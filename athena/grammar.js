@@ -59,7 +59,8 @@ export default grammar(trino, {
       ),
     ),
 
-    // Athena-specific keywords (not in Trino or base)
+    // Athena-specific keywords (not in Trino or base — defined here only)
+    keyword_unload:      _ => token(prec(1, make_keyword("unload"))),
     keyword_msck:        _ => token(prec(1, make_keyword("msck"))),
     keyword_repair:      _ => token(prec(1, make_keyword("repair"))),
     keyword_sync:        _ => token(prec(1, make_keyword("sync"))),
