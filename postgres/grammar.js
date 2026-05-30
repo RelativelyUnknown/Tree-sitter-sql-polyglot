@@ -546,6 +546,7 @@ export default grammar(base, {
     keyword_show:           _ => token(prec(1, make_keyword("show"))),
     keyword_off:            _ => token(prec(1, make_keyword("off"))),
     keyword_match:          _ => token(prec(1, make_keyword("match"))),
+    keyword_matched:        _ => token(prec(1, make_keyword("matched"))),
     keyword_version:        _ => token(prec(1, make_keyword("version"))),
     keyword_text:           _ => token(prec(1, make_keyword("text"))),
     keyword_current_user:   _ => token(prec(1, make_keyword("current_user"))),
