@@ -124,6 +124,9 @@ export default grammar(base, {
     // consistent keyword extraction alongside the token(prec(1,...)) keywords above
     keyword_row:             _ => token(prec(1, make_keyword("row"))),
     keyword_next:            _ => token(prec(1, make_keyword("next"))),
+    keyword_show:            _ => token(prec(1, make_keyword("show"))),
+    keyword_match:           _ => token(prec(1, make_keyword("match"))),
+    keyword_text:            _ => token(prec(1, make_keyword("text"))),
 
     // Exclude '->' from op_other so it is reserved for lambda_expression.
     // Trino does not use PostgreSQL-style JSON arrow operators.

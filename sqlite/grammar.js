@@ -200,6 +200,7 @@ export default grammar(base, {
     keyword_strict:        _ => token(prec(1, make_keyword("strict"))),
     keyword_virtual:       _ => token(prec(1, make_keyword("virtual"))),
     keyword_stored:        _ => token(prec(1, make_keyword("stored"))),
+    keyword_vacuum:        _ => token(prec(1, make_keyword("vacuum"))),
 
     ...sqlite_pragma_rules,
     ...sqlite_attach_rules,

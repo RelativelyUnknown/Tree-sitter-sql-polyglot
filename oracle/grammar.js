@@ -195,6 +195,10 @@ export default grammar(base, {
     keyword_exit:           _ => token(prec(1, make_keyword("exit"))),
     keyword_loop:           _ => token(prec(1, make_keyword("loop"))),
     keyword_exception:      _ => token(prec(1, make_keyword("exception"))),
+    keyword_while:          _ => token(prec(1, make_keyword("while"))),
+    keyword_source:         _ => token(prec(1, make_keyword("source"))),
+    keyword_declare:        _ => token(prec(1, make_keyword("declare"))),
+    keyword_current_user:   _ => token(prec(1, make_keyword("current_user"))),
 
     ...oracle_hierarchical_rules,
     ...oracle_plsql_rules,

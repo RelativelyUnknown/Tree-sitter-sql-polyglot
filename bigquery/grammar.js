@@ -230,6 +230,7 @@ export default grammar(base, {
     keyword_geography:  _ => token(prec(1, make_keyword("geography"))),
     keyword_datetime:   _ => token(prec(1, make_keyword("datetime"))),
     keyword_unnest:     _ => token(prec(1, make_keyword("unnest"))),
+    keyword_declare:    _ => token(prec(1, make_keyword("declare"))),
 
     // ── Spread all BigQuery rule modules ────────────────────────────────────
     ...select_rules,
