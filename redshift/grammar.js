@@ -18,12 +18,6 @@ export default grammar(base, {
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
     [$.interval],
-    [$.time],
-    [$.timestamp],
-    // CREATE EXTERNAL TABLE vs CREATE EXTERNAL SCHEMA both start with CREATE EXTERNAL
-    [$.create_external_table, $.create_external_schema],
-    // Optional CREATE EXTERNAL DATABASE tail at end of create_external_schema
-    [$.create_external_schema],
   ],
 
   rules: {
