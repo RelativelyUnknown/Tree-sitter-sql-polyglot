@@ -263,7 +263,7 @@ export default {
   keyword_execute: _ => make_keyword("execute"),
   keyword_procedure: _ => make_keyword("procedure"),
 
-  // ANSI SQL — used in base CREATE TABLE (CREATE EXTERNAL TABLE)
+  // ANSI SQL — used in base CREATE FUNCTION (LANGUAGE ... EXTERNAL routine)
   keyword_external: _ => make_keyword("external"),
   // ANSI SQL — used in base COMMENT ON statement
   keyword_comment: _ => make_keyword("comment"),

@@ -56,8 +56,12 @@ jobs:
             athena/src/node-types.json
             redshift/src/parser.c
             redshift/src/node-types.json
+            bigquery/src/parser.c
+            bigquery/src/node-types.json
+            tsql/src/parser.c
+            tsql/src/node-types.json
             .grammar-cache/
-          key: parsers-${{ hashFiles('grammar.js', 'grammar/**', 'spark/grammar.js', 'spark/grammar/**', 'databricks/grammar.js', 'databricks/grammar/**', 'postgres/grammar.js', 'postgres/grammar/**', 'mysql/grammar.js', 'mysql/grammar/**', 'snowflake/grammar.js', 'snowflake/grammar/**', 'mariadb/grammar.js', 'mariadb/grammar/**', 'sqlite/grammar.js', 'sqlite/grammar/**', 'hive/grammar.js', 'hive/grammar/**', 'oracle/grammar.js', 'oracle/grammar/**', 'db2/grammar.js', 'db2/grammar/**', 'duckdb/grammar.js', 'duckdb/grammar/**', 'trino/grammar.js', 'trino/grammar/**', 'athena/grammar.js', 'athena/grammar/**', 'redshift/grammar.js', 'redshift/grammar/**') }}
+          key: parsers-${{ hashFiles('grammar.js', 'grammar/**', 'spark/grammar.js', 'spark/grammar/**', 'databricks/grammar.js', 'databricks/grammar/**', 'postgres/grammar.js', 'postgres/grammar/**', 'mysql/grammar.js', 'mysql/grammar/**', 'snowflake/grammar.js', 'snowflake/grammar/**', 'mariadb/grammar.js', 'mariadb/grammar/**', 'sqlite/grammar.js', 'sqlite/grammar/**', 'hive/grammar.js', 'hive/grammar/**', 'oracle/grammar.js', 'oracle/grammar/**', 'db2/grammar.js', 'db2/grammar/**', 'duckdb/grammar.js', 'duckdb/grammar/**', 'trino/grammar.js', 'trino/grammar/**', 'athena/grammar.js', 'athena/grammar/**', 'redshift/grammar.js', 'redshift/grammar/**', 'bigquery/grammar.js', 'bigquery/grammar/**', 'tsql/grammar.js', 'tsql/grammar/**') }}
 
       # Generate in dependency order; independent dialects run in parallel.
       # base → [spark | postgres | mysql | snowflake] → databricks
@@ -76,6 +80,8 @@ jobs:
           node scripts/generate.js oracle &
           node scripts/generate.js db2 &
           node scripts/generate.js duckdb &
+          node scripts/generate.js bigquery &
+          node scripts/generate.js tsql &
           wait
           node scripts/generate.js trino
           node scripts/generate.js athena
@@ -130,6 +136,12 @@ jobs:
       - name: Run tests (Redshift SQL)
         run: cd redshift && tree-sitter test
 
+      - name: Run tests (BigQuery)
+        run: cd bigquery && tree-sitter test
+
+      - name: Run tests (T-SQL)
+        run: cd tsql && tree-sitter test
+
       - run: scripts/test-keywords.sh
 
   # ── Node native binding (OS matrix) ─────────────────────────────────────────
@@ -175,7 +187,7 @@ jobs:
       - uses: actions/checkout@v4
       - run: |
           STATUS=0
-          for dir in test spark/test databricks/test postgres/test mysql/test snowflake/test mariadb/test sqlite/test hive/test oracle/test db2/test duckdb/test trino/test athena/test redshift/test; do
+          for dir in test spark/test databricks/test postgres/test mysql/test snowflake/test mariadb/test sqlite/test hive/test oracle/test db2/test duckdb/test trino/test athena/test redshift/test bigquery/test tsql/test; do
             if [[ $(grep -rn --exclude=errors.txt ERROR "$dir/" 2>/dev/null | wc -l) -gt 0 ]]; then
                 echo "Found 'ERROR' in $dir: "
                 grep -rn --exclude=errors.txt ERROR "$dir/" | cut -f1,2 -d:
