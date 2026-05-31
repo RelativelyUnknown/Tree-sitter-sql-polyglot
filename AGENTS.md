@@ -404,3 +404,50 @@ for that dialect's parser. No shared keyword pool is needed.
 `keyword_ilike` (PostgreSQL-only `ILIKE` operator) is defined in `postgres/grammar.js`. The
 base grammar keeps only `keyword_like` in its `binary_expression` rule. Postgres overrides
 `binary_expression` to add `$.keyword_ilike` as a valid operator.
+
+### Prefix-shadowing: `token(prec(N,...))` defeats longest-match
+
+tree-sitter's normal lexer gives priority to the *longest* matching token (maximal munch). But
+`token(prec(N,...))` overrides that: a shorter token with higher prec *wins* over a longer token
+with lower prec, even when both could match the same input.
+
+**Concrete example — the `keyword_match` / `keyword_matched` bug:**
+
+`keyword_match: _ => token(prec(1, make_keyword("match")))` was added to `postgres/grammar.js`.
+`keyword_matched` was inherited from base at `prec(0)`.  When the input was `MATCHED`, the lexer
+preferred `keyword_match` (prec 1, 5 chars) over `keyword_matched` (prec 0, 7 chars) — leaving
+`ED` as a stray identifier and breaking `MERGE WHEN MATCHED THEN`.
+
+**Rule:** whenever you add a keyword `foo` with `token(prec(1,...))`, check whether any keyword
+`foobar` (sharing the same prefix) exists anywhere in the inheritance chain. If so, also override
+`foobar` with `token(prec(1,...))` in the same dialect so that equal-precedence longest-match
+resolves correctly.
+
+### Cross-dialect keyword audit: grep is not enough
+
+When removing a keyword from base, a `grep`-based scan of which dialect files reference it can
+miss usages for two reasons:
+
+1. **Indirect rule files**: a keyword may be referenced in `<dialect>/grammar/foo.js` but the
+   definition audit only scanned `<dialect>/grammar.js`. Always grep *all* files under
+   `<dialect>/` not just the top-level grammar.
+
+2. **Orphan definitions**: a keyword may be defined only in dialect A (e.g. `postgres`) but
+   *used* in dialect B (e.g. `databricks`) that does not inherit from A. Grep finds the usage
+   but the definition resolves only at generation time. The only reliable audit is to actually
+   **attempt generation** of every dialect and let the `ReferenceError: Undefined symbol` errors
+   surface the gaps.
+
+**Workflow:** after moving keywords from base to dialects, run generation for *every* dialect
+(not just the ones grep implicated) and fix `Undefined symbol` errors one by one before running
+corpus tests.
+
+### Hash-cached generation can silently skip changed grammars
+
+`scripts/generate.js` skips regeneration when its file hash matches the cached value. If you
+edit a grammar file but the hash doesn't change (e.g. whitespace-only changes, or the cache is
+stale from a previous run), the parser is not regenerated and tests continue to pass against the
+old binary — hiding the regression.
+
+When in doubt, force-regenerate: `cd <dialect> && tree-sitter generate grammar.js` directly,
+bypassing the npm script cache entirely.
