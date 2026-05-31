@@ -247,6 +247,8 @@ export default grammar(base, {
     keyword_rlike:          _ => token(prec(1, choice(make_keyword("rlike"), make_keyword("regexp")))),
     keyword_copy:           _ => token(prec(1, make_keyword("copy"))),
     keyword_policy:         _ => token(prec(1, make_keyword("policy"))),
+    keyword_declare:        _ => token(prec(1, make_keyword("declare"))),
+    keyword_match:          _ => token(prec(1, make_keyword("match"))),
 
     // ── Spread all Snowflake rule modules ───────────────────────────────────
     ...qualify_rules,

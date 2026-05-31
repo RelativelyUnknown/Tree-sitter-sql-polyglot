@@ -1,0 +1,182 @@
+import base from '../grammar.js';
+import { optional_parenthesis, make_keyword } from '../grammar/helpers.js';
+import trino_statement_rules from './grammar/statements.js';
+import trino_type_rules     from './grammar/types.js';
+import trino_expression_rules from './grammar/expressions.js';
+import trino_select_rules   from './grammar/select.js';
+import trino_ddl_rules      from './grammar/ddl.js';
+
+export default grammar(base, {
+  name: 'trino_sql',
+
+  conflicts: $ => [
+    [$.object_reference, $._qualified_field],
+    [$.field, $._qualified_field],
+    [$._column, $._qualified_field],
+    [$.object_reference],
+    [$.between_expression, $.binary_expression],
+    [$.from],
+    [$.create_function],
+    [$.list, $.grouping_set],
+    [$.list, $.rollup_element],
+    [$.list, $.cube_element],
+    [$.interval],
+    [$.time],
+    [$.timestamp],
+    [$.term],
+    [$.values],
+    [$.select_expression],
+    [$.set_operation],
+    [$.group_by],
+    [$.order_target],
+    // Lambda: x -> expr vs field reference
+    [$.object_reference, $._qualified_field, $.lambda_expression],
+    [$._qualified_field, $.lambda_expression],
+    [$.lambda_expression],
+    [$.binary_expression, $.lambda_expression],
+    // ROW(...) vs function invocation
+    [$.row_type, $.invocation],
+    // MATCH_RECOGNIZE internal GLR
+    [$.match_recognize_clause],
+    // ARRAY(type) vs ARRAY[...] expression
+    [$.array_type, $.array],
+    // set_session_statement vs set_statement (both start with SET SESSION)
+    [$.set_session_statement, $.set_statement],
+  ],
+
+  rules: {
+
+    statement: $ => seq(
+      optional(seq(
+        $.keyword_explain,
+        optional($.keyword_analyze),
+        optional($.keyword_verbose),
+        optional($.explain_options),
+      )),
+      choice(
+        $._ddl_statement,
+        $._dml_write,
+        optional_parenthesis($._dml_read),
+        $.prepare_statement,
+        $.execute_statement,
+        $.deallocate_statement,
+        $.show_stats_statement,
+        $.set_session_statement,
+        $.reset_session_statement,
+      ),
+    ),
+
+    // Override _expression to add lambda
+    _expression: $ => prec(1,
+      choice(
+        $.literal,
+        alias($._qualified_field, $.field),
+        $.parameter,
+        $.list,
+        $.case,
+        $.window_function,
+        $.subquery,
+        $.cast,
+        $.exists,
+        $.invocation,
+        $.binary_expression,
+        $.subscript,
+        $.unary_expression,
+        $.array,
+        $.interval,
+        $.between_expression,
+        $.parenthesized_expression,
+        $.trim_expression,
+        $.lambda_expression,
+      ),
+    ),
+
+    // Trino-specific keywords (not ANSI — defined here only, not in base)
+    keyword_prepare:         _ => token(prec(1, make_keyword("prepare"))),
+    keyword_deallocate:      _ => token(prec(1, make_keyword("deallocate"))),
+    keyword_stats:           _ => token(prec(1, make_keyword("stats"))),
+    keyword_match_recognize: _ => token(prec(1, make_keyword("match_recognize"))),
+    keyword_measures:        _ => token(prec(1, make_keyword("measures"))),
+    keyword_pattern:         _ => token(prec(1, make_keyword("pattern"))),
+    keyword_define:          _ => token(prec(1, make_keyword("define"))),
+    keyword_running:         _ => token(prec(1, make_keyword("running"))),
+    keyword_final:           _ => token(prec(1, make_keyword("final"))),
+    keyword_skip:            _ => token(prec(1, make_keyword("skip"))),
+    keyword_past:            _ => token(prec(1, make_keyword("past"))),
+    keyword_map:             _ => token(prec(1, make_keyword("map"))),
+    keyword_qualify:         _ => token(prec(1, make_keyword("qualify"))),
+    keyword_one:             _ => token(prec(1, make_keyword("one"))),
+    keyword_per:             _ => token(prec(1, make_keyword("per"))),
+    keyword_logical:         _ => token(prec(1, make_keyword("logical"))),
+    keyword_distributed:     _ => token(prec(1, make_keyword("distributed"))),
+    keyword_validate:        _ => token(prec(1, make_keyword("validate"))),
+    keyword_io:              _ => token(prec(1, make_keyword("io"))),
+    keyword_graphviz:        _ => token(prec(1, make_keyword("graphviz"))),
+    keyword_format:          _ => token(prec(1, make_keyword("format"))),
+    keyword_bernoulli:       _ => token(prec(1, make_keyword("bernoulli"))),
+    keyword_system:          _ => token(prec(1, make_keyword("system"))),
+    // Trino native type keywords (use token(prec) to ensure extraction works
+    // alongside the other token(prec(1,...)) keywords defined in this dialect)
+    keyword_tinyint:         _ => token(prec(1, make_keyword("tinyint"))),
+    keyword_ipaddress:       _ => token(prec(1, make_keyword("ipaddress"))),
+    keyword_uuid:            _ => token(prec(1, make_keyword("uuid"))),
+    // Override base keywords that appear in dialect-specific positions to ensure
+    // consistent keyword extraction alongside the token(prec(1,...)) keywords above
+    keyword_row:             _ => token(prec(1, make_keyword("row"))),
+    keyword_next:            _ => token(prec(1, make_keyword("next"))),
+    keyword_show:            _ => token(prec(1, make_keyword("show"))),
+    keyword_match:           _ => token(prec(1, make_keyword("match"))),
+    keyword_text:            _ => token(prec(1, make_keyword("text"))),
+
+    // Exclude '->' from op_other so it is reserved for lambda_expression.
+    // Trino does not use PostgreSQL-style JSON arrow operators.
+    op_other: _ => token(
+      choice(
+        '->>',
+        '#>',
+        '#>>',
+        '~',
+        '!~',
+        '~*',
+        '!~*',
+        '|',
+        '&',
+        '#',
+        '<<',
+        '>>',
+        '<<=',
+        '>>=',
+        '##',
+        '<->',
+        '@>',
+        '<@',
+        '&<',
+        '&>',
+        '|>>',
+        '<<|',
+        '&<|',
+        '|&>',
+        '<^',
+        '^>',
+        '?#',
+        '?-',
+        '?|',
+        '?-|',
+        '?||',
+        '@@',
+        '@@@',
+        '@?',
+        '#-',
+        '?&',
+        '?',
+      )
+    ),
+
+    ...trino_statement_rules,
+    ...trino_type_rules,
+    ...trino_expression_rules,
+    ...trino_select_rules,
+    ...trino_ddl_rules,
+
+  },
+});

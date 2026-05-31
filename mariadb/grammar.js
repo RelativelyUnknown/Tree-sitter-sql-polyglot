@@ -56,6 +56,7 @@ export default grammar(mysql, {
     keyword_body:        _ => token(prec(1, make_keyword("body"))),
     keyword_invisible:   _ => token(prec(1, make_keyword("invisible"))),
     keyword_visible:     _ => token(prec(1, make_keyword("visible"))),
+    keyword_version:     _ => token(prec(1, make_keyword("version"))),
 
     ...mariadb_temporal_rules,
     ...mariadb_versioning_rules,

@@ -455,6 +455,12 @@ export default grammar(base, {
     keyword_load:           _ => token(prec(1, make_keyword("load"))),
     keyword_escaped:        _ => token(prec(1, make_keyword("escaped"))),
     keyword_grants:         _ => token(prec(1, make_keyword("grants"))),
+    keyword_show:           _ => token(prec(1, make_keyword("show"))),
+    keyword_columns:        _ => token(prec(1, make_keyword("columns"))),
+    keyword_keys:           _ => token(prec(1, make_keyword("keys"))),
+    keyword_escape:         _ => token(prec(1, make_keyword("escape"))),
+    keyword_follows:        _ => token(prec(1, make_keyword("follows"))),
+    keyword_precedes:       _ => token(prec(1, make_keyword("precedes"))),
 
     ...mysql_create_rules,
     ...mysql_optimize_rules,

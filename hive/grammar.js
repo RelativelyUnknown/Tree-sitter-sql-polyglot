@@ -388,6 +388,7 @@ export default grammar(base, {
     keyword_environment:     _ => token(prec(1, make_keyword("environment"))),
     keyword_parameter:       _ => token(prec(1, make_keyword("parameter"))),
     keyword_style:           _ => token(prec(1, make_keyword("style"))),
+    keyword_overwrite:       _ => token(prec(1, make_keyword("overwrite"))),
 
     ...hive_storage_rules,
     ...hive_partition_rules,

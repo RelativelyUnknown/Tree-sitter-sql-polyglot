@@ -192,6 +192,8 @@ export default grammar(base, {
     keyword_access:         _ => token(prec(1, make_keyword("access"))),
     keyword_optimize:       _ => token(prec(1, make_keyword("optimize"))),
     keyword_options:        _ => token(prec(1, make_keyword("options"))),
+    keyword_version:        _ => token(prec(1, make_keyword("version"))),
+    keyword_policy:         _ => token(prec(1, make_keyword("policy"))),
 
     ...db2_modules_rules,
     ...db2_data_control_rules,

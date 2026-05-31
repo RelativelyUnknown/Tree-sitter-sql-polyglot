@@ -297,8 +297,16 @@ export default grammar(spark, {
     keyword_recipients: _ => token(prec(1, make_keyword("recipients"))),
     keyword_providers:  _ => token(prec(1, make_keyword("providers"))),
     keyword_appends:    _ => token(prec(1, make_keyword("appends"))),
+    keyword_upsert:     _ => token(prec(1, make_keyword("upsert"))),
     keyword_vacuum:     _ => token(prec(1, make_keyword("vacuum"))),
     keyword_policy:     _ => token(prec(1, make_keyword("policy"))),
+    keyword_show:       _ => token(prec(1, make_keyword("show"))),
+    keyword_unload:     _ => token(prec(1, make_keyword("unload"))),
+    keyword_keys:       _ => token(prec(1, make_keyword("keys"))),
+    keyword_extended:   _ => token(prec(1, make_keyword("extended"))),
+    keyword_version:    _ => token(prec(1, make_keyword("version"))),
+    keyword_flow:       _ => token(prec(1, make_keyword("flow"))),
+    keyword_names:      _ => token(prec(1, make_keyword("names"))),
 
     // Databricks-specific rule definitions
     ...vacuum_rules,

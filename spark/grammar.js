@@ -448,6 +448,9 @@ export default grammar(hive, {
     keyword_ordered:            _ => token(prec(1, make_keyword("ordered"))),
     keyword_options:            _ => token(prec(1, make_keyword("options"))),
     keyword_distributed:        _ => token(prec(1, make_keyword("distributed"))),
+    keyword_columns:            _ => token(prec(1, make_keyword("columns"))),
+    keyword_unset:              _ => token(prec(1, make_keyword("unset"))),
+    keyword_declare:            _ => token(prec(1, make_keyword("declare"))),
 
     ...spark_create_rules,
     ...spark_optimize_rules,

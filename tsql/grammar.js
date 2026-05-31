@@ -214,6 +214,10 @@ export default grammar(base, {
     keyword_file:             _ => token(prec(1, make_keyword("file"))),
     keyword_format:           _ => token(prec(1, make_keyword("format"))),
     keyword_clustered:        _ => token(prec(1, make_keyword("clustered"))),
+    keyword_copy:             _ => token(prec(1, make_keyword("copy"))),
+    keyword_while:            _ => token(prec(1, make_keyword("while"))),
+    keyword_source:           _ => token(prec(1, make_keyword("source"))),
+    keyword_declare:          _ => token(prec(1, make_keyword("declare"))),
 
     // T-SQL SET @variable = expression  (plus base transaction/constraint SET)
     set_statement: $ => prec.right(choice(
