@@ -1,11 +1,14 @@
 ; ClickHouse dialect keyword highlights
+(keyword_alias) @keyword
 (keyword_attach) @keyword
 (keyword_cache) @keyword
 (keyword_cluster) @keyword
+(keyword_codec) @keyword
 (keyword_config) @keyword
 (keyword_date32) @keyword
 (keyword_datetime) @keyword
 (keyword_datetime64) @keyword
+(keyword_deduplicate) @keyword
 (keyword_detach) @keyword
 (keyword_dictionaries) @keyword
 (keyword_dictionary) @keyword
@@ -13,13 +16,16 @@
 (keyword_distributed) @keyword
 (keyword_dns) @keyword
 (keyword_engine) @keyword
+(keyword_ephemeral) @keyword
 (keyword_fetches) @keyword
+(keyword_fill) @keyword
 (keyword_final) @keyword
 (keyword_fixedstring) @keyword
 (keyword_float32) @keyword
 (keyword_float64) @keyword
 (keyword_flush) @keyword
 (keyword_format) @keyword
+(keyword_freeze) @keyword
 (keyword_int128) @keyword
 (keyword_int16) @keyword
 (keyword_int256) @keyword
@@ -39,8 +45,11 @@
 (keyword_min) @keyword
 (keyword_nested) @keyword
 (keyword_nullable) @keyword
+(keyword_optimize) @keyword
+(keyword_outfile) @keyword
 (keyword_populate) @keyword
 (keyword_prewhere) @keyword
+(keyword_qualify) @keyword
 (keyword_reload) @keyword
 (keyword_replica) @keyword
 (keyword_replicated) @keyword
@@ -49,6 +58,7 @@
 (keyword_settings) @keyword
 (keyword_source) @keyword
 (keyword_start) @keyword
+(keyword_step) @keyword
 (keyword_stop) @keyword
 (keyword_sync) @keyword
 (keyword_system) @keyword

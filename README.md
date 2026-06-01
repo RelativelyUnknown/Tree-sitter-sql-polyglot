@@ -33,7 +33,7 @@ Each dialect compiles to its own `<dialect>/src/parser.c` and can be used indepe
 | **trino** | base | `PREPARE`/`EXECUTE`/`DEALLOCATE`, `MATCH_RECOGNIZE`, `TABLESAMPLE BERNOULLI/SYSTEM`, `ARRAY`/`MAP`/`ROW` types, lambdas |
 | **athena** | trino | `UNLOAD … TO 's3://…'`, `MSCK REPAIR TABLE … PARTITIONS` (managed Trino + data-lake semantics) |
 | **redshift** | base | `DISTKEY`/`SORTKEY`/`DISTSTYLE`/`ENCODE`, `CREATE EXTERNAL SCHEMA/TABLE`, `COPY`/`UNLOAD`, `VACUUM REINDEX`, `APPROXIMATE COUNT` |
-| **clickhouse** | base | `ENGINE = MergeTree() … `, `PREWHERE`, `FINAL`, `ARRAY JOIN`, `LIMIT n BY`, `SAMPLE`, `WITH TOTALS`, `FORMAT`, `CREATE DICTIONARY`/`LIVE VIEW`, `SYSTEM …`, `Map`/`Tuple`/`Nested`/`LowCardinality`/`Nullable` types |
+| **clickhouse** | base | `ENGINE = MergeTree() …`, column `MATERIALIZED`/`ALIAS`/`EPHEMERAL`/`CODEC`/`TTL`, `PREWHERE`, `FINAL`, `ARRAY JOIN`, `LIMIT n BY`, `SAMPLE`, `WITH TOTALS`, `QUALIFY`, `ORDER BY … WITH FILL`, `LIMIT … WITH TIES`, `INTO OUTFILE`/`FORMAT`, `ALTER … UPDATE`/`DELETE`, `OPTIMIZE … FINAL`, `CREATE DICTIONARY`/`LIVE VIEW`, `SYSTEM …`, `Map`/`Tuple`/`Nested`/`LowCardinality`/`Nullable` types |
 
 Dependency chains: `databricks → spark → hive → base`, `mariadb → mysql → base`, and `athena → trino → base`.
 Regenerate the child when a parent grammar changes. See [AGENTS.md](AGENTS.md) for the full architecture.

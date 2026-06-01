@@ -4,6 +4,7 @@ import ch_type_rules    from './grammar/types.js';
 import ch_select_rules  from './grammar/select.js';
 import ch_create_rules  from './grammar/create.js';
 import ch_system_rules  from './grammar/system.js';
+import ch_mutation_rules from './grammar/mutations.js';
 
 export default grammar(base, {
   name: 'clickhouse_sql',
@@ -37,6 +38,7 @@ export default grammar(base, {
         $.system_statement,
         $.attach_statement,
         $.detach_statement,
+        $.optimize_statement,
       ),
     ),
 
@@ -82,6 +84,22 @@ export default grammar(base, {
     keyword_lifetime:      _ => token(prec(1, make_keyword("lifetime"))),
     keyword_min:           _ => token(prec(1, make_keyword("min"))),
     keyword_max:           _ => token(prec(1, make_keyword("max"))),
+
+    // Column modifiers / DDL extensions
+    keyword_codec:         _ => token(prec(1, make_keyword("codec"))),
+    keyword_alias:         _ => token(prec(1, make_keyword("alias"))),
+    keyword_ephemeral:     _ => token(prec(1, make_keyword("ephemeral"))),
+
+    // Mutations / OPTIMIZE
+    keyword_optimize:      _ => token(prec(1, make_keyword("optimize"))),
+    keyword_deduplicate:   _ => token(prec(1, make_keyword("deduplicate"))),
+    keyword_freeze:        _ => token(prec(1, make_keyword("freeze"))),
+
+    // SELECT extensions
+    keyword_qualify:       _ => token(prec(1, make_keyword("qualify"))),
+    keyword_fill:          _ => token(prec(1, make_keyword("fill"))),
+    keyword_step:          _ => token(prec(1, make_keyword("step"))),
+    keyword_outfile:       _ => token(prec(1, make_keyword("outfile"))),
 
     // SYSTEM command keywords
     keyword_system:        _ => token(prec(1, make_keyword("system"))),
@@ -137,6 +155,7 @@ export default grammar(base, {
     ...ch_select_rules,
     ...ch_create_rules,
     ...ch_system_rules,
+    ...ch_mutation_rules,
 
   },
 });

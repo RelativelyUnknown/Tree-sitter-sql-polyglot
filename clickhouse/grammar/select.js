@@ -38,6 +38,19 @@ export default {
     optional(seq('/', $.literal)),
   ),
 
+  // QUALIFY <expr> — filter on window-function results (post-WINDOW)
+  qualify: $ => seq(
+    $.keyword_qualify,
+    field('predicate', $._expression),
+  ),
+
+  // INTO OUTFILE 'path' [COMPRESSION 'method'] — trailing, before FORMAT
+  into_outfile_clause: $ => seq(
+    $.keyword_into,
+    $.keyword_outfile,
+    alias($._literal_string, $.literal),
+  ),
+
   // FORMAT <Name> trailing output clause
   format_clause: $ => seq(
     $.keyword_format,
@@ -96,10 +109,36 @@ export default {
     optional($.group_by),
     optional($.having),
     optional($.window_clause),
+    optional($.qualify),
     optional($.order_by),
     optional($.limit),
     optional($.settings_clause),
+    optional($.into_outfile_clause),
     optional($.format_clause),
+  ),
+
+  // Override order_target to add ClickHouse WITH FILL [FROM x] [TO y] [STEP z]
+  order_target: $ => prec.right(seq(
+    $._expression,
+    optional(
+      seq(
+        choice(
+          $.direction,
+          seq($.keyword_using, choice('<', '>', '<=', '>=')),
+        ),
+        optional(seq($.keyword_nulls, choice($.keyword_first, $.keyword_last))),
+      ),
+    ),
+    optional($.with_fill),
+  )),
+
+  // WITH FILL [FROM expr] [TO expr] [STEP expr]
+  with_fill: $ => seq(
+    $.keyword_with,
+    $.keyword_fill,
+    optional(seq($.keyword_from, field('from', $._expression))),
+    optional(seq($.keyword_to, field('to', $._expression))),
+    optional(seq($.keyword_step, field('step', $._expression))),
   ),
 
   // Override group_by to add WITH TOTALS (alongside base WITH ROLLUP/CUBE)
@@ -118,14 +157,15 @@ export default {
     )),
   )),
 
-  // Override limit to add ClickHouse LIMIT n [, m] BY <expr-list>
-  limit: $ => seq(
+  // Override limit to add ClickHouse LIMIT n [, m] [WITH TIES] [BY <expr-list>]
+  limit: $ => prec.right(seq(
     $.keyword_limit,
     $.literal,
     optional(seq(',', $.literal)),
+    optional(seq($.keyword_with, $.keyword_ties)),
     optional($.offset),
     optional($.limit_by),
-  ),
+  )),
 
   limit_by: $ => seq(
     $.keyword_by,

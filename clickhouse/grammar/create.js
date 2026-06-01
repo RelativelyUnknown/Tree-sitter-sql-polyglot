@@ -1,6 +1,34 @@
-import { comma_list, paren_list } from '../../grammar/helpers.js';
+import { comma_list, paren_list, wrapped_in_parenthesis } from '../../grammar/helpers.js';
 
 export default {
+
+  // Override _column_constraint to add ClickHouse column modifiers:
+  // DEFAULT/MATERIALIZED/ALIAS/EPHEMERAL expr, CODEC(...), TTL expr, COMMENT,
+  // plus the ANSI base constraints (re-enumerated — overrides replace, not merge).
+  _column_constraint: $ => prec.left(choice(
+    choice($.keyword_null, $._not_null),
+    $._default_expression,
+    $._primary_key,
+    $._column_comment,
+    $._check_constraint,
+    $.keyword_unique,
+    // ClickHouse column computed/stored kinds
+    seq($.keyword_materialized, $._expression),
+    seq($.keyword_alias, $._expression),
+    seq($.keyword_ephemeral, optional($._expression)),
+    // CODEC(name[(args)] [, ...])
+    $.codec_clause,
+    // Per-column TTL expr
+    seq($.keyword_ttl, $._expression),
+  )),
+
+  // CODEC(ZSTD), CODEC(Delta, ZSTD(3)), CODEC(DoubleDelta, LZ4)
+  codec_clause: $ => seq(
+    $.keyword_codec,
+    '(',
+    comma_list(field('codec', choice($.invocation, $.identifier)), true),
+    ')',
+  ),
 
   // Override _create_statement to add ClickHouse-specific CREATE variants
   _create_statement: $ => seq(
@@ -36,7 +64,14 @@ export default {
       optional($.on_cluster),
       seq(
         optional($.column_definitions),
-        optional(seq($.keyword_as, $.create_query)),
+        optional(seq(
+          $.keyword_as,
+          choice(
+            // CREATE TABLE t2 AS t1  (clone schema from another table)
+            field('clone_source', $.object_reference),
+            $.create_query,
+          ),
+        )),
       ),
       optional($.engine_clause),
       repeat($._table_clause),
