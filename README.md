@@ -2,7 +2,7 @@
 
 A multi-dialect SQL parser for [tree-sitter](https://tree-sitter.github.io/), forked from
 [DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql). It restructures the
-upstream "permissive" grammar into a clean ANSI SQL base plus **12 independently compiled dialect
+upstream "permissive" grammar into a clean ANSI SQL base plus **16 independently compiled dialect
 grammars**, each layered on top via tree-sitter's `grammar(parent, overrides)` composition.
 
 Originally built as the SQL parser backend for [burnt](https://github.com/RedPandaMC/burnt) — a cost
@@ -29,9 +29,13 @@ Each dialect compiles to its own `<dialect>/src/parser.c` and can be used indepe
 | **bigquery** | base | `INT64`/`STRUCT<…>`/`ARRAY<…>` types, `UNNEST`, backtick identifiers, `QUALIFY` |
 | **snowflake** | base | scripting, `LATERAL FLATTEN`, time travel, `@stage` sources, `::` cast |
 | **sqlite** | base | `INSERT OR REPLACE/IGNORE`, UPSERT, `AUTOINCREMENT`, `INDEXED BY` |
+| **duckdb** | base | FROM-first `SELECT`, `SELECT * EXCLUDE/REPLACE/RENAME`, lambdas, struct/map/list literals, `ASOF`/`POSITIONAL JOIN`, `ATTACH` |
+| **trino** | base | `PREPARE`/`EXECUTE`/`DEALLOCATE`, `MATCH_RECOGNIZE`, `TABLESAMPLE BERNOULLI/SYSTEM`, `ARRAY`/`MAP`/`ROW` types, lambdas |
+| **athena** | trino | `UNLOAD … TO 's3://…'`, `MSCK REPAIR TABLE … PARTITIONS` (managed Trino + data-lake semantics) |
+| **redshift** | base | `DISTKEY`/`SORTKEY`/`DISTSTYLE`/`ENCODE`, `CREATE EXTERNAL SCHEMA/TABLE`, `COPY`/`UNLOAD`, `VACUUM REINDEX`, `APPROXIMATE COUNT` |
 
-Dependency chains: `databricks → spark → hive → base` and `mariadb → mysql → base`. Regenerate the child
-when a parent grammar changes. See [AGENTS.md](AGENTS.md) for the full architecture.
+Dependency chains: `databricks → spark → hive → base`, `mariadb → mysql → base`, and `athena → trino → base`.
+Regenerate the child when a parent grammar changes. See [AGENTS.md](AGENTS.md) for the full architecture.
 
 ---
 
@@ -76,7 +80,7 @@ npm run generate
 # Regenerate a single dialect (and its parent chain as needed)
 npm run generate:spark
 
-# Regenerate every parser (base + all 12 dialects)
+# Regenerate every parser (base + all 16 dialects)
 npm run generate:all
 
 # Run corpus tests for the base grammar

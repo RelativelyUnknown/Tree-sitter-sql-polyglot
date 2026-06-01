@@ -31,7 +31,6 @@ export default {
         $.keyword_insert,
         $._insert_values,
       ),
-      optional($.where),
     ),
   )),
 
