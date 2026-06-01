@@ -21,6 +21,10 @@ export default grammar(base, {
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
     [$.interval],
+    // ALTER ... UPDATE col = expr [IN PARTITION p]: after the value expression,
+    // `IN` may continue a binary IN-expression or begin the IN PARTITION clause.
+    // GLR explores both; only one continuation is well-formed at runtime.
+    [$.binary_expression, $.assignment],
   ],
 
   rules: {

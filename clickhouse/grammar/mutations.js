@@ -23,17 +23,28 @@ export default {
     $.alter_partition,
   ),
 
-  // ALTER TABLE t UPDATE col = expr [, ...] WHERE cond
+  // ALTER TABLE t UPDATE col = expr [, ...] [IN PARTITION p] WHERE cond
   alter_update: $ => seq(
     $.keyword_update,
     comma_list($.assignment, true),
+    optional($.in_partition_clause),
     $.where,
   ),
 
-  // ALTER TABLE t DELETE WHERE cond
+  // ALTER TABLE t DELETE [IN PARTITION p] WHERE cond
   alter_delete: $ => seq(
     $.keyword_delete,
+    optional($.in_partition_clause),
     $.where,
+  ),
+
+  // IN PARTITION partition_expr — scopes a mutation to one partition.
+  // `IN PARTITION` is disambiguated from the binary IN operator by the
+  // keyword_partition token (see the conflicts entry in grammar.js).
+  in_partition_clause: $ => seq(
+    $.keyword_in,
+    $.keyword_partition,
+    field('partition', $._expression),
   ),
 
   // ALTER TABLE t {DROP|DETACH|ATTACH|FREEZE} PARTITION expr
