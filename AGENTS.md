@@ -28,7 +28,8 @@ grammar.js                ← ANSI SQL base (clean, no dialect-specific rules)
   ├── duckdb/grammar.js   ← grammar(base, duckdb_rules)    [FROM-first SELECT, EXCLUDE/REPLACE, lambdas, ASOF JOIN]
   ├── trino/grammar.js    ← grammar(base, trino_rules)     [PREPARE/EXECUTE, MATCH_RECOGNIZE, ARRAY/MAP/ROW, lambdas]
   │     └── athena/grammar.js ← grammar(trino, athena_rules) [UNLOAD TO s3, MSCK REPAIR TABLE]
-  └── redshift/grammar.js ← grammar(base, redshift_rules)  [DISTKEY/SORTKEY/DISTSTYLE, EXTERNAL SCHEMA, COPY/UNLOAD]
+  ├── redshift/grammar.js ← grammar(base, redshift_rules)  [DISTKEY/SORTKEY/DISTSTYLE, EXTERNAL SCHEMA, COPY/UNLOAD]
+  └── clickhouse/grammar.js ← grammar(base, clickhouse_rules) [ENGINE=, PREWHERE, FINAL, ARRAY JOIN, LIMIT BY, SAMPLE, SYSTEM, Map/Tuple/Nested]
 ```
 
 Each dialect compiles to its own `<dialect>/src/parser.c` independently. Changing Databricks rules
