@@ -26,7 +26,7 @@ architecture and the parent/child dependency chains.
 ```bash
 npm run generate            # base grammar
 npm run generate:spark      # a single dialect
-npm run generate:all        # base + all 12 dialects
+npm run generate:all        # base + all 17 dialects
 ```
 
 Generation uses a content hash to skip `tree-sitter generate` when the relevant grammar files haven't
@@ -36,7 +36,7 @@ changed, saving ~60s on repeated runs. To force regeneration regardless:
 npm run generate:force
 ```
 
-A change to the base grammar ripples to all 12 parsers — regenerate and test all of them. Changing a
+A change to the base grammar ripples to all 17 parsers — regenerate and test all of them. Changing a
 dialect requires regenerating its child too (`databricks` after `spark`/`hive`; `mariadb` after `mysql`).
 
 ### 3. Run the tests

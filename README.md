@@ -2,7 +2,7 @@
 
 A multi-dialect SQL parser for [tree-sitter](https://tree-sitter.github.io/), forked from
 [DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql). It restructures the
-upstream "permissive" grammar into a clean ANSI SQL base plus **16 independently compiled dialect
+upstream "permissive" grammar into a clean ANSI SQL base plus **17 independently compiled dialect
 grammars**, each layered on top via tree-sitter's `grammar(parent, overrides)` composition.
 
 Originally built as the SQL parser backend for [burnt](https://github.com/RedPandaMC/burnt) — a cost
@@ -33,6 +33,7 @@ Each dialect compiles to its own `<dialect>/src/parser.c` and can be used indepe
 | **trino** | base | `PREPARE`/`EXECUTE`/`DEALLOCATE`, `MATCH_RECOGNIZE`, `TABLESAMPLE BERNOULLI/SYSTEM`, `ARRAY`/`MAP`/`ROW` types, lambdas |
 | **athena** | trino | `UNLOAD … TO 's3://…'`, `MSCK REPAIR TABLE … PARTITIONS` (managed Trino + data-lake semantics) |
 | **redshift** | base | `DISTKEY`/`SORTKEY`/`DISTSTYLE`/`ENCODE`, `CREATE EXTERNAL SCHEMA/TABLE`, `COPY`/`UNLOAD`, `VACUUM REINDEX`, `APPROXIMATE COUNT` |
+| **clickhouse** | base | `ENGINE = MergeTree() …`, column `MATERIALIZED`/`ALIAS`/`EPHEMERAL`/`CODEC`/`TTL`, `PREWHERE`, `FINAL`, `ARRAY JOIN`, `LIMIT n BY`, `SAMPLE`, `WITH TOTALS`, `QUALIFY`, `ORDER BY … WITH FILL`, `LIMIT … WITH TIES`, `INTO OUTFILE`/`FORMAT`, `ALTER … UPDATE`/`DELETE`, `OPTIMIZE … FINAL`, `CREATE DICTIONARY`/`LIVE VIEW`, `SYSTEM …`, `Map`/`Tuple`/`Nested`/`LowCardinality`/`Nullable` types |
 
 Dependency chains: `databricks → spark → hive → base`, `mariadb → mysql → base`, and `athena → trino → base`.
 Regenerate the child when a parent grammar changes. See [AGENTS.md](AGENTS.md) for the full architecture.
@@ -80,7 +81,7 @@ npm run generate
 # Regenerate a single dialect (and its parent chain as needed)
 npm run generate:spark
 
-# Regenerate every parser (base + all 16 dialects)
+# Regenerate every parser (base + all 17 dialects)
 npm run generate:all
 
 # Run corpus tests for the base grammar
