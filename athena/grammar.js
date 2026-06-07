@@ -2,6 +2,7 @@ import trino from '../trino/grammar.js';
 import { optional_parenthesis, make_keyword } from '../grammar/helpers.js';
 import athena_statement_rules from './grammar/statements.js';
 import athena_create_rules from './grammar/create.js';
+import athena_alter_rules from './grammar/alter.js';
 
 export default grammar(trino, {
   name: 'athena_sql',
@@ -53,11 +54,21 @@ export default grammar(trino, {
         $.execute_statement,
         $.deallocate_statement,
         $.show_stats_statement,
+        $.show_catalogs,
+        $.show_schemas,
+        $.show_tables,
+        $.show_columns,
+        $.show_functions,
+        $.show_session,
         $.set_session_statement,
         $.reset_session_statement,
         $.unload_statement,
         $.msck_repair_statement,
         $.create_external_table,
+        $.athena_add_partition,
+        $.athena_drop_partition,
+        $.athena_set_partition_location,
+        $.athena_rename_partition,
       ),
     ),
 
@@ -87,6 +98,7 @@ export default grammar(trino, {
 
     ...athena_statement_rules,
     ...athena_create_rules,
+    ...athena_alter_rules,
 
   },
 });

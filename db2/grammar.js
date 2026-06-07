@@ -25,6 +25,7 @@ export default grammar(base, {
     [$.from],
     [$.transaction, $.compound_statement],
     [$.set_variable_statement, $.object_reference],
+    [$.list, $.values_into_statement],
   ],
 
   rules: {
@@ -65,6 +66,8 @@ export default grammar(base, {
         $.loop_statement,
         $.leave_statement,
         $.iterate_statement,
+        $.call_statement,
+        $.values_into_statement,
       ),
     ),
 
@@ -153,6 +156,9 @@ export default grammar(base, {
 
     // Db2-specific keywords — token(prec(1,...)) needed so lexer prefers
     // these over base _identifier when both are valid in the same state.
+    keyword_call:       _ => token(prec(1, make_keyword("call"))),
+    keyword_values:     _ => token(prec(1, make_keyword("values"))),
+    keyword_into:       _ => token(prec(1, make_keyword("into"))),
     keyword_wrapper:    _ => token(prec(1, make_keyword("wrapper"))),
     keyword_nickname:   _ => token(prec(1, make_keyword("nickname"))),
     keyword_module:     _ => token(prec(1, make_keyword("module"))),

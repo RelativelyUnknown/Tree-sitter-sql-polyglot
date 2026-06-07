@@ -4,6 +4,7 @@ import mysql_create_rules from './grammar/create.js';
 import mysql_optimize_rules from './grammar/optimize.js';
 import mysql_load_data_rules from './grammar/load_data.js';
 import mysql_events_rules from './grammar/events.js';
+import mysql_select_into_rules from './grammar/select_into.js';
 
 export default grammar(base, {
   name: 'mysql_sql',
@@ -366,6 +367,21 @@ export default grammar(base, {
       optional($.identifier),
     ),
 
+    // MySQL: _select_statement override to support INTO OUTFILE / INTO DUMPFILE
+    _select_statement: $ => optional_parenthesis(
+      seq(
+        $.select,
+        optional(
+          choice(
+            $.into_outfile_clause,
+            $.into_dumpfile_clause,
+            seq($.keyword_into, $.select_expression),
+          ),
+        ),
+        optional($.from),
+      ),
+    ),
+
     // Override limit: MySQL also supports LIMIT offset, count (comma form)
     limit: $ => seq(
       $.keyword_limit,
@@ -461,11 +477,16 @@ export default grammar(base, {
     keyword_escape:         _ => token(prec(1, make_keyword("escape"))),
     keyword_follows:        _ => token(prec(1, make_keyword("follows"))),
     keyword_precedes:       _ => token(prec(1, make_keyword("precedes"))),
+    keyword_outfile:        _ => token(prec(1, make_keyword("outfile"))),
+    keyword_dumpfile:       _ => token(prec(1, make_keyword("dumpfile"))),
+    keyword_optionally:     _ => token(prec(1, make_keyword("optionally"))),
+    keyword_starting:       _ => token(prec(1, make_keyword("starting"))),
 
     ...mysql_create_rules,
     ...mysql_optimize_rules,
     ...mysql_load_data_rules,
     ...mysql_events_rules,
+    ...mysql_select_into_rules,
 
   },
 });

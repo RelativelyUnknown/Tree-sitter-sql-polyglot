@@ -12,6 +12,7 @@
   (keyword_struct)
   (keyword_qualify)
   (keyword_load)
+  (keyword_copy)
 ] @keyword
 
 ; DuckDB native types

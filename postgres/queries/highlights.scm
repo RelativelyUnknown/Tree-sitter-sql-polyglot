@@ -31,3 +31,11 @@
   (keyword_notify)
   (keyword_unlisten)
 ] @keyword
+
+; PostgreSQL COPY TO / FOREIGN TABLE / DOMAIN
+[
+  (keyword_stdout)
+  (keyword_server)
+  (keyword_domain)
+  (keyword_options)
+] @keyword

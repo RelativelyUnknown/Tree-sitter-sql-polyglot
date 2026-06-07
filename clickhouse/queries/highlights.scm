@@ -16,6 +16,7 @@
 (keyword_distributed) @keyword
 (keyword_dns) @keyword
 (keyword_engine) @keyword
+(keyword_exchange) @keyword
 (keyword_ephemeral) @keyword
 (keyword_fetches) @keyword
 (keyword_fill) @keyword
@@ -72,4 +73,5 @@
 (keyword_uint64) @keyword
 (keyword_uint8) @keyword
 (keyword_uuid) @keyword
+(keyword_validation) @keyword
 (keyword_volume) @keyword

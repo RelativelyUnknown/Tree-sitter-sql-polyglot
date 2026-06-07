@@ -5,6 +5,7 @@ import duckdb_pivot_rules from './grammar/pivot.js';
 import duckdb_expression_rules from './grammar/expressions.js';
 import duckdb_type_rules from './grammar/types.js';
 import duckdb_statement_rules from './grammar/statements.js';
+import duckdb_copy_rules from './grammar/copy.js';
 
 export default grammar(base, {
   name: 'duckdb_sql',
@@ -64,6 +65,7 @@ export default grammar(base, {
         $.pivot_statement,
         $.unpivot_statement,
         $.from_first_select,
+        $.copy_statement,
       ),
     ),
 
@@ -127,6 +129,7 @@ export default grammar(base, {
     keyword_pivot:      _ => token(prec(1, make_keyword("pivot"))),
     keyword_unpivot:    _ => token(prec(1, make_keyword("unpivot"))),
     keyword_name:       _ => token(prec(1, make_keyword("name"))),
+    keyword_copy:       _ => token(prec(1, make_keyword("copy"))),
 
     // DuckDB native type keywords
     keyword_hugeint:    _ => make_keyword("hugeint"),
@@ -144,6 +147,7 @@ export default grammar(base, {
     ...duckdb_expression_rules,
     ...duckdb_type_rules,
     ...duckdb_statement_rules,
+    ...duckdb_copy_rules,
 
   },
 });

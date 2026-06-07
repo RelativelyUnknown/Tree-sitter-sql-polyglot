@@ -1,0 +1,163 @@
+================================================================================
+DuckDB: COPY table TO parquet file with FORMAT option
+================================================================================
+
+COPY my_table TO 'file.parquet' (FORMAT PARQUET);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (copy_statement
+      (keyword_copy)
+      source: (object_reference
+        name: (identifier))
+      direction: (keyword_to)
+      target: (literal)
+      (copy_option
+        name: (identifier)
+        value: (identifier)))))
+
+================================================================================
+DuckDB: COPY table TO CSV with HEADER and DELIMITER
+================================================================================
+
+COPY my_table TO 'file.csv' (HEADER, DELIMITER ',');
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (copy_statement
+      (keyword_copy)
+      source: (object_reference
+        name: (identifier))
+      direction: (keyword_to)
+      target: (literal)
+      (copy_option
+        name: (identifier))
+      (copy_option
+        name: (identifier)
+        value: (literal)))))
+
+================================================================================
+DuckDB: COPY table FROM CSV with FORMAT and HEADER bool
+================================================================================
+
+COPY my_table FROM 'file.csv' (FORMAT CSV, HEADER TRUE);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (copy_statement
+      (keyword_copy)
+      source: (object_reference
+        name: (identifier))
+      direction: (keyword_from)
+      target: (literal)
+      (copy_option
+        name: (identifier)
+        value: (identifier))
+      (copy_option
+        name: (identifier)
+        value: (literal
+          (keyword_true))))))
+
+================================================================================
+DuckDB: COPY subquery TO parquet file without options
+================================================================================
+
+COPY (SELECT * FROM t WHERE x > 0) TO 'output.parquet';
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (copy_statement
+      (keyword_copy)
+      source: (select
+        (keyword_select)
+        (select_expression
+          (term
+            value: (all_fields))))
+      source: (from
+        (keyword_from)
+        (relation
+          (object_reference
+            name: (identifier)))
+        (where
+          (keyword_where)
+          predicate: (binary_expression
+            left: (field
+              name: (identifier))
+            right: (literal))))
+      direction: (keyword_to)
+      target: (literal))))
+
+================================================================================
+DuckDB: COPY subquery TO parquet with FORMAT and bare HEADER
+================================================================================
+
+COPY (SELECT id, name FROM users) TO 'output.parquet' (FORMAT PARQUET, HEADER);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (copy_statement
+      (keyword_copy)
+      source: (select
+        (keyword_select)
+        (select_expression
+          (term
+            value: (field
+              name: (identifier)))
+          (term
+            value: (field
+              name: (identifier)))))
+      source: (from
+        (keyword_from)
+        (relation
+          (object_reference
+            name: (identifier))))
+      direction: (keyword_to)
+      target: (literal)
+      (copy_option
+        name: (identifier)
+        value: (identifier))
+      (copy_option
+        name: (identifier)))))
+
+================================================================================
+DuckDB: COPY table TO CSV with multiple options including COMPRESSION
+================================================================================
+
+COPY my_table TO 'data.csv' (FORMAT CSV, HEADER TRUE, DELIMITER ',', QUOTE '"', COMPRESSION gzip);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (copy_statement
+      (keyword_copy)
+      source: (object_reference
+        name: (identifier))
+      direction: (keyword_to)
+      target: (literal)
+      (copy_option
+        name: (identifier)
+        value: (identifier))
+      (copy_option
+        name: (identifier)
+        value: (literal
+          (keyword_true)))
+      (copy_option
+        name: (identifier)
+        value: (literal))
+      (copy_option
+        name: (identifier)
+        value: (literal))
+      (copy_option
+        name: (identifier)
+        value: (identifier)))))

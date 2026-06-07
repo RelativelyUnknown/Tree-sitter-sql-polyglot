@@ -21,3 +21,5 @@
 (keyword_error) @keyword
 ; MERGE WHEN NOT MATCHED BY SOURCE (moved from base — BQ/SQL Server extension)
 (keyword_source) @keyword
+(keyword_call) @keyword
+(keyword_options) @keyword

@@ -1,0 +1,166 @@
+================================================================================
+CREATE FOREIGN TABLE basic
+================================================================================
+
+CREATE FOREIGN TABLE ft (id int, name text) SERVER myserver;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_foreign_table
+      (keyword_create)
+      (keyword_foreign)
+      (keyword_table)
+      (object_reference
+        name: (identifier))
+      (foreign_column_definition
+        name: (identifier)
+        type: (int
+          (keyword_int)))
+      (foreign_column_definition
+        name: (identifier)
+        custom_type: (object_reference
+          name: (identifier)))
+      (keyword_server)
+      server: (identifier))))
+
+================================================================================
+CREATE FOREIGN TABLE IF NOT EXISTS with OPTIONS
+================================================================================
+
+CREATE FOREIGN TABLE IF NOT EXISTS myschema.ft (
+  id bigint OPTIONS (column_name 'id'),
+  label text NOT NULL
+) SERVER myserver OPTIONS (schema_name 'public', table_name 'real_table');
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_foreign_table
+      (keyword_create)
+      (keyword_foreign)
+      (keyword_table)
+      (keyword_if)
+      (keyword_not)
+      (keyword_exists)
+      (object_reference
+        schema: (identifier)
+        name: (identifier))
+      (foreign_column_definition
+        name: (identifier)
+        type: (bigint
+          (keyword_bigint))
+        (foreign_options
+          (keyword_options)
+          key: (identifier)
+          value: (literal)))
+      (foreign_column_definition
+        name: (identifier)
+        custom_type: (object_reference
+          name: (identifier))
+        (keyword_not)
+        (keyword_null))
+      (keyword_server)
+      server: (identifier)
+      (foreign_options
+        (keyword_options)
+        key: (identifier)
+        value: (literal)
+        key: (identifier)
+        value: (literal)))))
+
+================================================================================
+CREATE DOMAIN simple
+================================================================================
+
+CREATE DOMAIN posint AS integer;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_domain
+      (keyword_create)
+      (keyword_domain)
+      (object_reference
+        name: (identifier))
+      (keyword_as)
+      base_type: (int
+        (keyword_int)))))
+
+================================================================================
+CREATE DOMAIN with DEFAULT and NOT NULL
+================================================================================
+
+CREATE DOMAIN myschema.posint AS integer DEFAULT 0 NOT NULL CHECK (VALUE > 0);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_domain
+      (keyword_create)
+      (keyword_domain)
+      (object_reference
+        schema: (identifier)
+        name: (identifier))
+      (keyword_as)
+      base_type: (int
+        (keyword_int))
+      (keyword_default)
+      (literal)
+      (keyword_not)
+      (keyword_null)
+      (keyword_check)
+      (binary_expression
+        left: (field
+          name: (identifier))
+        right: (literal)))))
+
+================================================================================
+CREATE DOMAIN with named CONSTRAINT
+================================================================================
+
+CREATE DOMAIN posint AS integer CONSTRAINT positive_int CHECK (VALUE > 0);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_domain
+      (keyword_create)
+      (keyword_domain)
+      (object_reference
+        name: (identifier))
+      (keyword_as)
+      base_type: (int
+        (keyword_int))
+      (keyword_constraint)
+      constraint_name: (identifier)
+      (keyword_check)
+      (binary_expression
+        left: (field
+          name: (identifier))
+        right: (literal)))))
+
+================================================================================
+CREATE DOMAIN nullable
+================================================================================
+
+CREATE DOMAIN mytext AS text NULL;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_domain
+      (keyword_create)
+      (keyword_domain)
+      (object_reference
+        name: (identifier))
+      (keyword_as)
+      custom_type: (object_reference
+        name: (identifier))
+      (keyword_null))))

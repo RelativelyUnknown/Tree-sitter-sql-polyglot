@@ -2,6 +2,34 @@ import { comma_list } from '../../grammar/helpers.js';
 
 export default {
 
+  // CALL procedure_name([arg, ...])
+  // CALL schema.procedure_name([arg, ...])
+  call_statement: $ => seq(
+    $.keyword_call,
+    field('procedure', $.object_reference),
+    '(',
+    comma_list($._expression),
+    ')',
+  ),
+
+  // :identifier  (DB2 host variable)
+  host_variable: $ => seq(':', $.identifier),
+
+  // VALUES expr INTO :var
+  // VALUES (expr1, expr2) INTO (:var1, :var2)
+  values_into_statement: $ => seq(
+    $.keyword_values,
+    choice(
+      seq('(', comma_list($._expression, true), ')'),
+      $._expression,
+    ),
+    $.keyword_into,
+    choice(
+      seq('(', comma_list($.host_variable, true), ')'),
+      $.host_variable,
+    ),
+  ),
+
   // [label:] BEGIN [ATOMIC] stmts END [label]
   compound_statement: $ => seq(
     optional(field('label', seq($.identifier, ':'))),

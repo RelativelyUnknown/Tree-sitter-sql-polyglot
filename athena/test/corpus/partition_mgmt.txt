@@ -1,0 +1,145 @@
+================================================================================
+Athena: ADD PARTITION without LOCATION
+================================================================================
+
+ALTER TABLE my_table ADD PARTITION (dt='2023-01-01');
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (athena_add_partition
+      (keyword_alter)
+      (keyword_table)
+      name: (object_reference
+        name: (identifier))
+      (keyword_add)
+      partition_spec: (athena_partition_spec
+        (keyword_partition)
+        key: (identifier)
+        value: (literal)))))
+
+================================================================================
+Athena: ADD PARTITION with IF NOT EXISTS and LOCATION
+================================================================================
+
+ALTER TABLE sales ADD IF NOT EXISTS PARTITION (year='2023', month='01') LOCATION 's3://bucket/2023/01/';
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (athena_add_partition
+      (keyword_alter)
+      (keyword_table)
+      name: (object_reference
+        name: (identifier))
+      (keyword_add)
+      (keyword_if)
+      (keyword_not)
+      (keyword_exists)
+      partition_spec: (athena_partition_spec
+        (keyword_partition)
+        key: (identifier)
+        value: (literal)
+        key: (identifier)
+        value: (literal))
+      (keyword_location)
+      location: (literal))))
+
+================================================================================
+Athena: DROP PARTITION simple
+================================================================================
+
+ALTER TABLE logs DROP PARTITION (dt='2023-01-01');
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (athena_drop_partition
+      (keyword_alter)
+      (keyword_table)
+      name: (object_reference
+        name: (identifier))
+      (keyword_drop)
+      partition_spec: (athena_partition_spec
+        (keyword_partition)
+        key: (identifier)
+        value: (literal)))))
+
+================================================================================
+Athena: DROP PARTITION with IF EXISTS and multiple partitions
+================================================================================
+
+ALTER TABLE my_table DROP IF EXISTS PARTITION (dt='2023-01-01'), PARTITION (dt='2023-01-02');
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (athena_drop_partition
+      (keyword_alter)
+      (keyword_table)
+      name: (object_reference
+        name: (identifier))
+      (keyword_drop)
+      (keyword_if)
+      (keyword_exists)
+      partition_spec: (athena_partition_spec
+        (keyword_partition)
+        key: (identifier)
+        value: (literal))
+      partition_spec: (athena_partition_spec
+        (keyword_partition)
+        key: (identifier)
+        value: (literal)))))
+
+================================================================================
+Athena: SET PARTITION LOCATION
+================================================================================
+
+ALTER TABLE my_table PARTITION (dt='2023-01-01') SET LOCATION 's3://new-bucket/path/';
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (athena_set_partition_location
+      (keyword_alter)
+      (keyword_table)
+      name: (object_reference
+        name: (identifier))
+      partition_spec: (athena_partition_spec
+        (keyword_partition)
+        key: (identifier)
+        value: (literal))
+      (keyword_set)
+      (keyword_location)
+      location: (literal))))
+
+================================================================================
+Athena: RENAME PARTITION
+================================================================================
+
+ALTER TABLE my_table PARTITION (dt='2023-01-01') RENAME TO PARTITION (dt='2023-01-02');
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (athena_rename_partition
+      (keyword_alter)
+      (keyword_table)
+      name: (object_reference
+        name: (identifier))
+      old_spec: (athena_partition_spec
+        (keyword_partition)
+        key: (identifier)
+        value: (literal))
+      (keyword_rename)
+      (keyword_to)
+      new_spec: (athena_partition_spec
+        (keyword_partition)
+        key: (identifier)
+        value: (literal)))))

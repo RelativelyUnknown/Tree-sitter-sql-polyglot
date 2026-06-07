@@ -1,6 +1,7 @@
 import base from '../grammar.js';
 import { optional_parenthesis, make_keyword } from '../grammar/helpers.js';
 import trino_statement_rules from './grammar/statements.js';
+import trino_show_rules      from './grammar/show.js';
 import trino_type_rules     from './grammar/types.js';
 import trino_expression_rules from './grammar/expressions.js';
 import trino_select_rules   from './grammar/select.js';
@@ -61,6 +62,12 @@ export default grammar(base, {
         $.execute_statement,
         $.deallocate_statement,
         $.show_stats_statement,
+        $.show_catalogs,
+        $.show_schemas,
+        $.show_tables,
+        $.show_columns,
+        $.show_functions,
+        $.show_session,
         $.set_session_statement,
         $.reset_session_statement,
       ),
@@ -127,6 +134,10 @@ export default grammar(base, {
     keyword_show:            _ => token(prec(1, make_keyword("show"))),
     keyword_match:           _ => token(prec(1, make_keyword("match"))),
     keyword_text:            _ => token(prec(1, make_keyword("text"))),
+    keyword_catalogs:        _ => token(prec(1, make_keyword("catalogs"))),
+    keyword_schemas:         _ => token(prec(1, make_keyword("schemas"))),
+    keyword_columns:         _ => token(prec(1, make_keyword("columns"))),
+    keyword_functions:       _ => token(prec(1, make_keyword("functions"))),
 
     // Exclude '->' from op_other so it is reserved for lambda_expression.
     // Trino does not use PostgreSQL-style JSON arrow operators.
@@ -173,6 +184,7 @@ export default grammar(base, {
     ),
 
     ...trino_statement_rules,
+    ...trino_show_rules,
     ...trino_type_rules,
     ...trino_expression_rules,
     ...trino_select_rules,

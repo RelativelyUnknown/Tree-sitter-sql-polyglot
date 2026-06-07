@@ -36,3 +36,15 @@
   (keyword_path)
   (keyword_infile)
 ] @keyword
+
+; MySQL SELECT INTO OUTFILE / DUMPFILE keywords
+[
+  (keyword_outfile)
+  (keyword_dumpfile)
+  (keyword_optionally)
+  (keyword_starting)
+  (keyword_terminated)
+  (keyword_escaped)
+  (keyword_fields)
+  (keyword_lines)
+] @keyword

@@ -2,6 +2,7 @@
 
 ; Db2-specific keywords
 [
+  (keyword_call)
   (keyword_wrapper)
   (keyword_nickname)
   (keyword_module)

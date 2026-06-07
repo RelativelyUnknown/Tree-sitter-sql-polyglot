@@ -69,6 +69,8 @@ export default {
           choice(
             // CREATE TABLE t2 AS t1  (clone schema from another table)
             field('clone_source', $.object_reference),
+            // CREATE TABLE t AS table_function(arg1, arg2)
+            field('table_function', $.invocation),
             $.create_query,
           ),
         )),

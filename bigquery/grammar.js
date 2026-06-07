@@ -83,6 +83,7 @@ export default grammar(base, {
       // BigQuery additions
       $.export_data,
       $.assert_statement,
+      $.call_statement,
     ),
 
     // ── CREATE: add BigQuery CREATE types ──────────────────────────────────
@@ -231,6 +232,7 @@ export default grammar(base, {
     keyword_datetime:   _ => token(prec(1, make_keyword("datetime"))),
     keyword_unnest:     _ => token(prec(1, make_keyword("unnest"))),
     keyword_declare:    _ => token(prec(1, make_keyword("declare"))),
+    keyword_call:       _ => token(prec(1, make_keyword("call"))),
 
     // ── Spread all BigQuery rule modules ────────────────────────────────────
     ...select_rules,

@@ -3,6 +3,7 @@ import { paren_list, optional_parenthesis, comma_list, wrapped_in_parenthesis, m
 import hive_storage_rules from './grammar/storage.js';
 import hive_partition_rules from './grammar/partition.js';
 import hive_lateral_view_rules from './grammar/lateral_view.js';
+import hive_show_rules from './grammar/show.js';
 
 export default grammar(base, {
   name: 'hive_sql',
@@ -46,6 +47,7 @@ export default grammar(base, {
       $.load_data,
       $.grant_statement,
       $.revoke_statement,
+      $.show_statement,
     ),
 
     // Override _dml_write to include Hive's multi-table insert and overwrite-directory
@@ -389,10 +391,14 @@ export default grammar(base, {
     keyword_parameter:       _ => token(prec(1, make_keyword("parameter"))),
     keyword_style:           _ => token(prec(1, make_keyword("style"))),
     keyword_overwrite:       _ => token(prec(1, make_keyword("overwrite"))),
+    keyword_show:            _ => token(prec(1, make_keyword("show"))),
+    keyword_databases:       _ => token(prec(1, make_keyword("databases"))),
+    keyword_functions:       _ => token(prec(1, make_keyword("functions"))),
 
     ...hive_storage_rules,
     ...hive_partition_rules,
     ...hive_lateral_view_rules,
+    ...hive_show_rules,
 
   },
 });

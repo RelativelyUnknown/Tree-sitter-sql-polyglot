@@ -25,6 +25,10 @@
   (keyword_format)
   (keyword_bernoulli)
   (keyword_system)
+  (keyword_catalogs)
+  (keyword_schemas)
+  (keyword_columns)
+  (keyword_functions)
 ] @keyword
 
 ; Trino native types

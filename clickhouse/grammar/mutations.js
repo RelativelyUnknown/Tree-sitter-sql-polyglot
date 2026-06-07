@@ -21,6 +21,7 @@ export default {
     $.alter_update,
     $.alter_delete,
     $.alter_partition,
+    $.exchange_partition,
   ),
 
   // ALTER TABLE t UPDATE col = expr [, ...] [IN PARTITION p] WHERE cond
@@ -52,6 +53,17 @@ export default {
     choice($.keyword_drop, $.keyword_detach, $.keyword_attach, $.keyword_freeze),
     $.keyword_partition,
     field('partition', $._expression),
+  ),
+
+  // ALTER TABLE t1 EXCHANGE PARTITION expr WITH TABLE t2 [WITHOUT VALIDATION]
+  exchange_partition: $ => seq(
+    $.keyword_exchange,
+    $.keyword_partition,
+    field('partition', $._expression),
+    $.keyword_with,
+    $.keyword_table,
+    field('target', $.object_reference),
+    optional(seq($.keyword_without, $.keyword_validation)),
   ),
 
   // OPTIMIZE TABLE t [ON CLUSTER c] [PARTITION expr] [FINAL] [DEDUPLICATE [BY expr]]

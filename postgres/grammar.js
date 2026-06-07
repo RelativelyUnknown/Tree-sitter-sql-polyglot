@@ -41,7 +41,8 @@ export default grammar(base, {
         $._insert_statement,
         $._update_statement,
         $._truncate_statement,
-        $._copy_statement,
+        $.copy_from_statement,
+        $.copy_to_statement,
       ),
     ),
 
@@ -98,6 +99,8 @@ export default grammar(base, {
         $.create_policy,
         $.create_publication,
         $.create_subscription,
+        $.create_foreign_table,
+        $.create_domain,
         prec.left(seq(
           $.create_schema,
           repeat($._create_statement),
@@ -559,6 +562,10 @@ export default grammar(base, {
     keyword_listen:         _ => token(prec(1, make_keyword("listen"))),
     keyword_notify:         _ => token(prec(1, make_keyword("notify"))),
     keyword_unlisten:       _ => token(prec(1, make_keyword("unlisten"))),
+    keyword_stdout:         _ => token(prec(1, make_keyword("stdout"))),
+    keyword_server:         _ => token(prec(1, make_keyword("server"))),
+    keyword_domain:         _ => token(prec(1, make_keyword("domain"))),
+    keyword_options:        _ => token(prec(1, make_keyword("options"))),
 
     ...pg_copy_rules,
     ...pg_optimize_rules,

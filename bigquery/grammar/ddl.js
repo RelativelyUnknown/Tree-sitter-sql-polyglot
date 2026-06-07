@@ -2,6 +2,43 @@ import { comma_list, paren_list, optional_parenthesis } from '../../grammar/help
 
 export default {
 
+  // Override: CREATE SCHEMA [IF NOT EXISTS] dataset_name [OPTIONS (...)]
+  create_schema: $ => seq(
+    $.keyword_create,
+    $.keyword_schema,
+    optional($._if_not_exists),
+    $.object_reference,
+    optional($.options_clause),
+  ),
+
+  // Override: ALTER SCHEMA [IF EXISTS] dataset_name SET OPTIONS (...)
+  alter_schema: $ => seq(
+    $.keyword_alter,
+    $.keyword_schema,
+    optional($._if_exists),
+    $.object_reference,
+    $.keyword_set,
+    $.options_clause,
+  ),
+
+  // Override: DROP SCHEMA [IF EXISTS] dataset_name [CASCADE | RESTRICT]
+  drop_schema: $ => seq(
+    $.keyword_drop,
+    $.keyword_schema,
+    optional($._if_exists),
+    $.object_reference,
+    optional($._drop_behavior),
+  ),
+
+  // CALL procedure_name([arg, ...])
+  call_statement: $ => seq(
+    $.keyword_call,
+    $.object_reference,
+    '(',
+    optional(comma_list($._expression, true)),
+    ')',
+  ),
+
   // Override when_clause to add WHEN NOT MATCHED BY SOURCE (BQ/SQL Server extension)
   when_clause: $ => prec.left(seq(
     $.keyword_when,

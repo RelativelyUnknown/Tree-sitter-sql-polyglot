@@ -98,6 +98,8 @@ export default grammar(base, {
     keyword_optimize:      _ => token(prec(1, make_keyword("optimize"))),
     keyword_deduplicate:   _ => token(prec(1, make_keyword("deduplicate"))),
     keyword_freeze:        _ => token(prec(1, make_keyword("freeze"))),
+    keyword_exchange:      _ => token(prec(1, make_keyword("exchange"))),
+    keyword_validation:    _ => token(prec(1, make_keyword("validation"))),
 
     // SELECT extensions
     keyword_qualify:       _ => token(prec(1, make_keyword("qualify"))),

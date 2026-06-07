@@ -14,7 +14,20 @@ export default {
     ),
   ),
 
-  // Override relation to add optional FOR SYSTEM_TIME clause
+  // FOR APPLICATION_TIME clause on a table reference (application-time temporal queries)
+  // APPLICATION_TIME is a single identifier token (contains underscore).
+  // We alias it to application_time for clarity in the parse tree.
+  _for_application_time: $ => seq(
+    $.keyword_for,
+    alias($.identifier, $.application_time),
+    choice(
+      seq($.keyword_as, $.keyword_of, $._expression),
+      seq($.keyword_between, $._expression, $.keyword_and, $._expression),
+      seq($.keyword_from, $._expression, $.keyword_to, $._expression),
+    ),
+  ),
+
+  // Override relation to add optional FOR SYSTEM_TIME / FOR APPLICATION_TIME clause
   relation: $ => prec.right(
     seq(
       choice(
@@ -25,7 +38,7 @@ export default {
         wrapped_in_parenthesis($.values),
       ),
       optional($.tablesample),
-      optional($._for_system_time),
+      optional(choice($._for_system_time, $._for_application_time)),
       optional(
         seq(
           $._alias,
