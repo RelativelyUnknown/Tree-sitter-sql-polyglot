@@ -1,0 +1,135 @@
+================================================================================
+EXCHANGE PARTITION basic
+================================================================================
+
+ALTER TABLE t1 EXCHANGE PARTITION 202401 WITH TABLE t2
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (alter_table
+      (keyword_alter)
+      (keyword_table)
+      (object_reference
+        name: (identifier))
+      (exchange_partition
+        (keyword_exchange)
+        (keyword_partition)
+        partition: (literal)
+        (keyword_with)
+        (keyword_table)
+        target: (object_reference
+          name: (identifier))))))
+
+================================================================================
+EXCHANGE PARTITION WITHOUT VALIDATION
+================================================================================
+
+ALTER TABLE t1 EXCHANGE PARTITION partition_name WITH TABLE t2 WITHOUT VALIDATION
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (alter_table
+      (keyword_alter)
+      (keyword_table)
+      (object_reference
+        name: (identifier))
+      (exchange_partition
+        (keyword_exchange)
+        (keyword_partition)
+        partition: (field
+          name: (identifier))
+        (keyword_with)
+        (keyword_table)
+        target: (object_reference
+          name: (identifier))
+        (keyword_without)
+        (keyword_validation)))))
+
+================================================================================
+EXCHANGE PARTITION qualified table names
+================================================================================
+
+ALTER TABLE db1.t1 EXCHANGE PARTITION 1 WITH TABLE db2.t2
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (alter_table
+      (keyword_alter)
+      (keyword_table)
+      (object_reference
+        schema: (identifier)
+        name: (identifier))
+      (exchange_partition
+        (keyword_exchange)
+        (keyword_partition)
+        partition: (literal)
+        (keyword_with)
+        (keyword_table)
+        target: (object_reference
+          schema: (identifier)
+          name: (identifier))))))
+
+================================================================================
+CREATE TABLE AS table function invocation
+================================================================================
+
+CREATE TABLE name AS table_function_name(arg1, arg2)
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_table)
+      (object_reference
+        name: (identifier))
+      (keyword_as)
+      table_function: (invocation
+        (object_reference
+          name: (identifier))
+        parameter: (term
+          value: (field
+            name: (identifier)))
+        parameter: (term
+          value: (field
+            name: (identifier)))))))
+
+================================================================================
+CREATE TABLE IF NOT EXISTS with ENGINE AS SELECT
+================================================================================
+
+CREATE TABLE IF NOT EXISTS name ENGINE = Memory AS SELECT * FROM other_table
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_table)
+      (keyword_if)
+      (keyword_not)
+      (keyword_exists)
+      (object_reference
+        name: (identifier))
+      (engine_clause
+        (keyword_engine)
+        engine: (identifier))
+      (create_query
+        (select
+          (keyword_select)
+          (select_expression
+            (term
+              value: (all_fields)))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                name: (identifier)))))))))

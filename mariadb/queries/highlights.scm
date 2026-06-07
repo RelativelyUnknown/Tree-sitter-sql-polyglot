@@ -7,6 +7,9 @@
   (keyword_period)
 ] @keyword
 
+; APPLICATION_TIME identifier (period name in temporal clauses and definitions)
+(application_time) @keyword.special
+
 ; MariaDB package keywords
 [
   (keyword_package)
