@@ -24,3 +24,10 @@
   (keyword_breadth)
   (keyword_depth)
 ] @keyword
+
+; PostgreSQL LISTEN/NOTIFY/UNLISTEN
+[
+  (keyword_listen)
+  (keyword_notify)
+  (keyword_unlisten)
+] @keyword
