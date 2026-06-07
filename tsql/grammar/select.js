@@ -42,6 +42,41 @@ export default {
     optional($.order_by),
     optional($.limit),
     optional($.for_clause),
+    optional($.option_clause),
+  ),
+
+  // OPTION (hint [, hint ...])
+  option_clause: $ => seq(
+    $.keyword_option,
+    '(',
+    comma_list($.query_hint, true),
+    ')',
+  ),
+
+  // Individual query hints
+  query_hint: $ => choice(
+    seq($.keyword_maxdop, alias($._natural_number, $.literal)),
+    $.keyword_recompile,
+    seq($.keyword_fast, alias($._natural_number, $.literal)),
+    seq($.keyword_optimize, $.keyword_for, choice(
+      $.keyword_unknown,
+      paren_list(
+        seq(
+          field('var', alias(/@@?[A-Za-z_][A-Za-z0-9_]*/i, $.identifier)),
+          choice(
+            $.keyword_unknown,
+            seq('=', $._expression),
+          ),
+        ),
+        true,
+      ),
+    )),
+    seq($.keyword_loop, $.keyword_join),
+    seq($.keyword_hash, $.keyword_join),
+    seq(seq($.keyword_merge, $.keyword_join)),
+    $.keyword_force_order,
+    seq($.keyword_use, $.keyword_hint, '(', alias($._literal_string, $.literal), ')'),
+    $.identifier,
   ),
 
   // CROSS APPLY <subquery|function> [alias]

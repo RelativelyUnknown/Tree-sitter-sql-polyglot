@@ -1,0 +1,180 @@
+================================================================================
+JSON_VALUE simple
+================================================================================
+
+SELECT JSON_VALUE(data, '$.name') FROM t
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (invocation
+            (object_reference
+              (identifier))
+            (term
+              (field
+                (identifier)))
+            (term
+              (literal))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+================================================================================
+JSON_QUERY
+================================================================================
+
+SELECT JSON_QUERY(doc, '$.address') FROM customers
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (invocation
+            (object_reference
+              (identifier))
+            (term
+              (field
+                (identifier)))
+            (term
+              (literal))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+================================================================================
+OPENJSON basic
+================================================================================
+
+SELECT * FROM OPENJSON(@json)
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (openjson_relation
+          (keyword_openjson)
+          (variable))))))
+
+================================================================================
+OPENJSON with path
+================================================================================
+
+SELECT * FROM OPENJSON(@json, '$.items')
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (openjson_relation
+          (keyword_openjson)
+          (variable)
+          (literal))))))
+
+================================================================================
+OPENJSON WITH schema clause
+================================================================================
+
+SELECT id, name FROM OPENJSON(@json) WITH (id INT, name NVARCHAR(100))
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (openjson_relation
+          (keyword_openjson)
+          (variable)
+          (openjson_with_clause
+            (keyword_with)
+            (openjson_column_def
+              (identifier)
+              (int
+                (keyword_int)))
+            (openjson_column_def
+              (identifier)
+              (nvarchar
+                (keyword_nvarchar)
+                (literal)))))))))
+
+================================================================================
+OPENJSON WITH path and AS JSON
+================================================================================
+
+SELECT id, tags FROM OPENJSON(@json, '$.items')
+WITH (id INT '$.id', tags NVARCHAR(200) '$.tags' AS JSON)
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (openjson_relation
+          (keyword_openjson)
+          (variable)
+          (literal)
+          (openjson_with_clause
+            (keyword_with)
+            (openjson_column_def
+              (identifier)
+              (int
+                (keyword_int))
+              (literal))
+            (openjson_column_def
+              (identifier)
+              (nvarchar
+                (keyword_nvarchar)
+                (literal))
+              (literal)
+              (keyword_as)
+              (keyword_json))))))))

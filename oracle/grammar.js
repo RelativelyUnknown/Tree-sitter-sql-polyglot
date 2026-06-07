@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, comma_list, make_keyword } from '../grammar/helpers.js';
+import { optional_parenthesis, comma_list, wrapped_in_parenthesis, make_keyword } from '../grammar/helpers.js';
 import oracle_hierarchical_rules from './grammar/hierarchical.js';
 import oracle_plsql_rules from './grammar/plsql_blocks.js';
 import oracle_bulk_rules from './grammar/bulk_ops.js';
@@ -7,6 +7,7 @@ import oracle_merge_rules from './grammar/merge_ext.js';
 import oracle_cursor_rules from './grammar/cursor.js';
 import oracle_package_rules from './grammar/package.js';
 import oracle_procedural_rules from './grammar/procedural.js';
+import oracle_pivot_rules from './grammar/pivot.js';
 
 export default grammar(base, {
   name: 'oracle_sql',
@@ -122,6 +123,46 @@ export default grammar(base, {
       ),
     ),
 
+    // Oracle relation: add PIVOT/UNPIVOT inline after table ref
+    relation: $ => prec.right(
+      seq(
+        choice(
+          $.subquery,
+          $.invocation,
+          $.object_reference,
+          wrapped_in_parenthesis($.values),
+        ),
+        optional($.tablesample),
+        optional(choice(
+          $.oracle_pivot_clause,
+          $.oracle_unpivot_clause,
+        )),
+        optional(seq(
+          $._alias,
+          optional(alias($._column_list, $.list)),
+        )),
+      ),
+    ),
+
+    // Override set_operation to add MINUS (Oracle alias for EXCEPT)
+    set_operation: $ => seq(
+      $._select_statement,
+      repeat1(
+        seq(
+          field(
+            "operation",
+            choice(
+              seq($.keyword_union, optional($.keyword_all)),
+              $.keyword_except,
+              $.keyword_intersect,
+              $.keyword_minus,
+            ),
+          ),
+          $._select_statement,
+        ),
+      ),
+    ),
+
     from: $ => seq(
       $.keyword_from,
       optional($.keyword_only),
@@ -199,6 +240,9 @@ export default grammar(base, {
     keyword_source:         _ => token(prec(1, make_keyword("source"))),
     keyword_declare:        _ => token(prec(1, make_keyword("declare"))),
     keyword_current_user:   _ => token(prec(1, make_keyword("current_user"))),
+    keyword_pivot:          _ => token(prec(1, make_keyword("pivot"))),
+    keyword_unpivot:        _ => token(prec(1, make_keyword("unpivot"))),
+    keyword_minus:          _ => token(prec(1, make_keyword("minus"))),
 
     ...oracle_hierarchical_rules,
     ...oracle_plsql_rules,
@@ -207,6 +251,7 @@ export default grammar(base, {
     ...oracle_cursor_rules,
     ...oracle_package_rules,
     ...oracle_procedural_rules,
+    ...oracle_pivot_rules,
 
   },
 });

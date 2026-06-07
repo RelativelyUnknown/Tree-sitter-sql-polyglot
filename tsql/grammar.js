@@ -6,6 +6,7 @@ import tsql_hint_rules from './grammar/hints.js';
 import tsql_dml_rules from './grammar/dml.js';
 import tsql_procedural_rules from './grammar/procedural.js';
 import tsql_synapse_rules from './grammar/synapse.js';
+import tsql_json_rules from './grammar/json.js';
 
 export default grammar(base, {
   name: 'tsql',
@@ -27,6 +28,8 @@ export default grammar(base, {
     // [$.statement] removed (tree-sitter reported it unnecessary)
     // output_clause INTO @var (col_list) is ambiguous with column_definitions
     [$.output_clause],
+    // openjson_relation: ambiguous whether WITH after ')' starts openjson_with_clause or table_hints
+    [$.openjson_relation],
   ],
 
   rules: {
@@ -218,6 +221,15 @@ export default grammar(base, {
     keyword_while:            _ => token(prec(1, make_keyword("while"))),
     keyword_source:           _ => token(prec(1, make_keyword("source"))),
     keyword_declare:          _ => token(prec(1, make_keyword("declare"))),
+    keyword_maxdop:           _ => token(prec(1, make_keyword("maxdop"))),
+    keyword_recompile:        _ => token(prec(1, make_keyword("recompile"))),
+    keyword_fast:             _ => token(prec(1, make_keyword("fast"))),
+    keyword_force_order:      _ => token(prec(1, make_keyword("force_order"))),
+    keyword_optimize:         _ => token(prec(1, make_keyword("optimize"))),
+    keyword_loop:             _ => token(prec(1, make_keyword("loop"))),
+    keyword_unknown:          _ => token(prec(1, make_keyword("unknown"))),
+    keyword_hint:             _ => token(prec(1, make_keyword("hint"))),
+    keyword_openjson:         _ => token(prec(1, make_keyword("openjson"))),
 
     // T-SQL SET @variable = expression  (plus base transaction/constraint SET)
     set_statement: $ => prec.right(choice(
@@ -234,6 +246,7 @@ export default grammar(base, {
     ...tsql_dml_rules,
     ...tsql_procedural_rules,
     ...tsql_synapse_rules,
+    ...tsql_json_rules,
 
   },
 });

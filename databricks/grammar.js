@@ -1,19 +1,21 @@
 import spark from '../spark/grammar.js';
 import { optional_parenthesis, paren_list, comma_list, make_keyword } from '../grammar/helpers.js';
 
-import vacuum_rules   from './grammar/vacuum.js';
-import optimize_rules from './grammar/optimize.js';
-import restore_rules  from './grammar/restore.js';
-import grant_rules    from './grammar/grant.js';
-import drop_rules     from './grammar/drop.js';
-import describe_rules from './grammar/describe.js';
-import show_rules     from './grammar/show.js';
-import cache_rules    from './grammar/cache.js';
-import resource_rules from './grammar/resource.js';
-import call_rules     from './grammar/call.js';
-import create_rules   from './grammar/create.js';
-import alter_rules    from './grammar/alter.js';
-import apply_rules    from './grammar/apply.js';
+import vacuum_rules     from './grammar/vacuum.js';
+import optimize_rules   from './grammar/optimize.js';
+import restore_rules    from './grammar/restore.js';
+import grant_rules      from './grammar/grant.js';
+import drop_rules       from './grammar/drop.js';
+import describe_rules   from './grammar/describe.js';
+import show_rules       from './grammar/show.js';
+import cache_rules      from './grammar/cache.js';
+import resource_rules   from './grammar/resource.js';
+import call_rules       from './grammar/call.js';
+import create_rules     from './grammar/create.js';
+import alter_rules      from './grammar/alter.js';
+import apply_rules      from './grammar/apply.js';
+import copy_into_rules  from './grammar/copy_into.js';
+import delta_rules      from './grammar/delta.js';
 
 export default grammar(spark, {
   name: 'databricks_sql',
@@ -73,6 +75,8 @@ export default grammar(spark, {
       $.grant_statement,
       $.revoke_statement,
       $.deny_statement,
+      // Databricks COPY INTO (Delta incremental load)
+      $.copy_into_statement,
       // Databricks / Spark UNLOAD (Athena)
       $._unload_statement,
       // Databricks CACHE
@@ -304,9 +308,34 @@ export default grammar(spark, {
     keyword_unload:     _ => token(prec(1, make_keyword("unload"))),
     keyword_keys:       _ => token(prec(1, make_keyword("keys"))),
     keyword_extended:   _ => token(prec(1, make_keyword("extended"))),
-    keyword_version:    _ => token(prec(1, make_keyword("version"))),
-    keyword_flow:       _ => token(prec(1, make_keyword("flow"))),
-    keyword_names:      _ => token(prec(1, make_keyword("names"))),
+    keyword_version:       _ => token(prec(1, make_keyword("version"))),
+    keyword_flow:          _ => token(prec(1, make_keyword("flow"))),
+    keyword_names:         _ => token(prec(1, make_keyword("names"))),
+    keyword_copy:          _ => token(prec(1, make_keyword("copy"))),
+    keyword_fileformat:    _ => token(prec(1, make_keyword("fileformat"))),
+    keyword_pattern:       _ => token(prec(1, make_keyword("pattern"))),
+
+    // Override relation to add Delta Lake time travel
+    relation: $ => prec.right(
+      seq(
+        choice(
+          $.subquery,
+          $.invocation,
+          $.object_reference,
+          $.lateral_subquery,
+          $.values,
+        ),
+        optional($.tablesample),
+        optional($.delta_time_travel),
+        optional(choice($.pivot_clause, $.unpivot_clause)),
+        optional(
+          seq(
+            $._alias,
+            optional(alias($._column_list, $.list)),
+          ),
+        ),
+      ),
+    ),
 
     // Databricks-specific rule definitions
     ...vacuum_rules,
@@ -322,6 +351,8 @@ export default grammar(spark, {
     ...create_rules,
     ...alter_rules,
     ...apply_rules,
+    ...copy_into_rules,
+    ...delta_rules,
 
   },
 });

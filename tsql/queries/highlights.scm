@@ -31,6 +31,16 @@
   (keyword_log)
   (keyword_seterror)
   (keyword_continue)
+  (keyword_option)
+  (keyword_maxdop)
+  (keyword_recompile)
+  (keyword_fast)
+  (keyword_force_order)
+  (keyword_optimize)
+  (keyword_loop)
+  (keyword_unknown)
+  (keyword_hint)
+  (keyword_openjson)
 ] @keyword
 
 ; T-SQL-specific types

@@ -19,4 +19,7 @@
   (keyword_loop)
   (keyword_declare)
   (keyword_atomic)
+  (keyword_pivot)
+  (keyword_unpivot)
+  (keyword_minus)
 ] @keyword

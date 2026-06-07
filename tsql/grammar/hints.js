@@ -2,13 +2,14 @@ import { comma_list, paren_list, wrapped_in_parenthesis } from '../../grammar/he
 
 export default {
 
-  // Override relation to support T-SQL table hints AND PIVOT/UNPIVOT.
+  // Override relation to support T-SQL table hints, PIVOT/UNPIVOT, and OPENJSON.
   // T-SQL syntax: table_name [PIVOT|UNPIVOT (...)] [[AS] alias] [WITH (hint [,...])]
   relation: $ => prec.right(
     seq(
       choice(
         $.subquery,
         $.invocation,
+        $.openjson_relation,
         $.object_reference,
         wrapped_in_parenthesis($.values),
       ),

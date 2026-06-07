@@ -60,3 +60,7 @@
 (keyword_cluster) @keyword
 (keyword_options) @keyword
 (keyword_url) @keyword
+(keyword_copy) @keyword
+(keyword_fileformat) @keyword
+(keyword_pattern) @keyword
+(keyword_version) @keyword
