@@ -64,18 +64,32 @@ export default {
       optional($.on_cluster),
       seq(
         optional($.column_definitions),
-        optional(seq(
-          $.keyword_as,
-          choice(
-            // CREATE TABLE t2 AS t1  (clone schema from another table)
-            field('clone_source', $.object_reference),
-            // CREATE TABLE t AS table_function(arg1, arg2)
-            field('table_function', $.invocation),
+        // ClickHouse supports two orderings:
+        //   (a) AS <clone|function|select>  [ENGINE = ...]  (original order)
+        //   (b) ENGINE = <name>             AS SELECT ...   (engine before SELECT)
+        choice(
+          // (a) AS clause first, engine optionally follows
+          seq(
+            optional(seq(
+              $.keyword_as,
+              choice(
+                // CREATE TABLE t2 AS t1  (clone schema from another table)
+                field('clone_source', $.object_reference),
+                // CREATE TABLE t AS table_function(arg1, arg2)
+                field('table_function', $.invocation),
+                $.create_query,
+              ),
+            )),
+            optional($.engine_clause),
+          ),
+          // (b) ENGINE first, then AS SELECT
+          seq(
+            $.engine_clause,
+            $.keyword_as,
             $.create_query,
           ),
-        )),
+        ),
       ),
-      optional($.engine_clause),
       repeat($._table_clause),
     ),
   ),
