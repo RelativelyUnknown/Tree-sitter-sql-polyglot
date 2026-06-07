@@ -138,6 +138,26 @@ export default {
     $.relation,
   ),
 
+  // Override relation to allow bare string literal as a FROM source
+  // e.g. SELECT * FROM '*.parquet' or SELECT * FROM ['a.parquet','b.parquet']
+  relation: $ => prec.right(
+    seq(
+      choice(
+        $.subquery,
+        $.invocation,
+        $.object_reference,
+        alias($._literal_string, $.literal),
+      ),
+      optional($.tablesample),
+      optional(
+        seq(
+          $._alias,
+          optional(alias($._column_list, $.list)),
+        ),
+      ),
+    ),
+  ),
+
   // Override group_by to add GROUP BY ALL
   group_by: $ => prec.left(seq(
     $.keyword_group,
