@@ -114,11 +114,149 @@ postgres/                       # PostgreSQL dialect
   test/corpus/
   tree-sitter.json
 
-mysql/                          # MySQL/MariaDB dialect
+mysql/                          # MySQL dialect
   grammar.js                    # grammar(base, mysql_rules)
   grammar/
     create.js                   # ENGINE=, CHARSET=, inline index syntax
-    optimize.js                 # MariaDB OPTIMIZE TABLE
+  src/parser.c
+  src/scanner.c
+  queries/highlights.scm
+  test/corpus/
+  tree-sitter.json
+
+mariadb/                        # MariaDB dialect (extends mysql/)
+  grammar.js                    # grammar(mysql, mariadb_rules)
+  grammar/
+    optimize.js                 # OPTIMIZE TABLE
+  src/parser.c
+  src/scanner.c
+  queries/highlights.scm
+  test/corpus/
+  tree-sitter.json
+
+snowflake/                      # Snowflake dialect
+  grammar.js                    # grammar(base, snowflake_rules)
+  grammar/
+    copy.js, create.js, alter.js, execute.js, use.js
+    time_travel.js, match_recognize.js, pivot.js, qualify.js
+    scripting.js, variant.js
+  src/parser.c
+  src/scanner.c
+  queries/highlights.scm
+  test/corpus/
+  tree-sitter.json
+
+bigquery/                       # BigQuery dialect
+  grammar.js                    # grammar(base, bigquery_rules)
+  grammar/
+    create.js, alter.js, ddl.js, dml.js, ml.js, types.js
+  src/parser.c
+  src/scanner.c
+  queries/highlights.scm
+  test/corpus/
+  tree-sitter.json
+
+sqlite/                         # SQLite dialect
+  grammar.js                    # grammar(base, sqlite_rules)
+  grammar/
+    create.js, pragma.js
+  src/parser.c
+  src/scanner.c
+  queries/highlights.scm
+  test/corpus/
+  tree-sitter.json
+
+hive/                           # Apache Hive dialect
+  grammar.js                    # grammar(base, hive_rules)
+  grammar/
+    create.js
+  src/parser.c
+  src/scanner.c
+  queries/highlights.scm
+  test/corpus/
+  tree-sitter.json
+
+oracle/                         # Oracle / PL-SQL dialect
+  grammar.js                    # grammar(base, oracle_rules)
+  grammar/
+    create.js, procedural.js
+  src/parser.c
+  src/scanner.c
+  queries/highlights.scm
+  test/corpus/
+  tree-sitter.json
+
+db2/                            # IBM Db2 dialect
+  grammar.js                    # grammar(base, db2_rules)
+  src/parser.c
+  src/scanner.c
+  queries/highlights.scm
+  test/corpus/
+  tree-sitter.json
+
+tsql/                           # T-SQL (SQL Server / Azure Synapse)
+  grammar.js                    # grammar(base, tsql_rules)
+  grammar/
+    create.js, alter.js, procedural.js
+  src/parser.c
+  src/scanner.c
+  queries/highlights.scm
+  test/corpus/
+  tree-sitter.json
+
+duckdb/                         # DuckDB dialect
+  grammar.js                    # grammar(base, duckdb_rules)
+  grammar/
+    create.js, select.js, types.js
+  src/parser.c
+  src/scanner.c
+  queries/highlights.scm
+  test/corpus/
+  tree-sitter.json
+
+trino/                          # Trino dialect
+  grammar.js                    # grammar(base, trino_rules)
+  grammar/
+    create.js
+  src/parser.c
+  src/scanner.c
+  queries/highlights.scm
+  test/corpus/
+  tree-sitter.json
+
+athena/                         # Amazon Athena dialect (extends trino/)
+  grammar.js                    # grammar(trino, athena_rules)
+  src/parser.c
+  src/scanner.c
+  queries/highlights.scm
+  test/corpus/
+  tree-sitter.json
+
+redshift/                       # Amazon Redshift dialect
+  grammar.js                    # grammar(base, redshift_rules)
+  grammar/
+    create.js, copy.js
+  src/parser.c
+  src/scanner.c
+  queries/highlights.scm
+  test/corpus/
+  tree-sitter.json
+
+clickhouse/                     # ClickHouse dialect
+  grammar.js                    # grammar(base, clickhouse_rules) [ENGINE=, PREWHERE, FINAL, ARRAY JOIN, LIMIT BY, SAMPLE, SYSTEM, Map/Tuple/Nested]
+  grammar/
+    create.js, alter.js, select.js, types.js, system.js
+  src/parser.c
+  src/scanner.c
+  queries/highlights.scm
+  test/corpus/
+  tree-sitter.json
+
+flink/                          # Apache Flink SQL dialect
+  grammar.js                    # grammar(base, flink_rules) [Window TVFs, temporal joins, ML TVFs, CREATE MODEL, MATERIALIZED TABLE]
+  grammar/
+    create.js, alter.js, drop.js, show.js, dml.js
+    utility.js, types.js, select.js, ml.js
   src/parser.c
   src/scanner.c
   queries/highlights.scm

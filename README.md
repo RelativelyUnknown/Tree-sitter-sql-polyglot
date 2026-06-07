@@ -2,7 +2,7 @@
 
 A multi-dialect SQL parser for [tree-sitter](https://tree-sitter.github.io/), forked from
 [DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql). It restructures the
-upstream "permissive" grammar into a clean ANSI SQL base plus **17 independently compiled dialect
+upstream "permissive" grammar into a clean ANSI SQL base plus **18 independently compiled dialect
 grammars**, each layered on top via tree-sitter's `grammar(parent, overrides)` composition.
 
 Originally built as the SQL parser backend for [burnt](https://github.com/RedPandaMC/burnt) — a cost
@@ -81,7 +81,7 @@ npm run generate
 # Regenerate a single dialect (and its parent chain as needed)
 npm run generate:spark
 
-# Regenerate every parser (base + all 17 dialects)
+# Regenerate every parser (base + all 18 dialects)
 npm run generate:all
 
 # Run corpus tests for the base grammar
