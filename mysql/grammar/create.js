@@ -41,10 +41,17 @@ export default {
         seq($.keyword_when, wrapped_in_parenthesis($._expression)),
       ),
     ),
-    $.keyword_execute,
-    choice($.keyword_function, $.keyword_procedure),
-    $.object_reference,
-    paren_list(field('parameter', $.term)),
+    choice(
+      // MySQL/MariaDB: FOR EACH ROW body
+      $.procedure_body,
+      // PostgreSQL-style: EXECUTE FUNCTION/PROCEDURE name(args)
+      seq(
+        $.keyword_execute,
+        choice($.keyword_function, $.keyword_procedure),
+        $.object_reference,
+        paren_list(field('parameter', $.term)),
+      ),
+    ),
   ),
 
 };
