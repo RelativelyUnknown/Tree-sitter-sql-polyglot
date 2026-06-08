@@ -7,6 +7,8 @@ import oracle_merge_rules from './grammar/merge_ext.js';
 import oracle_cursor_rules from './grammar/cursor.js';
 import oracle_package_rules from './grammar/package.js';
 import oracle_procedural_rules from './grammar/procedural.js';
+import oracle_type_rules from './grammar/types.js';
+import oracle_hint_rules from './grammar/hints.js';
 
 export default grammar(base, {
   name: 'oracle_sql',
@@ -200,6 +202,26 @@ export default grammar(base, {
     keyword_declare:        _ => token(prec(1, make_keyword("declare"))),
     keyword_current_user:   _ => token(prec(1, make_keyword("current_user"))),
 
+    // Oracle type keywords
+    keyword_number:         _ => token(prec(1, make_keyword("number"))),
+    keyword_varchar2:       _ => token(prec(1, make_keyword("varchar2"))),
+    keyword_nvarchar2:      _ => token(prec(1, make_keyword("nvarchar2"))),
+    keyword_clob:           _ => token(prec(1, make_keyword("clob"))),
+    keyword_nclob:          _ => token(prec(1, make_keyword("nclob"))),
+    keyword_blob:           _ => token(prec(1, make_keyword("blob"))),
+    keyword_bfile:          _ => token(prec(1, make_keyword("bfile"))),
+    keyword_raw:            _ => token(prec(1, make_keyword("raw"))),
+    keyword_long:           _ => token(prec(1, make_keyword("long"))),
+    keyword_rowid:          _ => token(prec(1, make_keyword("rowid"))),
+    keyword_urowid:         _ => token(prec(1, make_keyword("urowid"))),
+    keyword_binary_float:   _ => token(prec(1, make_keyword("binary_float"))),
+    keyword_binary_double:  _ => token(prec(1, make_keyword("binary_double"))),
+    keyword_byte:           _ => token(prec(1, make_keyword("byte"))),
+    keyword_year:           _ => token(prec(1, make_keyword("year"))),
+    keyword_month:          _ => token(prec(1, make_keyword("month"))),
+    keyword_day:            _ => token(prec(1, make_keyword("day"))),
+    keyword_second:         _ => token(prec(1, make_keyword("second"))),
+
     ...oracle_hierarchical_rules,
     ...oracle_plsql_rules,
     ...oracle_bulk_rules,
@@ -207,6 +229,8 @@ export default grammar(base, {
     ...oracle_cursor_rules,
     ...oracle_package_rules,
     ...oracle_procedural_rules,
+    ...oracle_type_rules,
+    ...oracle_hint_rules,
 
   },
 });
