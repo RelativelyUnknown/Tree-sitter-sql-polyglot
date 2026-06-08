@@ -12,6 +12,7 @@ import copy_rules        from './grammar/copy.js';
 import create_rules      from './grammar/create.js';
 import alter_rules       from './grammar/alter.js';
 import use_rules         from './grammar/use.js';
+import stage_rules       from './grammar/stage.js';
 
 export default grammar(base, {
   name: 'snowflake_sql',
@@ -85,6 +86,25 @@ export default grammar(base, {
       $.execute_task,
       $.copy_into,
       $.use_secondary_roles,
+      $.list_stage_statement,
+    ),
+
+    // ── DROP: add DROP STAGE ────────────────────────────────────────────────
+    _drop_statement: $ => seq(
+      choice(
+        $.drop_table,
+        $.drop_view,
+        $.drop_materialized_view,
+        $.drop_index,
+        $.drop_function,
+        $.drop_procedure,
+        $.drop_type,
+        $.drop_database,
+        $.drop_role,
+        $.drop_schema,
+        $.drop_sequence,
+        $.drop_stage,
+      ),
     ),
 
     // ── CREATE: add Snowflake CREATE types ─────────────────────────────────
@@ -113,6 +133,7 @@ export default grammar(base, {
         $.create_secure_view,
         $.create_masking_policy,
         $.create_row_access_policy,
+        $.create_stage,
       ),
     ),
 
@@ -132,6 +153,7 @@ export default grammar(base, {
         // Snowflake-specific
         $.alter_session,
         $.alter_table_masking,
+        $.alter_stage,
       ),
     ),
 
@@ -249,6 +271,15 @@ export default grammar(base, {
     keyword_policy:         _ => token(prec(1, make_keyword("policy"))),
     keyword_declare:        _ => token(prec(1, make_keyword("declare"))),
     keyword_match:          _ => token(prec(1, make_keyword("match"))),
+    keyword_stage:          _ => token(prec(1, make_keyword("stage"))),
+    keyword_url:            _ => token(prec(1, make_keyword("url"))),
+    keyword_credentials:    _ => token(prec(1, make_keyword("credentials"))),
+    keyword_file_format:    _ => token(prec(1, /[Ff][Ii][Ll][Ee]_[Ff][Oo][Rr][Mm][Aa][Tt]/)),
+    keyword_copy_options:   _ => token(prec(1, /[Cc][Oo][Pp][Yy]_[Oo][Pp][Tt][Ii][Oo][Nn][Ss]/)),
+    keyword_directory:      _ => token(prec(1, make_keyword("directory"))),
+    keyword_encryption:     _ => token(prec(1, make_keyword("encryption"))),
+    keyword_pattern:        _ => token(prec(1, make_keyword("pattern"))),
+    keyword_list:           _ => token(prec(1, make_keyword("list"))),
 
     // ── Spread all Snowflake rule modules ───────────────────────────────────
     ...qualify_rules,
@@ -262,6 +293,7 @@ export default grammar(base, {
     ...create_rules,
     ...alter_rules,
     ...use_rules,
+    ...stage_rules,
 
   },
 });

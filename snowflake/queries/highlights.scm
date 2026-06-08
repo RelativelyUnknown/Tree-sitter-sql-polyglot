@@ -45,3 +45,16 @@
 ; ── Stage references (@stage_name) ─────────────────────────────────────────
 
 (stage_ref) @string.special
+
+; Snowflake STAGE DDL keywords
+[
+  (keyword_stage)
+  (keyword_url)
+  (keyword_credentials)
+  (keyword_file_format)
+  (keyword_copy_options)
+  (keyword_directory)
+  (keyword_encryption)
+  (keyword_pattern)
+  (keyword_list)
+] @keyword

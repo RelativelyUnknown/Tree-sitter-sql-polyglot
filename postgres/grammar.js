@@ -7,6 +7,7 @@ import pg_alter_rules from './grammar/alter.js';
 import pg_drop_rules from './grammar/drop.js';
 import pg_replication_rules from './grammar/replication.js';
 import pg_partition_rules from './grammar/partition.js';
+import pg_notify_rules from './grammar/notify.js';
 
 export default grammar(base, {
   name: 'postgres_sql',
@@ -284,6 +285,9 @@ export default grammar(base, {
       $.do_statement,
       $.grant_statement,
       $.revoke_statement,
+      $.listen_statement,
+      $.notify_statement,
+      $.unlisten_statement,
     ),
 
     // PostgreSQL: DO $$ ... $$ anonymous block
@@ -552,6 +556,9 @@ export default grammar(base, {
     keyword_current_user:   _ => token(prec(1, make_keyword("current_user"))),
     keyword_session_user:   _ => token(prec(1, make_keyword("session_user"))),
     keyword_current_role:   _ => token(prec(1, make_keyword("current_role"))),
+    keyword_listen:         _ => token(prec(1, make_keyword("listen"))),
+    keyword_notify:         _ => token(prec(1, make_keyword("notify"))),
+    keyword_unlisten:       _ => token(prec(1, make_keyword("unlisten"))),
 
     ...pg_copy_rules,
     ...pg_optimize_rules,
@@ -560,6 +567,7 @@ export default grammar(base, {
     ...pg_drop_rules,
     ...pg_replication_rules,
     ...pg_partition_rules,
+    ...pg_notify_rules,
 
   },
 });
