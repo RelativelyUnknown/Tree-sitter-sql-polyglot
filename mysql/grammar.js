@@ -5,6 +5,7 @@ import mysql_optimize_rules from './grammar/optimize.js';
 import mysql_load_data_rules from './grammar/load_data.js';
 import mysql_events_rules from './grammar/events.js';
 import mysql_procedural_rules from './grammar/procedural.js';
+import mysql_partition_rules from './grammar/partition.js';
 
 export default grammar(base, {
   name: 'mysql_sql',
@@ -22,6 +23,7 @@ export default grammar(base, {
     [$.interval],
     [$._function_return, $.return_statement],
     [$._qualified_field, $.set_variable_statement],
+    [$.mysql_alter_partition],
   ],
 
   rules: {
@@ -38,6 +40,7 @@ export default grammar(base, {
           repeat($.table_option),
           optional(seq($.keyword_as, $.create_query)),
         ),
+        optional($.mysql_partition_clause),
       ),
     ),
 
@@ -483,6 +486,34 @@ export default grammar(base, {
     keyword_call:               _ => token(prec(1, make_keyword("call"))),
     keyword_declare:            _ => token(prec(1, make_keyword("declare"))),
 
+    // MySQL partition keywords
+    keyword_list:               _ => token(prec(1, make_keyword("list"))),
+    keyword_partitions:         _ => token(prec(1, make_keyword("partitions"))),
+    keyword_less:               _ => token(prec(1, make_keyword("less"))),
+    keyword_than:               _ => token(prec(1, make_keyword("than"))),
+    keyword_reorganize:         _ => token(prec(1, make_keyword("reorganize"))),
+    keyword_coalesce:           _ => token(prec(1, make_keyword("coalesce"))),
+    keyword_rebuild:            _ => token(prec(1, make_keyword("rebuild"))),
+    keyword_remove:             _ => token(prec(1, make_keyword("remove"))),
+    keyword_partitioning:       _ => token(prec(1, make_keyword("partitioning"))),
+    keyword_linear:             _ => token(prec(1, make_keyword("linear"))),
+
+    // Extend _alter_specifications to include MySQL partition management
+    _alter_specifications: $ => choice(
+      $.add_column,
+      $.add_constraint,
+      $.drop_constraint,
+      $.alter_column,
+      $.modify_column,
+      $.change_column,
+      $.drop_column,
+      $.rename_object,
+      $.rename_column,
+      $.set_schema,
+      $.change_ownership,
+      $.mysql_alter_partition,
+    ),
+
     // Override statement to include MySQL procedural constructs
     statement: $ => seq(
       optional(seq(
@@ -522,6 +553,7 @@ export default grammar(base, {
     ...mysql_load_data_rules,
     ...mysql_events_rules,
     ...mysql_procedural_rules,
+    ...mysql_partition_rules,
 
   },
 });
