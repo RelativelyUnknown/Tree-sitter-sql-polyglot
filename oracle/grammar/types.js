@@ -181,4 +181,15 @@ export default {
     ),
   ),
 
+  // DATE 'YYYY-MM-DD' and TIMESTAMP 'YYYY-MM-DD HH:MI:SS' Oracle literal forms
+  oracle_date_literal: $ => seq(
+    $.keyword_date,
+    alias($._literal_string, $.literal),
+  ),
+
+  oracle_timestamp_literal: $ => seq(
+    $.keyword_timestamp,
+    alias($._literal_string, $.literal),
+  ),
+
 };
