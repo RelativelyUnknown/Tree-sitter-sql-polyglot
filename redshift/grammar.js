@@ -124,6 +124,12 @@ export default grammar(base, {
     keyword_stored:       _ => token(prec(1, make_keyword("stored"))),
     keyword_location:     _ => token(prec(1, make_keyword("location"))),
 
+    // PARTITIONED BY / ROW FORMAT DELIMITED
+    keyword_partitioned:  _ => token(prec(1, make_keyword("partitioned"))),
+    keyword_delimited:    _ => token(prec(1, make_keyword("delimited"))),
+    keyword_fields:       _ => token(prec(1, make_keyword("fields"))),
+    keyword_terminated:   _ => token(prec(1, make_keyword("terminated"))),
+
     // APPROXIMATE COUNT
     keyword_approximate:  _ => token(prec(1, make_keyword("approximate"))),
 
