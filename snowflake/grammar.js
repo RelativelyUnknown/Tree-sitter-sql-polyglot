@@ -13,6 +13,7 @@ import create_rules      from './grammar/create.js';
 import alter_rules       from './grammar/alter.js';
 import use_rules         from './grammar/use.js';
 import stage_rules       from './grammar/stage.js';
+import show_rules        from './grammar/show.js';
 
 export default grammar(base, {
   name: 'snowflake_sql',
@@ -87,6 +88,8 @@ export default grammar(base, {
       $.copy_into,
       $.use_secondary_roles,
       $.list_stage_statement,
+      $.show_statement,
+      $.describe_statement,
     ),
 
     // ── DROP: add DROP STAGE ────────────────────────────────────────────────
@@ -281,6 +284,37 @@ export default grammar(base, {
     keyword_pattern:        _ => token(prec(1, make_keyword("pattern"))),
     keyword_list:           _ => token(prec(1, make_keyword("list"))),
 
+    // SHOW / DESCRIBE keywords
+    keyword_show:           _ => token(prec(1, make_keyword("show"))),
+    keyword_terse:          _ => token(prec(1, make_keyword("terse"))),
+    keyword_grants:         _ => token(prec(1, make_keyword("grants"))),
+    keyword_users:          _ => token(prec(1, make_keyword("users"))),
+    keyword_pipes:          _ => token(prec(1, make_keyword("pipes"))),
+    keyword_integrations:   _ => token(prec(1, make_keyword("integrations"))),
+    keyword_transactions:   _ => token(prec(1, make_keyword("transactions"))),
+    keyword_locks:          _ => token(prec(1, make_keyword("locks"))),
+    keyword_starts:         _ => token(prec(1, make_keyword("starts"))),
+    keyword_account:        _ => token(prec(1, make_keyword("account"))),
+    keyword_describe:       _ => token(prec(1, make_keyword("describe"))),
+    keyword_desc:           _ => token(prec(1, make_keyword("desc"))),
+    keyword_file:           _ => token(prec(1, make_keyword("file"))),
+    keyword_formats:        _ => token(prec(1, make_keyword("formats"))),
+    keyword_pipe:           _ => token(prec(1, make_keyword("pipe"))),
+    keyword_integration:    _ => token(prec(1, make_keyword("integration"))),
+    keyword_parameters:     _ => token(prec(1, make_keyword("parameters"))),
+    keyword_views:          _ => token(prec(1, make_keyword("views"))),
+    keyword_columns:        _ => token(prec(1, make_keyword("columns"))),
+    keyword_schemas:        _ => token(prec(1, make_keyword("schemas"))),
+    keyword_databases:      _ => token(prec(1, make_keyword("databases"))),
+    keyword_warehouses:     _ => token(prec(1, make_keyword("warehouses"))),
+    keyword_stages:         _ => token(prec(1, make_keyword("stages"))),
+    keyword_streams:        _ => token(prec(1, make_keyword("streams"))),
+    keyword_tasks:          _ => token(prec(1, make_keyword("tasks"))),
+    keyword_functions:      _ => token(prec(1, make_keyword("functions"))),
+    keyword_procedures:     _ => token(prec(1, make_keyword("procedures"))),
+    keyword_sequences:      _ => token(prec(1, make_keyword("sequences"))),
+    keyword_policies:       _ => token(prec(1, make_keyword("policies"))),
+
     // ── Spread all Snowflake rule modules ───────────────────────────────────
     ...qualify_rules,
     ...pivot_rules,
@@ -294,6 +328,7 @@ export default grammar(base, {
     ...alter_rules,
     ...use_rules,
     ...stage_rules,
+    ...show_rules,
 
   },
 });
