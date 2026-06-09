@@ -114,6 +114,31 @@ export default {
   // param_name TYPE  (used in MASKING POLICY / ROW ACCESS POLICY signatures)
   policy_param: $ => seq($.identifier, $._type),
 
+  // CREATE [OR REPLACE] FILE FORMAT [IF NOT EXISTS] name [TYPE = id] [prop = value ...]
+  create_file_format_statement: $ => seq(
+    $.keyword_create,
+    optional($._or_replace),
+    $.keyword_file,
+    $.keyword_format,
+    optional($._if_not_exists),
+    $.object_reference,
+    repeat($.file_format_property),
+  ),
+
+  // identifier = (literal | identifier | number | (list))
+  file_format_property: $ => seq(
+    $.identifier,
+    '=',
+    choice(
+      $.literal,
+      $.identifier,
+      seq('(', repeat(seq(
+        choice($.literal, $.identifier),
+        optional(','),
+      )), ')'),
+    ),
+  ),
+
   // CLONE source_object [AT / BEFORE time_travel]
   clone_clause: $ => seq(
     $.keyword_clone,

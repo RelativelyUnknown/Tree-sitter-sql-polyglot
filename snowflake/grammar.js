@@ -139,6 +139,7 @@ export default grammar(base, {
         $.create_row_access_policy,
         $.create_stage,
         $.create_warehouse_statement,
+        $.create_file_format_statement,
       ),
     ),
 
@@ -364,6 +365,7 @@ export default grammar(base, {
     keyword_describe:       _ => token(prec(1, make_keyword("describe"))),
     keyword_desc:           _ => token(prec(1, make_keyword("desc"))),
     keyword_file:           _ => token(prec(1, make_keyword("file"))),
+    keyword_format:         _ => token(prec(1, make_keyword("format"))),
     keyword_formats:        _ => token(prec(1, make_keyword("formats"))),
     keyword_pipe:           _ => token(prec(1, make_keyword("pipe"))),
     keyword_integration:    _ => token(prec(1, make_keyword("integration"))),

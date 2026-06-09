@@ -3,7 +3,8 @@ import { comma_list, wrapped_in_parenthesis } from '../../grammar/helpers.js';
 export default {
 
   // COPY INTO <table> FROM @<stage> [copy_options]
-  // COPY INTO @<stage> FROM <table> [copy_options]
+  // COPY INTO <table> FROM (subquery) [copy_options]
+  // COPY INTO @<stage> FROM <table|subquery> [copy_options]
   copy_into: $ => seq(
     $.keyword_copy,
     $.keyword_into,
@@ -11,13 +12,19 @@ export default {
       seq(
         $.object_reference,
         $.keyword_from,
-        $.stage_ref,
+        choice(
+          $.stage_ref,
+          seq('(', $._dml_read, ')'),
+        ),
         repeat($.copy_property),
       ),
       seq(
         $.stage_ref,
         $.keyword_from,
-        $.object_reference,
+        choice(
+          $.object_reference,
+          seq('(', $._dml_read, ')'),
+        ),
         repeat($.copy_property),
       ),
     ),
