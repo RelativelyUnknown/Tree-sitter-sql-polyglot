@@ -7,6 +7,9 @@ import oracle_merge_rules from './grammar/merge_ext.js';
 import oracle_cursor_rules from './grammar/cursor.js';
 import oracle_package_rules from './grammar/package.js';
 import oracle_procedural_rules from './grammar/procedural.js';
+import oracle_type_rules from './grammar/types.js';
+import oracle_hint_rules from './grammar/hints.js';
+import oracle_partition_rules from './grammar/partition.js';
 
 export default grammar(base, {
   name: 'oracle_sql',
@@ -163,6 +166,30 @@ export default grammar(base, {
       ),
     ),
 
+    // Override _expression to add Oracle date/timestamp literal forms (DATE '...' / TIMESTAMP '...')
+    _expression: $ => prec(1, choice(
+      $.literal,
+      alias($._qualified_field, $.field),
+      $.parameter,
+      $.list,
+      $.case,
+      $.window_function,
+      $.subquery,
+      $.cast,
+      $.exists,
+      $.invocation,
+      $.binary_expression,
+      $.subscript,
+      $.unary_expression,
+      $.array,
+      $.interval,
+      $.between_expression,
+      $.parenthesized_expression,
+      $.trim_expression,
+      $.oracle_date_literal,
+      $.oracle_timestamp_literal,
+    )),
+
     // Oracle-specific keywords — token(prec(1,...)) needed so lexer prefers
     // these over base _identifier when both are valid in the same state.
     keyword_exceptions:     _ => token(prec(1, make_keyword("exceptions"))),
@@ -200,6 +227,68 @@ export default grammar(base, {
     keyword_declare:        _ => token(prec(1, make_keyword("declare"))),
     keyword_current_user:   _ => token(prec(1, make_keyword("current_user"))),
 
+    // Oracle type keywords
+    keyword_number:         _ => token(prec(1, make_keyword("number"))),
+    keyword_varchar2:       _ => token(prec(1, make_keyword("varchar2"))),
+    keyword_nvarchar2:      _ => token(prec(1, make_keyword("nvarchar2"))),
+    keyword_clob:           _ => token(prec(1, make_keyword("clob"))),
+    keyword_nclob:          _ => token(prec(1, make_keyword("nclob"))),
+    keyword_blob:           _ => token(prec(1, make_keyword("blob"))),
+    keyword_bfile:          _ => token(prec(1, make_keyword("bfile"))),
+    keyword_raw:            _ => token(prec(1, make_keyword("raw"))),
+    keyword_long:           _ => token(prec(1, make_keyword("long"))),
+    keyword_rowid:          _ => token(prec(1, make_keyword("rowid"))),
+    keyword_urowid:         _ => token(prec(1, make_keyword("urowid"))),
+    keyword_binary_float:   _ => token(prec(1, make_keyword("binary_float"))),
+    keyword_binary_double:  _ => token(prec(1, make_keyword("binary_double"))),
+    keyword_byte:           _ => token(prec(1, make_keyword("byte"))),
+    keyword_year:           _ => token(prec(1, make_keyword("year"))),
+    keyword_month:          _ => token(prec(1, make_keyword("month"))),
+    keyword_day:            _ => token(prec(1, make_keyword("day"))),
+    keyword_second:         _ => token(prec(1, make_keyword("second"))),
+
+    // Oracle partition keywords
+    keyword_list:           _ => token(prec(1, make_keyword("list"))),
+    keyword_partitions:     _ => token(prec(1, make_keyword("partitions"))),
+    keyword_subpartition:   _ => token(prec(1, make_keyword("subpartition"))),
+    keyword_subpartitions:  _ => token(prec(1, make_keyword("subpartitions"))),
+    keyword_less:           _ => token(prec(1, make_keyword("less"))),
+    keyword_than:           _ => token(prec(1, make_keyword("than"))),
+    keyword_split:          _ => token(prec(1, make_keyword("split"))),
+    keyword_exchange:       _ => token(prec(1, make_keyword("exchange"))),
+    keyword_at:             _ => token(prec(1, make_keyword("at"))),
+
+    // Override create_table to add optional partition clause
+    create_table: $ => prec.left(seq(
+      $.keyword_create,
+      optional($._or_replace),
+      optional($._temporary),
+      $.keyword_table,
+      optional($._if_not_exists),
+      $.object_reference,
+      seq(
+        optional($.column_definitions),
+        optional(seq($.keyword_as, $.create_query)),
+      ),
+      optional($.oracle_partition_clause),
+    )),
+
+    // Extend _alter_specifications to include Oracle partition operations
+    _alter_specifications: $ => choice(
+      $.add_column,
+      $.add_constraint,
+      $.drop_constraint,
+      $.alter_column,
+      $.modify_column,
+      $.change_column,
+      $.drop_column,
+      $.rename_object,
+      $.rename_column,
+      $.set_schema,
+      $.change_ownership,
+      $.oracle_alter_partition,
+    ),
+
     ...oracle_hierarchical_rules,
     ...oracle_plsql_rules,
     ...oracle_bulk_rules,
@@ -207,6 +296,9 @@ export default grammar(base, {
     ...oracle_cursor_rules,
     ...oracle_package_rules,
     ...oracle_procedural_rules,
+    ...oracle_type_rules,
+    ...oracle_hint_rules,
+    ...oracle_partition_rules,
 
   },
 });

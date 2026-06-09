@@ -20,6 +20,9 @@ export default grammar(mysql, {
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
     [$.interval],
+    [$._function_return, $.return_statement],
+    [$._qualified_field, $.set_variable_statement],
+    [$.mysql_alter_partition],
   ],
 
   rules: {

@@ -100,7 +100,7 @@ export default {
 
   xml_mode: $ => seq(
     choice(
-      make_keyword("raw"),
+      seq(make_keyword("raw"), optional(seq('(', alias($._literal_string, $.literal), ')'))),
       make_keyword("auto"),
       make_keyword("explicit"),
       seq(make_keyword("path"), optional(seq('(', alias($._literal_string, $.literal), ')'))),
@@ -114,8 +114,7 @@ export default {
     make_keyword("xmlschema"),
     seq(make_keyword("root"), optional(seq('(', alias($._literal_string, $.literal), ')'))),
     make_keyword("type"),
-    make_keyword("binary"),
-    make_keyword("base64"),
+    seq(make_keyword("binary"), make_keyword("base64")),
   ),
 
   json_mode: $ => seq(

@@ -4,6 +4,8 @@ import mysql_create_rules from './grammar/create.js';
 import mysql_optimize_rules from './grammar/optimize.js';
 import mysql_load_data_rules from './grammar/load_data.js';
 import mysql_events_rules from './grammar/events.js';
+import mysql_procedural_rules from './grammar/procedural.js';
+import mysql_partition_rules from './grammar/partition.js';
 
 export default grammar(base, {
   name: 'mysql_sql',
@@ -19,6 +21,9 @@ export default grammar(base, {
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
     [$.interval],
+    [$._function_return, $.return_statement],
+    [$._qualified_field, $.set_variable_statement],
+    [$.mysql_alter_partition],
   ],
 
   rules: {
@@ -35,6 +40,7 @@ export default grammar(base, {
           repeat($.table_option),
           optional(seq($.keyword_as, $.create_query)),
         ),
+        optional($.mysql_partition_clause),
       ),
     ),
 
@@ -462,10 +468,92 @@ export default grammar(base, {
     keyword_follows:        _ => token(prec(1, make_keyword("follows"))),
     keyword_precedes:       _ => token(prec(1, make_keyword("precedes"))),
 
+    // MySQL procedural keywords
+    keyword_while:              _ => token(prec(1, make_keyword("while"))),
+    keyword_elseif:             _ => token(prec(1, make_keyword("elseif"))),
+    keyword_loop:               _ => token(prec(1, make_keyword("loop"))),
+    keyword_repeat:             _ => token(prec(1, make_keyword("repeat"))),
+    keyword_signal:             _ => token(prec(1, make_keyword("signal"))),
+    keyword_resignal:           _ => token(prec(1, make_keyword("resignal"))),
+    keyword_leave:              _ => token(prec(1, make_keyword("leave"))),
+    keyword_iterate:            _ => token(prec(1, make_keyword("iterate"))),
+    keyword_diagnostics:        _ => token(prec(1, make_keyword("diagnostics"))),
+    keyword_sqlstate:           _ => token(prec(1, make_keyword("sqlstate"))),
+    keyword_message_text:       _ => token(prec(1, make_keyword("message_text"))),
+    keyword_returned_sqlstate:  _ => token(prec(1, make_keyword("returned_sqlstate"))),
+    keyword_condition:          _ => token(prec(1, make_keyword("condition"))),
+    keyword_get:                _ => token(prec(1, make_keyword("get"))),
+    keyword_call:               _ => token(prec(1, make_keyword("call"))),
+    keyword_declare:            _ => token(prec(1, make_keyword("declare"))),
+
+    // MySQL partition keywords
+    keyword_list:               _ => token(prec(1, make_keyword("list"))),
+    keyword_partitions:         _ => token(prec(1, make_keyword("partitions"))),
+    keyword_less:               _ => token(prec(1, make_keyword("less"))),
+    keyword_than:               _ => token(prec(1, make_keyword("than"))),
+    keyword_reorganize:         _ => token(prec(1, make_keyword("reorganize"))),
+    keyword_coalesce:           _ => token(prec(1, make_keyword("coalesce"))),
+    keyword_rebuild:            _ => token(prec(1, make_keyword("rebuild"))),
+    keyword_remove:             _ => token(prec(1, make_keyword("remove"))),
+    keyword_partitioning:       _ => token(prec(1, make_keyword("partitioning"))),
+    keyword_linear:             _ => token(prec(1, make_keyword("linear"))),
+
+    // Extend _alter_specifications to include MySQL partition management
+    _alter_specifications: $ => choice(
+      $.add_column,
+      $.add_constraint,
+      $.drop_constraint,
+      $.alter_column,
+      $.modify_column,
+      $.change_column,
+      $.drop_column,
+      $.rename_object,
+      $.rename_column,
+      $.set_schema,
+      $.change_ownership,
+      $.mysql_alter_partition,
+    ),
+
+    // Override statement to include MySQL procedural constructs
+    statement: $ => seq(
+      optional(seq(
+        $.keyword_explain,
+        optional($.keyword_analyze),
+        optional($.keyword_verbose),
+      )),
+      choice(
+        $._ddl_statement,
+        $._dml_write,
+        optional_parenthesis($._dml_read),
+        $.compound_statement,
+        $.if_statement,
+        $.while_statement,
+        $.repeat_statement,
+        $.loop_statement,
+        $.leave_statement,
+        $.iterate_statement,
+        $.return_statement,
+        $.call_statement,
+        $.set_variable_statement,
+        $.signal_statement,
+        $.resignal_statement,
+        $.get_diagnostics_statement,
+        $.declare_statement,
+      ),
+    ),
+
+    // Override procedure_body to accept MySQL compound_statement (no ATOMIC keyword)
+    procedure_body: $ => choice(
+      $.compound_statement,
+      seq($.keyword_as, alias($._single_quote_string, $.literal)),
+    ),
+
     ...mysql_create_rules,
     ...mysql_optimize_rules,
     ...mysql_load_data_rules,
     ...mysql_events_rules,
+    ...mysql_procedural_rules,
+    ...mysql_partition_rules,
 
   },
 });

@@ -133,6 +133,8 @@ export default {
   )),
 
   // CREATE EXTERNAL TABLE [IF NOT EXISTS] ref (cols)
+  //   [PARTITIONED BY (col type, ...)]
+  //   [ROW FORMAT DELIMITED [FIELDS TERMINATED BY 'x']]
   //   STORED AS format
   //   LOCATION 's3://...'
   create_external_table: $ => seq(
@@ -142,8 +144,46 @@ export default {
     optional($._if_not_exists),
     $.object_reference,
     $.column_definitions,
+    optional(seq(
+      $.keyword_partitioned, $.keyword_by,
+      paren_list($.column_definition, true),
+    )),
+    optional(seq(
+      $.keyword_row, $.keyword_format,
+      $.keyword_delimited,
+      optional(seq(
+        $.keyword_fields, $.keyword_terminated, $.keyword_by,
+        alias($._literal_string, $.literal),
+      )),
+    )),
     seq($.keyword_stored, $.keyword_as, $.identifier),
     seq($.keyword_location, alias($._literal_string, $.literal)),
+  ),
+
+  // Override _alter_specifications to add Redshift external table partition ops
+  _alter_specifications: $ => choice(
+    $.add_column,
+    $.add_constraint,
+    $.drop_constraint,
+    $.alter_column,
+    $.modify_column,
+    $.change_column,
+    $.drop_column,
+    $.rename_object,
+    $.rename_column,
+    $.set_schema,
+    $.change_ownership,
+    // ADD PARTITION (key=val, ...) LOCATION '...'
+    seq(
+      $.keyword_add, $.keyword_partition,
+      paren_list(seq($.identifier, '=', $._expression), true),
+      $.keyword_location, alias($._literal_string, $.literal),
+    ),
+    // DROP PARTITION (key=val, ...)
+    seq(
+      $.keyword_drop, $.keyword_partition,
+      paren_list(seq($.identifier, '=', $._expression), true),
+    ),
   ),
 
 };
