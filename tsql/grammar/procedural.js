@@ -99,4 +99,68 @@ export default {
     $._expression,
   ),
 
+  // DECLARE cursor_name [INSENSITIVE] [SCROLL] CURSOR
+  //   [FOR | options] FOR select_statement
+  declare_cursor_statement: $ => prec.left(seq(
+    $.keyword_declare,
+    field('name', $.identifier),
+    repeat(choice(
+      $.keyword_insensitive,
+      $.keyword_scroll,
+      $.keyword_local,
+      $.keyword_global,
+      $.keyword_forward_only,
+      $.keyword_static,
+      $.keyword_keyset,
+      $.keyword_dynamic,
+      $.keyword_fast_forward,
+      $.keyword_read_only,
+      $.keyword_scroll_locks,
+      $.keyword_optimistic,
+      $.keyword_type_warning,
+    )),
+    $.keyword_cursor,
+    $.keyword_for,
+    $._dml_read,
+  )),
+
+  // OPEN [GLOBAL] cursor_name
+  open_cursor_statement: $ => seq(
+    $.keyword_open,
+    optional($.keyword_global),
+    field('name', $.identifier),
+  ),
+
+  // FETCH [direction] [FROM] [GLOBAL] cursor_name [INTO @var, ...]
+  fetch_cursor_statement: $ => seq(
+    $.keyword_fetch,
+    optional(choice(
+      $.keyword_next,
+      $.keyword_prior,
+      $.keyword_first,
+      $.keyword_last,
+      seq($.keyword_absolute, $._expression),
+      seq($.keyword_relative, $._expression),
+    )),
+    optional($.keyword_from),
+    optional($.keyword_global),
+    field('name', $.identifier),
+    optional(seq($.keyword_into, comma_list($.variable, true))),
+  ),
+
+  // CLOSE [GLOBAL] cursor_name
+  close_cursor_statement: $ => seq(
+    $.keyword_close,
+    optional($.keyword_global),
+    field('name', $.identifier),
+  ),
+
+  // DEALLOCATE [GLOBAL] [CURSOR] cursor_name
+  deallocate_cursor_statement: $ => seq(
+    $.keyword_deallocate,
+    optional($.keyword_global),
+    optional($.keyword_cursor),
+    field('name', $.identifier),
+  ),
+
 };

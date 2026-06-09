@@ -1,4 +1,4 @@
-import { paren_list } from '../../grammar/helpers.js';
+import { paren_list, comma_list } from '../../grammar/helpers.js';
 
 export default {
 
@@ -113,5 +113,41 @@ export default {
 
   // param_name TYPE  (used in MASKING POLICY / ROW ACCESS POLICY signatures)
   policy_param: $ => seq($.identifier, $._type),
+
+  // CLONE source_object [AT / BEFORE time_travel]
+  clone_clause: $ => seq(
+    $.keyword_clone,
+    $.object_reference,
+    optional($.time_travel_clause),
+  ),
+
+  // UNDROP TABLE|SCHEMA|DATABASE name
+  undrop_statement: $ => seq(
+    $.keyword_undrop,
+    choice($.keyword_table, $.keyword_schema, $.keyword_database),
+    $.object_reference,
+  ),
+
+  // CREATE [OR REPLACE] WAREHOUSE [IF NOT EXISTS] name [properties]
+  create_warehouse_statement: $ => seq(
+    $.keyword_create,
+    optional($._or_replace),
+    $.keyword_warehouse,
+    optional($._if_not_exists),
+    $.object_reference,
+    optional($.warehouse_properties),
+  ),
+
+  warehouse_properties: $ => repeat1(
+    choice(
+      seq($.keyword_warehouse_size, '=', $.identifier),
+      seq($.keyword_max_cluster_count, '=', $._expression),
+      seq($.keyword_min_cluster_count, '=', $._expression),
+      seq($.keyword_scaling_policy, '=', choice($.keyword_standard, $.keyword_economy)),
+      seq($.keyword_auto_suspend, '=', $._expression),
+      seq($.keyword_auto_resume, '=', choice($.keyword_true, $.keyword_false)),
+      seq($.keyword_comment, '=', alias($._literal_string, $.literal)),
+    ),
+  ),
 
 };

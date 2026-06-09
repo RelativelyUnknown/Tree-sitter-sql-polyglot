@@ -67,6 +67,7 @@ export default grammar(base, {
         $.return_statement,
         $.raise_statement,
         $.for_statement,
+        $.undrop_statement,
       ),
     ),
 
@@ -137,6 +138,7 @@ export default grammar(base, {
         $.create_masking_policy,
         $.create_row_access_policy,
         $.create_stage,
+        $.create_warehouse_statement,
       ),
     ),
 
@@ -157,8 +159,58 @@ export default grammar(base, {
         $.alter_session,
         $.alter_table_masking,
         $.alter_stage,
+        $.alter_warehouse_statement,
       ),
     ),
+
+    // ── CREATE TABLE: add CLONE clause ──────────────────────────────────────
+    create_table: $ => prec.left(
+      seq(
+        $.keyword_create,
+        optional(choice($._temporary, $.keyword_unlogged, $.keyword_external)),
+        $.keyword_table,
+        optional($._if_not_exists),
+        $.object_reference,
+        choice(
+          seq(
+            optional($.column_definitions),
+            optional($.clone_clause),
+            optional(seq($.keyword_as, $.create_query)),
+          ),
+          $.clone_clause,
+        ),
+      ),
+    ),
+
+    // ── CREATE SCHEMA: add CLONE clause ─────────────────────────────────────
+    create_schema: $ => prec.left(seq(
+      $.keyword_create,
+      $.keyword_schema,
+      choice(
+        seq(
+          optional($._if_not_exists),
+          $.identifier,
+          optional(seq($.keyword_authorization, $.identifier)),
+          optional($.clone_clause),
+        ),
+        seq(
+          $.keyword_authorization,
+          $.identifier,
+          optional($.clone_clause),
+        ),
+      ),
+    )),
+
+    // ── CREATE DATABASE: add CLONE clause ───────────────────────────────────
+    create_database: $ => prec.left(seq(
+      $.keyword_create,
+      $.keyword_database,
+      optional($._if_not_exists),
+      $.identifier,
+      optional($.keyword_with),
+      repeat($._with_settings),
+      optional($.clone_clause),
+    )),
 
     // ── SELECT / FROM: add QUALIFY after HAVING ─────────────────────────────
     from: $ => seq(
@@ -257,6 +309,20 @@ export default grammar(base, {
     keyword_stream:         _ => token(prec(1, make_keyword("stream"))),
     keyword_dynamic:        _ => token(prec(1, make_keyword("dynamic"))),
     keyword_warehouse:      _ => token(prec(1, make_keyword("warehouse"))),
+    keyword_clone:             _ => token(prec(1, make_keyword("clone"))),
+    keyword_undrop:            _ => token(prec(1, make_keyword("undrop"))),
+    keyword_warehouse_size:    _ => token(prec(1, /[Ww][Aa][Rr][Ee][Hh][Oo][Uu][Ss][Ee]_[Ss][Ii][Zz][Ee]/)),
+    keyword_max_cluster_count: _ => token(prec(1, /[Mm][Aa][Xx]_[Cc][Ll][Uu][Ss][Tt][Ee][Rr]_[Cc][Oo][Uu][Nn][Tt]/)),
+    keyword_min_cluster_count: _ => token(prec(1, /[Mm][Ii][Nn]_[Cc][Ll][Uu][Ss][Tt][Ee][Rr]_[Cc][Oo][Uu][Nn][Tt]/)),
+    keyword_scaling_policy:    _ => token(prec(1, /[Ss][Cc][Aa][Ll][Ii][Nn][Gg]_[Pp][Oo][Ll][Ii][Cc][Yy]/)),
+    keyword_standard:          _ => token(prec(1, make_keyword("standard"))),
+    keyword_economy:           _ => token(prec(1, make_keyword("economy"))),
+    keyword_auto_suspend:      _ => token(prec(1, /[Aa][Uu][Tt][Oo]_[Ss][Uu][Ss][Pp][Ee][Nn][Dd]/)),
+    keyword_auto_resume:       _ => token(prec(1, /[Aa][Uu][Tt][Oo]_[Rr][Ee][Ss][Uu][Mm][Ee]/)),
+    keyword_suspend:           _ => token(prec(1, make_keyword("suspend"))),
+    keyword_resume:            _ => token(prec(1, make_keyword("resume"))),
+    keyword_abort:             _ => token(prec(1, make_keyword("abort"))),
+    keyword_queries:           _ => token(prec(1, make_keyword("queries"))),
     keyword_schedule:       _ => token(prec(1, make_keyword("schedule"))),
     keyword_secure:         _ => token(prec(1, make_keyword("secure"))),
     keyword_masking:        _ => token(prec(1, make_keyword("masking"))),

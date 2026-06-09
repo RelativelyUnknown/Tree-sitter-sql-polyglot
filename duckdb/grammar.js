@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { optional_parenthesis, make_keyword, wrapped_in_parenthesis } from '../grammar/helpers.js';
 import duckdb_select_rules from './grammar/select.js';
 import duckdb_pivot_rules from './grammar/pivot.js';
 import duckdb_expression_rules from './grammar/expressions.js';
@@ -64,6 +64,7 @@ export default grammar(base, {
         $.pivot_statement,
         $.unpivot_statement,
         $.from_first_select,
+        $.copy_statement,
       ),
     ),
 
@@ -78,7 +79,7 @@ export default grammar(base, {
       ),
     ),
 
-    // Override _expression to add lambda, struct, map literals, list comprehension
+    // Override _expression to add lambda, struct, map literals, list comprehension, file_reader
     _expression: $ => prec(1,
       choice(
         $.literal,
@@ -91,6 +92,7 @@ export default grammar(base, {
         $.cast,
         alias($.implicit_cast, $.cast),
         $.exists,
+        $.file_reader,
         $.invocation,
         $.binary_expression,
         $.subscript,
@@ -103,6 +105,26 @@ export default grammar(base, {
         $.struct_literal,
         $.map_literal,
         $.list_comprehension,
+      ),
+    ),
+
+    // Override relation to add file_reader as a FROM source
+    relation: $ => prec.right(
+      seq(
+        choice(
+          $.subquery,
+          $.file_reader,
+          $.invocation,
+          $.object_reference,
+          wrapped_in_parenthesis($.values),
+        ),
+        optional($.tablesample),
+        optional(
+          seq(
+            $._alias,
+            optional(alias($._column_list, $.list)),
+          ),
+        ),
       ),
     ),
 
@@ -127,6 +149,14 @@ export default grammar(base, {
     keyword_pivot:      _ => token(prec(1, make_keyword("pivot"))),
     keyword_unpivot:    _ => token(prec(1, make_keyword("unpivot"))),
     keyword_name:       _ => token(prec(1, make_keyword("name"))),
+    keyword_copy:       _ => token(prec(1, make_keyword("copy"))),
+    keyword_read_csv:       _ => token(prec(1, /[Rr][Ee][Aa][Dd]_[Cc][Ss][Vv]/)),
+    keyword_read_csv_auto:  _ => token(prec(1, /[Rr][Ee][Aa][Dd]_[Cc][Ss][Vv]_[Aa][Uu][Tt][Oo]/)),
+    keyword_read_parquet:   _ => token(prec(1, /[Rr][Ee][Aa][Dd]_[Pp][Aa][Rr][Qq][Uu][Ee][Tt]/)),
+    keyword_read_json:      _ => token(prec(1, /[Rr][Ee][Aa][Dd]_[Jj][Ss][Oo][Nn]/)),
+    keyword_read_json_auto: _ => token(prec(1, /[Rr][Ee][Aa][Dd]_[Jj][Ss][Oo][Nn]_[Aa][Uu][Tt][Oo]/)),
+    keyword_read_orc:       _ => token(prec(1, /[Rr][Ee][Aa][Dd]_[Oo][Rr][Cc]/)),
+    keyword_read_avro:      _ => token(prec(1, /[Rr][Ee][Aa][Dd]_[Aa][Vv][Rr][Oo]/)),
 
     // DuckDB native type keywords
     keyword_hugeint:    _ => make_keyword("hugeint"),

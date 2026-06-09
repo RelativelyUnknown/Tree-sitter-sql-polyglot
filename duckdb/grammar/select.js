@@ -138,12 +138,13 @@ export default {
     $.relation,
   ),
 
-  // Override relation to allow bare string literal as a FROM source
+  // Override relation to allow bare string literal as a FROM source and file_reader
   // e.g. SELECT * FROM '*.parquet' or SELECT * FROM ['a.parquet','b.parquet']
   relation: $ => prec.right(
     seq(
       choice(
         $.subquery,
+        $.file_reader,
         $.invocation,
         $.object_reference,
         alias($._literal_string, $.literal),
