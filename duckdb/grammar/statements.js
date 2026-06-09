@@ -1,4 +1,4 @@
-import { comma_list, wrapped_in_parenthesis } from '../../grammar/helpers.js';
+import { comma_list, wrapped_in_parenthesis, optional_parenthesis } from '../../grammar/helpers.js';
 
 export default {
 
@@ -53,5 +53,33 @@ export default {
       $._dml_read,
     ),
   ),
+
+  // COPY {table [(cols)] | (SELECT ...)} FROM|TO 'file' [(options)]
+  copy_statement: $ => prec.left(seq(
+    $.keyword_copy,
+    choice(
+      seq(
+        $.object_reference,
+        optional(seq('(', comma_list($.identifier, true), ')')),
+      ),
+      seq('(', $._select_statement, ')'),
+    ),
+    choice($.keyword_from, $.keyword_to),
+    alias($._literal_string, $.literal),
+    optional(seq(
+      '(',
+      comma_list(
+        seq(
+          $.identifier,
+          optional(choice(
+            $._expression,
+            seq('=', $._expression),
+          )),
+        ),
+        true,
+      ),
+      ')',
+    )),
+  )),
 
 };

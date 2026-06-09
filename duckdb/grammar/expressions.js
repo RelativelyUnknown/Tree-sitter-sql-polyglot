@@ -1,4 +1,4 @@
-import { comma_list, wrapped_in_parenthesis } from '../../grammar/helpers.js';
+import { comma_list, wrapped_in_parenthesis, optional_parenthesis } from '../../grammar/helpers.js';
 
 export default {
 
@@ -31,6 +31,22 @@ export default {
   map_literal: $ => seq(
     $.keyword_map,
     $.struct_literal,
+  ),
+
+  // read_csv('path', [opt=val, ...]) etc. — structured file-reader node
+  file_reader: $ => seq(
+    field('function', choice(
+      $.keyword_read_csv,
+      $.keyword_read_csv_auto,
+      $.keyword_read_parquet,
+      $.keyword_read_json,
+      $.keyword_read_json_auto,
+      $.keyword_read_orc,
+      $.keyword_read_avro,
+    )),
+    '(',
+    comma_list($._expression, true),
+    ')',
   ),
 
   // [expr FOR x IN range(...) IF cond]
