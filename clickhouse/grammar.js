@@ -5,6 +5,7 @@ import ch_select_rules  from './grammar/select.js';
 import ch_create_rules  from './grammar/create.js';
 import ch_system_rules  from './grammar/system.js';
 import ch_mutation_rules from './grammar/mutations.js';
+import ch_access_control_rules from './grammar/access_control.js';
 
 export default grammar(base, {
   name: 'clickhouse_sql',
@@ -25,6 +26,13 @@ export default grammar(base, {
     // `IN` may continue a binary IN-expression or begin the IN PARTITION clause.
     // GLR explores both; only one continuation is well-formed at runtime.
     [$.binary_expression, $.assignment],
+    // Access control rules overlap with base create_role/alter_role/create_role
+    [$.create_user_statement, $.create_role],
+    [$.alter_user_statement, $.alter_role],
+    [$.alter_user_statement, $.object_reference],
+    [$.create_role_statement, $.create_role],
+    [$.ch_grant_statement, $.grant_statement],
+    [$.ch_revoke_statement, $.revoke_statement],
   ],
 
   rules: {
@@ -43,6 +51,16 @@ export default grammar(base, {
         $.attach_statement,
         $.detach_statement,
         $.optimize_statement,
+        $.kill_query_statement,
+        $.kill_mutation_statement,
+        $.create_user_statement,
+        $.alter_user_statement,
+        $.create_role_statement,
+        $.ch_grant_statement,
+        $.ch_revoke_statement,
+        $.create_quota_statement,
+        $.create_row_policy_statement,
+        $.create_settings_profile_statement,
       ),
     ),
 
@@ -105,6 +123,23 @@ export default grammar(base, {
     keyword_step:          _ => token(prec(1, make_keyword("step"))),
     keyword_outfile:       _ => token(prec(1, make_keyword("outfile"))),
 
+    // Access control / KILL keywords
+    keyword_kill:          _ => token(prec(1, make_keyword("kill"))),
+    keyword_query:         _ => token(prec(1, make_keyword("query"))),
+    keyword_mutation:      _ => token(prec(1, make_keyword("mutation"))),
+    keyword_identified:    _ => token(prec(1, make_keyword("identified"))),
+    keyword_quota:         _ => token(prec(1, make_keyword("quota"))),
+    keyword_keyed:         _ => token(prec(1, make_keyword("keyed"))),
+    keyword_row:           _ => token(prec(1, make_keyword("row"))),
+    keyword_policy:        _ => token(prec(1, make_keyword("policy"))),
+    keyword_permissive:    _ => token(prec(1, make_keyword("permissive"))),
+    keyword_restrictive:   _ => token(prec(1, make_keyword("restrictive"))),
+    keyword_profile:       _ => token(prec(1, make_keyword("profile"))),
+    keyword_host:          _ => token(prec(1, make_keyword("host"))),
+    keyword_ip:            _ => token(prec(1, make_keyword("ip"))),
+    keyword_async:         _ => token(prec(1, make_keyword("async"))),
+    keyword_test:          _ => token(prec(1, make_keyword("test"))),
+
     // SYSTEM command keywords
     keyword_system:        _ => token(prec(1, make_keyword("system"))),
     keyword_flush:         _ => token(prec(1, make_keyword("flush"))),
@@ -160,6 +195,7 @@ export default grammar(base, {
     ...ch_create_rules,
     ...ch_system_rules,
     ...ch_mutation_rules,
+    ...ch_access_control_rules,
 
   },
 });

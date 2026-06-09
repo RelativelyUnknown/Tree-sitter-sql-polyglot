@@ -163,4 +163,57 @@ export default {
     field('name', $.identifier),
   ),
 
+  // EXEC[UTE] proc_name [[@param =] expr [OUTPUT] [, ...]]
+  // EXECUTE (@sql_string)
+  exec_statement: $ => seq(
+    choice($.keyword_exec, $.keyword_execute),
+    choice(
+      seq(
+        $.object_reference,
+        optional(comma_list($.exec_param, true)),
+      ),
+      seq('(', $._expression, ')'),
+    ),
+  ),
+
+  // [@name =] expr [OUTPUT]
+  exec_param: $ => seq(
+    optional(seq(field('name', $.variable), '=')),
+    field('value', $._expression),
+    optional($.keyword_output),
+  ),
+
+  // RETURN [expr]
+  return_statement: $ => prec.right(seq(
+    $.keyword_return,
+    optional($._expression),
+  )),
+
+  // WAITFOR DELAY|TIME 'literal' [, TIMEOUT integer]
+  waitfor_statement: $ => seq(
+    $.keyword_waitfor,
+    choice($.keyword_delay, $.keyword_time),
+    alias($._literal_string, $.literal),
+    optional(seq(',', $.keyword_timeout, alias($._integer, $.literal))),
+  ),
+
+  // OPTION (hint [, hint ...])
+  option_clause: $ => seq(
+    $.keyword_option,
+    '(',
+    comma_list($.query_hint, true),
+    ')',
+  ),
+
+  // identifier [value]  or  identifier (value)
+  // Covers: RECOMPILE, MAXDOP 4, FORCE ORDER, HASH JOIN, OPTIMIZE FOR (@v UNKNOWN)
+  query_hint: $ => seq(
+    $.identifier,
+    optional(choice(
+      seq('(', $._expression, ')'),
+      alias($._integer, $.literal),
+      $.identifier,
+    )),
+  ),
+
 };

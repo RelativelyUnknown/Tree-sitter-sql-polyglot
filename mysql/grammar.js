@@ -24,6 +24,8 @@ export default grammar(base, {
     [$._function_return, $.return_statement],
     [$._qualified_field, $.set_variable_statement],
     [$.mysql_alter_partition],
+    [$.declare_statement, $.declare_cursor_statement, $.declare_condition_statement, $.declare_handler_statement],
+    [$.statement, $.declare_handler_statement],
   ],
 
   rules: {
@@ -485,6 +487,16 @@ export default grammar(base, {
     keyword_get:                _ => token(prec(1, make_keyword("get"))),
     keyword_call:               _ => token(prec(1, make_keyword("call"))),
     keyword_declare:            _ => token(prec(1, make_keyword("declare"))),
+    keyword_cursor:             _ => token(prec(1, make_keyword("cursor"))),
+    keyword_open:               _ => token(prec(1, make_keyword("open"))),
+    keyword_fetch:              _ => token(prec(1, make_keyword("fetch"))),
+    keyword_close:              _ => token(prec(1, make_keyword("close"))),
+    keyword_handler:            _ => token(prec(1, make_keyword("handler"))),
+    keyword_sqlexception:       _ => token(prec(1, make_keyword("sqlexception"))),
+    keyword_sqlwarning:         _ => token(prec(1, make_keyword("sqlwarning"))),
+    keyword_exit:               _ => token(prec(1, make_keyword("exit"))),
+    keyword_continue:           _ => token(prec(1, make_keyword("continue"))),
+    keyword_found:              _ => token(prec(1, make_keyword("found"))),
 
     // MySQL partition keywords
     keyword_list:               _ => token(prec(1, make_keyword("list"))),
@@ -539,6 +551,13 @@ export default grammar(base, {
         $.resignal_statement,
         $.get_diagnostics_statement,
         $.declare_statement,
+        $.declare_cursor_statement,
+        $.open_cursor_statement,
+        $.fetch_cursor_statement,
+        $.close_cursor_statement,
+        $.declare_condition_statement,
+        $.declare_handler_statement,
+        $.case_statement,
       ),
     ),
 

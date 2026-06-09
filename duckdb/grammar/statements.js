@@ -54,6 +54,49 @@ export default {
     ),
   ),
 
+  // CREATE [OR REPLACE] MACRO [IF NOT EXISTS] name(params) AS [TABLE] expr
+  create_macro_statement: $ => seq(
+    $.keyword_create,
+    optional($._or_replace),
+    $.keyword_macro,
+    optional($._if_not_exists),
+    $.object_reference,
+    '(',
+    optional(comma_list($.identifier, true)),
+    ')',
+    $.keyword_as,
+    optional($.keyword_table),
+    $._expression,
+  ),
+
+  // EXPORT DATABASE 'path' [(format_option [, ...])]
+  export_database_statement: $ => seq(
+    $.keyword_export,
+    $.keyword_database,
+    field('path', alias($._literal_string, $.literal)),
+    optional(seq(
+      '(',
+      comma_list(
+        seq(
+          $.identifier,
+          optional(choice(
+            $._expression,
+            seq('=', $._expression),
+          )),
+        ),
+        true,
+      ),
+      ')',
+    )),
+  ),
+
+  // IMPORT DATABASE 'path'
+  import_database_statement: $ => seq(
+    $.keyword_import,
+    $.keyword_database,
+    field('path', alias($._literal_string, $.literal)),
+  ),
+
   // COPY {table [(cols)] | (SELECT ...)} FROM|TO 'file' [(options)]
   copy_statement: $ => prec.left(seq(
     $.keyword_copy,

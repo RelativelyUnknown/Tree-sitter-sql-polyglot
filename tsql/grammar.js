@@ -27,6 +27,9 @@ export default grammar(base, {
     // [$.statement] removed (tree-sitter reported it unnecessary)
     // output_clause INTO @var (col_list) is ambiguous with column_definitions
     [$.output_clause],
+    // option_clause after optional_parenthesis(_dml_read) causes close-paren ambiguity
+    [$.option_clause],
+    [$._function_return, $.return_statement],
   ],
 
   rules: {
@@ -75,8 +78,24 @@ export default grammar(base, {
         $.fetch_cursor_statement,
         $.close_cursor_statement,
         $.deallocate_cursor_statement,
+        // New: EXEC/EXECUTE, RETURN, WAITFOR
+        $.exec_statement,
+        $.return_statement,
+        $.waitfor_statement,
       ),
     ),
+
+    // ── _dml_read: add trailing OPTION clause ─────────────────────────────────
+    _dml_read: $ => prec.right(seq(
+      optional(optional_parenthesis($._cte)),
+      optional_parenthesis(
+        choice(
+          $._select_statement,
+          $.set_operation,
+        ),
+      ),
+      optional($.option_clause),
+    )),
 
     // ── DDL dispatch ─────────────────────────────────────────────────────────
     _ddl_statement: $ => choice(
@@ -243,6 +262,13 @@ export default grammar(base, {
     keyword_relative:         _ => token(prec(1, make_keyword("relative"))),
     keyword_prior:            _ => token(prec(1, make_keyword("prior"))),
     keyword_read_only:        _ => token(prec(1, /[Rr][Ee][Aa][Dd]_[Oo][Nn][Ll][Yy]/)),
+    keyword_exec:             _ => token(prec(1, make_keyword("exec"))),
+    keyword_execute:          _ => token(prec(1, make_keyword("execute"))),
+    keyword_return:           _ => token(prec(1, make_keyword("return"))),
+    keyword_waitfor:          _ => token(prec(1, make_keyword("waitfor"))),
+    keyword_delay:            _ => token(prec(1, make_keyword("delay"))),
+    keyword_timeout:          _ => token(prec(1, make_keyword("timeout"))),
+    keyword_option:           _ => token(prec(1, make_keyword("option"))),
 
     // T-SQL SET @variable = expression  (plus base transaction/constraint SET)
     set_statement: $ => prec.right(choice(

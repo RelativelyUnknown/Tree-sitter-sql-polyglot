@@ -83,4 +83,29 @@ export default {
   // NULL (no-op statement)
   null_statement: $ => $.keyword_null,
 
+  // PRAGMA identifier [(args)]   -- generic: covers EXCEPTION_INIT, AUTONOMOUS_TRANSACTION, etc.
+  pragma_statement: $ => seq(
+    $.keyword_pragma,
+    $.identifier,
+    optional(seq('(', comma_list($._expression, true), ')')),
+  ),
+
+  // PIPE ROW (expr)
+  pipe_row_statement: $ => seq(
+    $.keyword_pipe,
+    $.keyword_row,
+    '(',
+    $._expression,
+    ')',
+  ),
+
+  // RETURNING expr [, expr] [BULK COLLECT] INTO identifier [, identifier]
+  returning_into_clause: $ => seq(
+    $.keyword_returning,
+    comma_list($._expression, true),
+    optional(seq($.keyword_bulk, $.keyword_collect)),
+    $.keyword_into,
+    comma_list($.identifier, true),
+  ),
+
 };

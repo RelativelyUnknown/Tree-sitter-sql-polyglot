@@ -25,4 +25,19 @@ export default {
     )),
   ),
 
+  // SHOW PARTITIONS table_name
+  show_partitions_statement: $ => seq(
+    $.keyword_show,
+    $.keyword_partitions,
+    $.object_reference,
+  ),
+
+  // SHOW CREATE TABLE|VIEW name
+  show_create_statement: $ => seq(
+    $.keyword_show,
+    $.keyword_create,
+    choice($.keyword_table, $.keyword_view),
+    $.object_reference,
+  ),
+
 };
