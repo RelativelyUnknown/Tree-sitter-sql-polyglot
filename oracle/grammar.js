@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, comma_list, make_keyword } from '../grammar/helpers.js';
+import { optional_parenthesis, comma_list, make_keyword, wrapped_in_parenthesis } from '../grammar/helpers.js';
 import oracle_hierarchical_rules from './grammar/hierarchical.js';
 import oracle_plsql_rules from './grammar/plsql_blocks.js';
 import oracle_bulk_rules from './grammar/bulk_ops.js';
@@ -10,6 +10,7 @@ import oracle_procedural_rules from './grammar/procedural.js';
 import oracle_type_rules from './grammar/types.js';
 import oracle_hint_rules from './grammar/hints.js';
 import oracle_partition_rules from './grammar/partition.js';
+import oracle_ddl_ext_rules from './grammar/ddl_ext.js';
 
 export default grammar(base, {
   name: 'oracle_sql',
@@ -52,7 +53,7 @@ export default grammar(base, {
 
   rules: {
 
-    // Extend _create_statement to add CREATE PACKAGE / PACKAGE BODY
+    // Extend _create_statement to add CREATE PACKAGE / PACKAGE BODY / SYNONYM / DATABASE LINK
     _create_statement: $ => seq(
       choice(
         $.create_table,
@@ -68,6 +69,8 @@ export default grammar(base, {
         $.create_trigger,
         $.create_package,
         $.create_package_body,
+        $.create_synonym_statement,
+        $.create_database_link_statement,
         prec.left(seq(
           $.create_schema,
           repeat($._create_statement),
@@ -75,7 +78,7 @@ export default grammar(base, {
       ),
     ),
 
-    // Extend _drop_statement to add DROP PACKAGE
+    // Extend _drop_statement to add DROP PACKAGE / SYNONYM
     _drop_statement: $ => seq(
       choice(
         $.drop_table,
@@ -90,6 +93,7 @@ export default grammar(base, {
         $.drop_function,
         $.drop_procedure,
         $.drop_package,
+        $.drop_synonym_statement,
       ),
     ),
 
@@ -146,6 +150,26 @@ export default grammar(base, {
       optional($.order_by),
       optional($.limit),
       optional($.offset_fetch_clause),
+    ),
+
+    // Override relation to add FLASHBACK AS OF clause
+    relation: $ => prec.right(
+      seq(
+        choice(
+          $.subquery,
+          $.invocation,
+          $.object_reference,
+          wrapped_in_parenthesis($.values),
+        ),
+        optional($.flashback_clause),
+        optional($.tablesample),
+        optional(
+          seq(
+            $._alias,
+            optional(alias($._column_list, $.list)),
+          ),
+        ),
+      ),
     ),
 
     // Extend unary_expression to include Oracle PRIOR operator
@@ -227,6 +251,13 @@ export default grammar(base, {
     keyword_declare:        _ => token(prec(1, make_keyword("declare"))),
     keyword_current_user:   _ => token(prec(1, make_keyword("current_user"))),
 
+    // Oracle DDL extension keywords
+    keyword_scn:            _ => token(prec(1, make_keyword("scn"))),
+    keyword_synonym:        _ => token(prec(1, make_keyword("synonym"))),
+    keyword_shared:         _ => token(prec(1, make_keyword("shared"))),
+    keyword_identified:     _ => token(prec(1, make_keyword("identified"))),
+    keyword_link:           _ => token(prec(1, make_keyword("link"))),
+
     // Oracle type keywords
     keyword_number:         _ => token(prec(1, make_keyword("number"))),
     keyword_varchar2:       _ => token(prec(1, make_keyword("varchar2"))),
@@ -299,6 +330,7 @@ export default grammar(base, {
     ...oracle_type_rules,
     ...oracle_hint_rules,
     ...oracle_partition_rules,
+    ...oracle_ddl_ext_rules,
 
   },
 });
