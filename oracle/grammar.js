@@ -49,6 +49,7 @@ export default grammar(base, {
     [$.assignment_statement, $._qualified_field],
     [$._function_return, $.return_statement],
     [$.cursor_for_loop, $.for_statement],
+    [$.pragma_statement, $._qualified_field],
   ],
 
   rules: {
@@ -126,6 +127,8 @@ export default grammar(base, {
         $.continue_statement,
         $.null_statement,
         $.assignment_statement,
+        $.pragma_statement,
+        $.pipe_row_statement,
       ),
     ),
 
@@ -251,6 +254,8 @@ export default grammar(base, {
     keyword_declare:        _ => token(prec(1, make_keyword("declare"))),
     keyword_current_user:   _ => token(prec(1, make_keyword("current_user"))),
 
+    keyword_pipe:           _ => token(prec(1, make_keyword("pipe"))),
+
     // Oracle DDL extension keywords
     keyword_scn:            _ => token(prec(1, make_keyword("scn"))),
     keyword_synonym:        _ => token(prec(1, make_keyword("synonym"))),
@@ -303,6 +308,43 @@ export default grammar(base, {
       ),
       optional($.oracle_partition_clause),
     )),
+
+    // Override INSERT to add optional RETURNING INTO
+    insert: $ => seq(
+      $.keyword_insert,
+      optional($.keyword_into),
+      $.object_reference,
+      optional(seq($.keyword_as, field('alias', $.identifier))),
+      choice(
+        $._insert_values,
+        $._set_values,
+      ),
+      optional($.returning_into_clause),
+    ),
+
+    // Override UPDATE to add optional WHERE and RETURNING INTO
+    update: $ => seq(
+      $.keyword_update,
+      optional($.keyword_only),
+      $.relation,
+      $._set_values,
+      optional($.where),
+      optional($.returning_into_clause),
+    ),
+
+    // Override _delete_statement to add optional RETURNING INTO
+    _delete_statement: $ => seq(
+      $.delete,
+      alias($._oracle_delete_from, $.from),
+    ),
+
+    _oracle_delete_from: $ => seq(
+      $.keyword_from,
+      optional($.keyword_only),
+      $.object_reference,
+      optional($.where),
+      optional($.returning_into_clause),
+    ),
 
     // Extend _alter_specifications to include Oracle partition operations
     _alter_specifications: $ => choice(
