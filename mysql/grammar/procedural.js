@@ -1,4 +1,4 @@
-import { comma_list } from '../../grammar/helpers.js';
+import { comma_list, paren_list } from '../../grammar/helpers.js';
 
 export default {
 
@@ -147,6 +147,103 @@ export default {
       $.keyword_returned_sqlstate,
       $.keyword_message_text,
       seq($.keyword_condition, field('condition_number', alias($._integer, $.literal))),
+    ),
+  ),
+
+  // DECLARE cur CURSOR FOR select_statement
+  declare_cursor_statement: $ => seq(
+    $.keyword_declare,
+    field('name', $.identifier),
+    $.keyword_cursor,
+    $.keyword_for,
+    $._dml_read,
+  ),
+
+  // OPEN cursor_name
+  open_cursor_statement: $ => seq(
+    $.keyword_open,
+    field('name', $.identifier),
+  ),
+
+  // FETCH cursor_name INTO var [, var ...]
+  fetch_cursor_statement: $ => seq(
+    $.keyword_fetch,
+    field('name', $.identifier),
+    $.keyword_into,
+    comma_list(choice($.user_variable, $.identifier), true),
+  ),
+
+  // CLOSE cursor_name
+  close_cursor_statement: $ => seq(
+    $.keyword_close,
+    field('name', $.identifier),
+  ),
+
+  // DECLARE name CONDITION FOR SQLSTATE 'value'
+  declare_condition_statement: $ => seq(
+    $.keyword_declare,
+    field('name', $.identifier),
+    $.keyword_condition,
+    $.keyword_for,
+    $.keyword_sqlstate,
+    alias($._single_quote_string, $.literal),
+  ),
+
+  // DECLARE CONTINUE|EXIT HANDLER FOR condition_list stmt_or_block
+  declare_handler_statement: $ => seq(
+    $.keyword_declare,
+    field('action', choice($.keyword_continue, $.keyword_exit)),
+    $.keyword_handler,
+    $.keyword_for,
+    comma_list($.handler_condition, true),
+    choice(
+      $.compound_statement,
+      seq($.statement, ';'),
+    ),
+  ),
+
+  // NOT FOUND | SQLEXCEPTION | SQLWARNING | SQLSTATE 'value' | condition_name
+  handler_condition: $ => choice(
+    seq($.keyword_not, $.keyword_found),
+    $.keyword_sqlexception,
+    $.keyword_sqlwarning,
+    seq($.keyword_sqlstate, alias($._single_quote_string, $.literal)),
+    $.identifier,
+  ),
+
+  // CASE expr WHEN v THEN stmts [WHEN ...] [ELSE stmts] END CASE
+  // CASE WHEN cond THEN stmts [WHEN ...] [ELSE stmts] END CASE
+  case_statement: $ => choice(
+    seq(
+      $.keyword_case,
+      field('operand', $._expression),
+      repeat1(seq(
+        $.keyword_when,
+        field('condition', $._expression),
+        $.keyword_then,
+        repeat(seq($.statement, ';')),
+      )),
+      optional(seq(
+        $.keyword_else,
+        repeat(seq($.statement, ';')),
+      )),
+      $.keyword_end,
+      $.keyword_case,
+    ),
+    seq(
+      $.keyword_case,
+      repeat1(seq(
+        $.keyword_when,
+        field('condition', $._expression),
+        $.keyword_then,
+        repeat(seq($.statement, ';')),
+      )),
+      optional(seq(
+        $.keyword_else,
+        repeat(seq($.statement, ';')),
+      )),
+      $.keyword_end,
+      $.keyword_case,
     ),
   ),
 
