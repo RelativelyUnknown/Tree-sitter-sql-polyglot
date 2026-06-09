@@ -69,6 +69,12 @@ export default grammar(base, {
         // T-SQL loop control
         $.keyword_break,
         $.keyword_continue,
+        // T-SQL cursor lifecycle
+        $.declare_cursor_statement,
+        $.open_cursor_statement,
+        $.fetch_cursor_statement,
+        $.close_cursor_statement,
+        $.deallocate_cursor_statement,
       ),
     ),
 
@@ -218,6 +224,25 @@ export default grammar(base, {
     keyword_while:            _ => token(prec(1, make_keyword("while"))),
     keyword_source:           _ => token(prec(1, make_keyword("source"))),
     keyword_declare:          _ => token(prec(1, make_keyword("declare"))),
+    keyword_cursor:           _ => token(prec(1, make_keyword("cursor"))),
+    keyword_open:             _ => token(prec(1, make_keyword("open"))),
+    keyword_close:            _ => token(prec(1, make_keyword("close"))),
+    keyword_deallocate:       _ => token(prec(1, make_keyword("deallocate"))),
+    keyword_insensitive:      _ => token(prec(1, make_keyword("insensitive"))),
+    keyword_scroll:           _ => token(prec(1, make_keyword("scroll"))),
+    keyword_global:           _ => token(prec(1, make_keyword("global"))),
+    keyword_forward_only:     _ => token(prec(1, make_keyword("forward_only"))),
+    keyword_static:           _ => token(prec(1, make_keyword("static"))),
+    keyword_keyset:           _ => token(prec(1, make_keyword("keyset"))),
+    keyword_dynamic:          _ => token(prec(1, make_keyword("dynamic"))),
+    keyword_fast_forward:     _ => token(prec(1, make_keyword("fast_forward"))),
+    keyword_scroll_locks:     _ => token(prec(1, make_keyword("scroll_locks"))),
+    keyword_optimistic:       _ => token(prec(1, make_keyword("optimistic"))),
+    keyword_type_warning:     _ => token(prec(1, make_keyword("type_warning"))),
+    keyword_absolute:         _ => token(prec(1, make_keyword("absolute"))),
+    keyword_relative:         _ => token(prec(1, make_keyword("relative"))),
+    keyword_prior:            _ => token(prec(1, make_keyword("prior"))),
+    keyword_read_only:        _ => token(prec(1, /[Rr][Ee][Aa][Dd]_[Oo][Nn][Ll][Yy]/)),
 
     // T-SQL SET @variable = expression  (plus base transaction/constraint SET)
     set_statement: $ => prec.right(choice(
