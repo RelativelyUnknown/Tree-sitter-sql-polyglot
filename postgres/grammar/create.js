@@ -1,4 +1,4 @@
-import { paren_list } from "../../grammar/helpers.js";
+import { paren_list, comma_list } from "../../grammar/helpers.js";
 
 export default {
 
@@ -80,6 +80,34 @@ export default {
         ),
       ),
     ),
+  ),
+
+  // CREATE [OR REPLACE] AGGREGATE name ( [* | arg_types [ORDER BY direct_types]] )
+  //   ( option = value [, ...] )
+  create_aggregate_statement: $ => seq(
+    $.keyword_create,
+    optional($._or_replace),
+    $.keyword_aggregate,
+    $.object_reference,
+    '(',
+    choice(
+      '*',
+      seq(
+        comma_list($._type, true),
+        optional(seq($.keyword_order, $.keyword_by, comma_list($._type, true))),
+      ),
+    ),
+    ')',
+    '(',
+    comma_list($.aggregate_option, true),
+    ')',
+  ),
+
+  // key = value  (covers SFUNC, STYPE, INITCOND, PARALLEL, etc.)
+  // bare identifier covers flags like FINALFUNC_EXTRA
+  aggregate_option: $ => choice(
+    seq($.identifier, '=', $._expression),
+    $.identifier,
   ),
 
 };

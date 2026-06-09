@@ -98,6 +98,7 @@ export default grammar(base, {
         $.create_policy,
         $.create_publication,
         $.create_subscription,
+        $.create_aggregate_statement,
         prec.left(seq(
           $.create_schema,
           repeat($._create_statement),
@@ -473,6 +474,7 @@ export default grammar(base, {
     ),
 
     // PostgreSQL-specific keywords (not ANSI)
+    keyword_aggregate:      _ => token(prec(1, make_keyword("aggregate"))),
     keyword_concurrently:   _ => token(prec(1, make_keyword("concurrently"))),
     keyword_btree:          _ => token(prec(1, make_keyword("btree"))),
     keyword_hash:           _ => token(prec(1, make_keyword("hash"))),
