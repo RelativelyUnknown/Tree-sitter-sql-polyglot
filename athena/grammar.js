@@ -58,6 +58,12 @@ export default grammar(trino, {
         $.unload_statement,
         $.msck_repair_statement,
         $.create_external_table,
+        $.show_statement,
+        $.describe_statement,
+        $.analyze_statement,
+        $.comment_on_statement,
+        $.show_partitions_statement,
+        $.show_create_statement,
       ),
     ),
 
