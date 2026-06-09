@@ -1,4 +1,4 @@
-import { paren_list } from '../../grammar/helpers.js';
+import { paren_list, comma_list } from '../../grammar/helpers.js';
 
 export default {
 
@@ -161,6 +161,7 @@ export default {
   ),
 
   // Override _alter_specifications to add Redshift external table partition ops
+  // and distribution/sort key changes
   _alter_specifications: $ => choice(
     $.add_column,
     $.add_constraint,
@@ -173,6 +174,8 @@ export default {
     $.rename_column,
     $.set_schema,
     $.change_ownership,
+    $.alter_diststyle_clause,
+    $.alter_sortkey_clause,
     // ADD PARTITION (key=val, ...) LOCATION '...'
     seq(
       $.keyword_add, $.keyword_partition,
@@ -184,6 +187,67 @@ export default {
       $.keyword_drop, $.keyword_partition,
       paren_list(seq($.identifier, '=', $._expression), true),
     ),
+  ),
+
+  // ALTER DISTSTYLE KEY DISTKEY col | EVEN | ALL
+  alter_diststyle_clause: $ => seq(
+    $.keyword_alter, $.keyword_diststyle,
+    choice(
+      seq($.keyword_key, $.keyword_distkey, $.identifier),
+      $.keyword_even,
+      $.keyword_all,
+    ),
+  ),
+
+  // ALTER [COMPOUND|INTERLEAVED] SORTKEY (cols) | SORTKEY NONE
+  alter_sortkey_clause: $ => seq(
+    $.keyword_alter,
+    optional(choice($.keyword_compound, $.keyword_interleaved)),
+    $.keyword_sortkey,
+    choice(
+      paren_list($.identifier, true),
+      $.keyword_none,
+    ),
+  ),
+
+  // ── User / Group management ──────────────────────────────────────────────────
+  // Base grammar handles CREATE/ALTER/DROP USER|GROUP|ROLE natively.
+  // Redshift-specific additions:
+
+  // Extend _role_options with Redshift-only role/user options
+  _role_options: $ => choice(
+    // Inherited base options (PASSWORD, CONNECTION LIMIT, VALID UNTIL, bare identifier)
+    seq(optional($.keyword_encrypted), $.keyword_password,
+        choice(field('password', alias($._literal_string, $.literal)), $.keyword_null)),
+    seq($.keyword_valid, $.keyword_until,
+        field('valid_until', alias($._literal_string, $.literal))),
+    seq($.keyword_connection, $.keyword_limit,
+        field('connection_limit', alias($._integer, $.literal))),
+    field('option', $.identifier),
+    // Redshift-specific user options
+    $.keyword_nocreatedb,
+    $.keyword_nocreateuser,
+    seq($.keyword_session, $.keyword_timeout, alias($._integer, $.literal)),
+    seq($.keyword_syslog, $.keyword_access,
+        choice($.keyword_unrestricted, $.keyword_restricted)),
+  ),
+
+  // ALTER GROUP name ADD|DROP USER name [, name]  (unique Redshift form)
+  alter_group_statement: $ => seq(
+    $.keyword_alter,
+    $.keyword_group,
+    $.identifier,
+    choice($.keyword_add, $.keyword_drop),
+    $.keyword_user,
+    comma_list($.identifier, true),
+  ),
+
+  // SET identifier TO value | DEFAULT  (Redshift session variable form)
+  set_session_variable_statement: $ => seq(
+    $.keyword_set,
+    $.object_reference,
+    $.keyword_to,
+    choice($._expression, $.keyword_default),
   ),
 
 };

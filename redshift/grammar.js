@@ -18,6 +18,7 @@ export default grammar(base, {
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
     [$.interval],
+    [$.alter_group_statement, $.alter_role],
   ],
 
   rules: {
@@ -34,6 +35,8 @@ export default grammar(base, {
         optional_parenthesis($._dml_read),
         $.copy_statement,
         $.unload_statement,
+        $.alter_group_statement,
+        $.set_session_variable_statement,
       ),
     ),
 
@@ -45,6 +48,7 @@ export default grammar(base, {
       $._merge_statement,
       $._refresh_statement,
       $.set_statement,
+      $.reset_statement,
       $.grant_statement,
       $.revoke_statement,
       $._optimize_statement,
@@ -132,6 +136,14 @@ export default grammar(base, {
 
     // APPROXIMATE COUNT
     keyword_approximate:  _ => token(prec(1, make_keyword("approximate"))),
+
+    // User / Group management
+    keyword_nocreatedb:   _ => token(prec(1, make_keyword("nocreatedb"))),
+    keyword_nocreateuser: _ => token(prec(1, make_keyword("nocreateuser"))),
+    keyword_syslog:       _ => token(prec(1, make_keyword("syslog"))),
+    keyword_access:       _ => token(prec(1, make_keyword("access"))),
+    keyword_unrestricted: _ => token(prec(1, make_keyword("unrestricted"))),
+    keyword_timeout:      _ => token(prec(1, make_keyword("timeout"))),
 
     ...rs_create_rules,
     ...rs_copy_rules,
