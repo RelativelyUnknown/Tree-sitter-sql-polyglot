@@ -1,4 +1,4 @@
-import { comma_list, paren_list, optional_parenthesis } from '../../grammar/helpers.js';
+import { comma_list, paren_list, optional_parenthesis, wrapped_in_parenthesis } from '../../grammar/helpers.js';
 
 export default {
 
@@ -44,7 +44,7 @@ export default {
     ')',
   ),
 
-  // Override: CREATE [TEMP] TABLE ... [column_defs] [OPTIONS (...)] [AS query]
+  // Override: CREATE [TEMP] TABLE ... [column_defs] [PARTITION BY] [CLUSTER BY] [OPTIONS (...)] [AS query]
   create_table: $ => prec.left(
     seq(
       $.keyword_create,
@@ -60,10 +60,26 @@ export default {
       $.object_reference,
       seq(
         optional($.column_definitions),
+        optional($.bq_partition_by),
+        optional($.bq_cluster_by),
         optional($.options_clause),
         optional(seq($.keyword_as, $.create_query)),
       ),
     ),
+  ),
+
+  // PARTITION BY expr
+  bq_partition_by: $ => seq(
+    $.keyword_partition,
+    $.keyword_by,
+    $._expression,
+  ),
+
+  // CLUSTER BY col1 [, col2, ...]
+  bq_cluster_by: $ => seq(
+    $.keyword_cluster,
+    $.keyword_by,
+    comma_list($.identifier, true),
   ),
 
   // Override: CREATE [OR REPLACE] [TEMP] VIEW ... [OPTIONS (...)] AS query
