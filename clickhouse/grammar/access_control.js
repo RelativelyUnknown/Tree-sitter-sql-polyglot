@@ -157,4 +157,45 @@ export default {
     comma_list(seq($.identifier, '=', $._expression), true),
   ),
 
+  // BACKUP TABLE|DATABASE|... target TO Disk(...) [SETTINGS ...]
+  backup_statement: $ => seq(
+    $.keyword_backup,
+    $._backup_target,
+    optional($.on_cluster),
+    $.keyword_to,
+    $._backup_destination,
+    optional($.ch_settings_clause),
+  ),
+
+  // RESTORE TABLE|DATABASE|... target FROM Disk(...) [SETTINGS ...]
+  restore_statement: $ => seq(
+    $.keyword_restore,
+    $._backup_target,
+    optional($.on_cluster),
+    $.keyword_from,
+    $._backup_destination,
+    optional($.ch_settings_clause),
+  ),
+
+  _backup_target: $ => comma_list(
+    choice(
+      seq(
+        choice(
+          $.keyword_table,
+          $.keyword_dictionary,
+          $.keyword_view,
+          $.keyword_database,
+        ),
+        $.object_reference,
+      ),
+      $.keyword_all,
+    ),
+    true,
+  ),
+
+  _backup_destination: $ => choice(
+    $.invocation,
+    alias($._literal_string, $.literal),
+  ),
+
 };
