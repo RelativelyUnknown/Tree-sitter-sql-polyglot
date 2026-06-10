@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { optional_parenthesis, make_keyword, comma_list } from '../grammar/helpers.js';
 import rs_create_rules from './grammar/create.js';
 import rs_copy_rules   from './grammar/copy.js';
 import rs_optimize_rules from './grammar/optimize.js';
@@ -33,6 +33,7 @@ export default grammar(base, {
         $._ddl_statement,
         $._dml_write,
         optional_parenthesis($._dml_read),
+        $._transaction_statement,
         $.copy_statement,
         $.unload_statement,
         $.alter_group_statement,
@@ -144,6 +145,35 @@ export default grammar(base, {
     keyword_access:       _ => token(prec(1, make_keyword("access"))),
     keyword_unrestricted: _ => token(prec(1, make_keyword("unrestricted"))),
     keyword_timeout:      _ => token(prec(1, make_keyword("timeout"))),
+
+    // Bulk GRANT keywords (#87)
+    keyword_sequences:    _ => token(prec(1, make_keyword("sequences"))),
+    keyword_functions:    _ => token(prec(1, make_keyword("functions"))),
+    keyword_procedures:   _ => token(prec(1, make_keyword("procedures"))),
+
+    // GRANT ... ON ALL TABLES/FUNCTIONS/PROCEDURES IN SCHEMA name (#87)
+    _grant_object: $ => choice(
+      seq($.keyword_table, $.object_reference),
+      seq($.keyword_view, $.object_reference),
+      seq($.keyword_schema, $.object_reference),
+      seq($.keyword_database, $.object_reference),
+      seq($.keyword_function, $.object_reference),
+      seq($.keyword_procedure, $.object_reference),
+      seq($.keyword_sequence, $.object_reference),
+      seq(
+        $.keyword_all,
+        choice(
+          $.keyword_tables,
+          $.keyword_sequences,
+          $.keyword_functions,
+          $.keyword_procedures,
+        ),
+        $.keyword_in,
+        $.keyword_schema,
+        comma_list($.object_reference, true),
+      ),
+      $.object_reference,
+    ),
 
     ...rs_create_rules,
     ...rs_copy_rules,

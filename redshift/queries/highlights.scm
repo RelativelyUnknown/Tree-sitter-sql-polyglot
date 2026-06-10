@@ -31,3 +31,10 @@
 (keyword_stored) @keyword
 (keyword_location) @keyword
 (keyword_approximate) @keyword
+
+; Bulk GRANT keywords (#87)
+[
+  (keyword_sequences)
+  (keyword_functions)
+  (keyword_procedures)
+] @keyword
