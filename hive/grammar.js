@@ -46,6 +46,8 @@ export default grammar(base, {
       $.load_data,
       $.grant_statement,
       $.revoke_statement,
+      $.show_statement,
+      $.describe_statement,
     ),
 
     // Override _dml_write to include Hive's multi-table insert and overwrite-directory
@@ -195,6 +197,7 @@ export default grammar(base, {
       $.rename_column,
       $.set_schema,
       $.change_ownership,
+      $.exchange_partition,
     ),
 
     // FROM with LATERAL VIEW, CLUSTER/DISTRIBUTE/SORT BY support
@@ -339,6 +342,88 @@ export default grammar(base, {
       $.identifier,
     ),
 
+    // SELECT TRANSFORM(cols) [ROW FORMAT ...] USING 'script' [AS (schema)] [ROW FORMAT ...]
+    select: $ => seq(
+      $.keyword_select,
+      choice(
+        seq(
+          optional($.keyword_distinct),
+          $.select_expression,
+        ),
+        $.transform_clause,
+      ),
+    ),
+
+    transform_clause: $ => prec.right(seq(
+      $.keyword_transform,
+      paren_list($._expression, true),
+      optional($.row_format),
+      $.keyword_using,
+      field('script', alias($._literal_string, $.literal)),
+      optional(
+        seq(
+          $.keyword_as,
+          choice(
+            paren_list($.column_definition, true),
+            comma_list($.identifier, true),
+          ),
+        ),
+      ),
+      optional($.row_format),
+    )),
+
+    // SHOW PARTITIONS / TABLES / DATABASES / SCHEMAS / FUNCTIONS
+    show_statement: $ => prec.right(seq(
+      $.keyword_show,
+      choice(
+        seq(
+          $.keyword_partitions,
+          $.object_reference,
+          optional($.partition_spec),
+        ),
+        seq(
+          $.keyword_tables,
+          optional(seq(choice($.keyword_from, $.keyword_in), $.object_reference)),
+          optional(seq(optional($.keyword_like), alias($._literal_string, $.literal))),
+        ),
+        seq(
+          choice($.keyword_databases, $.keyword_schemas),
+          optional(seq($.keyword_like, alias($._literal_string, $.literal))),
+        ),
+        seq(
+          $.keyword_functions,
+          optional(seq($.keyword_like, alias($._literal_string, $.literal))),
+        ),
+      ),
+    )),
+
+    // DESCRIBE [FORMATTED|EXTENDED] table [PARTITION (...)] [col]
+    describe_statement: $ => prec.right(seq(
+      choice($.keyword_describe, $.keyword_desc),
+      optional(choice($.keyword_formatted, $.keyword_extended)),
+      $.object_reference,
+      optional($.partition_spec),
+      optional(field('column', $.identifier)),
+    )),
+
+    // PARTITION (key=value, ...) — values may be any expression
+    partition_spec: $ => seq(
+      $.keyword_partition,
+      paren_list(
+        seq(field('key', $.identifier), '=', field('value', $._expression)),
+        true,
+      ),
+    ),
+
+    // ALTER TABLE target EXCHANGE PARTITION (spec) WITH TABLE source
+    exchange_partition: $ => seq(
+      $.keyword_exchange,
+      $.partition_spec,
+      $.keyword_with,
+      $.keyword_table,
+      $.object_reference,
+    ),
+
     // Hive-specific keywords — token(prec(1,...)) so the lexer prefers these over
     // the base _identifier pattern when both are valid in a parse state.
     keyword_serde:           _ => token(prec(1, make_keyword("serde"))),
@@ -389,6 +474,15 @@ export default grammar(base, {
     keyword_parameter:       _ => token(prec(1, make_keyword("parameter"))),
     keyword_style:           _ => token(prec(1, make_keyword("style"))),
     keyword_overwrite:       _ => token(prec(1, make_keyword("overwrite"))),
+    keyword_transform:       _ => token(prec(1, make_keyword("transform"))),
+    keyword_show:            _ => token(prec(1, make_keyword("show"))),
+    keyword_describe:        _ => token(prec(1, make_keyword("describe"))),
+    keyword_formatted:       _ => token(prec(1, make_keyword("formatted"))),
+    keyword_extended:        _ => token(prec(1, make_keyword("extended"))),
+    keyword_databases:       _ => token(prec(1, make_keyword("databases"))),
+    keyword_schemas:         _ => token(prec(1, make_keyword("schemas"))),
+    keyword_functions:       _ => token(prec(1, make_keyword("functions"))),
+    keyword_exchange:        _ => token(prec(1, make_keyword("exchange"))),
 
     ...hive_storage_rules,
     ...hive_partition_rules,
