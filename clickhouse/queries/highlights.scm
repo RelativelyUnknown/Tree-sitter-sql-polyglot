@@ -73,3 +73,9 @@
 (keyword_uint8) @keyword
 (keyword_uuid) @keyword
 (keyword_volume) @keyword
+
+; ClickHouse BACKUP / RESTORE (#98)
+[
+  (keyword_backup)
+  (keyword_restore)
+] @keyword

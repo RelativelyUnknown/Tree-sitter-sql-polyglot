@@ -8,6 +8,7 @@ import pg_drop_rules from './grammar/drop.js';
 import pg_replication_rules from './grammar/replication.js';
 import pg_partition_rules from './grammar/partition.js';
 import pg_notify_rules from './grammar/notify.js';
+import pg_statement_rules from './grammar/statements.js';
 
 export default grammar(base, {
   name: 'postgres_sql',
@@ -33,6 +34,24 @@ export default grammar(base, {
   ],
 
   rules: {
+
+    // PostgreSQL: EXPLAIN [ANALYZE] [VERBOSE] | EXPLAIN ( option [, ...] )
+    statement: $ => seq(
+      optional(seq(
+        $.keyword_explain,
+        optional(choice(
+          seq($.keyword_analyze, optional($.keyword_verbose)),
+          $.keyword_verbose,
+          $.explain_options,
+        )),
+      )),
+      choice(
+        $._ddl_statement,
+        $._dml_write,
+        optional_parenthesis($._dml_read),
+        $._transaction_statement,
+      ),
+    ),
 
     _dml_write: $ => seq(
       optional($._cte),
@@ -250,6 +269,66 @@ export default grammar(base, {
       ),
     ),
 
+    // PostgreSQL: add ILIKE / NOT ILIKE to the base operator table
+    binary_expression: $ => choice(
+      ...[
+        ['+', 'binary_plus'],
+        ['-', 'binary_plus'],
+        ['*', 'binary_times'],
+        ['/', 'binary_times'],
+        ['%', 'binary_times'],
+        ['^', 'binary_exp'],
+        ['=', 'binary_relation'],
+        ['<', 'binary_relation'],
+        ['<=', 'binary_relation'],
+        ['!=', 'binary_relation'],
+        ['>=', 'binary_relation'],
+        ['>', 'binary_relation'],
+        ['<>', 'binary_relation'],
+        [$.op_other, 'binary_other'],
+        [$.keyword_is, 'binary_is'],
+        [$.is_not, 'binary_is'],
+        [$.keyword_like, 'pattern_matching'],
+        [$.not_like, 'pattern_matching'],
+        [$.keyword_ilike, 'pattern_matching'],
+        [$.not_ilike, 'pattern_matching'],
+        [$.keyword_rlike, 'pattern_matching'],
+        [$.not_rlike, 'pattern_matching'],
+        [$.similar_to, 'pattern_matching'],
+        [$.not_similar_to, 'pattern_matching'],
+        [$.distinct_from, 'binary_is'],
+        [$.not_distinct_from, 'binary_is'],
+      ].map(([operator, precedence]) =>
+        prec.left(precedence, seq(
+          field('left', $._expression),
+          field('operator', operator),
+          field('right', $._expression)
+        ))
+      ),
+      ...[
+        [$.keyword_and, 'clause_connective'],
+        [$.keyword_or, 'clause_disjunctive'],
+      ].map(([operator, precedence]) =>
+        prec.left(precedence, seq(
+          field('left', $._expression),
+          field('operator', operator),
+          field('right', $._expression)
+        ))
+      ),
+      ...[
+        [$.keyword_in, 'binary_in'],
+        [$.not_in, 'binary_in'],
+      ].map(([operator, precedence]) =>
+        prec.left(precedence, seq(
+          field('left', $._expression),
+          field('operator', operator),
+          field('right', choice($.list, $.subquery))
+        ))
+      ),
+    ),
+
+    not_ilike: $ => seq($.keyword_not, $.keyword_ilike),
+
     implicit_cast: $ => seq(
       $._expression,
       '::',
@@ -289,6 +368,11 @@ export default grammar(base, {
       $.listen_statement,
       $.notify_statement,
       $.unlisten_statement,
+      $.lock_table_statement,
+      $.call_statement,
+      $.prepare_statement,
+      $.execute_statement,
+      $.deallocate_statement,
     ),
 
     // PostgreSQL: DO $$ ... $$ anonymous block
@@ -561,6 +645,28 @@ export default grammar(base, {
     keyword_listen:         _ => token(prec(1, make_keyword("listen"))),
     keyword_notify:         _ => token(prec(1, make_keyword("notify"))),
     keyword_unlisten:       _ => token(prec(1, make_keyword("unlisten"))),
+    keyword_share:          _ => token(prec(1, make_keyword("share"))),
+    keyword_lock:           _ => token(prec(1, make_keyword("lock"))),
+    keyword_locked:         _ => token(prec(1, make_keyword("locked"))),
+    keyword_skip:           _ => token(prec(1, make_keyword("skip"))),
+    keyword_mode:           _ => token(prec(1, make_keyword("mode"))),
+    keyword_access:         _ => token(prec(1, make_keyword("access"))),
+    keyword_exclusive:      _ => token(prec(1, make_keyword("exclusive"))),
+    keyword_prepare:        _ => token(prec(1, make_keyword("prepare"))),
+    keyword_deallocate:     _ => token(prec(1, make_keyword("deallocate"))),
+    keyword_call:           _ => token(prec(1, make_keyword("call"))),
+    keyword_costs:          _ => token(prec(1, make_keyword("costs"))),
+    keyword_settings:       _ => token(prec(1, make_keyword("settings"))),
+    keyword_generic_plan:   _ => token(prec(1, make_keyword("generic_plan"))),
+    keyword_buffers:        _ => token(prec(1, make_keyword("buffers"))),
+    keyword_wal:            _ => token(prec(1, make_keyword("wal"))),
+    keyword_timing:         _ => token(prec(1, make_keyword("timing"))),
+    keyword_summary:        _ => token(prec(1, make_keyword("summary"))),
+    keyword_yaml:           _ => token(prec(1, make_keyword("yaml"))),
+    keyword_sequences:      _ => token(prec(1, make_keyword("sequences"))),
+    keyword_functions:      _ => token(prec(1, make_keyword("functions"))),
+    keyword_procedures:     _ => token(prec(1, make_keyword("procedures"))),
+    keyword_routines:       _ => token(prec(1, make_keyword("routines"))),
 
     ...pg_copy_rules,
     ...pg_optimize_rules,
@@ -570,6 +676,7 @@ export default grammar(base, {
     ...pg_replication_rules,
     ...pg_partition_rules,
     ...pg_notify_rules,
+    ...pg_statement_rules,
 
   },
 });

@@ -121,3 +121,163 @@ ROLLBACK TRANSACTION;
             (keyword_null)))))
     (keyword_rollback)
     (keyword_transaction)))
+
+================================================================================
+Transaction with savepoint, rollback to savepoint, and release
+================================================================================
+
+BEGIN;
+UPDATE t SET a = 1;
+SAVEPOINT sp1;
+ROLLBACK TO SAVEPOINT sp1;
+RELEASE SAVEPOINT sp1;
+COMMIT;
+
+--------------------------------------------------------------------------------
+
+(program
+  (transaction
+    (keyword_begin)
+    (statement
+      (update
+        (keyword_update)
+        (relation
+          (object_reference
+            name: (identifier)))
+        (keyword_set)
+        (assignment
+          left: (field
+            name: (identifier))
+          right: (literal))))
+    (statement
+      (savepoint_statement
+        (keyword_savepoint)
+        name: (identifier)))
+    (statement
+      (rollback_to_savepoint_statement
+        (keyword_rollback)
+        (keyword_to)
+        (keyword_savepoint)
+        name: (identifier)))
+    (statement
+      (release_savepoint_statement
+        (keyword_release)
+        (keyword_savepoint)
+        name: (identifier)))
+    (keyword_commit)))
+
+================================================================================
+Savepoint statements without explicit SAVEPOINT keyword forms
+================================================================================
+
+BEGIN;
+SAVEPOINT sp1;
+ROLLBACK TO sp1;
+RELEASE sp1;
+COMMIT;
+
+--------------------------------------------------------------------------------
+
+(program
+  (transaction
+    (keyword_begin)
+    (statement
+      (savepoint_statement
+        (keyword_savepoint)
+        name: (identifier)))
+    (statement
+      (rollback_to_savepoint_statement
+        (keyword_rollback)
+        (keyword_to)
+        name: (identifier)))
+    (statement
+      (release_savepoint_statement
+        (keyword_release)
+        name: (identifier)))
+    (keyword_commit)))
+
+================================================================================
+START TRANSACTION with isolation level and access mode
+================================================================================
+
+START TRANSACTION ISOLATION LEVEL SERIALIZABLE READ ONLY;
+UPDATE t SET a = 1;
+COMMIT WORK;
+
+--------------------------------------------------------------------------------
+
+(program
+  (transaction
+    (keyword_start)
+    (keyword_transaction)
+    (transaction_mode
+      (keyword_isolation)
+      (keyword_level)
+      (keyword_serializable))
+    (transaction_mode
+      (keyword_read)
+      (keyword_only))
+    (statement
+      (update
+        (keyword_update)
+        (relation
+          (object_reference
+            name: (identifier)))
+        (keyword_set)
+        (assignment
+          left: (field
+            name: (identifier))
+          right: (literal))))
+    (keyword_commit)
+    (keyword_work)))
+
+================================================================================
+START TRANSACTION READ WRITE with comma-separated modes
+================================================================================
+
+START TRANSACTION READ WRITE, ISOLATION LEVEL READ COMMITTED;
+ROLLBACK WORK;
+
+--------------------------------------------------------------------------------
+
+(program
+  (transaction
+    (keyword_start)
+    (keyword_transaction)
+    (transaction_mode
+      (keyword_read)
+      (keyword_write))
+    (transaction_mode
+      (keyword_isolation)
+      (keyword_level)
+      (keyword_read)
+      (keyword_committed))
+    (keyword_rollback)
+    (keyword_work)))
+
+================================================================================
+BEGIN WORK transaction
+================================================================================
+
+BEGIN WORK;
+UPDATE t SET a = 1;
+COMMIT;
+
+--------------------------------------------------------------------------------
+
+(program
+  (transaction
+    (keyword_begin)
+    (keyword_work)
+    (statement
+      (update
+        (keyword_update)
+        (relation
+          (object_reference
+            name: (identifier)))
+        (keyword_set)
+        (assignment
+          left: (field
+            name: (identifier))
+          right: (literal))))
+    (keyword_commit)))

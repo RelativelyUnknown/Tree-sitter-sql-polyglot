@@ -82,4 +82,56 @@ export default {
     field('label', $.identifier),
   ),
 
+  // DECLARE name CURSOR [WITH HOLD] [WITH RETURN] FOR select
+  declare_cursor_statement: $ => seq(
+    $.keyword_declare,
+    field('name', $.identifier),
+    $.keyword_cursor,
+    repeat(seq($.keyword_with, choice($.keyword_hold, $.keyword_return))),
+    $.keyword_for,
+    $._dml_read,
+  ),
+
+  // OPEN cursor [USING expr, ...]
+  open_cursor_statement: $ => seq(
+    $.keyword_open,
+    field('name', $.identifier),
+    optional(seq($.keyword_using, comma_list($._expression, true))),
+  ),
+
+  // FETCH [FROM] cursor INTO var [, ...]
+  fetch_cursor_statement: $ => seq(
+    $.keyword_fetch,
+    optional($.keyword_from),
+    field('name', $.identifier),
+    $.keyword_into,
+    comma_list($.identifier, true),
+  ),
+
+  // CLOSE cursor
+  close_cursor_statement: $ => seq(
+    $.keyword_close,
+    field('name', $.identifier),
+  ),
+
+  // [label:] FOR var AS [cur CURSOR [WITH HOLD] FOR] select DO ... END FOR [label]
+  for_statement: $ => seq(
+    optional(field('label', seq($.identifier, ':'))),
+    $.keyword_for,
+    field('variable', $.identifier),
+    $.keyword_as,
+    optional(seq(
+      field('cursor', $.identifier),
+      $.keyword_cursor,
+      repeat(seq($.keyword_with, choice($.keyword_hold, $.keyword_return))),
+      $.keyword_for,
+    )),
+    $._dml_read,
+    $.keyword_do,
+    repeat(seq($.statement, ';')),
+    $.keyword_end,
+    $.keyword_for,
+    optional(field('end_label', $.identifier)),
+  ),
+
 };

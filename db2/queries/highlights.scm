@@ -24,3 +24,11 @@
   (keyword_declare)
   (keyword_atomic)
 ] @keyword
+
+; Db2 cursor lifecycle and FOR loop (#99)
+[
+  (keyword_cursor)
+  (keyword_open)
+  (keyword_close)
+  (keyword_hold)
+] @keyword

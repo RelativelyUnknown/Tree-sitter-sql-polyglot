@@ -57,6 +57,7 @@ export default grammar(base, {
         $._ddl_statement,
         $._dml_write,
         optional_parenthesis($._dml_read),
+        $._transaction_statement,
         $.prepare_statement,
         $.execute_statement,
         $.deallocate_statement,
