@@ -100,4 +100,25 @@ export default {
   // CONTINUE / ITERATE  (next loop iteration)
   continue_statement: $ => choice($.keyword_continue, $.keyword_iterate),
 
+  // CALL procedure(args)
+  call_statement: $ => seq(
+    $.keyword_call,
+    field('procedure', $.object_reference),
+    paren_list($._expression),
+  ),
+
+  // RAISE [USING MESSAGE = expr]
+  raise_statement: $ => prec.right(seq(
+    $.keyword_raise,
+    optional(seq(
+      $.keyword_using,
+      $.keyword_message,
+      '=',
+      $._expression,
+    )),
+  )),
+
+  // RETURN  (exit a procedure or script)
+  return_statement: $ => $.keyword_return,
+
 };
