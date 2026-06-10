@@ -63,11 +63,13 @@ export default grammar(base, {
         $._ddl_statement,
         $._dml_write,
         optional_parenthesis($._dml_read),
+        $._transaction_statement,
         $.let_statement,
         $.return_statement,
         $.raise_statement,
         $.for_statement,
         $.undrop_statement,
+        $.call_statement,
       ),
     ),
 
@@ -140,6 +142,7 @@ export default grammar(base, {
         $.create_stage,
         $.create_warehouse_statement,
         $.create_file_format_statement,
+        $.create_external_table,
       ),
     ),
 
@@ -161,6 +164,32 @@ export default grammar(base, {
         $.alter_table_masking,
         $.alter_stage,
         $.alter_warehouse_statement,
+        $.alter_table_cluster,
+      ),
+    ),
+
+    // ── CALL: invoke a stored procedure ─────────────────────────────────────
+    call_statement: $ => seq(
+      $.keyword_call,
+      field('procedure', $.object_reference),
+      paren_list($._expression),
+    ),
+
+    // ── INSERT: add Snowflake INSERT OVERWRITE INTO ─────────────────────────
+    insert: $ => seq(
+      $.keyword_insert,
+      optional($.keyword_overwrite),
+      optional($.keyword_into),
+      $.object_reference,
+      optional(
+        seq(
+          $.keyword_as,
+          field('alias', $.identifier)
+        ),
+      ),
+      choice(
+        $._insert_values,
+        $._set_values,
       ),
     ),
 
@@ -168,7 +197,7 @@ export default grammar(base, {
     create_table: $ => prec.left(
       seq(
         $.keyword_create,
-        optional(choice($._temporary, $.keyword_unlogged, $.keyword_external)),
+        optional(choice($._temporary, $.keyword_unlogged)),
         $.keyword_table,
         optional($._if_not_exists),
         $.object_reference,
@@ -350,6 +379,11 @@ export default grammar(base, {
     keyword_encryption:     _ => token(prec(1, make_keyword("encryption"))),
     keyword_pattern:        _ => token(prec(1, make_keyword("pattern"))),
     keyword_list:           _ => token(prec(1, make_keyword("list"))),
+    keyword_call:           _ => token(prec(1, make_keyword("call"))),
+    keyword_overwrite:      _ => token(prec(1, make_keyword("overwrite"))),
+    keyword_location:       _ => token(prec(1, make_keyword("location"))),
+    keyword_cluster:        _ => token(prec(1, make_keyword("cluster"))),
+    keyword_clustering:     _ => token(prec(1, make_keyword("clustering"))),
 
     // SHOW / DESCRIBE keywords
     keyword_show:           _ => token(prec(1, make_keyword("show"))),

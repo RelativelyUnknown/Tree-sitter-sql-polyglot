@@ -1,3 +1,5 @@
+import { paren_list } from '../../grammar/helpers.js';
+
 export default {
 
   // ALTER SESSION SET param = value
@@ -36,6 +38,18 @@ export default {
     $.keyword_masking,
     $.keyword_policy,
     $.object_reference,
+  ),
+
+  // ALTER TABLE [IF EXISTS] name CLUSTER BY (exprs) | DROP CLUSTERING KEY
+  alter_table_cluster: $ => seq(
+    $.keyword_alter,
+    $.keyword_table,
+    optional($._if_exists),
+    $.object_reference,
+    choice(
+      seq($.keyword_cluster, $.keyword_by, paren_list($._expression, true)),
+      seq($.keyword_drop, $.keyword_clustering, $.keyword_key),
+    ),
   ),
 
 };

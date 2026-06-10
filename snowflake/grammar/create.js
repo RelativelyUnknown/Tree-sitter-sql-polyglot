@@ -175,4 +175,41 @@ export default {
     ),
   ),
 
+  // CREATE [OR REPLACE] EXTERNAL TABLE [IF NOT EXISTS] name (columns)
+  //   [WITH] LOCATION = @stage [FILE_FORMAT = (props)] [PATTERN = 'regex']
+  //   [PARTITION BY (cols)]
+  create_external_table: $ => prec.left(seq(
+    $.keyword_create,
+    optional($._or_replace),
+    $.keyword_external,
+    $.keyword_table,
+    optional($._if_not_exists),
+    $.object_reference,
+    optional(paren_list($.external_table_column, true)),
+    repeat(
+      choice(
+        seq(optional($.keyword_with), $.keyword_location, '=', $.stage_ref),
+        seq(
+          $.keyword_file_format,
+          '=',
+          seq('(', repeat1($.file_format_property), ')'),
+        ),
+        seq($.keyword_pattern, '=', alias($._literal_string, $.literal)),
+        seq($.keyword_partition, $.keyword_by, paren_list($.identifier, true)),
+      ),
+    ),
+  )),
+
+  // col TYPE [AS (expr)] — external table virtual column projection
+  external_table_column: $ => seq(
+    field('name', $.identifier),
+    field('type', $._type),
+    optional(
+      seq(
+        $.keyword_as,
+        seq('(', $._expression, ')'),
+      ),
+    ),
+  ),
+
 };
