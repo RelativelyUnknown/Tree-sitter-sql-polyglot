@@ -69,6 +69,7 @@ export default grammar(hive, {
         $._ddl_statement,
         $._dml_write,
         optional_parenthesis($._dml_read),
+        $._transaction_statement,
         $.block,
         $.while_statement,
         $.if_statement,

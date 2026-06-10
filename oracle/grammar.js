@@ -110,6 +110,7 @@ export default grammar(base, {
         $._ddl_statement,
         $._dml_write,
         optional_parenthesis($._dml_read),
+        $._transaction_statement,
         $.compound_statement,
         $.forall_statement,
         $.execute_immediate_statement,

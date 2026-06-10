@@ -171,6 +171,7 @@ export default grammar(base, {
         $._ddl_statement,
         $._dml_write,
         optional_parenthesis($._dml_read),
+        $._transaction_statement,
         // Flink EXECUTE select / plan / statement_set
         $.execute_statement,
         $.call_statement,

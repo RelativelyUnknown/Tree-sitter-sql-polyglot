@@ -58,6 +58,7 @@ export default grammar(base, {
         $._ddl_statement,
         $._dml_write,
         optional_parenthesis($._dml_read),
+        $._transaction_statement,
         // T-SQL procedural constructs
         $.declare_statement,
         $.if_statement,
