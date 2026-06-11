@@ -89,6 +89,7 @@ export default grammar(base, {
       $.execute_immediate_statement,
       $.execute_task,
       $.copy_into,
+      $.use_statement,
       $.use_secondary_roles,
       $.list_stage_statement,
       $.show_statement,
