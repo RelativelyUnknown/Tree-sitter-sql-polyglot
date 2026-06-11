@@ -7,154 +7,101 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - 'main'
+
+# Cancel superseded runs of the same PR/branch — a new push obsoletes the
+# previous run, so don't pay for both.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  # ── Corpus + Rust + Python ──────────────────────────────────────────────────
-  # Grammar corpus tests are OS-independent. Run them once on ubuntu rather
-  # than in a 3-OS matrix to avoid paying 3x the cost for identical results.
+  # ── Corpus tests, sharded by dialect group ──────────────────────────────────
+  # Grammar corpus tests are OS-independent, so they run on ubuntu only.
+  # The 19 grammars are split into shards that run in parallel; each shard
+  # generates and tests only its own dialects. Dialects that extend another
+  # grammar (spark→hive, databricks→spark, mariadb→mysql, athena→trino) are
+  # kept in the same shard as their parents.
+  #
+  # Caching strategy: the exact key hashes every grammar source, but
+  # restore-keys falls back to the shard's most recent cache on a miss.
+  # scripts/generate.js then re-generates only the grammars whose own hash
+  # (including ancestor-chain files) actually changed — so a postgres-only PR
+  # regenerates 1 parser, not 19. ~/.cache/tree-sitter holds the compiled
+  # test libraries so `tree-sitter test` skips recompiling unchanged parsers.
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: base
+            dialects: ""
+          - shard: hive-chain
+            dialects: "hive spark databricks oracle db2"
+          - shard: pg-mysql
+            dialects: "postgres mysql mariadb sqlite duckdb"
+          - shard: warehouse
+            dialects: "snowflake bigquery tsql clickhouse flink"
+          - shard: trino-chain
+            dialects: "trino athena redshift"
     steps:
       - uses: actions/checkout@v4
       - uses: tree-sitter/setup-action@v2
         with:
           install-lib: false
 
-      # Cache generated parsers + hash state keyed on all grammar source files.
-      # src/tree_sitter/ headers are included so the test_node job can compile
-      # the native binding without needing to re-run tree-sitter generate.
       - uses: actions/cache@v4
         with:
           path: |
             src/parser.c
             src/node-types.json
             src/tree_sitter/
-            spark/src/parser.c
-            spark/src/node-types.json
-            databricks/src/parser.c
-            databricks/src/node-types.json
-            postgres/src/parser.c
-            postgres/src/node-types.json
-            mysql/src/parser.c
-            mysql/src/node-types.json
-            snowflake/src/parser.c
-            snowflake/src/node-types.json
-            mariadb/src/parser.c
-            mariadb/src/node-types.json
-            sqlite/src/parser.c
-            sqlite/src/node-types.json
-            hive/src/parser.c
-            hive/src/node-types.json
-            oracle/src/parser.c
-            oracle/src/node-types.json
-            db2/src/parser.c
-            db2/src/node-types.json
-            duckdb/src/parser.c
-            duckdb/src/node-types.json
-            trino/src/parser.c
-            trino/src/node-types.json
-            athena/src/parser.c
-            athena/src/node-types.json
-            redshift/src/parser.c
-            redshift/src/node-types.json
-            bigquery/src/parser.c
-            bigquery/src/node-types.json
-            tsql/src/parser.c
-            tsql/src/node-types.json
-            clickhouse/src/parser.c
-            clickhouse/src/node-types.json
-            flink/src/parser.c
-            flink/src/node-types.json
+            */src/parser.c
+            */src/node-types.json
+            */src/tree_sitter/
             .grammar-cache/
-          key: parsers-${{ hashFiles('grammar.js', 'grammar/**', 'spark/grammar.js', 'spark/grammar/**', 'databricks/grammar.js', 'databricks/grammar/**', 'postgres/grammar.js', 'postgres/grammar/**', 'mysql/grammar.js', 'mysql/grammar/**', 'snowflake/grammar.js', 'snowflake/grammar/**', 'mariadb/grammar.js', 'mariadb/grammar/**', 'sqlite/grammar.js', 'sqlite/grammar/**', 'hive/grammar.js', 'hive/grammar/**', 'oracle/grammar.js', 'oracle/grammar/**', 'db2/grammar.js', 'db2/grammar/**', 'duckdb/grammar.js', 'duckdb/grammar/**', 'trino/grammar.js', 'trino/grammar/**', 'athena/grammar.js', 'athena/grammar/**', 'redshift/grammar.js', 'redshift/grammar/**', 'bigquery/grammar.js', 'bigquery/grammar/**', 'tsql/grammar.js', 'tsql/grammar/**', 'clickhouse/grammar.js', 'clickhouse/grammar/**', 'flink/grammar.js', 'flink/grammar/**') }}
+            ~/.cache/tree-sitter/
+          key: parsers-${{ matrix.shard }}-${{ hashFiles('grammar.js', 'grammar/**', '*/grammar.js', '*/grammar/**') }}
+          restore-keys: |
+            parsers-${{ matrix.shard }}-
 
-      # Generate in dependency order; independent dialects run in parallel.
-      # base → [spark | postgres | mysql | snowflake] → databricks
+      # generate.js is hash-cached per grammar (including ancestor chains), so
+      # on a warm restore only the changed grammars are regenerated.
       - name: Generate parsers
         run: |
-          node scripts/generate.js
-          node scripts/generate.js spark &
-          node scripts/generate.js postgres &
-          node scripts/generate.js mysql &
-          node scripts/generate.js snowflake &
-          wait
-          node scripts/generate.js databricks
-          node scripts/generate.js mariadb
-          node scripts/generate.js sqlite &
-          node scripts/generate.js hive &
-          node scripts/generate.js oracle &
-          node scripts/generate.js db2 &
-          node scripts/generate.js duckdb &
-          node scripts/generate.js bigquery &
-          node scripts/generate.js tsql &
-          wait
-          node scripts/generate.js trino
-          node scripts/generate.js athena
-          node scripts/generate.js redshift
-          node scripts/generate.js clickhouse
-          node scripts/generate.js flink
+          if [ -z "${{ matrix.dialects }}" ]; then
+            node scripts/generate.js
+          else
+            for d in ${{ matrix.dialects }}; do
+              node scripts/generate.js "$d"
+            done
+          fi
+
+      # Rust build cache for the base parser-test-action (cargo test of the
+      # Rust binding is the slowest part of the base shard).
+      - uses: Swatinem/rust-cache@v2
+        if: matrix.shard == 'base'
 
       - name: Run tests (base SQL)
+        if: matrix.shard == 'base'
         uses: tree-sitter/parser-test-action@v3
         with:
           test-rust: true
           test-node: false
           test-python: true
 
-      - name: Run tests (Spark SQL)
-        run: cd spark && tree-sitter test
+      - name: Keyword/highlights sync check
+        if: matrix.shard == 'base'
+        run: scripts/test-keywords.sh
 
-      - name: Run tests (Databricks SQL)
-        run: cd databricks && tree-sitter test
-
-      - name: Run tests (PostgreSQL)
-        run: cd postgres && tree-sitter test
-
-      - name: Run tests (MySQL)
-        run: cd mysql && tree-sitter test
-
-      - name: Run tests (Snowflake)
-        run: cd snowflake && tree-sitter test
-
-      - name: Run tests (MariaDB)
-        run: cd mariadb && tree-sitter test
-
-      - name: Run tests (SQLite)
-        run: cd sqlite && tree-sitter test
-
-      - name: Run tests (Apache Hive)
-        run: cd hive && tree-sitter test
-
-      - name: Run tests (Oracle/PL-SQL)
-        run: cd oracle && tree-sitter test
-
-      - name: Run tests (IBM Db2)
-        run: cd db2 && tree-sitter test
-
-      - name: Run tests (DuckDB)
-        run: cd duckdb && tree-sitter test
-
-      - name: Run tests (Trino SQL)
-        run: cd trino && tree-sitter test
-
-      - name: Run tests (Athena SQL)
-        run: cd athena && tree-sitter test
-
-      - name: Run tests (Redshift SQL)
-        run: cd redshift && tree-sitter test
-
-      - name: Run tests (BigQuery)
-        run: cd bigquery && tree-sitter test
-
-      - name: Run tests (T-SQL)
-        run: cd tsql && tree-sitter test
-
-      - name: Run tests (ClickHouse)
-        run: cd clickhouse && tree-sitter test
-
-      - name: Run tests (Apache Flink)
-        run: cd flink && tree-sitter test
-
-      - run: scripts/test-keywords.sh
+      - name: Run dialect corpus tests
+        if: matrix.dialects != ''
+        run: |
+          for d in ${{ matrix.dialects }}; do
+            echo "::group::tree-sitter test ($d)"
+            (cd "$d" && tree-sitter test)
+            echo "::endgroup::"
+          done
 
   # ── Node native binding (OS matrix) ─────────────────────────────────────────
   # node-gyp compiles parser.c to a native .node addon. The result is
@@ -171,10 +118,11 @@ jobs:
         with:
           node-version: "22"
 
-      # Re-use the same parser cache so generation is skipped on cache hit.
-      # src/tree_sitter/ headers must be cached alongside parser.c: they are
-      # generated together by tree-sitter generate and required by node-gyp to
-      # compile binding.cc (include_dirs: ["src"] → #include "tree_sitter/parser.h").
+      # Re-use the base shard's parser cache so generation is skipped on a
+      # warm restore. src/tree_sitter/ headers must be cached alongside
+      # parser.c: they are generated together by tree-sitter generate and
+      # required by node-gyp to compile binding.cc
+      # (include_dirs: ["src"] → #include "tree_sitter/parser.h").
       - uses: actions/cache@v4
         with:
           path: |
@@ -182,7 +130,9 @@ jobs:
             src/node-types.json
             src/tree_sitter/
             .grammar-cache/
-          key: parsers-${{ hashFiles('grammar.js', 'grammar/**', 'spark/grammar.js', 'spark/grammar/**', 'databricks/grammar.js', 'databricks/grammar/**', 'postgres/grammar.js', 'postgres/grammar/**', 'mysql/grammar.js', 'mysql/grammar/**', 'snowflake/grammar.js', 'snowflake/grammar/**', 'mariadb/grammar.js', 'mariadb/grammar/**', 'sqlite/grammar.js', 'sqlite/grammar/**', 'hive/grammar.js', 'hive/grammar/**', 'oracle/grammar.js', 'oracle/grammar/**', 'db2/grammar.js', 'db2/grammar/**', 'duckdb/grammar.js', 'duckdb/grammar/**', 'trino/grammar.js', 'trino/grammar/**', 'athena/grammar.js', 'athena/grammar/**', 'redshift/grammar.js', 'redshift/grammar/**', 'bigquery/grammar.js', 'bigquery/grammar/**', 'tsql/grammar.js', 'tsql/grammar/**', 'clickhouse/grammar.js', 'clickhouse/grammar/**', 'flink/grammar.js', 'flink/grammar/**') }}
+          key: parsers-node-${{ runner.os }}-${{ hashFiles('grammar.js', 'grammar/**') }}
+          restore-keys: |
+            parsers-node-${{ runner.os }}-
 
       # npm ci runs the install hook: node scripts/generate.js && node-gyp-build
       # generate.js skips regeneration on cache hit; node-gyp-build compiles the
