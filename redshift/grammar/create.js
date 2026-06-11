@@ -232,6 +232,18 @@ export default {
         choice($.keyword_unrestricted, $.keyword_restricted)),
   ),
 
+  // DROP USER|GROUP|ROLE [IF EXISTS] name [, name …]  (Redshift allows a list)
+  drop_role: $ => seq(
+    $.keyword_drop,
+    choice(
+      $.keyword_group,
+      $.keyword_role,
+      $.keyword_user,
+    ),
+    optional($._if_exists),
+    comma_list($.identifier, true),
+  ),
+
   // ALTER GROUP name ADD|DROP USER name [, name]  (unique Redshift form)
   alter_group_statement: $ => seq(
     $.keyword_alter,

@@ -46,19 +46,28 @@ if (!existsSync(grammarPath)) {
 }
 
 // Compute a hash covering the grammar entry point, the shared grammar/ rules,
-// and (for dialects) the dialect's own grammar/ rules plus any parent entry
-// files (e.g. spark/grammar.js for databricks, grammar.js for all dialects).
+// and (for dialects) the dialect's own grammar/ rules plus the full ancestor
+// chain (entry file AND grammar/ rule dir of every parent grammar).
 const sharedHash = hashDir(join(ROOT, 'grammar'));
 const dialectHash = dialect ? hashDir(join(grammarDir, 'grammar')) : '';
 const entryHash = readFileSync(grammarPath, 'utf8');
 
-// Include parent grammar entry files so that changes to grammar.js (base)
-// or spark/grammar.js (for databricks) invalidate the dialect hash.
+// Ancestor chains: a child grammar must regenerate when ANY file in a parent
+// grammar changes — both the parent's grammar.js entry point and its
+// grammar/*.js rule modules (a hive/grammar/ change flows into spark and
+// databricks via grammar(base, …) composition at generation time).
+const PARENTS = {
+  spark: ['hive'],
+  databricks: ['spark', 'hive'],
+  mariadb: ['mysql'],
+  athena: ['trino'],
+};
+
 const parentHashes = [];
-if (dialect) parentHashes.push(readFileSync(join(ROOT, 'grammar.js'), 'utf8'));
-if (dialect === 'databricks') parentHashes.push(readFileSync(join(ROOT, 'spark', 'grammar.js'), 'utf8'));
-if (dialect === 'mariadb') parentHashes.push(readFileSync(join(ROOT, 'mysql', 'grammar.js'), 'utf8'));
-// hive extends base directly — no extra parent hash needed
+for (const parent of PARENTS[dialect] || []) {
+  parentHashes.push(readFileSync(join(ROOT, parent, 'grammar.js'), 'utf8'));
+  parentHashes.push(hashDir(join(ROOT, parent, 'grammar')));
+}
 
 const currentHash = [sharedHash, dialectHash, entryHash, ...parentHashes].join('|');
 

@@ -49,3 +49,11 @@
   (keyword_smallmoney)
   (keyword_uniqueidentifier)
 ] @type.builtin
+
+; USE, SYNONYM, LOGIN/USER security DDL (#103, #105, #106)
+[
+  (keyword_synonym)
+  (keyword_login)
+  (keyword_must_change)
+  (keyword_off)
+] @keyword

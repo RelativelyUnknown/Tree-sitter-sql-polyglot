@@ -64,6 +64,7 @@ export default grammar(base, {
         $.create_settings_profile_statement,
         $.backup_statement,
         $.restore_statement,
+        $.exchange_tables_statement,
       ),
     ),
 
@@ -140,6 +141,9 @@ export default grammar(base, {
     keyword_profile:       _ => token(prec(1, make_keyword("profile"))),
     keyword_backup:        _ => token(prec(1, make_keyword("backup"))),
     keyword_restore:       _ => token(prec(1, make_keyword("restore"))),
+    keyword_exchange:      _ => token(prec(1, make_keyword("exchange"))),
+    keyword_unfreeze:      _ => token(prec(1, make_keyword("unfreeze"))),
+    keyword_name:          _ => token(prec(1, make_keyword("name"))),
     keyword_host:          _ => token(prec(1, make_keyword("host"))),
     keyword_ip:            _ => token(prec(1, make_keyword("ip"))),
     keyword_async:         _ => token(prec(1, make_keyword("async"))),
