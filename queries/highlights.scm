@@ -238,6 +238,7 @@
 [
   (keyword_row)
   (keyword_comment)
+  (keyword_extension)
   (keyword_analyze)
   (keyword_explain)
   (keyword_verbose)

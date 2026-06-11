@@ -72,6 +72,7 @@ export default grammar(base, {
       // Config (replaces base set_statement in Flink context)
       $.flink_set_statement,
       $.flink_reset_statement,
+      $.comment_statement,
     ),
 
     // ── CREATE dispatcher ─────────────────────────────────────────────────────
