@@ -14,6 +14,12 @@ All notable changes to this project will be documented in this file. See [commit
 - **Hive:** `SELECT TRANSFORM(…) USING 'script' AS (…)` (#96); `SHOW PARTITIONS/TABLES/DATABASES/FUNCTIONS`, `DESCRIBE [FORMATTED|EXTENDED]`, `ALTER TABLE … EXCHANGE PARTITION` (#97)
 - **ClickHouse:** `BACKUP` / `RESTORE` (#98)
 - **Db2:** cursor lifecycle (`DECLARE … CURSOR [WITH HOLD] FOR`, `OPEN`, `FETCH … INTO`, `CLOSE`) and `FOR … AS … DO … END FOR` loop (#99)
+- **MySQL:** `FOR UPDATE/SHARE … [NOWAIT|SKIP LOCKED]` and `LOCK IN SHARE MODE` (#101); `SET GLOBAL/SESSION/PERSIST[_ONLY]`, `SET NAMES`, `SET CHARACTER SET` (#102); `CREATE/ALTER/DROP/RENAME USER` with `'user'@'host'` accounts (#106); `REPAIR/CHECK/ANALYZE TABLE` incl. histogram management (#107)
+- **Oracle:** `FOR UPDATE [OF …] [NOWAIT|WAIT n|SKIP LOCKED]` (#101); `ANALYZE TABLE/INDEX` (#107); `MODEL` clause (#108); `ALTER SYSTEM`/`ALTER SESSION`, `CREATE/DROP DIRECTORY`, `GRANT READ/WRITE ON DIRECTORY` (#111)
+- **T-SQL:** `USE database` (#103); `CREATE/DROP SYNONYM` (#105); `CREATE/ALTER/DROP LOGIN` and `USER` security DDL (#106)
+- **Snowflake:** `USE DATABASE/SCHEMA/WAREHOUSE/ROLE` (#104)
+- **Redshift:** multi-name `DROP USER`; full user-management corpus coverage (#109)
+- **ClickHouse:** `EXCHANGE TABLES … AND …`; `ALTER TABLE FREEZE/UNFREEZE [PARTITION …] [WITH NAME …]` (#110)
 - **Base (ANSI):** `GRANT`/`REVOKE` (DCL); `GROUP BY ROLLUP`/`CUBE`/`GROUPING SETS` and `WITH ROLLUP`/`CUBE`; `FETCH {FIRST|NEXT} n {ROW|ROWS} {ONLY|WITH TIES}`; `WITHIN GROUP (ORDER BY …)` ordered-set aggregates; ANSI `TRIM([{BOTH|LEADING|TRAILING} [char] FROM] str)`; interval qualifiers (`INTERVAL '1' DAY`)
 - **Spark:** `QUALIFY`; `PIVOT`/`UNPIVOT`; query-level `CLUSTER`/`DISTRIBUTE`/`SORT BY`; `CREATE TABLE … USING/OPTIONS`
 - **Hive:** `LOAD DATA [LOCAL] INPATH`; `INSERT OVERWRITE [LOCAL] DIRECTORY`; multi-table `INSERT`; `CLUSTER`/`DISTRIBUTE`/`SORT BY`
