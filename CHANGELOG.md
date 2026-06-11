@@ -20,6 +20,13 @@ All notable changes to this project will be documented in this file. See [commit
 - **Snowflake:** `USE DATABASE/SCHEMA/WAREHOUSE/ROLE` (#104)
 - **Redshift:** multi-name `DROP USER`; full user-management corpus coverage (#109)
 - **ClickHouse:** `EXCHANGE TABLES … AND …`; `ALTER TABLE FREEZE/UNFREEZE [PARTITION …] [WITH NAME …]` (#110)
+- **All dialects:** `COMMENT ON` wired into the base DDL dispatch and every dialect override — previously unreachable in 14 dialects (#126)
+- **Trino/Athena:** `SELECT … FOR UPDATE` (#113)
+- **Snowflake:** `RETURNING` on INSERT/UPDATE/DELETE (#116)
+- **BigQuery:** `THEN RETURN` on INSERT/UPDATE/DELETE (#117)
+- **DuckDB:** `RETURNING` on INSERT/UPDATE/DELETE (#118)
+- **ClickHouse:** `INSERT … RETURNING` (#119)
+- **Db2:** `SELECT … FROM FINAL/NEW/OLD TABLE (dml)` data-change-table-reference (#123)
 - **Base (ANSI):** `GRANT`/`REVOKE` (DCL); `GROUP BY ROLLUP`/`CUBE`/`GROUPING SETS` and `WITH ROLLUP`/`CUBE`; `FETCH {FIRST|NEXT} n {ROW|ROWS} {ONLY|WITH TIES}`; `WITHIN GROUP (ORDER BY …)` ordered-set aggregates; ANSI `TRIM([{BOTH|LEADING|TRAILING} [char] FROM] str)`; interval qualifiers (`INTERVAL '1' DAY`)
 - **Spark:** `QUALIFY`; `PIVOT`/`UNPIVOT`; query-level `CLUSTER`/`DISTRIBUTE`/`SORT BY`; `CREATE TABLE … USING/OPTIONS`
 - **Hive:** `LOAD DATA [LOCAL] INPATH`; `INSERT OVERWRITE [LOCAL] DIRECTORY`; multi-table `INSERT`; `CLUSTER`/`DISTRIBUTE`/`SORT BY`
