@@ -10,6 +10,7 @@ import oracle_procedural_rules from './grammar/procedural.js';
 import oracle_type_rules from './grammar/types.js';
 import oracle_hint_rules from './grammar/hints.js';
 import oracle_partition_rules from './grammar/partition.js';
+import oracle_admin_rules from './grammar/admin.js';
 import oracle_ddl_ext_rules from './grammar/ddl_ext.js';
 
 export default grammar(base, {
@@ -72,6 +73,7 @@ export default grammar(base, {
         $.create_package_body,
         $.create_synonym_statement,
         $.create_database_link_statement,
+        $.create_directory_statement,
         prec.left(seq(
           $.create_schema,
           repeat($._create_statement),
@@ -95,6 +97,7 @@ export default grammar(base, {
         $.drop_procedure,
         $.drop_package,
         $.drop_synonym_statement,
+        $.drop_directory_statement,
       ),
     ),
 
@@ -130,6 +133,9 @@ export default grammar(base, {
         $.assignment_statement,
         $.pragma_statement,
         $.pipe_row_statement,
+        $.alter_session_statement,
+        $.alter_system_statement,
+        $.analyze_statement,
       ),
     ),
 
@@ -150,6 +156,7 @@ export default grammar(base, {
       optional($.group_by),
       optional($.having),
       optional($.window_clause),
+      optional($.model_clause),
       optional($.order_siblings_by),
       optional($.order_by),
       optional($.limit),
@@ -295,6 +302,40 @@ export default grammar(base, {
     keyword_exchange:       _ => token(prec(1, make_keyword("exchange"))),
     keyword_at:             _ => token(prec(1, make_keyword("at"))),
 
+    // Locking / MODEL / ALTER SYSTEM/SESSION / DIRECTORY / ANALYZE (#101, #107, #108, #111)
+    keyword_skip:           _ => token(prec(1, make_keyword("skip"))),
+    keyword_locked:         _ => token(prec(1, make_keyword("locked"))),
+    keyword_model:          _ => token(prec(1, make_keyword("model"))),
+    keyword_nav:            _ => token(prec(1, make_keyword("nav"))),
+    keyword_keep:           _ => token(prec(1, make_keyword("keep"))),
+    keyword_updated:        _ => token(prec(1, make_keyword("updated"))),
+    keyword_dimension:      _ => token(prec(1, make_keyword("dimension"))),
+    keyword_measures:       _ => token(prec(1, make_keyword("measures"))),
+    keyword_rules:          _ => token(prec(1, make_keyword("rules"))),
+    keyword_upsert:         _ => token(prec(1, make_keyword("upsert"))),
+    keyword_sequential:     _ => token(prec(1, make_keyword("sequential"))),
+    keyword_automatic:      _ => token(prec(1, make_keyword("automatic"))),
+    keyword_iterate:        _ => token(prec(1, make_keyword("iterate"))),
+    keyword_system:         _ => token(prec(1, make_keyword("system"))),
+    keyword_scope:          _ => token(prec(1, make_keyword("scope"))),
+    keyword_sid:            _ => token(prec(1, make_keyword("sid"))),
+    keyword_memory:         _ => token(prec(1, make_keyword("memory"))),
+    keyword_spfile:         _ => token(prec(1, make_keyword("spfile"))),
+    keyword_flush:          _ => token(prec(1, make_keyword("flush"))),
+    keyword_kill:           _ => token(prec(1, make_keyword("kill"))),
+    keyword_checkpoint:     _ => token(prec(1, make_keyword("checkpoint"))),
+    keyword_switch:         _ => token(prec(1, make_keyword("switch"))),
+    keyword_logfile:        _ => token(prec(1, make_keyword("logfile"))),
+    keyword_archive:        _ => token(prec(1, make_keyword("archive"))),
+    keyword_log:            _ => token(prec(1, make_keyword("log"))),
+    keyword_directory:      _ => token(prec(1, make_keyword("directory"))),
+    keyword_compute:        _ => token(prec(1, make_keyword("compute"))),
+    keyword_estimate:       _ => token(prec(1, make_keyword("estimate"))),
+    keyword_validate:       _ => token(prec(1, make_keyword("validate"))),
+    keyword_structure:      _ => token(prec(1, make_keyword("structure"))),
+    keyword_sample:         _ => token(prec(1, make_keyword("sample"))),
+    keyword_statistics:     _ => token(prec(1, make_keyword("statistics"))),
+
     // Override create_table to add optional partition clause
     create_table: $ => prec.left(seq(
       $.keyword_create,
@@ -374,6 +415,7 @@ export default grammar(base, {
     ...oracle_hint_rules,
     ...oracle_partition_rules,
     ...oracle_ddl_ext_rules,
+    ...oracle_admin_rules,
 
   },
 });
