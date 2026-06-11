@@ -6,6 +6,7 @@ import mysql_load_data_rules from './grammar/load_data.js';
 import mysql_events_rules from './grammar/events.js';
 import mysql_procedural_rules from './grammar/procedural.js';
 import mysql_partition_rules from './grammar/partition.js';
+import mysql_admin_rules from './grammar/admin.js';
 
 export default grammar(base, {
   name: 'mysql_sql',
@@ -22,7 +23,7 @@ export default grammar(base, {
     [$.list, $.cube_element],
     [$.interval],
     [$._function_return, $.return_statement],
-    [$._qualified_field, $.set_variable_statement],
+    [$._qualified_field, $.set_assignment],
     [$.mysql_alter_partition],
     [$.declare_statement, $.declare_cursor_statement, $.declare_condition_statement, $.declare_handler_statement],
     [$.statement, $.declare_handler_statement],
@@ -82,6 +83,13 @@ export default grammar(base, {
       $.describe_statement,
       $.grant_statement,
       $.revoke_statement,
+      $.create_user_statement,
+      $.alter_user_statement,
+      $.drop_user_statement,
+      $.rename_user_statement,
+      $.repair_table_statement,
+      $.check_table_statement,
+      $.analyze_table_statement,
     ),
 
     _dml_write: $ => seq(
@@ -420,6 +428,32 @@ export default grammar(base, {
     ),
 
     // MySQL-specific keywords (not ANSI) — also defined in grammar/keywords.js for extraction
+    // Locking / SET scopes / user management / maintenance (#101, #102, #106, #107)
+    keyword_share:           _ => token(prec(1, make_keyword("share"))),
+    keyword_lock:            _ => token(prec(1, make_keyword("lock"))),
+    keyword_locked:          _ => token(prec(1, make_keyword("locked"))),
+    keyword_skip:            _ => token(prec(1, make_keyword("skip"))),
+    keyword_mode:            _ => token(prec(1, make_keyword("mode"))),
+    keyword_global:          _ => token(prec(1, make_keyword("global"))),
+    keyword_persist:         _ => token(prec(1, make_keyword("persist"))),
+    keyword_persist_only:    _ => token(prec(1, /[Pp][Ee][Rr][Ss][Ii][Ss][Tt]_[Oo][Nn][Ll][Yy]/)),
+    keyword_names:           _ => token(prec(1, make_keyword("names"))),
+    keyword_expire:          _ => token(prec(1, make_keyword("expire"))),
+    keyword_account:         _ => token(prec(1, make_keyword("account"))),
+    keyword_unlock:          _ => token(prec(1, make_keyword("unlock"))),
+    keyword_identified:      _ => token(prec(1, make_keyword("identified"))),
+    keyword_quick:           _ => token(prec(1, make_keyword("quick"))),
+    keyword_extended:        _ => token(prec(1, make_keyword("extended"))),
+    keyword_fast:            _ => token(prec(1, make_keyword("fast"))),
+    keyword_medium:          _ => token(prec(1, make_keyword("medium"))),
+    keyword_changed:         _ => token(prec(1, make_keyword("changed"))),
+    keyword_upgrade:         _ => token(prec(1, make_keyword("upgrade"))),
+    keyword_histogram:       _ => token(prec(1, make_keyword("histogram"))),
+    keyword_buckets:         _ => token(prec(1, make_keyword("buckets"))),
+    keyword_repair:          _ => token(prec(1, make_keyword("repair"))),
+    keyword_use_frm:         _ => token(prec(1, /[Uu][Ss][Ee]_[Ff][Rr][Mm]/)),
+    keyword_no_write_to_binlog: _ => token(prec(1, /[Nn][Oo]_[Ww][Rr][Ii][Tt][Ee]_[Tt][Oo]_[Bb][Ii][Nn][Ll][Oo][Gg]/)),
+
     keyword_auto_increment: _ => token(prec(1, make_keyword("auto_increment"))),
     keyword_stored:         _ => token(prec(1, make_keyword("stored"))),
     keyword_virtual:        _ => token(prec(1, make_keyword("virtual"))),
@@ -574,6 +608,7 @@ export default grammar(base, {
     ...mysql_events_rules,
     ...mysql_procedural_rules,
     ...mysql_partition_rules,
+    ...mysql_admin_rules,
 
   },
 });

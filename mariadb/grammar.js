@@ -21,7 +21,7 @@ export default grammar(mysql, {
     [$.list, $.cube_element],
     [$.interval],
     [$._function_return, $.return_statement],
-    [$._qualified_field, $.set_variable_statement],
+    [$._qualified_field, $.set_assignment],
     [$.mysql_alter_partition],
     [$.declare_statement, $.declare_cursor_statement, $.declare_condition_statement, $.declare_handler_statement],
     [$.statement, $.declare_handler_statement],
