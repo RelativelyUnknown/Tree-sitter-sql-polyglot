@@ -79,3 +79,10 @@
   (keyword_backup)
   (keyword_restore)
 ] @keyword
+
+; EXCHANGE TABLES and FREEZE/UNFREEZE (#110)
+[
+  (keyword_exchange)
+  (keyword_unfreeze)
+  (keyword_name)
+] @keyword

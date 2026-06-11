@@ -47,11 +47,34 @@ export default {
     field('partition', $._expression),
   ),
 
-  // ALTER TABLE t {DROP|DETACH|ATTACH|FREEZE} PARTITION expr
-  alter_partition: $ => seq(
-    choice($.keyword_drop, $.keyword_detach, $.keyword_attach, $.keyword_freeze),
-    $.keyword_partition,
-    field('partition', $._expression),
+  // ALTER TABLE t {DROP|DETACH|ATTACH} PARTITION expr
+  // ALTER TABLE t FREEZE [PARTITION expr] [WITH NAME 'backup']
+  // ALTER TABLE t UNFREEZE [PARTITION expr] WITH NAME 'backup'
+  alter_partition: $ => prec.right(choice(
+    seq(
+      choice($.keyword_drop, $.keyword_detach, $.keyword_attach),
+      $.keyword_partition,
+      field('partition', $._expression),
+    ),
+    seq(
+      choice($.keyword_freeze, $.keyword_unfreeze),
+      optional(seq($.keyword_partition, field('partition', $._expression))),
+      optional(seq(
+        $.keyword_with,
+        $.keyword_name,
+        field('name', alias($._literal_string, $.literal)),
+      )),
+    ),
+  )),
+
+  // EXCHANGE TABLES t1 AND t2 [ON CLUSTER c] — atomic table swap
+  exchange_tables_statement: $ => seq(
+    $.keyword_exchange,
+    $.keyword_tables,
+    $.object_reference,
+    $.keyword_and,
+    $.object_reference,
+    optional($.on_cluster),
   ),
 
   // OPTIMIZE TABLE t [ON CLUSTER c] [PARTITION expr] [FINAL] [DEDUPLICATE [BY expr]]
