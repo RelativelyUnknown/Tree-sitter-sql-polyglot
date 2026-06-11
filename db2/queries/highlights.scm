@@ -32,3 +32,8 @@
   (keyword_close)
   (keyword_hold)
 ] @keyword
+
+; Data-change-table-reference (#123)
+[
+  (keyword_final)
+] @keyword
