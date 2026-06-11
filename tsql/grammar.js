@@ -6,6 +6,7 @@ import tsql_hint_rules from './grammar/hints.js';
 import tsql_dml_rules from './grammar/dml.js';
 import tsql_procedural_rules from './grammar/procedural.js';
 import tsql_synapse_rules from './grammar/synapse.js';
+import tsql_security_rules from './grammar/security.js';
 
 export default grammar(base, {
   name: 'tsql',
@@ -110,6 +111,15 @@ export default grammar(base, {
       $.copy_into_statement,
       $.grant_statement,
       $.revoke_statement,
+      $.use_statement,
+      $.create_synonym_statement,
+      $.drop_synonym_statement,
+      $.create_login_statement,
+      $.alter_login_statement,
+      $.drop_login_statement,
+      $.create_user_statement,
+      $.alter_user_statement,
+      $.drop_user_statement,
     ),
 
     // ── CREATE dispatch ───────────────────────────────────────────────────────
@@ -270,6 +280,10 @@ export default grammar(base, {
     keyword_delay:            _ => token(prec(1, make_keyword("delay"))),
     keyword_timeout:          _ => token(prec(1, make_keyword("timeout"))),
     keyword_option:           _ => token(prec(1, make_keyword("option"))),
+    keyword_synonym:          _ => token(prec(1, make_keyword("synonym"))),
+    keyword_off:              _ => token(prec(1, make_keyword("off"))),
+    keyword_login:            _ => token(prec(1, make_keyword("login"))),
+    keyword_must_change:      _ => token(prec(1, /[Mm][Uu][Ss][Tt]_[Cc][Hh][Aa][Nn][Gg][Ee]/)),
 
     // T-SQL SET @variable = expression  (plus base transaction/constraint SET)
     set_statement: $ => prec.right(choice(
@@ -286,6 +300,7 @@ export default grammar(base, {
     ...tsql_dml_rules,
     ...tsql_procedural_rules,
     ...tsql_synapse_rules,
+    ...tsql_security_rules,
 
   },
 });
