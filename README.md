@@ -31,6 +31,7 @@ Each dialect compiles to its own `<dialect>/src/parser.c` and can be used indepe
 | **sqlite** | base | `INSERT OR REPLACE/IGNORE`, UPSERT, `AUTOINCREMENT`, `INDEXED BY` |
 | **spanner** | bigquery | trailing `PRIMARY KEY`, `INTERLEAVE IN PARENT … ON DELETE CASCADE`, `NULL_FILTERED`/`STORING` indexes, `CREATE CHANGE STREAM`, `ROW DELETION POLICY`, `STRING(n\|MAX)`/`BYTES(n\|MAX)` |
 | **duckdb** | base | FROM-first `SELECT`, `SELECT * EXCLUDE/REPLACE/RENAME`, lambdas, struct/map/list literals, `ASOF`/`POSITIONAL JOIN`, `ATTACH` |
+| **teradata** | base | `SEL`/`DEL` abbreviations, `SET`/`MULTISET`/`VOLATILE` tables, `[UNIQUE] PRIMARY INDEX`/`NO PRIMARY INDEX`, `PARTITION BY RANGE_N`/`CASE_N`, `COLLECT STATISTICS`, `CREATE MACRO`, `TOP n`, `QUALIFY`, `:param` references |
 | **trino** | base | `PREPARE`/`EXECUTE`/`DEALLOCATE`, `MATCH_RECOGNIZE`, `TABLESAMPLE BERNOULLI/SYSTEM`, `ARRAY`/`MAP`/`ROW` types, lambdas |
 | **athena** | trino | `UNLOAD … TO 's3://…'`, `MSCK REPAIR TABLE … PARTITIONS` (managed Trino + data-lake semantics) |
 | **redshift** | base | `DISTKEY`/`SORTKEY`/`DISTSTYLE`/`ENCODE`, `CREATE EXTERNAL SCHEMA/TABLE`, `COPY`/`UNLOAD`, `VACUUM REINDEX`, `APPROXIMATE COUNT` |

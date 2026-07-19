@@ -60,6 +60,7 @@ dialects:
   flink:      { parent: base,     family: calcite,   rank: 35 }
   cockroachdb: { parent: postgres, family: postgres, rank: 27 }
   spanner:    { parent: bigquery, family: googlesql, rank: 40 }
+  teradata:   { parent: base,     family: standalone, rank: 14 }
 
 features:
 
@@ -132,6 +133,7 @@ features:
       databricks: { status: not-applicable, reason: "Databricks SQL uses LIMIT only" }
       bigquery: { status: not-applicable, reason: "GoogleSQL uses LIMIT/OFFSET only" }
       spanner:  { status: not-applicable, reason: "GoogleSQL uses LIMIT/OFFSET only" }
+      teradata: { status: not-applicable, reason: "Teradata uses TOP / QUALIFY row windows" }
 
   - id: limit_offset
     name: "LIMIT / OFFSET"
@@ -146,6 +148,7 @@ features:
       oracle: { status: not-applicable, reason: "Oracle uses FETCH FIRST / ROWNUM" }
       tsql:   { status: not-applicable, reason: "T-SQL uses TOP / OFFSET-FETCH" }
       db2:    { status: not-applicable, reason: "Db2 uses FETCH FIRST" }
+      teradata: { status: not-applicable, reason: "Teradata uses TOP / QUALIFY, no LIMIT" }
 
   - id: qualify_clause
     name: "QUALIFY clause"
@@ -206,6 +209,7 @@ features:
         probe: "SELECT a FROM t1 TABLESAMPLE (BUCKET 1 OUT OF 4 ON a);"
       clickhouse:
         probe: "SELECT a FROM t1 SAMPLE 0.1;"
+      teradata: { status: not-applicable, reason: "Teradata uses its own SAMPLE clause" }
       bigquery:
         probe: "SELECT a FROM t1 TABLESAMPLE SYSTEM (10 PERCENT);"
       cockroachdb: { status: not-applicable, reason: "No TABLESAMPLE upstream" }
@@ -238,6 +242,7 @@ features:
       snowflake:  { status: not-applicable, reason: "PostgreSQL-family extension" }
       bigquery:   { status: not-applicable, reason: "PostgreSQL-family extension" }
       spanner:    { status: not-applicable, reason: "PostgreSQL-family extension" }
+      teradata:   { status: not-applicable, reason: "PostgreSQL-family extension" }
       redshift:   { status: not-applicable, reason: "Not supported by Redshift" }
       trino:      { status: not-applicable, reason: "PostgreSQL-family extension" }
       athena:     { status: not-applicable, reason: "PostgreSQL-family extension" }
@@ -310,6 +315,7 @@ features:
       spark:      { status: not-applicable, reason: "No upstream support as of Spark 4.x" }
       databricks: { status: not-applicable, reason: "No upstream support" }
       flink:      { status: not-applicable, reason: "Streaming model: results go to sinks" }
+      teradata:   { status: not-applicable, reason: "No RETURNING upstream" }
 
   - id: upsert
     name: "Upsert (ON CONFLICT / ON DUPLICATE KEY)"
@@ -332,6 +338,7 @@ features:
       bigquery:   { status: not-applicable, reason: "BigQuery upserts via MERGE" }
       spanner:
         probe: "INSERT OR UPDATE INTO t1 (a) VALUES (1);"
+      teradata:   { status: not-applicable, reason: "Upsert via UPDATE … ELSE INSERT (atomic upsert form)" }
       redshift:   { status: not-applicable, reason: "Redshift upserts via MERGE / staging" }
       trino:      { status: not-applicable, reason: "No upsert syntax" }
       athena:     { status: not-applicable, reason: "No upsert syntax" }
@@ -366,6 +373,7 @@ features:
       duckdb:     { status: not-applicable, reason: "No row locking" }
       clickhouse: { status: not-applicable, reason: "No row locking" }
       flink:      { status: not-applicable, reason: "No row locking" }
+      teradata:   { status: not-applicable, reason: "Uses LOCKING request modifier, not FOR UPDATE" }
 
   - id: truncate
     name: "TRUNCATE TABLE"
@@ -415,6 +423,7 @@ features:
       hive:
         probe: "CREATE MATERIALIZED VIEW mv1 AS SELECT a FROM t1;"
       spark:   { status: not-applicable, reason: "No materialized views in OSS Spark" }
+      teradata: { status: not-applicable, reason: "Teradata uses JOIN INDEX instead" }
 
   - id: comment_on
     name: "COMMENT ON object"
@@ -527,6 +536,7 @@ features:
       redshift: { status: not-applicable, reason: "Metadata via catalog" }
       bigquery: { status: not-applicable, reason: "Metadata via INFORMATION_SCHEMA" }
       spanner:  { status: not-applicable, reason: "Metadata via INFORMATION_SCHEMA" }
+      teradata: { status: not-applicable, reason: "Metadata via HELP / SHOW TABLE object form" }
 
   - id: procedural_block
     name: "Procedural block (BEGIN … END / scripting)"
@@ -575,6 +585,7 @@ features:
       snowflake:  { status: not-applicable, reason: "No SQL-level PREPARE" }
       bigquery:   { status: not-applicable, reason: "No PREPARE" }
       spanner:    { status: not-applicable, reason: "No PREPARE" }
+      teradata:   { status: not-applicable, reason: "Prepared statements are API-level" }
       redshift:
         probe: "PREPARE p1 AS SELECT a FROM t1;"
       clickhouse: { status: not-applicable, reason: "No PREPARE" }
