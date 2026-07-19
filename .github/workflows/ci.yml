@@ -146,6 +146,27 @@ jobs:
           TREE_SITTER_BIN: tree-sitter
         run: python tools/scorecard.py --check
 
+      # Full (non --check) run to produce the human-readable report. Runs
+      # even if the gate above failed, so a red PR still gets a report to
+      # diagnose from. Writes to the Actions job summary (every run) and
+      # docs/coverage.md / tools/coverage.json (uploaded below); the docs
+      # site rebuilds this same page from the live parsers via pages.yml.
+      - name: Build coverage report
+        if: always()
+        env:
+          TREE_SITTER_BIN: tree-sitter
+        run: python tools/scorecard.py
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            docs/coverage.md
+            tools/coverage.json
+          retention-days: 30
+
   # ── Node native binding (OS matrix) ─────────────────────────────────────────
   # node-gyp compiles parser.c to a native .node addon. The result is
   # platform-specific, so this job stays as a 3-OS matrix.

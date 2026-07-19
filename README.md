@@ -8,6 +8,10 @@ grammars**, each layered on top via tree-sitter's `grammar(parent, overrides)` c
 Originally built as the SQL parser backend for [burnt](https://github.com/RedPandaMC/burnt) — a cost
 compiler and linter for Spark pipelines — it now aims for broad dialect coverage across the SQL ecosystem.
 
+**[Docs site](https://redpandamc.github.io/tree-sitter-sql-extended/)** ·
+**[Dialect coverage](https://redpandamc.github.io/tree-sitter-sql-extended/coverage)** — per-dialect
+feature scores, regenerated from the live parsers on every push to `main`.
+
 ---
 
 ## Dialects

@@ -28,7 +28,12 @@ Usage:
 
 Artifacts:
   tools/coverage.json   machine-readable results (committed baseline)
-  docs/COVERAGE.md      human-readable scorecard + genealogy tree
+  docs/coverage.md      human-readable scorecard + genealogy tree (VitePress
+                        page; generated fresh on every run, never committed)
+
+When run inside GitHub Actions ($GITHUB_STEP_SUMMARY set), the scores table
+is also appended to the job summary — every CI run surfaces the scorecard
+result directly in the Actions UI, in both --check and full-run modes.
 
 Requires generated parsers (npm run generate:all) and the pinned
 tree-sitter CLI (override the binary with TREE_SITTER_BIN).
@@ -38,9 +43,9 @@ import argparse
 import json
 import os
 import shlex
+import shutil
 import subprocess
 import sys
-import tempfile
 from datetime import date
 from pathlib import Path
 
@@ -53,7 +58,15 @@ except ImportError:
 ROOT = Path(__file__).resolve().parent.parent
 FEATURES_FILE = ROOT / "tools" / "features.yml"
 COVERAGE_JSON = ROOT / "tools" / "coverage.json"
-COVERAGE_MD = ROOT / "docs" / "COVERAGE.md"
+COVERAGE_MD = ROOT / "docs" / "coverage.md"
+
+VITEPRESS_FRONTMATTER = """---
+title: Dialect coverage
+outline: [2, 3]
+editLink: false
+---
+
+"""
 
 TS_BIN = os.environ.get(
     "TREE_SITTER_BIN",
@@ -99,15 +112,22 @@ def parse_probes(dialect: str, probes: dict[str, str]) -> dict[str, bool]:
 
     Uses a single `tree-sitter parse -q` invocation over one file per probe;
     -q prints (only) a stats line for files that contain errors.
+
+    Probe files are written INSIDE the dialect's directory (not a system temp
+    dir): newer tree-sitter CLIs select the grammar for out-of-tree files by
+    registry/config rather than CWD, which made every dialect's probes parse
+    with the base `sql` grammar in CI. Files under the grammar's own directory
+    resolve to that grammar on every CLI version. `tmp/` is gitignored.
     """
     results: dict[str, bool] = {}
     if not probes:
         return results
-    with tempfile.TemporaryDirectory(prefix=f"scorecard-{dialect}-") as tmp:
-        tmpdir = Path(tmp)
+    probe_dir = dialect_dir(dialect) / "tmp" / "scorecard-probes"
+    probe_dir.mkdir(parents=True, exist_ok=True)
+    try:
         files = {}
         for fid, sql in probes.items():
-            p = tmpdir / f"{fid}.sql"
+            p = probe_dir / f"{fid}.sql"
             p.write_text(sql + "\n")
             files[str(p)] = fid
 
@@ -123,12 +143,16 @@ def parse_probes(dialect: str, probes: dict[str, str]) -> dict[str, bool]:
         for path, fid in files.items():
             # -q lists (only) files with parse errors; match on the full path
             # (never the bare file name: "cte.sql" is a substring of
-            # "recursive_cte.sql").
-            results[fid] = path not in failed_output
+            # "recursive_cte.sql"). Newer CLIs print the path relative to CWD,
+            # so check both spellings.
+            rel = str(Path(path).relative_to(dialect_dir(dialect)))
+            results[fid] = path not in failed_output and rel not in failed_output
         # Sanity: if the CLI itself broke (e.g. no parser), everything fails.
         if proc.returncode not in (0, 1):
             for fid in files.values():
                 results[fid] = False
+    finally:
+        shutil.rmtree(probe_dir, ignore_errors=True)
     return results
 
 
@@ -287,6 +311,35 @@ def render_markdown(reg: dict, results: dict) -> str:
     return "\n".join(lines)
 
 
+def render_step_summary(results: dict) -> str:
+    """Compact scores table for the GitHub Actions job summary."""
+    lines = [
+        "## SQL dialect feature coverage",
+        "",
+        "| Dialect | Score | Implemented / Applicable |",
+        "|---|---|---|",
+    ]
+    for d, r in sorted(results["dialects"].items(), key=lambda kv: -kv[1]["score"]):
+        lines.append(f"| {d} | {r['score']}% | {r['weight_implemented']} / {r['weight_applicable']} |")
+
+    pur = results["purity"]
+    if pur["violations"]:
+        lines += ["", f"**{len(pur['violations'])} ANSI purity violation(s):**"]
+        lines += [f"- `{v['feature']}` — {v['kind']}" for v in pur["violations"]]
+    else:
+        lines += ["", "ANSI purity: clean (no violations)."]
+    lines.append("")
+    return "\n".join(lines)
+
+
+def write_step_summary(results: dict) -> None:
+    path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if not path:
+        return
+    with open(path, "a") as f:
+        f.write(render_step_summary(results))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Dialect feature scorecard")
     ap.add_argument("--check", action="store_true",
@@ -310,6 +363,10 @@ def main() -> int:
         print("\n[purity] ANSI purity violations:")
         for v in violations:
             print(f"  ✗ {v['feature']}: {v['kind']}")
+
+    # Surface the result in the Actions job summary regardless of mode — this
+    # is the always-on "CI outputs the scorecard" behavior, not just --check.
+    write_step_summary(results)
 
     if args.check:
         if not COVERAGE_JSON.exists():
@@ -337,11 +394,15 @@ def main() -> int:
         print("\nOK: no regressions, purity intact.")
         return 0
 
-    # Write artifacts (full runs only, so partial runs don't clobber them)
+    # Write artifacts (full runs only, so partial runs don't clobber them).
+    # docs/coverage.md is a generated VitePress page — never committed (see
+    # .gitignore) — so it is safe to regenerate (and its date stamp to churn)
+    # on every build; tools/coverage.json remains the committed --check
+    # baseline and is the only artifact meant to be reviewed in a diff.
     if not args.dialect:
         COVERAGE_JSON.write_text(json.dumps(results, indent=2, sort_keys=True) + "\n")
-        COVERAGE_MD.parent.mkdir(exist_ok=True)
-        COVERAGE_MD.write_text(render_markdown(reg, results))
+        COVERAGE_MD.parent.mkdir(parents=True, exist_ok=True)
+        COVERAGE_MD.write_text(VITEPRESS_FRONTMATTER + render_markdown(reg, results))
         print(f"\nWrote {COVERAGE_JSON.relative_to(ROOT)} and {COVERAGE_MD.relative_to(ROOT)}")
 
     return 1 if violations else 0
