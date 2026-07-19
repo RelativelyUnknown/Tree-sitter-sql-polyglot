@@ -17,7 +17,7 @@
  */
 
 import { execSync, spawn } from 'child_process';
-import { cpus } from 'os';
+import { cpus, totalmem } from 'os';
 import { fileURLToPath } from 'url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -47,7 +47,20 @@ const DEFAULT_ALL = [
 const names = process.argv.slice(2);
 const targets = names.length ? names : DEFAULT_ALL;
 
-const concurrency = Math.max(1, Number(process.env.GENERATE_CONCURRENCY) || cpus().length);
+// tree-sitter generate's LR table construction is memory-hungry for the
+// larger/more conflict-heavy dialects (spark, databricks, oracle measured
+// locally at 2.5-5.5GB RSS each while generating). CPU-count concurrency
+// (4 on a standard GitHub-hosted runner, which also has ~16GB RAM) let 3-4
+// such processes run at once and exceed the runner's memory budget — the
+// OOM took down the whole runner VM rather than just the offending
+// process, which surfaces in Actions as "the runner has received a
+// shutdown signal" instead of an ordinary failed step. Budget conservatively
+// (6GB/worker) against total system memory, capped by CPU count.
+const memoryBoundConcurrency = Math.floor(totalmem() / (6 * 1024 ** 3));
+const concurrency = Math.max(
+  1,
+  Number(process.env.GENERATE_CONCURRENCY) || Math.min(cpus().length, memoryBoundConcurrency),
+);
 
 function generateOne(name) {
   const args = name === 'base' ? [] : [name];
