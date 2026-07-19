@@ -94,6 +94,7 @@ export default grammar(base, {
       $.list_stage_statement,
       $.show_statement,
       $.describe_statement,
+      $.comment_statement,
     ),
 
     // ── DROP: add DROP STAGE ────────────────────────────────────────────────
@@ -167,6 +168,23 @@ export default grammar(base, {
         $.alter_warehouse_statement,
         $.alter_table_cluster,
       ),
+    ),
+
+    // ── DML: add RETURNING to INSERT / UPDATE / DELETE (#116) ───────────────
+    _insert_statement: $ => seq(
+      $.insert,
+      optional($.returning),
+    ),
+
+    _update_statement: $ => seq(
+      $.update,
+      optional($.returning),
+    ),
+
+    _delete_statement: $ => seq(
+      $.delete,
+      alias($._delete_from, $.from),
+      optional($.returning),
     ),
 
     // ── CALL: invoke a stored procedure ─────────────────────────────────────

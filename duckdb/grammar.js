@@ -46,6 +46,24 @@ export default grammar(base, {
 
   rules: {
 
+    // ── DML: add RETURNING to INSERT / UPDATE / DELETE (#118) ───────────────
+    _insert_statement: $ => seq(
+      $.insert,
+      optional($.returning),
+    ),
+
+    _update_statement: $ => seq(
+      $.update,
+      optional($.returning),
+    ),
+
+    _delete_statement: $ => seq(
+      $.delete,
+      alias($._delete_from, $.from),
+      optional($.returning),
+    ),
+
+
     statement: $ => seq(
       optional(seq(
         $.keyword_explain,

@@ -72,6 +72,29 @@ export default grammar(base, {
       ),
     ),
 
+    // ── DML: BigQuery THEN RETURN on INSERT / UPDATE / DELETE (#117) ────────
+    _insert_statement: $ => seq(
+      $.insert,
+      optional($.then_return_clause),
+    ),
+
+    _update_statement: $ => seq(
+      $.update,
+      optional($.then_return_clause),
+    ),
+
+    _delete_statement: $ => seq(
+      $.delete,
+      alias($._delete_from, $.from),
+      optional($.then_return_clause),
+    ),
+
+    then_return_clause: $ => seq(
+      $.keyword_then,
+      $.keyword_return,
+      $.select_expression,
+    ),
+
     // ── DDL: add BigQuery-specific statements ───────────────────────────────
     _ddl_statement: $ => choice(
       // base ANSI DDL
@@ -87,6 +110,7 @@ export default grammar(base, {
       // BigQuery additions
       $.export_data,
       $.assert_statement,
+      $.comment_statement,
     ),
 
     // ── CREATE: add BigQuery CREATE types ──────────────────────────────────

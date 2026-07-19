@@ -120,6 +120,7 @@ export default grammar(base, {
       $.create_user_statement,
       $.alter_user_statement,
       $.drop_user_statement,
+      $.comment_statement,
     ),
 
     // ── CREATE dispatch ───────────────────────────────────────────────────────

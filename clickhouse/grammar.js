@@ -37,6 +37,13 @@ export default grammar(base, {
 
   rules: {
 
+    // ── INSERT: ClickHouse 23.4+ supports INSERT … RETURNING (#119) ─────────
+    _insert_statement: $ => seq(
+      $.insert,
+      optional($.returning),
+    ),
+
+
     statement: $ => seq(
       optional(seq(
         $.keyword_explain,

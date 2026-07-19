@@ -44,6 +44,7 @@ export default grammar(base, {
       $.get_diagnostics_statement,
       $.grant_statement,
       $.revoke_statement,
+      $.comment_statement,
     ),
 
     // Extend statement to add Db2 SQL PL procedural constructs
@@ -157,8 +158,44 @@ export default grammar(base, {
       optional($.with_isolation_clause),
     ),
 
+    // SELECT … FROM FINAL|NEW|OLD TABLE (dml) — data-change-table-reference (#123)
+    relation: $ => prec.right(
+      seq(
+        choice(
+          $.subquery,
+          $.invocation,
+          $.object_reference,
+          seq('(', $.values, ')'),
+          $.data_change_table_reference,
+        ),
+        optional($.tablesample),
+        optional(
+          seq(
+            $._alias,
+            optional(alias($._column_list, $.list)),
+          ),
+        ),
+      ),
+    ),
+
+    data_change_table_reference: $ => seq(
+      choice(
+        seq($.keyword_final, $.keyword_table),
+        seq($.keyword_new, $.keyword_table),
+        seq($.keyword_old, $.keyword_table),
+      ),
+      '(',
+      choice(
+        $._insert_statement,
+        $._update_statement,
+        $._delete_statement,
+      ),
+      ')',
+    ),
+
     // Db2-specific keywords — token(prec(1,...)) needed so lexer prefers
     // these over base _identifier when both are valid in the same state.
+    keyword_final:      _ => token(prec(1, make_keyword("final"))),
     keyword_wrapper:    _ => token(prec(1, make_keyword("wrapper"))),
     keyword_nickname:   _ => token(prec(1, make_keyword("nickname"))),
     keyword_module:     _ => token(prec(1, make_keyword("module"))),
@@ -181,6 +218,8 @@ export default grammar(base, {
     keyword_failure:    _ => token(prec(1, make_keyword("failure"))),
     keyword_success:    _ => token(prec(1, make_keyword("success"))),
     keyword_value:      _ => token(prec(1, make_keyword("value"))),
+    // prefix-shadow guard: keyword_value at prec 1 must not shadow VALUES
+    keyword_values:     _ => token(prec(1, make_keyword("values"))),
     keyword_do:         _ => token(prec(1, make_keyword("do"))),
     keyword_leave:      _ => token(prec(1, make_keyword("leave"))),
     keyword_iterate:    _ => token(prec(1, make_keyword("iterate"))),
