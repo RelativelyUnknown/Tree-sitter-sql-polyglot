@@ -80,20 +80,26 @@ const hashFile = join(ROOT, `.grammar-cache/${cacheKey}.hash`);
 // The hash marker alone isn't proof generation actually happened: CI restores
 // .grammar-cache/ and src/**/*.json/parser.c from the SAME actions/cache key,
 // but if that cache entry was ever saved incomplete (e.g. a prior run whose
-// upload step raced a mid-flight generate, or GitHub's immutable-cache-key
-// semantics pinned an old/partial save under this exact hash), the marker
-// restores fine while the artifact it describes never does — and every
-// future run with an identical grammar hash trusts the marker forever.
-// Require the primary generated artifact to actually be on disk too.
-const parserPath = join(grammarDir, 'src', 'parser.c');
+// upload step raced a mid-flight generate, a workflow's `path:` list missing
+// one of the generated files, or GitHub's immutable-cache-key semantics
+// pinning an old/partial save under this exact hash), the marker restores
+// fine while some artifact it describes never does — and every future run
+// with an identical grammar hash trusts the marker forever. Require every
+// generated artifact `tree-sitter generate` produces to actually be on disk.
+const generatedPaths = [
+  join(grammarDir, 'src', 'parser.c'),
+  join(grammarDir, 'src', 'grammar.json'),
+  join(grammarDir, 'src', 'node-types.json'),
+];
+const missingPath = generatedPaths.find((p) => !existsSync(p));
 const hashMatches = existsSync(hashFile) && readFileSync(hashFile, 'utf8').trim() === currentHash.trim();
 
-if (hashMatches && existsSync(parserPath)) {
+if (hashMatches && !missingPath) {
   console.log(`grammar unchanged — skipping generate (${cacheKey})`);
   process.exit(0);
 }
 if (hashMatches) {
-  console.log(`hash marker present but ${parserPath.replace(ROOT, '')} is missing — regenerating (${cacheKey})`);
+  console.log(`hash marker present but ${missingPath.replace(ROOT, '')} is missing — regenerating (${cacheKey})`);
 }
 
 console.log(`generating parser for ${cacheKey}...`);
