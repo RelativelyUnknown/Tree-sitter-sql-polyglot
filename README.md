@@ -29,6 +29,7 @@ Each dialect compiles to its own `<dialect>/src/parser.c` and can be used indepe
 | **bigquery** | base | `INT64`/`STRUCT<…>`/`ARRAY<…>` types, `UNNEST`, backtick identifiers, `QUALIFY` |
 | **snowflake** | base | scripting, `LATERAL FLATTEN`, time travel, `@stage` sources, `::` cast |
 | **sqlite** | base | `INSERT OR REPLACE/IGNORE`, UPSERT, `AUTOINCREMENT`, `INDEXED BY` |
+| **spanner** | bigquery | trailing `PRIMARY KEY`, `INTERLEAVE IN PARENT … ON DELETE CASCADE`, `NULL_FILTERED`/`STORING` indexes, `CREATE CHANGE STREAM`, `ROW DELETION POLICY`, `STRING(n\|MAX)`/`BYTES(n\|MAX)` |
 | **duckdb** | base | FROM-first `SELECT`, `SELECT * EXCLUDE/REPLACE/RENAME`, lambdas, struct/map/list literals, `ASOF`/`POSITIONAL JOIN`, `ATTACH` |
 | **trino** | base | `PREPARE`/`EXECUTE`/`DEALLOCATE`, `MATCH_RECOGNIZE`, `TABLESAMPLE BERNOULLI/SYSTEM`, `ARRAY`/`MAP`/`ROW` types, lambdas |
 | **athena** | trino | `UNLOAD … TO 's3://…'`, `MSCK REPAIR TABLE … PARTITIONS` (managed Trino + data-lake semantics) |
@@ -37,8 +38,8 @@ Each dialect compiles to its own `<dialect>/src/parser.c` and can be used indepe
 | **clickhouse** | base | `ENGINE = MergeTree() …`, column `MATERIALIZED`/`ALIAS`/`EPHEMERAL`/`CODEC`/`TTL`, `PREWHERE`, `FINAL`, `ARRAY JOIN`, `LIMIT n BY`, `SAMPLE`, `WITH TOTALS`, `QUALIFY`, `ORDER BY … WITH FILL`, `LIMIT … WITH TIES`, `INTO OUTFILE`/`FORMAT`, `ALTER … UPDATE`/`DELETE`, `OPTIMIZE … FINAL`, `CREATE DICTIONARY`/`LIVE VIEW`, `SYSTEM …`, `Map`/`Tuple`/`Nested`/`LowCardinality`/`Nullable` types |
 
 Dependency chains: `databricks → spark → hive → base`, `mariadb → mysql → base`, `athena → trino → base`,
-and `cockroachdb → postgres → base` — chains follow real dialect genealogy (CockroachDB is
-PostgreSQL-compatible by design).
+`cockroachdb → postgres → base`, and `spanner → bigquery → base` — chains follow real dialect
+genealogy (CockroachDB is PostgreSQL-compatible by design; Spanner and BigQuery share GoogleSQL).
 Regenerate the child when a parent grammar changes. See [AGENTS.md](AGENTS.md) for the full architecture.
 
 ---

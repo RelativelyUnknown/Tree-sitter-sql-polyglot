@@ -59,6 +59,7 @@ dialects:
   clickhouse: { parent: base,     family: standalone, rank: 17 }
   flink:      { parent: base,     family: calcite,   rank: 35 }
   cockroachdb: { parent: postgres, family: postgres, rank: 27 }
+  spanner:    { parent: bigquery, family: googlesql, rank: 40 }
 
 features:
 
@@ -130,6 +131,7 @@ features:
       spark:   { status: not-applicable, reason: "Spark SQL uses LIMIT only" }
       databricks: { status: not-applicable, reason: "Databricks SQL uses LIMIT only" }
       bigquery: { status: not-applicable, reason: "GoogleSQL uses LIMIT/OFFSET only" }
+      spanner:  { status: not-applicable, reason: "GoogleSQL uses LIMIT/OFFSET only" }
 
   - id: limit_offset
     name: "LIMIT / OFFSET"
@@ -165,6 +167,7 @@ features:
       redshift:  { status: not-applicable, reason: "Redshift QUALIFY only in specific contexts; not core" }
       flink:     { status: not-applicable, reason: "No QUALIFY upstream" }
       cockroachdb: { status: not-applicable, reason: "No QUALIFY upstream" }
+      spanner:     { status: not-applicable, reason: "No QUALIFY upstream" }
 
   - id: lateral_join
     name: "LATERAL join / correlated derived table"
@@ -234,6 +237,7 @@ features:
       databricks: { status: not-applicable, reason: "PostgreSQL-family extension" }
       snowflake:  { status: not-applicable, reason: "PostgreSQL-family extension" }
       bigquery:   { status: not-applicable, reason: "PostgreSQL-family extension" }
+      spanner:    { status: not-applicable, reason: "PostgreSQL-family extension" }
       redshift:   { status: not-applicable, reason: "Not supported by Redshift" }
       trino:      { status: not-applicable, reason: "PostgreSQL-family extension" }
       athena:     { status: not-applicable, reason: "PostgreSQL-family extension" }
@@ -276,6 +280,7 @@ features:
       duckdb:  { status: not-applicable, reason: "DuckDB has no MERGE (uses ON CONFLICT)" }
       clickhouse: { status: not-applicable, reason: "ClickHouse has no MERGE statement" }
       cockroachdb: { status: not-applicable, reason: "No MERGE; UPSERT / ON CONFLICT instead" }
+      spanner:    { status: not-applicable, reason: "No MERGE; INSERT OR UPDATE instead" }
       redshift: { probe: "MERGE INTO t1 USING t2 ON t1.id = t2.id WHEN MATCHED THEN UPDATE SET a = t2.a WHEN NOT MATCHED THEN INSERT (a) VALUES (t2.a);" }
 
   - id: returning_clause
@@ -286,6 +291,8 @@ features:
     probe: "INSERT INTO t1 (a) VALUES (1) RETURNING a;"
     dialects:
       bigquery:
+        probe: "INSERT INTO t1 (a) VALUES (1) THEN RETURN a;"
+      spanner:
         probe: "INSERT INTO t1 (a) VALUES (1) THEN RETURN a;"
       tsql:
         probe: "INSERT INTO t1 (a) OUTPUT INSERTED.a VALUES (1);"
@@ -323,6 +330,8 @@ features:
       databricks: { status: not-applicable, reason: "Upserts via MERGE INTO" }
       snowflake:  { status: not-applicable, reason: "Snowflake upserts via MERGE" }
       bigquery:   { status: not-applicable, reason: "BigQuery upserts via MERGE" }
+      spanner:
+        probe: "INSERT OR UPDATE INTO t1 (a) VALUES (1);"
       redshift:   { status: not-applicable, reason: "Redshift upserts via MERGE / staging" }
       trino:      { status: not-applicable, reason: "No upsert syntax" }
       athena:     { status: not-applicable, reason: "No upsert syntax" }
@@ -419,6 +428,7 @@ features:
       sqlite:     { status: not-applicable, reason: "No COMMENT statement" }
       tsql:       { status: not-applicable, reason: "Comments via sp_addextendedproperty" }
       bigquery:   { status: not-applicable, reason: "Comments via OPTIONS(description=…)" }
+      spanner:    { status: not-applicable, reason: "Comments via schema options" }
       clickhouse: { status: not-applicable, reason: "Comments via ALTER … MODIFY COMMENT" }
       flink:      { status: not-applicable, reason: "Comments via table options" }
 
@@ -478,6 +488,7 @@ features:
       athena:     { status: not-applicable, reason: "No savepoints" }
       clickhouse: { status: not-applicable, reason: "No savepoints" }
       bigquery:   { status: not-applicable, reason: "No savepoints" }
+      spanner:    { status: not-applicable, reason: "No savepoints" }
       flink:      { status: not-applicable, reason: "No transactional savepoints in SQL" }
 
   - id: grant_revoke
@@ -515,6 +526,7 @@ features:
       db2:      { status: not-applicable, reason: "Metadata via catalog" }
       redshift: { status: not-applicable, reason: "Metadata via catalog" }
       bigquery: { status: not-applicable, reason: "Metadata via INFORMATION_SCHEMA" }
+      spanner:  { status: not-applicable, reason: "Metadata via INFORMATION_SCHEMA" }
 
   - id: procedural_block
     name: "Procedural block (BEGIN … END / scripting)"
@@ -539,6 +551,7 @@ features:
         probe: "BEGIN SELECT a FROM t1; END;"
       flink:      { status: not-applicable, reason: "No procedural language" }
       cockroachdb: { status: not-applicable, reason: "No procedural SQL language" }
+      spanner:     { status: not-applicable, reason: "No procedural SQL in Spanner DDL (BigQuery scripting is not Spanner)" }
 
   - id: prepared_statements
     name: "PREPARE / EXECUTE"
@@ -561,6 +574,7 @@ features:
       databricks: { status: not-applicable, reason: "No PREPARE" }
       snowflake:  { status: not-applicable, reason: "No SQL-level PREPARE" }
       bigquery:   { status: not-applicable, reason: "No PREPARE" }
+      spanner:    { status: not-applicable, reason: "No PREPARE" }
       redshift:
         probe: "PREPARE p1 AS SELECT a FROM t1;"
       clickhouse: { status: not-applicable, reason: "No PREPARE" }

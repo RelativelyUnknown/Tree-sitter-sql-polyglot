@@ -382,14 +382,16 @@ export default grammar(base, {
       optional($.identifier),
     ),
 
-    // Override limit: MySQL also supports LIMIT offset, count (comma form)
-    limit: $ => seq(
+    // Override limit: MySQL also supports LIMIT offset, count (comma form).
+    // prec.right (as in base): a following OFFSET binds to the limit clause
+    // rather than starting an ANSI OFFSET … ROWS offset_fetch_clause.
+    limit: $ => prec.right(seq(
       $.keyword_limit,
       choice(
         seq(alias($._integer, $.literal), ',', alias($._integer, $.literal)),
         seq($.literal, optional($.offset)),
       ),
-    ),
+    )),
 
     // MySQL user/session variables: @name and @@name
     user_variable: _ => token(/@@?[a-zA-Z_][a-zA-Z0-9_]*/),

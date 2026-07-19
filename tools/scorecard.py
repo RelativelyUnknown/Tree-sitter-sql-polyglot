@@ -71,7 +71,19 @@ def dialect_dir(name: str) -> Path:
 
 
 def has_parser(name: str) -> bool:
-    return (dialect_dir(name) / "src" / "parser.c").exists()
+    src = dialect_dir(name) / "src"
+    parser = src / "parser.c"
+    grammar = src / "grammar.json"
+    if not parser.exists():
+        return False
+    # A grammar.json newer than parser.c means a generation run failed partway
+    # (grammar.json is written before table construction) — treat as missing so
+    # stale parsers can never silently skew scores.
+    if grammar.exists() and grammar.stat().st_mtime > parser.stat().st_mtime:
+        print(f"WARNING: {name}: parser.c is older than grammar.json (partial "
+              f"generation?) — run: node scripts/generate.js {name}", file=sys.stderr)
+        return False
+    return True
 
 
 def probe_for(feature: dict, dialect: str) -> tuple[str | None, str | None]:
