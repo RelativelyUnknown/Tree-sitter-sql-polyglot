@@ -2,7 +2,7 @@
 
 A multi-dialect SQL parser for [tree-sitter](https://tree-sitter.github.io/), forked from
 [DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql). It restructures the
-upstream "permissive" grammar into a clean ANSI SQL base plus **18 independently compiled dialect
+upstream "permissive" grammar into a clean ANSI SQL base plus **22 independently compiled dialect
 grammars**, each layered on top via tree-sitter's `grammar(parent, overrides)` composition.
 
 Originally built as the SQL parser backend for [burnt](https://github.com/RedPandaMC/burnt) — a cost
@@ -17,6 +17,7 @@ Each dialect compiles to its own `<dialect>/src/parser.c` and can be used indepe
 | Dialect | Extends | Highlights |
 |---------|---------|-----------|
 | **base** (ANSI) | — | `GRANT`/`REVOKE`, `GROUP BY ROLLUP`/`CUBE`/`GROUPING SETS`, `FETCH FIRST`/`OFFSET … FETCH`, `WITHIN GROUP`, `TRIM(… FROM …)`, interval qualifiers |
+| **hana** | base | `CREATE COLUMN/ROW TABLE`, `UPSERT … WITH PRIMARY KEY`, `WITH HINT (…)`, SQLScript procedures (`LANGUAGE SQLSCRIPT`, `DECLARE`, `:=`, `:param`) |
 | **hive** | base | `LATERAL VIEW`, `STORED AS`/`STORED BY`, multi-table `INSERT`, `LOAD DATA INPATH`, `CLUSTER`/`DISTRIBUTE`/`SORT BY` |
 | **spark** | hive | `QUALIFY`, `PIVOT`/`UNPIVOT`, time travel, scripting (`IF`/`WHILE`/`LOOP`), Iceberg, `VARIANT`, `CREATE TABLE … USING/OPTIONS` |
 | **databricks** | spark | Delta/DLT (`OPTIMIZE … ZORDER BY`, `VACUUM`, `RESTORE`), Unity Catalog (`CATALOG`/`VOLUME`/`EXTERNAL LOCATION`, `GRANT`), Iceberg `CALL` |
@@ -86,7 +87,7 @@ npm run generate
 # Regenerate a single dialect (and its parent chain as needed)
 npm run generate:spark
 
-# Regenerate every parser (base + all 18 dialects)
+# Regenerate every parser (base + all 22 dialects)
 npm run generate:all
 
 # Run corpus tests for the base grammar
@@ -104,7 +105,7 @@ sources are unchanged. Use `npm run generate:force` to bypass the cache.
 
 Base grammar rules are split across `grammar/` (e.g. `grammar/statements/*.js`, `grammar/expressions.js`,
 `grammar/keywords.js`). Dialect rules live under `<dialect>/grammar/`. A change to the base ripples to all
-12 parsers, so regenerate and test all of them after editing base files.
+22 parsers, so regenerate and test all of them after editing base files.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md) for more detail.
 
