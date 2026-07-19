@@ -94,6 +94,33 @@ export default grammar(base, {
       $.list_stage_statement,
       $.show_statement,
       $.describe_statement,
+      $.comment_statement,
+    ),
+
+    // ── SELECT … FOR UPDATE [NOWAIT | WAIT <n>] (hybrid tables) ────────────
+    _select_statement: $ => optional_parenthesis(
+      seq(
+        $.select,
+        optional(
+          seq(
+            $.keyword_into,
+            $.select_expression,
+          ),
+        ),
+        optional($.from),
+        optional($.locking_clause),
+      ),
+    ),
+
+    locking_clause: $ => seq(
+      $.keyword_for,
+      $.keyword_update,
+      optional(
+        choice(
+          $.keyword_nowait,
+          seq($.keyword_wait, alias($._integer, $.literal)),
+        ),
+      ),
     ),
 
     // ── DROP: add DROP STAGE ────────────────────────────────────────────────
@@ -432,6 +459,18 @@ export default grammar(base, {
     ...use_rules,
     ...stage_rules,
     ...show_rules,
+
+
+    // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
+    // that are strict prefixes of the base keywords below. Explicit precedence
+    // beats match length in the tree-sitter lexer, so without an equal-prec
+    // re-declaration the longer keyword becomes unlexable in this dialect.
+    keyword_attribute: _ => token(prec(1, make_keyword("attribute"))),
+    keyword_atomic: _ => token(prec(1, make_keyword("atomic"))),
+    keyword_called: _ => token(prec(1, make_keyword("called"))),
+    keyword_definer: _ => token(prec(1, make_keyword("definer"))),
+    keyword_matched: _ => token(prec(1, make_keyword("matched"))),
+    keyword_percent: _ => token(prec(1, make_keyword("percent"))),
 
   },
 });

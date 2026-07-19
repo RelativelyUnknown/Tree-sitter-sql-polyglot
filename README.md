@@ -33,9 +33,12 @@ Each dialect compiles to its own `<dialect>/src/parser.c` and can be used indepe
 | **trino** | base | `PREPARE`/`EXECUTE`/`DEALLOCATE`, `MATCH_RECOGNIZE`, `TABLESAMPLE BERNOULLI/SYSTEM`, `ARRAY`/`MAP`/`ROW` types, lambdas |
 | **athena** | trino | `UNLOAD … TO 's3://…'`, `MSCK REPAIR TABLE … PARTITIONS` (managed Trino + data-lake semantics) |
 | **redshift** | base | `DISTKEY`/`SORTKEY`/`DISTSTYLE`/`ENCODE`, `CREATE EXTERNAL SCHEMA/TABLE`, `COPY`/`UNLOAD`, `VACUUM REINDEX`, `APPROXIMATE COUNT` |
+| **cockroachdb** | postgres | `AS OF SYSTEM TIME`, `UPSERT INTO`, `BACKUP`/`RESTORE`, `IMPORT INTO … CSV DATA`, `CREATE CHANGEFEED`, hash-sharded indexes (`USING HASH`), `STORING (…)`, `SHOW JOBS`/`GRANTS`/`DATABASES` |
 | **clickhouse** | base | `ENGINE = MergeTree() …`, column `MATERIALIZED`/`ALIAS`/`EPHEMERAL`/`CODEC`/`TTL`, `PREWHERE`, `FINAL`, `ARRAY JOIN`, `LIMIT n BY`, `SAMPLE`, `WITH TOTALS`, `QUALIFY`, `ORDER BY … WITH FILL`, `LIMIT … WITH TIES`, `INTO OUTFILE`/`FORMAT`, `ALTER … UPDATE`/`DELETE`, `OPTIMIZE … FINAL`, `CREATE DICTIONARY`/`LIVE VIEW`, `SYSTEM …`, `Map`/`Tuple`/`Nested`/`LowCardinality`/`Nullable` types |
 
-Dependency chains: `databricks → spark → hive → base`, `mariadb → mysql → base`, and `athena → trino → base`.
+Dependency chains: `databricks → spark → hive → base`, `mariadb → mysql → base`, `athena → trino → base`,
+and `cockroachdb → postgres → base` — chains follow real dialect genealogy (CockroachDB is
+PostgreSQL-compatible by design).
 Regenerate the child when a parent grammar changes. See [AGENTS.md](AGENTS.md) for the full architecture.
 
 ---

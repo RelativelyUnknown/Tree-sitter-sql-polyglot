@@ -199,6 +199,8 @@ export default {
 
   // ANSI SQL — tablesample/percent (used in base grammar tablesample rule)
   keyword_tablesample: _ => make_keyword("tablesample"),
+  keyword_bernoulli: _ => make_keyword("bernoulli"),
+  keyword_system: _ => make_keyword("system"),
   keyword_percent: _ => make_keyword("percent"),
 
   // Common dialect type — string (used in base _type rule)

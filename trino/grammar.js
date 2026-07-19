@@ -192,5 +192,15 @@ export default grammar(base, {
     ...trino_select_rules,
     ...trino_ddl_rules,
 
+
+    // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
+    // that are strict prefixes of the base keywords below. Explicit precedence
+    // beats match length in the tree-sitter lexer, so without an equal-prec
+    // re-declaration the longer keyword becomes unlexable in this dialect.
+    keyword_definer: _ => token(prec(1, make_keyword("definer"))),
+    keyword_matched: _ => token(prec(1, make_keyword("matched"))),
+    keyword_percent: _ => token(prec(1, make_keyword("percent"))),
+    keyword_rows: _ => token(prec(1, make_keyword("rows"))),
+
   },
 });

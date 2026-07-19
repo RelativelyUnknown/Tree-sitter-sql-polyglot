@@ -1,0 +1,567 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Canonical feature registry for the per-dialect completeness scorecard.
+#
+# Consumed by tools/scorecard.py, which parses each feature's probe SQL with
+# every dialect's compiled parser and reports weighted coverage per dialect.
+#
+# Schema
+# ------
+# dialects:            registry of dialects with lineage metadata
+#   <name>:
+#     parent:          parent grammar (null = ANSI base)
+#     family:          genealogy family (documentation only)
+#     rank:            approximate DB-Engines rank (documentation only)
+#
+# features:            list of canonical features
+#   - id:              stable snake_case identifier
+#     name:            human-readable name
+#     category:        dml | ddl | query | procedural | types | admin
+#     ansi:            true  = part of ISO/IEC 9075 → the BASE parser must
+#                              accept the default probe
+#                      false = vendor extension → the BASE parser must REJECT
+#                              the default probe (ANSI purity rule); dialects
+#                              opt in via their grammars
+#     weight:          1 = niche, 3 = high-frequency production feature
+#     probe:           default probe SQL (must end with ;)
+#     purity_exception: optional; true when the base grammar currently accepts
+#                      a non-ANSI probe for historical reasons (inherited from
+#                      the permissive upstream fork). Tracked, not approved —
+#                      each exception should reference a cleanup issue.
+#     dialects:        per-dialect overrides
+#       <name>:
+#         probe:       dialect-specific probe replacing the default
+#         status:      "not-applicable" = engine has no such feature upstream;
+#                      excluded from the dialect's score denominator
+#         reason:      required with status: not-applicable
+#
+# A feature/dialect pair with no explicit status is scored by parsing:
+# probe parses without ERROR/MISSING → implemented; otherwise → absent (gap).
+# ─────────────────────────────────────────────────────────────────────────────
+
+dialects:
+  base:       { parent: null,     family: ansi }
+  postgres:   { parent: base,     family: postgres,  rank: 4 }
+  mysql:      { parent: base,     family: mysql,     rank: 2 }
+  mariadb:    { parent: mysql,    family: mysql,     rank: 12 }
+  tsql:       { parent: base,     family: sybase,    rank: 3 }
+  oracle:     { parent: base,     family: standalone, rank: 1 }
+  db2:        { parent: base,     family: standalone, rank: 8 }
+  sqlite:     { parent: base,     family: standalone, rank: 10 }
+  hive:       { parent: base,     family: hive,      rank: 16 }
+  spark:      { parent: hive,     family: hive,      rank: 18 }
+  databricks: { parent: spark,    family: hive,      rank: 13 }
+  snowflake:  { parent: base,     family: standalone, rank: 7 }
+  bigquery:   { parent: base,     family: googlesql, rank: 15 }
+  redshift:   { parent: base,     family: postgres,  rank: 20 }
+  trino:      { parent: base,     family: presto,    rank: 25 }
+  athena:     { parent: trino,    family: presto,    rank: 30 }
+  duckdb:     { parent: base,     family: postgres,  rank: 24 }
+  clickhouse: { parent: base,     family: standalone, rank: 17 }
+  flink:      { parent: base,     family: calcite,   rank: 35 }
+  cockroachdb: { parent: postgres, family: postgres, rank: 27 }
+
+features:
+
+  # ── query ────────────────────────────────────────────────────────────────
+
+  - id: select_basic
+    name: "Basic SELECT with projection and WHERE"
+    category: query
+    ansi: true
+    weight: 3
+    probe: "SELECT a, b FROM t1 WHERE a > 1;"
+
+  - id: cte
+    name: "Common table expressions (WITH)"
+    category: query
+    ansi: true
+    weight: 3
+    probe: "WITH x AS (SELECT a FROM t1) SELECT a FROM x;"
+
+  - id: recursive_cte
+    name: "Recursive CTE (WITH RECURSIVE)"
+    category: query
+    ansi: true
+    weight: 3
+    probe: "WITH RECURSIVE x AS (SELECT 1 AS n) SELECT n FROM x;"
+    dialects:
+      tsql:
+        # T-SQL recursion uses plain WITH (no RECURSIVE keyword)
+        probe: "WITH x AS (SELECT 1 AS n) SELECT n FROM x;"
+      oracle:
+        probe: "WITH x (n) AS (SELECT 1 FROM dual) SELECT n FROM x;"
+
+  - id: window_functions
+    name: "Window functions (OVER / PARTITION BY)"
+    category: query
+    ansi: true
+    weight: 3
+    probe: "SELECT ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) FROM t1;"
+
+  - id: grouping_sets
+    name: "GROUP BY GROUPING SETS"
+    category: query
+    ansi: true
+    weight: 1
+    probe: "SELECT a, SUM(b) FROM t1 GROUP BY GROUPING SETS ((a), ());"
+    dialects:
+      sqlite: { status: not-applicable, reason: "SQLite has no GROUPING SETS" }
+
+  - id: rollup
+    name: "GROUP BY ROLLUP"
+    category: query
+    ansi: true
+    weight: 1
+    probe: "SELECT a, SUM(b) FROM t1 GROUP BY ROLLUP (a);"
+    dialects:
+      sqlite: { status: not-applicable, reason: "SQLite has no ROLLUP" }
+
+  - id: offset_fetch
+    name: "OFFSET … FETCH FIRST n ROWS"
+    category: query
+    ansi: true
+    weight: 1
+    probe: "SELECT a FROM t1 ORDER BY a OFFSET 5 ROWS FETCH FIRST 10 ROWS ONLY;"
+    dialects:
+      mysql:   { status: not-applicable, reason: "MySQL uses LIMIT/OFFSET only" }
+      mariadb: { status: not-applicable, reason: "MariaDB uses LIMIT/OFFSET only" }
+      sqlite:  { status: not-applicable, reason: "SQLite uses LIMIT/OFFSET only" }
+      hive:    { status: not-applicable, reason: "HiveQL uses LIMIT only" }
+      spark:   { status: not-applicable, reason: "Spark SQL uses LIMIT only" }
+      databricks: { status: not-applicable, reason: "Databricks SQL uses LIMIT only" }
+      bigquery: { status: not-applicable, reason: "GoogleSQL uses LIMIT/OFFSET only" }
+
+  - id: limit_offset
+    name: "LIMIT / OFFSET"
+    category: query
+    ansi: false
+    weight: 3
+    probe: "SELECT a FROM t1 ORDER BY a LIMIT 10 OFFSET 5;"
+    # Inherited from the permissive upstream fork: base parses LIMIT/OFFSET.
+    # Cleanup tracked via the scorecard purity report.
+    purity_exception: true
+    dialects:
+      oracle: { status: not-applicable, reason: "Oracle uses FETCH FIRST / ROWNUM" }
+      tsql:   { status: not-applicable, reason: "T-SQL uses TOP / OFFSET-FETCH" }
+      db2:    { status: not-applicable, reason: "Db2 uses FETCH FIRST" }
+
+  - id: qualify_clause
+    name: "QUALIFY clause"
+    category: query
+    ansi: false
+    weight: 1
+    probe: "SELECT a FROM t1 QUALIFY ROW_NUMBER() OVER (ORDER BY a) = 1;"
+    dialects:
+      postgres:  { status: not-applicable, reason: "No QUALIFY upstream" }
+      mysql:     { status: not-applicable, reason: "No QUALIFY upstream" }
+      mariadb:   { status: not-applicable, reason: "No QUALIFY upstream" }
+      tsql:      { status: not-applicable, reason: "No QUALIFY upstream" }
+      oracle:    { status: not-applicable, reason: "No QUALIFY upstream" }
+      db2:       { status: not-applicable, reason: "No QUALIFY upstream" }
+      sqlite:    { status: not-applicable, reason: "No QUALIFY upstream" }
+      hive:      { status: not-applicable, reason: "No QUALIFY upstream" }
+      trino:     { status: not-applicable, reason: "No QUALIFY upstream" }
+      athena:    { status: not-applicable, reason: "No QUALIFY upstream" }
+      redshift:  { status: not-applicable, reason: "Redshift QUALIFY only in specific contexts; not core" }
+      flink:     { status: not-applicable, reason: "No QUALIFY upstream" }
+      cockroachdb: { status: not-applicable, reason: "No QUALIFY upstream" }
+
+  - id: lateral_join
+    name: "LATERAL join / correlated derived table"
+    category: query
+    ansi: true
+    weight: 1
+    probe: "SELECT a FROM t1 JOIN LATERAL (SELECT b FROM t2) x ON true;"
+    dialects:
+      sqlite:  { status: not-applicable, reason: "No LATERAL upstream" }
+      hive:
+        probe: "SELECT a FROM t1 LATERAL VIEW explode(arr) x AS b;"
+      spark:
+        probe: "SELECT a FROM t1 LATERAL VIEW explode(arr) x AS b;"
+      databricks:
+        probe: "SELECT a FROM t1 LATERAL VIEW explode(arr) x AS b;"
+      snowflake:
+        probe: "SELECT a FROM t1, LATERAL FLATTEN(input => t1.v) f;"
+
+  - id: tablesample
+    name: "TABLESAMPLE"
+    category: query
+    ansi: true
+    weight: 1
+    probe: "SELECT a FROM t1 TABLESAMPLE BERNOULLI (10);"
+    dialects:
+      mysql:   { status: not-applicable, reason: "No TABLESAMPLE upstream" }
+      mariadb: { status: not-applicable, reason: "No TABLESAMPLE upstream" }
+      sqlite:  { status: not-applicable, reason: "No TABLESAMPLE upstream" }
+      tsql:
+        probe: "SELECT a FROM t1 TABLESAMPLE (10 PERCENT);"
+      spark:
+        probe: "SELECT a FROM t1 TABLESAMPLE (10 PERCENT);"
+      databricks:
+        probe: "SELECT a FROM t1 TABLESAMPLE (10 PERCENT);"
+      hive:
+        probe: "SELECT a FROM t1 TABLESAMPLE (BUCKET 1 OUT OF 4 ON a);"
+      clickhouse:
+        probe: "SELECT a FROM t1 SAMPLE 0.1;"
+      bigquery:
+        probe: "SELECT a FROM t1 TABLESAMPLE SYSTEM (10 PERCENT);"
+      cockroachdb: { status: not-applicable, reason: "No TABLESAMPLE upstream" }
+
+  - id: set_operations
+    name: "UNION / INTERSECT / EXCEPT"
+    category: query
+    ansi: true
+    weight: 3
+    probe: "SELECT a FROM t1 UNION ALL SELECT a FROM t2;"
+
+  - id: distinct_on
+    name: "SELECT DISTINCT ON"
+    category: query
+    ansi: false
+    weight: 1
+    probe: "SELECT DISTINCT ON (a) a, b FROM t1 ORDER BY a;"
+    # Inherited from the permissive upstream fork: base parses DISTINCT ON.
+    purity_exception: true
+    dialects:
+      mysql:      { status: not-applicable, reason: "PostgreSQL-family extension" }
+      mariadb:    { status: not-applicable, reason: "PostgreSQL-family extension" }
+      tsql:       { status: not-applicable, reason: "PostgreSQL-family extension" }
+      oracle:     { status: not-applicable, reason: "PostgreSQL-family extension" }
+      db2:        { status: not-applicable, reason: "PostgreSQL-family extension" }
+      sqlite:     { status: not-applicable, reason: "PostgreSQL-family extension" }
+      hive:       { status: not-applicable, reason: "PostgreSQL-family extension" }
+      spark:      { status: not-applicable, reason: "PostgreSQL-family extension" }
+      databricks: { status: not-applicable, reason: "PostgreSQL-family extension" }
+      snowflake:  { status: not-applicable, reason: "PostgreSQL-family extension" }
+      bigquery:   { status: not-applicable, reason: "PostgreSQL-family extension" }
+      redshift:   { status: not-applicable, reason: "Not supported by Redshift" }
+      trino:      { status: not-applicable, reason: "PostgreSQL-family extension" }
+      athena:     { status: not-applicable, reason: "PostgreSQL-family extension" }
+      clickhouse: { status: not-applicable, reason: "ClickHouse uses LIMIT 1 BY" }
+      flink:      { status: not-applicable, reason: "PostgreSQL-family extension" }
+
+  # ── dml ──────────────────────────────────────────────────────────────────
+
+  - id: insert_values
+    name: "INSERT … VALUES"
+    category: dml
+    ansi: true
+    weight: 3
+    probe: "INSERT INTO t1 (a, b) VALUES (1, 'x');"
+
+  - id: update_where
+    name: "UPDATE … SET … WHERE"
+    category: dml
+    ansi: true
+    weight: 3
+    probe: "UPDATE t1 SET a = 2 WHERE b = 'x';"
+
+  - id: delete_where
+    name: "DELETE … WHERE"
+    category: dml
+    ansi: true
+    weight: 3
+    probe: "DELETE FROM t1 WHERE a = 1;"
+
+  - id: merge_statement
+    name: "MERGE INTO"
+    category: dml
+    ansi: true
+    weight: 3
+    probe: "MERGE INTO t1 USING t2 ON t1.id = t2.id WHEN MATCHED THEN UPDATE SET a = t2.a WHEN NOT MATCHED THEN INSERT (a) VALUES (t2.a);"
+    dialects:
+      mysql:   { status: not-applicable, reason: "MySQL has no MERGE (uses ON DUPLICATE KEY)" }
+      mariadb: { status: not-applicable, reason: "MariaDB has no MERGE" }
+      sqlite:  { status: not-applicable, reason: "SQLite has no MERGE (uses UPSERT)" }
+      duckdb:  { status: not-applicable, reason: "DuckDB has no MERGE (uses ON CONFLICT)" }
+      clickhouse: { status: not-applicable, reason: "ClickHouse has no MERGE statement" }
+      cockroachdb: { status: not-applicable, reason: "No MERGE; UPSERT / ON CONFLICT instead" }
+      redshift: { probe: "MERGE INTO t1 USING t2 ON t1.id = t2.id WHEN MATCHED THEN UPDATE SET a = t2.a WHEN NOT MATCHED THEN INSERT (a) VALUES (t2.a);" }
+
+  - id: returning_clause
+    name: "RETURNING / equivalent on DML"
+    category: dml
+    ansi: false
+    weight: 3
+    probe: "INSERT INTO t1 (a) VALUES (1) RETURNING a;"
+    dialects:
+      bigquery:
+        probe: "INSERT INTO t1 (a) VALUES (1) THEN RETURN a;"
+      tsql:
+        probe: "INSERT INTO t1 (a) OUTPUT INSERTED.a VALUES (1);"
+      oracle:
+        probe: "INSERT INTO t1 (a) VALUES (1) RETURNING a INTO v_a;"
+      db2:
+        probe: "SELECT a FROM FINAL TABLE (INSERT INTO t1 (a) VALUES (1));"
+      mysql:      { status: not-applicable, reason: "No upstream support (MariaDB-only feature)" }
+      snowflake:  { status: not-applicable, reason: "Snowflake has no RETURNING (issue #116 corrected)" }
+      clickhouse: { status: not-applicable, reason: "Open upstream feature request ClickHouse#21697" }
+      redshift:   { status: not-applicable, reason: "No upstream support" }
+      trino:      { status: not-applicable, reason: "No upstream support" }
+      athena:     { status: not-applicable, reason: "No upstream support" }
+      hive:       { status: not-applicable, reason: "No upstream support" }
+      spark:      { status: not-applicable, reason: "No upstream support as of Spark 4.x" }
+      databricks: { status: not-applicable, reason: "No upstream support" }
+      flink:      { status: not-applicable, reason: "Streaming model: results go to sinks" }
+
+  - id: upsert
+    name: "Upsert (ON CONFLICT / ON DUPLICATE KEY)"
+    category: dml
+    ansi: false
+    weight: 3
+    probe: "INSERT INTO t1 (a) VALUES (1) ON CONFLICT DO NOTHING;"
+    dialects:
+      mysql:
+        probe: "INSERT INTO t1 (a) VALUES (1) ON DUPLICATE KEY UPDATE a = 2;"
+      mariadb:
+        probe: "INSERT INTO t1 (a) VALUES (1) ON DUPLICATE KEY UPDATE a = 2;"
+      tsql:       { status: not-applicable, reason: "T-SQL upserts via MERGE" }
+      oracle:     { status: not-applicable, reason: "Oracle upserts via MERGE" }
+      db2:        { status: not-applicable, reason: "Db2 upserts via MERGE" }
+      hive:       { status: not-applicable, reason: "No upsert; INSERT OVERWRITE instead" }
+      spark:      { status: not-applicable, reason: "Upserts via MERGE INTO (Delta/Iceberg)" }
+      databricks: { status: not-applicable, reason: "Upserts via MERGE INTO" }
+      snowflake:  { status: not-applicable, reason: "Snowflake upserts via MERGE" }
+      bigquery:   { status: not-applicable, reason: "BigQuery upserts via MERGE" }
+      redshift:   { status: not-applicable, reason: "Redshift upserts via MERGE / staging" }
+      trino:      { status: not-applicable, reason: "No upsert syntax" }
+      athena:     { status: not-applicable, reason: "No upsert syntax" }
+      clickhouse: { status: not-applicable, reason: "Dedup via ReplacingMergeTree engine" }
+      flink:      { probe: "UPSERT INTO t1 VALUES (1, 'x');" }
+
+  - id: locking_clause
+    name: "SELECT … FOR UPDATE row locking"
+    category: dml
+    ansi: false
+    weight: 3
+    probe: "SELECT a FROM t1 FOR UPDATE;"
+    dialects:
+      mysql:
+        probe: "SELECT a FROM t1 FOR UPDATE SKIP LOCKED;"
+      oracle:
+        probe: "SELECT a FROM t1 FOR UPDATE OF a NOWAIT;"
+      snowflake:
+        probe: "SELECT a FROM t1 FOR UPDATE NOWAIT;"
+      tsql:
+        probe: "SELECT a FROM t1 WITH (UPDLOCK);"
+      db2:
+        probe: "SELECT a FROM t1 WITH RS;"
+      sqlite:     { status: not-applicable, reason: "Whole-database locking model" }
+      hive:       { status: not-applicable, reason: "No row locking" }
+      spark:      { status: not-applicable, reason: "No row locking" }
+      databricks: { status: not-applicable, reason: "No row locking" }
+      bigquery:   { status: not-applicable, reason: "No row locking" }
+      redshift:   { status: not-applicable, reason: "No SELECT FOR UPDATE" }
+      trino:      { status: not-applicable, reason: "No row locking" }
+      athena:     { status: not-applicable, reason: "No row locking" }
+      duckdb:     { status: not-applicable, reason: "No row locking" }
+      clickhouse: { status: not-applicable, reason: "No row locking" }
+      flink:      { status: not-applicable, reason: "No row locking" }
+
+  - id: truncate
+    name: "TRUNCATE TABLE"
+    category: dml
+    ansi: true
+    weight: 1
+    probe: "TRUNCATE TABLE t1;"
+    dialects:
+      sqlite: { status: not-applicable, reason: "SQLite uses DELETE without WHERE" }
+
+  # ── ddl ──────────────────────────────────────────────────────────────────
+
+  - id: create_table
+    name: "CREATE TABLE with constraints"
+    category: ddl
+    ansi: true
+    weight: 3
+    probe: "CREATE TABLE t9 (id INTEGER PRIMARY KEY, name VARCHAR(100) NOT NULL);"
+
+  - id: alter_table_add_column
+    name: "ALTER TABLE ADD COLUMN"
+    category: ddl
+    ansi: true
+    weight: 3
+    probe: "ALTER TABLE t1 ADD COLUMN c INTEGER;"
+
+  - id: create_view
+    name: "CREATE VIEW"
+    category: ddl
+    ansi: true
+    weight: 3
+    probe: "CREATE VIEW v1 AS SELECT a FROM t1;"
+
+  - id: materialized_view
+    name: "CREATE MATERIALIZED VIEW"
+    category: ddl
+    ansi: false
+    weight: 1
+    probe: "CREATE MATERIALIZED VIEW mv1 AS SELECT a FROM t1;"
+    # Inherited from the permissive upstream fork: base parses this.
+    purity_exception: true
+    dialects:
+      mysql:   { status: not-applicable, reason: "No materialized views upstream" }
+      mariadb: { status: not-applicable, reason: "No materialized views upstream" }
+      sqlite:  { status: not-applicable, reason: "No materialized views upstream" }
+      tsql:    { status: not-applicable, reason: "T-SQL uses indexed views instead" }
+      hive:
+        probe: "CREATE MATERIALIZED VIEW mv1 AS SELECT a FROM t1;"
+      spark:   { status: not-applicable, reason: "No materialized views in OSS Spark" }
+
+  - id: comment_on
+    name: "COMMENT ON object"
+    category: ddl
+    ansi: false
+    weight: 1
+    probe: "COMMENT ON TABLE t1 IS 'docs';"
+    dialects:
+      mysql:      { status: not-applicable, reason: "Comments via COMMENT= table option" }
+      mariadb:    { status: not-applicable, reason: "Comments via COMMENT= table option" }
+      sqlite:     { status: not-applicable, reason: "No COMMENT statement" }
+      tsql:       { status: not-applicable, reason: "Comments via sp_addextendedproperty" }
+      bigquery:   { status: not-applicable, reason: "Comments via OPTIONS(description=…)" }
+      clickhouse: { status: not-applicable, reason: "Comments via ALTER … MODIFY COMMENT" }
+      flink:      { status: not-applicable, reason: "Comments via table options" }
+
+  - id: create_index
+    name: "CREATE INDEX"
+    category: ddl
+    ansi: false
+    weight: 3
+    probe: "CREATE INDEX idx1 ON t1 (a);"
+    # CREATE INDEX is not in ISO SQL but is parsed by the base grammar
+    # (inherited from the permissive upstream fork).
+    purity_exception: true
+    dialects:
+      hive:       { status: not-applicable, reason: "Indexes removed in Hive 3" }
+      spark:      { status: not-applicable, reason: "No indexes" }
+      databricks: { status: not-applicable, reason: "No user indexes (Delta manages layout)" }
+      snowflake:  { status: not-applicable, reason: "No user indexes (micro-partitions)" }
+      bigquery:
+        probe: "CREATE SEARCH INDEX idx1 ON t1 (ALL COLUMNS);"
+      trino:      { status: not-applicable, reason: "No indexes (connector-dependent)" }
+      athena:     { status: not-applicable, reason: "No indexes" }
+      redshift:   { status: not-applicable, reason: "No indexes (uses sort/dist keys)" }
+      clickhouse:
+        probe: "ALTER TABLE t1 ADD INDEX idx1 a TYPE minmax GRANULARITY 4;"
+      flink:      { status: not-applicable, reason: "No indexes" }
+
+  - id: create_temporary_table
+    name: "CREATE TEMPORARY TABLE"
+    category: ddl
+    ansi: true
+    weight: 1
+    probe: "CREATE TEMPORARY TABLE tmp1 (a INTEGER);"
+
+  # ── procedural / admin ───────────────────────────────────────────────────
+
+  - id: transactions
+    name: "START TRANSACTION / COMMIT / ROLLBACK"
+    category: admin
+    ansi: true
+    weight: 3
+    probe: "START TRANSACTION; COMMIT;"
+    dialects:
+      tsql:
+        probe: "BEGIN TRANSACTION; COMMIT;"
+
+  - id: savepoint
+    name: "SAVEPOINT / ROLLBACK TO SAVEPOINT"
+    category: admin
+    ansi: true
+    weight: 1
+    probe: "SAVEPOINT sp1; ROLLBACK TO SAVEPOINT sp1;"
+    dialects:
+      hive:       { status: not-applicable, reason: "No savepoints" }
+      spark:      { status: not-applicable, reason: "No savepoints" }
+      databricks: { status: not-applicable, reason: "No savepoints" }
+      trino:      { status: not-applicable, reason: "No savepoints" }
+      athena:     { status: not-applicable, reason: "No savepoints" }
+      clickhouse: { status: not-applicable, reason: "No savepoints" }
+      bigquery:   { status: not-applicable, reason: "No savepoints" }
+      flink:      { status: not-applicable, reason: "No transactional savepoints in SQL" }
+
+  - id: grant_revoke
+    name: "GRANT / REVOKE"
+    category: admin
+    ansi: true
+    weight: 1
+    probe: "GRANT SELECT ON t1 TO alice;"
+    dialects:
+      sqlite: { status: not-applicable, reason: "No access control" }
+      flink:  { status: not-applicable, reason: "No GRANT in Flink SQL" }
+
+  - id: explain
+    name: "EXPLAIN"
+    category: admin
+    ansi: false
+    weight: 1
+    probe: "EXPLAIN SELECT a FROM t1;"
+    # base accepts EXPLAIN (inherited from the permissive upstream fork).
+    purity_exception: true
+    dialects:
+      tsql: { status: not-applicable, reason: "T-SQL uses SET SHOWPLAN instead" }
+
+  - id: show_statement
+    name: "SHOW metadata statements"
+    category: admin
+    ansi: false
+    weight: 1
+    probe: "SHOW TABLES;"
+    dialects:
+      postgres: { status: not-applicable, reason: "Metadata via catalog/psql, not SHOW TABLES" }
+      sqlite:   { status: not-applicable, reason: "Metadata via pragma" }
+      tsql:     { status: not-applicable, reason: "Metadata via system views" }
+      oracle:   { status: not-applicable, reason: "Metadata via data dictionary" }
+      db2:      { status: not-applicable, reason: "Metadata via catalog" }
+      redshift: { status: not-applicable, reason: "Metadata via catalog" }
+      bigquery: { status: not-applicable, reason: "Metadata via INFORMATION_SCHEMA" }
+
+  - id: procedural_block
+    name: "Procedural block (BEGIN … END / scripting)"
+    category: procedural
+    ansi: false
+    weight: 3
+    probe: "BEGIN SELECT a FROM t1; END;"
+    dialects:
+      oracle:
+        probe: "BEGIN NULL; END;"
+      mysql:
+        probe: "BEGIN SELECT a FROM t1; END;"
+      postgres:   { status: not-applicable, reason: "Procedural code lives in PL/pgSQL function bodies (strings)" }
+      sqlite:     { status: not-applicable, reason: "No procedural language" }
+      hive:       { status: not-applicable, reason: "No procedural language" }
+      trino:      { status: not-applicable, reason: "No procedural language" }
+      athena:     { status: not-applicable, reason: "No procedural language" }
+      duckdb:     { status: not-applicable, reason: "No procedural language" }
+      clickhouse: { status: not-applicable, reason: "No procedural language" }
+      redshift:   { status: not-applicable, reason: "Procedural code inside $$ strings" }
+      mariadb:
+        probe: "BEGIN SELECT a FROM t1; END;"
+      flink:      { status: not-applicable, reason: "No procedural language" }
+      cockroachdb: { status: not-applicable, reason: "No procedural SQL language" }
+
+  - id: prepared_statements
+    name: "PREPARE / EXECUTE"
+    category: admin
+    ansi: false
+    weight: 1
+    probe: "PREPARE p1 AS SELECT a FROM t1;"
+    dialects:
+      mysql:
+        probe: "PREPARE p1 FROM 'SELECT 1';"
+      mariadb:
+        probe: "PREPARE p1 FROM 'SELECT 1';"
+      tsql:       { status: not-applicable, reason: "Uses sp_executesql" }
+      oracle:     { status: not-applicable, reason: "Uses EXECUTE IMMEDIATE (PL/SQL)" }
+      db2:
+        probe: "PREPARE p1 FROM 'SELECT 1';"
+      sqlite:     { status: not-applicable, reason: "API-level prepare only" }
+      hive:       { status: not-applicable, reason: "No PREPARE" }
+      spark:      { status: not-applicable, reason: "No PREPARE" }
+      databricks: { status: not-applicable, reason: "No PREPARE" }
+      snowflake:  { status: not-applicable, reason: "No SQL-level PREPARE" }
+      bigquery:   { status: not-applicable, reason: "No PREPARE" }
+      redshift:
+        probe: "PREPARE p1 AS SELECT a FROM t1;"
+      clickhouse: { status: not-applicable, reason: "No PREPARE" }
+      flink:      { status: not-applicable, reason: "No PREPARE" }

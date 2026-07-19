@@ -61,6 +61,8 @@ const PARENTS = {
   databricks: ['spark', 'hive'],
   mariadb: ['mysql'],
   athena: ['trino'],
+  cockroachdb: ['postgres'],
+  spanner: ['bigquery'],
 };
 
 const parentHashes = [];

@@ -39,7 +39,7 @@ jobs:
           - shard: hive-chain
             dialects: "hive spark databricks oracle db2"
           - shard: pg-mysql
-            dialects: "postgres mysql mariadb sqlite duckdb"
+            dialects: "postgres mysql mariadb sqlite duckdb cockroachdb"
           - shard: warehouse
             dialects: "snowflake bigquery tsql clickhouse flink"
           - shard: trino-chain
@@ -103,6 +103,49 @@ jobs:
             echo "::endgroup::"
           done
 
+  # ── Feature-completeness scorecard ──────────────────────────────────────────
+  # Parses every feature probe in tools/features.yml with every dialect parser
+  # and fails on coverage regressions (implemented → absent) or new ANSI
+  # purity violations in the base grammar. Baseline: tools/coverage.json.
+  scorecard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: tree-sitter/setup-action@v2
+        with:
+          install-lib: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            src/parser.c
+            src/node-types.json
+            src/tree_sitter/
+            */src/parser.c
+            */src/node-types.json
+            */src/tree_sitter/
+            .grammar-cache/
+            ~/.cache/tree-sitter/
+          key: parsers-scorecard-${{ hashFiles('grammar.js', 'grammar/**', '*/grammar.js', '*/grammar/**') }}
+          restore-keys: |
+            parsers-scorecard-
+
+      - name: Generate all parsers
+        run: npm run generate:all
+
+      - name: Evidence corroboration gate
+        run: |
+          pip install pyyaml
+          python tools/corroborate.py
+
+      - name: Scorecard regression check
+        env:
+          TREE_SITTER_BIN: tree-sitter
+        run: python tools/scorecard.py --check
+
   # ── Node native binding (OS matrix) ─────────────────────────────────────────
   # node-gyp compiles parser.c to a native .node addon. The result is
   # platform-specific, so this job stays as a 3-OS matrix.
@@ -153,7 +196,7 @@ jobs:
           # forms "(ERROR", "(MISSING", "(UNEXPECTED") rather than the bare words,
           # which legitimately appear in valid SQL (e.g. EXCEPTION WHEN ERROR THEN,
           # ERROR_MESSAGE(), RAISERROR(...)). errors.txt holds intentional error tests.
-          for dir in test spark/test databricks/test postgres/test mysql/test snowflake/test mariadb/test sqlite/test hive/test oracle/test db2/test duckdb/test trino/test athena/test redshift/test bigquery/test tsql/test clickhouse/test flink/test; do
+          for dir in test spark/test databricks/test postgres/test mysql/test snowflake/test mariadb/test sqlite/test hive/test oracle/test db2/test duckdb/test trino/test athena/test redshift/test bigquery/test tsql/test clickhouse/test flink/test cockroachdb/test; do
             if [[ $(grep -rnE --exclude=errors.txt '\(ERROR' "$dir/" 2>/dev/null | wc -l) -gt 0 ]]; then
                 echo "Found 'ERROR' in $dir: "
                 grep -rnE --exclude=errors.txt '\(ERROR' "$dir/" | cut -f1,2 -d:

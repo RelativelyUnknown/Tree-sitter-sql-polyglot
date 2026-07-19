@@ -1,0 +1,160 @@
+================================================================================
+Spanner: CREATE TABLE with trailing PRIMARY KEY
+================================================================================
+
+CREATE TABLE Singers (SingerId INT64 NOT NULL, FirstName STRING(1024)) PRIMARY KEY (SingerId);
+
+--------------------------------------------------------------------------------
+
+(program)
+
+================================================================================
+Spanner: interleaved child table with ON DELETE CASCADE
+================================================================================
+
+CREATE TABLE Albums (SingerId INT64 NOT NULL, AlbumId INT64 NOT NULL) PRIMARY KEY (SingerId, AlbumId), INTERLEAVE IN PARENT Singers ON DELETE CASCADE;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (column_definitions
+        (column_definition
+          (identifier)
+          (keyword_int64)
+          (keyword_not)
+          (keyword_null))
+        (column_definition
+          (identifier)
+          (keyword_int64)
+          (keyword_not)
+          (keyword_null)))
+      (table_primary_key
+        (keyword_primary)
+        (keyword_key)
+        (ordered_key_part
+          (identifier))
+        (ordered_key_part
+          (identifier)))
+      (interleave_clause
+        (keyword_interleave)
+        (keyword_in)
+        (keyword_parent)
+        (object_reference
+          (identifier))
+        (keyword_on)
+        (keyword_delete)
+        (keyword_cascade)))))
+
+================================================================================
+Spanner: CREATE TABLE with ROW DELETION POLICY
+================================================================================
+
+CREATE TABLE Events (Id INT64 NOT NULL, CreatedAt TIMESTAMP) PRIMARY KEY (Id), ROW DELETION POLICY (OLDER_THAN(CreatedAt, INTERVAL 30 DAY));
+
+--------------------------------------------------------------------------------
+
+(program)
+
+================================================================================
+Spanner: NULL_FILTERED index with STORING and INTERLEAVE
+================================================================================
+
+CREATE UNIQUE NULL_FILTERED INDEX AlbumsByTitle ON Albums (AlbumTitle DESC) STORING (MarketingBudget), INTERLEAVE IN Singers;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_index
+      (keyword_create)
+      (keyword_unique)
+      (keyword_null_filtered)
+      (keyword_index)
+      (identifier)
+      (keyword_on)
+      (object_reference
+        (identifier))
+      (index_fields
+        (field
+          (identifier)
+          (direction
+            (keyword_desc))))
+      (keyword_storing)
+      (list
+        (column
+          (identifier)))
+      (interleave_clause
+        (keyword_interleave)
+        (keyword_in)
+        (object_reference
+          (identifier))))))
+
+================================================================================
+Spanner: CREATE CHANGE STREAM
+================================================================================
+
+CREATE CHANGE STREAM OrderStream FOR Orders, Customers(Name, Email);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_change_stream
+      (keyword_create)
+      (keyword_change)
+      (keyword_stream)
+      (object_reference
+        (identifier))
+      (keyword_for)
+      (change_stream_target
+        (object_reference
+          (identifier)))
+      (change_stream_target
+        (object_reference
+          (identifier))
+        (list
+          (column
+            (identifier))
+          (column
+            (identifier)))))))
+
+================================================================================
+Spanner: CREATE CHANGE STREAM FOR ALL with options
+================================================================================
+
+CREATE CHANGE STREAM EverythingStream FOR ALL OPTIONS (retention_period = '36h');
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_change_stream
+      (keyword_create)
+      (keyword_change)
+      (keyword_stream)
+      (object_reference
+        (identifier))
+      (keyword_for)
+      (keyword_all)
+      (options_clause
+        (keyword_options)
+        (identifier)
+        (literal)))))
+
+================================================================================
+Spanner: inherited GoogleSQL features (THEN RETURN, types, QUALIFY)
+================================================================================
+
+INSERT INTO Singers (SingerId) VALUES (1) THEN RETURN SingerId;
+
+SELECT SingerId FROM Singers QUALIFY ROW_NUMBER() OVER (ORDER BY SingerId) = 1;
+
+--------------------------------------------------------------------------------
+
+(program)

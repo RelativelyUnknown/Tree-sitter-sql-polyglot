@@ -25,6 +25,10 @@ export default grammar(mysql, {
     [$.mysql_alter_partition],
     [$.declare_statement, $.declare_cursor_statement, $.declare_condition_statement, $.declare_handler_statement],
     [$.statement, $.declare_handler_statement],
+    // FOR after a relation is ambiguous: FOR SYSTEM_TIME (temporal clause,
+    // inside relation) vs FOR UPDATE/SHARE (locking clause, after the from).
+    // GLR must explore both until SYSTEM_TIME/UPDATE disambiguates.
+    [$.relation],
   ],
 
   rules: {

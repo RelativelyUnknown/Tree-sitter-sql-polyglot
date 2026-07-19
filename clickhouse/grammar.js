@@ -206,5 +206,14 @@ export default grammar(base, {
     ...ch_mutation_rules,
     ...ch_access_control_rules,
 
+
+    // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
+    // that are strict prefixes of the base keywords below. Explicit precedence
+    // beats match length in the tree-sitter lexer, so without an equal-prec
+    // re-declaration the longer keyword becomes unlexable in this dialect.
+    keyword_maxvalue: _ => token(prec(1, make_keyword("maxvalue"))),
+    keyword_minvalue: _ => token(prec(1, make_keyword("minvalue"))),
+    keyword_rows: _ => token(prec(1, make_keyword("rows"))),
+
   },
 });

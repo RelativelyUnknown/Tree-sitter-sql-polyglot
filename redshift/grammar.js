@@ -53,6 +53,7 @@ export default grammar(base, {
       $.grant_statement,
       $.revoke_statement,
       $._optimize_statement,
+      $.comment_statement,
     ),
 
     // Override _expression to add approximate_count

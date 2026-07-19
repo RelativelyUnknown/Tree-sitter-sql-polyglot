@@ -245,12 +245,14 @@ export default {
     ),
   ),
 
+  // ANSI: TABLESAMPLE [BERNOULLI | SYSTEM] (n [ROWS | PERCENT])
   tablesample: $ => seq(
     $.keyword_tablesample,
+    optional(choice($.keyword_bernoulli, $.keyword_system)),
     '(',
-    choice(
-      seq($._natural_number, $.keyword_rows),
-      seq($._natural_number, $.keyword_percent),
+    seq(
+      $._natural_number,
+      optional(choice($.keyword_rows, $.keyword_percent)),
     ),
     ')',
   ),
@@ -478,19 +480,31 @@ export default {
     ),
   ),
 
-  limit: $ => seq(
+  // prec.right: after LIMIT n, a following OFFSET binds to the limit clause
+  // rather than starting an ANSI OFFSET … ROWS offset_fetch_clause.
+  limit: $ => prec.right(seq(
     $.keyword_limit,
     $.literal,
     optional($.offset),
-  ),
+  )),
 
   offset: $ => seq(
     $.keyword_offset,
     $.literal,
   ),
 
-  // ANSI FETCH {FIRST|NEXT} n {ROW|ROWS} {ONLY|WITH TIES}
-  offset_fetch_clause: $ => seq(
+  // ANSI [OFFSET n {ROW|ROWS}] FETCH {FIRST|NEXT} n {ROW|ROWS} {ONLY|WITH TIES}
+  offset_fetch_clause: $ => prec.right(choice(
+    seq(
+      $.keyword_offset,
+      $.literal,
+      choice($.keyword_row, $.keyword_rows),
+      optional($._fetch_first_clause),
+    ),
+    $._fetch_first_clause,
+  )),
+
+  _fetch_first_clause: $ => seq(
     $.keyword_fetch,
     choice($.keyword_first, $.keyword_next),
     optional($.literal),

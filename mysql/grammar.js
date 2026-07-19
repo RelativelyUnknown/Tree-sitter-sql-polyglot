@@ -610,5 +610,15 @@ export default grammar(base, {
     ...mysql_partition_rules,
     ...mysql_admin_rules,
 
+
+    // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
+    // that are strict prefixes of the base keywords below. Explicit precedence
+    // beats match length in the tree-sitter lexer, so without an equal-prec
+    // re-declaration the longer keyword becomes unlexable in this dialect.
+    keyword_attribute: _ => token(prec(1, make_keyword("attribute"))),
+    keyword_atomic: _ => token(prec(1, make_keyword("atomic"))),
+    keyword_called: _ => token(prec(1, make_keyword("called"))),
+    keyword_repeatable: _ => token(prec(1, make_keyword("repeatable"))),
+
   },
 });
