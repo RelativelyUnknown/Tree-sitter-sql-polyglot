@@ -58,6 +58,7 @@ export default {
     $.set_statement,
     $.grant_statement,
     $.revoke_statement,
+    $.comment_statement,
   ),
 
   _dml_write: $ => seq(
