@@ -46,6 +46,21 @@ export default grammar(base, {
 
   rules: {
 
+    // Trino has its own comment_on_statement (richer than base comment_statement);
+    // exclude the base rule from the inherited DDL dispatch to avoid ambiguity (#126)
+    _ddl_statement: $ => choice(
+      $._create_statement,
+      $._alter_statement,
+      $._drop_statement,
+      $._rename_statement,
+      $._merge_statement,
+      $._refresh_statement,
+      $.set_statement,
+      $.grant_statement,
+      $.revoke_statement,
+    ),
+
+
     statement: $ => seq(
       optional(seq(
         $.keyword_explain,

@@ -1,4 +1,4 @@
-import { comma_list } from '../../grammar/helpers.js';
+import { comma_list, optional_parenthesis } from '../../grammar/helpers.js';
 
 export default {
 
@@ -144,6 +144,26 @@ export default {
     $.identifier,
     $.keyword_as,
     $._expression,
+  ),
+
+  // Trino: SELECT … FOR UPDATE (#113)
+  _select_statement: $ => optional_parenthesis(
+    seq(
+      $.select,
+      optional(
+        seq(
+          $.keyword_into,
+          $.select_expression,
+        ),
+      ),
+      optional($.from),
+      optional($.locking_clause),
+    ),
+  ),
+
+  locking_clause: $ => seq(
+    $.keyword_for,
+    $.keyword_update,
   ),
 
 };

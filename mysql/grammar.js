@@ -90,6 +90,7 @@ export default grammar(base, {
       $.repair_table_statement,
       $.check_table_statement,
       $.analyze_table_statement,
+      $.comment_statement,
     ),
 
     _dml_write: $ => seq(

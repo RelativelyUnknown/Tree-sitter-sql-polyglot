@@ -72,7 +72,7 @@ export default grammar(base, {
       ),
     ),
 
-    // ── DML: THEN RETURN (BigQuery's RETURNING equivalent) ──────────────────
+    // ── DML: THEN RETURN — BigQuery's RETURNING equivalent (#117) ───────────
     _insert_statement: $ => seq(
       $.insert,
       optional($.then_return_clause),
@@ -115,6 +115,7 @@ export default grammar(base, {
       // BigQuery additions
       $.export_data,
       $.assert_statement,
+      $.comment_statement,
     ),
 
     // ── CREATE: add BigQuery CREATE types ──────────────────────────────────
