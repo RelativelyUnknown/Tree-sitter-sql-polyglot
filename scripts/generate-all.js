@@ -16,11 +16,26 @@
  * writing only to its own <dialect>/src/.
  */
 
-import { spawn } from 'child_process';
+import { execSync, spawn } from 'child_process';
 import { cpus } from 'os';
 import { fileURLToPath } from 'url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+
+// Must match the CLI constant in generate.js. npx extracts a cold-cache
+// package into a shared ~/.npm/_npx/<hash>/ directory on first use; when
+// several generate.js children race to do that extract-then-execute at once,
+// one can end up executing the binary while another is still writing it
+// (ETXTBSY) or spawning it mid-extraction (ENOENT). Warm the cache with a
+// single serial call before starting the concurrent pool so every worker
+// below finds it already fully extracted.
+const CLI = 'npx --yes --package=tree-sitter-cli@v0.26.3 -- tree-sitter';
+try {
+  execSync(`${CLI} --version`, { cwd: ROOT, stdio: 'ignore' });
+} catch {
+  // Ignore — if the CLI is genuinely broken, the failure surfaces per-dialect
+  // below where it can be attributed to a specific grammar.
+}
 
 const DEFAULT_ALL = [
   'base', 'spark', 'postgres', 'mysql', 'databricks', 'snowflake', 'bigquery',
