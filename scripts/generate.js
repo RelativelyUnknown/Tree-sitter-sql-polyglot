@@ -77,9 +77,23 @@ mkdirSync(join(ROOT, '.grammar-cache'), { recursive: true });
 const cacheKey = dialect || 'base';
 const hashFile = join(ROOT, `.grammar-cache/${cacheKey}.hash`);
 
-if (existsSync(hashFile) && readFileSync(hashFile, 'utf8').trim() === currentHash.trim()) {
+// The hash marker alone isn't proof generation actually happened: CI restores
+// .grammar-cache/ and src/**/*.json/parser.c from the SAME actions/cache key,
+// but if that cache entry was ever saved incomplete (e.g. a prior run whose
+// upload step raced a mid-flight generate, or GitHub's immutable-cache-key
+// semantics pinned an old/partial save under this exact hash), the marker
+// restores fine while the artifact it describes never does — and every
+// future run with an identical grammar hash trusts the marker forever.
+// Require the primary generated artifact to actually be on disk too.
+const parserPath = join(grammarDir, 'src', 'parser.c');
+const hashMatches = existsSync(hashFile) && readFileSync(hashFile, 'utf8').trim() === currentHash.trim();
+
+if (hashMatches && existsSync(parserPath)) {
   console.log(`grammar unchanged — skipping generate (${cacheKey})`);
   process.exit(0);
+}
+if (hashMatches) {
+  console.log(`hash marker present but ${parserPath.replace(ROOT, '')} is missing — regenerating (${cacheKey})`);
 }
 
 console.log(`generating parser for ${cacheKey}...`);
