@@ -14,23 +14,26 @@ export default {
     ),
   ),
 
-  // Override relation to add optional FOR SYSTEM_TIME clause
-  relation: $ => prec.right(
-    seq(
-      choice(
-        $.subquery,
-        $.invocation,
-        $.json_table,
-        $.object_reference,
-        wrapped_in_parenthesis($.values),
-      ),
-      optional($.tablesample),
-      optional($._for_system_time),
-      optional(
-        seq(
-          $._alias,
-          optional(alias($._column_list, $.list)),
-        ),
+  // Override relation to add optional FOR SYSTEM_TIME clause.
+  // Deliberately NOT prec.right: right-associativity would statically resolve
+  // the shift/reduce on FOR toward FOR SYSTEM_TIME and never let the declared
+  // [$.relation] GLR conflict fork, breaking `… FROM t FOR UPDATE` (the
+  // locking clause inherited from mysql). Without the static resolution GLR
+  // explores both; SYSTEM_TIME vs UPDATE disambiguates one token later.
+  relation: $ => seq(
+    choice(
+      $.subquery,
+      $.invocation,
+      $.json_table,
+      $.object_reference,
+      wrapped_in_parenthesis($.values),
+    ),
+    optional($.tablesample),
+    optional($._for_system_time),
+    optional(
+      seq(
+        $._alias,
+        optional(alias($._column_list, $.list)),
       ),
     ),
   ),

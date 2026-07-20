@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, make_keyword, comma_list } from '../grammar/helpers.js';
+import { optional_parenthesis, make_keyword, comma_list, paren_list } from '../grammar/helpers.js';
 import rs_create_rules from './grammar/create.js';
 import rs_copy_rules   from './grammar/copy.js';
 import rs_optimize_rules from './grammar/optimize.js';
@@ -38,6 +38,9 @@ export default grammar(base, {
         $.unload_statement,
         $.alter_group_statement,
         $.set_session_variable_statement,
+        $.prepare_statement,
+        $.execute_statement,
+        $.deallocate_statement,
       ),
     ),
 
@@ -54,6 +57,35 @@ export default grammar(base, {
       $.revoke_statement,
       $._optimize_statement,
       $.comment_statement,
+    ),
+
+    // PREPARE name [(data_type, ...)] AS statement (PostgreSQL-style)
+    prepare_statement: $ => seq(
+      $.keyword_prepare,
+      field('name', $.identifier),
+      optional(paren_list($._type, true)),
+      $.keyword_as,
+      choice(
+        $._dml_read,
+        $._dml_write,
+      ),
+    ),
+
+    // EXECUTE name [(parameter, ...)]
+    execute_statement: $ => seq(
+      $.keyword_execute,
+      field('name', $.identifier),
+      optional(paren_list($._expression, true)),
+    ),
+
+    // DEALLOCATE [PREPARE] { name | ALL }
+    deallocate_statement: $ => seq(
+      $.keyword_deallocate,
+      optional($.keyword_prepare),
+      choice(
+        field('name', $.identifier),
+        $.keyword_all,
+      ),
     ),
 
     // Override _expression to add approximate_count
@@ -89,6 +121,8 @@ export default grammar(base, {
 
     // ── Redshift-specific keywords ───────────────────────────────────────────
     // COPY / UNLOAD
+    keyword_prepare:      _ => token(prec(1, make_keyword("prepare"))),
+    keyword_deallocate:   _ => token(prec(1, make_keyword("deallocate"))),
     keyword_copy:         _ => token(prec(1, make_keyword("copy"))),
     keyword_unload:       _ => token(prec(1, make_keyword("unload"))),
     keyword_iam_role:     _ => token(prec(1, make_keyword("iam_role"))),

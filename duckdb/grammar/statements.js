@@ -1,4 +1,4 @@
-import { comma_list, wrapped_in_parenthesis, optional_parenthesis } from '../../grammar/helpers.js';
+import { comma_list, wrapped_in_parenthesis, optional_parenthesis, paren_list } from '../../grammar/helpers.js';
 
 export default {
 
@@ -124,5 +124,40 @@ export default {
       ')',
     )),
   )),
+
+  // SHOW {TABLES | ALL TABLES | DATABASES | object} (metadata inspection)
+  show_statement: $ => seq(
+    $.keyword_show,
+    choice(
+      seq(optional($.keyword_all), $.keyword_tables),
+      $.keyword_databases,
+      $.object_reference,
+    ),
+  ),
+
+  // PREPARE name AS statement (PostgreSQL-compatible)
+  prepare_statement: $ => seq(
+    $.keyword_prepare,
+    field('name', $.identifier),
+    $.keyword_as,
+    choice(
+      $._dml_read,
+      $._dml_write,
+    ),
+  ),
+
+  // EXECUTE name [(parameter, ...)]
+  execute_statement: $ => seq(
+    $.keyword_execute,
+    field('name', $.identifier),
+    optional(paren_list($._expression, true)),
+  ),
+
+  // DEALLOCATE [PREPARE] name
+  deallocate_statement: $ => seq(
+    $.keyword_deallocate,
+    optional($.keyword_prepare),
+    field('name', $.identifier),
+  ),
 
 };

@@ -91,6 +91,9 @@ export default grammar(base, {
       $.check_table_statement,
       $.analyze_table_statement,
       $.comment_statement,
+      $.prepare_statement,
+      $.execute_statement,
+      $.deallocate_statement,
     ),
 
     _dml_write: $ => seq(
@@ -435,6 +438,8 @@ export default grammar(base, {
     keyword_share:           _ => token(prec(1, make_keyword("share"))),
     keyword_lock:            _ => token(prec(1, make_keyword("lock"))),
     keyword_locked:          _ => token(prec(1, make_keyword("locked"))),
+    keyword_prepare:         _ => token(prec(1, make_keyword("prepare"))),
+    keyword_deallocate:      _ => token(prec(1, make_keyword("deallocate"))),
     keyword_skip:            _ => token(prec(1, make_keyword("skip"))),
     keyword_mode:            _ => token(prec(1, make_keyword("mode"))),
     keyword_global:          _ => token(prec(1, make_keyword("global"))),

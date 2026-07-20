@@ -41,6 +41,7 @@ export default {
     optional($.window_clause),
     optional($.order_by),
     optional($.limit),
+    optional($.offset_fetch_clause),
     optional($.for_clause),
   ),
 

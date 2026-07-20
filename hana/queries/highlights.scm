@@ -3,6 +3,7 @@
 ; SAP HANA-specific keywords
 [
   (keyword_upsert)
+  (keyword_locked)
   (keyword_hint)
   (keyword_sqlscript)
   (keyword_invoker)

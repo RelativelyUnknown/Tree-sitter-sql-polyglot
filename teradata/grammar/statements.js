@@ -343,4 +343,14 @@ export default {
     )),
   )),
 
+  // BEGIN [ATOMIC] stmts END — Teradata stored-procedure compound block
+  compound_statement: $ => seq(
+    optional(field('label', seq($.identifier, ':'))),
+    $.keyword_begin,
+    optional($.keyword_atomic),
+    repeat(seq($.statement, ';')),
+    $.keyword_end,
+    optional(field('end_label', $.identifier)),
+  ),
+
 };

@@ -51,11 +51,27 @@ export default grammar(base, {
       ),
     ),
 
+    // base DDL dispatch plus COMMENT ON (HANA supports COMMENT ON TABLE/COLUMN/VIEW).
+    // Full re-enumeration: an override replaces the base rule entirely.
+    _ddl_statement: $ => choice(
+      $._create_statement,
+      $._alter_statement,
+      $._drop_statement,
+      $._rename_statement,
+      $._merge_statement,
+      $._refresh_statement,
+      $.set_statement,
+      $.grant_statement,
+      $.revoke_statement,
+      $.comment_statement,
+    ),
+
     // base parameter plus HANA :name SQLScript variable references
     parameter: _ => /\?|(\$[0-9]+)|(:[a-zA-Z_][a-zA-Z0-9_]*)/,
 
     // HANA-specific keywords (dialect-level per AGENTS.md)
     keyword_upsert:    _ => token(prec(1, make_keyword("upsert"))),
+    keyword_locked:    _ => token(prec(1, make_keyword("locked"))),
     keyword_hint:      _ => token(prec(1, make_keyword("hint"))),
     keyword_sqlscript: _ => token(prec(1, make_keyword("sqlscript"))),
     keyword_invoker:   _ => token(prec(1, make_keyword("invoker"))),

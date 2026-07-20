@@ -1,4 +1,6 @@
 ; Redshift-specific keywords
+(keyword_prepare) @keyword
+(keyword_deallocate) @keyword
 (keyword_copy) @keyword
 (keyword_unload) @keyword
 (keyword_iam_role) @keyword

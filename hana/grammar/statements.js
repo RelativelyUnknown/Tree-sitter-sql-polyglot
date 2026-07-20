@@ -1,4 +1,4 @@
-import { comma_list, paren_list } from '../../grammar/helpers.js';
+import { comma_list, paren_list, optional_parenthesis } from '../../grammar/helpers.js';
 
 export default {
 
@@ -96,6 +96,35 @@ export default {
     field('name', $.identifier),
     ':=',
     $._expression,
+  ),
+
+  // base _select_statement plus HANA row locking
+  _select_statement: $ => optional_parenthesis(
+    seq(
+      $.select,
+      optional(
+        seq(
+          $.keyword_into,
+          $.select_expression,
+        ),
+      ),
+      optional($.from),
+      optional($.locking_clause),
+    ),
+  ),
+
+  // FOR UPDATE [OF col, …] [NOWAIT | WAIT n | IGNORE LOCKED]
+  locking_clause: $ => seq(
+    $.keyword_for,
+    $.keyword_update,
+    optional(seq($.keyword_of, comma_list($.object_reference, true))),
+    optional(
+      choice(
+        $.keyword_nowait,
+        seq($.keyword_wait, alias($._integer, $.literal)),
+        seq($.keyword_ignore, $.keyword_locked),
+      ),
+    ),
   ),
 
 };

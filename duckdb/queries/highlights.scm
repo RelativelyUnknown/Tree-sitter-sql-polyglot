@@ -2,6 +2,10 @@
 
 ; DuckDB-specific keywords
 [
+  (keyword_prepare)
+  (keyword_deallocate)
+  (keyword_show)
+  (keyword_databases)
   (keyword_attach)
   (keyword_detach)
   (keyword_install)

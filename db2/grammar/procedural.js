@@ -134,4 +134,22 @@ export default {
     optional(field('end_label', $.identifier)),
   ),
 
+  // Dynamic SQL: PREPARE stmt FROM {'sql text' | host-variable}
+  prepare_statement: $ => seq(
+    $.keyword_prepare,
+    field('name', $.identifier),
+    $.keyword_from,
+    choice(
+      alias($._literal_string, $.literal),
+      $.parameter,
+    ),
+  ),
+
+  // EXECUTE stmt [USING var [, var …]]
+  execute_statement: $ => seq(
+    $.keyword_execute,
+    field('name', $.identifier),
+    optional(seq($.keyword_using, comma_list(choice($.parameter, $.identifier), true))),
+  ),
+
 };

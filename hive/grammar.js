@@ -258,7 +258,11 @@ export default grammar(base, {
       choice(
         seq($._natural_number, $.keyword_rows),
         seq($._natural_number, $.keyword_percent),
-        seq($.keyword_bucket, $._natural_number, $.keyword_out, $.keyword_of, $._natural_number),
+        seq(
+          $.keyword_bucket, $._natural_number, $.keyword_out, $.keyword_of, $._natural_number,
+          // Hive: BUCKET x OUT OF y ON {col | rand()}
+          optional(seq($.keyword_on, choice($.identifier, $.invocation))),
+        ),
       ),
       ')',
     ),

@@ -43,6 +43,8 @@
   (keyword_lock)
   (keyword_locked)
   (keyword_skip)
+  (keyword_prepare)
+  (keyword_deallocate)
   (keyword_mode)
   (keyword_global)
   (keyword_persist)

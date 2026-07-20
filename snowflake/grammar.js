@@ -34,6 +34,12 @@ export default grammar(base, {
     [$._function_return, $.return_statement],
     [$.time],
     [$.timestamp],
+    // Comma-position LATERAL fn(...) as a relation overlaps with the base
+    // JOIN LATERAL / CROSS JOIN LATERAL join forms and their trailing alias;
+    // GLR explores each until ON / ',' / end disambiguates.
+    [$.relation, $.lateral_cross_join],
+    [$._alias, $.lateral_join],
+    [$._alias, $.lateral_cross_join],
   ],
 
   rules: {
@@ -319,6 +325,8 @@ export default grammar(base, {
           wrapped_in_parenthesis($.values),
           // Snowflake: @stage as a FROM source
           $.stage_ref,
+          // Snowflake: comma-position LATERAL FLATTEN(...) / LATERAL (subquery)
+          seq($.keyword_lateral, choice($.invocation, $.subquery)),
         ),
         optional($.time_travel_clause),
         optional($.tablesample),
@@ -357,6 +365,56 @@ export default grammar(base, {
       // Snowflake-specific
       $.variant_access,
     )),
+
+    // base invocation plus Snowflake named arguments: fn(name => value, …)
+    // (e.g. FLATTEN(INPUT => t.col)); re-enumerates the base alternatives.
+    invocation: $ => prec(1,
+      seq(
+        $.object_reference,
+        choice(
+          // Snowflake named arguments
+          paren_list(
+            seq(
+              field('name', $.identifier),
+              '=>',
+              field('value', $._expression),
+            ),
+            true,
+          ),
+          // default invocation
+          paren_list(
+            seq(
+              optional($.keyword_distinct),
+              field('parameter', $.term),
+              optional($.order_by),
+            ),
+          ),
+          // EXTRACT(unit FROM term)
+          paren_list(
+            seq(
+              field('unit', $.object_reference),
+              $.keyword_from,
+              $.term,
+            ),
+          ),
+          // aggregate function, e.g. group_concat
+          wrapped_in_parenthesis(
+            seq(
+              optional($.keyword_distinct),
+              field('parameter', $.term),
+              optional($.order_by),
+              optional(seq(
+                choice($.keyword_separator, ','),
+                alias($._literal_string, $.literal),
+              )),
+              optional($.limit),
+            ),
+          ),
+        ),
+        optional($.filter_expression),
+        optional($.within_group),
+      ),
+    ),
 
     // ── :: type cast (Snowflake-specific; Postgres has same pattern) ─────────
     _colon_cast: $ => seq(

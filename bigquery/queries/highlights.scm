@@ -10,6 +10,13 @@
 
 (keyword_unnest) @function.call
 
+; Search / vector index DDL
+[
+  (keyword_search)
+  (keyword_vector)
+  (keyword_columns)
+] @keyword
+
 (keyword_struct) @keyword
 (keyword_export) @keyword
 (keyword_model) @keyword

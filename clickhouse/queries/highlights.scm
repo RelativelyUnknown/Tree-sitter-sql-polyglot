@@ -26,6 +26,12 @@
 (keyword_flush) @keyword
 (keyword_format) @keyword
 (keyword_freeze) @keyword
+(keyword_show) @keyword
+(keyword_databases) @keyword
+(keyword_processlist) @keyword
+(keyword_granularity) @keyword
+(keyword_materialize) @keyword
+(keyword_clear) @keyword
 (keyword_int128) @keyword
 (keyword_int16) @keyword
 (keyword_int256) @keyword
