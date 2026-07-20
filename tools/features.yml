@@ -406,6 +406,10 @@ features:
     ansi: true
     weight: 3
     probe: "ALTER TABLE t1 ADD COLUMN c INTEGER;"
+    dialects:
+      flink:
+        # Flink SQL has no COLUMN keyword in ALTER TABLE ADD
+        probe: "ALTER TABLE t1 ADD c INTEGER;"
 
   - id: create_view
     name: "CREATE VIEW"
@@ -477,6 +481,8 @@ features:
     ansi: true
     weight: 1
     probe: "CREATE TEMPORARY TABLE tmp1 (a INTEGER);"
+    dialects:
+      spanner: { status: not-applicable, reason: "Spanner GoogleSQL has no temporary tables" }
 
   # ── procedural / admin ───────────────────────────────────────────────────
 
@@ -597,5 +603,10 @@ features:
       hana:       { status: not-applicable, reason: "Prepared statements are API-level" }
       redshift:
         probe: "PREPARE p1 AS SELECT a FROM t1;"
+      trino:
+        # Trino uses PREPARE … FROM, not the PostgreSQL PREPARE … AS form
+        probe: "PREPARE p1 FROM SELECT a FROM t1;"
+      athena:
+        probe: "PREPARE p1 FROM SELECT a FROM t1;"
       clickhouse: { status: not-applicable, reason: "No PREPARE" }
       flink:      { status: not-applicable, reason: "No PREPARE" }
