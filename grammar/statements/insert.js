@@ -16,7 +16,6 @@ export default {
         field('alias', $.identifier)
       ),
     ),
-    // TODO we need a test for `insert...set`
     choice(
       $._insert_values,
       $._set_values,
