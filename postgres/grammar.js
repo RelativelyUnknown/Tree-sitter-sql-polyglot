@@ -1,5 +1,6 @@
 import base from '../grammar.js';
 import { comma_list, optional_parenthesis, paren_list, wrapped_in_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { fromClause } from '../grammar/statements/select.js';
 import pg_copy_rules from './grammar/copy.js';
 import pg_optimize_rules from './grammar/optimize.js';
 import pg_create_rules from './grammar/create.js';
@@ -34,6 +35,9 @@ export default grammar(base, {
   ],
 
   rules: {
+
+    // LIMIT is supported: fromClause with limit re-adds it over the ANSI base.
+    from: $ => fromClause($, { limit: true }),
 
     // PostgreSQL: EXPLAIN [ANALYZE] [VERBOSE] | EXPLAIN ( option [, ...] )
     statement: $ => seq(

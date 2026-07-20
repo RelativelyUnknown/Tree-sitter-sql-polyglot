@@ -252,4 +252,29 @@ export default {
     ),
   )),
 
+  // PREPARE stmt FROM {'sql text' | @user_var}
+  prepare_statement: $ => seq(
+    $.keyword_prepare,
+    field('name', $.identifier),
+    $.keyword_from,
+    choice(
+      alias($._literal_string, $.literal),
+      $.user_variable,
+    ),
+  ),
+
+  // EXECUTE stmt [USING @var [, @var …]]
+  execute_statement: $ => seq(
+    $.keyword_execute,
+    field('name', $.identifier),
+    optional(seq($.keyword_using, comma_list($.user_variable, true))),
+  ),
+
+  // {DEALLOCATE | DROP} PREPARE stmt
+  deallocate_statement: $ => seq(
+    choice($.keyword_deallocate, $.keyword_drop),
+    $.keyword_prepare,
+    field('name', $.identifier),
+  ),
+
 };

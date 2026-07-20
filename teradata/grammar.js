@@ -1,5 +1,6 @@
 import base from '../grammar.js';
 import { comma_list, optional_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { createStatementChoices } from '../grammar/statements/create.js';
 import teradata_statement_rules from './grammar/statements.js';
 
 // Teradata SQL — standalone lineage (since 1979), extends the ANSI base.
@@ -23,10 +24,16 @@ export default grammar(base, {
     [$.list, $.cube_element],
     [$.interval],
     // BLOCKCOMPRESSION=mode(…) option args vs the table's column list
-    [$.teradata_table_option],
+    [$.table_option],
+    // BEGIN … ; is ambiguous between a transaction block and a compound
+    // statement until END/COMMIT disambiguates (same as db2/hana)
+    [$.transaction, $.compound_statement],
   ],
 
   rules: {
+
+    // Re-add non-ANSI CREATE forms this dialect supports over the strict ANSI base.
+    _create_statement: $ => seq(choice(...createStatementChoices($, { index: true }))),
 
     // base statement dispatch plus Teradata statement forms
     statement: $ => seq(
@@ -45,6 +52,7 @@ export default grammar(base, {
         $.replace_view,
         $.set_query_band_statement,
         $.help_statement,
+        $.compound_statement,
       ),
     ),
 
@@ -93,6 +101,21 @@ export default grammar(base, {
       optional($.order_by),
       optional($.limit),
       optional($.offset_fetch_clause),
+    ),
+
+    // base DDL dispatch plus COMMENT ON (Teradata: COMMENT ON TABLE t IS '…').
+    // Full re-enumeration: an override replaces the base rule entirely.
+    _ddl_statement: $ => choice(
+      $._create_statement,
+      $._alter_statement,
+      $._drop_statement,
+      $._rename_statement,
+      $._merge_statement,
+      $._refresh_statement,
+      $.set_statement,
+      $.grant_statement,
+      $.revoke_statement,
+      $.comment_statement,
     ),
 
     // base parameter plus Teradata :name macro/host-variable references

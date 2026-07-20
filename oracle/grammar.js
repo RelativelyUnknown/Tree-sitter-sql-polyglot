@@ -235,8 +235,8 @@ export default grammar(base, {
       $.between_expression,
       $.parenthesized_expression,
       $.trim_expression,
-      $.oracle_date_literal,
-      $.oracle_timestamp_literal,
+      $.date_literal,
+      $.timestamp_literal,
     )),
 
     // Oracle-specific keywords — token(prec(1,...)) needed so lexer prefers
@@ -362,7 +362,7 @@ export default grammar(base, {
         optional($.column_definitions),
         optional(seq($.keyword_as, $.create_query)),
       ),
-      optional($.oracle_partition_clause),
+      optional($.table_partition_by),
     )),
 
     // Override INSERT to add optional RETURNING INTO
@@ -415,7 +415,7 @@ export default grammar(base, {
       $.rename_column,
       $.set_schema,
       $.change_ownership,
-      $.oracle_alter_partition,
+      $.alter_partition,
     ),
 
     ...oracle_hierarchical_rules,

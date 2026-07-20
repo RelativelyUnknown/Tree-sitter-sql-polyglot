@@ -4,7 +4,7 @@ export default {
 
   // [WITH] ('key' = 'val', ...) — Flink connector options
   // keyword_with is optional so ALTER SET can use bare parens
-  flink_options: $ => seq(
+  with_properties: $ => seq(
     optional($.keyword_with),
     '(',
     comma_list(
@@ -70,7 +70,7 @@ export default {
   )),
 
   // [CONSTRAINT name] PRIMARY KEY (cols) [NOT ENFORCED]
-  flink_table_constraint: $ => seq(
+  constraint: $ => seq(
     optional(seq($.keyword_constraint, field('constraint_name', $.identifier))),
     choice(
       seq($.keyword_primary, $.keyword_key),
@@ -81,14 +81,14 @@ export default {
   ),
 
   // Column list supporting metadata/computed/watermark/constraint entries
-  flink_column_definitions: $ => seq(
+  column_definitions: $ => seq(
     '(',
     comma_list(
       choice(
         $.metadata_column,
         $.computed_column,
         $.watermark_definition,
-        $.flink_table_constraint,
+        $.constraint,
         $.column_definition,
       ),
       true,
@@ -134,7 +134,7 @@ export default {
       $.keyword_table,
       optional($._if_not_exists),
       $.object_reference,
-      optional($.flink_column_definitions),
+      optional($.column_definitions),
       optional($._flink_comment),
       optional($.distribution_spec),
       optional(seq(
@@ -143,7 +143,7 @@ export default {
         paren_list($.identifier, true),
       )),
       optional(seq($.keyword_using, $.keyword_connection, $.object_reference)),
-      optional($.flink_options),
+      optional($.with_properties),
       optional($.like_clause),
       optional(seq($.keyword_as, $.create_query)),
     ),
@@ -156,7 +156,7 @@ export default {
     optional($._if_not_exists),
     field('name', $.identifier),
     optional($._flink_comment),
-    optional($.flink_options),
+    optional($.with_properties),
   ),
 
   // Override: CREATE DATABASE [IF NOT EXISTS] name [COMMENT '...'] [WITH (...)]
@@ -166,7 +166,7 @@ export default {
     optional($._if_not_exists),
     $.object_reference,
     optional($._flink_comment),
-    optional($.flink_options),
+    optional($.with_properties),
   )),
 
   // Override: CREATE [OR REPLACE] [TEMPORARY] [SYSTEM] FUNCTION [IF NOT EXISTS] name
@@ -204,7 +204,7 @@ export default {
         ),
       ),
     ),
-    optional($.flink_options),
+    optional($.with_properties),
   )),
 
   // Override: CREATE [OR REPLACE] [TEMPORARY] VIEW [IF NOT EXISTS] name [(fields)] [COMMENT] AS select
@@ -233,7 +233,7 @@ export default {
     optional(seq($.keyword_input, paren_list($.column_definition, true))),
     optional(seq($.keyword_output, paren_list($.column_definition, true))),
     optional($._flink_comment),
-    optional($.flink_options),
+    optional($.with_properties),
     optional(seq($.keyword_as, $.create_query)),
   )),
 
@@ -246,7 +246,7 @@ export default {
     $.keyword_table,
     optional($._if_not_exists),
     $.object_reference,
-    optional($.flink_column_definitions),
+    optional($.column_definitions),
     optional($._flink_comment),
     optional($.distribution_spec),
     optional(seq(
@@ -254,7 +254,7 @@ export default {
       $.keyword_by,
       paren_list($.identifier, true),
     )),
-    optional($.flink_options),
+    optional($.with_properties),
     optional(seq(
       $.keyword_freshness,
       '=',
@@ -279,7 +279,7 @@ export default {
     optional($._if_not_exists),
     $.object_reference,
     optional($._flink_comment),
-    $.flink_options,
+    $.with_properties,
   ),
 
 };

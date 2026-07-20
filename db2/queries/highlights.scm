@@ -2,6 +2,7 @@
 
 ; Db2-specific keywords
 [
+  (keyword_prepare)
   (keyword_wrapper)
   (keyword_nickname)
   (keyword_module)
@@ -36,4 +37,11 @@
 ; Data-change-table-reference (#123)
 [
   (keyword_final)
+] @keyword
+
+; EXPLAIN prefix (non-ANSI; re-added over the strict ANSI base)
+[
+  (keyword_explain)
+  (keyword_analyze)
+  (keyword_verbose)
 ] @keyword

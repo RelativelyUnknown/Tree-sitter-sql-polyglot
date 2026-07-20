@@ -1,6 +1,20 @@
-import { comma_list, wrapped_in_parenthesis, optional_parenthesis } from '../../grammar/helpers.js';
+import { comma_list, wrapped_in_parenthesis, optional_parenthesis, paren_list } from '../../grammar/helpers.js';
 
 export default {
+
+  // DuckDB: SELECT DISTINCT ON (expr, …) … (PostgreSQL-compatible). An explicit
+  // rule is required now that the strict ANSI base reserves ON — DISTINCT ON no
+  // longer falls back to an accidental on(…) function-call parse.
+  select: $ => seq(
+    $.keyword_select,
+    optional(
+      seq(
+        $.keyword_distinct,
+        optional(seq($.keyword_on, paren_list($._expression, true))),
+      ),
+    ),
+    $.select_expression,
+  ),
 
   // QUALIFY expr
   qualify: $ => seq(

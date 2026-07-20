@@ -1,5 +1,6 @@
 import base from '../grammar.js';
 import { paren_list, optional_parenthesis, comma_list, wrapped_in_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { createStatementChoices } from '../grammar/statements/create.js';
 import hive_storage_rules from './grammar/storage.js';
 import hive_partition_rules from './grammar/partition.js';
 import hive_lateral_view_rules from './grammar/lateral_view.js';
@@ -28,6 +29,24 @@ export default grammar(base, {
   ],
 
   rules: {
+
+    // Re-add non-ANSI CREATE forms this dialect supports over the strict ANSI base.
+    _create_statement: $ => seq(choice(...createStatementChoices($, { materializedView: true }))),
+
+    // HiveQL supports the EXPLAIN prefix (re-added over the strict ANSI base).
+    statement: $ => seq(
+      optional(seq(
+        $.keyword_explain,
+        optional($.keyword_analyze),
+        optional($.keyword_verbose),
+      )),
+      choice(
+        $._ddl_statement,
+        $._dml_write,
+        optional_parenthesis($._dml_read),
+        $._transaction_statement,
+      ),
+    ),
 
     // Hive DDL: no Spark 4.x variable statements, no scripting constructs,
     // no Iceberg-specific statements.  MSCK REPAIR TABLE is Hive/Impala-specific.
@@ -258,7 +277,11 @@ export default grammar(base, {
       choice(
         seq($._natural_number, $.keyword_rows),
         seq($._natural_number, $.keyword_percent),
-        seq($.keyword_bucket, $._natural_number, $.keyword_out, $.keyword_of, $._natural_number),
+        seq(
+          $.keyword_bucket, $._natural_number, $.keyword_out, $.keyword_of, $._natural_number,
+          // Hive: BUCKET x OUT OF y ON {col | rand()}
+          optional(seq($.keyword_on, choice($.identifier, $.invocation))),
+        ),
       ),
       ')',
     ),

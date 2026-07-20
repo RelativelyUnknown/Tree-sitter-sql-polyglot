@@ -1,4 +1,6 @@
 ; Redshift-specific keywords
+(keyword_prepare) @keyword
+(keyword_deallocate) @keyword
 (keyword_copy) @keyword
 (keyword_unload) @keyword
 (keyword_iam_role) @keyword
@@ -37,4 +39,11 @@
   (keyword_sequences)
   (keyword_functions)
   (keyword_procedures)
+] @keyword
+
+; EXPLAIN prefix (non-ANSI; re-added over the strict ANSI base)
+[
+  (keyword_explain)
+  (keyword_analyze)
+  (keyword_verbose)
 ] @keyword

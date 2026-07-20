@@ -72,6 +72,8 @@ export default grammar(base, {
         $.fetch_cursor_statement,
         $.close_cursor_statement,
         $.for_statement,
+        $.prepare_statement,
+        $.execute_statement,
       ),
     ),
 
@@ -196,6 +198,7 @@ export default grammar(base, {
 
     // Db2-specific keywords — token(prec(1,...)) needed so lexer prefers
     // these over base _identifier when both are valid in the same state.
+    keyword_prepare:    _ => token(prec(1, make_keyword("prepare"))),
     keyword_final:      _ => token(prec(1, make_keyword("final"))),
     keyword_wrapper:    _ => token(prec(1, make_keyword("wrapper"))),
     keyword_nickname:   _ => token(prec(1, make_keyword("nickname"))),

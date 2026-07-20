@@ -24,7 +24,7 @@ export default grammar(base, {
     [$.interval],
     [$._function_return, $.return_statement],
     [$._qualified_field, $.set_assignment],
-    [$.mysql_alter_partition],
+    [$.alter_partition],
     [$.declare_statement, $.declare_cursor_statement, $.declare_condition_statement, $.declare_handler_statement],
     [$.statement, $.declare_handler_statement],
   ],
@@ -43,7 +43,7 @@ export default grammar(base, {
           repeat($.table_option),
           optional(seq($.keyword_as, $.create_query)),
         ),
-        optional($.mysql_partition_clause),
+        optional($.table_partition_by),
       ),
     ),
 
@@ -91,6 +91,9 @@ export default grammar(base, {
       $.check_table_statement,
       $.analyze_table_statement,
       $.comment_statement,
+      $.prepare_statement,
+      $.execute_statement,
+      $.deallocate_statement,
     ),
 
     _dml_write: $ => seq(
@@ -435,6 +438,8 @@ export default grammar(base, {
     keyword_share:           _ => token(prec(1, make_keyword("share"))),
     keyword_lock:            _ => token(prec(1, make_keyword("lock"))),
     keyword_locked:          _ => token(prec(1, make_keyword("locked"))),
+    keyword_prepare:         _ => token(prec(1, make_keyword("prepare"))),
+    keyword_deallocate:      _ => token(prec(1, make_keyword("deallocate"))),
     keyword_skip:            _ => token(prec(1, make_keyword("skip"))),
     keyword_mode:            _ => token(prec(1, make_keyword("mode"))),
     keyword_global:          _ => token(prec(1, make_keyword("global"))),
@@ -560,7 +565,7 @@ export default grammar(base, {
       $.rename_column,
       $.set_schema,
       $.change_ownership,
-      $.mysql_alter_partition,
+      $.alter_partition,
     ),
 
     // Override statement to include MySQL procedural constructs

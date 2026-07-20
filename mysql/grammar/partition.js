@@ -5,7 +5,7 @@ export default {
   // PARTITION BY [LINEAR] RANGE|LIST (expr) | HASH (expr) | KEY (cols)
   // [PARTITIONS n]
   // [(partition_def, ...)]
-  mysql_partition_clause: $ => seq(
+  table_partition_by: $ => seq(
     $.keyword_partition, $.keyword_by,
     optional($.keyword_linear),
     choice(
@@ -14,10 +14,10 @@ export default {
       seq($.keyword_key, paren_list($.identifier, true)),
     ),
     optional(seq($.keyword_partitions, alias($._natural_number, $.literal))),
-    optional(paren_list($.mysql_partition_definition, true)),
+    optional(paren_list($.partition_definition, true)),
   ),
 
-  mysql_partition_definition: $ => seq(
+  partition_definition: $ => seq(
     $.keyword_partition, $.identifier,
     optional(choice(
       seq(
@@ -29,14 +29,14 @@ export default {
   ),
 
   // ALTER TABLE partition management — wired into _alter_specifications
-  mysql_alter_partition: $ => choice(
+  alter_partition: $ => choice(
     seq($.keyword_add, $.keyword_partition,
-        paren_list($.mysql_partition_definition, true)),
+        paren_list($.partition_definition, true)),
     seq($.keyword_drop, $.keyword_partition,
         comma_list($.identifier, true)),
     seq($.keyword_reorganize, $.keyword_partition,
         comma_list($.identifier, true),
-        $.keyword_into, paren_list($.mysql_partition_definition, true)),
+        $.keyword_into, paren_list($.partition_definition, true)),
     seq($.keyword_truncate, $.keyword_partition,
         choice($.keyword_all, comma_list($.identifier, true))),
     seq($.keyword_coalesce, $.keyword_partition,

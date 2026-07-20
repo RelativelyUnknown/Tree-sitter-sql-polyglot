@@ -21,6 +21,27 @@ export default {
     $.alter_update,
     $.alter_delete,
     $.alter_partition,
+    $.alter_index_spec,
+  ),
+
+  // Data-skipping index management:
+  //   ADD INDEX name expr TYPE type [GRANULARITY n] | {DROP|MATERIALIZE|CLEAR} INDEX name
+  alter_index_spec: $ => choice(
+    seq(
+      $.keyword_add,
+      $.keyword_index,
+      field('name', $.identifier),
+      field('expression', $._expression),
+      $.keyword_type,
+      field('type', choice($.identifier, $.invocation)),
+      optional(seq($.keyword_granularity, alias($._natural_number, $.literal))),
+    ),
+    seq(
+      choice($.keyword_drop, $.keyword_materialize, $.keyword_clear),
+      $.keyword_index,
+      field('name', $.identifier),
+      optional($.in_partition_clause),
+    ),
   ),
 
   // ALTER TABLE t UPDATE col = expr [, ...] [IN PARTITION p] WHERE cond

@@ -3,26 +3,37 @@ import { comma_list, paren_list, wrapped_in_parenthesis } from "../helpers.js";
 import create_function_rules from "./create-function.js";
 import create_procedure_rules from "./create-procedure.js";
 
+// Shared _create_statement choice builder. Base omits the non-ANSI
+// CREATE MATERIALIZED VIEW and CREATE INDEX; dialects that support them pass
+// { materializedView: true } / { index: true } from their own override instead
+// of re-enumerating the whole choice.
+export function createStatementChoices($, { materializedView = false, index = false } = {}) {
+  return [
+    $.create_table,
+    $.create_view,
+    ...(materializedView ? [$.create_materialized_view] : []),
+    ...(index ? [$.create_index] : []),
+    $.create_function,
+    $.create_procedure,
+    $.create_type,
+    $.create_database,
+    $.create_role,
+    $.create_sequence,
+    $.create_trigger,
+    prec.left(seq(
+      $.create_schema,
+      repeat($._create_statement),
+    )),
+  ];
+}
+
 export default {
 
+  // Strict ANSI base: CREATE MATERIALIZED VIEW and CREATE INDEX are not ISO SQL;
+  // dialects that support them opt in via createStatementChoices (below) in
+  // their own _create_statement override. The rule definitions remain for reuse.
   _create_statement: $ => seq(
-    choice(
-      $.create_table,
-      $.create_view,
-      $.create_materialized_view,
-      $.create_index,
-      $.create_function,
-      $.create_procedure,
-      $.create_type,
-      $.create_database,
-      $.create_role,
-      $.create_sequence,
-      $.create_trigger,
-      prec.left(seq(
-        $.create_schema,
-        repeat($._create_statement),
-      )),
-    ),
+    choice(...createStatementChoices($)),
   ),
 
   // left precedence because 'quoted' table options otherwise conflict with

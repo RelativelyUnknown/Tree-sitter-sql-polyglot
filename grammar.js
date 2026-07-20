@@ -49,6 +49,15 @@ export default grammar({
 
   word: $ => $._identifier,
 
+  // Strict ANSI base: ON is an ISO SQL reserved word. Reserving it stops `on`
+  // from being lexed as a bare identifier / function name, so the PostgreSQL
+  // `SELECT DISTINCT ON (…)` extension no longer parses accidentally as an
+  // `on(…)` invocation. `JOIN … ON` is unaffected — it references the
+  // keyword_on token explicitly rather than an identifier position.
+  reserved: {
+    global: $ => [$.keyword_on],
+  },
+
   rules: {
     program: $ => seq(
       // any number of transactions or statements with a terminating ;

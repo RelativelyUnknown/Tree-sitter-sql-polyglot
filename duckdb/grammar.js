@@ -68,6 +68,10 @@ export default grammar(base, {
         $.copy_statement,
         $.export_database_statement,
         $.import_database_statement,
+        $.prepare_statement,
+        $.execute_statement,
+        $.deallocate_statement,
+        $.show_statement,
       ),
     ),
 
@@ -121,6 +125,43 @@ export default grammar(base, {
     _insert_statement: $ => seq(
       $.insert,
       optional($.returning),
+    ),
+
+    // base insert plus INSERT OR REPLACE|IGNORE and ON CONFLICT upsert
+    insert: $ => seq(
+      $.keyword_insert,
+      optional(seq($.keyword_or, choice($.keyword_replace, $.keyword_ignore))),
+      optional($.keyword_into),
+      $.object_reference,
+      optional(
+        seq(
+          $.keyword_as,
+          field('alias', $.identifier),
+        ),
+      ),
+      choice(
+        $._insert_values,
+        $._set_values,
+      ),
+      optional($._on_conflict),
+    ),
+
+    // base _on_conflict plus DuckDB's optional conflict target column list
+    _on_conflict: $ => seq(
+      $.keyword_on,
+      $.keyword_conflict,
+      optional(alias($._column_list, $.list)),
+      seq(
+        $.keyword_do,
+        choice(
+          $.keyword_nothing,
+          seq(
+            $.keyword_update,
+            $._set_values,
+            optional($.where),
+          ),
+        ),
+      ),
     ),
 
     _update_statement: $ => seq(
@@ -192,6 +233,10 @@ export default grammar(base, {
 
     // DuckDB-specific keywords
     keyword_returning:  _ => token(prec(1, make_keyword("returning"))),
+    keyword_prepare:    _ => token(prec(1, make_keyword("prepare"))),
+    keyword_deallocate: _ => token(prec(1, make_keyword("deallocate"))),
+    keyword_show:       _ => token(prec(1, make_keyword("show"))),
+    keyword_databases:  _ => token(prec(1, make_keyword("databases"))),
     keyword_attach:     _ => token(prec(1, make_keyword("attach"))),
     keyword_detach:     _ => token(prec(1, make_keyword("detach"))),
     keyword_install:    _ => token(prec(1, make_keyword("install"))),

@@ -1,5 +1,7 @@
 import base from '../grammar.js';
 import { optional_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { createStatementChoices } from '../grammar/statements/create.js';
+import { fromClause } from '../grammar/statements/select.js';
 import hana_statement_rules from './grammar/statements.js';
 
 // SAP HANA SQL — standalone lineage (SQLScript is HANA's own procedural
@@ -29,6 +31,12 @@ export default grammar(base, {
 
   rules: {
 
+    // Re-add non-ANSI CREATE forms this dialect supports over the strict ANSI base.
+    _create_statement: $ => seq(choice(...createStatementChoices($, { materializedView: true, index: true }))),
+
+    // LIMIT is supported: fromClause with limit re-adds it over the ANSI base.
+    from: $ => fromClause($, { limit: true }),
+
     // base statement dispatch plus HANA statement forms; WITH HINT is wired
     // on query statements (its main HANA use) to avoid trailing-WITH
     // ambiguity with GRANT/type clauses
@@ -51,11 +59,27 @@ export default grammar(base, {
       ),
     ),
 
+    // base DDL dispatch plus COMMENT ON (HANA supports COMMENT ON TABLE/COLUMN/VIEW).
+    // Full re-enumeration: an override replaces the base rule entirely.
+    _ddl_statement: $ => choice(
+      $._create_statement,
+      $._alter_statement,
+      $._drop_statement,
+      $._rename_statement,
+      $._merge_statement,
+      $._refresh_statement,
+      $.set_statement,
+      $.grant_statement,
+      $.revoke_statement,
+      $.comment_statement,
+    ),
+
     // base parameter plus HANA :name SQLScript variable references
     parameter: _ => /\?|(\$[0-9]+)|(:[a-zA-Z_][a-zA-Z0-9_]*)/,
 
     // HANA-specific keywords (dialect-level per AGENTS.md)
     keyword_upsert:    _ => token(prec(1, make_keyword("upsert"))),
+    keyword_locked:    _ => token(prec(1, make_keyword("locked"))),
     keyword_hint:      _ => token(prec(1, make_keyword("hint"))),
     keyword_sqlscript: _ => token(prec(1, make_keyword("sqlscript"))),
     keyword_invoker:   _ => token(prec(1, make_keyword("invoker"))),

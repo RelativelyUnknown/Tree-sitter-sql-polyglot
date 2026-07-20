@@ -36,11 +36,11 @@ export default {
         $.keyword_json,
         $.keyword_xml,
 
-        $.flink_row_type,        // ROW<f1 t1, ...> or ROW(f1 t1, ...)
-        $.flink_array_type,      // ARRAY<element_type>
-        $.flink_map_type,        // MAP<key_type, val_type>
-        $.flink_multiset_type,   // MULTISET<element_type>
-        $.flink_raw_type,        // RAW('class', 'snapshot')
+        $.row_type,        // ROW<f1 t1, ...> or ROW(f1 t1, ...)
+        $.array_type,      // ARRAY<element_type>
+        $.map_type,        // MAP<key_type, val_type>
+        $.multiset_type,   // MULTISET<element_type>
+        $.raw_type,        // RAW('class', 'snapshot')
 
         $.enum,
         field('custom_type', $.object_reference),
@@ -61,7 +61,7 @@ export default {
 
   // ROW<f1 type1 [NOT NULL] ['comment'], f2 type2, ...>
   // also ROW(f1 type1, f2 type2)  (parenthesis form)
-  flink_row_type: $ => prec.left(seq(
+  row_type: $ => prec.left(seq(
     $.keyword_row,
     choice(
       seq(
@@ -94,7 +94,7 @@ export default {
   )),
 
   // ARRAY<element_type>
-  flink_array_type: $ => seq(
+  array_type: $ => seq(
     $.keyword_array,
     '<',
     field('element', $._type),
@@ -102,7 +102,7 @@ export default {
   ),
 
   // MAP<key_type, value_type>
-  flink_map_type: $ => seq(
+  map_type: $ => seq(
     $.keyword_map,
     '<',
     field('key', $._type),
@@ -112,7 +112,7 @@ export default {
   ),
 
   // MULTISET<element_type>
-  flink_multiset_type: $ => seq(
+  multiset_type: $ => seq(
     $.keyword_multiset,
     '<',
     field('element', $._type),
@@ -120,7 +120,7 @@ export default {
   ),
 
   // RAW('class_name', 'serialized_snapshot')
-  flink_raw_type: $ => seq(
+  raw_type: $ => seq(
     $.keyword_raw,
     '(',
     field('class', alias($._literal_string, $.literal)),

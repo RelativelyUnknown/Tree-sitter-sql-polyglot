@@ -1,5 +1,6 @@
 import base from '../grammar.js';
 import { comma_list, paren_list, optional_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { fromClause } from '../grammar/statements/select.js';
 
 import create_rules from './grammar/create.js';
 import alter_rules  from './grammar/alter.js';
@@ -27,21 +28,21 @@ export default grammar(base, {
     [$.list, $.cube_element],
     [$.interval],
     // Flink-specific conflicts
-    [$.flink_column_definitions, $.column_definitions],
     [$.metadata_column, $.column_definition],
     [$._column, $.metadata_column],
     [$.computed_column, $.column_definition],
-    [$.flink_row_type],
+    [$.row_type],
     [$.object_reference, $.function_argument],
     [$.use_catalog_statement, $.use_database_statement],
     [$.execute_statement, $.execute_plan],
-    [$.flink_set_statement, $.set_statement],
-    [$.flink_reset_statement, $.reset_statement],
     [$.alter_table, $.alter_materialized_table],
     [$.create_table, $.create_materialized_table],
   ],
 
   rules: {
+
+    // LIMIT is supported: fromClause with limit re-adds it over the ANSI base.
+    from: $ => fromClause($, { limit: true }),
 
     // ── DDL dispatcher ────────────────────────────────────────────────────────
     _ddl_statement: $ => choice(
@@ -70,8 +71,8 @@ export default grammar(base, {
       $.show_statement,
       $.describe_statement,
       // Config (replaces base set_statement in Flink context)
-      $.flink_set_statement,
-      $.flink_reset_statement,
+      $.set_statement,
+      $.reset_statement,
       $.comment_statement,
     ),
 

@@ -43,6 +43,8 @@
   (keyword_lock)
   (keyword_locked)
   (keyword_skip)
+  (keyword_prepare)
+  (keyword_deallocate)
   (keyword_mode)
   (keyword_global)
   (keyword_persist)
@@ -63,4 +65,11 @@
   (keyword_repair)
   (keyword_use_frm)
   (keyword_no_write_to_binlog)
+] @keyword
+
+; EXPLAIN prefix (non-ANSI; re-added over the strict ANSI base)
+[
+  (keyword_explain)
+  (keyword_analyze)
+  (keyword_verbose)
 ] @keyword

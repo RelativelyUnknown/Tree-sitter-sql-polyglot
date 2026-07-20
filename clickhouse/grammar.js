@@ -72,6 +72,7 @@ export default grammar(base, {
         $.backup_statement,
         $.restore_statement,
         $.exchange_tables_statement,
+        $.show_statement,
       ),
     ),
 
@@ -95,6 +96,10 @@ export default grammar(base, {
 
     // ── ClickHouse keywords (dialect-local, per codebase convention) ──────────
     // Statement / clause keywords
+    keyword_show:          _ => token(prec(1, make_keyword("show"))),
+    keyword_databases:     _ => token(prec(1, make_keyword("databases"))),
+    keyword_processlist:   _ => token(prec(1, make_keyword("processlist"))),
+    keyword_granularity:   _ => token(prec(1, make_keyword("granularity"))),
     keyword_engine:        _ => token(prec(1, make_keyword("engine"))),
     keyword_prewhere:      _ => token(prec(1, make_keyword("prewhere"))),
     keyword_final:         _ => token(prec(1, make_keyword("final"))),
@@ -127,6 +132,12 @@ export default grammar(base, {
     keyword_optimize:      _ => token(prec(1, make_keyword("optimize"))),
     keyword_deduplicate:   _ => token(prec(1, make_keyword("deduplicate"))),
     keyword_freeze:        _ => token(prec(1, make_keyword("freeze"))),
+    keyword_materialize:   _ => token(prec(1, make_keyword("materialize"))),
+    // Re-declared at prec(1) so maximal munch keeps MATERIALIZED intact:
+    // keyword_materialize (prec 1) would otherwise shadow the longer
+    // MATERIALIZED (prefix-shadowing bug — precedence beats length).
+    keyword_materialized:  _ => token(prec(1, make_keyword("materialized"))),
+    keyword_clear:         _ => token(prec(1, make_keyword("clear"))),
 
     // SELECT extensions
     keyword_qualify:       _ => token(prec(1, make_keyword("qualify"))),

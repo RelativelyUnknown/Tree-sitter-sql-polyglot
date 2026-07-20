@@ -2,6 +2,10 @@
 
 ; DuckDB-specific keywords
 [
+  (keyword_prepare)
+  (keyword_deallocate)
+  (keyword_show)
+  (keyword_databases)
   (keyword_attach)
   (keyword_detach)
   (keyword_install)
@@ -29,3 +33,10 @@
 
 ; Lambda expression arrow
 (lambda_expression "->" @operator)
+
+; EXPLAIN prefix (non-ANSI; re-added over the strict ANSI base)
+[
+  (keyword_explain)
+  (keyword_analyze)
+  (keyword_verbose)
+] @keyword

@@ -1,5 +1,5 @@
 import bigquery from '../bigquery/grammar.js';
-import { make_keyword } from '../grammar/helpers.js';
+import { make_keyword, optional_parenthesis } from '../grammar/helpers.js';
 import spanner_ddl_rules from './grammar/ddl.js';
 
 // Google Cloud Spanner — GoogleSQL, the same language family as BigQuery
@@ -53,6 +53,46 @@ export default grammar(bigquery, {
         $.create_model,
         $.create_change_stream,
       ),
+    ),
+
+    // base insert plus Spanner INSERT {OR UPDATE | OR IGNORE} upsert forms
+    // (bigquery's _insert_statement wrapper with THEN RETURN is preserved)
+    insert: $ => seq(
+      $.keyword_insert,
+      optional(seq($.keyword_or, choice($.keyword_update, $.keyword_ignore))),
+      optional($.keyword_into),
+      $.object_reference,
+      optional(
+        seq(
+          $.keyword_as,
+          field('alias', $.identifier),
+        ),
+      ),
+      choice(
+        $._insert_values,
+        $._set_values,
+      ),
+    ),
+
+    // base _select_statement plus Spanner FOR UPDATE (GoogleSQL locking hint)
+    _select_statement: $ => optional_parenthesis(
+      seq(
+        $.select,
+        optional(
+          seq(
+            $.keyword_into,
+            $.select_expression,
+          ),
+        ),
+        optional($.from),
+        optional($.locking_clause),
+      ),
+    ),
+
+    // FOR UPDATE — Spanner supports no OF/NOWAIT/SKIP LOCKED modifiers
+    locking_clause: $ => seq(
+      $.keyword_for,
+      $.keyword_update,
     ),
 
     // Spanner-specific keywords (dialect-level per AGENTS.md)

@@ -10,6 +10,13 @@
 
 (keyword_unnest) @function.call
 
+; Search / vector index DDL
+[
+  (keyword_search)
+  (keyword_vector)
+  (keyword_columns)
+] @keyword
+
 (keyword_struct) @keyword
 (keyword_export) @keyword
 (keyword_model) @keyword
@@ -28,4 +35,11 @@
   (keyword_raise)
   (keyword_message)
   (keyword_return)
+] @keyword
+
+; EXPLAIN prefix (non-ANSI; re-added over the strict ANSI base)
+[
+  (keyword_explain)
+  (keyword_analyze)
+  (keyword_verbose)
 ] @keyword

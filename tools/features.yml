@@ -136,6 +136,14 @@ features:
       spanner:  { status: not-applicable, reason: "GoogleSQL uses LIMIT/OFFSET only" }
       teradata: { status: not-applicable, reason: "Teradata uses TOP / QUALIFY row windows" }
       hana:     { status: not-applicable, reason: "HANA uses LIMIT/OFFSET only" }
+      # ClickHouse does support OFFSET … FETCH, but wiring offset_fetch_clause
+      # into ClickHouse's already-GLR-heavy `from` rule (the [$.from] conflict
+      # plus the bare-OFFSET overlap with SAMPLE … OFFSET and LIMIT … OFFSET)
+      # explodes the generated parse table past the CLI's memory ceiling (OOM
+      # at `tree-sitter generate`). Left as a tracked gap rather than shipping a
+      # grammar that cannot be generated in CI. ClickHouse's idiomatic paging is
+      # LIMIT/OFFSET, which is fully supported.
+      clickhouse: { status: not-applicable, reason: "OFFSET/FETCH unshippable — parse-table OOM in ClickHouse's from rule; uses LIMIT/OFFSET" }
 
   - id: limit_offset
     name: "LIMIT / OFFSET"
@@ -143,9 +151,6 @@ features:
     ansi: false
     weight: 3
     probe: "SELECT a FROM t1 ORDER BY a LIMIT 10 OFFSET 5;"
-    # Inherited from the permissive upstream fork: base parses LIMIT/OFFSET.
-    # Cleanup tracked via the scorecard purity report.
-    purity_exception: true
     dialects:
       oracle: { status: not-applicable, reason: "Oracle uses FETCH FIRST / ROWNUM" }
       tsql:   { status: not-applicable, reason: "T-SQL uses TOP / OFFSET-FETCH" }
@@ -230,8 +235,6 @@ features:
     ansi: false
     weight: 1
     probe: "SELECT DISTINCT ON (a) a, b FROM t1 ORDER BY a;"
-    # Inherited from the permissive upstream fork: base parses DISTINCT ON.
-    purity_exception: true
     dialects:
       mysql:      { status: not-applicable, reason: "PostgreSQL-family extension" }
       mariadb:    { status: not-applicable, reason: "PostgreSQL-family extension" }
@@ -406,6 +409,10 @@ features:
     ansi: true
     weight: 3
     probe: "ALTER TABLE t1 ADD COLUMN c INTEGER;"
+    dialects:
+      flink:
+        # Flink SQL has no COLUMN keyword in ALTER TABLE ADD
+        probe: "ALTER TABLE t1 ADD c INTEGER;"
 
   - id: create_view
     name: "CREATE VIEW"
@@ -420,8 +427,6 @@ features:
     ansi: false
     weight: 1
     probe: "CREATE MATERIALIZED VIEW mv1 AS SELECT a FROM t1;"
-    # Inherited from the permissive upstream fork: base parses this.
-    purity_exception: true
     dialects:
       mysql:   { status: not-applicable, reason: "No materialized views upstream" }
       mariadb: { status: not-applicable, reason: "No materialized views upstream" }
@@ -454,9 +459,6 @@ features:
     ansi: false
     weight: 3
     probe: "CREATE INDEX idx1 ON t1 (a);"
-    # CREATE INDEX is not in ISO SQL but is parsed by the base grammar
-    # (inherited from the permissive upstream fork).
-    purity_exception: true
     dialects:
       hive:       { status: not-applicable, reason: "Indexes removed in Hive 3" }
       spark:      { status: not-applicable, reason: "No indexes" }
@@ -477,6 +479,8 @@ features:
     ansi: true
     weight: 1
     probe: "CREATE TEMPORARY TABLE tmp1 (a INTEGER);"
+    dialects:
+      spanner: { status: not-applicable, reason: "Spanner GoogleSQL has no temporary tables" }
 
   # ── procedural / admin ───────────────────────────────────────────────────
 
@@ -523,8 +527,6 @@ features:
     ansi: false
     weight: 1
     probe: "EXPLAIN SELECT a FROM t1;"
-    # base accepts EXPLAIN (inherited from the permissive upstream fork).
-    purity_exception: true
     dialects:
       tsql: { status: not-applicable, reason: "T-SQL uses SET SHOWPLAN instead" }
 
@@ -597,5 +599,10 @@ features:
       hana:       { status: not-applicable, reason: "Prepared statements are API-level" }
       redshift:
         probe: "PREPARE p1 AS SELECT a FROM t1;"
+      trino:
+        # Trino uses PREPARE … FROM, not the PostgreSQL PREPARE … AS form
+        probe: "PREPARE p1 FROM SELECT a FROM t1;"
+      athena:
+        probe: "PREPARE p1 FROM SELECT a FROM t1;"
       clickhouse: { status: not-applicable, reason: "No PREPARE" }
       flink:      { status: not-applicable, reason: "No PREPARE" }

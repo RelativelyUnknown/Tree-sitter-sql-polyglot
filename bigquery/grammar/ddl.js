@@ -44,6 +44,38 @@ export default {
     ')',
   ),
 
+  // BigQuery: CREATE [SEARCH | VECTOR] INDEX [IF NOT EXISTS] name
+  //   ON tbl {(ALL COLUMNS) | (col, …)} [OPTIONS (…)]
+  create_index: $ => seq(
+    $.keyword_create,
+    optional($.keyword_unique),
+    optional(choice($.keyword_search, $.keyword_vector)),
+    $.keyword_index,
+    optional(
+      seq(
+        optional($._if_not_exists),
+        field('column', $._column),
+      ),
+    ),
+    $.keyword_on,
+    optional($.keyword_only),
+    seq(
+      $.object_reference,
+      optional(
+        seq(
+          $.keyword_using,
+          field('index_type', $.identifier),
+        ),
+      ),
+      choice(
+        $.index_fields,
+        seq('(', $.keyword_all, $.keyword_columns, ')'),
+      ),
+    ),
+    optional($.options_clause),
+    optional($.where),
+  ),
+
   // Override: CREATE [TEMP] TABLE ... [column_defs] [PARTITION BY] [CLUSTER BY] [OPTIONS (...)] [AS query]
   create_table: $ => prec.left(
     seq(

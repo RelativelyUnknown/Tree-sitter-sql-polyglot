@@ -1,5 +1,21 @@
 export default {
 
+  // SHOW {[ALL] TABLES [FROM db] [LIKE '…'] | DATABASES | CREATE TABLE obj | PROCESSLIST}
+  show_statement: $ => prec.right(seq(
+    $.keyword_show,
+    choice(
+      seq(
+        optional($.keyword_all),
+        $.keyword_tables,
+        optional(seq($.keyword_from, $.object_reference)),
+        optional(seq($.keyword_like, alias($._literal_string, $.literal))),
+      ),
+      $.keyword_databases,
+      seq($.keyword_create, $.keyword_table, $.object_reference),
+      $.keyword_processlist,
+    ),
+  )),
+
   // SYSTEM <command> [ON CLUSTER ...]
   system_statement: $ => seq(
     $.keyword_system,

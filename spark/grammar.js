@@ -2,7 +2,7 @@ import hive from '../hive/grammar.js';
 import { paren_list, optional_parenthesis, comma_list, make_keyword } from '../grammar/helpers.js';
 import spark_create_rules from './grammar/create.js';
 import spark_optimize_rules from './grammar/optimize.js';
-import spark_spark4_rules from './grammar/spark4.js'; // TODO change file name
+import spark_spark4_rules from './grammar/spark4_features.js';
 import spark_scripting_rules from './grammar/scripting.js';
 import spark_iceberg_rules from './grammar/iceberg.js';
 import spark_select_rules from './grammar/select.js';
