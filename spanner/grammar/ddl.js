@@ -60,13 +60,13 @@ export default {
     '(',
     field('column', $.identifier),
     ',',
-    alias($.spanner_interval, $.interval),
+    alias($._unquoted_interval, $.interval),
     ')',
     ')',
   ),
 
   // GoogleSQL unquoted interval: INTERVAL 30 DAY
-  spanner_interval: $ => seq(
+  _unquoted_interval: $ => seq(
     $.keyword_interval,
     $._natural_number,
     field('qualifier', $.identifier),

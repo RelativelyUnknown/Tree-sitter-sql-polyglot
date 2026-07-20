@@ -11,9 +11,9 @@ export default {
     choice(
       seq($.keyword_rename, $.keyword_to, $.object_reference),
       seq($.keyword_rename, $.identifier, $.keyword_to, $.identifier),
-      seq($.keyword_set, $.flink_options),
+      seq($.keyword_set, $.with_properties),
       seq($.keyword_reset, '(', comma_list(alias($._literal_string, $.literal), true), ')'),
-      seq($.keyword_add, optional($._if_not_exists), $.keyword_partition, paren_list(seq($.identifier, '=', $.literal), true), optional(seq($.keyword_with, $.flink_options))),
+      seq($.keyword_add, optional($._if_not_exists), $.keyword_partition, paren_list(seq($.identifier, '=', $.literal), true), optional(seq($.keyword_with, $.with_properties))),
       seq($.keyword_drop, $.keyword_partition, paren_list(seq($.identifier, '=', $.literal), true)),
       seq($.keyword_add, $.watermark_definition),
       seq($.keyword_drop, $.keyword_watermark),
@@ -36,7 +36,7 @@ export default {
     $.keyword_catalog,
     field('name', $.identifier),
     choice(
-      seq($.keyword_set, $.flink_options),
+      seq($.keyword_set, $.with_properties),
       seq($.keyword_reset, '(', comma_list(alias($._literal_string, $.literal), true), ')'),
       seq($.keyword_comment, alias($._literal_string, $.literal)),
     ),
@@ -48,7 +48,7 @@ export default {
     $.keyword_database,
     $.object_reference,
     $.keyword_set,
-    $.flink_options,
+    $.with_properties,
   )),
 
   // ALTER VIEW name (RENAME TO | AS select)
@@ -87,7 +87,7 @@ export default {
     optional($._if_exists),
     $.object_reference,
     choice(
-      seq($.keyword_set, $.flink_options),
+      seq($.keyword_set, $.with_properties),
       seq($.keyword_reset, '(', comma_list(alias($._literal_string, $.literal), true), ')'),
       seq($.keyword_rename, $.keyword_to, $.object_reference),
     ),
@@ -101,11 +101,11 @@ export default {
     $.object_reference,
     choice(
       $.keyword_suspend,
-      seq($.keyword_resume, optional($.flink_options)),
+      seq($.keyword_resume, optional($.with_properties)),
       seq($.keyword_refresh, optional(seq($.keyword_partition, paren_list(seq($.identifier, '=', $.literal), true)))),
       seq($.keyword_set, $.keyword_freshness, '=', $.interval),
       seq($.keyword_set, $.keyword_refresh_mode, '=', choice($.keyword_full, $.keyword_continuous)),
-      seq($.keyword_set, $.flink_options),
+      seq($.keyword_set, $.with_properties),
       seq($.keyword_reset, '(', comma_list(alias($._literal_string, $.literal), true), ')'),
       seq($.keyword_as, $.create_query),
     ),
@@ -120,7 +120,7 @@ export default {
     optional($._if_exists),
     $.object_reference,
     choice(
-      seq($.keyword_set, $.flink_options),
+      seq($.keyword_set, $.with_properties),
       seq($.keyword_reset, '(', comma_list(alias($._literal_string, $.literal), true), ')'),
       seq($.keyword_rename, $.keyword_to, $.object_reference),
     ),

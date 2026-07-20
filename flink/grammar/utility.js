@@ -7,7 +7,7 @@ export default {
     $.keyword_load,
     $.keyword_module,
     field('name', $.identifier),
-    optional($.flink_options),
+    optional($.with_properties),
   ),
 
   // UNLOAD MODULE name
@@ -98,7 +98,7 @@ export default {
   ),
 
   // Override set_statement: SET 'key' = 'val' | SET (show all config)
-  flink_set_statement: $ => seq(
+  set_statement: $ => seq(
     $.keyword_set,
     optional(seq(
       alias($._literal_string, $.literal),
@@ -108,7 +108,7 @@ export default {
   ),
 
   // Override reset_statement: RESET ['key']
-  flink_reset_statement: $ => seq(
+  reset_statement: $ => seq(
     $.keyword_reset,
     optional(alias($._literal_string, $.literal)),
   ),

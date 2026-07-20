@@ -20,7 +20,7 @@ export default {
       $.keyword_table,
       optional($._if_not_exists),
       $.object_reference,
-      repeat(seq(',', $.teradata_table_option)),
+      repeat(seq(',', $.table_option)),
       optional($.column_definitions),
       optional(seq(
         $.keyword_as,
@@ -31,7 +31,7 @@ export default {
         $.primary_index,
         seq($.keyword_no, $.keyword_primary, $.keyword_index),
       )),
-      optional($.teradata_partition_by),
+      optional($.table_partition_by),
       optional(seq($.keyword_index, alias($._column_list, $.list))),
       optional($.on_commit_clause),
     ),
@@ -44,7 +44,7 @@ export default {
     $.keyword_rows,
   ),
 
-  teradata_table_option: $ => choice(
+  table_option: $ => choice(
     // [NO] FALLBACK [PROTECTION]
     seq(optional($.keyword_no), $.keyword_fallback, optional($.keyword_protection)),
     // [NO|DUAL|LOCAL|NOT LOCAL] [BEFORE|AFTER] JOURNAL
@@ -101,7 +101,7 @@ export default {
   ),
 
   // PARTITION BY RANGE_N(…) | CASE_N(…) | expr
-  teradata_partition_by: $ => prec.right(seq(
+  table_partition_by: $ => prec.right(seq(
     $.keyword_partition,
     $.keyword_by,
     choice(

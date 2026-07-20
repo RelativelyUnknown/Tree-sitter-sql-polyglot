@@ -21,7 +21,6 @@ export default {
         $.long_type,
         $.binary_float,
         $.binary_double,
-        $.oracle_timestamp,
         $.interval_year_to_month,
         $.interval_day_to_second,
         // Base types (unchanged)
@@ -121,7 +120,7 @@ export default {
   binary_double: $ => $.keyword_binary_double,
 
   // TIMESTAMP[(p)] [WITH [LOCAL] TIME ZONE]
-  oracle_timestamp: $ => prec.right(1,
+  timestamp: $ => prec.right(1,
     seq(
       prec.right(1,
         choice(
@@ -182,12 +181,12 @@ export default {
   ),
 
   // DATE 'YYYY-MM-DD' and TIMESTAMP 'YYYY-MM-DD HH:MI:SS' Oracle literal forms
-  oracle_date_literal: $ => seq(
+  date_literal: $ => seq(
     $.keyword_date,
     alias($._literal_string, $.literal),
   ),
 
-  oracle_timestamp_literal: $ => seq(
+  timestamp_literal: $ => seq(
     $.keyword_timestamp,
     alias($._literal_string, $.literal),
   ),

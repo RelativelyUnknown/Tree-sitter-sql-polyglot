@@ -102,7 +102,7 @@ export default grammar(base, {
     insert: $ => seq(
       $.keyword_insert,
       optional(
-        seq($.keyword_or, $.sqlite_conflict_action),
+        seq($.keyword_or, $.conflict_action),
       ),
       optional($.keyword_into),
       $.object_reference,
@@ -121,7 +121,7 @@ export default grammar(base, {
     // (already covered by base via keyword_replace → insert, but kept here for clarity)
 
     // Conflict resolution algorithms used in INSERT OR ...
-    sqlite_conflict_action: $ => choice(
+    conflict_action: $ => choice(
       $.keyword_rollback,
       $.keyword_abort,
       $.keyword_replace,

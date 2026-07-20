@@ -23,7 +23,7 @@ export default grammar(base, {
     [$.list, $.cube_element],
     [$.interval],
     // BLOCKCOMPRESSION=mode(…) option args vs the table's column list
-    [$.teradata_table_option],
+    [$.table_option],
     // BEGIN … ; is ambiguous between a transaction block and a compound
     // statement until END/COMMIT disambiguates (same as db2/hana)
     [$.transaction, $.compound_statement],

@@ -24,7 +24,7 @@ export default grammar(base, {
     [$.interval],
     [$._function_return, $.return_statement],
     [$._qualified_field, $.set_assignment],
-    [$.mysql_alter_partition],
+    [$.alter_partition],
     [$.declare_statement, $.declare_cursor_statement, $.declare_condition_statement, $.declare_handler_statement],
     [$.statement, $.declare_handler_statement],
   ],
@@ -43,7 +43,7 @@ export default grammar(base, {
           repeat($.table_option),
           optional(seq($.keyword_as, $.create_query)),
         ),
-        optional($.mysql_partition_clause),
+        optional($.table_partition_by),
       ),
     ),
 
@@ -565,7 +565,7 @@ export default grammar(base, {
       $.rename_column,
       $.set_schema,
       $.change_ownership,
-      $.mysql_alter_partition,
+      $.alter_partition,
     ),
 
     // Override statement to include MySQL procedural constructs

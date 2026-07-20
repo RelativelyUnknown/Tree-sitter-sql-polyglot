@@ -21,8 +21,8 @@ export default {
       $.keyword_by,
       $.column_definitions,
     )),
-    optional($.athena_row_format),
-    optional($.athena_stored_as),
+    optional($.row_format),
+    optional($.stored_as),
     $.keyword_location,
     field('location', alias($._literal_string, $.literal)),
     optional(seq(
@@ -40,7 +40,7 @@ export default {
 
   // ROW FORMAT SERDE 'class' [WITH SERDEPROPERTIES (k=v, ...)]
   // ROW FORMAT DELIMITED [FIELDS TERMINATED BY 'x'] [LINES TERMINATED BY 'x']
-  athena_row_format: $ => seq(
+  row_format: $ => seq(
     $.keyword_row,
     $.keyword_format,
     choice(
@@ -79,7 +79,7 @@ export default {
   ),
 
   // STORED AS format_name
-  athena_stored_as: $ => seq(
+  stored_as: $ => seq(
     $.keyword_stored,
     $.keyword_as,
     choice(

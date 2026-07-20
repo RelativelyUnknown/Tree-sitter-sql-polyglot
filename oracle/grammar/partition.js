@@ -5,7 +5,7 @@ export default {
   // PARTITION BY RANGE|LIST|HASH (cols)
   // [SUBPARTITION BY HASH|LIST (cols) [SUBPARTITIONS n]]
   // [(partition_def, ...)]
-  oracle_partition_clause: $ => seq(
+  table_partition_by: $ => seq(
     $.keyword_partition, $.keyword_by,
     choice($.keyword_range, $.keyword_list, $.keyword_hash),
     paren_list($._expression, true),
@@ -16,10 +16,10 @@ export default {
       paren_list($._expression, true),
       optional(seq($.keyword_subpartitions, alias($._natural_number, $.literal))),
     )),
-    optional(paren_list($.oracle_partition_definition, true)),
+    optional(paren_list($.partition_definition, true)),
   ),
 
-  oracle_partition_definition: $ => seq(
+  partition_definition: $ => seq(
     $.keyword_partition, optional($.identifier),
     choice(
       seq(
@@ -32,7 +32,7 @@ export default {
   ),
 
   // ADD/DROP/TRUNCATE/SPLIT/MERGE/EXCHANGE PARTITION — wired into _alter_specifications
-  oracle_alter_partition: $ => choice(
+  alter_partition: $ => choice(
     seq(
       $.keyword_add, $.keyword_partition, $.identifier,
       $.keyword_values, $.keyword_less, $.keyword_than,
