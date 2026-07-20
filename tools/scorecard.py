@@ -113,11 +113,18 @@ def parse_probes(dialect: str, probes: dict[str, str]) -> dict[str, bool]:
     Uses a single `tree-sitter parse -q` invocation over one file per probe;
     -q prints (only) a stats line for files that contain errors.
 
-    Probe files are written INSIDE the dialect's directory (not a system temp
-    dir): newer tree-sitter CLIs select the grammar for out-of-tree files by
-    registry/config rather than CWD, which made every dialect's probes parse
-    with the base `sql` grammar in CI. Files under the grammar's own directory
-    resolve to that grammar on every CLI version. `tmp/` is gitignored.
+    Grammar selection is the subtle part. Probe files are written INSIDE the
+    dialect's directory (tmp/, gitignored) so that, walking up from each file,
+    the CLI finds the dialect's own tree-sitter.json. But that only works when
+    nothing else claims the file first: tree-sitter/setup-action writes a
+    global ~/.config/tree-sitter/config.json with `parser-directories` pointing
+    at the CI workspace, and when that config is present the CLI resolves every
+    `.sql` file through it — matching the base `sql` grammar for ALL dialects
+    and reporting their extensions (COMMENT ON, SHOW, …) as absent. We override
+    it with `--config-path` pointing at a config whose `parser-directories` is
+    empty, which forces the CLI back to file-relative resolution (the dialect
+    grammar) regardless of any global config. Locally, where no global config
+    exists, this changes nothing.
     """
     results: dict[str, bool] = {}
     if not probes:
@@ -131,7 +138,12 @@ def parse_probes(dialect: str, probes: dict[str, str]) -> dict[str, bool]:
             p.write_text(sql + "\n")
             files[str(p)] = fid
 
-        cmd = shlex.split(TS_BIN) + ["parse", "-q", *files.keys()]
+        config_path = probe_dir / "ts-config.json"
+        config_path.write_text('{"parser-directories": []}\n')
+
+        cmd = shlex.split(TS_BIN) + [
+            "parse", "-q", "--config-path", str(config_path), *files.keys()
+        ]
         proc = subprocess.run(
             cmd,
             cwd=dialect_dir(dialect),
