@@ -76,3 +76,10 @@
   (keyword_ml_evaluate)
   (keyword_vector_search)
 ] @function.builtin
+
+; EXPLAIN prefix (non-ANSI; re-added over the strict ANSI base)
+[
+  (keyword_explain)
+  (keyword_analyze)
+  (keyword_verbose)
+] @keyword

@@ -25,3 +25,10 @@
   (keyword_fields)
   (keyword_lines)
 ] @keyword
+
+; EXPLAIN prefix (non-ANSI; re-added over the strict ANSI base)
+[
+  (keyword_explain)
+  (keyword_analyze)
+  (keyword_verbose)
+] @keyword

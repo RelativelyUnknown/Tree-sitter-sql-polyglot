@@ -1,5 +1,7 @@
 import base from '../grammar.js';
 import { optional_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { createStatementChoices } from '../grammar/statements/create.js';
+import { fromClause } from '../grammar/statements/select.js';
 import hana_statement_rules from './grammar/statements.js';
 
 // SAP HANA SQL — standalone lineage (SQLScript is HANA's own procedural
@@ -28,6 +30,12 @@ export default grammar(base, {
   ],
 
   rules: {
+
+    // Re-add non-ANSI CREATE forms this dialect supports over the strict ANSI base.
+    _create_statement: $ => seq(choice(...createStatementChoices($, { materializedView: true, index: true }))),
+
+    // LIMIT is supported: fromClause with limit re-adds it over the ANSI base.
+    from: $ => fromClause($, { limit: true }),
 
     // base statement dispatch plus HANA statement forms; WITH HINT is wired
     // on query statements (its main HANA use) to avoid trailing-WITH

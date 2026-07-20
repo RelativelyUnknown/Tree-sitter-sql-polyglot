@@ -18,12 +18,9 @@ import grant_rules from "./grant.js";
 
 export default {
 
+  // Strict ANSI base: no EXPLAIN prefix (EXPLAIN is not ISO SQL). Dialects that
+  // support it re-add the prefix in their own statement override.
   statement: $ => seq(
-    optional(seq(
-      $.keyword_explain,
-      optional($.keyword_analyze),
-      optional($.keyword_verbose),
-    )),
     choice(
       $._ddl_statement,
       $._dml_write,

@@ -1,5 +1,6 @@
 import base from '../grammar.js';
 import { optional_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { createStatementChoices } from '../grammar/statements/create.js';
 import trino_statement_rules from './grammar/statements.js';
 import trino_type_rules     from './grammar/types.js';
 import trino_expression_rules from './grammar/expressions.js';
@@ -45,6 +46,9 @@ export default grammar(base, {
   ],
 
   rules: {
+
+    // Re-add non-ANSI CREATE forms this dialect supports over the strict ANSI base.
+    _create_statement: $ => seq(choice(...createStatementChoices($, { materializedView: true }))),
 
     // Trino has its own comment_on_statement (richer than base comment_statement);
     // exclude the base rule from the inherited DDL dispatch to avoid ambiguity (#126)

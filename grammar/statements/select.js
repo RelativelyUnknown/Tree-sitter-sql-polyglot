@@ -1,5 +1,33 @@
 import { comma_list, optional_parenthesis, paren_list, wrapped_in_parenthesis } from "../helpers.js";
 
+// Shared FROM-clause builder. The base grammar instantiates it WITHOUT the
+// non-ANSI LIMIT clause (strict ANSI purity); dialects that support LIMIT
+// call fromClause($, { limit: true }) from their own `from` override instead
+// of re-enumerating the whole clause. Dialects with additional clauses
+// (PREWHERE, QUALIFY, …) define their own `from` and do not use this builder.
+export function fromClause($, { limit = false } = {}) {
+  return seq(
+    $.keyword_from,
+    optional($.keyword_only),
+    comma_list($.relation, true),
+    repeat(
+      choice(
+        $.join,
+        $.cross_join,
+        $.lateral_join,
+        $.lateral_cross_join,
+      ),
+    ),
+    optional($.where),
+    optional($.group_by),
+    optional($.having),
+    optional($.window_clause),
+    optional($.order_by),
+    ...(limit ? [optional($.limit)] : []),
+    optional($.offset_fetch_clause),
+  );
+}
+
 export default {
 
   _cte: $ => seq(
@@ -204,28 +232,10 @@ export default {
     field('alias', $.identifier),
   ),
 
-  from: $ => seq(
-    $.keyword_from,
-    optional(
-      $.keyword_only,
-    ),
-    comma_list($.relation, true),
-    repeat(
-      choice(
-        $.join,
-        $.cross_join,
-        $.lateral_join,
-        $.lateral_cross_join,
-      ),
-    ),
-    optional($.where),
-    optional($.group_by),
-    optional($.having),
-    optional($.window_clause),
-    optional($.order_by),
-    optional($.limit),
-    optional($.offset_fetch_clause),
-  ),
+  // Strict ANSI base: LIMIT/OFFSET are not ISO SQL — base keeps only the ANSI
+  // OFFSET … FETCH form (fromClause without limit). Dialects that support LIMIT
+  // override `from` with fromClause($, { limit: true }).
+  from: $ => fromClause($),
 
   relation: $ => prec.right(
     seq(

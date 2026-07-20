@@ -1,5 +1,6 @@
 import base from '../grammar.js';
 import { comma_list, paren_list, optional_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { fromClause } from '../grammar/statements/select.js';
 
 import create_rules from './grammar/create.js';
 import alter_rules  from './grammar/alter.js';
@@ -39,6 +40,9 @@ export default grammar(base, {
   ],
 
   rules: {
+
+    // LIMIT is supported: fromClause with limit re-adds it over the ANSI base.
+    from: $ => fromClause($, { limit: true }),
 
     // ── DDL dispatcher ────────────────────────────────────────────────────────
     _ddl_statement: $ => choice(

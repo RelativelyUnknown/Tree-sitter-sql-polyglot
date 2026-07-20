@@ -1,5 +1,6 @@
 import base from '../grammar.js';
 import { comma_list, optional_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { createStatementChoices } from '../grammar/statements/create.js';
 import teradata_statement_rules from './grammar/statements.js';
 
 // Teradata SQL — standalone lineage (since 1979), extends the ANSI base.
@@ -30,6 +31,9 @@ export default grammar(base, {
   ],
 
   rules: {
+
+    // Re-add non-ANSI CREATE forms this dialect supports over the strict ANSI base.
+    _create_statement: $ => seq(choice(...createStatementChoices($, { index: true }))),
 
     // base statement dispatch plus Teradata statement forms
     statement: $ => seq(

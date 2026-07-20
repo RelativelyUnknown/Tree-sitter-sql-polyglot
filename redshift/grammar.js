@@ -1,5 +1,6 @@
 import base from '../grammar.js';
 import { optional_parenthesis, make_keyword, comma_list, paren_list } from '../grammar/helpers.js';
+import { fromClause } from '../grammar/statements/select.js';
 import rs_create_rules from './grammar/create.js';
 import rs_copy_rules   from './grammar/copy.js';
 import rs_optimize_rules from './grammar/optimize.js';
@@ -22,6 +23,9 @@ export default grammar(base, {
   ],
 
   rules: {
+
+    // LIMIT is supported: fromClause with limit re-adds it over the ANSI base.
+    from: $ => fromClause($, { limit: true }),
 
     statement: $ => seq(
       optional(seq(

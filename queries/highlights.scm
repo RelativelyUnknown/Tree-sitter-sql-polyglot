@@ -10,7 +10,6 @@
     name: (identifier) @function.call))
 
 [
-  (keyword_hash)
   (keyword_array)
 ] @function.call
 
@@ -179,7 +178,6 @@
   (keyword_foreign)
   (keyword_constraint)
   (keyword_force)
-  (keyword_include)
   (keyword_for)
   (keyword_if)
   (keyword_exists)
@@ -238,9 +236,6 @@
 [
   (keyword_row)
   (keyword_comment)
-  (keyword_analyze)
-  (keyword_explain)
-  (keyword_verbose)
   (keyword_truncate)
   (keyword_cache)
 ] @keyword

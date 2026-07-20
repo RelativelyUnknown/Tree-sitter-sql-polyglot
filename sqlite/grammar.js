@@ -1,5 +1,6 @@
 import base from '../grammar.js';
 import { optional_parenthesis, comma_list, paren_list, make_keyword, wrapped_in_parenthesis } from '../grammar/helpers.js';
+import { fromClause } from '../grammar/statements/select.js';
 import sqlite_pragma_rules from './grammar/pragma.js';
 import sqlite_attach_rules from './grammar/attach.js';
 import sqlite_virtual_table_rules from './grammar/virtual_table.js';
@@ -21,6 +22,9 @@ export default grammar(base, {
   ],
 
   rules: {
+
+    // LIMIT is supported: fromClause with limit re-adds it over the ANSI base.
+    from: $ => fromClause($, { limit: true }),
 
     // Extend statement to add SQLite-specific top-level statements
     statement: $ => seq(

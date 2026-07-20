@@ -13,7 +13,7 @@ export default {
     $.object_reference,
     optional($.where),
     optional($.order_by),
-    optional($.limit),
+    // Strict ANSI base: no LIMIT on DELETE (dialects re-add it in their override)
   ),
 
   delete: $ => seq(

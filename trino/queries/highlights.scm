@@ -36,3 +36,10 @@
 
 ; Lambda expression arrow
 (lambda_expression "->" @operator)
+
+; EXPLAIN prefix (non-ANSI; re-added over the strict ANSI base)
+[
+  (keyword_explain)
+  (keyword_analyze)
+  (keyword_verbose)
+] @keyword
