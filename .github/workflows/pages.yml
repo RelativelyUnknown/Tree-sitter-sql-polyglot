@@ -30,6 +30,7 @@ jobs:
       - uses: tree-sitter/setup-action@v2
         with:
           install-lib: false
+          tree-sitter-ref: v0.26.3
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -56,9 +57,12 @@ jobs:
       - run: npm install
       - run: npm run generate:all
 
+      # No TREE_SITTER_BIN override: scorecard.py's own default pins the
+      # same npx tree-sitter-cli@v0.26.3 that generate.js uses to build the
+      # parsers — see ci.yml's scorecard job for why that consistency
+      # matters (parsing with a different CLI version than generated with
+      # causes false regressions on some probes).
       - name: Generate coverage report
-        env:
-          TREE_SITTER_BIN: tree-sitter
         run: |
           pip install pyyaml
           python tools/scorecard.py

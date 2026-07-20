@@ -49,6 +49,7 @@ jobs:
       - uses: tree-sitter/setup-action@v2
         with:
           install-lib: false
+          tree-sitter-ref: v0.26.3
 
       - uses: actions/cache@v4
         with:
@@ -119,6 +120,7 @@ jobs:
       - uses: tree-sitter/setup-action@v2
         with:
           install-lib: false
+          tree-sitter-ref: v0.26.3
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -148,9 +150,16 @@ jobs:
           pip install pyyaml
           python tools/corroborate.py
 
+      # No TREE_SITTER_BIN override here: scorecard.py's own default pins
+      # the same npx tree-sitter-cli@v0.26.3 that generate.js uses to build
+      # the parsers. Overriding it to the tree-sitter/setup-action CLI
+      # (0.26.11) parses parser.c/grammar.json built by a different CLI
+      # version than the one that generated them — that ABI mismatch
+      # produces false "implemented → absent" regressions on some probes
+      # (reproduced locally: 0.26.11 parsing a 0.26.3-generated trino
+      # grammar drops prepared_statements even though the grammar handles
+      # it correctly under matching versions).
       - name: Scorecard regression check
-        env:
-          TREE_SITTER_BIN: tree-sitter
         run: python tools/scorecard.py --check
 
       # Full (non --check) run to produce the human-readable report. Runs
@@ -160,8 +169,6 @@ jobs:
       # site rebuilds this same page from the live parsers via pages.yml.
       - name: Build coverage report
         if: always()
-        env:
-          TREE_SITTER_BIN: tree-sitter
         run: python tools/scorecard.py
 
       - name: Upload coverage report
