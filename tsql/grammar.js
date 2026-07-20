@@ -303,5 +303,15 @@ export default grammar(base, {
     ...tsql_synapse_rules,
     ...tsql_security_rules,
 
+
+    // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
+    // that are strict prefixes of the base keywords below. Explicit precedence
+    // beats match length in the tree-sitter lexer, so without an equal-prec
+    // re-declaration the longer keyword becomes unlexable in this dialect.
+    keyword_logged: _ => token(prec(1, make_keyword("logged"))),
+    keyword_offset: _ => token(prec(1, make_keyword("offset"))),
+    keyword_returning: _ => token(prec(1, make_keyword("returning"))),
+    keyword_returns: _ => token(prec(1, make_keyword("returns"))),
+
   },
 });

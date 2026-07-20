@@ -48,6 +48,10 @@ export default {
   ...show_rules,
   ...grant_rules,
 
+  // COMMENT ON is deliberately NOT wired here: it is not ISO SQL, and the
+  // base grammar stays strict ANSI (see tools/features.yml purity rule).
+  // Dialects that support it wire $.comment_statement into their own
+  // _ddl_statement overrides.
   _ddl_statement: $ => choice(
     $._create_statement,
     $._alter_statement,
@@ -58,7 +62,6 @@ export default {
     $.set_statement,
     $.grant_statement,
     $.revoke_statement,
-    $.comment_statement,
   ),
 
   _dml_write: $ => seq(

@@ -33,7 +33,10 @@ except ImportError:
     sys.exit(2)
 
 EVIDENCE_DIR = Path(__file__).parent / "evidence"
-SOURCES = ["sqlglot", "antlr", "vendor_doc", "real_world"]
+# other_parser: independent SQL parser implementations (JSqlParser, Apache
+# Calcite, ANTLR grammars-v4, pg_query, …) — used for dialects that SQLGlot
+# does not cover (e.g. SAP HANA, Spanner).
+SOURCES = ["sqlglot", "antlr", "vendor_doc", "real_world", "other_parser"]
 
 
 def load_evidence_files(dialect: str | None) -> list[tuple[Path, dict]]:

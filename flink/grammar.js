@@ -290,5 +290,12 @@ export default grammar(base, {
     ...select_rules,
     ...ml_rules,
 
+
+    // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
+    // that are strict prefixes of the base keywords below. Explicit precedence
+    // beats match length in the tree-sitter lexer, so without an equal-prec
+    // re-declaration the longer keyword becomes unlexable in this dialect.
+    keyword_called: _ => token(prec(1, make_keyword("called"))),
+
   },
 });

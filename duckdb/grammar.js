@@ -46,24 +46,6 @@ export default grammar(base, {
 
   rules: {
 
-    // ── DML: add RETURNING to INSERT / UPDATE / DELETE (#118) ───────────────
-    _insert_statement: $ => seq(
-      $.insert,
-      optional($.returning),
-    ),
-
-    _update_statement: $ => seq(
-      $.update,
-      optional($.returning),
-    ),
-
-    _delete_statement: $ => seq(
-      $.delete,
-      alias($._delete_from, $.from),
-      optional($.returning),
-    ),
-
-
     statement: $ => seq(
       optional(seq(
         $.keyword_explain,
@@ -119,6 +101,37 @@ export default grammar(base, {
           $.from_first_select,
         ),
       ),
+    ),
+
+    // DuckDB: COMMENT ON is supported (re-enumerates base _ddl_statement)
+    _ddl_statement: $ => choice(
+      $._create_statement,
+      $._alter_statement,
+      $._drop_statement,
+      $._rename_statement,
+      $._merge_statement,
+      $._refresh_statement,
+      $.set_statement,
+      $.grant_statement,
+      $.revoke_statement,
+      $.comment_statement,
+    ),
+
+    // DuckDB: INSERT/UPDATE/DELETE support RETURNING (same syntax as PostgreSQL)
+    _insert_statement: $ => seq(
+      $.insert,
+      optional($.returning),
+    ),
+
+    _update_statement: $ => seq(
+      $.update,
+      optional($.returning),
+    ),
+
+    _delete_statement: $ => seq(
+      $.delete,
+      alias($._delete_from, $.from),
+      optional($.returning),
     ),
 
     // Override _expression to add lambda, struct, map literals, list comprehension, file_reader
@@ -178,6 +191,7 @@ export default grammar(base, {
     ),
 
     // DuckDB-specific keywords
+    keyword_returning:  _ => token(prec(1, make_keyword("returning"))),
     keyword_attach:     _ => token(prec(1, make_keyword("attach"))),
     keyword_detach:     _ => token(prec(1, make_keyword("detach"))),
     keyword_install:    _ => token(prec(1, make_keyword("install"))),

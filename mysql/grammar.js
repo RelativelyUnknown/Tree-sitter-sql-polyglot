@@ -383,14 +383,16 @@ export default grammar(base, {
       optional($.identifier),
     ),
 
-    // Override limit: MySQL also supports LIMIT offset, count (comma form)
-    limit: $ => seq(
+    // Override limit: MySQL also supports LIMIT offset, count (comma form).
+    // prec.right (as in base): a following OFFSET binds to the limit clause
+    // rather than starting an ANSI OFFSET … ROWS offset_fetch_clause.
+    limit: $ => prec.right(seq(
       $.keyword_limit,
       choice(
         seq(alias($._integer, $.literal), ',', alias($._integer, $.literal)),
         seq($.literal, optional($.offset)),
       ),
-    ),
+    )),
 
     // MySQL user/session variables: @name and @@name
     user_variable: _ => token(/@@?[a-zA-Z_][a-zA-Z0-9_]*/),
@@ -610,6 +612,16 @@ export default grammar(base, {
     ...mysql_procedural_rules,
     ...mysql_partition_rules,
     ...mysql_admin_rules,
+
+
+    // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
+    // that are strict prefixes of the base keywords below. Explicit precedence
+    // beats match length in the tree-sitter lexer, so without an equal-prec
+    // re-declaration the longer keyword becomes unlexable in this dialect.
+    keyword_attribute: _ => token(prec(1, make_keyword("attribute"))),
+    keyword_atomic: _ => token(prec(1, make_keyword("atomic"))),
+    keyword_called: _ => token(prec(1, make_keyword("called"))),
+    keyword_repeatable: _ => token(prec(1, make_keyword("repeatable"))),
 
   },
 });

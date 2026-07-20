@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, comma_list, make_keyword } from '../grammar/helpers.js';
+import { optional_parenthesis, comma_list, make_keyword, wrapped_in_parenthesis } from '../grammar/helpers.js';
 import db2_modules_rules from './grammar/modules.js';
 import db2_data_control_rules from './grammar/data_control.js';
 import db2_isolation_rules from './grammar/isolation.js';
@@ -134,6 +134,42 @@ export default grammar(base, {
       ),
     ),
 
+    // Db2: SELECT … FROM FINAL/NEW/OLD TABLE (INSERT/UPDATE/DELETE …)
+    // (data-change-table-reference — Db2's mechanism for returning modified rows)
+    relation: $ => prec.right(
+      seq(
+        choice(
+          $.subquery,
+          $.invocation,
+          $.object_reference,
+          wrapped_in_parenthesis($.values),
+          $.data_change_table_reference,
+        ),
+        optional($.tablesample),
+        optional(
+          seq(
+            $._alias,
+            optional(alias($._column_list, $.list)),
+          ),
+        ),
+      ),
+    ),
+
+    data_change_table_reference: $ => seq(
+      choice(
+        seq($.keyword_final, $.keyword_table),
+        seq($.keyword_new, $.keyword_table),
+        seq($.keyword_old, $.keyword_table),
+      ),
+      wrapped_in_parenthesis(
+        choice(
+          $.insert,
+          $.update,
+          seq($.delete, alias($._delete_from, $.from)),
+        ),
+      ),
+    ),
+
     // Extend FROM to support OPTIMIZE FOR n ROWS and WITH isolation level at end
     from: $ => seq(
       $.keyword_from,
@@ -156,41 +192,6 @@ export default grammar(base, {
       optional($.offset_fetch_clause),
       optional($.optimize_for_clause),
       optional($.with_isolation_clause),
-    ),
-
-    // SELECT … FROM FINAL|NEW|OLD TABLE (dml) — data-change-table-reference (#123)
-    relation: $ => prec.right(
-      seq(
-        choice(
-          $.subquery,
-          $.invocation,
-          $.object_reference,
-          seq('(', $.values, ')'),
-          $.data_change_table_reference,
-        ),
-        optional($.tablesample),
-        optional(
-          seq(
-            $._alias,
-            optional(alias($._column_list, $.list)),
-          ),
-        ),
-      ),
-    ),
-
-    data_change_table_reference: $ => seq(
-      choice(
-        seq($.keyword_final, $.keyword_table),
-        seq($.keyword_new, $.keyword_table),
-        seq($.keyword_old, $.keyword_table),
-      ),
-      '(',
-      choice(
-        $._insert_statement,
-        $._update_statement,
-        $._delete_statement,
-      ),
-      ')',
     ),
 
     // Db2-specific keywords — token(prec(1,...)) needed so lexer prefers
@@ -218,7 +219,9 @@ export default grammar(base, {
     keyword_failure:    _ => token(prec(1, make_keyword("failure"))),
     keyword_success:    _ => token(prec(1, make_keyword("success"))),
     keyword_value:      _ => token(prec(1, make_keyword("value"))),
-    // prefix-shadow guard: keyword_value at prec 1 must not shadow VALUES
+    // keyword_value's explicit prec(1) outranks the base keyword_values token
+    // (precedence beats match length in the lexer), which broke INSERT … VALUES.
+    // Re-declare keyword_values at the same precedence so longest-match wins.
     keyword_values:     _ => token(prec(1, make_keyword("values"))),
     keyword_do:         _ => token(prec(1, make_keyword("do"))),
     keyword_leave:      _ => token(prec(1, make_keyword("leave"))),
@@ -251,6 +254,13 @@ export default grammar(base, {
     ...db2_diagnostics_rules,
     ...db2_audit_rules,
     ...db2_procedural_rules,
+
+
+    // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
+    // that are strict prefixes of the base keywords below. Explicit precedence
+    // beats match length in the tree-sitter lexer, so without an equal-prec
+    // re-declaration the longer keyword becomes unlexable in this dialect.
+    keyword_double: _ => token(prec(1, make_keyword("double"))),
 
   },
 });

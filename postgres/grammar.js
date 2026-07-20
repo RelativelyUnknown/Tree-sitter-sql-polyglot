@@ -635,6 +635,10 @@ export default grammar(base, {
     keyword_identity:       _ => token(prec(1, make_keyword("identity"))),
     keyword_show:           _ => token(prec(1, make_keyword("show"))),
     keyword_off:            _ => token(prec(1, make_keyword("off"))),
+    // keyword_off's explicit prec(1) outranks the base keyword_offset token
+    // (precedence beats match length in the lexer), which broke LIMIT … OFFSET.
+    // Re-declare keyword_offset at the same precedence so longest-match wins.
+    keyword_offset:         _ => token(prec(1, make_keyword("offset"))),
     keyword_match:          _ => token(prec(1, make_keyword("match"))),
     keyword_matched:        _ => token(prec(1, make_keyword("matched"))),
     keyword_version:        _ => token(prec(1, make_keyword("version"))),

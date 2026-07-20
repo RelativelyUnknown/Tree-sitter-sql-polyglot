@@ -1,0 +1,87 @@
+name: Deploy docs to GitHub Pages
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Only one Pages deployment at a time; a newer push supersedes an in-flight one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  # ── Build the VitePress site ────────────────────────────────────────────────
+  # The coverage page is generated fresh from the live parsers on every run
+  # (tools/scorecard.py) — never hand-updated. The downloads page mirrors the
+  # base grammar's build artifacts (scripts/docs-prep.js).
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: tree-sitter/setup-action@v2
+        with:
+          install-lib: false
+          tree-sitter-ref: v0.26.3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Shares the ci.yml scorecard job's cache namespace so a merge to main
+      # (which already ran that job on the PR) gets a warm parser cache here.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            src/parser.c
+            src/node-types.json
+            src/grammar.json
+            src/tree_sitter/
+            */src/parser.c
+            */src/node-types.json
+            */src/grammar.json
+            */src/tree_sitter/
+            .grammar-cache/
+            ~/.cache/tree-sitter/
+          key: parsers-v2-scorecard-${{ hashFiles('grammar.js', 'grammar/**', '*/grammar.js', '*/grammar/**') }}
+          restore-keys: |
+            parsers-v2-scorecard-
+
+      - run: npm install
+      - run: npm run generate:all
+
+      # No TREE_SITTER_BIN override: scorecard.py's own default pins the
+      # same npx tree-sitter-cli@v0.26.3 that generate.js uses to build the
+      # parsers — see ci.yml's scorecard job for why that consistency
+      # matters (parsing with a different CLI version than generated with
+      # causes false regressions on some probes).
+      - name: Generate coverage report
+        run: |
+          pip install pyyaml
+          python tools/scorecard.py
+
+      - name: Build docs site
+        run: npm run docs:build
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/.vitepress/dist
+
+  # ── Deploy to GitHub Pages ───────────────────────────────────────────────────
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -102,6 +102,20 @@ export default grammar(base, {
     ),
 
     // Extend statement to add PL/SQL blocks, FORALL, EXECUTE IMMEDIATE, cursors,
+    // Oracle: COMMENT ON is supported (re-enumerates base _ddl_statement)
+    _ddl_statement: $ => choice(
+      $._create_statement,
+      $._alter_statement,
+      $._drop_statement,
+      $._rename_statement,
+      $._merge_statement,
+      $._refresh_statement,
+      $.set_statement,
+      $.grant_statement,
+      $.revoke_statement,
+      $.comment_statement,
+    ),
+
     // procedural control-flow (IF/WHILE/LOOP/FOR/RETURN/EXIT/CONTINUE/NULL/ASSIGN)
     statement: $ => seq(
       optional(seq(
@@ -416,6 +430,17 @@ export default grammar(base, {
     ...oracle_partition_rules,
     ...oracle_ddl_ext_rules,
     ...oracle_admin_rules,
+
+
+    // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
+    // that are strict prefixes of the base keywords below. Explicit precedence
+    // beats match length in the tree-sitter lexer, so without an equal-prec
+    // re-declaration the longer keyword becomes unlexable in this dialect.
+    keyword_attribute: _ => token(prec(1, make_keyword("attribute"))),
+    keyword_atomic: _ => token(prec(1, make_keyword("atomic"))),
+    keyword_connection: _ => token(prec(1, make_keyword("connection"))),
+    keyword_logged: _ => token(prec(1, make_keyword("logged"))),
+    keyword_savepoint: _ => token(prec(1, make_keyword("savepoint"))),
 
   },
 });

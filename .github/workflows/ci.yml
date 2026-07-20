@@ -37,44 +37,50 @@ jobs:
           - shard: base
             dialects: ""
           - shard: hive-chain
-            dialects: "hive spark databricks oracle db2"
+            dialects: "hive spark databricks oracle db2 hana"
           - shard: pg-mysql
-            dialects: "postgres mysql mariadb sqlite duckdb"
+            dialects: "postgres mysql mariadb sqlite duckdb cockroachdb"
           - shard: warehouse
-            dialects: "snowflake bigquery tsql clickhouse flink"
+            dialects: "snowflake bigquery spanner tsql clickhouse flink"
           - shard: trino-chain
-            dialects: "trino athena redshift"
+            dialects: "trino athena redshift teradata"
     steps:
       - uses: actions/checkout@v4
       - uses: tree-sitter/setup-action@v2
         with:
           install-lib: false
+          tree-sitter-ref: v0.26.3
 
       - uses: actions/cache@v4
         with:
           path: |
             src/parser.c
             src/node-types.json
+            src/grammar.json
             src/tree_sitter/
             */src/parser.c
             */src/node-types.json
+            */src/grammar.json
             */src/tree_sitter/
             .grammar-cache/
             ~/.cache/tree-sitter/
-          key: parsers-${{ matrix.shard }}-${{ hashFiles('grammar.js', 'grammar/**', '*/grammar.js', '*/grammar/**') }}
+          key: parsers-v2-${{ matrix.shard }}-${{ hashFiles('grammar.js', 'grammar/**', '*/grammar.js', '*/grammar/**') }}
           restore-keys: |
-            parsers-${{ matrix.shard }}-
+            parsers-v2-${{ matrix.shard }}-
 
       # generate.js is hash-cached per grammar (including ancestor chains), so
-      # on a warm restore only the changed grammars are regenerated.
+      # on a warm restore only the changed grammars are regenerated. Dialects
+      # in a shard are generated concurrently (scripts/generate-all.js):
+      # each dialect's grammar.js composes its parent grammar from JS SOURCE
+      # (not the parent's compiled output), so there is no ordering
+      # dependency and running tree-sitter generate for several dialects at
+      # once is safe.
       - name: Generate parsers
         run: |
           if [ -z "${{ matrix.dialects }}" ]; then
             node scripts/generate.js
           else
-            for d in ${{ matrix.dialects }}; do
-              node scripts/generate.js "$d"
-            done
+            node scripts/generate-all.js ${{ matrix.dialects }}
           fi
 
       # Rust build cache for the base parser-test-action (cargo test of the
@@ -102,6 +108,78 @@ jobs:
             (cd "$d" && tree-sitter test)
             echo "::endgroup::"
           done
+
+  # ── Feature-completeness scorecard ──────────────────────────────────────────
+  # Parses every feature probe in tools/features.yml with every dialect parser
+  # and fails on coverage regressions (implemented → absent) or new ANSI
+  # purity violations in the base grammar. Baseline: tools/coverage.json.
+  scorecard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: tree-sitter/setup-action@v2
+        with:
+          install-lib: false
+          tree-sitter-ref: v0.26.3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            src/parser.c
+            src/node-types.json
+            src/grammar.json
+            src/tree_sitter/
+            */src/parser.c
+            */src/node-types.json
+            */src/grammar.json
+            */src/tree_sitter/
+            .grammar-cache/
+            ~/.cache/tree-sitter/
+          key: parsers-v2-scorecard-${{ hashFiles('grammar.js', 'grammar/**', '*/grammar.js', '*/grammar/**') }}
+          restore-keys: |
+            parsers-v2-scorecard-
+
+      - name: Generate all parsers
+        run: npm run generate:all
+
+      - name: Evidence corroboration gate
+        run: |
+          pip install pyyaml
+          python tools/corroborate.py
+
+      # No TREE_SITTER_BIN override here: scorecard.py's own default pins
+      # the same npx tree-sitter-cli@v0.26.3 that generate.js uses to build
+      # the parsers. Overriding it to the tree-sitter/setup-action CLI
+      # (0.26.11) parses parser.c/grammar.json built by a different CLI
+      # version than the one that generated them — that ABI mismatch
+      # produces false "implemented → absent" regressions on some probes
+      # (reproduced locally: 0.26.11 parsing a 0.26.3-generated trino
+      # grammar drops prepared_statements even though the grammar handles
+      # it correctly under matching versions).
+      - name: Scorecard regression check
+        run: python tools/scorecard.py --check
+
+      # Full (non --check) run to produce the human-readable report. Runs
+      # even if the gate above failed, so a red PR still gets a report to
+      # diagnose from. Writes to the Actions job summary (every run) and
+      # docs/coverage.md / tools/coverage.json (uploaded below); the docs
+      # site rebuilds this same page from the live parsers via pages.yml.
+      - name: Build coverage report
+        if: always()
+        run: python tools/scorecard.py
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            docs/coverage.md
+            tools/coverage.json
+          retention-days: 30
 
   # ── Node native binding (OS matrix) ─────────────────────────────────────────
   # node-gyp compiles parser.c to a native .node addon. The result is
@@ -153,7 +231,7 @@ jobs:
           # forms "(ERROR", "(MISSING", "(UNEXPECTED") rather than the bare words,
           # which legitimately appear in valid SQL (e.g. EXCEPTION WHEN ERROR THEN,
           # ERROR_MESSAGE(), RAISERROR(...)). errors.txt holds intentional error tests.
-          for dir in test spark/test databricks/test postgres/test mysql/test snowflake/test mariadb/test sqlite/test hive/test oracle/test db2/test duckdb/test trino/test athena/test redshift/test bigquery/test tsql/test clickhouse/test flink/test; do
+          for dir in test spark/test databricks/test postgres/test mysql/test snowflake/test mariadb/test sqlite/test hive/test oracle/test db2/test duckdb/test trino/test athena/test redshift/test bigquery/test tsql/test clickhouse/test flink/test cockroachdb/test spanner/test teradata/test hana/test; do
             if [[ $(grep -rnE --exclude=errors.txt '\(ERROR' "$dir/" 2>/dev/null | wc -l) -gt 0 ]]; then
                 echo "Found 'ERROR' in $dir: "
                 grep -rnE --exclude=errors.txt '\(ERROR' "$dir/" | cut -f1,2 -d:

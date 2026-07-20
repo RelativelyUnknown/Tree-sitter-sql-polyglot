@@ -238,7 +238,6 @@
 [
   (keyword_row)
   (keyword_comment)
-  (keyword_extension)
   (keyword_analyze)
   (keyword_explain)
   (keyword_verbose)
@@ -347,6 +346,8 @@
   (keyword_procedure)
   (keyword_percent)
   (keyword_tablesample)
+  (keyword_bernoulli)
+  (keyword_system)
 ] @keyword
 
 

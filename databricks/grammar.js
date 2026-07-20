@@ -323,5 +323,13 @@ export default grammar(spark, {
     ...alter_rules,
     ...apply_rules,
 
+
+    // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
+    // that are strict prefixes of the base keywords below. Explicit precedence
+    // beats match length in the tree-sitter lexer, so without an equal-prec
+    // re-declaration the longer keyword becomes unlexable in this dialect.
+    keyword_called: _ => token(prec(1, make_keyword("called"))),
+    keyword_generated: _ => token(prec(1, make_keyword("generated"))),
+
   },
 });

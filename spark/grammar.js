@@ -140,6 +140,12 @@ export default grammar(hive, {
       $.set_statement,
       $.reset_statement,
       $.use_statement,
+      // inherited Hive metadata/data statements (must be re-enumerated:
+      // an override replaces the parent rule wholesale)
+      $.show_statement,
+      $.describe_statement,
+      $.msck_repair_statement,
+      $.load_data,
       $.declare_variable_statement,
       $.set_variable_statement,
       $.call_statement,
@@ -459,5 +465,16 @@ export default grammar(hive, {
     ...spark_scripting_rules,
     ...spark_iceberg_rules,
     ...spark_select_rules,
+
+    // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
+    // that are strict prefixes of the base keywords below. Explicit precedence
+    // beats match length in the tree-sitter lexer, so without an equal-prec
+    // re-declaration the longer keyword becomes unlexable in this dialect.
+    keyword_called: _ => token(prec(1, make_keyword("called"))),
+    keyword_repeatable: _ => token(prec(1, make_keyword("repeatable"))),
+    keyword_variadic: _ => token(prec(1, make_keyword("variadic"))),
+    keyword_varbinary: _ => token(prec(1, make_keyword("varbinary"))),
+    keyword_varying: _ => token(prec(1, make_keyword("varying"))),
+
   },
 });

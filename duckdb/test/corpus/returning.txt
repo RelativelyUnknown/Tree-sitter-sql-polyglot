@@ -1,9 +1,8 @@
 ================================================================================
-INSERT RETURNING
+DuckDB: INSERT VALUES RETURNING *
 ================================================================================
 
-INSERT INTO t VALUES (1, 'a') RETURNING *;
-INSERT INTO t SELECT * FROM src RETURNING id;
+INSERT INTO t1 VALUES (1, 'a') RETURNING *;
 
 --------------------------------------------------------------------------------
 
@@ -22,7 +21,17 @@ INSERT INTO t SELECT * FROM src RETURNING id;
       (keyword_returning)
       (select_expression
         (term
-          (all_fields)))))
+          (all_fields))))))
+
+================================================================================
+DuckDB: INSERT SELECT RETURNING column
+================================================================================
+
+INSERT INTO t1 SELECT * FROM src RETURNING id;
+
+--------------------------------------------------------------------------------
+
+(program
   (statement
     (insert
       (keyword_insert)
@@ -47,10 +56,10 @@ INSERT INTO t SELECT * FROM src RETURNING id;
             (identifier)))))))
 
 ================================================================================
-UPDATE RETURNING
+DuckDB: UPDATE RETURNING *
 ================================================================================
 
-UPDATE t SET col = 42 WHERE id = 1 RETURNING *;
+UPDATE t1 SET col = 42 WHERE id = 1 RETURNING *;
 
 --------------------------------------------------------------------------------
 
@@ -79,10 +88,10 @@ UPDATE t SET col = 42 WHERE id = 1 RETURNING *;
           (all_fields))))))
 
 ================================================================================
-DELETE RETURNING
+DuckDB: DELETE RETURNING columns
 ================================================================================
 
-DELETE FROM t WHERE id = 1 RETURNING id, name;
+DELETE FROM t1 WHERE id = 1 RETURNING id, name;
 
 --------------------------------------------------------------------------------
 
@@ -109,3 +118,39 @@ DELETE FROM t WHERE id = 1 RETURNING id, name;
         (term
           (field
             (identifier)))))))
+
+================================================================================
+DuckDB: INSERT RETURNING expression with alias
+================================================================================
+
+INSERT INTO t1 (a, b) VALUES (1, 2) RETURNING a + b AS total;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert
+      (keyword_insert)
+      (keyword_into)
+      (object_reference
+        (identifier))
+      (list
+        (column
+          (identifier))
+        (column
+          (identifier)))
+      (keyword_values)
+      (list
+        (literal)
+        (literal)))
+    (returning
+      (keyword_returning)
+      (select_expression
+        (term
+          (binary_expression
+            (field
+              (identifier))
+            (field
+              (identifier)))
+          (keyword_as)
+          (identifier))))))

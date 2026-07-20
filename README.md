@@ -2,11 +2,15 @@
 
 A multi-dialect SQL parser for [tree-sitter](https://tree-sitter.github.io/), forked from
 [DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql). It restructures the
-upstream "permissive" grammar into a clean ANSI SQL base plus **18 independently compiled dialect
+upstream "permissive" grammar into a clean ANSI SQL base plus **22 independently compiled dialect
 grammars**, each layered on top via tree-sitter's `grammar(parent, overrides)` composition.
 
 Originally built as the SQL parser backend for [burnt](https://github.com/RedPandaMC/burnt) — a cost
 compiler and linter for Spark pipelines — it now aims for broad dialect coverage across the SQL ecosystem.
+
+**[Docs site](https://redpandamc.github.io/tree-sitter-sql-extended/)** ·
+**[Dialect coverage](https://redpandamc.github.io/tree-sitter-sql-extended/coverage)** — per-dialect
+feature scores, regenerated from the live parsers on every push to `main`.
 
 ---
 
@@ -17,6 +21,7 @@ Each dialect compiles to its own `<dialect>/src/parser.c` and can be used indepe
 | Dialect | Extends | Highlights |
 |---------|---------|-----------|
 | **base** (ANSI) | — | `GRANT`/`REVOKE`, `GROUP BY ROLLUP`/`CUBE`/`GROUPING SETS`, `FETCH FIRST`/`OFFSET … FETCH`, `WITHIN GROUP`, `TRIM(… FROM …)`, interval qualifiers |
+| **hana** | base | `CREATE COLUMN/ROW TABLE`, `UPSERT … WITH PRIMARY KEY`, `WITH HINT (…)`, SQLScript procedures (`LANGUAGE SQLSCRIPT`, `DECLARE`, `:=`, `:param`) |
 | **hive** | base | `LATERAL VIEW`, `STORED AS`/`STORED BY`, multi-table `INSERT`, `LOAD DATA INPATH`, `CLUSTER`/`DISTRIBUTE`/`SORT BY` |
 | **spark** | hive | `QUALIFY`, `PIVOT`/`UNPIVOT`, time travel, scripting (`IF`/`WHILE`/`LOOP`), Iceberg, `VARIANT`, `CREATE TABLE … USING/OPTIONS` |
 | **databricks** | spark | Delta/DLT (`OPTIMIZE … ZORDER BY`, `VACUUM`, `RESTORE`), Unity Catalog (`CATALOG`/`VOLUME`/`EXTERNAL LOCATION`, `GRANT`), Iceberg `CALL` |
@@ -29,13 +34,18 @@ Each dialect compiles to its own `<dialect>/src/parser.c` and can be used indepe
 | **bigquery** | base | `INT64`/`STRUCT<…>`/`ARRAY<…>` types, `UNNEST`, backtick identifiers, `QUALIFY` |
 | **snowflake** | base | scripting, `LATERAL FLATTEN`, time travel, `@stage` sources, `::` cast |
 | **sqlite** | base | `INSERT OR REPLACE/IGNORE`, UPSERT, `AUTOINCREMENT`, `INDEXED BY` |
+| **spanner** | bigquery | trailing `PRIMARY KEY`, `INTERLEAVE IN PARENT … ON DELETE CASCADE`, `NULL_FILTERED`/`STORING` indexes, `CREATE CHANGE STREAM`, `ROW DELETION POLICY`, `STRING(n\|MAX)`/`BYTES(n\|MAX)` |
 | **duckdb** | base | FROM-first `SELECT`, `SELECT * EXCLUDE/REPLACE/RENAME`, lambdas, struct/map/list literals, `ASOF`/`POSITIONAL JOIN`, `ATTACH` |
+| **teradata** | base | `SEL`/`DEL` abbreviations, `SET`/`MULTISET`/`VOLATILE` tables, `[UNIQUE] PRIMARY INDEX`/`NO PRIMARY INDEX`, `PARTITION BY RANGE_N`/`CASE_N`, `COLLECT STATISTICS`, `CREATE MACRO`, `TOP n`, `QUALIFY`, `:param` references |
 | **trino** | base | `PREPARE`/`EXECUTE`/`DEALLOCATE`, `MATCH_RECOGNIZE`, `TABLESAMPLE BERNOULLI/SYSTEM`, `ARRAY`/`MAP`/`ROW` types, lambdas |
 | **athena** | trino | `UNLOAD … TO 's3://…'`, `MSCK REPAIR TABLE … PARTITIONS` (managed Trino + data-lake semantics) |
 | **redshift** | base | `DISTKEY`/`SORTKEY`/`DISTSTYLE`/`ENCODE`, `CREATE EXTERNAL SCHEMA/TABLE`, `COPY`/`UNLOAD`, `VACUUM REINDEX`, `APPROXIMATE COUNT` |
+| **cockroachdb** | postgres | `AS OF SYSTEM TIME`, `UPSERT INTO`, `BACKUP`/`RESTORE`, `IMPORT INTO … CSV DATA`, `CREATE CHANGEFEED`, hash-sharded indexes (`USING HASH`), `STORING (…)`, `SHOW JOBS`/`GRANTS`/`DATABASES` |
 | **clickhouse** | base | `ENGINE = MergeTree() …`, column `MATERIALIZED`/`ALIAS`/`EPHEMERAL`/`CODEC`/`TTL`, `PREWHERE`, `FINAL`, `ARRAY JOIN`, `LIMIT n BY`, `SAMPLE`, `WITH TOTALS`, `QUALIFY`, `ORDER BY … WITH FILL`, `LIMIT … WITH TIES`, `INTO OUTFILE`/`FORMAT`, `ALTER … UPDATE`/`DELETE`, `OPTIMIZE … FINAL`, `CREATE DICTIONARY`/`LIVE VIEW`, `SYSTEM …`, `Map`/`Tuple`/`Nested`/`LowCardinality`/`Nullable` types |
 
-Dependency chains: `databricks → spark → hive → base`, `mariadb → mysql → base`, and `athena → trino → base`.
+Dependency chains: `databricks → spark → hive → base`, `mariadb → mysql → base`, `athena → trino → base`,
+`cockroachdb → postgres → base`, and `spanner → bigquery → base` — chains follow real dialect
+genealogy (CockroachDB is PostgreSQL-compatible by design; Spanner and BigQuery share GoogleSQL).
 Regenerate the child when a parent grammar changes. See [AGENTS.md](AGENTS.md) for the full architecture.
 
 ---
@@ -81,7 +91,7 @@ npm run generate
 # Regenerate a single dialect (and its parent chain as needed)
 npm run generate:spark
 
-# Regenerate every parser (base + all 18 dialects)
+# Regenerate every parser (base + all 22 dialects)
 npm run generate:all
 
 # Run corpus tests for the base grammar
@@ -99,7 +109,7 @@ sources are unchanged. Use `npm run generate:force` to bypass the cache.
 
 Base grammar rules are split across `grammar/` (e.g. `grammar/statements/*.js`, `grammar/expressions.js`,
 `grammar/keywords.js`). Dialect rules live under `<dialect>/grammar/`. A change to the base ripples to all
-12 parsers, so regenerate and test all of them after editing base files.
+22 parsers, so regenerate and test all of them after editing base files.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md) for more detail.
 

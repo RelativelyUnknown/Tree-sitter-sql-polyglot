@@ -141,7 +141,7 @@ BREAKING CHANGE: The `(foo_node)` node has been renamed to `(bar_node)`
 
 ```bash
 bash scripts/bump-version.sh <version>   # bumps package.json, tree-sitter.json, Cargo.toml, pyproject.toml, CMakeLists.txt
-npm run release                           # generates CHANGELOG entry and commits
+npm run release                           # generates a docs/changelog.md entry and commits
 git push
 ```
 
@@ -155,12 +155,20 @@ git push --tags
 
 Pushing the tag triggers CI to build artifacts and publish to npm, crates.io, and PyPI.
 
-## Github Pages (local docs preview)
+## Docs site (local preview)
+
+The docs site (`docs/`) is a [VitePress](https://vitepress.dev/) site, deployed to GitHub Pages by
+`.github/workflows/pages.yml` on every push to `main`. Only `docs/index.md`, `docs/changelog.md`, and
+`docs/.vitepress/*` are hand-written; `docs/coverage.md` and `docs/downloads.md` are generated
+(gitignored — never commit them).
 
 ```bash
-cd docs/
-bundle install
-bundle exec jekyll serve
+npm install
+npm run generate:all                     # optional but required for a real (non-stub) coverage page
+pip install pyyaml && python tools/scorecard.py   # optional — writes docs/coverage.md
+npm run docs:dev
 ```
 
-Open [localhost:4000](http://localhost:4000).
+Open the URL `vitepress dev` prints (typically [localhost:5173](http://localhost:5173)).
+`npm run docs:build` produces the static site in `docs/.vitepress/dist/`;
+`npm run docs:preview` serves that build locally.

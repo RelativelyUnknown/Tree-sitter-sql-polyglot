@@ -72,7 +72,7 @@ export default grammar(base, {
       ),
     ),
 
-    // ── DML: BigQuery THEN RETURN on INSERT / UPDATE / DELETE (#117) ────────
+    // ── DML: THEN RETURN — BigQuery's RETURNING equivalent (#117) ───────────
     _insert_statement: $ => seq(
       $.insert,
       optional($.then_return_clause),
@@ -92,6 +92,11 @@ export default grammar(base, {
     then_return_clause: $ => seq(
       $.keyword_then,
       $.keyword_return,
+      optional(seq(
+        $.keyword_with,
+        $.keyword_action,
+        optional(seq($.keyword_as, field('alias', $.identifier))),
+      )),
       $.select_expression,
     ),
 
@@ -275,6 +280,14 @@ export default grammar(base, {
     ...ddl_rules,
     ...ml_rules,
     ...types_rules,
+
+
+    // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
+    // that are strict prefixes of the base keywords below. Explicit precedence
+    // beats match length in the tree-sitter lexer, so without an equal-prec
+    // re-declaration the longer keyword becomes unlexable in this dialect.
+    keyword_called: _ => token(prec(1, make_keyword("called"))),
+    keyword_returns: _ => token(prec(1, make_keyword("returns"))),
 
   },
 });
