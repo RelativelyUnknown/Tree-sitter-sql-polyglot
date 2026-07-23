@@ -208,6 +208,8 @@ export default grammar(spark, {
       seq($.keyword_write, $.keyword_distributed, $.keyword_by, $.keyword_partition),
       // Iceberg / Unity Catalog specs
       $._alter_table_iceberg_spec,
+      // Liquid clustering: CLUSTER BY (col, …) | CLUSTER BY NONE
+      seq($.keyword_cluster, $.keyword_by, choice(paren_list($.identifier, true), $.keyword_none)),
     ),
 
     // Override set_statement to add Databricks-specific SET forms

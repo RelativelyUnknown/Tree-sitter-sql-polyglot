@@ -31,6 +31,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **CockroachDB:** column families (`FAMILY name (cols)`)
 - **Trino:** `CREATE VIEW … SECURITY {DEFINER|INVOKER}` (and optional `COMMENT`)
 - **Trino:** `ALTER TABLE … EXECUTE proc(…)`; `SET ROLE`; `SET TIME ZONE`; `DENY`
+- **Databricks:** liquid clustering `ALTER TABLE … CLUSTER BY (…)` / `CLUSTER BY NONE`
 - **Db2:** `LABEL ON {TABLE|COLUMN} … IS '…'`
 - **Spanner:** generated columns `col AS (expr) STORED`; `CREATE VIEW … SQL SECURITY {INVOKER|DEFINER}`
 - **Flink:** `LATERAL TABLE(func(…)) AS t(cols)` table-function join
