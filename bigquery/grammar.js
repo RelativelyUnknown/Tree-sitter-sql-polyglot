@@ -216,6 +216,7 @@ export default grammar(base, {
           wrapped_in_parenthesis($.values),
           $.unnest,
         ),
+        optional($.for_system_time_as_of),
         optional($.tablesample),
         optional(choice($.pivot_clause, $.unpivot_clause)),
         optional(
@@ -229,6 +230,16 @@ export default grammar(base, {
 
     keyword_pivot:      _ => token(prec(1, make_keyword("pivot"))),
     keyword_unpivot:    _ => token(prec(1, make_keyword("unpivot"))),
+    keyword_system_time: _ => token(prec(1, /[Ss][Yy][Ss][Tt][Ee][Mm]_[Tt][Ii][Mm][Ee]/)),
+
+    // FOR SYSTEM_TIME AS OF <timestamp>: time-travel table reference.
+    for_system_time_as_of: $ => seq(
+      $.keyword_for,
+      $.keyword_system_time,
+      $.keyword_as,
+      $.keyword_of,
+      field('time_point', $._expression),
+    ),
 
     // ── identifier: add backtick quoting ────────────────────────────────────
     _bq_backtick_quoted_string: _ => /`[^`]*`/,
