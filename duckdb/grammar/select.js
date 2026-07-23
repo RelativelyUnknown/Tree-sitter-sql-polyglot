@@ -1,4 +1,4 @@
-import { comma_list, wrapped_in_parenthesis, optional_parenthesis, paren_list } from '../../grammar/helpers.js';
+import { comma_list, wrapped_in_parenthesis, optional_parenthesis, paren_list, make_keyword } from '../../grammar/helpers.js';
 
 export default {
 
@@ -105,6 +105,7 @@ export default {
         $.positional_join,
       ),
     ),
+    optional($.using_sample),
     optional($.where),
     optional($.group_by),
     optional($.having),
@@ -114,6 +115,21 @@ export default {
     optional($.limit),
     optional($.offset_fetch_clause),
   ),
+
+  // USING SAMPLE n [%|ROWS|PERCENT] | USING SAMPLE method(n [%])
+  using_sample: $ => seq(
+    $.keyword_using,
+    $.keyword_sample,
+    choice(
+      $.invocation,
+      seq(
+        alias($._integer, $.literal),
+        optional(choice('%', $.keyword_percent, $.keyword_rows)),
+      ),
+    ),
+  ),
+
+  keyword_sample: _ => token(prec(1, make_keyword("sample"))),
 
   // FROM-first syntax: FROM t [WHERE ...] [SELECT ...]
   from_first_select: $ => seq(
@@ -130,6 +146,7 @@ export default {
         $.positional_join,
       ),
     ),
+    optional($.using_sample),
     optional($.where),
     optional($.group_by),
     optional($.having),

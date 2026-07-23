@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **PostgreSQL:** foreign-data DDL: `CREATE SERVER`, `CREATE FOREIGN TABLE` (with `OPTIONS`)
 - **SQLite:** `GLOB` and `MATCH` pattern operators
 - **DuckDB:** `UNION`/`EXCEPT`/`INTERSECT … BY NAME`
+- **DuckDB:** `USING SAMPLE` clause
 - **Teradata:** character-column attributes `[NOT] CASESPECIFIC`, `UPPERCASE`, `TITLE`
 - **SAP HANA:** `SELECT TOP n`; `ALTER TABLE … ADD (col type, …)` parenthesized column list
 - **MariaDB:** `CREATE OR REPLACE TABLE`
