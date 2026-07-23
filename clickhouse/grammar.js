@@ -96,6 +96,29 @@ export default grammar(base, {
 
     // ── ClickHouse keywords (dialect-local, per codebase convention) ──────────
     // Statement / clause keywords
+    // GLOBAL JOIN broadcasts the right table across a distributed query.
+    join: $ => seq(
+      optional($.keyword_global),
+      optional($.keyword_natural),
+      optional(choice(
+        $.keyword_left,
+        seq($.keyword_full, $.keyword_outer),
+        seq($.keyword_left, $.keyword_outer),
+        $.keyword_right,
+        seq($.keyword_right, $.keyword_outer),
+        $.keyword_inner,
+        $.keyword_full,
+      )),
+      $.keyword_join,
+      $.relation,
+      optional($.join),
+      choice(
+        seq($.keyword_on, field('predicate', $._expression)),
+        seq($.keyword_using, alias($._column_list, $.list)),
+      ),
+    ),
+
+    keyword_global:        _ => token(prec(1, make_keyword("global"))),
     keyword_show:          _ => token(prec(1, make_keyword("show"))),
     keyword_databases:     _ => token(prec(1, make_keyword("databases"))),
     keyword_processlist:   _ => token(prec(1, make_keyword("processlist"))),
