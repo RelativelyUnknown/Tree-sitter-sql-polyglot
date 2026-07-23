@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, paren_list, make_keyword } from '../grammar/helpers.js';
+import { optional_parenthesis, paren_list, comma_list, make_keyword } from '../grammar/helpers.js';
 import { createStatementChoices } from '../grammar/statements/create.js';
 import trino_statement_rules from './grammar/statements.js';
 import trino_type_rules     from './grammar/types.js';
@@ -87,8 +87,63 @@ export default grammar(base, {
         $.describe_statement,
         $.analyze_statement,
         $.comment_on_statement,
+        $.deny_statement,
+        $.set_role_statement,
+        $.set_time_zone_statement,
       ),
     ),
+
+    // DENY privilege [, …] ON object TO grantee [, …]
+    deny_statement: $ => seq(
+      $.keyword_deny,
+      $._privilege_list,
+      $.keyword_on,
+      $._grant_object,
+      $.keyword_to,
+      $._grantee_list,
+    ),
+
+    // SET ROLE {role | ALL | NONE}
+    set_role_statement: $ => seq(
+      $.keyword_set,
+      $.keyword_role,
+      choice($.keyword_all, $.keyword_none, $.identifier),
+    ),
+
+    // SET TIME ZONE {LOCAL | expr}
+    set_time_zone_statement: $ => seq(
+      $.keyword_set,
+      $.keyword_time,
+      $.keyword_zone,
+      choice($.keyword_local, $._expression),
+    ),
+
+    // Add ALTER TABLE … EXECUTE proc(arg => value, …) to the base alter specs.
+    _alter_specifications: $ => choice(
+      $.add_column,
+      $.add_constraint,
+      $.drop_constraint,
+      $.alter_column,
+      $.modify_column,
+      $.change_column,
+      $.drop_column,
+      $.rename_object,
+      $.rename_column,
+      $.set_schema,
+      $.change_ownership,
+      seq(
+        $.keyword_execute,
+        $.identifier,
+        optional(seq(
+          '(',
+          comma_list(choice(seq($.identifier, '=>', $._expression), $._expression), true),
+          ')',
+        )),
+        optional($.where),
+      ),
+    ),
+
+    keyword_deny: _ => token(prec(1, make_keyword("deny"))),
 
     // Override _expression to add lambda
     _expression: $ => prec(1,
