@@ -1,4 +1,4 @@
-# tree-sitter-sql-extended — Architecture Guide
+# tree-sitter-sql-extended: Architecture Guide
 
 ## What this repo is
 
@@ -33,7 +33,7 @@ grammar.js                ← ANSI SQL base (clean, no dialect-specific rules)
 ```
 
 Each dialect compiles to its own `<dialect>/src/parser.c` independently. Changing Databricks rules
-only requires regenerating `databricks/src/parser.c` — base and sibling parsers are unaffected.
+only requires regenerating `databricks/src/parser.c`; base and sibling parsers are unaffected.
 Dependencies: databricks depends on spark; spark depends on hive; mariadb depends on mysql.
 Regenerate the child dialect when the parent grammar changes.
 
@@ -42,7 +42,7 @@ Regenerate the child dialect when the parent grammar changes.
 ## Directory layout
 
 ```
-grammar.js                      # Entry point — spreads all rule groups
+grammar.js                      # Entry point, spreads all rule groups
 grammar/
   keywords.js                   # 500+ case-insensitive keyword regexes
   types.js                      # SQL type system (INT, VARCHAR, ARRAY, custom, etc.)
@@ -306,14 +306,14 @@ _ddl_statement: $ => choice(
 ```
 
 Dialect grammars extend the base using tree-sitter's `grammar(base, overrides)` pattern. A rule
-in `overrides` **replaces** the base rule entirely for that dialect — there is no automatic
+in `overrides` **replaces** the base rule entirely for that dialect; there is no automatic
 merging. Dispatch lists must therefore re-enumerate all base alternatives plus the new ones.
 
 ---
 
 ## How to add a new ANSI SQL statement
 
-1. **Find the file**: look in `grammar/statements/` — pick the file matching the statement type.
+1. **Find the file**: look in `grammar/statements/`, pick the file matching the statement type.
 
 2. **Define the rule** in that file:
    ```javascript
@@ -351,7 +351,7 @@ merging. Dispatch lists must therefore re-enumerate all base alternatives plus t
    (keyword_streaming) @keyword
    ```
 
-6. **Test**: `npm run generate && npm run test:corpus` — the keyword sync check in
+6. **Test**: `npm run generate && npm run test:corpus`; the keyword sync check in
    `test:keywords` will fail if step 5 is missing.
 
 7. **Corpus test**: add a test case to the relevant file in `test/corpus/`.
@@ -382,7 +382,7 @@ Use `spark/grammar.js` as the canonical example of `grammar(base, overrides)`.
      name: 'my_dialect_sql',
 
      rules: {
-       // Override dispatch lists — must re-enumerate ALL base alternatives plus new ones
+       // Override dispatch lists: must re-enumerate ALL base alternatives plus new ones
        _create_statement: $ => seq(choice(
          $.create_table,
          $.create_view,
@@ -435,7 +435,7 @@ Use `spark/grammar.js` as the canonical example of `grammar(base, overrides)`.
 ## Dev workflow
 
 ```bash
-# Generate all parsers (hash-cached — skips unchanged grammars)
+# Generate all parsers (hash-cached, skips unchanged grammars)
 npm run generate:all
 
 # Generate individual parsers
@@ -527,7 +527,7 @@ actually referenced by base grammar rules.
 ### How keyword extraction works
 
 tree-sitter performs *keyword extraction* during parser generation: it builds a `ts_lex_keywords`
-function in the generated C parser. **Each generated parser has its own keyword extraction** —
+function in the generated C parser. **Each generated parser has its own keyword extraction**:
 base and each dialect produce independent parsers with independent `ts_lex_keywords` functions.
 This means dialect-specific keywords defined in a dialect's own `grammar.js` are fully extracted
 for that dialect's parser. No shared keyword pool is needed.
@@ -540,7 +540,7 @@ for that dialect's parser. No shared keyword pool is needed.
    ```
 2. Use it in the dialect's grammar rules
 3. Add it to the dialect's `queries/highlights.scm` if it should be highlighted
-4. Do NOT add it to `grammar/keywords.js` — that file is for ANSI/base only
+4. Do NOT add it to `grammar/keywords.js`; that file is for ANSI/base only
 
 ### The keyword_like / keyword_ilike split
 
@@ -554,11 +554,11 @@ tree-sitter's normal lexer gives priority to the *longest* matching token (maxim
 `token(prec(N,...))` overrides that: a shorter token with higher prec *wins* over a longer token
 with lower prec, even when both could match the same input.
 
-**Concrete example — the `keyword_match` / `keyword_matched` bug:**
+**Concrete example: the `keyword_match` / `keyword_matched` bug:**
 
 `keyword_match: _ => token(prec(1, make_keyword("match")))` was added to `postgres/grammar.js`.
 `keyword_matched` was inherited from base at `prec(0)`.  When the input was `MATCHED`, the lexer
-preferred `keyword_match` (prec 1, 5 chars) over `keyword_matched` (prec 0, 7 chars) — leaving
+preferred `keyword_match` (prec 1, 5 chars) over `keyword_matched` (prec 0, 7 chars), leaving
 `ED` as a stray identifier and breaking `MERGE WHEN MATCHED THEN`.
 
 **Rule:** whenever you add a keyword `foo` with `token(prec(1,...))`, check whether any keyword
@@ -590,7 +590,7 @@ corpus tests.
 `scripts/generate.js` skips regeneration when its file hash matches the cached value. If you
 edit a grammar file but the hash doesn't change (e.g. whitespace-only changes, or the cache is
 stale from a previous run), the parser is not regenerated and tests continue to pass against the
-old binary — hiding the regression.
+old binary, hiding the regression.
 
 When in doubt, force-regenerate: `cd <dialect> && tree-sitter generate grammar.js` directly,
 bypassing the npm script cache entirely.
