@@ -37,6 +37,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **Databricks:** liquid clustering `ALTER TABLE … CLUSTER BY (…)` / `CLUSTER BY NONE`
 - **ClickHouse:** `GLOBAL JOIN` (distributed-query broadcast)
 - **Db2:** `LABEL ON {TABLE|COLUMN} … IS '…'`
+- **Db2:** temporal queries `FOR {SYSTEM_TIME|BUSINESS_TIME} {AS OF|BETWEEN … AND …|FROM … TO …}`
 - **Spanner:** generated columns `col AS (expr) STORED`; `CREATE VIEW … SQL SECURITY {INVOKER|DEFINER}`
 - **Flink:** `LATERAL TABLE(func(…)) AS t(cols)` table-function join
 - **Athena:** `VACUUM`; `ALTER TABLE … ADD/DROP PARTITION`, `SET LOCATION`

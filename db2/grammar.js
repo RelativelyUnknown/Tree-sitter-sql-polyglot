@@ -162,6 +162,7 @@ export default grammar(base, {
           wrapped_in_parenthesis($.values),
           $.data_change_table_reference,
         ),
+        optional($.temporal_clause),
         optional($.tablesample),
         optional(
           seq(
@@ -171,6 +172,20 @@ export default grammar(base, {
         ),
       ),
     ),
+
+    // FOR {SYSTEM_TIME | BUSINESS_TIME} {AS OF t | BETWEEN t AND t | FROM t TO t}
+    temporal_clause: $ => seq(
+      $.keyword_for,
+      choice($.keyword_system_time, $.keyword_business_time),
+      choice(
+        seq($.keyword_as, $.keyword_of, $._expression),
+        seq($.keyword_between, $._expression, $.keyword_and, $._expression),
+        seq($.keyword_from, $._expression, $.keyword_to, $._expression),
+      ),
+    ),
+
+    keyword_system_time:   _ => token(prec(1, /[Ss][Yy][Ss][Tt][Ee][Mm]_[Tt][Ii][Mm][Ee]/)),
+    keyword_business_time: _ => token(prec(1, /[Bb][Uu][Ss][Ii][Nn][Ee][Ss][Ss]_[Tt][Ii][Mm][Ee]/)),
 
     data_change_table_reference: $ => seq(
       choice(
