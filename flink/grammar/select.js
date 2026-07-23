@@ -113,6 +113,7 @@ export default {
         ),
         optional($.tablesample),
         optional($.for_system_time_as_of),
+        optional($.match_recognize_clause),
         optional(
           seq(
             $._alias,

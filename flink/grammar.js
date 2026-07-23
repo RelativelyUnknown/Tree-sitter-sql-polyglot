@@ -11,6 +11,7 @@ import utility_rules from './grammar/utility.js';
 import type_rules   from './grammar/types.js';
 import select_rules from './grammar/select.js';
 import ml_rules     from './grammar/ml.js';
+import match_recognize_rules from './grammar/match_recognize.js';
 
 export default grammar(base, {
   name: 'flink_sql',
@@ -276,6 +277,15 @@ export default grammar(base, {
     keyword_tinyint:      _ => token(prec(1, make_keyword("tinyint"))),
     keyword_refresh_mode: _ => token(prec(1, /[Rr][Ee][Ff][Rr][Ee][Ss][Hh]_[Mm][Oo][Dd][Ee]/)),
     keyword_system_time:  _ => token(prec(1, /[Ss][Yy][Ss][Tt][Ee][Mm]_[Tt][Ii][Mm][Ee]/)),
+    keyword_match_recognize: _ => token(prec(1, /[Mm][Aa][Tt][Cc][Hh]_[Rr][Ee][Cc][Oo][Gg][Nn][Ii][Zz][Ee]/)),
+    keyword_measures:     _ => token(prec(1, make_keyword("measures"))),
+    keyword_pattern:      _ => token(prec(1, make_keyword("pattern"))),
+    keyword_define:       _ => token(prec(1, make_keyword("define"))),
+    keyword_per:          _ => token(prec(1, make_keyword("per"))),
+    keyword_skip:         _ => token(prec(1, make_keyword("skip"))),
+    keyword_past:         _ => token(prec(1, make_keyword("past"))),
+    keyword_one:          _ => token(prec(1, make_keyword("one"))),
+    keyword_match:        _ => token(prec(1, make_keyword("match"))),
     keyword_ml_predict:   _ => token(prec(1, /[Mm][Ll]_[Pp][Rr][Ee][Dd][Ii][Cc][Tt]/)),
     keyword_ml_evaluate:  _ => token(prec(1, /[Mm][Ll]_[Ee][Vv][Aa][Ll][Uu][Aa][Tt][Ee]/)),
     keyword_vector_search:_ => token(prec(1, /[Vv][Ee][Cc][Tt][Oo][Rr]_[Ss][Ee][Aa][Rr][Cc][Hh]/)),
@@ -290,6 +300,7 @@ export default grammar(base, {
     ...type_rules,
     ...select_rules,
     ...ml_rules,
+    ...match_recognize_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
