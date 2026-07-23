@@ -1,9 +1,27 @@
-import { paren_list, wrapped_in_parenthesis } from '../../grammar/helpers.js';
+import { comma_list, paren_list, wrapped_in_parenthesis } from '../../grammar/helpers.js';
 
 export default {
 
   // QUALIFY <window_function_condition>
   qualify: $ => seq($.keyword_qualify, field('predicate', $._expression)),
+
+  // GROUP BY ALL groups by every non-aggregated item in the SELECT list.
+  group_by: $ => prec.left(seq(
+    $.keyword_group,
+    $.keyword_by,
+    choice(
+      $.keyword_all,
+      seq(
+        comma_list(choice(
+          $._expression,
+          $.rollup_clause,
+          $.cube_clause,
+          $.grouping_sets_clause,
+        ), true),
+        optional(seq($.keyword_with, choice($.keyword_rollup, $.keyword_cube))),
+      ),
+    ),
+  )),
 
   // UNNEST(<array>) [WITH OFFSET]
   // The outer alias ([AS alias]) is handled by the relation rule

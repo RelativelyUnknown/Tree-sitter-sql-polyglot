@@ -315,6 +315,24 @@ export default grammar(base, {
       optional($.offset_fetch_clause),
     ),
 
+    // GROUP BY ALL groups by every non-aggregated item in the SELECT list.
+    group_by: $ => prec.left(seq(
+      $.keyword_group,
+      $.keyword_by,
+      choice(
+        $.keyword_all,
+        seq(
+          comma_list(choice(
+            $._expression,
+            $.rollup_clause,
+            $.cube_clause,
+            $.grouping_sets_clause,
+          ), true),
+          optional(seq($.keyword_with, choice($.keyword_rollup, $.keyword_cube))),
+        ),
+      ),
+    )),
+
     // ── relation: add time travel, PIVOT, UNPIVOT, MATCH_RECOGNIZE ──────────
     relation: $ => prec.right(
       seq(
