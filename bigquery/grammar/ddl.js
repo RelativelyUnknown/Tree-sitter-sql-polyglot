@@ -2,6 +2,44 @@ import { comma_list, paren_list, optional_parenthesis, wrapped_in_parenthesis } 
 
 export default {
 
+  // BigQuery function/procedure DDL:
+  //   CREATE [TABLE] FUNCTION … AS (expr) | AS SELECT | LANGUAGE js AS '…'
+  //   CREATE PROCEDURE … BEGIN … END  (ATOMIC optional)
+  create_function: $ => prec.left(seq(
+    $.keyword_create,
+    optional($._or_replace),
+    optional($._temporary),
+    optional($.keyword_table),
+    $.keyword_function,
+    optional($._if_not_exists),
+    $.object_reference,
+    $.function_arguments,
+    optional(seq($.keyword_returns, choice(seq($.keyword_table, optional($.column_definitions)), $._type))),
+    repeat(choice($.function_language, $.options_clause)),
+    optional($.function_body),
+  )),
+
+  function_body: $ => choice(
+    seq(
+      $.keyword_begin,
+      optional($.keyword_atomic),
+      repeat1(seq($._function_body_statement, ';')),
+      $.keyword_end,
+    ),
+    seq($.keyword_as, alias($._single_quote_string, $.literal)),
+    // SQL UDF: AS (expr); TVF body: AS (SELECT …)
+    seq($.keyword_as, wrapped_in_parenthesis(choice($._expression, $._dml_read))),
+    // TVF body: AS SELECT … (unparenthesized)
+    seq($.keyword_as, $.create_query),
+  ),
+
+  procedure_body: $ => seq(
+    $.keyword_begin,
+    optional($.keyword_atomic),
+    repeat(seq($._function_body_statement, ';')),
+    $.keyword_end,
+  ),
+
   // Override when_clause to add WHEN NOT MATCHED BY SOURCE (BQ/SQL Server extension)
   when_clause: $ => prec.left(seq(
     $.keyword_when,
