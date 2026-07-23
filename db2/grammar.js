@@ -45,7 +45,22 @@ export default grammar(base, {
       $.grant_statement,
       $.revoke_statement,
       $.comment_statement,
+      $.label_statement,
     ),
+
+    // LABEL ON {TABLE ref | COLUMN ref.col} IS 'string' (comment sibling)
+    label_statement: $ => seq(
+      $.keyword_label,
+      $.keyword_on,
+      choice(
+        seq(optional($.keyword_table), $.object_reference),
+        seq($.keyword_column, alias($._qualified_field, $.object_reference)),
+      ),
+      $.keyword_is,
+      alias($._literal_string, $.literal),
+    ),
+
+    keyword_label: _ => token(prec(1, make_keyword("label"))),
 
     // Extend statement to add Db2 SQL PL procedural constructs
     statement: $ => seq(
