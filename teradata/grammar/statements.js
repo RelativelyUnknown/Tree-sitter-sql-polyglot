@@ -341,6 +341,10 @@ export default {
         $.literal,
       )),
     )),
+    // Character-column attributes
+    seq(optional($.keyword_not), $.keyword_casespecific),
+    $.keyword_uppercase,
+    seq($.keyword_title, $.literal),
   )),
 
   // BEGIN [ATOMIC] stmts END — Teradata stored-procedure compound block

@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { optional_parenthesis, paren_list, make_keyword } from '../grammar/helpers.js';
 import { createStatementChoices } from '../grammar/statements/create.js';
 import { fromClause } from '../grammar/statements/select.js';
 import hana_statement_rules from './grammar/statements.js';
@@ -36,6 +36,28 @@ export default grammar(base, {
 
     // LIMIT is supported: fromClause with limit re-adds it over the ANSI base.
     from: $ => fromClause($, { limit: true }),
+
+    // SELECT TOP n … row limiting.
+    select: $ => seq(
+      $.keyword_select,
+      optional(seq($.keyword_top, alias($._integer, $.literal))),
+      optional($.keyword_distinct),
+      $.select_expression,
+    ),
+
+    keyword_top: _ => token(prec(1, make_keyword("top"))),
+
+    // ALTER TABLE t ADD (col type, …): HANA requires the parenthesized list.
+    add_column: $ => choice(
+      seq(
+        optional($.keyword_add),
+        optional($.keyword_column),
+        optional($._if_not_exists),
+        $.column_definition,
+        optional($.column_position),
+      ),
+      seq($.keyword_add, paren_list($.column_definition, true)),
+    ),
 
     // base statement dispatch plus HANA statement forms; WITH HINT is wired
     // on query statements (its main HANA use) to avoid trailing-WITH

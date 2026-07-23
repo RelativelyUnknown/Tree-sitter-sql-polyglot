@@ -161,6 +161,9 @@ export default grammar(base, {
     keyword_none:       _ => token(prec(1, make_keyword("none"))),
     keyword_columns:    _ => token(prec(1, make_keyword("columns"))),
     keyword_compress:   _ => token(prec(1, make_keyword("compress"))),
+    keyword_casespecific: _ => token(prec(1, make_keyword("casespecific"))),
+    keyword_uppercase:  _ => token(prec(1, make_keyword("uppercase"))),
+    keyword_title:      _ => token(prec(1, make_keyword("title"))),
     keyword_share:      _ => token(prec(1, make_keyword("share"))),
 
     ...teradata_statement_rules,
