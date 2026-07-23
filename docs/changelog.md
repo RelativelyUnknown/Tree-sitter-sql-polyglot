@@ -28,6 +28,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **Hive:** `ALTER TABLE … [PARTITION (…)] CONCATENATE`
 - **Hive:** `EXPORT`/`IMPORT TABLE`; `CREATE TEMPORARY MACRO`
 - **CockroachDB:** `ALTER TABLE … SPLIT AT`/`UNSPLIT AT`/`SCATTER` range administration
+- **CockroachDB:** column families (`FAMILY name (cols)`)
 - **Trino:** `CREATE VIEW … SECURITY {DEFINER|INVOKER}` (and optional `COMMENT`)
 - **Trino:** `ALTER TABLE … EXECUTE proc(…)`; `SET ROLE`; `SET TIME ZONE`; `DENY`
 - **Db2:** `LABEL ON {TABLE|COLUMN} … IS '…'`

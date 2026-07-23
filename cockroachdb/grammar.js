@@ -1,5 +1,5 @@
 import postgres from '../postgres/grammar.js';
-import { comma_list, optional_parenthesis, wrapped_in_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { comma_list, optional_parenthesis, wrapped_in_parenthesis, paren_list, make_keyword } from '../grammar/helpers.js';
 import crdb_statement_rules from './grammar/statements.js';
 
 // CockroachDB SQL — PostgreSQL-compatible by design (wire protocol and
@@ -165,6 +165,22 @@ export default grammar(postgres, {
       seq($.keyword_unsplit, $.keyword_all),
     ),
 
+    // Column families: FAMILY [name] (col, …) as a table-level element.
+    constraint: $ => choice(
+      $._constraint_literal,
+      $._key_constraint,
+      $._primary_key_constraint,
+      $._check_constraint,
+      $.family_def,
+    ),
+
+    family_def: $ => seq(
+      $.keyword_family,
+      optional($.identifier),
+      paren_list($.identifier, true),
+    ),
+
+    keyword_family:     _ => token(prec(1, make_keyword("family"))),
     keyword_split:      _ => token(prec(1, make_keyword("split"))),
     keyword_unsplit:    _ => token(prec(1, make_keyword("unsplit"))),
     keyword_scatter:    _ => token(prec(1, make_keyword("scatter"))),
