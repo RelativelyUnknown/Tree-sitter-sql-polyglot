@@ -189,6 +189,7 @@ export default grammar(base, {
     keyword_sequences:    _ => token(prec(1, make_keyword("sequences"))),
     keyword_functions:    _ => token(prec(1, make_keyword("functions"))),
     keyword_procedures:   _ => token(prec(1, make_keyword("procedures"))),
+    keyword_append:       _ => token(prec(1, make_keyword("append"))),
 
     // GRANT ... ON ALL TABLES/FUNCTIONS/PROCEDURES IN SCHEMA name (#87)
     _grant_object: $ => choice(

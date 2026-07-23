@@ -176,6 +176,8 @@ export default {
     $.change_ownership,
     $.alter_diststyle_clause,
     $.alter_sortkey_clause,
+    // APPEND FROM src: move blocks from one table to another
+    seq($.keyword_append, $.keyword_from, $.object_reference),
     // ADD PARTITION (key=val, ...) LOCATION '...'
     seq(
       $.keyword_add, $.keyword_partition,

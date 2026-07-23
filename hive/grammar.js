@@ -217,6 +217,16 @@ export default grammar(base, {
       $.set_schema,
       $.change_ownership,
       $.exchange_partition,
+      $.concatenate_partition,
+    ),
+
+    // ALTER TABLE t [PARTITION (k=v, …)] CONCATENATE (small-file compaction)
+    concatenate_partition: $ => seq(
+      optional(seq(
+        $.keyword_partition,
+        paren_list(seq($.identifier, '=', $._expression), true),
+      )),
+      $.keyword_concatenate,
     ),
 
     // FROM with LATERAL VIEW, CLUSTER/DISTRIBUTE/SORT BY support
@@ -506,6 +516,7 @@ export default grammar(base, {
     keyword_schemas:         _ => token(prec(1, make_keyword("schemas"))),
     keyword_functions:       _ => token(prec(1, make_keyword("functions"))),
     keyword_exchange:        _ => token(prec(1, make_keyword("exchange"))),
+    keyword_concatenate:     _ => token(prec(1, make_keyword("concatenate"))),
 
     ...hive_storage_rules,
     ...hive_partition_rules,
