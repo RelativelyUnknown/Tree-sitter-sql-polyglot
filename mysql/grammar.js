@@ -176,18 +176,24 @@ export default grammar(base, {
 
     join: $ => seq(
       optional($.keyword_natural),
-      optional(
-        choice(
-          $.keyword_left,
-          seq($.keyword_full, $.keyword_outer),
-          seq($.keyword_left, $.keyword_outer),
-          $.keyword_right,
-          seq($.keyword_right, $.keyword_outer),
-          $.keyword_inner,
-          $.keyword_full,
+      choice(
+        seq(
+          optional(
+            choice(
+              $.keyword_left,
+              seq($.keyword_full, $.keyword_outer),
+              seq($.keyword_left, $.keyword_outer),
+              $.keyword_right,
+              seq($.keyword_right, $.keyword_outer),
+              $.keyword_inner,
+              $.keyword_full,
+            ),
+          ),
+          $.keyword_join,
         ),
+        // MySQL STRAIGHT_JOIN forces the optimizer to read the left table first.
+        $.keyword_straight_join,
       ),
-      $.keyword_join,
       $.relation,
       optional($.index_hint),
       optional($.join),
@@ -624,6 +630,7 @@ export default grammar(base, {
     // beats match length in the tree-sitter lexer, so without an equal-prec
     // re-declaration the longer keyword becomes unlexable in this dialect.
     keyword_attribute: _ => token(prec(1, make_keyword("attribute"))),
+    keyword_straight_join: _ => token(prec(1, make_keyword("straight_join"))),
     keyword_atomic: _ => token(prec(1, make_keyword("atomic"))),
     keyword_called: _ => token(prec(1, make_keyword("called"))),
     keyword_repeatable: _ => token(prec(1, make_keyword("repeatable"))),
