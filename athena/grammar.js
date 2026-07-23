@@ -1,5 +1,5 @@
 import trino from '../trino/grammar.js';
-import { optional_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { optional_parenthesis, paren_list, make_keyword } from '../grammar/helpers.js';
 import athena_statement_rules from './grammar/statements.js';
 import athena_create_rules from './grammar/create.js';
 
@@ -65,8 +65,43 @@ export default grammar(trino, {
         $.comment_on_statement,
         $.show_partitions_statement,
         $.show_create_statement,
+        $.vacuum_statement,
       ),
     ),
+
+    // VACUUM <table> (Iceberg snapshot expiry / orphan-file cleanup)
+    vacuum_statement: $ => seq($.keyword_vacuum, $.object_reference),
+
+    // Hive-style partition management on ALTER TABLE (re-enumerates the base set).
+    _alter_specifications: $ => choice(
+      $.add_column,
+      $.add_constraint,
+      $.drop_constraint,
+      $.alter_column,
+      $.modify_column,
+      $.change_column,
+      $.drop_column,
+      $.rename_object,
+      $.rename_column,
+      $.set_schema,
+      $.change_ownership,
+      seq(
+        $.keyword_add,
+        optional($._if_not_exists),
+        $.keyword_partition,
+        paren_list(seq($.identifier, '=', $._expression), true),
+        optional(seq($.keyword_location, alias($._literal_string, $.literal))),
+      ),
+      seq(
+        $.keyword_drop,
+        optional($._if_exists),
+        $.keyword_partition,
+        paren_list(seq($.identifier, '=', $._expression), true),
+      ),
+      seq($.keyword_set, $.keyword_location, alias($._literal_string, $.literal)),
+    ),
+
+    keyword_vacuum:       _ => token(prec(1, make_keyword("vacuum"))),
 
     // Athena-specific keywords (not in Trino or base — defined here only)
     keyword_unload:       _ => token(prec(1, make_keyword("unload"))),
