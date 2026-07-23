@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **Snowflake:** `START WITH … CONNECT BY … PRIOR` hierarchical queries
 - **Snowflake:** `SELECT * [ILIKE '…'] [EXCLUDE …] [RENAME …]` column transformers
 - **Oracle:** `PIVOT` / `UNPIVOT`
+- **Oracle:** `MATCH_RECOGNIZE` row-pattern recognition
 - **PostgreSQL:** `CREATE DOMAIN`
 - **PostgreSQL:** foreign-data DDL: `CREATE SERVER`, `CREATE FOREIGN TABLE` (with `OPTIONS`)
 - **SQLite:** `GLOB` and `MATCH` pattern operators

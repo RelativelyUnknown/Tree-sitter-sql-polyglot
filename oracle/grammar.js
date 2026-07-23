@@ -1,5 +1,6 @@
 import base from '../grammar.js';
 import { optional_parenthesis, comma_list, paren_list, make_keyword, wrapped_in_parenthesis } from '../grammar/helpers.js';
+import oracle_match_recognize_rules from './grammar/match_recognize.js';
 import oracle_hierarchical_rules from './grammar/hierarchical.js';
 import oracle_plsql_rules from './grammar/plsql_blocks.js';
 import oracle_bulk_rules from './grammar/bulk_ops.js';
@@ -189,6 +190,7 @@ export default grammar(base, {
         optional($.flashback_clause),
         optional($.tablesample),
         optional(choice($.pivot_clause, $.unpivot_clause)),
+        optional($.match_recognize_clause),
         optional(
           seq(
             $._alias,
@@ -227,6 +229,17 @@ export default grammar(base, {
     ),
 
     keyword_pivot:   _ => token(prec(1, make_keyword("pivot"))),
+    keyword_match_recognize: _ => token(prec(1, /[Mm][Aa][Tt][Cc][Hh]_[Rr][Ee][Cc][Oo][Gg][Nn][Ii][Zz][Ee]/)),
+    keyword_pattern: _ => token(prec(1, make_keyword("pattern"))),
+    keyword_define:  _ => token(prec(1, make_keyword("define"))),
+    keyword_per:     _ => token(prec(1, make_keyword("per"))),
+    keyword_past:    _ => token(prec(1, make_keyword("past"))),
+    keyword_one:     _ => token(prec(1, make_keyword("one"))),
+    keyword_match:   _ => token(prec(1, make_keyword("match"))),
+    // Re-declare longer keywords that the prec(1) tokens above would otherwise
+    // shadow (explicit precedence beats match length in the lexer).
+    keyword_matched: _ => token(prec(1, make_keyword("matched"))),
+    keyword_percent: _ => token(prec(1, make_keyword("percent"))),
     keyword_unpivot: _ => token(prec(1, make_keyword("unpivot"))),
 
     // Extend unary_expression to include Oracle PRIOR operator
@@ -462,6 +475,7 @@ export default grammar(base, {
     ...oracle_partition_rules,
     ...oracle_ddl_ext_rules,
     ...oracle_admin_rules,
+    ...oracle_match_recognize_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
