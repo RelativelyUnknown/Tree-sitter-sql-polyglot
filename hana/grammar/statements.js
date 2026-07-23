@@ -1,4 +1,4 @@
-import { comma_list, paren_list, optional_parenthesis } from '../../grammar/helpers.js';
+import { comma_list, paren_list, optional_parenthesis, make_keyword } from '../../grammar/helpers.js';
 
 export default {
 
@@ -71,13 +71,69 @@ export default {
   // (shared node name: db2 and others also expose compound_statement)
   compound_statement: $ => seq(
     $.keyword_begin,
-    repeat(choice(
-      seq($.declare_statement, ';'),
-      seq($.assignment_statement, ';'),
-      seq($.statement, ';'),
-    )),
+    repeat($._sqlscript_statement),
     $.keyword_end,
   ),
+
+  // Statements allowed inside a SQLScript block or control-flow body.
+  _sqlscript_statement: $ => choice(
+    seq($.declare_statement, ';'),
+    seq($.assignment_statement, ';'),
+    seq($.if_statement, ';'),
+    seq($.while_statement, ';'),
+    seq($.for_statement, ';'),
+    seq($.keyword_break, ';'),
+    seq($.keyword_continue, ';'),
+    seq($.statement, ';'),
+  ),
+
+  // IF cond THEN … [ELSEIF cond THEN …] [ELSE …] END IF
+  if_statement: $ => seq(
+    $.keyword_if,
+    field('condition', $._expression),
+    $.keyword_then,
+    repeat($._sqlscript_statement),
+    repeat(seq(
+      $.keyword_elseif,
+      field('condition', $._expression),
+      $.keyword_then,
+      repeat($._sqlscript_statement),
+    )),
+    optional(seq($.keyword_else, repeat($._sqlscript_statement))),
+    $.keyword_end,
+    $.keyword_if,
+  ),
+
+  // WHILE cond DO … END WHILE
+  while_statement: $ => seq(
+    $.keyword_while,
+    field('condition', $._expression),
+    $.keyword_do,
+    repeat($._sqlscript_statement),
+    $.keyword_end,
+    $.keyword_while,
+  ),
+
+  // FOR i IN lower..upper [REVERSE] DO … END FOR
+  for_statement: $ => seq(
+    $.keyword_for,
+    field('index', $.identifier),
+    $.keyword_in,
+    optional($.keyword_reverse),
+    field('lower', $._expression),
+    '..',
+    field('upper', $._expression),
+    $.keyword_do,
+    repeat($._sqlscript_statement),
+    $.keyword_end,
+    $.keyword_for,
+  ),
+
+  keyword_while:    _ => token(prec(1, make_keyword("while"))),
+  keyword_elseif:   _ => token(prec(1, make_keyword("elseif"))),
+  keyword_break:    _ => token(prec(1, make_keyword("break"))),
+  keyword_continue: _ => token(prec(1, make_keyword("continue"))),
+  keyword_reverse:  _ => token(prec(1, make_keyword("reverse"))),
 
   // DECLARE v [CONSTANT] TYPE [:= expr | DEFAULT expr]
   declare_statement: $ => seq(

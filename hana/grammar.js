@@ -27,6 +27,7 @@ export default grammar(base, {
     // BEGIN … ; is ambiguous between a transaction block and a SQLScript
     // compound statement until END/COMMIT disambiguates (same as db2)
     [$.transaction, $.compound_statement],
+    [$.transaction, $._sqlscript_statement],
   ],
 
   rules: {

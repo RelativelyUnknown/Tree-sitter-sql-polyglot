@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **DuckDB:** `USING SAMPLE` clause
 - **Teradata:** character-column attributes `[NOT] CASESPECIFIC`, `UPPERCASE`, `TITLE`
 - **SAP HANA:** `SELECT TOP n`; `ALTER TABLE … ADD (col type, …)` parenthesized column list
+- **SAP HANA:** SQLScript control flow (`IF`/`ELSEIF`/`ELSE`, `WHILE … DO`, `FOR … IN a..b DO`, `BREAK`/`CONTINUE`)
 - **MariaDB:** `CREATE OR REPLACE TABLE`
 - **Redshift:** `ALTER TABLE … APPEND FROM`
 - **Redshift:** `CREATE EXTERNAL FUNCTION … LAMBDA … IAM_ROLE …`
