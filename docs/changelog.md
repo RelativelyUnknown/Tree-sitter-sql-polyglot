@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file. See [commit
 
 ### Features
 
+- **T-SQL:** `IDENTITY[(seed, increment)]` column property; computed columns `col AS (expr) [PERSISTED]`
 - **Base (ANSI):** `SAVEPOINT` / `RELEASE SAVEPOINT` / `ROLLBACK TO SAVEPOINT`; `START TRANSACTION` with `ISOLATION LEVEL` and `READ ONLY`/`READ WRITE` modes; `BEGIN`/`COMMIT`/`ROLLBACK WORK` (#86)
 - **PostgreSQL:** `FOR UPDATE`/`SHARE` locking clause with `NOWAIT`/`SKIP LOCKED`; `LOCK TABLE … IN … MODE` (#86); `GRANT … ON ALL TABLES/SEQUENCES/FUNCTIONS IN SCHEMA` (#87); `SELECT DISTINCT ON (…)` (#88); `ILIKE`/`NOT ILIKE` operators (#89); `PREPARE`/`EXECUTE`/`DEALLOCATE` (#90); `DELETE … USING` and `CALL` (#91); `EXPLAIN ( option … )` (#92)
 - **Redshift:** `GRANT … ON ALL TABLES/FUNCTIONS/PROCEDURES IN SCHEMA` (#87)

@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, comma_list, make_keyword } from '../grammar/helpers.js';
+import { optional_parenthesis, comma_list, paren_list, wrapped_in_parenthesis, make_keyword } from '../grammar/helpers.js';
 import tsql_select_rules from './grammar/select.js';
 import tsql_type_rules from './grammar/types.js';
 import tsql_hint_rules from './grammar/hints.js';
@@ -285,6 +285,65 @@ export default grammar(base, {
     keyword_off:              _ => token(prec(1, make_keyword("off"))),
     keyword_login:            _ => token(prec(1, make_keyword("login"))),
     keyword_must_change:      _ => token(prec(1, /[Mm][Uu][Ss][Tt]_[Cc][Hh][Aa][Nn][Gg][Ee]/)),
+
+    // ── Column constraints — add IDENTITY and computed AS … PERSISTED ────────
+    // Re-enumerates the base _column_constraint alternatives (a dialect override
+    // replaces the base rule entirely) and appends the two T-SQL forms:
+    //   id INT IDENTITY(seed, increment)
+    //   total AS (qty * price) PERSISTED
+    _column_constraint: $ => prec.left(choice(
+      choice($.keyword_null, $._not_null),
+      seq(
+        $.keyword_references,
+        $.object_reference,
+        paren_list($.identifier, true),
+        repeat(seq(
+          $.keyword_on,
+          choice($.keyword_delete, $.keyword_update),
+          choice(
+            seq($.keyword_no, $.keyword_action),
+            $.keyword_restrict,
+            $.keyword_cascade,
+            seq($.keyword_set, choice($.keyword_null, $.keyword_default), optional(paren_list($.identifier, true))),
+          ),
+        )),
+      ),
+      $._default_expression,
+      $._primary_key,
+      $.direction,
+      $._column_comment,
+      $._check_constraint,
+      // Identity column: IDENTITY [(seed, increment)]
+      seq(
+        $.keyword_identity,
+        optional(wrapped_in_parenthesis(seq(
+          alias($._integer, $.literal),
+          ',',
+          alias($._integer, $.literal),
+        ))),
+      ),
+      $.keyword_unique,
+    )),
+
+    keyword_identity:  _ => token(prec(1, make_keyword("identity"))),
+    keyword_persisted: _ => token(prec(1, make_keyword("persisted"))),
+
+    // Computed columns have no data type: `total AS (qty * price) [PERSISTED]`.
+    // The base column_definition requires a type, so re-enumerate it here and
+    // add the type-less computed form.
+    column_definition: $ => prec.left(choice(
+      seq(
+        field('name', $._column),
+        field('type', $._type),
+        repeat($._column_constraint),
+      ),
+      seq(
+        field('name', $._column),
+        $.keyword_as,
+        field('expression', $._expression),
+        optional($.keyword_persisted),
+      ),
+    )),
 
     // T-SQL SET @variable = expression  (plus base transaction/constraint SET)
     set_statement: $ => prec.right(choice(
