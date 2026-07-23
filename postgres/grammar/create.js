@@ -17,6 +17,40 @@ export default {
     )),
   ),
 
+  // Foreign-data wrapper DDL.
+  fdw_options: $ => seq(
+    $.keyword_options,
+    '(',
+    comma_list(seq($.identifier, alias($._literal_string, $.literal)), true),
+    ')',
+  ),
+
+  create_server: $ => seq(
+    $.keyword_create,
+    $.keyword_server,
+    optional($._if_not_exists),
+    $.identifier,
+    optional(seq($.keyword_type, alias($._literal_string, $.literal))),
+    optional(seq($.keyword_version, choice(alias($._literal_string, $.literal), $.identifier))),
+    $.keyword_foreign,
+    $.keyword_data,
+    $.keyword_wrapper,
+    $.identifier,
+    optional($.fdw_options),
+  ),
+
+  create_foreign_table: $ => seq(
+    $.keyword_create,
+    $.keyword_foreign,
+    $.keyword_table,
+    optional($._if_not_exists),
+    $.object_reference,
+    optional($.column_definitions),
+    $.keyword_server,
+    $.identifier,
+    optional($.fdw_options),
+  ),
+
   create_extension: $ => prec.left(seq(
     $.keyword_create,
     $.keyword_extension,
