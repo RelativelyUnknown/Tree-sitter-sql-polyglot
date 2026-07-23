@@ -2,6 +2,21 @@ import { paren_list, comma_list } from "../../grammar/helpers.js";
 
 export default {
 
+  // CREATE DOMAIN name [AS] type [DEFAULT expr] [ [CONSTRAINT c] {NULL|NOT NULL|CHECK(expr)} … ]
+  create_domain: $ => seq(
+    $.keyword_create,
+    $.keyword_domain,
+    $.object_reference,
+    optional($.keyword_as),
+    $._type,
+    repeat(choice(
+      $._default_expression,
+      $.keyword_null,
+      $._not_null,
+      $._check_constraint,
+    )),
+  ),
+
   create_extension: $ => prec.left(seq(
     $.keyword_create,
     $.keyword_extension,
