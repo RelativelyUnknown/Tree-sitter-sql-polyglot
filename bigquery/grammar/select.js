@@ -5,6 +5,37 @@ export default {
   // QUALIFY <window_function_condition>
   qualify: $ => seq($.keyword_qualify, field('predicate', $._expression)),
 
+  // PIVOT ( agg [AS alias] [, …] FOR col IN ( value [AS alias] [, …] ) )
+  pivot_clause: $ => seq(
+    $.keyword_pivot,
+    '(',
+    comma_list(seq($.invocation, optional($._alias)), true),
+    $.keyword_for,
+    $.identifier,
+    $.keyword_in,
+    paren_list(seq(
+      choice(alias($._literal_string, $.literal), alias($._integer, $.literal), $.identifier),
+      optional($._alias),
+    ), true),
+    ')',
+  ),
+
+  // UNPIVOT ( value_col FOR name_col IN ( col [, …] ) )
+  unpivot_clause: $ => seq(
+    $.keyword_unpivot,
+    optional(choice(
+      seq($.keyword_include, $.keyword_nulls),
+      seq($.keyword_exclude, $.keyword_nulls),
+    )),
+    '(',
+    choice($.identifier, paren_list($.identifier, true)),
+    $.keyword_for,
+    $.identifier,
+    $.keyword_in,
+    paren_list($.identifier, true),
+    ')',
+  ),
+
   // GROUP BY ALL groups by every non-aggregated item in the SELECT list.
   group_by: $ => prec.left(seq(
     $.keyword_group,

@@ -217,6 +217,7 @@ export default grammar(base, {
           $.unnest,
         ),
         optional($.tablesample),
+        optional(choice($.pivot_clause, $.unpivot_clause)),
         optional(
           seq(
             $._alias,
@@ -225,6 +226,9 @@ export default grammar(base, {
         ),
       ),
     ),
+
+    keyword_pivot:      _ => token(prec(1, make_keyword("pivot"))),
+    keyword_unpivot:    _ => token(prec(1, make_keyword("unpivot"))),
 
     // ── identifier: add backtick quoting ────────────────────────────────────
     _bq_backtick_quoted_string: _ => /`[^`]*`/,
