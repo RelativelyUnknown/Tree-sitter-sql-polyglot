@@ -26,6 +26,71 @@ export default grammar(base, {
     // LIMIT is supported: fromClause with limit re-adds it over the ANSI base.
     from: $ => fromClause($, { limit: true }),
 
+    // Add SQLite's GLOB and MATCH pattern operators to the base operator table.
+    binary_expression: $ => choice(
+      ...[
+        ['+', 'binary_plus'],
+        ['-', 'binary_plus'],
+        ['*', 'binary_times'],
+        ['/', 'binary_times'],
+        ['%', 'binary_times'],
+        ['^', 'binary_exp'],
+        ['=', 'binary_relation'],
+        ['<', 'binary_relation'],
+        ['<=', 'binary_relation'],
+        ['!=', 'binary_relation'],
+        ['>=', 'binary_relation'],
+        ['>', 'binary_relation'],
+        ['<>', 'binary_relation'],
+        [$.op_other, 'binary_other'],
+        [$.keyword_is, 'binary_is'],
+        [$.is_not, 'binary_is'],
+        [$.keyword_like, 'pattern_matching'],
+        [$.not_like, 'pattern_matching'],
+        [$.keyword_glob, 'pattern_matching'],
+        [$.not_glob, 'pattern_matching'],
+        [$.keyword_match, 'pattern_matching'],
+        [$.not_match, 'pattern_matching'],
+        [$.keyword_rlike, 'pattern_matching'],
+        [$.not_rlike, 'pattern_matching'],
+        [$.similar_to, 'pattern_matching'],
+        [$.not_similar_to, 'pattern_matching'],
+        [$.distinct_from, 'binary_is'],
+        [$.not_distinct_from, 'binary_is'],
+      ].map(([operator, precedence]) =>
+        prec.left(precedence, seq(
+          field('left', $._expression),
+          field('operator', operator),
+          field('right', $._expression)
+        ))
+      ),
+      ...[
+        [$.keyword_and, 'clause_connective'],
+        [$.keyword_or, 'clause_disjunctive'],
+      ].map(([operator, precedence]) =>
+        prec.left(precedence, seq(
+          field('left', $._expression),
+          field('operator', operator),
+          field('right', $._expression)
+        ))
+      ),
+      ...[
+        [$.keyword_in, 'binary_in'],
+        [$.not_in, 'binary_in'],
+      ].map(([operator, precedence]) =>
+        prec.left(precedence, seq(
+          field('left', $._expression),
+          field('operator', operator),
+          field('right', choice($.list, $.subquery))
+        ))
+      ),
+    ),
+
+    keyword_glob: _ => token(prec(1, make_keyword("glob"))),
+    keyword_match: _ => token(prec(1, make_keyword("match"))),
+    not_glob: $ => seq($.keyword_not, $.keyword_glob),
+    not_match: $ => seq($.keyword_not, $.keyword_match),
+
     // Extend statement to add SQLite-specific top-level statements
     statement: $ => seq(
       optional(seq(
