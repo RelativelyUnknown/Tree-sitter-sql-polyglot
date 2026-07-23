@@ -25,6 +25,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **MariaDB:** `CREATE OR REPLACE TABLE`
 - **Redshift:** `ALTER TABLE … APPEND FROM`
 - **Hive:** `ALTER TABLE … [PARTITION (…)] CONCATENATE`
+- **Hive:** `EXPORT`/`IMPORT TABLE`; `CREATE TEMPORARY MACRO`
 - **CockroachDB:** `ALTER TABLE … SPLIT AT`/`UNSPLIT AT`/`SCATTER` range administration
 - **Trino:** `CREATE VIEW … SECURITY {DEFINER|INVOKER}` (and optional `COMMENT`)
 - **Trino:** `ALTER TABLE … EXECUTE proc(…)`; `SET ROLE`; `SET TIME ZONE`; `DENY`

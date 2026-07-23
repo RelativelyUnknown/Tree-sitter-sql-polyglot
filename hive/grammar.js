@@ -67,7 +67,50 @@ export default grammar(base, {
       $.revoke_statement,
       $.show_statement,
       $.describe_statement,
+      $.export_statement,
+      $.import_statement,
+      $.create_temporary_macro,
     ),
+
+    // EXPORT TABLE t [PARTITION (…)] TO 'hdfs_path'
+    export_statement: $ => seq(
+      $.keyword_export,
+      $.keyword_table,
+      $.object_reference,
+      optional(seq($.keyword_partition, paren_list(seq($.identifier, '=', $._expression), true))),
+      $.keyword_to,
+      alias($._literal_string, $.literal),
+    ),
+
+    // IMPORT [[EXTERNAL] TABLE t [PARTITION (…)]] FROM 'hdfs_path' [LOCATION 'path']
+    import_statement: $ => seq(
+      $.keyword_import,
+      optional(seq(
+        optional($.keyword_external),
+        $.keyword_table,
+        $.object_reference,
+        optional(seq($.keyword_partition, paren_list(seq($.identifier, '=', $._expression), true))),
+      )),
+      $.keyword_from,
+      alias($._literal_string, $.literal),
+      optional(seq($.keyword_location, alias($._literal_string, $.literal))),
+    ),
+
+    // CREATE TEMPORARY MACRO name(param type, …) body_expression
+    create_temporary_macro: $ => seq(
+      $.keyword_create,
+      $.keyword_temporary,
+      $.keyword_macro,
+      $.identifier,
+      '(',
+      comma_list(seq($.identifier, $._type), false),
+      ')',
+      $._expression,
+    ),
+
+    keyword_export: _ => token(prec(1, make_keyword("export"))),
+    keyword_import: _ => token(prec(1, make_keyword("import"))),
+    keyword_macro:  _ => token(prec(1, make_keyword("macro"))),
 
     // Override _dml_write to include Hive's multi-table insert and overwrite-directory
     _dml_write: $ => seq(
