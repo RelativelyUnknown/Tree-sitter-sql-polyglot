@@ -27,6 +27,8 @@ export default grammar(base, {
     [$.alter_partition],
     [$.declare_statement, $.declare_cursor_statement, $.declare_condition_statement, $.declare_handler_statement],
     [$.statement, $.declare_handler_statement],
+    // DELETE t1, t2 FROM …: targets look like relations until FROM appears.
+    [$.relation, $._mysql_delete_target],
   ],
 
   rules: {
@@ -172,6 +174,34 @@ export default grammar(base, {
       optional($.order_by),
       optional($.limit),
       optional($.offset_fetch_clause),
+    ),
+
+    // MySQL DELETE: single-table plus the two multi-table forms.
+    //   DELETE FROM t WHERE …                          (single, via $.from)
+    //   DELETE t1[.*], t2[.*] FROM t1 JOIN t2 …        (targets before FROM)
+    //   DELETE FROM t1, t2 USING t1 JOIN t2 …          (USING form)
+    _delete_statement: $ => seq(
+      $.delete,
+      choice(
+        alias($._delete_from, $.from),
+        seq(
+          comma_list($._mysql_delete_target, true),
+          $.from,
+        ),
+        seq(
+          $.keyword_from,
+          comma_list($._mysql_delete_target, true),
+          $.keyword_using,
+          comma_list($.relation, true),
+          repeat(choice($.join, $.cross_join, $.lateral_join, $.lateral_cross_join)),
+          optional($.where),
+        ),
+      ),
+    ),
+
+    _mysql_delete_target: $ => seq(
+      $.object_reference,
+      optional(seq('.', '*')),
     ),
 
     join: $ => seq(

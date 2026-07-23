@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file. See [commit
 
 - **T-SQL:** `IDENTITY[(seed, increment)]` column property; computed columns `col AS (expr) [PERSISTED]`
 - **MySQL:** `STRAIGHT_JOIN` join type; `ALTER TABLE … ALGORITHM=`/`LOCK=` online-DDL options
+- **MySQL:** multi-table `DELETE` (`DELETE t1, t2 FROM …` and `DELETE FROM t1, t2 USING …`)
 - **Spark / Databricks / BigQuery / Snowflake:** `GROUP BY ALL`
 - **PostgreSQL:** `CREATE DOMAIN`
 - **SQLite:** `GLOB` and `MATCH` pattern operators
