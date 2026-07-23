@@ -130,6 +130,7 @@ export default grammar(base, {
     keyword_copy:         _ => token(prec(1, make_keyword("copy"))),
     keyword_unload:       _ => token(prec(1, make_keyword("unload"))),
     keyword_iam_role:     _ => token(prec(1, make_keyword("iam_role"))),
+    keyword_lambda:       _ => token(prec(1, make_keyword("lambda"))),
     keyword_ignoreheader: _ => token(prec(1, make_keyword("ignoreheader"))),
     keyword_maxfilesize:  _ => token(prec(1, make_keyword("maxfilesize"))),
     keyword_gzip:         _ => token(prec(1, make_keyword("gzip"))),

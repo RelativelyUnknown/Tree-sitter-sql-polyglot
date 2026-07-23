@@ -99,11 +99,32 @@ export default {
       $.create_trigger,
       $.create_external_schema,
       $.create_external_table,
+      $.create_external_function,
       prec.left(seq(
         $.create_schema,
         repeat($._create_statement),
       )),
     ),
+  ),
+
+  // CREATE [OR REPLACE] EXTERNAL FUNCTION name (argtype, …) RETURNS type
+  //   [VOLATILE|STABLE|IMMUTABLE] LAMBDA 'fn' IAM_ROLE 'arn:…'
+  create_external_function: $ => seq(
+    $.keyword_create,
+    optional($._or_replace),
+    $.keyword_external,
+    $.keyword_function,
+    $.object_reference,
+    '(',
+    optional(comma_list($._type, true)),
+    ')',
+    $.keyword_returns,
+    $._type,
+    optional(choice($.keyword_volatile, $.keyword_stable, $.keyword_immutable)),
+    $.keyword_lambda,
+    alias($._literal_string, $.literal),
+    $.keyword_iam_role,
+    alias($._literal_string, $.literal),
   ),
 
   // CREATE EXTERNAL SCHEMA [IF NOT EXISTS] name

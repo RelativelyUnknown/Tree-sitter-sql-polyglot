@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **SAP HANA:** `SELECT TOP n`; `ALTER TABLE … ADD (col type, …)` parenthesized column list
 - **MariaDB:** `CREATE OR REPLACE TABLE`
 - **Redshift:** `ALTER TABLE … APPEND FROM`
+- **Redshift:** `CREATE EXTERNAL FUNCTION … LAMBDA … IAM_ROLE …`
 - **Hive:** `ALTER TABLE … [PARTITION (…)] CONCATENATE`
 - **Hive:** `EXPORT`/`IMPORT TABLE`; `CREATE TEMPORARY MACRO`
 - **CockroachDB:** `ALTER TABLE … SPLIT AT`/`UNSPLIT AT`/`SCATTER` range administration
