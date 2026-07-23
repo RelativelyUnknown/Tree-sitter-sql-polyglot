@@ -306,6 +306,7 @@ export default grammar(base, {
         $.lateral_cross_join,
       )),
       optional($.where),
+      optional($.connect_by_clause),
       optional($.group_by),
       optional($.having),
       optional($.qualify),
@@ -314,6 +315,37 @@ export default grammar(base, {
       optional($.limit),
       optional($.offset_fetch_clause),
     ),
+
+    // Hierarchical query: [START WITH cond] CONNECT BY [NOCYCLE] cond (with PRIOR).
+    connect_by_clause: $ => seq(
+      optional(seq($.keyword_start, $.keyword_with, $._expression)),
+      $.keyword_connect,
+      $.keyword_by,
+      optional($.keyword_nocycle),
+      $._expression,
+    ),
+
+    // Add PRIOR as a unary operator (re-enumerates the base operator table).
+    unary_expression: $ => choice(
+      ...[
+        [$.keyword_not, 'unary_not'],
+        [$.bang, 'unary_not'],
+        [$.keyword_any, 'unary_not'],
+        [$.keyword_some, 'unary_not'],
+        [$.keyword_all, 'unary_not'],
+        [$.keyword_prior, 'unary_not'],
+        [$.op_unary_other, 'unary_other'],
+      ].map(([operator, precedence]) =>
+        prec.left(precedence, seq(
+          field('operator', operator),
+          field('operand', $._expression),
+        ))
+      ),
+    ),
+
+    keyword_connect: _ => token(prec(1, make_keyword("connect"))),
+    keyword_prior:   _ => token(prec(1, make_keyword("prior"))),
+    keyword_nocycle: _ => token(prec(1, make_keyword("nocycle"))),
 
     // GROUP BY ALL groups by every non-aggregated item in the SELECT list.
     group_by: $ => prec.left(seq(
