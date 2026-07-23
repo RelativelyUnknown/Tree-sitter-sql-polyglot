@@ -34,6 +34,8 @@ export default grammar(base, {
     [$._function_return, $.return_statement],
     [$.time],
     [$.timestamp],
+    // `*` starts both a plain all_fields and a transformed one.
+    [$.all_fields_transform, $.all_fields],
     // Comma-position LATERAL fn(...) as a relation overlaps with the base
     // JOIN LATERAL / CROSS JOIN LATERAL join forms and their trailing alias;
     // GLR explores each until ON / ',' / end disambiguates.
@@ -346,6 +348,42 @@ export default grammar(base, {
     keyword_connect: _ => token(prec(1, make_keyword("connect"))),
     keyword_prior:   _ => token(prec(1, make_keyword("prior"))),
     keyword_nocycle: _ => token(prec(1, make_keyword("nocycle"))),
+    keyword_ilike:   _ => token(prec(1, make_keyword("ilike"))),
+
+    // SELECT * [ILIKE 'pattern'] [EXCLUDE …] [RENAME …] column transformers.
+    term: $ => seq(
+      field('value', choice(
+        $.all_fields_transform,
+        $.all_fields,
+        $._expression,
+      )),
+      optional($._alias),
+    ),
+
+    all_fields_transform: $ => seq(
+      optional(seq($.object_reference, '.')),
+      '*',
+      choice(
+        seq($._ilike_pattern, optional($._exclude_columns), optional($._rename_columns)),
+        seq($._exclude_columns, optional($._rename_columns)),
+        $._rename_columns,
+      ),
+    ),
+
+    _ilike_pattern: $ => seq($.keyword_ilike, alias($._literal_string, $.literal)),
+
+    _exclude_columns: $ => seq(
+      $.keyword_exclude,
+      choice(field('col', $.identifier), paren_list(field('col', $.identifier), true)),
+    ),
+
+    _rename_columns: $ => seq(
+      $.keyword_rename,
+      choice(
+        seq(field('old', $.identifier), $.keyword_as, field('new', $.identifier)),
+        paren_list(seq(field('old', $.identifier), $.keyword_as, field('new', $.identifier)), true),
+      ),
+    ),
 
     // GROUP BY ALL groups by every non-aggregated item in the SELECT list.
     group_by: $ => prec.left(seq(

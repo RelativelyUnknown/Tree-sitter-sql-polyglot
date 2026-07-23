@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **MySQL:** multi-table `DELETE` (`DELETE t1, t2 FROM …` and `DELETE FROM t1, t2 USING …`)
 - **Spark / Databricks / BigQuery / Snowflake:** `GROUP BY ALL`
 - **Snowflake:** `START WITH … CONNECT BY … PRIOR` hierarchical queries
+- **Snowflake:** `SELECT * [ILIKE '…'] [EXCLUDE …] [RENAME …]` column transformers
 - **Oracle:** `PIVOT` / `UNPIVOT`
 - **PostgreSQL:** `CREATE DOMAIN`
 - **PostgreSQL:** foreign-data DDL: `CREATE SERVER`, `CREATE FOREIGN TABLE` (with `OPTIONS`)
