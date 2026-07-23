@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { optional_parenthesis, paren_list, make_keyword } from '../grammar/helpers.js';
 import { createStatementChoices } from '../grammar/statements/create.js';
 import trino_statement_rules from './grammar/statements.js';
 import trino_type_rules     from './grammar/types.js';
@@ -216,6 +216,20 @@ export default grammar(base, {
     // that are strict prefixes of the base keywords below. Explicit precedence
     // beats match length in the tree-sitter lexer, so without an equal-prec
     // re-declaration the longer keyword becomes unlexable in this dialect.
+    // CREATE [OR REPLACE] VIEW … [COMMENT '…'] [SECURITY {DEFINER|INVOKER}] AS query
+    create_view: $ => prec.right(seq(
+      $.keyword_create,
+      optional($._or_replace),
+      $.keyword_view,
+      optional($._if_not_exists),
+      $.object_reference,
+      optional(paren_list($.identifier)),
+      optional(seq($.keyword_comment, alias($._literal_string, $.literal))),
+      optional(seq($.keyword_security, choice($.keyword_definer, $.keyword_invoker))),
+      $.keyword_as,
+      $.create_query,
+    )),
+
     keyword_definer: _ => token(prec(1, make_keyword("definer"))),
     keyword_matched: _ => token(prec(1, make_keyword("matched"))),
     keyword_percent: _ => token(prec(1, make_keyword("percent"))),
