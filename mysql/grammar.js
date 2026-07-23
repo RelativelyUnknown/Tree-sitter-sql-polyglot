@@ -558,7 +558,8 @@ export default grammar(base, {
     keyword_partitioning:       _ => token(prec(1, make_keyword("partitioning"))),
     keyword_linear:             _ => token(prec(1, make_keyword("linear"))),
 
-    // Extend _alter_specifications to include MySQL partition management
+    // Extend _alter_specifications to include MySQL partition management and
+    // the online-DDL options ALGORITHM= / LOCK= (comma-separated trailing items).
     _alter_specifications: $ => choice(
       $.add_column,
       $.add_constraint,
@@ -572,6 +573,22 @@ export default grammar(base, {
       $.set_schema,
       $.change_ownership,
       $.alter_partition,
+      $.alter_algorithm_option,
+      $.alter_lock_option,
+    ),
+
+    // ALGORITHM [=] {DEFAULT | INSTANT | INPLACE | COPY | NOCOPY}
+    alter_algorithm_option: $ => seq(
+      $.keyword_algorithm,
+      optional('='),
+      choice($.keyword_default, $.identifier),
+    ),
+
+    // LOCK [=] {DEFAULT | NONE | SHARED | EXCLUSIVE}
+    alter_lock_option: $ => seq(
+      $.keyword_lock,
+      optional('='),
+      choice($.keyword_default, $.identifier),
     ),
 
     // Override statement to include MySQL procedural constructs
@@ -631,6 +648,7 @@ export default grammar(base, {
     // re-declaration the longer keyword becomes unlexable in this dialect.
     keyword_attribute: _ => token(prec(1, make_keyword("attribute"))),
     keyword_straight_join: _ => token(prec(1, make_keyword("straight_join"))),
+    keyword_algorithm: _ => token(prec(1, make_keyword("algorithm"))),
     keyword_atomic: _ => token(prec(1, make_keyword("atomic"))),
     keyword_called: _ => token(prec(1, make_keyword("called"))),
     keyword_repeatable: _ => token(prec(1, make_keyword("repeatable"))),
