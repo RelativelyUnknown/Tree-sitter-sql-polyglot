@@ -23,6 +23,8 @@ export default grammar(postgres, {
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
     [$.interval],
+    // SPLIT AT VALUES (…) shares the base `values` rule with a top-level VALUES.
+    [$.values],
   ],
 
   rules: {
@@ -131,6 +133,43 @@ export default grammar(postgres, {
       optional($.tablespace),
       optional($.where),
     ),
+
+    // Extend _alter_specifications (re-enumerate the inherited base set) with
+    // CockroachDB range administration: SPLIT AT / UNSPLIT AT / SCATTER.
+    _alter_specifications: $ => choice(
+      $.add_column,
+      $.add_constraint,
+      $.drop_constraint,
+      $.alter_column,
+      $.modify_column,
+      $.change_column,
+      $.drop_column,
+      $.rename_object,
+      $.rename_column,
+      $.set_schema,
+      $.change_ownership,
+      $.split_at,
+      $.unsplit_at,
+      $.keyword_scatter,
+    ),
+
+    split_at: $ => seq(
+      $.keyword_split,
+      $.keyword_at,
+      $.values,
+      optional(seq($.keyword_with, $.keyword_expiration, $._expression)),
+    ),
+
+    unsplit_at: $ => choice(
+      seq($.keyword_unsplit, $.keyword_at, $.values),
+      seq($.keyword_unsplit, $.keyword_all),
+    ),
+
+    keyword_split:      _ => token(prec(1, make_keyword("split"))),
+    keyword_unsplit:    _ => token(prec(1, make_keyword("unsplit"))),
+    keyword_scatter:    _ => token(prec(1, make_keyword("scatter"))),
+    keyword_at:         _ => token(prec(1, make_keyword("at"))),
+    keyword_expiration: _ => token(prec(1, make_keyword("expiration"))),
 
     // CockroachDB-specific keywords (dialect-level per AGENTS.md; token(prec(1))
     // biases the lexer over plain identifiers)
