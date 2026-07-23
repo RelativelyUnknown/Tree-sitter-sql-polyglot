@@ -22,6 +22,22 @@ export default {
     $._expression,
   ),
 
+  // Set operations with the DuckDB `BY NAME` modifier, which matches columns by
+  // name rather than by position: `SELECT … UNION ALL BY NAME SELECT …`.
+  set_operation: $ => seq(
+    $._select_statement,
+    repeat1(seq(
+      field('operation', choice(
+        seq($.keyword_union, optional(choice($.keyword_all, $.keyword_distinct)), optional($._by_name)),
+        seq($.keyword_except, optional($.keyword_all), optional($._by_name)),
+        seq($.keyword_intersect, optional($.keyword_all), optional($._by_name)),
+      )),
+      $._select_statement,
+    )),
+  ),
+
+  _by_name: $ => seq($.keyword_by, $.keyword_name),
+
   // * EXCLUDE (col1, col2)
   all_fields_exclude: $ => seq(
     optional(seq($.object_reference, '.')),
