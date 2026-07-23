@@ -328,6 +328,17 @@ export default grammar(base, {
     keyword_identity:  _ => token(prec(1, make_keyword("identity"))),
     keyword_persisted: _ => token(prec(1, make_keyword("persisted"))),
 
+    // T-SQL user-defined types: table-valued (AS TABLE (…)) and alias (FROM type).
+    create_type: $ => prec.left(seq(
+      $.keyword_create,
+      $.keyword_type,
+      $.object_reference,
+      choice(
+        seq($.keyword_as, $.keyword_table, $.column_definitions),
+        seq($.keyword_from, $._type, optional(choice($.keyword_null, $._not_null))),
+      ),
+    )),
+
     // Computed columns have no data type: `total AS (qty * price) [PERSISTED]`.
     // The base column_definition requires a type, so re-enumerate it here and
     // add the type-less computed form.

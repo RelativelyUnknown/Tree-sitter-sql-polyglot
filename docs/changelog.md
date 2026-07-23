@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file. See [commit
 ### Features
 
 - **T-SQL:** `IDENTITY[(seed, increment)]` column property; computed columns `col AS (expr) [PERSISTED]`
+- **T-SQL:** `CREATE TYPE … AS TABLE (…)` (table-valued) and `CREATE TYPE … FROM base_type` (alias)
 - **MySQL:** `STRAIGHT_JOIN` join type; `ALTER TABLE … ALGORITHM=`/`LOCK=` online-DDL options
 - **MySQL:** multi-table `DELETE` (`DELETE t1, t2 FROM …` and `DELETE FROM t1, t2 USING …`)
 - **Spark / Databricks / BigQuery / Snowflake:** `GROUP BY ALL`
