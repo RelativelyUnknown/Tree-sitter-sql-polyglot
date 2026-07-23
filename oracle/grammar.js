@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, comma_list, make_keyword, wrapped_in_parenthesis } from '../grammar/helpers.js';
+import { optional_parenthesis, comma_list, paren_list, make_keyword, wrapped_in_parenthesis } from '../grammar/helpers.js';
 import oracle_hierarchical_rules from './grammar/hierarchical.js';
 import oracle_plsql_rules from './grammar/plsql_blocks.js';
 import oracle_bulk_rules from './grammar/bulk_ops.js';
@@ -188,6 +188,7 @@ export default grammar(base, {
         ),
         optional($.flashback_clause),
         optional($.tablesample),
+        optional(choice($.pivot_clause, $.unpivot_clause)),
         optional(
           seq(
             $._alias,
@@ -196,6 +197,37 @@ export default grammar(base, {
         ),
       ),
     ),
+
+    // PIVOT ( agg [alias] [, …] FOR col IN ( value [alias] [, …] ) )
+    pivot_clause: $ => seq(
+      $.keyword_pivot,
+      '(',
+      comma_list(seq($.invocation, optional($._alias)), true),
+      $.keyword_for,
+      choice($.identifier, paren_list($.identifier, true)),
+      $.keyword_in,
+      paren_list(seq(
+        choice(alias($._literal_string, $.literal), alias($._integer, $.literal), $.identifier),
+        optional($._alias),
+      ), true),
+      ')',
+    ),
+
+    // UNPIVOT [INCLUDE|EXCLUDE NULLS] ( value_col FOR name_col IN ( col [, …] ) )
+    unpivot_clause: $ => seq(
+      $.keyword_unpivot,
+      optional(seq(choice($.keyword_include, $.keyword_exclude), $.keyword_nulls)),
+      '(',
+      choice($.identifier, paren_list($.identifier, true)),
+      $.keyword_for,
+      choice($.identifier, paren_list($.identifier, true)),
+      $.keyword_in,
+      paren_list($.identifier, true),
+      ')',
+    ),
+
+    keyword_pivot:   _ => token(prec(1, make_keyword("pivot"))),
+    keyword_unpivot: _ => token(prec(1, make_keyword("unpivot"))),
 
     // Extend unary_expression to include Oracle PRIOR operator
     unary_expression: $ => choice(
