@@ -24,6 +24,8 @@ All notable changes to this project will be documented in this file. See [commit
 - **Snowflake:** multi-table `INSERT ALL`/`INSERT FIRST … WHEN … THEN INTO …`
 - **Oracle:** `PIVOT` / `UNPIVOT`
 - **Oracle:** `MATCH_RECOGNIZE` row-pattern recognition
+- **Oracle:** `FIRST`/`LAST` aggregates `fn(…) KEEP (DENSE_RANK {FIRST|LAST} ORDER BY …) [OVER (…)]`
+- **Oracle:** `CREATE TABLE … ORGANIZATION {HEAP|INDEX|EXTERNAL}` (index-organized tables)
 - **PostgreSQL:** `CREATE DOMAIN`
 - **PostgreSQL:** foreign-data DDL: `CREATE SERVER`, `CREATE FOREIGN TABLE` (with `OPTIONS`)
 - **PostgreSQL:** `CREATE CAST (… AS …) {WITH FUNCTION|WITHOUT FUNCTION|WITH INOUT} [AS ASSIGNMENT|IMPLICIT]`

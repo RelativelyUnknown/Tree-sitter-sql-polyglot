@@ -282,7 +282,25 @@ export default grammar(base, {
       $.trim_expression,
       $.date_literal,
       $.timestamp_literal,
+      $.keep_aggregate,
     )),
+
+    // FIRST/LAST aggregate: fn(args) KEEP (DENSE_RANK {FIRST|LAST} ORDER BY …)
+    //   [OVER (…)]
+    keep_aggregate: $ => seq(
+      $.invocation,
+      $.keyword_keep,
+      '(',
+      $.keyword_dense_rank,
+      choice($.keyword_first, $.keyword_last),
+      $.order_by,
+      ')',
+      optional(seq($.keyword_over, choice($.identifier, $.window_specification))),
+    ),
+
+    keyword_dense_rank:   _ => token(prec(1, make_keyword("dense_rank"))),
+    keyword_organization: _ => token(prec(1, make_keyword("organization"))),
+    keyword_heap:         _ => token(prec(1, make_keyword("heap"))),
 
     // Oracle-specific keywords — token(prec(1,...)) needed so lexer prefers
     // these over base _identifier when both are valid in the same state.
@@ -407,8 +425,15 @@ export default grammar(base, {
         optional($.column_definitions),
         optional(seq($.keyword_as, $.create_query)),
       ),
+      optional($.organization_clause),
       optional($.table_partition_by),
     )),
+
+    // ORGANIZATION {HEAP | INDEX | EXTERNAL} — index-organized tables (IOT) etc.
+    organization_clause: $ => seq(
+      $.keyword_organization,
+      choice($.keyword_heap, $.keyword_index, $.keyword_external),
+    ),
 
     // Override INSERT to add optional RETURNING INTO
     insert: $ => seq(
