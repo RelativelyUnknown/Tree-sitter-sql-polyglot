@@ -1,5 +1,5 @@
 import bigquery from '../bigquery/grammar.js';
-import { make_keyword, optional_parenthesis, paren_list } from '../grammar/helpers.js';
+import { make_keyword, optional_parenthesis, paren_list, wrapped_in_parenthesis } from '../grammar/helpers.js';
 import spanner_ddl_rules from './grammar/ddl.js';
 
 // Google Cloud Spanner — GoogleSQL, the same language family as BigQuery
@@ -98,6 +98,34 @@ export default grammar(bigquery, {
     // Spanner-specific keywords (dialect-level per AGENTS.md)
     keyword_stored:        _ => token(prec(1, make_keyword("stored"))),
     keyword_sql:           _ => token(prec(1, make_keyword("sql"))),
+
+    // Spanner GoogleSQL has no SQL-level FOR SYSTEM_TIME AS OF (stale reads are
+    // an API concern), so drop the inherited clause that otherwise shadows the
+    // FOR UPDATE locking clause.
+    relation: $ => prec.right(seq(
+      choice(
+        $.subquery,
+        $.invocation,
+        $.object_reference,
+        wrapped_in_parenthesis($.values),
+        $.unnest,
+      ),
+      optional($.tablesample),
+      optional(choice($.pivot_clause, $.unpivot_clause)),
+      optional(seq(
+        $._alias,
+        optional(alias($._column_list, $.list)),
+      )),
+    )),
+
+    // CREATE SEQUENCE name [OPTIONS (…)]
+    create_sequence: $ => seq(
+      $.keyword_create,
+      $.keyword_sequence,
+      optional($._if_not_exists),
+      $.object_reference,
+      optional($.options_clause),
+    ),
 
     // Generated column: … AS (expr) STORED (re-enumerates base _column_constraint).
     _column_constraint: $ => prec.left(choice(

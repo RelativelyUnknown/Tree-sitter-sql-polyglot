@@ -48,6 +48,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **Db2:** `LABEL ON {TABLE|COLUMN} … IS '…'`
 - **Db2:** temporal queries `FOR {SYSTEM_TIME|BUSINESS_TIME} {AS OF|BETWEEN … AND …|FROM … TO …}`
 - **Spanner:** generated columns `col AS (expr) STORED`; `CREATE VIEW … SQL SECURITY {INVOKER|DEFINER}`
+- **Spanner:** `CREATE SEQUENCE … OPTIONS (…)`
 - **Flink:** `LATERAL TABLE(func(…)) AS t(cols)` table-function join
 - **Flink:** `MATCH_RECOGNIZE` row-pattern recognition
 - **Athena:** `VACUUM`; `ALTER TABLE … ADD/DROP PARTITION`, `SET LOCATION`
@@ -86,6 +87,7 @@ All notable changes to this project will be documented in this file. See [commit
 
 ### Bug Fixes
 
+- **Spanner:** restore `SELECT … FOR UPDATE`, which the inherited BigQuery `FOR SYSTEM_TIME AS OF` clause shadowed
 - **MariaDB:** restore MySQL features dropped by the `_column_constraint` override (`AUTO_INCREMENT`, `STORED`/`VIRTUAL` generated columns, FK `ON DELETE/UPDATE` actions)
 - **Databricks:** restore `iceberg_write_order` and `DISTRIBUTED BY PARTITION` dropped by the `_alter_specifications` override
 - **Base:** fix `_decimal_number` consuming the first dot of Oracle's `..` range operator
