@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { optional_parenthesis, comma_list, paren_list, make_keyword } from '../grammar/helpers.js';
 import ch_type_rules    from './grammar/types.js';
 import ch_select_rules  from './grammar/select.js';
 import ch_create_rules  from './grammar/create.js';
@@ -17,6 +17,9 @@ export default grammar(base, {
     [$.object_reference],
     [$.between_expression, $.binary_expression],
     [$.from],
+    [$.all_fields_transform, $.all_fields],
+    [$.all_fields_transform],
+    [$._qualified_field, $._column_transformer],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
@@ -119,6 +122,31 @@ export default grammar(base, {
     ),
 
     keyword_global:        _ => token(prec(1, make_keyword("global"))),
+
+    // Column transformers on `*`: EXCEPT / APPLY / REPLACE.
+    // (COLUMNS('regex') parses as a generic function invocation.)
+    term: $ => seq(
+      field('value', choice(
+        $.all_fields_transform,
+        $.all_fields,
+        $._expression,
+      )),
+      optional($._alias),
+    ),
+
+    all_fields_transform: $ => seq(
+      optional(seq($.object_reference, '.')),
+      '*',
+      repeat1($._column_transformer),
+    ),
+
+    _column_transformer: $ => choice(
+      seq($.keyword_except, choice(field('col', $.identifier), paren_list(field('col', $.identifier), true))),
+      seq($.keyword_apply, '(', choice($.identifier, $._expression), ')'),
+      seq($.keyword_replace, '(', comma_list(seq($._expression, $.keyword_as, $.identifier), true), ')'),
+    ),
+
+    keyword_apply:         _ => token(prec(1, make_keyword("apply"))),
     keyword_show:          _ => token(prec(1, make_keyword("show"))),
     keyword_databases:     _ => token(prec(1, make_keyword("databases"))),
     keyword_processlist:   _ => token(prec(1, make_keyword("processlist"))),

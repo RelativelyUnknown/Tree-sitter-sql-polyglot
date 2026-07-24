@@ -39,6 +39,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **Databricks:** liquid clustering `ALTER TABLE … CLUSTER BY (…)` / `CLUSTER BY NONE`
 - **Databricks:** `COPY INTO … FROM … FILEFORMAT = … [PATTERN|FILES|FORMAT_OPTIONS|COPY_OPTIONS …]`
 - **ClickHouse:** `GLOBAL JOIN` (distributed-query broadcast)
+- **ClickHouse:** `SELECT *` column transformers (`EXCEPT`/`APPLY`/`REPLACE`)
 - **Db2:** `LABEL ON {TABLE|COLUMN} … IS '…'`
 - **Db2:** temporal queries `FOR {SYSTEM_TIME|BUSINESS_TIME} {AS OF|BETWEEN … AND …|FROM … TO …}`
 - **Spanner:** generated columns `col AS (expr) STORED`; `CREATE VIEW … SQL SECURITY {INVOKER|DEFINER}`
