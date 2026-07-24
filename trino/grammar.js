@@ -43,6 +43,8 @@ export default grammar(base, {
     [$.array_type, $.array],
     // set_session_statement vs set_statement (both start with SET SESSION)
     [$.set_session_statement, $.set_statement],
+    // SET SESSION AUTHORIZATION vs SET SESSION var = value (shared SET SESSION prefix)
+    [$.set_session_statement, $.set_session_authorization_statement],
   ],
 
   rules: {
@@ -90,6 +92,8 @@ export default grammar(base, {
         $.deny_statement,
         $.set_role_statement,
         $.set_time_zone_statement,
+        $.set_path_statement,
+        $.set_session_authorization_statement,
       ),
     ),
 
@@ -116,6 +120,23 @@ export default grammar(base, {
       $.keyword_time,
       $.keyword_zone,
       choice($.keyword_local, $._expression),
+    ),
+
+    // SET PATH element [, …]  (each element is [catalog.]schema)
+    set_path_statement: $ => seq(
+      $.keyword_set,
+      $.keyword_path,
+      comma_list($.object_reference, true),
+    ),
+
+    keyword_path: _ => make_keyword("path"),
+
+    // SET SESSION AUTHORIZATION { user | 'user' }
+    set_session_authorization_statement: $ => seq(
+      $.keyword_set,
+      $.keyword_session,
+      $.keyword_authorization,
+      choice($.identifier, alias($._literal_string, $.literal)),
     ),
 
     // Add ALTER TABLE … EXECUTE proc(arg => value, …) to the base alter specs.

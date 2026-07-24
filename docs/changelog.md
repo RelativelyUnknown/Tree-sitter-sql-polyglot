@@ -59,6 +59,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **CockroachDB:** `ALTER TABLE … SET LOCALITY …`; `CONFIGURE ZONE USING …`
 - **Trino:** `CREATE VIEW … SECURITY {DEFINER|INVOKER}` (and optional `COMMENT`)
 - **Trino:** `ALTER TABLE … EXECUTE proc(…)`; `SET ROLE`; `SET TIME ZONE`; `DENY`
+- **Trino:** `SET PATH …`; `SET SESSION AUTHORIZATION {user|'user'}`
 - **Databricks:** liquid clustering `ALTER TABLE … CLUSTER BY (…)` / `CLUSTER BY NONE`
 - **Databricks:** `CREATE MATERIALIZED VIEW … [SCHEDULE [REFRESH] {CRON …|EVERY n unit}] AS …`
 - **Databricks:** `COPY INTO … FROM … FILEFORMAT = … [PATTERN|FILES|FORMAT_OPTIONS|COPY_OPTIONS …]`
