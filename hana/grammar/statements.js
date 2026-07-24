@@ -150,8 +150,12 @@ export default {
   // v := expr  (SQLScript scalar assignment)
   assignment_statement: $ => seq(
     field('name', $.identifier),
-    ':=',
-    $._expression,
+    choice(
+      // scalar variable
+      seq(':=', $._expression),
+      // table variable: tabvar = SELECT … (or another table variable)
+      seq('=', choice($._dml_read, $._expression)),
+    ),
   ),
 
   // base _select_statement plus HANA row locking

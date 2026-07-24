@@ -44,6 +44,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **Teradata:** atomic UPSERT `UPDATE … SET … [WHERE …] ELSE INSERT …`
 - **SAP HANA:** `SELECT TOP n`; `ALTER TABLE … ADD (col type, …)` parenthesized column list
 - **SAP HANA:** SQLScript control flow (`IF`/`ELSEIF`/`ELSE`, `WHILE … DO`, `FOR … IN a..b DO`, `BREAK`/`CONTINUE`)
+- **SAP HANA:** SQLScript table-variable assignment (`tabvar = SELECT …`)
 - **MariaDB:** `CREATE OR REPLACE TABLE`
 - **Redshift:** `ALTER TABLE … APPEND FROM`
 - **Redshift:** `CREATE EXTERNAL FUNCTION … LAMBDA … IAM_ROLE …`
