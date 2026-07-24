@@ -65,12 +65,44 @@ export default grammar(base, {
       $.load_data,
       $.grant_statement,
       $.revoke_statement,
+      $.grant_role,
+      $.revoke_role,
+      $.set_role_statement,
       $.show_statement,
       $.describe_statement,
       $.export_statement,
       $.import_statement,
       $.create_temporary_macro,
     ),
+
+    // GRANT ROLE r [, …] TO {USER|GROUP|ROLE} name [, …]
+    grant_role: $ => seq(
+      $.keyword_grant,
+      $.keyword_role,
+      comma_list($.identifier, true),
+      $.keyword_to,
+      choice($.keyword_user, $.keyword_group, $.keyword_role),
+      comma_list($.identifier, true),
+    ),
+
+    // REVOKE ROLE r [, …] FROM {USER|GROUP|ROLE} name [, …]
+    revoke_role: $ => seq(
+      $.keyword_revoke,
+      $.keyword_role,
+      comma_list($.identifier, true),
+      $.keyword_from,
+      choice($.keyword_user, $.keyword_group, $.keyword_role),
+      comma_list($.identifier, true),
+    ),
+
+    // SET ROLE {name | ALL | NONE}
+    set_role_statement: $ => seq(
+      $.keyword_set,
+      $.keyword_role,
+      choice($.keyword_all, $.keyword_none, $.identifier),
+    ),
+
+    keyword_roles: _ => token(prec(1, make_keyword("roles"))),
 
     // EXPORT TABLE t [PARTITION (…)] TO 'hdfs_path'
     export_statement: $ => seq(
@@ -469,6 +501,15 @@ export default grammar(base, {
         seq(
           $.keyword_functions,
           optional(seq($.keyword_like, alias($._literal_string, $.literal))),
+        ),
+        // SHOW ROLES / SHOW CURRENT ROLES / SHOW ROLE GRANT {USER|GROUP|ROLE} n
+        $.keyword_roles,
+        seq($.keyword_current, $.keyword_roles),
+        seq(
+          $.keyword_role,
+          $.keyword_grant,
+          choice($.keyword_user, $.keyword_group, $.keyword_role),
+          $.identifier,
         ),
       ),
     )),

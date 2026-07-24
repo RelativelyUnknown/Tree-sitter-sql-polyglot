@@ -47,6 +47,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **Redshift:** `CREATE DATASHARE`; `ALTER DATASHARE … {ADD|REMOVE} {TABLE|SCHEMA} …`
 - **Hive:** `ALTER TABLE … [PARTITION (…)] CONCATENATE`
 - **Hive:** `EXPORT`/`IMPORT TABLE`; `CREATE TEMPORARY MACRO`
+- **Hive / Spark / Databricks:** role DDL (`GRANT`/`REVOKE ROLE`, `SET ROLE`, `SHOW [CURRENT] ROLES`, `SHOW ROLE GRANT`)
 - **CockroachDB:** `ALTER TABLE … SPLIT AT`/`UNSPLIT AT`/`SCATTER` range administration
 - **CockroachDB:** column families (`FAMILY name (cols)`)
 - **CockroachDB:** `ALTER TABLE … SET LOCALITY …`; `CONFIGURE ZONE USING …`
