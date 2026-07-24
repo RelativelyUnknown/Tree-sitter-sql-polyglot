@@ -238,7 +238,7 @@ export default grammar(hive, {
       ),
     )),
 
-    // Spark SQL: INSERT OVERWRITE ... PARTITION (...)
+    // Spark SQL: INSERT {INTO|OVERWRITE} [TABLE] ref [PARTITION (...)] [BY NAME] …
     insert: $ => seq(
       choice(
         $.keyword_insert,
@@ -251,6 +251,7 @@ export default grammar(hive, {
           $.keyword_overwrite,
         ),
       ),
+      optional($.keyword_table),
       $.object_reference,
       optional($.table_partition),
       optional(
@@ -259,6 +260,7 @@ export default grammar(hive, {
           field('alias', $.identifier)
         ),
       ),
+      optional(seq($.keyword_by, $.keyword_name)),
       choice(
         $._insert_values,
         $._set_values,
@@ -270,6 +272,10 @@ export default grammar(hive, {
         ),
       ),
     ),
+
+    // Plain keyword (no elevated precedence) so a column literally named
+    // `name` still lexes as an identifier outside the INSERT … BY NAME context.
+    keyword_name: _ => make_keyword("name"),
 
     // Override term to support SELECT * EXCEPT
     term: $ => seq(
