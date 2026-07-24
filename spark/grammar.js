@@ -151,6 +151,10 @@ export default grammar(hive, {
       $.call_statement,
       $.grant_statement,
       $.revoke_statement,
+      // inherited Hive role DDL
+      $.grant_role,
+      $.revoke_role,
+      $.set_role_statement,
     ),
 
     // Override set_statement to add scripting assignment: SET var = expr
