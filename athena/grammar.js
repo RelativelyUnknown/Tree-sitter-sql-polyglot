@@ -66,11 +66,28 @@ export default grammar(trino, {
         $.show_partitions_statement,
         $.show_create_statement,
         $.vacuum_statement,
+        $.optimize_statement,
       ),
     ),
 
     // VACUUM <table> (Iceberg snapshot expiry / orphan-file cleanup)
     vacuum_statement: $ => seq($.keyword_vacuum, $.object_reference),
+
+    // OPTIMIZE <table> REWRITE DATA USING BIN_PACK [WHERE predicate]
+    // (Iceberg compaction)
+    optimize_statement: $ => seq(
+      $.keyword_optimize,
+      $.object_reference,
+      $.keyword_rewrite,
+      $.keyword_data,
+      $.keyword_using,
+      $.keyword_bin_pack,
+      optional($.where),
+    ),
+
+    keyword_optimize: _ => token(prec(1, make_keyword("optimize"))),
+    keyword_rewrite:  _ => token(prec(1, make_keyword("rewrite"))),
+    keyword_bin_pack: _ => token(prec(1, make_keyword("bin_pack"))),
 
     // Hive-style partition management on ALTER TABLE (re-enumerates the base set).
     _alter_specifications: $ => choice(
