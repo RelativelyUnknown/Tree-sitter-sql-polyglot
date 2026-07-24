@@ -25,7 +25,13 @@ export default {
       optional(seq(
         $.keyword_as,
         choice($.create_query, wrapped_in_parenthesis($.create_query)),
-        optional(seq($.keyword_with, optional($.keyword_no), $.keyword_data)),
+        optional(seq(
+          $.keyword_with, optional($.keyword_no), $.keyword_data,
+          optional(seq(
+            $.keyword_and, optional($.keyword_no),
+            choice($.keyword_statistics, $.keyword_stats),
+          )),
+        )),
       )),
       optional(choice(
         $.primary_index,

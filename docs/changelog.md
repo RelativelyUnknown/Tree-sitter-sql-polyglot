@@ -42,6 +42,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **Teradata:** character-column attributes `[NOT] CASESPECIFIC`, `UPPERCASE`, `TITLE`
 - **Teradata:** `CREATE {JOIN|HASH} INDEX … AS SELECT … [PRIMARY INDEX (…)]`
 - **Teradata:** atomic UPSERT `UPDATE … SET … [WHERE …] ELSE INSERT …`
+- **Teradata:** `CREATE TABLE … AS … WITH [NO] DATA [AND [NO] STATISTICS]`
 - **SAP HANA:** `SELECT TOP n`; `ALTER TABLE … ADD (col type, …)` parenthesized column list
 - **SAP HANA:** SQLScript control flow (`IF`/`ELSEIF`/`ELSE`, `WHILE … DO`, `FOR … IN a..b DO`, `BREAK`/`CONTINUE`)
 - **SAP HANA:** SQLScript table-variable assignment (`tabvar = SELECT …`)
