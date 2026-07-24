@@ -98,6 +98,31 @@ export default {
     $.create_query,
   )),
 
+  // CREATE MODEL name FROM {ref | (query)} [TARGET col] [FUNCTION fn]
+  //   [IAM_ROLE {DEFAULT|'arn'}] [AUTO {ON|OFF} | key value …]
+  //   [SETTINGS (key 'value', …)]  (Redshift ML)
+  create_model: $ => prec.right(seq(
+    $.keyword_create,
+    $.keyword_model,
+    optional($._if_not_exists),
+    $.object_reference,
+    $.keyword_from,
+    choice($.subquery, $.object_reference),
+    optional(seq($.keyword_target, $.identifier)),
+    optional(seq($.keyword_function, $.identifier)),
+    optional(seq($.keyword_iam_role, choice($.keyword_default, alias($._literal_string, $.literal)))),
+    repeat($.model_parameter),
+    optional(seq(
+      $.keyword_settings,
+      paren_list(seq(field('key', $.identifier), optional(alias($._literal_string, $.literal))), true),
+    )),
+  )),
+
+  model_parameter: $ => choice(
+    seq($.keyword_auto, choice($.keyword_on, $.keyword_off)),
+    seq(field('key', $.identifier), field('value', choice($.identifier, alias($._literal_string, $.literal)))),
+  ),
+
   // CREATE DATASHARE ds [SET PUBLICACCESSIBLE {TRUE|FALSE}]
   create_datashare: $ => seq(
     $.keyword_create,
@@ -138,6 +163,7 @@ export default {
       $.create_external_table,
       $.create_external_function,
       $.create_datashare,
+      $.create_model,
       prec.left(seq(
         $.create_schema,
         repeat($._create_statement),

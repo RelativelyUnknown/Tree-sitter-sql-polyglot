@@ -45,6 +45,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **Redshift:** `CREATE EXTERNAL FUNCTION … LAMBDA … IAM_ROLE …`
 - **Redshift:** `CREATE MATERIALIZED VIEW … [BACKUP|AUTO REFRESH] {YES|NO}`
 - **Redshift:** `CREATE DATASHARE`; `ALTER DATASHARE … {ADD|REMOVE} {TABLE|SCHEMA} …`
+- **Redshift:** `CREATE MODEL … FROM … TARGET … FUNCTION … IAM_ROLE … SETTINGS (…)` (Redshift ML)
 - **Hive:** `ALTER TABLE … [PARTITION (…)] CONCATENATE`
 - **Hive:** `EXPORT`/`IMPORT TABLE`; `CREATE TEMPORARY MACRO`
 - **Hive / Spark:** role DDL (`GRANT`/`REVOKE ROLE`, `SET ROLE`, `SHOW [CURRENT] ROLES`, `SHOW ROLE GRANT`)
