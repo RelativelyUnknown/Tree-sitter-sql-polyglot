@@ -29,6 +29,39 @@ export default {
     optional(seq($.keyword_as, $.create_query)),
   ),
 
+  // CREATE [OR REPLACE] MATERIALIZED VIEW [IF NOT EXISTS] name [(cols)]
+  //   [COMMENT 'str'] [CLUSTER BY (cols)] [TBLPROPERTIES (…)]
+  //   [SCHEDULE [REFRESH] {CRON 'expr' [AT TIME ZONE 'tz'] | EVERY n unit}]
+  //   AS query
+  create_materialized_view: $ => prec.right(seq(
+    $.keyword_create,
+    optional($._or_replace),
+    $.keyword_materialized,
+    $.keyword_view,
+    optional($._if_not_exists),
+    $.object_reference,
+    optional($.column_definitions),
+    optional(seq($.keyword_comment, alias($._literal_string, $.literal))),
+    optional(seq($.keyword_cluster, $.keyword_by, paren_list($.identifier, true))),
+    optional(seq($.keyword_tblproperties, paren_list($.table_option, true))),
+    optional($.schedule_clause),
+    $.keyword_as,
+    $.create_query,
+  )),
+
+  schedule_clause: $ => seq(
+    $.keyword_schedule,
+    optional($.keyword_refresh),
+    choice(
+      seq(
+        $.keyword_cron,
+        alias($._literal_string, $.literal),
+        optional(seq($.keyword_at, $.keyword_time, $.keyword_zone, alias($._literal_string, $.literal))),
+      ),
+      seq($.keyword_every, alias($._integer, $.literal), $.identifier),
+    ),
+  ),
+
   // CREATE [OR REPLACE] LIVE TABLE [IF NOT EXISTS] name [settings] [AS query]
   create_live_table: $ => seq(
     $.keyword_create,

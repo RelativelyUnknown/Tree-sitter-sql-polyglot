@@ -60,6 +60,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **Trino:** `CREATE VIEW … SECURITY {DEFINER|INVOKER}` (and optional `COMMENT`)
 - **Trino:** `ALTER TABLE … EXECUTE proc(…)`; `SET ROLE`; `SET TIME ZONE`; `DENY`
 - **Databricks:** liquid clustering `ALTER TABLE … CLUSTER BY (…)` / `CLUSTER BY NONE`
+- **Databricks:** `CREATE MATERIALIZED VIEW … [SCHEDULE [REFRESH] {CRON …|EVERY n unit}] AS …`
 - **Databricks:** `COPY INTO … FROM … FILEFORMAT = … [PATTERN|FILES|FORMAT_OPTIONS|COPY_OPTIONS …]`
 - **ClickHouse:** `GLOBAL JOIN` (distributed-query broadcast)
 - **ClickHouse:** `SELECT *` column transformers (`EXCEPT`/`APPLY`/`REPLACE`)
