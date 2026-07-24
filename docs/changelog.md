@@ -41,6 +41,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **DuckDB:** open-ended list slicing (`l[2:]`, `l[:3]`, `l[:]`)
 - **Teradata:** character-column attributes `[NOT] CASESPECIFIC`, `UPPERCASE`, `TITLE`
 - **Teradata:** `CREATE {JOIN|HASH} INDEX … AS SELECT … [PRIMARY INDEX (…)]`
+- **Teradata:** atomic UPSERT `UPDATE … SET … [WHERE …] ELSE INSERT …`
 - **SAP HANA:** `SELECT TOP n`; `ALTER TABLE … ADD (col type, …)` parenthesized column list
 - **SAP HANA:** SQLScript control flow (`IF`/`ELSEIF`/`ELSE`, `WHILE … DO`, `FOR … IN a..b DO`, `BREAK`/`CONTINUE`)
 - **MariaDB:** `CREATE OR REPLACE TABLE`

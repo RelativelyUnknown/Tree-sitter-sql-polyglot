@@ -70,6 +70,18 @@ export default grammar(base, {
       ),
     ),
 
+    // Atomic UPSERT: UPDATE … SET … [WHERE …] ELSE INSERT … (base update plus
+    // the trailing ELSE INSERT tail).
+    update: $ => seq(
+      $.keyword_update,
+      optional($.keyword_only),
+      choice(
+        $._mysql_update_statement,
+        $._postgres_update_statement,
+      ),
+      optional(seq($.keyword_else, $.insert)),
+    ),
+
     // SEL / DEL abbreviations: the keyword tokens accept both spellings.
     // Declared at default precedence (like all base keywords) so longest
     // match keeps identifiers such as "selection" intact.
