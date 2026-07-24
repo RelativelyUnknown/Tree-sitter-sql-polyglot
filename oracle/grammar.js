@@ -435,6 +435,27 @@ export default grammar(base, {
       choice($.keyword_heap, $.keyword_index, $.keyword_external),
     ),
 
+    // Oracle trigger with a PL/SQL block body (base mandates the Postgres
+    // EXECUTE FUNCTION tail instead).
+    create_trigger: $ => seq(
+      $.keyword_create,
+      optional($._or_replace),
+      $.keyword_trigger,
+      $.object_reference,
+      choice(
+        $.keyword_before,
+        $.keyword_after,
+        seq($.keyword_instead, $.keyword_of),
+      ),
+      $._create_trigger_event,
+      repeat(seq($.keyword_or, $._create_trigger_event)),
+      $.keyword_on,
+      $.object_reference,
+      optional(seq($.keyword_for, $.keyword_each, $.keyword_row)),
+      optional(seq($.keyword_when, wrapped_in_parenthesis($._expression))),
+      $.compound_statement,
+    ),
+
     // Override INSERT to add optional RETURNING INTO
     insert: $ => seq(
       $.keyword_insert,
