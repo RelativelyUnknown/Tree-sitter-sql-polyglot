@@ -18,6 +18,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **MySQL:** `STRAIGHT_JOIN` join type; `ALTER TABLE … ALGORITHM=`/`LOCK=` online-DDL options
 - **MySQL:** multi-table `DELETE` (`DELETE t1, t2 FROM …` and `DELETE FROM t1, t2 USING …`)
 - **MySQL:** full-text `MATCH (…) AGAINST (… [IN BOOLEAN/NATURAL LANGUAGE MODE])`
+- **MySQL / MariaDB:** `SELECT … INTO {OUTFILE 'f' [CHARACTER SET …] [FIELDS …] [LINES …] | DUMPFILE 'f'}`
 - **Spark / Databricks / BigQuery / Snowflake:** `GROUP BY ALL`
 - **Spark / Databricks:** `INSERT {INTO|OVERWRITE} TABLE …` keyword form; `INSERT INTO … BY NAME`
 - **Spark / Databricks:** Delta time travel in `FROM` (`table {VERSION|TIMESTAMP} AS OF …`)

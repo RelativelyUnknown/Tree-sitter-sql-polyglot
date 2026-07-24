@@ -40,4 +40,20 @@ export default {
     choice($.keyword_lines, $.keyword_rows),
   ),
 
+  // SELECT … INTO { OUTFILE 'f' [CHARACTER SET cs] [FIELDS …] [LINES …]
+  //              | DUMPFILE 'f' }
+  into_outfile: $ => seq(
+    $.keyword_into,
+    choice(
+      seq(
+        $.keyword_outfile,
+        alias($._literal_string, $.literal),
+        optional(seq($.keyword_character, $.keyword_set, $.identifier)),
+        optional($._load_fields_clause),
+        optional($._load_lines_clause),
+      ),
+      seq($.keyword_dumpfile, alias($._literal_string, $.literal)),
+    ),
+  ),
+
 };

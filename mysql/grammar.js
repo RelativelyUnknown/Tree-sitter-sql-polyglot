@@ -121,6 +121,7 @@ export default grammar(base, {
       ),
     ),
 
+
     insert: $ => seq(
       choice(
         $.keyword_insert,
@@ -174,6 +175,7 @@ export default grammar(base, {
       optional($.order_by),
       optional($.limit),
       optional($.offset_fetch_clause),
+      optional($.into_outfile),
     ),
 
     // MySQL DELETE: single-table plus the two multi-table forms.
@@ -537,6 +539,11 @@ export default grammar(base, {
     keyword_fields:         _ => token(prec(1, make_keyword("fields"))),
     keyword_terminated:     _ => token(prec(1, make_keyword("terminated"))),
     keyword_lines:          _ => token(prec(1, make_keyword("lines"))),
+    keyword_outfile:        _ => token(prec(1, make_keyword("outfile"))),
+    keyword_dumpfile:       _ => token(prec(1, make_keyword("dumpfile"))),
+    // INTO is reserved in MySQL; bias the lexer so a trailing INTO OUTFILE is
+    // not mis-lexed as a relation alias identifier.
+    keyword_into:           _ => token(prec(1, make_keyword("into"))),
     keyword_rollup:         _ => token(prec(1, make_keyword("rollup"))),
     keyword_event:          _ => token(prec(1, make_keyword("event"))),
     keyword_every:          _ => token(prec(1, make_keyword("every"))),
