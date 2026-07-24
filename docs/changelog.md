@@ -30,6 +30,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **SQLite:** `RETURNING` on `UPDATE` and `DELETE`
 - **DuckDB:** `UNION`/`EXCEPT`/`INTERSECT … BY NAME`
 - **DuckDB:** `USING SAMPLE` clause
+- **DuckDB:** open-ended list slicing (`l[2:]`, `l[:3]`, `l[:]`)
 - **Teradata:** character-column attributes `[NOT] CASESPECIFIC`, `UPPERCASE`, `TITLE`
 - **Teradata:** `CREATE {JOIN|HASH} INDEX … AS SELECT … [PRIMARY INDEX (…)]`
 - **SAP HANA:** `SELECT TOP n`; `ALTER TABLE … ADD (col type, …)` parenthesized column list

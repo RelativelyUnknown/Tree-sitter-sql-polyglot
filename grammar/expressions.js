@@ -201,10 +201,11 @@ export default {
       "[",
       choice(
         field('subscript', $._expression),
+        // Slice: [lower:upper], and open-ended [lower:] / [:upper] / [:]
         seq(
-          field('lower', $._expression),
+          optional(field('lower', $._expression)),
           ':',
-          field('upper', $._expression),
+          optional(field('upper', $._expression)),
         ),
       ),
       "]",
