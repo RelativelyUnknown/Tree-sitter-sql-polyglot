@@ -98,6 +98,28 @@ export default {
     $.create_query,
   )),
 
+  // CREATE DATASHARE ds [SET PUBLICACCESSIBLE {TRUE|FALSE}]
+  create_datashare: $ => seq(
+    $.keyword_create,
+    $.keyword_datashare,
+    optional($._if_not_exists),
+    $.object_reference,
+  ),
+
+  // ALTER DATASHARE ds {ADD|REMOVE} {TABLE ref | SCHEMA ref} [, …]
+  alter_datashare: $ => seq(
+    $.keyword_alter,
+    $.keyword_datashare,
+    $.object_reference,
+    repeat1(seq(
+      choice($.keyword_add, $.keyword_remove),
+      choice(
+        seq($.keyword_table, comma_list($.object_reference, true)),
+        seq($.keyword_schema, comma_list($.object_reference, true)),
+      ),
+    )),
+  ),
+
   // Override _create_statement to add Redshift-specific CREATE variants
   _create_statement: $ => seq(
     choice(
@@ -115,6 +137,7 @@ export default {
       $.create_external_schema,
       $.create_external_table,
       $.create_external_function,
+      $.create_datashare,
       prec.left(seq(
         $.create_schema,
         repeat($._create_statement),
