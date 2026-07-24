@@ -29,10 +29,6 @@ export default grammar(base, {
     // `IN` may continue a binary IN-expression or begin the IN PARTITION clause.
     // GLR explores both; only one continuation is well-formed at runtime.
     [$.binary_expression, $.assignment],
-    // GLOBAL [NOT] IN shares the `_expression` left operand with the other
-    // infix operators; GLR needs these to pick the operator by lookahead.
-    [$.binary_expression, $.global_in_expression],
-    [$.between_expression, $.global_in_expression],
     // Access control rules overlap with base create_role/alter_role/create_role
     [$.create_user_statement, $.create_role],
     [$.alter_user_statement, $.alter_role],
@@ -149,39 +145,76 @@ export default grammar(base, {
     keyword_global:        _ => token(prec(1, make_keyword("global"))),
 
     // x GLOBAL [NOT] IN (…): the distributed IN, whose right side is broadcast
-    // to every shard. Shares the binary_in precedence with the base IN operator.
-    // global_in / global_not_in mirror the base not_in operator rule.
-    global_in: $ => seq($.keyword_global, $.keyword_in),
-    global_not_in: $ => seq($.keyword_global, $.keyword_not, $.keyword_in),
+    // to every shard. Lexed as one multi-word operator token: a bare
+    // keyword_global mid-expression is never shifted (the parser ends the
+    // predicate first and drops GLOBAL as an error), so GLOBAL and IN must
+    // arrive together as a single terminal. Longer-match keeps GLOBAL JOIN
+    // (no IN follows) lexing as keyword_global.
+    global_in: _ => token(prec(2, seq(
+      /[Gg][Ll][Oo][Bb][Aa][Ll]/, /[ \t\r\n]+/, /[Ii][Nn]/,
+    ))),
+    global_not_in: _ => token(prec(2, seq(
+      /[Gg][Ll][Oo][Bb][Aa][Ll]/, /[ \t\r\n]+/,
+      /[Nn][Oo][Tt]/, /[ \t\r\n]+/, /[Ii][Nn]/,
+    ))),
 
-    global_in_expression: $ => prec.left('binary_in', seq(
-      field('left', $._expression),
-      field('operator', choice($.global_in, $.global_not_in)),
-      field('right', choice($.list, $.subquery)),
-    )),
-
-    // base _expression plus the GLOBAL IN operator form
-    _expression: $ => prec(1, choice(
-      $.literal,
-      alias($._qualified_field, $.field),
-      $.parameter,
-      $.list,
-      $.case,
-      $.window_function,
-      $.subquery,
-      $.cast,
-      $.exists,
-      $.invocation,
-      $.binary_expression,
-      $.subscript,
-      $.unary_expression,
-      $.array,
-      $.interval,
-      $.between_expression,
-      $.parenthesized_expression,
-      $.trim_expression,
-      $.global_in_expression,
-    )),
+    // base binary_expression with GLOBAL IN / GLOBAL NOT IN in the binary_in group
+    binary_expression: $ => choice(
+      ...[
+        ['+', 'binary_plus'],
+        ['-', 'binary_plus'],
+        ['*', 'binary_times'],
+        ['/', 'binary_times'],
+        ['%', 'binary_times'],
+        ['^', 'binary_exp'],
+        ['=', 'binary_relation'],
+        ['<', 'binary_relation'],
+        ['<=', 'binary_relation'],
+        ['!=', 'binary_relation'],
+        ['>=', 'binary_relation'],
+        ['>', 'binary_relation'],
+        ['<>', 'binary_relation'],
+        [$.op_other, 'binary_other'],
+        [$.keyword_is, 'binary_is'],
+        [$.is_not, 'binary_is'],
+        [$.keyword_like, 'pattern_matching'],
+        [$.not_like, 'pattern_matching'],
+        [$.keyword_rlike, 'pattern_matching'],
+        [$.not_rlike, 'pattern_matching'],
+        [$.similar_to, 'pattern_matching'],
+        [$.not_similar_to, 'pattern_matching'],
+        [$.distinct_from, 'binary_is'],
+        [$.not_distinct_from, 'binary_is'],
+      ].map(([operator, precedence]) =>
+        prec.left(precedence, seq(
+          field('left', $._expression),
+          field('operator', operator),
+          field('right', $._expression)
+        ))
+      ),
+      ...[
+        [$.keyword_and, 'clause_connective'],
+        [$.keyword_or, 'clause_disjunctive'],
+      ].map(([operator, precedence]) =>
+        prec.left(precedence, seq(
+          field('left', $._expression),
+          field('operator', operator),
+          field('right', $._expression)
+        ))
+      ),
+      ...[
+        [$.keyword_in, 'binary_in'],
+        [$.not_in, 'binary_in'],
+        [$.global_in, 'binary_in'],
+        [$.global_not_in, 'binary_in'],
+      ].map(([operator, precedence]) =>
+        prec.left(precedence, seq(
+          field('left', $._expression),
+          field('operator', operator),
+          field('right', choice($.list, $.subquery))
+        ))
+      ),
+    ),
 
     // Column transformers on `*`: EXCEPT / APPLY / REPLACE.
     // (COLUMNS('regex') parses as a generic function invocation.)

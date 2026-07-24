@@ -177,7 +177,7 @@ export default grammar(base, {
       optional($.options_clause),
     )),
 
-    keyword_clone: _ => make_keyword("clone"),
+    keyword_clone: _ => token(prec(1, make_keyword("clone"))),
 
     // ── term: allow SELECT * EXCEPT / REPLACE ──────────────────────────────
     term: $ => seq(
