@@ -29,6 +29,10 @@ export default grammar(base, {
     // `IN` may continue a binary IN-expression or begin the IN PARTITION clause.
     // GLR explores both; only one continuation is well-formed at runtime.
     [$.binary_expression, $.assignment],
+    // GLOBAL [NOT] IN shares the `_expression` left operand with the other
+    // infix operators; GLR needs these to pick the operator by lookahead.
+    [$.binary_expression, $.global_in_expression],
+    [$.between_expression, $.global_in_expression],
     // Access control rules overlap with base create_role/alter_role/create_role
     [$.create_user_statement, $.create_role],
     [$.alter_user_statement, $.alter_role],
@@ -143,6 +147,41 @@ export default grammar(base, {
     ),
 
     keyword_global:        _ => token(prec(1, make_keyword("global"))),
+
+    // x GLOBAL [NOT] IN (…): the distributed IN, whose right side is broadcast
+    // to every shard. Shares the binary_in precedence with the base IN operator.
+    // global_in / global_not_in mirror the base not_in operator rule.
+    global_in: $ => seq($.keyword_global, $.keyword_in),
+    global_not_in: $ => seq($.keyword_global, $.keyword_not, $.keyword_in),
+
+    global_in_expression: $ => prec.left('binary_in', seq(
+      field('left', $._expression),
+      field('operator', choice($.global_in, $.global_not_in)),
+      field('right', choice($.list, $.subquery)),
+    )),
+
+    // base _expression plus the GLOBAL IN operator form
+    _expression: $ => prec(1, choice(
+      $.literal,
+      alias($._qualified_field, $.field),
+      $.parameter,
+      $.list,
+      $.case,
+      $.window_function,
+      $.subquery,
+      $.cast,
+      $.exists,
+      $.invocation,
+      $.binary_expression,
+      $.subscript,
+      $.unary_expression,
+      $.array,
+      $.interval,
+      $.between_expression,
+      $.parenthesized_expression,
+      $.trim_expression,
+      $.global_in_expression,
+    )),
 
     // Column transformers on `*`: EXCEPT / APPLY / REPLACE.
     // (COLUMNS('regex') parses as a generic function invocation.)

@@ -63,6 +63,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **Databricks:** `CREATE MATERIALIZED VIEW … [SCHEDULE [REFRESH] {CRON …|EVERY n unit}] AS …`
 - **Databricks:** `COPY INTO … FROM … FILEFORMAT = … [PATTERN|FILES|FORMAT_OPTIONS|COPY_OPTIONS …]`
 - **ClickHouse:** `GLOBAL JOIN` (distributed-query broadcast)
+- **ClickHouse:** `x GLOBAL [NOT] IN (…)` distributed IN
 - **ClickHouse:** `SELECT *` column transformers (`EXCEPT`/`APPLY`/`REPLACE`)
 - **ClickHouse:** `INSERT INTO … [(cols)] FORMAT fmt`; `INSERT INTO FUNCTION f(…) …`
 - **Db2:** `LABEL ON {TABLE|COLUMN} … IS '…'`
