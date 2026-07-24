@@ -356,6 +356,15 @@ export default grammar(base, {
       ),
     )),
 
+    // Select-list variable assignment: SELECT @v = expr [, …]
+    term: $ => choice(
+      seq(field('variable', $.variable), '=', field('value', $._expression)),
+      seq(
+        field('value', choice($.all_fields, $._expression)),
+        optional($._alias),
+      ),
+    ),
+
     // T-SQL SET @variable = expression  (plus base transaction/constraint SET)
     set_statement: $ => prec.right(choice(
       seq($.keyword_set, $.variable, '=', $._expression),
