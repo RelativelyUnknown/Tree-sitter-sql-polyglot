@@ -186,6 +186,18 @@ export default grammar(base, {
       optional($.returning),
     ),
 
+    // SQLite (3.35+) supports RETURNING on UPDATE and DELETE too.
+    _update_statement: $ => seq(
+      $.update,
+      optional($.returning),
+    ),
+
+    _delete_statement: $ => seq(
+      $.delete,
+      alias($._delete_from, $.from),
+      optional($.returning),
+    ),
+
     // REPLACE INTO t ... is syntactic sugar for INSERT OR REPLACE
     // (already covered by base via keyword_replace → insert, but kept here for clarity)
 

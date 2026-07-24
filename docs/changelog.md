@@ -23,6 +23,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **PostgreSQL:** `CREATE DOMAIN`
 - **PostgreSQL:** foreign-data DDL: `CREATE SERVER`, `CREATE FOREIGN TABLE` (with `OPTIONS`)
 - **SQLite:** `GLOB` and `MATCH` pattern operators
+- **SQLite:** `RETURNING` on `UPDATE` and `DELETE`
 - **DuckDB:** `UNION`/`EXCEPT`/`INTERSECT … BY NAME`
 - **DuckDB:** `USING SAMPLE` clause
 - **Teradata:** character-column attributes `[NOT] CASESPECIFIC`, `UPPERCASE`, `TITLE`
