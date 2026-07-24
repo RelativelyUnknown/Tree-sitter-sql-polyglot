@@ -286,6 +286,12 @@ export default grammar(base, {
     keyword_past:         _ => token(prec(1, make_keyword("past"))),
     keyword_one:          _ => token(prec(1, make_keyword("one"))),
     keyword_match:        _ => token(prec(1, make_keyword("match"))),
+    // keyword_match / keyword_per are strict prefixes of keyword_matched /
+    // keyword_percent; explicit precedence beats match length in the lexer, so
+    // re-declare the longer keywords at equal precedence (keeps MERGE's WHEN
+    // MATCHED and TABLESAMPLE … PERCENT lexable).
+    keyword_matched:      _ => token(prec(1, make_keyword("matched"))),
+    keyword_percent:      _ => token(prec(1, make_keyword("percent"))),
     keyword_ml_predict:   _ => token(prec(1, /[Mm][Ll]_[Pp][Rr][Ee][Dd][Ii][Cc][Tt]/)),
     keyword_ml_evaluate:  _ => token(prec(1, /[Mm][Ll]_[Ee][Vv][Aa][Ll][Uu][Aa][Tt][Ee]/)),
     keyword_vector_search:_ => token(prec(1, /[Vv][Ee][Cc][Tt][Oo][Rr]_[Ss][Ee][Aa][Rr][Cc][Hh]/)),

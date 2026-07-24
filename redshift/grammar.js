@@ -138,6 +138,10 @@ export default grammar(base, {
     keyword_target:       _ => token(prec(1, make_keyword("target"))),
     keyword_settings:     _ => token(prec(1, make_keyword("settings"))),
     keyword_off:          _ => token(prec(1, make_keyword("off"))),
+    // keyword_off is a strict prefix of keyword_offset; explicit precedence
+    // beats match length in the lexer, so re-declare keyword_offset at equal
+    // precedence to keep OFFSET / FETCH and LIMIT … OFFSET lexable.
+    keyword_offset:       _ => token(prec(1, make_keyword("offset"))),
     keyword_ignoreheader: _ => token(prec(1, make_keyword("ignoreheader"))),
     keyword_maxfilesize:  _ => token(prec(1, make_keyword("maxfilesize"))),
     keyword_gzip:         _ => token(prec(1, make_keyword("gzip"))),
