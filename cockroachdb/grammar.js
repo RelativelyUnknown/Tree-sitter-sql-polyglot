@@ -25,6 +25,8 @@ export default grammar(postgres, {
     [$.interval],
     // SPLIT AT VALUES (…) shares the base `values` rule with a top-level VALUES.
     [$.values],
+    // SET LOCALITY and SET SCHEMA both begin ALTER TABLE … SET.
+    [$._alter_specifications],
   ],
 
   rules: {
@@ -151,6 +153,24 @@ export default grammar(postgres, {
       $.split_at,
       $.unsplit_at,
       $.keyword_scatter,
+      // Multi-region: SET LOCALITY {GLOBAL | REGIONAL [BY ROW|TABLE]}
+      seq(
+        $.keyword_set,
+        $.keyword_locality,
+        choice(
+          $.keyword_global,
+          seq($.keyword_regional, optional(seq($.keyword_by, choice($.keyword_row, $.keyword_table)))),
+        ),
+      ),
+      // CONFIGURE ZONE {USING var = expr [, …] | DISCARD}
+      seq(
+        $.keyword_configure,
+        $.keyword_zone,
+        choice(
+          seq($.keyword_using, comma_list(seq($.identifier, '=', $._expression), true)),
+          $.keyword_discard,
+        ),
+      ),
     ),
 
     split_at: $ => seq(
@@ -181,6 +201,11 @@ export default grammar(postgres, {
     ),
 
     keyword_family:     _ => token(prec(1, make_keyword("family"))),
+    keyword_locality:   _ => token(prec(1, make_keyword("locality"))),
+    keyword_regional:   _ => token(prec(1, make_keyword("regional"))),
+    keyword_global:     _ => token(prec(1, make_keyword("global"))),
+    keyword_configure:  _ => token(prec(1, make_keyword("configure"))),
+    keyword_discard:    _ => token(prec(1, make_keyword("discard"))),
     keyword_split:      _ => token(prec(1, make_keyword("split"))),
     keyword_unsplit:    _ => token(prec(1, make_keyword("unsplit"))),
     keyword_scatter:    _ => token(prec(1, make_keyword("scatter"))),

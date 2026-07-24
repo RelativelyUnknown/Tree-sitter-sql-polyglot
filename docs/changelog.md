@@ -38,6 +38,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **Hive:** `EXPORT`/`IMPORT TABLE`; `CREATE TEMPORARY MACRO`
 - **CockroachDB:** `ALTER TABLE … SPLIT AT`/`UNSPLIT AT`/`SCATTER` range administration
 - **CockroachDB:** column families (`FAMILY name (cols)`)
+- **CockroachDB:** `ALTER TABLE … SET LOCALITY …`; `CONFIGURE ZONE USING …`
 - **Trino:** `CREATE VIEW … SECURITY {DEFINER|INVOKER}` (and optional `COMMENT`)
 - **Trino:** `ALTER TABLE … EXECUTE proc(…)`; `SET ROLE`; `SET TIME ZONE`; `DENY`
 - **Databricks:** liquid clustering `ALTER TABLE … CLUSTER BY (…)` / `CLUSTER BY NONE`
