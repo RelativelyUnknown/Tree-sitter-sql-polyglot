@@ -36,6 +36,8 @@ export default grammar(base, {
     [$.timestamp],
     // `*` starts both a plain all_fields and a transformed one.
     [$.all_fields_transform, $.all_fields],
+    // Consecutive INTO clauses in a multi-table INSERT.
+    [$.insert_into_clause],
     // Comma-position LATERAL fn(...) as a relation overlaps with the base
     // JOIN LATERAL / CROSS JOIN LATERAL join forms and their trailing alias;
     // GLR explores each until ON / ',' / end disambiguates.
@@ -205,9 +207,32 @@ export default grammar(base, {
     ),
 
     // ── DML: add RETURNING to INSERT / UPDATE / DELETE (#116) ───────────────
-    _insert_statement: $ => seq(
-      $.insert,
-      optional($.returning),
+    _insert_statement: $ => choice(
+      seq($.insert, optional($.returning)),
+      $.multi_table_insert,
+    ),
+
+    // INSERT [OVERWRITE] ALL INTO … INTO … SELECT …            (unconditional)
+    // INSERT [OVERWRITE] {ALL|FIRST} WHEN c THEN INTO … [ELSE INTO …] SELECT …
+    multi_table_insert: $ => seq(
+      $.keyword_insert,
+      optional($.keyword_overwrite),
+      choice(
+        seq($.keyword_all, repeat1($.insert_into_clause)),
+        seq(
+          choice($.keyword_all, $.keyword_first),
+          repeat1(seq($.keyword_when, $._expression, $.keyword_then, repeat1($.insert_into_clause))),
+          optional(seq($.keyword_else, repeat1($.insert_into_clause))),
+        ),
+      ),
+      $._dml_read,
+    ),
+
+    insert_into_clause: $ => seq(
+      $.keyword_into,
+      $.object_reference,
+      optional(paren_list($.identifier, true)),
+      optional(seq($.keyword_values, paren_list($._expression, true))),
     ),
 
     _update_statement: $ => seq(

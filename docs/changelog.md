@@ -16,6 +16,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **Spark / Databricks / BigQuery / Snowflake:** `GROUP BY ALL`
 - **Snowflake:** `START WITH … CONNECT BY … PRIOR` hierarchical queries
 - **Snowflake:** `SELECT * [ILIKE '…'] [EXCLUDE …] [RENAME …]` column transformers
+- **Snowflake:** multi-table `INSERT ALL`/`INSERT FIRST … WHEN … THEN INTO …`
 - **Oracle:** `PIVOT` / `UNPIVOT`
 - **Oracle:** `MATCH_RECOGNIZE` row-pattern recognition
 - **PostgreSQL:** `CREATE DOMAIN`
