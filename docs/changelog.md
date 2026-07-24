@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file. See [commit
 
 ### Features
 
+- **PostgreSQL / SQLite / CockroachDB / DuckDB:** `ON CONFLICT (col) [WHERE …] | ON CONSTRAINT name` upsert targets
 - **T-SQL:** `IDENTITY[(seed, increment)]` column property; computed columns `col AS (expr) [PERSISTED]`
 - **T-SQL:** `CREATE TYPE … AS TABLE (…)` (table-valued) and `CREATE TYPE … FROM base_type` (alias)
 - **BigQuery:** `PIVOT` / `UNPIVOT`
