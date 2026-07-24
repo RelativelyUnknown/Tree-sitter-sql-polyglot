@@ -39,4 +39,25 @@ export default {
     $.keyword_clone,
     $.object_reference,
   ),
+
+  // Spark view: the base view plus the data-source form
+  //   CREATE [OR REPLACE] [TEMPORARY] VIEW [IF NOT EXISTS] name [(cols)]
+  //     [USING source] [OPTIONS (…)] [COMMENT '…'] [TBLPROPERTIES (…)]
+  //     [AS query]
+  // AS is optional here because a USING-backed temporary view has no query.
+  create_view: $ => prec.right(seq(
+    $.keyword_create,
+    optional($._or_replace),
+    optional($._temporary),
+    optional($.keyword_recursive),
+    $.keyword_view,
+    optional($._if_not_exists),
+    $.object_reference,
+    optional(paren_list($.identifier)),
+    optional($.table_using),
+    optional($.table_options),
+    optional(seq($.keyword_comment, alias($._literal_string, $.literal))),
+    optional(seq($.keyword_tblproperties, paren_list($.table_option, true))),
+    optional(seq($.keyword_as, $.create_query)),
+  )),
 };

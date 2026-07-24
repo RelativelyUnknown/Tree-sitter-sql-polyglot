@@ -22,6 +22,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **Spark / Databricks / BigQuery / Snowflake:** `GROUP BY ALL`
 - **Spark / Databricks:** `INSERT {INTO|OVERWRITE} TABLE …` keyword form; `INSERT INTO … BY NAME`
 - **Spark / Databricks:** Delta time travel in `FROM` (`table {VERSION|TIMESTAMP} AS OF …`)
+- **Spark:** `CREATE [TEMPORARY] VIEW … USING source [OPTIONS (…)]` data-source views (optional `AS query`)
 - **Snowflake:** `START WITH … CONNECT BY … PRIOR` hierarchical queries
 - **Snowflake:** `SELECT * [ILIKE '…'] [EXCLUDE …] [RENAME …]` column transformers
 - **Snowflake:** multi-table `INSERT ALL`/`INSERT FIRST … WHEN … THEN INTO …`
