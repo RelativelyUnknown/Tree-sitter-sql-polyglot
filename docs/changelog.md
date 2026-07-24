@@ -30,6 +30,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **DuckDB:** `UNION`/`EXCEPT`/`INTERSECT … BY NAME`
 - **DuckDB:** `USING SAMPLE` clause
 - **Teradata:** character-column attributes `[NOT] CASESPECIFIC`, `UPPERCASE`, `TITLE`
+- **Teradata:** `CREATE {JOIN|HASH} INDEX … AS SELECT … [PRIMARY INDEX (…)]`
 - **SAP HANA:** `SELECT TOP n`; `ALTER TABLE … ADD (col type, …)` parenthesized column list
 - **SAP HANA:** SQLScript control flow (`IF`/`ELSEIF`/`ELSE`, `WHILE … DO`, `FOR … IN a..b DO`, `BREAK`/`CONTINUE`)
 - **MariaDB:** `CREATE OR REPLACE TABLE`

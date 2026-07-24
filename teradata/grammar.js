@@ -33,7 +33,21 @@ export default grammar(base, {
   rules: {
 
     // Re-add non-ANSI CREATE forms this dialect supports over the strict ANSI base.
-    _create_statement: $ => seq(choice(...createStatementChoices($, { index: true }))),
+    _create_statement: $ => seq(choice(...createStatementChoices($, { index: true }), $.create_join_index)),
+
+    // CREATE {JOIN | HASH} INDEX name AS SELECT … [PRIMARY INDEX (…)]
+    create_join_index: $ => prec.right(seq(
+      $.keyword_create,
+      choice($.keyword_join, $.keyword_hash),
+      $.keyword_index,
+      $.object_reference,
+      optional($._if_not_exists),
+      $.keyword_as,
+      $.create_query,
+      optional($.primary_index),
+    )),
+
+    keyword_hash: _ => token(prec(1, make_keyword("hash"))),
 
     // base statement dispatch plus Teradata statement forms
     statement: $ => seq(
