@@ -46,6 +46,27 @@ export default grammar(base, {
       optional($.returning),
     ),
 
+    // base insert plus INSERT INTO FUNCTION f(…) and a trailing FORMAT clause
+    // (INSERT INTO t [(cols)] FORMAT fmt; the row data itself is out of band).
+    insert: $ => seq(
+      $.keyword_insert,
+      optional($.keyword_into),
+      choice(
+        seq($.keyword_function, $.invocation),
+        $.object_reference,
+      ),
+      optional(seq($.keyword_as, field('alias', $.identifier))),
+      choice(
+        $._insert_values,
+        $._set_values,
+        seq(
+          optional(alias($._column_list, $.list)),
+          $.keyword_format,
+          field('format', $.identifier),
+        ),
+      ),
+    ),
+
 
     statement: $ => seq(
       optional(seq(

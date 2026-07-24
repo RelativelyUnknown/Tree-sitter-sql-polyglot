@@ -61,6 +61,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **Databricks:** `COPY INTO … FROM … FILEFORMAT = … [PATTERN|FILES|FORMAT_OPTIONS|COPY_OPTIONS …]`
 - **ClickHouse:** `GLOBAL JOIN` (distributed-query broadcast)
 - **ClickHouse:** `SELECT *` column transformers (`EXCEPT`/`APPLY`/`REPLACE`)
+- **ClickHouse:** `INSERT INTO … [(cols)] FORMAT fmt`; `INSERT INTO FUNCTION f(…) …`
 - **Db2:** `LABEL ON {TABLE|COLUMN} … IS '…'`
 - **Db2:** temporal queries `FOR {SYSTEM_TIME|BUSINESS_TIME} {AS OF|BETWEEN … AND …|FROM … TO …}`
 - **Db2:** `DECLARE GLOBAL TEMPORARY TABLE … [ON COMMIT {PRESERVE|DELETE} ROWS]`
