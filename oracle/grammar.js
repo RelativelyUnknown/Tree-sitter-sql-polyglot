@@ -184,6 +184,8 @@ export default grammar(base, {
         choice(
           $.subquery,
           $.invocation,
+          $.json_table,
+          $.xmltable,
           $.object_reference,
           wrapped_in_parenthesis($.values),
         ),
@@ -199,6 +201,49 @@ export default grammar(base, {
         ),
       ),
     ),
+
+    // JSON_TABLE(expr, 'path' COLUMNS ( col type [PATH 'p'] [, …] ))
+    json_table: $ => seq(
+      $.keyword_json_table,
+      '(',
+      $._expression,
+      ',',
+      alias($._literal_string, $.literal),
+      $.keyword_columns,
+      '(',
+      comma_list($.json_table_column, true),
+      ')',
+      ')',
+    ),
+
+    json_table_column: $ => seq(
+      field('name', $.identifier),
+      $._type,
+      optional(seq($.keyword_path, alias($._literal_string, $.literal))),
+    ),
+
+    // XMLTABLE('xpath' [PASSING expr] COLUMNS col type [PATH 'p'] [, …])
+    xmltable: $ => seq(
+      $.keyword_xmltable,
+      '(',
+      alias($._literal_string, $.literal),
+      optional(seq($.keyword_passing, $._expression)),
+      $.keyword_columns,
+      comma_list($.xmltable_column, true),
+      ')',
+    ),
+
+    xmltable_column: $ => seq(
+      field('name', $.identifier),
+      $._type,
+      optional(seq($.keyword_path, alias($._literal_string, $.literal))),
+    ),
+
+    keyword_json_table: _ => token(prec(1, make_keyword("json_table"))),
+    keyword_xmltable:   _ => token(prec(1, make_keyword("xmltable"))),
+    keyword_columns:    _ => token(prec(1, make_keyword("columns"))),
+    keyword_path:       _ => token(prec(1, make_keyword("path"))),
+    keyword_passing:    _ => token(prec(1, make_keyword("passing"))),
 
     // PIVOT ( agg [alias] [, …] FOR col IN ( value [alias] [, …] ) )
     pivot_clause: $ => seq(

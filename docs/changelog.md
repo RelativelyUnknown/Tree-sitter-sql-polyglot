@@ -32,6 +32,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **Oracle:** `FIRST`/`LAST` aggregates `fn(…) KEEP (DENSE_RANK {FIRST|LAST} ORDER BY …) [OVER (…)]`
 - **Oracle:** `CREATE TABLE … ORGANIZATION {HEAP|INDEX|EXTERNAL}` (index-organized tables)
 - **Oracle:** `CREATE [OR REPLACE] TRIGGER … [DECLARE …] BEGIN … END` PL/SQL block body
+- **Oracle:** `JSON_TABLE(…)` and `XMLTABLE(…)` with `COLUMNS (…)` projection in `FROM`
 - **PostgreSQL:** `CREATE DOMAIN`
 - **PostgreSQL:** foreign-data DDL: `CREATE SERVER`, `CREATE FOREIGN TABLE` (with `OPTIONS`)
 - **PostgreSQL:** `CREATE CAST (… AS …) {WITH FUNCTION|WITHOUT FUNCTION|WITH INOUT} [AS ASSIGNMENT|IMPLICIT]`
