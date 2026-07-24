@@ -300,6 +300,7 @@ export default grammar(hive, {
           $.lateral_subquery,
           $.values,
         ),
+        optional($.time_travel),
         optional($.tablesample),
         optional(choice($.pivot_clause, $.unpivot_clause)),
         optional(
@@ -310,6 +311,17 @@ export default grammar(hive, {
         ),
       ),
     ),
+
+    // Delta time travel: table {VERSION|TIMESTAMP} AS OF value (optionally FOR).
+    time_travel: $ => seq(
+      optional($.keyword_for),
+      choice($.keyword_version, $.keyword_timestamp),
+      $.keyword_as,
+      $.keyword_of,
+      $._expression,
+    ),
+
+    keyword_version: _ => token(prec(1, make_keyword("version"))),
 
     // Override from to add: LATERAL VIEW, QUALIFY, CLUSTER/DISTRIBUTE/SORT BY
     from: $ => seq(
