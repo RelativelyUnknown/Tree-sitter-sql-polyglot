@@ -32,6 +32,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **PostgreSQL:** `CREATE DOMAIN`
 - **PostgreSQL:** foreign-data DDL: `CREATE SERVER`, `CREATE FOREIGN TABLE` (with `OPTIONS`)
 - **PostgreSQL:** `CREATE CAST (… AS …) {WITH FUNCTION|WITHOUT FUNCTION|WITH INOUT} [AS ASSIGNMENT|IMPLICIT]`
+- **SQLite:** `CREATE TRIGGER … BEGIN stmt; … END` statement-list body
 - **SQLite:** `GLOB` and `MATCH` pattern operators
 - **SQLite:** `RETURNING` on `UPDATE` and `DELETE`
 - **DuckDB:** `UNION`/`EXCEPT`/`INTERSECT … BY NAME`

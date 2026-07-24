@@ -133,6 +133,29 @@ export default grammar(base, {
       ),
     ),
 
+    // SQLite trigger with a BEGIN … END statement-list body (base mandates the
+    // Postgres EXECUTE FUNCTION tail instead).
+    create_trigger: $ => seq(
+      $.keyword_create,
+      optional($._temporary),
+      $.keyword_trigger,
+      optional($._if_not_exists),
+      $.object_reference,
+      optional(choice(
+        $.keyword_before,
+        $.keyword_after,
+        seq($.keyword_instead, $.keyword_of),
+      )),
+      $._create_trigger_event,
+      $.keyword_on,
+      $.object_reference,
+      optional(seq($.keyword_for, $.keyword_each, $.keyword_row)),
+      optional(seq($.keyword_when, $._expression)),
+      $.keyword_begin,
+      repeat1(seq(choice($._dml_write, $._dml_read), ';')),
+      $.keyword_end,
+    ),
+
     // Override create_table to support WITHOUT ROWID and STRICT table options
     create_table: $ => prec.left(
       seq(
