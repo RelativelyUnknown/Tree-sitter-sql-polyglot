@@ -65,6 +65,35 @@ export default grammar(base, {
 
     keyword_global: _ => token(prec(1, make_keyword("global"))),
 
+    // CREATE TABLE … ORGANIZE BY {ROW | COLUMN | DIMENSIONS (cols) | (cols)}
+    // BLU column-organized tables and multidimensional clustering (MDC).
+    create_table: $ => prec.left(seq(
+      $.keyword_create,
+      optional($._temporary),
+      $.keyword_table,
+      optional($._if_not_exists),
+      $.object_reference,
+      seq(
+        optional($.column_definitions),
+        optional(seq($.keyword_as, $.create_query)),
+      ),
+      optional($.organize_by_clause),
+    )),
+
+    organize_by_clause: $ => seq(
+      $.keyword_organize,
+      $.keyword_by,
+      choice(
+        $.keyword_row,
+        $.keyword_column,
+        seq($.keyword_dimensions, wrapped_in_parenthesis(comma_list($.identifier, true))),
+        wrapped_in_parenthesis(comma_list($.identifier, true)),
+      ),
+    ),
+
+    keyword_organize:   _ => token(prec(1, make_keyword("organize"))),
+    keyword_dimensions: _ => token(prec(1, make_keyword("dimensions"))),
+
     // LABEL ON {TABLE ref | COLUMN ref.col} IS 'string' (comment sibling)
     label_statement: $ => seq(
       $.keyword_label,

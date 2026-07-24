@@ -55,6 +55,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **Db2:** `LABEL ON {TABLE|COLUMN} … IS '…'`
 - **Db2:** temporal queries `FOR {SYSTEM_TIME|BUSINESS_TIME} {AS OF|BETWEEN … AND …|FROM … TO …}`
 - **Db2:** `DECLARE GLOBAL TEMPORARY TABLE … [ON COMMIT {PRESERVE|DELETE} ROWS]`
+- **Db2:** `CREATE TABLE … ORGANIZE BY {ROW|COLUMN|DIMENSIONS (…)|(…)}` (BLU column-organized tables and multidimensional clustering)
 - **Spanner:** generated columns `col AS (expr) STORED`; `CREATE VIEW … SQL SECURITY {INVOKER|DEFINER}`
 - **Spanner:** `CREATE SEQUENCE … OPTIONS (…)`
 - **Flink:** `LATERAL TABLE(func(…)) AS t(cols)` table-function join
