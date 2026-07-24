@@ -58,6 +58,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **Db2:** `CREATE TABLE … ORGANIZE BY {ROW|COLUMN|DIMENSIONS (…)|(…)}` (BLU column-organized tables and multidimensional clustering)
 - **Spanner:** generated columns `col AS (expr) STORED`; `CREATE VIEW … SQL SECURITY {INVOKER|DEFINER}`
 - **Spanner:** `CREATE SEQUENCE … OPTIONS (…)`
+- **Spanner:** `ALTER DATABASE … SET OPTIONS (…)`; `ALTER TABLE … {ADD|REPLACE|DROP} ROW DELETION POLICY`
 - **Flink:** `LATERAL TABLE(func(…)) AS t(cols)` table-function join
 - **Flink:** `MATCH_RECOGNIZE` row-pattern recognition
 - **Athena:** `VACUUM`; `ALTER TABLE … ADD/DROP PARTITION`, `SET LOCATION`

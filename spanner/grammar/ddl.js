@@ -22,6 +22,33 @@ export default {
     ),
   ),
 
+  // ALTER DATABASE db SET OPTIONS (key = value, …)
+  alter_database: $ => seq(
+    $.keyword_alter,
+    $.keyword_database,
+    $.identifier,
+    $.keyword_set,
+    $.options_clause,
+  ),
+
+  // base _alter_specifications plus ALTER TABLE … {ADD|REPLACE} ROW DELETION
+  // POLICY (…) and DROP ROW DELETION POLICY.
+  _alter_specifications: $ => choice(
+    $.add_column,
+    $.add_constraint,
+    $.drop_constraint,
+    $.alter_column,
+    $.modify_column,
+    $.change_column,
+    $.drop_column,
+    $.rename_object,
+    $.rename_column,
+    $.set_schema,
+    $.change_ownership,
+    seq(choice($.keyword_add, $.keyword_replace), $.row_deletion_policy),
+    seq($.keyword_drop, $.keyword_row, $.keyword_deletion, $.keyword_policy),
+  ),
+
   table_primary_key: $ => seq(
     $.keyword_primary,
     $.keyword_key,
