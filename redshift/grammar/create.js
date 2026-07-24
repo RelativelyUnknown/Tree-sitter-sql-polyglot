@@ -83,6 +83,21 @@ export default {
     paren_list($.identifier, true),
   ),
 
+  // CREATE MATERIALIZED VIEW mv [BACKUP YES|NO] [AUTO REFRESH YES|NO] AS query
+  create_materialized_view: $ => prec.right(seq(
+    $.keyword_create,
+    $.keyword_materialized,
+    $.keyword_view,
+    optional($._if_not_exists),
+    $.object_reference,
+    repeat(choice(
+      seq($.keyword_backup, choice($.keyword_yes, $.keyword_no)),
+      seq($.keyword_auto, $.keyword_refresh, choice($.keyword_yes, $.keyword_no)),
+    )),
+    $.keyword_as,
+    $.create_query,
+  )),
+
   // Override _create_statement to add Redshift-specific CREATE variants
   _create_statement: $ => seq(
     choice(

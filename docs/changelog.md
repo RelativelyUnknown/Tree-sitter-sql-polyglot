@@ -34,6 +34,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **MariaDB:** `CREATE OR REPLACE TABLE`
 - **Redshift:** `ALTER TABLE … APPEND FROM`
 - **Redshift:** `CREATE EXTERNAL FUNCTION … LAMBDA … IAM_ROLE …`
+- **Redshift:** `CREATE MATERIALIZED VIEW … [BACKUP|AUTO REFRESH] {YES|NO}`
 - **Hive:** `ALTER TABLE … [PARTITION (…)] CONCATENATE`
 - **Hive:** `EXPORT`/`IMPORT TABLE`; `CREATE TEMPORARY MACRO`
 - **CockroachDB:** `ALTER TABLE … SPLIT AT`/`UNSPLIT AT`/`SCATTER` range administration

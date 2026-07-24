@@ -164,6 +164,8 @@ export default grammar(base, {
     keyword_interleaved:  _ => token(prec(1, make_keyword("interleaved"))),
     keyword_even:         _ => token(prec(1, make_keyword("even"))),
     keyword_auto:         _ => token(prec(1, make_keyword("auto"))),
+    keyword_yes:          _ => token(prec(1, make_keyword("yes"))),
+    keyword_backup:       _ => token(prec(1, make_keyword("backup"))),
 
     // EXTERNAL SCHEMA / TABLE
     keyword_stored:       _ => token(prec(1, make_keyword("stored"))),
