@@ -48,6 +48,23 @@ export default grammar(base, {
       $.label_statement,
     ),
 
+    // DECLARE GLOBAL TEMPORARY TABLE name (cols) [ON COMMIT {PRESERVE|DELETE} ROWS] …
+    declare_global_temporary_table: $ => seq(
+      $.keyword_declare,
+      $.keyword_global,
+      $.keyword_temporary,
+      $.keyword_table,
+      $.object_reference,
+      optional($.column_definitions),
+      repeat(choice(
+        seq($.keyword_on, $.keyword_commit, choice($.keyword_preserve, $.keyword_delete), $.keyword_rows),
+        seq($.keyword_not, $.keyword_logged),
+        seq($.keyword_with, $.keyword_replace),
+      )),
+    ),
+
+    keyword_global: _ => token(prec(1, make_keyword("global"))),
+
     // LABEL ON {TABLE ref | COLUMN ref.col} IS 'string' (comment sibling)
     label_statement: $ => seq(
       $.keyword_label,
@@ -75,6 +92,7 @@ export default grammar(base, {
         optional_parenthesis($._dml_read),
         $._transaction_statement,
         $.compound_statement,
+        $.declare_global_temporary_table,
         $.declare_statement,
         $.set_variable_statement,
         $.if_statement,
