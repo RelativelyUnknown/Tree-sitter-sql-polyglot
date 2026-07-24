@@ -1,5 +1,5 @@
 import spark from '../spark/grammar.js';
-import { optional_parenthesis, paren_list, comma_list, make_keyword } from '../grammar/helpers.js';
+import { optional_parenthesis, paren_list, comma_list, wrapped_in_parenthesis, make_keyword } from '../grammar/helpers.js';
 
 import vacuum_rules   from './grammar/vacuum.js';
 import optimize_rules from './grammar/optimize.js';
@@ -73,6 +73,7 @@ export default grammar(spark, {
       $.grant_statement,
       $.revoke_statement,
       $.deny_statement,
+      $.copy_into_statement,
       // Databricks / Spark UNLOAD (Athena)
       $._unload_statement,
       // Databricks CACHE
@@ -254,6 +255,40 @@ export default grammar(spark, {
     keyword_credential: _ => token(prec(1, make_keyword("credential"))),
     keyword_share:      _ => token(prec(1, make_keyword("share"))),
     keyword_files:      _ => token(prec(1, make_keyword("files"))),
+    keyword_copy:          _ => token(prec(1, make_keyword("copy"))),
+    keyword_fileformat:    _ => token(prec(1, make_keyword("fileformat"))),
+    keyword_pattern:       _ => token(prec(1, make_keyword("pattern"))),
+    keyword_validate:      _ => token(prec(1, make_keyword("validate"))),
+    keyword_format_options: _ => token(prec(1, /[Ff][Oo][Rr][Mm][Aa][Tt]_[Oo][Pp][Tt][Ii][Oo][Nn][Ss]/)),
+    keyword_copy_options:   _ => token(prec(1, /[Cc][Oo][Pp][Yy]_[Oo][Pp][Tt][Ii][Oo][Nn][Ss]/)),
+
+    // COPY INTO t FROM {'src' | (SELECT … FROM 'src')}
+    //   [FILEFORMAT = fmt] [VALIDATE …] [PATTERN = 'glob'] [FILES = ('a','b')]
+    //   [FORMAT_OPTIONS (…)] [COPY_OPTIONS (…)]
+    copy_into_statement: $ => seq(
+      $.keyword_copy,
+      $.keyword_into,
+      $.object_reference,
+      $.keyword_from,
+      choice(
+        alias($._literal_string, $.literal),
+        wrapped_in_parenthesis($._dml_read),
+      ),
+      repeat(choice(
+        seq($.keyword_fileformat, '=', $.identifier),
+        seq($.keyword_pattern, '=', alias($._literal_string, $.literal)),
+        seq($.keyword_files, '=', paren_list(alias($._literal_string, $.literal), true)),
+        seq($.keyword_format_options, paren_list($._copy_option, true)),
+        seq($.keyword_copy_options, paren_list($._copy_option, true)),
+        seq($.keyword_validate, optional($.keyword_all), optional($._dml_read)),
+      )),
+    ),
+
+    _copy_option: $ => seq(
+      alias($._literal_string, $.literal),
+      '=',
+      alias($._literal_string, $.literal),
+    ),
     keyword_file:       _ => token(prec(1, make_keyword("file"))),
     keyword_catalog:    _ => token(prec(1, make_keyword("catalog"))),
     keyword_describe:   _ => token(prec(1, make_keyword("describe"))),
