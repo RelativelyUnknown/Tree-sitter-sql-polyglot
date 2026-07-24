@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **BigQuery:** `FOR SYSTEM_TIME AS OF` time travel
 - **BigQuery:** UDF/TVF/procedure DDL: SQL `AS (expr)`, `CREATE TABLE FUNCTION … AS SELECT`, `CREATE PROCEDURE … BEGIN … END`
 - **BigQuery:** `LOAD DATA {INTO|OVERWRITE} … FROM FILES (…)`
+- **BigQuery:** `CREATE SNAPSHOT TABLE … CLONE … [FOR SYSTEM_TIME AS OF …] [OPTIONS (…)]`
 - **MySQL:** `STRAIGHT_JOIN` join type; `ALTER TABLE … ALGORITHM=`/`LOCK=` online-DDL options
 - **MySQL:** multi-table `DELETE` (`DELETE t1, t2 FROM …` and `DELETE FROM t1, t2 USING …`)
 - **MySQL:** full-text `MATCH (…) AGAINST (… [IN BOOLEAN/NATURAL LANGUAGE MODE])`

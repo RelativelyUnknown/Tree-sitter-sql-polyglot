@@ -159,8 +159,25 @@ export default grammar(base, {
         )),
         // BigQuery-specific
         $.create_model,
+        $.create_snapshot_table,
       ),
     ),
+
+    // CREATE SNAPSHOT TABLE [IF NOT EXISTS] name CLONE source
+    //   [FOR SYSTEM_TIME AS OF t] [OPTIONS (…)]
+    create_snapshot_table: $ => prec.right(seq(
+      $.keyword_create,
+      $.keyword_snapshot,
+      $.keyword_table,
+      optional($._if_not_exists),
+      $.object_reference,
+      $.keyword_clone,
+      $.object_reference,
+      optional($.for_system_time_as_of),
+      optional($.options_clause),
+    )),
+
+    keyword_clone: _ => make_keyword("clone"),
 
     // ── term: allow SELECT * EXCEPT / REPLACE ──────────────────────────────
     term: $ => seq(
