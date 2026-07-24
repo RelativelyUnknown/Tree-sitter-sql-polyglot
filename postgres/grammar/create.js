@@ -2,6 +2,24 @@ import { paren_list, comma_list } from "../../grammar/helpers.js";
 
 export default {
 
+  // CREATE CAST (source AS target) {WITH FUNCTION f | WITHOUT FUNCTION | WITH INOUT}
+  //   [AS ASSIGNMENT | AS IMPLICIT]
+  create_cast: $ => seq(
+    $.keyword_create,
+    $.keyword_cast,
+    '(',
+    $._type,
+    $.keyword_as,
+    $._type,
+    ')',
+    choice(
+      seq($.keyword_with, $.keyword_function, $.object_reference, optional($.function_arguments)),
+      seq($.keyword_without, $.keyword_function),
+      seq($.keyword_with, $.keyword_inout),
+    ),
+    optional(seq($.keyword_as, choice($.keyword_assignment, $.keyword_implicit))),
+  ),
+
   // CREATE DOMAIN name [AS] type [DEFAULT expr] [ [CONSTRAINT c] {NULL|NOT NULL|CHECK(expr)} … ]
   create_domain: $ => seq(
     $.keyword_create,
