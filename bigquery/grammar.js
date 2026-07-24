@@ -114,9 +114,29 @@ export default grammar(base, {
       $.revoke_statement,
       // BigQuery additions
       $.export_data,
+      $.load_data_statement,
       $.assert_statement,
       $.comment_statement,
     ),
+
+    // LOAD DATA {INTO|OVERWRITE} table [(cols)] [OPTIONS(…)] FROM FILES (k = v, …)
+    load_data_statement: $ => seq(
+      $.keyword_load,
+      $.keyword_data,
+      choice($.keyword_into, $.keyword_overwrite),
+      $.object_reference,
+      optional($.column_definitions),
+      optional($.options_clause),
+      $.keyword_from,
+      $.keyword_files,
+      '(',
+      comma_list(seq($.identifier, '=', $._expression), true),
+      ')',
+    ),
+
+    keyword_load:      _ => token(prec(1, make_keyword("load"))),
+    keyword_files:     _ => token(prec(1, make_keyword("files"))),
+    keyword_overwrite: _ => token(prec(1, make_keyword("overwrite"))),
 
     // ── CREATE: add BigQuery CREATE types ──────────────────────────────────
     _create_statement: $ => seq(
