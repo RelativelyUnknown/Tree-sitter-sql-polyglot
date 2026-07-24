@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file. See [commit
 - **BigQuery:** UDF/TVF/procedure DDL: SQL `AS (expr)`, `CREATE TABLE FUNCTION … AS SELECT`, `CREATE PROCEDURE … BEGIN … END`
 - **MySQL:** `STRAIGHT_JOIN` join type; `ALTER TABLE … ALGORITHM=`/`LOCK=` online-DDL options
 - **MySQL:** multi-table `DELETE` (`DELETE t1, t2 FROM …` and `DELETE FROM t1, t2 USING …`)
+- **MySQL:** full-text `MATCH (…) AGAINST (… [IN BOOLEAN/NATURAL LANGUAGE MODE])`
 - **Spark / Databricks / BigQuery / Snowflake:** `GROUP BY ALL`
 - **Snowflake:** `START WITH … CONNECT BY … PRIOR` hierarchical queries
 - **Snowflake:** `SELECT * [ILIKE '…'] [EXCLUDE …] [RENAME …]` column transformers

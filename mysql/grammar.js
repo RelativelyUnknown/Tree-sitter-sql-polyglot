@@ -440,6 +440,7 @@ export default grammar(base, {
     _expression: $ => prec(1,
       choice(
         $.user_variable,
+        $.match_against,
         $.literal,
         alias($._qualified_field, $.field),
         $.parameter,
@@ -459,6 +460,29 @@ export default grammar(base, {
         $.parenthesized_expression,
       ),
     ),
+
+    // Full-text search: MATCH (col, …) AGAINST (expr [search modifier])
+    match_against: $ => seq(
+      $.keyword_match,
+      '(',
+      comma_list(alias($._qualified_field, $.field), true),
+      ')',
+      $.keyword_against,
+      '(',
+      $._expression,
+      optional(choice(
+        seq($.keyword_in, $.keyword_boolean, $.keyword_mode),
+        seq($.keyword_in, $.keyword_natural, $.keyword_language, $.keyword_mode,
+            optional(seq($.keyword_with, $.keyword_query, $.keyword_expansion))),
+        seq($.keyword_with, $.keyword_query, $.keyword_expansion),
+      )),
+      ')',
+    ),
+
+    keyword_match:     _ => token(prec(1, make_keyword("match"))),
+    keyword_against:   _ => token(prec(1, make_keyword("against"))),
+    keyword_query:     _ => token(prec(1, make_keyword("query"))),
+    keyword_expansion: _ => token(prec(1, make_keyword("expansion"))),
 
     _backtick_quoted_string: _ => /`[^`]*`/,
 
