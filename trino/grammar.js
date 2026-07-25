@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { optional_parenthesis, paren_list, comma_list, make_keyword } from '../grammar/helpers.js';
 import { createStatementChoices } from '../grammar/statements/create.js';
 import trino_statement_rules from './grammar/statements.js';
 import trino_type_rules     from './grammar/types.js';
@@ -43,6 +43,8 @@ export default grammar(base, {
     [$.array_type, $.array],
     // set_session_statement vs set_statement (both start with SET SESSION)
     [$.set_session_statement, $.set_statement],
+    // SET SESSION AUTHORIZATION vs SET SESSION var = value (shared SET SESSION prefix)
+    [$.set_session_statement, $.set_session_authorization_statement],
   ],
 
   rules: {
@@ -87,8 +89,82 @@ export default grammar(base, {
         $.describe_statement,
         $.analyze_statement,
         $.comment_on_statement,
+        $.deny_statement,
+        $.set_role_statement,
+        $.set_time_zone_statement,
+        $.set_path_statement,
+        $.set_session_authorization_statement,
       ),
     ),
+
+    // DENY privilege [, …] ON object TO grantee [, …]
+    deny_statement: $ => seq(
+      $.keyword_deny,
+      $._privilege_list,
+      $.keyword_on,
+      $._grant_object,
+      $.keyword_to,
+      $._grantee_list,
+    ),
+
+    // SET ROLE {role | ALL | NONE}
+    set_role_statement: $ => seq(
+      $.keyword_set,
+      $.keyword_role,
+      choice($.keyword_all, $.keyword_none, $.identifier),
+    ),
+
+    // SET TIME ZONE {LOCAL | expr}
+    set_time_zone_statement: $ => seq(
+      $.keyword_set,
+      $.keyword_time,
+      $.keyword_zone,
+      choice($.keyword_local, $._expression),
+    ),
+
+    // SET PATH element [, …]  (each element is [catalog.]schema)
+    set_path_statement: $ => seq(
+      $.keyword_set,
+      $.keyword_path,
+      comma_list($.object_reference, true),
+    ),
+
+    keyword_path: _ => make_keyword("path"),
+
+    // SET SESSION AUTHORIZATION { user | 'user' }
+    set_session_authorization_statement: $ => seq(
+      $.keyword_set,
+      $.keyword_session,
+      $.keyword_authorization,
+      choice($.identifier, alias($._literal_string, $.literal)),
+    ),
+
+    // Add ALTER TABLE … EXECUTE proc(arg => value, …) to the base alter specs.
+    _alter_specifications: $ => choice(
+      $.add_column,
+      $.add_constraint,
+      $.drop_constraint,
+      $.alter_column,
+      $.modify_column,
+      $.change_column,
+      $.drop_column,
+      $.rename_object,
+      $.rename_column,
+      $.set_schema,
+      $.change_ownership,
+      seq(
+        $.keyword_execute,
+        $.identifier,
+        optional(seq(
+          '(',
+          comma_list(choice(seq($.identifier, '=>', $._expression), $._expression), true),
+          ')',
+        )),
+        optional($.where),
+      ),
+    ),
+
+    keyword_deny: _ => token(prec(1, make_keyword("deny"))),
 
     // Override _expression to add lambda
     _expression: $ => prec(1,
@@ -216,6 +292,20 @@ export default grammar(base, {
     // that are strict prefixes of the base keywords below. Explicit precedence
     // beats match length in the tree-sitter lexer, so without an equal-prec
     // re-declaration the longer keyword becomes unlexable in this dialect.
+    // CREATE [OR REPLACE] VIEW … [COMMENT '…'] [SECURITY {DEFINER|INVOKER}] AS query
+    create_view: $ => prec.right(seq(
+      $.keyword_create,
+      optional($._or_replace),
+      $.keyword_view,
+      optional($._if_not_exists),
+      $.object_reference,
+      optional(paren_list($.identifier)),
+      optional(seq($.keyword_comment, alias($._literal_string, $.literal))),
+      optional(seq($.keyword_security, choice($.keyword_definer, $.keyword_invoker))),
+      $.keyword_as,
+      $.create_query,
+    )),
+
     keyword_definer: _ => token(prec(1, make_keyword("definer"))),
     keyword_matched: _ => token(prec(1, make_keyword("matched"))),
     keyword_percent: _ => token(prec(1, make_keyword("percent"))),

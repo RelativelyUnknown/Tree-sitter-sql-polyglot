@@ -114,9 +114,29 @@ export default grammar(base, {
       $.revoke_statement,
       // BigQuery additions
       $.export_data,
+      $.load_data_statement,
       $.assert_statement,
       $.comment_statement,
     ),
+
+    // LOAD DATA {INTO|OVERWRITE} table [(cols)] [OPTIONS(…)] FROM FILES (k = v, …)
+    load_data_statement: $ => seq(
+      $.keyword_load,
+      $.keyword_data,
+      choice($.keyword_into, $.keyword_overwrite),
+      $.object_reference,
+      optional($.column_definitions),
+      optional($.options_clause),
+      $.keyword_from,
+      $.keyword_files,
+      '(',
+      comma_list(seq($.identifier, '=', $._expression), true),
+      ')',
+    ),
+
+    keyword_load:      _ => token(prec(1, make_keyword("load"))),
+    keyword_files:     _ => token(prec(1, make_keyword("files"))),
+    keyword_overwrite: _ => token(prec(1, make_keyword("overwrite"))),
 
     // ── CREATE: add BigQuery CREATE types ──────────────────────────────────
     _create_statement: $ => seq(
@@ -139,8 +159,25 @@ export default grammar(base, {
         )),
         // BigQuery-specific
         $.create_model,
+        $.create_snapshot_table,
       ),
     ),
+
+    // CREATE SNAPSHOT TABLE [IF NOT EXISTS] name CLONE source
+    //   [FOR SYSTEM_TIME AS OF t] [OPTIONS (…)]
+    create_snapshot_table: $ => prec.right(seq(
+      $.keyword_create,
+      $.keyword_snapshot,
+      $.keyword_table,
+      optional($._if_not_exists),
+      $.object_reference,
+      $.keyword_clone,
+      $.object_reference,
+      optional($.for_system_time_as_of),
+      optional($.options_clause),
+    )),
+
+    keyword_clone: _ => token(prec(1, make_keyword("clone"))),
 
     // ── term: allow SELECT * EXCEPT / REPLACE ──────────────────────────────
     term: $ => seq(
@@ -216,7 +253,9 @@ export default grammar(base, {
           wrapped_in_parenthesis($.values),
           $.unnest,
         ),
+        optional($.for_system_time_as_of),
         optional($.tablesample),
+        optional(choice($.pivot_clause, $.unpivot_clause)),
         optional(
           seq(
             $._alias,
@@ -224,6 +263,19 @@ export default grammar(base, {
           ),
         ),
       ),
+    ),
+
+    keyword_pivot:      _ => token(prec(1, make_keyword("pivot"))),
+    keyword_unpivot:    _ => token(prec(1, make_keyword("unpivot"))),
+    keyword_system_time: _ => token(prec(1, /[Ss][Yy][Ss][Tt][Ee][Mm]_[Tt][Ii][Mm][Ee]/)),
+
+    // FOR SYSTEM_TIME AS OF <timestamp>: time-travel table reference.
+    for_system_time_as_of: $ => seq(
+      $.keyword_for,
+      $.keyword_system_time,
+      $.keyword_as,
+      $.keyword_of,
+      field('time_point', $._expression),
     ),
 
     // ── identifier: add backtick quoting ────────────────────────────────────

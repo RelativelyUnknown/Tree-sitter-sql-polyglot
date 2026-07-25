@@ -26,7 +26,7 @@ architecture and the parent/child dependency chains.
 ```bash
 npm run generate            # base grammar
 npm run generate:spark      # a single dialect
-npm run generate:all        # base + all 17 dialects
+npm run generate:all        # base + all 22 dialects
 ```
 
 Generation uses a content hash to skip `tree-sitter generate` when the relevant grammar files haven't
@@ -36,7 +36,7 @@ changed, saving ~60s on repeated runs. To force regeneration regardless:
 npm run generate:force
 ```
 
-A change to the base grammar ripples to all 17 parsers — regenerate and test all of them. Changing a
+A change to the base grammar ripples to all 22 parsers, so regenerate and test all of them. Changing a
 dialect requires regenerating its child too (`databricks` after `spark`/`hive`; `mariadb` after `mysql`).
 
 ### 3. Run the tests
@@ -92,12 +92,12 @@ Run `make format` before committing to normalise spacing.
 3. Wire it into the relevant dispatch list in `grammar/statements/index.js`
    (e.g. `_ddl_statement`, `_drop_statement`).
 4. If the statement uses new keywords, add them to `grammar/keywords.js` using `make_keyword()`.
-   **All keyword tokens must live in the base** `grammar/keywords.js` — tree-sitter's keyword
+   **All keyword tokens must live in the base** `grammar/keywords.js`, because tree-sitter's keyword
    extraction only runs on the base grammar, even for keywords that are only used by one dialect.
 5. If the keyword is reachable from the base grammar, add it to `queries/highlights.scm` as a
    `@keyword` capture. Keywords only reachable through a dialect override go in that dialect's
-   `<dialect>/queries/highlights.scm` instead — adding them to the base file fails the sync check.
-6. Run `npm run generate && npm run test:keywords` — the sync check fails if step 5 is wrong.
+   `<dialect>/queries/highlights.scm` instead; adding them to the base file fails the sync check.
+6. Run `npm run generate && npm run test:keywords`; the sync check fails if step 5 is wrong.
 7. Add corpus tests in `test/corpus/` (or `<dialect>/test/corpus/` for a dialect feature).
 
 ### A note on overrides and conflicts
@@ -105,7 +105,7 @@ Run `make format` before committing to normalise spacing.
 A dialect override **replaces** the base rule entirely. When overriding a `choice`/dispatch rule
 (e.g. `_ddl_statement`, `from`, `statement`, `_column_constraint`), you must **re-enumerate every base
 alternative** plus your additions, or you will silently drop features. Likewise, each dialect declares
-its own `conflicts` array — base conflicts do **not** propagate, so a new GLR conflict introduced in the
+its own `conflicts` array, and base conflicts do **not** propagate, so a new GLR conflict introduced in the
 base must be added to every dialect's `conflicts` array too.
 
 ## Adding a New SQL Dialect
@@ -160,12 +160,12 @@ Pushing the tag triggers CI to build artifacts and publish to npm, crates.io, an
 The docs site (`docs/`) is a [VitePress](https://vitepress.dev/) site, deployed to GitHub Pages by
 `.github/workflows/pages.yml` on every push to `main`. Only `docs/index.md`, `docs/changelog.md`, and
 `docs/.vitepress/*` are hand-written; `docs/coverage.md` and `docs/downloads.md` are generated
-(gitignored — never commit them).
+(gitignored, never commit them).
 
 ```bash
 npm install
 npm run generate:all                     # optional but required for a real (non-stub) coverage page
-pip install pyyaml && python tools/scorecard.py   # optional — writes docs/coverage.md
+pip install pyyaml && python tools/scorecard.py   # optional, writes docs/coverage.md
 npm run docs:dev
 ```
 

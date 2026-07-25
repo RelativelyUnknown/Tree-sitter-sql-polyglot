@@ -6,6 +6,83 @@ All notable changes to this project will be documented in this file. See [commit
 
 ### Features
 
+- **Base (ANSI):** named `CONSTRAINT fk FOREIGN KEY (…) REFERENCES … [ON DELETE/UPDATE …]` table constraints
+- **PostgreSQL / SQLite / CockroachDB / DuckDB:** `ON CONFLICT (col) [WHERE …] | ON CONSTRAINT name` upsert targets
+- **T-SQL:** `IDENTITY[(seed, increment)]` column property; computed columns `col AS (expr) [PERSISTED]`
+- **T-SQL:** `CREATE TYPE … AS TABLE (…)` (table-valued) and `CREATE TYPE … FROM base_type` (alias)
+- **T-SQL:** select-list variable assignment (`SELECT @v = expr`)
+- **BigQuery:** `PIVOT` / `UNPIVOT`
+- **BigQuery:** `FOR SYSTEM_TIME AS OF` time travel
+- **BigQuery:** UDF/TVF/procedure DDL: SQL `AS (expr)`, `CREATE TABLE FUNCTION … AS SELECT`, `CREATE PROCEDURE … BEGIN … END`
+- **BigQuery:** `LOAD DATA {INTO|OVERWRITE} … FROM FILES (…)`
+- **BigQuery:** `CREATE SNAPSHOT TABLE … CLONE … [FOR SYSTEM_TIME AS OF …] [OPTIONS (…)]`
+- **MySQL:** `STRAIGHT_JOIN` join type; `ALTER TABLE … ALGORITHM=`/`LOCK=` online-DDL options
+- **MySQL:** multi-table `DELETE` (`DELETE t1, t2 FROM …` and `DELETE FROM t1, t2 USING …`)
+- **MySQL:** full-text `MATCH (…) AGAINST (… [IN BOOLEAN/NATURAL LANGUAGE MODE])`
+- **MySQL / MariaDB:** `SELECT … INTO {OUTFILE 'f' [CHARACTER SET …] [FIELDS …] [LINES …] | DUMPFILE 'f'}`
+- **Spark / Databricks / BigQuery / Snowflake:** `GROUP BY ALL`
+- **Spark / Databricks:** `INSERT {INTO|OVERWRITE} TABLE …` keyword form; `INSERT INTO … BY NAME`
+- **Spark / Databricks:** Delta time travel in `FROM` (`table {VERSION|TIMESTAMP} AS OF …`)
+- **Spark:** `CREATE [TEMPORARY] VIEW … USING source [OPTIONS (…)]` data-source views (optional `AS query`)
+- **Snowflake:** `START WITH … CONNECT BY … PRIOR` hierarchical queries
+- **Snowflake:** `SELECT * [ILIKE '…'] [EXCLUDE …] [RENAME …]` column transformers
+- **Snowflake:** multi-table `INSERT ALL`/`INSERT FIRST … WHEN … THEN INTO …`
+- **Oracle:** `PIVOT` / `UNPIVOT`
+- **Oracle:** `MATCH_RECOGNIZE` row-pattern recognition
+- **Oracle:** `FIRST`/`LAST` aggregates `fn(…) KEEP (DENSE_RANK {FIRST|LAST} ORDER BY …) [OVER (…)]`
+- **Oracle:** `CREATE TABLE … ORGANIZATION {HEAP|INDEX|EXTERNAL}` (index-organized tables)
+- **Oracle:** `CREATE [OR REPLACE] TRIGGER … [DECLARE …] BEGIN … END` PL/SQL block body
+- **Oracle:** `JSON_TABLE(…)` and `XMLTABLE(…)` with `COLUMNS (…)` projection in `FROM`
+- **PostgreSQL:** `CREATE DOMAIN`
+- **PostgreSQL:** foreign-data DDL: `CREATE SERVER`, `CREATE FOREIGN TABLE` (with `OPTIONS`)
+- **PostgreSQL:** `CREATE CAST (… AS …) {WITH FUNCTION|WITHOUT FUNCTION|WITH INOUT} [AS ASSIGNMENT|IMPLICIT]`
+- **SQLite:** `CREATE TRIGGER … BEGIN stmt; … END` statement-list body
+- **SQLite:** `GLOB` and `MATCH` pattern operators
+- **SQLite:** `RETURNING` on `UPDATE` and `DELETE`
+- **DuckDB:** `UNION`/`EXCEPT`/`INTERSECT … BY NAME`
+- **DuckDB:** `USING SAMPLE` clause
+- **DuckDB:** open-ended list slicing (`l[2:]`, `l[:3]`, `l[:]`)
+- **Teradata:** character-column attributes `[NOT] CASESPECIFIC`, `UPPERCASE`, `TITLE`
+- **Teradata:** `CREATE {JOIN|HASH} INDEX … AS SELECT … [PRIMARY INDEX (…)]`
+- **Teradata:** atomic UPSERT `UPDATE … SET … [WHERE …] ELSE INSERT …`
+- **Teradata:** `CREATE TABLE … AS … WITH [NO] DATA [AND [NO] STATISTICS]`
+- **SAP HANA:** `SELECT TOP n`; `ALTER TABLE … ADD (col type, …)` parenthesized column list
+- **SAP HANA:** SQLScript control flow (`IF`/`ELSEIF`/`ELSE`, `WHILE … DO`, `FOR … IN a..b DO`, `BREAK`/`CONTINUE`)
+- **SAP HANA:** SQLScript table-variable assignment (`tabvar = SELECT …`)
+- **MariaDB:** `CREATE OR REPLACE TABLE`
+- **Redshift:** `ALTER TABLE … APPEND FROM`
+- **Redshift:** `CREATE EXTERNAL FUNCTION … LAMBDA … IAM_ROLE …`
+- **Redshift:** `CREATE MATERIALIZED VIEW … [BACKUP|AUTO REFRESH] {YES|NO}`
+- **Redshift:** `CREATE DATASHARE`; `ALTER DATASHARE … {ADD|REMOVE} {TABLE|SCHEMA} …`
+- **Redshift:** `CREATE MODEL … FROM … TARGET … FUNCTION … IAM_ROLE … SETTINGS (…)` (Redshift ML)
+- **Hive:** `ALTER TABLE … [PARTITION (…)] CONCATENATE`
+- **Hive:** `EXPORT`/`IMPORT TABLE`; `CREATE TEMPORARY MACRO`
+- **Hive / Spark:** role DDL (`GRANT`/`REVOKE ROLE`, `SET ROLE`, `SHOW [CURRENT] ROLES`, `SHOW ROLE GRANT`)
+- **CockroachDB:** `ALTER TABLE … SPLIT AT`/`UNSPLIT AT`/`SCATTER` range administration
+- **CockroachDB:** column families (`FAMILY name (cols)`)
+- **CockroachDB:** `ALTER TABLE … SET LOCALITY …`; `CONFIGURE ZONE USING …`
+- **Trino:** `CREATE VIEW … SECURITY {DEFINER|INVOKER}` (and optional `COMMENT`)
+- **Trino:** `ALTER TABLE … EXECUTE proc(…)`; `SET ROLE`; `SET TIME ZONE`; `DENY`
+- **Trino:** `SET PATH …`; `SET SESSION AUTHORIZATION {user|'user'}`
+- **Databricks:** liquid clustering `ALTER TABLE … CLUSTER BY (…)` / `CLUSTER BY NONE`
+- **Databricks:** `CREATE MATERIALIZED VIEW … [SCHEDULE [REFRESH] {CRON …|EVERY n unit}] AS …`
+- **Databricks:** `COPY INTO … FROM … FILEFORMAT = … [PATTERN|FILES|FORMAT_OPTIONS|COPY_OPTIONS …]`
+- **ClickHouse:** `GLOBAL JOIN` (distributed-query broadcast)
+- **ClickHouse:** `x GLOBAL [NOT] IN (…)` distributed IN
+- **ClickHouse:** `SELECT *` column transformers (`EXCEPT`/`APPLY`/`REPLACE`)
+- **ClickHouse:** `INSERT INTO … [(cols)] FORMAT fmt`; `INSERT INTO FUNCTION f(…) …`
+- **Db2:** `LABEL ON {TABLE|COLUMN} … IS '…'`
+- **Db2:** temporal queries `FOR {SYSTEM_TIME|BUSINESS_TIME} {AS OF|BETWEEN … AND …|FROM … TO …}`
+- **Db2:** `DECLARE GLOBAL TEMPORARY TABLE … [ON COMMIT {PRESERVE|DELETE} ROWS]`
+- **Db2:** `CREATE TABLE … ORGANIZE BY {ROW|COLUMN|DIMENSIONS (…)|(…)}` (BLU column-organized tables and multidimensional clustering)
+- **Spanner:** generated columns `col AS (expr) STORED`; `CREATE VIEW … SQL SECURITY {INVOKER|DEFINER}`
+- **Spanner:** `CREATE SEQUENCE … OPTIONS (…)`
+- **Spanner:** `ALTER DATABASE … SET OPTIONS (…)`; `ALTER TABLE … {ADD|REPLACE|DROP} ROW DELETION POLICY`
+- **Flink:** `LATERAL TABLE(func(…)) AS t(cols)` table-function join
+- **Flink:** `MATCH_RECOGNIZE` row-pattern recognition
+- **Athena:** `VACUUM`; `ALTER TABLE … ADD/DROP PARTITION`, `SET LOCATION`
+- **Athena:** `OPTIMIZE … REWRITE DATA USING BIN_PACK [WHERE …]` (Iceberg compaction)
+- **Athena:** managed `CREATE TABLE … [PARTITIONED BY (transform(…))] [LOCATION …] TBLPROPERTIES ('table_type'='ICEBERG')`
 - **Base (ANSI):** `SAVEPOINT` / `RELEASE SAVEPOINT` / `ROLLBACK TO SAVEPOINT`; `START TRANSACTION` with `ISOLATION LEVEL` and `READ ONLY`/`READ WRITE` modes; `BEGIN`/`COMMIT`/`ROLLBACK WORK` (#86)
 - **PostgreSQL:** `FOR UPDATE`/`SHARE` locking clause with `NOWAIT`/`SKIP LOCKED`; `LOCK TABLE … IN … MODE` (#86); `GRANT … ON ALL TABLES/SEQUENCES/FUNCTIONS IN SCHEMA` (#87); `SELECT DISTINCT ON (…)` (#88); `ILIKE`/`NOT ILIKE` operators (#89); `PREPARE`/`EXECUTE`/`DEALLOCATE` (#90); `DELETE … USING` and `CALL` (#91); `EXPLAIN ( option … )` (#92)
 - **Redshift:** `GRANT … ON ALL TABLES/FUNCTIONS/PROCEDURES IN SCHEMA` (#87)
@@ -41,6 +118,7 @@ All notable changes to this project will be documented in this file. See [commit
 
 ### Bug Fixes
 
+- **Spanner:** restore `SELECT … FOR UPDATE`, which the inherited BigQuery `FOR SYSTEM_TIME AS OF` clause shadowed
 - **MariaDB:** restore MySQL features dropped by the `_column_constraint` override (`AUTO_INCREMENT`, `STORED`/`VIRTUAL` generated columns, FK `ON DELETE/UPDATE` actions)
 - **Databricks:** restore `iceberg_write_order` and `DISTRIBUTED BY PARTITION` dropped by the `_alter_specifications` override
 - **Base:** fix `_decimal_number` consuming the first dot of Oracle's `..` range operator

@@ -28,10 +28,11 @@ export default {
     ')',
   ),
 
-  // Override create_table to allow WITH SYSTEM VERSIONING at the end
+  // Override create_table to allow OR REPLACE and WITH SYSTEM VERSIONING.
   create_table: $ => prec.left(
     seq(
       $.keyword_create,
+      optional($._or_replace),
       optional($._temporary),
       $.keyword_table,
       optional($._if_not_exists),

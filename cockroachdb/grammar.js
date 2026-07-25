@@ -1,5 +1,5 @@
 import postgres from '../postgres/grammar.js';
-import { comma_list, optional_parenthesis, wrapped_in_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { comma_list, optional_parenthesis, wrapped_in_parenthesis, paren_list, make_keyword } from '../grammar/helpers.js';
 import crdb_statement_rules from './grammar/statements.js';
 
 // CockroachDB SQL — PostgreSQL-compatible by design (wire protocol and
@@ -23,6 +23,10 @@ export default grammar(postgres, {
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
     [$.interval],
+    // SPLIT AT VALUES (…) shares the base `values` rule with a top-level VALUES.
+    [$.values],
+    // SET LOCALITY and SET SCHEMA both begin ALTER TABLE … SET.
+    [$._alter_specifications],
   ],
 
   rules: {
@@ -131,6 +135,82 @@ export default grammar(postgres, {
       optional($.tablespace),
       optional($.where),
     ),
+
+    // Extend _alter_specifications (re-enumerate the inherited base set) with
+    // CockroachDB range administration: SPLIT AT / UNSPLIT AT / SCATTER.
+    _alter_specifications: $ => choice(
+      $.add_column,
+      $.add_constraint,
+      $.drop_constraint,
+      $.alter_column,
+      $.modify_column,
+      $.change_column,
+      $.drop_column,
+      $.rename_object,
+      $.rename_column,
+      $.set_schema,
+      $.change_ownership,
+      $.split_at,
+      $.unsplit_at,
+      $.keyword_scatter,
+      // Multi-region: SET LOCALITY {GLOBAL | REGIONAL [BY ROW|TABLE]}
+      seq(
+        $.keyword_set,
+        $.keyword_locality,
+        choice(
+          $.keyword_global,
+          seq($.keyword_regional, optional(seq($.keyword_by, choice($.keyword_row, $.keyword_table)))),
+        ),
+      ),
+      // CONFIGURE ZONE {USING var = expr [, …] | DISCARD}
+      seq(
+        $.keyword_configure,
+        $.keyword_zone,
+        choice(
+          seq($.keyword_using, comma_list(seq($.identifier, '=', $._expression), true)),
+          $.keyword_discard,
+        ),
+      ),
+    ),
+
+    split_at: $ => seq(
+      $.keyword_split,
+      $.keyword_at,
+      $.values,
+      optional(seq($.keyword_with, $.keyword_expiration, $._expression)),
+    ),
+
+    unsplit_at: $ => choice(
+      seq($.keyword_unsplit, $.keyword_at, $.values),
+      seq($.keyword_unsplit, $.keyword_all),
+    ),
+
+    // Column families: FAMILY [name] (col, …) as a table-level element.
+    constraint: $ => choice(
+      $._constraint_literal,
+      $._key_constraint,
+      $._primary_key_constraint,
+      $._check_constraint,
+      $.family_def,
+    ),
+
+    family_def: $ => seq(
+      $.keyword_family,
+      optional($.identifier),
+      paren_list($.identifier, true),
+    ),
+
+    keyword_family:     _ => token(prec(1, make_keyword("family"))),
+    keyword_locality:   _ => token(prec(1, make_keyword("locality"))),
+    keyword_regional:   _ => token(prec(1, make_keyword("regional"))),
+    keyword_global:     _ => token(prec(1, make_keyword("global"))),
+    keyword_configure:  _ => token(prec(1, make_keyword("configure"))),
+    keyword_discard:    _ => token(prec(1, make_keyword("discard"))),
+    keyword_split:      _ => token(prec(1, make_keyword("split"))),
+    keyword_unsplit:    _ => token(prec(1, make_keyword("unsplit"))),
+    keyword_scatter:    _ => token(prec(1, make_keyword("scatter"))),
+    keyword_at:         _ => token(prec(1, make_keyword("at"))),
+    keyword_expiration: _ => token(prec(1, make_keyword("expiration"))),
 
     // CockroachDB-specific keywords (dialect-level per AGENTS.md; token(prec(1))
     // biases the lexer over plain identifiers)

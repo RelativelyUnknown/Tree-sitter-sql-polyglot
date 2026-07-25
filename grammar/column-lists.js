@@ -123,7 +123,28 @@ export default {
       ),
       seq(
         $._check_constraint
-      )
+      ),
+      // Named FOREIGN KEY: CONSTRAINT fk FOREIGN KEY (cols) REFERENCES t (cols) [ON …]
+      seq(
+        optional($.keyword_foreign),
+        $.keyword_key,
+        $.ordered_columns,
+        $.keyword_references,
+        $.object_reference,
+        paren_list($.identifier, true),
+        repeat(
+          seq(
+            $.keyword_on,
+            choice($.keyword_delete, $.keyword_update),
+            choice(
+              seq($.keyword_no, $.keyword_action),
+              $.keyword_restrict,
+              $.keyword_cascade,
+              seq($.keyword_set, choice($.keyword_null, $.keyword_default)),
+            ),
+          ),
+        ),
+      ),
     )
   ),
 

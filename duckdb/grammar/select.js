@@ -1,4 +1,4 @@
-import { comma_list, wrapped_in_parenthesis, optional_parenthesis, paren_list } from '../../grammar/helpers.js';
+import { comma_list, wrapped_in_parenthesis, optional_parenthesis, paren_list, make_keyword } from '../../grammar/helpers.js';
 
 export default {
 
@@ -21,6 +21,22 @@ export default {
     $.keyword_qualify,
     $._expression,
   ),
+
+  // Set operations with the DuckDB `BY NAME` modifier, which matches columns by
+  // name rather than by position: `SELECT … UNION ALL BY NAME SELECT …`.
+  set_operation: $ => seq(
+    $._select_statement,
+    repeat1(seq(
+      field('operation', choice(
+        seq($.keyword_union, optional(choice($.keyword_all, $.keyword_distinct)), optional($._by_name)),
+        seq($.keyword_except, optional($.keyword_all), optional($._by_name)),
+        seq($.keyword_intersect, optional($.keyword_all), optional($._by_name)),
+      )),
+      $._select_statement,
+    )),
+  ),
+
+  _by_name: $ => seq($.keyword_by, $.keyword_name),
 
   // * EXCLUDE (col1, col2)
   all_fields_exclude: $ => seq(
@@ -89,6 +105,7 @@ export default {
         $.positional_join,
       ),
     ),
+    optional($.using_sample),
     optional($.where),
     optional($.group_by),
     optional($.having),
@@ -98,6 +115,21 @@ export default {
     optional($.limit),
     optional($.offset_fetch_clause),
   ),
+
+  // USING SAMPLE n [%|ROWS|PERCENT] | USING SAMPLE method(n [%])
+  using_sample: $ => seq(
+    $.keyword_using,
+    $.keyword_sample,
+    choice(
+      $.invocation,
+      seq(
+        alias($._integer, $.literal),
+        optional(choice('%', $.keyword_percent, $.keyword_rows)),
+      ),
+    ),
+  ),
+
+  keyword_sample: _ => token(prec(1, make_keyword("sample"))),
 
   // FROM-first syntax: FROM t [WHERE ...] [SELECT ...]
   from_first_select: $ => seq(
@@ -114,6 +146,7 @@ export default {
         $.positional_join,
       ),
     ),
+    optional($.using_sample),
     optional($.where),
     optional($.group_by),
     optional($.having),

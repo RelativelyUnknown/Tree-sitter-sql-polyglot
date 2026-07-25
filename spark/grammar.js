@@ -151,6 +151,10 @@ export default grammar(hive, {
       $.call_statement,
       $.grant_statement,
       $.revoke_statement,
+      // inherited Hive role DDL
+      $.grant_role,
+      $.revoke_role,
+      $.set_role_statement,
     ),
 
     // Override set_statement to add scripting assignment: SET var = expr
@@ -238,7 +242,7 @@ export default grammar(hive, {
       ),
     )),
 
-    // Spark SQL: INSERT OVERWRITE ... PARTITION (...)
+    // Spark SQL: INSERT {INTO|OVERWRITE} [TABLE] ref [PARTITION (...)] [BY NAME] …
     insert: $ => seq(
       choice(
         $.keyword_insert,
@@ -251,6 +255,7 @@ export default grammar(hive, {
           $.keyword_overwrite,
         ),
       ),
+      optional($.keyword_table),
       $.object_reference,
       optional($.table_partition),
       optional(
@@ -259,6 +264,7 @@ export default grammar(hive, {
           field('alias', $.identifier)
         ),
       ),
+      optional(seq($.keyword_by, $.keyword_name)),
       choice(
         $._insert_values,
         $._set_values,
@@ -270,6 +276,10 @@ export default grammar(hive, {
         ),
       ),
     ),
+
+    // Plain keyword (no elevated precedence) so a column literally named
+    // `name` still lexes as an identifier outside the INSERT … BY NAME context.
+    keyword_name: _ => make_keyword("name"),
 
     // Override term to support SELECT * EXCEPT
     term: $ => seq(
@@ -294,6 +304,7 @@ export default grammar(hive, {
           $.lateral_subquery,
           $.values,
         ),
+        optional($.time_travel),
         optional($.tablesample),
         optional(choice($.pivot_clause, $.unpivot_clause)),
         optional(
@@ -304,6 +315,17 @@ export default grammar(hive, {
         ),
       ),
     ),
+
+    // Delta time travel: table {VERSION|TIMESTAMP} AS OF value (optionally FOR).
+    time_travel: $ => seq(
+      optional($.keyword_for),
+      choice($.keyword_version, $.keyword_timestamp),
+      $.keyword_as,
+      $.keyword_of,
+      $._expression,
+    ),
+
+    keyword_version: _ => token(prec(1, make_keyword("version"))),
 
     // Override from to add: LATERAL VIEW, QUALIFY, CLUSTER/DISTRIBUTE/SORT BY
     from: $ => seq(

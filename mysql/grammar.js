@@ -27,6 +27,8 @@ export default grammar(base, {
     [$.alter_partition],
     [$.declare_statement, $.declare_cursor_statement, $.declare_condition_statement, $.declare_handler_statement],
     [$.statement, $.declare_handler_statement],
+    // DELETE t1, t2 FROM …: targets look like relations until FROM appears.
+    [$.relation, $._delete_target],
   ],
 
   rules: {
@@ -119,6 +121,7 @@ export default grammar(base, {
       ),
     ),
 
+
     insert: $ => seq(
       choice(
         $.keyword_insert,
@@ -172,22 +175,57 @@ export default grammar(base, {
       optional($.order_by),
       optional($.limit),
       optional($.offset_fetch_clause),
+      optional($.into_outfile),
+    ),
+
+    // MySQL DELETE: single-table plus the two multi-table forms.
+    //   DELETE FROM t WHERE …                          (single, base _delete_from)
+    //   DELETE t1[.*], t2[.*] FROM t1 JOIN t2 …        (targets before FROM)
+    //   DELETE FROM t1, t2 USING t1 JOIN t2 …          (USING form)
+    _delete_statement: $ => seq(
+      $.delete,
+      choice(
+        alias($._delete_from, $.from),
+        seq(
+          comma_list($._delete_target, true),
+          $.from,
+        ),
+        seq(
+          $.keyword_from,
+          comma_list($._delete_target, true),
+          $.keyword_using,
+          comma_list($.relation, true),
+          repeat(choice($.join, $.cross_join, $.lateral_join, $.lateral_cross_join)),
+          optional($.where),
+        ),
+      ),
+    ),
+
+    _delete_target: $ => seq(
+      $.object_reference,
+      optional(seq('.', '*')),
     ),
 
     join: $ => seq(
       optional($.keyword_natural),
-      optional(
-        choice(
-          $.keyword_left,
-          seq($.keyword_full, $.keyword_outer),
-          seq($.keyword_left, $.keyword_outer),
-          $.keyword_right,
-          seq($.keyword_right, $.keyword_outer),
-          $.keyword_inner,
-          $.keyword_full,
+      choice(
+        seq(
+          optional(
+            choice(
+              $.keyword_left,
+              seq($.keyword_full, $.keyword_outer),
+              seq($.keyword_left, $.keyword_outer),
+              $.keyword_right,
+              seq($.keyword_right, $.keyword_outer),
+              $.keyword_inner,
+              $.keyword_full,
+            ),
+          ),
+          $.keyword_join,
         ),
+        // MySQL STRAIGHT_JOIN forces the optimizer to read the left table first.
+        $.keyword_straight_join,
       ),
-      $.keyword_join,
       $.relation,
       optional($.index_hint),
       optional($.join),
@@ -404,6 +442,7 @@ export default grammar(base, {
     _expression: $ => prec(1,
       choice(
         $.user_variable,
+        $.match_against,
         $.literal,
         alias($._qualified_field, $.field),
         $.parameter,
@@ -423,6 +462,29 @@ export default grammar(base, {
         $.parenthesized_expression,
       ),
     ),
+
+    // Full-text search: MATCH (col, …) AGAINST (expr [search modifier])
+    match_against: $ => seq(
+      $.keyword_match,
+      '(',
+      comma_list(alias($._qualified_field, $.field), true),
+      ')',
+      $.keyword_against,
+      '(',
+      $._expression,
+      optional(choice(
+        seq($.keyword_in, $.keyword_boolean, $.keyword_mode),
+        seq($.keyword_in, $.keyword_natural, $.keyword_language, $.keyword_mode,
+            optional(seq($.keyword_with, $.keyword_query, $.keyword_expansion))),
+        seq($.keyword_with, $.keyword_query, $.keyword_expansion),
+      )),
+      ')',
+    ),
+
+    keyword_match:     _ => token(prec(1, make_keyword("match"))),
+    keyword_against:   _ => token(prec(1, make_keyword("against"))),
+    keyword_query:     _ => token(prec(1, make_keyword("query"))),
+    keyword_expansion: _ => token(prec(1, make_keyword("expansion"))),
 
     _backtick_quoted_string: _ => /`[^`]*`/,
 
@@ -477,6 +539,11 @@ export default grammar(base, {
     keyword_fields:         _ => token(prec(1, make_keyword("fields"))),
     keyword_terminated:     _ => token(prec(1, make_keyword("terminated"))),
     keyword_lines:          _ => token(prec(1, make_keyword("lines"))),
+    keyword_outfile:        _ => token(prec(1, make_keyword("outfile"))),
+    keyword_dumpfile:       _ => token(prec(1, make_keyword("dumpfile"))),
+    // INTO is reserved in MySQL; bias the lexer so a trailing INTO OUTFILE is
+    // not mis-lexed as a relation alias identifier.
+    keyword_into:           _ => token(prec(1, make_keyword("into"))),
     keyword_rollup:         _ => token(prec(1, make_keyword("rollup"))),
     keyword_event:          _ => token(prec(1, make_keyword("event"))),
     keyword_every:          _ => token(prec(1, make_keyword("every"))),
@@ -552,7 +619,8 @@ export default grammar(base, {
     keyword_partitioning:       _ => token(prec(1, make_keyword("partitioning"))),
     keyword_linear:             _ => token(prec(1, make_keyword("linear"))),
 
-    // Extend _alter_specifications to include MySQL partition management
+    // Extend _alter_specifications to include MySQL partition management and
+    // the online-DDL options ALGORITHM= / LOCK= (comma-separated trailing items).
     _alter_specifications: $ => choice(
       $.add_column,
       $.add_constraint,
@@ -566,6 +634,22 @@ export default grammar(base, {
       $.set_schema,
       $.change_ownership,
       $.alter_partition,
+      $.alter_algorithm_option,
+      $.alter_lock_option,
+    ),
+
+    // ALGORITHM [=] {DEFAULT | INSTANT | INPLACE | COPY | NOCOPY}
+    alter_algorithm_option: $ => seq(
+      $.keyword_algorithm,
+      optional('='),
+      choice($.keyword_default, $.identifier),
+    ),
+
+    // LOCK [=] {DEFAULT | NONE | SHARED | EXCLUSIVE}
+    alter_lock_option: $ => seq(
+      $.keyword_lock,
+      optional('='),
+      choice($.keyword_default, $.identifier),
     ),
 
     // Override statement to include MySQL procedural constructs
@@ -624,6 +708,8 @@ export default grammar(base, {
     // beats match length in the tree-sitter lexer, so without an equal-prec
     // re-declaration the longer keyword becomes unlexable in this dialect.
     keyword_attribute: _ => token(prec(1, make_keyword("attribute"))),
+    keyword_straight_join: _ => token(prec(1, make_keyword("straight_join"))),
+    keyword_algorithm: _ => token(prec(1, make_keyword("algorithm"))),
     keyword_atomic: _ => token(prec(1, make_keyword("atomic"))),
     keyword_called: _ => token(prec(1, make_keyword("called"))),
     keyword_repeatable: _ => token(prec(1, make_keyword("repeatable"))),

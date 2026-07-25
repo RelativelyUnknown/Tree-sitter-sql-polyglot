@@ -88,13 +88,15 @@ export default {
   // Override relation to allow TABLE(window_tvf(...)), TABLE(invocation), temporal join sources
   relation: $ => prec.right(
     choice(
-      // Flink: TABLE(window_tvf_call) or TABLE(table_function)
+      // Flink: [LATERAL] TABLE(window_tvf_call) or TABLE(table_function),
+      // with an optional AS alias and column list (LATERAL TABLE join).
       seq(
+        optional($.keyword_lateral),
         $.keyword_table,
         '(',
         choice($.window_tvf, $.invocation),
         ')',
-        optional($._alias),
+        optional(seq($._alias, optional(alias($._column_list, $.list)))),
       ),
       // Flink: ML TVFs used directly in FROM
       seq(
@@ -111,6 +113,7 @@ export default {
         ),
         optional($.tablesample),
         optional($.for_system_time_as_of),
+        optional($.match_recognize_clause),
         optional(
           seq(
             $._alias,

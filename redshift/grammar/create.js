@@ -83,6 +83,68 @@ export default {
     paren_list($.identifier, true),
   ),
 
+  // CREATE MATERIALIZED VIEW mv [BACKUP YES|NO] [AUTO REFRESH YES|NO] AS query
+  create_materialized_view: $ => prec.right(seq(
+    $.keyword_create,
+    $.keyword_materialized,
+    $.keyword_view,
+    optional($._if_not_exists),
+    $.object_reference,
+    repeat(choice(
+      seq($.keyword_backup, choice($.keyword_yes, $.keyword_no)),
+      seq($.keyword_auto, $.keyword_refresh, choice($.keyword_yes, $.keyword_no)),
+    )),
+    $.keyword_as,
+    $.create_query,
+  )),
+
+  // CREATE MODEL name FROM {ref | (query)} [TARGET col] [FUNCTION fn]
+  //   [IAM_ROLE {DEFAULT|'arn'}] [AUTO {ON|OFF} | key value …]
+  //   [SETTINGS (key 'value', …)]  (Redshift ML)
+  create_model: $ => prec.right(seq(
+    $.keyword_create,
+    $.keyword_model,
+    optional($._if_not_exists),
+    $.object_reference,
+    $.keyword_from,
+    choice($.subquery, $.object_reference),
+    optional(seq($.keyword_target, $.identifier)),
+    optional(seq($.keyword_function, $.identifier)),
+    optional(seq($.keyword_iam_role, choice($.keyword_default, alias($._literal_string, $.literal)))),
+    repeat($.model_parameter),
+    optional(seq(
+      $.keyword_settings,
+      paren_list(seq(field('key', $.identifier), optional(alias($._literal_string, $.literal))), true),
+    )),
+  )),
+
+  model_parameter: $ => choice(
+    seq($.keyword_auto, choice($.keyword_on, $.keyword_off)),
+    seq(field('key', $.identifier), field('value', choice($.identifier, alias($._literal_string, $.literal)))),
+  ),
+
+  // CREATE DATASHARE ds [SET PUBLICACCESSIBLE {TRUE|FALSE}]
+  create_datashare: $ => seq(
+    $.keyword_create,
+    $.keyword_datashare,
+    optional($._if_not_exists),
+    $.object_reference,
+  ),
+
+  // ALTER DATASHARE ds {ADD|REMOVE} {TABLE ref | SCHEMA ref} [, …]
+  alter_datashare: $ => seq(
+    $.keyword_alter,
+    $.keyword_datashare,
+    $.object_reference,
+    repeat1(seq(
+      choice($.keyword_add, $.keyword_remove),
+      choice(
+        seq($.keyword_table, comma_list($.object_reference, true)),
+        seq($.keyword_schema, comma_list($.object_reference, true)),
+      ),
+    )),
+  ),
+
   // Override _create_statement to add Redshift-specific CREATE variants
   _create_statement: $ => seq(
     choice(
@@ -99,11 +161,34 @@ export default {
       $.create_trigger,
       $.create_external_schema,
       $.create_external_table,
+      $.create_external_function,
+      $.create_datashare,
+      $.create_model,
       prec.left(seq(
         $.create_schema,
         repeat($._create_statement),
       )),
     ),
+  ),
+
+  // CREATE [OR REPLACE] EXTERNAL FUNCTION name (argtype, …) RETURNS type
+  //   [VOLATILE|STABLE|IMMUTABLE] LAMBDA 'fn' IAM_ROLE 'arn:…'
+  create_external_function: $ => seq(
+    $.keyword_create,
+    optional($._or_replace),
+    $.keyword_external,
+    $.keyword_function,
+    $.object_reference,
+    '(',
+    optional(comma_list($._type, true)),
+    ')',
+    $.keyword_returns,
+    $._type,
+    optional(choice($.keyword_volatile, $.keyword_stable, $.keyword_immutable)),
+    $.keyword_lambda,
+    alias($._literal_string, $.literal),
+    $.keyword_iam_role,
+    alias($._literal_string, $.literal),
   ),
 
   // CREATE EXTERNAL SCHEMA [IF NOT EXISTS] name
@@ -176,6 +261,8 @@ export default {
     $.change_ownership,
     $.alter_diststyle_clause,
     $.alter_sortkey_clause,
+    // APPEND FROM src: move blocks from one table to another
+    seq($.keyword_append, $.keyword_from, $.object_reference),
     // ADD PARTITION (key=val, ...) LOCATION '...'
     seq(
       $.keyword_add, $.keyword_partition,

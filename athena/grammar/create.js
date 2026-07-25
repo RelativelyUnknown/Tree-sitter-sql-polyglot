@@ -38,6 +38,48 @@ export default {
     )),
   ),
 
+  // Managed (non-EXTERNAL) table: trino's create_table plus the Athena tails
+  //   [PARTITIONED BY (col | transform(col[, n]), …)]
+  //   [LOCATION 's3://…'] [TBLPROPERTIES ('k'='v', …)]
+  // TBLPROPERTIES('table_type'='ICEBERG') selects the managed Iceberg engine.
+  create_table: $ => prec.left(seq(
+    $.keyword_create,
+    optional($._temporary),
+    $.keyword_table,
+    optional($._if_not_exists),
+    $.object_reference,
+    seq(
+      optional($.column_definitions),
+      optional($.with_properties),
+      optional(seq($.keyword_as, $.create_query)),
+    ),
+    optional(seq(
+      $.keyword_partitioned, $.keyword_by,
+      paren_list($.partition_transform, true),
+    )),
+    optional(seq($.keyword_location, alias($._literal_string, $.literal))),
+    optional(seq(
+      $.keyword_tblproperties,
+      paren_list(seq(
+        field('key', alias($._literal_string, $.literal)),
+        '=',
+        field('value', alias($._literal_string, $.literal)),
+      ), true),
+    )),
+  )),
+
+  // Iceberg partition spec: bare column or a transform such as day(ts),
+  // bucket(16, id), truncate(10, name).
+  partition_transform: $ => choice(
+    seq(
+      field('transform', $.identifier),
+      '(',
+      comma_list(choice($.identifier, alias($._integer, $.literal)), true),
+      ')',
+    ),
+    field('column', $.identifier),
+  ),
+
   // ROW FORMAT SERDE 'class' [WITH SERDEPROPERTIES (k=v, ...)]
   // ROW FORMAT DELIMITED [FIELDS TERMINATED BY 'x'] [LINES TERMINATED BY 'x']
   row_format: $ => seq(

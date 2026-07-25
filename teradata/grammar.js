@@ -33,7 +33,21 @@ export default grammar(base, {
   rules: {
 
     // Re-add non-ANSI CREATE forms this dialect supports over the strict ANSI base.
-    _create_statement: $ => seq(choice(...createStatementChoices($, { index: true }))),
+    _create_statement: $ => seq(choice(...createStatementChoices($, { index: true }), $.create_join_index)),
+
+    // CREATE {JOIN | HASH} INDEX name AS SELECT … [PRIMARY INDEX (…)]
+    create_join_index: $ => prec.right(seq(
+      $.keyword_create,
+      choice($.keyword_join, $.keyword_hash),
+      $.keyword_index,
+      $.object_reference,
+      optional($._if_not_exists),
+      $.keyword_as,
+      $.create_query,
+      optional($.primary_index),
+    )),
+
+    keyword_hash: _ => token(prec(1, make_keyword("hash"))),
 
     // base statement dispatch plus Teradata statement forms
     statement: $ => seq(
@@ -54,6 +68,18 @@ export default grammar(base, {
         $.help_statement,
         $.compound_statement,
       ),
+    ),
+
+    // Atomic UPSERT: UPDATE … SET … [WHERE …] ELSE INSERT … (base update plus
+    // the trailing ELSE INSERT tail).
+    update: $ => seq(
+      $.keyword_update,
+      optional($.keyword_only),
+      choice(
+        $._mysql_update_statement,
+        $._postgres_update_statement,
+      ),
+      optional(seq($.keyword_else, $.insert)),
     ),
 
     // SEL / DEL abbreviations: the keyword tokens accept both spellings.
@@ -161,6 +187,9 @@ export default grammar(base, {
     keyword_none:       _ => token(prec(1, make_keyword("none"))),
     keyword_columns:    _ => token(prec(1, make_keyword("columns"))),
     keyword_compress:   _ => token(prec(1, make_keyword("compress"))),
+    keyword_casespecific: _ => token(prec(1, make_keyword("casespecific"))),
+    keyword_uppercase:  _ => token(prec(1, make_keyword("uppercase"))),
+    keyword_title:      _ => token(prec(1, make_keyword("title"))),
     keyword_share:      _ => token(prec(1, make_keyword("share"))),
 
     ...teradata_statement_rules,

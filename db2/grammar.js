@@ -45,7 +45,68 @@ export default grammar(base, {
       $.grant_statement,
       $.revoke_statement,
       $.comment_statement,
+      $.label_statement,
     ),
+
+    // DECLARE GLOBAL TEMPORARY TABLE name (cols) [ON COMMIT {PRESERVE|DELETE} ROWS] …
+    declare_global_temporary_table: $ => seq(
+      $.keyword_declare,
+      $.keyword_global,
+      $.keyword_temporary,
+      $.keyword_table,
+      $.object_reference,
+      optional($.column_definitions),
+      repeat(choice(
+        seq($.keyword_on, $.keyword_commit, choice($.keyword_preserve, $.keyword_delete), $.keyword_rows),
+        seq($.keyword_not, $.keyword_logged),
+        seq($.keyword_with, $.keyword_replace),
+      )),
+    ),
+
+    keyword_global: _ => token(prec(1, make_keyword("global"))),
+
+    // CREATE TABLE … ORGANIZE BY {ROW | COLUMN | DIMENSIONS (cols) | (cols)}
+    // BLU column-organized tables and multidimensional clustering (MDC).
+    create_table: $ => prec.left(seq(
+      $.keyword_create,
+      optional($._temporary),
+      $.keyword_table,
+      optional($._if_not_exists),
+      $.object_reference,
+      seq(
+        optional($.column_definitions),
+        optional(seq($.keyword_as, $.create_query)),
+      ),
+      optional($.organize_by_clause),
+    )),
+
+    organize_by_clause: $ => seq(
+      $.keyword_organize,
+      $.keyword_by,
+      choice(
+        $.keyword_row,
+        $.keyword_column,
+        seq($.keyword_dimensions, wrapped_in_parenthesis(comma_list($.identifier, true))),
+        wrapped_in_parenthesis(comma_list($.identifier, true)),
+      ),
+    ),
+
+    keyword_organize:   _ => token(prec(1, make_keyword("organize"))),
+    keyword_dimensions: _ => token(prec(1, make_keyword("dimensions"))),
+
+    // LABEL ON {TABLE ref | COLUMN ref.col} IS 'string' (comment sibling)
+    label_statement: $ => seq(
+      $.keyword_label,
+      $.keyword_on,
+      choice(
+        seq(optional($.keyword_table), $.object_reference),
+        seq($.keyword_column, alias($._qualified_field, $.object_reference)),
+      ),
+      $.keyword_is,
+      alias($._literal_string, $.literal),
+    ),
+
+    keyword_label: _ => token(prec(1, make_keyword("label"))),
 
     // Extend statement to add Db2 SQL PL procedural constructs
     statement: $ => seq(
@@ -60,6 +121,7 @@ export default grammar(base, {
         optional_parenthesis($._dml_read),
         $._transaction_statement,
         $.compound_statement,
+        $.declare_global_temporary_table,
         $.declare_statement,
         $.set_variable_statement,
         $.if_statement,
@@ -147,6 +209,7 @@ export default grammar(base, {
           wrapped_in_parenthesis($.values),
           $.data_change_table_reference,
         ),
+        optional($.temporal_clause),
         optional($.tablesample),
         optional(
           seq(
@@ -156,6 +219,20 @@ export default grammar(base, {
         ),
       ),
     ),
+
+    // FOR {SYSTEM_TIME | BUSINESS_TIME} {AS OF t | BETWEEN t AND t | FROM t TO t}
+    temporal_clause: $ => seq(
+      $.keyword_for,
+      choice($.keyword_system_time, $.keyword_business_time),
+      choice(
+        seq($.keyword_as, $.keyword_of, $._expression),
+        seq($.keyword_between, $._expression, $.keyword_and, $._expression),
+        seq($.keyword_from, $._expression, $.keyword_to, $._expression),
+      ),
+    ),
+
+    keyword_system_time:   _ => token(prec(1, /[Ss][Yy][Ss][Tt][Ee][Mm]_[Tt][Ii][Mm][Ee]/)),
+    keyword_business_time: _ => token(prec(1, /[Bb][Uu][Ss][Ii][Nn][Ee][Ss][Ss]_[Tt][Ii][Mm][Ee]/)),
 
     data_change_table_reference: $ => seq(
       choice(

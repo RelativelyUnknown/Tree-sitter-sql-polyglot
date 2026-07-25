@@ -59,6 +59,7 @@ export default grammar(base, {
       $.reset_statement,
       $.grant_statement,
       $.revoke_statement,
+      $.alter_datashare,
       $._optimize_statement,
       $.comment_statement,
     ),
@@ -130,6 +131,17 @@ export default grammar(base, {
     keyword_copy:         _ => token(prec(1, make_keyword("copy"))),
     keyword_unload:       _ => token(prec(1, make_keyword("unload"))),
     keyword_iam_role:     _ => token(prec(1, make_keyword("iam_role"))),
+    keyword_lambda:       _ => token(prec(1, make_keyword("lambda"))),
+    keyword_datashare:    _ => token(prec(1, make_keyword("datashare"))),
+    keyword_remove:       _ => token(prec(1, make_keyword("remove"))),
+    keyword_model:        _ => token(prec(1, make_keyword("model"))),
+    keyword_target:       _ => token(prec(1, make_keyword("target"))),
+    keyword_settings:     _ => token(prec(1, make_keyword("settings"))),
+    keyword_off:          _ => token(prec(1, make_keyword("off"))),
+    // keyword_off is a strict prefix of keyword_offset; explicit precedence
+    // beats match length in the lexer, so re-declare keyword_offset at equal
+    // precedence to keep OFFSET / FETCH and LIMIT … OFFSET lexable.
+    keyword_offset:       _ => token(prec(1, make_keyword("offset"))),
     keyword_ignoreheader: _ => token(prec(1, make_keyword("ignoreheader"))),
     keyword_maxfilesize:  _ => token(prec(1, make_keyword("maxfilesize"))),
     keyword_gzip:         _ => token(prec(1, make_keyword("gzip"))),
@@ -163,6 +175,8 @@ export default grammar(base, {
     keyword_interleaved:  _ => token(prec(1, make_keyword("interleaved"))),
     keyword_even:         _ => token(prec(1, make_keyword("even"))),
     keyword_auto:         _ => token(prec(1, make_keyword("auto"))),
+    keyword_yes:          _ => token(prec(1, make_keyword("yes"))),
+    keyword_backup:       _ => token(prec(1, make_keyword("backup"))),
 
     // EXTERNAL SCHEMA / TABLE
     keyword_stored:       _ => token(prec(1, make_keyword("stored"))),
@@ -189,6 +203,7 @@ export default grammar(base, {
     keyword_sequences:    _ => token(prec(1, make_keyword("sequences"))),
     keyword_functions:    _ => token(prec(1, make_keyword("functions"))),
     keyword_procedures:   _ => token(prec(1, make_keyword("procedures"))),
+    keyword_append:       _ => token(prec(1, make_keyword("append"))),
 
     // GRANT ... ON ALL TABLES/FUNCTIONS/PROCEDURES IN SCHEMA name (#87)
     _grant_object: $ => choice(

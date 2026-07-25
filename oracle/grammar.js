@@ -1,5 +1,6 @@
 import base from '../grammar.js';
-import { optional_parenthesis, comma_list, make_keyword, wrapped_in_parenthesis } from '../grammar/helpers.js';
+import { optional_parenthesis, comma_list, paren_list, make_keyword, wrapped_in_parenthesis } from '../grammar/helpers.js';
+import oracle_match_recognize_rules from './grammar/match_recognize.js';
 import oracle_hierarchical_rules from './grammar/hierarchical.js';
 import oracle_plsql_rules from './grammar/plsql_blocks.js';
 import oracle_bulk_rules from './grammar/bulk_ops.js';
@@ -183,11 +184,15 @@ export default grammar(base, {
         choice(
           $.subquery,
           $.invocation,
+          $.json_table,
+          $.xmltable,
           $.object_reference,
           wrapped_in_parenthesis($.values),
         ),
         optional($.flashback_clause),
         optional($.tablesample),
+        optional(choice($.pivot_clause, $.unpivot_clause)),
+        optional($.match_recognize_clause),
         optional(
           seq(
             $._alias,
@@ -196,6 +201,91 @@ export default grammar(base, {
         ),
       ),
     ),
+
+    // JSON_TABLE(expr, 'path' COLUMNS ( col type [PATH 'p'] [, …] ))
+    json_table: $ => seq(
+      $.keyword_json_table,
+      '(',
+      $._expression,
+      ',',
+      alias($._literal_string, $.literal),
+      $.keyword_columns,
+      '(',
+      comma_list($.json_table_column, true),
+      ')',
+      ')',
+    ),
+
+    json_table_column: $ => seq(
+      field('name', $.identifier),
+      $._type,
+      optional(seq($.keyword_path, alias($._literal_string, $.literal))),
+    ),
+
+    // XMLTABLE('xpath' [PASSING expr] COLUMNS col type [PATH 'p'] [, …])
+    xmltable: $ => seq(
+      $.keyword_xmltable,
+      '(',
+      alias($._literal_string, $.literal),
+      optional(seq($.keyword_passing, $._expression)),
+      $.keyword_columns,
+      comma_list($.xmltable_column, true),
+      ')',
+    ),
+
+    xmltable_column: $ => seq(
+      field('name', $.identifier),
+      $._type,
+      optional(seq($.keyword_path, alias($._literal_string, $.literal))),
+    ),
+
+    keyword_json_table: _ => token(prec(1, make_keyword("json_table"))),
+    keyword_xmltable:   _ => token(prec(1, make_keyword("xmltable"))),
+    keyword_columns:    _ => token(prec(1, make_keyword("columns"))),
+    keyword_path:       _ => token(prec(1, make_keyword("path"))),
+    keyword_passing:    _ => token(prec(1, make_keyword("passing"))),
+
+    // PIVOT ( agg [alias] [, …] FOR col IN ( value [alias] [, …] ) )
+    pivot_clause: $ => seq(
+      $.keyword_pivot,
+      '(',
+      comma_list(seq($.invocation, optional($._alias)), true),
+      $.keyword_for,
+      choice($.identifier, paren_list($.identifier, true)),
+      $.keyword_in,
+      paren_list(seq(
+        choice(alias($._literal_string, $.literal), alias($._integer, $.literal), $.identifier),
+        optional($._alias),
+      ), true),
+      ')',
+    ),
+
+    // UNPIVOT [INCLUDE|EXCLUDE NULLS] ( value_col FOR name_col IN ( col [, …] ) )
+    unpivot_clause: $ => seq(
+      $.keyword_unpivot,
+      optional(seq(choice($.keyword_include, $.keyword_exclude), $.keyword_nulls)),
+      '(',
+      choice($.identifier, paren_list($.identifier, true)),
+      $.keyword_for,
+      choice($.identifier, paren_list($.identifier, true)),
+      $.keyword_in,
+      paren_list($.identifier, true),
+      ')',
+    ),
+
+    keyword_pivot:   _ => token(prec(1, make_keyword("pivot"))),
+    keyword_match_recognize: _ => token(prec(1, /[Mm][Aa][Tt][Cc][Hh]_[Rr][Ee][Cc][Oo][Gg][Nn][Ii][Zz][Ee]/)),
+    keyword_pattern: _ => token(prec(1, make_keyword("pattern"))),
+    keyword_define:  _ => token(prec(1, make_keyword("define"))),
+    keyword_per:     _ => token(prec(1, make_keyword("per"))),
+    keyword_past:    _ => token(prec(1, make_keyword("past"))),
+    keyword_one:     _ => token(prec(1, make_keyword("one"))),
+    keyword_match:   _ => token(prec(1, make_keyword("match"))),
+    // Re-declare longer keywords that the prec(1) tokens above would otherwise
+    // shadow (explicit precedence beats match length in the lexer).
+    keyword_matched: _ => token(prec(1, make_keyword("matched"))),
+    keyword_percent: _ => token(prec(1, make_keyword("percent"))),
+    keyword_unpivot: _ => token(prec(1, make_keyword("unpivot"))),
 
     // Extend unary_expression to include Oracle PRIOR operator
     unary_expression: $ => choice(
@@ -237,7 +327,25 @@ export default grammar(base, {
       $.trim_expression,
       $.date_literal,
       $.timestamp_literal,
+      $.keep_aggregate,
     )),
+
+    // FIRST/LAST aggregate: fn(args) KEEP (DENSE_RANK {FIRST|LAST} ORDER BY …)
+    //   [OVER (…)]
+    keep_aggregate: $ => seq(
+      $.invocation,
+      $.keyword_keep,
+      '(',
+      $.keyword_dense_rank,
+      choice($.keyword_first, $.keyword_last),
+      $.order_by,
+      ')',
+      optional(seq($.keyword_over, choice($.identifier, $.window_specification))),
+    ),
+
+    keyword_dense_rank:   _ => token(prec(1, make_keyword("dense_rank"))),
+    keyword_organization: _ => token(prec(1, make_keyword("organization"))),
+    keyword_heap:         _ => token(prec(1, make_keyword("heap"))),
 
     // Oracle-specific keywords — token(prec(1,...)) needed so lexer prefers
     // these over base _identifier when both are valid in the same state.
@@ -362,8 +470,36 @@ export default grammar(base, {
         optional($.column_definitions),
         optional(seq($.keyword_as, $.create_query)),
       ),
+      optional($.organization_clause),
       optional($.table_partition_by),
     )),
+
+    // ORGANIZATION {HEAP | INDEX | EXTERNAL} — index-organized tables (IOT) etc.
+    organization_clause: $ => seq(
+      $.keyword_organization,
+      choice($.keyword_heap, $.keyword_index, $.keyword_external),
+    ),
+
+    // Oracle trigger with a PL/SQL block body (base mandates the Postgres
+    // EXECUTE FUNCTION tail instead).
+    create_trigger: $ => seq(
+      $.keyword_create,
+      optional($._or_replace),
+      $.keyword_trigger,
+      $.object_reference,
+      choice(
+        $.keyword_before,
+        $.keyword_after,
+        seq($.keyword_instead, $.keyword_of),
+      ),
+      $._create_trigger_event,
+      repeat(seq($.keyword_or, $._create_trigger_event)),
+      $.keyword_on,
+      $.object_reference,
+      optional(seq($.keyword_for, $.keyword_each, $.keyword_row)),
+      optional(seq($.keyword_when, wrapped_in_parenthesis($._expression))),
+      $.compound_statement,
+    ),
 
     // Override INSERT to add optional RETURNING INTO
     insert: $ => seq(
@@ -430,6 +566,7 @@ export default grammar(base, {
     ...oracle_partition_rules,
     ...oracle_ddl_ext_rules,
     ...oracle_admin_rules,
+    ...oracle_match_recognize_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords

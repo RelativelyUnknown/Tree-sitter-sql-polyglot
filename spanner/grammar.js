@@ -1,5 +1,5 @@
 import bigquery from '../bigquery/grammar.js';
-import { make_keyword, optional_parenthesis } from '../grammar/helpers.js';
+import { make_keyword, optional_parenthesis, paren_list, wrapped_in_parenthesis } from '../grammar/helpers.js';
 import spanner_ddl_rules from './grammar/ddl.js';
 
 // Google Cloud Spanner — GoogleSQL, the same language family as BigQuery
@@ -96,6 +96,84 @@ export default grammar(bigquery, {
     ),
 
     // Spanner-specific keywords (dialect-level per AGENTS.md)
+    keyword_stored:        _ => token(prec(1, make_keyword("stored"))),
+    keyword_sql:           _ => token(prec(1, make_keyword("sql"))),
+
+    // Spanner GoogleSQL has no SQL-level FOR SYSTEM_TIME AS OF (stale reads are
+    // an API concern), so drop the inherited clause that otherwise shadows the
+    // FOR UPDATE locking clause.
+    relation: $ => prec.right(seq(
+      choice(
+        $.subquery,
+        $.invocation,
+        $.object_reference,
+        wrapped_in_parenthesis($.values),
+        $.unnest,
+      ),
+      optional($.tablesample),
+      optional(choice($.pivot_clause, $.unpivot_clause)),
+      optional(seq(
+        $._alias,
+        optional(alias($._column_list, $.list)),
+      )),
+    )),
+
+    // CREATE SEQUENCE name [OPTIONS (…)]
+    create_sequence: $ => seq(
+      $.keyword_create,
+      $.keyword_sequence,
+      optional($._if_not_exists),
+      $.object_reference,
+      optional($.options_clause),
+    ),
+
+    // Generated column: … AS (expr) STORED (re-enumerates base _column_constraint).
+    _column_constraint: $ => prec.left(choice(
+      choice($.keyword_null, $._not_null),
+      seq(
+        $.keyword_references,
+        $.object_reference,
+        paren_list($.identifier, true),
+        repeat(seq(
+          $.keyword_on,
+          choice($.keyword_delete, $.keyword_update),
+          choice(
+            seq($.keyword_no, $.keyword_action),
+            $.keyword_restrict,
+            $.keyword_cascade,
+            seq($.keyword_set, choice($.keyword_null, $.keyword_default), optional(paren_list($.identifier, true))),
+          ),
+        )),
+      ),
+      $._default_expression,
+      $._primary_key,
+      $.direction,
+      $._column_comment,
+      $._check_constraint,
+      seq(
+        optional(seq($.keyword_generated, $.keyword_always)),
+        $.keyword_as,
+        $._expression,
+        optional($.keyword_stored),
+      ),
+      $.keyword_unique,
+    )),
+
+    // CREATE VIEW … SQL SECURITY {INVOKER|DEFINER} AS query (Spanner requires it).
+    create_view: $ => prec.right(seq(
+      $.keyword_create,
+      optional($._or_replace),
+      optional($.keyword_recursive),
+      $.keyword_view,
+      optional($._if_not_exists),
+      $.object_reference,
+      optional(paren_list($.identifier)),
+      optional(seq($.keyword_sql, $.keyword_security, choice($.keyword_invoker, $.keyword_definer))),
+      optional($.options_clause),
+      $.keyword_as,
+      $.create_query,
+    )),
+
     keyword_interleave:    _ => token(prec(1, make_keyword("interleave"))),
     keyword_parent:        _ => token(prec(1, make_keyword("parent"))),
     keyword_null_filtered: _ => token(prec(1, make_keyword("null_filtered"))),

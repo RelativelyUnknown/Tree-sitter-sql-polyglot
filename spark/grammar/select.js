@@ -8,6 +8,24 @@ export default {
     field('predicate', $._expression),
   ),
 
+  // GROUP BY ALL groups by every non-aggregated item in the SELECT list.
+  group_by: $ => prec.left(seq(
+    $.keyword_group,
+    $.keyword_by,
+    choice(
+      $.keyword_all,
+      seq(
+        comma_list(choice(
+          $._expression,
+          $.rollup_clause,
+          $.cube_clause,
+          $.grouping_sets_clause,
+        ), true),
+        optional(seq($.keyword_with, choice($.keyword_rollup, $.keyword_cube))),
+      ),
+    ),
+  )),
+
   // Note: cluster_by / distribute_by / sort_by are defined in Hive (parent grammar)
   // and inherited by Spark. They live there so they are also available in plain Hive.
 

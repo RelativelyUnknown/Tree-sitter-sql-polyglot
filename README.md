@@ -1,15 +1,16 @@
 # tree-sitter-sql-extended
 
-A multi-dialect SQL parser for [tree-sitter](https://tree-sitter.github.io/), forked from
-[DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql). It restructures the
-upstream "permissive" grammar into a clean ANSI SQL base plus **22 independently compiled dialect
-grammars**, each layered on top via tree-sitter's `grammar(parent, overrides)` composition.
+A multi-dialect SQL parser for [tree-sitter](https://tree-sitter.github.io/). It provides an ANSI SQL
+base plus **22 independently compiled dialect grammars**, each layered on top via tree-sitter's
+`grammar(parent, overrides)` composition.
 
-Originally built as the SQL parser backend for [burnt](https://github.com/RedPandaMC/burnt) — a cost
-compiler and linter for Spark pipelines — it now aims for broad dialect coverage across the SQL ecosystem.
+The grammar is a fork of [DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql).
+The upstream ships a single "permissive" grammar that mixes several dialects together; this fork
+splits that into a strict ANSI base and one grammar per dialect, so each engine's syntax is parsed on
+its own terms.
 
 **[Docs site](https://redpandamc.github.io/tree-sitter-sql-extended/)** ·
-**[Dialect coverage](https://redpandamc.github.io/tree-sitter-sql-extended/coverage)** — per-dialect
+**[Dialect coverage](https://redpandamc.github.io/tree-sitter-sql-extended/coverage)**: per-dialect
 feature scores, regenerated from the live parsers on every push to `main`.
 
 ---
@@ -38,14 +39,15 @@ Each dialect compiles to its own `<dialect>/src/parser.c` and can be used indepe
 | **duckdb** | base | FROM-first `SELECT`, `SELECT * EXCLUDE/REPLACE/RENAME`, lambdas, struct/map/list literals, `ASOF`/`POSITIONAL JOIN`, `ATTACH` |
 | **teradata** | base | `SEL`/`DEL` abbreviations, `SET`/`MULTISET`/`VOLATILE` tables, `[UNIQUE] PRIMARY INDEX`/`NO PRIMARY INDEX`, `PARTITION BY RANGE_N`/`CASE_N`, `COLLECT STATISTICS`, `CREATE MACRO`, `TOP n`, `QUALIFY`, `:param` references |
 | **trino** | base | `PREPARE`/`EXECUTE`/`DEALLOCATE`, `MATCH_RECOGNIZE`, `TABLESAMPLE BERNOULLI/SYSTEM`, `ARRAY`/`MAP`/`ROW` types, lambdas |
-| **athena** | trino | `UNLOAD … TO 's3://…'`, `MSCK REPAIR TABLE … PARTITIONS` (managed Trino + data-lake semantics) |
+| **athena** | trino | `UNLOAD … TO 's3://…'`, `MSCK REPAIR TABLE … PARTITIONS` (managed Trino plus data-lake semantics) |
 | **redshift** | base | `DISTKEY`/`SORTKEY`/`DISTSTYLE`/`ENCODE`, `CREATE EXTERNAL SCHEMA/TABLE`, `COPY`/`UNLOAD`, `VACUUM REINDEX`, `APPROXIMATE COUNT` |
 | **cockroachdb** | postgres | `AS OF SYSTEM TIME`, `UPSERT INTO`, `BACKUP`/`RESTORE`, `IMPORT INTO … CSV DATA`, `CREATE CHANGEFEED`, hash-sharded indexes (`USING HASH`), `STORING (…)`, `SHOW JOBS`/`GRANTS`/`DATABASES` |
 | **clickhouse** | base | `ENGINE = MergeTree() …`, column `MATERIALIZED`/`ALIAS`/`EPHEMERAL`/`CODEC`/`TTL`, `PREWHERE`, `FINAL`, `ARRAY JOIN`, `LIMIT n BY`, `SAMPLE`, `WITH TOTALS`, `QUALIFY`, `ORDER BY … WITH FILL`, `LIMIT … WITH TIES`, `INTO OUTFILE`/`FORMAT`, `ALTER … UPDATE`/`DELETE`, `OPTIMIZE … FINAL`, `CREATE DICTIONARY`/`LIVE VIEW`, `SYSTEM …`, `Map`/`Tuple`/`Nested`/`LowCardinality`/`Nullable` types |
+| **flink** | base | connector DDL (`WITH (…)`), `WATERMARK FOR`, windowing TVFs (`TUMBLE`/`HOP`/`CUMULATE`), `MATCH_RECOGNIZE`, temporal joins, `CREATE CATALOG`/`MODULE`, statement sets |
 
 Dependency chains: `databricks → spark → hive → base`, `mariadb → mysql → base`, `athena → trino → base`,
-`cockroachdb → postgres → base`, and `spanner → bigquery → base` — chains follow real dialect
-genealogy (CockroachDB is PostgreSQL-compatible by design; Spanner and BigQuery share GoogleSQL).
+`cockroachdb → postgres → base`, and `spanner → bigquery → base`. The chains follow real dialect
+genealogy: CockroachDB is PostgreSQL-compatible by design, and Spanner and BigQuery share GoogleSQL.
 Regenerate the child when a parent grammar changes. See [AGENTS.md](AGENTS.md) for the full architecture.
 
 ---
@@ -66,11 +68,10 @@ let mut parser = tree_sitter::Parser::new();
 parser.set_language(&LANGUAGE.into()).unwrap();
 
 let tree = parser.parse(sql_source, None).unwrap();
-// tree is valid even on syntax errors — partial results, not None
+// tree is valid even on syntax errors: partial results, not None
 ```
 
-The parser degrades gracefully: a syntax error in one statement produces an `ERROR` node; the rest of the
-file continues to parse normally.
+A syntax error in one statement produces an `ERROR` node; the rest of the file continues to parse.
 
 ---
 
@@ -117,9 +118,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md) for more detai
 
 ## Upstream
 
-This fork tracks [`DerekStride/tree-sitter-sql`](https://github.com/DerekStride/tree-sitter-sql). Upstreaming
-Databricks-specific extensions is encouraged where the upstream maintainers are interested; extensions that are
-too vendor-specific will live here permanently.
+This fork tracks [`DerekStride/tree-sitter-sql`](https://github.com/DerekStride/tree-sitter-sql).
+Extensions that are general enough are worth upstreaming where the upstream maintainers are interested;
+vendor-specific extensions live here.
 
 ---
 
@@ -143,6 +144,6 @@ too vendor-specific will live here permanently.
 
 ### Other SQL tree-sitter grammars
 
-- [DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql) — upstream
-- [takegue/tree-sitter-sql-bigquery](https://github.com/takegue/tree-sitter-sql-bigquery) — BigQuery fork (same pattern as this repo)
+- [DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql): upstream
+- [takegue/tree-sitter-sql-bigquery](https://github.com/takegue/tree-sitter-sql-bigquery): BigQuery fork
 - [m-novikov/tree-sitter-sql](https://github.com/m-novikov/tree-sitter-sql)

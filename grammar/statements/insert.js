@@ -25,17 +25,22 @@ export default {
   _on_conflict: $ => seq(
     $.keyword_on,
     $.keyword_conflict,
-    seq(
-      $.keyword_do,
-      choice(
-        $.keyword_nothing,
-        seq(
-          $.keyword_update,
-          $._set_values,
-          optional($.where),
-        ),
+    optional($.conflict_target),
+    $.keyword_do,
+    choice(
+      $.keyword_nothing,
+      seq(
+        $.keyword_update,
+        $._set_values,
+        optional($.where),
       ),
     ),
+  ),
+
+  // ON CONFLICT (col [, …]) [WHERE predicate] | ON CONSTRAINT name
+  conflict_target: $ => choice(
+    seq('(', comma_list($._expression), ')', optional($.where)),
+    seq($.keyword_on, $.keyword_constraint, field('name', $.identifier)),
   ),
 
   _on_duplicate_key_update: $ => seq(

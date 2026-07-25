@@ -2,6 +2,73 @@ import { paren_list, comma_list } from "../../grammar/helpers.js";
 
 export default {
 
+  // CREATE CAST (source AS target) {WITH FUNCTION f | WITHOUT FUNCTION | WITH INOUT}
+  //   [AS ASSIGNMENT | AS IMPLICIT]
+  create_cast: $ => seq(
+    $.keyword_create,
+    $.keyword_cast,
+    '(',
+    $._type,
+    $.keyword_as,
+    $._type,
+    ')',
+    choice(
+      seq($.keyword_with, $.keyword_function, $.object_reference, optional($.function_arguments)),
+      seq($.keyword_without, $.keyword_function),
+      seq($.keyword_with, $.keyword_inout),
+    ),
+    optional(seq($.keyword_as, choice($.keyword_assignment, $.keyword_implicit))),
+  ),
+
+  // CREATE DOMAIN name [AS] type [DEFAULT expr] [ [CONSTRAINT c] {NULL|NOT NULL|CHECK(expr)} … ]
+  create_domain: $ => seq(
+    $.keyword_create,
+    $.keyword_domain,
+    $.object_reference,
+    optional($.keyword_as),
+    $._type,
+    repeat(choice(
+      $._default_expression,
+      $.keyword_null,
+      $._not_null,
+      $._check_constraint,
+    )),
+  ),
+
+  // Foreign-data wrapper DDL.
+  fdw_options: $ => seq(
+    $.keyword_options,
+    '(',
+    comma_list(seq($.identifier, alias($._literal_string, $.literal)), true),
+    ')',
+  ),
+
+  create_server: $ => seq(
+    $.keyword_create,
+    $.keyword_server,
+    optional($._if_not_exists),
+    $.identifier,
+    optional(seq($.keyword_type, alias($._literal_string, $.literal))),
+    optional(seq($.keyword_version, choice(alias($._literal_string, $.literal), $.identifier))),
+    $.keyword_foreign,
+    $.keyword_data,
+    $.keyword_wrapper,
+    $.identifier,
+    optional($.fdw_options),
+  ),
+
+  create_foreign_table: $ => seq(
+    $.keyword_create,
+    $.keyword_foreign,
+    $.keyword_table,
+    optional($._if_not_exists),
+    $.object_reference,
+    optional($.column_definitions),
+    $.keyword_server,
+    $.identifier,
+    optional($.fdw_options),
+  ),
+
   create_extension: $ => prec.left(seq(
     $.keyword_create,
     $.keyword_extension,

@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { optional_parenthesis, comma_list, paren_list, make_keyword } from '../grammar/helpers.js';
 import ch_type_rules    from './grammar/types.js';
 import ch_select_rules  from './grammar/select.js';
 import ch_create_rules  from './grammar/create.js';
@@ -17,6 +17,9 @@ export default grammar(base, {
     [$.object_reference],
     [$.between_expression, $.binary_expression],
     [$.from],
+    [$.all_fields_transform, $.all_fields],
+    [$.all_fields_transform],
+    [$._qualified_field, $._column_transformer],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
@@ -41,6 +44,27 @@ export default grammar(base, {
     _insert_statement: $ => seq(
       $.insert,
       optional($.returning),
+    ),
+
+    // base insert plus INSERT INTO FUNCTION f(…) and a trailing FORMAT clause
+    // (INSERT INTO t [(cols)] FORMAT fmt; the row data itself is out of band).
+    insert: $ => seq(
+      $.keyword_insert,
+      optional($.keyword_into),
+      choice(
+        seq($.keyword_function, $.invocation),
+        $.object_reference,
+      ),
+      optional(seq($.keyword_as, field('alias', $.identifier))),
+      choice(
+        $._insert_values,
+        $._set_values,
+        seq(
+          optional(alias($._column_list, $.list)),
+          $.keyword_format,
+          field('format', $.identifier),
+        ),
+      ),
     ),
 
 
@@ -96,6 +120,126 @@ export default grammar(base, {
 
     // ── ClickHouse keywords (dialect-local, per codebase convention) ──────────
     // Statement / clause keywords
+    // GLOBAL JOIN broadcasts the right table across a distributed query.
+    join: $ => seq(
+      optional($.keyword_global),
+      optional($.keyword_natural),
+      optional(choice(
+        $.keyword_left,
+        seq($.keyword_full, $.keyword_outer),
+        seq($.keyword_left, $.keyword_outer),
+        $.keyword_right,
+        seq($.keyword_right, $.keyword_outer),
+        $.keyword_inner,
+        $.keyword_full,
+      )),
+      $.keyword_join,
+      $.relation,
+      optional($.join),
+      choice(
+        seq($.keyword_on, field('predicate', $._expression)),
+        seq($.keyword_using, alias($._column_list, $.list)),
+      ),
+    ),
+
+    keyword_global:        _ => token(prec(1, make_keyword("global"))),
+
+    // x GLOBAL [NOT] IN (…): the distributed IN, whose right side is broadcast
+    // to every shard. Lexed as one multi-word operator token: a bare
+    // keyword_global mid-expression is never shifted (the parser ends the
+    // predicate first and drops GLOBAL as an error), so GLOBAL and IN must
+    // arrive together as a single terminal. Longer-match keeps GLOBAL JOIN
+    // (no IN follows) lexing as keyword_global.
+    global_in: _ => token(prec(2, seq(
+      /[Gg][Ll][Oo][Bb][Aa][Ll]/, /[ \t\r\n]+/, /[Ii][Nn]/,
+    ))),
+    global_not_in: _ => token(prec(2, seq(
+      /[Gg][Ll][Oo][Bb][Aa][Ll]/, /[ \t\r\n]+/,
+      /[Nn][Oo][Tt]/, /[ \t\r\n]+/, /[Ii][Nn]/,
+    ))),
+
+    // base binary_expression with GLOBAL IN / GLOBAL NOT IN in the binary_in group
+    binary_expression: $ => choice(
+      ...[
+        ['+', 'binary_plus'],
+        ['-', 'binary_plus'],
+        ['*', 'binary_times'],
+        ['/', 'binary_times'],
+        ['%', 'binary_times'],
+        ['^', 'binary_exp'],
+        ['=', 'binary_relation'],
+        ['<', 'binary_relation'],
+        ['<=', 'binary_relation'],
+        ['!=', 'binary_relation'],
+        ['>=', 'binary_relation'],
+        ['>', 'binary_relation'],
+        ['<>', 'binary_relation'],
+        [$.op_other, 'binary_other'],
+        [$.keyword_is, 'binary_is'],
+        [$.is_not, 'binary_is'],
+        [$.keyword_like, 'pattern_matching'],
+        [$.not_like, 'pattern_matching'],
+        [$.keyword_rlike, 'pattern_matching'],
+        [$.not_rlike, 'pattern_matching'],
+        [$.similar_to, 'pattern_matching'],
+        [$.not_similar_to, 'pattern_matching'],
+        [$.distinct_from, 'binary_is'],
+        [$.not_distinct_from, 'binary_is'],
+      ].map(([operator, precedence]) =>
+        prec.left(precedence, seq(
+          field('left', $._expression),
+          field('operator', operator),
+          field('right', $._expression)
+        ))
+      ),
+      ...[
+        [$.keyword_and, 'clause_connective'],
+        [$.keyword_or, 'clause_disjunctive'],
+      ].map(([operator, precedence]) =>
+        prec.left(precedence, seq(
+          field('left', $._expression),
+          field('operator', operator),
+          field('right', $._expression)
+        ))
+      ),
+      ...[
+        [$.keyword_in, 'binary_in'],
+        [$.not_in, 'binary_in'],
+        [$.global_in, 'binary_in'],
+        [$.global_not_in, 'binary_in'],
+      ].map(([operator, precedence]) =>
+        prec.left(precedence, seq(
+          field('left', $._expression),
+          field('operator', operator),
+          field('right', choice($.list, $.subquery))
+        ))
+      ),
+    ),
+
+    // Column transformers on `*`: EXCEPT / APPLY / REPLACE.
+    // (COLUMNS('regex') parses as a generic function invocation.)
+    term: $ => seq(
+      field('value', choice(
+        $.all_fields_transform,
+        $.all_fields,
+        $._expression,
+      )),
+      optional($._alias),
+    ),
+
+    all_fields_transform: $ => seq(
+      optional(seq($.object_reference, '.')),
+      '*',
+      repeat1($._column_transformer),
+    ),
+
+    _column_transformer: $ => choice(
+      seq($.keyword_except, choice(field('col', $.identifier), paren_list(field('col', $.identifier), true))),
+      seq($.keyword_apply, '(', choice($.identifier, $._expression), ')'),
+      seq($.keyword_replace, '(', comma_list(seq($._expression, $.keyword_as, $.identifier), true), ')'),
+    ),
+
+    keyword_apply:         _ => token(prec(1, make_keyword("apply"))),
     keyword_show:          _ => token(prec(1, make_keyword("show"))),
     keyword_databases:     _ => token(prec(1, make_keyword("databases"))),
     keyword_processlist:   _ => token(prec(1, make_keyword("processlist"))),

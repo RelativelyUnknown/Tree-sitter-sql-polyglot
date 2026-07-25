@@ -65,9 +65,84 @@ export default grammar(base, {
       $.load_data,
       $.grant_statement,
       $.revoke_statement,
+      $.grant_role,
+      $.revoke_role,
+      $.set_role_statement,
       $.show_statement,
       $.describe_statement,
+      $.export_statement,
+      $.import_statement,
+      $.create_temporary_macro,
     ),
+
+    // GRANT ROLE r [, …] TO {USER|GROUP|ROLE} name [, …]
+    grant_role: $ => seq(
+      $.keyword_grant,
+      $.keyword_role,
+      comma_list($.identifier, true),
+      $.keyword_to,
+      choice($.keyword_user, $.keyword_group, $.keyword_role),
+      comma_list($.identifier, true),
+    ),
+
+    // REVOKE ROLE r [, …] FROM {USER|GROUP|ROLE} name [, …]
+    revoke_role: $ => seq(
+      $.keyword_revoke,
+      $.keyword_role,
+      comma_list($.identifier, true),
+      $.keyword_from,
+      choice($.keyword_user, $.keyword_group, $.keyword_role),
+      comma_list($.identifier, true),
+    ),
+
+    // SET ROLE {name | ALL | NONE}
+    set_role_statement: $ => seq(
+      $.keyword_set,
+      $.keyword_role,
+      choice($.keyword_all, $.keyword_none, $.identifier),
+    ),
+
+    keyword_roles: _ => token(prec(1, make_keyword("roles"))),
+
+    // EXPORT TABLE t [PARTITION (…)] TO 'hdfs_path'
+    export_statement: $ => seq(
+      $.keyword_export,
+      $.keyword_table,
+      $.object_reference,
+      optional(seq($.keyword_partition, paren_list(seq($.identifier, '=', $._expression), true))),
+      $.keyword_to,
+      alias($._literal_string, $.literal),
+    ),
+
+    // IMPORT [[EXTERNAL] TABLE t [PARTITION (…)]] FROM 'hdfs_path' [LOCATION 'path']
+    import_statement: $ => seq(
+      $.keyword_import,
+      optional(seq(
+        optional($.keyword_external),
+        $.keyword_table,
+        $.object_reference,
+        optional(seq($.keyword_partition, paren_list(seq($.identifier, '=', $._expression), true))),
+      )),
+      $.keyword_from,
+      alias($._literal_string, $.literal),
+      optional(seq($.keyword_location, alias($._literal_string, $.literal))),
+    ),
+
+    // CREATE TEMPORARY MACRO name(param type, …) body_expression
+    create_temporary_macro: $ => seq(
+      $.keyword_create,
+      $.keyword_temporary,
+      $.keyword_macro,
+      $.identifier,
+      '(',
+      comma_list(seq($.identifier, $._type), false),
+      ')',
+      $._expression,
+    ),
+
+    keyword_export: _ => token(prec(1, make_keyword("export"))),
+    keyword_import: _ => token(prec(1, make_keyword("import"))),
+    keyword_macro:  _ => token(prec(1, make_keyword("macro"))),
 
     // Override _dml_write to include Hive's multi-table insert and overwrite-directory
     _dml_write: $ => seq(
@@ -217,6 +292,16 @@ export default grammar(base, {
       $.set_schema,
       $.change_ownership,
       $.exchange_partition,
+      $.concatenate_partition,
+    ),
+
+    // ALTER TABLE t [PARTITION (k=v, …)] CONCATENATE (small-file compaction)
+    concatenate_partition: $ => seq(
+      optional(seq(
+        $.keyword_partition,
+        paren_list(seq($.identifier, '=', $._expression), true),
+      )),
+      $.keyword_concatenate,
     ),
 
     // FROM with LATERAL VIEW, CLUSTER/DISTRIBUTE/SORT BY support
@@ -417,6 +502,15 @@ export default grammar(base, {
           $.keyword_functions,
           optional(seq($.keyword_like, alias($._literal_string, $.literal))),
         ),
+        // SHOW ROLES / SHOW CURRENT ROLES / SHOW ROLE GRANT {USER|GROUP|ROLE} n
+        $.keyword_roles,
+        seq($.keyword_current, $.keyword_roles),
+        seq(
+          $.keyword_role,
+          $.keyword_grant,
+          choice($.keyword_user, $.keyword_group, $.keyword_role),
+          $.identifier,
+        ),
       ),
     )),
 
@@ -506,6 +600,7 @@ export default grammar(base, {
     keyword_schemas:         _ => token(prec(1, make_keyword("schemas"))),
     keyword_functions:       _ => token(prec(1, make_keyword("functions"))),
     keyword_exchange:        _ => token(prec(1, make_keyword("exchange"))),
+    keyword_concatenate:     _ => token(prec(1, make_keyword("concatenate"))),
 
     ...hive_storage_rules,
     ...hive_partition_rules,

@@ -34,6 +34,10 @@ export default grammar(base, {
     [$._function_return, $.return_statement],
     [$.time],
     [$.timestamp],
+    // `*` starts both a plain all_fields and a transformed one.
+    [$.all_fields_transform, $.all_fields],
+    // Consecutive INTO clauses in a multi-table INSERT.
+    [$.insert_into_clause],
     // Comma-position LATERAL fn(...) as a relation overlaps with the base
     // JOIN LATERAL / CROSS JOIN LATERAL join forms and their trailing alias;
     // GLR explores each until ON / ',' / end disambiguates.
@@ -203,9 +207,32 @@ export default grammar(base, {
     ),
 
     // ── DML: add RETURNING to INSERT / UPDATE / DELETE (#116) ───────────────
-    _insert_statement: $ => seq(
-      $.insert,
-      optional($.returning),
+    _insert_statement: $ => choice(
+      seq($.insert, optional($.returning)),
+      $.multi_table_insert,
+    ),
+
+    // INSERT [OVERWRITE] ALL INTO … INTO … SELECT …            (unconditional)
+    // INSERT [OVERWRITE] {ALL|FIRST} WHEN c THEN INTO … [ELSE INTO …] SELECT …
+    multi_table_insert: $ => seq(
+      $.keyword_insert,
+      optional($.keyword_overwrite),
+      choice(
+        seq($.keyword_all, repeat1($.insert_into_clause)),
+        seq(
+          choice($.keyword_all, $.keyword_first),
+          repeat1(seq($.keyword_when, $._expression, $.keyword_then, repeat1($.insert_into_clause))),
+          optional(seq($.keyword_else, repeat1($.insert_into_clause))),
+        ),
+      ),
+      $._dml_read,
+    ),
+
+    insert_into_clause: $ => seq(
+      $.keyword_into,
+      $.object_reference,
+      optional(paren_list($.identifier, true)),
+      optional(seq($.keyword_values, paren_list($._expression, true))),
     ),
 
     _update_statement: $ => seq(
@@ -306,6 +333,7 @@ export default grammar(base, {
         $.lateral_cross_join,
       )),
       optional($.where),
+      optional($.connect_by_clause),
       optional($.group_by),
       optional($.having),
       optional($.qualify),
@@ -314,6 +342,91 @@ export default grammar(base, {
       optional($.limit),
       optional($.offset_fetch_clause),
     ),
+
+    // Hierarchical query: [START WITH cond] CONNECT BY [NOCYCLE] cond (with PRIOR).
+    connect_by_clause: $ => seq(
+      optional(seq($.keyword_start, $.keyword_with, $._expression)),
+      $.keyword_connect,
+      $.keyword_by,
+      optional($.keyword_nocycle),
+      $._expression,
+    ),
+
+    // Add PRIOR as a unary operator (re-enumerates the base operator table).
+    unary_expression: $ => choice(
+      ...[
+        [$.keyword_not, 'unary_not'],
+        [$.bang, 'unary_not'],
+        [$.keyword_any, 'unary_not'],
+        [$.keyword_some, 'unary_not'],
+        [$.keyword_all, 'unary_not'],
+        [$.keyword_prior, 'unary_not'],
+        [$.op_unary_other, 'unary_other'],
+      ].map(([operator, precedence]) =>
+        prec.left(precedence, seq(
+          field('operator', operator),
+          field('operand', $._expression),
+        ))
+      ),
+    ),
+
+    keyword_connect: _ => token(prec(1, make_keyword("connect"))),
+    keyword_prior:   _ => token(prec(1, make_keyword("prior"))),
+    keyword_nocycle: _ => token(prec(1, make_keyword("nocycle"))),
+    keyword_ilike:   _ => token(prec(1, make_keyword("ilike"))),
+
+    // SELECT * [ILIKE 'pattern'] [EXCLUDE …] [RENAME …] column transformers.
+    term: $ => seq(
+      field('value', choice(
+        $.all_fields_transform,
+        $.all_fields,
+        $._expression,
+      )),
+      optional($._alias),
+    ),
+
+    all_fields_transform: $ => seq(
+      optional(seq($.object_reference, '.')),
+      '*',
+      choice(
+        seq($._ilike_pattern, optional($._exclude_columns), optional($._rename_columns)),
+        seq($._exclude_columns, optional($._rename_columns)),
+        $._rename_columns,
+      ),
+    ),
+
+    _ilike_pattern: $ => seq($.keyword_ilike, alias($._literal_string, $.literal)),
+
+    _exclude_columns: $ => seq(
+      $.keyword_exclude,
+      choice(field('col', $.identifier), paren_list(field('col', $.identifier), true)),
+    ),
+
+    _rename_columns: $ => seq(
+      $.keyword_rename,
+      choice(
+        seq(field('old', $.identifier), $.keyword_as, field('new', $.identifier)),
+        paren_list(seq(field('old', $.identifier), $.keyword_as, field('new', $.identifier)), true),
+      ),
+    ),
+
+    // GROUP BY ALL groups by every non-aggregated item in the SELECT list.
+    group_by: $ => prec.left(seq(
+      $.keyword_group,
+      $.keyword_by,
+      choice(
+        $.keyword_all,
+        seq(
+          comma_list(choice(
+            $._expression,
+            $.rollup_clause,
+            $.cube_clause,
+            $.grouping_sets_clause,
+          ), true),
+          optional(seq($.keyword_with, choice($.keyword_rollup, $.keyword_cube))),
+        ),
+      ),
+    )),
 
     // ── relation: add time travel, PIVOT, UNPIVOT, MATCH_RECOGNIZE ──────────
     relation: $ => prec.right(
