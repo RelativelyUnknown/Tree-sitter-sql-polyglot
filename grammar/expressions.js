@@ -25,6 +25,8 @@ export default {
       $.between_expression,
       $.parenthesized_expression,
       $.trim_expression,
+      $.typed_temporal_literal,
+      $.datetime_value_function,
     )
   ),
 
@@ -371,6 +373,31 @@ export default {
   not_in: $ => seq(
     $.keyword_not,
     $.keyword_in,
+  ),
+
+  // ANSI typed temporal literals (F051-03): DATE '…', TIME '…', TIMESTAMP '…'.
+  typed_temporal_literal: $ => prec(2, seq(
+    field('type', choice($.keyword_date, $.keyword_time, $.keyword_timestamp)),
+    field('value', alias($._literal_string, $.literal)),
+  )),
+
+  // ANSI datetime value functions (F051-06): niladic CURRENT_DATE / CURRENT_TIME
+  // / CURRENT_TIMESTAMP / LOCALTIME / LOCALTIMESTAMP, with optional precision on
+  // the time-bearing forms.
+  datetime_value_function: $ => choice(
+    $.keyword_current_date,
+    // prec.right so that after CURRENT_TIME/TIMESTAMP/LOCALTIME[STAMP] a
+    // following `(` is shifted as the optional precision rather than reducing
+    // the niladic form (a shift/reduce that surfaces in some dialects).
+    prec.right(2, seq(
+      choice(
+        $.keyword_current_time,
+        $.keyword_current_timestamp,
+        $.keyword_localtime,
+        $.keyword_localtimestamp,
+      ),
+      optional(wrapped_in_parenthesis(alias($._natural_number, $.literal))),
+    )),
   ),
 
   subquery: $ => wrapped_in_parenthesis(

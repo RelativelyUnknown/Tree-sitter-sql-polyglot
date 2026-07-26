@@ -165,7 +165,8 @@ The docs site (`docs/`) is a [VitePress](https://vitepress.dev/) site, deployed 
 ```bash
 npm install
 npm run generate:all                     # optional but required for a real (non-stub) coverage page
-pip install pyyaml && python tools/scorecard.py   # optional, writes docs/coverage.md
+pip install -r tools/requirements.txt && bash tools/antlr/setup.sh  # coverage corroborators
+python tools/coverage.py                 # optional, writes docs/coverage.md
 npm run docs:dev
 ```
 

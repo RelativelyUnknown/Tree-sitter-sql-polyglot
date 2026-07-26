@@ -8,7 +8,7 @@
  *     `{% for file in site.static_files %}` download loop) and writes
  *     docs/downloads.md listing them.
  *  2. Writes a stub docs/coverage.md if the real one (written by
- *     tools/scorecard.py) doesn't exist yet, so `npm run docs:dev` works
+ *     tools/coverage.py) doesn't exist yet, so `npm run docs:dev` works
  *     from a fresh clone before parsers are generated.
  *
  * Both docs/downloads.md and docs/coverage.md are gitignored — always
@@ -133,12 +133,12 @@ function writeCoverageStubIfMissing() {
     '',
     '```bash',
     'npm run generate:all',
-    'pip install pyyaml',
-    'python tools/scorecard.py',
+    'pip install -r tools/requirements.txt',
+    'python tools/coverage.py',
     '```',
     '',
   ].join('\n'));
-  console.log(`docs-prep: wrote stub ${relative(ROOT, COVERAGE_MD)} (run tools/scorecard.py for the real page)`);
+  console.log(`docs-prep: wrote stub ${relative(ROOT, COVERAGE_MD)} (run tools/coverage.py for the real page)`);
 }
 
 const copied = copyArtifacts();

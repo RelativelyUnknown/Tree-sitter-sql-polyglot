@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file. See [commit
 
 ### Features
 
+- **Base (ANSI):** typed temporal literals (`DATE '…'`, `TIME '…'`, `TIMESTAMP '…'`) and datetime value functions (`CURRENT_DATE`, `CURRENT_TIME`, `CURRENT_TIMESTAMP`, `LOCALTIME`, `LOCALTIMESTAMP`)
+- **Tooling:** replaced the `scorecard.py`/`corroborate.py`/`parse_rate.py`/`diff_parse.py` scripts with one corroborated coverage tool (`tools/coverage.py`) that cross-checks every feature probe against independent reference parsers (SQLGlot, ANTLR grammars-v4, pglast, sqlfluff) and scores the base grammar against ISO Core — surfacing "suspect" probes (ours accepts, no reference does) and confirmed gaps (e.g. `LIKE … ESCAPE`, cursors)
 - **Base (ANSI):** named `CONSTRAINT fk FOREIGN KEY (…) REFERENCES … [ON DELETE/UPDATE …]` table constraints
 - **PostgreSQL / SQLite / CockroachDB / DuckDB:** `ON CONFLICT (col) [WHERE …] | ON CONSTRAINT name` upsert targets
 - **T-SQL:** `IDENTITY[(seed, increment)]` column property; computed columns `col AS (expr) [PERSISTED]`

@@ -109,11 +109,13 @@ jobs:
             echo "::endgroup::"
           done
 
-  # ── Feature-completeness scorecard ──────────────────────────────────────────
-  # Parses every feature probe in tools/features.yml with every dialect parser
-  # and fails on coverage regressions (implemented → absent) or new ANSI
-  # purity violations in the base grammar. Baseline: tools/coverage.json.
-  scorecard:
+  # ── Corroborated feature coverage ───────────────────────────────────────────
+  # One coverage step. tools/coverage.py parses every probe in tools/features.yml
+  # with our parsers AND with independent reference parsers (SQLGlot, ANTLR
+  # grammars-v4, pglast, sqlfluff), scores the base against ISO Core, and fails on
+  # coverage regressions, new "suspect" probes (ours accepts, no reference does),
+  # or ANSI purity violations. Baseline: tools/coverage.json.
+  coverage:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -124,6 +126,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
 
       - uses: actions/cache@v4
         with:
@@ -138,38 +144,33 @@ jobs:
             */src/tree_sitter/
             .grammar-cache/
             ~/.cache/tree-sitter/
-          key: parsers-v2-scorecard-${{ hashFiles('grammar.js', 'grammar/**', '*/grammar.js', '*/grammar/**') }}
+            tools/antlr/build/
+            tools/antlr/*.jar
+          key: parsers-v2-coverage-${{ hashFiles('grammar.js', 'grammar/**', '*/grammar.js', '*/grammar/**', 'tools/antlr/setup.sh') }}
           restore-keys: |
-            parsers-v2-scorecard-
+            parsers-v2-coverage-
 
       - name: Generate all parsers
         run: npm run generate:all
 
-      - name: Evidence corroboration gate
+      - name: Install corroborators
         run: |
-          pip install pyyaml
-          python tools/corroborate.py
+          pip install -r tools/requirements.txt
+          bash tools/antlr/setup.sh
 
-      # No TREE_SITTER_BIN override here: scorecard.py's own default pins
-      # the same npx tree-sitter-cli@v0.26.3 that generate.js uses to build
-      # the parsers. Overriding it to the tree-sitter/setup-action CLI
-      # (0.26.11) parses parser.c/grammar.json built by a different CLI
-      # version than the one that generated them — that ABI mismatch
-      # produces false "implemented → absent" regressions on some probes
-      # (reproduced locally: 0.26.11 parsing a 0.26.3-generated trino
-      # grammar drops prepared_statements even though the grammar handles
-      # it correctly under matching versions).
-      - name: Scorecard regression check
-        run: python tools/scorecard.py --check
+      # No TREE_SITTER_BIN override: coverage.py's own default pins the same
+      # npx tree-sitter-cli@v0.26.3 that generate.js uses to build the parsers.
+      # Overriding it to the setup-action CLI (0.26.11) parses parser.c built by
+      # a different CLI version — that ABI mismatch produces false
+      # "implemented → absent" regressions on some probes.
+      - name: Coverage gate (regressions / suspects / purity)
+        run: python tools/coverage.py --check
 
-      # Full (non --check) run to produce the human-readable report. Runs
-      # even if the gate above failed, so a red PR still gets a report to
-      # diagnose from. Writes to the Actions job summary (every run) and
-      # docs/coverage.md / tools/coverage.json (uploaded below); the docs
-      # site rebuilds this same page from the live parsers via pages.yml.
+      # Full run for the human-readable report + job summary. Runs even if the
+      # gate failed, so a red PR still gets a diagnosable report.
       - name: Build coverage report
         if: always()
-        run: python tools/scorecard.py
+        run: python tools/coverage.py
 
       - name: Upload coverage report
         if: always()
