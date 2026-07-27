@@ -32,6 +32,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      # Capped so at most 2 of the 5 shards claim a heavy ubuntu-latest runner
+      # at once — launching all 5 (plus the coverage job) simultaneously has
+      # been observed to exceed this account's concurrent-runner capacity,
+      # with the runner getting reclaimed mid-generate ("The operation was
+      # canceled") on whichever shards lose the race.
+      max-parallel: 2
       matrix:
         include:
           - shard: base
@@ -116,6 +122,12 @@ jobs:
   # coverage regressions, new "suspect" probes (ours accepts, no reference does),
   # or ANSI purity violations. Baseline: tools/coverage.json.
   coverage:
+    # Runs after the test matrix rather than alongside it: this job's own
+    # `generate:all` redoes generation for every dialect the matrix shards
+    # already cover, and running both at once was pushing simultaneous heavy
+    # ubuntu-latest job count past this account's sustainable concurrency
+    # (observed as runner reclaim — "The operation was canceled" — mid-generate).
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
