@@ -61,6 +61,18 @@ jobs:
             parsers-v2-coverage-
 
       - run: npm install
+
+      # See ci.yml's coverage job: clickhouse alone peaks at ~15.4GB RSS
+      # during generate on a 16GB runner, leaving almost no headroom.
+      - name: Increase swap (ClickHouse generate is memory-bound)
+        run: |
+          sudo swapoff -a || true
+          sudo fallocate -l 12G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
+
       # Forced sequential — see ci.yml's coverage job: concurrent generation
       # of the heavier grammars (all 22 at once here) can OOM the runner VM.
       - run: npm run generate:all

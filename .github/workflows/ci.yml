@@ -83,6 +83,25 @@ jobs:
           restore-keys: |
             parsers-v2-${{ matrix.shard }}-
 
+      # ClickHouse's tree-sitter generate peaks at ~15.4GB RSS on a 16GB
+      # runner (measured locally: converges cleanly at +291s, exit 0, but
+      # with only ~50MB of system memory free at the peak). That's not a
+      # runaway/pathological grammar — it's a real, very large table that
+      # just happens to land right at the physical ceiling, so any other
+      # resident process (the runner's own agent, cache restore, etc.)
+      # tips it into the OOM kill Actions reports as "the runner has
+      # received a shutdown signal". Swap gives it headroom to finish
+      # without needing a bigger runner.
+      - name: Increase swap (ClickHouse generate is memory-bound)
+        if: matrix.shard == 'clickhouse'
+        run: |
+          sudo swapoff -a || true
+          sudo fallocate -l 12G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
+
       # generate.js is hash-cached per grammar (including ancestor chains), so
       # on a warm restore only the changed grammars are regenerated. Dialects
       # in a shard are generated concurrently (scripts/generate-all.js):
@@ -189,6 +208,17 @@ jobs:
           key: parsers-v2-coverage-${{ hashFiles('grammar.js', 'grammar/**', '*/grammar.js', '*/grammar/**', 'tools/antlr/setup.sh') }}
           restore-keys: |
             parsers-v2-coverage-
+
+      # See the test job's "Increase swap" step: this job generates all 22
+      # dialects, including clickhouse, which peaks at ~15.4GB RSS alone.
+      - name: Increase swap (ClickHouse generate is memory-bound)
+        run: |
+          sudo swapoff -a || true
+          sudo fallocate -l 12G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
 
       - name: Generate all parsers
         # See the matching note on the test job's "Generate parsers" step:

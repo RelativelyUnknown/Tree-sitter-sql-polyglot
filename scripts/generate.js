@@ -10,11 +10,35 @@
  * This is required because tree-sitter writes output to ./src/ relative to CWD.
  */
 
-import { execSync } from 'child_process';
+import { execSync, spawn } from 'child_process';
 import { createHash } from 'crypto';
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, mkdirSync } from 'fs';
 import { join, resolve } from 'path';
 import { fileURLToPath } from 'url';
+
+// Investigation-only instrumentation (GENERATE_DEBUG_MEMORY=1): some CI runs
+// have died on specific dialects with "the runner has received a shutdown
+// signal" (no application-level error) after a variable amount of time.
+// Sampling system memory + the generate process's own RSS periodically lets
+// a mid-run kill still leave a timeline behind — climbing RSS toward
+// MemTotal points to a real OOM; flat/low usage points elsewhere (pure CPU
+// time, or an externally-triggered interruption unrelated to this process).
+function sampleMemory(label) {
+  try {
+    const meminfo = readFileSync('/proc/meminfo', 'utf8');
+    const total = Number(meminfo.match(/^MemTotal:\s+(\d+) kB/m)?.[1] ?? 0);
+    const avail = Number(meminfo.match(/^MemAvailable:\s+(\d+) kB/m)?.[1] ?? 0);
+    const usedMb = ((total - avail) / 1024).toFixed(0);
+    const totalMb = (total / 1024).toFixed(0);
+    const psOut = execSync("ps -eo rss,comm --sort=-rss | grep -i tree-sitter | head -3", { encoding: 'utf8' }).trim();
+    const topRss = psOut
+      ? psOut.split('\n').map((l) => l.trim().split(/\s+/)).map(([rss, comm]) => `${comm}=${(Number(rss) / 1024).toFixed(0)}MB`).join(', ')
+      : '(no tree-sitter process found)';
+    console.log(`  [mem] ${label}: system ${usedMb}/${totalMb}MB used; ${topRss}`);
+  } catch {
+    // Non-Linux or /proc unavailable (e.g. local macOS dev) — skip silently.
+  }
+}
 
 const CLI = 'npx --yes --package=tree-sitter-cli@v0.26.3 -- tree-sitter';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -104,6 +128,22 @@ if (hashMatches) {
 
 console.log(`generating parser for ${cacheKey}...`);
 // Run tree-sitter generate FROM the grammar's directory so output goes to <dialect>/src/
-execSync(`${CLI} generate ${grammarFile}`, { cwd: grammarDir, stdio: 'inherit' });
+if (process.env.GENERATE_DEBUG_MEMORY) {
+  const start = Date.now();
+  sampleMemory(`${cacheKey} start`);
+  const child = spawn(CLI.split(' ')[0], [...CLI.split(' ').slice(1), 'generate', grammarFile], {
+    cwd: grammarDir,
+    stdio: 'inherit',
+  });
+  const timer = setInterval(() => {
+    sampleMemory(`${cacheKey} +${((Date.now() - start) / 1000).toFixed(0)}s`);
+  }, 10_000);
+  const code = await new Promise((res) => child.on('close', res));
+  clearInterval(timer);
+  sampleMemory(`${cacheKey} end (+${((Date.now() - start) / 1000).toFixed(0)}s, exit ${code})`);
+  if (code !== 0) process.exit(code ?? 1);
+} else {
+  execSync(`${CLI} generate ${grammarFile}`, { cwd: grammarDir, stdio: 'inherit' });
+}
 writeFileSync(hashFile, currentHash);
 console.log(`done (${cacheKey}).`);
