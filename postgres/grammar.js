@@ -56,7 +56,22 @@ export default grammar(base, {
         $._dml_write,
         optional_parenthesis($._dml_read),
         $._transaction_statement,
+        $.declare_cursor_statement,
       ),
+    ),
+
+    // PostgreSQL: DECLARE name [BINARY] [[NO] SCROLL] CURSOR [{WITH|WITHOUT} HOLD]
+    // FOR query (ISO E121). PL/pgSQL DECLARE lives inside function-body strings,
+    // so a top-level DECLARE is unambiguously a cursor declaration.
+    declare_cursor_statement: $ => seq(
+      $.keyword_declare,
+      field('name', $.identifier),
+      optional($.keyword_binary),
+      optional(seq(optional($.keyword_no), $.keyword_scroll)),
+      $.keyword_cursor,
+      optional(seq(choice($.keyword_with, $.keyword_without), $.keyword_hold)),
+      $.keyword_for,
+      $._dml_read,
     ),
 
     _dml_write: $ => seq(
@@ -281,6 +296,10 @@ export default grammar(base, {
         // parse exclusively through like_expression (with optional ESCAPE),
         // not through binary_expression's operator table below.
         $.like_expression,
+        // ANSI typed temporal literal (F051-03): DATE/TIME/TIMESTAMP '…'.
+        // Re-added for the same reason — the re-enumeration replaces the base
+        // _expression wholesale.
+        $.typed_temporal_literal,
       ),
     ),
 
@@ -693,6 +712,10 @@ export default grammar(base, {
     keyword_functions:      _ => token(prec(1, make_keyword("functions"))),
     keyword_procedures:     _ => token(prec(1, make_keyword("procedures"))),
     keyword_routines:       _ => token(prec(1, make_keyword("routines"))),
+    keyword_declare:        _ => token(prec(1, make_keyword("declare"))),
+    keyword_cursor:         _ => token(prec(1, make_keyword("cursor"))),
+    keyword_scroll:         _ => token(prec(1, make_keyword("scroll"))),
+    keyword_hold:           _ => token(prec(1, make_keyword("hold"))),
 
     ...pg_copy_rules,
     ...pg_optimize_rules,

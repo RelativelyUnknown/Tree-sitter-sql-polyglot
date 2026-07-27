@@ -26,7 +26,20 @@ export default {
       $._dml_write,
       optional_parenthesis($._dml_read),
       $._transaction_statement,
+      $.declare_cursor_statement,
     ),
+  ),
+
+  // ANSI DECLARE CURSOR (ISO E121, Core): DECLARE name [[NO] SCROLL] CURSOR
+  // FOR query. Kept minimal — dialects extend with their own options
+  // (WITH HOLD, BINARY, INSENSITIVE, …) in their statement overrides.
+  declare_cursor_statement: $ => seq(
+    $.keyword_declare,
+    field('name', $.identifier),
+    optional(seq(optional($.keyword_no), $.keyword_scroll)),
+    $.keyword_cursor,
+    $.keyword_for,
+    $._dml_read,
   ),
 
   ...create_rules,

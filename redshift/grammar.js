@@ -47,7 +47,17 @@ export default grammar(base, {
         $.prepare_statement,
         $.execute_statement,
         $.deallocate_statement,
+        $.declare_cursor_statement,
       ),
+    ),
+
+    // Redshift: DECLARE cursor_name CURSOR FOR query (ISO E121).
+    declare_cursor_statement: $ => seq(
+      $.keyword_declare,
+      field('name', $.identifier),
+      $.keyword_cursor,
+      $.keyword_for,
+      $._dml_read,
     ),
 
     _ddl_statement: $ => choice(
@@ -118,6 +128,8 @@ export default grammar(base, {
         // _expression: LIKE/NOT LIKE now parse exclusively through
         // like_expression (with optional ESCAPE), not binary_expression.
         $.like_expression,
+        // ANSI typed temporal literal (F051-03): DATE/TIME/TIMESTAMP '…'.
+        $.typed_temporal_literal,
         $.parenthesized_expression,
         $.trim_expression,
         $.approximate_count,
@@ -210,6 +222,8 @@ export default grammar(base, {
     keyword_functions:    _ => token(prec(1, make_keyword("functions"))),
     keyword_procedures:   _ => token(prec(1, make_keyword("procedures"))),
     keyword_append:       _ => token(prec(1, make_keyword("append"))),
+    keyword_declare:      _ => token(prec(1, make_keyword("declare"))),
+    keyword_cursor:       _ => token(prec(1, make_keyword("cursor"))),
 
     // GRANT ... ON ALL TABLES/FUNCTIONS/PROCEDURES IN SCHEMA name (#87)
     _grant_object: $ => choice(

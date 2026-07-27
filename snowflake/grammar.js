@@ -480,6 +480,8 @@ export default grammar(base, {
       // _expression: LIKE/NOT LIKE now parse exclusively through
       // like_expression (with optional ESCAPE), not binary_expression.
       $.like_expression,
+      // ANSI typed temporal literal (F051-03): DATE/TIME/TIMESTAMP '…'.
+      $.typed_temporal_literal,
       $.parenthesized_expression,
       // Snowflake-specific
       $.variant_access,
@@ -591,6 +593,7 @@ export default grammar(base, {
     keyword_copy:           _ => token(prec(1, make_keyword("copy"))),
     keyword_policy:         _ => token(prec(1, make_keyword("policy"))),
     keyword_declare:        _ => token(prec(1, make_keyword("declare"))),
+    keyword_cursor:         _ => token(prec(1, make_keyword("cursor"))),
     keyword_match:          _ => token(prec(1, make_keyword("match"))),
     keyword_stage:          _ => token(prec(1, make_keyword("stage"))),
     keyword_url:            _ => token(prec(1, make_keyword("url"))),

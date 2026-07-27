@@ -202,6 +202,8 @@ export default grammar(base, {
         // _expression: LIKE/NOT LIKE now parse exclusively through
         // like_expression (with optional ESCAPE), not binary_expression.
         $.like_expression,
+        // ANSI typed temporal literal (F051-03): DATE/TIME/TIMESTAMP '…'.
+        $.typed_temporal_literal,
         $.parenthesized_expression,
         $.lambda_expression,
         $.struct_literal,
