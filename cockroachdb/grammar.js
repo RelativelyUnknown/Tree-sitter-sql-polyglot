@@ -52,6 +52,7 @@ export default grammar(postgres, {
         $.restore_statement,
         $.import_into_statement,
         $.create_changefeed_statement,
+        $.declare_cursor_statement,
       ),
     ),
 

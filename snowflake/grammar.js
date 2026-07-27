@@ -82,6 +82,7 @@ export default grammar(base, {
         $.for_statement,
         $.undrop_statement,
         $.call_statement,
+        $.declare_cursor_statement,
       ),
     ),
 

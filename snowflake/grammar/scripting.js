@@ -6,22 +6,13 @@ export default {
   //   var2 TYPE [DEFAULT expr];
   declare_block: $ => seq(
     $.keyword_declare,
-    repeat1(seq(choice($.variable_declaration, $.cursor_declaration), ';')),
+    repeat1(seq($.variable_declaration, ';')),
   ),
 
   variable_declaration: $ => seq(
     $.identifier,
     optional($._type),
     optional(seq($.keyword_default, $._expression)),
-  ),
-
-  // Snowflake Scripting: name CURSOR FOR query (ISO E121). Declared in the
-  // DECLARE section alongside scalar variables.
-  cursor_declaration: $ => seq(
-    field('name', $.identifier),
-    $.keyword_cursor,
-    $.keyword_for,
-    $._dml_read,
   ),
 
   // BEGIN
