@@ -18,7 +18,9 @@ export default grammar(base, {
     [$.object_reference, $._qualified_field],
     [$._column, $._qualified_field],
     [$.object_reference],
-    [$.between_expression, $.binary_expression],
+    // Local shift/reduce ambiguity shared with like_expression's optional
+    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    [$.between_expression, $.binary_expression, $.like_expression],
     [$.time],
     [$.timestamp],
     [$.create_function],
@@ -274,6 +276,11 @@ export default grammar(base, {
         $.between_expression,
         $.parenthesized_expression,
         $.object_id,
+        // Inherited from base but this dialect fully re-enumerates
+        // _expression, so it must be re-added explicitly: LIKE/NOT LIKE now
+        // parse exclusively through like_expression (with optional ESCAPE),
+        // not through binary_expression's operator table below.
+        $.like_expression,
       ),
     ),
 
@@ -296,8 +303,9 @@ export default grammar(base, {
         [$.op_other, 'binary_other'],
         [$.keyword_is, 'binary_is'],
         [$.is_not, 'binary_is'],
-        [$.keyword_like, 'pattern_matching'],
-        [$.not_like, 'pattern_matching'],
+        // LIKE / NOT LIKE are handled exclusively by the inherited
+        // like_expression rule (with its optional ESCAPE tail) — not
+        // duplicated here. See base grammar/expressions.js for why.
         [$.keyword_ilike, 'pattern_matching'],
         [$.not_ilike, 'pattern_matching'],
         [$.keyword_rlike, 'pattern_matching'],

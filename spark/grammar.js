@@ -14,7 +14,9 @@ export default grammar(hive, {
     [$.object_reference, $._qualified_field],
     [$._column, $._qualified_field],
     [$.object_reference],
-    [$.between_expression, $.binary_expression],
+    // Local shift/reduce ambiguity shared with like_expression's optional
+    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    [$.between_expression, $.binary_expression, $.like_expression],
     [$.from],
     [$.create_function],
     [$.list, $.grouping_set],
@@ -215,6 +217,10 @@ export default grammar(hive, {
       $.array,
       $.interval,
       $.between_expression,
+      // Inherited from base but this dialect fully re-enumerates
+      // _expression: LIKE/NOT LIKE now parse exclusively through
+      // like_expression (with optional ESCAPE), not binary_expression.
+      $.like_expression,
       $.parenthesized_expression,
       $.collate_expression,
       $.variant_path_expression,

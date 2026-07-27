@@ -16,7 +16,9 @@ export default grammar(base, {
     [$.field, $._qualified_field],
     [$._column, $._qualified_field],
     [$.object_reference],
-    [$.between_expression, $.binary_expression],
+    // Local shift/reduce ambiguity shared with like_expression's optional
+    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    [$.between_expression, $.binary_expression, $.like_expression],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
@@ -459,6 +461,10 @@ export default grammar(base, {
         $.array,
         $.interval,
         $.between_expression,
+        // Inherited from base but this dialect fully re-enumerates
+        // _expression: LIKE/NOT LIKE now parse exclusively through
+        // like_expression (with optional ESCAPE), not binary_expression.
+        $.like_expression,
         $.parenthesized_expression,
       ),
     ),

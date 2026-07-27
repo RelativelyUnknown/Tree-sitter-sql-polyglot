@@ -212,6 +212,7 @@
   (keyword_some)
   (keyword_only)
   (keyword_like)
+  (keyword_escape)
   (keyword_rlike)
   (keyword_similar)
   (keyword_over)

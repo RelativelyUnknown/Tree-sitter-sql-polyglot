@@ -360,4 +360,7 @@ export default {
   keyword_localtime: _ => make_keyword("localtime"),
   keyword_localtimestamp: _ => make_keyword("localtimestamp"),
 
+  // ANSI SQL — LIKE ... ESCAPE (E061-05)
+  keyword_escape: _ => make_keyword("escape"),
+
 }
