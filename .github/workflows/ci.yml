@@ -82,6 +82,16 @@ jobs:
       # dependency and running tree-sitter generate for several dialects at
       # once is safe.
       - name: Generate parsers
+        # Force strictly sequential generation: generate-all.js's own
+        # memory-bound concurrency (6GB/worker budget) still allows 2 workers
+        # on a standard 16GB runner, and two of the heavier grammars
+        # (spark/databricks/oracle/db2/hana/clickhouse) generating at once has
+        # been observed to exceed that and OOM the whole runner VM — which
+        # Actions reports as "the runner has received a shutdown signal"
+        # rather than an ordinary step failure. Trade wall-clock time for
+        # reliability here.
+        env:
+          GENERATE_CONCURRENCY: 1
         run: |
           if [ -z "${{ matrix.dialects }}" ]; then
             node scripts/generate.js
@@ -163,6 +173,12 @@ jobs:
             parsers-v2-coverage-
 
       - name: Generate all parsers
+        # See the matching note on the test job's "Generate parsers" step:
+        # forced sequential to avoid OOM-ing the runner when heavy grammars
+        # generate concurrently (this job generates all 22 dialects at once,
+        # the worst case for that).
+        env:
+          GENERATE_CONCURRENCY: 1
         run: npm run generate:all
 
       - name: Install corroborators

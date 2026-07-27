@@ -61,7 +61,11 @@ jobs:
             parsers-v2-coverage-
 
       - run: npm install
+      # Forced sequential — see ci.yml's coverage job: concurrent generation
+      # of the heavier grammars (all 22 at once here) can OOM the runner VM.
       - run: npm run generate:all
+        env:
+          GENERATE_CONCURRENCY: 1
 
       # No TREE_SITTER_BIN override: coverage.py's own default pins the same
       # npx tree-sitter-cli@v0.26.3 that generate.js uses to build the parsers —
