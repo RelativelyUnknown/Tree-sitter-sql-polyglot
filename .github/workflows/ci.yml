@@ -235,12 +235,28 @@ jobs:
       # uploaded its own via "Upload parsers for coverage reuse"). merge-multiple
       # reconstructs root src/ and every <dialect>/src/ in place, plus the
       # .grammar-cache/*.hash markers — so the generate:all below is a no-op.
-      # This replaces the ~86-min full regeneration (and the swap it required).
+      # This replaces the ~86-min full regeneration for the common case.
       - name: Download parsers from test matrix
         uses: actions/download-artifact@v4
         with:
           pattern: parsers-*
           merge-multiple: true
+
+      # Safety-net swap for the generate:all below. In the happy path every
+      # grammar is a hash-cache hit and nothing regenerates, so this costs
+      # nothing. But generate:all self-heals any grammar whose artifact failed
+      # to transport — and if that grammar is clickhouse (peaks at ~15.4GB RSS
+      # generating), a from-scratch rebuild OOM-kills the whole runner ("the
+      # runner has received a shutdown signal", exit 143). Cheap swap keeps the
+      # fallback path survivable regardless of which single artifact is missing.
+      - name: Increase swap (safety net for a clickhouse fallback regen)
+        run: |
+          sudo swapoff -a || true
+          sudo fallocate -l 12G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
 
       - name: Generate all parsers (no-op when artifacts restored; safety net)
         # With the downloaded parsers + .grammar-cache/*.hash markers present,
