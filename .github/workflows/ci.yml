@@ -138,6 +138,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: parsers-${{ matrix.shard }}
+          # .grammar-cache/ is dot-prefixed; upload-artifact@v4 excludes hidden
+          # paths by default, which would drop the hash markers and force the
+          # coverage job to regenerate all 22 from scratch (the exact ~86 min /
+          # OOM this reuse is meant to avoid). Opt them back in.
+          include-hidden-files: true
           path: |
             src/parser.c
             src/*.json
