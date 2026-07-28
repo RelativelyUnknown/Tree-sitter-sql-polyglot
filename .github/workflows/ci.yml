@@ -127,6 +127,28 @@ jobs:
             node scripts/generate-all.js ${{ matrix.dialects }}
           fi
 
+      # Publish this shard's freshly-generated parsers so the coverage job can
+      # reuse them instead of regenerating all 22 from scratch (~86 min). The
+      # globs only match what this shard actually built (base shard → root src/;
+      # dialect shards → their */src/). The .grammar-cache/*.hash markers travel
+      # too, so the coverage job's `generate:all` sees a full hash-cache hit and
+      # no-ops. Parsers are built with tree-sitter-cli@v0.26.3 (same pin
+      # coverage.py uses to parse), so they are ABI-compatible for reuse.
+      - name: Upload parsers for coverage reuse
+        uses: actions/upload-artifact@v4
+        with:
+          name: parsers-${{ matrix.shard }}
+          path: |
+            src/parser.c
+            src/*.json
+            src/tree_sitter/
+            */src/parser.c
+            */src/*.json
+            */src/tree_sitter/
+            .grammar-cache/
+          retention-days: 1
+          if-no-files-found: warn
+
       # Rust build cache for the base parser-test-action (cargo test of the
       # Rust binding is the slowest part of the base shard).
       - uses: Swatinem/rust-cache@v2
@@ -190,41 +212,37 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      # Parsers now come from the test matrix via download-artifact (below), so
+      # this cache only carries the ANTLR reference-parser build and the
+      # tree-sitter on-the-fly compile cache — the slow-to-rebuild, parser-
+      # independent pieces.
       - uses: actions/cache@v4
         with:
           path: |
-            src/parser.c
-            src/node-types.json
-            src/grammar.json
-            src/tree_sitter/
-            */src/parser.c
-            */src/node-types.json
-            */src/grammar.json
-            */src/tree_sitter/
-            .grammar-cache/
             ~/.cache/tree-sitter/
             tools/antlr/build/
             tools/antlr/*.jar
-          key: parsers-v2-coverage-${{ hashFiles('grammar.js', 'grammar/**', '*/grammar.js', '*/grammar/**', 'tools/antlr/setup.sh') }}
+          key: coverage-deps-${{ hashFiles('tools/antlr/setup.sh') }}
           restore-keys: |
-            parsers-v2-coverage-
+            coverage-deps-
 
-      # See the test job's "Increase swap" step: this job generates all 22
-      # dialects, including clickhouse, which peaks at ~15.4GB RSS alone.
-      - name: Increase swap (ClickHouse generate is memory-bound)
-        run: |
-          sudo swapoff -a || true
-          sudo fallocate -l 12G /swapfile
-          sudo chmod 600 /swapfile
-          sudo mkswap /swapfile
-          sudo swapon /swapfile
-          free -h
+      # Reuse the parsers the test matrix already built this run (each shard
+      # uploaded its own via "Upload parsers for coverage reuse"). merge-multiple
+      # reconstructs root src/ and every <dialect>/src/ in place, plus the
+      # .grammar-cache/*.hash markers — so the generate:all below is a no-op.
+      # This replaces the ~86-min full regeneration (and the swap it required).
+      - name: Download parsers from test matrix
+        uses: actions/download-artifact@v4
+        with:
+          pattern: parsers-*
+          merge-multiple: true
 
-      - name: Generate all parsers
-        # See the matching note on the test job's "Generate parsers" step:
-        # forced sequential to avoid OOM-ing the runner when heavy grammars
-        # generate concurrently (this job generates all 22 dialects at once,
-        # the worst case for that).
+      - name: Generate all parsers (no-op when artifacts restored; safety net)
+        # With the downloaded parsers + .grammar-cache/*.hash markers present,
+        # generate.js's hash cache skips every grammar ("unchanged — skipping
+        # generate"), so this returns in seconds. It self-heals only what's
+        # actually missing if an artifact failed to transport. GENERATE_CONCURRENCY=1
+        # keeps that fallback path safe (see the test job's note).
         env:
           GENERATE_CONCURRENCY: 1
         run: npm run generate:all
