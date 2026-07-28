@@ -23,7 +23,6 @@ export default grammar(base, {
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
-    [$.interval],
     // DuckDB from-first vs regular from
     [$.from_first_select, $.from],
     // from_first_select in statement vs _dml_read

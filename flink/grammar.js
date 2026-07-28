@@ -29,7 +29,6 @@ export default grammar(base, {
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
-    [$.interval],
     // Flink-specific conflicts
     [$.metadata_column, $.column_definition],
     [$._column, $.metadata_column],

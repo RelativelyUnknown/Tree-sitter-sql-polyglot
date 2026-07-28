@@ -24,7 +24,6 @@ export default grammar(postgres, {
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
-    [$.interval],
     // SPLIT AT VALUES (…) shares the base `values` rule with a top-level VALUES.
     [$.values],
     // SET LOCALITY and SET SCHEMA both begin ALTER TABLE … SET.

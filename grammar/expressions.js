@@ -355,11 +355,17 @@ export default {
   ),
 
   // Postgres syntax for intervals
-  interval: $ => seq(
+  // prec.right greedily attaches the optional trailing qualifier
+  // (INTERVAL '1' DAY -> qualifier=DAY) instead of reducing INTERVAL '1' and
+  // leaving DAY to a following context (e.g. an implicit select alias). This
+  // resolves the interval shift/reduce statically, so it no longer needs a
+  // declared GLR [$.interval] self-conflict. Parse trees are unchanged
+  // (INTERVAL '1' DAY still yields interval with qualifier: DAY).
+  interval: $ => prec.right(seq(
     $.keyword_interval,
     $._literal_string,
     optional(field('qualifier', $.identifier)),
-  ),
+  )),
 
   between_expression: $ => choice(
     ...[

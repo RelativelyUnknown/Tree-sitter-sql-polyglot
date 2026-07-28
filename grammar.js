@@ -29,7 +29,9 @@ export default grammar({
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
-    [$.interval],
+    // [$.interval] removed: the interval rule now resolves its trailing-
+    // qualifier shift/reduce statically via prec.right (see
+    // grammar/expressions.js), so the GLR conflict is no longer needed.
   ],
 
   precedences: $ => [

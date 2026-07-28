@@ -23,7 +23,6 @@ export default grammar(base, {
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
-    [$.interval],
     // output_clause: optional paren column list after INTO @var is ambiguous
     // (also ambiguous with column_definitions on INTO @var (col_list)).
     // EXPLAIN followed by keyword_continue / keyword_break is ambiguous — resolved by tree-sitter

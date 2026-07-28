@@ -19,7 +19,6 @@ export default grammar(trino, {
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
-    [$.interval],
     [$.time],
     [$.timestamp],
     [$.term],

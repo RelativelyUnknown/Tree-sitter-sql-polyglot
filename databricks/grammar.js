@@ -30,7 +30,6 @@ export default grammar(spark, {
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
-    [$.interval],
     [$.term],
     [$.values],
     [$.select_expression],

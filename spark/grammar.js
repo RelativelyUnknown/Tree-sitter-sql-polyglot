@@ -22,7 +22,6 @@ export default grammar(hive, {
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
-    [$.interval],
     [$.term],
     [$.lateral_cross_join],
     [$.values],

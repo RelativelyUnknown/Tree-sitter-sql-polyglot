@@ -49,7 +49,6 @@ export default grammar(base, {
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
-    [$.interval],
     [$.assignment_statement, $._qualified_field],
     [$._function_return, $.return_statement],
     [$.cursor_for_loop, $.for_statement],
