@@ -25,10 +25,9 @@ export default grammar(base, {
     [$.list, $.cube_element],
     [$.interval],
     // output_clause: optional paren column list after INTO @var is ambiguous
-    [$.output_clause],
+    // (also ambiguous with column_definitions on INTO @var (col_list)).
     // EXPLAIN followed by keyword_continue / keyword_break is ambiguous — resolved by tree-sitter
     // [$.statement] removed (tree-sitter reported it unnecessary)
-    // output_clause INTO @var (col_list) is ambiguous with column_definitions
     [$.output_clause],
     // option_clause after optional_parenthesis(_dml_read) causes close-paren ambiguity
     [$.option_clause],
