@@ -218,18 +218,28 @@ jobs:
           java-version: "17"
 
       # Parsers now come from the test matrix via download-artifact (below), so
-      # this cache only carries the ANTLR reference-parser build and the
-      # tree-sitter on-the-fly compile cache — the slow-to-rebuild, parser-
-      # independent pieces.
+      # this cache only carries the ANTLR reference-parser build — the
+      # slow-to-rebuild, parser-independent piece.
+      #
+      # Deliberately NOT caching ~/.cache/tree-sitter/ here. That directory holds
+      # tree-sitter's *compiled* parser libraries (.so), which it reuses based on
+      # source mtime. When the coverage job regenerated every parser.c itself,
+      # the fresh mtime always superseded any cached .so. Now that parser.c comes
+      # from download-artifact (older mtime, not regenerated), a cached .so would
+      # win the mtime check and coverage.py would parse with a STALE compiled
+      # library — silently scoring current features (like_escape,
+      # typed_temporal_literal, cursor) as "absent". Compiling parser.c is cheap
+      # (seconds, unlike generation), so we always compile fresh instead. Key
+      # bumped to v2 so the old archive (which still contains that .so) is not
+      # restored.
       - uses: actions/cache@v4
         with:
           path: |
-            ~/.cache/tree-sitter/
             tools/antlr/build/
             tools/antlr/*.jar
-          key: coverage-deps-${{ hashFiles('tools/antlr/setup.sh') }}
+          key: coverage-deps-v2-${{ hashFiles('tools/antlr/setup.sh') }}
           restore-keys: |
-            coverage-deps-
+            coverage-deps-v2-
 
       # Reuse the parsers the test matrix already built this run (each shard
       # uploaded its own via "Upload parsers for coverage reuse"). merge-multiple
@@ -267,6 +277,20 @@ jobs:
         env:
           GENERATE_CONCURRENCY: 1
         run: npm run generate:all
+
+      # Guarantee coverage.py parses with the CURRENT parser.c. tree-sitter
+      # compiles parser.c to a cached .so and reuses it while the source isn't
+      # newer; a lingering compiled lib would otherwise shadow a downloaded
+      # (non-regenerated) parser.c and mis-score current features as absent.
+      # Purge any compiled cache and bump every parser source's mtime so the
+      # first parse recompiles from the freshly downloaded/generated sources.
+      - name: Force fresh parser compilation
+        run: |
+          rm -rf ~/.cache/tree-sitter
+          # touch only files that already exist (never create an empty
+          # scanner.c); covers repo-root src/ (base) and every */src/ (dialects)
+          find . -type f \( -name parser.c -o -name scanner.c -o -name scanner.cc \) \
+            -path '*src/*' -exec touch {} +
 
       # Log per-grammar parser size (src/parser.c bytes), STATE_COUNT /
       # LARGE_STATE_COUNT and declared-conflict count, ranked, so GLR
