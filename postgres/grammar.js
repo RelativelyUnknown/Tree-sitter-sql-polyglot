@@ -21,8 +21,6 @@ export default grammar(base, {
     // Local shift/reduce ambiguity shared with like_expression's optional
     // ESCAPE tail — kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
-    [$.time],
-    [$.timestamp],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],

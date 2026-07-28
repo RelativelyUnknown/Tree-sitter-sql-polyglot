@@ -11,8 +11,6 @@ export default grammar(base, {
 
   conflicts: $ => [
     [$.object_reference, $._qualified_field],
-    [$.time],
-    [$.timestamp],
     [$.field, $._qualified_field],
     [$._column, $._qualified_field],
     [$.object_reference],
