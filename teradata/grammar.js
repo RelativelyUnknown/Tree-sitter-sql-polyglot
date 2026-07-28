@@ -69,7 +69,19 @@ export default grammar(base, {
         $.set_query_band_statement,
         $.help_statement,
         $.compound_statement,
+        $.declare_cursor_statement,
       ),
+    ),
+
+    // Teradata SP cursor: DECLARE cursor_name CURSOR FOR <query> (ISO E121).
+    // Minimal override of the base rule — Teradata has no [NO] SCROLL option,
+    // and dropping that optional sub-sequence keeps the parse table small.
+    declare_cursor_statement: $ => seq(
+      $.keyword_declare,
+      field('name', $.identifier),
+      $.keyword_cursor,
+      $.keyword_for,
+      $._dml_read,
     ),
 
     // Atomic UPSERT: UPDATE … SET … [WHERE …] ELSE INSERT … (base update plus
