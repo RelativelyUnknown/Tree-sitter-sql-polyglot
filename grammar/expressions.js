@@ -25,6 +25,9 @@ export default {
       $.between_expression,
       $.parenthesized_expression,
       $.trim_expression,
+      $.typed_temporal_literal,
+      $.datetime_value_function,
+      $.like_expression,
     )
   ),
 
@@ -276,8 +279,13 @@ export default {
       [$.op_other, 'binary_other'],
       [$.keyword_is, 'binary_is'],
       [$.is_not, 'binary_is'],
-      [$.keyword_like, 'pattern_matching'],
-      [$.not_like, 'pattern_matching'],
+      // LIKE / NOT LIKE are handled exclusively by like_expression below (with
+      // its optional ESCAPE tail) — NOT duplicated here. Two rules deriving
+      // the identical "expr LIKE expr" span would force GLR to carry both
+      // interpretations through every nested expression containing a LIKE,
+      // which is expensive enough to blow the parse table for large dialect
+      // grammars (observed: teradata/clickhouse failed to generate under 12+
+      // minutes with the duplicate). One rule, no ambiguity, no explosion.
       [$.keyword_rlike, 'pattern_matching'],
       [$.not_rlike, 'pattern_matching'],
       [$.similar_to, 'pattern_matching'],
@@ -371,6 +379,45 @@ export default {
   not_in: $ => seq(
     $.keyword_not,
     $.keyword_in,
+  ),
+
+  // ANSI LIKE ... ESCAPE (E061-05). The SOLE rule for `expr LIKE expr` — it is
+  // NOT also listed in binary_expression's operator map. Deriving the same
+  // "expr LIKE expr" span two different ways (once here, once as a plain
+  // binary_expression) forces GLR to keep both interpretations alive across
+  // every nested expression containing a LIKE, which explodes the parse table
+  // for large dialect grammars (teradata/clickhouse failed to generate under
+  // that duplication). One rule, no ambiguity: ESCAPE is simply optional.
+  like_expression: $ => prec.left('pattern_matching', seq(
+    field('left', $._expression),
+    field('operator', choice($.keyword_like, $.not_like)),
+    field('right', $._expression),
+    optional(seq($.keyword_escape, field('escape', $._expression))),
+  )),
+
+  // ANSI typed temporal literals (F051-03): DATE '…', TIME '…', TIMESTAMP '…'.
+  typed_temporal_literal: $ => prec(2, seq(
+    field('type', choice($.keyword_date, $.keyword_time, $.keyword_timestamp)),
+    field('value', alias($._literal_string, $.literal)),
+  )),
+
+  // ANSI datetime value functions (F051-06): niladic CURRENT_DATE / CURRENT_TIME
+  // / CURRENT_TIMESTAMP / LOCALTIME / LOCALTIMESTAMP, with optional precision on
+  // the time-bearing forms.
+  datetime_value_function: $ => choice(
+    $.keyword_current_date,
+    // prec.right so that after CURRENT_TIME/TIMESTAMP/LOCALTIME[STAMP] a
+    // following `(` is shifted as the optional precision rather than reducing
+    // the niladic form (a shift/reduce that surfaces in some dialects).
+    prec.right(2, seq(
+      choice(
+        $.keyword_current_time,
+        $.keyword_current_timestamp,
+        $.keyword_localtime,
+        $.keyword_localtimestamp,
+      ),
+      optional(wrapped_in_parenthesis(alias($._natural_number, $.literal))),
+    )),
   ),
 
   subquery: $ => wrapped_in_parenthesis(

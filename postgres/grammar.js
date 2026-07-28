@@ -18,7 +18,9 @@ export default grammar(base, {
     [$.object_reference, $._qualified_field],
     [$._column, $._qualified_field],
     [$.object_reference],
-    [$.between_expression, $.binary_expression],
+    // Local shift/reduce ambiguity shared with like_expression's optional
+    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    [$.between_expression, $.binary_expression, $.like_expression],
     [$.time],
     [$.timestamp],
     [$.create_function],
@@ -54,7 +56,22 @@ export default grammar(base, {
         $._dml_write,
         optional_parenthesis($._dml_read),
         $._transaction_statement,
+        $.declare_cursor_statement,
       ),
+    ),
+
+    // PostgreSQL: DECLARE name [BINARY] [[NO] SCROLL] CURSOR [{WITH|WITHOUT} HOLD]
+    // FOR query (ISO E121). PL/pgSQL DECLARE lives inside function-body strings,
+    // so a top-level DECLARE is unambiguously a cursor declaration.
+    declare_cursor_statement: $ => seq(
+      $.keyword_declare,
+      field('name', $.identifier),
+      optional($.keyword_binary),
+      optional(seq(optional($.keyword_no), $.keyword_scroll)),
+      $.keyword_cursor,
+      optional(seq(choice($.keyword_with, $.keyword_without), $.keyword_hold)),
+      $.keyword_for,
+      $._dml_read,
     ),
 
     _dml_write: $ => seq(
@@ -274,6 +291,15 @@ export default grammar(base, {
         $.between_expression,
         $.parenthesized_expression,
         $.object_id,
+        // Inherited from base but this dialect fully re-enumerates
+        // _expression, so it must be re-added explicitly: LIKE/NOT LIKE now
+        // parse exclusively through like_expression (with optional ESCAPE),
+        // not through binary_expression's operator table below.
+        $.like_expression,
+        // ANSI typed temporal literal (F051-03): DATE/TIME/TIMESTAMP '…'.
+        // Re-added for the same reason — the re-enumeration replaces the base
+        // _expression wholesale.
+        $.typed_temporal_literal,
       ),
     ),
 
@@ -296,8 +322,9 @@ export default grammar(base, {
         [$.op_other, 'binary_other'],
         [$.keyword_is, 'binary_is'],
         [$.is_not, 'binary_is'],
-        [$.keyword_like, 'pattern_matching'],
-        [$.not_like, 'pattern_matching'],
+        // LIKE / NOT LIKE are handled exclusively by the inherited
+        // like_expression rule (with its optional ESCAPE tail) — not
+        // duplicated here. See base grammar/expressions.js for why.
         [$.keyword_ilike, 'pattern_matching'],
         [$.not_ilike, 'pattern_matching'],
         [$.keyword_rlike, 'pattern_matching'],
@@ -685,6 +712,10 @@ export default grammar(base, {
     keyword_functions:      _ => token(prec(1, make_keyword("functions"))),
     keyword_procedures:     _ => token(prec(1, make_keyword("procedures"))),
     keyword_routines:       _ => token(prec(1, make_keyword("routines"))),
+    keyword_declare:        _ => token(prec(1, make_keyword("declare"))),
+    keyword_cursor:         _ => token(prec(1, make_keyword("cursor"))),
+    keyword_scroll:         _ => token(prec(1, make_keyword("scroll"))),
+    keyword_hold:           _ => token(prec(1, make_keyword("hold"))),
 
     ...pg_copy_rules,
     ...pg_optimize_rules,

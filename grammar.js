@@ -20,7 +20,11 @@ export default grammar({
     [$.field, $._qualified_field],
     [$._column, $._qualified_field],
     [$.object_reference],
-    [$.between_expression, $.binary_expression],
+    // Local shift/reduce ambiguity at the same "what does a trailing NOT
+    // belong to" boundary that between_expression/binary_expression already
+    // share above — bounded to one lookahead decision, not a duplicate
+    // derivation of the whole like_expression subtree.
+    [$.between_expression, $.binary_expression, $.like_expression],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],

@@ -1,8 +1,10 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Canonical feature registry for the per-dialect completeness scorecard.
+# Canonical feature registry for the corroborated coverage tool.
 #
-# Consumed by tools/scorecard.py, which parses each feature's probe SQL with
-# every dialect's compiled parser and reports weighted coverage per dialect.
+# Consumed by tools/coverage.py, which parses each feature's probe SQL with
+# every dialect's compiled parser AND with independent reference parsers
+# (SQLGlot, ANTLR, pglast, sqlfluff), and reports weighted, corroborated
+# coverage per dialect (base scored against ISO Core).
 #
 # Schema
 # ------
@@ -15,12 +17,20 @@
 # features:            list of canonical features
 #   - id:              stable snake_case identifier
 #     name:            human-readable name
+#     iso:             optional ISO/IEC 9075 feature code (e.g. E061-05, F201)
 #     category:        dml | ddl | query | procedural | types | admin
 #     ansi:            true  = part of ISO/IEC 9075 → the BASE parser must
-#                              accept the default probe
+#                              accept the default probe (counts toward the base
+#                              Core score)
 #                      false = vendor extension → the BASE parser must REJECT
 #                              the default probe (ANSI purity rule); dialects
 #                              opt in via their grammars
+#     observable:      optional, default true. false = the feature has no
+#                              writable surface syntax to probe (e.g. SQLSTATE
+#                              status codes, host-language binding) and is
+#                              excluded from every score denominator. Kept
+#                              minimal — if you can write it as SQL, it is
+#                              observable and must be scored.
 #     weight:          1 = niche, 3 = high-frequency production feature
 #     probe:           default probe SQL (must end with ;)
 #     purity_exception: optional; true when the base grammar currently accepts
@@ -606,3 +616,105 @@ features:
         probe: "PREPARE p1 FROM SELECT a FROM t1;"
       clickhouse: { status: not-applicable, reason: "No PREPARE" }
       flink:      { status: not-applicable, reason: "No PREPARE" }
+
+  # ── ANSI Core predicates, literals & expressions ─────────────────────────
+  # Grounded in ISO/IEC 9075-2 Core. The base grammar MUST parse every writable
+  # ANSI construct here; anything it rejects is a genuine base gap.
+
+  - id: quantified_comparison
+    name: "Quantified comparison predicate (= ANY / > ALL)"
+    iso: E061-07
+    category: query
+    ansi: true
+    weight: 1
+    probe: "SELECT a FROM t1 WHERE a = ANY (SELECT b FROM t2);"
+
+  - id: like_escape
+    name: "LIKE … ESCAPE"
+    iso: E061-05
+    category: query
+    ansi: true
+    weight: 1
+    probe: "SELECT a FROM t1 WHERE a LIKE 'x%' ESCAPE '!';"
+
+  - id: typed_temporal_literal
+    name: "Typed temporal literal (DATE/TIME/TIMESTAMP '…')"
+    iso: F051-03
+    category: types
+    ansi: true
+    weight: 1
+    probe: "SELECT a FROM t1 WHERE d > DATE '2021-01-01';"
+
+  - id: datetime_value_function
+    name: "Datetime value functions (CURRENT_DATE/TIMESTAMP, LOCALTIMESTAMP)"
+    iso: F051-06
+    category: query
+    ansi: true
+    weight: 1
+    probe: "SELECT CURRENT_DATE, CURRENT_TIMESTAMP FROM t1;"
+
+  - id: cast_expression
+    name: "CAST"
+    iso: F201
+    category: query
+    ansi: true
+    weight: 3
+    probe: "SELECT CAST(a AS INTEGER) FROM t1;"
+
+  - id: case_expression
+    name: "CASE expression"
+    iso: F261
+    category: query
+    ansi: true
+    weight: 3
+    probe: "SELECT CASE WHEN a > 1 THEN 'y' ELSE 'n' END FROM t1;"
+
+  # Cursors are writable ANSI SQL (E121), so the base is scored on them — and,
+  # having no cursor rules by design, the base honestly reports them as a gap.
+  # Dialects with a procedural/embedded layer implement them.
+  - id: cursor
+    name: "Cursors (DECLARE / OPEN / FETCH / CLOSE)"
+    iso: E121
+    category: procedural
+    ansi: true
+    weight: 1
+    probe: "DECLARE c CURSOR FOR SELECT a FROM t1;"
+    dialects:
+      tsql:
+        probe: "DECLARE c CURSOR FOR SELECT a FROM t1; OPEN c;"
+      sqlite:     { status: not-applicable, reason: "Cursors are API-level only" }
+      hive:       { status: not-applicable, reason: "No cursors" }
+      spark:      { status: not-applicable, reason: "No cursors" }
+      databricks: { status: not-applicable, reason: "No cursors" }
+      trino:      { status: not-applicable, reason: "No cursors" }
+      athena:     { status: not-applicable, reason: "No cursors" }
+      duckdb:     { status: not-applicable, reason: "No cursors" }
+      clickhouse: { status: not-applicable, reason: "No cursors" }
+      bigquery:   { status: not-applicable, reason: "No cursors" }
+      spanner:    { status: not-applicable, reason: "No cursors" }
+      flink:      { status: not-applicable, reason: "No cursors" }
+      oracle:     { probe: "DECLARE CURSOR c IS SELECT a FROM t1; BEGIN NULL; END;" }
+      hana:       { probe: "DECLARE CURSOR c FOR SELECT a FROM t1;" }
+      teradata:   { probe: "DECLARE c CURSOR FOR SELECT a FROM t1;" }
+
+  # ── Not parser-observable ────────────────────────────────────────────────
+  # No writable surface syntax to probe → excluded from every score denominator.
+  # Kept minimal and documented so the exclusion is explicit, not a catch-all.
+
+  - id: sqlstate
+    name: "SQLSTATE status codes"
+    iso: E171
+    category: admin
+    ansi: true
+    weight: 1
+    observable: false
+    probe: "SELECT 1;"   # unused: observable:false features are never probed
+
+  - id: host_language_binding
+    name: "Host-language binding (embedded SQL)"
+    iso: E182
+    category: admin
+    ansi: true
+    weight: 1
+    observable: false
+    probe: "SELECT 1;"   # unused: observable:false features are never probed

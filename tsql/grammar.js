@@ -16,17 +16,18 @@ export default grammar(base, {
     [$.field, $._qualified_field],
     [$._column, $._qualified_field],
     [$.object_reference],
-    [$.between_expression, $.binary_expression],
+    // Local shift/reduce ambiguity shared with like_expression's optional
+    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    [$.between_expression, $.binary_expression, $.like_expression],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
     [$.interval],
     // output_clause: optional paren column list after INTO @var is ambiguous
-    [$.output_clause],
+    // (also ambiguous with column_definitions on INTO @var (col_list)).
     // EXPLAIN followed by keyword_continue / keyword_break is ambiguous — resolved by tree-sitter
     // [$.statement] removed (tree-sitter reported it unnecessary)
-    // output_clause INTO @var (col_list) is ambiguous with column_definitions
     [$.output_clause],
     // option_clause after optional_parenthesis(_dml_read) causes close-paren ambiguity
     [$.option_clause],
@@ -201,6 +202,12 @@ export default grammar(base, {
         $.array,
         $.interval,
         $.between_expression,
+        // Inherited from base but this dialect fully re-enumerates
+        // _expression: LIKE/NOT LIKE now parse exclusively through
+        // like_expression (with optional ESCAPE), not binary_expression.
+        $.like_expression,
+        // ANSI typed temporal literal (F051-03): DATE/TIME/TIMESTAMP '…'.
+        $.typed_temporal_literal,
         $.parenthesized_expression,
       ),
     ),

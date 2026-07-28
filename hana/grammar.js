@@ -18,7 +18,9 @@ export default grammar(base, {
     [$.field, $._qualified_field],
     [$._column, $._qualified_field],
     [$.object_reference],
-    [$.between_expression, $.binary_expression],
+    // Local shift/reduce ambiguity shared with like_expression's optional
+    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    [$.between_expression, $.binary_expression, $.like_expression],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
@@ -79,7 +81,18 @@ export default grammar(base, {
         $._transaction_statement,
         $.upsert_statement,
         $.compound_statement,
+        $.declare_cursor_statement,
       ),
+    ),
+
+    // SAP HANA SQLScript cursor: DECLARE CURSOR name FOR <select> (ISO E121,
+    // CURSOR-first order, unlike the ANSI name-first form).
+    declare_cursor_statement: $ => seq(
+      $.keyword_declare,
+      $.keyword_cursor,
+      field('name', $.identifier),
+      $.keyword_for,
+      $._dml_read,
     ),
 
     // base DDL dispatch plus COMMENT ON (HANA supports COMMENT ON TABLE/COLUMN/VIEW).
@@ -109,6 +122,7 @@ export default grammar(base, {
     keyword_definer:   _ => token(prec(1, make_keyword("definer"))),
     keyword_reads:     _ => token(prec(1, make_keyword("reads"))),
     keyword_declare:   _ => token(prec(1, make_keyword("declare"))),
+    keyword_cursor:    _ => token(prec(1, make_keyword("cursor"))),
     keyword_constant:  _ => token(prec(1, make_keyword("constant"))),
     keyword_inout:     _ => token(prec(1, make_keyword("inout"))),
     keyword_global:    _ => token(prec(1, make_keyword("global"))),

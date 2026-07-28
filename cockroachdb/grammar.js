@@ -15,7 +15,9 @@ export default grammar(postgres, {
     [$.object_reference, $._qualified_field],
     [$._column, $._qualified_field],
     [$.object_reference],
-    [$.between_expression, $.binary_expression],
+    // Local shift/reduce ambiguity shared with like_expression's optional
+    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    [$.between_expression, $.binary_expression, $.like_expression],
     [$.time],
     [$.timestamp],
     [$.create_function],
@@ -50,6 +52,7 @@ export default grammar(postgres, {
         $.restore_statement,
         $.import_into_statement,
         $.create_changefeed_statement,
+        $.declare_cursor_statement,
       ),
     ),
 

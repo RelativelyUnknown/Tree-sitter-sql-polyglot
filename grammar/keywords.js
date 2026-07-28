@@ -164,6 +164,9 @@ export default {
   keyword_current: _ => make_keyword("current"),
   keyword_row: _ => make_keyword("row"),
   keyword_fetch: _ => make_keyword("fetch"),
+  keyword_declare: _ => make_keyword("declare"),
+  keyword_cursor: _ => make_keyword("cursor"),
+  keyword_scroll: _ => make_keyword("scroll"),
   keyword_ties: _ => make_keyword("ties"),
   keyword_others: _ => make_keyword("others"),
   keyword_only: _ => make_keyword("only"),
@@ -351,5 +354,16 @@ export default {
 
   // ANSI SQL — WITHIN GROUP (ORDER BY ...)
   keyword_within: _ => make_keyword("within"),
+
+  // ANSI SQL — datetime value functions (F051-06). keyword_current_timestamp
+  // is declared above; the rest are added here for the datetime_value_function
+  // rule. LOCALTIME / LOCALTIMESTAMP are the without-time-zone variants.
+  keyword_current_date: _ => make_keyword("current_date"),
+  keyword_current_time: _ => make_keyword("current_time"),
+  keyword_localtime: _ => make_keyword("localtime"),
+  keyword_localtimestamp: _ => make_keyword("localtimestamp"),
+
+  // ANSI SQL — LIKE ... ESCAPE (E061-05)
+  keyword_escape: _ => make_keyword("escape"),
 
 }

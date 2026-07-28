@@ -156,6 +156,9 @@
   (keyword_limit)
   (keyword_offset)
   (keyword_fetch)
+  (keyword_declare)
+  (keyword_cursor)
+  (keyword_scroll)
   (keyword_next)
   (keyword_within)
   (keyword_leading)
@@ -212,6 +215,7 @@
   (keyword_some)
   (keyword_only)
   (keyword_like)
+  (keyword_escape)
   (keyword_rlike)
   (keyword_similar)
   (keyword_over)
@@ -345,6 +349,17 @@
   (keyword_system)
 ] @keyword
 
+
+; ============================================================
+; Datetime value functions (ANSI F051-06)
+; ============================================================
+
+[
+  (keyword_current_date)
+  (keyword_current_time)
+  (keyword_localtime)
+  (keyword_localtimestamp)
+] @function.builtin
 
 ; ============================================================
 ; Type qualifiers

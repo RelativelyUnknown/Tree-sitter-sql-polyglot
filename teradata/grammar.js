@@ -17,7 +17,9 @@ export default grammar(base, {
     [$.field, $._qualified_field],
     [$._column, $._qualified_field],
     [$.object_reference],
-    [$.between_expression, $.binary_expression],
+    // Local shift/reduce ambiguity shared with like_expression's optional
+    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    [$.between_expression, $.binary_expression, $.like_expression],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
@@ -67,7 +69,19 @@ export default grammar(base, {
         $.set_query_band_statement,
         $.help_statement,
         $.compound_statement,
+        $.declare_cursor_statement,
       ),
+    ),
+
+    // Teradata SP cursor: DECLARE cursor_name CURSOR FOR <query> (ISO E121).
+    // Minimal override of the base rule — Teradata has no [NO] SCROLL option,
+    // and dropping that optional sub-sequence keeps the parse table small.
+    declare_cursor_statement: $ => seq(
+      $.keyword_declare,
+      field('name', $.identifier),
+      $.keyword_cursor,
+      $.keyword_for,
+      $._dml_read,
     ),
 
     // Atomic UPSERT: UPDATE … SET … [WHERE …] ELSE INSERT … (base update plus

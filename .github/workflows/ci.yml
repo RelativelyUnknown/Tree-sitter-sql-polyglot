@@ -32,6 +32,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      # Capped so at most 2 of the 5 shards claim a heavy ubuntu-latest runner
+      # at once — launching all 5 (plus the coverage job) simultaneously has
+      # been observed to exceed this account's concurrent-runner capacity,
+      # with the runner getting reclaimed mid-generate ("The operation was
+      # canceled") on whichever shards lose the race.
+      max-parallel: 2
       matrix:
         include:
           - shard: base
@@ -41,7 +47,16 @@ jobs:
           - shard: pg-mysql
             dialects: "postgres mysql mariadb sqlite duckdb cockroachdb"
           - shard: warehouse
-            dialects: "snowflake bigquery spanner tsql clickhouse flink"
+            dialects: "snowflake bigquery spanner tsql flink"
+          # ClickHouse's grammar is right at the edge of tree-sitter's LR
+          # table-construction memory ceiling on its own (see the
+          # offset_fetch note in tools/features.yml) — even alone, with
+          # GENERATE_CONCURRENCY=1 and no other dialect sharing the runner,
+          # its `tree-sitter generate` has taken 10+ minutes and gotten the
+          # runner reclaimed. Isolated in its own shard so nothing else
+          # competes for the runner's time/memory budget at all.
+          - shard: clickhouse
+            dialects: "clickhouse"
           - shard: trino-chain
             dialects: "trino athena redshift teradata"
     steps:
@@ -64,9 +79,38 @@ jobs:
             */src/tree_sitter/
             .grammar-cache/
             ~/.cache/tree-sitter/
-          key: parsers-v2-${{ matrix.shard }}-${{ hashFiles('grammar.js', 'grammar/**', '*/grammar.js', '*/grammar/**') }}
+          # Key bumped v2 -> v3 to abandon the old cache line. Some v2 entries
+          # had drifted internally inconsistent — a fresh .grammar-cache/*.hash
+          # marker alongside a parser.c predating the like_escape /
+          # typed_temporal_literal / cursor features — so generate.js's marker
+          # check skipped regeneration and the shards served (and uploaded) a
+          # STALE parser.c. That was invisible until the coverage job began
+          # reusing these artifacts (corpus tests don't exercise those probes),
+          # then surfaced as ~40 "implemented -> absent" coverage regressions.
+          # v3 starts clean: every shard regenerates from the current grammar
+          # once, and all v3 entries are born internally consistent.
+          key: parsers-v3-${{ matrix.shard }}-${{ hashFiles('grammar.js', 'grammar/**', '*/grammar.js', '*/grammar/**') }}
           restore-keys: |
-            parsers-v2-${{ matrix.shard }}-
+            parsers-v3-${{ matrix.shard }}-
+
+      # ClickHouse's tree-sitter generate peaks at ~15.4GB RSS on a 16GB
+      # runner (measured locally: converges cleanly at +291s, exit 0, but
+      # with only ~50MB of system memory free at the peak). That's not a
+      # runaway/pathological grammar — it's a real, very large table that
+      # just happens to land right at the physical ceiling, so any other
+      # resident process (the runner's own agent, cache restore, etc.)
+      # tips it into the OOM kill Actions reports as "the runner has
+      # received a shutdown signal". Swap gives it headroom to finish
+      # without needing a bigger runner.
+      - name: Increase swap (ClickHouse generate is memory-bound)
+        if: matrix.shard == 'clickhouse'
+        run: |
+          sudo swapoff -a || true
+          sudo fallocate -l 12G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
 
       # generate.js is hash-cached per grammar (including ancestor chains), so
       # on a warm restore only the changed grammars are regenerated. Dialects
@@ -76,12 +120,49 @@ jobs:
       # dependency and running tree-sitter generate for several dialects at
       # once is safe.
       - name: Generate parsers
+        # Force strictly sequential generation: generate-all.js's own
+        # memory-bound concurrency (6GB/worker budget) still allows 2 workers
+        # on a standard 16GB runner, and two of the heavier grammars
+        # (spark/databricks/oracle/db2/hana/clickhouse) generating at once has
+        # been observed to exceed that and OOM the whole runner VM — which
+        # Actions reports as "the runner has received a shutdown signal"
+        # rather than an ordinary step failure. Trade wall-clock time for
+        # reliability here.
+        env:
+          GENERATE_CONCURRENCY: 1
         run: |
           if [ -z "${{ matrix.dialects }}" ]; then
             node scripts/generate.js
           else
             node scripts/generate-all.js ${{ matrix.dialects }}
           fi
+
+      # Publish this shard's freshly-generated parsers so the coverage job can
+      # reuse them instead of regenerating all 22 from scratch (~86 min). The
+      # globs only match what this shard actually built (base shard → root src/;
+      # dialect shards → their */src/). The .grammar-cache/*.hash markers travel
+      # too, so the coverage job's `generate:all` sees a full hash-cache hit and
+      # no-ops. Parsers are built with tree-sitter-cli@v0.26.3 (same pin
+      # coverage.py uses to parse), so they are ABI-compatible for reuse.
+      - name: Upload parsers for coverage reuse
+        uses: actions/upload-artifact@v4
+        with:
+          name: parsers-${{ matrix.shard }}
+          # .grammar-cache/ is dot-prefixed; upload-artifact@v4 excludes hidden
+          # paths by default, which would drop the hash markers and force the
+          # coverage job to regenerate all 22 from scratch (the exact ~86 min /
+          # OOM this reuse is meant to avoid). Opt them back in.
+          include-hidden-files: true
+          path: |
+            src/parser.c
+            src/*.json
+            src/tree_sitter/
+            */src/parser.c
+            */src/*.json
+            */src/tree_sitter/
+            .grammar-cache/
+          retention-days: 1
+          if-no-files-found: warn
 
       # Rust build cache for the base parser-test-action (cargo test of the
       # Rust binding is the slowest part of the base shard).
@@ -95,6 +176,15 @@ jobs:
           test-rust: true
           test-node: false
           test-python: true
+          # The action defaults generate: true, which — with no dialect
+          # argument of its own — walks every grammar.js it finds in the
+          # checkout (all 22 dialects, not just base) and regenerates each
+          # one sequentially, ignoring both the cache restored above and this
+          # job's own "Generate parsers" step that already built base
+          # successfully. That redundant, unbounded pass has been observed
+          # to run 25+ minutes before the runner gets reclaimed. base is
+          # already generated by this point — skip regenerating.
+          generate: false
 
       - name: Keyword/highlights sync check
         if: matrix.shard == 'base'
@@ -109,11 +199,19 @@ jobs:
             echo "::endgroup::"
           done
 
-  # ── Feature-completeness scorecard ──────────────────────────────────────────
-  # Parses every feature probe in tools/features.yml with every dialect parser
-  # and fails on coverage regressions (implemented → absent) or new ANSI
-  # purity violations in the base grammar. Baseline: tools/coverage.json.
-  scorecard:
+  # ── Corroborated feature coverage ───────────────────────────────────────────
+  # One coverage step. tools/coverage.py parses every probe in tools/features.yml
+  # with our parsers AND with independent reference parsers (SQLGlot, ANTLR
+  # grammars-v4, pglast, sqlfluff), scores the base against ISO Core, and fails on
+  # coverage regressions, new "suspect" probes (ours accepts, no reference does),
+  # or ANSI purity violations. Baseline: tools/coverage.json.
+  coverage:
+    # Runs after the test matrix rather than alongside it: this job's own
+    # `generate:all` redoes generation for every dialect the matrix shards
+    # already cover, and running both at once was pushing simultaneous heavy
+    # ubuntu-latest job count past this account's sustainable concurrency
+    # (observed as runner reclaim — "The operation was canceled" — mid-generate).
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -124,52 +222,110 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
 
+      # Parsers now come from the test matrix via download-artifact (below), so
+      # this cache only carries the ANTLR reference-parser build — the
+      # slow-to-rebuild, parser-independent piece.
+      #
+      # Deliberately NOT caching ~/.cache/tree-sitter/ here. That directory holds
+      # tree-sitter's *compiled* parser libraries (.so), which it reuses based on
+      # source mtime. When the coverage job regenerated every parser.c itself,
+      # the fresh mtime always superseded any cached .so. Now that parser.c comes
+      # from download-artifact (older mtime, not regenerated), a cached .so would
+      # win the mtime check and coverage.py would parse with a STALE compiled
+      # library — silently scoring current features (like_escape,
+      # typed_temporal_literal, cursor) as "absent". Compiling parser.c is cheap
+      # (seconds, unlike generation), so we always compile fresh instead. Key
+      # bumped to v2 so the old archive (which still contains that .so) is not
+      # restored.
       - uses: actions/cache@v4
         with:
           path: |
-            src/parser.c
-            src/node-types.json
-            src/grammar.json
-            src/tree_sitter/
-            */src/parser.c
-            */src/node-types.json
-            */src/grammar.json
-            */src/tree_sitter/
-            .grammar-cache/
-            ~/.cache/tree-sitter/
-          key: parsers-v2-scorecard-${{ hashFiles('grammar.js', 'grammar/**', '*/grammar.js', '*/grammar/**') }}
+            tools/antlr/build/
+            tools/antlr/*.jar
+          key: coverage-deps-v2-${{ hashFiles('tools/antlr/setup.sh') }}
           restore-keys: |
-            parsers-v2-scorecard-
+            coverage-deps-v2-
 
-      - name: Generate all parsers
+      # Reuse the parsers the test matrix already built this run (each shard
+      # uploaded its own via "Upload parsers for coverage reuse"). merge-multiple
+      # reconstructs root src/ and every <dialect>/src/ in place, plus the
+      # .grammar-cache/*.hash markers — so the generate:all below is a no-op.
+      # This replaces the ~86-min full regeneration for the common case.
+      - name: Download parsers from test matrix
+        uses: actions/download-artifact@v4
+        with:
+          pattern: parsers-*
+          merge-multiple: true
+
+      # Safety-net swap for the generate:all below. In the happy path every
+      # grammar is a hash-cache hit and nothing regenerates, so this costs
+      # nothing. But generate:all self-heals any grammar whose artifact failed
+      # to transport — and if that grammar is clickhouse (peaks at ~15.4GB RSS
+      # generating), a from-scratch rebuild OOM-kills the whole runner ("the
+      # runner has received a shutdown signal", exit 143). Cheap swap keeps the
+      # fallback path survivable regardless of which single artifact is missing.
+      - name: Increase swap (safety net for a clickhouse fallback regen)
+        run: |
+          sudo swapoff -a || true
+          sudo fallocate -l 12G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
+
+      - name: Generate all parsers (no-op when artifacts restored; safety net)
+        # With the downloaded parsers + .grammar-cache/*.hash markers present,
+        # generate.js's hash cache skips every grammar ("unchanged — skipping
+        # generate"), so this returns in seconds. It self-heals only what's
+        # actually missing if an artifact failed to transport. GENERATE_CONCURRENCY=1
+        # keeps that fallback path safe (see the test job's note).
+        env:
+          GENERATE_CONCURRENCY: 1
         run: npm run generate:all
 
-      - name: Evidence corroboration gate
+      # Guarantee coverage.py parses with the CURRENT parser.c. tree-sitter
+      # compiles parser.c to a cached .so and reuses it while the source isn't
+      # newer; a lingering compiled lib would otherwise shadow a downloaded
+      # (non-regenerated) parser.c and mis-score current features as absent.
+      # Purge any compiled cache and bump every parser source's mtime so the
+      # first parse recompiles from the freshly downloaded/generated sources.
+      - name: Force fresh parser compilation
         run: |
-          pip install pyyaml
-          python tools/corroborate.py
+          rm -rf ~/.cache/tree-sitter
+          # touch only files that already exist (never create an empty
+          # scanner.c); covers repo-root src/ (base) and every */src/ (dialects)
+          find . -type f \( -name parser.c -o -name scanner.c -o -name scanner.cc \) \
+            -path '*src/*' -exec touch {} +
 
-      # No TREE_SITTER_BIN override here: scorecard.py's own default pins
-      # the same npx tree-sitter-cli@v0.26.3 that generate.js uses to build
-      # the parsers. Overriding it to the tree-sitter/setup-action CLI
-      # (0.26.11) parses parser.c/grammar.json built by a different CLI
-      # version than the one that generated them — that ABI mismatch
-      # produces false "implemented → absent" regressions on some probes
-      # (reproduced locally: 0.26.11 parsing a 0.26.3-generated trino
-      # grammar drops prepared_statements even though the grammar handles
-      # it correctly under matching versions).
-      - name: Scorecard regression check
-        run: python tools/scorecard.py --check
+      # Log per-grammar parser size (src/parser.c bytes), STATE_COUNT /
+      # LARGE_STATE_COUNT and declared-conflict count, ranked, so GLR
+      # table growth is visible in every run without regenerating.
+      - name: Log grammar/parser sizes
+        run: python tools/glr_scan.py --no-generate --no-stress
 
-      # Full (non --check) run to produce the human-readable report. Runs
-      # even if the gate above failed, so a red PR still gets a report to
-      # diagnose from. Writes to the Actions job summary (every run) and
-      # docs/coverage.md / tools/coverage.json (uploaded below); the docs
-      # site rebuilds this same page from the live parsers via pages.yml.
+      - name: Install corroborators
+        run: |
+          pip install -r tools/requirements.txt
+          bash tools/antlr/setup.sh
+
+      # No TREE_SITTER_BIN override: coverage.py's own default pins the same
+      # npx tree-sitter-cli@v0.26.3 that generate.js uses to build the parsers.
+      # Overriding it to the setup-action CLI (0.26.11) parses parser.c built by
+      # a different CLI version — that ABI mismatch produces false
+      # "implemented → absent" regressions on some probes.
+      - name: Coverage gate (regressions / suspects / purity)
+        run: python tools/coverage.py --check
+
+      # Full run for the human-readable report + job summary. Runs even if the
+      # gate failed, so a red PR still gets a diagnosable report.
       - name: Build coverage report
         if: always()
-        run: python tools/scorecard.py
+        run: python tools/coverage.py
 
       - name: Upload coverage report
         if: always()

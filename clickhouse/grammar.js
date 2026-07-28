@@ -15,7 +15,9 @@ export default grammar(base, {
     [$.field, $._qualified_field],
     [$._column, $._qualified_field],
     [$.object_reference],
-    [$.between_expression, $.binary_expression],
+    // Local shift/reduce ambiguity shared with like_expression's optional
+    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    [$.between_expression, $.binary_expression, $.like_expression],
     [$.from],
     [$.all_fields_transform, $.all_fields],
     [$.all_fields_transform],
@@ -177,8 +179,9 @@ export default grammar(base, {
         [$.op_other, 'binary_other'],
         [$.keyword_is, 'binary_is'],
         [$.is_not, 'binary_is'],
-        [$.keyword_like, 'pattern_matching'],
-        [$.not_like, 'pattern_matching'],
+        // LIKE / NOT LIKE are handled exclusively by the inherited
+        // like_expression rule (with its optional ESCAPE tail) — not
+        // duplicated here. See base grammar/expressions.js for why.
         [$.keyword_rlike, 'pattern_matching'],
         [$.not_rlike, 'pattern_matching'],
         [$.similar_to, 'pattern_matching'],

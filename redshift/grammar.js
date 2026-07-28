@@ -13,7 +13,9 @@ export default grammar(base, {
     [$.field, $._qualified_field],
     [$._column, $._qualified_field],
     [$.object_reference],
-    [$.between_expression, $.binary_expression],
+    // Local shift/reduce ambiguity shared with like_expression's optional
+    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    [$.between_expression, $.binary_expression, $.like_expression],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
@@ -45,7 +47,17 @@ export default grammar(base, {
         $.prepare_statement,
         $.execute_statement,
         $.deallocate_statement,
+        $.declare_cursor_statement,
       ),
+    ),
+
+    // Redshift: DECLARE cursor_name CURSOR FOR query (ISO E121).
+    declare_cursor_statement: $ => seq(
+      $.keyword_declare,
+      field('name', $.identifier),
+      $.keyword_cursor,
+      $.keyword_for,
+      $._dml_read,
     ),
 
     _ddl_statement: $ => choice(
@@ -112,6 +124,12 @@ export default grammar(base, {
         $.array,
         $.interval,
         $.between_expression,
+        // Inherited from base but this dialect fully re-enumerates
+        // _expression: LIKE/NOT LIKE now parse exclusively through
+        // like_expression (with optional ESCAPE), not binary_expression.
+        $.like_expression,
+        // ANSI typed temporal literal (F051-03): DATE/TIME/TIMESTAMP '…'.
+        $.typed_temporal_literal,
         $.parenthesized_expression,
         $.trim_expression,
         $.approximate_count,
@@ -204,6 +222,8 @@ export default grammar(base, {
     keyword_functions:    _ => token(prec(1, make_keyword("functions"))),
     keyword_procedures:   _ => token(prec(1, make_keyword("procedures"))),
     keyword_append:       _ => token(prec(1, make_keyword("append"))),
+    keyword_declare:      _ => token(prec(1, make_keyword("declare"))),
+    keyword_cursor:       _ => token(prec(1, make_keyword("cursor"))),
 
     // GRANT ... ON ALL TABLES/FUNCTIONS/PROCEDURES IN SCHEMA name (#87)
     _grant_object: $ => choice(

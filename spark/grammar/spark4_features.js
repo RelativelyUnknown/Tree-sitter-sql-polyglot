@@ -45,16 +45,35 @@ export default {
     paren_list(field('column', $.identifier), true),
   ),
 
-  // Spark 4.0: expr COLLATE collation_name
+  // Spark 4.0: expr COLLATE collation_name.
+  // The left operand is restricted to the expression forms COLLATE actually
+  // applies to (a column/field, a string literal, a function result, a
+  // parenthesized expression) rather than the full $._expression. Making this a
+  // suffix on *every* expression form multiplied the parse table across the
+  // whole grammar; this keeps the accepted trees identical (the operand still
+  // appears as an unlabeled child) while cutting states in spark AND databricks.
   collate_expression: $ => prec.left(5, seq(
-    $._expression,
+    choice(
+      alias($._qualified_field, $.field),
+      $.literal,
+      $.invocation,
+      $.parenthesized_expression,
+    ),
     $.keyword_collate,
     field('collation', $.identifier),
   )),
 
-  // Spark 4.0: col:key1:key2  (semi-structured variant path access)
+  // Spark 4.0: col:key1:key2  (semi-structured variant path access). The left
+  // operand is a column/field, a prior variant path (chaining col:a:b), or a
+  // subscript (col[0]:a) — not the full $._expression. Same rationale as
+  // collate_expression: avoids a bare-`:` suffix on every expression form
+  // (which also collides with subscript slice `a[1:2]`), shrinking the table.
   variant_path_expression: $ => prec.left(10, seq(
-    $._expression,
+    choice(
+      alias($._qualified_field, $.field),
+      $.variant_path_expression,
+      $.subscript,
+    ),
     ':',
     $.identifier,
   )),
