@@ -79,9 +79,19 @@ jobs:
             */src/tree_sitter/
             .grammar-cache/
             ~/.cache/tree-sitter/
-          key: parsers-v2-${{ matrix.shard }}-${{ hashFiles('grammar.js', 'grammar/**', '*/grammar.js', '*/grammar/**') }}
+          # Key bumped v2 -> v3 to abandon the old cache line. Some v2 entries
+          # had drifted internally inconsistent — a fresh .grammar-cache/*.hash
+          # marker alongside a parser.c predating the like_escape /
+          # typed_temporal_literal / cursor features — so generate.js's marker
+          # check skipped regeneration and the shards served (and uploaded) a
+          # STALE parser.c. That was invisible until the coverage job began
+          # reusing these artifacts (corpus tests don't exercise those probes),
+          # then surfaced as ~40 "implemented -> absent" coverage regressions.
+          # v3 starts clean: every shard regenerates from the current grammar
+          # once, and all v3 entries are born internally consistent.
+          key: parsers-v3-${{ matrix.shard }}-${{ hashFiles('grammar.js', 'grammar/**', '*/grammar.js', '*/grammar/**') }}
           restore-keys: |
-            parsers-v2-${{ matrix.shard }}-
+            parsers-v3-${{ matrix.shard }}-
 
       # ClickHouse's tree-sitter generate peaks at ~15.4GB RSS on a 16GB
       # runner (measured locally: converges cleanly at +291s, exit 0, but
