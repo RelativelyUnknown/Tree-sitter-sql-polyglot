@@ -499,7 +499,10 @@ export default grammar(base, {
       $._identifier,
       $._double_quote_string,
       $._backtick_quoted_string,
-      seq("`", $._identifier, "`"),
+      // NB: no separate seq("`", _identifier, "`") alternative — the
+      // _backtick_quoted_string token (/`[^`]*`/) already matches every
+      // `quoted` identifier and wins the lexer's longest-match over a bare
+      // "`", so that sequence was unreachable dead weight in the parse table.
     ),
 
     // MySQL-specific keywords (not ANSI) — also defined in grammar/keywords.js for extraction
