@@ -14,7 +14,6 @@
   (keyword_skip)
   (keyword_past)
   (keyword_map)
-  (keyword_qualify)
   (keyword_one)
   (keyword_per)
   (keyword_logical)
