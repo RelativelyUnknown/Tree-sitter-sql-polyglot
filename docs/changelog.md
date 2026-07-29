@@ -106,7 +106,8 @@ All notable changes to this project will be documented in this file. See [commit
 - **DuckDB:** `RETURNING` on INSERT/UPDATE/DELETE (#118)
 - **ClickHouse:** `INSERT … RETURNING` (#119)
 - **Db2:** `SELECT … FROM FINAL/NEW/OLD TABLE (dml)` data-change-table-reference (#123)
-- **Base (ANSI):** `GRANT`/`REVOKE` (DCL); `GROUP BY ROLLUP`/`CUBE`/`GROUPING SETS` and `WITH ROLLUP`/`CUBE`; `FETCH {FIRST|NEXT} n {ROW|ROWS} {ONLY|WITH TIES}`; `WITHIN GROUP (ORDER BY …)` ordered-set aggregates; ANSI `TRIM([{BOTH|LEADING|TRAILING} [char] FROM] str)`; interval qualifiers (`INTERVAL '1' DAY`)
+- **Base (ANSI):** `GRANT`/`REVOKE` (DCL); `GROUP BY ROLLUP`/`CUBE`/`GROUPING SETS`; `FETCH {FIRST|NEXT} n {ROW|ROWS} {ONLY|WITH TIES}`; `WITHIN GROUP (ORDER BY …)` ordered-set aggregates; ANSI `TRIM([{BOTH|LEADING|TRAILING} [char] FROM] str)`; interval qualifiers (`INTERVAL '1' DAY`)
+- **Base (ANSI) purity fix:** removed the non-ANSI trailing `GROUP BY … WITH ROLLUP`/`WITH CUBE` modifier from the base grammar (base now only accepts the ISO leading `ROLLUP(...)`/`CUBE(...)`/`GROUPING SETS(...)` forms); the vendor modifier moves to the dialects that actually have it — **MySQL/MariaDB:** `WITH ROLLUP` only (MySQL never implemented `WITH CUBE`); **T-SQL:** `WITH ROLLUP`/`WITH CUBE` (deprecated legacy syntax, still valid)
 - **Spark:** `QUALIFY`; `PIVOT`/`UNPIVOT`; query-level `CLUSTER`/`DISTRIBUTE`/`SORT BY`; `CREATE TABLE … USING/OPTIONS`
 - **Hive:** `LOAD DATA [LOCAL] INPATH`; `INSERT OVERWRITE [LOCAL] DIRECTORY`; multi-table `INSERT`; `CLUSTER`/`DISTRIBUTE`/`SORT BY`
 - **SQLite:** `INSERT OR REPLACE|IGNORE|…` and UPSERT; `AUTOINCREMENT`; `INDEXED BY`/`NOT INDEXED`
