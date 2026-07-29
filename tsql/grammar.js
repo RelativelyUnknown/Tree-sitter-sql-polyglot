@@ -23,11 +23,11 @@ export default grammar(base, {
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
-    // output_clause: optional paren column list after INTO @var is ambiguous
-    // (also ambiguous with column_definitions on INTO @var (col_list)).
+    // output_clause's trailing optional paren column list after INTO <target>
+    // is now resolved statically by prec.right on the rule itself (see
+    // tsql/grammar/dml.js), so the [$.output_clause] GLR self-conflict is gone.
     // EXPLAIN followed by keyword_continue / keyword_break is ambiguous — resolved by tree-sitter
     // [$.statement] removed (tree-sitter reported it unnecessary)
-    [$.output_clause],
     // option_clause after optional_parenthesis(_dml_read) causes close-paren ambiguity
     [$.option_clause],
     [$._function_return, $.return_statement],
