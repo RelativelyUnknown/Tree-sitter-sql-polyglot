@@ -31,11 +31,8 @@ export default grammar(base, {
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
-    [$.interval],
     // Snowflake-specific conflicts
     [$._function_return, $.return_statement],
-    [$.time],
-    [$.timestamp],
     // `*` starts both a plain all_fields and a transformed one.
     [$.all_fields_transform, $.all_fields],
     // Consecutive INTO clauses in a multi-table INSERT.

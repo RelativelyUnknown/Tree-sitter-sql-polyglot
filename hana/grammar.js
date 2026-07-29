@@ -25,7 +25,6 @@ export default grammar(base, {
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
-    [$.interval],
     // BEGIN … ; is ambiguous between a transaction block and a SQLScript
     // compound statement until END/COMMIT disambiguates (same as db2)
     [$.transaction, $.compound_statement],

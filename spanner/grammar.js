@@ -25,7 +25,6 @@ export default grammar(bigquery, {
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
-    [$.interval],
     [$.all_fields, $.all_fields_except],
     [$.qualify],
     [$.array_type, $.struct_type],

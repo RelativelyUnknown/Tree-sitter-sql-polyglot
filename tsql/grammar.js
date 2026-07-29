@@ -23,12 +23,11 @@ export default grammar(base, {
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
-    [$.interval],
-    // output_clause: optional paren column list after INTO @var is ambiguous
-    // (also ambiguous with column_definitions on INTO @var (col_list)).
+    // output_clause's trailing optional paren column list after INTO <target>
+    // is now resolved statically by prec.right on the rule itself (see
+    // tsql/grammar/dml.js), so the [$.output_clause] GLR self-conflict is gone.
     // EXPLAIN followed by keyword_continue / keyword_break is ambiguous — resolved by tree-sitter
     // [$.statement] removed (tree-sitter reported it unnecessary)
-    [$.output_clause],
     // option_clause after optional_parenthesis(_dml_read) causes close-paren ambiguity
     [$.option_clause],
     [$._function_return, $.return_statement],
@@ -169,12 +168,19 @@ export default grammar(base, {
     identifier: $ => choice(
       $._identifier,
       $._double_quote_string,
-      $._tsql_bracket_identifier,
-      $._tsql_temp_identifier,
+      $._tsql_quoted_identifier,
     ),
 
-    _tsql_bracket_identifier: _ => token(/\[[^\]\n]*\]/),
-    _tsql_temp_identifier: _ => token(/##?[A-Za-z_][0-9A-Za-z_]*/),
+    // [bracket] and #temp / ##global identifiers share a single token. Their
+    // patterns are disjoint ('[' vs '#') and both surface as a hidden child of
+    // (identifier), so one terminal produces byte-identical trees while removing
+    // a duplicate, always-identical action-table column (bracket and temp
+    // carried the same ACTIONS entry in every identifier-expecting state) —
+    // shrinking the generated table on tsql, the heaviest grammar.
+    _tsql_quoted_identifier: _ => token(choice(
+      /\[[^\]\n]*\]/,
+      /##?[A-Za-z_][0-9A-Za-z_]*/,
+    )),
 
     // ── @variable syntax ──────────────────────────────────────────────────────
     // Matches both @@system_var and @local_var.

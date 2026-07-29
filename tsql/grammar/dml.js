@@ -4,7 +4,12 @@ export default {
 
   // ── OUTPUT clause ────────────────────────────────────────────────────────────
 
-  output_clause: $ => seq(
+  // prec.right resolves the internal shift/reduce over the trailing
+  // optional(paren_list) after INTO <target>: greedily attach the parenthesized
+  // column list to the OUTPUT … INTO target (the sensible reading) rather than
+  // reducing output_clause early. This replaces the declared [$.output_clause]
+  // GLR self-conflict with a static, deterministic resolution.
+  output_clause: $ => prec.right(seq(
     $.keyword_output,
     comma_list($.output_column, true),
     optional(seq(
@@ -12,7 +17,7 @@ export default {
       choice($.object_reference, $.variable),
       optional(paren_list($.identifier, true)),
     )),
-  ),
+  )),
 
   // INSERTED.col | DELETED.col | INSERTED.* | DELETED.* | expression
   output_column: $ => prec.left(choice(

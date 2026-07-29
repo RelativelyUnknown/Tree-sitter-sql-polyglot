@@ -96,14 +96,22 @@ export default {
     $.keyword_time,
     $.keyword_zone,
   ),
-  time: $ => seq(
+  // prec.right greedily attaches the optional "[WITH|WITHOUT] TIME ZONE" tail
+  // (TIMESTAMP WITH TIME ZONE stays one timestamp node, per
+  // test/corpus/create.txt) instead of reducing the bare type and leaving the
+  // tail to a following context. This resolves the trailing-optional
+  // shift/reduce statically — several dialects (postgres, trino, snowflake,
+  // duckdb, athena, cockroachdb) otherwise need a declared [$.time]/[$.timestamp]
+  // GLR self-conflict — mirroring oracle's existing prec.right timestamp
+  // override. Inert where no such ambiguity exists (base and most dialects).
+  time: $ => prec.right(seq(
     parametric_type($, $.keyword_time),
     optional($._include_time_zone),
-  ),
-  timestamp: $ => seq(
+  )),
+  timestamp: $ => prec.right(seq(
     parametric_type($, $.keyword_timestamp),
     optional($._include_time_zone),
-  ),
+  )),
 
   enum: $ => seq(
     $.keyword_enum,

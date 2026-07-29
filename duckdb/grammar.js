@@ -11,8 +11,6 @@ export default grammar(base, {
 
   conflicts: $ => [
     [$.object_reference, $._qualified_field],
-    [$.time],
-    [$.timestamp],
     [$.field, $._qualified_field],
     [$._column, $._qualified_field],
     [$.object_reference],
@@ -23,7 +21,6 @@ export default grammar(base, {
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
-    [$.interval],
     // DuckDB from-first vs regular from
     [$.from_first_select, $.from],
     // from_first_select in statement vs _dml_read

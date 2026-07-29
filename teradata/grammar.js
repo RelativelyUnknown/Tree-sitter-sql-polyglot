@@ -24,7 +24,6 @@ export default grammar(base, {
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
-    [$.interval],
     // BLOCKCOMPRESSION=mode(…) option args vs the table's column list
     [$.table_option],
     // BEGIN … ; is ambiguous between a transaction block and a compound
