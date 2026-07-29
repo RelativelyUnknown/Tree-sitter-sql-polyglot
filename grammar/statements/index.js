@@ -59,7 +59,7 @@ export default {
   ...grant_rules,
 
   // COMMENT ON is deliberately NOT wired here: it is not ISO SQL, and the
-  // base grammar stays strict ANSI (see tools/features.yml purity rule).
+  // base grammar stays strict ANSI (see tools/coverage-probes.yml purity rule).
   // Dialects that support it wire $.comment_statement into their own
   // _ddl_statement overrides.
   _ddl_statement: $ => choice(

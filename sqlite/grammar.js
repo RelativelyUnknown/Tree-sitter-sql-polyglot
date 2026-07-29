@@ -25,7 +25,8 @@ export default grammar(base, {
   rules: {
 
     // LIMIT is supported: fromClause with limit re-adds it over the ANSI base.
-    from: $ => fromClause($, { limit: true }),
+    // SQLite paging is LIMIT/OFFSET only — no ANSI OFFSET…FETCH FIRST.
+    from: $ => fromClause($, { limit: true, offsetFetch: false }),
 
     // Add SQLite's GLOB and MATCH pattern operators to the base operator table.
     binary_expression: $ => choice(
@@ -93,6 +94,34 @@ export default grammar(base, {
     not_glob: $ => seq($.keyword_not, $.keyword_glob),
     not_match: $ => seq($.keyword_not, $.keyword_match),
 
+    // GRANT/REVOKE removed: SQLite has no access-control model.
+    _ddl_statement: $ => choice(
+      $._create_statement,
+      $._alter_statement,
+      $._drop_statement,
+      $._rename_statement,
+      $._merge_statement,
+      $._refresh_statement,
+      $.set_statement,
+    ),
+
+    // TRUNCATE removed: SQLite has no TRUNCATE TABLE (DELETE without WHERE instead).
+    _dml_write: $ => seq(
+      optional($._cte),
+      choice(
+        $._delete_statement,
+        $._insert_statement,
+        $._update_statement,
+      ),
+    ),
+
+    // SQLite has no GROUPING SETS/ROLLUP/CUBE.
+    group_by: $ => prec.left(seq(
+      $.keyword_group,
+      $.keyword_by,
+      comma_list($._expression, true),
+    )),
+
     // Extend statement to add SQLite-specific top-level statements
     statement: $ => seq(
       optional(seq(
@@ -113,12 +142,12 @@ export default grammar(base, {
       ),
     ),
 
-    // Extend _create_statement to add CREATE VIRTUAL TABLE
+    // Extend _create_statement to add CREATE VIRTUAL TABLE.
+    // No CREATE MATERIALIZED VIEW: SQLite has no materialized views.
     _create_statement: $ => seq(
       choice(
         $.create_table,
         $.create_view,
-        $.create_materialized_view,
         $.create_index,
         $.create_function,
         $.create_procedure,

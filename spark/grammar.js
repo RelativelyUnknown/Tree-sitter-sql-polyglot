@@ -1,5 +1,6 @@
 import hive from '../hive/grammar.js';
 import { paren_list, optional_parenthesis, comma_list, make_keyword } from '../grammar/helpers.js';
+import { createStatementChoices } from '../grammar/statements/create.js';
 import spark_create_rules from './grammar/create.js';
 import spark_optimize_rules from './grammar/optimize.js';
 import spark_spark4_rules from './grammar/spark4_features.js';
@@ -43,6 +44,10 @@ export default grammar(hive, {
   ],
 
   rules: {
+    // No CREATE MATERIALIZED VIEW: unlike Hive, OSS Spark has no materialized
+    // views (re-enumerate over Hive's _create_statement, which opts in).
+    _create_statement: $ => seq(choice(...createStatementChoices($))),
+
     // Re-add $.block to program (removed from base — procedural blocks are Spark-specific)
     program: $ => seq(
       repeat(
@@ -361,8 +366,8 @@ export default grammar(hive, {
           $.sort_by,
         ),
       ),
+      // Spark SQL paging is LIMIT-only — no ANSI OFFSET…FETCH FIRST.
       optional($.limit),
-      optional($.offset_fetch_clause),
     ),
 
     _alter_specifications: $ => choice(

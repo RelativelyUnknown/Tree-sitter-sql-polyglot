@@ -79,7 +79,7 @@ export default grammar(base, {
         $._ddl_statement,
         $._dml_write,
         optional_parenthesis($._dml_read),
-        $._transaction_statement,
+        // No SAVEPOINT: ClickHouse has no savepoints.
         $.system_statement,
         $.attach_statement,
         $.detach_statement,

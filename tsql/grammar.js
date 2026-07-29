@@ -124,11 +124,11 @@ export default grammar(base, {
     ),
 
     // ── CREATE dispatch ───────────────────────────────────────────────────────
+    // No CREATE MATERIALIZED VIEW: T-SQL uses indexed views instead.
     _create_statement: $ => seq(
       choice(
         $.create_table,
         $.create_view,
-        $.create_materialized_view,
         $.create_index,
         $.create_function,
         $.create_procedure,

@@ -244,8 +244,8 @@ export default grammar(base, {
       optional($.qualify),
       optional($.window_clause),
       optional($.order_by),
+      // GoogleSQL paging is LIMIT/OFFSET only — no ANSI OFFSET…FETCH FIRST.
       optional($.limit),
-      optional($.offset_fetch_clause),
     ),
 
     // ── relation: add UNNEST as a FROM source ───────────────────────────────

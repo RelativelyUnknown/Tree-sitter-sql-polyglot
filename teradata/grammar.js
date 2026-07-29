@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { comma_list, optional_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { comma_list, optional_parenthesis, make_keyword, wrapped_in_parenthesis } from '../grammar/helpers.js';
 import { createStatementChoices } from '../grammar/statements/create.js';
 import teradata_statement_rules from './grammar/statements.js';
 
@@ -32,6 +32,25 @@ export default grammar(base, {
   ],
 
   rules: {
+
+    // No TABLESAMPLE: Teradata uses its own SAMPLE clause (see `from` below),
+    // not the ANSI TABLESAMPLE clause.
+    relation: $ => prec.right(
+      seq(
+        choice(
+          $.subquery,
+          $.invocation,
+          $.object_reference,
+          wrapped_in_parenthesis($.values),
+        ),
+        optional(
+          seq(
+            $._alias,
+            optional(alias($._column_list, $.list)),
+          ),
+        ),
+      ),
+    ),
 
     // Re-add non-ANSI CREATE forms this dialect supports over the strict ANSI base.
     _create_statement: $ => seq(choice(...createStatementChoices($, { index: true }), $.create_join_index)),
@@ -138,8 +157,7 @@ export default grammar(base, {
       optional($.qualify),
       optional($.window_clause),
       optional($.order_by),
-      optional($.limit),
-      optional($.offset_fetch_clause),
+      // Teradata paging is TOP (in SELECT) / QUALIFY — no LIMIT or FETCH FIRST.
     ),
 
     // base DDL dispatch plus COMMENT ON (Teradata: COMMENT ON TABLE t IS '…').

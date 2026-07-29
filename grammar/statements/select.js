@@ -3,9 +3,11 @@ import { comma_list, optional_parenthesis, paren_list, wrapped_in_parenthesis } 
 // Shared FROM-clause builder. The base grammar instantiates it WITHOUT the
 // non-ANSI LIMIT clause (strict ANSI purity); dialects that support LIMIT
 // call fromClause($, { limit: true }) from their own `from` override instead
-// of re-enumerating the whole clause. Dialects with additional clauses
-// (PREWHERE, QUALIFY, …) define their own `from` and do not use this builder.
-export function fromClause($, { limit = false } = {}) {
+// of re-enumerating the whole clause. Dialects whose engine has no ANSI
+// OFFSET…FETCH FIRST paging (LIMIT-only engines) additionally pass
+// offsetFetch: false. Dialects with additional clauses (PREWHERE, QUALIFY, …)
+// define their own `from` and do not use this builder.
+export function fromClause($, { limit = false, offsetFetch = true } = {}) {
   return seq(
     $.keyword_from,
     optional($.keyword_only),
@@ -24,7 +26,7 @@ export function fromClause($, { limit = false } = {}) {
     optional($.window_clause),
     optional($.order_by),
     ...(limit ? [optional($.limit)] : []),
-    optional($.offset_fetch_clause),
+    ...(offsetFetch ? [optional($.offset_fetch_clause)] : []),
   );
 }
 
@@ -403,6 +405,10 @@ export default {
     field('predicate', $._expression),
   ),
 
+  // Strict ANSI: only the leading ROLLUP(...)/CUBE(...)/GROUPING SETS(...)
+  // forms are ISO/IEC 9075. The trailing "WITH ROLLUP"/"WITH CUBE" modifier
+  // is vendor syntax (MySQL has WITH ROLLUP; T-SQL has both) and is added by
+  // those dialects' own group_by overrides, not here.
   group_by: $ => prec.left(seq(
     $.keyword_group,
     $.keyword_by,
@@ -412,7 +418,6 @@ export default {
       $.cube_clause,
       $.grouping_sets_clause,
     ), true),
-    optional(seq($.keyword_with, choice($.keyword_rollup, $.keyword_cube))),
   )),
 
   rollup_clause: $ => seq(

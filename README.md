@@ -43,7 +43,7 @@ Each dialect compiles to its own `<dialect>/src/parser.c` and can be used indepe
 | **redshift** | base | `DISTKEY`/`SORTKEY`/`DISTSTYLE`/`ENCODE`, `CREATE EXTERNAL SCHEMA/TABLE`, `COPY`/`UNLOAD`, `VACUUM REINDEX`, `APPROXIMATE COUNT` |
 | **cockroachdb** | postgres | `AS OF SYSTEM TIME`, `UPSERT INTO`, `BACKUP`/`RESTORE`, `IMPORT INTO … CSV DATA`, `CREATE CHANGEFEED`, hash-sharded indexes (`USING HASH`), `STORING (…)`, `SHOW JOBS`/`GRANTS`/`DATABASES` |
 | **clickhouse** | base | `ENGINE = MergeTree() …`, column `MATERIALIZED`/`ALIAS`/`EPHEMERAL`/`CODEC`/`TTL`, `PREWHERE`, `FINAL`, `ARRAY JOIN`, `LIMIT n BY`, `SAMPLE`, `WITH TOTALS`, `QUALIFY`, `ORDER BY … WITH FILL`, `LIMIT … WITH TIES`, `INTO OUTFILE`/`FORMAT`, `ALTER … UPDATE`/`DELETE`, `OPTIMIZE … FINAL`, `CREATE DICTIONARY`/`LIVE VIEW`, `SYSTEM …`, `Map`/`Tuple`/`Nested`/`LowCardinality`/`Nullable` types |
-| **flink** | base | connector DDL (`WITH (…)`), `WATERMARK FOR`, windowing TVFs (`TUMBLE`/`HOP`/`CUMULATE`), `MATCH_RECOGNIZE`, temporal joins, `CREATE CATALOG`/`MODULE`, statement sets |
+| **flink** | base | connector DDL (`WITH (…)`), `WATERMARK FOR`, windowing TVFs (`TUMBLE`/`HOP`/`CUMULATE`), `MATCH_RECOGNIZE`, temporal joins, `CREATE CATALOG`, `LOAD`/`UNLOAD MODULE`, statement sets |
 
 Dependency chains: `databricks → spark → hive → base`, `mariadb → mysql → base`, `athena → trino → base`,
 `cockroachdb → postgres → base`, and `spanner → bigquery → base`. The chains follow real dialect

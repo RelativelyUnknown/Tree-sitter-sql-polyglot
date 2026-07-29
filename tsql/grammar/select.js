@@ -2,6 +2,20 @@ import { make_keyword, comma_list, optional_parenthesis, paren_list } from '../.
 
 export default {
 
+  // T-SQL: GROUP BY supports trailing WITH ROLLUP / WITH CUBE (deprecated
+  // legacy syntax, superseded by GROUPING SETS, but still valid T-SQL).
+  group_by: $ => prec.left(seq(
+    $.keyword_group,
+    $.keyword_by,
+    comma_list(choice(
+      $._expression,
+      $.rollup_clause,
+      $.cube_clause,
+      $.grouping_sets_clause,
+    ), true),
+    optional(seq($.keyword_with, choice($.keyword_rollup, $.keyword_cube))),
+  )),
+
   // SELECT [TOP n [PERCENT] [WITH TIES]] [DISTINCT] ...
   select: $ => seq(
     $.keyword_select,

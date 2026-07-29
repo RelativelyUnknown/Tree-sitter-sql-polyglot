@@ -36,8 +36,8 @@ export default grammar(base, {
     // Re-add non-ANSI CREATE forms this dialect supports over the strict ANSI base.
     _create_statement: $ => seq(choice(...createStatementChoices($, { materializedView: true, index: true }))),
 
-    // LIMIT is supported: fromClause with limit re-adds it over the ANSI base.
-    from: $ => fromClause($, { limit: true }),
+    // LIMIT is supported (HANA has no ANSI OFFSET…FETCH FIRST paging).
+    from: $ => fromClause($, { limit: true, offsetFetch: false }),
 
     // SELECT TOP n … row limiting.
     select: $ => seq(

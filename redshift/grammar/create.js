@@ -146,12 +146,12 @@ export default {
   ),
 
   // Override _create_statement to add Redshift-specific CREATE variants
+  // No CREATE INDEX: Redshift has no traditional indexes (uses sort/dist keys).
   _create_statement: $ => seq(
     choice(
       $.create_table,
       $.create_view,
       $.create_materialized_view,
-      $.create_index,
       $.create_function,
       $.create_procedure,
       $.create_type,

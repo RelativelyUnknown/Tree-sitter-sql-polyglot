@@ -331,8 +331,8 @@ export default grammar(base, {
           $.sort_by,
         ),
       ),
+      // HiveQL paging is LIMIT-only — no ANSI OFFSET…FETCH FIRST.
       optional($.limit),
-      optional($.offset_fetch_clause),
     ),
 
     // CLUSTER BY col [, col]
