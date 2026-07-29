@@ -2,7 +2,7 @@
 """
 Corroborated SQL feature-coverage tool (the single coverage entry point).
 
-For every (dialect, feature) probe in tools/features.yml this tool records:
+For every (dialect, feature) probe in tools/coverage-probes.yml this tool records:
 
   ours          does THIS grammar's compiled tree-sitter parser accept the probe
   <corroborator> does each independent reference parser accept it
@@ -59,7 +59,7 @@ except ImportError:
     sys.exit(2)
 
 ROOT = Path(__file__).resolve().parent.parent
-FEATURES_FILE = ROOT / "tools" / "features.yml"
+FEATURES_FILE = ROOT / "tools" / "coverage-probes.yml"
 COVERAGE_JSON = ROOT / "tools" / "coverage.json"
 COVERAGE_MD = ROOT / "docs" / "coverage.md"
 ANTLR_DIR = ROOT / "tools" / "antlr"

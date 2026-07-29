@@ -323,9 +323,10 @@ features:
       db2:
         probe: "SELECT a FROM FINAL TABLE (INSERT INTO t1 (a) VALUES (1));"
       mysql:      { status: not-applicable, reason: "No upstream support (MariaDB-only feature)" }
-      snowflake:  { status: not-applicable, reason: "Snowflake has no RETURNING (issue #116 corrected)" }
-      clickhouse: { status: not-applicable, reason: "Open upstream feature request ClickHouse#21697" }
       redshift:   { status: not-applicable, reason: "No upstream support" }
+      # snowflake (#116) and clickhouse (23.4+, #119) both added RETURNING —
+      # no not-applicable entry; the grammar and a passing corpus test both
+      # confirm it.
       trino:      { status: not-applicable, reason: "No upstream support" }
       athena:     { status: not-applicable, reason: "No upstream support" }
       hive:       { status: not-applicable, reason: "No upstream support" }
@@ -388,8 +389,9 @@ features:
       databricks: { status: not-applicable, reason: "No row locking" }
       bigquery:   { status: not-applicable, reason: "No row locking" }
       redshift:   { status: not-applicable, reason: "No SELECT FOR UPDATE" }
-      trino:      { status: not-applicable, reason: "No row locking" }
-      athena:     { status: not-applicable, reason: "No row locking" }
+      # trino/athena (#113) added SELECT … FOR UPDATE — no not-applicable
+      # entry; the grammar's locking_clause rule and a passing corpus test
+      # both confirm it.
       duckdb:     { status: not-applicable, reason: "No row locking" }
       clickhouse: { status: not-applicable, reason: "No row locking" }
       flink:      { status: not-applicable, reason: "No row locking" }
@@ -454,14 +456,18 @@ features:
     weight: 1
     probe: "COMMENT ON TABLE t1 IS 'docs';"
     dialects:
-      mysql:      { status: not-applicable, reason: "Comments via COMMENT= table option" }
-      mariadb:    { status: not-applicable, reason: "Comments via COMMENT= table option" }
+      # mysql/mariadb/tsql/bigquery/spanner/flink: COMMENT ON was deliberately
+      # wired into every dialect's _ddl_statement override (#126) as a common
+      # normalized DDL surface, even though each engine's *native* comment
+      # mechanism is different (COMMENT= table option, sp_addextendedproperty,
+      # OPTIONS(description=…), schema options, table options respectively).
+      # No not-applicable entries here — the grammar genuinely accepts it.
       sqlite:     { status: not-applicable, reason: "No COMMENT statement" }
-      tsql:       { status: not-applicable, reason: "Comments via sp_addextendedproperty" }
-      bigquery:   { status: not-applicable, reason: "Comments via OPTIONS(description=…)" }
-      spanner:    { status: not-applicable, reason: "Comments via schema options" }
-      clickhouse: { status: not-applicable, reason: "Comments via ALTER … MODIFY COMMENT" }
-      flink:      { status: not-applicable, reason: "Comments via table options" }
+      # ClickHouse has neither ANSI COMMENT ON nor a working ALTER … MODIFY
+      # COMMENT in the grammar (no column_definition path accepts COMMENT as
+      # a column name) — genuinely not-applicable, not merely "use the
+      # workaround instead".
+      clickhouse: { status: not-applicable, reason: "No COMMENT ON and no MODIFY COMMENT column rule in the grammar; native comments are set via ALTER TABLE … COMMENT COLUMN, not modeled here" }
 
   - id: create_index
     name: "CREATE INDEX"
@@ -547,7 +553,10 @@ features:
     weight: 1
     probe: "SHOW TABLES;"
     dialects:
-      postgres: { status: not-applicable, reason: "Metadata via catalog/psql, not SHOW TABLES" }
+      # postgres has its own dedicated _show_statement (SHOW CREATE TABLE/
+      # VIEW/SCHEMA/USER, SHOW ALL, SHOW TABLES [FROM …] [LIKE …]), wired
+      # into _ddl_statement and confirmed by a passing corpus test
+      # (postgres/test/corpus/show.txt) — no not-applicable entry.
       sqlite:   { status: not-applicable, reason: "Metadata via pragma" }
       tsql:     { status: not-applicable, reason: "Metadata via system views" }
       oracle:   { status: not-applicable, reason: "Metadata via data dictionary" }
@@ -669,9 +678,10 @@ features:
     weight: 3
     probe: "SELECT CASE WHEN a > 1 THEN 'y' ELSE 'n' END FROM t1;"
 
-  # Cursors are writable ANSI SQL (E121), so the base is scored on them — and,
-  # having no cursor rules by design, the base honestly reports them as a gap.
-  # Dialects with a procedural/embedded layer implement them.
+  # Cursors are writable ANSI SQL (E121), so the base is scored on them. The
+  # base grammar does implement DECLARE ... CURSOR FOR (declare_cursor_statement
+  # in grammar/statements/index.js) — this is scored as implemented, not a gap.
+  # Dialects with a procedural/embedded layer implement their own variants.
   - id: cursor
     name: "Cursors (DECLARE / OPEN / FETCH / CLOSE)"
     iso: E121
