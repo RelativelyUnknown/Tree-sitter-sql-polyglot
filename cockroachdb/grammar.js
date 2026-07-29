@@ -69,6 +69,7 @@ export default grammar(postgres, {
     // base relation plus optional AS OF SYSTEM TIME on a table reference.
     // Placed inside relation (before the alias) so the token after AS
     // disambiguates: OF → historical read, identifier → alias.
+    // No TABLESAMPLE: CockroachDB has no ANSI TABLESAMPLE clause upstream.
     relation: $ => prec.right(
       seq(
         choice(
@@ -77,7 +78,6 @@ export default grammar(postgres, {
           $.object_reference,
           wrapped_in_parenthesis($.values),
         ),
-        optional($.tablesample),
         optional($.as_of_clause),
         optional(
           seq(

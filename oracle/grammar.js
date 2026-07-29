@@ -175,7 +175,7 @@ export default grammar(base, {
       optional($.model_clause),
       optional($.order_siblings_by),
       optional($.order_by),
-      optional($.limit),
+      // Oracle paging is FETCH FIRST/ROWNUM — no LIMIT keyword.
       optional($.offset_fetch_clause),
     ),
 

@@ -33,6 +33,23 @@ export default grammar(bigquery, {
 
   rules: {
 
+    // bigquery _ddl_statement minus MERGE: Cloud Spanner has no MERGE
+    // statement (uses INSERT OR UPDATE instead).
+    _ddl_statement: $ => choice(
+      $._create_statement,
+      $._alter_statement,
+      $._drop_statement,
+      $._rename_statement,
+      $._refresh_statement,
+      $.set_statement,
+      $.grant_statement,
+      $.revoke_statement,
+      $.export_data,
+      $.load_data_statement,
+      $.assert_statement,
+      $.comment_statement,
+    ),
+
     // bigquery _create_statement plus Spanner CHANGE STREAM
     _create_statement: $ => seq(
       choice(

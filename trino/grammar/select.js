@@ -2,12 +2,6 @@ import { comma_list, optional_parenthesis } from '../../grammar/helpers.js';
 
 export default {
 
-  // QUALIFY expr
-  qualify: $ => seq(
-    $.keyword_qualify,
-    $._expression,
-  ),
-
   // TABLESAMPLE BERNOULLI(n) | SYSTEM(n)  — overrides base ROWS/PERCENT/BUCKET form
   tablesample: $ => seq(
     $.keyword_tablesample,
@@ -17,7 +11,7 @@ export default {
     ),
   ),
 
-  // Override from to add QUALIFY
+  // No QUALIFY: Trino/Athena have no QUALIFY clause upstream.
   from: $ => seq(
     $.keyword_from,
     optional($.keyword_only),
@@ -33,7 +27,6 @@ export default {
     optional($.where),
     optional($.group_by),
     optional($.having),
-    optional($.qualify),
     optional($.window_clause),
     optional($.order_by),
     optional($.limit),

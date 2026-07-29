@@ -47,6 +47,7 @@ export default grammar(base, {
     from: $ => fromClause($, { limit: true }),
 
     // ── DDL dispatcher ────────────────────────────────────────────────────────
+    // No GRANT/REVOKE: Flink SQL has no standard access-control DDL.
     _ddl_statement: $ => choice(
       $._create_statement,
       $._alter_statement,
@@ -54,8 +55,6 @@ export default grammar(base, {
       $._rename_statement,
       $._merge_statement,
       $._refresh_statement,
-      $.grant_statement,
-      $.revoke_statement,
       // Flink USE / MODULE / JAR
       $.use_catalog_statement,
       $.use_database_statement,

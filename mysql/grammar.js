@@ -50,11 +50,11 @@ export default grammar(base, {
       ),
     ),
 
+    // No CREATE MATERIALIZED VIEW: no materialized views upstream in MySQL.
     _create_statement: $ => seq(
       choice(
         $.create_table,
         $.create_view,
-        $.create_materialized_view,
         $.create_index,
         $.create_function,
         $.create_procedure,
@@ -174,8 +174,8 @@ export default grammar(base, {
       optional($.having),
       optional($.window_clause),
       optional($.order_by),
+      // MySQL paging is LIMIT/OFFSET only — no ANSI OFFSET…FETCH FIRST.
       optional($.limit),
-      optional($.offset_fetch_clause),
       optional($.into_outfile),
     ),
 
@@ -262,7 +262,8 @@ export default grammar(base, {
       ),
     ),
 
-    // MySQL: GROUP BY supports WITH ROLLUP
+    // MySQL: GROUP BY supports trailing WITH ROLLUP (no WITH CUBE — MySQL
+    // never implemented that form, unlike T-SQL).
     group_by: $ => prec.left(seq(
       $.keyword_group,
       $.keyword_by,
@@ -272,7 +273,7 @@ export default grammar(base, {
         $.cube_clause,
         $.grouping_sets_clause,
       ), true),
-      optional(seq($.keyword_with, choice($.keyword_rollup, $.keyword_cube))),
+      optional(seq($.keyword_with, $.keyword_rollup)),
     )),
 
     // MySQL: window functions support IGNORE/RESPECT NULLS

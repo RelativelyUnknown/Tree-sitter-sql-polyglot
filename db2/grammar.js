@@ -268,7 +268,7 @@ export default grammar(base, {
       optional($.having),
       optional($.window_clause),
       optional($.order_by),
-      optional($.limit),
+      // Db2 paging is FETCH FIRST — no LIMIT keyword.
       optional($.offset_fetch_clause),
       optional($.optimize_for_clause),
       optional($.with_isolation_clause),
