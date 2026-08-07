@@ -87,6 +87,10 @@ export default grammar(base, {
         $.show_statement,
         $.describe_statement,
         $.analyze_statement,
+        $.call_statement,
+        $.create_branch_statement,
+        $.drop_branch_statement,
+        $.alter_branch_statement,
         $.comment_on_statement,
         $.deny_statement,
         $.set_role_statement,
@@ -238,6 +242,15 @@ export default grammar(base, {
     keyword_roles:           _ => token(prec(1, make_keyword("roles"))),
     keyword_describe:        _ => token(prec(1, make_keyword("describe"))),
     keyword_extended:        _ => token(prec(1, make_keyword("extended"))),
+    keyword_call:            _ => token(prec(1, make_keyword("call"))),
+    keyword_output:          _ => token(prec(1, make_keyword("output"))),
+    // BRANCH / BRANCHES: distinct tokens, and "branch" is a prefix of
+    // "branches", so neither may rely on precedence to win — longest match
+    // decides, which requires them at the same (default) token precedence.
+    keyword_branch:          _ => make_keyword("branch"),
+    keyword_branches:        _ => make_keyword("branches"),
+    keyword_fast:            _ => token(prec(1, make_keyword("fast"))),
+    keyword_forward:         _ => token(prec(1, make_keyword("forward"))),
     keyword_comment:         _ => token(prec(1, make_keyword("comment"))),
     keyword_match:           _ => token(prec(1, make_keyword("match"))),
     keyword_text:            _ => token(prec(1, make_keyword("text"))),

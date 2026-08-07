@@ -24,6 +24,12 @@
   (keyword_format)
   (keyword_bernoulli)
   (keyword_system)
+  (keyword_call)
+  (keyword_output)
+  (keyword_branch)
+  (keyword_branches)
+  (keyword_fast)
+  (keyword_forward)
 ] @keyword
 
 ; Trino native types
