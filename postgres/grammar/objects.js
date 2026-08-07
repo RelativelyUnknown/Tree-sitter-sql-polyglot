@@ -254,7 +254,13 @@ export default {
     optional(choice($.keyword_also, $.keyword_instead)),
     choice(
       $.keyword_nothing,
-      seq('(', repeat1(seq($.statement, optional(';'))), ')'),
+      // PostgreSQL spells the multi-command form as ( command ; command ... ).
+      // The separator must be mandatory between commands: with an optional
+      // one, a completed command could be followed directly by '(', which is
+      // ambiguous with a trailing argument list on the command itself (e.g.
+      // EXECUTE proc • '(' ). A required ';' leaves only ';' or ')' valid
+      // after a command, so the '(' can only be the argument list.
+      seq('(', $.statement, repeat(seq(';', $.statement)), optional(';'), ')'),
       $.statement,
     ),
   )),
