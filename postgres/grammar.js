@@ -11,6 +11,7 @@ import pg_partition_rules from './grammar/partition.js';
 import pg_notify_rules from './grammar/notify.js';
 import pg_statement_rules from './grammar/statements.js';
 import pg_maintenance_rules from './grammar/maintenance.js';
+import pg_object_rules from './grammar/objects.js';
 
 export default grammar(base, {
   name: 'postgres_sql',
@@ -415,6 +416,15 @@ export default grammar(base, {
       $.close_statement,
       $.abort_statement,
       $.move_statement,
+      // Object-definition statements
+      $.security_label_statement,
+      $.reassign_owned_statement,
+      $.import_foreign_schema_statement,
+      $.create_collation_statement,
+      $.create_conversion_statement,
+      $.create_access_method_statement,
+      $.create_transform_statement,
+      $.create_event_trigger_statement,
     ),
 
     // PostgreSQL: DO $$ ... $$ anonymous block
@@ -714,6 +724,21 @@ export default grammar(base, {
     keyword_relative:       _ => token(prec(1, make_keyword("relative"))),
     keyword_forward:        _ => token(prec(1, make_keyword("forward"))),
     keyword_backward:       _ => token(prec(1, make_keyword("backward"))),
+    // Object-definition statements (see grammar/objects.js)
+    keyword_label:          _ => token(prec(1, make_keyword("label"))),
+    keyword_reassign:       _ => token(prec(1, make_keyword("reassign"))),
+    keyword_import:         _ => token(prec(1, make_keyword("import"))),
+    keyword_collation:      _ => token(prec(1, make_keyword("collation"))),
+    keyword_conversion:     _ => token(prec(1, make_keyword("conversion"))),
+    keyword_method:         _ => token(prec(1, make_keyword("method"))),
+    keyword_handler:        _ => token(prec(1, make_keyword("handler"))),
+    keyword_transform:      _ => token(prec(1, make_keyword("transform"))),
+    keyword_sql:            _ => token(prec(1, make_keyword("sql"))),
+    keyword_event:          _ => token(prec(1, make_keyword("event"))),
+    keyword_procedural:     _ => token(prec(1, make_keyword("procedural"))),
+    keyword_large:          _ => token(prec(1, make_keyword("large"))),
+    keyword_object:         _ => token(prec(1, make_keyword("object"))),
+    keyword_routine:        _ => token(prec(1, make_keyword("routine"))),
     keyword_share:          _ => token(prec(1, make_keyword("share"))),
     keyword_lock:           _ => token(prec(1, make_keyword("lock"))),
     keyword_locked:         _ => token(prec(1, make_keyword("locked"))),
@@ -751,6 +776,7 @@ export default grammar(base, {
     ...pg_notify_rules,
     ...pg_statement_rules,
     ...pg_maintenance_rules,
+    ...pg_object_rules,
 
   },
 });

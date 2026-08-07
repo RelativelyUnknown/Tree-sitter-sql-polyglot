@@ -36,6 +36,24 @@
   (keyword_backward)
 ] @keyword
 
+; PostgreSQL object-definition statement keywords
+[
+  (keyword_label)
+  (keyword_reassign)
+  (keyword_import)
+  (keyword_collation)
+  (keyword_conversion)
+  (keyword_method)
+  (keyword_handler)
+  (keyword_transform)
+  (keyword_sql)
+  (keyword_event)
+  (keyword_procedural)
+  (keyword_large)
+  (keyword_object)
+  (keyword_routine)
+] @keyword
+
 ; PostgreSQL replication / CTE / DO keywords (#31)
 [
   (keyword_publication)
