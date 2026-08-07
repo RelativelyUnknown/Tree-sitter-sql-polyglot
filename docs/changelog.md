@@ -121,6 +121,9 @@ All notable changes to this project will be documented in this file. See [commit
 
 ### Bug Fixes
 
+- **DuckDB:** restore `MERGE INTO`, wrongly removed as "no MERGE upstream" — DuckDB 1.4.0 (2025-09) added it
+- **T-SQL:** restore `CREATE MATERIALIZED VIEW`, wrongly removed as "indexed views instead" — Azure Synapse dedicated SQL pools support it, and this dialect covers Synapse
+- **Spark:** restore `CREATE MATERIALIZED VIEW` (inherited from Hive), wrongly removed as "no materialized views in OSS Spark" — Spark 4.x documents it under Declarative Pipelines
 - **Spanner:** restore `SELECT … FOR UPDATE`, which the inherited BigQuery `FOR SYSTEM_TIME AS OF` clause shadowed
 - **MariaDB:** restore MySQL features dropped by the `_column_constraint` override (`AUTO_INCREMENT`, `STORED`/`VIRTUAL` generated columns, FK `ON DELETE/UPDATE` actions)
 - **Databricks:** restore `iceberg_write_order` and `DISTRIBUTED BY PARTITION` dropped by the `_alter_specifications` override

@@ -1,6 +1,5 @@
 import spark from '../spark/grammar.js';
 import { optional_parenthesis, paren_list, comma_list, wrapped_in_parenthesis, make_keyword } from '../grammar/helpers.js';
-import { createStatementChoices } from '../grammar/statements/create.js';
 
 import vacuum_rules   from './grammar/vacuum.js';
 import optimize_rules from './grammar/optimize.js';
@@ -51,10 +50,6 @@ export default grammar(spark, {
   ],
 
   rules: {
-
-    // Unlike plain OSS Spark, Databricks/Unity Catalog does support
-    // CREATE MATERIALIZED VIEW (DLT) — re-add it over Spark's stricter base.
-    _create_statement: $ => seq(choice(...createStatementChoices($, { materializedView: true }))),
 
     _ddl_statement: $ => choice(
       // Base ANSI SQL DDL

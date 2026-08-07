@@ -107,12 +107,14 @@ export default grammar(base, {
     ),
 
     // DuckDB: COMMENT ON is supported (re-enumerates base _ddl_statement)
-    // No MERGE: DuckDB has no MERGE statement (uses ON CONFLICT upsert instead).
+    // MERGE INTO is supported since DuckDB 1.4.0 (2025-09), alongside the
+    // older ON CONFLICT upsert form.
     _ddl_statement: $ => choice(
       $._create_statement,
       $._alter_statement,
       $._drop_statement,
       $._rename_statement,
+      $._merge_statement,
       $._refresh_statement,
       $.set_statement,
       $.grant_statement,

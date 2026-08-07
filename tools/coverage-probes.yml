@@ -299,7 +299,8 @@ features:
       mysql:   { status: not-applicable, reason: "MySQL has no MERGE (uses ON DUPLICATE KEY)" }
       mariadb: { status: not-applicable, reason: "MariaDB has no MERGE" }
       sqlite:  { status: not-applicable, reason: "SQLite has no MERGE (uses UPSERT)" }
-      duckdb:  { status: not-applicable, reason: "DuckDB has no MERGE (uses ON CONFLICT)" }
+      # duckdb: MERGE INTO landed in DuckDB 1.4.0 (2025-09) — scored, not
+      # excluded. https://duckdb.org/docs/lts/sql/statements/merge_into
       clickhouse: { status: not-applicable, reason: "ClickHouse has no MERGE statement" }
       cockroachdb: { status: not-applicable, reason: "No MERGE; UPSERT / ON CONFLICT instead" }
       spanner:    { status: not-applicable, reason: "No MERGE; INSERT OR UPDATE instead" }
@@ -443,10 +444,14 @@ features:
       mysql:   { status: not-applicable, reason: "No materialized views upstream" }
       mariadb: { status: not-applicable, reason: "No materialized views upstream" }
       sqlite:  { status: not-applicable, reason: "No materialized views upstream" }
-      tsql:    { status: not-applicable, reason: "T-SQL uses indexed views instead" }
+      # tsql: Azure Synapse dedicated SQL pools support CREATE MATERIALIZED
+      # VIEW AS SELECT, and this dialect covers Synapse (see
+      # tsql/grammar/synapse.js) — scored, not excluded. Plain SQL Server
+      # uses indexed views, but both share this grammar.
       hive:
         probe: "CREATE MATERIALIZED VIEW mv1 AS SELECT a FROM t1;"
-      spark:   { status: not-applicable, reason: "No materialized views in OSS Spark" }
+      # spark: Spark 4.x documents CREATE MATERIALIZED VIEW (Declarative
+      # Pipelines), and the rule is inherited from Hive — scored, not excluded.
       teradata: { status: not-applicable, reason: "Teradata uses JOIN INDEX instead" }
 
   - id: comment_on
