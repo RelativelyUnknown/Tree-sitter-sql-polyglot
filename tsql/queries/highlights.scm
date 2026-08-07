@@ -6,7 +6,6 @@
 ; T-SQL-specific keywords
 [
   (keyword_save)
-  (keyword_tran)
   (keyword_top)
   (keyword_output)
   (keyword_inserted)

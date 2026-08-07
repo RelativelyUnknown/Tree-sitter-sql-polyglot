@@ -296,7 +296,11 @@ export default grammar(base, {
     keyword_exec:             _ => token(prec(1, make_keyword("exec"))),
     keyword_execute:          _ => token(prec(1, make_keyword("execute"))),
     keyword_save:             _ => token(prec(1, make_keyword("save"))),
-    keyword_tran:             _ => token(prec(1, make_keyword("tran"))),
+    // T-SQL abbreviates TRANSACTION to TRAN (BEGIN/COMMIT/ROLLBACK/SAVE TRAN).
+    // Matched as ONE token with an optional tail — a separate keyword_tran
+    // would shadow the TRAN prefix of TRANSACTION, because tree-sitter weighs
+    // lexical precedence before match length. Same idiom as teradata's SEL.
+    keyword_transaction:      _ => /[Tt][Rr][Aa][Nn]([Ss][Aa][Cc][Tt][Ii][Oo][Nn])?/,
     keyword_return:           _ => token(prec(1, make_keyword("return"))),
     keyword_waitfor:          _ => token(prec(1, make_keyword("waitfor"))),
     keyword_delay:            _ => token(prec(1, make_keyword("delay"))),
@@ -399,7 +403,7 @@ export default grammar(base, {
     // T-SQL's savepoint form; it has no ANSI SAVEPOINT statement.
     save_transaction_statement: $ => seq(
       $.keyword_save,
-      choice($.keyword_tran, $.keyword_transaction),
+      $.keyword_transaction,
       field('name', choice($.identifier, $.variable)),
     ),
 
@@ -408,7 +412,7 @@ export default grammar(base, {
     // this without the ANSI "TO SAVEPOINT".
     _rollback: $ => seq(
       $.keyword_rollback,
-      optional(choice($.keyword_tran, $.keyword_transaction, $.keyword_work)),
+      optional(choice($.keyword_transaction, $.keyword_work)),
       optional(field('name', choice($.identifier, $.variable))),
     ),
 
