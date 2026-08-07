@@ -6,6 +6,8 @@ import spark_spark4_rules from './grammar/spark4_features.js';
 import spark_scripting_rules from './grammar/scripting.js';
 import spark_iceberg_rules from './grammar/iceberg.js';
 import spark_select_rules from './grammar/select.js';
+import spark_cache_rules from './grammar/cache.js';
+import spark_resource_rules from './grammar/resource.js';
 
 export default grammar(hive, {
   name: 'spark_sql',
@@ -149,6 +151,12 @@ export default grammar(hive, {
       // an override replaces the parent rule wholesale)
       $.show_statement,
       $.describe_statement,
+      // OSS Spark cache + resource management (previously only in databricks)
+      $.cache_table,
+      $.uncache_table,
+      $.clear_cache,
+      $.add_resource_statement,
+      $.list_resource_statement,
       $.msck_repair_statement,
       $.load_data,
       $.declare_variable_statement,
@@ -498,6 +506,23 @@ export default grammar(hive, {
     ...spark_scripting_rules,
     ...spark_iceberg_rules,
     ...spark_select_rules,
+    ...spark_cache_rules,
+    ...spark_resource_rules,
+
+    // Keywords for the cache / resource statements moved up from databricks.
+    // file/files, jar/jars and archive/archives are prefix pairs, but both
+    // members sit at the SAME token precedence, so longest match decides —
+    // the TRAN/TRANSACTION trap only bites when the shorter word is given
+    // higher precedence than the longer one.
+    keyword_lazy:       _ => token(prec(1, make_keyword("lazy"))),
+    keyword_clear:      _ => token(prec(1, make_keyword("clear"))),
+    keyword_uncache:    _ => token(prec(1, make_keyword("uncache"))),
+    keyword_file:       _ => token(prec(1, make_keyword("file"))),
+    keyword_files:      _ => token(prec(1, make_keyword("files"))),
+    keyword_jars:       _ => token(prec(1, make_keyword("jars"))),
+    keyword_archive:    _ => token(prec(1, make_keyword("archive"))),
+    keyword_archives:   _ => token(prec(1, make_keyword("archives"))),
+    keyword_list:       _ => token(prec(1, make_keyword("list"))),
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
     // that are strict prefixes of the base keywords below. Explicit precedence

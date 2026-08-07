@@ -9,7 +9,6 @@ import drop_rules     from './grammar/drop.js';
 import describe_rules from './grammar/describe.js';
 import show_rules     from './grammar/show.js';
 import cache_rules    from './grammar/cache.js';
-import resource_rules from './grammar/resource.js';
 import call_rules     from './grammar/call.js';
 import create_rules   from './grammar/create.js';
 import alter_rules    from './grammar/alter.js';
@@ -258,7 +257,6 @@ export default grammar(spark, {
     keyword_volume:     _ => token(prec(1, make_keyword("volume"))),
     keyword_credential: _ => token(prec(1, make_keyword("credential"))),
     keyword_share:      _ => token(prec(1, make_keyword("share"))),
-    keyword_files:      _ => token(prec(1, make_keyword("files"))),
     keyword_copy:          _ => token(prec(1, make_keyword("copy"))),
     keyword_fileformat:    _ => token(prec(1, make_keyword("fileformat"))),
     keyword_pattern:       _ => token(prec(1, make_keyword("pattern"))),
@@ -293,7 +291,6 @@ export default grammar(spark, {
       '=',
       alias($._literal_string, $.literal),
     ),
-    keyword_file:       _ => token(prec(1, make_keyword("file"))),
     keyword_catalog:    _ => token(prec(1, make_keyword("catalog"))),
     keyword_describe:   _ => token(prec(1, make_keyword("describe"))),
     keyword_query:      _ => token(prec(1, make_keyword("query"))),
@@ -314,10 +311,6 @@ export default grammar(spark, {
     keyword_history:    _ => token(prec(1, make_keyword("history"))),
     keyword_detail:     _ => token(prec(1, make_keyword("detail"))),
     keyword_global:     _ => token(prec(1, make_keyword("global"))),
-    keyword_lazy:       _ => token(prec(1, make_keyword("lazy"))),
-    keyword_clear:      _ => token(prec(1, make_keyword("clear"))),
-    keyword_uncache:    _ => token(prec(1, make_keyword("uncache"))),
-    keyword_jar:        _ => token(prec(1, make_keyword("jar"))),
     keyword_handler:    _ => token(prec(1, make_keyword("handler"))),
     keyword_environment:_ => token(prec(1, make_keyword("environment"))),
     keyword_parameter:  _ => token(prec(1, make_keyword("parameter"))),
@@ -325,10 +318,6 @@ export default grammar(spark, {
     keyword_shallow:    _ => token(prec(1, make_keyword("shallow"))),
     keyword_deep:       _ => token(prec(1, make_keyword("deep"))),
     keyword_clone:      _ => token(prec(1, make_keyword("clone"))),
-    keyword_jars:       _ => token(prec(1, make_keyword("jars"))),
-    keyword_archive:    _ => token(prec(1, make_keyword("archive"))),
-    keyword_archives:   _ => token(prec(1, make_keyword("archives"))),
-    keyword_list:       _ => token(prec(1, make_keyword("list"))),
     keyword_catalogs:   _ => token(prec(1, make_keyword("catalogs"))),
     keyword_namespaces: _ => token(prec(1, make_keyword("namespaces"))),
     keyword_volumes:    _ => token(prec(1, make_keyword("volumes"))),
@@ -358,7 +347,6 @@ export default grammar(spark, {
     ...describe_rules,
     ...show_rules,
     ...cache_rules,
-    ...resource_rules,
     ...call_rules,
     ...create_rules,
     ...alter_rules,

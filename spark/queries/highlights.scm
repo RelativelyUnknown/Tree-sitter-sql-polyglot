@@ -18,3 +18,16 @@
   (keyword_analyze)
   (keyword_verbose)
 ] @keyword
+
+; Spark cache / resource management keywords
+[
+  (keyword_lazy)
+  (keyword_clear)
+  (keyword_uncache)
+  (keyword_file)
+  (keyword_files)
+  (keyword_jars)
+  (keyword_archive)
+  (keyword_archives)
+  (keyword_list)
+] @keyword
