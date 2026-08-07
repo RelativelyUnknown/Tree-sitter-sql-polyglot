@@ -52,7 +52,14 @@
   (keyword_large)
   (keyword_object)
   (keyword_routine)
+  (keyword_operator)
+  (keyword_rule)
+  (keyword_also)
+  (keyword_replica)
 ] @keyword
+
+; User-defined operator symbols (CREATE/ALTER OPERATOR)
+(operator_symbol) @operator
 
 ; PostgreSQL replication / CTE / DO keywords (#31)
 [

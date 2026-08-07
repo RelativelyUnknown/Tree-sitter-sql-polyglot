@@ -185,4 +185,129 @@ export default {
     paren_list(alias($._literal_string, $.literal), true),
   ),
 
+  // ── Operators ─────────────────────────────────────────────────────────────
+  // https://www.postgresql.org/docs/current/sql-createoperator.html
+  // https://www.postgresql.org/docs/current/sql-alteroperator.html
+  //
+  // A user-defined operator name is an arbitrary run of symbol characters
+  // (===, &&&, @@). The base op_other token is a fixed list of known
+  // operators and cannot match those, so this needs its own greedy token.
+  // It is only ever valid directly after CREATE/ALTER OPERATOR or as a
+  // COMMUTATOR/NEGATOR value, so it does not compete with the expression
+  // grammar's operators in any shared lexer state.
+  operator_symbol: _ => token(/[+\-*/<>=~!@#%^&|`?]+/),
+
+  create_operator_statement: $ => seq(
+    $.keyword_create,
+    $.keyword_operator,
+    field('name', $.operator_symbol),
+    '(',
+    comma_list($._operator_option, true),
+    ')',
+  ),
+
+  _operator_option: $ => choice(
+    seq(
+      choice($.keyword_function, $.keyword_procedure, $.keyword_restrict, $.keyword_join),
+      '=',
+      field('value', $._operator_value),
+    ),
+    // LEFTARG / RIGHTARG / COMMUTATOR / NEGATOR are not reserved words, so
+    // they lex as identifiers; HASHES and MERGES appear as bare flags.
+    seq(field('option', $.identifier), optional(seq('=', field('value', $._operator_value)))),
+  ),
+
+  // _type already falls back to custom_type: object_reference, so listing
+  // object_reference alongside it would be ambiguous rather than additive.
+  _operator_value: $ => choice($.keyword_none, $.operator_symbol, $._type),
+
+  alter_operator_statement: $ => seq(
+    $.keyword_alter,
+    $.keyword_operator,
+    field('name', $.operator_symbol),
+    '(',
+    field('left_type', choice($.keyword_none, $._type)),
+    ',',
+    field('right_type', $._type),
+    ')',
+    choice(
+      seq($.keyword_owner, $.keyword_to, field('new_owner', $._role_specification)),
+      seq($.keyword_set, $.keyword_schema, field('new_schema', $.identifier)),
+      seq($.keyword_set, '(', comma_list($._operator_option, true), ')'),
+    ),
+  ),
+
+  // ── Rules ─────────────────────────────────────────────────────────────────
+  // https://www.postgresql.org/docs/current/sql-createrule.html
+  create_rule_statement: $ => prec.right(seq(
+    $.keyword_create,
+    optional($._or_replace),
+    $.keyword_rule,
+    field('name', $.identifier),
+    $.keyword_as,
+    $.keyword_on,
+    field('event', choice($.keyword_select, $.keyword_insert, $.keyword_update, $.keyword_delete)),
+    $.keyword_to,
+    field('table', $.object_reference),
+    optional(seq($.keyword_where, field('condition', $._expression))),
+    $.keyword_do,
+    optional(choice($.keyword_also, $.keyword_instead)),
+    choice(
+      $.keyword_nothing,
+      seq('(', repeat1(seq($.statement, optional(';'))), ')'),
+      $.statement,
+    ),
+  )),
+
+  // ALTER RULE name ON table RENAME TO new_name
+  alter_rule_statement: $ => seq(
+    $.keyword_alter,
+    $.keyword_rule,
+    field('name', $.identifier),
+    $.keyword_on,
+    field('table', $.object_reference),
+    $.keyword_rename,
+    $.keyword_to,
+    field('new_name', $.identifier),
+  ),
+
+  // ── ALTER for collation / conversion / event trigger ──────────────────────
+  // These three share the RENAME TO / OWNER TO / SET SCHEMA shape.
+  _object_alter_action: $ => choice(
+    seq($.keyword_rename, $.keyword_to, field('new_name', $.identifier)),
+    seq($.keyword_owner, $.keyword_to, field('new_owner', $._role_specification)),
+    seq($.keyword_set, $.keyword_schema, field('new_schema', $.identifier)),
+  ),
+
+  // ALTER COLLATION name { REFRESH VERSION | <shared action> }
+  alter_collation_statement: $ => seq(
+    $.keyword_alter,
+    $.keyword_collation,
+    field('name', $.object_reference),
+    choice(
+      seq($.keyword_refresh, $.keyword_version),
+      $._object_alter_action,
+    ),
+  ),
+
+  alter_conversion_statement: $ => seq(
+    $.keyword_alter,
+    $.keyword_conversion,
+    field('name', $.object_reference),
+    $._object_alter_action,
+  ),
+
+  // ALTER EVENT TRIGGER name { DISABLE | ENABLE [REPLICA|ALWAYS] | <shared> }
+  alter_event_trigger_statement: $ => seq(
+    $.keyword_alter,
+    $.keyword_event,
+    $.keyword_trigger,
+    field('name', $.identifier),
+    choice(
+      $.keyword_disable,
+      seq($.keyword_enable, optional(choice($.keyword_replica, $.keyword_always))),
+      $._object_alter_action,
+    ),
+  ),
+
 };
