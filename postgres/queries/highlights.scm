@@ -16,6 +16,26 @@
   (keyword_excluding)
 ] @keyword
 
+; PostgreSQL maintenance / utility statement keywords
+[
+  (keyword_reindex)
+  (keyword_cluster)
+  (keyword_checkpoint)
+  (keyword_discard)
+  (keyword_plans)
+  (keyword_sequences)
+  (keyword_load)
+  (keyword_close)
+  (keyword_abort)
+  (keyword_chain)
+  (keyword_move)
+  (keyword_prior)
+  (keyword_absolute)
+  (keyword_relative)
+  (keyword_forward)
+  (keyword_backward)
+] @keyword
+
 ; PostgreSQL replication / CTE / DO keywords (#31)
 [
   (keyword_publication)

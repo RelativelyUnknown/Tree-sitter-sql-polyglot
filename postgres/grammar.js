@@ -10,6 +10,7 @@ import pg_replication_rules from './grammar/replication.js';
 import pg_partition_rules from './grammar/partition.js';
 import pg_notify_rules from './grammar/notify.js';
 import pg_statement_rules from './grammar/statements.js';
+import pg_maintenance_rules from './grammar/maintenance.js';
 
 export default grammar(base, {
   name: 'postgres_sql',
@@ -405,6 +406,15 @@ export default grammar(base, {
       $.prepare_statement,
       $.execute_statement,
       $.deallocate_statement,
+      // Maintenance / utility statements
+      $.reindex_statement,
+      $.cluster_statement,
+      $.checkpoint_statement,
+      $.discard_statement,
+      $.load_statement,
+      $.close_statement,
+      $.abort_statement,
+      $.move_statement,
     ),
 
     // PostgreSQL: DO $$ ... $$ anonymous block
@@ -687,6 +697,23 @@ export default grammar(base, {
     keyword_listen:         _ => token(prec(1, make_keyword("listen"))),
     keyword_notify:         _ => token(prec(1, make_keyword("notify"))),
     keyword_unlisten:       _ => token(prec(1, make_keyword("unlisten"))),
+    // Maintenance / utility statements (see grammar/maintenance.js)
+    keyword_reindex:        _ => token(prec(1, make_keyword("reindex"))),
+    keyword_cluster:        _ => token(prec(1, make_keyword("cluster"))),
+    keyword_checkpoint:     _ => token(prec(1, make_keyword("checkpoint"))),
+    keyword_discard:        _ => token(prec(1, make_keyword("discard"))),
+    keyword_plans:          _ => token(prec(1, make_keyword("plans"))),
+    keyword_sequences:      _ => token(prec(1, make_keyword("sequences"))),
+    keyword_load:           _ => token(prec(1, make_keyword("load"))),
+    keyword_close:          _ => token(prec(1, make_keyword("close"))),
+    keyword_abort:          _ => token(prec(1, make_keyword("abort"))),
+    keyword_chain:          _ => token(prec(1, make_keyword("chain"))),
+    keyword_move:           _ => token(prec(1, make_keyword("move"))),
+    keyword_prior:          _ => token(prec(1, make_keyword("prior"))),
+    keyword_absolute:       _ => token(prec(1, make_keyword("absolute"))),
+    keyword_relative:       _ => token(prec(1, make_keyword("relative"))),
+    keyword_forward:        _ => token(prec(1, make_keyword("forward"))),
+    keyword_backward:       _ => token(prec(1, make_keyword("backward"))),
     keyword_share:          _ => token(prec(1, make_keyword("share"))),
     keyword_lock:           _ => token(prec(1, make_keyword("lock"))),
     keyword_locked:         _ => token(prec(1, make_keyword("locked"))),
@@ -723,6 +750,7 @@ export default grammar(base, {
     ...pg_partition_rules,
     ...pg_notify_rules,
     ...pg_statement_rules,
+    ...pg_maintenance_rules,
 
   },
 });
