@@ -539,6 +539,14 @@ features:
     weight: 1
     probe: "SAVEPOINT sp1; ROLLBACK TO SAVEPOINT sp1;"
     dialects:
+      # T-SQL has savepoints, but spells them SAVE TRANSACTION / ROLLBACK
+      # TRANSACTION <name> — not the ANSI SAVEPOINT keyword. Probe override
+      # rather than not-applicable: the capability exists, the syntax differs.
+      # Wrapped in a transaction because that is both how T-SQL savepoints are
+      # actually used and where the grammar reaches ROLLBACK (_rollback
+      # terminates the transaction rule; it is not a standalone statement).
+      tsql:
+        probe: "BEGIN TRANSACTION; SAVE TRANSACTION sp1; ROLLBACK TRANSACTION sp1;"
       hive:       { status: not-applicable, reason: "No savepoints" }
       spark:      { status: not-applicable, reason: "No savepoints" }
       databricks: { status: not-applicable, reason: "No savepoints" }
