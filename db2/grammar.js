@@ -140,12 +140,13 @@ export default grammar(base, {
       ),
     ),
 
-    // Extend _create_statement to add Db2-specific CREATE statements
+    // Extend _create_statement to add Db2-specific CREATE statements.
+    // No CREATE MATERIALIZED VIEW: Db2 spells this as a materialized query
+    // table on CREATE TABLE (… DATA INITIALLY DEFERRED REFRESH DEFERRED).
     _create_statement: $ => seq(
       choice(
         $.create_table,
         $.create_view,
-        $.create_materialized_view,
         $.create_index,
         $.create_function,
         $.create_procedure,

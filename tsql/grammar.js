@@ -59,7 +59,10 @@ export default grammar(base, {
         $._ddl_statement,
         $._dml_write,
         optional_parenthesis($._dml_read),
-        $._transaction_statement,
+        // T-SQL has no ANSI SAVEPOINT / RELEASE SAVEPOINT / ROLLBACK TO
+        // SAVEPOINT — it uses SAVE TRANSACTION instead, so the base
+        // _transaction_statement family is deliberately not wired in here.
+        $.save_transaction_statement,
         // T-SQL procedural constructs
         $.declare_statement,
         $.if_statement,
@@ -292,6 +295,8 @@ export default grammar(base, {
     keyword_read_only:        _ => token(prec(1, /[Rr][Ee][Aa][Dd]_[Oo][Nn][Ll][Yy]/)),
     keyword_exec:             _ => token(prec(1, make_keyword("exec"))),
     keyword_execute:          _ => token(prec(1, make_keyword("execute"))),
+    keyword_save:             _ => token(prec(1, make_keyword("save"))),
+    keyword_tran:             _ => token(prec(1, make_keyword("tran"))),
     keyword_return:           _ => token(prec(1, make_keyword("return"))),
     keyword_waitfor:          _ => token(prec(1, make_keyword("waitfor"))),
     keyword_delay:            _ => token(prec(1, make_keyword("delay"))),
@@ -389,6 +394,23 @@ export default grammar(base, {
       seq($.keyword_set, $.keyword_transaction, $.keyword_snapshot, $._transaction_mode),
       seq($.keyword_set, $.keyword_session, $.keyword_characteristics, $.keyword_as, $.keyword_transaction, $._transaction_mode),
     )),
+
+    // SAVE { TRAN | TRANSACTION } { savepoint_name | @savepoint_variable }
+    // T-SQL's savepoint form; it has no ANSI SAVEPOINT statement.
+    save_transaction_statement: $ => seq(
+      $.keyword_save,
+      choice($.keyword_tran, $.keyword_transaction),
+      field('name', choice($.identifier, $.variable)),
+    ),
+
+    // ROLLBACK { TRAN | TRANSACTION } [ name | @var ] — an explicit name rolls
+    // back to that savepoint rather than the whole transaction. T-SQL spells
+    // this without the ANSI "TO SAVEPOINT".
+    _rollback: $ => seq(
+      $.keyword_rollback,
+      optional(choice($.keyword_tran, $.keyword_transaction, $.keyword_work)),
+      optional(field('name', choice($.identifier, $.variable))),
+    ),
 
     ...tsql_select_rules,
     ...tsql_type_rules,

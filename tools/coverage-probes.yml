@@ -46,6 +46,22 @@
 #
 # A feature/dialect pair with no explicit status is scored by parsing:
 # probe parses without ERROR/MISSING → implemented; otherwise → absent (gap).
+#
+# Reading "suspect" results
+# -------------------------
+# A "suspect" (we accept, no corroborator does) is evidence of an over-loose
+# grammar ONLY where the corroborators actually cover that dialect. SQLGlot,
+# pglast, ANTLR and sqlfluff have thin-to-no Db2 coverage, so most Db2
+# suspects are corroborator blind spots rather than grammar bugs — verified
+# against IBM's own docs: FINAL TABLE, COMMENT ON, SAVEPOINT, compound
+# BEGIN…END, PREPARE and DECLARE CURSOR are all real Db2 syntax. Check the
+# vendor's documentation before "fixing" a suspect by deleting grammar.
+#
+# Scope note: this registry is a regression guard, not a completeness
+# measure. It tracks 44 features; PostgreSQL alone documents 183 statements,
+# and a statement-index diff found ≥25 of them (21%) with no grammar support
+# at all. A dialect at 100% here means "passes every probe we wrote", not
+# "feature complete".
 # ─────────────────────────────────────────────────────────────────────────────
 
 dialects:
@@ -453,6 +469,7 @@ features:
       # spark: Spark 4.x documents CREATE MATERIALIZED VIEW (Declarative
       # Pipelines), and the rule is inherited from Hive — scored, not excluded.
       teradata: { status: not-applicable, reason: "Teradata uses JOIN INDEX instead" }
+      db2:     { status: not-applicable, reason: "Db2 uses materialized query tables: CREATE TABLE … DATA INITIALLY DEFERRED REFRESH DEFERRED" }
 
   - id: comment_on
     name: "COMMENT ON object"
