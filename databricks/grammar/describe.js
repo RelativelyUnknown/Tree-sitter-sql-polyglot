@@ -36,11 +36,7 @@ export default {
     $.object_reference,
   ),
 
-  // DESCRIBE QUERY statement
-  describe_query: $ => seq(
-    $.keyword_describe,
-    $.keyword_query,
-    choice($._dml_read, $.object_reference),
-  ),
+  // DESCRIBE QUERY moved to spark/grammar/cache.js — it is an OSS Spark
+  // statement, so Databricks now inherits it rather than owning it.
 
 };

@@ -293,7 +293,6 @@ export default grammar(spark, {
     ),
     keyword_catalog:    _ => token(prec(1, make_keyword("catalog"))),
     keyword_describe:   _ => token(prec(1, make_keyword("describe"))),
-    keyword_query:      _ => token(prec(1, make_keyword("query"))),
     keyword_call:       _ => token(prec(1, make_keyword("call"))),
     keyword_branch:     _ => token(prec(1, make_keyword("branch"))),
     keyword_tag:        _ => token(prec(1, make_keyword("tag"))),

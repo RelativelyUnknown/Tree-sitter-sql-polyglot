@@ -31,3 +31,15 @@
   (keyword_archives)
   (keyword_list)
 ] @keyword
+
+; Spark SHOW / DESCRIBE / SET PATH keywords
+[
+  (keyword_views)
+  (keyword_collations)
+  (keyword_query)
+  (keyword_path)
+  (keyword_default_path)
+  (keyword_system_path)
+  (keyword_current_schema)
+  (keyword_current_database)
+] @keyword

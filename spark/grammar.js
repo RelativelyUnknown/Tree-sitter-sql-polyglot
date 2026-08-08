@@ -157,6 +157,8 @@ export default grammar(hive, {
       $.clear_cache,
       $.add_resource_statement,
       $.list_resource_statement,
+      $.describe_query,
+      $.set_path_statement,
       $.msck_repair_statement,
       $.load_data,
       $.declare_variable_statement,
@@ -525,6 +527,14 @@ export default grammar(hive, {
     keyword_list:       _ => token(prec(1, make_keyword("list"))),
     keyword_views:      _ => token(prec(1, make_keyword("views"))),
     keyword_collations: _ => token(prec(1, make_keyword("collations"))),
+    keyword_query:      _ => token(prec(1, make_keyword("query"))),
+    // SET PATH path elements. default_path/system_path are distinct words,
+    // not PATH with a prefix, so no shadowing against keyword_path.
+    keyword_path:             _ => token(prec(1, make_keyword("path"))),
+    keyword_default_path:     _ => token(prec(1, make_keyword("default_path"))),
+    keyword_system_path:      _ => token(prec(1, make_keyword("system_path"))),
+    keyword_current_schema:   _ => token(prec(1, make_keyword("current_schema"))),
+    keyword_current_database: _ => token(prec(1, make_keyword("current_database"))),
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
     // that are strict prefixes of the base keywords below. Explicit precedence

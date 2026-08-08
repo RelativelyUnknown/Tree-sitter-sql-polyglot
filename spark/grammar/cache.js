@@ -1,3 +1,5 @@
+import { comma_list } from '../../grammar/helpers.js';
+
 // Spark SQL cache management.
 //
 // These are OSS Spark statements, not Databricks extensions:
@@ -81,5 +83,33 @@ export default {
       ),
     ),
   )),
+
+  // { DESC | DESCRIBE } QUERY input_statement
+  // https://spark.apache.org/docs/latest/sql-ref-syntax-aux-describe-query.html
+  // Another OSS Spark statement that only lived in databricks; Databricks now
+  // inherits it from here.
+  describe_query: $ => seq(
+    choice($.keyword_describe, $.keyword_desc),
+    $.keyword_query,
+    choice($._dml_read, $.object_reference),
+  ),
+
+  // SET PATH = path_element [, ...]
+  // https://spark.apache.org/docs/latest/sql-ref-syntax-aux-conf-mgmt-set-path.html
+  set_path_statement: $ => seq(
+    $.keyword_set,
+    $.keyword_path,
+    '=',
+    comma_list($._path_element, true),
+  ),
+
+  _path_element: $ => choice(
+    $.keyword_default_path,
+    $.keyword_system_path,
+    $.keyword_path,
+    $.keyword_current_schema,
+    $.keyword_current_database,
+    $.object_reference,
+  ),
 
 };
