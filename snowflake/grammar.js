@@ -14,6 +14,7 @@ import alter_rules       from './grammar/alter.js';
 import use_rules         from './grammar/use.js';
 import stage_rules       from './grammar/stage.js';
 import show_rules        from './grammar/show.js';
+import files_rules      from './grammar/files.js';
 
 export default grammar(base, {
   name: 'snowflake_sql',
@@ -102,9 +103,25 @@ export default grammar(base, {
       $.use_statement,
       $.use_secondary_roles,
       $.list_stage_statement,
+      $.put_statement,
+      $.get_statement,
+      $.remove_statement,
+      $.copy_files_statement,
       $.show_statement,
       $.describe_statement,
       $.comment_statement,
+    ),
+
+    // ── TRUNCATE: add the MATERIALIZED VIEW target ─────────────────────────
+    // https://docs.snowflake.com/en/sql-reference/sql/truncate-materialized-view
+    _truncate_statement: $ => seq(
+      $.keyword_truncate,
+      choice(
+        seq(optional($.keyword_table), optional($.keyword_only)),
+        seq($.keyword_materialized, $.keyword_view),
+      ),
+      comma_list($.object_reference),
+      optional($._drop_behavior),
     ),
 
     // ── SELECT … FOR UPDATE [NOWAIT | WAIT <n>] (hybrid tables) ────────────
@@ -640,6 +657,15 @@ export default grammar(base, {
     keyword_sequences:      _ => token(prec(1, make_keyword("sequences"))),
     keyword_policies:       _ => token(prec(1, make_keyword("policies"))),
 
+    // Staged-file commands (PUT/GET/REMOVE/COPY FILES). `files` sits at the
+    // same precedence as `file` so match length — not precedence — decides
+    // between them.
+    keyword_put:            _ => token(prec(1, make_keyword("put"))),
+    keyword_get:            _ => token(prec(1, make_keyword("get"))),
+    keyword_remove:         _ => token(prec(1, make_keyword("remove"))),
+    keyword_files:          _ => token(prec(1, make_keyword("files"))),
+    keyword_unset:          _ => token(prec(1, make_keyword("unset"))),
+
     // ── Spread all Snowflake rule modules ───────────────────────────────────
     ...qualify_rules,
     ...pivot_rules,
@@ -654,6 +680,7 @@ export default grammar(base, {
     ...use_rules,
     ...stage_rules,
     ...show_rules,
+    ...files_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
