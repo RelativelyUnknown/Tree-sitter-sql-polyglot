@@ -82,12 +82,20 @@ export default {
       $.keyword_session,
       $.keyword_cache,
       $.keyword_savepoint,
-      field('word', $.identifier),
+      $.system_option,
       $.literal,
       paren_list($._expression, true),
-      seq('=', field('value', $._expression)),
     )),
   )),
+
+  // A bare word, or `name = scalar`. The value is a literal or identifier
+  // rather than a full expression: with _expression here, `a = b = c` could
+  // either nest as a binary_expression or continue the enclosing repeat,
+  // which is an unresolvable conflict between the two rules.
+  system_option: $ => seq(
+    field('name', $.identifier),
+    optional(seq('=', field('value', choice($.literal, $.identifier)))),
+  ),
 
   // CREATE | DROP <object-kind> name [options]
   // One rule for the object kinds HANA adds that have a plain
@@ -98,11 +106,11 @@ export default {
     optional($._if_exists),
     field('name', $.object_reference),
     repeat(choice(
-      field('option', $.identifier),
+      seq($.keyword_for, field('target', $.object_reference)),
+      $.system_option,
       $.literal,
       paren_list($._expression, true),
-      seq($.keyword_set, field('option', $.identifier)),
-      seq('=', field('value', $._expression)),
+      seq($.keyword_set, $.system_option),
     )),
   )),
 
