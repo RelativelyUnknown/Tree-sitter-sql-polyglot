@@ -112,12 +112,12 @@ export default {
     field('recipient', $.object_reference),
   ),
 
-  // RENAME { TABLE | VIEW | MACRO | PROCEDURE | TRIGGER | FUNCTION }
-  //   old { TO | AS } new
+  // RENAME { VIEW | MACRO | PROCEDURE | TRIGGER | FUNCTION } old {TO|AS} new
+  // TABLE is deliberately absent: base's _rename_statement already covers
+  // `RENAME TABLE t TO t2`, and listing it here made that reducible two ways.
   rename_object_statement: $ => seq(
     $.keyword_rename,
     choice(
-      $.keyword_table,
       $.keyword_view,
       $.keyword_macro,
       $.keyword_procedure,
