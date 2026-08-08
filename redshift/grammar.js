@@ -4,6 +4,7 @@ import { fromClause } from '../grammar/statements/select.js';
 import rs_create_rules from './grammar/create.js';
 import rs_copy_rules   from './grammar/copy.js';
 import rs_optimize_rules from './grammar/optimize.js';
+import objects_rules  from './grammar/objects.js';
 
 export default grammar(base, {
   name: 'redshift_sql',
@@ -47,8 +48,60 @@ export default grammar(base, {
         $.execute_statement,
         $.deallocate_statement,
         $.declare_cursor_statement,
+        $.show_statement,
+        $.desc_statement,
+        $.cancel_statement,
+        $.abort_statement,
+        $.lock_statement,
+        $.call_statement,
+        $.close_statement,
+        $.fetch_statement,
+        $.analyze_statement,
+        $.set_session_authorization,
       ),
     ),
+
+    // ── Keywords for the statements in grammar/objects.js ──────────────────
+    // Plural/singular pairs (schemas/schema, policies/policy, templates/…)
+    // sit at the same precedence as their singular counterparts, so match
+    // length — not precedence — picks between them.
+    keyword_show:        _ => token(prec(1, make_keyword("show"))),
+    keyword_schemas:     _ => token(prec(1, make_keyword("schemas"))),
+    keyword_databases:   _ => token(prec(1, make_keyword("databases"))),
+    keyword_datashares:  _ => token(prec(1, make_keyword("datashares"))),
+    keyword_columns:     _ => token(prec(1, make_keyword("columns"))),
+    keyword_grants:      _ => token(prec(1, make_keyword("grants"))),
+    keyword_keys:        _ => token(prec(1, make_keyword("keys"))),
+    keyword_constraints: _ => token(prec(1, make_keyword("constraints"))),
+    keyword_exported:    _ => token(prec(1, make_keyword("exported"))),
+    keyword_parameters:  _ => token(prec(1, make_keyword("parameters"))),
+    keyword_predicate:   _ => token(prec(1, make_keyword("predicate"))),
+    keyword_namespace:   _ => token(prec(1, make_keyword("namespace"))),
+    keyword_account:     _ => token(prec(1, make_keyword("account"))),
+    keyword_priority:    _ => token(prec(1, make_keyword("priority"))),
+    keyword_masking:     _ => token(prec(1, make_keyword("masking"))),
+    keyword_rls:         _ => token(prec(1, make_keyword("rls"))),
+    keyword_policy:      _ => token(prec(1, make_keyword("policy"))),
+    keyword_policies:    _ => token(prec(1, make_keyword("policies"))),
+    keyword_identity:    _ => token(prec(1, make_keyword("identity"))),
+    keyword_provider:    _ => token(prec(1, make_keyword("provider"))),
+    keyword_library:     _ => token(prec(1, make_keyword("library"))),
+    keyword_template:    _ => token(prec(1, make_keyword("template"))),
+    keyword_templates:   _ => token(prec(1, make_keyword("templates"))),
+    keyword_definition:  _ => token(prec(1, make_keyword("definition"))),
+    keyword_attach:      _ => token(prec(1, make_keyword("attach"))),
+    keyword_detach:      _ => token(prec(1, make_keyword("detach"))),
+    keyword_cancel:      _ => token(prec(1, make_keyword("cancel"))),
+    keyword_abort:       _ => token(prec(1, make_keyword("abort"))),
+    keyword_close:       _ => token(prec(1, make_keyword("close"))),
+    keyword_forward:     _ => token(prec(1, make_keyword("forward"))),
+    keyword_lock:        _ => token(prec(1, make_keyword("lock"))),
+    keyword_call:        _ => token(prec(1, make_keyword("call"))),
+    // Lexer-precedence guard: `call` above is a strict prefix of the base
+    // grammar's prec-0 `called`, and explicit precedence beats match length,
+    // so `called` has to be re-declared at the same precedence to stay
+    // lexable in this dialect.
+    keyword_called:      _ => token(prec(1, make_keyword("called"))),
 
     // Redshift: DECLARE cursor_name CURSOR FOR query (ISO E121).
     declare_cursor_statement: $ => seq(
@@ -73,6 +126,30 @@ export default grammar(base, {
       $.alter_datashare,
       $._optimize_statement,
       $.comment_statement,
+      // grammar/objects.js
+      $.create_masking_policy,
+      $.alter_masking_policy,
+      $.drop_masking_policy,
+      $.attach_masking_policy,
+      $.detach_masking_policy,
+      $.create_rls_policy,
+      $.alter_rls_policy,
+      $.drop_rls_policy,
+      $.attach_rls_policy,
+      $.detach_rls_policy,
+      $.create_identity_provider,
+      $.drop_identity_provider,
+      $.create_library,
+      $.drop_library,
+      $.create_template,
+      $.alter_template,
+      $.drop_template,
+      $.alter_system_statement,
+      $.alter_default_privileges,
+      $.create_external_view,
+      $.alter_external_view,
+      $.drop_external_view,
+      $.drop_model,
     ),
 
     // PREPARE name [(data_type, ...)] AS statement (PostgreSQL-style)
@@ -251,6 +328,7 @@ export default grammar(base, {
     ...rs_create_rules,
     ...rs_copy_rules,
     ...rs_optimize_rules,
+    ...objects_rules,
 
   },
 });
