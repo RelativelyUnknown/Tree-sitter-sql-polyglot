@@ -180,5 +180,175 @@ export default {
     field('user', $.object_reference),
     optional(seq($.keyword_password, field('password', $._expression))),
   )),
+  // EXPORT <objects> [WHERE c | HAVING c] AS <format> INTO <path>
+  //   [WITH <options>] [[ON <locations>] FOR <procedure_call>]
+  // EXPORT INTO [<format> FILE] <path> FROM {<source> | (<select>)}
+  // EXPORT INTO RDF FILE <path> FROM SPARQL_GRAPH {DEFAULT | '<graph>'}
+  export_statement: $ => prec.right(seq(
+    $.keyword_export,
+    choice(
+      seq(
+        $.keyword_into,
+        optional(seq(field('format', $._hana_io_file_type), $.keyword_file)),
+        field('path', $.literal),
+        $.keyword_from,
+        choice(
+          seq(
+            $.keyword_sparql_graph,
+            choice($.keyword_default, field('graph', $.literal)),
+          ),
+          field('source', $.object_reference),
+          $._select_statement,
+        ),
+      ),
+      seq(
+        $._hana_io_objects,
+        optional(choice($.where, seq($.keyword_having, field('condition', $._expression)))),
+        $.keyword_as,
+        $._hana_io_format,
+        $.keyword_into,
+        field('path', $.literal),
+      ),
+    ),
+    repeat($._hana_io_tail),
+  )),
+
+  // IMPORT <objects> [HAVING c] [AS <format>] FROM <path> [WITH <options>]
+  //   [AT [LOCATION] <host:port>] [WITH IGNORE NUMA NODE]
+  // IMPORT FROM [<file_type> FILE] [IN <directory_type>] <path>
+  //   [INTO {<target> | SPARQL_GRAPH {DEFAULT | <graph>}}] [WITH <options>]
+  // IMPORT SCAN <path> <output> [WITH <options>]
+  import_statement: $ => prec.right(seq(
+    $.keyword_import,
+    choice(
+      // The documented <output> element does not appear in any vendor
+      // example, so it is optional here.
+      seq(
+        $.keyword_scan,
+        field('path', $.literal),
+        optional(field('output', $._expression)),
+      ),
+      seq(
+        $.keyword_from,
+        optional(seq(field('file_type', $._hana_io_file_type), $.keyword_file)),
+        // HIVE PARTITION | DELTA LAKE — always two words, neither reserved.
+        optional(seq(
+          $.keyword_in,
+          field('directory_type', $.identifier),
+          field('directory_subtype', $.identifier),
+        )),
+        field('path', $.literal),
+        optional(seq(
+          $.keyword_into,
+          choice(
+            seq(
+              $.keyword_sparql_graph,
+              choice($.keyword_default, field('graph', $._expression)),
+            ),
+            field('target', $.object_reference),
+          ),
+        )),
+      ),
+      seq(
+        $._hana_io_objects,
+        optional(seq($.keyword_having, field('condition', $._expression))),
+        optional(seq($.keyword_as, $._hana_io_format)),
+        $.keyword_from,
+        field('path', $.literal),
+      ),
+    ),
+    repeat($._hana_io_tail),
+  )),
+
+  // <object_list> | ALL | *
+  _hana_io_objects: $ => choice(
+    $.keyword_all,
+    '*',
+    comma_list($.object_reference, true),
+  ),
+
+  // CSV | PARQUET | JSON | CONTROL | RDF — always followed by FILE, which is
+  // reserved here, so the leading word can stay an ordinary identifier.
+  _hana_io_file_type: $ => choice($.identifier, $.keyword_rdf),
+
+  // CSV | PARQUET | BINARY [DATA | RAW]
+  _hana_io_format: $ => seq(
+    field('format', $.identifier),
+    optional(field('binary_type', $.identifier)),
+  ),
+
+  // The trailing clauses are order independent in practice and the option
+  // lists are long, open ended and version specific, so options are accepted
+  // as runs of words, scalars and parenthesised lists.
+  _hana_io_tail: $ => choice(
+    seq($.keyword_with, comma_list($._hana_io_option, true)),
+    seq($.keyword_at, optional($.keyword_location), field('location', $._expression)),
+    seq($.keyword_on, comma_list($._expression, true)),
+    seq($.keyword_for, $.call_statement),
+  ),
+
+  _hana_io_option: $ => repeat1(choice(
+    $.identifier,
+    $.literal,
+    paren_list($._expression, true),
+  )),
+
+  // UNSET [SESSION] <key>          UNSET ROLEGROUP | USERGROUP
+  // UNSET TRANSACTION <timeout>    UNSET PSE <name> PURPOSE <purpose>
+  // UNSET SESSION CREDENTIAL FOR REMOTE SOURCE ref { TYPE 'OAUTH' | ALL }
+  unset_statement: $ => prec.right(seq(
+    $.keyword_unset,
+    choice(
+      seq(
+        $.keyword_session,
+        $.keyword_credential,
+        $.keyword_for,
+        $.keyword_remote,
+        $.keyword_source,
+        field('name', $.object_reference),
+        choice(
+          seq($.keyword_type, field('type', $.literal)),
+          $.keyword_all,
+        ),
+      ),
+      // PURPOSE is one word, or two for REMOTE SOURCE / TOKEN EXCHANGE.
+      seq(
+        $.keyword_pse,
+        field('name', $.object_reference),
+        $.keyword_purpose,
+        field('purpose', $.identifier),
+        optional(field('purpose_detail', $.identifier)),
+      ),
+      // TRANSACTION [HESITANT] LOCK WAIT TIMEOUT <n>
+      seq(
+        $.keyword_transaction,
+        optional(field('mode', $.identifier)),
+        $.keyword_lock,
+        field('option', $.identifier),
+        field('setting', $.identifier),
+        field('value', $.literal),
+      ),
+      $.keyword_rolegroup,
+      $.keyword_usergroup,
+      // <key> is a string literal, which keeps this apart from the
+      // SESSION CREDENTIAL form above.
+      seq(optional($.keyword_session), field('key', $.literal)),
+    ),
+  )),
+
+  // DO [(<named_parameters>)] [(<bound_parameters>)] BEGIN … END
+  // Both lists are parenthesised, so they are accepted as a repetition
+  // rather than two adjacent optionals, which would not be decidable.
+  do_statement: $ => prec.right(seq(
+    $.keyword_do,
+    repeat(paren_list($._hana_do_parameter, false)),
+    $.compound_statement,
+  )),
+
+  // <mode>, <name>, <type>   or   <parameter> => <value>
+  _hana_do_parameter: $ => choice(
+    seq(field('name', $.identifier), '=>', field('value', $._expression)),
+    $._expression,
+  ),
 
 };

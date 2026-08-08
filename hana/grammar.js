@@ -95,6 +95,10 @@ export default grammar(base, {
         $.cancel_async_call_statement,
         $.call_statement,
         $.connect_statement,
+        $.export_statement,
+        $.import_statement,
+        $.unset_statement,
+        $.do_statement,
       ),
     ),
 
@@ -172,6 +176,21 @@ export default grammar(base, {
     keyword_connect:     _ => token(prec(1, make_keyword("connect"))),
     keyword_parameters:  _ => token(prec(1, make_keyword("parameters"))),
     keyword_unset:       _ => token(prec(1, make_keyword("unset"))),
+
+    // Second pass: statements the vendor list showed were still missing.
+    keyword_export:      _ => token(prec(1, make_keyword("export"))),
+    keyword_import:      _ => token(prec(1, make_keyword("import"))),
+    keyword_scan:        _ => token(prec(1, make_keyword("scan"))),
+    keyword_rdf:         _ => token(prec(1, make_keyword("rdf"))),
+    keyword_file:        _ => token(prec(1, make_keyword("file"))),
+    keyword_sparql_graph: _ => token(prec(1, /[Ss][Pp][Aa][Rr][Qq][Ll]_[Gg][Rr][Aa][Pp][Hh]/)),
+    keyword_purpose:     _ => token(prec(1, make_keyword("purpose"))),
+    keyword_location:    _ => token(prec(1, make_keyword("location"))),
+    keyword_at:          _ => token(prec(1, make_keyword("at"))),
+    // Lexer-precedence guards: `at` above claims the front of both of these,
+    // and BEGIN ATOMIC is this dialect's compound-statement header.
+    keyword_atomic:      _ => token(prec(1, make_keyword("atomic"))),
+    keyword_attribute:   _ => token(prec(1, make_keyword("attribute"))),
 
     // Lexer-precedence guards for the longer keywords whose prefixes the
     // tokens above now claim.
