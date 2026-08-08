@@ -523,6 +523,8 @@ export default grammar(hive, {
     keyword_archive:    _ => token(prec(1, make_keyword("archive"))),
     keyword_archives:   _ => token(prec(1, make_keyword("archives"))),
     keyword_list:       _ => token(prec(1, make_keyword("list"))),
+    keyword_views:      _ => token(prec(1, make_keyword("views"))),
+    keyword_collations: _ => token(prec(1, make_keyword("collations"))),
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
     // that are strict prefixes of the base keywords below. Explicit precedence

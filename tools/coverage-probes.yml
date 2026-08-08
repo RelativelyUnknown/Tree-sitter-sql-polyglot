@@ -57,11 +57,23 @@
 # BEGIN…END, PREPARE and DECLARE CURSOR are all real Db2 syntax. Check the
 # vendor's documentation before "fixing" a suspect by deleting grammar.
 #
-# Scope note: this registry is a regression guard, not a completeness
-# measure. It tracks 44 features; PostgreSQL alone documents 183 statements,
-# and a statement-index diff found ≥25 of them (21%) with no grammar support
-# at all. A dialect at 100% here means "passes every probe we wrote", not
+# Scope note: this registry is a regression guard, and only a partial
+# completeness measure. It tracks 52 features; PostgreSQL alone documents 183
+# statements. A dialect at 100% here means "passes every probe we wrote", not
 # "feature complete".
+#
+# It was previously saturated — 100% with zero gaps on all 23 dialects — which
+# made it structurally unable to show progress or completeness, only
+# regressions. That is why 25 missing PostgreSQL statements were invisible.
+# The vendor maintenance/object-DDL block at the end of this file starts
+# correcting that: those probes are scored for dialects that plausibly have
+# the statement, so a missing one now registers as a real absence and pulls
+# the score below 100%.
+#
+# Scoring these honestly does mean a dialect can lose points for a statement
+# another engine's family invented. The real fix is a per-dialect statement
+# inventory rather than one shared feature list — a larger change to
+# coverage.py's denominator, deliberately not attempted here.
 # ─────────────────────────────────────────────────────────────────────────────
 
 dialects:
@@ -736,6 +748,86 @@ features:
       oracle:     { probe: "DECLARE CURSOR c IS SELECT a FROM t1; BEGIN NULL; END;" }
       hana:       { probe: "DECLARE CURSOR c FOR SELECT a FROM t1;" }
       teradata:   { probe: "DECLARE c CURSOR FOR SELECT a FROM t1;" }
+
+  # ── Vendor maintenance / object DDL ──────────────────────────────────────
+  # Added alongside the statements implemented in this branch so they are
+  # regression-protected. Each is scoped with not-applicable ONLY where the
+  # engine demonstrably has no such statement; where a dialect plausibly has
+  # it and we simply do not implement it, the probe is left scored so the gap
+  # shows up as a real absence rather than being hidden by a guess. That is
+  # the opposite of how the stale not-applicable entries corrected earlier in
+  # this file came about.
+
+  - id: reindex
+    name: "REINDEX"
+    category: admin
+    ansi: false
+    weight: 1
+    probe: "REINDEX TABLE t1;"
+    dialects:
+      # Engines with no user-managed indexes at all cannot have REINDEX.
+      hive:       { status: not-applicable, reason: "Indexes removed in Hive 3" }
+      spark:      { status: not-applicable, reason: "No indexes" }
+      databricks: { status: not-applicable, reason: "No user indexes (Delta manages layout)" }
+      redshift:   { status: not-applicable, reason: "No indexes (sort/dist keys)" }
+      bigquery:   { status: not-applicable, reason: "No user indexes" }
+      spanner:    { status: not-applicable, reason: "Index DDL only, no REINDEX" }
+      trino:      { status: not-applicable, reason: "Query engine, no index storage" }
+      athena:     { status: not-applicable, reason: "Query engine, no index storage" }
+      flink:      { status: not-applicable, reason: "Query engine, no index storage" }
+
+  - id: cluster_table
+    name: "CLUSTER table USING index"
+    category: admin
+    ansi: false
+    weight: 1
+    probe: "CLUSTER t1 USING idx1;"
+    dialects:
+      hive:       { status: not-applicable, reason: "CLUSTER BY is a query clause, not this statement" }
+      spark:      { status: not-applicable, reason: "CLUSTER BY is a query clause, not this statement" }
+      databricks: { status: not-applicable, reason: "CLUSTER BY is liquid clustering, not this statement" }
+
+  - id: discard
+    name: "DISCARD session state"
+    category: admin
+    ansi: false
+    weight: 1
+    probe: "DISCARD ALL;"
+
+  - id: security_label
+    name: "SECURITY LABEL"
+    category: admin
+    ansi: false
+    weight: 1
+    probe: "SECURITY LABEL ON TABLE t1 IS 'classified';"
+
+  - id: import_foreign_schema
+    name: "IMPORT FOREIGN SCHEMA"
+    category: ddl
+    ansi: false
+    weight: 1
+    probe: "IMPORT FOREIGN SCHEMA remote FROM SERVER srv INTO local;"
+
+  - id: create_operator
+    name: "CREATE OPERATOR"
+    category: ddl
+    ansi: false
+    weight: 1
+    probe: "CREATE OPERATOR === (FUNCTION = my_eq, LEFTARG = integer, RIGHTARG = integer);"
+
+  - id: create_rule
+    name: "CREATE RULE"
+    category: ddl
+    ansi: false
+    weight: 1
+    probe: "CREATE RULE r1 AS ON DELETE TO t1 DO INSTEAD NOTHING;"
+
+  - id: cache_table
+    name: "CACHE / UNCACHE TABLE"
+    category: admin
+    ansi: false
+    weight: 1
+    probe: "CACHE TABLE t1;"
 
   # ── Not parser-observable ────────────────────────────────────────────────
   # No writable surface syntax to probe → excluded from every score denominator.
