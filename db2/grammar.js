@@ -152,6 +152,11 @@ export default grammar(base, {
         $.execute_immediate_statement,
         $.connect_statement,
         $.disconnect_statement,
+        $.audit_statement,
+        $.whenever_statement,
+        $.goto_statement,
+        $.allocate_cursor_statement,
+        $.associate_locators_statement,
       ),
     ),
 
@@ -250,6 +255,24 @@ export default grammar(base, {
     keyword_unchecked:      _ => token(prec(1, make_keyword("unchecked"))),
     keyword_off:            _ => token(prec(1, make_keyword("off"))),
     keyword_integrity:      _ => token(prec(1, make_keyword("integrity"))),
+
+    // Second pass: statements the vendor list showed were still missing.
+    // `go`/`goto` and `locator`/`locators` sit at the same precedence as each
+    // other, so match length decides between them.
+    keyword_whenever:       _ => token(prec(1, make_keyword("whenever"))),
+    keyword_sqlerror:       _ => token(prec(1, make_keyword("sqlerror"))),
+    keyword_sqlwarning:     _ => token(prec(1, make_keyword("sqlwarning"))),
+    keyword_found:          _ => token(prec(1, make_keyword("found"))),
+    keyword_goto:           _ => token(prec(1, make_keyword("goto"))),
+    keyword_go:             _ => token(prec(1, make_keyword("go"))),
+    keyword_allocate:       _ => token(prec(1, make_keyword("allocate"))),
+    keyword_associate:      _ => token(prec(1, make_keyword("associate"))),
+    keyword_locators:       _ => token(prec(1, make_keyword("locators"))),
+    keyword_result:         _ => token(prec(1, make_keyword("result"))),
+    keyword_exception:      _ => token(prec(1, make_keyword("exception"))),
+    keyword_trusted:        _ => token(prec(1, make_keyword("trusted"))),
+    keyword_context:        _ => token(prec(1, make_keyword("context"))),
+    keyword_remove:         _ => token(prec(1, make_keyword("remove"))),
 
     // Lexer-precedence guards: each of these is a longer keyword whose first
     // characters are now claimed by a prec-1 token above. Precedence beats

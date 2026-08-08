@@ -181,4 +181,91 @@ export default {
     )),
   )),
 
+  // AUDIT policy-block { USING | REPLACE | REMOVE } POLICY p
+  // AUDIT { ADD | REMOVE } EXCEPTION FOR TRUSTED CONTEXT c
+  audit_statement: $ => prec.right(seq(
+    $.keyword_audit,
+    choice(
+      seq(
+        choice($.keyword_add, $.keyword_remove),
+        $.keyword_exception,
+        $.keyword_for,
+        $.keyword_trusted,
+        $.keyword_context,
+        field('context', $.identifier),
+      ),
+      seq(
+        comma_list($._audit_target, true),
+        choice(
+          seq(
+            choice($.keyword_using, $.keyword_replace),
+            $.keyword_policy,
+            field('policy', $.identifier),
+          ),
+          seq($.keyword_remove, $.keyword_policy),
+        ),
+      ),
+    ),
+  )),
+
+  _audit_target: $ => choice(
+    $.keyword_database,
+    seq($.keyword_table, field('table', $.object_reference)),
+    seq($.keyword_trusted, $.keyword_context, field('context', $.identifier)),
+    seq(
+      choice($.keyword_user, $.keyword_group, $.keyword_role),
+      field('name', $.identifier),
+    ),
+    field('authority', $.identifier),
+  ),
+
+  // WHENEVER { NOT FOUND | SQLERROR | SQLWARNING }
+  //   { CONTINUE | GOTO label | GO TO label }
+  whenever_statement: $ => seq(
+    $.keyword_whenever,
+    choice(
+      seq($.keyword_not, $.keyword_found),
+      $.keyword_sqlerror,
+      $.keyword_sqlwarning,
+    ),
+    choice(
+      $.keyword_continue,
+      seq(
+        choice($.keyword_goto, seq($.keyword_go, $.keyword_to)),
+        optional(':'),
+        field('label', $.identifier),
+      ),
+    ),
+  ),
+
+  // GOTO label
+  goto_statement: $ => seq(
+    $.keyword_goto,
+    field('label', $.identifier),
+  ),
+
+  // ALLOCATE cursor-name CURSOR FOR RESULT SET rs-locator-variable
+  // The name precedes the CURSOR keyword — this is not the ANSI word order.
+  allocate_cursor_statement: $ => seq(
+    $.keyword_allocate,
+    field('name', $.identifier),
+    $.keyword_cursor,
+    $.keyword_for,
+    $.keyword_result,
+    $.keyword_set,
+    field('result_set', $.identifier),
+  ),
+
+  // ASSOCIATE [RESULT SET] {LOCATOR | LOCATORS} (v [, …])
+  //   WITH PROCEDURE p
+  associate_locators_statement: $ => seq(
+    $.keyword_associate,
+    optional(seq($.keyword_result, $.keyword_set)),
+    choice($.keyword_locator, $.keyword_locators),
+    paren_list($.identifier, true),
+    $.keyword_with,
+    $.keyword_procedure,
+    field('procedure', $.object_reference),
+  ),
+
 };
