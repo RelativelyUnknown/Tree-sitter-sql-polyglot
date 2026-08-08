@@ -75,10 +75,10 @@ export default {
         $.object_reference,
         optional(seq($.keyword_for, $._rs_principal)),
       ),
-      // SHOW GRANTS [ON ref] [FOR principal]
+      // SHOW GRANTS [ON grant_object] [FOR principal]
       seq(
         $.keyword_grants,
-        optional(seq($.keyword_on, optional($._grant_object), $.object_reference)),
+        optional(seq($.keyword_on, $._grant_object)),
         optional(seq($.keyword_for, $._rs_principal)),
       ),
       // SHOW { RLS | MASKING } POLICIES
@@ -321,22 +321,32 @@ export default {
 
   // CREATE IDENTITY PROVIDER name TYPE t NAMESPACE ns [option …]
   // ALTER  IDENTITY PROVIDER name [option …]
-  // The trailing option list (PARAMETERS/IAM_ROLE/AUTO_CREATE_ROLES/…) is a
-  // long open-ended set of `KEYWORD value` pairs; it is accepted generically.
+  // The trailing option set (TYPE/NAMESPACE/PARAMETERS/IAM_ROLE/
+  // AUTO_CREATE_ROLES/APPLICATION_ARN/…) is open-ended and order-free, so it
+  // is accepted as a repeat of option forms rather than a fixed sequence.
   create_identity_provider: $ => prec.right(seq(
     choice($.keyword_create, $.keyword_alter),
     $.keyword_identity,
     $.keyword_provider,
     field('name', $.identifier),
-    optional(seq($.keyword_type, field('type', $.identifier))),
-    optional(seq($.keyword_namespace, field('namespace', $.identifier))),
     repeat($._identity_provider_option),
   )),
 
   _identity_provider_option: $ => choice(
+    seq($.keyword_type, field('type', $.identifier)),
+    seq($.keyword_namespace, field('namespace', $.identifier)),
     seq($.keyword_parameters, alias($._literal_string, $.literal)),
     seq($.keyword_iam_role, choice($.keyword_default, alias($._literal_string, $.literal))),
-    seq(field('option', $.identifier), optional(choice($.literal, $.identifier))),
+    $.option_pair,
+  ),
+
+  // One `NAME [AS] value` option. The value is mandatory on purpose: with an
+  // optional value, a repeat of this rule cannot tell whether the identifier
+  // after an option name is that option's value or the next option's name.
+  option_pair: $ => seq(
+    field('option', $.identifier),
+    optional($.keyword_as),
+    field('value', choice($.literal, $.identifier)),
   ),
 
   // DROP IDENTITY PROVIDER name [CASCADE]
@@ -387,8 +397,11 @@ export default {
     field('name', $.identifier),
   ),
 
-  // CREATE [OR REPLACE] TEMPLATE name FOR COPY [AS] [[FORMAT] [AS] fmt]
+  // CREATE [OR REPLACE] TEMPLATE name FOR COPY [AS] [FORMAT [AS] fmt]
   //   [parameter [argument] [, …]]
+  // The documented `[[FORMAT] [AS] data_format]` allows the format name to
+  // stand entirely alone, which would be indistinguishable from the first
+  // parameter; FORMAT is required here to keep the two apart.
   create_template: $ => prec.right(seq(
     $.keyword_create,
     optional($._or_replace),
@@ -398,12 +411,18 @@ export default {
     $.keyword_copy,
     optional($.keyword_as),
     optional(seq(
-      optional($.keyword_format),
+      $.keyword_format,
       optional($.keyword_as),
       field('format', $.identifier),
     )),
-    repeat($._identity_provider_option),
+    optional(comma_list($.template_parameter, true)),
   )),
+
+  // Commas make the argument safely optional here, unlike option_pair.
+  template_parameter: $ => seq(
+    field('parameter', $.identifier),
+    optional(field('argument', choice($.literal, $.identifier))),
+  ),
 
   // ALTER TEMPLATE name { RENAME TO … | OWNER TO … | ADD … | DROP … | SET … }
   alter_template: $ => seq(
