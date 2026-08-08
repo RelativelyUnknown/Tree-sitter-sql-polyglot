@@ -159,6 +159,7 @@ export default grammar(hive, {
       $.list_resource_statement,
       $.describe_query,
       $.set_path_statement,
+      $.create_table_like,
       $.msck_repair_statement,
       $.load_data,
       $.declare_variable_statement,

@@ -75,18 +75,7 @@ export default {
     optional(seq($.keyword_tblproperties, paren_list($.table_option, true))),
     optional(seq($.keyword_as, $.create_query)),
   ),
-
-  // CREATE TABLE [IF NOT EXISTS] new_table LIKE existing [USING format] [LOCATION path]
-  create_table_like: $ => seq(
-    $.keyword_create,
-    $.keyword_table,
-    optional($._if_not_exists),
-    $.object_reference,
-    $.keyword_like,
-    $.object_reference,
-    optional(seq($.keyword_using, $.identifier)),
-    optional(seq($.keyword_location, alias($._literal_string, $.literal))),
-  ),
+  // CREATE TABLE … LIKE … moved to spark/grammar/create.js (OSS Spark syntax).
 
   // Iceberg partition transform: year(ts), month(ts), day(ts), hour(ts),
   //   bucket(16, id), truncate(10, name), identity(col)

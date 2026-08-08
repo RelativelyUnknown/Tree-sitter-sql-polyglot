@@ -84,6 +84,20 @@ export default {
     ),
   )),
 
+  // { DESC | DESCRIBE } [ TABLE ] [ EXTENDED | FORMATTED ] table [PARTITION] [col]
+  // https://spark.apache.org/docs/latest/sql-ref-syntax-aux-describe-table.html
+  // Hive's rule has no optional TABLE keyword, so `DESCRIBE TABLE t` failed.
+  // Overriding replaces the parent rule wholesale, so Hive's shape is
+  // re-stated here with the keyword added.
+  describe_statement: $ => prec.right(seq(
+    choice($.keyword_describe, $.keyword_desc),
+    optional($.keyword_table),
+    optional(choice($.keyword_formatted, $.keyword_extended)),
+    $.object_reference,
+    optional($.partition_spec),
+    optional(field('column', $.identifier)),
+  )),
+
   // { DESC | DESCRIBE } QUERY input_statement
   // https://spark.apache.org/docs/latest/sql-ref-syntax-aux-describe-query.html
   // Another OSS Spark statement that only lived in databricks; Databricks now
