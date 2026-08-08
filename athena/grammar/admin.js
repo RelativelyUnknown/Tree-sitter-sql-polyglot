@@ -4,9 +4,11 @@ import { comma_list, paren_list } from '../../grammar/helpers.js';
 // https://docs.aws.amazon.com/athena/latest/ug/ddl-reference.html
 export default {
 
-  // SHOW VIEWS [IN db] [LIKE '…']      SHOW DATABASES [LIKE '…']
-  // SHOW CREATE {TABLE | VIEW} name    SHOW PARTITIONS table
+  // SHOW VIEWS [IN db] [LIKE '…']   SHOW DATABASES [LIKE '…']
   // SHOW TBLPROPERTIES table [('key')]
+  //
+  // SHOW CREATE TABLE|VIEW and SHOW PARTITIONS are deliberately absent: this
+  // dialect already has show_create_statement and show_partitions_statement.
   //
   // Kept as its own statement rather than overriding Trino's show_statement:
   // an override replaces the parent rule wholesale, which would drop every
@@ -16,12 +18,6 @@ export default {
     choice(
       seq($.keyword_views, optional(seq($.keyword_in, $.object_reference))),
       $.keyword_databases,
-      seq(
-        $.keyword_create,
-        choice($.keyword_table, $.keyword_view),
-        field('name', $.object_reference),
-      ),
-      seq($.keyword_partitions, field('table', $.object_reference)),
       seq(
         $.keyword_tblproperties,
         field('table', $.object_reference),
