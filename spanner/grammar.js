@@ -1,6 +1,7 @@
 import bigquery from '../bigquery/grammar.js';
 import { make_keyword, optional_parenthesis, paren_list, wrapped_in_parenthesis } from '../grammar/helpers.js';
 import spanner_ddl_rules from './grammar/ddl.js';
+import spanner_admin_rules from './grammar/admin.js';
 
 // Google Cloud Spanner — GoogleSQL, the same language family as BigQuery
 // (shared INT64/STRING types, backtick identifiers, THEN RETURN on DML).
@@ -48,6 +49,17 @@ export default grammar(bigquery, {
       $.load_data_statement,
       $.assert_statement,
       $.comment_statement,
+      // grammar/admin.js
+      $.locality_group_statement,
+      $.proto_bundle_statement,
+      $.create_search_index,
+      $.alter_index_columns,
+      $.drop_search_index,
+      $.alter_change_stream,
+      $.drop_change_stream,
+      $.alter_statistics,
+      $.analyze_statement,
+      $.model_statement,
     ),
 
     // bigquery _create_statement plus Spanner CHANGE STREAM
@@ -202,7 +214,17 @@ export default grammar(bigquery, {
     keyword_older_than:    _ => token(prec(1, make_keyword("older_than"))),
     keyword_max:           _ => token(prec(1, make_keyword("max"))),
 
+    // ── Keywords for the statements in grammar/admin.js ────────────────────
+    keyword_locality:      _ => token(prec(1, make_keyword("locality"))),
+    keyword_placement:     _ => token(prec(1, make_keyword("placement"))),
+    keyword_proto:         _ => token(prec(1, make_keyword("proto"))),
+    keyword_bundle:        _ => token(prec(1, make_keyword("bundle"))),
+    keyword_remote:        _ => token(prec(1, make_keyword("remote"))),
+    keyword_output:        _ => token(prec(1, make_keyword("output"))),
+    keyword_statistics:    _ => token(prec(1, make_keyword("statistics"))),
+
     ...spanner_ddl_rules,
+    ...spanner_admin_rules,
 
   },
 });
