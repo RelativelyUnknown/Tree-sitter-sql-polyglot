@@ -13,6 +13,7 @@ import oracle_hint_rules from './grammar/hints.js';
 import oracle_partition_rules from './grammar/partition.js';
 import oracle_admin_rules from './grammar/admin.js';
 import oracle_ddl_ext_rules from './grammar/ddl_ext.js';
+import oracle_admin_ddl_rules from './grammar/admin_ddl.js';
 
 export default grammar(base, {
   name: 'oracle_sql',
@@ -116,6 +117,12 @@ export default grammar(base, {
       $.grant_statement,
       $.revoke_statement,
       $.comment_statement,
+      // grammar/admin_ddl.js
+      $.restore_point_statement,
+      $.create_cluster_statement,
+      $.truncate_cluster_statement,
+      $.drop_cluster_statement,
+      $.context_statement,
     ),
 
     // procedural control-flow (IF/WHILE/LOOP/FOR/RETURN/EXIT/CONTINUE/NULL/ASSIGN)
@@ -152,6 +159,15 @@ export default grammar(base, {
         $.alter_session_statement,
         $.alter_system_statement,
         $.analyze_statement,
+        // grammar/admin_ddl.js
+        $.lock_table_statement,
+        $.purge_statement,
+        $.flashback_statement,
+        $.audit_policy_statement,
+        $.associate_statistics_statement,
+        $.explain_plan_statement,
+        $.set_role_statement,
+        $.call_statement,
       ),
     ),
 
@@ -570,6 +586,7 @@ export default grammar(base, {
     ...oracle_hint_rules,
     ...oracle_partition_rules,
     ...oracle_ddl_ext_rules,
+    ...oracle_admin_ddl_rules,
     ...oracle_admin_rules,
     ...oracle_match_recognize_rules,
 
@@ -583,6 +600,42 @@ export default grammar(base, {
     keyword_connection: _ => token(prec(1, make_keyword("connection"))),
     keyword_logged: _ => token(prec(1, make_keyword("logged"))),
     keyword_savepoint: _ => token(prec(1, make_keyword("savepoint"))),
+
+    // ── Keywords for the statements in grammar/admin_ddl.js ────────────────
+    keyword_lock:         _ => token(prec(1, make_keyword("lock"))),
+    keyword_mode:         _ => token(prec(1, make_keyword("mode"))),
+    keyword_share:        _ => token(prec(1, make_keyword("share"))),
+    keyword_exclusive:    _ => token(prec(1, make_keyword("exclusive"))),
+    keyword_purge:        _ => token(prec(1, make_keyword("purge"))),
+    keyword_flashback:    _ => token(prec(1, make_keyword("flashback"))),
+    keyword_restore:      _ => token(prec(1, make_keyword("restore"))),
+    keyword_point:        _ => token(prec(1, make_keyword("point"))),
+    keyword_cluster:      _ => token(prec(1, make_keyword("cluster"))),
+    keyword_size:         _ => token(prec(1, make_keyword("size"))),
+    keyword_storage:      _ => token(prec(1, make_keyword("storage"))),
+    keyword_reuse:        _ => token(prec(1, make_keyword("reuse"))),
+    keyword_including:    _ => token(prec(1, make_keyword("including"))),
+    keyword_constraints:  _ => token(prec(1, make_keyword("constraints"))),
+    keyword_context:      _ => token(prec(1, make_keyword("context"))),
+    keyword_audit:        _ => token(prec(1, make_keyword("audit"))),
+    keyword_noaudit:      _ => token(prec(1, make_keyword("noaudit"))),
+    keyword_policy:       _ => token(prec(1, make_keyword("policy"))),
+    keyword_whenever:     _ => token(prec(1, make_keyword("whenever"))),
+    keyword_successful:   _ => token(prec(1, make_keyword("successful"))),
+    keyword_associate:    _ => token(prec(1, make_keyword("associate"))),
+    keyword_disassociate: _ => token(prec(1, make_keyword("disassociate"))),
+    keyword_selectivity:  _ => token(prec(1, make_keyword("selectivity"))),
+    keyword_plan:         _ => token(prec(1, make_keyword("plan"))),
+    keyword_call:         _ => token(prec(1, make_keyword("call"))),
+
+    // Lexer-precedence guards: each keyword above is a strict prefix of one of
+    // these, and tree-sitter resolves lexical precedence before match length,
+    // so the longer form has to be re-declared at the same precedence to stay
+    // lexable. `model` matters most — Oracle's MODEL clause depends on it.
+    keyword_called:       _ => token(prec(1, make_keyword("called"))),
+    keyword_locked:       _ => token(prec(1, make_keyword("locked"))),
+    keyword_model:        _ => token(prec(1, make_keyword("model"))),
+    keyword_shared:       _ => token(prec(1, make_keyword("shared"))),
 
   },
 });
