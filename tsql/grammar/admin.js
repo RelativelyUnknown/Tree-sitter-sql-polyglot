@@ -327,6 +327,10 @@ export default {
   // ── Sensitivity classification ──────────────────────────────────────────
 
   // ADD SENSITIVITY CLASSIFICATION TO col [, …] WITH (option [, …])
+  // Every documented option — LABEL, LABEL_ID, INFORMATION_TYPE,
+  // INFORMATION_TYPE_ID, RANK — is a NAME = value pair, so tsql_option covers
+  // them all; a separate rule for RANK duplicated it exactly and left a
+  // reduce-reduce conflict.
   // DROP SENSITIVITY CLASSIFICATION FROM col [, …]
   sensitivity_classification_statement: $ => seq(
     choice($.keyword_add, $.keyword_drop),
@@ -334,13 +338,7 @@ export default {
     $.keyword_classification,
     choice($.keyword_to, $.keyword_from),
     comma_list(field('column', $.object_reference), true),
-    optional(seq($.keyword_with, paren_list($._sensitivity_option, true))),
-  ),
-
-  _sensitivity_option: $ => choice(
-    $.tsql_option,
-    // RANK = NONE | LOW | MEDIUM | HIGH | CRITICAL
-    seq(field('name', $.identifier), '=', field('value', $.identifier)),
+    optional(seq($.keyword_with, paren_list($.tsql_option, true))),
   ),
 
   // ── Server-level roles ──────────────────────────────────────────────────
