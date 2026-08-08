@@ -160,6 +160,7 @@ export default grammar(hive, {
       $.describe_query,
       $.set_path_statement,
       $.create_table_like,
+      $.show_collations_statement,
       $.msck_repair_statement,
       $.load_data,
       $.declare_variable_statement,
@@ -182,10 +183,13 @@ export default grammar(hive, {
       seq($.keyword_set, $.object_reference, '=', $._expression),
     )),
 
-    // Override _type to add VARIANT
+    // Override _type to add VARIANT. $.tinyint must be repeated from hive:
+    // an override replaces the parent rule wholesale, so omitting it here
+    // would drop TINYINT for spark and databricks even though hive has it.
     _type: $ => prec.left(
       choice(
         $.keyword_variant,
+        $.tinyint,
         $.keyword_boolean,
         $.bit,
         $.binary,
@@ -526,7 +530,6 @@ export default grammar(hive, {
     keyword_archive:    _ => token(prec(1, make_keyword("archive"))),
     keyword_archives:   _ => token(prec(1, make_keyword("archives"))),
     keyword_list:       _ => token(prec(1, make_keyword("list"))),
-    keyword_views:      _ => token(prec(1, make_keyword("views"))),
     keyword_collations: _ => token(prec(1, make_keyword("collations"))),
     keyword_query:      _ => token(prec(1, make_keyword("query"))),
     // SET PATH path elements. default_path/system_path are distinct words,

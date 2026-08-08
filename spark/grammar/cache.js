@@ -34,54 +34,16 @@ export default {
     $.keyword_cache,
   ),
 
-  // Hive's show_statement plus Spark's SHOW VIEWS and SHOW COLLATIONS.
-  // An override replaces the parent rule wholesale, so Hive's alternatives
-  // are re-enumerated verbatim below.
-  //   https://spark.apache.org/docs/latest/sql-ref-syntax-aux-show-views.html
-  //   https://spark.apache.org/docs/latest/sql-ref-syntax-aux-show-collations.html
-  show_statement: $ => prec.right(seq(
+  // SHOW COLLATIONS [ LIKE pattern ]
+  // https://spark.apache.org/docs/latest/sql-ref-syntax-aux-show-collations.html
+  // Kept as its own statement rather than overriding hive's show_statement:
+  // an override replaces the parent rule wholesale, so it would silently drop
+  // any SHOW alternative hive later adds (SHOW VIEWS/COLUMNS/LOCKS/... all
+  // now live there).
+  show_collations_statement: $ => prec.right(seq(
     $.keyword_show,
-    choice(
-      // ── inherited from hive ──
-      seq(
-        $.keyword_partitions,
-        $.object_reference,
-        optional($.partition_spec),
-      ),
-      seq(
-        $.keyword_tables,
-        optional(seq(choice($.keyword_from, $.keyword_in), $.object_reference)),
-        optional(seq(optional($.keyword_like), alias($._literal_string, $.literal))),
-      ),
-      seq(
-        choice($.keyword_databases, $.keyword_schemas),
-        optional(seq($.keyword_like, alias($._literal_string, $.literal))),
-      ),
-      seq(
-        $.keyword_functions,
-        optional(seq($.keyword_like, alias($._literal_string, $.literal))),
-      ),
-      $.keyword_roles,
-      seq($.keyword_current, $.keyword_roles),
-      seq(
-        $.keyword_role,
-        $.keyword_grant,
-        choice($.keyword_user, $.keyword_group, $.keyword_role),
-        $.identifier,
-      ),
-      // ── Spark additions ──
-      // SHOW VIEWS [ { FROM | IN } database ] [ LIKE pattern ]
-      seq(
-        $.keyword_views,
-        optional(seq(choice($.keyword_from, $.keyword_in), $.object_reference)),
-        optional(seq(optional($.keyword_like), alias($._literal_string, $.literal))),
-      ),
-      // SHOW COLLATIONS [ LIKE pattern ]
-      seq(
-        $.keyword_collations,
-        optional(seq(optional($.keyword_like), alias($._literal_string, $.literal))),
-      ),
-    ),
+    $.keyword_collations,
+    optional(seq(optional($.keyword_like), alias($._literal_string, $.literal))),
   )),
 
   // { DESC | DESCRIBE } [ TABLE ] [ EXTENDED | FORMATTED ] table [PARTITION] [col]

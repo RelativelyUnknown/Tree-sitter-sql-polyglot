@@ -27,3 +27,20 @@
   (keyword_analyze)
   (keyword_verbose)
 ] @keyword
+
+; Hive SHOW family, data connectors, transactions and TINYINT
+[
+  (keyword_tinyint)
+  (keyword_connector)
+  (keyword_connectors)
+  (keyword_dcproperties)
+  (keyword_url)
+  (keyword_columns)
+  (keyword_indexes)
+  (keyword_locks)
+  (keyword_compactions)
+  (keyword_conf)
+  (keyword_views)
+  (keyword_abort)
+  (keyword_transactions)
+] @keyword
