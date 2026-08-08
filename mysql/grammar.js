@@ -7,6 +7,7 @@ import mysql_events_rules from './grammar/events.js';
 import mysql_procedural_rules from './grammar/procedural.js';
 import mysql_partition_rules from './grammar/partition.js';
 import mysql_admin_rules from './grammar/admin.js';
+import mysql_admin_ddl_rules from './grammar/admin_ddl.js';
 
 export default grammar(base, {
   name: 'mysql_sql',
@@ -97,6 +98,24 @@ export default grammar(base, {
       $.prepare_statement,
       $.execute_statement,
       $.deallocate_statement,
+      // grammar/admin_ddl.js
+      $.alter_event,
+      $.drop_event,
+      $.create_server,
+      $.alter_server,
+      $.drop_server,
+      $.create_tablespace,
+      $.alter_tablespace,
+      $.drop_tablespace,
+      $.create_logfile_group,
+      $.alter_logfile_group,
+      $.drop_logfile_group,
+      $.create_spatial_reference_system,
+      $.drop_spatial_reference_system,
+      $.create_resource_group,
+      $.drop_resource_group,
+      $.set_resource_group,
+      $.alter_instance,
     ),
 
     _dml_write: $ => seq(
@@ -574,7 +593,6 @@ export default grammar(base, {
     keyword_processlist:    _ => token(prec(1, make_keyword("processlist"))),
     keyword_status:         _ => token(prec(1, make_keyword("status"))),
     keyword_warnings:       _ => token(prec(1, make_keyword("warnings"))),
-    keyword_errors:         _ => token(prec(1, make_keyword("errors"))),
     keyword_variables:      _ => token(prec(1, make_keyword("variables"))),
     keyword_indexes:        _ => token(prec(1, make_keyword("indexes"))),
     keyword_describe:       _ => token(prec(1, make_keyword("describe"))),
@@ -696,6 +714,25 @@ export default grammar(base, {
         $.declare_condition_statement,
         $.declare_handler_statement,
         $.case_statement,
+        // grammar/admin_ddl.js
+        $.do_statement,
+        $.table_statement,
+        $.values_statement,
+        $.handler_statement,
+        $.import_table_statement,
+        $.load_xml_statement,
+        $.lock_tables_statement,
+        $.unlock_tables_statement,
+        $.lock_instance_statement,
+        $.clone_statement,
+        $.help_statement,
+        $.install_statement,
+        $.uninstall_statement,
+        $.checksum_table_statement,
+        $.flush_statement,
+        $.kill_statement,
+        $.reset_statement,
+        $.restart_statement,
       ),
     ),
 
@@ -712,6 +749,7 @@ export default grammar(base, {
     ...mysql_procedural_rules,
     ...mysql_partition_rules,
     ...mysql_admin_rules,
+    ...mysql_admin_ddl_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
@@ -724,6 +762,44 @@ export default grammar(base, {
     keyword_atomic: _ => token(prec(1, make_keyword("atomic"))),
     keyword_called: _ => token(prec(1, make_keyword("called"))),
     keyword_repeatable: _ => token(prec(1, make_keyword("repeatable"))),
+
+    // ── Keywords for the statements in grammar/admin_ddl.js ────────────────
+    keyword_server:      _ => token(prec(1, make_keyword("server"))),
+    keyword_options:     _ => token(prec(1, make_keyword("options"))),
+    keyword_undo:        _ => token(prec(1, make_keyword("undo"))),
+    keyword_datafile:    _ => token(prec(1, make_keyword("datafile"))),
+    keyword_undofile:    _ => token(prec(1, make_keyword("undofile"))),
+    keyword_logfile:     _ => token(prec(1, make_keyword("logfile"))),
+    keyword_spatial:     _ => token(prec(1, make_keyword("spatial"))),
+    keyword_reference:   _ => token(prec(1, make_keyword("reference"))),
+    keyword_resource:    _ => token(prec(1, make_keyword("resource"))),
+    keyword_import:      _ => token(prec(1, make_keyword("import"))),
+    keyword_concurrent:  _ => token(prec(1, make_keyword("concurrent"))),
+    keyword_prev:        _ => token(prec(1, make_keyword("prev"))),
+    keyword_instance:    _ => token(prec(1, make_keyword("instance"))),
+    keyword_backup:      _ => token(prec(1, make_keyword("backup"))),
+    keyword_clone:       _ => token(prec(1, make_keyword("clone"))),
+    keyword_directory:   _ => token(prec(1, make_keyword("directory"))),
+    keyword_require:     _ => token(prec(1, make_keyword("require"))),
+    keyword_ssl:         _ => token(prec(1, make_keyword("ssl"))),
+    keyword_help:        _ => token(prec(1, make_keyword("help"))),
+    keyword_install:     _ => token(prec(1, make_keyword("install"))),
+    keyword_uninstall:   _ => token(prec(1, make_keyword("uninstall"))),
+    keyword_plugin:      _ => token(prec(1, make_keyword("plugin"))),
+    keyword_component:   _ => token(prec(1, make_keyword("component"))),
+    keyword_soname:      _ => token(prec(1, make_keyword("soname"))),
+    keyword_checksum:    _ => token(prec(1, make_keyword("checksum"))),
+    keyword_flush:       _ => token(prec(1, make_keyword("flush"))),
+    keyword_export:      _ => token(prec(1, make_keyword("export"))),
+    keyword_kill:        _ => token(prec(1, make_keyword("kill"))),
+    keyword_shutdown:    _ => token(prec(1, make_keyword("shutdown"))),
+
+    // Lexer-precedence guards: each of these is a strict prefix of a longer
+    // keyword above/below, and explicit precedence beats match length, so the
+    // longer form has to be re-declared at the same precedence to stay
+    // lexable in this dialect.
+    keyword_concurrently: _ => token(prec(1, make_keyword("concurrently"))),
+    keyword_references:   _ => token(prec(1, make_keyword("references"))),
 
   },
 });
