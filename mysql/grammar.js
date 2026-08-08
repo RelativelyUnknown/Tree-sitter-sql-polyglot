@@ -762,6 +762,7 @@ export default grammar(base, {
     keyword_atomic: _ => token(prec(1, make_keyword("atomic"))),
     keyword_called: _ => token(prec(1, make_keyword("called"))),
     keyword_repeatable: _ => token(prec(1, make_keyword("repeatable"))),
+    keyword_errors:         _ => token(prec(1, make_keyword("errors"))),
 
     // ── Keywords for the statements in grammar/admin_ddl.js ────────────────
     keyword_server:      _ => token(prec(1, make_keyword("server"))),
