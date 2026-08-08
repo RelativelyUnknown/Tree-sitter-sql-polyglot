@@ -32,10 +32,14 @@ export default {
   )),
 
   // ALTER {DATABASE | SCHEMA} db SET DBPROPERTIES ('k' = 'v' [, …])
+  // The name is an identifier, not an object_reference: base's alter_database
+  // and alter_schema both spell it that way, and using the wider symbol makes
+  // the parser choose between reducing the same token two ways when it
+  // reaches SET.
   alter_database_properties: $ => seq(
     $.keyword_alter,
     choice($.keyword_database, $.keyword_schema),
-    field('name', $.object_reference),
+    field('name', $.identifier),
     $.keyword_set,
     $.keyword_dbproperties,
     paren_list($.property_pair, true),
