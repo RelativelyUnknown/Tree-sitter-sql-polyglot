@@ -184,4 +184,37 @@ export default {
     optional(seq($.keyword_comment, alias($._literal_string, $.literal))),
   ),
 
+
+  // UNDROP { MATERIALIZED VIEW | TABLE } { name | WITH ID id }
+  // https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-undrop-table
+  undrop_statement: $ => seq(
+    $.keyword_undrop,
+    choice(seq($.keyword_materialized, $.keyword_view), $.keyword_table),
+    choice(
+      field('name', $.object_reference),
+      seq($.keyword_with, $.keyword_id, alias($._literal_string, $.literal)),
+    ),
+  ),
+
+  // CREATE SERVER (Lakehouse Federation) — options modelled as the generic
+  // OPTIONS (k = v, …) form Databricks uses for federated objects.
+  create_server: $ => seq(
+    $.keyword_create,
+    $.keyword_server,
+    optional($._if_not_exists),
+    field('name', $.identifier),
+    optional(seq($.keyword_type, alias($._literal_string, $.literal))),
+    optional(seq($.keyword_options, paren_list($._key_value_pair, true))),
+  ),
+
+  // DROP BLOOMFILTER INDEX ON [TABLE] table_name
+  drop_bloomfilter_index: $ => seq(
+    $.keyword_drop,
+    $.keyword_bloomfilter,
+    $.keyword_index,
+    $.keyword_on,
+    optional($.keyword_table),
+    field('table', $.object_reference),
+  ),
+
 };

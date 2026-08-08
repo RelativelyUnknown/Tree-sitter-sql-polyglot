@@ -110,6 +110,10 @@ export default grammar(spark, {
       $.create_recipient,
       $.create_provider,
       $.create_policy,
+      // Previously missing Databricks statements
+      $.undrop_statement,
+      $.create_server,
+      $.drop_bloomfilter_index,
     ),
 
     _optimize_statement: $ => choice(
@@ -137,6 +141,8 @@ export default grammar(spark, {
         $._show_volumes,
         $._show_grants,
         $._show_uc_object_type,
+        $._show_procedures,
+        $._show_tables_dropped,
         $._show_tblproperties,
         $._show_partitions,
         $._show_columns,
@@ -325,6 +331,19 @@ export default grammar(spark, {
     keyword_shares:     _ => token(prec(1, make_keyword("shares"))),
     keyword_recipients: _ => token(prec(1, make_keyword("recipients"))),
     keyword_providers:  _ => token(prec(1, make_keyword("providers"))),
+    // Previously missing statements (UNDROP, CREATE SERVER, bloom filter
+    // indexes, and the SHOW object types). procedure/procedures and
+    // location/locations are prefix pairs but sit at equal precedence, so
+    // longest match resolves them.
+    keyword_undrop:     _ => token(prec(1, make_keyword("undrop"))),
+    keyword_id:         _ => token(prec(1, make_keyword("id"))),
+    keyword_server:     _ => token(prec(1, make_keyword("server"))),
+    keyword_bloomfilter: _ => token(prec(1, make_keyword("bloomfilter"))),
+    keyword_users:      _ => token(prec(1, make_keyword("users"))),
+    keyword_policies:   _ => token(prec(1, make_keyword("policies"))),
+    keyword_locations:  _ => token(prec(1, make_keyword("locations"))),
+    keyword_procedures: _ => token(prec(1, make_keyword("procedures"))),
+    keyword_dropped:    _ => token(prec(1, make_keyword("dropped"))),
     keyword_appends:    _ => token(prec(1, make_keyword("appends"))),
     keyword_upsert:     _ => token(prec(1, make_keyword("upsert"))),
     keyword_vacuum:     _ => token(prec(1, make_keyword("vacuum"))),

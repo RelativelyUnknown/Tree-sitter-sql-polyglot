@@ -189,6 +189,9 @@ export default grammar(hive, {
     _type: $ => prec.left(
       choice(
         $.keyword_variant,
+        // Spark 4.2 geospatial types
+        $.keyword_geometry,
+        $.keyword_geography,
         $.tinyint,
         $.keyword_boolean,
         $.bit,
@@ -531,6 +534,8 @@ export default grammar(hive, {
     keyword_archives:   _ => token(prec(1, make_keyword("archives"))),
     keyword_list:       _ => token(prec(1, make_keyword("list"))),
     keyword_collations: _ => token(prec(1, make_keyword("collations"))),
+    keyword_geometry:   _ => token(prec(1, make_keyword("geometry"))),
+    keyword_geography:  _ => token(prec(1, make_keyword("geography"))),
     keyword_query:      _ => token(prec(1, make_keyword("query"))),
     // SET PATH path elements. default_path/system_path are distinct words,
     // not PATH with a prefix, so no shadowing against keyword_path.

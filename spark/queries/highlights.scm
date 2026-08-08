@@ -43,3 +43,9 @@
   (keyword_current_schema)
   (keyword_current_database)
 ] @keyword
+
+; Spark 4.2 geospatial types
+[
+  (keyword_geometry)
+  (keyword_geography)
+] @type.builtin
