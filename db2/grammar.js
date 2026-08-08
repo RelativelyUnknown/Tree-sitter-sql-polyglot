@@ -7,6 +7,7 @@ import db2_special_register_rules from './grammar/special_registers.js';
 import db2_diagnostics_rules from './grammar/diagnostics.js';
 import db2_audit_rules from './grammar/audit.js';
 import db2_procedural_rules from './grammar/procedural.js';
+import db2_admin_ddl_rules from './grammar/admin.js';
 
 export default grammar(base, {
   name: 'db2_sql',
@@ -47,6 +48,9 @@ export default grammar(base, {
       $.revoke_statement,
       $.comment_statement,
       $.label_statement,
+      // grammar/admin.js
+      $.create_alias_statement,
+      $.create_variable_statement,
     ),
 
     // DECLARE GLOBAL TEMPORARY TABLE name (cols) [ON COMMIT {PRESERVE|DELETE} ROWS] …
@@ -137,6 +141,17 @@ export default grammar(base, {
         $.for_statement,
         $.prepare_statement,
         $.execute_statement,
+        // grammar/admin.js
+        $.lock_table_statement,
+        $.call_statement,
+        $.refresh_table_statement,
+        $.set_integrity_statement,
+        $.flush_statement,
+        $.free_locator_statement,
+        $.describe_statement,
+        $.execute_immediate_statement,
+        $.connect_statement,
+        $.disconnect_statement,
       ),
     ),
 
@@ -188,6 +203,59 @@ export default grammar(base, {
     ),
 
     // Extend set_statement to add SET CURRENT SCHEMA = value
+
+    // ── Keywords for the statements in grammar/admin.js ────────────────────
+    // These are plain make_keyword tokens, not token(prec(1, …)). The base
+    // grammar sets `word: $ => $._identifier`, so an unprefixed keyword is
+    // extracted — recognised where the grammar expects it and still usable as
+    // an identifier everywhere else. That matters here: the audit corpus has
+    // `CATEGORIES EXECUTE, CONNECT`, where CONNECT is an ordinary identifier.
+    // It also removes the prefix-shadowing problem, since extraction matches
+    // whole words (`call` never eats the front of `called`).
+    keyword_lock:           _ => make_keyword("lock"),
+    keyword_mode:           _ => make_keyword("mode"),
+    keyword_share:          _ => make_keyword("share"),
+    keyword_exclusive:      _ => make_keyword("exclusive"),
+    keyword_call:           _ => make_keyword("call"),
+    keyword_incremental:    _ => make_keyword("incremental"),
+    keyword_allow:          _ => make_keyword("allow"),
+    keyword_access:         _ => make_keyword("access"),
+    keyword_storage:        _ => make_keyword("storage"),
+    keyword_reuse:          _ => make_keyword("reuse"),
+    keyword_triggers:       _ => make_keyword("triggers"),
+    keyword_continue:       _ => make_keyword("continue"),
+    keyword_identity:       _ => make_keyword("identity"),
+    keyword_flush:          _ => make_keyword("flush"),
+    keyword_package:        _ => make_keyword("package"),
+    keyword_cache:          _ => make_keyword("cache"),
+    keyword_dynamic:        _ => make_keyword("dynamic"),
+    keyword_event:          _ => make_keyword("event"),
+    keyword_monitor:        _ => make_keyword("monitor"),
+    keyword_buffer:         _ => make_keyword("buffer"),
+    keyword_bufferpools:    _ => make_keyword("bufferpools"),
+    keyword_federated:      _ => make_keyword("federated"),
+    keyword_authentication: _ => make_keyword("authentication"),
+    keyword_optimization:   _ => make_keyword("optimization"),
+    keyword_profile:        _ => make_keyword("profile"),
+    keyword_free:           _ => make_keyword("free"),
+    keyword_locator:        _ => make_keyword("locator"),
+    keyword_describe:       _ => make_keyword("describe"),
+    keyword_output:         _ => make_keyword("output"),
+    keyword_connect:        _ => make_keyword("connect"),
+    keyword_disconnect:     _ => make_keyword("disconnect"),
+    keyword_sql:            _ => make_keyword("sql"),
+    keyword_alias:          _ => make_keyword("alias"),
+    keyword_variable:       _ => make_keyword("variable"),
+    keyword_constant:       _ => make_keyword("constant"),
+    keyword_checked:        _ => make_keyword("checked"),
+    keyword_unchecked:      _ => make_keyword("unchecked"),
+    keyword_off:            _ => make_keyword("off"),
+
+    // INTEGRITY is the exception: SET INTEGRITY has to beat set_statement's
+    // generic `object_reference = expression` branch, which an extracted
+    // keyword cannot do.
+    keyword_integrity:      _ => token(prec(1, make_keyword("integrity"))),
+
     set_statement: $ => seq(
       $.keyword_set,
       choice(
@@ -336,6 +404,7 @@ export default grammar(base, {
     ...db2_diagnostics_rules,
     ...db2_audit_rules,
     ...db2_procedural_rules,
+    ...db2_admin_ddl_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
