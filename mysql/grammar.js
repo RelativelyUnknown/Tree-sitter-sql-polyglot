@@ -716,8 +716,6 @@ export default grammar(base, {
         $.case_statement,
         // grammar/admin_ddl.js
         $.do_statement,
-        $.table_statement,
-        $.values_statement,
         $.handler_statement,
         $.import_table_statement,
         $.load_xml_statement,

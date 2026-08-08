@@ -7,6 +7,7 @@ import tsql_dml_rules from './grammar/dml.js';
 import tsql_procedural_rules from './grammar/procedural.js';
 import tsql_synapse_rules from './grammar/synapse.js';
 import tsql_security_rules from './grammar/security.js';
+import tsql_admin_rules   from './grammar/admin.js';
 
 export default grammar(base, {
   name: 'tsql',
@@ -87,6 +88,16 @@ export default grammar(base, {
         $.exec_statement,
         $.return_statement,
         $.waitfor_statement,
+        // grammar/admin.js
+        $.set_option_statement,
+        $.execute_as_statement,
+        $.revert_statement,
+        $.setuser_statement,
+        $.enable_trigger_statement,
+        $.update_statistics_statement,
+        $.backup_statement,
+        $.open_key_statement,
+        $.sensitivity_classification_statement,
       ),
     ),
 
@@ -124,6 +135,16 @@ export default grammar(base, {
       $.alter_user_statement,
       $.drop_user_statement,
       $.comment_statement,
+      // grammar/admin.js
+      $.deny_statement,
+      $.create_statistics,
+      $.create_key_object,
+      $.create_partition_function,
+      $.create_partition_scheme,
+      $.create_security_policy,
+      $.create_default_or_rule,
+      $.create_principal_role,
+      $.drop_tsql_object,
     ),
 
     // ── CREATE dispatch ───────────────────────────────────────────────────────
@@ -277,6 +298,37 @@ export default grammar(base, {
     keyword_cursor:           _ => token(prec(1, make_keyword("cursor"))),
     keyword_open:             _ => token(prec(1, make_keyword("open"))),
     keyword_close:            _ => token(prec(1, make_keyword("close"))),
+
+    // ── Keywords for the statements in grammar/admin.js ────────────────────
+    // MASTER / SYMMETRIC / ASYMMETRIC are deliberately absent: `USE master;`
+    // is in the corpus and none of the three is reserved in T-SQL, so those
+    // words stay identifiers (see grammar/admin.js).
+    keyword_deny:             _ => token(prec(1, make_keyword("deny"))),
+    keyword_control:          _ => token(prec(1, make_keyword("control"))),
+    keyword_revert:           _ => token(prec(1, make_keyword("revert"))),
+    keyword_caller:           _ => token(prec(1, make_keyword("caller"))),
+    keyword_cookie:           _ => token(prec(1, make_keyword("cookie"))),
+    keyword_setuser:          _ => token(prec(1, make_keyword("setuser"))),
+    keyword_statistics:       _ => token(prec(1, make_keyword("statistics"))),
+    keyword_partitions:       _ => token(prec(1, make_keyword("partitions"))),
+    keyword_backup:           _ => token(prec(1, make_keyword("backup"))),
+    keyword_restore:          _ => token(prec(1, make_keyword("restore"))),
+    keyword_certificate:      _ => token(prec(1, make_keyword("certificate"))),
+    keyword_credential:       _ => token(prec(1, make_keyword("credential"))),
+    keyword_scoped:           _ => token(prec(1, make_keyword("scoped"))),
+    keyword_encryption:       _ => token(prec(1, make_keyword("encryption"))),
+    keyword_decryption:       _ => token(prec(1, make_keyword("decryption"))),
+    keyword_scheme:           _ => token(prec(1, make_keyword("scheme"))),
+    keyword_security:         _ => token(prec(1, make_keyword("security"))),
+    keyword_policy:           _ => token(prec(1, make_keyword("policy"))),
+    keyword_predicate:        _ => token(prec(1, make_keyword("predicate"))),
+    keyword_block:            _ => token(prec(1, make_keyword("block"))),
+    keyword_replication:      _ => token(prec(1, make_keyword("replication"))),
+    keyword_rule:             _ => token(prec(1, make_keyword("rule"))),
+    keyword_sensitivity:      _ => token(prec(1, make_keyword("sensitivity"))),
+    keyword_classification:   _ => token(prec(1, make_keyword("classification"))),
+    keyword_server:           _ => token(prec(1, make_keyword("server"))),
+    keyword_application:      _ => token(prec(1, make_keyword("application"))),
     keyword_deallocate:       _ => token(prec(1, make_keyword("deallocate"))),
     keyword_insensitive:      _ => token(prec(1, make_keyword("insensitive"))),
     keyword_scroll:           _ => token(prec(1, make_keyword("scroll"))),
@@ -416,6 +468,7 @@ export default grammar(base, {
       optional(field('name', choice($.identifier, $.variable))),
     ),
 
+    ...tsql_admin_rules,
     ...tsql_select_rules,
     ...tsql_type_rules,
     ...tsql_hint_rules,

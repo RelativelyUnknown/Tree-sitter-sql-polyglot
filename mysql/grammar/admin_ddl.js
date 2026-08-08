@@ -251,26 +251,9 @@ export default {
     comma_list($._expression, true),
   ),
 
-  // TABLE t [ORDER BY col] [LIMIT n [OFFSET n]]
-  table_statement: $ => prec.right(seq(
-    $.keyword_table,
-    field('name', $.object_reference),
-    optional($.order_by),
-    optional($.limit),
-  )),
-
-  // VALUES ROW(…)[, ROW(…)] … [ORDER BY n] [LIMIT n]
-  values_statement: $ => prec.right(seq(
-    $.keyword_values,
-    comma_list($.row_constructor, true),
-    optional($.order_by),
-    optional($.limit),
-  )),
-
-  row_constructor: $ => seq(
-    $.keyword_row,
-    paren_list($._expression, true),
-  ),
+  // TABLE and VALUES already exist in this dialect: mysql's _dml_read
+  // carries table_statement and values_row_statement, so they are query
+  // expressions here, not separate statements.
 
   // HANDLER t OPEN [[AS] alias]
   // HANDLER t READ … [WHERE …] [LIMIT …]
@@ -488,6 +471,8 @@ export default {
   ),
 
   // RESET reset_option [, …]
+  // A deliberate override of the base (PostgreSQL-shaped) `RESET name`:
+  // MySQL's RESET is a replication/binlog statement, not a settings reset.
   reset_statement: $ => seq(
     $.keyword_reset,
     comma_list($.reset_option, true),

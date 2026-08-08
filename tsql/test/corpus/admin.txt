@@ -1,337 +1,307 @@
 ================================================================================
-MySQL: CREATE SERVER
+T-SQL: SET NOCOUNT ON
 ================================================================================
 
-CREATE SERVER s FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'localhost', PORT 3306)
+SET NOCOUNT ON
 
 --------------------------------------------------------------------------------
 
 (program
   (statement
-    (create_server
+    (set_option_statement
+      (keyword_set)
+      option: (identifier)
+      (keyword_on))))
+
+================================================================================
+T-SQL: SET two options OFF
+================================================================================
+
+SET ANSI_NULLS, QUOTED_IDENTIFIER OFF
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (set_option_statement
+      (keyword_set)
+      option: (identifier)
+      option: (identifier)
+      (keyword_off))))
+
+================================================================================
+T-SQL: SET IDENTITY_INSERT
+================================================================================
+
+SET IDENTITY_INSERT dbo.t1 ON
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (set_option_statement
+      (keyword_set)
+      option: (identifier)
+      value: (object_reference
+        schema: (identifier)
+        name: (identifier))
+      (keyword_on))))
+
+================================================================================
+T-SQL: SET STATISTICS IO ON
+================================================================================
+
+SET STATISTICS IO ON
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (set_option_statement
+      (keyword_set)
+      (keyword_statistics)
+      option: (identifier)
+      (keyword_on))))
+
+================================================================================
+T-SQL: DENY
+================================================================================
+
+DENY SELECT ON dbo.t1 TO alice CASCADE
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (deny_statement
+      (keyword_deny)
+      (tsql_permission
+        permission: (keyword_select))
+      (keyword_on)
+      securable: (object_reference
+        schema: (identifier)
+        name: (identifier))
+      (keyword_to)
+      principal: (identifier)
+      (keyword_cascade))))
+
+================================================================================
+T-SQL: DISABLE TRIGGER
+================================================================================
+
+DISABLE TRIGGER ALL ON DATABASE
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (enable_trigger_statement
+      (keyword_disable)
+      (keyword_trigger)
+      (keyword_all)
+      (keyword_on)
+      (keyword_database))))
+
+================================================================================
+T-SQL: UPDATE STATISTICS
+================================================================================
+
+UPDATE STATISTICS dbo.t1 ix_a
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (update_statistics_statement
+      (keyword_update)
+      (keyword_statistics)
+      table: (object_reference
+        schema: (identifier)
+        name: (identifier))
+      name: (identifier))))
+
+================================================================================
+T-SQL: EXECUTE AS CALLER
+================================================================================
+
+EXECUTE AS CALLER
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (execute_as_statement
+      (keyword_execute)
+      (keyword_as)
+      (keyword_caller))))
+
+================================================================================
+T-SQL: REVERT
+================================================================================
+
+REVERT
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (revert_statement
+      (keyword_revert))))
+
+================================================================================
+T-SQL: CREATE MASTER KEY
+================================================================================
+
+CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'p@ssw0rd'
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_key_object
       (keyword_create)
-      (keyword_server)
+      kind: (identifier)
+      (keyword_key)
+      (keyword_encryption)
+      (keyword_by)
+      (keyword_password)
+      (literal))))
+
+================================================================================
+T-SQL: CLOSE MASTER KEY
+================================================================================
+
+CLOSE MASTER KEY
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (open_key_statement
+      (keyword_close)
+      kind: (identifier)
+      (keyword_key))))
+
+================================================================================
+T-SQL: CREATE PARTITION FUNCTION
+================================================================================
+
+CREATE PARTITION FUNCTION pf1 (int) AS RANGE LEFT FOR VALUES (1, 100)
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_partition_function
+      (keyword_create)
+      (keyword_partition)
+      (keyword_function)
       name: (identifier)
-      (keyword_foreign)
-      (keyword_data)
-      (identifier)
-      wrapper: (identifier)
-      (keyword_options)
-      (mysql_option
-        name: (identifier)
-        value: (literal))
-      (mysql_option
-        name: (identifier)
-        value: (literal)))))
-
-================================================================================
-MySQL: DROP SERVER
-================================================================================
-
-DROP SERVER IF EXISTS s
-
---------------------------------------------------------------------------------
-
-(program
-  (statement
-    (drop_server
-      (keyword_drop)
-      (keyword_server)
-      (keyword_if)
-      (keyword_exists)
-      name: (identifier))))
-
-================================================================================
-MySQL: DROP EVENT
-================================================================================
-
-DROP EVENT IF EXISTS cleanup
-
---------------------------------------------------------------------------------
-
-(program
-  (statement
-    (drop_event
-      (keyword_drop)
-      (keyword_event)
-      (keyword_if)
-      (keyword_exists)
-      name: (object_reference
-        name: (identifier)))))
-
-================================================================================
-MySQL: DROP UNDO TABLESPACE
-================================================================================
-
-DROP UNDO TABLESPACE ts1
-
---------------------------------------------------------------------------------
-
-(program
-  (statement
-    (drop_tablespace
-      (keyword_drop)
-      (keyword_undo)
-      (keyword_tablespace)
-      name: (identifier))))
-
-================================================================================
-MySQL: DO
-================================================================================
-
-DO 1, 2
-
---------------------------------------------------------------------------------
-
-(program
-  (statement
-    (do_statement
-      (keyword_do)
+      (int
+        (keyword_int))
+      (keyword_as)
+      (keyword_range)
+      (keyword_left)
+      (keyword_for)
+      (keyword_values)
       (literal)
       (literal))))
 
 ================================================================================
-MySQL: HANDLER OPEN and CLOSE
+T-SQL: CREATE PARTITION SCHEME
 ================================================================================
 
-HANDLER t1 OPEN AS h1
+CREATE PARTITION SCHEME ps1 AS PARTITION pf1 ALL TO (PRIMARY)
 
 --------------------------------------------------------------------------------
 
 (program
   (statement
-    (handler_statement
-      (keyword_handler)
-      table: (object_reference
-        name: (identifier))
-      (keyword_open)
-      (keyword_as)
-      alias: (identifier))))
-
-================================================================================
-MySQL: LOCK TABLES
-================================================================================
-
-LOCK TABLES t1 READ, t2 WRITE
-
---------------------------------------------------------------------------------
-
-(program
-  (statement
-    (lock_tables_statement
-      (keyword_lock)
-      (keyword_tables)
-      (lock_table_spec
-        table: (object_reference
-          name: (identifier))
-        (keyword_read))
-      (lock_table_spec
-        table: (object_reference
-          name: (identifier))
-        (keyword_write)))))
-
-================================================================================
-MySQL: UNLOCK TABLES
-================================================================================
-
-UNLOCK TABLES
-
---------------------------------------------------------------------------------
-
-(program
-  (statement
-    (unlock_tables_statement
-      (keyword_unlock)
-      (keyword_tables))))
-
-================================================================================
-MySQL: LOCK INSTANCE FOR BACKUP
-================================================================================
-
-LOCK INSTANCE FOR BACKUP
-
---------------------------------------------------------------------------------
-
-(program
-  (statement
-    (lock_instance_statement
-      (keyword_lock)
-      (keyword_instance)
-      (keyword_for)
-      (keyword_backup))))
-
-================================================================================
-MySQL: FLUSH PRIVILEGES
-================================================================================
-
-FLUSH PRIVILEGES
-
---------------------------------------------------------------------------------
-
-(program
-  (statement
-    (flush_statement
-      (keyword_flush)
-      (flush_option
-        (keyword_privileges)))))
-
-================================================================================
-MySQL: FLUSH BINARY LOGS
-================================================================================
-
-FLUSH BINARY LOGS
-
---------------------------------------------------------------------------------
-
-(program
-  (statement
-    (flush_statement
-      (keyword_flush)
-      (flush_option
-        (keyword_binary)
-        kind: (identifier)))))
-
-================================================================================
-MySQL: KILL QUERY
-================================================================================
-
-KILL QUERY 42
-
---------------------------------------------------------------------------------
-
-(program
-  (statement
-    (kill_statement
-      (keyword_kill)
-      (keyword_query)
-      process_id: (literal))))
-
-================================================================================
-MySQL: CHECKSUM TABLE
-================================================================================
-
-CHECKSUM TABLE t1, t2 QUICK
-
---------------------------------------------------------------------------------
-
-(program
-  (statement
-    (checksum_table_statement
-      (keyword_checksum)
-      (keyword_table)
-      (object_reference
-        name: (identifier))
-      (object_reference
-        name: (identifier))
-      (keyword_quick))))
-
-================================================================================
-MySQL: INSTALL PLUGIN
-================================================================================
-
-INSTALL PLUGIN my_plugin SONAME 'my_plugin.so'
-
---------------------------------------------------------------------------------
-
-(program
-  (statement
-    (install_statement
-      (keyword_install)
-      (keyword_plugin)
+    (create_partition_scheme
+      (keyword_create)
+      (keyword_partition)
+      (keyword_scheme)
       name: (identifier)
-      (keyword_soname)
-      (literal))))
+      (keyword_as)
+      (keyword_partition)
+      function: (identifier)
+      (keyword_all)
+      (keyword_to)
+      (keyword_primary))))
 
 ================================================================================
-MySQL: UNINSTALL COMPONENT
+T-SQL: CREATE RULE
 ================================================================================
 
-UNINSTALL COMPONENT 'file://component_log_sink_json'
+CREATE RULE dbo.r1 AS 1
 
 --------------------------------------------------------------------------------
 
 (program
   (statement
-    (uninstall_statement
-      (keyword_uninstall)
-      (keyword_component)
-      (literal))))
+    (create_default_or_rule
+      (keyword_create)
+      (keyword_rule)
+      name: (object_reference
+        schema: (identifier)
+        name: (identifier))
+      (keyword_as)
+      expression: (literal))))
 
 ================================================================================
-MySQL: HELP
+T-SQL: CREATE SERVER ROLE
 ================================================================================
 
-HELP 'contents'
+CREATE SERVER ROLE sr1 AUTHORIZATION sa
 
 --------------------------------------------------------------------------------
 
 (program
   (statement
-    (help_statement
-      (keyword_help)
-      (literal))))
+    (create_principal_role
+      (keyword_create)
+      (keyword_server)
+      (keyword_role)
+      name: (identifier)
+      (keyword_authorization)
+      owner: (identifier))))
 
 ================================================================================
-MySQL: RESTART
+T-SQL: DROP SECURITY POLICY
 ================================================================================
 
-RESTART
+DROP SECURITY POLICY IF EXISTS dbo.sp1
 
 --------------------------------------------------------------------------------
 
 (program
   (statement
-    (restart_statement
-      (keyword_restart))))
-
-================================================================================
-MySQL: IMPORT TABLE
-================================================================================
-
-IMPORT TABLE FROM '/tmp/t1.sdi'
-
---------------------------------------------------------------------------------
-
-(program
-  (statement
-    (import_table_statement
-      (keyword_import)
-      (keyword_table)
-      (keyword_from)
-      (literal))))
-
-================================================================================
-MySQL: DROP SPATIAL REFERENCE SYSTEM
-================================================================================
-
-DROP SPATIAL REFERENCE SYSTEM IF EXISTS 4326
-
---------------------------------------------------------------------------------
-
-(program
-  (statement
-    (drop_spatial_reference_system
+    (drop_tsql_object
       (keyword_drop)
-      (keyword_spatial)
-      (keyword_reference)
-      (keyword_system)
+      (keyword_security)
+      (keyword_policy)
       (keyword_if)
       (keyword_exists)
-      srid: (literal))))
+      name: (object_reference
+        schema: (identifier)
+        name: (identifier)))))
 
 ================================================================================
-MySQL: DROP RESOURCE GROUP
+T-SQL: BACKUP DATABASE
 ================================================================================
 
-DROP RESOURCE GROUP rg1 FORCE
+BACKUP DATABASE mydb TO DISK = '/backups/mydb.bak'
 
 --------------------------------------------------------------------------------
 
 (program
   (statement
-    (drop_resource_group
-      (keyword_drop)
-      (keyword_resource)
-      (keyword_group)
-      name: (identifier)
-      (keyword_force))))
+    (backup_statement
+      (keyword_backup)
+      (keyword_database)
+      name: (object_reference
+        name: (identifier))
+      (keyword_to)
+      (backup_device
+        kind: (identifier)
+        (literal)))))
