@@ -211,21 +211,25 @@ export default grammar(base, {
     // Extend set_statement to add SET CURRENT SCHEMA = value
 
     // ── Keywords for the clause completions in grammar/clauses.js ──────────
-    // All appear mid-statement only, so they stay extracted (prec 0) and
-    // longest match keeps identifiers with these prefixes intact.
+    // Most appear mid-statement only and stay extracted (prec 0). The
+    // reserved ones sit where an identifier is also legal in the same parse
+    // state — the second word of a two-word TRANSFER OWNERSHIP object kind,
+    // the sensitivity in DECLARE CURSOR — and an extracted keyword loses to
+    // the word token there. PARTITION, EXTENSION and GROUP below are
+    // reserved for the same reason.
     keyword_age:          _ => make_keyword("age"),
-    keyword_asensitive:   _ => make_keyword("asensitive"),
+    keyword_asensitive:   _ => token(prec(1, make_keyword("asensitive"))),
     keyword_caller:       _ => make_keyword("caller"),
     keyword_capture:      _ => make_keyword("capture"),
     keyword_changes:      _ => make_keyword("changes"),
     keyword_client:       _ => make_keyword("client"),
-    keyword_compress:     _ => make_keyword("compress"),
+    keyword_compress:     _ => token(prec(1, make_keyword("compress"))),
     keyword_current_user: _ => make_keyword("current_user"),
     keyword_cursors:      _ => make_keyword("cursors"),
-    keyword_hierarchy:    _ => make_keyword("hierarchy"),
-    keyword_insensitive:  _ => make_keyword("insensitive"),
+    keyword_hierarchy:    _ => token(prec(1, make_keyword("hierarchy"))),
+    keyword_insensitive:  _ => token(prec(1, make_keyword("insensitive"))),
     keyword_locks:        _ => make_keyword("locks"),
-    keyword_mapping:      _ => make_keyword("mapping"),
+    keyword_mapping:      _ => token(prec(1, make_keyword("mapping"))),
     keyword_method:       _ => make_keyword("method"),
     keyword_modification: _ => make_keyword("modification"),
     keyword_query:        _ => make_keyword("query"),
@@ -236,6 +240,13 @@ export default grammar(base, {
     keyword_tracking:     _ => make_keyword("tracking"),
     keyword_xsrobject:    _ => make_keyword("xsrobject"),
     keyword_yes:          _ => make_keyword("yes"),
+    keyword_extension:    _ => token(prec(1, make_keyword("extension"))),
+    keyword_partition:    _ => token(prec(1, make_keyword("partition"))),
+    keyword_group:        _ => token(prec(1, make_keyword("group"))),
+    // Lexer-precedence guards: `group` above claims the front of both of
+    // these, and precedence is compared before match length.
+    keyword_grouping:     _ => token(prec(1, make_keyword("grouping"))),
+    keyword_groups:       _ => token(prec(1, make_keyword("groups"))),
 
     // ── Keywords for the statements in grammar/admin.js ────────────────────
     // These must be token(prec(1, …)), not plain make_keyword. The base
