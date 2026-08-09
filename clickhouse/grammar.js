@@ -158,23 +158,29 @@ export default grammar(base, {
 
     // Settings-constraint and OPTIMIZE option words; all mid-statement.
 
-    keyword_changeable_in_readonly: _ => make_keyword("changeable_in_readonly"),
+    keyword_changeable_in_readonly: _ => token(prec(1, make_keyword("changeable_in_readonly"))),
 
     keyword_cleanup:             _ => make_keyword("cleanup"),
 
-    keyword_const:               _ => make_keyword("const"),
+    keyword_const:               _ => token(prec(1, make_keyword("const"))),
+
+    // Lexer-precedence guards: `const` above claims the front of both,
+
+    // and precedence is compared before match length.
+
+    keyword_constraint:  _ => token(prec(1, make_keyword("constraint"))),
+
+    keyword_constraints: _ => token(prec(1, make_keyword("constraints"))),
 
     keyword_dry:                 _ => make_keyword("dry"),
 
-    keyword_id:                  _ => make_keyword("id"),
-
     keyword_parts:               _ => make_keyword("parts"),
 
-    keyword_readonly:            _ => make_keyword("readonly"),
+    keyword_readonly:            _ => token(prec(1, make_keyword("readonly"))),
 
     keyword_run:                 _ => make_keyword("run"),
 
-    keyword_writable:            _ => make_keyword("writable"),
+    keyword_writable:            _ => token(prec(1, make_keyword("writable"))),
 
     // x GLOBAL [NOT] IN (…): the distributed IN, whose right side is broadcast
     // to every shard. Lexed as one multi-word operator token: a bare

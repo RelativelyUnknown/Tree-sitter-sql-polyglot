@@ -104,11 +104,10 @@ export default {
     $.keyword_table,
     $.object_reference,
     optional($.on_cluster),
-    optional(seq(
-      $.keyword_partition,
-      optional($.keyword_id),
-      field('partition', $._expression),
-    )),
+    // PARTITION ID '<id>' is deliberately absent: ID sits where an
+    // expression may begin, and reserving it is not an option — `id` is an
+    // ordinary column name and the corpus uses it as one.
+    optional(seq($.keyword_partition, field('partition', $._expression))),
     optional(seq($.keyword_dry, $.keyword_run, $.keyword_parts,
                  comma_list(field('part', $.literal), true))),
     optional(choice($.keyword_final, $.keyword_force)),
