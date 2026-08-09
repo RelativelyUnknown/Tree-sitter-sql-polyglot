@@ -14,6 +14,7 @@ import oracle_partition_rules from './grammar/partition.js';
 import oracle_admin_rules from './grammar/admin.js';
 import oracle_ddl_ext_rules from './grammar/ddl_ext.js';
 import oracle_admin_ddl_rules from './grammar/admin_ddl.js';
+import oracle_mview_rules from './grammar/mviews.js';
 
 export default grammar(base, {
   name: 'oracle_sql',
@@ -76,6 +77,8 @@ export default grammar(base, {
         $.create_package_body,
         $.create_synonym_statement,
         $.create_database_link_statement,
+        $.create_materialized_view_log,
+        $.create_materialized_zonemap,
         $.create_directory_statement,
         prec.left(seq(
           $.create_schema,
@@ -100,6 +103,9 @@ export default grammar(base, {
         $.drop_procedure,
         $.drop_package,
         $.drop_synonym_statement,
+        $.drop_database_link_statement,
+        $.drop_materialized_view_log,
+        $.drop_materialized_zonemap,
         $.drop_directory_statement,
       ),
     ),
@@ -117,6 +123,10 @@ export default grammar(base, {
       $.grant_statement,
       $.revoke_statement,
       $.comment_statement,
+      // grammar/mviews.js
+      $.alter_database_link_statement,
+      $.alter_materialized_view_log,
+      $.alter_materialized_zonemap,
       // grammar/admin_ddl.js
       $.restore_point_statement,
       $.create_cluster_statement,
@@ -587,6 +597,7 @@ export default grammar(base, {
     ...oracle_partition_rules,
     ...oracle_ddl_ext_rules,
     ...oracle_admin_ddl_rules,
+    ...oracle_mview_rules,
     ...oracle_admin_rules,
     ...oracle_match_recognize_rules,
 
@@ -627,6 +638,43 @@ export default grammar(base, {
     keyword_selectivity:  _ => token(prec(1, make_keyword("selectivity"))),
     keyword_plan:         _ => token(prec(1, make_keyword("plan"))),
     keyword_call:         _ => token(prec(1, make_keyword("call"))),
+
+    // ── Keywords for the statements in grammar/mviews.js ───────────────────
+    // Materialized view, view log and zonemap vocabulary.
+    keyword_build:        _ => token(prec(1, make_keyword("build"))),
+    keyword_never:        _ => token(prec(1, make_keyword("never"))),
+    keyword_fast:         _ => token(prec(1, make_keyword("fast"))),
+    keyword_complete:     _ => token(prec(1, make_keyword("complete"))),
+    keyword_demand:       _ => token(prec(1, make_keyword("demand"))),
+    keyword_segment:      _ => token(prec(1, make_keyword("segment"))),
+    keyword_prebuilt:     _ => token(prec(1, make_keyword("prebuilt"))),
+    keyword_excluding:    _ => token(prec(1, make_keyword("excluding"))),
+    keyword_zonemap:      _ => token(prec(1, make_keyword("zonemap"))),
+    keyword_pruning:      _ => token(prec(1, make_keyword("pruning"))),
+    keyword_rebuild:      _ => token(prec(1, make_keyword("rebuild"))),
+    keyword_compile:      _ => token(prec(1, make_keyword("compile"))),
+    keyword_consider:     _ => token(prec(1, make_keyword("consider"))),
+    keyword_fresh:        _ => token(prec(1, make_keyword("fresh"))),
+    keyword_rewrite:      _ => token(prec(1, make_keyword("rewrite"))),
+    keyword_unusable:     _ => token(prec(1, make_keyword("unusable"))),
+    keyword_monitoring:   _ => token(prec(1, make_keyword("monitoring"))),
+    keyword_authenticated: _ => token(prec(1, make_keyword("authenticated"))),
+    keyword_online:       _ => token(prec(1, make_keyword("online"))),
+    keyword_pctfree:      _ => token(prec(1, make_keyword("pctfree"))),
+    keyword_pctused:      _ => token(prec(1, make_keyword("pctused"))),
+    keyword_initrans:     _ => token(prec(1, make_keyword("initrans"))),
+    keyword_noparallel:   _ => token(prec(1, make_keyword("noparallel"))),
+    keyword_nocache:      _ => token(prec(1, make_keyword("nocache"))),
+    keyword_logging:      _ => token(prec(1, make_keyword("logging"))),
+    keyword_nologging:    _ => token(prec(1, make_keyword("nologging"))),
+    keyword_noreverse:    _ => token(prec(1, make_keyword("noreverse"))),
+
+    // Left extracted rather than reserved: QUERY, MASTER and COALESCE are all
+    // plausible identifiers, and each appears only in a position where no
+    // identifier is legal, so the word token can never shadow them.
+    keyword_query:        _ => make_keyword("query"),
+    keyword_master:       _ => make_keyword("master"),
+    keyword_coalesce:     _ => make_keyword("coalesce"),
 
     // Lexer-precedence guards: each keyword above is a strict prefix of one of
     // these, and tree-sitter resolves lexical precedence before match length,
