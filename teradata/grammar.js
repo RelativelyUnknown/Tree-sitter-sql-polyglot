@@ -3,6 +3,7 @@ import { comma_list, optional_parenthesis, make_keyword, wrapped_in_parenthesis 
 import { createStatementChoices } from '../grammar/statements/create.js';
 import teradata_statement_rules from './grammar/statements.js';
 import teradata_admin_rules from './grammar/admin.js';
+import teradata_analysis_rules from './grammar/analysis.js';
 
 // Teradata SQL — standalone lineage (since 1979), extends the ANSI base.
 // Adds SEL/DEL abbreviations, SET/MULTISET/VOLATILE tables, PRIMARY INDEX,
@@ -102,6 +103,13 @@ export default grammar(base, {
         $.collect_demographics_statement,
         $.drop_statistics_statement,
         $.execute_macro_statement,
+        // grammar/analysis.js
+        $.call_statement,
+        $.dump_explain_statement,
+        $.initiate_index_analysis_statement,
+        $.initiate_partition_analysis_statement,
+        $.restart_index_analysis_statement,
+        $.using_request_statement,
       ),
     ),
 
@@ -195,6 +203,22 @@ export default grammar(base, {
     // Teradata-specific keywords (dialect-level per AGENTS.md)
     keyword_multiset:   _ => token(prec(1, make_keyword("multiset"))),
 
+    // ── Keywords for the statements in grammar/analysis.js ─────────────────
+    // Statement-initial keywords are reserved for the same reason as above.
+    keyword_call:       _ => token(prec(1, make_keyword("call"))),
+    // Lexer-precedence guard: `call` above claims the front of `called`.
+    keyword_called:     _ => token(prec(1, make_keyword("called"))),
+    keyword_dump:       _ => token(prec(1, make_keyword("dump"))),
+    keyword_initiate:   _ => token(prec(1, make_keyword("initiate"))),
+    keyword_restart:    _ => token(prec(1, make_keyword("restart"))),
+    keyword_using:      _ => token(prec(1, make_keyword("using"))),
+    // Clause keywords: only reachable mid-statement, so they stay extracted.
+    keyword_analysis:   _ => make_keyword("analysis"),
+    keyword_keep:       _ => make_keyword("keep"),
+    keyword_modified:   _ => make_keyword("modified"),
+    keyword_stat:       _ => make_keyword("stat"),
+    keyword_sql:        _ => make_keyword("sql"),
+
     // ── Keywords for the statements in grammar/admin.js ────────────────────
     // prec-1, not plain make_keyword: compound_statement allows a leading
     // `label:`, so an identifier is legal at statement start and an extracted
@@ -252,7 +276,6 @@ export default grammar(base, {
     keyword_help:       _ => token(prec(1, make_keyword("help"))),
     keyword_minus:      _ => token(prec(1, make_keyword("minus"))),
     keyword_preserve:   _ => token(prec(1, make_keyword("preserve"))),
-    keyword_query_band: _ => token(prec(1, make_keyword("query_band"))),
     keyword_none:       _ => token(prec(1, make_keyword("none"))),
     keyword_columns:    _ => token(prec(1, make_keyword("columns"))),
     keyword_compress:   _ => token(prec(1, make_keyword("compress"))),
@@ -263,6 +286,7 @@ export default grammar(base, {
 
     ...teradata_statement_rules,
     ...teradata_admin_rules,
+    ...teradata_analysis_rules,
 
   },
 });
