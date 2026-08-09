@@ -118,6 +118,60 @@ export default {
     field('time_limit', $.literal),
   ),
 
+  // INSERT EXPLAIN [WITH [NO] STATISTICS [USING SAMPLE pct [PERCENT]]]
+  //   [AND DEMOGRAPHICS] [FOR t [,...]] INTO qcd [AS plan]
+  //   [LIMIT [SQL [= n]]] [FOR frequency] [CHECK STATISTICS]
+  //   [IN XML [NODDLTEXT]] <request>
+  // The two FOR clauses are separated by the mandatory INTO, so neither is
+  // ambiguous with the other.
+  insert_explain_statement: $ => seq(
+    $.keyword_insert,
+    $.keyword_explain,
+    optional(seq(
+      $.keyword_with,
+      optional($.keyword_no),
+      $.keyword_statistics,
+      optional(seq(
+        $.keyword_using,
+        $.keyword_sample,
+        field('percentage', $.literal),
+        optional($.keyword_percent),
+      )),
+    )),
+    optional(seq($.keyword_and, $.keyword_demographics)),
+    optional(seq($.keyword_for, comma_list($.object_reference, true))),
+    $._qcd_target,
+    optional($._explain_limit),
+    optional(seq($.keyword_for, field('frequency', $.literal))),
+    optional(seq($.keyword_check, $.keyword_statistics)),
+    optional(seq($.keyword_in, $.keyword_xml, optional($.keyword_noddltext))),
+    field('request', $.statement),
+  ),
+
+  // EXECUTE FUNCTION [COLUMNS (name [,...])] [INTO [VOLATILE] ART]
+  //   function ( argument [,...] )
+  // The named argument groups (FUNC_PARAMS, INPUT_FMT, OUTPUT_FMT, MAP) are
+  // function-call shaped, so the base expression rule already accepts them.
+  execute_function_statement: $ => seq(
+    $.keyword_execute,
+    $.keyword_function,
+    optional(seq($.keyword_columns, paren_list($.identifier, true))),
+    optional(seq($.keyword_into, optional($.keyword_volatile), $.keyword_art)),
+    field('name', $.object_reference),
+    paren_list($._expression, false),
+  ),
+
+  // SELECT AND CONSUME TOP 1 <select_list> FROM <queue_table>
+  select_and_consume_statement: $ => seq(
+    $.keyword_select,
+    $.keyword_and,
+    $.keyword_consume,
+    $.keyword_top,
+    field('count', $.literal),
+    $.select_expression,
+    $.from,
+  ),
+
   // USING ( name type [,...] ) <request>
   using_request_statement: $ => seq(
     $.keyword_using,

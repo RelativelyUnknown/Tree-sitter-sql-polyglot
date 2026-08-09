@@ -110,6 +110,9 @@ export default grammar(base, {
         $.initiate_partition_analysis_statement,
         $.restart_index_analysis_statement,
         $.using_request_statement,
+        $.insert_explain_statement,
+        $.execute_function_statement,
+        $.select_and_consume_statement,
       ),
     ),
 
@@ -218,6 +221,9 @@ export default grammar(base, {
     keyword_modified:   _ => make_keyword("modified"),
     keyword_stat:       _ => make_keyword("stat"),
     keyword_sql:        _ => make_keyword("sql"),
+    keyword_consume:    _ => make_keyword("consume"),
+    keyword_art:        _ => make_keyword("art"),
+    keyword_noddltext:  _ => make_keyword("noddltext"),
 
     // ── Keywords for the statements in grammar/admin.js ────────────────────
     // prec-1, not plain make_keyword: compound_statement allows a leading
