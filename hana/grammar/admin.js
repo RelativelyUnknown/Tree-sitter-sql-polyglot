@@ -11,6 +11,7 @@ export default {
     $.keyword_lock,
     $.keyword_table,
     field('table', $.object_reference),
+    optional(seq($.keyword_partition, field('partition', $.literal))),
     $.keyword_in,
     field('mode', choice($.keyword_exclusive, $.keyword_share)),
     $.keyword_mode,
@@ -23,7 +24,9 @@ export default {
     $.keyword_delta,
     $.keyword_of,
     field('table', $.object_reference),
+    optional(seq($.keyword_part, field('part', $.literal))),
     optional(seq($.keyword_with, $.keyword_parameters, paren_list($._expression, true))),
+    optional(seq($.keyword_force, $.keyword_rebuild)),
   )),
 
   // LOAD t [ALL | (col, …)]   |   UNLOAD t
@@ -37,7 +40,11 @@ export default {
   refresh_object_statement: $ => prec.right(seq(
     $.keyword_refresh,
     choice(
-      seq($.keyword_view, field('name', $.object_reference)),
+      seq(
+        $.keyword_view,
+        field('name', $.object_reference),
+        optional($.keyword_anonymization),
+      ),
       seq($.keyword_pse, field('name', $.object_reference)),
       seq(
         $.keyword_statistics,
@@ -141,7 +148,16 @@ export default {
   validate_statement: $ => seq(
     $.keyword_validate,
     choice(
-      seq($.keyword_user, field('name', $.object_reference)),
+      seq(
+        $.keyword_user,
+        choice(
+          seq(
+            field('name', $.object_reference),
+            optional(seq($.keyword_password, field('password', $._expression))),
+          ),
+          seq($.keyword_with, $.keyword_assertion, field('assertion', $._expression)),
+        ),
+      ),
       seq($.keyword_ldap, $.keyword_provider, field('name', $.object_reference)),
     ),
   ),
@@ -349,6 +365,85 @@ export default {
   _hana_do_parameter: $ => choice(
     seq(field('name', $.identifier), '=>', field('value', $._expression)),
     $._expression,
+  ),
+
+  // ── Statements added from the clause-level pass over the SQL Reference ───
+
+  // ALTER INDEX i {REBUILD | UNIQUE <type> | <load_unit> [ONLINE [PREFERRED]]}
+  alter_index: $ => prec.right(seq(
+    $.keyword_alter,
+    $.keyword_index,
+    field('name', $.object_reference),
+    choice(
+      $.keyword_rebuild,
+      seq($.keyword_unique, optional(field('index_type', $.identifier))),
+      seq(
+        $._hana_load_unit,
+        optional(seq($.keyword_online, optional($.keyword_preferred))),
+      ),
+    ),
+  )),
+
+  _hana_load_unit: $ => seq(
+    choice($.keyword_column, $.keyword_page, $.keyword_default),
+    $.keyword_loadable,
+  ),
+
+  // ALTER ROLE r {SET|UNSET ROLEGROUP g | {ADD|DROP} LDAP GROUP g, …}
+  alter_role: $ => seq(
+    $.keyword_alter,
+    $.keyword_role,
+    field('name', $.object_reference),
+    choice(
+      seq($.keyword_set, $.keyword_rolegroup, field('rolegroup', $.identifier)),
+      seq($.keyword_unset, $.keyword_rolegroup),
+      seq(
+        choice($.keyword_add, $.keyword_drop),
+        $.keyword_ldap,
+        $.keyword_group,
+        comma_list($.identifier, true),
+      ),
+    ),
+  ),
+
+  // ALTER ROLEGROUP g [{ENABLE | DISABLE}] ROLE ADMIN
+  alter_rolegroup_statement: $ => seq(
+    $.keyword_alter,
+    $.keyword_rolegroup,
+    field('name', $.identifier),
+    optional(choice($.keyword_enable, $.keyword_disable)),
+    $.keyword_role,
+    $.keyword_admin,
+  ),
+
+  // {CREATE | ALTER | DROP} TABLE GROUP g …
+  table_group_statement: $ => prec.right(seq(
+    choice($.keyword_create, $.keyword_alter, $.keyword_drop),
+    $.keyword_table,
+    $.keyword_group,
+    field('name', $.object_reference),
+    repeat(choice(
+      seq(choice($.keyword_set, $.keyword_unset), $.system_option),
+      seq(
+        choice($.keyword_add, $.keyword_remove),
+        comma_list($.object_reference, true),
+      ),
+      $.keyword_force,
+      $.system_option,
+    )),
+  )),
+
+  // CREATE [OR REPLACE] SCHEMA SYNONYM s FOR schema
+  // DROP SCHEMA SYNONYM s
+  schema_synonym_statement: $ => seq(
+    choice(
+      seq($.keyword_create, optional($._or_replace)),
+      $.keyword_drop,
+    ),
+    $.keyword_schema,
+    $.keyword_synonym,
+    field('name', $.object_reference),
+    optional(seq($.keyword_for, field('schema', $.object_reference))),
   ),
 
 };

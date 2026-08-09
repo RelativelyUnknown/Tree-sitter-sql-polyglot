@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, paren_list, make_keyword } from '../grammar/helpers.js';
+import { optional_parenthesis, paren_list, comma_list, make_keyword } from '../grammar/helpers.js';
 import { createStatementChoices } from '../grammar/statements/create.js';
 import { fromClause } from '../grammar/statements/select.js';
 import hana_statement_rules from './grammar/statements.js';
@@ -30,6 +30,12 @@ export default grammar(base, {
     // compound statement until END/COMMIT disambiguates (same as db2)
     [$.transaction, $.compound_statement],
     [$.transaction, $._sqlscript_statement],
+    // TABLE GROUP: after CREATE/ALTER/DROP TABLE, GROUP is an extracted
+    // keyword and so is also a legal table name, which one token of lookahead
+    // cannot separate.
+    [$.create_table, $.table_group_statement],
+    [$.alter_table, $.table_group_statement],
+    [$.drop_table, $.table_group_statement],
   ],
 
   rules: {
@@ -127,6 +133,60 @@ export default grammar(base, {
       $.comment_statement,
       // grammar/admin.js
       $.hana_object_statement,
+      $.alter_rolegroup_statement,
+      $.table_group_statement,
+      $.schema_synonym_statement,
+    ),
+
+    // base alter_sequence plus HANA's RESET BY <subquery> tail.
+    alter_sequence: $ => seq(
+      $.keyword_alter,
+      $.keyword_sequence,
+      optional($._if_exists),
+      $.object_reference,
+      choice(
+        repeat1(
+          choice(
+            seq($.keyword_as, $._type),
+            seq($.keyword_increment, optional($.keyword_by), $.literal),
+            seq($.keyword_minvalue, choice($.literal, seq($.keyword_no, $.keyword_minvalue))),
+            seq($.keyword_maxvalue, choice($.literal, seq($.keyword_no, $.keyword_maxvalue))),
+            seq($.keyword_start, optional($.keyword_with), field('start', $.literal)),
+            seq($.keyword_restart, optional($.keyword_with), field('restart', $.literal)),
+            seq($.keyword_cache, field('cache', $.literal)),
+            seq(optional($.keyword_no), $.keyword_cycle),
+            seq($.keyword_owned, $.keyword_by, choice($.keyword_none, $.object_reference)),
+          ),
+        ),
+        $.rename_object,
+        $.change_ownership,
+        seq(
+          $.keyword_set,
+          choice(
+            choice($.keyword_logged, $.keyword_unlogged),
+            seq($.keyword_schema, $.identifier),
+          ),
+        ),
+      ),
+      optional(seq($.keyword_reset, $.keyword_by, $._dml_read)),
+    ),
+
+    // CREATE SCHEMA s [OWNED BY user]
+    create_schema: $ => prec.left(seq(
+      $.keyword_create,
+      $.keyword_schema,
+      optional($._if_not_exists),
+      field('name', $.object_reference),
+      optional(seq($.keyword_owned, $.keyword_by, field('owner', $.identifier))),
+    )),
+
+    // TRUNCATE TABLE t [PARTITION (id, …)]
+    _truncate_statement: $ => seq(
+      $.keyword_truncate,
+      optional($.keyword_table),
+      optional($.keyword_only),
+      comma_list($.object_reference),
+      optional(seq($.keyword_partition, paren_list($.literal, true))),
     ),
 
     // base parameter plus HANA :name SQLScript variable references
@@ -161,6 +221,25 @@ export default grammar(base, {
     keyword_rolegroup:   _ => token(prec(1, make_keyword("rolegroup"))),
     keyword_jwt:         _ => token(prec(1, make_keyword("jwt"))),
     keyword_ldap:        _ => token(prec(1, make_keyword("ldap"))),
+
+    // ── Keywords for the clause-level pass over the SQL Reference ──────────
+    keyword_part:          _ => token(prec(1, make_keyword("part"))),
+    keyword_anonymization: _ => token(prec(1, make_keyword("anonymization"))),
+    keyword_assertion:     _ => token(prec(1, make_keyword("assertion"))),
+    keyword_rebuild:       _ => token(prec(1, make_keyword("rebuild"))),
+    keyword_online:        _ => token(prec(1, make_keyword("online"))),
+    keyword_preferred:     _ => token(prec(1, make_keyword("preferred"))),
+    keyword_loadable:      _ => token(prec(1, make_keyword("loadable"))),
+    keyword_remove:        _ => token(prec(1, make_keyword("remove"))),
+    keyword_page:          _ => token(prec(1, make_keyword("page"))),
+
+    // Lexer-precedence guards: PART is a strict prefix of these, and explicit
+    // precedence beats match length, so each has to be re-declared here.
+    keyword_partition:     _ => token(prec(1, make_keyword("partition"))),
+    keyword_partitions:    _ => token(prec(1, make_keyword("partitions"))),
+    keyword_partitioned:   _ => token(prec(1, make_keyword("partitioned"))),
+    keyword_parameters:    _ => token(prec(1, make_keyword("parameters"))),
+    keyword_parameter:     _ => token(prec(1, make_keyword("parameter"))),
     keyword_saml:        _ => token(prec(1, make_keyword("saml"))),
     keyword_x509:        _ => token(prec(1, make_keyword("x509"))),
     keyword_provider:    _ => token(prec(1, make_keyword("provider"))),
