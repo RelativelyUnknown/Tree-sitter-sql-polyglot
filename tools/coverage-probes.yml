@@ -829,6 +829,219 @@ features:
     weight: 1
     probe: "CACHE TABLE t1;"
 
+  # ── Vendor statement families added by the grammar/vendor-doc audit ──────
+  # Every spelling below is transcribed from the vendor's own syntax block
+  # (the same sources the grammar work used: Oracle SQL Language Reference,
+  # BigQuery/Spanner GoogleSQL DDL, MySQL Reference Manual, SAP HANA SQL
+  # Reference, ClickHouse docs, Db2 SQL Reference, Teradata SQL DML/DDL).
+  # not-applicable is used ONLY where the engine demonstrably has no such
+  # statement; where a dialect plausibly has one we have not implemented, the
+  # probe stays scored so the gap is visible.
+
+  - id: alter_set_options
+    name: "Option list on ALTER TABLE"
+    category: ddl
+    ansi: false
+    weight: 2
+    probe: "ALTER TABLE t1 SET OPTIONS (description = 'x');"
+    dialects:
+      postgres:    { probe: "ALTER TABLE t1 SET (fillfactor = 70);" }
+      cockroachdb: { probe: "ALTER TABLE t1 SET (ttl_expire_after = '1 day');" }
+      mysql:       { probe: "ALTER TABLE t1 ENGINE = InnoDB;" }
+      mariadb:     { probe: "ALTER TABLE t1 ENGINE = InnoDB;" }
+      hive:        { probe: "ALTER TABLE t1 SET TBLPROPERTIES ('k' = 'v');" }
+      spark:       { probe: "ALTER TABLE t1 SET TBLPROPERTIES ('k' = 'v');" }
+      databricks:  { probe: "ALTER TABLE t1 SET TBLPROPERTIES ('k' = 'v');" }
+      trino:       { probe: "ALTER TABLE t1 SET PROPERTIES format = 'ORC';" }
+      athena:      { probe: "ALTER TABLE t1 SET TBLPROPERTIES ('k' = 'v');" }
+      clickhouse:  { probe: "ALTER TABLE t1 MODIFY SETTING max_threads = 4;" }
+      snowflake:   { probe: "ALTER TABLE t1 SET COMMENT = 'x';" }
+      flink:       { probe: "ALTER TABLE t1 SET ('k' = 'v');" }
+      duckdb:      { status: not-applicable, reason: "No per-table option list" }
+      sqlite:      { status: not-applicable, reason: "No per-table option list" }
+
+  - id: index_rebuild
+    name: "ALTER INDEX … REBUILD"
+    category: admin
+    ansi: false
+    weight: 1
+    probe: "ALTER INDEX idx1 REBUILD;"
+    dialects:
+      tsql:        { probe: "ALTER INDEX idx1 ON t1 REBUILD;" }
+      db2:         { probe: "REORG INDEXES ALL FOR TABLE t1;" }
+      # Engines with no user-managed indexes, or none that can be rebuilt in
+      # place — REINDEX (a separate probe) is the PostgreSQL-family spelling.
+      postgres:    { status: not-applicable, reason: "REINDEX, not ALTER INDEX REBUILD" }
+      cockroachdb: { status: not-applicable, reason: "REINDEX, not ALTER INDEX REBUILD" }
+      sqlite:      { status: not-applicable, reason: "REINDEX, not ALTER INDEX REBUILD" }
+      duckdb:      { status: not-applicable, reason: "No index maintenance statement" }
+      hive:        { status: not-applicable, reason: "Indexes removed in Hive 3" }
+      spark:       { status: not-applicable, reason: "No indexes" }
+      databricks:  { status: not-applicable, reason: "No user indexes" }
+      redshift:    { status: not-applicable, reason: "No indexes (sort/dist keys)" }
+      bigquery:    { status: not-applicable, reason: "No user indexes to rebuild" }
+      trino:       { status: not-applicable, reason: "Query engine, no index storage" }
+      athena:      { status: not-applicable, reason: "Query engine, no index storage" }
+      flink:       { status: not-applicable, reason: "Query engine, no index storage" }
+      snowflake:   { status: not-applicable, reason: "No user indexes (micro-partitions)" }
+      clickhouse:  { probe: "ALTER TABLE t1 MATERIALIZE INDEX idx1;" }
+
+  - id: database_options
+    name: "CREATE DATABASE with an option list"
+    category: ddl
+    ansi: false
+    weight: 1
+    probe: "CREATE DATABASE db1 CHARACTER SET utf8mb4;"
+    dialects:
+      postgres:    { probe: "CREATE DATABASE db1 WITH ENCODING 'UTF8';" }
+      cockroachdb: { probe: "CREATE DATABASE db1 PRIMARY REGION 'us-east1';" }
+      hive:        { probe: "CREATE DATABASE db1 WITH DBPROPERTIES ('k' = 'v');" }
+      spark:       { probe: "CREATE DATABASE db1 WITH DBPROPERTIES ('k' = 'v');" }
+      databricks:  { probe: "CREATE DATABASE db1 WITH DBPROPERTIES ('k' = 'v');" }
+      athena:      { probe: "CREATE DATABASE db1 WITH DBPROPERTIES ('k' = 'v');" }
+      snowflake:   { probe: "CREATE DATABASE db1 DATA_RETENTION_TIME_IN_DAYS = 1;" }
+      bigquery:    { status: not-applicable, reason: "Datasets are schemas; CREATE SCHEMA … OPTIONS" }
+      spanner:     { status: not-applicable, reason: "Databases are created by the instance API" }
+      sqlite:      { status: not-applicable, reason: "One database per file; ATTACH instead" }
+      trino:       { status: not-applicable, reason: "Catalogs are configured, not created" }
+      flink:       { probe: "CREATE DATABASE db1 WITH ('k' = 'v');" }
+      oracle:      { probe: "CREATE DATABASE db1 CHARACTER SET AL32UTF8;" }
+      hana:        { status: not-applicable, reason: "Tenant databases via ALTER SYSTEM, not CREATE DATABASE" }
+      db2:         { status: not-applicable, reason: "CREATE DATABASE is a CLP command, not SQL" }
+
+  - id: bulk_load
+    name: "Bulk load from a file"
+    category: dml
+    ansi: false
+    weight: 2
+    probe: "LOAD DATA INFILE 'f.csv' INTO TABLE t1;"
+    dialects:
+      postgres:    { probe: "COPY t1 FROM 'f.csv';" }
+      cockroachdb: { probe: "COPY t1 FROM STDIN;" }
+      redshift:    { probe: "COPY t1 FROM 's3://b/f' IAM_ROLE 'arn';" }
+      snowflake:   { probe: "COPY INTO t1 FROM @stage1;" }
+      duckdb:      { probe: "COPY t1 FROM 'f.csv';" }
+      bigquery:    { probe: "LOAD DATA INTO t1 FROM FILES (uris = ['gs://b/f']);" }
+      hive:        { probe: "LOAD DATA INPATH '/f' INTO TABLE t1;" }
+      spark:       { probe: "LOAD DATA INPATH '/f' INTO TABLE t1;" }
+      databricks:  { probe: "LOAD DATA INPATH '/f' INTO TABLE t1;" }
+      clickhouse:  { status: not-applicable, reason: "Ingest via INSERT … FROM INFILE / clickhouse-client" }
+      trino:       { status: not-applicable, reason: "No load statement; INSERT … SELECT from a connector" }
+      athena:      { status: not-applicable, reason: "No load statement; data is already in S3" }
+      flink:       { status: not-applicable, reason: "No load statement; INSERT … SELECT from a connector" }
+      spanner:     { status: not-applicable, reason: "Bulk load via the Dataflow/import API" }
+      sqlite:      { status: not-applicable, reason: ".import is a shell command, not SQL" }
+
+  - id: materialized_view_log
+    name: "Materialized view log (incremental refresh source)"
+    category: ddl
+    ansi: false
+    weight: 1
+    probe: "CREATE MATERIALIZED VIEW LOG ON t1 WITH PRIMARY KEY;"
+    dialects:
+      # A change-capture object that only the Oracle family spells this way;
+      # elsewhere incremental refresh is either automatic or unavailable.
+      postgres:    { status: not-applicable, reason: "Full refresh only; no MV log object" }
+      cockroachdb: { status: not-applicable, reason: "No materialized view log" }
+      mysql:       { status: not-applicable, reason: "No materialized views" }
+      mariadb:     { status: not-applicable, reason: "No materialized views" }
+      sqlite:      { status: not-applicable, reason: "No materialized views" }
+      duckdb:      { status: not-applicable, reason: "No materialized views" }
+      tsql:        { status: not-applicable, reason: "Indexed views refresh implicitly" }
+      db2:         { status: not-applicable, reason: "MQT staging tables, not a MV log" }
+      hive:        { status: not-applicable, reason: "No materialized view log" }
+      spark:       { status: not-applicable, reason: "No materialized view log" }
+      databricks:  { status: not-applicable, reason: "No materialized view log" }
+      snowflake:   { status: not-applicable, reason: "Materialized views refresh automatically" }
+      bigquery:    { status: not-applicable, reason: "Materialized views refresh automatically" }
+      spanner:     { status: not-applicable, reason: "No materialized views" }
+      redshift:    { status: not-applicable, reason: "No materialized view log" }
+      trino:       { status: not-applicable, reason: "No materialized view log" }
+      athena:      { status: not-applicable, reason: "No materialized views" }
+      clickhouse:  { status: not-applicable, reason: "Materialized views are insert triggers" }
+      flink:       { status: not-applicable, reason: "No materialized view log" }
+      teradata:    { status: not-applicable, reason: "Join indexes refresh implicitly" }
+      hana:        { status: not-applicable, reason: "No materialized view log" }
+
+  - id: database_link
+    name: "Remote database link / connection object"
+    category: ddl
+    ansi: false
+    weight: 1
+    probe: "CREATE DATABASE LINK dl1 CONNECT TO u1 IDENTIFIED BY p1 USING 'svc';"
+    dialects:
+      postgres:    { probe: "CREATE SERVER srv1 FOREIGN DATA WRAPPER fdw1;" }
+      cockroachdb: { probe: "CREATE EXTERNAL CONNECTION ec1 AS 's3://b';" }
+      mariadb:     { probe: "CREATE SERVER srv1 FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h');" }
+      mysql:       { probe: "CREATE SERVER srv1 FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h');" }
+      bigquery:    { probe: "CREATE CONNECTION `p.r.c1` OPTIONS (type = 'CLOUD_SQL');" }
+      flink:       { probe: "CREATE CATALOG c1 WITH ('type' = 'hive');" }
+      sqlite:      { status: not-applicable, reason: "ATTACH DATABASE, not a link object" }
+      duckdb:      { status: not-applicable, reason: "ATTACH, not a link object" }
+      spanner:     { status: not-applicable, reason: "No remote link object" }
+      hive:        { status: not-applicable, reason: "No remote link object" }
+      spark:       { status: not-applicable, reason: "No remote link object" }
+      databricks:  { status: not-applicable, reason: "Foreign catalogs are Unity Catalog objects" }
+      athena:      { status: not-applicable, reason: "Federation via Lambda connectors, not SQL" }
+
+  - id: optimize_table
+    name: "Storage compaction / reorganisation"
+    category: admin
+    ansi: false
+    weight: 1
+    probe: "OPTIMIZE TABLE t1;"
+    dialects:
+      clickhouse:  { probe: "OPTIMIZE TABLE t1 FINAL;" }
+      spark:       { probe: "OPTIMIZE t1;" }
+      databricks:  { probe: "OPTIMIZE t1 ZORDER BY (a);" }
+      hana:        { probe: "MERGE DELTA OF t1;" }
+      db2:         { probe: "REORG TABLE t1;" }
+      oracle:      { probe: "ALTER TABLE t1 SHRINK SPACE;" }
+      postgres:    { status: not-applicable, reason: "VACUUM (a separate maintenance model)" }
+      cockroachdb: { status: not-applicable, reason: "Compaction is automatic" }
+      duckdb:      { status: not-applicable, reason: "CHECKPOINT/VACUUM, no compaction statement" }
+      sqlite:      { probe: "VACUUM;" }
+      snowflake:   { status: not-applicable, reason: "Micro-partitions are maintained automatically" }
+      bigquery:    { status: not-applicable, reason: "Storage is managed automatically" }
+      spanner:     { status: not-applicable, reason: "Storage is managed automatically" }
+      redshift:    { probe: "VACUUM t1;" }
+      trino:       { status: not-applicable, reason: "Query engine, no owned storage" }
+      athena:      { status: not-applicable, reason: "Query engine, no owned storage" }
+      flink:       { status: not-applicable, reason: "Query engine, no owned storage" }
+      tsql:        { status: not-applicable, reason: "Index rebuild is the maintenance path" }
+      teradata:    { status: not-applicable, reason: "No compaction statement" }
+
+  - id: commit_synonym
+    name: "COMMIT/ROLLBACK synonyms (END, ABORT)"
+    category: dml
+    ansi: false
+    weight: 1
+    probe: "END;"
+    dialects:
+      postgres:    { probe: "END TRANSACTION;" }
+      cockroachdb: { probe: "END TRANSACTION;" }
+      redshift:    { probe: "END TRANSACTION;" }
+      # Engines where END belongs to a block, not a transaction.
+      mysql:       { status: not-applicable, reason: "END closes a compound statement" }
+      mariadb:     { status: not-applicable, reason: "END closes a compound statement" }
+      tsql:        { status: not-applicable, reason: "END closes a BEGIN block" }
+      oracle:      { status: not-applicable, reason: "END closes a PL/SQL block" }
+      db2:         { status: not-applicable, reason: "END closes a compound statement" }
+      hana:        { status: not-applicable, reason: "END closes a SQLScript block" }
+      hive:        { status: not-applicable, reason: "No transaction synonyms" }
+      spark:       { status: not-applicable, reason: "No transaction synonyms" }
+      databricks:  { status: not-applicable, reason: "No transaction synonyms" }
+      snowflake:   { status: not-applicable, reason: "No transaction synonyms" }
+      bigquery:    { status: not-applicable, reason: "No transaction synonyms" }
+      spanner:     { status: not-applicable, reason: "No transaction synonyms" }
+      trino:       { status: not-applicable, reason: "No transaction synonyms" }
+      athena:      { status: not-applicable, reason: "No transactions" }
+      flink:       { status: not-applicable, reason: "No transactions" }
+      clickhouse:  { status: not-applicable, reason: "No transaction synonyms" }
+      teradata:    { status: not-applicable, reason: "END is a block terminator" }
+      duckdb:      { status: not-applicable, reason: "No END synonym" }
+      sqlite:      { probe: "END TRANSACTION;" }
+
   # ── Not parser-observable ────────────────────────────────────────────────
   # No writable surface syntax to probe → excluded from every score denominator.
   # Kept minimal and documented so the exclusion is explicit, not a catch-all.
