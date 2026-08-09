@@ -133,9 +133,7 @@ export default grammar(base, {
       $.comment_statement,
       // grammar/admin.js
       $.hana_object_statement,
-      $.alter_rolegroup_statement,
       $.table_group_statement,
-      $.schema_synonym_statement,
     ),
 
     // base alter_sequence plus HANA's RESET BY <subquery> tail.

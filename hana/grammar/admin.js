@@ -109,6 +109,7 @@ export default {
   // `<kind> name [word …]` shape.
   hana_object_statement: $ => prec.right(seq(
     choice($.keyword_create, $.keyword_drop, $.keyword_alter),
+    optional($._or_replace),
     $._hana_object_kind,
     optional($._if_exists),
     field('name', $.object_reference),
@@ -406,16 +407,6 @@ export default {
     ),
   ),
 
-  // ALTER ROLEGROUP g [{ENABLE | DISABLE}] ROLE ADMIN
-  alter_rolegroup_statement: $ => seq(
-    $.keyword_alter,
-    $.keyword_rolegroup,
-    field('name', $.identifier),
-    optional(choice($.keyword_enable, $.keyword_disable)),
-    $.keyword_role,
-    $.keyword_admin,
-  ),
-
   // {CREATE | ALTER | DROP} TABLE GROUP g …
   table_group_statement: $ => prec.right(seq(
     choice($.keyword_create, $.keyword_alter, $.keyword_drop),
@@ -432,18 +423,5 @@ export default {
       $.system_option,
     )),
   )),
-
-  // CREATE [OR REPLACE] SCHEMA SYNONYM s FOR schema
-  // DROP SCHEMA SYNONYM s
-  schema_synonym_statement: $ => seq(
-    choice(
-      seq($.keyword_create, optional($._or_replace)),
-      $.keyword_drop,
-    ),
-    $.keyword_schema,
-    $.keyword_synonym,
-    field('name', $.object_reference),
-    optional(seq($.keyword_for, field('schema', $.object_reference))),
-  ),
 
 };
