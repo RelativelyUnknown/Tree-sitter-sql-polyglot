@@ -1,0 +1,1 @@
+IMPORT FOREIGN SCHEMA remote FROM SERVER srv INTO local;

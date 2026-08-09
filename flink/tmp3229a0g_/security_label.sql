@@ -1,0 +1,1 @@
+SECURITY LABEL ON TABLE t1 IS 'classified';
