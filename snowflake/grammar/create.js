@@ -59,6 +59,7 @@ export default {
     $.keyword_warehouse,
     '=',
     $.identifier,
+    repeat($.snowflake_property),
     $.keyword_as,
     $._dml_read,
   ),
@@ -172,6 +173,8 @@ export default {
       seq($.keyword_auto_suspend, '=', $._expression),
       seq($.keyword_auto_resume, '=', choice($.keyword_true, $.keyword_false)),
       seq($.keyword_comment, '=', alias($._literal_string, $.literal)),
+      // Fallback for the properties the reference adds between releases.
+      $.snowflake_property,
     ),
   ),
 

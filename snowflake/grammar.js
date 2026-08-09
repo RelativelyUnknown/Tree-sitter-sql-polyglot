@@ -5,6 +5,7 @@ import qualify_rules     from './grammar/qualify.js';
 import pivot_rules       from './grammar/pivot.js';
 import match_rec_rules   from './grammar/match_recognize.js';
 import time_travel_rules from './grammar/time_travel.js';
+import snowflake_property_rules from './grammar/properties.js';
 import variant_rules     from './grammar/variant.js';
 import scripting_rules   from './grammar/scripting.js';
 import execute_rules     from './grammar/execute.js';
@@ -665,6 +666,7 @@ export default grammar(base, {
     keyword_remove:         _ => token(prec(1, make_keyword("remove"))),
     keyword_files:          _ => token(prec(1, make_keyword("files"))),
     keyword_unset:          _ => token(prec(1, make_keyword("unset"))),
+    keyword_swap:           _ => token(prec(1, make_keyword("swap"))),
 
     // ── Spread all Snowflake rule modules ───────────────────────────────────
     ...qualify_rules,
@@ -681,6 +683,8 @@ export default grammar(base, {
     ...stage_rules,
     ...show_rules,
     ...files_rules,
+    // last, so its overrides win over the inherited rules
+    ...snowflake_property_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
