@@ -2,6 +2,7 @@ import postgres from '../postgres/grammar.js';
 import { comma_list, optional_parenthesis, wrapped_in_parenthesis, paren_list, make_keyword } from '../grammar/helpers.js';
 import crdb_statement_rules from './grammar/statements.js';
 import crdb_admin_rules from './grammar/admin.js';
+import crdb_clause_rules from './grammar/clauses.js';
 
 // CockroachDB SQL — PostgreSQL-compatible by design (wire protocol and
 // syntax), layered on the postgres grammar. Adds the CockroachDB-native
@@ -214,6 +215,30 @@ export default grammar(postgres, {
     ),
 
     keyword_family:     _ => token(prec(1, make_keyword("family"))),
+
+    // Multi-region and zone-configuration vocabulary. SURVIVE, PLACEMENT and
+    // CONVERT head an ALTER DATABASE alternative and are reserved like the
+    // rest of this dialect's keywords; the others only ever follow a keyword,
+    // so they stay extracted — REGION is too common a column name to reserve.
+
+
+    keyword_availability:    _ => make_keyword("availability"),
+
+    keyword_configuration:   _ => make_keyword("configuration"),
+
+    keyword_convert:         _ => token(prec(1, make_keyword("convert"))),
+
+    keyword_failure:         _ => make_keyword("failure"),
+
+    keyword_parent:          _ => make_keyword("parent"),
+
+    keyword_placement:       _ => token(prec(1, make_keyword("placement"))),
+
+    keyword_region:          _ => make_keyword("region"),
+
+    keyword_regions:         _ => make_keyword("regions"),
+
+    keyword_survive:         _ => token(prec(1, make_keyword("survive"))),
     keyword_locality:   _ => token(prec(1, make_keyword("locality"))),
     keyword_regional:   _ => token(prec(1, make_keyword("regional"))),
     keyword_global:     _ => token(prec(1, make_keyword("global"))),
@@ -259,6 +284,8 @@ export default grammar(postgres, {
 
     ...crdb_statement_rules,
     ...crdb_admin_rules,
+    // last, so its overrides win over the inherited rules
+    ...crdb_clause_rules,
 
   },
 });
