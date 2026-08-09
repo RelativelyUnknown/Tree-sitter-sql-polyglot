@@ -50,12 +50,15 @@ export default {
     )),
   ),
 
+  // LINES STARTING BY is deliberately absent. This clause is shared with
+  // into_outfile, which sits inside SELECT, and giving it a second
+  // alternative destabilises the select path — ORDER BY and CAST stop
+  // parsing in MariaDB. It needs its own fix rather than riding along here.
   _load_lines_clause: $ => seq(
     $.keyword_lines,
-    repeat1(choice(
-      seq($.keyword_starting,   $.keyword_by, alias($._literal_string, $.literal)),
+    repeat1(
       seq($.keyword_terminated, $.keyword_by, alias($._literal_string, $.literal)),
-    )),
+    ),
   ),
 
   _load_ignore_lines: $ => seq(
