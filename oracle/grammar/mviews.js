@@ -298,16 +298,14 @@ export default {
     $.object_reference,
     repeat1(choice(
       $.rename_object,
-      seq(
-        $.keyword_rebuild,
-        repeat(choice(
-          $.keyword_reverse,
-          $.keyword_noreverse,
-          $.keyword_online,
-          $.keyword_compute,
-          $._oracle_physical_attribute,
-        )),
-      ),
+      // The physical attributes that may follow REBUILD are collected by the
+      // outer repeat1, not nested here — nesting them makes the two repeats
+      // ambiguous for a shared attribute.
+      $.keyword_rebuild,
+      $.keyword_reverse,
+      $.keyword_noreverse,
+      $.keyword_online,
+      $.keyword_compute,
       $.keyword_unusable,
       $.keyword_coalesce,
       $.keyword_compile,
