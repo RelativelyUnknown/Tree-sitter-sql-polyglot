@@ -228,7 +228,7 @@ export default grammar(base, {
     keyword_changes:      _ => make_keyword("changes"),
     keyword_client:       _ => make_keyword("client"),
     keyword_compress:     _ => token(prec(1, make_keyword("compress"))),
-    keyword_current_user: _ => make_keyword("current_user"),
+    keyword_current_user: _ => token(prec(1, make_keyword("current_user"))),
     keyword_cursors:      _ => make_keyword("cursors"),
     keyword_hierarchy:    _ => token(prec(1, make_keyword("hierarchy"))),
     keyword_insensitive:  _ => token(prec(1, make_keyword("insensitive"))),
@@ -239,8 +239,8 @@ export default grammar(base, {
     keyword_query:        _ => make_keyword("query"),
     keyword_retain:       _ => make_keyword("retain"),
     keyword_scope:        _ => make_keyword("scope"),
-    keyword_session_user: _ => make_keyword("session_user"),
-    keyword_system_user:  _ => make_keyword("system_user"),
+    keyword_session_user: _ => token(prec(1, make_keyword("session_user"))),
+    keyword_system_user:  _ => token(prec(1, make_keyword("system_user"))),
     keyword_tracking:     _ => make_keyword("tracking"),
     keyword_xsrobject:    _ => make_keyword("xsrobject"),
     keyword_yes:          _ => make_keyword("yes"),
@@ -255,6 +255,9 @@ export default grammar(base, {
     // identifier; extracted SCHEMA loses to the word token there, so the
     // statement was never reachable.
     keyword_schema:       _ => token(prec(1, make_keyword("schema"))),
+    // SET SCHEMA also accepts a plain name, so an identifier is legal in the
+    // same position as these three and they would otherwise lose to it.
+    keyword_user:         _ => token(prec(1, make_keyword("user"))),
 
     // ── Keywords for the statements in grammar/admin.js ────────────────────
     // These must be token(prec(1, …)), not plain make_keyword. The base
