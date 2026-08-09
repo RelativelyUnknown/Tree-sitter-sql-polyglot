@@ -3,8 +3,11 @@ import { comma_list, wrapped_in_parenthesis, optional_parenthesis, paren_list } 
 export default {
 
   // ATTACH ['file.db'] [AS alias] [(TYPE type, READ_ONLY bool, ...)]
+  // ATTACH [IF NOT EXISTS | OR REPLACE] [DATABASE] 'path' [AS alias]
+  //   [( option [value] [, ...] )]
   attach_statement: $ => seq(
     $.keyword_attach,
+    optional(choice($._if_not_exists, $._or_replace)),
     optional($.keyword_database),
     optional(field('path', alias($._literal_string, $.literal))),
     optional(seq(
@@ -22,10 +25,11 @@ export default {
     )),
   ),
 
-  // DETACH [DATABASE] alias
+  // DETACH [DATABASE] [IF EXISTS] alias
   detach_statement: $ => seq(
     $.keyword_detach,
     optional($.keyword_database),
+    optional($._if_exists),
     optional(field('alias', $.identifier)),
   ),
 
