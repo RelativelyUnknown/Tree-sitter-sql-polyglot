@@ -4,6 +4,7 @@ import { createStatementChoices } from '../grammar/statements/create.js';
 import trino_statement_rules from './grammar/statements.js';
 import trino_type_rules     from './grammar/types.js';
 import trino_expression_rules from './grammar/expressions.js';
+import trino_clause_rules from './grammar/clauses.js';
 import trino_select_rules   from './grammar/select.js';
 import trino_ddl_rules      from './grammar/ddl.js';
 
@@ -169,6 +170,8 @@ export default grammar(base, {
 
     keyword_deny: _ => token(prec(1, make_keyword("deny"))),
 
+    keyword_properties:  _ => token(prec(1, make_keyword("properties"))),
+
     // Override _expression to add lambda
     _expression: $ => prec(1,
       choice(
@@ -304,6 +307,8 @@ export default grammar(base, {
     ...trino_expression_rules,
     ...trino_select_rules,
     ...trino_ddl_rules,
+    // last, so its overrides win over the inherited rules
+    ...trino_clause_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
