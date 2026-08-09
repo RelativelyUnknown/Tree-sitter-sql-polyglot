@@ -222,7 +222,9 @@ export default grammar(base, {
     keyword_using:      _ => token(prec(1, make_keyword("using"))),
     // Clause keywords: only reachable mid-statement, so they stay extracted.
     keyword_analysis:   _ => make_keyword("analysis"),
-    keyword_keep:       _ => make_keyword("keep"),
+    // KEEP INDEX follows `AS <tag>`, where the tag is an identifier; the
+    // extracted keyword loses to the word token in that state.
+    keyword_keep:       _ => token(prec(1, make_keyword("keep"))),
     keyword_modified:   _ => make_keyword("modified"),
     keyword_stat:       _ => make_keyword("stat"),
     keyword_sql:        _ => make_keyword("sql"),
