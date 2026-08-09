@@ -1,14 +1,5 @@
 export default {
 
-  // DROP TABLE [IF EXISTS] name PURGE
-  drop_table_purge: $ => seq(
-    $.keyword_drop,
-    $.keyword_table,
-    optional($._if_exists),
-    $.object_reference,
-    $.keyword_purge,
-  ),
-
   // DROP CATALOG [IF EXISTS] name [CASCADE | RESTRICT]
   drop_catalog: $ => seq(
     $.keyword_drop,

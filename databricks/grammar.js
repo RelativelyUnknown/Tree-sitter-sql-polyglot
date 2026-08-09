@@ -163,7 +163,6 @@ export default grammar(spark, {
       $.drop_function,
       $.drop_procedure,
       // Databricks drops
-      $.drop_table_purge,
       $.drop_catalog,
       $.drop_namespace,
       $.drop_connection,

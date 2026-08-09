@@ -8,6 +8,7 @@ import spark_iceberg_rules from './grammar/iceberg.js';
 import spark_select_rules from './grammar/select.js';
 import spark_cache_rules from './grammar/cache.js';
 import spark_resource_rules from './grammar/resource.js';
+import spark_clause_rules from './grammar/clauses.js';
 
 export default grammar(hive, {
   name: 'spark_sql',
@@ -309,6 +310,11 @@ export default grammar(hive, {
     // Plain keyword (no elevated precedence) so a column literally named
     // `name` still lexes as an identifier outside the INSERT … BY NAME context.
     keyword_name: _ => make_keyword("name"),
+    // Database DDL vocabulary; all follow a keyword, never a name.
+    keyword_dbproperties: _ => make_keyword("dbproperties"),
+    keyword_namespace:    _ => make_keyword("namespace"),
+    keyword_properties:   _ => make_keyword("properties"),
+    keyword_purge:        _ => make_keyword("purge"),
 
     // Override term to support SELECT * EXCEPT
     term: $ => seq(
@@ -518,6 +524,8 @@ export default grammar(hive, {
     ...spark_select_rules,
     ...spark_cache_rules,
     ...spark_resource_rules,
+    // last, so its overrides win over the inherited rules
+    ...spark_clause_rules,
 
     // Keywords for the cache / resource statements moved up from databricks.
     // file/files, jar/jars and archive/archives are prefix pairs, but both
