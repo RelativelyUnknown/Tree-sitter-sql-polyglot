@@ -139,6 +139,10 @@ export default grammar(base, {
         $.loop_statement,
         $.leave_statement,
         $.iterate_statement,
+        $.repeat_statement,
+        $.pipe_statement,
+        $.declare_section_statement,
+        $.datalake_table_statement,
         $.declare_cursor_statement,
         $.open_cursor_statement,
         $.fetch_cursor_statement,
@@ -452,6 +456,21 @@ export default grammar(base, {
     keyword_do:         _ => token(prec(1, make_keyword("do"))),
     keyword_leave:      _ => token(prec(1, make_keyword("leave"))),
     keyword_iterate:    _ => token(prec(1, make_keyword("iterate"))),
+
+    // ── Keywords for REPEAT, PIPE, DECLARE SECTION and DATALAKE ────────────
+    keyword_repeat:       _ => token(prec(1, make_keyword("repeat"))),
+    keyword_pipe:         _ => token(prec(1, make_keyword("pipe"))),
+    keyword_datalake:     _ => token(prec(1, make_keyword("datalake"))),
+    keyword_stored:       _ => token(prec(1, make_keyword("stored"))),
+    keyword_location:     _ => token(prec(1, make_keyword("location"))),
+    keyword_partitioned:  _ => token(prec(1, make_keyword("partitioned"))),
+    keyword_tblproperties: _ => token(prec(1, make_keyword("tblproperties"))),
+    keyword_format:       _ => token(prec(1, make_keyword("format"))),
+
+    // Lexer-precedence guard: REPEAT is a strict prefix of REPEATABLE, and
+    // explicit precedence beats match length, so the longer word has to be
+    // re-declared at the same precedence to stay lexable.
+    keyword_repeatable:   _ => token(prec(1, make_keyword("repeatable"))),
     keyword_loop:       _ => token(prec(1, make_keyword("loop"))),
     keyword_elseif:     _ => token(prec(1, make_keyword("elseif"))),
     keyword_while:      _ => token(prec(1, make_keyword("while"))),

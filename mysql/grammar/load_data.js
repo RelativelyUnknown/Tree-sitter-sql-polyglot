@@ -50,15 +50,28 @@ export default {
     )),
   ),
 
-  // LINES STARTING BY is deliberately absent. This clause is shared with
-  // into_outfile, which sits inside SELECT, and giving it a second
-  // alternative destabilises the select path — ORDER BY and CAST stop
-  // parsing in MariaDB. It needs its own fix rather than riding along here.
+  // LINES [STARTING BY 'str'] [TERMINATED BY 'str'].
+  // Spelled in the documented fixed order rather than as a repeat: this rule
+  // is shared with into_outfile, which sits inside SELECT, and a repeat over
+  // two alternatives destabilises the MariaDB select path.
   _load_lines_clause: $ => seq(
     $.keyword_lines,
-    repeat1(
-      seq($.keyword_terminated, $.keyword_by, alias($._literal_string, $.literal)),
+    choice(
+      seq($._load_lines_starting, optional($._load_lines_terminated)),
+      $._load_lines_terminated,
     ),
+  ),
+
+  _load_lines_starting: $ => seq(
+    $.keyword_starting,
+    $.keyword_by,
+    alias($._literal_string, $.literal),
+  ),
+
+  _load_lines_terminated: $ => seq(
+    $.keyword_terminated,
+    $.keyword_by,
+    alias($._literal_string, $.literal),
   ),
 
   _load_ignore_lines: $ => seq(

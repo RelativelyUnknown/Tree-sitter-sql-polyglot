@@ -61,12 +61,69 @@ export default {
     $.keyword_option,
   ),
 
-  // The database/schema option list (CHARACTER SET, COLLATE, ENCRYPTION,
-  // READ ONLY) is deliberately absent. Overriding create_database,
-  // create_schema, alter_database and alter_schema to carry it destabilises
-  // the MariaDB parse table — CREATE EVENT, DELETE RETURNING and PERIOD FOR
-  // SYSTEM_TIME all start failing — so it needs its own investigation rather
-  // than riding along with this pass.
+  // CREATE {DATABASE | SCHEMA} [IF NOT EXISTS] db [create_option] …
+  //   create_option: [DEFAULT] {CHARACTER SET [=] cs | COLLATE [=] col
+  //                            | ENCRYPTION [=] {'Y' | 'N'}}
+  // ALTER {DATABASE | SCHEMA} [db] {create_option | READ ONLY [=] …} …
+  //
+  // The options are enumerated rather than reused from base's `_with_settings`
+  // (a generic `name [=] value` pair). The generic pair is what destabilised
+  // MariaDB when this was first attempted: it collides with the statement
+  // heads that begin with a bare identifier.
+  _mysql_db_option: $ => choice(
+    seq(
+      optional($.keyword_default),
+      choice(
+        seq($.keyword_character, $.keyword_set, optional('='), field('charset', $.identifier)),
+        seq($.keyword_collate, optional('='), field('collation', $.identifier)),
+        seq(
+          $.keyword_encryption,
+          optional('='),
+          field('encryption', alias($._literal_string, $.literal)),
+        ),
+      ),
+    ),
+    seq(
+      $.keyword_read,
+      $.keyword_only,
+      optional('='),
+      field('read_only', choice($.keyword_default, $.literal)),
+    ),
+  ),
+
+  // DATABASE and SCHEMA stay separate rules rather than one rule with a
+  // choice: base already defines create_schema/alter_schema and this dialect
+  // lists both in its statement sets, so merging them would make the two
+  // spellings ambiguous with each other.
+  create_database: $ => prec.left(seq(
+    $.keyword_create,
+    $.keyword_database,
+    optional($._if_not_exists),
+    field('name', $.identifier),
+    repeat($._mysql_db_option),
+  )),
+
+  create_schema: $ => prec.left(seq(
+    $.keyword_create,
+    $.keyword_schema,
+    optional($._if_not_exists),
+    field('name', $.identifier),
+    repeat($._mysql_db_option),
+  )),
+
+  alter_database: $ => prec.left(seq(
+    $.keyword_alter,
+    $.keyword_database,
+    optional(field('name', $.identifier)),
+    repeat1($._mysql_db_option),
+  )),
+
+  alter_schema: $ => prec.left(seq(
+    $.keyword_alter,
+    $.keyword_schema,
+    optional(field('name', $.identifier)),
+    repeat1($._mysql_db_option),
+  )),
 
   // DROP INDEX name ON table [ALGORITHM [=] {DEFAULT | INPLACE | COPY}]
   //   [LOCK [=] {DEFAULT | NONE | SHARED | EXCLUSIVE}]

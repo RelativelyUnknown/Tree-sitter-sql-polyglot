@@ -66,10 +66,7 @@ export default grammar(base, {
         $.create_sequence,
         $.create_trigger,
         $.create_event,
-        prec.left(seq(
-          $.create_schema,
-          repeat($._create_statement),
-        )),
+        $.create_schema,
       ),
     ),
 
