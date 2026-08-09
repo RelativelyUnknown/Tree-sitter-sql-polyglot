@@ -23,7 +23,7 @@ export default {
     $._qcd_target,
     optional($._explain_limit),
     optional(seq($.keyword_check, $.keyword_statistics)),
-    field('request', $.statement),
+    field('request', $._analysable_request),
   ),
 
   // INTO qcd [AS plan_name]
@@ -145,7 +145,7 @@ export default {
     optional(seq($.keyword_for, field('frequency', $.literal))),
     optional(seq($.keyword_check, $.keyword_statistics)),
     optional(seq($.keyword_in, $.keyword_xml, optional($.keyword_noddltext))),
-    field('request', $.statement),
+    field('request', $._analysable_request),
   ),
 
   // EXECUTE FUNCTION [COLUMNS (name [,...])] [INTO [VOLATILE] ART]
@@ -172,11 +172,18 @@ export default {
     $.from,
   ),
 
+  // The request a query-analysis statement wraps is a DML request, not an
+  // arbitrary statement. Nesting the whole `statement` rule here instead
+  // makes the generated parse table explode, because every position inside
+  // the inner statement also has to encode "have we returned to the outer
+  // one yet" — and there is no terminator to settle it.
+  _analysable_request: $ => choice($._dml_read, $._dml_write),
+
   // USING ( name type [,...] ) <request>
   using_request_statement: $ => seq(
     $.keyword_using,
     paren_list($._using_variable, true),
-    field('request', $.statement),
+    field('request', $._analysable_request),
   ),
 
   _using_variable: $ => seq(
