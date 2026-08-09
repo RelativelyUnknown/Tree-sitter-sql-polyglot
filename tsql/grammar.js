@@ -7,6 +7,7 @@ import tsql_dml_rules from './grammar/dml.js';
 import tsql_procedural_rules from './grammar/procedural.js';
 import tsql_synapse_rules from './grammar/synapse.js';
 import tsql_security_rules from './grammar/security.js';
+import tsql_database_rules from './grammar/database.js';
 import tsql_admin_rules   from './grammar/admin.js';
 
 export default grammar(base, {
@@ -249,6 +250,13 @@ export default grammar(base, {
     // All defined with token(prec(1,...)) so the lexer prefers them over
     // the base _identifier pattern in ambiguous parse states.
     keyword_top:              _ => token(prec(1, make_keyword("top"))),
+    // CREATE / ALTER DATABASE vocabulary. Each follows a keyword rather
+    // than a name, so they stay extracted.
+    keyword_configuration:   _ => make_keyword("configuration"),
+    keyword_containment:     _ => make_keyword("containment"),
+    keyword_filegroup:       _ => make_keyword("filegroup"),
+    keyword_name:            _ => make_keyword("name"),
+    keyword_remove:          _ => make_keyword("remove"),
     keyword_output:           _ => token(prec(1, make_keyword("output"))),
     keyword_inserted:         _ => token(prec(1, make_keyword("inserted"))),
     keyword_deleted:          _ => token(prec(1, make_keyword("deleted"))),
@@ -476,6 +484,8 @@ export default grammar(base, {
     ...tsql_procedural_rules,
     ...tsql_synapse_rules,
     ...tsql_security_rules,
+    // last, so its overrides win over the inherited rules
+    ...tsql_database_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
