@@ -240,6 +240,46 @@ export default grammar(base, {
       optional($.returning),
     ),
 
+    // UPDATE OR {ROLLBACK|ABORT|REPLACE|FAIL|IGNORE} — SQLite's conflict
+    // clause, the same set INSERT already accepts.
+    update: $ => seq(
+      $.keyword_update,
+      optional(seq($.keyword_or, $.conflict_action)),
+      optional($.keyword_only),
+      choice(
+        $._mysql_update_statement,
+        $._postgres_update_statement,
+      ),
+    ),
+
+    // BEGIN [DEFERRED | IMMEDIATE | EXCLUSIVE] [TRANSACTION]
+    // Only the isolation modes are new; the rest of the inherited body is
+    // reproduced verbatim, since an override replaces the parent wholesale.
+    transaction: $ => seq(
+      choice(
+        seq(
+          $.keyword_begin,
+          optional(choice(
+            $.keyword_deferred,
+            $.keyword_immediate,
+            $.keyword_exclusive,
+          )),
+          optional(choice($.keyword_transaction, $.keyword_work)),
+        ),
+        seq(
+          $.keyword_start,
+          $.keyword_transaction,
+          optional(seq(
+            $.transaction_mode,
+            repeat(seq(optional(','), $.transaction_mode)),
+          )),
+        ),
+      ),
+      optional(';'),
+      repeat(seq($.statement, ';')),
+      choice($._commit, $._rollback),
+    ),
+
     // SQLite (3.35+) supports RETURNING on UPDATE and DELETE too.
     _update_statement: $ => seq(
       $.update,
@@ -331,6 +371,8 @@ export default grammar(base, {
     keyword_indexed:       _ => token(prec(1, make_keyword("indexed"))),
     keyword_autoincrement: _ => token(prec(1, make_keyword("autoincrement"))),
     keyword_rollback:      _ => token(prec(1, make_keyword("rollback"))),
+    // BEGIN EXCLUSIVE; follows BEGIN, so it stays extracted.
+    keyword_exclusive:     _ => make_keyword("exclusive"),
     keyword_abort:         _ => token(prec(1, make_keyword("abort"))),
     keyword_fail:          _ => token(prec(1, make_keyword("fail"))),
     keyword_strict:        _ => token(prec(1, make_keyword("strict"))),
