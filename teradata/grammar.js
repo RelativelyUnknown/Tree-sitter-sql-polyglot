@@ -78,6 +78,13 @@ export default grammar(base, {
         optional($.keyword_analyze),
         optional($.keyword_verbose),
       )),
+      // Request modifiers, like the EXPLAIN prefix above: a clause in front
+      // of the request it applies to, rather than a rule that contains it.
+      optional(choice(
+        $.dump_explain_clause,
+        $.insert_explain_clause,
+        $.using_request_clause,
+      )),
       choice(
         $._ddl_statement,
         $._dml_write,
@@ -105,14 +112,10 @@ export default grammar(base, {
         $.execute_macro_statement,
         // grammar/analysis.js
         $.call_statement,
-        $.dump_explain_statement,
         $.initiate_index_analysis_statement,
         $.initiate_partition_analysis_statement,
         $.restart_index_analysis_statement,
-        $.using_request_statement,
-        $.insert_explain_statement,
         $.execute_function_statement,
-        $.select_and_consume_statement,
       ),
     ),
 
@@ -146,8 +149,10 @@ export default grammar(base, {
     keyword_delete: _ => /[Dd][Ee][Ll]([Ee][Tt][Ee])?/,
 
     // SELECT [TOP n [PERCENT] [WITH TIES]] [DISTINCT] …
+    // base select plus TOP n, and Teradata's queue-table consuming read.
     select: $ => seq(
       $.keyword_select,
+      optional(seq($.keyword_and, $.keyword_consume)),
       optional(seq(
         $.keyword_top,
         $.literal,

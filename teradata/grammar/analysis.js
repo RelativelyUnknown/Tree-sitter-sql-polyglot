@@ -17,13 +17,16 @@ export default {
 
   // DUMP EXPLAIN INTO qcd [AS plan] [LIMIT [SQL [= n]]] [CHECK STATISTICS]
   //   <request>
-  dump_explain_statement: $ => seq(
+  // Modelled as a prefix clause on `statement`, the way base handles the
+  // EXPLAIN modifier. Making the request a suffix of this rule instead
+  // duplicates the whole DML state machine inside it, and generation stops
+  // finishing in reasonable time.
+  dump_explain_clause: $ => seq(
     $.keyword_dump,
     $.keyword_explain,
     $._qcd_target,
     optional($._explain_limit),
     optional(seq($.keyword_check, $.keyword_statistics)),
-    field('request', $._analysable_request),
   ),
 
   // INTO qcd [AS plan_name]
@@ -124,7 +127,7 @@ export default {
   //   [IN XML [NODDLTEXT]] <request>
   // The two FOR clauses are separated by the mandatory INTO, so neither is
   // ambiguous with the other.
-  insert_explain_statement: $ => seq(
+  insert_explain_clause: $ => seq(
     $.keyword_insert,
     $.keyword_explain,
     optional(seq(
@@ -145,7 +148,6 @@ export default {
     optional(seq($.keyword_for, field('frequency', $.literal))),
     optional(seq($.keyword_check, $.keyword_statistics)),
     optional(seq($.keyword_in, $.keyword_xml, optional($.keyword_noddltext))),
-    field('request', $._analysable_request),
   ),
 
   // EXECUTE FUNCTION [COLUMNS (name [,...])] [INTO [VOLATILE] ART]
@@ -161,29 +163,10 @@ export default {
     paren_list($._expression, false),
   ),
 
-  // SELECT AND CONSUME TOP 1 <select_list> FROM <queue_table>
-  select_and_consume_statement: $ => seq(
-    $.keyword_select,
-    $.keyword_and,
-    $.keyword_consume,
-    $.keyword_top,
-    field('count', $.literal),
-    $.select_expression,
-    $.from,
-  ),
-
-  // The request a query-analysis statement wraps is a DML request, not an
-  // arbitrary statement. Nesting the whole `statement` rule here instead
-  // makes the generated parse table explode, because every position inside
-  // the inner statement also has to encode "have we returned to the outer
-  // one yet" — and there is no terminator to settle it.
-  _analysable_request: $ => choice($._dml_read, $._dml_write),
-
   // USING ( name type [,...] ) <request>
-  using_request_statement: $ => seq(
+  using_request_clause: $ => seq(
     $.keyword_using,
     paren_list($._using_variable, true),
-    field('request', $._analysable_request),
   ),
 
   _using_variable: $ => seq(
