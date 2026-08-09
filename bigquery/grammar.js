@@ -9,6 +9,7 @@ import ddl_rules       from './grammar/ddl.js';
 import ml_rules        from './grammar/ml.js';
 import types_rules     from './grammar/types.js';
 import objects_rules   from './grammar/objects.js';
+import alter_rules     from './grammar/alter.js';
 
 export default grammar(base, {
   name: 'bigquery_sql',
@@ -23,6 +24,7 @@ export default grammar(base, {
     // ESCAPE tail — kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     [$.create_function],
+    [$.add_constraint],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
@@ -131,6 +133,7 @@ export default grammar(base, {
       $.alter_search_index,
       $.drop_search_index,
       $.drop_qualified_table,
+      $.drop_all_row_access_policies,
     ),
 
     // LOAD DATA {INTO|OVERWRITE} table [(cols)] [OPTIONS(…)] FROM FILES (k = v, …)
@@ -351,6 +354,8 @@ export default grammar(base, {
     keyword_undrop:       _ => token(prec(1, make_keyword("undrop"))),
     keyword_replica:      _ => token(prec(1, make_keyword("replica"))),
     keyword_rebuild:      _ => token(prec(1, make_keyword("rebuild"))),
+    keyword_enforced:     _ => token(prec(1, make_keyword("enforced"))),
+    keyword_policies:     _ => token(prec(1, make_keyword("policies"))),
     keyword_aggregate:    _ => token(prec(1, make_keyword("aggregate"))),
     keyword_search:     _ => token(prec(1, make_keyword("search"))),
     keyword_vector:     _ => token(prec(1, make_keyword("vector"))),
@@ -374,6 +379,7 @@ export default grammar(base, {
     ...ml_rules,
     ...types_rules,
     ...objects_rules,
+    ...alter_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
