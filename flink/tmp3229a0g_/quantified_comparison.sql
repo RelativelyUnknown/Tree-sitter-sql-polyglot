@@ -1,1 +1,0 @@
-SELECT a FROM t1 WHERE a = ANY (SELECT b FROM t2);

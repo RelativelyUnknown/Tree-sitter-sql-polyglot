@@ -1,1 +1,0 @@
-CLUSTER t1 USING idx1;

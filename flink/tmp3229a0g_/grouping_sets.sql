@@ -1,1 +1,0 @@
-SELECT a, SUM(b) FROM t1 GROUP BY GROUPING SETS ((a), ());

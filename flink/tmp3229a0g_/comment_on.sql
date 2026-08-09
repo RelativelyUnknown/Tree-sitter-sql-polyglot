@@ -1,1 +1,0 @@
-COMMENT ON TABLE t1 IS 'docs';

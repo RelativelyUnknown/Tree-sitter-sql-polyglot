@@ -1,1 +1,0 @@
-CACHE TABLE t1;

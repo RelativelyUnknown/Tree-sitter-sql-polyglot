@@ -1,1 +1,0 @@
-UPSERT INTO t1 VALUES (1, 'x');

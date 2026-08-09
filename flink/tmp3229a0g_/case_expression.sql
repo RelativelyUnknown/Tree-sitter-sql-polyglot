@@ -1,1 +1,0 @@
-SELECT CASE WHEN a > 1 THEN 'y' ELSE 'n' END FROM t1;
