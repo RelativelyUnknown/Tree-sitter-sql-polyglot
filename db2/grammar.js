@@ -8,6 +8,7 @@ import db2_diagnostics_rules from './grammar/diagnostics.js';
 import db2_audit_rules from './grammar/audit.js';
 import db2_procedural_rules from './grammar/procedural.js';
 import db2_admin_ddl_rules from './grammar/admin.js';
+import db2_clause_rules from './grammar/clauses.js';
 
 export default grammar(base, {
   name: 'db2_sql',
@@ -209,6 +210,33 @@ export default grammar(base, {
 
     // Extend set_statement to add SET CURRENT SCHEMA = value
 
+    // ── Keywords for the clause completions in grammar/clauses.js ──────────
+    // All appear mid-statement only, so they stay extracted (prec 0) and
+    // longest match keeps identifiers with these prefixes intact.
+    keyword_age:          _ => make_keyword("age"),
+    keyword_asensitive:   _ => make_keyword("asensitive"),
+    keyword_caller:       _ => make_keyword("caller"),
+    keyword_capture:      _ => make_keyword("capture"),
+    keyword_changes:      _ => make_keyword("changes"),
+    keyword_client:       _ => make_keyword("client"),
+    keyword_compress:     _ => make_keyword("compress"),
+    keyword_current_user: _ => make_keyword("current_user"),
+    keyword_cursors:      _ => make_keyword("cursors"),
+    keyword_hierarchy:    _ => make_keyword("hierarchy"),
+    keyword_insensitive:  _ => make_keyword("insensitive"),
+    keyword_locks:        _ => make_keyword("locks"),
+    keyword_mapping:      _ => make_keyword("mapping"),
+    keyword_method:       _ => make_keyword("method"),
+    keyword_modification: _ => make_keyword("modification"),
+    keyword_query:        _ => make_keyword("query"),
+    keyword_retain:       _ => make_keyword("retain"),
+    keyword_scope:        _ => make_keyword("scope"),
+    keyword_session_user: _ => make_keyword("session_user"),
+    keyword_system_user:  _ => make_keyword("system_user"),
+    keyword_tracking:     _ => make_keyword("tracking"),
+    keyword_xsrobject:    _ => make_keyword("xsrobject"),
+    keyword_yes:          _ => make_keyword("yes"),
+
     // ── Keywords for the statements in grammar/admin.js ────────────────────
     // These must be token(prec(1, …)), not plain make_keyword. The base
     // grammar sets `word: $ => $._identifier`, so an unprefixed keyword is
@@ -408,12 +436,10 @@ export default grammar(base, {
     keyword_declare:    _ => token(prec(1, make_keyword("declare"))),
     keyword_atomic:     _ => token(prec(1, make_keyword("atomic"))),
     keyword_signal:         _ => token(prec(1, make_keyword("signal"))),
-    keyword_sqlstate:       _ => token(prec(1, make_keyword("sqlstate"))),
     keyword_resignal:       _ => token(prec(1, make_keyword("resignal"))),
     keyword_message_text:   _ => token(prec(1, make_keyword("message_text"))),
     keyword_get:            _ => token(prec(1, make_keyword("get"))),
     keyword_diagnostics:    _ => token(prec(1, make_keyword("diagnostics"))),
-    keyword_access:         _ => token(prec(1, make_keyword("access"))),
     keyword_optimize:       _ => token(prec(1, make_keyword("optimize"))),
     keyword_options:        _ => token(prec(1, make_keyword("options"))),
     keyword_version:        _ => token(prec(1, make_keyword("version"))),
@@ -431,6 +457,8 @@ export default grammar(base, {
     ...db2_audit_rules,
     ...db2_procedural_rules,
     ...db2_admin_ddl_rules,
+    // last, so its overrides win over the inherited rules
+    ...db2_clause_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords

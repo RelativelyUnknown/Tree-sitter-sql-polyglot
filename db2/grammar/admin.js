@@ -35,6 +35,10 @@ export default {
         choice($.keyword_no, $.keyword_read, $.keyword_write),
         $.keyword_access,
       ),
+      // query-optimization-options
+      seq($.keyword_allow, $.keyword_query, $.keyword_optimization),
+      seq($.keyword_using, $.keyword_refresh, $.keyword_deferred, $.keyword_tables),
+      seq($.keyword_with, $.keyword_refresh, $.keyword_age, $.keyword_any),
     )),
   )),
 
