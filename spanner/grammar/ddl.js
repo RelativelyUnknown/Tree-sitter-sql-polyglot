@@ -47,6 +47,80 @@ export default {
     $.change_ownership,
     seq(choice($.keyword_add, $.keyword_replace), $.row_deletion_policy),
     seq($.keyword_drop, $.keyword_row, $.keyword_deletion, $.keyword_policy),
+    // ALTER TABLE t {ADD | DROP} SYNONYM s
+    seq(
+      choice($.keyword_add, $.keyword_drop),
+      $.keyword_synonym,
+      field('name', $.identifier),
+    ),
+    // ALTER TABLE t SET INTERLEAVE IN [PARENT] p [ON DELETE …]
+    seq($.keyword_set, $.interleave_clause),
+    // ALTER TABLE t SET OPTIONS (…)
+    seq($.keyword_set, $.options_clause),
+  ),
+
+  // base alter_column plus the Spanner-only identity and ON UPDATE actions.
+  alter_column: $ => seq(
+    $.keyword_alter,
+    optional($.keyword_column),
+    field('name', $.identifier),
+    choice(
+      seq(
+        choice($.keyword_set, $.keyword_drop),
+        $.keyword_not,
+        $.keyword_null,
+      ),
+      seq(
+        optional(seq($.keyword_set, $.keyword_data)),
+        $.keyword_type,
+        field('type', $._type),
+      ),
+      seq($.keyword_set, $.keyword_default, $._expression),
+      seq($.keyword_drop, $.keyword_default),
+      // ALTER COLUMN c SET ON UPDATE (expr) | DROP ON UPDATE
+      seq($.keyword_set, $.keyword_on, $.keyword_update, $._expression),
+      seq($.keyword_drop, $.keyword_on, $.keyword_update),
+      // ALTER COLUMN c SET OPTIONS (…)
+      seq($.keyword_set, $.options_clause),
+      // ALTER COLUMN c ALTER IDENTITY {SET {SKIP RANGE a, b | NO SKIP RANGE}
+      //                               | RESTART COUNTER WITH n}
+      seq(
+        $.keyword_alter,
+        $.keyword_identity,
+        choice(
+          seq($.keyword_set, $.sequence_option_clause),
+          $.sequence_option_clause,
+        ),
+      ),
+      // ALTER COLUMN c <type> [NOT NULL] [DEFAULT (…) | AS (…) | GENERATED …]
+      seq(
+        field('type', $._type),
+        repeat($._column_constraint),
+      ),
+    ),
+  ),
+
+  // Spanner sequence options, shared by CREATE/ALTER SEQUENCE and by the
+  // identity clause on a column.
+  //   BIT_REVERSED_POSITIVE
+  //   | [NO] SKIP RANGE min, max
+  //   | {START | RESTART} COUNTER WITH n
+  sequence_option_clause: $ => choice(
+    $.keyword_bit_reversed_positive,
+    seq(
+      $.keyword_skip,
+      $.keyword_range,
+      field('min', $.literal),
+      ',',
+      field('max', $.literal),
+    ),
+    seq($.keyword_no, $.keyword_skip, $.keyword_range),
+    seq(
+      choice($.keyword_start, $.keyword_restart),
+      $.keyword_counter,
+      $.keyword_with,
+      field('counter', $.literal),
+    ),
   ),
 
   table_primary_key: $ => seq(
