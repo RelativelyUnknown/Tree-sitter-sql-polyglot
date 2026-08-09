@@ -104,12 +104,19 @@ export default {
     $.keyword_table,
     $.object_reference,
     optional($.on_cluster),
-    optional(seq($.keyword_partition, field('partition', $._expression))),
-    optional($.keyword_final),
+    optional(seq(
+      $.keyword_partition,
+      optional($.keyword_id),
+      field('partition', $._expression),
+    )),
+    optional(seq($.keyword_dry, $.keyword_run, $.keyword_parts,
+                 comma_list(field('part', $.literal), true))),
+    optional(choice($.keyword_final, $.keyword_force)),
     optional(seq(
       $.keyword_deduplicate,
       optional(seq($.keyword_by, comma_list($._expression, true))),
     )),
+    optional($.keyword_cleanup),
   )),
 
 };

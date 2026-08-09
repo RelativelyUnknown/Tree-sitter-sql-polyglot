@@ -156,6 +156,26 @@ export default grammar(base, {
 
     keyword_global:        _ => token(prec(1, make_keyword("global"))),
 
+    // Settings-constraint and OPTIMIZE option words; all mid-statement.
+
+    keyword_changeable_in_readonly: _ => make_keyword("changeable_in_readonly"),
+
+    keyword_cleanup:             _ => make_keyword("cleanup"),
+
+    keyword_const:               _ => make_keyword("const"),
+
+    keyword_dry:                 _ => make_keyword("dry"),
+
+    keyword_id:                  _ => make_keyword("id"),
+
+    keyword_parts:               _ => make_keyword("parts"),
+
+    keyword_readonly:            _ => make_keyword("readonly"),
+
+    keyword_run:                 _ => make_keyword("run"),
+
+    keyword_writable:            _ => make_keyword("writable"),
+
     // x GLOBAL [NOT] IN (…): the distributed IN, whose right side is broadcast
     // to every shard. Lexed as one multi-word operator token: a bare
     // keyword_global mid-expression is never shifted (the parser ends the

@@ -64,11 +64,35 @@ export default {
   ),
 
   // CREATE ROLE [IF NOT EXISTS] name
-  create_role_statement: $ => seq(
+  // CREATE ROLE [IF NOT EXISTS | OR REPLACE] name [,...] [ON CLUSTER c]
+  //   [IN storage] [SETTINGS <setting> [,...]]
+  create_role_statement: $ => prec.left(seq(
     $.keyword_create,
     $.keyword_role,
-    optional($._if_not_exists),
-    $.identifier,
+    optional(choice($._if_not_exists, $._or_replace)),
+    comma_list($.identifier, true),
+    optional($.on_cluster),
+    optional(seq($.keyword_in, field('storage', $.identifier))),
+    optional(seq($.keyword_settings, comma_list($._ch_setting, true))),
+  )),
+
+  // variable [= value] [MIN [=] v] [MAX [=] v]
+  //   [CONST | READONLY | WRITABLE | CHANGEABLE_IN_READONLY]
+  // or PROFILE 'name'
+  _ch_setting: $ => choice(
+    seq($.keyword_profile, field('profile', $.literal)),
+    seq(
+      field('name', $.identifier),
+      optional(seq('=', field('value', $._expression))),
+      optional(seq($.keyword_min, optional('='), field('min', $._expression))),
+      optional(seq($.keyword_max, optional('='), field('max', $._expression))),
+      optional(field('constraint', choice(
+        $.keyword_const,
+        $.keyword_readonly,
+        $.keyword_writable,
+        $.keyword_changeable_in_readonly,
+      ))),
+    ),
   ),
 
   // GRANT role [, role] TO user [, user]  (ClickHouse role-grant, no ON clause)
@@ -135,21 +159,18 @@ export default {
   ),
 
   // CREATE SETTINGS PROFILE name SETTINGS k = v [MAX v] [, ...] TO role
-  create_settings_profile_statement: $ => seq(
+  // CREATE SETTINGS PROFILE [IF NOT EXISTS | OR REPLACE] name [ON CLUSTER c]
+  //   [SETTINGS <setting> [,...]] [TO role [,...]]
+  create_settings_profile_statement: $ => prec.left(seq(
     $.keyword_create,
     $.keyword_settings,
     $.keyword_profile,
-    $.identifier,
-    $.keyword_settings,
-    comma_list(seq(
-      $.identifier,
-      '=',
-      $._expression,
-      optional(seq($.keyword_max, $._expression)),
-    ), true),
-    $.keyword_to,
+    optional(choice($._if_not_exists, $._or_replace)),
     comma_list($.identifier, true),
-  ),
+    optional($.on_cluster),
+    optional(seq($.keyword_settings, comma_list($._ch_setting, true))),
+    optional(seq($.keyword_to, comma_list($.identifier, true))),
+  )),
 
   // SETTINGS k = v [, ...]  (inline settings clause used by CREATE USER)
   ch_settings_clause: $ => seq(
