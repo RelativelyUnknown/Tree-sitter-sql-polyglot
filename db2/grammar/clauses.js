@@ -158,10 +158,11 @@ export default {
   // The SET CURRENT SCHEMA spelling is deliberately absent: set_statement
   // already accepts `<special_register> = <expression>`, and CURRENT SCHEMA
   // is one of those registers, so admitting it here too would be ambiguous.
-  // prec(2) beats set_variable_statement's prec(1): `SET SCHEMA = x` also
-  // matches `SET <target> = <expression>`, and without this the variable
-  // form wins and SCHEMA is taken as an ordinary identifier.
-  set_schema: $ => prec(2, seq(
+  // SCHEMA is reserved in this dialect (see grammar.js) so that it wins over
+  // set_variable_statement's identifier target. Rule precedence cannot
+  // settle that one: the two forms differ by which token the lexer produced,
+  // so there is no parser conflict for a precedence to resolve.
+  set_schema: $ => seq(
     $.keyword_set,
     $.keyword_schema,
     optional('='),
@@ -173,7 +174,7 @@ export default {
       $.keyword_system_user,
       $.keyword_current_user,
     )),
-  )),
+  ),
 
   // TRANSFER OWNERSHIP OF <object> TO {USER | GROUP | ROLE} name
   //   {PRESERVE | REVOKE} PRIVILEGES

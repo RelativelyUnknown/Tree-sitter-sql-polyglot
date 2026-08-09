@@ -247,6 +247,10 @@ export default grammar(base, {
     // these, and precedence is compared before match length.
     keyword_grouping:     _ => token(prec(1, make_keyword("grouping"))),
     keyword_groups:       _ => token(prec(1, make_keyword("groups"))),
+    // SET SCHEMA competes with set_variable_statement, whose target is an
+    // identifier; extracted SCHEMA loses to the word token there, so the
+    // statement was never reachable.
+    keyword_schema:       _ => token(prec(1, make_keyword("schema"))),
 
     // ── Keywords for the statements in grammar/admin.js ────────────────────
     // These must be token(prec(1, …)), not plain make_keyword. The base
