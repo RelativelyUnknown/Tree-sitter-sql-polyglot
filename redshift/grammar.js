@@ -4,6 +4,7 @@ import { fromClause } from '../grammar/statements/select.js';
 import rs_create_rules from './grammar/create.js';
 import rs_copy_rules   from './grammar/copy.js';
 import rs_optimize_rules from './grammar/optimize.js';
+import redshift_clause_rules from './grammar/clauses.js';
 import objects_rules  from './grammar/objects.js';
 
 export default grammar(base, {
@@ -66,6 +67,12 @@ export default grammar(base, {
     // sit at the same precedence as their singular counterparts, so match
     // length — not precedence — picks between them.
     keyword_show:        _ => token(prec(1, make_keyword("show"))),
+    // ALTER DATABASE / ALTER MATERIALIZED VIEW vocabulary; each follows a
+    // keyword rather than a name, so they stay extracted.
+    keyword_conjunction:    _ => make_keyword("conjunction"),
+    keyword_inerror:        _ => make_keyword("inerror"),
+    keyword_integration:    _ => make_keyword("integration"),
+    keyword_unlimited:      _ => make_keyword("unlimited"),
     keyword_schemas:     _ => token(prec(1, make_keyword("schemas"))),
     keyword_databases:   _ => token(prec(1, make_keyword("databases"))),
     keyword_datashares:  _ => token(prec(1, make_keyword("datashares"))),
@@ -329,6 +336,8 @@ export default grammar(base, {
     ...rs_copy_rules,
     ...rs_optimize_rules,
     ...objects_rules,
+    // last, so its overrides win over the inherited rules
+    ...redshift_clause_rules,
 
   },
 });
