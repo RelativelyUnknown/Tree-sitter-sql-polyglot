@@ -663,6 +663,9 @@ export default grammar(base, {
       $.alter_partition,
       $.alter_algorithm_option,
       $.alter_lock_option,
+      // ALTER TABLE t ENGINE = InnoDB, AUTO_INCREMENT = 5, …
+      // The same table_option list CREATE TABLE takes.
+      $.table_option,
     ),
 
     // ALGORITHM [=] {DEFAULT | INSTANT | INPLACE | COPY | NOCOPY}

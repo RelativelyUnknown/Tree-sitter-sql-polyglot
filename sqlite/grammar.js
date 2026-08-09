@@ -103,7 +103,15 @@ export default grammar(base, {
       $._merge_statement,
       $._refresh_statement,
       $.set_statement,
+      $.end_statement,
     ),
+
+    // END [TRANSACTION] — SQLite's synonym for COMMIT, usable on its own and
+    // not only as the terminator of a BEGIN block.
+    end_statement: $ => prec(-1, prec.right(seq(
+      $.keyword_end,
+      optional(choice($.keyword_transaction, $.keyword_work)),
+    ))),
 
     // TRUNCATE removed: SQLite has no TRUNCATE TABLE (DELETE without WHERE instead).
     _dml_write: $ => seq(

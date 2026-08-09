@@ -364,6 +364,20 @@ export default grammar(base, {
     ),
 
     // ALTER TABLE specifications: add_partition (from hive_compat) but no Iceberg ops
+    // CREATE {DATABASE | SCHEMA} [IF NOT EXISTS] name
+    //   [COMMENT c] [LOCATION path] [WITH DBPROPERTIES ('k' = 'v', …)]
+    create_database: $ => prec.left(seq(
+      $.keyword_create,
+      choice($.keyword_database, $.keyword_schema),
+      optional($._if_not_exists),
+      $.identifier,
+      repeat(choice(
+        seq($.keyword_comment, field('comment', $.literal)),
+        seq($.keyword_location, field('location', $.literal)),
+        seq($.keyword_with, $.keyword_dbproperties, paren_list($.table_option, true)),
+      )),
+    )),
+
     _alter_specifications: $ => choice(
       $.add_partition,
       $.add_column,
@@ -379,6 +393,12 @@ export default grammar(base, {
       $.change_ownership,
       $.exchange_partition,
       $.concatenate_partition,
+      // ALTER TABLE t {SET | UNSET} TBLPROPERTIES ('k' = 'v', …)
+      // Spelled the same way as the ALTER VIEW action above: table_option on
+      // SET, a bare name list on UNSET.
+      seq($.keyword_set, $.keyword_tblproperties, paren_list($.table_option, true)),
+      seq($.keyword_unset, $.keyword_tblproperties, paren_list($._expression, true)),
+      seq($.keyword_set, $.keyword_serdeproperties, paren_list($.table_option, true)),
     ),
 
     // ALTER TABLE t [PARTITION (k=v, …)] CONCATENATE (small-file compaction)
@@ -675,6 +695,8 @@ export default grammar(base, {
     // the base _identifier pattern when both are valid in a parse state.
     keyword_serde:           _ => token(prec(1, make_keyword("serde"))),
     keyword_serdeproperties: _ => token(prec(1, make_keyword("serdeproperties"))),
+    keyword_unset:           _ => token(prec(1, make_keyword("unset"))),
+    keyword_dbproperties:    _ => make_keyword("dbproperties"),
     keyword_skewed:          _ => token(prec(1, make_keyword("skewed"))),
     keyword_directories:     _ => token(prec(1, make_keyword("directories"))),
     keyword_stored:          _ => token(prec(1, make_keyword("stored"))),

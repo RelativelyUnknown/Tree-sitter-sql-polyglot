@@ -765,6 +765,7 @@ features:
     weight: 1
     probe: "REINDEX TABLE t1;"
     dialects:
+      duckdb:     { status: not-applicable, reason: "No REINDEX; ART indexes are rebuilt on load" }
       # Engines with no user-managed indexes at all cannot have REINDEX.
       hive:       { status: not-applicable, reason: "Indexes removed in Hive 3" }
       spark:      { status: not-applicable, reason: "No indexes" }
@@ -783,6 +784,12 @@ features:
     weight: 1
     probe: "CLUSTER t1 USING idx1;"
     dialects:
+      # A PostgreSQL storage statement. sqlfluff accepts it for the dialects
+      # below because its grammars inherit ANSI/PostgreSQL, not because the
+      # engines have it.
+      tsql:       { status: not-applicable, reason: "No CLUSTER statement" }
+      redshift:   { status: not-applicable, reason: "No CLUSTER statement (sort keys instead)" }
+      duckdb:     { status: not-applicable, reason: "No CLUSTER statement" }
       hive:       { status: not-applicable, reason: "CLUSTER BY is a query clause, not this statement" }
       spark:      { status: not-applicable, reason: "CLUSTER BY is a query clause, not this statement" }
       databricks: { status: not-applicable, reason: "CLUSTER BY is liquid clustering, not this statement" }
@@ -793,6 +800,9 @@ features:
     ansi: false
     weight: 1
     probe: "DISCARD ALL;"
+    dialects:
+      redshift:   { status: not-applicable, reason: "No DISCARD statement" }
+      duckdb:     { status: not-applicable, reason: "No DISCARD statement" }
 
   - id: security_label
     name: "SECURITY LABEL"
@@ -800,6 +810,9 @@ features:
     ansi: false
     weight: 1
     probe: "SECURITY LABEL ON TABLE t1 IS 'classified';"
+    dialects:
+      redshift:   { status: not-applicable, reason: "No SECURITY LABEL; RLS policies instead" }
+      duckdb:     { status: not-applicable, reason: "No label-based security" }
 
   - id: import_foreign_schema
     name: "IMPORT FOREIGN SCHEMA"
@@ -807,6 +820,9 @@ features:
     ansi: false
     weight: 1
     probe: "IMPORT FOREIGN SCHEMA remote FROM SERVER srv INTO local;"
+    dialects:
+      redshift:   { status: not-applicable, reason: "Federation via external schemas, no FDW import" }
+      duckdb:     { status: not-applicable, reason: "ATTACH + scanner extensions, no FDW import" }
 
   - id: create_operator
     name: "CREATE OPERATOR"
@@ -814,6 +830,8 @@ features:
     ansi: false
     weight: 1
     probe: "CREATE OPERATOR === (FUNCTION = my_eq, LEFTARG = integer, RIGHTARG = integer);"
+    dialects:
+      duckdb:     { status: not-applicable, reason: "No user-defined operators" }
 
   - id: create_rule
     name: "CREATE RULE"
@@ -924,7 +942,7 @@ features:
       bigquery:    { probe: "LOAD DATA INTO t1 FROM FILES (uris = ['gs://b/f']);" }
       hive:        { probe: "LOAD DATA INPATH '/f' INTO TABLE t1;" }
       spark:       { probe: "LOAD DATA INPATH '/f' INTO TABLE t1;" }
-      databricks:  { probe: "LOAD DATA INPATH '/f' INTO TABLE t1;" }
+      databricks:  { probe: "COPY INTO t1 FROM '/f' FILEFORMAT = CSV;" }
       clickhouse:  { status: not-applicable, reason: "Ingest via INSERT … FROM INFILE / clickhouse-client" }
       trino:       { status: not-applicable, reason: "No load statement; INSERT … SELECT from a connector" }
       athena:      { status: not-applicable, reason: "No load statement; data is already in S3" }

@@ -115,6 +115,37 @@ export default grammar(base, {
     )),
 
     // ── DDL dispatch ─────────────────────────────────────────────────────────
+    // ALTER INDEX {name | ALL} ON table
+    //   {REBUILD [PARTITION = n] [WITH (opt = val, …)] | REORGANIZE
+    //    | DISABLE | RESUME | PAUSE | ABORT | SET (opt = val, …)}
+    // A T-SQL-only spelling: base's alter_index has no ON clause.
+    alter_index_statement: $ => prec.right(seq(
+      $.keyword_alter,
+      $.keyword_index,
+      choice(field('name', $.identifier), $.keyword_all),
+      $.keyword_on,
+      field('table', $.object_reference),
+      choice(
+        seq(
+          $.keyword_rebuild,
+          optional(seq($.keyword_partition, '=', field('partition', $.literal))),
+          optional(seq($.keyword_with, paren_list($.index_option, true))),
+        ),
+        $.keyword_reorganize,
+        $.keyword_disable,
+        $.keyword_resume,
+        $.keyword_pause,
+        $.keyword_abort,
+        seq($.keyword_set, paren_list($.index_option, true)),
+      ),
+    )),
+
+    index_option: $ => seq(
+      field('name', $.identifier),
+      '=',
+      field('value', choice($.literal, $.identifier, $.keyword_on, $.keyword_off)),
+    ),
+
     _ddl_statement: $ => choice(
       $._create_statement,
       $._alter_statement,
@@ -129,6 +160,7 @@ export default grammar(base, {
       $.use_statement,
       $.create_synonym_statement,
       $.drop_synonym_statement,
+      $.alter_index_statement,
       $.create_login_statement,
       $.alter_login_statement,
       $.drop_login_statement,
@@ -289,6 +321,12 @@ export default grammar(base, {
     keyword_print:            _ => token(prec(1, make_keyword("print"))),
     keyword_break:            _ => token(prec(1, make_keyword("break"))),
     keyword_log:              _ => token(prec(1, make_keyword("log"))),
+    // ── Keywords for ALTER INDEX ──────────────────────────────────────────
+    keyword_rebuild:          _ => token(prec(1, make_keyword("rebuild"))),
+    keyword_reorganize:       _ => token(prec(1, make_keyword("reorganize"))),
+    keyword_resume:           _ => token(prec(1, make_keyword("resume"))),
+    keyword_pause:            _ => token(prec(1, make_keyword("pause"))),
+    keyword_abort:            _ => token(prec(1, make_keyword("abort"))),
     keyword_seterror:         _ => token(prec(1, make_keyword("seterror"))),
     // Note: keyword_continue is already in base (BigQuery); redefine here
     // with higher precedence so T-SQL parse states treat it as a keyword.

@@ -328,15 +328,37 @@ export default grammar(base, {
     )),
 
     // ── CREATE DATABASE: add CLONE clause ───────────────────────────────────
+    // CREATE DATABASE db [WITH] <property> … [CLONE src]
+    // snowflake_property rather than base's _with_settings: the latter takes
+    // only an identifier or quoted string as the value, so a numeric option
+    // (DATA_RETENTION_TIME_IN_DAYS = 1) had nowhere to go.
     create_database: $ => prec.left(seq(
       $.keyword_create,
       $.keyword_database,
       optional($._if_not_exists),
       $.identifier,
       optional($.keyword_with),
-      repeat($._with_settings),
+      repeat($.snowflake_property),
       optional($.clone_clause),
     )),
+
+    // base _alter_specifications plus Snowflake's object-property actions:
+    //   ALTER TABLE t SET COMMENT = 'x' | UNSET COMMENT
+    _alter_specifications: $ => choice(
+      $.add_column,
+      $.add_constraint,
+      $.drop_constraint,
+      $.alter_column,
+      $.modify_column,
+      $.change_column,
+      $.drop_column,
+      $.rename_object,
+      $.rename_column,
+      $.set_schema,
+      $.change_ownership,
+      seq($.keyword_set, comma_list($.snowflake_property, true)),
+      seq($.keyword_unset, comma_list($.identifier, true)),
+    ),
 
     // ── SELECT / FROM: add QUALIFY after HAVING ─────────────────────────────
     from: $ => seq(

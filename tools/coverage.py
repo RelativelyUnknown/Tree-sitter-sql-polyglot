@@ -152,10 +152,21 @@ class SqlglotCorroborator(Corroborator):
 
     def parses(self, sql: str, dialect: str) -> bool:
         try:
-            self._mod.parse_one(sql, read=SQLGLOT_DIALECT[dialect])
-            return True
+            tree = self._mod.parse_one(sql, read=SQLGLOT_DIALECT[dialect])
         except Exception:
             return False
+        if tree is None:
+            return False
+        # sqlglot does not raise on syntax it has no model for: it warns
+        # ("falling back to parsing as a 'Command'") and returns a Command node
+        # wrapping the raw text. Counting that as acceptance made every
+        # statement sqlglot has never heard of look like a gap in ours — 29 of
+        # the 83 confirmed gaps were this, CREATE RULE and CREATE DATABASE LINK
+        # among them. A Command result means "not modelled", so: not parsed.
+        from sqlglot import expressions as sqlglot_exp
+        if isinstance(tree, sqlglot_exp.Command):
+            return False
+        return not any(True for _ in tree.find_all(sqlglot_exp.Command))
 
 
 class SqlfluffCorroborator(Corroborator):

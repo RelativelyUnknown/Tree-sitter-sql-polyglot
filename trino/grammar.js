@@ -156,6 +156,7 @@ export default grammar(base, {
       $.rename_column,
       $.set_schema,
       $.change_ownership,
+      $._set_properties,
       seq(
         $.keyword_execute,
         $.identifier,

@@ -414,6 +414,12 @@ export default grammar(hive, {
       // Iceberg write order
       $.write_order,
       seq($.keyword_write, $.keyword_distributed, $.keyword_by, $.keyword_partition),
+      // ALTER TABLE t {SET | UNSET} TBLPROPERTIES ('k' = 'v', …)
+      // Spelled the same way as the ALTER VIEW action above: table_option on
+      // SET, a bare name list on UNSET.
+      seq($.keyword_set, $.keyword_tblproperties, paren_list($.table_option, true)),
+      seq($.keyword_unset, $.keyword_tblproperties, paren_list($._expression, true)),
+      seq($.keyword_set, $.keyword_serdeproperties, paren_list($.table_option, true)),
     ),
 
     tablesample: $ => seq(
