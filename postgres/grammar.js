@@ -415,6 +415,7 @@ export default grammar(base, {
       $.load_statement,
       $.close_statement,
       $.abort_statement,
+      $.end_statement,
       $.move_statement,
       // Object-definition statements
       $.security_label_statement,
@@ -640,6 +641,7 @@ export default grammar(base, {
     keyword_vacuum:         _ => token(prec(1, make_keyword("vacuum"))),
     keyword_copy:           _ => token(prec(1, make_keyword("copy"))),
     keyword_stdin:          _ => token(prec(1, make_keyword("stdin"))),
+    keyword_stdout:         _ => token(prec(1, make_keyword("stdout"))),
     keyword_freeze:         _ => token(prec(1, make_keyword("freeze"))),
     keyword_escape:         _ => token(prec(1, make_keyword("escape"))),
     keyword_encoding:       _ => token(prec(1, make_keyword("encoding"))),

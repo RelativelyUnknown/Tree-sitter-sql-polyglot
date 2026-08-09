@@ -12,9 +12,6 @@ export default grammar(base, {
   name: 'clickhouse_sql',
 
   conflicts: $ => [
-    // PARTITION ID '…' vs PARTITION <expr>: `id` is an extracted keyword, so
-    // both alternatives can begin with the same word token.
-    [$.partition_selector],
     [$.object_reference, $._qualified_field],
     [$.field, $._qualified_field],
     [$._column, $._qualified_field],
@@ -157,7 +154,6 @@ export default grammar(base, {
       ),
     ),
 
-    keyword_id: _ => make_keyword("id"),
 
 
     keyword_global:        _ => token(prec(1, make_keyword("global"))),

@@ -2,16 +2,24 @@ import { wrapped_in_parenthesis } from "../../grammar/helpers.js";
 
 export default {
 
-  _copy_statement: $ => seq(
+  // COPY {table [(cols)] | (query)} {FROM | TO} {'file' | STDIN | STDOUT
+  //   | PROGRAM 'cmd'} [[WITH] (option, …)] [WHERE cond]
+  // The column list and the option block are both optional — requiring them
+  // rejected the plainest spelling, `COPY t FROM 'f.csv'`.
+  _copy_statement: $ => prec.right(seq(
     $.keyword_copy,
-    $.object_reference,
-    $._column_list,
-    $.keyword_from,
+    choice(
+      seq($.object_reference, optional($._column_list)),
+      wrapped_in_parenthesis($._dml_read),
+    ),
+    choice($.keyword_from, $.keyword_to),
     choice(
       $.keyword_stdin,
+      $.keyword_stdout,
       alias($._literal_string, "filename"),
       seq($.keyword_program, alias($._literal_string, "command")),
     ),
+    optional(seq(
     optional($.keyword_with),
     wrapped_in_parenthesis(
       repeat1(
@@ -61,7 +69,8 @@ export default {
         ),
       ),
     ),
+    )),
     optional($.where),
-  ),
+  )),
 
 };

@@ -3,6 +3,32 @@ import { comma_list, paren_list } from '../../grammar/helpers.js';
 export default {
 
   // PostgreSQL ALTER TABLE ... ALTER COLUMN with SET STATISTICS / SET STORAGE / SET COMPRESSION
+  // base _alter_specifications plus the storage-parameter actions:
+  //   ALTER TABLE t SET (fillfactor = 70) | RESET (fillfactor)
+  _alter_specifications: $ => choice(
+    $.add_column,
+    $.add_constraint,
+    $.drop_constraint,
+    $.alter_column,
+    $.modify_column,
+    $.change_column,
+    $.drop_column,
+    $.rename_object,
+    $.rename_column,
+    $.set_schema,
+    $.change_ownership,
+    seq($.keyword_set, $.storage_parameters),
+    seq($.keyword_reset, paren_list($.identifier, true)),
+    seq($.keyword_set, $.keyword_tablespace, field('tablespace', $.identifier)),
+  ),
+
+  storage_parameters: $ => paren_list($.storage_parameter, true),
+
+  storage_parameter: $ => seq(
+    field('name', $.identifier),
+    optional(seq('=', field('value', choice($.literal, $.identifier)))),
+  ),
+
   alter_column: $ => seq(
     $.keyword_alter,
     optional($.keyword_column),

@@ -116,13 +116,22 @@ export default {
   )),
 
   // PARTITION {expr | ID '<id>'}.
-  // ID is an extracted keyword, not a reserved one — `id` is an ordinary
-  // column name in ClickHouse and the corpus uses it as one. That leaves the
-  // two alternatives ambiguous on their first token, so this rule is listed
-  // in the dialect's conflicts and resolved by the token that follows.
+  //
+  // The ID form is one token, not a keyword followed by a string. `id` is an
+  // ordinary column name in ClickHouse, so reserving it is not an option, and
+  // as an extracted keyword the lexer settles it against the word token
+  // before the parser can weigh the alternatives — the string that follows
+  // then has nowhere to go. Matching the whole marker lexically decides it by
+  // length instead: `ID '…'` is longer than the identifier `id`, while a bare
+  // `id` still lexes as an identifier. The cost is that the quoted id is not
+  // its own literal node.
   partition_selector: $ => choice(
-    seq($.keyword_id, alias($._literal_string, $.literal)),
+    $.partition_id,
     field('partition', $._expression),
   ),
+
+  partition_id: _ => token(seq(
+    /[iI][dD]/, /[ \t]+/, "'", /[^']*/, "'",
+  )),
 
 };
