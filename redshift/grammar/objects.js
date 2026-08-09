@@ -120,13 +120,19 @@ export default {
   )),
 
   // ABORT [WORK | TRANSACTION] — Redshift's synonym for ROLLBACK.
-  // Its documented sibling END is deliberately NOT accepted here: base's
-  // BEGIN … END procedure body ends with a bare `END`, so a statement-level
-  // `END` would be ambiguous with the block terminator.
   abort_statement: $ => prec.right(seq(
     $.keyword_abort,
     optional(choice($.keyword_work, $.keyword_transaction)),
   )),
+
+  // END [WORK | TRANSACTION] — Redshift's synonym for COMMIT.
+  // Negative precedence because base's BEGIN … END procedure body also ends
+  // with a bare END: at the end of a statement inside a body, closing the
+  // body has to win over starting an END statement.
+  end_statement: $ => prec(-1, prec.right(seq(
+    $.keyword_end,
+    optional(choice($.keyword_work, $.keyword_transaction)),
+  ))),
 
   // LOCK [TABLE] t [, …]
   lock_statement: $ => seq(

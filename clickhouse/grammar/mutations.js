@@ -104,10 +104,7 @@ export default {
     $.keyword_table,
     $.object_reference,
     optional($.on_cluster),
-    // PARTITION ID '<id>' is deliberately absent: ID sits where an
-    // expression may begin, and reserving it is not an option — `id` is an
-    // ordinary column name and the corpus uses it as one.
-    optional(seq($.keyword_partition, field('partition', $._expression))),
+    optional(seq($.keyword_partition, $.partition_selector)),
     optional(seq($.keyword_dry, $.keyword_run, $.keyword_parts,
                  comma_list(field('part', $.literal), true))),
     optional(choice($.keyword_final, $.keyword_force)),
@@ -117,5 +114,15 @@ export default {
     )),
     optional($.keyword_cleanup),
   )),
+
+  // PARTITION {expr | ID '<id>'}.
+  // ID is an extracted keyword, not a reserved one — `id` is an ordinary
+  // column name in ClickHouse and the corpus uses it as one. That leaves the
+  // two alternatives ambiguous on their first token, so this rule is listed
+  // in the dialect's conflicts and resolved by the token that follows.
+  partition_selector: $ => choice(
+    seq($.keyword_id, alias($._literal_string, $.literal)),
+    field('partition', $._expression),
+  ),
 
 };

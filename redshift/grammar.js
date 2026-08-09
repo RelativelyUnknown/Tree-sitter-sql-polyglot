@@ -53,6 +53,7 @@ export default grammar(base, {
         $.desc_statement,
         $.cancel_statement,
         $.abort_statement,
+        $.end_statement,
         $.lock_statement,
         $.call_statement,
         $.close_statement,

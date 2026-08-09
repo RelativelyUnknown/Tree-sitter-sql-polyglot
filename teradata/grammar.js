@@ -181,6 +181,7 @@ export default grammar(base, {
           $.lateral_cross_join,
         ),
       ),
+      optional($.expand_on_clause),
       optional($.where),
       optional($.group_by),
       optional($.having),
@@ -205,11 +206,23 @@ export default grammar(base, {
       $.comment_statement,
     ),
 
+    // EXPAND ON period_col [AS alias] [BY interval [anchor]] [FOR period_expr]
+    // Teradata's temporal expansion: one row per interval of a PERIOD value.
+    expand_on_clause: $ => prec.right(seq(
+      $.keyword_expand,
+      $.keyword_on,
+      field('period', $._expression),
+      optional(seq(optional($.keyword_as), field('alias', $.identifier))),
+      optional(seq($.keyword_by, field('interval', $._expression))),
+      optional(seq($.keyword_for, field('period_expression', $._expression))),
+    )),
+
     // base parameter plus Teradata :name macro/host-variable references
     parameter: _ => /\?|(\$[0-9]+)|(:[a-zA-Z_][a-zA-Z0-9_]*)/,
 
     // Teradata-specific keywords (dialect-level per AGENTS.md)
     keyword_multiset:   _ => token(prec(1, make_keyword("multiset"))),
+    keyword_expand:     _ => token(prec(1, make_keyword("expand"))),
 
     // ── Keywords for the statements in grammar/analysis.js ─────────────────
     // Statement-initial keywords are reserved for the same reason as above.
