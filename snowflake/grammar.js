@@ -356,8 +356,12 @@ export default grammar(base, {
       $.rename_column,
       $.set_schema,
       $.change_ownership,
-      seq($.keyword_set, comma_list($.snowflake_property, true)),
-      seq($.keyword_unset, comma_list($.identifier, true)),
+      // prec.right: alter_table already comma-separates its specifications,
+      // so a ',' after a property is ambiguous between continuing this list
+      // and starting the next specification. Right associativity binds it to
+      // the inner list, which is the reading Snowflake documents.
+      prec.right(seq($.keyword_set, comma_list($.snowflake_property, true))),
+      prec.right(seq($.keyword_unset, comma_list($.identifier, true))),
     ),
 
     // ── SELECT / FROM: add QUALIFY after HAVING ─────────────────────────────

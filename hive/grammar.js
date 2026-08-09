@@ -366,9 +366,11 @@ export default grammar(base, {
     // ALTER TABLE specifications: add_partition (from hive_compat) but no Iceberg ops
     // CREATE {DATABASE | SCHEMA} [IF NOT EXISTS] name
     //   [COMMENT c] [LOCATION path] [WITH DBPROPERTIES ('k' = 'v', …)]
+    // DATABASE only: base already defines create_schema for the SCHEMA
+    // spelling, and accepting both here made the two rules ambiguous.
     create_database: $ => prec.left(seq(
       $.keyword_create,
-      choice($.keyword_database, $.keyword_schema),
+      $.keyword_database,
       optional($._if_not_exists),
       $.identifier,
       repeat(choice(

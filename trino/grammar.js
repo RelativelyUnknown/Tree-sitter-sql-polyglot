@@ -156,7 +156,17 @@ export default grammar(base, {
       $.rename_column,
       $.set_schema,
       $.change_ownership,
-      $._set_properties,
+      // Spelled out rather than reusing $._set_properties: alter_table
+      // comma-separates its specifications, so a ',' after a property is
+      // ambiguous between continuing the property list and starting the next
+      // specification. prec.right has to sit on the production that holds the
+      // list for the parser to prefer continuing it — wrapping the hidden
+      // rule's reference does not reach it.
+      prec.right(seq(
+        $.keyword_set,
+        $.keyword_properties,
+        comma_list($.trino_property, true),
+      )),
       seq(
         $.keyword_execute,
         $.identifier,
