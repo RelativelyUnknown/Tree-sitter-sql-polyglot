@@ -658,6 +658,11 @@ export default grammar(base, {
     keyword_conflict:       _ => token(prec(1, make_keyword("conflict"))),
     keyword_upsert:         _ => token(prec(1, make_keyword("upsert"))),
     keyword_nowait:         _ => token(prec(1, make_keyword("nowait"))),
+    // ATTACH follows the index name in ALTER INDEX and DEPENDS follows it in
+    // ALTER INDEX / ALTER MATERIALIZED VIEW, both positions where an
+    // identifier is still legal, so neither can stay extracted.
+    keyword_attach:         _ => token(prec(1, make_keyword("attach"))),
+    keyword_depends:        _ => token(prec(1, make_keyword("depends"))),
     keyword_wait:           _ => token(prec(1, make_keyword("wait"))),
     keyword_tablespace:     _ => token(prec(1, make_keyword("tablespace"))),
     keyword_replication:    _ => token(prec(1, make_keyword("replication"))),
@@ -768,7 +773,6 @@ export default grammar(base, {
     keyword_timing:         _ => token(prec(1, make_keyword("timing"))),
     keyword_summary:        _ => token(prec(1, make_keyword("summary"))),
     keyword_yaml:           _ => token(prec(1, make_keyword("yaml"))),
-    keyword_sequences:      _ => token(prec(1, make_keyword("sequences"))),
     keyword_functions:      _ => token(prec(1, make_keyword("functions"))),
     keyword_procedures:     _ => token(prec(1, make_keyword("procedures"))),
     keyword_routines:       _ => token(prec(1, make_keyword("routines"))),
