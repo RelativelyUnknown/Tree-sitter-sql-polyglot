@@ -2,9 +2,14 @@ import { comma_list, paren_list } from "../../grammar/helpers.js";
 
 export default {
 
+  // LOAD DATA [LOW_PRIORITY | CONCURRENT] [LOCAL] INFILE 'f'
+  //   [REPLACE | IGNORE] INTO TABLE t [PARTITION (p,...)]
+  //   [CHARACTER SET cs] [FIELDS ...] [LINES ...] [IGNORE n LINES]
+  //   [(cols)] [SET col = expr, ...]
   load_data_statement: $ => seq(
     $.keyword_load,
     $.keyword_data,
+    optional(choice($.keyword_low_priority, $.keyword_concurrent)),
     optional($.keyword_local),
     $.keyword_infile,
     alias($._literal_string, $.literal),
@@ -12,26 +17,45 @@ export default {
     $.keyword_into,
     $.keyword_table,
     $.object_reference,
+    optional(seq($.keyword_partition, paren_list($.identifier, true))),
+    optional(seq($.keyword_character, $.keyword_set, field('charset', $.identifier))),
     optional($._load_fields_clause),
     optional($._load_lines_clause),
     optional($._load_ignore_lines),
     optional(alias($._column_list, $.list)),
+    optional(seq($.keyword_set, comma_list($._load_set_item, true))),
   ),
 
+  _load_set_item: $ => seq(
+    field('column', $.identifier),
+    '=',
+    field('value', $._expression),
+  ),
+
+  // FIELDS/COLUMNS are synonyms, and ENCLOSED BY may be OPTIONALLY ENCLOSED.
   _load_fields_clause: $ => seq(
-    $.keyword_fields,
+    choice($.keyword_fields, $.keyword_columns),
     repeat1(choice(
       seq($.keyword_terminated, $.keyword_by, alias($._literal_string, $.literal)),
-      seq($.keyword_enclosed,   $.keyword_by, alias($._literal_string, $.literal)),
+      // Spelled as two alternatives rather than a leading optional: an
+      // optional at the head of a repeat alternative is not decidable.
+      seq($.keyword_enclosed, $.keyword_by, alias($._literal_string, $.literal)),
+      seq(
+        $.keyword_optionally,
+        $.keyword_enclosed,
+        $.keyword_by,
+        alias($._literal_string, $.literal),
+      ),
       seq($.keyword_escaped,    $.keyword_by, alias($._literal_string, $.literal)),
     )),
   ),
 
   _load_lines_clause: $ => seq(
     $.keyword_lines,
-    repeat1(
+    repeat1(choice(
+      seq($.keyword_starting,   $.keyword_by, alias($._literal_string, $.literal)),
       seq($.keyword_terminated, $.keyword_by, alias($._literal_string, $.literal)),
-    ),
+    )),
   ),
 
   _load_ignore_lines: $ => seq(

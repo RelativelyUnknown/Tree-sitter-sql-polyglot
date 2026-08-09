@@ -8,6 +8,7 @@ import mysql_procedural_rules from './grammar/procedural.js';
 import mysql_partition_rules from './grammar/partition.js';
 import mysql_admin_rules from './grammar/admin.js';
 import mysql_admin_ddl_rules from './grammar/admin_ddl.js';
+import mysql_clause_rules from './grammar/clauses.js';
 
 export default grammar(base, {
   name: 'mysql_sql',
@@ -748,6 +749,8 @@ export default grammar(base, {
     ...mysql_partition_rules,
     ...mysql_admin_rules,
     ...mysql_admin_ddl_rules,
+    // last, so its overrides win over the inherited rules
+    ...mysql_clause_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
@@ -757,6 +760,22 @@ export default grammar(base, {
     keyword_attribute: _ => token(prec(1, make_keyword("attribute"))),
     keyword_straight_join: _ => token(prec(1, make_keyword("straight_join"))),
     keyword_algorithm: _ => token(prec(1, make_keyword("algorithm"))),
+
+    // ── Keywords for the clause completions in grammar/clauses.js ──────────
+    // All appear mid-statement, after a keyword rather than after a name, so
+    // they stay extracted.
+    keyword_copy:        _ => make_keyword("copy"),
+    keyword_encryption:  _ => make_keyword("encryption"),
+    keyword_exclusive:   _ => make_keyword("exclusive"),
+    keyword_inplace:     _ => make_keyword("inplace"),
+    // prec(1): OPTION is a prefix of OPTIONALLY and is valid in the same
+    // states, so the shorter token wins without this.
+    keyword_optionally:  _ => token(prec(1, make_keyword("optionally"))),
+    keyword_shared:      _ => make_keyword("shared"),
+    keyword_sql:         _ => make_keyword("sql"),
+    keyword_starting:    _ => make_keyword("starting"),
+    keyword_temptable:   _ => make_keyword("temptable"),
+    keyword_undefined:   _ => make_keyword("undefined"),
     keyword_atomic: _ => token(prec(1, make_keyword("atomic"))),
     keyword_called: _ => token(prec(1, make_keyword("called"))),
     keyword_repeatable: _ => token(prec(1, make_keyword("repeatable"))),
