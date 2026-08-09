@@ -41,6 +41,10 @@ export default grammar(base, {
       $._merge_statement,
       $._refresh_statement,
       $.set_statement,
+      // Db2's SET SCHEMA is a statement in its own right. Base only ever
+      // reaches set_schema as a clause of ALTER TABLE / ALTER VIEW, so at
+      // statement level it was falling through to set_variable_statement.
+      $.set_schema,
       $.transfer_ownership,
       $.signal_statement,
       $.resignal_statement,

@@ -158,10 +158,11 @@ export default {
   // The SET CURRENT SCHEMA spelling is deliberately absent: set_statement
   // already accepts `<special_register> = <expression>`, and CURRENT SCHEMA
   // is one of those registers, so admitting it here too would be ambiguous.
-  // SCHEMA is reserved in this dialect (see grammar.js) so that it wins over
-  // set_variable_statement's identifier target. Rule precedence cannot
-  // settle that one: the two forms differ by which token the lexer produced,
-  // so there is no parser conflict for a precedence to resolve.
+  // SCHEMA is reserved in this dialect (see grammar.js) so that SET SCHEMA
+  // cannot be read as set_variable_statement's identifier target, and
+  // set_schema is added to _ddl_statement there so the statement form is
+  // reachable at all — base only ever uses this rule as a clause of
+  // ALTER TABLE / ALTER VIEW.
   set_schema: $ => seq(
     $.keyword_set,
     $.keyword_schema,
