@@ -10,6 +10,33 @@ export default {
     $.object_reference,
   ),
 
+  // DROP [TEMPORARY] TABLE [IF EXISTS] name
+  drop_table: $ => seq(
+    $.keyword_drop,
+    optional($._temporary),
+    $.keyword_table,
+    optional($._if_exists),
+    $.object_reference,
+  ),
+
+  // DROP [TEMPORARY] VIEW [IF EXISTS] name
+  drop_view: $ => seq(
+    $.keyword_drop,
+    optional($._temporary),
+    $.keyword_view,
+    optional($._if_exists),
+    $.object_reference,
+  ),
+
+  // DROP DATABASE [IF EXISTS] name [RESTRICT | CASCADE]
+  drop_database: $ => seq(
+    $.keyword_drop,
+    $.keyword_database,
+    optional($._if_exists),
+    $.object_reference,
+    optional($._drop_behavior),
+  ),
+
   // DROP CATALOG [IF EXISTS] name
   drop_catalog: $ => seq(
     $.keyword_drop,
