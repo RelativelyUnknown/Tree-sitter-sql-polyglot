@@ -10,6 +10,8 @@ import pg_replication_rules from './grammar/replication.js';
 import pg_partition_rules from './grammar/partition.js';
 import pg_notify_rules from './grammar/notify.js';
 import pg_statement_rules from './grammar/statements.js';
+import pg_maintenance_rules from './grammar/maintenance.js';
+import pg_object_rules from './grammar/objects.js';
 
 export default grammar(base, {
   name: 'postgres_sql',
@@ -405,6 +407,32 @@ export default grammar(base, {
       $.prepare_statement,
       $.execute_statement,
       $.deallocate_statement,
+      // Maintenance / utility statements
+      $.reindex_statement,
+      $.cluster_statement,
+      $.checkpoint_statement,
+      $.discard_statement,
+      $.load_statement,
+      $.close_statement,
+      $.abort_statement,
+      $.end_statement,
+      $.move_statement,
+      // Object-definition statements
+      $.security_label_statement,
+      $.reassign_owned_statement,
+      $.import_foreign_schema_statement,
+      $.create_collation_statement,
+      $.create_conversion_statement,
+      $.create_access_method_statement,
+      $.create_transform_statement,
+      $.create_event_trigger_statement,
+      $.create_operator_statement,
+      $.alter_operator_statement,
+      $.create_rule_statement,
+      $.alter_rule_statement,
+      $.alter_collation_statement,
+      $.alter_conversion_statement,
+      $.alter_event_trigger_statement,
     ),
 
     // PostgreSQL: DO $$ ... $$ anonymous block
@@ -613,6 +641,7 @@ export default grammar(base, {
     keyword_vacuum:         _ => token(prec(1, make_keyword("vacuum"))),
     keyword_copy:           _ => token(prec(1, make_keyword("copy"))),
     keyword_stdin:          _ => token(prec(1, make_keyword("stdin"))),
+    keyword_stdout:         _ => token(prec(1, make_keyword("stdout"))),
     keyword_freeze:         _ => token(prec(1, make_keyword("freeze"))),
     keyword_escape:         _ => token(prec(1, make_keyword("escape"))),
     keyword_encoding:       _ => token(prec(1, make_keyword("encoding"))),
@@ -631,6 +660,11 @@ export default grammar(base, {
     keyword_conflict:       _ => token(prec(1, make_keyword("conflict"))),
     keyword_upsert:         _ => token(prec(1, make_keyword("upsert"))),
     keyword_nowait:         _ => token(prec(1, make_keyword("nowait"))),
+    // ATTACH follows the index name in ALTER INDEX and DEPENDS follows it in
+    // ALTER INDEX / ALTER MATERIALIZED VIEW, both positions where an
+    // identifier is still legal, so neither can stay extracted.
+    keyword_attach:         _ => token(prec(1, make_keyword("attach"))),
+    keyword_depends:        _ => token(prec(1, make_keyword("depends"))),
     keyword_wait:           _ => token(prec(1, make_keyword("wait"))),
     keyword_tablespace:     _ => token(prec(1, make_keyword("tablespace"))),
     keyword_replication:    _ => token(prec(1, make_keyword("replication"))),
@@ -687,6 +721,42 @@ export default grammar(base, {
     keyword_listen:         _ => token(prec(1, make_keyword("listen"))),
     keyword_notify:         _ => token(prec(1, make_keyword("notify"))),
     keyword_unlisten:       _ => token(prec(1, make_keyword("unlisten"))),
+    // Maintenance / utility statements (see grammar/maintenance.js)
+    keyword_reindex:        _ => token(prec(1, make_keyword("reindex"))),
+    keyword_cluster:        _ => token(prec(1, make_keyword("cluster"))),
+    keyword_checkpoint:     _ => token(prec(1, make_keyword("checkpoint"))),
+    keyword_discard:        _ => token(prec(1, make_keyword("discard"))),
+    keyword_plans:          _ => token(prec(1, make_keyword("plans"))),
+    keyword_sequences:      _ => token(prec(1, make_keyword("sequences"))),
+    keyword_load:           _ => token(prec(1, make_keyword("load"))),
+    keyword_close:          _ => token(prec(1, make_keyword("close"))),
+    keyword_abort:          _ => token(prec(1, make_keyword("abort"))),
+    keyword_chain:          _ => token(prec(1, make_keyword("chain"))),
+    keyword_move:           _ => token(prec(1, make_keyword("move"))),
+    keyword_prior:          _ => token(prec(1, make_keyword("prior"))),
+    keyword_absolute:       _ => token(prec(1, make_keyword("absolute"))),
+    keyword_relative:       _ => token(prec(1, make_keyword("relative"))),
+    keyword_forward:        _ => token(prec(1, make_keyword("forward"))),
+    keyword_backward:       _ => token(prec(1, make_keyword("backward"))),
+    // Object-definition statements (see grammar/objects.js)
+    keyword_label:          _ => token(prec(1, make_keyword("label"))),
+    keyword_reassign:       _ => token(prec(1, make_keyword("reassign"))),
+    keyword_import:         _ => token(prec(1, make_keyword("import"))),
+    keyword_collation:      _ => token(prec(1, make_keyword("collation"))),
+    keyword_conversion:     _ => token(prec(1, make_keyword("conversion"))),
+    keyword_method:         _ => token(prec(1, make_keyword("method"))),
+    keyword_handler:        _ => token(prec(1, make_keyword("handler"))),
+    keyword_transform:      _ => token(prec(1, make_keyword("transform"))),
+    keyword_sql:            _ => token(prec(1, make_keyword("sql"))),
+    keyword_event:          _ => token(prec(1, make_keyword("event"))),
+    keyword_procedural:     _ => token(prec(1, make_keyword("procedural"))),
+    keyword_large:          _ => token(prec(1, make_keyword("large"))),
+    keyword_object:         _ => token(prec(1, make_keyword("object"))),
+    keyword_routine:        _ => token(prec(1, make_keyword("routine"))),
+    keyword_operator:       _ => token(prec(1, make_keyword("operator"))),
+    keyword_rule:           _ => token(prec(1, make_keyword("rule"))),
+    keyword_also:           _ => token(prec(1, make_keyword("also"))),
+    keyword_replica:        _ => token(prec(1, make_keyword("replica"))),
     keyword_share:          _ => token(prec(1, make_keyword("share"))),
     keyword_lock:           _ => token(prec(1, make_keyword("lock"))),
     keyword_locked:         _ => token(prec(1, make_keyword("locked"))),
@@ -705,7 +775,6 @@ export default grammar(base, {
     keyword_timing:         _ => token(prec(1, make_keyword("timing"))),
     keyword_summary:        _ => token(prec(1, make_keyword("summary"))),
     keyword_yaml:           _ => token(prec(1, make_keyword("yaml"))),
-    keyword_sequences:      _ => token(prec(1, make_keyword("sequences"))),
     keyword_functions:      _ => token(prec(1, make_keyword("functions"))),
     keyword_procedures:     _ => token(prec(1, make_keyword("procedures"))),
     keyword_routines:       _ => token(prec(1, make_keyword("routines"))),
@@ -723,6 +792,8 @@ export default grammar(base, {
     ...pg_partition_rules,
     ...pg_notify_rules,
     ...pg_statement_rules,
+    ...pg_maintenance_rules,
+    ...pg_object_rules,
 
   },
 });

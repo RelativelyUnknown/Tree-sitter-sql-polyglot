@@ -66,15 +66,91 @@ export default {
       seq($.keyword_grants,    optional(seq($.keyword_on, $.object_reference))),
       seq($.keyword_roles,     optional(seq($.keyword_from, $.object_reference))),
       $.keyword_session,
+      // SHOW BRANCHES { FROM | IN } TABLE table  (Iceberg)
+      seq(
+        $.keyword_branches,
+        choice($.keyword_from, $.keyword_in),
+        $.keyword_table,
+        $.object_reference,
+      ),
     ),
     optional(seq($.keyword_like, alias($._literal_string, $.literal))),
   ),
 
   // DESCRIBE [EXTENDED] table  /  DESC table
+  // DESCRIBE INPUT  statement_name
+  // DESCRIBE OUTPUT statement_name | ( query )
   describe_statement: $ => seq(
     choice($.keyword_describe, $.keyword_desc),
-    optional($.keyword_extended),
-    $.object_reference,
+    choice(
+      seq($.keyword_input, field('statement_name', $.identifier)),
+      seq(
+        $.keyword_output,
+        choice(
+          field('statement_name', $.identifier),
+          seq('(', $._dml_read, ')'),
+        ),
+      ),
+      seq(optional($.keyword_extended), $.object_reference),
+    ),
+  ),
+
+  // CALL procedure_name ( [ name => ] expression [, ...] )
+  call_statement: $ => seq(
+    $.keyword_call,
+    field('procedure', $.object_reference),
+    '(',
+    optional(comma_list(
+      choice(seq(field('name', $.identifier), '=>', $._expression), $._expression),
+      true,
+    )),
+    ')',
+  ),
+
+  // ── Iceberg branches ──────────────────────────────────────────────────────
+  // CREATE [OR REPLACE] BRANCH [IF NOT EXISTS] name [WITH (props)]
+  //   IN TABLE table [FROM source_branch]
+  create_branch_statement: $ => seq(
+    $.keyword_create,
+    optional($._or_replace),
+    $.keyword_branch,
+    optional($._if_not_exists),
+    field('branch', $.identifier),
+    optional(seq(
+      $.keyword_with,
+      '(',
+      comma_list(seq(field('property', $.identifier), '=', $._expression), true),
+      ')',
+    )),
+    $.keyword_in,
+    $.keyword_table,
+    field('table', $.object_reference),
+    optional(seq($.keyword_from, field('source_branch', $.identifier))),
+  ),
+
+  // DROP BRANCH [IF EXISTS] name IN TABLE table
+  drop_branch_statement: $ => seq(
+    $.keyword_drop,
+    $.keyword_branch,
+    optional($._if_exists),
+    field('branch', $.identifier),
+    $.keyword_in,
+    $.keyword_table,
+    field('table', $.object_reference),
+  ),
+
+  // ALTER BRANCH source IN TABLE table FAST FORWARD TO target
+  alter_branch_statement: $ => seq(
+    $.keyword_alter,
+    $.keyword_branch,
+    field('source_branch', $.identifier),
+    $.keyword_in,
+    $.keyword_table,
+    field('table', $.object_reference),
+    $.keyword_fast,
+    $.keyword_forward,
+    $.keyword_to,
+    field('target_branch', $.identifier),
   ),
 
   // ANALYZE table [WITH (k = v, ...)]

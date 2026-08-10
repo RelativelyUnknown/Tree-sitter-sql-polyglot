@@ -5,6 +5,7 @@ import qualify_rules     from './grammar/qualify.js';
 import pivot_rules       from './grammar/pivot.js';
 import match_rec_rules   from './grammar/match_recognize.js';
 import time_travel_rules from './grammar/time_travel.js';
+import snowflake_property_rules from './grammar/properties.js';
 import variant_rules     from './grammar/variant.js';
 import scripting_rules   from './grammar/scripting.js';
 import execute_rules     from './grammar/execute.js';
@@ -14,6 +15,7 @@ import alter_rules       from './grammar/alter.js';
 import use_rules         from './grammar/use.js';
 import stage_rules       from './grammar/stage.js';
 import show_rules        from './grammar/show.js';
+import files_rules      from './grammar/files.js';
 
 export default grammar(base, {
   name: 'snowflake_sql',
@@ -102,9 +104,25 @@ export default grammar(base, {
       $.use_statement,
       $.use_secondary_roles,
       $.list_stage_statement,
+      $.put_statement,
+      $.get_statement,
+      $.remove_statement,
+      $.copy_files_statement,
       $.show_statement,
       $.describe_statement,
       $.comment_statement,
+    ),
+
+    // ── TRUNCATE: add the MATERIALIZED VIEW target ─────────────────────────
+    // https://docs.snowflake.com/en/sql-reference/sql/truncate-materialized-view
+    _truncate_statement: $ => seq(
+      $.keyword_truncate,
+      choice(
+        seq(optional($.keyword_table), optional($.keyword_only)),
+        seq($.keyword_materialized, $.keyword_view),
+      ),
+      comma_list($.object_reference),
+      optional($._drop_behavior),
     ),
 
     // ── SELECT … FOR UPDATE [NOWAIT | WAIT <n>] (hybrid tables) ────────────
@@ -310,15 +328,41 @@ export default grammar(base, {
     )),
 
     // ── CREATE DATABASE: add CLONE clause ───────────────────────────────────
+    // CREATE DATABASE db [WITH] <property> … [CLONE src]
+    // snowflake_property rather than base's _with_settings: the latter takes
+    // only an identifier or quoted string as the value, so a numeric option
+    // (DATA_RETENTION_TIME_IN_DAYS = 1) had nowhere to go.
     create_database: $ => prec.left(seq(
       $.keyword_create,
       $.keyword_database,
       optional($._if_not_exists),
       $.identifier,
       optional($.keyword_with),
-      repeat($._with_settings),
+      repeat($.snowflake_property),
       optional($.clone_clause),
     )),
+
+    // base _alter_specifications plus Snowflake's object-property actions:
+    //   ALTER TABLE t SET COMMENT = 'x' | UNSET COMMENT
+    _alter_specifications: $ => choice(
+      $.add_column,
+      $.add_constraint,
+      $.drop_constraint,
+      $.alter_column,
+      $.modify_column,
+      $.change_column,
+      $.drop_column,
+      $.rename_object,
+      $.rename_column,
+      $.set_schema,
+      $.change_ownership,
+      // prec.right: alter_table already comma-separates its specifications,
+      // so a ',' after a property is ambiguous between continuing this list
+      // and starting the next specification. Right associativity binds it to
+      // the inner list, which is the reading Snowflake documents.
+      prec.right(seq($.keyword_set, comma_list($.snowflake_property, true))),
+      prec.right(seq($.keyword_unset, comma_list($.identifier, true))),
+    ),
 
     // ── SELECT / FROM: add QUALIFY after HAVING ─────────────────────────────
     from: $ => seq(
@@ -640,6 +684,16 @@ export default grammar(base, {
     keyword_sequences:      _ => token(prec(1, make_keyword("sequences"))),
     keyword_policies:       _ => token(prec(1, make_keyword("policies"))),
 
+    // Staged-file commands (PUT/GET/REMOVE/COPY FILES). `files` sits at the
+    // same precedence as `file` so match length — not precedence — decides
+    // between them.
+    keyword_put:            _ => token(prec(1, make_keyword("put"))),
+    keyword_get:            _ => token(prec(1, make_keyword("get"))),
+    keyword_remove:         _ => token(prec(1, make_keyword("remove"))),
+    keyword_files:          _ => token(prec(1, make_keyword("files"))),
+    keyword_unset:          _ => token(prec(1, make_keyword("unset"))),
+    keyword_swap:           _ => token(prec(1, make_keyword("swap"))),
+
     // ── Spread all Snowflake rule modules ───────────────────────────────────
     ...qualify_rules,
     ...pivot_rules,
@@ -654,6 +708,9 @@ export default grammar(base, {
     ...use_rules,
     ...stage_rules,
     ...show_rules,
+    ...files_rules,
+    // last, so its overrides win over the inherited rules
+    ...snowflake_property_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords

@@ -67,3 +67,16 @@
   (keyword_analyze)
   (keyword_verbose)
 ] @keyword
+
+; Previously missing Databricks statement keywords
+[
+  (keyword_undrop)
+  (keyword_id)
+  (keyword_server)
+  (keyword_bloomfilter)
+  (keyword_users)
+  (keyword_policies)
+  (keyword_locations)
+  (keyword_procedures)
+  (keyword_dropped)
+] @keyword

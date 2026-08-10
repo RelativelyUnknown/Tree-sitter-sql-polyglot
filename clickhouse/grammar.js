@@ -6,6 +6,7 @@ import ch_create_rules  from './grammar/create.js';
 import ch_system_rules  from './grammar/system.js';
 import ch_mutation_rules from './grammar/mutations.js';
 import ch_access_control_rules from './grammar/access_control.js';
+import ch_admin_rules from './grammar/admin.js';
 
 export default grammar(base, {
   name: 'clickhouse_sql',
@@ -98,6 +99,16 @@ export default grammar(base, {
         $.restore_statement,
         $.exchange_tables_statement,
         $.show_statement,
+        // grammar/admin.js
+        $.check_statement,
+        $.describe_statement,
+        $.exists_statement,
+        $.move_access_statement,
+        $.set_role_statement,
+        $.undrop_statement,
+        $.named_collection_statement,
+        $.masking_policy_statement,
+        $.use_statement,
       ),
     ),
 
@@ -143,7 +154,35 @@ export default grammar(base, {
       ),
     ),
 
+
+
     keyword_global:        _ => token(prec(1, make_keyword("global"))),
+
+    // Settings-constraint and OPTIMIZE option words; all mid-statement.
+
+    keyword_changeable_in_readonly: _ => token(prec(1, make_keyword("changeable_in_readonly"))),
+
+    keyword_cleanup:             _ => make_keyword("cleanup"),
+
+    keyword_const:               _ => token(prec(1, make_keyword("const"))),
+
+    // Lexer-precedence guards: `const` above claims the front of both,
+
+    // and precedence is compared before match length.
+
+    keyword_constraint:  _ => token(prec(1, make_keyword("constraint"))),
+
+    keyword_constraints: _ => token(prec(1, make_keyword("constraints"))),
+
+    keyword_dry:                 _ => make_keyword("dry"),
+
+    keyword_parts:               _ => make_keyword("parts"),
+
+    keyword_readonly:            _ => token(prec(1, make_keyword("readonly"))),
+
+    keyword_run:                 _ => make_keyword("run"),
+
+    keyword_writable:            _ => token(prec(1, make_keyword("writable"))),
 
     // x GLOBAL [NOT] IN (…): the distributed IN, whose right side is broadcast
     // to every shard. Lexed as one multi-word operator token: a bare
@@ -258,6 +297,18 @@ export default grammar(base, {
     keyword_live:          _ => token(prec(1, make_keyword("live"))),
     keyword_populate:      _ => token(prec(1, make_keyword("populate"))),
     keyword_cluster:       _ => token(prec(1, make_keyword("cluster"))),
+
+    // ── Keywords for the statements in grammar/admin.js ────────────────────
+    keyword_move:          _ => token(prec(1, make_keyword("move"))),
+    keyword_undrop:        _ => token(prec(1, make_keyword("undrop"))),
+    keyword_describe:      _ => token(prec(1, make_keyword("describe"))),
+    keyword_named:         _ => token(prec(1, make_keyword("named"))),
+    keyword_collection:    _ => token(prec(1, make_keyword("collection"))),
+    keyword_masking:       _ => token(prec(1, make_keyword("masking"))),
+    keyword_overridable:   _ => token(prec(1, make_keyword("overridable"))),
+    keyword_part:          _ => token(prec(1, make_keyword("part"))),
+    // Lexer-precedence guard: `part` above claims the front of `partition`.
+    keyword_partition:     _ => token(prec(1, make_keyword("partition"))),
     keyword_ttl:           _ => token(prec(1, make_keyword("ttl"))),
     keyword_disk:          _ => token(prec(1, make_keyword("disk"))),
     keyword_volume:        _ => token(prec(1, make_keyword("volume"))),
@@ -369,6 +420,7 @@ export default grammar(base, {
     ...ch_system_rules,
     ...ch_mutation_rules,
     ...ch_access_control_rules,
+    ...ch_admin_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords

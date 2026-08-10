@@ -11,7 +11,9 @@ export default {
     $.keyword_categories,
     choice(
       $.keyword_all,
-      comma_list($.identifier, true),
+      // CONNECT is a reserved keyword in this dialect (CONNECT statement), so
+      // it can no longer arrive here as a plain identifier.
+      comma_list(choice($.identifier, $.keyword_connect), true),
     ),
     $.keyword_status,
     choice($.keyword_both, $.keyword_failure, $.keyword_success),

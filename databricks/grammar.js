@@ -1,6 +1,5 @@
 import spark from '../spark/grammar.js';
 import { optional_parenthesis, paren_list, comma_list, wrapped_in_parenthesis, make_keyword } from '../grammar/helpers.js';
-import { createStatementChoices } from '../grammar/statements/create.js';
 
 import vacuum_rules   from './grammar/vacuum.js';
 import optimize_rules from './grammar/optimize.js';
@@ -10,7 +9,6 @@ import drop_rules     from './grammar/drop.js';
 import describe_rules from './grammar/describe.js';
 import show_rules     from './grammar/show.js';
 import cache_rules    from './grammar/cache.js';
-import resource_rules from './grammar/resource.js';
 import call_rules     from './grammar/call.js';
 import create_rules   from './grammar/create.js';
 import alter_rules    from './grammar/alter.js';
@@ -51,10 +49,6 @@ export default grammar(spark, {
   ],
 
   rules: {
-
-    // Unlike plain OSS Spark, Databricks/Unity Catalog does support
-    // CREATE MATERIALIZED VIEW (DLT) — re-add it over Spark's stricter base.
-    _create_statement: $ => seq(choice(...createStatementChoices($, { materializedView: true }))),
 
     _ddl_statement: $ => choice(
       // Base ANSI SQL DDL
@@ -116,6 +110,10 @@ export default grammar(spark, {
       $.create_recipient,
       $.create_provider,
       $.create_policy,
+      // Previously missing Databricks statements
+      $.undrop_statement,
+      $.create_server,
+      $.drop_bloomfilter_index,
     ),
 
     _optimize_statement: $ => choice(
@@ -143,6 +141,8 @@ export default grammar(spark, {
         $._show_volumes,
         $._show_grants,
         $._show_uc_object_type,
+        $._show_procedures,
+        $._show_tables_dropped,
         $._show_tblproperties,
         $._show_partitions,
         $._show_columns,
@@ -163,7 +163,6 @@ export default grammar(spark, {
       $.drop_function,
       $.drop_procedure,
       // Databricks drops
-      $.drop_table_purge,
       $.drop_catalog,
       $.drop_namespace,
       $.drop_connection,
@@ -263,7 +262,6 @@ export default grammar(spark, {
     keyword_volume:     _ => token(prec(1, make_keyword("volume"))),
     keyword_credential: _ => token(prec(1, make_keyword("credential"))),
     keyword_share:      _ => token(prec(1, make_keyword("share"))),
-    keyword_files:      _ => token(prec(1, make_keyword("files"))),
     keyword_copy:          _ => token(prec(1, make_keyword("copy"))),
     keyword_fileformat:    _ => token(prec(1, make_keyword("fileformat"))),
     keyword_pattern:       _ => token(prec(1, make_keyword("pattern"))),
@@ -298,10 +296,8 @@ export default grammar(spark, {
       '=',
       alias($._literal_string, $.literal),
     ),
-    keyword_file:       _ => token(prec(1, make_keyword("file"))),
     keyword_catalog:    _ => token(prec(1, make_keyword("catalog"))),
     keyword_describe:   _ => token(prec(1, make_keyword("describe"))),
-    keyword_query:      _ => token(prec(1, make_keyword("query"))),
     keyword_call:       _ => token(prec(1, make_keyword("call"))),
     keyword_branch:     _ => token(prec(1, make_keyword("branch"))),
     keyword_tag:        _ => token(prec(1, make_keyword("tag"))),
@@ -319,10 +315,6 @@ export default grammar(spark, {
     keyword_history:    _ => token(prec(1, make_keyword("history"))),
     keyword_detail:     _ => token(prec(1, make_keyword("detail"))),
     keyword_global:     _ => token(prec(1, make_keyword("global"))),
-    keyword_lazy:       _ => token(prec(1, make_keyword("lazy"))),
-    keyword_clear:      _ => token(prec(1, make_keyword("clear"))),
-    keyword_uncache:    _ => token(prec(1, make_keyword("uncache"))),
-    keyword_jar:        _ => token(prec(1, make_keyword("jar"))),
     keyword_handler:    _ => token(prec(1, make_keyword("handler"))),
     keyword_environment:_ => token(prec(1, make_keyword("environment"))),
     keyword_parameter:  _ => token(prec(1, make_keyword("parameter"))),
@@ -330,10 +322,6 @@ export default grammar(spark, {
     keyword_shallow:    _ => token(prec(1, make_keyword("shallow"))),
     keyword_deep:       _ => token(prec(1, make_keyword("deep"))),
     keyword_clone:      _ => token(prec(1, make_keyword("clone"))),
-    keyword_jars:       _ => token(prec(1, make_keyword("jars"))),
-    keyword_archive:    _ => token(prec(1, make_keyword("archive"))),
-    keyword_archives:   _ => token(prec(1, make_keyword("archives"))),
-    keyword_list:       _ => token(prec(1, make_keyword("list"))),
     keyword_catalogs:   _ => token(prec(1, make_keyword("catalogs"))),
     keyword_namespaces: _ => token(prec(1, make_keyword("namespaces"))),
     keyword_volumes:    _ => token(prec(1, make_keyword("volumes"))),
@@ -342,6 +330,19 @@ export default grammar(spark, {
     keyword_shares:     _ => token(prec(1, make_keyword("shares"))),
     keyword_recipients: _ => token(prec(1, make_keyword("recipients"))),
     keyword_providers:  _ => token(prec(1, make_keyword("providers"))),
+    // Previously missing statements (UNDROP, CREATE SERVER, bloom filter
+    // indexes, and the SHOW object types). procedure/procedures and
+    // location/locations are prefix pairs but sit at equal precedence, so
+    // longest match resolves them.
+    keyword_undrop:     _ => token(prec(1, make_keyword("undrop"))),
+    keyword_id:         _ => token(prec(1, make_keyword("id"))),
+    keyword_server:     _ => token(prec(1, make_keyword("server"))),
+    keyword_bloomfilter: _ => token(prec(1, make_keyword("bloomfilter"))),
+    keyword_users:      _ => token(prec(1, make_keyword("users"))),
+    keyword_policies:   _ => token(prec(1, make_keyword("policies"))),
+    keyword_locations:  _ => token(prec(1, make_keyword("locations"))),
+    keyword_procedures: _ => token(prec(1, make_keyword("procedures"))),
+    keyword_dropped:    _ => token(prec(1, make_keyword("dropped"))),
     keyword_appends:    _ => token(prec(1, make_keyword("appends"))),
     keyword_upsert:     _ => token(prec(1, make_keyword("upsert"))),
     keyword_vacuum:     _ => token(prec(1, make_keyword("vacuum"))),
@@ -363,7 +364,6 @@ export default grammar(spark, {
     ...describe_rules,
     ...show_rules,
     ...cache_rules,
-    ...resource_rules,
     ...call_rules,
     ...create_rules,
     ...alter_rules,

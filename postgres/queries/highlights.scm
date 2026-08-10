@@ -16,6 +16,51 @@
   (keyword_excluding)
 ] @keyword
 
+; PostgreSQL maintenance / utility statement keywords
+[
+  (keyword_reindex)
+  (keyword_cluster)
+  (keyword_checkpoint)
+  (keyword_discard)
+  (keyword_plans)
+  (keyword_sequences)
+  (keyword_load)
+  (keyword_close)
+  (keyword_abort)
+  (keyword_chain)
+  (keyword_move)
+  (keyword_prior)
+  (keyword_absolute)
+  (keyword_relative)
+  (keyword_forward)
+  (keyword_backward)
+] @keyword
+
+; PostgreSQL object-definition statement keywords
+[
+  (keyword_label)
+  (keyword_reassign)
+  (keyword_import)
+  (keyword_collation)
+  (keyword_conversion)
+  (keyword_method)
+  (keyword_handler)
+  (keyword_transform)
+  (keyword_sql)
+  (keyword_event)
+  (keyword_procedural)
+  (keyword_large)
+  (keyword_object)
+  (keyword_routine)
+  (keyword_operator)
+  (keyword_rule)
+  (keyword_also)
+  (keyword_replica)
+] @keyword
+
+; User-defined operator symbols (CREATE/ALTER OPERATOR)
+(operator_symbol) @operator
+
 ; PostgreSQL replication / CTE / DO keywords (#31)
 [
   (keyword_publication)

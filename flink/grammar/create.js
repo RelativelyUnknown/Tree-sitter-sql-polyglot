@@ -124,12 +124,15 @@ export default {
     ),
   )),
 
-  // Override: CREATE [OR REPLACE] [TEMPORARY] TABLE [IF NOT EXISTS] name
+  // Override: {CREATE [OR REPLACE] | REPLACE} [TEMPORARY] TABLE [IF NOT EXISTS] name
   //   [(cols)] [COMMENT] [DISTRIBUTED] [PARTITIONED BY] [USING CONNECTION] [WITH] [LIKE] [AS select]
   create_table: $ => prec.left(
     seq(
-      $.keyword_create,
-      optional($._or_replace),
+      // Flink also accepts a bare REPLACE TABLE … AS select (RTAS).
+      choice(
+        seq($.keyword_create, optional($._or_replace)),
+        $.keyword_replace,
+      ),
       optional($._temporary),
       $.keyword_table,
       optional($._if_not_exists),

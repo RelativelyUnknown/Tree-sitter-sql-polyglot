@@ -1,27 +1,9 @@
+// Databricks refresh statements.
+//
+// CACHE / UNCACHE / CLEAR CACHE moved up to spark/grammar/cache.js — they are
+// OSS Spark statements, so Databricks now inherits them rather than owning
+// them. Only the Databricks-specific refresh forms remain here.
 export default {
-
-  // CACHE [LAZY] TABLE name [AS query]
-  cache_table: $ => prec.left(seq(
-    $.keyword_cache,
-    optional($.keyword_lazy),
-    $.keyword_table,
-    $.object_reference,
-    optional(seq($.keyword_as, $._dml_read)),
-  )),
-
-  // UNCACHE TABLE [IF EXISTS] name
-  uncache_table: $ => seq(
-    $.keyword_uncache,
-    $.keyword_table,
-    optional($._if_exists),
-    $.object_reference,
-  ),
-
-  // CLEAR CACHE
-  clear_cache: $ => seq(
-    $.keyword_clear,
-    $.keyword_cache,
-  ),
 
   // REFRESH TABLE name
   refresh_table_databricks: $ => seq(

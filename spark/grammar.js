@@ -1,12 +1,14 @@
 import hive from '../hive/grammar.js';
 import { paren_list, optional_parenthesis, comma_list, make_keyword } from '../grammar/helpers.js';
-import { createStatementChoices } from '../grammar/statements/create.js';
 import spark_create_rules from './grammar/create.js';
 import spark_optimize_rules from './grammar/optimize.js';
 import spark_spark4_rules from './grammar/spark4_features.js';
 import spark_scripting_rules from './grammar/scripting.js';
 import spark_iceberg_rules from './grammar/iceberg.js';
 import spark_select_rules from './grammar/select.js';
+import spark_cache_rules from './grammar/cache.js';
+import spark_resource_rules from './grammar/resource.js';
+import spark_clause_rules from './grammar/clauses.js';
 
 export default grammar(hive, {
   name: 'spark_sql',
@@ -44,9 +46,9 @@ export default grammar(hive, {
   ],
 
   rules: {
-    // No CREATE MATERIALIZED VIEW: unlike Hive, OSS Spark has no materialized
-    // views (re-enumerate over Hive's _create_statement, which opts in).
-    _create_statement: $ => seq(choice(...createStatementChoices($))),
+    // _create_statement is inherited from Hive unchanged: it opts into
+    // CREATE MATERIALIZED VIEW, which Spark 4.x also documents (Declarative
+    // Pipelines), so there is nothing to narrow here.
 
     // Re-add $.block to program (removed from base — procedural blocks are Spark-specific)
     program: $ => seq(
@@ -150,6 +152,16 @@ export default grammar(hive, {
       // an override replaces the parent rule wholesale)
       $.show_statement,
       $.describe_statement,
+      // OSS Spark cache + resource management (previously only in databricks)
+      $.cache_table,
+      $.uncache_table,
+      $.clear_cache,
+      $.add_resource_statement,
+      $.list_resource_statement,
+      $.describe_query,
+      $.set_path_statement,
+      $.create_table_like,
+      $.show_collations_statement,
       $.msck_repair_statement,
       $.load_data,
       $.declare_variable_statement,
@@ -172,10 +184,16 @@ export default grammar(hive, {
       seq($.keyword_set, $.object_reference, '=', $._expression),
     )),
 
-    // Override _type to add VARIANT
+    // Override _type to add VARIANT. $.tinyint must be repeated from hive:
+    // an override replaces the parent rule wholesale, so omitting it here
+    // would drop TINYINT for spark and databricks even though hive has it.
     _type: $ => prec.left(
       choice(
         $.keyword_variant,
+        // Spark 4.2 geospatial types
+        $.keyword_geometry,
+        $.keyword_geography,
+        $.tinyint,
         $.keyword_boolean,
         $.bit,
         $.binary,
@@ -292,6 +310,11 @@ export default grammar(hive, {
     // Plain keyword (no elevated precedence) so a column literally named
     // `name` still lexes as an identifier outside the INSERT … BY NAME context.
     keyword_name: _ => make_keyword("name"),
+    // Database DDL vocabulary; all follow a keyword, never a name.
+    keyword_dbproperties: _ => make_keyword("dbproperties"),
+    keyword_namespace:    _ => make_keyword("namespace"),
+    keyword_properties:   _ => make_keyword("properties"),
+    keyword_purge:        _ => make_keyword("purge"),
 
     // Override term to support SELECT * EXCEPT
     term: $ => seq(
@@ -391,6 +414,12 @@ export default grammar(hive, {
       // Iceberg write order
       $.write_order,
       seq($.keyword_write, $.keyword_distributed, $.keyword_by, $.keyword_partition),
+      // ALTER TABLE t {SET | UNSET} TBLPROPERTIES ('k' = 'v', …)
+      // Spelled the same way as the ALTER VIEW action above: table_option on
+      // SET, a bare name list on UNSET.
+      seq($.keyword_set, $.keyword_tblproperties, paren_list($.table_option, true)),
+      seq($.keyword_unset, $.keyword_tblproperties, paren_list($._expression, true)),
+      seq($.keyword_set, $.keyword_serdeproperties, paren_list($.table_option, true)),
     ),
 
     tablesample: $ => seq(
@@ -499,6 +528,36 @@ export default grammar(hive, {
     ...spark_scripting_rules,
     ...spark_iceberg_rules,
     ...spark_select_rules,
+    ...spark_cache_rules,
+    ...spark_resource_rules,
+    // last, so its overrides win over the inherited rules
+    ...spark_clause_rules,
+
+    // Keywords for the cache / resource statements moved up from databricks.
+    // file/files, jar/jars and archive/archives are prefix pairs, but both
+    // members sit at the SAME token precedence, so longest match decides —
+    // the TRAN/TRANSACTION trap only bites when the shorter word is given
+    // higher precedence than the longer one.
+    keyword_lazy:       _ => token(prec(1, make_keyword("lazy"))),
+    keyword_clear:      _ => token(prec(1, make_keyword("clear"))),
+    keyword_uncache:    _ => token(prec(1, make_keyword("uncache"))),
+    keyword_file:       _ => token(prec(1, make_keyword("file"))),
+    keyword_files:      _ => token(prec(1, make_keyword("files"))),
+    keyword_jars:       _ => token(prec(1, make_keyword("jars"))),
+    keyword_archive:    _ => token(prec(1, make_keyword("archive"))),
+    keyword_archives:   _ => token(prec(1, make_keyword("archives"))),
+    keyword_list:       _ => token(prec(1, make_keyword("list"))),
+    keyword_collations: _ => token(prec(1, make_keyword("collations"))),
+    keyword_geometry:   _ => token(prec(1, make_keyword("geometry"))),
+    keyword_geography:  _ => token(prec(1, make_keyword("geography"))),
+    keyword_query:      _ => token(prec(1, make_keyword("query"))),
+    // SET PATH path elements. default_path/system_path are distinct words,
+    // not PATH with a prefix, so no shadowing against keyword_path.
+    keyword_path:             _ => token(prec(1, make_keyword("path"))),
+    keyword_default_path:     _ => token(prec(1, make_keyword("default_path"))),
+    keyword_system_path:      _ => token(prec(1, make_keyword("system_path"))),
+    keyword_current_schema:   _ => token(prec(1, make_keyword("current_schema"))),
+    keyword_current_database: _ => token(prec(1, make_keyword("current_database"))),
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
     // that are strict prefixes of the base keywords below. Explicit precedence

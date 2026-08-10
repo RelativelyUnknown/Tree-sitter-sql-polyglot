@@ -104,12 +104,34 @@ export default {
     $.keyword_table,
     $.object_reference,
     optional($.on_cluster),
-    optional(seq($.keyword_partition, field('partition', $._expression))),
-    optional($.keyword_final),
+    optional(seq($.keyword_partition, $.partition_selector)),
+    optional(seq($.keyword_dry, $.keyword_run, $.keyword_parts,
+                 comma_list(field('part', $.literal), true))),
+    optional(choice($.keyword_final, $.keyword_force)),
     optional(seq(
       $.keyword_deduplicate,
       optional(seq($.keyword_by, comma_list($._expression, true))),
     )),
+    optional($.keyword_cleanup),
+  )),
+
+  // PARTITION {expr | ID '<id>'}.
+  //
+  // The ID form is one token, not a keyword followed by a string. `id` is an
+  // ordinary column name in ClickHouse, so reserving it is not an option, and
+  // as an extracted keyword the lexer settles it against the word token
+  // before the parser can weigh the alternatives — the string that follows
+  // then has nowhere to go. Matching the whole marker lexically decides it by
+  // length instead: `ID '…'` is longer than the identifier `id`, while a bare
+  // `id` still lexes as an identifier. The cost is that the quoted id is not
+  // its own literal node.
+  partition_selector: $ => choice(
+    $.partition_id,
+    field('partition', $._expression),
+  ),
+
+  partition_id: _ => token(seq(
+    /[iI][dD]/, /[ \t]+/, "'", /[^']*/, "'",
   )),
 
 };

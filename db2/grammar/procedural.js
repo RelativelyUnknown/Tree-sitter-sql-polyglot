@@ -1,4 +1,4 @@
-import { comma_list } from '../../grammar/helpers.js';
+import { comma_list, paren_list } from '../../grammar/helpers.js';
 
 export default {
 
@@ -69,6 +69,49 @@ export default {
     $.keyword_loop,
     optional(field('end_label', $.identifier)),
   ),
+
+  // [label:] REPEAT stmts UNTIL cond END REPEAT [label]
+  repeat_statement: $ => seq(
+    optional(field('label', seq($.identifier, ':'))),
+    $.keyword_repeat,
+    repeat(seq($.statement, ';')),
+    $.keyword_until,
+    field('condition', $._expression),
+    $.keyword_end,
+    $.keyword_repeat,
+    optional(field('end_label', $.identifier)),
+  ),
+
+  // PIPE {expr [, …] | row-variable} — emits a row from a pipelined table
+  // function.
+  pipe_statement: $ => seq(
+    $.keyword_pipe,
+    comma_list($._expression, true),
+  ),
+
+  // {BEGIN | END} DECLARE SECTION — the embedded-SQL host-variable section.
+  //
+  // Lexed as one token per spelling rather than as three keywords. As three
+  // keywords the END form is ambiguous with the END that closes every block
+  // in this dialect (compound, IF, WHILE, LOOP, FOR, REPEAT), and resolving
+  // that would mean GLR splitting on END everywhere. As a single token the
+  // decision is the lexer's, settled by match length: `END DECLARE SECTION`
+  // is longer than `END`, and a bare END still lexes as keyword_end.
+  // The cost is that a comment or newline between the words is not accepted.
+  declare_section_statement: $ => choice(
+    field('begin', $.keyword_begin_declare_section),
+    field('end', $.keyword_end_declare_section),
+  ),
+
+  keyword_begin_declare_section: _ => token(seq(
+    /[bB][eE][gG][iI][nN]/, /[ \t]+/, /[dD][eE][cC][lL][aA][rR][eE]/,
+    /[ \t]+/, /[sS][eE][cC][tT][iI][oO][nN]/,
+  )),
+
+  keyword_end_declare_section: _ => token(seq(
+    /[eE][nN][dD]/, /[ \t]+/, /[dD][eE][cC][lL][aA][rR][eE]/,
+    /[ \t]+/, /[sS][eE][cC][tT][iI][oO][nN]/,
+  )),
 
   // LEAVE label
   leave_statement: $ => seq(
@@ -150,6 +193,42 @@ export default {
     $.keyword_execute,
     field('name', $.identifier),
     optional(seq($.keyword_using, comma_list(choice($.parameter, $.identifier), true))),
+  ),
+
+  // {CREATE | ALTER | DROP | TRUNCATE} DATALAKE TABLE …
+  // Db2's external-table surface over object storage. The tail is the Hive
+  // vocabulary Db2 adopted for it.
+  datalake_table_statement: $ => prec.right(seq(
+    choice(
+      seq($.keyword_create, optional($._or_replace)),
+      $.keyword_alter,
+      $.keyword_drop,
+      $.keyword_truncate,
+    ),
+    $.keyword_datalake,
+    $.keyword_table,
+    optional(choice($._if_not_exists, $._if_exists)),
+    field('name', $.object_reference),
+    optional($.column_definitions),
+    repeat($._datalake_option),
+  )),
+
+  _datalake_option: $ => choice(
+    seq($.keyword_stored, $.keyword_as, field('format', $.identifier)),
+    seq($.keyword_location, field('location', alias($._literal_string, $.literal))),
+    seq(
+      $.keyword_partitioned,
+      $.keyword_by,
+      choice($.column_definitions, paren_list($.identifier, true)),
+    ),
+    seq($.keyword_tblproperties, paren_list($._datalake_property, true)),
+    seq($.keyword_row, $.keyword_format, field('row_format', alias($._literal_string, $.literal))),
+  ),
+
+  _datalake_property: $ => seq(
+    field('key', alias($._literal_string, $.literal)),
+    '=',
+    field('value', alias($._literal_string, $.literal)),
   ),
 
 };

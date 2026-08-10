@@ -60,4 +60,20 @@ export default {
     optional(seq($.keyword_tblproperties, paren_list($.table_option, true))),
     optional(seq($.keyword_as, $.create_query)),
   )),
+
+  // CREATE TABLE [IF NOT EXISTS] target LIKE source [USING src] [LOCATION 'p']
+  // https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-create-table-like.html
+  // OSS Spark syntax that previously existed only in the databricks grammar,
+  // so plain Spark could not parse it. Databricks inherits it from here.
+  create_table_like: $ => seq(
+    $.keyword_create,
+    $.keyword_table,
+    optional($._if_not_exists),
+    $.object_reference,
+    $.keyword_like,
+    $.object_reference,
+    optional(seq($.keyword_using, $.identifier)),
+    optional(seq($.keyword_location, alias($._literal_string, $.literal))),
+  ),
+
 };

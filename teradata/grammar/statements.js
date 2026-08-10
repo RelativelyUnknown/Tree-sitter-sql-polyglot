@@ -264,14 +264,8 @@ export default {
   ),
 
   // HELP STATISTICS obj [FROM obj]
-  help_statement: $ => prec.right(seq(
-    $.keyword_help,
-    choice(
-      seq($.keyword_statistics, $.object_reference,
-          optional(seq($.keyword_from, $.object_reference))),
-      seq($.keyword_table, $.object_reference),
-    ),
-  )),
+  // help_statement now lives in grammar/admin.js, which covers the full
+  // HELP object list rather than just STATISTICS and TABLE.
 
   // SAMPLE n | SAMPLE f [, f …] — row sampling on a FROM clause
   sample_clause: $ => seq(

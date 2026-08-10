@@ -8,6 +8,8 @@ import scripting_rules from './grammar/scripting.js';
 import ddl_rules       from './grammar/ddl.js';
 import ml_rules        from './grammar/ml.js';
 import types_rules     from './grammar/types.js';
+import objects_rules   from './grammar/objects.js';
+import alter_rules     from './grammar/alter.js';
 
 export default grammar(base, {
   name: 'bigquery_sql',
@@ -22,6 +24,7 @@ export default grammar(base, {
     // ESCAPE tail — kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     [$.create_function],
+    [$.add_constraint],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
@@ -118,6 +121,19 @@ export default grammar(base, {
       $.load_data_statement,
       $.assert_statement,
       $.comment_statement,
+      $.create_table_from_source,
+      $.create_external_schema,
+      $.create_row_access_policy,
+      $.drop_row_access_policy,
+      $.create_admin_object,
+      $.alter_admin_object,
+      $.drop_admin_object,
+      $.undrop_schema,
+      $.alter_schema_replica,
+      $.alter_search_index,
+      $.drop_search_index,
+      $.drop_qualified_table,
+      $.drop_all_row_access_policies,
     ),
 
     // LOAD DATA {INTO|OVERWRITE} table [(cols)] [OPTIONS(…)] FROM FILES (k = v, …)
@@ -319,6 +335,28 @@ export default grammar(base, {
     keyword_elseif:     _ => token(prec(1, make_keyword("elseif"))),
     keyword_source:     _ => token(prec(1, make_keyword("source"))),
     keyword_options:    _ => token(prec(1, make_keyword("options"))),
+
+    // Administrative DDL object types. Each is a prec-1 token so it wins over
+    // the identifier regex on equal-length matches; the cost is that these
+    // words can no longer be used as bare identifiers in this dialect.
+    // `data_policy` sits above the base's prec-0 `data` keyword, so the longer
+    // token is reachable.
+    keyword_copy:         _ => token(prec(1, make_keyword("copy"))),
+    keyword_access:       _ => token(prec(1, make_keyword("access"))),
+    keyword_policy:       _ => token(prec(1, make_keyword("policy"))),
+    keyword_capacity:     _ => token(prec(1, make_keyword("capacity"))),
+    keyword_bi_capacity:  _ => token(prec(1, make_keyword("bi_capacity"))),
+    keyword_reservation:  _ => token(prec(1, make_keyword("reservation"))),
+    keyword_assignment:   _ => token(prec(1, make_keyword("assignment"))),
+    keyword_data_policy:  _ => token(prec(1, make_keyword("data_policy"))),
+    keyword_organization: _ => token(prec(1, make_keyword("organization"))),
+    keyword_project:      _ => token(prec(1, make_keyword("project"))),
+    keyword_undrop:       _ => token(prec(1, make_keyword("undrop"))),
+    keyword_replica:      _ => token(prec(1, make_keyword("replica"))),
+    keyword_rebuild:      _ => token(prec(1, make_keyword("rebuild"))),
+    keyword_enforced:     _ => token(prec(1, make_keyword("enforced"))),
+    keyword_policies:     _ => token(prec(1, make_keyword("policies"))),
+    keyword_aggregate:    _ => token(prec(1, make_keyword("aggregate"))),
     keyword_search:     _ => token(prec(1, make_keyword("search"))),
     keyword_vector:     _ => token(prec(1, make_keyword("vector"))),
     keyword_columns:    _ => token(prec(1, make_keyword("columns"))),
@@ -340,6 +378,8 @@ export default grammar(base, {
     ...ddl_rules,
     ...ml_rules,
     ...types_rules,
+    ...objects_rules,
+    ...alter_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords

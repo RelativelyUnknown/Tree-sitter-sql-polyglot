@@ -1,15 +1,23 @@
-import { paren_list } from '../../grammar/helpers.js';
+import { comma_list, paren_list } from '../../grammar/helpers.js';
 
 export default {
 
-  // ALTER SESSION SET param = value
+  // ALTER SESSION SET p = v [, …] | UNSET p [, …]
+  // https://docs.snowflake.com/en/sql-reference/sql/alter-session
+  // Previously accepted exactly one SET pair and no UNSET form at all.
   alter_session: $ => seq(
     $.keyword_alter,
     $.keyword_session,
-    $.keyword_set,
-    $.identifier,
+    choice(
+      seq($.keyword_set, comma_list($.session_parameter, true)),
+      seq($.keyword_unset, comma_list($.identifier, true)),
+    ),
+  ),
+
+  session_parameter: $ => seq(
+    field('name', $.identifier),
     '=',
-    $._expression,
+    field('value', $._expression),
   ),
 
   // ALTER WAREHOUSE [IF EXISTS] name SET|SUSPEND|RESUME|ABORT ALL QUERIES

@@ -1,6 +1,8 @@
 import postgres from '../postgres/grammar.js';
 import { comma_list, optional_parenthesis, wrapped_in_parenthesis, paren_list, make_keyword } from '../grammar/helpers.js';
 import crdb_statement_rules from './grammar/statements.js';
+import crdb_admin_rules from './grammar/admin.js';
+import crdb_clause_rules from './grammar/clauses.js';
 
 // CockroachDB SQL — PostgreSQL-compatible by design (wire protocol and
 // syntax), layered on the postgres grammar. Adds the CockroachDB-native
@@ -50,6 +52,18 @@ export default grammar(postgres, {
         $.import_into_statement,
         $.create_changefeed_statement,
         $.declare_cursor_statement,
+        // grammar/admin.js
+        $.job_control_statement,
+        $.cancel_query_statement,
+        $.schedule_control_statement,
+        $.set_cluster_setting_statement,
+        $.reset_cluster_setting_statement,
+        $.create_external_connection_statement,
+        $.drop_external_connection_statement,
+        $.check_external_connection_statement,
+        $.export_statement,
+        $.create_statistics_statement,
+        $.drop_owned_by_statement,
       ),
     ),
 
@@ -201,6 +215,30 @@ export default grammar(postgres, {
     ),
 
     keyword_family:     _ => token(prec(1, make_keyword("family"))),
+
+    // Multi-region and zone-configuration vocabulary. SURVIVE, PLACEMENT and
+    // CONVERT head an ALTER DATABASE alternative and are reserved like the
+    // rest of this dialect's keywords; the others only ever follow a keyword,
+    // so they stay extracted — REGION is too common a column name to reserve.
+
+
+    keyword_availability:    _ => make_keyword("availability"),
+
+    keyword_configuration:   _ => make_keyword("configuration"),
+
+    keyword_convert:         _ => token(prec(1, make_keyword("convert"))),
+
+    keyword_failure:         _ => make_keyword("failure"),
+
+    keyword_parent:          _ => make_keyword("parent"),
+
+    keyword_placement:       _ => token(prec(1, make_keyword("placement"))),
+
+    keyword_region:          _ => make_keyword("region"),
+
+    keyword_regions:         _ => make_keyword("regions"),
+
+    keyword_survive:         _ => token(prec(1, make_keyword("survive"))),
     keyword_locality:   _ => token(prec(1, make_keyword("locality"))),
     keyword_regional:   _ => token(prec(1, make_keyword("regional"))),
     keyword_global:     _ => token(prec(1, make_keyword("global"))),
@@ -223,6 +261,21 @@ export default grammar(postgres, {
     keyword_csv:        _ => token(prec(1, make_keyword("csv"))),
     keyword_system:     _ => token(prec(1, make_keyword("system"))),
     keyword_jobs:       _ => token(prec(1, make_keyword("jobs"))),
+
+    // ── Keywords for the statements in grammar/admin.js ────────────────────
+    // `job` and `setting` sit at the same precedence as the already-declared
+    // `jobs` and `settings`, so match length — not precedence — decides.
+    keyword_job:        _ => token(prec(1, make_keyword("job"))),
+    keyword_setting:    _ => token(prec(1, make_keyword("setting"))),
+    keyword_cancel:     _ => token(prec(1, make_keyword("cancel"))),
+    keyword_pause:      _ => token(prec(1, make_keyword("pause"))),
+    keyword_resume:     _ => token(prec(1, make_keyword("resume"))),
+    keyword_query:      _ => token(prec(1, make_keyword("query"))),
+    keyword_queries:    _ => token(prec(1, make_keyword("queries"))),
+    keyword_sessions:   _ => token(prec(1, make_keyword("sessions"))),
+    keyword_schedule:   _ => token(prec(1, make_keyword("schedule"))),
+    keyword_schedules:  _ => token(prec(1, make_keyword("schedules"))),
+    keyword_export:     _ => token(prec(1, make_keyword("export"))),
     keyword_users:      _ => token(prec(1, make_keyword("users"))),
     keyword_databases:  _ => token(prec(1, make_keyword("databases"))),
     keyword_grants:     _ => token(prec(1, make_keyword("grants"))),
@@ -230,6 +283,9 @@ export default grammar(postgres, {
     keyword_storing:    _ => token(prec(1, make_keyword("storing"))),
 
     ...crdb_statement_rules,
+    ...crdb_admin_rules,
+    // last, so its overrides win over the inherited rules
+    ...crdb_clause_rules,
 
   },
 });

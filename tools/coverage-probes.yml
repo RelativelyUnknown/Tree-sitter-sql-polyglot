@@ -46,6 +46,34 @@
 #
 # A feature/dialect pair with no explicit status is scored by parsing:
 # probe parses without ERROR/MISSING → implemented; otherwise → absent (gap).
+#
+# Reading "suspect" results
+# -------------------------
+# A "suspect" (we accept, no corroborator does) is evidence of an over-loose
+# grammar ONLY where the corroborators actually cover that dialect. SQLGlot,
+# pglast, ANTLR and sqlfluff have thin-to-no Db2 coverage, so most Db2
+# suspects are corroborator blind spots rather than grammar bugs — verified
+# against IBM's own docs: FINAL TABLE, COMMENT ON, SAVEPOINT, compound
+# BEGIN…END, PREPARE and DECLARE CURSOR are all real Db2 syntax. Check the
+# vendor's documentation before "fixing" a suspect by deleting grammar.
+#
+# Scope note: this registry is a regression guard, and only a partial
+# completeness measure. It tracks 52 features; PostgreSQL alone documents 183
+# statements. A dialect at 100% here means "passes every probe we wrote", not
+# "feature complete".
+#
+# It was previously saturated — 100% with zero gaps on all 23 dialects — which
+# made it structurally unable to show progress or completeness, only
+# regressions. That is why 25 missing PostgreSQL statements were invisible.
+# The vendor maintenance/object-DDL block at the end of this file starts
+# correcting that: those probes are scored for dialects that plausibly have
+# the statement, so a missing one now registers as a real absence and pulls
+# the score below 100%.
+#
+# Scoring these honestly does mean a dialect can lose points for a statement
+# another engine's family invented. The real fix is a per-dialect statement
+# inventory rather than one shared feature list — a larger change to
+# coverage.py's denominator, deliberately not attempted here.
 # ─────────────────────────────────────────────────────────────────────────────
 
 dialects:
@@ -299,7 +327,8 @@ features:
       mysql:   { status: not-applicable, reason: "MySQL has no MERGE (uses ON DUPLICATE KEY)" }
       mariadb: { status: not-applicable, reason: "MariaDB has no MERGE" }
       sqlite:  { status: not-applicable, reason: "SQLite has no MERGE (uses UPSERT)" }
-      duckdb:  { status: not-applicable, reason: "DuckDB has no MERGE (uses ON CONFLICT)" }
+      # duckdb: MERGE INTO landed in DuckDB 1.4.0 (2025-09) — scored, not
+      # excluded. https://duckdb.org/docs/lts/sql/statements/merge_into
       clickhouse: { status: not-applicable, reason: "ClickHouse has no MERGE statement" }
       cockroachdb: { status: not-applicable, reason: "No MERGE; UPSERT / ON CONFLICT instead" }
       spanner:    { status: not-applicable, reason: "No MERGE; INSERT OR UPDATE instead" }
@@ -443,11 +472,16 @@ features:
       mysql:   { status: not-applicable, reason: "No materialized views upstream" }
       mariadb: { status: not-applicable, reason: "No materialized views upstream" }
       sqlite:  { status: not-applicable, reason: "No materialized views upstream" }
-      tsql:    { status: not-applicable, reason: "T-SQL uses indexed views instead" }
+      # tsql: Azure Synapse dedicated SQL pools support CREATE MATERIALIZED
+      # VIEW AS SELECT, and this dialect covers Synapse (see
+      # tsql/grammar/synapse.js) — scored, not excluded. Plain SQL Server
+      # uses indexed views, but both share this grammar.
       hive:
         probe: "CREATE MATERIALIZED VIEW mv1 AS SELECT a FROM t1;"
-      spark:   { status: not-applicable, reason: "No materialized views in OSS Spark" }
+      # spark: Spark 4.x documents CREATE MATERIALIZED VIEW (Declarative
+      # Pipelines), and the rule is inherited from Hive — scored, not excluded.
       teradata: { status: not-applicable, reason: "Teradata uses JOIN INDEX instead" }
+      db2:     { status: not-applicable, reason: "Db2 uses materialized query tables: CREATE TABLE … DATA INITIALLY DEFERRED REFRESH DEFERRED" }
 
   - id: comment_on
     name: "COMMENT ON object"
@@ -517,6 +551,14 @@ features:
     weight: 1
     probe: "SAVEPOINT sp1; ROLLBACK TO SAVEPOINT sp1;"
     dialects:
+      # T-SQL has savepoints, but spells them SAVE TRANSACTION / ROLLBACK
+      # TRANSACTION <name> — not the ANSI SAVEPOINT keyword. Probe override
+      # rather than not-applicable: the capability exists, the syntax differs.
+      # Wrapped in a transaction because that is both how T-SQL savepoints are
+      # actually used and where the grammar reaches ROLLBACK (_rollback
+      # terminates the transaction rule; it is not a standalone statement).
+      tsql:
+        probe: "BEGIN TRANSACTION; SAVE TRANSACTION sp1; ROLLBACK TRANSACTION sp1;"
       hive:       { status: not-applicable, reason: "No savepoints" }
       spark:      { status: not-applicable, reason: "No savepoints" }
       databricks: { status: not-applicable, reason: "No savepoints" }
@@ -706,6 +748,317 @@ features:
       oracle:     { probe: "DECLARE CURSOR c IS SELECT a FROM t1; BEGIN NULL; END;" }
       hana:       { probe: "DECLARE CURSOR c FOR SELECT a FROM t1;" }
       teradata:   { probe: "DECLARE c CURSOR FOR SELECT a FROM t1;" }
+
+  # ── Vendor maintenance / object DDL ──────────────────────────────────────
+  # Added alongside the statements implemented in this branch so they are
+  # regression-protected. Each is scoped with not-applicable ONLY where the
+  # engine demonstrably has no such statement; where a dialect plausibly has
+  # it and we simply do not implement it, the probe is left scored so the gap
+  # shows up as a real absence rather than being hidden by a guess. That is
+  # the opposite of how the stale not-applicable entries corrected earlier in
+  # this file came about.
+
+  - id: reindex
+    name: "REINDEX"
+    category: admin
+    ansi: false
+    weight: 1
+    probe: "REINDEX TABLE t1;"
+    dialects:
+      duckdb:     { status: not-applicable, reason: "No REINDEX; ART indexes are rebuilt on load" }
+      # Engines with no user-managed indexes at all cannot have REINDEX.
+      hive:       { status: not-applicable, reason: "Indexes removed in Hive 3" }
+      spark:      { status: not-applicable, reason: "No indexes" }
+      databricks: { status: not-applicable, reason: "No user indexes (Delta manages layout)" }
+      redshift:   { status: not-applicable, reason: "No indexes (sort/dist keys)" }
+      bigquery:   { status: not-applicable, reason: "No user indexes" }
+      spanner:    { status: not-applicable, reason: "Index DDL only, no REINDEX" }
+      trino:      { status: not-applicable, reason: "Query engine, no index storage" }
+      athena:     { status: not-applicable, reason: "Query engine, no index storage" }
+      flink:      { status: not-applicable, reason: "Query engine, no index storage" }
+
+  - id: cluster_table
+    name: "CLUSTER table USING index"
+    category: admin
+    ansi: false
+    weight: 1
+    probe: "CLUSTER t1 USING idx1;"
+    dialects:
+      # A PostgreSQL storage statement. sqlfluff accepts it for the dialects
+      # below because its grammars inherit ANSI/PostgreSQL, not because the
+      # engines have it.
+      tsql:       { status: not-applicable, reason: "No CLUSTER statement" }
+      redshift:   { status: not-applicable, reason: "No CLUSTER statement (sort keys instead)" }
+      duckdb:     { status: not-applicable, reason: "No CLUSTER statement" }
+      hive:       { status: not-applicable, reason: "CLUSTER BY is a query clause, not this statement" }
+      spark:      { status: not-applicable, reason: "CLUSTER BY is a query clause, not this statement" }
+      databricks: { status: not-applicable, reason: "CLUSTER BY is liquid clustering, not this statement" }
+
+  - id: discard
+    name: "DISCARD session state"
+    category: admin
+    ansi: false
+    weight: 1
+    probe: "DISCARD ALL;"
+    dialects:
+      redshift:   { status: not-applicable, reason: "No DISCARD statement" }
+      duckdb:     { status: not-applicable, reason: "No DISCARD statement" }
+
+  - id: security_label
+    name: "SECURITY LABEL"
+    category: admin
+    ansi: false
+    weight: 1
+    probe: "SECURITY LABEL ON TABLE t1 IS 'classified';"
+    dialects:
+      redshift:   { status: not-applicable, reason: "No SECURITY LABEL; RLS policies instead" }
+      duckdb:     { status: not-applicable, reason: "No label-based security" }
+
+  - id: import_foreign_schema
+    name: "IMPORT FOREIGN SCHEMA"
+    category: ddl
+    ansi: false
+    weight: 1
+    probe: "IMPORT FOREIGN SCHEMA remote FROM SERVER srv INTO local;"
+    dialects:
+      redshift:   { status: not-applicable, reason: "Federation via external schemas, no FDW import" }
+      duckdb:     { status: not-applicable, reason: "ATTACH + scanner extensions, no FDW import" }
+
+  - id: create_operator
+    name: "CREATE OPERATOR"
+    category: ddl
+    ansi: false
+    weight: 1
+    probe: "CREATE OPERATOR === (FUNCTION = my_eq, LEFTARG = integer, RIGHTARG = integer);"
+    dialects:
+      duckdb:     { status: not-applicable, reason: "No user-defined operators" }
+
+  - id: create_rule
+    name: "CREATE RULE"
+    category: ddl
+    ansi: false
+    weight: 1
+    probe: "CREATE RULE r1 AS ON DELETE TO t1 DO INSTEAD NOTHING;"
+
+  - id: cache_table
+    name: "CACHE / UNCACHE TABLE"
+    category: admin
+    ansi: false
+    weight: 1
+    probe: "CACHE TABLE t1;"
+
+  # ── Vendor statement families added by the grammar/vendor-doc audit ──────
+  # Every spelling below is transcribed from the vendor's own syntax block
+  # (the same sources the grammar work used: Oracle SQL Language Reference,
+  # BigQuery/Spanner GoogleSQL DDL, MySQL Reference Manual, SAP HANA SQL
+  # Reference, ClickHouse docs, Db2 SQL Reference, Teradata SQL DML/DDL).
+  # not-applicable is used ONLY where the engine demonstrably has no such
+  # statement; where a dialect plausibly has one we have not implemented, the
+  # probe stays scored so the gap is visible.
+
+  - id: alter_set_options
+    name: "Option list on ALTER TABLE"
+    category: ddl
+    ansi: false
+    weight: 2
+    probe: "ALTER TABLE t1 SET OPTIONS (description = 'x');"
+    dialects:
+      postgres:    { probe: "ALTER TABLE t1 SET (fillfactor = 70);" }
+      cockroachdb: { probe: "ALTER TABLE t1 SET (ttl_expire_after = '1 day');" }
+      mysql:       { probe: "ALTER TABLE t1 ENGINE = InnoDB;" }
+      mariadb:     { probe: "ALTER TABLE t1 ENGINE = InnoDB;" }
+      hive:        { probe: "ALTER TABLE t1 SET TBLPROPERTIES ('k' = 'v');" }
+      spark:       { probe: "ALTER TABLE t1 SET TBLPROPERTIES ('k' = 'v');" }
+      databricks:  { probe: "ALTER TABLE t1 SET TBLPROPERTIES ('k' = 'v');" }
+      trino:       { probe: "ALTER TABLE t1 SET PROPERTIES format = 'ORC';" }
+      athena:      { probe: "ALTER TABLE t1 SET TBLPROPERTIES ('k' = 'v');" }
+      clickhouse:  { probe: "ALTER TABLE t1 MODIFY SETTING max_threads = 4;" }
+      snowflake:   { probe: "ALTER TABLE t1 SET COMMENT = 'x';" }
+      flink:       { probe: "ALTER TABLE t1 SET ('k' = 'v');" }
+      duckdb:      { status: not-applicable, reason: "No per-table option list" }
+      sqlite:      { status: not-applicable, reason: "No per-table option list" }
+
+  - id: index_rebuild
+    name: "ALTER INDEX … REBUILD"
+    category: admin
+    ansi: false
+    weight: 1
+    probe: "ALTER INDEX idx1 REBUILD;"
+    dialects:
+      tsql:        { probe: "ALTER INDEX idx1 ON t1 REBUILD;" }
+      db2:         { probe: "REORG INDEXES ALL FOR TABLE t1;" }
+      # Engines with no user-managed indexes, or none that can be rebuilt in
+      # place — REINDEX (a separate probe) is the PostgreSQL-family spelling.
+      postgres:    { status: not-applicable, reason: "REINDEX, not ALTER INDEX REBUILD" }
+      cockroachdb: { status: not-applicable, reason: "REINDEX, not ALTER INDEX REBUILD" }
+      sqlite:      { status: not-applicable, reason: "REINDEX, not ALTER INDEX REBUILD" }
+      duckdb:      { status: not-applicable, reason: "No index maintenance statement" }
+      hive:        { status: not-applicable, reason: "Indexes removed in Hive 3" }
+      spark:       { status: not-applicable, reason: "No indexes" }
+      databricks:  { status: not-applicable, reason: "No user indexes" }
+      redshift:    { status: not-applicable, reason: "No indexes (sort/dist keys)" }
+      bigquery:    { status: not-applicable, reason: "No user indexes to rebuild" }
+      trino:       { status: not-applicable, reason: "Query engine, no index storage" }
+      athena:      { status: not-applicable, reason: "Query engine, no index storage" }
+      flink:       { status: not-applicable, reason: "Query engine, no index storage" }
+      snowflake:   { status: not-applicable, reason: "No user indexes (micro-partitions)" }
+      clickhouse:  { probe: "ALTER TABLE t1 MATERIALIZE INDEX idx1;" }
+
+  - id: database_options
+    name: "CREATE DATABASE with an option list"
+    category: ddl
+    ansi: false
+    weight: 1
+    probe: "CREATE DATABASE db1 CHARACTER SET utf8mb4;"
+    dialects:
+      postgres:    { probe: "CREATE DATABASE db1 WITH ENCODING 'UTF8';" }
+      cockroachdb: { probe: "CREATE DATABASE db1 PRIMARY REGION 'us-east1';" }
+      hive:        { probe: "CREATE DATABASE db1 WITH DBPROPERTIES ('k' = 'v');" }
+      spark:       { probe: "CREATE DATABASE db1 WITH DBPROPERTIES ('k' = 'v');" }
+      databricks:  { probe: "CREATE DATABASE db1 WITH DBPROPERTIES ('k' = 'v');" }
+      athena:      { probe: "CREATE DATABASE db1 WITH DBPROPERTIES ('k' = 'v');" }
+      snowflake:   { probe: "CREATE DATABASE db1 DATA_RETENTION_TIME_IN_DAYS = 1;" }
+      bigquery:    { status: not-applicable, reason: "Datasets are schemas; CREATE SCHEMA … OPTIONS" }
+      spanner:     { status: not-applicable, reason: "Databases are created by the instance API" }
+      sqlite:      { status: not-applicable, reason: "One database per file; ATTACH instead" }
+      trino:       { status: not-applicable, reason: "Catalogs are configured, not created" }
+      flink:       { probe: "CREATE DATABASE db1 WITH ('k' = 'v');" }
+      oracle:      { probe: "CREATE DATABASE db1 CHARACTER SET AL32UTF8;" }
+      hana:        { status: not-applicable, reason: "Tenant databases via ALTER SYSTEM, not CREATE DATABASE" }
+      db2:         { status: not-applicable, reason: "CREATE DATABASE is a CLP command, not SQL" }
+
+  - id: bulk_load
+    name: "Bulk load from a file"
+    category: dml
+    ansi: false
+    weight: 2
+    probe: "LOAD DATA INFILE 'f.csv' INTO TABLE t1;"
+    dialects:
+      postgres:    { probe: "COPY t1 FROM 'f.csv';" }
+      cockroachdb: { probe: "COPY t1 FROM STDIN;" }
+      redshift:    { probe: "COPY t1 FROM 's3://b/f' IAM_ROLE 'arn';" }
+      snowflake:   { probe: "COPY INTO t1 FROM @stage1;" }
+      duckdb:      { probe: "COPY t1 FROM 'f.csv';" }
+      bigquery:    { probe: "LOAD DATA INTO t1 FROM FILES (uris = ['gs://b/f']);" }
+      hive:        { probe: "LOAD DATA INPATH '/f' INTO TABLE t1;" }
+      spark:       { probe: "LOAD DATA INPATH '/f' INTO TABLE t1;" }
+      databricks:  { probe: "COPY INTO t1 FROM '/f' FILEFORMAT = CSV;" }
+      clickhouse:  { status: not-applicable, reason: "Ingest via INSERT … FROM INFILE / clickhouse-client" }
+      trino:       { status: not-applicable, reason: "No load statement; INSERT … SELECT from a connector" }
+      athena:      { status: not-applicable, reason: "No load statement; data is already in S3" }
+      flink:       { status: not-applicable, reason: "No load statement; INSERT … SELECT from a connector" }
+      spanner:     { status: not-applicable, reason: "Bulk load via the Dataflow/import API" }
+      sqlite:      { status: not-applicable, reason: ".import is a shell command, not SQL" }
+
+  - id: materialized_view_log
+    name: "Materialized view log (incremental refresh source)"
+    category: ddl
+    ansi: false
+    weight: 1
+    probe: "CREATE MATERIALIZED VIEW LOG ON t1 WITH PRIMARY KEY;"
+    dialects:
+      # A change-capture object that only the Oracle family spells this way;
+      # elsewhere incremental refresh is either automatic or unavailable.
+      postgres:    { status: not-applicable, reason: "Full refresh only; no MV log object" }
+      cockroachdb: { status: not-applicable, reason: "No materialized view log" }
+      mysql:       { status: not-applicable, reason: "No materialized views" }
+      mariadb:     { status: not-applicable, reason: "No materialized views" }
+      sqlite:      { status: not-applicable, reason: "No materialized views" }
+      duckdb:      { status: not-applicable, reason: "No materialized views" }
+      tsql:        { status: not-applicable, reason: "Indexed views refresh implicitly" }
+      db2:         { status: not-applicable, reason: "MQT staging tables, not a MV log" }
+      hive:        { status: not-applicable, reason: "No materialized view log" }
+      spark:       { status: not-applicable, reason: "No materialized view log" }
+      databricks:  { status: not-applicable, reason: "No materialized view log" }
+      snowflake:   { status: not-applicable, reason: "Materialized views refresh automatically" }
+      bigquery:    { status: not-applicable, reason: "Materialized views refresh automatically" }
+      spanner:     { status: not-applicable, reason: "No materialized views" }
+      redshift:    { status: not-applicable, reason: "No materialized view log" }
+      trino:       { status: not-applicable, reason: "No materialized view log" }
+      athena:      { status: not-applicable, reason: "No materialized views" }
+      clickhouse:  { status: not-applicable, reason: "Materialized views are insert triggers" }
+      flink:       { status: not-applicable, reason: "No materialized view log" }
+      teradata:    { status: not-applicable, reason: "Join indexes refresh implicitly" }
+      hana:        { status: not-applicable, reason: "No materialized view log" }
+
+  - id: database_link
+    name: "Remote database link / connection object"
+    category: ddl
+    ansi: false
+    weight: 1
+    probe: "CREATE DATABASE LINK dl1 CONNECT TO u1 IDENTIFIED BY p1 USING 'svc';"
+    dialects:
+      postgres:    { probe: "CREATE SERVER srv1 FOREIGN DATA WRAPPER fdw1;" }
+      cockroachdb: { probe: "CREATE EXTERNAL CONNECTION ec1 AS 's3://b';" }
+      mariadb:     { probe: "CREATE SERVER srv1 FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h');" }
+      mysql:       { probe: "CREATE SERVER srv1 FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h');" }
+      bigquery:    { probe: "CREATE CONNECTION `p.r.c1` OPTIONS (type = 'CLOUD_SQL');" }
+      flink:       { probe: "CREATE CATALOG c1 WITH ('type' = 'hive');" }
+      sqlite:      { status: not-applicable, reason: "ATTACH DATABASE, not a link object" }
+      duckdb:      { status: not-applicable, reason: "ATTACH, not a link object" }
+      spanner:     { status: not-applicable, reason: "No remote link object" }
+      hive:        { status: not-applicable, reason: "No remote link object" }
+      spark:       { status: not-applicable, reason: "No remote link object" }
+      databricks:  { status: not-applicable, reason: "Foreign catalogs are Unity Catalog objects" }
+      athena:      { status: not-applicable, reason: "Federation via Lambda connectors, not SQL" }
+
+  - id: optimize_table
+    name: "Storage compaction / reorganisation"
+    category: admin
+    ansi: false
+    weight: 1
+    probe: "OPTIMIZE TABLE t1;"
+    dialects:
+      clickhouse:  { probe: "OPTIMIZE TABLE t1 FINAL;" }
+      spark:       { probe: "OPTIMIZE t1;" }
+      databricks:  { probe: "OPTIMIZE t1 ZORDER BY (a);" }
+      hana:        { probe: "MERGE DELTA OF t1;" }
+      db2:         { probe: "REORG TABLE t1;" }
+      oracle:      { probe: "ALTER TABLE t1 SHRINK SPACE;" }
+      postgres:    { status: not-applicable, reason: "VACUUM (a separate maintenance model)" }
+      cockroachdb: { status: not-applicable, reason: "Compaction is automatic" }
+      duckdb:      { status: not-applicable, reason: "CHECKPOINT/VACUUM, no compaction statement" }
+      sqlite:      { probe: "VACUUM;" }
+      snowflake:   { status: not-applicable, reason: "Micro-partitions are maintained automatically" }
+      bigquery:    { status: not-applicable, reason: "Storage is managed automatically" }
+      spanner:     { status: not-applicable, reason: "Storage is managed automatically" }
+      redshift:    { probe: "VACUUM t1;" }
+      trino:       { status: not-applicable, reason: "Query engine, no owned storage" }
+      athena:      { status: not-applicable, reason: "Query engine, no owned storage" }
+      flink:       { status: not-applicable, reason: "Query engine, no owned storage" }
+      tsql:        { status: not-applicable, reason: "Index rebuild is the maintenance path" }
+      teradata:    { status: not-applicable, reason: "No compaction statement" }
+
+  - id: commit_synonym
+    name: "COMMIT/ROLLBACK synonyms (END, ABORT)"
+    category: dml
+    ansi: false
+    weight: 1
+    probe: "END;"
+    dialects:
+      postgres:    { probe: "END TRANSACTION;" }
+      cockroachdb: { probe: "END TRANSACTION;" }
+      redshift:    { probe: "END TRANSACTION;" }
+      # Engines where END belongs to a block, not a transaction.
+      mysql:       { status: not-applicable, reason: "END closes a compound statement" }
+      mariadb:     { status: not-applicable, reason: "END closes a compound statement" }
+      tsql:        { status: not-applicable, reason: "END closes a BEGIN block" }
+      oracle:      { status: not-applicable, reason: "END closes a PL/SQL block" }
+      db2:         { status: not-applicable, reason: "END closes a compound statement" }
+      hana:        { status: not-applicable, reason: "END closes a SQLScript block" }
+      hive:        { status: not-applicable, reason: "No transaction synonyms" }
+      spark:       { status: not-applicable, reason: "No transaction synonyms" }
+      databricks:  { status: not-applicable, reason: "No transaction synonyms" }
+      snowflake:   { status: not-applicable, reason: "No transaction synonyms" }
+      bigquery:    { status: not-applicable, reason: "No transaction synonyms" }
+      spanner:     { status: not-applicable, reason: "No transaction synonyms" }
+      trino:       { status: not-applicable, reason: "No transaction synonyms" }
+      athena:      { status: not-applicable, reason: "No transactions" }
+      flink:       { status: not-applicable, reason: "No transactions" }
+      clickhouse:  { status: not-applicable, reason: "No transaction synonyms" }
+      teradata:    { status: not-applicable, reason: "END is a block terminator" }
+      duckdb:      { status: not-applicable, reason: "No END synonym" }
+      sqlite:      { probe: "END TRANSACTION;" }
 
   # ── Not parser-observable ────────────────────────────────────────────────
   # No writable surface syntax to probe → excluded from every score denominator.

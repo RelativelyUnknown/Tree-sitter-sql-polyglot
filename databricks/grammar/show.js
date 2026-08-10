@@ -70,6 +70,23 @@ export default {
     $.keyword_shares,
     $.keyword_recipients,
     $.keyword_providers,
+    // Unity Catalog object types previously missing from SHOW
+    $.keyword_users,
+    $.keyword_policies,
+    seq($.keyword_external, $.keyword_locations),
+  ),
+
+  // SHOW PROCEDURES [ { FROM | IN } schema ]
+  _show_procedures: $ => seq(
+    $.keyword_procedures,
+    optional(seq(choice($.keyword_from, $.keyword_in), $.object_reference)),
+  ),
+
+  // SHOW TABLES DROPPED [ { FROM | IN } schema ]
+  _show_tables_dropped: $ => seq(
+    $.keyword_tables,
+    $.keyword_dropped,
+    optional(seq(choice($.keyword_from, $.keyword_in), $.object_reference)),
   ),
 
   // SHOW TBLPROPERTIES table [(key)]

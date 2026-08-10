@@ -2,6 +2,7 @@ import trino from '../trino/grammar.js';
 import { optional_parenthesis, paren_list, make_keyword } from '../grammar/helpers.js';
 import athena_statement_rules from './grammar/statements.js';
 import athena_create_rules from './grammar/create.js';
+import athena_admin_rules from './grammar/admin.js';
 
 export default grammar(trino, {
   name: 'athena_sql',
@@ -60,6 +61,11 @@ export default grammar(trino, {
         $.create_external_table,
         $.show_statement,
         $.describe_statement,
+        // grammar/admin.js
+        $.athena_show_statement,
+        $.alter_database_properties,
+        $.alter_view_dialect,
+        $.describe_view_statement,
         $.analyze_statement,
         $.comment_on_statement,
         $.show_partitions_statement,
@@ -115,9 +121,36 @@ export default grammar(trino, {
         paren_list(seq($.identifier, '=', $._expression), true),
       ),
       seq($.keyword_set, $.keyword_location, alias($._literal_string, $.literal)),
+      // ALTER TABLE t SET TBLPROPERTIES ('k' = 'v' [, …])
+      seq(
+        $.keyword_set,
+        $.keyword_tblproperties,
+        paren_list($.property_pair, true),
+      ),
+      // ALTER TABLE t {ADD | REPLACE} COLUMNS (col type [, …])
+      seq(
+        choice($.keyword_add, $.keyword_replace),
+        $.keyword_columns,
+        $.column_definitions,
+      ),
+      // ALTER TABLE t RENAME PARTITION (…) TO PARTITION (…)
+      seq(
+        $.keyword_rename,
+        $.keyword_partition,
+        paren_list(seq($.identifier, '=', $._expression), true),
+        $.keyword_to,
+        $.keyword_partition,
+        paren_list(seq($.identifier, '=', $._expression), true),
+      ),
     ),
 
     keyword_vacuum:       _ => token(prec(1, make_keyword("vacuum"))),
+
+    // ── Keywords for the statements in grammar/admin.js ────────────────────
+    keyword_views:        _ => token(prec(1, make_keyword("views"))),
+    keyword_databases:    _ => token(prec(1, make_keyword("databases"))),
+    keyword_dbproperties: _ => token(prec(1, make_keyword("dbproperties"))),
+    keyword_dialect:      _ => token(prec(1, make_keyword("dialect"))),
 
     // Athena-specific keywords (not in Trino or base — defined here only)
     keyword_unload:       _ => token(prec(1, make_keyword("unload"))),
@@ -144,6 +177,7 @@ export default grammar(trino, {
     keyword_lines:        _ => token(prec(1, make_keyword("lines"))),
 
     ...athena_statement_rules,
+    ...athena_admin_rules,
     ...athena_create_rules,
 
   },

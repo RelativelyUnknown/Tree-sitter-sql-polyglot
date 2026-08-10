@@ -75,18 +75,7 @@ export default {
     optional(seq($.keyword_tblproperties, paren_list($.table_option, true))),
     optional(seq($.keyword_as, $.create_query)),
   ),
-
-  // CREATE TABLE [IF NOT EXISTS] new_table LIKE existing [USING format] [LOCATION path]
-  create_table_like: $ => seq(
-    $.keyword_create,
-    $.keyword_table,
-    optional($._if_not_exists),
-    $.object_reference,
-    $.keyword_like,
-    $.object_reference,
-    optional(seq($.keyword_using, $.identifier)),
-    optional(seq($.keyword_location, alias($._literal_string, $.literal))),
-  ),
+  // CREATE TABLE … LIKE … moved to spark/grammar/create.js (OSS Spark syntax).
 
   // Iceberg partition transform: year(ts), month(ts), day(ts), hour(ts),
   //   bucket(16, id), truncate(10, name), identity(col)
@@ -193,6 +182,39 @@ export default {
     optional($._if_not_exists),
     $.object_reference,
     optional(seq($.keyword_comment, alias($._literal_string, $.literal))),
+  ),
+
+
+  // UNDROP { MATERIALIZED VIEW | TABLE } { name | WITH ID id }
+  // https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-undrop-table
+  undrop_statement: $ => seq(
+    $.keyword_undrop,
+    choice(seq($.keyword_materialized, $.keyword_view), $.keyword_table),
+    choice(
+      field('name', $.object_reference),
+      seq($.keyword_with, $.keyword_id, alias($._literal_string, $.literal)),
+    ),
+  ),
+
+  // CREATE SERVER (Lakehouse Federation) — options modelled as the generic
+  // OPTIONS (k = v, …) form Databricks uses for federated objects.
+  create_server: $ => seq(
+    $.keyword_create,
+    $.keyword_server,
+    optional($._if_not_exists),
+    field('name', $.identifier),
+    optional(seq($.keyword_type, alias($._literal_string, $.literal))),
+    optional(seq($.keyword_options, paren_list($._key_value_pair, true))),
+  ),
+
+  // DROP BLOOMFILTER INDEX ON [TABLE] table_name
+  drop_bloomfilter_index: $ => seq(
+    $.keyword_drop,
+    $.keyword_bloomfilter,
+    $.keyword_index,
+    $.keyword_on,
+    optional($.keyword_table),
+    field('table', $.object_reference),
   ),
 
 };

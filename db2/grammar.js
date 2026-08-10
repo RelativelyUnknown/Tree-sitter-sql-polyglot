@@ -7,6 +7,8 @@ import db2_special_register_rules from './grammar/special_registers.js';
 import db2_diagnostics_rules from './grammar/diagnostics.js';
 import db2_audit_rules from './grammar/audit.js';
 import db2_procedural_rules from './grammar/procedural.js';
+import db2_admin_ddl_rules from './grammar/admin.js';
+import db2_clause_rules from './grammar/clauses.js';
 
 export default grammar(base, {
   name: 'db2_sql',
@@ -39,6 +41,10 @@ export default grammar(base, {
       $._merge_statement,
       $._refresh_statement,
       $.set_statement,
+      // Db2's SET SCHEMA is a statement in its own right. Base only ever
+      // reaches set_schema as a clause of ALTER TABLE / ALTER VIEW, so at
+      // statement level it was falling through to set_variable_statement.
+      $.set_schema,
       $.transfer_ownership,
       $.signal_statement,
       $.resignal_statement,
@@ -47,6 +53,9 @@ export default grammar(base, {
       $.revoke_statement,
       $.comment_statement,
       $.label_statement,
+      // grammar/admin.js
+      $.create_alias_statement,
+      $.create_variable_statement,
     ),
 
     // DECLARE GLOBAL TEMPORARY TABLE name (cols) [ON COMMIT {PRESERVE|DELETE} ROWS] …
@@ -130,6 +139,10 @@ export default grammar(base, {
         $.loop_statement,
         $.leave_statement,
         $.iterate_statement,
+        $.repeat_statement,
+        $.pipe_statement,
+        $.declare_section_statement,
+        $.datalake_table_statement,
         $.declare_cursor_statement,
         $.open_cursor_statement,
         $.fetch_cursor_statement,
@@ -137,15 +150,32 @@ export default grammar(base, {
         $.for_statement,
         $.prepare_statement,
         $.execute_statement,
+        // grammar/admin.js
+        $.lock_table_statement,
+        $.call_statement,
+        $.refresh_table_statement,
+        $.set_integrity_statement,
+        $.flush_statement,
+        $.free_locator_statement,
+        $.describe_statement,
+        $.execute_immediate_statement,
+        $.connect_statement,
+        $.disconnect_statement,
+        $.audit_statement,
+        $.whenever_statement,
+        $.goto_statement,
+        $.allocate_cursor_statement,
+        $.associate_locators_statement,
       ),
     ),
 
-    // Extend _create_statement to add Db2-specific CREATE statements
+    // Extend _create_statement to add Db2-specific CREATE statements.
+    // No CREATE MATERIALIZED VIEW: Db2 spells this as a materialized query
+    // table on CREATE TABLE (… DATA INITIALLY DEFERRED REFRESH DEFERRED).
     _create_statement: $ => seq(
       choice(
         $.create_table,
         $.create_view,
-        $.create_materialized_view,
         $.create_index,
         $.create_function,
         $.create_procedure,
@@ -187,6 +217,125 @@ export default grammar(base, {
     ),
 
     // Extend set_statement to add SET CURRENT SCHEMA = value
+
+    // ── Keywords for the clause completions in grammar/clauses.js ──────────
+    // Most appear mid-statement only and stay extracted (prec 0). The
+    // reserved ones sit where an identifier is also legal in the same parse
+    // state — the second word of a two-word TRANSFER OWNERSHIP object kind,
+    // the sensitivity in DECLARE CURSOR — and an extracted keyword loses to
+    // the word token there. PARTITION, EXTENSION and GROUP below are
+    // reserved for the same reason.
+    keyword_age:          _ => make_keyword("age"),
+    keyword_asensitive:   _ => token(prec(1, make_keyword("asensitive"))),
+    keyword_caller:       _ => make_keyword("caller"),
+    keyword_capture:      _ => make_keyword("capture"),
+    keyword_changes:      _ => make_keyword("changes"),
+    keyword_client:       _ => make_keyword("client"),
+    keyword_compress:     _ => token(prec(1, make_keyword("compress"))),
+    keyword_current_user: _ => token(prec(1, make_keyword("current_user"))),
+    keyword_cursors:      _ => make_keyword("cursors"),
+    keyword_hierarchy:    _ => token(prec(1, make_keyword("hierarchy"))),
+    keyword_insensitive:  _ => token(prec(1, make_keyword("insensitive"))),
+    keyword_locks:        _ => make_keyword("locks"),
+    keyword_mapping:      _ => token(prec(1, make_keyword("mapping"))),
+    keyword_method:       _ => make_keyword("method"),
+    keyword_modification: _ => make_keyword("modification"),
+    keyword_query:        _ => make_keyword("query"),
+    keyword_retain:       _ => make_keyword("retain"),
+    keyword_scope:        _ => make_keyword("scope"),
+    keyword_session_user: _ => token(prec(1, make_keyword("session_user"))),
+    keyword_system_user:  _ => token(prec(1, make_keyword("system_user"))),
+    keyword_tracking:     _ => make_keyword("tracking"),
+    keyword_xsrobject:    _ => make_keyword("xsrobject"),
+    keyword_yes:          _ => make_keyword("yes"),
+    keyword_extension:    _ => token(prec(1, make_keyword("extension"))),
+    keyword_partition:    _ => token(prec(1, make_keyword("partition"))),
+    keyword_group:        _ => token(prec(1, make_keyword("group"))),
+    // Lexer-precedence guards: `group` above claims the front of both of
+    // these, and precedence is compared before match length.
+    keyword_grouping:     _ => token(prec(1, make_keyword("grouping"))),
+    keyword_groups:       _ => token(prec(1, make_keyword("groups"))),
+    // SET SCHEMA competes with set_variable_statement, whose target is an
+    // identifier; extracted SCHEMA loses to the word token there, so the
+    // statement was never reachable.
+    keyword_schema:       _ => token(prec(1, make_keyword("schema"))),
+    // SET SCHEMA also accepts a plain name, so an identifier is legal in the
+    // same position as these three and they would otherwise lose to it.
+    keyword_user:         _ => token(prec(1, make_keyword("user"))),
+
+    // ── Keywords for the statements in grammar/admin.js ────────────────────
+    // These must be token(prec(1, …)), not plain make_keyword. The base
+    // grammar sets `word: $ => $._identifier`, so an unprefixed keyword is
+    // extracted — and an extracted keyword loses to the word token wherever
+    // an identifier is also legal. In this dialect an identifier is legal at
+    // statement start, so every statement-initial extracted keyword lexed as
+    // an identifier and the statements did not parse at all.
+    keyword_lock:           _ => token(prec(1, make_keyword("lock"))),
+    keyword_mode:           _ => token(prec(1, make_keyword("mode"))),
+    keyword_share:          _ => token(prec(1, make_keyword("share"))),
+    keyword_exclusive:      _ => token(prec(1, make_keyword("exclusive"))),
+    keyword_call:           _ => token(prec(1, make_keyword("call"))),
+    keyword_incremental:    _ => token(prec(1, make_keyword("incremental"))),
+    keyword_allow:          _ => token(prec(1, make_keyword("allow"))),
+    keyword_access:         _ => token(prec(1, make_keyword("access"))),
+    keyword_storage:        _ => token(prec(1, make_keyword("storage"))),
+    keyword_reuse:          _ => token(prec(1, make_keyword("reuse"))),
+    keyword_triggers:       _ => token(prec(1, make_keyword("triggers"))),
+    keyword_continue:       _ => token(prec(1, make_keyword("continue"))),
+    keyword_identity:       _ => token(prec(1, make_keyword("identity"))),
+    keyword_flush:          _ => token(prec(1, make_keyword("flush"))),
+    keyword_package:        _ => token(prec(1, make_keyword("package"))),
+    keyword_cache:          _ => token(prec(1, make_keyword("cache"))),
+    keyword_dynamic:        _ => token(prec(1, make_keyword("dynamic"))),
+    keyword_event:          _ => token(prec(1, make_keyword("event"))),
+    keyword_monitor:        _ => token(prec(1, make_keyword("monitor"))),
+    keyword_buffer:         _ => token(prec(1, make_keyword("buffer"))),
+    keyword_bufferpools:    _ => token(prec(1, make_keyword("bufferpools"))),
+    keyword_federated:      _ => token(prec(1, make_keyword("federated"))),
+    keyword_authentication: _ => token(prec(1, make_keyword("authentication"))),
+    keyword_optimization:   _ => token(prec(1, make_keyword("optimization"))),
+    keyword_profile:        _ => token(prec(1, make_keyword("profile"))),
+    keyword_free:           _ => token(prec(1, make_keyword("free"))),
+    keyword_locator:        _ => token(prec(1, make_keyword("locator"))),
+    keyword_describe:       _ => token(prec(1, make_keyword("describe"))),
+    keyword_output:         _ => token(prec(1, make_keyword("output"))),
+    keyword_connect:        _ => token(prec(1, make_keyword("connect"))),
+    keyword_disconnect:     _ => token(prec(1, make_keyword("disconnect"))),
+    keyword_sql:            _ => token(prec(1, make_keyword("sql"))),
+    keyword_alias:          _ => token(prec(1, make_keyword("alias"))),
+    keyword_variable:       _ => token(prec(1, make_keyword("variable"))),
+    keyword_constant:       _ => token(prec(1, make_keyword("constant"))),
+    keyword_checked:        _ => token(prec(1, make_keyword("checked"))),
+    keyword_unchecked:      _ => token(prec(1, make_keyword("unchecked"))),
+    keyword_off:            _ => token(prec(1, make_keyword("off"))),
+    keyword_integrity:      _ => token(prec(1, make_keyword("integrity"))),
+
+    // Second pass: statements the vendor list showed were still missing.
+    // `go`/`goto` and `locator`/`locators` sit at the same precedence as each
+    // other, so match length decides between them.
+    keyword_whenever:       _ => token(prec(1, make_keyword("whenever"))),
+    keyword_sqlerror:       _ => token(prec(1, make_keyword("sqlerror"))),
+    keyword_sqlwarning:     _ => token(prec(1, make_keyword("sqlwarning"))),
+    keyword_found:          _ => token(prec(1, make_keyword("found"))),
+    keyword_goto:           _ => token(prec(1, make_keyword("goto"))),
+    keyword_go:             _ => token(prec(1, make_keyword("go"))),
+    keyword_allocate:       _ => token(prec(1, make_keyword("allocate"))),
+    keyword_associate:      _ => token(prec(1, make_keyword("associate"))),
+    keyword_locators:       _ => token(prec(1, make_keyword("locators"))),
+    keyword_result:         _ => token(prec(1, make_keyword("result"))),
+    keyword_exception:      _ => token(prec(1, make_keyword("exception"))),
+    keyword_trusted:        _ => token(prec(1, make_keyword("trusted"))),
+    keyword_context:        _ => token(prec(1, make_keyword("context"))),
+    keyword_remove:         _ => token(prec(1, make_keyword("remove"))),
+
+    // Lexer-precedence guards: each of these is a longer keyword whose first
+    // characters are now claimed by a prec-1 token above. Precedence beats
+    // match length, so they have to be re-declared at the same precedence.
+    keyword_called:         _ => token(prec(1, make_keyword("called"))),
+    keyword_connection:     _ => token(prec(1, make_keyword("connection"))),
+    keyword_offset:         _ => token(prec(1, make_keyword("offset"))),
+    keyword_sqlstate:       _ => token(prec(1, make_keyword("sqlstate"))),
+
     set_statement: $ => seq(
       $.keyword_set,
       choice(
@@ -307,18 +456,31 @@ export default grammar(base, {
     keyword_do:         _ => token(prec(1, make_keyword("do"))),
     keyword_leave:      _ => token(prec(1, make_keyword("leave"))),
     keyword_iterate:    _ => token(prec(1, make_keyword("iterate"))),
+
+    // ── Keywords for REPEAT, PIPE, DECLARE SECTION and DATALAKE ────────────
+    keyword_repeat:       _ => token(prec(1, make_keyword("repeat"))),
+    keyword_pipe:         _ => token(prec(1, make_keyword("pipe"))),
+    keyword_datalake:     _ => token(prec(1, make_keyword("datalake"))),
+    keyword_stored:       _ => token(prec(1, make_keyword("stored"))),
+    keyword_location:     _ => token(prec(1, make_keyword("location"))),
+    keyword_partitioned:  _ => token(prec(1, make_keyword("partitioned"))),
+    keyword_tblproperties: _ => token(prec(1, make_keyword("tblproperties"))),
+    keyword_format:       _ => token(prec(1, make_keyword("format"))),
+
+    // Lexer-precedence guard: REPEAT is a strict prefix of REPEATABLE, and
+    // explicit precedence beats match length, so the longer word has to be
+    // re-declared at the same precedence to stay lexable.
+    keyword_repeatable:   _ => token(prec(1, make_keyword("repeatable"))),
     keyword_loop:       _ => token(prec(1, make_keyword("loop"))),
     keyword_elseif:     _ => token(prec(1, make_keyword("elseif"))),
     keyword_while:      _ => token(prec(1, make_keyword("while"))),
     keyword_declare:    _ => token(prec(1, make_keyword("declare"))),
     keyword_atomic:     _ => token(prec(1, make_keyword("atomic"))),
     keyword_signal:         _ => token(prec(1, make_keyword("signal"))),
-    keyword_sqlstate:       _ => token(prec(1, make_keyword("sqlstate"))),
     keyword_resignal:       _ => token(prec(1, make_keyword("resignal"))),
     keyword_message_text:   _ => token(prec(1, make_keyword("message_text"))),
     keyword_get:            _ => token(prec(1, make_keyword("get"))),
     keyword_diagnostics:    _ => token(prec(1, make_keyword("diagnostics"))),
-    keyword_access:         _ => token(prec(1, make_keyword("access"))),
     keyword_optimize:       _ => token(prec(1, make_keyword("optimize"))),
     keyword_options:        _ => token(prec(1, make_keyword("options"))),
     keyword_version:        _ => token(prec(1, make_keyword("version"))),
@@ -335,6 +497,9 @@ export default grammar(base, {
     ...db2_diagnostics_rules,
     ...db2_audit_rules,
     ...db2_procedural_rules,
+    ...db2_admin_ddl_rules,
+    // last, so its overrides win over the inherited rules
+    ...db2_clause_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords

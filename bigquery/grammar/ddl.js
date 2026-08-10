@@ -10,6 +10,8 @@ export default {
     optional($._or_replace),
     optional($._temporary),
     optional($.keyword_table),
+    // CREATE [OR REPLACE] [TEMP] AGGREGATE FUNCTION …
+    optional($.keyword_aggregate),
     $.keyword_function,
     optional($._if_not_exists),
     $.object_reference,
@@ -118,6 +120,9 @@ export default {
   create_table: $ => prec.left(
     seq(
       $.keyword_create,
+      // BigQuery documents CREATE OR REPLACE TABLE alongside CREATE TABLE;
+      // the base (ANSI) rule has no OR REPLACE, so it has to be added here.
+      optional($._or_replace),
       optional(
         choice(
           $._temporary,

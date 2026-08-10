@@ -5,6 +5,7 @@ import duckdb_pivot_rules from './grammar/pivot.js';
 import duckdb_expression_rules from './grammar/expressions.js';
 import duckdb_type_rules from './grammar/types.js';
 import duckdb_statement_rules from './grammar/statements.js';
+import duckdb_admin_rules from './grammar/admin.js';
 
 export default grammar(base, {
   name: 'duckdb_sql',
@@ -71,6 +72,15 @@ export default grammar(base, {
         $.execute_statement,
         $.deallocate_statement,
         $.show_statement,
+        // grammar/admin.js
+        $.checkpoint_statement,
+        $.vacuum_statement,
+        $.analyze_statement,
+        $.call_statement,
+        $.describe_statement,
+        $.set_config_statement,
+        $.reset_config_statement,
+        $.set_variable_statement,
       ),
     ),
 
@@ -107,17 +117,23 @@ export default grammar(base, {
     ),
 
     // DuckDB: COMMENT ON is supported (re-enumerates base _ddl_statement)
-    // No MERGE: DuckDB has no MERGE statement (uses ON CONFLICT upsert instead).
+    // MERGE INTO is supported since DuckDB 1.4.0 (2025-09), alongside the
+    // older ON CONFLICT upsert form.
     _ddl_statement: $ => choice(
       $._create_statement,
       $._alter_statement,
       $._drop_statement,
       $._rename_statement,
+      $._merge_statement,
       $._refresh_statement,
       $.set_statement,
       $.grant_statement,
       $.revoke_statement,
       $.comment_statement,
+      $.use_statement,
+      // grammar/admin.js
+      $.create_secret_statement,
+      $.drop_secret_statement,
     ),
 
     // DuckDB: INSERT/UPDATE/DELETE support RETURNING (same syntax as PostgreSQL)
@@ -278,11 +294,27 @@ export default grammar(base, {
     keyword_uuid:       _ => make_keyword("uuid"),
     keyword_varint:     _ => make_keyword("varint"),
 
+    // ── Keywords for the statements in grammar/admin.js ────────────────────
+    keyword_checkpoint: _ => token(prec(1, make_keyword("checkpoint"))),
+    keyword_force:      _ => token(prec(1, make_keyword("force"))),
+    keyword_vacuum:     _ => token(prec(1, make_keyword("vacuum"))),
+    keyword_describe:   _ => token(prec(1, make_keyword("describe"))),
+    keyword_global:     _ => token(prec(1, make_keyword("global"))),
+    keyword_variable:   _ => token(prec(1, make_keyword("variable"))),
+    keyword_secret:     _ => token(prec(1, make_keyword("secret"))),
+    keyword_persistent: _ => token(prec(1, make_keyword("persistent"))),
+    keyword_call:       _ => token(prec(1, make_keyword("call"))),
+    // Lexer-precedence guard: `call` is a strict prefix of the base grammar's
+    // prec-0 `called`, and precedence beats match length, so `called` has to
+    // be re-declared at the same precedence to stay lexable here.
+    keyword_called:     _ => token(prec(1, make_keyword("called"))),
+
     ...duckdb_select_rules,
     ...duckdb_pivot_rules,
     ...duckdb_expression_rules,
     ...duckdb_type_rules,
     ...duckdb_statement_rules,
+    ...duckdb_admin_rules,
 
   },
 });

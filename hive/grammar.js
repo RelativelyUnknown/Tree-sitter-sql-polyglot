@@ -74,6 +74,91 @@ export default grammar(base, {
       $.export_statement,
       $.import_statement,
       $.create_temporary_macro,
+      // Hive 4 data connectors + transaction administration
+      $.create_connector,
+      $.alter_connector,
+      $.drop_connector,
+      $.abort_transactions_statement,
+    ),
+
+    // TINYINT is a Hive/Spark column type absent from the strict ANSI base,
+    // so _type is re-enumerated here to add it. Inherited by spark and
+    // databricks, which is why `CREATE TABLE t (a TINYINT)` previously failed
+    // in all three.
+    _type: $ => prec.left(
+      choice(
+        $.tinyint,
+        $.keyword_boolean,
+        $.bit,
+        $.binary,
+        $.varbinary,
+        $.smallint,
+        $.int,
+        $.bigint,
+        $.decimal,
+        $.numeric,
+        $.double,
+        $.float,
+        $.char,
+        $.varchar,
+        $.nchar,
+        $.nvarchar,
+        $.keyword_date,
+        $.time,
+        $.timestamp,
+        $.keyword_interval,
+        $.keyword_json,
+        $.keyword_xml,
+        $.keyword_string,
+        $.enum,
+        field('custom_type', $.object_reference),
+      ),
+    ),
+
+    tinyint: $ => $.keyword_tinyint,
+
+    // CREATE CONNECTOR name TYPE 'type' URL 'url' [COMMENT '…']
+    //   [WITH DCPROPERTIES (k=v, …)]
+    create_connector: $ => seq(
+      $.keyword_create,
+      $.keyword_connector,
+      optional($._if_not_exists),
+      field('name', $.identifier),
+      optional(seq($.keyword_type, alias($._literal_string, $.literal))),
+      optional(seq($.keyword_url, alias($._literal_string, $.literal))),
+      optional(seq($.keyword_comment, alias($._literal_string, $.literal))),
+      optional(seq(
+        $.keyword_with,
+        $.keyword_dcproperties,
+        paren_list($._key_value_pair, true),
+      )),
+    ),
+
+    // ALTER CONNECTOR name SET { DCPROPERTIES (…) | URL '…' | OWNER … }
+    alter_connector: $ => seq(
+      $.keyword_alter,
+      $.keyword_connector,
+      field('name', $.identifier),
+      $.keyword_set,
+      choice(
+        seq($.keyword_dcproperties, paren_list($._key_value_pair, true)),
+        seq($.keyword_url, alias($._literal_string, $.literal)),
+        seq($.keyword_owner, choice($.keyword_user, $.keyword_role), $.identifier),
+      ),
+    ),
+
+    drop_connector: $ => seq(
+      $.keyword_drop,
+      $.keyword_connector,
+      optional($._if_exists),
+      field('name', $.identifier),
+    ),
+
+    // ABORT TRANSACTIONS id [ id … ]
+    abort_transactions_statement: $ => seq(
+      $.keyword_abort,
+      $.keyword_transactions,
+      repeat1(alias($._natural_number, $.literal)),
     ),
 
     // GRANT ROLE r [, …] TO {USER|GROUP|ROLE} name [, …]
@@ -279,6 +364,22 @@ export default grammar(base, {
     ),
 
     // ALTER TABLE specifications: add_partition (from hive_compat) but no Iceberg ops
+    // CREATE {DATABASE | SCHEMA} [IF NOT EXISTS] name
+    //   [COMMENT c] [LOCATION path] [WITH DBPROPERTIES ('k' = 'v', …)]
+    // DATABASE only: base already defines create_schema for the SCHEMA
+    // spelling, and accepting both here made the two rules ambiguous.
+    create_database: $ => prec.left(seq(
+      $.keyword_create,
+      $.keyword_database,
+      optional($._if_not_exists),
+      $.identifier,
+      repeat(choice(
+        seq($.keyword_comment, field('comment', $.literal)),
+        seq($.keyword_location, field('location', $.literal)),
+        seq($.keyword_with, $.keyword_dbproperties, paren_list($.table_option, true)),
+      )),
+    )),
+
     _alter_specifications: $ => choice(
       $.add_partition,
       $.add_column,
@@ -294,6 +395,12 @@ export default grammar(base, {
       $.change_ownership,
       $.exchange_partition,
       $.concatenate_partition,
+      // ALTER TABLE t {SET | UNSET} TBLPROPERTIES ('k' = 'v', …)
+      // Spelled the same way as the ALTER VIEW action above: table_option on
+      // SET, a bare name list on UNSET.
+      seq($.keyword_set, $.keyword_tblproperties, paren_list($.table_option, true)),
+      seq($.keyword_unset, $.keyword_tblproperties, paren_list($._expression, true)),
+      seq($.keyword_set, $.keyword_serdeproperties, paren_list($.table_option, true)),
     ),
 
     // ALTER TABLE t [PARTITION (k=v, …)] CONCATENATE (small-file compaction)
@@ -512,6 +619,50 @@ export default grammar(base, {
           choice($.keyword_user, $.keyword_group, $.keyword_role),
           $.identifier,
         ),
+        // ── Hive SHOW statements previously missing ──
+        // SHOW VIEWS / MATERIALIZED VIEWS [ {FROM|IN} db ] [ LIKE pattern ]
+        seq(
+          choice(
+            $.keyword_views,
+            seq($.keyword_materialized, $.keyword_views),
+          ),
+          optional(seq(choice($.keyword_from, $.keyword_in), $.object_reference)),
+          optional(seq(optional($.keyword_like), alias($._literal_string, $.literal))),
+        ),
+        // SHOW COLUMNS {FROM|IN} table [ {FROM|IN} db ] [ LIKE pattern ]
+        seq(
+          $.keyword_columns,
+          choice($.keyword_from, $.keyword_in),
+          $.object_reference,
+          optional(seq(choice($.keyword_from, $.keyword_in), $.object_reference)),
+          optional(seq(optional($.keyword_like), alias($._literal_string, $.literal))),
+        ),
+        // SHOW [FORMATTED] INDEXES ON table [ {FROM|IN} db ]
+        seq(
+          optional($.keyword_formatted),
+          $.keyword_indexes,
+          $.keyword_on,
+          $.object_reference,
+          optional(seq(choice($.keyword_from, $.keyword_in), $.object_reference)),
+        ),
+        // SHOW TBLPROPERTIES table [ ( 'name' ) ]
+        seq(
+          $.keyword_tblproperties,
+          $.object_reference,
+          optional(wrapped_in_parenthesis(alias($._literal_string, $.literal))),
+        ),
+        // SHOW LOCKS [ table [PARTITION (…)] ] [EXTENDED]
+        seq(
+          $.keyword_locks,
+          optional($.object_reference),
+          optional($.partition_spec),
+          optional($.keyword_extended),
+        ),
+        // SHOW TRANSACTIONS / COMPACTIONS / CONNECTORS / CONF 'key'
+        $.keyword_transactions,
+        $.keyword_compactions,
+        $.keyword_connectors,
+        seq($.keyword_conf, alias($._literal_string, $.literal)),
       ),
     )),
 
@@ -546,6 +697,8 @@ export default grammar(base, {
     // the base _identifier pattern when both are valid in a parse state.
     keyword_serde:           _ => token(prec(1, make_keyword("serde"))),
     keyword_serdeproperties: _ => token(prec(1, make_keyword("serdeproperties"))),
+    keyword_unset:           _ => token(prec(1, make_keyword("unset"))),
+    keyword_dbproperties:    _ => make_keyword("dbproperties"),
     keyword_skewed:          _ => token(prec(1, make_keyword("skewed"))),
     keyword_directories:     _ => token(prec(1, make_keyword("directories"))),
     keyword_stored:          _ => token(prec(1, make_keyword("stored"))),
@@ -587,6 +740,22 @@ export default grammar(base, {
     keyword_oids:            _ => token(prec(1, make_keyword("oids"))),
     keyword_virtual:         _ => token(prec(1, make_keyword("virtual"))),
     keyword_jar:             _ => token(prec(1, make_keyword("jar"))),
+    // TINYINT column type (Hive/Spark; not ANSI, so absent from base)
+    keyword_tinyint:         _ => token(prec(1, make_keyword("tinyint"))),
+    // Hive 4 data connectors
+    keyword_connector:       _ => token(prec(1, make_keyword("connector"))),
+    keyword_connectors:      _ => token(prec(1, make_keyword("connectors"))),
+    keyword_dcproperties:    _ => token(prec(1, make_keyword("dcproperties"))),
+    keyword_url:             _ => token(prec(1, make_keyword("url"))),
+    // SHOW family + transaction administration
+    keyword_columns:         _ => token(prec(1, make_keyword("columns"))),
+    keyword_indexes:         _ => token(prec(1, make_keyword("indexes"))),
+    keyword_locks:           _ => token(prec(1, make_keyword("locks"))),
+    keyword_compactions:     _ => token(prec(1, make_keyword("compactions"))),
+    keyword_conf:            _ => token(prec(1, make_keyword("conf"))),
+    keyword_views:           _ => token(prec(1, make_keyword("views"))),
+    keyword_abort:           _ => token(prec(1, make_keyword("abort"))),
+    keyword_transactions:    _ => token(prec(1, make_keyword("transactions"))),
     keyword_handler:         _ => token(prec(1, make_keyword("handler"))),
     keyword_environment:     _ => token(prec(1, make_keyword("environment"))),
     keyword_parameter:       _ => token(prec(1, make_keyword("parameter"))),

@@ -7,6 +7,8 @@ import tsql_dml_rules from './grammar/dml.js';
 import tsql_procedural_rules from './grammar/procedural.js';
 import tsql_synapse_rules from './grammar/synapse.js';
 import tsql_security_rules from './grammar/security.js';
+import tsql_database_rules from './grammar/database.js';
+import tsql_admin_rules   from './grammar/admin.js';
 
 export default grammar(base, {
   name: 'tsql',
@@ -59,7 +61,10 @@ export default grammar(base, {
         $._ddl_statement,
         $._dml_write,
         optional_parenthesis($._dml_read),
-        $._transaction_statement,
+        // T-SQL has no ANSI SAVEPOINT / RELEASE SAVEPOINT / ROLLBACK TO
+        // SAVEPOINT — it uses SAVE TRANSACTION instead, so the base
+        // _transaction_statement family is deliberately not wired in here.
+        $.save_transaction_statement,
         // T-SQL procedural constructs
         $.declare_statement,
         $.if_statement,
@@ -84,6 +89,16 @@ export default grammar(base, {
         $.exec_statement,
         $.return_statement,
         $.waitfor_statement,
+        // grammar/admin.js
+        $.set_option_statement,
+        $.execute_as_statement,
+        $.revert_statement,
+        $.setuser_statement,
+        $.enable_trigger_statement,
+        $.update_statistics_statement,
+        $.backup_statement,
+        $.open_key_statement,
+        $.sensitivity_classification_statement,
       ),
     ),
 
@@ -100,6 +115,37 @@ export default grammar(base, {
     )),
 
     // ── DDL dispatch ─────────────────────────────────────────────────────────
+    // ALTER INDEX {name | ALL} ON table
+    //   {REBUILD [PARTITION = n] [WITH (opt = val, …)] | REORGANIZE
+    //    | DISABLE | RESUME | PAUSE | ABORT | SET (opt = val, …)}
+    // A T-SQL-only spelling: base's alter_index has no ON clause.
+    alter_index_statement: $ => prec.right(seq(
+      $.keyword_alter,
+      $.keyword_index,
+      choice(field('name', $.identifier), $.keyword_all),
+      $.keyword_on,
+      field('table', $.object_reference),
+      choice(
+        seq(
+          $.keyword_rebuild,
+          optional(seq($.keyword_partition, '=', field('partition', $.literal))),
+          optional(seq($.keyword_with, paren_list($.index_option, true))),
+        ),
+        $.keyword_reorganize,
+        $.keyword_disable,
+        $.keyword_resume,
+        $.keyword_pause,
+        $.keyword_abort,
+        seq($.keyword_set, paren_list($.index_option, true)),
+      ),
+    )),
+
+    index_option: $ => seq(
+      field('name', $.identifier),
+      '=',
+      field('value', choice($.literal, $.identifier, $.keyword_on, $.keyword_off)),
+    ),
+
     _ddl_statement: $ => choice(
       $._create_statement,
       $._alter_statement,
@@ -114,6 +160,7 @@ export default grammar(base, {
       $.use_statement,
       $.create_synonym_statement,
       $.drop_synonym_statement,
+      $.alter_index_statement,
       $.create_login_statement,
       $.alter_login_statement,
       $.drop_login_statement,
@@ -121,14 +168,27 @@ export default grammar(base, {
       $.alter_user_statement,
       $.drop_user_statement,
       $.comment_statement,
+      // grammar/admin.js
+      $.deny_statement,
+      $.create_statistics,
+      $.create_key_object,
+      $.create_partition_function,
+      $.create_partition_scheme,
+      $.create_security_policy,
+      $.create_default_or_rule,
+      $.create_principal_role,
+      $.drop_tsql_object,
     ),
 
     // ── CREATE dispatch ───────────────────────────────────────────────────────
-    // No CREATE MATERIALIZED VIEW: T-SQL uses indexed views instead.
+    // CREATE MATERIALIZED VIEW is Azure Synapse dedicated-SQL-pool syntax
+    // (this dialect covers Synapse — see grammar/synapse.js). Box-standard
+    // SQL Server uses indexed views instead, but both share this grammar.
     _create_statement: $ => seq(
       choice(
         $.create_table,
         $.create_view,
+        $.create_materialized_view,
         $.create_index,
         $.create_function,
         $.create_procedure,
@@ -222,6 +282,13 @@ export default grammar(base, {
     // All defined with token(prec(1,...)) so the lexer prefers them over
     // the base _identifier pattern in ambiguous parse states.
     keyword_top:              _ => token(prec(1, make_keyword("top"))),
+    // CREATE / ALTER DATABASE vocabulary. Each follows a keyword rather
+    // than a name, so they stay extracted.
+    keyword_configuration:   _ => make_keyword("configuration"),
+    keyword_containment:     _ => make_keyword("containment"),
+    keyword_filegroup:       _ => make_keyword("filegroup"),
+    keyword_name:            _ => make_keyword("name"),
+    keyword_remove:          _ => make_keyword("remove"),
     keyword_output:           _ => token(prec(1, make_keyword("output"))),
     keyword_inserted:         _ => token(prec(1, make_keyword("inserted"))),
     keyword_deleted:          _ => token(prec(1, make_keyword("deleted"))),
@@ -254,6 +321,12 @@ export default grammar(base, {
     keyword_print:            _ => token(prec(1, make_keyword("print"))),
     keyword_break:            _ => token(prec(1, make_keyword("break"))),
     keyword_log:              _ => token(prec(1, make_keyword("log"))),
+    // ── Keywords for ALTER INDEX ──────────────────────────────────────────
+    keyword_rebuild:          _ => token(prec(1, make_keyword("rebuild"))),
+    keyword_reorganize:       _ => token(prec(1, make_keyword("reorganize"))),
+    keyword_resume:           _ => token(prec(1, make_keyword("resume"))),
+    keyword_pause:            _ => token(prec(1, make_keyword("pause"))),
+    keyword_abort:            _ => token(prec(1, make_keyword("abort"))),
     keyword_seterror:         _ => token(prec(1, make_keyword("seterror"))),
     // Note: keyword_continue is already in base (BigQuery); redefine here
     // with higher precedence so T-SQL parse states treat it as a keyword.
@@ -271,6 +344,37 @@ export default grammar(base, {
     keyword_cursor:           _ => token(prec(1, make_keyword("cursor"))),
     keyword_open:             _ => token(prec(1, make_keyword("open"))),
     keyword_close:            _ => token(prec(1, make_keyword("close"))),
+
+    // ── Keywords for the statements in grammar/admin.js ────────────────────
+    // MASTER / SYMMETRIC / ASYMMETRIC are deliberately absent: `USE master;`
+    // is in the corpus and none of the three is reserved in T-SQL, so those
+    // words stay identifiers (see grammar/admin.js).
+    keyword_deny:             _ => token(prec(1, make_keyword("deny"))),
+    keyword_control:          _ => token(prec(1, make_keyword("control"))),
+    keyword_revert:           _ => token(prec(1, make_keyword("revert"))),
+    keyword_caller:           _ => token(prec(1, make_keyword("caller"))),
+    keyword_cookie:           _ => token(prec(1, make_keyword("cookie"))),
+    keyword_setuser:          _ => token(prec(1, make_keyword("setuser"))),
+    keyword_statistics:       _ => token(prec(1, make_keyword("statistics"))),
+    keyword_partitions:       _ => token(prec(1, make_keyword("partitions"))),
+    keyword_backup:           _ => token(prec(1, make_keyword("backup"))),
+    keyword_restore:          _ => token(prec(1, make_keyword("restore"))),
+    keyword_certificate:      _ => token(prec(1, make_keyword("certificate"))),
+    keyword_credential:       _ => token(prec(1, make_keyword("credential"))),
+    keyword_scoped:           _ => token(prec(1, make_keyword("scoped"))),
+    keyword_encryption:       _ => token(prec(1, make_keyword("encryption"))),
+    keyword_decryption:       _ => token(prec(1, make_keyword("decryption"))),
+    keyword_scheme:           _ => token(prec(1, make_keyword("scheme"))),
+    keyword_security:         _ => token(prec(1, make_keyword("security"))),
+    keyword_policy:           _ => token(prec(1, make_keyword("policy"))),
+    keyword_predicate:        _ => token(prec(1, make_keyword("predicate"))),
+    keyword_block:            _ => token(prec(1, make_keyword("block"))),
+    keyword_replication:      _ => token(prec(1, make_keyword("replication"))),
+    keyword_rule:             _ => token(prec(1, make_keyword("rule"))),
+    keyword_sensitivity:      _ => token(prec(1, make_keyword("sensitivity"))),
+    keyword_classification:   _ => token(prec(1, make_keyword("classification"))),
+    keyword_server:           _ => token(prec(1, make_keyword("server"))),
+    keyword_application:      _ => token(prec(1, make_keyword("application"))),
     keyword_deallocate:       _ => token(prec(1, make_keyword("deallocate"))),
     keyword_insensitive:      _ => token(prec(1, make_keyword("insensitive"))),
     keyword_scroll:           _ => token(prec(1, make_keyword("scroll"))),
@@ -289,6 +393,12 @@ export default grammar(base, {
     keyword_read_only:        _ => token(prec(1, /[Rr][Ee][Aa][Dd]_[Oo][Nn][Ll][Yy]/)),
     keyword_exec:             _ => token(prec(1, make_keyword("exec"))),
     keyword_execute:          _ => token(prec(1, make_keyword("execute"))),
+    keyword_save:             _ => token(prec(1, make_keyword("save"))),
+    // T-SQL abbreviates TRANSACTION to TRAN (BEGIN/COMMIT/ROLLBACK/SAVE TRAN).
+    // Matched as ONE token with an optional tail — a separate keyword_tran
+    // would shadow the TRAN prefix of TRANSACTION, because tree-sitter weighs
+    // lexical precedence before match length. Same idiom as teradata's SEL.
+    keyword_transaction:      _ => /[Tt][Rr][Aa][Nn]([Ss][Aa][Cc][Tt][Ii][Oo][Nn])?/,
     keyword_return:           _ => token(prec(1, make_keyword("return"))),
     keyword_waitfor:          _ => token(prec(1, make_keyword("waitfor"))),
     keyword_delay:            _ => token(prec(1, make_keyword("delay"))),
@@ -387,6 +497,24 @@ export default grammar(base, {
       seq($.keyword_set, $.keyword_session, $.keyword_characteristics, $.keyword_as, $.keyword_transaction, $._transaction_mode),
     )),
 
+    // SAVE { TRAN | TRANSACTION } { savepoint_name | @savepoint_variable }
+    // T-SQL's savepoint form; it has no ANSI SAVEPOINT statement.
+    save_transaction_statement: $ => seq(
+      $.keyword_save,
+      $.keyword_transaction,
+      field('name', choice($.identifier, $.variable)),
+    ),
+
+    // ROLLBACK { TRAN | TRANSACTION } [ name | @var ] — an explicit name rolls
+    // back to that savepoint rather than the whole transaction. T-SQL spells
+    // this without the ANSI "TO SAVEPOINT".
+    _rollback: $ => seq(
+      $.keyword_rollback,
+      optional(choice($.keyword_transaction, $.keyword_work)),
+      optional(field('name', choice($.identifier, $.variable))),
+    ),
+
+    ...tsql_admin_rules,
     ...tsql_select_rules,
     ...tsql_type_rules,
     ...tsql_hint_rules,
@@ -394,6 +522,8 @@ export default grammar(base, {
     ...tsql_procedural_rules,
     ...tsql_synapse_rules,
     ...tsql_security_rules,
+    // last, so its overrides win over the inherited rules
+    ...tsql_database_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords

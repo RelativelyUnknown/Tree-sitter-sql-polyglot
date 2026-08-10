@@ -2,6 +2,8 @@ import base from '../grammar.js';
 import { comma_list, optional_parenthesis, make_keyword, wrapped_in_parenthesis } from '../grammar/helpers.js';
 import { createStatementChoices } from '../grammar/statements/create.js';
 import teradata_statement_rules from './grammar/statements.js';
+import teradata_admin_rules from './grammar/admin.js';
+import teradata_analysis_rules from './grammar/analysis.js';
 
 // Teradata SQL — standalone lineage (since 1979), extends the ANSI base.
 // Adds SEL/DEL abbreviations, SET/MULTISET/VOLATILE tables, PRIMARY INDEX,
@@ -76,6 +78,13 @@ export default grammar(base, {
         optional($.keyword_analyze),
         optional($.keyword_verbose),
       )),
+      // Request modifiers, like the EXPLAIN prefix above: a clause in front
+      // of the request it applies to, rather than a rule that contains it.
+      optional(choice(
+        $.dump_explain_clause,
+        $.insert_explain_clause,
+        $.using_request_clause,
+      )),
       choice(
         $._ddl_statement,
         $._dml_write,
@@ -88,6 +97,25 @@ export default grammar(base, {
         $.help_statement,
         $.compound_statement,
         $.declare_cursor_statement,
+        // grammar/admin.js
+        $.show_statement,
+        $.logging_statement,
+        $.database_statement,
+        $.give_statement,
+        $.rename_object_statement,
+        $.delete_database_statement,
+        $.checkpoint_statement,
+        $.echo_statement,
+        $.abort_statement,
+        $.collect_demographics_statement,
+        $.drop_statistics_statement,
+        $.execute_macro_statement,
+        // grammar/analysis.js
+        $.call_statement,
+        $.initiate_index_analysis_statement,
+        $.initiate_partition_analysis_statement,
+        $.restart_index_analysis_statement,
+        $.execute_function_statement,
       ),
     ),
 
@@ -121,8 +149,10 @@ export default grammar(base, {
     keyword_delete: _ => /[Dd][Ee][Ll]([Ee][Tt][Ee])?/,
 
     // SELECT [TOP n [PERCENT] [WITH TIES]] [DISTINCT] …
+    // base select plus TOP n, and Teradata's queue-table consuming read.
     select: $ => seq(
       $.keyword_select,
+      optional(seq($.keyword_and, $.keyword_consume)),
       optional(seq(
         $.keyword_top,
         $.literal,
@@ -151,6 +181,7 @@ export default grammar(base, {
           $.lateral_cross_join,
         ),
       ),
+      optional($.expand_on_clause),
       optional($.where),
       optional($.group_by),
       optional($.having),
@@ -175,11 +206,68 @@ export default grammar(base, {
       $.comment_statement,
     ),
 
+    // EXPAND ON period_col [AS alias] [BY interval [anchor]] [FOR period_expr]
+    // Teradata's temporal expansion: one row per interval of a PERIOD value.
+    expand_on_clause: $ => prec.right(seq(
+      $.keyword_expand,
+      $.keyword_on,
+      field('period', $._expression),
+      optional(seq(optional($.keyword_as), field('alias', $.identifier))),
+      optional(seq($.keyword_by, field('interval', $._expression))),
+      optional(seq($.keyword_for, field('period_expression', $._expression))),
+    )),
+
     // base parameter plus Teradata :name macro/host-variable references
     parameter: _ => /\?|(\$[0-9]+)|(:[a-zA-Z_][a-zA-Z0-9_]*)/,
 
     // Teradata-specific keywords (dialect-level per AGENTS.md)
     keyword_multiset:   _ => token(prec(1, make_keyword("multiset"))),
+    keyword_expand:     _ => token(prec(1, make_keyword("expand"))),
+
+    // ── Keywords for the statements in grammar/analysis.js ─────────────────
+    // Statement-initial keywords are reserved for the same reason as above.
+    keyword_call:       _ => token(prec(1, make_keyword("call"))),
+    // Lexer-precedence guard: `call` above claims the front of `called`.
+    keyword_called:     _ => token(prec(1, make_keyword("called"))),
+    keyword_dump:       _ => token(prec(1, make_keyword("dump"))),
+    keyword_initiate:   _ => token(prec(1, make_keyword("initiate"))),
+    keyword_restart:    _ => token(prec(1, make_keyword("restart"))),
+    keyword_using:      _ => token(prec(1, make_keyword("using"))),
+    // Clause keywords: only reachable mid-statement, so they stay extracted.
+    keyword_analysis:   _ => make_keyword("analysis"),
+    // KEEP INDEX follows `AS <tag>`, where the tag is an identifier; the
+    // extracted keyword loses to the word token in that state.
+    keyword_keep:       _ => token(prec(1, make_keyword("keep"))),
+    keyword_modified:   _ => make_keyword("modified"),
+    keyword_stat:       _ => make_keyword("stat"),
+    keyword_sql:        _ => make_keyword("sql"),
+    keyword_consume:    _ => make_keyword("consume"),
+    keyword_art:        _ => make_keyword("art"),
+    keyword_noddltext:  _ => make_keyword("noddltext"),
+
+    // ── Keywords for the statements in grammar/admin.js ────────────────────
+    // prec-1, not plain make_keyword: compound_statement allows a leading
+    // `label:`, so an identifier is legal at statement start and an extracted
+    // keyword would lose to it there.
+    keyword_show:         _ => token(prec(1, make_keyword("show"))),
+    keyword_logging:      _ => token(prec(1, make_keyword("logging"))),
+    keyword_capture:      _ => token(prec(1, make_keyword("capture"))),
+    keyword_isolated:     _ => token(prec(1, make_keyword("isolated"))),
+    keyword_loading:      _ => token(prec(1, make_keyword("loading"))),
+    keyword_give:         _ => token(prec(1, make_keyword("give"))),
+    keyword_checkpoint:   _ => token(prec(1, make_keyword("checkpoint"))),
+    keyword_echo:         _ => token(prec(1, make_keyword("echo"))),
+    keyword_abort:        _ => token(prec(1, make_keyword("abort"))),
+    keyword_flush:        _ => token(prec(1, make_keyword("flush"))),
+    keyword_demographics: _ => token(prec(1, make_keyword("demographics"))),
+    keyword_map:          _ => token(prec(1, make_keyword("map"))),
+    keyword_method:       _ => token(prec(1, make_keyword("method"))),
+    keyword_transform:    _ => token(prec(1, make_keyword("transform"))),
+    keyword_online:       _ => token(prec(1, make_keyword("online"))),
+    keyword_error:        _ => token(prec(1, make_keyword("error"))),
+    keyword_query:        _ => token(prec(1, make_keyword("query"))),
+    // Lexer-precedence guard: `query` above claims the front of query_band.
+    keyword_query_band:   _ => token(prec(1, /[Qq][Uu][Ee][Rr][Yy]_[Bb][Aa][Nn][Dd]/)),
     keyword_fallback:   _ => token(prec(1, make_keyword("fallback"))),
     keyword_journal:    _ => token(prec(1, make_keyword("journal"))),
     keyword_dual:       _ => token(prec(1, make_keyword("dual"))),
@@ -214,7 +302,6 @@ export default grammar(base, {
     keyword_help:       _ => token(prec(1, make_keyword("help"))),
     keyword_minus:      _ => token(prec(1, make_keyword("minus"))),
     keyword_preserve:   _ => token(prec(1, make_keyword("preserve"))),
-    keyword_query_band: _ => token(prec(1, make_keyword("query_band"))),
     keyword_none:       _ => token(prec(1, make_keyword("none"))),
     keyword_columns:    _ => token(prec(1, make_keyword("columns"))),
     keyword_compress:   _ => token(prec(1, make_keyword("compress"))),
@@ -224,6 +311,8 @@ export default grammar(base, {
     keyword_share:      _ => token(prec(1, make_keyword("share"))),
 
     ...teradata_statement_rules,
+    ...teradata_admin_rules,
+    ...teradata_analysis_rules,
 
   },
 });

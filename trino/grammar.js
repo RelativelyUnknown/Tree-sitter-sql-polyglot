@@ -4,6 +4,7 @@ import { createStatementChoices } from '../grammar/statements/create.js';
 import trino_statement_rules from './grammar/statements.js';
 import trino_type_rules     from './grammar/types.js';
 import trino_expression_rules from './grammar/expressions.js';
+import trino_clause_rules from './grammar/clauses.js';
 import trino_select_rules   from './grammar/select.js';
 import trino_ddl_rules      from './grammar/ddl.js';
 
@@ -87,6 +88,10 @@ export default grammar(base, {
         $.show_statement,
         $.describe_statement,
         $.analyze_statement,
+        $.call_statement,
+        $.create_branch_statement,
+        $.drop_branch_statement,
+        $.alter_branch_statement,
         $.comment_on_statement,
         $.deny_statement,
         $.set_role_statement,
@@ -151,6 +156,17 @@ export default grammar(base, {
       $.rename_column,
       $.set_schema,
       $.change_ownership,
+      // Spelled out rather than reusing $._set_properties: alter_table
+      // comma-separates its specifications, so a ',' after a property is
+      // ambiguous between continuing the property list and starting the next
+      // specification. prec.right has to sit on the production that holds the
+      // list for the parser to prefer continuing it — wrapping the hidden
+      // rule's reference does not reach it.
+      prec.right(seq(
+        $.keyword_set,
+        $.keyword_properties,
+        comma_list($.trino_property, true),
+      )),
       seq(
         $.keyword_execute,
         $.identifier,
@@ -164,6 +180,8 @@ export default grammar(base, {
     ),
 
     keyword_deny: _ => token(prec(1, make_keyword("deny"))),
+
+    keyword_properties:  _ => token(prec(1, make_keyword("properties"))),
 
     // Override _expression to add lambda
     _expression: $ => prec(1,
@@ -238,6 +256,15 @@ export default grammar(base, {
     keyword_roles:           _ => token(prec(1, make_keyword("roles"))),
     keyword_describe:        _ => token(prec(1, make_keyword("describe"))),
     keyword_extended:        _ => token(prec(1, make_keyword("extended"))),
+    keyword_call:            _ => token(prec(1, make_keyword("call"))),
+    keyword_output:          _ => token(prec(1, make_keyword("output"))),
+    // BRANCH / BRANCHES: distinct tokens, and "branch" is a prefix of
+    // "branches", so neither may rely on precedence to win — longest match
+    // decides, which requires them at the same (default) token precedence.
+    keyword_branch:          _ => make_keyword("branch"),
+    keyword_branches:        _ => make_keyword("branches"),
+    keyword_fast:            _ => token(prec(1, make_keyword("fast"))),
+    keyword_forward:         _ => token(prec(1, make_keyword("forward"))),
     keyword_comment:         _ => token(prec(1, make_keyword("comment"))),
     keyword_match:           _ => token(prec(1, make_keyword("match"))),
     keyword_text:            _ => token(prec(1, make_keyword("text"))),
@@ -291,6 +318,8 @@ export default grammar(base, {
     ...trino_expression_rules,
     ...trino_select_rules,
     ...trino_ddl_rules,
+    // last, so its overrides win over the inherited rules
+    ...trino_clause_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
