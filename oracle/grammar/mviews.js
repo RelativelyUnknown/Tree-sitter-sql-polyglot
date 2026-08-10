@@ -299,7 +299,7 @@ export default {
     repeat1(choice(
       $.rename_object,
       // The physical attributes that may follow REBUILD are collected by the
-      // outer repeat1, not nested here — nesting them makes the two repeats
+      // outer repeat1, not nested here; nesting them makes the two repeats
       // ambiguous for a shared attribute.
       $.keyword_rebuild,
       $.keyword_reverse,

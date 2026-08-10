@@ -2,7 +2,7 @@ import { comma_list, paren_list } from '../../grammar/helpers.js';
 
 // Statements that already had a rule but only covered part of the vendor
 // syntax. Each override reproduces the inherited body and adds the clauses
-// the Db2 12.1.3 SQL Reference syntax diagram shows — an override replaces
+// the Db2 12.1.3 SQL Reference syntax diagram shows; an override replaces
 // the parent rule wholesale, so nothing may be dropped.
 export default {
 
@@ -161,7 +161,7 @@ export default {
   // SCHEMA is reserved in this dialect (see grammar.js) so that SET SCHEMA
   // cannot be read as set_variable_statement's identifier target, and
   // set_schema is added to _ddl_statement there so the statement form is
-  // reachable at all — base only ever uses this rule as a clause of
+  // reachable at all; base only ever uses this rule as a clause of
   // ALTER TABLE / ALTER VIEW.
   set_schema: $ => seq(
     $.keyword_set,

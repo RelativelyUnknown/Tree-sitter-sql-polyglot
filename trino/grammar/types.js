@@ -20,7 +20,7 @@ export default {
     ')',
   ),
 
-  // ROW(field_name type, ...) — field names are optional
+  // ROW(field_name type, ...); field names are optional
   row_type: $ => seq(
     $.keyword_row,
     '(',

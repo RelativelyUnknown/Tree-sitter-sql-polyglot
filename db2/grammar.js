@@ -19,7 +19,7 @@ export default grammar(base, {
     [$._column, $._qualified_field],
     [$.object_reference],
     // Local shift/reduce ambiguity shared with like_expression's optional
-    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     [$.create_function],
     [$.list, $.grouping_set],
@@ -333,8 +333,8 @@ export default grammar(base, {
     // ── Keywords for the clause completions in grammar/clauses.js ──────────
     // Most appear mid-statement only and stay extracted (prec 0). The
     // reserved ones sit where an identifier is also legal in the same parse
-    // state — the second word of a two-word TRANSFER OWNERSHIP object kind,
-    // the sensitivity in DECLARE CURSOR — and an extracted keyword loses to
+    // state; the second word of a two-word TRANSFER OWNERSHIP object kind,
+    // the sensitivity in DECLARE CURSOR; and an extracted keyword loses to
     // the word token there. PARTITION, EXTENSION and GROUP below are
     // reserved for the same reason.
     keyword_age:          _ => make_keyword("age"),
@@ -378,7 +378,7 @@ export default grammar(base, {
     // ── Keywords for the statements in grammar/admin.js ────────────────────
     // These must be token(prec(1, …)), not plain make_keyword. The base
     // grammar sets `word: $ => $._identifier`, so an unprefixed keyword is
-    // extracted — and an extracted keyword loses to the word token wherever
+    // extracted; and an extracted keyword loses to the word token wherever
     // an identifier is also legal. In this dialect an identifier is legal at
     // statement start, so every statement-initial extracted keyword lexed as
     // an identifier and the statements did not parse at all.
@@ -461,7 +461,7 @@ export default grammar(base, {
     ),
 
     // Db2: SELECT … FROM FINAL/NEW/OLD TABLE (INSERT/UPDATE/DELETE …)
-    // (data-change-table-reference — Db2's mechanism for returning modified rows)
+    // (data-change-table-reference; Db2's mechanism for returning modified rows)
     relation: $ => prec.right(
       seq(
         choice(
@@ -529,13 +529,13 @@ export default grammar(base, {
       optional($.having),
       optional($.window_clause),
       optional($.order_by),
-      // Db2 paging is FETCH FIRST — no LIMIT keyword.
+      // Db2 paging is FETCH FIRST; no LIMIT keyword.
       optional($.offset_fetch_clause),
       optional($.optimize_for_clause),
       optional($.with_isolation_clause),
     ),
 
-    // Db2-specific keywords — token(prec(1,...)) needed so lexer prefers
+    // Db2-specific keywords; token(prec(1,...)) needed so lexer prefers
     // these over base _identifier when both are valid in the same state.
     keyword_prepare:    _ => token(prec(1, make_keyword("prepare"))),
     keyword_final:      _ => token(prec(1, make_keyword("final"))),

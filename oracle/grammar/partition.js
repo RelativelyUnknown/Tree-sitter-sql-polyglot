@@ -31,7 +31,7 @@ export default {
     optional(seq($.keyword_subpartitions, alias($._natural_number, $.literal))),
   ),
 
-  // ADD/DROP/TRUNCATE/SPLIT/MERGE/EXCHANGE PARTITION — wired into _alter_specifications
+  // ADD/DROP/TRUNCATE/SPLIT/MERGE/EXCHANGE PARTITION; wired into _alter_specifications
   alter_partition: $ => choice(
     seq(
       $.keyword_add, $.keyword_partition, $.identifier,

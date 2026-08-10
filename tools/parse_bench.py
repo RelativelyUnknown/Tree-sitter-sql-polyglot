@@ -4,7 +4,7 @@ Parse-throughput benchmark (the runtime counterpart to tools/glr_scan.py).
 
 glr_scan.py measures what a grammar costs to *build*: parser.c bytes, STATE_COUNT,
 generation wall-time and peak RSS. None of that is what an editor feels. This tool
-measures what a grammar costs to *run* — bytes/ms of actual parsing — so a grammar
+measures what a grammar costs to *run* (bytes/ms of actual parsing), so a grammar
 change can be justified with a number instead of an argument about what ought to be
 faster.
 
@@ -14,7 +14,7 @@ Two workloads per dialect:
            repeated to a fixed size so every dialect parses the same byte count. This
            is the throughput number that matters.
 
-  stress   inputs built to provoke GLR stack splitting — deep parenthesis nesting,
+  stress   inputs built to provoke GLR stack splitting; deep parenthesis nesting,
            huge IN lists, long UNION/CTE chains, wide projections, deep CASE nesting,
            nested pattern operators. Each is measured at two sizes; a dialect whose
            time grows faster than its input has an ambiguity that only shows up on
@@ -87,7 +87,7 @@ REGRESSION_TOLERANCE = 0.15
 # following statement (see clean_statements). Valid in every dialect here.
 SENTINEL = "SELECT 1;"
 
-# Corpus files whose cases are *meant* not to parse — never feed them to a benchmark.
+# Corpus files whose cases are *meant* not to parse; never feed them to a benchmark.
 EXCLUDED_CORPUS = {"errors.txt"}
 
 # Corpus test block: "="x80 / name / "="x80 / SQL / "-"x80 / expected tree.
@@ -129,7 +129,7 @@ def corpus_statements(name: str) -> list:
 
 
 def probe_statements(name: str) -> list:
-    """This dialect's coverage probes — the doc-derived feature surface."""
+    """This dialect's coverage probes; the doc-derived feature surface."""
     try:
         import yaml
     except ImportError:
@@ -154,7 +154,7 @@ def _run_parse(name: str, files: list, cfg: Path) -> dict:
     """Parse `files` with this dialect's parser. Returns the --json-summary dict.
 
     cwd is the dialect directory and parser-directories is emptied, so grammar
-    resolution is forced file-relative — the same guard coverage.py::ours_parses uses
+    resolution is forced file-relative; the same guard coverage.py::ours_parses uses
     to stop a global ~/.config/tree-sitter config silently rerouting every .sql to the
     base grammar.
     """
@@ -178,12 +178,12 @@ def clean_statements(name: str, stmts: list, work: Path, cfg: Path) -> list:
 
     A corpus case can be dialect-specific in ways the benchmark shouldn't care about,
     and a probe may be a known gap. Feeding an ERROR node into a throughput benchmark
-    measures error recovery, not parsing — so anything that fails is dropped, in one
+    measures error recovery, not parsing; so anything that fails is dropped, in one
     batched tree-sitter invocation.
 
     Each candidate is tested *followed by a sentinel statement* rather than alone. The
     `program` rule accepts one unterminated trailing statement, so a statement that
-    swallows its own terminator still parses in isolation but breaks the next one —
+    swallows its own terminator still parses in isolation but breaks the next one;
     which would silently poison the concatenated workload with error recovery. Requiring
     each statement to compose with a successor is what makes the assembled input clean.
     """
@@ -260,7 +260,7 @@ def _boolean_chain(n: int) -> str:
 
 
 def _like_chain(n: int) -> str:
-    # The LIKE family is this repo's historical table-explosion trigger — see the
+    # The LIKE family is this repo's historical table-explosion trigger; see the
     # note at the top of tools/glr_scan.py.
     return "SELECT a FROM t WHERE " + " AND ".join(
         f"c{i} LIKE 'p%' ESCAPE '\\'" for i in range(n)
@@ -327,7 +327,7 @@ def has_keyword_extraction(name: str) -> bool:
 def bench_dialect(name: str, do_stress: bool, repeats: int) -> dict:
     row = {"dialect": name}
     if not parser_c(name).exists():
-        row["error"] = "parser.c absent — run scripts/generate-all.js"
+        row["error"] = "parser.c absent; run scripts/generate-all.js"
         return row
 
     row["keyword_extraction"] = has_keyword_extraction(name)
@@ -432,7 +432,7 @@ def render_markdown(results: dict) -> str:
     if stressed:
         ids = [sid for sid, _, _ in STRESS]
         lines += [
-            "", "## Stress workloads — time growth when the input doubles", "",
+            "", "## Stress workloads; time growth when the input doubles", "",
             "A value near **2.0** is linear parsing. Values near or above **4.0** mean "
             "the parser is doing superlinear work on that shape, which is where GLR "
             "stack splitting shows up. `—` means the dialect rejects that input.", "",
@@ -511,7 +511,7 @@ def main() -> int:
 
     if args.check:
         if not REPORT_JSON.exists():
-            print("ERROR: tools/parse_bench.json missing — run parse_bench.py to create it.",
+            print("ERROR: tools/parse_bench.json missing; run parse_bench.py to create it.",
                   file=sys.stderr)
             return 1
         baseline = json.loads(REPORT_JSON.read_text())

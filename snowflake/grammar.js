@@ -27,7 +27,7 @@ export default grammar(base, {
     [$._column, $._qualified_field],
     [$.object_reference],
     // Local shift/reduce ambiguity shared with like_expression's optional
-    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     [$.create_function],
     [$.list, $.grouping_set],
@@ -726,7 +726,7 @@ export default grammar(base, {
     keyword_policies:       _ => token(prec(1, make_keyword("policies"))),
 
     // Staged-file commands (PUT/GET/REMOVE/COPY FILES). `files` sits at the
-    // same precedence as `file` so match length — not precedence — decides
+    // same precedence as `file` so match length (not precedence) decides
     // between them.
     keyword_put:            _ => token(prec(1, make_keyword("put"))),
     keyword_get:            _ => token(prec(1, make_keyword("get"))),

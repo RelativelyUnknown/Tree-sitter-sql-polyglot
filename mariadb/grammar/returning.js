@@ -2,7 +2,7 @@ import { comma_list } from "../../grammar/helpers.js";
 
 export default {
 
-  // RETURNING col_list — shared by DELETE, INSERT, UPDATE
+  // RETURNING col_list; shared by DELETE, INSERT, UPDATE
   returning: $ => seq(
     $.keyword_returning,
     $.select_expression,

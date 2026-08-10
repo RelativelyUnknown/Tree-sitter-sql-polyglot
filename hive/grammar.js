@@ -12,7 +12,7 @@ export default grammar(base, {
     [$.object_reference, $._qualified_field],
     [$.object_reference],
     // Local shift/reduce ambiguity shared with like_expression's optional
-    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     [$.create_function],
     [$.list, $.grouping_set],
@@ -331,7 +331,7 @@ export default grammar(base, {
       $.table_option,
     ),
 
-    // INSERT OVERWRITE ... PARTITION (key=val) — core HiveQL DML
+    // INSERT OVERWRITE ... PARTITION (key=val); core HiveQL DML
     insert: $ => seq(
       $.keyword_insert,
       optional($.keyword_ignore),
@@ -459,7 +459,7 @@ export default grammar(base, {
           $.sort_by,
         ),
       ),
-      // HiveQL paging is LIMIT-only — no ANSI OFFSET…FETCH FIRST.
+      // HiveQL paging is LIMIT-only; no ANSI OFFSET…FETCH FIRST.
       optional($.limit),
     ),
 
@@ -696,7 +696,7 @@ export default grammar(base, {
       optional(field('column', $.identifier)),
     )),
 
-    // PARTITION (key=value, ...) — values may be any expression
+    // PARTITION (key=value, ...); values may be any expression
     partition_spec: $ => seq(
       $.keyword_partition,
       paren_list(
@@ -714,7 +714,7 @@ export default grammar(base, {
       $.object_reference,
     ),
 
-    // Hive-specific keywords — token(prec(1,...)) so the lexer prefers these over
+    // Hive-specific keywords; token(prec(1,...)) so the lexer prefers these over
     // the base _identifier pattern when both are valid in a parse state.
     keyword_serde:           _ => token(prec(1, make_keyword("serde"))),
     keyword_serdeproperties: _ => token(prec(1, make_keyword("serdeproperties"))),

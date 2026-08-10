@@ -11,7 +11,7 @@
  *     tools/coverage.py) doesn't exist yet, so `npm run docs:dev` works
  *     from a fresh clone before parsers are generated.
  *
- * Both docs/downloads.md and docs/coverage.md are gitignored — always
+ * Both docs/downloads.md and docs/coverage.md are gitignored; always
  * regenerated, never committed.
  */
 
@@ -25,7 +25,7 @@ const DOWNLOADS_MD = join(ROOT, 'docs', 'downloads.md');
 const COVERAGE_MD = join(ROOT, 'docs', 'coverage.md');
 
 // Same source list the old .github/workflows/gh-pages.yml copied into
-// docs/ — the base grammar's build files and manifests. Per-dialect
+// docs/; the base grammar's build files and manifests. Per-dialect
 // src/parser.c files are intentionally excluded: they are large generated
 // C sources (hundreds of thousands of lines each across 22 dialects) that
 // were never part of the published artifact set.
@@ -94,7 +94,7 @@ function writeDownloadsPage(copiedTopLevel) {
   ];
 
   if (!files.length) {
-    lines.push('No artifacts available — run `npm run generate` first.', '');
+    lines.push('No artifacts available; run `npm run generate` first.', '');
   } else {
     const byTopDir = new Map();
     for (const f of files) {

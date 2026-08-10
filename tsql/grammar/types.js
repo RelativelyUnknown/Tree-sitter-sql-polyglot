@@ -50,7 +50,7 @@ export default {
     ),
   ),
 
-  // SMALLDATETIME — no precision parameter
+  // SMALLDATETIME; no precision parameter
   smalldatetime: $ => $.keyword_smalldatetime,
 
   // MONEY | SMALLMONEY

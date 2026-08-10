@@ -2,7 +2,7 @@ import { comma_list, wrapped_in_parenthesis } from '../../grammar/helpers.js';
 
 export default {
 
-  // PREWHERE <expr> — ClickHouse pre-filtering, sits before WHERE
+  // PREWHERE <expr>; ClickHouse pre-filtering, sits before WHERE
   prewhere: $ => seq(
     $.keyword_prewhere,
     field('predicate', $._expression),
@@ -21,7 +21,7 @@ export default {
     optional(seq(optional($.keyword_as), field('alias', $.identifier))),
   ),
 
-  // FINAL — read merged/collapsed rows
+  // FINAL; read merged/collapsed rows
   // SAMPLE k | SAMPLE 0.1 | SAMPLE 1/10 [OFFSET 3/10]
   sample_clause: $ => seq(
     $.keyword_sample,
@@ -38,13 +38,13 @@ export default {
     optional(seq('/', $.literal)),
   ),
 
-  // QUALIFY <expr> — filter on window-function results (post-WINDOW)
+  // QUALIFY <expr>; filter on window-function results (post-WINDOW)
   qualify: $ => seq(
     $.keyword_qualify,
     field('predicate', $._expression),
   ),
 
-  // INTO OUTFILE 'path' [COMPRESSION 'method'] — trailing, before FORMAT
+  // INTO OUTFILE 'path' [COMPRESSION 'method']; trailing, before FORMAT
   into_outfile_clause: $ => seq(
     $.keyword_into,
     $.keyword_outfile,

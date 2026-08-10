@@ -78,7 +78,7 @@ export default {
     $.create_query,
   ),
 
-  // DESCRIBE VIEW v — Trino's describe_statement has no VIEW keyword slot.
+  // DESCRIBE VIEW v; Trino's describe_statement has no VIEW keyword slot.
   describe_view_statement: $ => seq(
     choice($.keyword_describe, $.keyword_desc),
     $.keyword_view,

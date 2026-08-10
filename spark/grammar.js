@@ -18,7 +18,7 @@ export default grammar(hive, {
     [$._column, $._qualified_field],
     [$.object_reference],
     // Local shift/reduce ambiguity shared with like_expression's optional
-    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     [$.from],
     [$.create_function],
@@ -50,7 +50,7 @@ export default grammar(hive, {
     // CREATE MATERIALIZED VIEW, which Spark 4.x also documents (Declarative
     // Pipelines), so there is nothing to narrow here.
 
-    // Re-add $.block to program (removed from base — procedural blocks are Spark-specific)
+    // Re-add $.block to program (removed from base; procedural blocks are Spark-specific)
     program: $ => seq(
       repeat(
         seq(
@@ -390,7 +390,7 @@ export default grammar(hive, {
           $.sort_by,
         ),
       ),
-      // Spark SQL paging is LIMIT-only — no ANSI OFFSET…FETCH FIRST.
+      // Spark SQL paging is LIMIT-only; no ANSI OFFSET…FETCH FIRST.
       optional($.limit),
     ),
 
@@ -537,7 +537,7 @@ export default grammar(hive, {
 
     // Keywords for the cache / resource statements moved up from databricks.
     // file/files, jar/jars and archive/archives are prefix pairs, but both
-    // members sit at the SAME token precedence, so longest match decides —
+    // members sit at the SAME token precedence, so longest match decides;
     // the TRAN/TRANSACTION trap only bites when the shorter word is given
     // higher precedence than the longer one.
     keyword_lazy:       _ => token(prec(1, make_keyword("lazy"))),

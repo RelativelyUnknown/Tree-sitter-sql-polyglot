@@ -7,7 +7,7 @@ export default {
 
   // SHOW { TABLE | VIEW | MACRO | PROCEDURE | TRIGGER | JOIN INDEX
   //      | HASH INDEX | MAP | STATISTICS | QUERY LOGGING } object
-  // SHOW <request>   — echoes the DDL that would create the request's objects
+  // SHOW <request>  ; echoes the DDL that would create the request's objects
   show_statement: $ => prec.right(seq(
     $.keyword_show,
     choice(
@@ -98,7 +98,7 @@ export default {
     $.literal,
   )),
 
-  // DATABASE name — sets the session's default database
+  // DATABASE name; sets the session's default database
   database_statement: $ => seq(
     $.keyword_database,
     field('name', $.object_reference),

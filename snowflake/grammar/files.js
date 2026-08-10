@@ -1,7 +1,7 @@
 import { paren_list } from '../../grammar/helpers.js';
 
 // Snowflake's staged-file commands. These are the four statement pages under
-// https://docs.snowflake.com/en/sql-reference/sql/ that had no rule at all —
+// https://docs.snowflake.com/en/sql-reference/sql/ that had no rule at all;
 // the grammar could parse COPY INTO and LIST, but not the PUT/GET/REMOVE
 // round trip they sit next to, nor COPY FILES.
 export default {

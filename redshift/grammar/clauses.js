@@ -2,7 +2,7 @@ import { comma_list, paren_list } from '../../grammar/helpers.js';
 
 // Clause completions from the Amazon Redshift developer guide (583 statement
 // pages, enumerated from the docs TOC). Each override reproduces the
-// inherited body — an override replaces the parent rule wholesale.
+// inherited body; an override replaces the parent rule wholesale.
 export default {
 
   // ALTER MATERIALIZED VIEW name
@@ -89,7 +89,7 @@ export default {
   // CREATE DATABASE db [WITH] [OWNER [=] u] [CONNECTION LIMIT n]
   //   [COLLATE …] [ISOLATION LEVEL …]
   // Redshift's own option list, in place of the base rule's generic
-  // `name [=] value` settings — the same options ALTER DATABASE accepts,
+  // `name [=] value` settings; the same options ALTER DATABASE accepts,
   // plus OWNER.
   create_database: $ => prec.left(seq(
     $.keyword_create,

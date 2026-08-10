@@ -16,7 +16,7 @@ export default grammar(base, {
     [$._column, $._qualified_field],
     [$.object_reference],
     // Local shift/reduce ambiguity shared with like_expression's optional
-    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     [$.create_function],
     [$.list, $.grouping_set],
@@ -66,7 +66,7 @@ export default grammar(base, {
     // ── Keywords for the statements in grammar/objects.js ──────────────────
     // Plural/singular pairs (schemas/schema, policies/policy, templates/…)
     // sit at the same precedence as their singular counterparts, so match
-    // length — not precedence — picks between them.
+    // length (not precedence) picks between them.
     keyword_show:        _ => token(prec(1, make_keyword("show"))),
     // ALTER DATABASE / ALTER MATERIALIZED VIEW vocabulary; each follows a
     // keyword rather than a name, so they stay extracted.
@@ -273,12 +273,12 @@ export default grammar(base, {
     // VACUUM / ANALYZE COMPRESSION
     keyword_vacuum:       _ => token(prec(1, make_keyword("vacuum"))),
     keyword_reindex:      _ => token(prec(1, make_keyword("reindex"))),
-    // keyword_sort prefix-check: keyword_sortkey also prec(1) — longest match wins
+    // keyword_sort prefix-check: keyword_sortkey also prec(1); longest match wins
     keyword_sort:         _ => token(prec(1, make_keyword("sort"))),
 
     // Distribution / Sort keys
     // keyword_distkey prefix-check: keyword_diststyle shares 'dist' prefix,
-    // both prec(1), different suffix 'k' vs 's' — no shadowing.
+    // both prec(1), different suffix 'k' vs 's'; no shadowing.
     keyword_distkey:      _ => token(prec(1, make_keyword("distkey"))),
     keyword_sortkey:      _ => token(prec(1, make_keyword("sortkey"))),
     keyword_diststyle:    _ => token(prec(1, make_keyword("diststyle"))),

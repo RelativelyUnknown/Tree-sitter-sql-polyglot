@@ -1,6 +1,6 @@
 export default {
 
-  // WITH isolation_level — appended to SELECT
+  // WITH isolation_level; appended to SELECT
   with_isolation_clause: $ => seq(
     $.keyword_with,
     choice($.keyword_ur, $.keyword_cs, $.keyword_rs, $.keyword_rr),

@@ -280,7 +280,7 @@ export default {
       [$.keyword_is, 'binary_is'],
       [$.is_not, 'binary_is'],
       // LIKE / NOT LIKE are handled exclusively by like_expression below (with
-      // its optional ESCAPE tail) — NOT duplicated here. Two rules deriving
+      // its optional ESCAPE tail); NOT duplicated here. Two rules deriving
       // the identical "expr LIKE expr" span would force GLR to carry both
       // interpretations through every nested expression containing a LIKE,
       // which is expensive enough to blow the parse table for large dialect
@@ -387,7 +387,7 @@ export default {
     $.keyword_in,
   ),
 
-  // ANSI LIKE ... ESCAPE (E061-05). The SOLE rule for `expr LIKE expr` — it is
+  // ANSI LIKE ... ESCAPE (E061-05). The SOLE rule for `expr LIKE expr`; it is
   // NOT also listed in binary_expression's operator map. Deriving the same
   // "expr LIKE expr" span two different ways (once here, once as a plain
   // binary_expression) forces GLR to keep both interpretations alive across

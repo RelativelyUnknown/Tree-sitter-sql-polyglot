@@ -1,6 +1,6 @@
 export default {
 
-  // MAP(key_type, value_type) — DuckDB map type
+  // MAP(key_type, value_type); DuckDB map type
   map_type: $ => seq(
     $.keyword_map,
     '(',
@@ -10,7 +10,7 @@ export default {
     ')',
   ),
 
-  // STRUCT(field_name type, ...) — DuckDB struct type
+  // STRUCT(field_name type, ...); DuckDB struct type
   struct_type: $ => seq(
     $.keyword_struct,
     '(',

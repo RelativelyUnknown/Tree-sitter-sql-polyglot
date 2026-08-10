@@ -2,7 +2,7 @@ import { comma_list } from '../../grammar/helpers.js';
 
 // Clause completions from the Trino SQL statement reference (77 syntax
 // blocks scraped from trino.io/docs). Each override reproduces the
-// inherited body — an override replaces the parent rule wholesale.
+// inherited body; an override replaces the parent rule wholesale.
 export default {
 
   // SET AUTHORIZATION ( user | USER user | ROLE role )

@@ -45,7 +45,7 @@ export default {
   ),
 
   // A job/session/schedule id, or a parenthesised query producing ids.
-  // _expression already covers both — a literal id and a subquery such as
+  // _expression already covers both; a literal id and a subquery such as
   // `(WITH x AS (SHOW JOBS) SELECT job_id FROM x)`. Offering _dml_read as a
   // second alternative would make `( SELECT … )` reducible two ways, so the
   // documented unparenthesised `PAUSE SCHEDULES WITH … SELECT …` form is not

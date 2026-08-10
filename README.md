@@ -1,17 +1,17 @@
 # tree-sitter-sql-extended
 
 A multi-dialect SQL parser for [tree-sitter](https://tree-sitter.github.io/). It provides an ANSI SQL
-base plus **22 independently compiled dialect grammars**, each layered on top via tree-sitter's
+base plus 22 independently compiled dialect grammars, each layered on top with tree-sitter's
 `grammar(parent, overrides)` composition.
 
 The grammar is a fork of [DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql).
-The upstream ships a single "permissive" grammar that mixes several dialects together; this fork
-splits that into a strict ANSI base and one grammar per dialect, so each engine's syntax is parsed on
-its own terms.
+Upstream ships a single "permissive" grammar that mixes several dialects together. This fork splits
+that into a strict ANSI base and one grammar per dialect, so each engine's syntax is parsed on its
+own terms.
 
-**[Docs site](https://redpandamc.github.io/tree-sitter-sql-extended/)** ·
-**[Dialect coverage](https://redpandamc.github.io/tree-sitter-sql-extended/coverage)**: per-dialect
-feature scores, regenerated from the live parsers on every push to `main`.
+[Docs site](https://redpandamc.github.io/tree-sitter-sql-extended/) and
+[dialect coverage](https://redpandamc.github.io/tree-sitter-sql-extended/coverage), which carries the
+per-dialect feature scores and is regenerated from the live parsers on every push to `main`.
 
 ---
 
@@ -21,32 +21,32 @@ Each dialect compiles to its own `<dialect>/src/parser.c` and can be used indepe
 
 | Dialect | Extends | Highlights |
 |---------|---------|-----------|
-| **base** (ANSI) | — | `GRANT`/`REVOKE`, `GROUP BY ROLLUP`/`CUBE`/`GROUPING SETS`, `FETCH FIRST`/`OFFSET … FETCH`, `WITHIN GROUP`, `TRIM(… FROM …)`, interval qualifiers |
-| **hana** | base | `CREATE COLUMN/ROW TABLE`, `UPSERT … WITH PRIMARY KEY`, `WITH HINT (…)`, SQLScript procedures (`LANGUAGE SQLSCRIPT`, `DECLARE`, `:=`, `:param`) |
+| **base** (ANSI) | none | `GRANT`/`REVOKE`, `GROUP BY ROLLUP`/`CUBE`/`GROUPING SETS`, `FETCH FIRST`/`OFFSET ... FETCH`, `WITHIN GROUP`, `TRIM(... FROM ...)`, interval qualifiers |
+| **hana** | base | `CREATE COLUMN/ROW TABLE`, `UPSERT ... WITH PRIMARY KEY`, `WITH HINT (...)`, SQLScript procedures (`LANGUAGE SQLSCRIPT`, `DECLARE`, `:=`, `:param`) |
 | **hive** | base | `LATERAL VIEW`, `STORED AS`/`STORED BY`, multi-table `INSERT`, `LOAD DATA INPATH`, `CLUSTER`/`DISTRIBUTE`/`SORT BY` |
-| **spark** | hive | `QUALIFY`, `PIVOT`/`UNPIVOT`, time travel, scripting (`IF`/`WHILE`/`LOOP`), Iceberg, `VARIANT`, `CREATE TABLE … USING/OPTIONS` |
-| **databricks** | spark | Delta/DLT (`OPTIMIZE … ZORDER BY`, `VACUUM`, `RESTORE`), Unity Catalog (`CATALOG`/`VOLUME`/`EXTERNAL LOCATION`, `GRANT`), Iceberg `CALL` |
-| **postgres** | base | `COPY`, `VACUUM`, `PARTITION BY`/`PARTITION OF`, `CREATE TABLE (LIKE …)`, `INHERITS`, extensions, RLS policies, `::` cast |
+| **spark** | hive | `QUALIFY`, `PIVOT`/`UNPIVOT`, time travel, scripting (`IF`/`WHILE`/`LOOP`), Iceberg, `VARIANT`, `CREATE TABLE ... USING/OPTIONS` |
+| **databricks** | spark | Delta/DLT (`OPTIMIZE ... ZORDER BY`, `VACUUM`, `RESTORE`), Unity Catalog (`CATALOG`/`VOLUME`/`EXTERNAL LOCATION`, `GRANT`), Iceberg `CALL` |
+| **postgres** | base | `COPY`, `VACUUM`, `PARTITION BY`/`PARTITION OF`, `CREATE TABLE (LIKE ...)`, `INHERITS`, extensions, RLS policies, `::` cast |
 | **mysql** | base | `ENGINE=`/`CHARSET=`, index hints, `SHOW`, `DESCRIBE`, `LIMIT offset, count`, `@`/`@@` variables |
 | **mariadb** | mysql | `INVISIBLE` columns (plus inherited MySQL features) |
-| **oracle** | base | `CONNECT BY`, PL/SQL blocks, packages, cursors, `FORALL`, `BULK COLLECT`, numeric `FOR … IN 1..10` |
-| **db2** | base | SQL PL (`BEGIN…END`, `IF`/`WHILE`/`LOOP`, `LEAVE`/`ITERATE`), modules, audit policies, federated objects |
+| **oracle** | base | `CONNECT BY`, PL/SQL blocks, packages, cursors, `FORALL`, `BULK COLLECT`, numeric `FOR ... IN 1..10` |
+| **db2** | base | SQL PL (`BEGIN...END`, `IF`/`WHILE`/`LOOP`, `LEAVE`/`ITERATE`), modules, audit policies, federated objects |
 | **tsql** | base | T-SQL scripting, `CROSS`/`OUTER APPLY`, query hints, `#temp`/`##global` identifiers |
-| **bigquery** | base | `INT64`/`STRUCT<…>`/`ARRAY<…>` types, `UNNEST`, backtick identifiers, `QUALIFY` |
+| **bigquery** | base | `INT64`/`STRUCT<...>`/`ARRAY<...>` types, `UNNEST`, backtick identifiers, `QUALIFY` |
 | **snowflake** | base | scripting, `LATERAL FLATTEN`, time travel, `@stage` sources, `::` cast |
 | **sqlite** | base | `INSERT OR REPLACE/IGNORE`, UPSERT, `AUTOINCREMENT`, `INDEXED BY` |
-| **spanner** | bigquery | trailing `PRIMARY KEY`, `INTERLEAVE IN PARENT … ON DELETE CASCADE`, `NULL_FILTERED`/`STORING` indexes, `CREATE CHANGE STREAM`, `ROW DELETION POLICY`, `STRING(n\|MAX)`/`BYTES(n\|MAX)` |
+| **spanner** | bigquery | trailing `PRIMARY KEY`, `INTERLEAVE IN PARENT ... ON DELETE CASCADE`, `NULL_FILTERED`/`STORING` indexes, `CREATE CHANGE STREAM`, `ROW DELETION POLICY`, `STRING(n\|MAX)`/`BYTES(n\|MAX)` |
 | **duckdb** | base | FROM-first `SELECT`, `SELECT * EXCLUDE/REPLACE/RENAME`, lambdas, struct/map/list literals, `ASOF`/`POSITIONAL JOIN`, `ATTACH` |
 | **teradata** | base | `SEL`/`DEL` abbreviations, `SET`/`MULTISET`/`VOLATILE` tables, `[UNIQUE] PRIMARY INDEX`/`NO PRIMARY INDEX`, `PARTITION BY RANGE_N`/`CASE_N`, `COLLECT STATISTICS`, `CREATE MACRO`, `TOP n`, `QUALIFY`, `:param` references |
 | **trino** | base | `PREPARE`/`EXECUTE`/`DEALLOCATE`, `MATCH_RECOGNIZE`, `TABLESAMPLE BERNOULLI/SYSTEM`, `ARRAY`/`MAP`/`ROW` types, lambdas |
-| **athena** | trino | `UNLOAD … TO 's3://…'`, `MSCK REPAIR TABLE … PARTITIONS` (managed Trino plus data-lake semantics) |
+| **athena** | trino | `UNLOAD ... TO 's3://...'`, `MSCK REPAIR TABLE ... PARTITIONS` (managed Trino plus data-lake semantics) |
 | **redshift** | base | `DISTKEY`/`SORTKEY`/`DISTSTYLE`/`ENCODE`, `CREATE EXTERNAL SCHEMA/TABLE`, `COPY`/`UNLOAD`, `VACUUM REINDEX`, `APPROXIMATE COUNT` |
-| **cockroachdb** | postgres | `AS OF SYSTEM TIME`, `UPSERT INTO`, `BACKUP`/`RESTORE`, `IMPORT INTO … CSV DATA`, `CREATE CHANGEFEED`, hash-sharded indexes (`USING HASH`), `STORING (…)`, `SHOW JOBS`/`GRANTS`/`DATABASES` |
-| **clickhouse** | base | `ENGINE = MergeTree() …`, column `MATERIALIZED`/`ALIAS`/`EPHEMERAL`/`CODEC`/`TTL`, `PREWHERE`, `FINAL`, `ARRAY JOIN`, `LIMIT n BY`, `SAMPLE`, `WITH TOTALS`, `QUALIFY`, `ORDER BY … WITH FILL`, `LIMIT … WITH TIES`, `INTO OUTFILE`/`FORMAT`, `ALTER … UPDATE`/`DELETE`, `OPTIMIZE … FINAL`, `CREATE DICTIONARY`/`LIVE VIEW`, `SYSTEM …`, `Map`/`Tuple`/`Nested`/`LowCardinality`/`Nullable` types |
-| **flink** | base | connector DDL (`WITH (…)`), `WATERMARK FOR`, windowing TVFs (`TUMBLE`/`HOP`/`CUMULATE`), `MATCH_RECOGNIZE`, temporal joins, `CREATE CATALOG`, `LOAD`/`UNLOAD MODULE`, statement sets |
+| **cockroachdb** | postgres | `AS OF SYSTEM TIME`, `UPSERT INTO`, `BACKUP`/`RESTORE`, `IMPORT INTO ... CSV DATA`, `CREATE CHANGEFEED`, hash-sharded indexes (`USING HASH`), `STORING (...)`, `SHOW JOBS`/`GRANTS`/`DATABASES` |
+| **clickhouse** | base | `ENGINE = MergeTree() ...`, column `MATERIALIZED`/`ALIAS`/`EPHEMERAL`/`CODEC`/`TTL`, `PREWHERE`, `FINAL`, `ARRAY JOIN`, `LIMIT n BY`, `SAMPLE`, `WITH TOTALS`, `QUALIFY`, `ORDER BY ... WITH FILL`, `LIMIT ... WITH TIES`, `INTO OUTFILE`/`FORMAT`, `ALTER ... UPDATE`/`DELETE`, `OPTIMIZE ... FINAL`, `CREATE DICTIONARY`/`LIVE VIEW`, `SYSTEM ...`, `Map`/`Tuple`/`Nested`/`LowCardinality`/`Nullable` types |
+| **flink** | base | connector DDL (`WITH (...)`), `WATERMARK FOR`, windowing TVFs (`TUMBLE`/`HOP`/`CUMULATE`), `MATCH_RECOGNIZE`, temporal joins, `CREATE CATALOG`, `LOAD`/`UNLOAD MODULE`, statement sets |
 
-Dependency chains: `databricks → spark → hive → base`, `mariadb → mysql → base`, `athena → trino → base`,
-`cockroachdb → postgres → base`, and `spanner → bigquery → base`. The chains follow real dialect
+Dependency chains: `databricks -> spark -> hive -> base`, `mariadb -> mysql -> base`, `athena -> trino -> base`,
+`cockroachdb -> postgres -> base`, and `spanner -> bigquery -> base`. The chains follow real dialect
 genealogy: CockroachDB is PostgreSQL-compatible by design, and Spanner and BigQuery share GoogleSQL.
 Regenerate the child when a parent grammar changes. See [AGENTS.md](AGENTS.md) for the full architecture.
 
@@ -101,7 +101,7 @@ npm run test:corpus
 # Run corpus tests for a specific dialect
 npm run test:corpus:spark
 
-# Verify base keyword ↔ queries/highlights.scm sync
+# Check that base keywords are in sync with queries/highlights.scm
 npm run test:keywords
 ```
 
@@ -119,8 +119,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md) for more detai
 ## Upstream
 
 This fork tracks [`DerekStride/tree-sitter-sql`](https://github.com/DerekStride/tree-sitter-sql).
-Extensions that are general enough are worth upstreaming where the upstream maintainers are interested;
-vendor-specific extensions live here.
+General extensions are worth sending upstream if the maintainers there want them. Vendor-specific
+ones stay here.
 
 ---
 

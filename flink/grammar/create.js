@@ -2,7 +2,7 @@ import { comma_list, paren_list } from '../../grammar/helpers.js';
 
 export default {
 
-  // [WITH] ('key' = 'val', ...) — Flink connector options
+  // [WITH] ('key' = 'val', ...); Flink connector options
   // keyword_with is optional so ALTER SET can use bare parens
   with_properties: $ => seq(
     optional($.keyword_with),

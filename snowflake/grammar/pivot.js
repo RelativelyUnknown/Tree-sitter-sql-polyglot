@@ -2,8 +2,8 @@ import { paren_list, comma_list } from '../../grammar/helpers.js';
 
 export default {
 
-  // PIVOT ( agg_fn(col) FOR col IN ('v1', 'v2') )  — standard
-  // PIVOT ( agg_fn(col) FOR col IN (ANY ORDER BY col) )  — dynamic pivot
+  // PIVOT ( agg_fn(col) FOR col IN ('v1', 'v2') ) ; standard
+  // PIVOT ( agg_fn(col) FOR col IN (ANY ORDER BY col) ) ; dynamic pivot
   pivot_clause: $ => seq(
     $.keyword_pivot,
     '(',

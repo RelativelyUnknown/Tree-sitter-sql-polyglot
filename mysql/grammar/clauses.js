@@ -2,7 +2,7 @@ import { comma_list, paren_list } from '../../grammar/helpers.js';
 
 // Statements that already had a rule but covered only part of the syntax the
 // MySQL 8.4 reference documents. Each override reproduces the inherited body
-// and adds the missing clauses — an override replaces the parent wholesale.
+// and adds the missing clauses; an override replaces the parent wholesale.
 export default {
 
   // ALTER [ALGORITHM = {UNDEFINED | MERGE | TEMPTABLE}] [DEFINER = user]

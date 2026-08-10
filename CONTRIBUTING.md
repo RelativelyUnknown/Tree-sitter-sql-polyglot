@@ -44,7 +44,7 @@ dialect requires regenerating its child too (`databricks` after `spark`/`hive`; 
 ```bash
 npm run test:corpus            # base corpus tests (test/corpus/*.txt)
 npm run test:corpus:spark      # a single dialect's corpus (<dialect>/test/corpus/*.txt)
-npm run test:keywords          # verify base keyword ↔ queries/highlights.scm sync
+npm run test:keywords          # keywords in sync with queries/highlights.scm
 npm run test:node              # Node.js binding test
 npm test                       # the full sequence
 ```
@@ -91,26 +91,26 @@ Run `make format` before committing to normalise spacing.
 2. Add the rule definition.
 3. Wire it into the relevant dispatch list in `grammar/statements/index.js`
    (e.g. `_ddl_statement`, `_drop_statement`).
-4. If the statement uses new keywords, add them to `grammar/keywords.js` using `make_keyword()`.
-   **All keyword tokens must live in the base** `grammar/keywords.js`, because tree-sitter's keyword
-   extraction only runs on the base grammar, even for keywords that are only used by one dialect.
+4. If the statement uses new keywords, define them with `make_keyword()`. ANSI keywords go in
+   `grammar/keywords.js`; dialect-specific keywords go in that dialect's own `grammar.js` rules
+   block. Each parser runs its own keyword extraction, so there is no shared keyword pool.
 5. If the keyword is reachable from the base grammar, add it to `queries/highlights.scm` as a
    `@keyword` capture. Keywords only reachable through a dialect override go in that dialect's
    `<dialect>/queries/highlights.scm` instead; adding them to the base file fails the sync check.
-6. Run `npm run generate && npm run test:keywords`; the sync check fails if step 5 is wrong.
+6. Run `npm run generate && npm run test:keywords`. The sync check fails if step 5 is wrong.
 7. Add corpus tests in `test/corpus/` (or `<dialect>/test/corpus/` for a dialect feature).
 
 ### A note on overrides and conflicts
 
-A dialect override **replaces** the base rule entirely. When overriding a `choice`/dispatch rule
-(e.g. `_ddl_statement`, `from`, `statement`, `_column_constraint`), you must **re-enumerate every base
-alternative** plus your additions, or you will silently drop features. Likewise, each dialect declares
-its own `conflicts` array, and base conflicts do **not** propagate, so a new GLR conflict introduced in the
-base must be added to every dialect's `conflicts` array too.
+A dialect override replaces the base rule entirely. When overriding a `choice` or dispatch rule
+(`_ddl_statement`, `from`, `statement`, `_column_constraint`), re-enumerate every base alternative
+alongside your additions, or the dialect silently loses features. Each dialect also declares its own
+`conflicts` array, and base conflicts do not propagate, so a new GLR conflict in the base has to be
+added to every dialect's `conflicts` array too.
 
 ## Adding a New SQL Dialect
 
-See [AGENTS.md](AGENTS.md) for the full dialect architecture. The short version:
+[AGENTS.md](AGENTS.md) has the full dialect architecture. In short:
 
 1. Create `<dialect>/grammar.js` using tree-sitter's `grammar(parent, overrides)` pattern.
 2. The parent is `grammar.js` (ANSI SQL base) or another dialect (e.g. Databricks extends Spark).

@@ -57,12 +57,12 @@ export default {
   // second context.
   //
   // Note on generation time: teradata's `tree-sitter generate` takes ~25-30
-  // minutes. That is pre-existing, not a cost of the ALTER TABLE reuse —
+  // minutes. That is pre-existing, not a cost of the ALTER TABLE reuse;
   // measured by generating this dialect from an unmodified checkout, which
   // ran past 23 minutes with the same flat ~580MB RSS and CPU-bound profile.
   table_option: $ => choice(
     $._table_attribute,
-    // BLOCKCOMPRESSION = mode [(column defs)] — the parens are ambiguous with
+    // BLOCKCOMPRESSION = mode [(column defs)]; the parens are ambiguous with
     // the table's own column list (…=NEVER (a INT) vs …=AUTOTEMP(c1 INT));
     // GLR explores both and prec.dynamic(-1) prefers the table-column reading
     // when both survive.
@@ -112,7 +112,7 @@ export default {
     seq($.keyword_checksum, '=', choice($.keyword_on, $.keyword_default, $.identifier)),
   ),
 
-  // ALTER TABLE t, <attribute> — the same attributes CREATE TABLE takes, with
+  // ALTER TABLE t, <attribute>; the same attributes CREATE TABLE takes, with
   // BLOCKCOMPRESSION in its unambiguous spelling (no trailing column list to
   // weigh against a table's own column definitions).
   alter_table_option: $ => choice(
@@ -208,7 +208,7 @@ export default {
   ),
 
   // LOCKING ROW|TABLE t|VIEW v|DATABASE d FOR ACCESS|READ|WRITE|SHARE|EXCLUSIVE
-  // — request modifier prefixed to a query
+  // request modifier prefixed to a query
   locking_modifier: $ => seq(
     $.keyword_locking,
     choice(
@@ -261,7 +261,7 @@ export default {
     ),
   ),
 
-  // REPLACE VIEW v [(cols)] AS query — Teradata's create-or-replace
+  // REPLACE VIEW v [(cols)] AS query; Teradata's create-or-replace
   replace_view: $ => seq(
     $.keyword_replace,
     $.keyword_view,
@@ -289,7 +289,7 @@ export default {
   // help_statement now lives in grammar/admin.js, which covers the full
   // HELP object list rather than just STATISTICS and TABLE.
 
-  // SAMPLE n | SAMPLE f [, f …] — row sampling on a FROM clause
+  // SAMPLE n | SAMPLE f [, f …]; row sampling on a FROM clause
   sample_clause: $ => seq(
     $.keyword_sample,
     comma_list($.literal, true),
@@ -369,7 +369,7 @@ export default {
     seq($.keyword_title, $.literal),
   )),
 
-  // BEGIN [ATOMIC] stmts END — Teradata stored-procedure compound block
+  // BEGIN [ATOMIC] stmts END; Teradata stored-procedure compound block
   compound_statement: $ => seq(
     optional(field('label', seq($.identifier, ':'))),
     $.keyword_begin,

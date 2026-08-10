@@ -28,7 +28,7 @@ export default {
     )),
   ),
 
-  // ALTER TABLE partition management — wired into _alter_specifications
+  // ALTER TABLE partition management; wired into _alter_specifications
   alter_partition: $ => choice(
     seq($.keyword_add, $.keyword_partition,
         paren_list($.partition_definition, true)),

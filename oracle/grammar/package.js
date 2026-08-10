@@ -122,7 +122,7 @@ export default {
     ';',
   ),
 
-  // PRAGMA name [(args)];  — most common: PRAGMA EXCEPTION_INIT
+  // PRAGMA name [(args)]; ; most common: PRAGMA EXCEPTION_INIT
   package_pragma: $ => seq(
     $.keyword_pragma,
     $.identifier,

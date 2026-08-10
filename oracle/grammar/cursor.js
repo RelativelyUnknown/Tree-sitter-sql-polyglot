@@ -2,7 +2,7 @@ import { comma_list, paren_list } from '../../grammar/helpers.js';
 
 export default {
 
-  // CURSOR name [(param type [, ...])] IS select;  — inside DECLARE block
+  // CURSOR name [(param type [, ...])] IS select; ; inside DECLARE block
   cursor_declaration: $ => seq(
     $.keyword_cursor,
     field('name', $.identifier),

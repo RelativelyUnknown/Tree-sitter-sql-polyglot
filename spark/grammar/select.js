@@ -2,7 +2,7 @@ import { comma_list, paren_list, wrapped_in_parenthesis } from "../../grammar/he
 
 export default {
 
-  // QUALIFY predicate — post-window-function row filter
+  // QUALIFY predicate; post-window-function row filter
   qualify: $ => seq(
     $.keyword_qualify,
     field('predicate', $._expression),

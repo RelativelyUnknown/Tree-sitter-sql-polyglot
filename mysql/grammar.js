@@ -19,7 +19,7 @@ export default grammar(base, {
     [$._column, $._qualified_field],
     [$.object_reference],
     // Local shift/reduce ambiguity shared with like_expression's optional
-    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     [$.create_function],
     [$.list, $.grouping_set],
@@ -191,7 +191,7 @@ export default grammar(base, {
       optional($.having),
       optional($.window_clause),
       optional($.order_by),
-      // MySQL paging is LIMIT/OFFSET only — no ANSI OFFSET…FETCH FIRST.
+      // MySQL paging is LIMIT/OFFSET only; no ANSI OFFSET…FETCH FIRST.
       optional($.limit),
       optional($.into_outfile),
     ),
@@ -279,7 +279,7 @@ export default grammar(base, {
       ),
     ),
 
-    // MySQL: GROUP BY supports trailing WITH ROLLUP (no WITH CUBE — MySQL
+    // MySQL: GROUP BY supports trailing WITH ROLLUP (no WITH CUBE; MySQL
     // never implemented that form, unlike T-SQL).
     group_by: $ => prec.left(seq(
       $.keyword_group,
@@ -517,13 +517,13 @@ export default grammar(base, {
       $._identifier,
       $._double_quote_string,
       $._backtick_quoted_string,
-      // NB: no separate seq("`", _identifier, "`") alternative — the
+      // NB: no separate seq("`", _identifier, "`") alternative; the
       // _backtick_quoted_string token (/`[^`]*`/) already matches every
       // `quoted` identifier and wins the lexer's longest-match over a bare
       // "`", so that sequence was unreachable dead weight in the parse table.
     ),
 
-    // MySQL-specific keywords (not ANSI) — also defined in grammar/keywords.js for extraction
+    // MySQL-specific keywords (not ANSI); also defined in grammar/keywords.js for extraction
     // Locking / SET scopes / user management / maintenance (#101, #102, #106, #107)
     keyword_share:           _ => token(prec(1, make_keyword("share"))),
     keyword_lock:            _ => token(prec(1, make_keyword("lock"))),

@@ -33,7 +33,7 @@ export default {
     $.struct_literal,
   ),
 
-  // read_csv('path', [opt=val, ...]) etc. — structured file-reader node
+  // read_csv('path', [opt=val, ...]) etc.; structured file-reader node
   file_reader: $ => seq(
     field('function', choice(
       $.keyword_read_csv,

@@ -30,7 +30,7 @@ export default {
   )),
 
   // A flat comma list of filespecs and FILEGROUP markers. Nesting a comma
-  // list inside this one is not decidable — the two commas are the same
+  // list inside this one is not decidable; the two commas are the same
   // token in the same position.
   _db_file_element: $ => choice(
     $.db_filespec,

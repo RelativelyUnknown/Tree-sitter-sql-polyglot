@@ -16,7 +16,7 @@ export default grammar(base, {
     [$.field, $._qualified_field],
     [$.object_reference],
     // Local shift/reduce ambiguity shared with like_expression's optional
-    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     [$.create_function],
     [$.list, $.grouping_set],
@@ -184,7 +184,7 @@ export default grammar(base, {
       // comma-separates its specifications, so a ',' after a property is
       // ambiguous between continuing the property list and starting the next
       // specification. prec.right has to sit on the production that holds the
-      // list for the parser to prefer continuing it — wrapping the hidden
+      // list for the parser to prefer continuing it; wrapping the hidden
       // rule's reference does not reach it.
       prec.right(seq(
         $.keyword_set,
@@ -238,7 +238,7 @@ export default grammar(base, {
       ),
     ),
 
-    // Trino-specific keywords (not ANSI — defined here only, not in base)
+    // Trino-specific keywords (not ANSI; defined here only, not in base)
     keyword_prepare:         _ => token(prec(1, make_keyword("prepare"))),
     keyword_deallocate:      _ => token(prec(1, make_keyword("deallocate"))),
     keyword_stats:           _ => token(prec(1, make_keyword("stats"))),
@@ -273,8 +273,8 @@ export default grammar(base, {
     keyword_next:            _ => token(prec(1, make_keyword("next"))),
     keyword_show:            _ => token(prec(1, make_keyword("show"))),
     keyword_catalogs:        _ => token(prec(1, make_keyword("catalogs"))),
-    // Prefix of keyword_catalogs; both sit at prec(1) so longest-match — not
-    // precedence — decides between CATALOG and CATALOGS (see AGENTS.md).
+    // Prefix of keyword_catalogs; both sit at prec(1) so longest-match; not
+    // precedence; decides between CATALOG and CATALOGS (see AGENTS.md).
     keyword_catalog:         _ => token(prec(1, make_keyword("catalog"))),
     keyword_schemas:         _ => token(prec(1, make_keyword("schemas"))),
     keyword_columns:         _ => token(prec(1, make_keyword("columns"))),
@@ -286,7 +286,7 @@ export default grammar(base, {
     keyword_call:            _ => token(prec(1, make_keyword("call"))),
     keyword_output:          _ => token(prec(1, make_keyword("output"))),
     // BRANCH / BRANCHES: distinct tokens, and "branch" is a prefix of
-    // "branches", so neither may rely on precedence to win — longest match
+    // "branches", so neither may rely on precedence to win; longest match
     // decides, which requires them at the same (default) token precedence.
     keyword_branch:          _ => make_keyword("branch"),
     keyword_branches:        _ => make_keyword("branches"),

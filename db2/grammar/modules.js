@@ -40,7 +40,7 @@ export default {
     field('name', $.object_reference),
   ),
 
-  // OPTIONS (key 'value' [, key 'value']) — Db2 federation options
+  // OPTIONS (key 'value' [, key 'value']); Db2 federation options
   options_clause: $ => seq(
     $.keyword_options,
     paren_list(

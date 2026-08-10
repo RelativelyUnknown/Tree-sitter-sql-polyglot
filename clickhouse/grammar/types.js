@@ -79,7 +79,7 @@ export default {
     ),
   ),
 
-  // Array(T) — ClickHouse parametric form (distinct from base bracketed array_size)
+  // Array(T); ClickHouse parametric form (distinct from base bracketed array_size)
   array_type: $ => seq(
     $.keyword_array,
     '(',

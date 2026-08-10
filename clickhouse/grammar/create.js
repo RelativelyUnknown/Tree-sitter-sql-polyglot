@@ -4,7 +4,7 @@ export default {
 
   // Override _column_constraint to add ClickHouse column modifiers:
   // DEFAULT/MATERIALIZED/ALIAS/EPHEMERAL expr, CODEC(...), TTL expr, COMMENT,
-  // plus the ANSI base constraints (re-enumerated — overrides replace, not merge).
+  // plus the ANSI base constraints (re-enumerated; overrides replace, not merge).
   _column_constraint: $ => prec.left(choice(
     choice($.keyword_null, $._not_null),
     $._default_expression,
@@ -209,7 +209,7 @@ export default {
     seq($.keyword_lifetime, '(', $._dictionary_lifetime, ')'),
   ),
 
-  // SOURCE(CLICKHOUSE(TABLE 'x' ...)) / LAYOUT(FLAT()) — nested function-like args
+  // SOURCE(CLICKHOUSE(TABLE 'x' ...)) / LAYOUT(FLAT()); nested function-like args
   _dictionary_arg: $ => seq(
     field('name', $.identifier),
     '(',

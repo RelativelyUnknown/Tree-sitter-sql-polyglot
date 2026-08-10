@@ -74,7 +74,7 @@ export default {
     ')',
   ),
 
-  // key = value — used in WITH clauses across Synapse DDL
+  // key = value; used in WITH clauses across Synapse DDL
   with_option: $ => seq(
     $.identifier,
     '=',

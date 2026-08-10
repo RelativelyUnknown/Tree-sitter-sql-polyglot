@@ -96,7 +96,7 @@ export default {
     field('name', $.identifier),
   ),
 
-  // Narrow base role rules to ROLE/GROUP — CREATE/ALTER/DROP USER are handled
+  // Narrow base role rules to ROLE/GROUP; CREATE/ALTER/DROP USER are handled
   // by the T-SQL-specific rules above.
   create_role: $ => prec.left(seq(
     $.keyword_create,

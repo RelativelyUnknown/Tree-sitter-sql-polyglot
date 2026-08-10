@@ -2,7 +2,7 @@ import { comma_list, wrapped_in_parenthesis } from '../../grammar/helpers.js';
 
 export default {
 
-  // AS OF SYSTEM TIME <expr> — historical (follower) reads; also used by BACKUP
+  // AS OF SYSTEM TIME <expr>; historical (follower) reads; also used by BACKUP
   as_of_clause: $ => seq(
     $.keyword_as,
     $.keyword_of,
@@ -11,7 +11,7 @@ export default {
     $._expression,
   ),
 
-  // WITH option [= value] [, ...] — shared by BACKUP/RESTORE/IMPORT/CHANGEFEED
+  // WITH option [= value] [, ...]; shared by BACKUP/RESTORE/IMPORT/CHANGEFEED
   crdb_options_clause: $ => seq(
     $.keyword_with,
     comma_list($.crdb_option, true),
@@ -110,7 +110,7 @@ export default {
     ),
   ),
 
-  // UPSERT INTO t [(col [, ...])] VALUES (...) | SELECT ... — insert-or-update
+  // UPSERT INTO t [(col [, ...])] VALUES (...) | SELECT ...; insert-or-update
   upsert_statement: $ => seq(
     $.keyword_upsert,
     $.keyword_into,

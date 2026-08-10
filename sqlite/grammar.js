@@ -14,7 +14,7 @@ export default grammar(base, {
     [$._column, $._qualified_field],
     [$.object_reference],
     // Local shift/reduce ambiguity shared with like_expression's optional
-    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     [$.create_function],
     [$.list, $.grouping_set],
@@ -25,7 +25,7 @@ export default grammar(base, {
   rules: {
 
     // LIMIT is supported: fromClause with limit re-adds it over the ANSI base.
-    // SQLite paging is LIMIT/OFFSET only — no ANSI OFFSET…FETCH FIRST.
+    // SQLite paging is LIMIT/OFFSET only; no ANSI OFFSET…FETCH FIRST.
     from: $ => fromClause($, { limit: true, offsetFetch: false }),
 
     // Add SQLite's GLOB and MATCH pattern operators to the base operator table.
@@ -48,7 +48,7 @@ export default grammar(base, {
         [$.keyword_is, 'binary_is'],
         [$.is_not, 'binary_is'],
         // LIKE / NOT LIKE are handled exclusively by the inherited
-        // like_expression rule (with its optional ESCAPE tail) — not
+        // like_expression rule (with its optional ESCAPE tail); not
         // duplicated here. See base grammar/expressions.js for why.
         // SQLite's four pattern operators are LIKE (handled by
         // like_expression), GLOB, REGEXP and MATCH. keyword_rlike matches
@@ -111,7 +111,7 @@ export default grammar(base, {
       $.end_statement,
     ),
 
-    // END [TRANSACTION] — SQLite's synonym for COMMIT, usable on its own and
+    // END [TRANSACTION]; SQLite's synonym for COMMIT, usable on its own and
     // not only as the terminator of a BEGIN block.
     end_statement: $ => prec(-1, prec.right(seq(
       $.keyword_end,
@@ -253,7 +253,7 @@ export default grammar(base, {
       optional($.returning),
     ),
 
-    // UPDATE OR {ROLLBACK|ABORT|REPLACE|FAIL|IGNORE} — SQLite's conflict
+    // UPDATE OR {ROLLBACK|ABORT|REPLACE|FAIL|IGNORE}; SQLite's conflict
     // clause, the same set INSERT already accepts.
     update: $ => seq(
       $.keyword_update,

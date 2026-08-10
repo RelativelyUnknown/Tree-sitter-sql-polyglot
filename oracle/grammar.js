@@ -45,7 +45,7 @@ export default grammar(base, {
     [$._column, $._qualified_field],
     [$.object_reference],
     // Local shift/reduce ambiguity shared with like_expression's optional
-    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     [$.create_function],
     [$.list, $.grouping_set],
@@ -202,7 +202,7 @@ export default grammar(base, {
       optional($.model_clause),
       optional($.order_siblings_by),
       optional($.order_by),
-      // Oracle paging is FETCH FIRST/ROWNUM — no LIMIT keyword.
+      // Oracle paging is FETCH FIRST/ROWNUM; no LIMIT keyword.
       optional($.offset_fetch_clause),
     ),
 
@@ -379,7 +379,7 @@ export default grammar(base, {
     keyword_organization: _ => token(prec(1, make_keyword("organization"))),
     keyword_heap:         _ => token(prec(1, make_keyword("heap"))),
 
-    // Oracle-specific keywords — token(prec(1,...)) needed so lexer prefers
+    // Oracle-specific keywords; token(prec(1,...)) needed so lexer prefers
     // these over base _identifier when both are valid in the same state.
     keyword_exceptions:     _ => token(prec(1, make_keyword("exceptions"))),
     keyword_connect:        _ => token(prec(1, make_keyword("connect"))),
@@ -503,7 +503,7 @@ export default grammar(base, {
       optional($.table_partition_by),
     )),
 
-    // ORGANIZATION {HEAP | INDEX | EXTERNAL} — index-organized tables (IOT) etc.
+    // ORGANIZATION {HEAP | INDEX | EXTERNAL}; index-organized tables (IOT) etc.
     organization_clause: $ => seq(
       $.keyword_organization,
       choice($.keyword_heap, $.keyword_index, $.keyword_external),
@@ -685,7 +685,7 @@ export default grammar(base, {
     // Lexer-precedence guards: each keyword above is a strict prefix of one of
     // these, and tree-sitter resolves lexical precedence before match length,
     // so the longer form has to be re-declared at the same precedence to stay
-    // lexable. `model` matters most — Oracle's MODEL clause depends on it.
+    // lexable. `model` matters most; Oracle's MODEL clause depends on it.
     keyword_called:       _ => token(prec(1, make_keyword("called"))),
     keyword_locked:       _ => token(prec(1, make_keyword("locked"))),
     keyword_model:        _ => token(prec(1, make_keyword("model"))),

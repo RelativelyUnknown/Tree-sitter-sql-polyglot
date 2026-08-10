@@ -1,10 +1,10 @@
 export default {
 
   // Semi-structured / variant colon-path access:
-  //   col:key             — top-level key
-  //   col:obj.nested      — dot-delimited sub-path
-  //   col:arr[0]          — array index
-  //   col:obj.arr[0]::STRING  — cast (:: cast is handled by base binary_expression)
+  //   col:key            ; top-level key
+  //   col:obj.nested     ; dot-delimited sub-path
+  //   col:arr[0]         ; array index
+  //   col:obj.arr[0]::STRING ; cast (:: cast is handled by base binary_expression)
   //
   // Precedence 10 ensures colon binds tightly to the left-hand field/invocation.
   variant_access: $ => prec.left(10, seq(

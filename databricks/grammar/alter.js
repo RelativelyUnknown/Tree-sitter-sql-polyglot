@@ -69,13 +69,13 @@ export default {
       $.keyword_location,
       field('location', alias($._literal_string, $.literal)),
     ),
-    // Iceberg SET TBLPROPERTIES — keys may be quoted strings
+    // Iceberg SET TBLPROPERTIES; keys may be quoted strings
     seq(
       $.keyword_set,
       $.keyword_tblproperties,
       $.list,
     ),
-    // Iceberg UNSET TBLPROPERTIES — keys may be quoted strings, IF EXISTS optional after list
+    // Iceberg UNSET TBLPROPERTIES; keys may be quoted strings, IF EXISTS optional after list
     seq(
       $.keyword_unset,
       $.keyword_tblproperties,

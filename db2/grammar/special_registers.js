@@ -1,6 +1,6 @@
 export default {
 
-  // CURRENT SCHEMA | CURRENT TIMESTAMP | CURRENT DATE etc. — Db2 special registers
+  // CURRENT SCHEMA | CURRENT TIMESTAMP | CURRENT DATE etc.; Db2 special registers
   special_register: $ => seq(
     $.keyword_current,
     choice(

@@ -38,7 +38,7 @@ export default {
     ';',
   ),
 
-  // FUNCTION name(args) RETURN type — declaration (no body)
+  // FUNCTION name(args) RETURN type; declaration (no body)
   package_function_decl: $ => seq(
     $.keyword_function,
     $.object_reference,
@@ -47,7 +47,7 @@ export default {
     $._type,
   ),
 
-  // PROCEDURE name(args) — declaration
+  // PROCEDURE name(args); declaration
   package_procedure_decl: $ => seq(
     $.keyword_procedure,
     $.object_reference,

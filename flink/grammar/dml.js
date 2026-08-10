@@ -63,7 +63,7 @@ export default {
     field('path', alias($._literal_string, $.literal)),
   ),
 
-  // EXECUTE select — general EXECUTE wrapper for SELECT queries
+  // EXECUTE select; general EXECUTE wrapper for SELECT queries
   execute_statement: $ => seq(
     $.keyword_execute,
     $._dml_read,
