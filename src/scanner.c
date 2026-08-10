@@ -37,10 +37,11 @@ static char* add_char(char* text, size_t* text_size, char c, int index) {
   }
 
   // will break when indexes advances more than MALLOC_STRING_SIZE
-  if (index + 1 >= *text_size) {
+  if ((size_t)index + 1 >= *text_size) {
+    size_t old_size = *text_size;
     *text_size += MALLOC_STRING_SIZE;
     char* tmp = malloc(*text_size * sizeof(char));
-    strncpy(tmp, text, *text_size);
+    memcpy(tmp, text, old_size);
     free(text);
     text = tmp;
   }
@@ -50,32 +51,34 @@ static char* add_char(char* text, size_t* text_size, char c, int index) {
   return text;
 }
 
+// text_size lives on the stack, not the heap. Scanning the body of a dollar-quoted
+// string calls this function once per input character (see the DOLLAR_QUOTED_STRING
+// loop below, which advances one character and retries whenever no tag is found), and
+// the overwhelmingly common case returns at the very first `if` without ever touching
+// the buffer. Heap-allocating the size counter made that hot path pay a malloc/free
+// per character of every dollar-quoted body.
 static char* scan_dollar_string_tag(TSLexer *lexer) {
   char* tag = NULL;
   int index = 0;
-  size_t* text_size = malloc(sizeof(size_t));
-  *text_size = 0;
+  size_t text_size = 0;
   if (lexer->lookahead == '$') {
-    tag = add_char(tag, text_size, '$', index);
+    tag = add_char(tag, &text_size, '$', index);
     lexer->advance(lexer, false);
   } else {
-    free(text_size);
     return NULL;
   }
 
   while (lexer->lookahead != '$' && !iswspace(lexer->lookahead) && !lexer->eof(lexer)) {
-    tag = add_char(tag, text_size, lexer->lookahead, ++index);
+    tag = add_char(tag, &text_size, lexer->lookahead, ++index);
     lexer->advance(lexer, false);
   }
 
   if (lexer->lookahead == '$') {
-    tag = add_char(tag, text_size, lexer->lookahead, ++index);
+    tag = add_char(tag, &text_size, lexer->lookahead, ++index);
     lexer->advance(lexer, false);
-    free(text_size);
     return tag;
   } else {
     free(tag);
-    free(text_size);
     return NULL;
   }
 }

@@ -77,10 +77,15 @@ export default {
     false,
   ),
 
-  _function_return: $ => seq(
+  // prec.right: without the ';' that used to terminate the bare-RETURN body, the
+  // trailing expression is ambiguous against every operator that can continue it
+  // (NOT LIKE / NOT IN / NOT BETWEEN / NOT SIMILAR TO …). Shifting is always the
+  // right call — RETURN takes the longest expression — so this resolves statically
+  // instead of costing a GLR conflict.
+  _function_return: $ => prec.right(seq(
     $.keyword_return,
     $._expression,
-  ),
+  )),
 
   _function_body_statement: $ => choice(
     $.statement,
@@ -89,10 +94,13 @@ export default {
 
   // ANSI SQL ISO/IEC 9075-4 compound statement body
   function_body: $ => choice(
-    seq(
-      $._function_return,
-      ';'
-    ),
+    // Bare `RETURN expr` — no ';' here. The terminator belongs to `program`
+    // (`seq(statement, ';')`). Consuming it inside the body made the statement
+    // parse in isolation, because `program` also allows one unterminated trailing
+    // statement, while making every *following* statement an ERROR:
+    //   CREATE FUNCTION f() RETURNS int LANGUAGE sql RETURN 1; SELECT 1;
+    // left `program` still expecting the ';' it had already been given.
+    $._function_return,
     seq(
       $.keyword_begin,
       $.keyword_atomic,
