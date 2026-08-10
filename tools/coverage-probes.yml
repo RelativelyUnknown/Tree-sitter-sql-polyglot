@@ -76,6 +76,12 @@
 #   spark/optimize_table    OPTIMIZE — Delta Lake (open source since 2.0)
 #   athena/database_options CREATE DATABASE … WITH DBPROPERTIES — Amazon
 #                           Athena DDL reference
+#   teradata/database_link  CREATE FOREIGN SERVER — Teradata QueryGrid SQL
+#                           command reference for the Teradata connector
+#   tsql/security_label     ADD SENSITIVITY CLASSIFICATION … WITH (LABEL = …)
+#                           — T-SQL reference. Attaching a LABEL to a column
+#                           is this feature under Microsoft's spelling, so it
+#                           is probed rather than excluded.
 #
 # Scope note: this registry is a regression guard, and only a partial
 # completeness measure. It tracks 52 features; PostgreSQL alone documents 183
@@ -896,7 +902,7 @@ features:
       duckdb:     { status: not-applicable, reason: "No label-based security" }
       mysql:      { status: not-applicable, reason: "No label-based security" }
       mariadb:    { status: not-applicable, reason: "No label-based security" }
-      tsql:       { status: not-applicable, reason: "Sensitivity classifications via ADD SENSITIVITY CLASSIFICATION" }
+      tsql:       { probe: "ADD SENSITIVITY CLASSIFICATION TO t1.c1 WITH (LABEL = 'Confidential');" }
       oracle:     { status: not-applicable, reason: "Oracle Label Security is configured through PL/SQL packages" }
       sqlite:     { status: not-applicable, reason: "No label-based security" }
       hana:       { status: not-applicable, reason: "No label-based security" }
@@ -1232,7 +1238,7 @@ features:
       databricks:  { status: not-applicable, reason: "Foreign catalogs are Unity Catalog objects" }
       athena:      { status: not-applicable, reason: "Federation via Lambda connectors, not SQL" }
       clickhouse:  { status: not-applicable, reason: "Remote access via table/database engines, no link object" }
-      teradata:    { status: not-applicable, reason: "QueryGrid links are configured, not created in SQL" }
+      teradata:    { probe: "CREATE FOREIGN SERVER srv1 USING HOSTTYPE('NVP') DO IMPORT WITH syslib.load_from_tgt;" }
 
   - id: optimize_table
     name: "Storage compaction / reorganisation"

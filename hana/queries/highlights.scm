@@ -16,7 +16,6 @@
   (keyword_sql)
   (keyword_priority)
   (keyword_log)
-  (keyword_logged)
   (keyword_persistent)
   (keyword_memory)
   (keyword_off)

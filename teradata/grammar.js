@@ -55,7 +55,53 @@ export default grammar(base, {
     ),
 
     // Re-add non-ANSI CREATE forms this dialect supports over the strict ANSI base.
-    _create_statement: $ => seq(choice(...createStatementChoices($, { index: true }), $.create_join_index)),
+    _create_statement: $ => seq(choice(
+      ...createStatementChoices($, { index: true }),
+      $.create_join_index,
+      $.create_foreign_server,
+    )),
+
+    // CREATE FOREIGN SERVER name
+    //   [EXTERNAL SECURITY {DEFINER | INVOKER} TRUSTED auth]
+    //   USING option('value') …
+    //   DO IMPORT WITH udf [, DO EXPORT WITH udf]
+    // QueryGrid's remote-connection object. The USING options are
+    // space-separated name('value') pairs — no commas — while the DO clauses
+    // are comma-separated, which is why they are two different lists.
+    create_foreign_server: $ => prec.left(seq(
+      $.keyword_create,
+      $.keyword_foreign,
+      $.keyword_server,
+      field('name', $.identifier),
+      optional(seq(
+        $.keyword_external,
+        $.keyword_security,
+        choice($.keyword_definer, $.keyword_invoker),
+        $.keyword_trusted,
+        field('authorization', $.object_reference),
+      )),
+      optional(seq($.keyword_using, repeat1($.foreign_server_option))),
+      comma_list($.foreign_server_action, true),
+    )),
+
+    foreign_server_option: $ => seq(
+      field('name', $.identifier),
+      '(',
+      field('value', alias($._literal_string, $.literal)),
+      ')',
+    ),
+
+    foreign_server_action: $ => seq(
+      $.keyword_do,
+      choice($.keyword_import, $.keyword_export),
+      $.keyword_with,
+      field('function', $.object_reference),
+    ),
+
+    keyword_server:  _ => token(prec(1, make_keyword("server"))),
+    keyword_trusted: _ => token(prec(1, make_keyword("trusted"))),
+    keyword_import:  _ => token(prec(1, make_keyword("import"))),
+    keyword_export:  _ => token(prec(1, make_keyword("export"))),
 
     // CREATE {JOIN | HASH} INDEX name AS SELECT … [PRIMARY INDEX (…)]
     create_join_index: $ => prec.right(seq(

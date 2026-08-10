@@ -251,17 +251,29 @@ export default grammar(base, {
     ),
 
     // ── Label-based access control (LBAC) ───────────────────────────────────
-    // CREATE SECURITY LABEL policy.label COMPONENT c 'v' [, …]
+    // CREATE SECURITY LABEL policy.label
+    //   COMPONENT c1 'v' [, 'v' …] [, COMPONENT c2 'v' …]
+    // One flat comma-separated list rather than a list of lists: nesting two
+    // comma lists leaves the ',' after an element ambiguous between
+    // continuing the elements and starting the next COMPONENT clause, which
+    // tree-sitter cannot resolve. Here every ',' is shifted by the same rule
+    // and the token after it (COMPONENT vs a string) decides.
     create_security_label: $ => seq(
       $.keyword_create,
       $.keyword_security,
       $.keyword_label,
       field('name', $.object_reference),
-      comma_list(seq(
-        $.keyword_component,
-        field('component', $.identifier),
-        comma_list(field('element', alias($._literal_string, $.literal)), true),
-      ), true),
+      $._security_label_component,
+      repeat(seq(',', choice(
+        $._security_label_component,
+        field('element', alias($._literal_string, $.literal)),
+      ))),
+    ),
+
+    _security_label_component: $ => seq(
+      $.keyword_component,
+      field('component', $.identifier),
+      field('element', alias($._literal_string, $.literal)),
     ),
 
     // CREATE SECURITY POLICY p COMPONENTS c1 [, c2 …] WITH DB2LBACRULES
