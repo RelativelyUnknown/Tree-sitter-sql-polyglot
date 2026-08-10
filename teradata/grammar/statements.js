@@ -53,8 +53,13 @@ export default {
   // CREATE TABLE's attribute list. The BLOCKCOMPRESSION entry carries a
   // GLR-ambiguous optional paren list, so it is kept separate from the
   // unambiguous attributes: ALTER TABLE reuses only the latter (see
-  // alter_table in ../grammar.js). Pulling the ambiguous entry into a second
-  // context made teradata's LR table construction blow up.
+  // alter_table in ../grammar.js), rather than putting that ambiguity in a
+  // second context.
+  //
+  // Note on generation time: teradata's `tree-sitter generate` takes ~25-30
+  // minutes. That is pre-existing, not a cost of the ALTER TABLE reuse —
+  // measured by generating this dialect from an unmodified checkout, which
+  // ran past 23 minutes with the same flat ~580MB RSS and CPU-bound profile.
   table_option: $ => choice(
     $._table_attribute,
     // BLOCKCOMPRESSION = mode [(column defs)] — the parens are ambiguous with
