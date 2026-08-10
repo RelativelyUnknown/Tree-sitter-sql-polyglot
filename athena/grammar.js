@@ -11,30 +11,20 @@ export default grammar(trino, {
   conflicts: $ => [
     [$.object_reference, $._qualified_field],
     [$.field, $._qualified_field],
-    [$._column, $._qualified_field],
     [$.object_reference],
     // Local shift/reduce ambiguity shared with like_expression's optional
     // ESCAPE tail — kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
-    [$.from],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
-    [$.term],
     [$.values],
-    [$.select_expression],
-    [$.set_operation],
-    [$.group_by],
-    [$.order_target],
-    [$.object_reference, $._qualified_field, $.lambda_expression],
-    [$._qualified_field, $.lambda_expression],
-    [$.lambda_expression],
-    [$.binary_expression, $.lambda_expression],
-    [$.row_type, $.invocation],
-    [$.match_recognize_clause],
-    [$.array_type, $.array],
-    [$.set_session_statement, $.set_statement],
+    // The fifteen other entries this list used to carry (the lambda group,
+    // row_type/invocation, array_type/array, match_recognize_clause,
+    // set_statement/set_session_statement, from, term, select_expression,
+    // set_operation, group_by, order_target, _column/_qualified_field) were
+    // copied from trino and are all reported unnecessary here.
   ],
 
   rules: {

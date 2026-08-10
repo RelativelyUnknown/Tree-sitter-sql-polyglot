@@ -50,14 +50,19 @@ export default grammar(base, {
         // LIKE / NOT LIKE are handled exclusively by the inherited
         // like_expression rule (with its optional ESCAPE tail) — not
         // duplicated here. See base grammar/expressions.js for why.
+        // SQLite's four pattern operators are LIKE (handled by
+        // like_expression), GLOB, REGEXP and MATCH. keyword_rlike matches
+        // both RLIKE and REGEXP, so REGEXP is covered by that entry.
+        // SIMILAR TO is deliberately absent: it is ISO SQL that SQLite does
+        // not implement, and every extra operator sharing the
+        // pattern_matching precedence multiplies this dialect's parse table
+        // (see tools/glr_scan.py on LIKE-family ambiguity).
         [$.keyword_glob, 'pattern_matching'],
         [$.not_glob, 'pattern_matching'],
         [$.keyword_match, 'pattern_matching'],
         [$.not_match, 'pattern_matching'],
         [$.keyword_rlike, 'pattern_matching'],
         [$.not_rlike, 'pattern_matching'],
-        [$.similar_to, 'pattern_matching'],
-        [$.not_similar_to, 'pattern_matching'],
         [$.distinct_from, 'binary_is'],
         [$.not_distinct_from, 'binary_is'],
       ].map(([operator, precedence]) =>

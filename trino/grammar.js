@@ -14,37 +14,21 @@ export default grammar(base, {
   conflicts: $ => [
     [$.object_reference, $._qualified_field],
     [$.field, $._qualified_field],
-    [$._column, $._qualified_field],
     [$.object_reference],
     // Local shift/reduce ambiguity shared with like_expression's optional
     // ESCAPE tail — kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
-    [$.from],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
-    [$.term],
     [$.values],
-    [$.select_expression],
-    [$.set_operation],
-    [$.group_by],
-    [$.order_target],
-    // Lambda: x -> expr vs field reference
-    [$.object_reference, $._qualified_field, $.lambda_expression],
-    [$._qualified_field, $.lambda_expression],
-    [$.lambda_expression],
-    [$.binary_expression, $.lambda_expression],
-    // ROW(...) vs function invocation
-    [$.row_type, $.invocation],
-    // MATCH_RECOGNIZE internal GLR
-    [$.match_recognize_clause],
-    // ARRAY(type) vs ARRAY[...] expression
-    [$.array_type, $.array],
-    // set_session_statement vs set_statement (both start with SET SESSION)
-    [$.set_session_statement, $.set_statement],
-    // SET SESSION AUTHORIZATION vs SET SESSION var = value (shared SET SESSION prefix)
-    [$.set_session_statement, $.set_session_authorization_statement],
+    // Everything else this list used to carry is reported unnecessary by
+    // tree-sitter: the four lambda entries, row_type/invocation,
+    // array_type/array, the two set_session pairs, match_recognize_clause,
+    // select_expression, from, term, group_by, set_operation, order_target
+    // and _column/_qualified_field. Removing them in one pass exposed the
+    // last two, which is why this was done iteratively.
   ],
 
   rules: {

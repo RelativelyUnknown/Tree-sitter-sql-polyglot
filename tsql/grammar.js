@@ -30,8 +30,9 @@ export default grammar(base, {
     // tsql/grammar/dml.js), so the [$.output_clause] GLR self-conflict is gone.
     // EXPLAIN followed by keyword_continue / keyword_break is ambiguous — resolved by tree-sitter
     // [$.statement] removed (tree-sitter reported it unnecessary)
-    // option_clause after optional_parenthesis(_dml_read) causes close-paren ambiguity
-    [$.option_clause],
+    // [$.option_clause] removed: tree-sitter reports it unnecessary — the
+    // close-paren ambiguity it was added for is resolved by prec.right on
+    // _dml_read above.
     [$._function_return, $.return_statement],
   ],
 
