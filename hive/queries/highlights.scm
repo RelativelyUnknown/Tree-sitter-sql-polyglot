@@ -19,6 +19,8 @@
   (keyword_schemas)
   (keyword_functions)
   (keyword_exchange)
+  (keyword_compact)
+  (keyword_pool)
 ] @keyword
 
 ; EXPLAIN prefix (non-ANSI; re-added over the strict ANSI base)

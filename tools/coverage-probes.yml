@@ -57,6 +57,32 @@
 # BEGIN…END, PREPARE and DECLARE CURSOR are all real Db2 syntax. Check the
 # vendor's documentation before "fixing" a suspect by deleting grammar.
 #
+# The per-dialect statement inventory below added more of the same kind. Each
+# of these was checked against the vendor's current syntax block and then
+# against every corroborator that claims the dialect; none of them accepts it,
+# so they are recorded as blind spots, not looseness:
+#
+#   db2/security_label      CREATE SECURITY LABEL (LBAC) — IBM Db2 SQL Reference
+#   db2/database_link       CREATE SERVER (federation) — IBM Db2 SQL Reference
+#   db2/alter_set_options   ALTER TABLE … APPEND ON — IBM Db2 SQL Reference
+#   db2/index_rebuild       REORG INDEXES ALL FOR TABLE — Db2 Command Reference
+#   db2/optimize_table      REORG TABLE — Db2 Command Reference
+#   oracle/create_operator  CREATE OPERATOR … BINDING … RETURN … USING —
+#                           Oracle SQL Language Reference (extensible indexing)
+#   trino/database_link     CREATE CATALOG … USING — Trino SQL reference
+#                           (dynamic catalog management)
+#   teradata/alter_set_options  ALTER TABLE t, NO FALLBACK — Teradata SQL DDL
+#   clickhouse/alter_set_options  ALTER TABLE … MODIFY SETTING — ClickHouse docs
+#   spark/optimize_table    OPTIMIZE — Delta Lake (open source since 2.0)
+#   athena/database_options CREATE DATABASE … WITH DBPROPERTIES — Amazon
+#                           Athena DDL reference
+#   teradata/database_link  CREATE FOREIGN SERVER — Teradata QueryGrid SQL
+#                           command reference for the Teradata connector
+#   tsql/security_label     ADD SENSITIVITY CLASSIFICATION … WITH (LABEL = …)
+#                           — T-SQL reference. Attaching a LABEL to a column
+#                           is this feature under Microsoft's spelling, so it
+#                           is probed rather than excluded.
+#
 # Scope note: this registry is a regression guard, and only a partial
 # completeness measure. It tracks 52 features; PostgreSQL alone documents 183
 # statements. A dialect at 100% here means "passes every probe we wrote", not
@@ -765,6 +791,9 @@ features:
     weight: 1
     probe: "REINDEX TABLE t1;"
     dialects:
+      # SQLite spells it without the TABLE keyword: REINDEX
+      # collation-name | table-name | index-name.
+      sqlite:     { probe: "REINDEX t1;" }
       duckdb:     { status: not-applicable, reason: "No REINDEX; ART indexes are rebuilt on load" }
       # Engines with no user-managed indexes at all cannot have REINDEX.
       hive:       { status: not-applicable, reason: "Indexes removed in Hive 3" }
@@ -776,6 +805,19 @@ features:
       trino:      { status: not-applicable, reason: "Query engine, no index storage" }
       athena:     { status: not-applicable, reason: "Query engine, no index storage" }
       flink:      { status: not-applicable, reason: "Query engine, no index storage" }
+      snowflake:  { status: not-applicable, reason: "No user indexes (micro-partitions)" }
+      # REINDEX is a PostgreSQL/SQLite spelling. These engines do rebuild
+      # indexes, but through a different statement scored by index_rebuild
+      # (ALTER INDEX … REBUILD, REORG INDEXES, MATERIALIZE INDEX) — counting
+      # the PostgreSQL spelling against them measured the wrong thing.
+      oracle:     { status: not-applicable, reason: "ALTER INDEX … REBUILD, not REINDEX" }
+      tsql:       { status: not-applicable, reason: "ALTER INDEX … REBUILD, not REINDEX" }
+      db2:        { status: not-applicable, reason: "REORG INDEXES, not REINDEX" }
+      clickhouse: { status: not-applicable, reason: "ALTER TABLE … MATERIALIZE INDEX, not REINDEX" }
+      hana:       { status: not-applicable, reason: "ALTER INDEX … REBUILD, not REINDEX" }
+      mysql:      { status: not-applicable, reason: "No REINDEX; OPTIMIZE TABLE rebuilds indexes" }
+      mariadb:    { status: not-applicable, reason: "No REINDEX; OPTIMIZE TABLE rebuilds indexes" }
+      teradata:   { status: not-applicable, reason: "No REINDEX statement" }
 
   - id: cluster_table
     name: "CLUSTER table USING index"
@@ -793,6 +835,24 @@ features:
       hive:       { status: not-applicable, reason: "CLUSTER BY is a query clause, not this statement" }
       spark:      { status: not-applicable, reason: "CLUSTER BY is a query clause, not this statement" }
       databricks: { status: not-applicable, reason: "CLUSTER BY is liquid clustering, not this statement" }
+      # CLUSTER … USING physically reorders a heap by an index — a
+      # PostgreSQL-only maintenance statement. Oracle's CREATE CLUSTER
+      # defines a different object (a shared-key storage cluster) and is not
+      # this statement; the rest have no equivalent at all.
+      oracle:     { status: not-applicable, reason: "CREATE CLUSTER defines a storage cluster; no CLUSTER … USING" }
+      mysql:      { status: not-applicable, reason: "No CLUSTER statement (InnoDB is clustered by PK)" }
+      mariadb:    { status: not-applicable, reason: "No CLUSTER statement (InnoDB is clustered by PK)" }
+      sqlite:     { status: not-applicable, reason: "No CLUSTER statement" }
+      db2:        { status: not-applicable, reason: "Clustering index + REORG, no CLUSTER statement" }
+      hana:       { status: not-applicable, reason: "No CLUSTER statement" }
+      teradata:   { status: not-applicable, reason: "No CLUSTER statement (primary index governs layout)" }
+      snowflake:  { status: not-applicable, reason: "CLUSTER BY is a table property, not this statement" }
+      bigquery:   { status: not-applicable, reason: "CLUSTER BY is a table property, not this statement" }
+      spanner:    { status: not-applicable, reason: "INTERLEAVE governs layout; no CLUSTER statement" }
+      clickhouse: { status: not-applicable, reason: "ORDER BY governs layout; no CLUSTER statement" }
+      trino:      { status: not-applicable, reason: "Query engine, no owned storage to recluster" }
+      athena:     { status: not-applicable, reason: "Query engine, no owned storage to recluster" }
+      flink:      { status: not-applicable, reason: "Query engine, no owned storage to recluster" }
 
   - id: discard
     name: "DISCARD session state"
@@ -801,8 +861,31 @@ features:
     weight: 1
     probe: "DISCARD ALL;"
     dialects:
+      # DISCARD {ALL|PLANS|SEQUENCES|TEMPORARY} resets PostgreSQL session
+      # state and exists only in the PostgreSQL family. SQLGlot accepts it for
+      # every dialect because its dialect parsers share one base parser, not
+      # because these engines have the statement — checked against each
+      # vendor's own statement list.
       redshift:   { status: not-applicable, reason: "No DISCARD statement" }
       duckdb:     { status: not-applicable, reason: "No DISCARD statement" }
+      mysql:      { status: not-applicable, reason: "No DISCARD statement (only ALTER TABLE … DISCARD TABLESPACE)" }
+      mariadb:    { status: not-applicable, reason: "No DISCARD statement (only ALTER TABLE … DISCARD TABLESPACE)" }
+      tsql:       { status: not-applicable, reason: "No DISCARD statement" }
+      oracle:     { status: not-applicable, reason: "No DISCARD statement" }
+      sqlite:     { status: not-applicable, reason: "No DISCARD statement" }
+      db2:        { status: not-applicable, reason: "No DISCARD statement" }
+      hana:       { status: not-applicable, reason: "No DISCARD statement" }
+      teradata:   { status: not-applicable, reason: "No DISCARD statement" }
+      hive:       { status: not-applicable, reason: "No DISCARD statement" }
+      spark:      { status: not-applicable, reason: "No DISCARD statement" }
+      databricks: { status: not-applicable, reason: "No DISCARD statement" }
+      snowflake:  { status: not-applicable, reason: "No DISCARD statement" }
+      bigquery:   { status: not-applicable, reason: "No DISCARD statement" }
+      spanner:    { status: not-applicable, reason: "No DISCARD statement" }
+      trino:      { status: not-applicable, reason: "No DISCARD statement" }
+      athena:     { status: not-applicable, reason: "No DISCARD statement" }
+      clickhouse: { status: not-applicable, reason: "No DISCARD statement" }
+      flink:      { status: not-applicable, reason: "No DISCARD statement" }
 
   - id: security_label
     name: "SECURITY LABEL"
@@ -811,8 +894,29 @@ features:
     weight: 1
     probe: "SECURITY LABEL ON TABLE t1 IS 'classified';"
     dialects:
+      # Db2 is the one other engine with label-based access control as SQL
+      # DDL, but it labels *rows/columns* through LBAC objects rather than
+      # attaching a provider label to an existing object the PostgreSQL way.
+      db2:        { probe: "CREATE SECURITY LABEL p1.l1 COMPONENT c1 'high';" }
       redshift:   { status: not-applicable, reason: "No SECURITY LABEL; RLS policies instead" }
       duckdb:     { status: not-applicable, reason: "No label-based security" }
+      mysql:      { status: not-applicable, reason: "No label-based security" }
+      mariadb:    { status: not-applicable, reason: "No label-based security" }
+      tsql:       { probe: "ADD SENSITIVITY CLASSIFICATION TO t1.c1 WITH (LABEL = 'Confidential');" }
+      oracle:     { status: not-applicable, reason: "Oracle Label Security is configured through PL/SQL packages" }
+      sqlite:     { status: not-applicable, reason: "No label-based security" }
+      hana:       { status: not-applicable, reason: "No label-based security" }
+      teradata:   { status: not-applicable, reason: "Row-level security via constraint objects, not labels" }
+      hive:       { status: not-applicable, reason: "Authorization via Ranger/SQL-standard grants, no labels" }
+      spark:      { status: not-applicable, reason: "No label-based security" }
+      databricks: { status: not-applicable, reason: "Unity Catalog tags/masks, no SECURITY LABEL" }
+      snowflake:  { status: not-applicable, reason: "Object tags + masking policies, no SECURITY LABEL" }
+      bigquery:   { status: not-applicable, reason: "Policy tags are an IAM/Data Catalog concept, not SQL" }
+      spanner:    { status: not-applicable, reason: "No label-based security" }
+      trino:      { status: not-applicable, reason: "Access control is connector/system configuration" }
+      athena:     { status: not-applicable, reason: "Access control is Lake Formation, not SQL" }
+      clickhouse: { status: not-applicable, reason: "Row policies, no SECURITY LABEL" }
+      flink:      { status: not-applicable, reason: "No label-based security" }
 
   - id: import_foreign_schema
     name: "IMPORT FOREIGN SCHEMA"
@@ -821,8 +925,30 @@ features:
     weight: 1
     probe: "IMPORT FOREIGN SCHEMA remote FROM SERVER srv INTO local;"
     dialects:
+      # SQL/MED bulk foreign-table import. Only the PostgreSQL family
+      # implements it; every other engine below reaches remote data through a
+      # different object (scored by database_link) and has no IMPORT FOREIGN
+      # SCHEMA in its statement list.
       redshift:   { status: not-applicable, reason: "Federation via external schemas, no FDW import" }
       duckdb:     { status: not-applicable, reason: "ATTACH + scanner extensions, no FDW import" }
+      mysql:      { status: not-applicable, reason: "FEDERATED tables are declared one at a time" }
+      mariadb:    { status: not-applicable, reason: "CONNECT/FEDERATED tables are declared one at a time" }
+      tsql:       { status: not-applicable, reason: "Linked servers/external tables, no FDW import" }
+      oracle:     { status: not-applicable, reason: "Database links + synonyms, no FDW import" }
+      sqlite:     { status: not-applicable, reason: "ATTACH DATABASE, no FDW" }
+      db2:        { status: not-applicable, reason: "Nicknames are created per remote table" }
+      hana:       { status: not-applicable, reason: "Virtual tables are created per remote table" }
+      teradata:   { status: not-applicable, reason: "QueryGrid foreign tables, no FDW import" }
+      hive:       { status: not-applicable, reason: "No FDW model" }
+      spark:      { status: not-applicable, reason: "No FDW model" }
+      databricks: { status: not-applicable, reason: "Foreign catalogs are Unity Catalog objects" }
+      snowflake:  { status: not-applicable, reason: "External tables/stages, no FDW import" }
+      bigquery:   { status: not-applicable, reason: "External tables + connections, no FDW import" }
+      spanner:    { status: not-applicable, reason: "No FDW model" }
+      trino:      { status: not-applicable, reason: "Connectors expose remote schemas automatically" }
+      athena:     { status: not-applicable, reason: "Connectors expose remote schemas automatically" }
+      clickhouse: { status: not-applicable, reason: "Remote data via table/database engines, no FDW import" }
+      flink:      { status: not-applicable, reason: "Catalogs expose remote schemas automatically" }
 
   - id: create_operator
     name: "CREATE OPERATOR"
@@ -831,7 +957,28 @@ features:
     weight: 1
     probe: "CREATE OPERATOR === (FUNCTION = my_eq, LEFTARG = integer, RIGHTARG = integer);"
     dialects:
+      # Oracle is the other engine with user-defined operators (extensible
+      # indexing), spelled with BINDING/RETURN/USING instead of an option list.
+      oracle:     { probe: "CREATE OPERATOR eq_op BINDING (VARCHAR2, VARCHAR2) RETURN NUMBER USING eq_f;" }
       duckdb:     { status: not-applicable, reason: "No user-defined operators" }
+      mysql:      { status: not-applicable, reason: "No user-defined operators" }
+      mariadb:    { status: not-applicable, reason: "No user-defined operators" }
+      tsql:       { status: not-applicable, reason: "No user-defined operators" }
+      sqlite:     { status: not-applicable, reason: "No user-defined operators" }
+      db2:        { status: not-applicable, reason: "No user-defined operators" }
+      hana:       { status: not-applicable, reason: "No user-defined operators" }
+      teradata:   { status: not-applicable, reason: "No user-defined operators" }
+      hive:       { status: not-applicable, reason: "No user-defined operators" }
+      spark:      { status: not-applicable, reason: "No user-defined operators" }
+      databricks: { status: not-applicable, reason: "No user-defined operators" }
+      snowflake:  { status: not-applicable, reason: "No user-defined operators" }
+      bigquery:   { status: not-applicable, reason: "No user-defined operators" }
+      spanner:    { status: not-applicable, reason: "No user-defined operators" }
+      redshift:   { status: not-applicable, reason: "No user-defined operators" }
+      trino:      { status: not-applicable, reason: "No user-defined operators" }
+      athena:     { status: not-applicable, reason: "No user-defined operators" }
+      clickhouse: { status: not-applicable, reason: "No user-defined operators" }
+      flink:      { status: not-applicable, reason: "No user-defined operators" }
 
   - id: create_rule
     name: "CREATE RULE"
@@ -839,6 +986,30 @@ features:
     ansi: false
     weight: 1
     probe: "CREATE RULE r1 AS ON DELETE TO t1 DO INSTEAD NOTHING;"
+    dialects:
+      # The PostgreSQL query-rewrite rule system. T-SQL also has a CREATE RULE
+      # (a bindable value constraint, deprecated but still documented), which
+      # shares only the name — hence its own probe rather than the default.
+      tsql:       { probe: "CREATE RULE r1 AS @value > 0;" }
+      mysql:      { status: not-applicable, reason: "No rule objects" }
+      mariadb:    { status: not-applicable, reason: "No rule objects" }
+      oracle:     { status: not-applicable, reason: "Rules belong to the Rules Manager PL/SQL API, not DDL" }
+      sqlite:     { status: not-applicable, reason: "No rule objects" }
+      duckdb:     { status: not-applicable, reason: "No rule objects" }
+      db2:        { status: not-applicable, reason: "No rule objects" }
+      hana:       { status: not-applicable, reason: "No rule objects" }
+      teradata:   { status: not-applicable, reason: "No rule objects" }
+      hive:       { status: not-applicable, reason: "No rule objects" }
+      spark:      { status: not-applicable, reason: "No rule objects" }
+      databricks: { status: not-applicable, reason: "No rule objects" }
+      snowflake:  { status: not-applicable, reason: "No rule objects" }
+      bigquery:   { status: not-applicable, reason: "No rule objects" }
+      spanner:    { status: not-applicable, reason: "No rule objects" }
+      redshift:   { status: not-applicable, reason: "No rule objects" }
+      trino:      { status: not-applicable, reason: "No rule objects" }
+      athena:     { status: not-applicable, reason: "No rule objects" }
+      clickhouse: { status: not-applicable, reason: "No rule objects" }
+      flink:      { status: not-applicable, reason: "No rule objects" }
 
   - id: cache_table
     name: "CACHE / UNCACHE TABLE"
@@ -846,6 +1017,31 @@ features:
     ansi: false
     weight: 1
     probe: "CACHE TABLE t1;"
+    dialects:
+      # CACHE/UNCACHE TABLE is Spark SQL's statement for pinning a relation in
+      # the executor block manager; Databricks inherits it. No other engine
+      # exposes cache residency as a statement — SQLGlot parses it everywhere
+      # only because its dialects share one base parser.
+      postgres:    { status: not-applicable, reason: "Buffer cache is not managed by statement" }
+      cockroachdb: { status: not-applicable, reason: "Buffer cache is not managed by statement" }
+      mysql:       { status: not-applicable, reason: "No CACHE TABLE (query cache removed in 8.0)" }
+      mariadb:     { status: not-applicable, reason: "No CACHE TABLE statement" }
+      tsql:        { status: not-applicable, reason: "Buffer pool is not managed by statement" }
+      oracle:      { status: not-applicable, reason: "CACHE is a table attribute, not a statement" }
+      sqlite:      { status: not-applicable, reason: "No CACHE TABLE statement" }
+      duckdb:      { status: not-applicable, reason: "No CACHE TABLE statement" }
+      db2:         { status: not-applicable, reason: "Bufferpools are objects, not a CACHE statement" }
+      hana:        { status: not-applicable, reason: "LOAD/UNLOAD manage residency, not CACHE TABLE" }
+      teradata:    { status: not-applicable, reason: "No CACHE TABLE statement" }
+      hive:        { status: not-applicable, reason: "CACHE TABLE is a Spark statement, not Hive" }
+      snowflake:   { status: not-applicable, reason: "Result/warehouse caches are automatic" }
+      bigquery:    { status: not-applicable, reason: "Result cache is automatic" }
+      spanner:     { status: not-applicable, reason: "No CACHE TABLE statement" }
+      redshift:    { status: not-applicable, reason: "Result cache is automatic" }
+      trino:       { status: not-applicable, reason: "Caching is connector configuration, not SQL" }
+      athena:      { status: not-applicable, reason: "Caching is connector configuration, not SQL" }
+      clickhouse:  { status: not-applicable, reason: "Caches are settings/SYSTEM commands, not CACHE TABLE" }
+      flink:       { status: not-applicable, reason: "No CACHE TABLE statement" }
 
   # ── Vendor statement families added by the grammar/vendor-doc audit ──────
   # Every spelling below is transcribed from the vendor's own syntax block
@@ -875,6 +1071,15 @@ features:
       clickhouse:  { probe: "ALTER TABLE t1 MODIFY SETTING max_threads = 4;" }
       snowflake:   { probe: "ALTER TABLE t1 SET COMMENT = 'x';" }
       flink:       { probe: "ALTER TABLE t1 SET ('k' = 'v');" }
+      # Each engine below has a per-table option list, but spells it its own
+      # way; the default `SET OPTIONS (…)` is GoogleSQL's spelling and was
+      # measuring vocabulary rather than the feature.
+      tsql:        { probe: "ALTER TABLE t1 SET (LOCK_ESCALATION = AUTO);" }
+      oracle:      { probe: "ALTER TABLE t1 PCTFREE 10;" }
+      db2:         { probe: "ALTER TABLE t1 APPEND ON;" }
+      hana:        { probe: "ALTER TABLE t1 UNLOAD PRIORITY 5;" }
+      teradata:    { probe: "ALTER TABLE t1, NO FALLBACK;" }
+      redshift:    { probe: "ALTER TABLE t1 SET TABLE PROPERTIES ('numRows' = '1000');" }
       duckdb:      { status: not-applicable, reason: "No per-table option list" }
       sqlite:      { status: not-applicable, reason: "No per-table option list" }
 
@@ -903,6 +1108,13 @@ features:
       flink:       { status: not-applicable, reason: "Query engine, no index storage" }
       snowflake:   { status: not-applicable, reason: "No user indexes (micro-partitions)" }
       clickhouse:  { probe: "ALTER TABLE t1 MATERIALIZE INDEX idx1;" }
+      # Indexes exist, but there is no statement that rebuilds one in place:
+      # MySQL/MariaDB rebuild through OPTIMIZE TABLE or ALTER TABLE … ENGINE,
+      # Spanner only through DROP + CREATE INDEX, Teradata not at all.
+      mysql:       { status: not-applicable, reason: "OPTIMIZE TABLE / ALTER TABLE … ENGINE rebuilds, no ALTER INDEX" }
+      mariadb:     { status: not-applicable, reason: "OPTIMIZE TABLE / ALTER TABLE … ENGINE rebuilds, no ALTER INDEX" }
+      spanner:     { status: not-applicable, reason: "Index DDL is CREATE/DROP only" }
+      teradata:    { status: not-applicable, reason: "No index rebuild statement" }
 
   - id: database_options
     name: "CREATE DATABASE with an option list"
@@ -924,8 +1136,15 @@ features:
       trino:       { status: not-applicable, reason: "Catalogs are configured, not created" }
       flink:       { probe: "CREATE DATABASE db1 WITH ('k' = 'v');" }
       oracle:      { probe: "CREATE DATABASE db1 CHARACTER SET AL32UTF8;" }
+      # CHARACTER SET is MySQL's spelling; these engines take an option list
+      # of their own.
+      tsql:        { probe: "CREATE DATABASE db1 COLLATE Latin1_General_CI_AS;" }
+      redshift:    { probe: "CREATE DATABASE db1 WITH OWNER u1;" }
+      clickhouse:  { probe: "CREATE DATABASE db1 ENGINE = Atomic;" }
+      teradata:    { probe: "CREATE DATABASE db1 AS PERM = 1000000;" }
       hana:        { status: not-applicable, reason: "Tenant databases via ALTER SYSTEM, not CREATE DATABASE" }
       db2:         { status: not-applicable, reason: "CREATE DATABASE is a CLP command, not SQL" }
+      duckdb:      { status: not-applicable, reason: "No CREATE DATABASE; databases are files reached via ATTACH" }
 
   - id: bulk_load
     name: "Bulk load from a file"
@@ -949,6 +1168,15 @@ features:
       flink:       { status: not-applicable, reason: "No load statement; INSERT … SELECT from a connector" }
       spanner:     { status: not-applicable, reason: "Bulk load via the Dataflow/import API" }
       sqlite:      { status: not-applicable, reason: ".import is a shell command, not SQL" }
+      # T-SQL and HANA do have a SQL-level file loader, each with its own
+      # spelling. Oracle, Db2 and Teradata load through external utilities
+      # (SQL*Loader, the LOAD/IMPORT CLP commands, FastLoad/TPT), so there is
+      # no statement to parse.
+      tsql:        { probe: "BULK INSERT t1 FROM 'f.csv';" }
+      hana:        { probe: "IMPORT FROM CSV FILE '/f.csv' INTO t1;" }
+      oracle:      { status: not-applicable, reason: "SQL*Loader / external tables, not a SQL statement" }
+      db2:         { status: not-applicable, reason: "LOAD and IMPORT are CLP commands (ADMIN_CMD), not SQL" }
+      teradata:    { status: not-applicable, reason: "FastLoad/MultiLoad/TPT utilities, not SQL" }
 
   - id: materialized_view_log
     name: "Materialized view log (incremental refresh source)"
@@ -994,6 +1222,14 @@ features:
       mysql:       { probe: "CREATE SERVER srv1 FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h');" }
       bigquery:    { probe: "CREATE CONNECTION `p.r.c1` OPTIONS (type = 'CLOUD_SQL');" }
       flink:       { probe: "CREATE CATALOG c1 WITH ('type' = 'hive');" }
+      # Every engine below has a first-class remote-connection object; only
+      # the Oracle family spells it CREATE DATABASE LINK.
+      db2:         { probe: "CREATE SERVER srv1 WRAPPER drda OPTIONS (NODE 'n1');" }
+      hana:        { probe: "CREATE REMOTE SOURCE rs1 ADAPTER odbc CONFIGURATION 'dsn=d1';" }
+      trino:       { probe: "CREATE CATALOG c1 USING postgresql;" }
+      snowflake:   { probe: "CREATE STORAGE INTEGRATION si1 TYPE = EXTERNAL_STAGE STORAGE_PROVIDER = 'S3';" }
+      tsql:        { probe: "CREATE EXTERNAL DATA SOURCE ds1 WITH (LOCATION = 'sqlserver://h');" }
+      redshift:    { probe: "CREATE EXTERNAL SCHEMA s1 FROM POSTGRES DATABASE 'db1' URI 'h' IAM_ROLE 'arn';" }
       sqlite:      { status: not-applicable, reason: "ATTACH DATABASE, not a link object" }
       duckdb:      { status: not-applicable, reason: "ATTACH, not a link object" }
       spanner:     { status: not-applicable, reason: "No remote link object" }
@@ -1001,6 +1237,8 @@ features:
       spark:       { status: not-applicable, reason: "No remote link object" }
       databricks:  { status: not-applicable, reason: "Foreign catalogs are Unity Catalog objects" }
       athena:      { status: not-applicable, reason: "Federation via Lambda connectors, not SQL" }
+      clickhouse:  { status: not-applicable, reason: "Remote access via table/database engines, no link object" }
+      teradata:    { probe: "CREATE FOREIGN SERVER srv1 USING HOSTTYPE('NVP') DO IMPORT WITH syslib.load_from_tgt;" }
 
   - id: optimize_table
     name: "Storage compaction / reorganisation"
@@ -1010,7 +1248,11 @@ features:
     probe: "OPTIMIZE TABLE t1;"
     dialects:
       clickhouse:  { probe: "OPTIMIZE TABLE t1 FINAL;" }
+      # OPTIMIZE is Delta Lake's compaction statement, available in open
+      # source Delta since 2.0 — not a Databricks-only extension.
       spark:       { probe: "OPTIMIZE t1;" }
+      # Hive compacts ACID tables through ALTER TABLE … COMPACT.
+      hive:        { probe: "ALTER TABLE t1 COMPACT 'major';" }
       databricks:  { probe: "OPTIMIZE t1 ZORDER BY (a);" }
       hana:        { probe: "MERGE DELTA OF t1;" }
       db2:         { probe: "REORG TABLE t1;" }

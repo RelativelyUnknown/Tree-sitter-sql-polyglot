@@ -10,7 +10,6 @@ export default grammar(base, {
 
   conflicts: $ => [
     [$.object_reference, $._qualified_field],
-    [$._column, $._qualified_field],
     [$.object_reference],
     // Local shift/reduce ambiguity shared with like_expression's optional
     // ESCAPE tail — kept in sync with the base grammar's conflicts.
@@ -22,11 +21,10 @@ export default grammar(base, {
     [$.stored_by],
     [$.row_format],
     [$.skewed_by],
-    [$.cluster_by],
-    [$.distribute_by],
-    [$.sort_by],
-    [$.multi_table_insert],
     [$.select, $.multi_table_insert],
+    // Removed as unnecessary (tree-sitter reports them and each one still
+    // costs GLR-split states): [$._column, $._qualified_field],
+    // [$.cluster_by], [$.distribute_by], [$.sort_by], [$.multi_table_insert].
   ],
 
   rules: {
@@ -395,6 +393,7 @@ export default grammar(base, {
       $.change_ownership,
       $.exchange_partition,
       $.concatenate_partition,
+      $.compact_partition,
       // ALTER TABLE t {SET | UNSET} TBLPROPERTIES ('k' = 'v', …)
       // Spelled the same way as the ALTER VIEW action above: table_option on
       // SET, a bare name list on UNSET.
@@ -410,6 +409,28 @@ export default grammar(base, {
         paren_list(seq($.identifier, '=', $._expression), true),
       )),
       $.keyword_concatenate,
+    ),
+
+    // ALTER TABLE t [PARTITION (k=v, …)] COMPACT 'major' [AND WAIT]
+    //   [POOL 'p'] [WITH OVERWRITE TBLPROPERTIES ('k' = 'v', …)]
+    // Hive's manual compaction request for full/insert-only ACID tables. The
+    // compaction type ('major' | 'minor' | 'rebalance') is a string literal,
+    // not a keyword.
+    compact_partition: $ => seq(
+      optional(seq(
+        $.keyword_partition,
+        paren_list(seq($.identifier, '=', $._expression), true),
+      )),
+      $.keyword_compact,
+      field('type', alias($._literal_string, $.literal)),
+      optional(seq($.keyword_and, $.keyword_wait)),
+      optional(seq($.keyword_pool, field('pool', alias($._literal_string, $.literal)))),
+      optional(seq(
+        $.keyword_with,
+        $.keyword_overwrite,
+        $.keyword_tblproperties,
+        paren_list($.table_option, true),
+      )),
     ),
 
     // FROM with LATERAL VIEW, CLUSTER/DISTRIBUTE/SORT BY support
@@ -771,6 +792,10 @@ export default grammar(base, {
     keyword_functions:       _ => token(prec(1, make_keyword("functions"))),
     keyword_exchange:        _ => token(prec(1, make_keyword("exchange"))),
     keyword_concatenate:     _ => token(prec(1, make_keyword("concatenate"))),
+    // Shares a prefix with keyword_compactions, which is also token(prec(1,…));
+    // at equal precedence longest-match still resolves COMPACTIONS correctly.
+    keyword_compact:         _ => token(prec(1, make_keyword("compact"))),
+    keyword_pool:            _ => token(prec(1, make_keyword("pool"))),
 
     ...hive_storage_rules,
     ...hive_partition_rules,

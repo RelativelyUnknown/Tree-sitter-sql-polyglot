@@ -28,6 +28,7 @@
   (keyword_output)
   (keyword_branch)
   (keyword_branches)
+  (keyword_catalog)
   (keyword_fast)
   (keyword_forward)
 ] @keyword

@@ -167,6 +167,11 @@ export default grammar(postgres, {
       $.split_at,
       $.unsplit_at,
       $.keyword_scatter,
+      // Re-enumerating the base set dropped PostgreSQL's storage-parameter
+      // actions; CockroachDB keeps them and uses them for row-level TTL
+      // (SET (ttl_expire_after = '1 day')).
+      seq($.keyword_set, $.storage_parameters),
+      seq($.keyword_reset, paren_list($.identifier, true)),
       // Multi-region: SET LOCALITY {GLOBAL | REGIONAL [BY ROW|TABLE]}
       seq(
         $.keyword_set,

@@ -133,6 +133,7 @@ export default grammar(hive, {
       $._optimize_table,
       $._compute_stats,
       $._spark_analyze,
+      $._delta_optimize,
     ),
 
     // Override _ddl_statement to add Spark 4.0 variable statements and CALL
@@ -461,6 +462,7 @@ export default grammar(hive, {
     keyword_compute:            _ => token(prec(1, make_keyword("compute"))),
     keyword_stats:              _ => token(prec(1, make_keyword("stats"))),
     keyword_optimize:           _ => token(prec(1, make_keyword("optimize"))),
+    keyword_zorder:             _ => token(prec(1, make_keyword("zorder"))),
     keyword_rewrite:            _ => token(prec(1, make_keyword("rewrite"))),
     keyword_bin_pack:           _ => token(prec(1, make_keyword("bin_pack"))),
     keyword_incremental:        _ => token(prec(1, make_keyword("incremental"))),

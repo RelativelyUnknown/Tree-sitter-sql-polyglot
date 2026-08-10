@@ -30,8 +30,9 @@ export default grammar(base, {
     // tsql/grammar/dml.js), so the [$.output_clause] GLR self-conflict is gone.
     // EXPLAIN followed by keyword_continue / keyword_break is ambiguous — resolved by tree-sitter
     // [$.statement] removed (tree-sitter reported it unnecessary)
-    // option_clause after optional_parenthesis(_dml_read) causes close-paren ambiguity
-    [$.option_clause],
+    // [$.option_clause] removed: tree-sitter reports it unnecessary — the
+    // close-paren ambiguity it was added for is resolved by prec.right on
+    // _dml_read above.
     [$._function_return, $.return_statement],
   ],
 
@@ -206,6 +207,23 @@ export default grammar(base, {
           repeat($._create_statement),
         )),
       ),
+    ),
+
+    // ALTER TABLE t SET (LOCK_ESCALATION = AUTO) — the table-option list,
+    // spelled with the same option entries CREATE TABLE's WITH (…) accepts.
+    _alter_specifications: $ => choice(
+      $.add_column,
+      $.add_constraint,
+      $.drop_constraint,
+      $.alter_column,
+      $.modify_column,
+      $.change_column,
+      $.drop_column,
+      $.rename_object,
+      $.rename_column,
+      $.set_schema,
+      $.change_ownership,
+      seq($.keyword_set, '(', comma_list($.table_with_option, true), ')'),
     ),
 
     // ── CREATE TABLE with optional Synapse WITH (...) ────────────────────────

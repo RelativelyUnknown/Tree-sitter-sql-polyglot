@@ -1,8 +1,6 @@
 ; inherits: spark_sql
 
 ; Databricks/Unity Catalog keywords
-(keyword_optimize) @keyword
-(keyword_zorder) @keyword
 (keyword_vacuum) @keyword
 (keyword_restore) @keyword
 (keyword_convert) @keyword

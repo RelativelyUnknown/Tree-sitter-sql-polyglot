@@ -27,6 +27,26 @@ export default {
     optional(seq($.keyword_like, alias($._literal_string, $.literal))),
   )),
 
+  // CREATE {DATABASE | SCHEMA} [IF NOT EXISTS] db
+  //   [COMMENT 'c'] [LOCATION 's3://…'] [WITH DBPROPERTIES ('k' = 'v', …)]
+  // Athena keeps Hive's database DDL rather than Trino's, which has no
+  // DBPROPERTIES; the base rule's generic `name = value` settings do not
+  // cover it.
+  // DATABASE only: the SCHEMA spelling is already handled by base's
+  // create_schema, and accepting both here would put the two rules in
+  // conflict on the CREATE SCHEMA prefix.
+  create_database: $ => prec.left(seq(
+    $.keyword_create,
+    $.keyword_database,
+    optional($._if_not_exists),
+    field('name', $.identifier),
+    repeat(choice(
+      seq($.keyword_comment, field('comment', alias($._literal_string, $.literal))),
+      seq($.keyword_location, field('location', alias($._literal_string, $.literal))),
+      seq($.keyword_with, $.keyword_dbproperties, paren_list($.property_pair, true)),
+    )),
+  )),
+
   // ALTER {DATABASE | SCHEMA} db SET DBPROPERTIES ('k' = 'v' [, …])
   // The name is an identifier, not an object_reference: base's alter_database
   // and alter_schema both spell it that way, and using the wider symbol makes

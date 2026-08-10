@@ -22,6 +22,20 @@ export default {
     $.alter_delete,
     $.alter_partition,
     $.alter_index_spec,
+    // MODIFY SETTING k = v [, …] / RESET SETTING k [, …] — the per-table
+    // option list. SETTING is an extracted keyword, so the lexer hands the
+    // parser keyword_setting rather than an identifier here and this branch
+    // never competes with modify_column (the same arrangement ADD INDEX
+    // already relies on above).
+    //
+    // prec.right, and on the production holding the list rather than on the
+    // list itself: alter_table comma-separates its specifications, so a ','
+    // after a setting is ambiguous between continuing this list and starting
+    // the next specification. Without it tree-sitter reports an unresolved
+    // conflict and refuses to generate. Same fix, same reason, as trino's
+    // SET PROPERTIES.
+    prec.right(seq($.keyword_modify, $.keyword_setting, comma_list($.setting_item, true))),
+    prec.right(seq($.keyword_reset, $.keyword_setting, comma_list($.identifier, true))),
   ),
 
   // Data-skipping index management:

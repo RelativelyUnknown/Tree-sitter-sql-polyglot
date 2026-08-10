@@ -4,6 +4,15 @@
 (keyword_copy) @keyword
 (keyword_unload) @keyword
 (keyword_iam_role) @keyword
+(keyword_postgres) @keyword
+(keyword_mysql) @keyword
+(keyword_kinesis) @keyword
+(keyword_msk) @keyword
+(keyword_redshift) @keyword
+(keyword_uri) @keyword
+(keyword_port) @keyword
+(keyword_secret_arn) @keyword
+(keyword_properties) @keyword
 (keyword_ignoreheader) @keyword
 (keyword_maxfilesize) @keyword
 (keyword_gzip) @keyword

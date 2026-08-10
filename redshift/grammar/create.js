@@ -192,10 +192,12 @@ export default {
   ),
 
   // CREATE EXTERNAL SCHEMA [IF NOT EXISTS] name
-  //   FROM DATA CATALOG
-  //   DATABASE 'db'
-  //   IAM_ROLE 'arn:...'
+  //   FROM { DATA CATALOG | POSTGRES | MYSQL | KINESIS | MSK | REDSHIFT }
+  //   [DATABASE 'db'] [SCHEMA 's'] [URI 'host' [PORT n]]
+  //   IAM_ROLE 'arn:…' [SECRET_ARN 'arn:…']
   //   [CREATE EXTERNAL DATABASE IF NOT EXISTS]
+  // DATA CATALOG is the Spectrum/Glue form; the engine names are the
+  // federated-query forms, which reach a remote instance over URI/PORT.
   create_external_schema: $ => prec.left(seq(
     $.keyword_create,
     $.keyword_external,
@@ -203,12 +205,20 @@ export default {
     optional($._if_not_exists),
     $.identifier,
     $.keyword_from,
-    $.keyword_data,
-    $.keyword_catalog,
-    $.keyword_database,
-    alias($._literal_string, $.literal),
-    $.keyword_iam_role,
-    alias($._literal_string, $.literal),
+    choice(
+      seq($.keyword_data, $.keyword_catalog),
+      $.keyword_postgres,
+      $.keyword_mysql,
+      $.keyword_kinesis,
+      $.keyword_msk,
+      $.keyword_redshift,
+    ),
+    optional(seq($.keyword_database, alias($._literal_string, $.literal))),
+    optional(seq($.keyword_schema, alias($._literal_string, $.literal))),
+    optional(seq($.keyword_uri, alias($._literal_string, $.literal))),
+    optional(seq($.keyword_port, $.literal)),
+    optional(seq($.keyword_iam_role, alias($._literal_string, $.literal))),
+    optional(seq($.keyword_secret_arn, alias($._literal_string, $.literal))),
     optional(seq(
       $.keyword_create,
       $.keyword_external,
@@ -273,6 +283,16 @@ export default {
     seq(
       $.keyword_drop, $.keyword_partition,
       paren_list(seq($.identifier, '=', $._expression), true),
+    ),
+    // SET TABLE PROPERTIES ('numRows' = '1000', …) — the external-table
+    // option list.
+    seq(
+      $.keyword_set, $.keyword_table, $.keyword_properties,
+      paren_list(seq(
+        field('key', alias($._literal_string, $.literal)),
+        '=',
+        field('value', alias($._literal_string, $.literal)),
+      ), true),
     ),
   ),
 

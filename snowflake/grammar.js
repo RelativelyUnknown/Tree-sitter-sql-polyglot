@@ -199,8 +199,50 @@ export default grammar(base, {
         $.create_warehouse_statement,
         $.create_file_format_statement,
         $.create_external_table,
+        $.create_integration,
       ),
     ),
+
+    // CREATE [OR REPLACE] {STORAGE|API|NOTIFICATION|SECURITY|CATALOG
+    //   |EXTERNAL ACCESS} INTEGRATION [IF NOT EXISTS] name
+    //   TYPE = t <option> = <value> …
+    // Snowflake's named connection objects to services outside the account.
+    // The option list is open-ended and integration-type specific, so it is
+    // parsed as `name = value` pairs rather than enumerated.
+    create_integration: $ => prec.left(seq(
+      $.keyword_create,
+      optional($._or_replace),
+      choice(
+        $.keyword_storage,
+        $.keyword_api,
+        $.keyword_notification,
+        $.keyword_security,
+        $.keyword_catalog,
+        seq($.keyword_external, $.keyword_access),
+      ),
+      $.keyword_integration,
+      optional($._if_not_exists),
+      field('name', $.identifier),
+      repeat1($.integration_option),
+    )),
+
+    integration_option: $ => seq(
+      // TYPE, ENABLED and COMMENT are extracted keywords, so they cannot
+      // arrive here as identifiers and are listed explicitly.
+      field('name', choice(
+        $.identifier,
+        $.keyword_type,
+        $.keyword_enabled,
+        $.keyword_comment,
+      )),
+      '=',
+      field('value', choice($.literal, $.identifier, $.list)),
+    ),
+
+    keyword_storage:      _ => token(prec(1, make_keyword("storage"))),
+    keyword_api:          _ => token(prec(1, make_keyword("api"))),
+    keyword_notification: _ => token(prec(1, make_keyword("notification"))),
+    keyword_enabled:      _ => token(prec(1, make_keyword("enabled"))),
 
     // ── ALTER: add ALTER SESSION + masking policy alter ─────────────────────
     _alter_statement: $ => seq(
@@ -594,7 +636,6 @@ export default grammar(base, {
     keyword_next:           _ => token(prec(1, make_keyword("next"))),
     keyword_match_recognize:_ => token(prec(1, make_keyword("match_recognize"))),
     keyword_measures:       _ => token(prec(1, make_keyword("measures"))),
-    keyword_pattern:        _ => token(prec(1, make_keyword("pattern"))),
     keyword_define:         _ => token(prec(1, make_keyword("define"))),
     keyword_skip:           _ => token(prec(1, make_keyword("skip"))),
     keyword_flatten:        _ => token(prec(1, make_keyword("flatten"))),

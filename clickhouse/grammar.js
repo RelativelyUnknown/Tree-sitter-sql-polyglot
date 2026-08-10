@@ -220,10 +220,17 @@ export default grammar(base, {
         // LIKE / NOT LIKE are handled exclusively by the inherited
         // like_expression rule (with its optional ESCAPE tail) — not
         // duplicated here. See base grammar/expressions.js for why.
+        // ClickHouse's pattern operators are LIKE / NOT LIKE (handled by the
+        // inherited like_expression), ILIKE / NOT ILIKE, and REGEXP — which
+        // arrives through keyword_rlike. SIMILAR TO is ISO SQL that
+        // ClickHouse does not implement, and it was displacing ILIKE, which
+        // ClickHouse does: swapping them keeps the pattern_matching group the
+        // same size (this grammar is already at tree-sitter's table-
+        // construction memory ceiling) while making it match the engine.
         [$.keyword_rlike, 'pattern_matching'],
         [$.not_rlike, 'pattern_matching'],
-        [$.similar_to, 'pattern_matching'],
-        [$.not_similar_to, 'pattern_matching'],
+        [$.keyword_ilike, 'pattern_matching'],
+        [$.not_ilike, 'pattern_matching'],
         [$.distinct_from, 'binary_is'],
         [$.not_distinct_from, 'binary_is'],
       ].map(([operator, precedence]) =>
@@ -291,7 +298,12 @@ export default grammar(base, {
     keyword_sample:        _ => token(prec(1, make_keyword("sample"))),
     keyword_totals:        _ => token(prec(1, make_keyword("totals"))),
     keyword_format:        _ => token(prec(1, make_keyword("format"))),
+    keyword_ilike:         _ => token(prec(1, make_keyword("ilike"))),
+    not_ilike:             $ => seq($.keyword_not, $.keyword_ilike),
     keyword_settings:      _ => token(prec(1, make_keyword("settings"))),
+    // Prefix of keyword_settings; both at prec(1) so longest-match decides
+    // between SETTING and SETTINGS (see AGENTS.md on prefix shadowing).
+    keyword_setting:       _ => token(prec(1, make_keyword("setting"))),
     keyword_dictionary:    _ => token(prec(1, make_keyword("dictionary"))),
     keyword_dictionaries:  _ => token(prec(1, make_keyword("dictionaries"))),
     keyword_live:          _ => token(prec(1, make_keyword("live"))),

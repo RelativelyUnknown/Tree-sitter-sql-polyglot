@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, comma_list, make_keyword, wrapped_in_parenthesis } from '../grammar/helpers.js';
+import { optional_parenthesis, comma_list, paren_list, make_keyword, wrapped_in_parenthesis } from '../grammar/helpers.js';
 import db2_modules_rules from './grammar/modules.js';
 import db2_data_control_rules from './grammar/data_control.js';
 import db2_isolation_rules from './grammar/isolation.js';
@@ -166,7 +166,56 @@ export default grammar(base, {
         $.goto_statement,
         $.allocate_cursor_statement,
         $.associate_locators_statement,
+        $.reorg_statement,
       ),
+    ),
+
+    // REORG TABLE t [INDEX i] [ALLOW {NO|READ|WRITE} ACCESS]
+    // REORG INDEXES ALL FOR TABLE t [ALLOW …]
+    // Db2's storage-reorganisation command: a utility, but one that is issued
+    // as SQL text (directly or through SYSPROC.ADMIN_CMD).
+    reorg_statement: $ => prec.left(seq(
+      $.keyword_reorg,
+      choice(
+        seq(
+          $.keyword_table,
+          field('table', $.object_reference),
+          optional(seq($.keyword_index, field('index', $.object_reference))),
+        ),
+        seq(
+          $.keyword_indexes,
+          $.keyword_all,
+          $.keyword_for,
+          $.keyword_table,
+          field('table', $.object_reference),
+        ),
+      ),
+      optional(seq(
+        $.keyword_allow,
+        choice($.keyword_no, $.keyword_read, $.keyword_write),
+        $.keyword_access,
+      )),
+    )),
+
+    // base _alter_specifications plus Db2's table-attribute actions:
+    //   ALTER TABLE t APPEND {ON | OFF}
+    //   ALTER TABLE t {VOLATILE | NOT VOLATILE}
+    //   ALTER TABLE t ACTIVATE NOT LOGGED INITIALLY
+    _alter_specifications: $ => choice(
+      $.add_column,
+      $.add_constraint,
+      $.drop_constraint,
+      $.alter_column,
+      $.modify_column,
+      $.change_column,
+      $.drop_column,
+      $.rename_object,
+      $.rename_column,
+      $.set_schema,
+      $.change_ownership,
+      seq($.keyword_append, choice($.keyword_on, $.keyword_off)),
+      seq(optional($.keyword_not), $.keyword_volatile),
+      seq($.keyword_activate, $.keyword_not, $.keyword_logged, $.keyword_initially),
     ),
 
     // Extend _create_statement to add Db2-specific CREATE statements.
@@ -191,11 +240,74 @@ export default grammar(base, {
         $.create_mask,
         $.create_permission,
         $.create_audit_policy,
+        $.create_security_label,
+        $.create_security_policy,
+        $.create_security_label_component,
         prec.left(seq(
           $.create_schema,
           repeat($._create_statement),
         )),
       ),
+    ),
+
+    // ── Label-based access control (LBAC) ───────────────────────────────────
+    // CREATE SECURITY LABEL policy.label
+    //   COMPONENT c1 'v' [, 'v' …] [, COMPONENT c2 'v' …]
+    // One flat comma-separated list rather than a list of lists: nesting two
+    // comma lists leaves the ',' after an element ambiguous between
+    // continuing the elements and starting the next COMPONENT clause, which
+    // tree-sitter cannot resolve. Here every ',' is shifted by the same rule
+    // and the token after it (COMPONENT vs a string) decides.
+    create_security_label: $ => seq(
+      $.keyword_create,
+      $.keyword_security,
+      $.keyword_label,
+      field('name', $.object_reference),
+      $._security_label_component,
+      repeat(seq(',', choice(
+        $._security_label_component,
+        field('element', alias($._literal_string, $.literal)),
+      ))),
+    ),
+
+    _security_label_component: $ => seq(
+      $.keyword_component,
+      field('component', $.identifier),
+      field('element', alias($._literal_string, $.literal)),
+    ),
+
+    // CREATE SECURITY POLICY p COMPONENTS c1 [, c2 …] WITH DB2LBACRULES
+    //   [{RESTRICT | OVERRIDE} NOT AUTHORIZED WRITE SECURITY LABEL]
+    create_security_policy: $ => prec.left(seq(
+      $.keyword_create,
+      $.keyword_security,
+      $.keyword_policy,
+      field('name', $.identifier),
+      $.keyword_components,
+      comma_list(field('component', $.identifier), true),
+      $.keyword_with,
+      field('ruleset', $.identifier),
+      optional(seq(
+        choice($.keyword_restrict, $.keyword_override),
+        $.keyword_not,
+        $.keyword_authorized,
+        $.keyword_write,
+        $.keyword_security,
+        $.keyword_label,
+      )),
+    )),
+
+    // CREATE SECURITY LABEL COMPONENT c {ARRAY | SET | TREE} (…)
+    // The element list is component-type specific; parsed as an expression
+    // list rather than three separate shapes.
+    create_security_label_component: $ => seq(
+      $.keyword_create,
+      $.keyword_security,
+      $.keyword_label,
+      $.keyword_component,
+      field('name', $.identifier),
+      choice($.keyword_array, $.keyword_set, $.keyword_tree),
+      paren_list($._expression, true),
     ),
 
     // Extend _drop_statement to add DROP AUDIT POLICY
@@ -485,6 +597,18 @@ export default grammar(base, {
     keyword_options:        _ => token(prec(1, make_keyword("options"))),
     keyword_version:        _ => token(prec(1, make_keyword("version"))),
     keyword_policy:         _ => token(prec(1, make_keyword("policy"))),
+    // ── LBAC and table-maintenance vocabulary ──────────────────────────────
+    // COMPONENT is a strict prefix of COMPONENTS: both stay at prec(1) so
+    // longest-match decides which one a given word is.
+    keyword_component:      _ => token(prec(1, make_keyword("component"))),
+    keyword_components:     _ => token(prec(1, make_keyword("components"))),
+    keyword_override:       _ => token(prec(1, make_keyword("override"))),
+    keyword_authorized:     _ => token(prec(1, make_keyword("authorized"))),
+    keyword_tree:           _ => token(prec(1, make_keyword("tree"))),
+    keyword_append:         _ => token(prec(1, make_keyword("append"))),
+    keyword_activate:       _ => token(prec(1, make_keyword("activate"))),
+    keyword_reorg:          _ => token(prec(1, make_keyword("reorg"))),
+    keyword_indexes:        _ => token(prec(1, make_keyword("indexes"))),
     keyword_cursor:         _ => token(prec(1, make_keyword("cursor"))),
     keyword_open:           _ => token(prec(1, make_keyword("open"))),
     keyword_close:          _ => token(prec(1, make_keyword("close"))),

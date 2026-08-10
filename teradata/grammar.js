@@ -55,7 +55,53 @@ export default grammar(base, {
     ),
 
     // Re-add non-ANSI CREATE forms this dialect supports over the strict ANSI base.
-    _create_statement: $ => seq(choice(...createStatementChoices($, { index: true }), $.create_join_index)),
+    _create_statement: $ => seq(choice(
+      ...createStatementChoices($, { index: true }),
+      $.create_join_index,
+      $.create_foreign_server,
+    )),
+
+    // CREATE FOREIGN SERVER name
+    //   [EXTERNAL SECURITY {DEFINER | INVOKER} TRUSTED auth]
+    //   USING option('value') …
+    //   DO IMPORT WITH udf [, DO EXPORT WITH udf]
+    // QueryGrid's remote-connection object. The USING options are
+    // space-separated name('value') pairs — no commas — while the DO clauses
+    // are comma-separated, which is why they are two different lists.
+    create_foreign_server: $ => prec.left(seq(
+      $.keyword_create,
+      $.keyword_foreign,
+      $.keyword_server,
+      field('name', $.identifier),
+      optional(seq(
+        $.keyword_external,
+        $.keyword_security,
+        choice($.keyword_definer, $.keyword_invoker),
+        $.keyword_trusted,
+        field('authorization', $.object_reference),
+      )),
+      optional(seq($.keyword_using, repeat1($.foreign_server_option))),
+      comma_list($.foreign_server_action, true),
+    )),
+
+    foreign_server_option: $ => seq(
+      field('name', $.identifier),
+      '(',
+      field('value', alias($._literal_string, $.literal)),
+      ')',
+    ),
+
+    foreign_server_action: $ => seq(
+      $.keyword_do,
+      choice($.keyword_import, $.keyword_export),
+      $.keyword_with,
+      field('function', $.object_reference),
+    ),
+
+    keyword_server:  _ => token(prec(1, make_keyword("server"))),
+    keyword_trusted: _ => token(prec(1, make_keyword("trusted"))),
+    keyword_import:  _ => token(prec(1, make_keyword("import"))),
+    keyword_export:  _ => token(prec(1, make_keyword("export"))),
 
     // CREATE {JOIN | HASH} INDEX name AS SELECT … [PRIMARY INDEX (…)]
     create_join_index: $ => prec.right(seq(
@@ -70,6 +116,69 @@ export default grammar(base, {
     )),
 
     keyword_hash: _ => token(prec(1, make_keyword("hash"))),
+
+    // CREATE DATABASE db [FROM owner] AS PERM = n [BYTES], SPOOL = n, …
+    // Teradata's space/attribute list, not the ANSI `WITH setting` tail the
+    // base rule carries. CREATE USER shares the same option list.
+    create_database: $ => prec.left(seq(
+      $.keyword_create,
+      $.keyword_database,
+      optional($._if_not_exists),
+      field('name', $.identifier),
+      optional(seq($.keyword_from, field('owner', $.identifier))),
+      optional(seq($.keyword_as, comma_list($.database_option, true))),
+    )),
+
+    database_option: $ => choice(
+      seq(
+        choice($.keyword_permanent, $.keyword_perm, $.keyword_spool, $.keyword_temporary),
+        '=',
+        $._expression,
+        optional($.keyword_bytes),
+      ),
+      seq($.keyword_account, '=', $.literal),
+      seq($.keyword_default, $.keyword_map, '=', $.identifier),
+      // The protection/journalling attributes a database shares with a table.
+      seq(optional($.keyword_no), $.keyword_fallback, optional($.keyword_protection)),
+      seq(
+        optional(choice(
+          $.keyword_no,
+          $.keyword_dual,
+          $.keyword_local,
+          seq($.keyword_not, $.keyword_local),
+        )),
+        optional(choice($.keyword_before, $.keyword_after)),
+        $.keyword_journal,
+      ),
+    ),
+
+    // ALTER TABLE t, NO FALLBACK, NO BEFORE JOURNAL
+    // Teradata attaches its table-attribute list with leading commas, exactly
+    // as CREATE TABLE does. The leading comma is what separates this form from
+    // the ANSI action list, so the two branches stay LR-decidable. The base
+    // rule's ROW LEVEL SECURITY branch is dropped: Teradata has no such action.
+    alter_table: $ => seq(
+      $.keyword_alter,
+      $.keyword_table,
+      optional($._if_exists),
+      optional($.keyword_only),
+      $.object_reference,
+      choice(
+        repeat1(seq(',', $.alter_table_option)),
+        seq(
+          $._alter_specifications,
+          repeat(seq(',', $._alter_specifications)),
+        ),
+      ),
+    ),
+
+    // PERM is a prefix of PERMANENT: both stay at the same token precedence so
+    // longest-match, not precedence, picks the spelling actually written.
+    keyword_perm:      _ => token(prec(1, make_keyword("perm"))),
+    keyword_permanent: _ => token(prec(1, make_keyword("permanent"))),
+    keyword_spool:     _ => token(prec(1, make_keyword("spool"))),
+    keyword_bytes:     _ => token(prec(1, make_keyword("bytes"))),
+    keyword_account:   _ => token(prec(1, make_keyword("account"))),
 
     // base statement dispatch plus Teradata statement forms
     statement: $ => seq(

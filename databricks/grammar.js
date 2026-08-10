@@ -2,7 +2,6 @@ import spark from '../spark/grammar.js';
 import { optional_parenthesis, paren_list, comma_list, wrapped_in_parenthesis, make_keyword } from '../grammar/helpers.js';
 
 import vacuum_rules   from './grammar/vacuum.js';
-import optimize_rules from './grammar/optimize.js';
 import restore_rules  from './grammar/restore.js';
 import grant_rules    from './grammar/grant.js';
 import drop_rules     from './grammar/drop.js';
@@ -120,7 +119,7 @@ export default grammar(spark, {
       $._optimize_table,   // Iceberg (from base via spark)
       $._compute_stats,    // Hive/Impala (from spark)
       $._spark_analyze,    // Spark ANALYZE (from spark)
-      $._delta_optimize,   // Databricks Delta
+      $._delta_optimize,   // Delta Lake (from spark)
       $._vacuum_table,     // Databricks Delta vacuum
     ),
 
@@ -236,7 +235,6 @@ export default grammar(spark, {
     keyword_hours:      _ => token(prec(1, make_keyword("hours"))),
     keyword_dry:        _ => token(prec(1, make_keyword("dry"))),
     keyword_run:        _ => token(prec(1, make_keyword("run"))),
-    keyword_zorder:     _ => token(prec(1, make_keyword("zorder"))),
     keyword_restore:    _ => token(prec(1, make_keyword("restore"))),
     keyword_convert:    _ => token(prec(1, make_keyword("convert"))),
     keyword_fsck:       _ => token(prec(1, make_keyword("fsck"))),
@@ -357,7 +355,6 @@ export default grammar(spark, {
 
     // Databricks-specific rule definitions
     ...vacuum_rules,
-    ...optimize_rules,
     ...restore_rules,
     ...grant_rules,
     ...drop_rules,

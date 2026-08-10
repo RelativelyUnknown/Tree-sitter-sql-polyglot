@@ -1,4 +1,5 @@
 import trino from '../trino/grammar.js';
+import { createStatementChoices } from '../grammar/statements/create.js';
 import { optional_parenthesis, paren_list, make_keyword } from '../grammar/helpers.js';
 import athena_statement_rules from './grammar/statements.js';
 import athena_create_rules from './grammar/create.js';
@@ -10,33 +11,45 @@ export default grammar(trino, {
   conflicts: $ => [
     [$.object_reference, $._qualified_field],
     [$.field, $._qualified_field],
-    [$._column, $._qualified_field],
     [$.object_reference],
     // Local shift/reduce ambiguity shared with like_expression's optional
     // ESCAPE tail — kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
-    [$.from],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
-    [$.term],
     [$.values],
-    [$.select_expression],
-    [$.set_operation],
-    [$.group_by],
-    [$.order_target],
-    [$.object_reference, $._qualified_field, $.lambda_expression],
-    [$._qualified_field, $.lambda_expression],
-    [$.lambda_expression],
-    [$.binary_expression, $.lambda_expression],
-    [$.row_type, $.invocation],
-    [$.match_recognize_clause],
-    [$.array_type, $.array],
-    [$.set_session_statement, $.set_statement],
+    // The fifteen other entries this list used to carry (the lambda group,
+    // row_type/invocation, array_type/array, match_recognize_clause,
+    // set_statement/set_session_statement, from, term, select_expression,
+    // set_operation, group_by, order_target, _column/_qualified_field) were
+    // copied from trino and are all reported unnecessary here.
   ],
 
   rules: {
+
+    // Athena is managed Trino: catalogs are registered through Glue and Lambda
+    // connectors, never with SQL. Take Trino's dynamic-catalog statements back
+    // out of the inherited dispatch lists rather than inheriting syntax the
+    // engine rejects.
+    _create_statement: $ => seq(choice(
+      ...createStatementChoices($, { materializedView: true }),
+    )),
+
+    _drop_statement: $ => seq(choice(
+      $.drop_table,
+      $.drop_view,
+      $.drop_materialized_view,
+      $.drop_index,
+      $.drop_type,
+      $.drop_schema,
+      $.drop_database,
+      $.drop_role,
+      $.drop_sequence,
+      $.drop_function,
+      $.drop_procedure,
+    )),
 
     statement: $ => seq(
       optional(seq(
