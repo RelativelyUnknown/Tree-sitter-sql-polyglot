@@ -5,14 +5,14 @@ import { fromClause } from '../grammar/statements/select.js';
 import hana_statement_rules from './grammar/statements.js';
 import hana_admin_rules from './grammar/admin.js';
 
-// SAP HANA SQL — standalone lineage (SQLScript is HANA's own procedural
+// SAP HANA SQL; standalone lineage (SQLScript is HANA's own procedural
 // language; the Sybase heritage is wire-level, not syntactic), extends the
 // ANSI base. Adds COLUMN/ROW tables, UPSERT, WITH HINT, and SQLScript
 // procedures with :param references.
 export default grammar(base, {
   name: 'hana_sql',
 
-  // conflicts do not propagate from the parent — base's list is copied
+  // conflicts do not propagate from the parent; base's list is copied
   // verbatim.
   conflicts: $ => [
     [$.object_reference, $._qualified_field],
@@ -20,7 +20,7 @@ export default grammar(base, {
     [$._column, $._qualified_field],
     [$.object_reference],
     // Local shift/reduce ambiguity shared with like_expression's optional
-    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     [$.create_function],
     [$.list, $.grouping_set],

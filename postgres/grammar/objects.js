@@ -124,7 +124,7 @@ export default {
     $.keyword_method,
     field('name', $.identifier),
     $.keyword_type,
-    // access_method_type is INDEX or TABLE — both lex as keywords, so they
+    // access_method_type is INDEX or TABLE; both lex as keywords, so they
     // must be listed explicitly rather than matched as a bare identifier.
     field('am_type', choice($.keyword_index, $.keyword_table)),
     $.keyword_handler,

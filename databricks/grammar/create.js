@@ -196,7 +196,7 @@ export default {
     ),
   ),
 
-  // CREATE SERVER (Lakehouse Federation) — options modelled as the generic
+  // CREATE SERVER (Lakehouse Federation); options modelled as the generic
   // OPTIONS (k = v, …) form Databricks uses for federated objects.
   create_server: $ => seq(
     $.keyword_create,

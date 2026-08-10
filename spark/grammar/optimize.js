@@ -60,7 +60,7 @@ export default {
     optional($.where),
   ),
 
-  // OPTIMIZE t [WHERE p] [ZORDER BY (cols)] — Delta Lake's compaction
+  // OPTIMIZE t [WHERE p] [ZORDER BY (cols)]; Delta Lake's compaction
   // statement. Open source since Delta 2.0, so it belongs to Spark rather
   // than to Databricks; Databricks inherits it from here.
   // Distinguished from the Iceberg form above by the token after the table

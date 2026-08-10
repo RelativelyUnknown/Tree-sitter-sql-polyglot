@@ -69,7 +69,7 @@ export default {
     ),
   ),
 
-  // VARCHAR2[(n [BYTE|CHAR])] — size optional for PL/SQL parameter/variable contexts
+  // VARCHAR2[(n [BYTE|CHAR])]; size optional for PL/SQL parameter/variable contexts
   varchar2: $ => prec.right(1,
     choice(
       $.keyword_varchar2,
@@ -85,7 +85,7 @@ export default {
     ),
   ),
 
-  // NVARCHAR2[(n)] — size optional for PL/SQL contexts
+  // NVARCHAR2[(n)]; size optional for PL/SQL contexts
   nvarchar2: $ => prec.right(1,
     choice(
       $.keyword_nvarchar2,

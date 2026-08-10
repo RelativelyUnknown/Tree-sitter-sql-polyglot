@@ -17,7 +17,7 @@ for ts in */tree-sitter.json; do
   sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" "$ts"
 done
 
-# Cargo.toml (first occurrence — the [package] version)
+# Cargo.toml (first occurrence; the [package] version)
 sed -i "0,/^version = .*/s/^version = .*/version = \"$VERSION\"/" Cargo.toml
 
 # pyproject.toml

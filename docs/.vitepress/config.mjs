@@ -3,12 +3,12 @@ import { SITE_BASE } from './site-base.mjs';
 
 export default defineConfig({
   title: 'tree-sitter-sql-extended',
-  description: 'A multi-dialect SQL grammar for tree-sitter — ANSI base plus 22 dialect extensions.',
+  description: 'A multi-dialect SQL grammar for tree-sitter; ANSI base plus 22 dialect extensions.',
   base: SITE_BASE,
   cleanUrls: true,
   lastUpdated: true,
 
-  // downloads.md links into docs/public/artifacts/ — static files (source
+  // downloads.md links into docs/public/artifacts/; static files (source
   // code, manifests) with no VitePress page behind them, which the
   // dead-link checker otherwise flags.
   ignoreDeadLinks: [/\/artifacts\//],

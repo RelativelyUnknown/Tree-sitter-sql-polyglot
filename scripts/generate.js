@@ -20,7 +20,7 @@ import { fileURLToPath } from 'url';
 // have died on specific dialects with "the runner has received a shutdown
 // signal" (no application-level error) after a variable amount of time.
 // Sampling system memory + the generate process's own RSS periodically lets
-// a mid-run kill still leave a timeline behind — climbing RSS toward
+// a mid-run kill still leave a timeline behind; climbing RSS toward
 // MemTotal points to a real OOM; flat/low usage points elsewhere (pure CPU
 // time, or an externally-triggered interruption unrelated to this process).
 function sampleMemory(label) {
@@ -36,7 +36,7 @@ function sampleMemory(label) {
       : '(no tree-sitter process found)';
     console.log(`  [mem] ${label}: system ${usedMb}/${totalMb}MB used; ${topRss}`);
   } catch {
-    // Non-Linux or /proc unavailable (e.g. local macOS dev) — skip silently.
+    // Non-Linux or /proc unavailable (e.g. local macOS dev); skip silently.
   }
 }
 
@@ -77,7 +77,7 @@ const dialectHash = dialect ? hashDir(join(grammarDir, 'grammar')) : '';
 const entryHash = readFileSync(grammarPath, 'utf8');
 
 // Ancestor chains: a child grammar must regenerate when ANY file in a parent
-// grammar changes — both the parent's grammar.js entry point and its
+// grammar changes; both the parent's grammar.js entry point and its
 // grammar/*.js rule modules (a hive/grammar/ change flows into spark and
 // databricks via grammar(base, …) composition at generation time).
 const PARENTS = {
@@ -107,7 +107,7 @@ const hashFile = join(ROOT, `.grammar-cache/${cacheKey}.hash`);
 // upload step raced a mid-flight generate, a workflow's `path:` list missing
 // one of the generated files, or GitHub's immutable-cache-key semantics
 // pinning an old/partial save under this exact hash), the marker restores
-// fine while some artifact it describes never does — and every future run
+// fine while some artifact it describes never does; and every future run
 // with an identical grammar hash trusts the marker forever. Require every
 // generated artifact `tree-sitter generate` produces to actually be on disk.
 const generatedPaths = [
@@ -119,11 +119,11 @@ const missingPath = generatedPaths.find((p) => !existsSync(p));
 const hashMatches = existsSync(hashFile) && readFileSync(hashFile, 'utf8').trim() === currentHash.trim();
 
 if (hashMatches && !missingPath) {
-  console.log(`grammar unchanged — skipping generate (${cacheKey})`);
+  console.log(`grammar unchanged; skipping generate (${cacheKey})`);
   process.exit(0);
 }
 if (hashMatches) {
-  console.log(`hash marker present but ${missingPath.replace(ROOT, '')} is missing — regenerating (${cacheKey})`);
+  console.log(`hash marker present but ${missingPath.replace(ROOT, '')} is missing; regenerating (${cacheKey})`);
 }
 
 console.log(`generating parser for ${cacheKey}...`);

@@ -31,7 +31,7 @@ export default {
   ),
 
   // ANSI DECLARE CURSOR (ISO E121, Core): DECLARE name [[NO] SCROLL] CURSOR
-  // FOR query. Kept minimal — dialects extend with their own options
+  // FOR query. Kept minimal; dialects extend with their own options
   // (WITH HOLD, BINARY, INSENSITIVE, …) in their statement overrides.
   declare_cursor_statement: $ => seq(
     $.keyword_declare,

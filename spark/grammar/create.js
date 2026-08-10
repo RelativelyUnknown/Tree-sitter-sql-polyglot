@@ -11,11 +11,11 @@ export default {
     seq($.keyword_tblproperties, paren_list($.table_option, true)),
     seq($.keyword_without, $.keyword_oids),
     $.storage_parameters,
-    // USING <data_source> [OPTIONS (...)] — the canonical Spark/Delta table form
+    // USING <data_source> [OPTIONS (...)]; the canonical Spark/Delta table form
     $.table_using,
     // OPTIONS (...) without a preceding USING (allowed in some Spark DDL contexts)
     $.table_options,
-    // COMMENT 'string' — table-level comment
+    // COMMENT 'string'; table-level comment
     seq($.keyword_comment, alias($.literal, $.literal)),
     // Databricks SHALLOW CLONE / DEEP CLONE
     $.shallow_clone,

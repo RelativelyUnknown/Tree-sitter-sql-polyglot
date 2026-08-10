@@ -17,7 +17,7 @@ export default grammar(base, {
     [$._column, $._qualified_field],
     [$.object_reference],
     // Local shift/reduce ambiguity shared with like_expression's optional
-    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     [$.from],
     [$.all_fields_transform, $.all_fields],
@@ -218,10 +218,10 @@ export default grammar(base, {
         [$.keyword_is, 'binary_is'],
         [$.is_not, 'binary_is'],
         // LIKE / NOT LIKE are handled exclusively by the inherited
-        // like_expression rule (with its optional ESCAPE tail) — not
+        // like_expression rule (with its optional ESCAPE tail); not
         // duplicated here. See base grammar/expressions.js for why.
         // ClickHouse's pattern operators are LIKE / NOT LIKE (handled by the
-        // inherited like_expression), ILIKE / NOT ILIKE, and REGEXP — which
+        // inherited like_expression), ILIKE / NOT ILIKE, and REGEXP; which
         // arrives through keyword_rlike. SIMILAR TO is ISO SQL that
         // ClickHouse does not implement, and it was displacing ILIKE, which
         // ClickHouse does: swapping them keeps the pattern_matching group the
@@ -344,7 +344,7 @@ export default grammar(base, {
     keyword_materialize:   _ => token(prec(1, make_keyword("materialize"))),
     // Re-declared at prec(1) so maximal munch keeps MATERIALIZED intact:
     // keyword_materialize (prec 1) would otherwise shadow the longer
-    // MATERIALIZED (prefix-shadowing bug — precedence beats length).
+    // MATERIALIZED (prefix-shadowing bug; precedence beats length).
     keyword_materialized:  _ => token(prec(1, make_keyword("materialized"))),
     keyword_clear:         _ => token(prec(1, make_keyword("clear"))),
 

@@ -200,16 +200,16 @@ export default {
   keyword_privileges: _ => make_keyword("privileges"),
   keyword_catalog: _ => make_keyword("catalog"),
 
-  // ANSI SQL — tablesample/percent (used in base grammar tablesample rule)
+  // ANSI SQL; tablesample/percent (used in base grammar tablesample rule)
   keyword_tablesample: _ => make_keyword("tablesample"),
   keyword_bernoulli: _ => make_keyword("bernoulli"),
   keyword_system: _ => make_keyword("system"),
   keyword_percent: _ => make_keyword("percent"),
 
-  // Common dialect type — string (used in base _type rule)
+  // Common dialect type; string (used in base _type rule)
   keyword_string: _ => make_keyword("string"),
 
-  // ANSI SQL — FETCH NEXT n ROWS
+  // ANSI SQL; FETCH NEXT n ROWS
   keyword_next: _ => make_keyword("next"),
 
   keyword_except: _ => make_keyword("except"),
@@ -271,11 +271,11 @@ export default {
   keyword_execute: _ => make_keyword("execute"),
   keyword_procedure: _ => make_keyword("procedure"),
 
-  // ANSI SQL — used in base CREATE FUNCTION (LANGUAGE ... EXTERNAL routine)
+  // ANSI SQL; used in base CREATE FUNCTION (LANGUAGE ... EXTERNAL routine)
   keyword_external: _ => make_keyword("external"),
-  // ANSI SQL — used in base COMMENT ON statement
+  // ANSI SQL; used in base COMMENT ON statement
   keyword_comment: _ => make_keyword("comment"),
-  // ANSI SQL — used in base ALTER SEQUENCE ... CACHE n
+  // ANSI SQL; used in base ALTER SEQUENCE ... CACHE n
   keyword_cache: _ => make_keyword("cache"),
 
   // Operators
@@ -346,16 +346,16 @@ export default {
 
   keyword_array: _ => make_keyword("array"), // not included in _type since it's a constructor literal
 
-  // ANSI SQL — TRIM(BOTH|LEADING|TRAILING x FROM y)
+  // ANSI SQL; TRIM(BOTH|LEADING|TRAILING x FROM y)
   keyword_both: _ => make_keyword("both"),
   keyword_leading: _ => make_keyword("leading"),
   keyword_trailing: _ => make_keyword("trailing"),
   keyword_trim: _ => make_keyword("trim"),
 
-  // ANSI SQL — WITHIN GROUP (ORDER BY ...)
+  // ANSI SQL; WITHIN GROUP (ORDER BY ...)
   keyword_within: _ => make_keyword("within"),
 
-  // ANSI SQL — datetime value functions (F051-06). keyword_current_timestamp
+  // ANSI SQL; datetime value functions (F051-06). keyword_current_timestamp
   // is declared above; the rest are added here for the datetime_value_function
   // rule. LOCALTIME / LOCALTIMESTAMP are the without-time-zone variants.
   keyword_current_date: _ => make_keyword("current_date"),
@@ -363,7 +363,7 @@ export default {
   keyword_localtime: _ => make_keyword("localtime"),
   keyword_localtimestamp: _ => make_keyword("localtimestamp"),
 
-  // ANSI SQL — LIKE ... ESCAPE (E061-05)
+  // ANSI SQL; LIKE ... ESCAPE (E061-05)
   keyword_escape: _ => make_keyword("escape"),
 
 }

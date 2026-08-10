@@ -29,13 +29,13 @@
 #                              writable surface syntax to probe (e.g. SQLSTATE
 #                              status codes, host-language binding) and is
 #                              excluded from every score denominator. Kept
-#                              minimal — if you can write it as SQL, it is
+#                              minimal; if you can write it as SQL, it is
 #                              observable and must be scored.
 #     weight:          1 = niche, 3 = high-frequency production feature
 #     probe:           default probe SQL (must end with ;)
 #     purity_exception: optional; true when the base grammar currently accepts
 #                      a non-ANSI probe for historical reasons (inherited from
-#                      the permissive upstream fork). Tracked, not approved —
+#                      the permissive upstream fork). Tracked, not approved;
 #                      each exception should reference a cleanup issue.
 #     dialects:        per-dialect overrides
 #       <name>:
@@ -52,7 +52,7 @@
 # A "suspect" (we accept, no corroborator does) is evidence of an over-loose
 # grammar ONLY where the corroborators actually cover that dialect. SQLGlot,
 # pglast, ANTLR and sqlfluff have thin-to-no Db2 coverage, so most Db2
-# suspects are corroborator blind spots rather than grammar bugs — verified
+# suspects are corroborator blind spots rather than grammar bugs; verified
 # against IBM's own docs: FINAL TABLE, COMMENT ON, SAVEPOINT, compound
 # BEGIN…END, PREPARE and DECLARE CURSOR are all real Db2 syntax. Check the
 # vendor's documentation before "fixing" a suspect by deleting grammar.
@@ -62,24 +62,24 @@
 # against every corroborator that claims the dialect; none of them accepts it,
 # so they are recorded as blind spots, not looseness:
 #
-#   db2/security_label      CREATE SECURITY LABEL (LBAC) — IBM Db2 SQL Reference
-#   db2/database_link       CREATE SERVER (federation) — IBM Db2 SQL Reference
-#   db2/alter_set_options   ALTER TABLE … APPEND ON — IBM Db2 SQL Reference
-#   db2/index_rebuild       REORG INDEXES ALL FOR TABLE — Db2 Command Reference
-#   db2/optimize_table      REORG TABLE — Db2 Command Reference
-#   oracle/create_operator  CREATE OPERATOR … BINDING … RETURN … USING —
+#   db2/security_label      CREATE SECURITY LABEL (LBAC); IBM Db2 SQL Reference
+#   db2/database_link       CREATE SERVER (federation); IBM Db2 SQL Reference
+#   db2/alter_set_options   ALTER TABLE … APPEND ON; IBM Db2 SQL Reference
+#   db2/index_rebuild       REORG INDEXES ALL FOR TABLE; Db2 Command Reference
+#   db2/optimize_table      REORG TABLE; Db2 Command Reference
+#   oracle/create_operator  CREATE OPERATOR … BINDING … RETURN … USING;
 #                           Oracle SQL Language Reference (extensible indexing)
-#   trino/database_link     CREATE CATALOG … USING — Trino SQL reference
+#   trino/database_link     CREATE CATALOG … USING; Trino SQL reference
 #                           (dynamic catalog management)
-#   teradata/alter_set_options  ALTER TABLE t, NO FALLBACK — Teradata SQL DDL
-#   clickhouse/alter_set_options  ALTER TABLE … MODIFY SETTING — ClickHouse docs
-#   spark/optimize_table    OPTIMIZE — Delta Lake (open source since 2.0)
-#   athena/database_options CREATE DATABASE … WITH DBPROPERTIES — Amazon
+#   teradata/alter_set_options  ALTER TABLE t, NO FALLBACK; Teradata SQL DDL
+#   clickhouse/alter_set_options  ALTER TABLE … MODIFY SETTING; ClickHouse docs
+#   spark/optimize_table    OPTIMIZE; Delta Lake (open source since 2.0)
+#   athena/database_options CREATE DATABASE … WITH DBPROPERTIES; Amazon
 #                           Athena DDL reference
-#   teradata/database_link  CREATE FOREIGN SERVER — Teradata QueryGrid SQL
+#   teradata/database_link  CREATE FOREIGN SERVER; Teradata QueryGrid SQL
 #                           command reference for the Teradata connector
-#   tsql/security_label     ADD SENSITIVITY CLASSIFICATION … WITH (LABEL = …)
-#                           — T-SQL reference. Attaching a LABEL to a column
+#   tsql/security_label     ADD SENSITIVITY CLASSIFICATION … WITH (LABEL = …);
+#                           T-SQL reference. Attaching a LABEL to a column
 #                           is this feature under Microsoft's spelling, so it
 #                           is probed rather than excluded.
 #
@@ -88,7 +88,7 @@
 # statements. A dialect at 100% here means "passes every probe we wrote", not
 # "feature complete".
 #
-# It was previously saturated — 100% with zero gaps on all 23 dialects — which
+# It was previously saturated (100% with zero gaps on all 23 dialects), which
 # made it structurally unable to show progress or completeness, only
 # regressions. That is why 25 missing PostgreSQL statements were invisible.
 # The vendor maintenance/object-DDL block at the end of this file starts
@@ -98,7 +98,7 @@
 #
 # Scoring these honestly does mean a dialect can lose points for a statement
 # another engine's family invented. The real fix is a per-dialect statement
-# inventory rather than one shared feature list — a larger change to
+# inventory rather than one shared feature list; a larger change to
 # coverage.py's denominator, deliberately not attempted here.
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -207,7 +207,7 @@ features:
       # at `tree-sitter generate`). Left as a tracked gap rather than shipping a
       # grammar that cannot be generated in CI. ClickHouse's idiomatic paging is
       # LIMIT/OFFSET, which is fully supported.
-      clickhouse: { status: not-applicable, reason: "OFFSET/FETCH unshippable — parse-table OOM in ClickHouse's from rule; uses LIMIT/OFFSET" }
+      clickhouse: { status: not-applicable, reason: "OFFSET/FETCH unshippable; parse-table OOM in ClickHouse's from rule; uses LIMIT/OFFSET" }
 
   - id: limit_offset
     name: "LIMIT / OFFSET"
@@ -353,7 +353,7 @@ features:
       mysql:   { status: not-applicable, reason: "MySQL has no MERGE (uses ON DUPLICATE KEY)" }
       mariadb: { status: not-applicable, reason: "MariaDB has no MERGE" }
       sqlite:  { status: not-applicable, reason: "SQLite has no MERGE (uses UPSERT)" }
-      # duckdb: MERGE INTO landed in DuckDB 1.4.0 (2025-09) — scored, not
+      # duckdb: MERGE INTO landed in DuckDB 1.4.0 (2025-09); scored, not
       # excluded. https://duckdb.org/docs/lts/sql/statements/merge_into
       clickhouse: { status: not-applicable, reason: "ClickHouse has no MERGE statement" }
       cockroachdb: { status: not-applicable, reason: "No MERGE; UPSERT / ON CONFLICT instead" }
@@ -379,7 +379,7 @@ features:
         probe: "SELECT a FROM FINAL TABLE (INSERT INTO t1 (a) VALUES (1));"
       mysql:      { status: not-applicable, reason: "No upstream support (MariaDB-only feature)" }
       redshift:   { status: not-applicable, reason: "No upstream support" }
-      # snowflake (#116) and clickhouse (23.4+, #119) both added RETURNING —
+      # snowflake (#116) and clickhouse (23.4+, #119) both added RETURNING;
       # no not-applicable entry; the grammar and a passing corpus test both
       # confirm it.
       trino:      { status: not-applicable, reason: "No upstream support" }
@@ -444,7 +444,7 @@ features:
       databricks: { status: not-applicable, reason: "No row locking" }
       bigquery:   { status: not-applicable, reason: "No row locking" }
       redshift:   { status: not-applicable, reason: "No SELECT FOR UPDATE" }
-      # trino/athena (#113) added SELECT … FOR UPDATE — no not-applicable
+      # trino/athena (#113) added SELECT … FOR UPDATE; no not-applicable
       # entry; the grammar's locking_clause rule and a passing corpus test
       # both confirm it.
       duckdb:     { status: not-applicable, reason: "No row locking" }
@@ -500,12 +500,12 @@ features:
       sqlite:  { status: not-applicable, reason: "No materialized views upstream" }
       # tsql: Azure Synapse dedicated SQL pools support CREATE MATERIALIZED
       # VIEW AS SELECT, and this dialect covers Synapse (see
-      # tsql/grammar/synapse.js) — scored, not excluded. Plain SQL Server
+      # tsql/grammar/synapse.js); scored, not excluded. Plain SQL Server
       # uses indexed views, but both share this grammar.
       hive:
         probe: "CREATE MATERIALIZED VIEW mv1 AS SELECT a FROM t1;"
       # spark: Spark 4.x documents CREATE MATERIALIZED VIEW (Declarative
-      # Pipelines), and the rule is inherited from Hive — scored, not excluded.
+      # Pipelines), and the rule is inherited from Hive; scored, not excluded.
       teradata: { status: not-applicable, reason: "Teradata uses JOIN INDEX instead" }
       db2:     { status: not-applicable, reason: "Db2 uses materialized query tables: CREATE TABLE … DATA INITIALLY DEFERRED REFRESH DEFERRED" }
 
@@ -521,11 +521,11 @@ features:
       # normalized DDL surface, even though each engine's *native* comment
       # mechanism is different (COMMENT= table option, sp_addextendedproperty,
       # OPTIONS(description=…), schema options, table options respectively).
-      # No not-applicable entries here — the grammar genuinely accepts it.
+      # No not-applicable entries here; the grammar genuinely accepts it.
       sqlite:     { status: not-applicable, reason: "No COMMENT statement" }
       # ClickHouse has neither ANSI COMMENT ON nor a working ALTER … MODIFY
       # COMMENT in the grammar (no column_definition path accepts COMMENT as
-      # a column name) — genuinely not-applicable, not merely "use the
+      # a column name); genuinely not-applicable, not merely "use the
       # workaround instead".
       clickhouse: { status: not-applicable, reason: "No COMMENT ON and no MODIFY COMMENT column rule in the grammar; native comments are set via ALTER TABLE … COMMENT COLUMN, not modeled here" }
 
@@ -578,7 +578,7 @@ features:
     probe: "SAVEPOINT sp1; ROLLBACK TO SAVEPOINT sp1;"
     dialects:
       # T-SQL has savepoints, but spells them SAVE TRANSACTION / ROLLBACK
-      # TRANSACTION <name> — not the ANSI SAVEPOINT keyword. Probe override
+      # TRANSACTION <name>; not the ANSI SAVEPOINT keyword. Probe override
       # rather than not-applicable: the capability exists, the syntax differs.
       # Wrapped in a transaction because that is both how T-SQL savepoints are
       # actually used and where the grammar reaches ROLLBACK (_rollback
@@ -624,7 +624,7 @@ features:
       # postgres has its own dedicated _show_statement (SHOW CREATE TABLE/
       # VIEW/SCHEMA/USER, SHOW ALL, SHOW TABLES [FROM …] [LIKE …]), wired
       # into _ddl_statement and confirmed by a passing corpus test
-      # (postgres/test/corpus/show.txt) — no not-applicable entry.
+      # (postgres/test/corpus/show.txt); no not-applicable entry.
       sqlite:   { status: not-applicable, reason: "Metadata via pragma" }
       tsql:     { status: not-applicable, reason: "Metadata via system views" }
       oracle:   { status: not-applicable, reason: "Metadata via data dictionary" }
@@ -748,7 +748,7 @@ features:
 
   # Cursors are writable ANSI SQL (E121), so the base is scored on them. The
   # base grammar does implement DECLARE ... CURSOR FOR (declare_cursor_statement
-  # in grammar/statements/index.js) — this is scored as implemented, not a gap.
+  # in grammar/statements/index.js); this is scored as implemented, not a gap.
   # Dialects with a procedural/embedded layer implement their own variants.
   - id: cursor
     name: "Cursors (DECLARE / OPEN / FETCH / CLOSE)"
@@ -808,7 +808,7 @@ features:
       snowflake:  { status: not-applicable, reason: "No user indexes (micro-partitions)" }
       # REINDEX is a PostgreSQL/SQLite spelling. These engines do rebuild
       # indexes, but through a different statement scored by index_rebuild
-      # (ALTER INDEX … REBUILD, REORG INDEXES, MATERIALIZE INDEX) — counting
+      # (ALTER INDEX … REBUILD, REORG INDEXES, MATERIALIZE INDEX); counting
       # the PostgreSQL spelling against them measured the wrong thing.
       oracle:     { status: not-applicable, reason: "ALTER INDEX … REBUILD, not REINDEX" }
       tsql:       { status: not-applicable, reason: "ALTER INDEX … REBUILD, not REINDEX" }
@@ -835,7 +835,7 @@ features:
       hive:       { status: not-applicable, reason: "CLUSTER BY is a query clause, not this statement" }
       spark:      { status: not-applicable, reason: "CLUSTER BY is a query clause, not this statement" }
       databricks: { status: not-applicable, reason: "CLUSTER BY is liquid clustering, not this statement" }
-      # CLUSTER … USING physically reorders a heap by an index — a
+      # CLUSTER … USING physically reorders a heap by an index; a
       # PostgreSQL-only maintenance statement. Oracle's CREATE CLUSTER
       # defines a different object (a shared-key storage cluster) and is not
       # this statement; the rest have no equivalent at all.
@@ -864,7 +864,7 @@ features:
       # DISCARD {ALL|PLANS|SEQUENCES|TEMPORARY} resets PostgreSQL session
       # state and exists only in the PostgreSQL family. SQLGlot accepts it for
       # every dialect because its dialect parsers share one base parser, not
-      # because these engines have the statement — checked against each
+      # because these engines have the statement; checked against each
       # vendor's own statement list.
       redshift:   { status: not-applicable, reason: "No DISCARD statement" }
       duckdb:     { status: not-applicable, reason: "No DISCARD statement" }
@@ -989,7 +989,7 @@ features:
     dialects:
       # The PostgreSQL query-rewrite rule system. T-SQL also has a CREATE RULE
       # (a bindable value constraint, deprecated but still documented), which
-      # shares only the name — hence its own probe rather than the default.
+      # shares only the name; hence its own probe rather than the default.
       tsql:       { probe: "CREATE RULE r1 AS @value > 0;" }
       mysql:      { status: not-applicable, reason: "No rule objects" }
       mariadb:    { status: not-applicable, reason: "No rule objects" }
@@ -1020,7 +1020,7 @@ features:
     dialects:
       # CACHE/UNCACHE TABLE is Spark SQL's statement for pinning a relation in
       # the executor block manager; Databricks inherits it. No other engine
-      # exposes cache residency as a statement — SQLGlot parses it everywhere
+      # exposes cache residency as a statement; SQLGlot parses it everywhere
       # only because its dialects share one base parser.
       postgres:    { status: not-applicable, reason: "Buffer cache is not managed by statement" }
       cockroachdb: { status: not-applicable, reason: "Buffer cache is not managed by statement" }
@@ -1093,7 +1093,7 @@ features:
       tsql:        { probe: "ALTER INDEX idx1 ON t1 REBUILD;" }
       db2:         { probe: "REORG INDEXES ALL FOR TABLE t1;" }
       # Engines with no user-managed indexes, or none that can be rebuilt in
-      # place — REINDEX (a separate probe) is the PostgreSQL-family spelling.
+      # place; REINDEX (a separate probe) is the PostgreSQL-family spelling.
       postgres:    { status: not-applicable, reason: "REINDEX, not ALTER INDEX REBUILD" }
       cockroachdb: { status: not-applicable, reason: "REINDEX, not ALTER INDEX REBUILD" }
       sqlite:      { status: not-applicable, reason: "REINDEX, not ALTER INDEX REBUILD" }
@@ -1249,7 +1249,7 @@ features:
     dialects:
       clickhouse:  { probe: "OPTIMIZE TABLE t1 FINAL;" }
       # OPTIMIZE is Delta Lake's compaction statement, available in open
-      # source Delta since 2.0 — not a Databricks-only extension.
+      # source Delta since 2.0; not a Databricks-only extension.
       spark:       { probe: "OPTIMIZE t1;" }
       # Hive compacts ACID tables through ALTER TABLE … COMPACT.
       hive:        { probe: "ALTER TABLE t1 COMPACT 'major';" }

@@ -65,7 +65,7 @@ export default {
 
   // Spark 4.0: col:key1:key2  (semi-structured variant path access). The left
   // operand is a column/field, a prior variant path (chaining col:a:b), or a
-  // subscript (col[0]:a) — not the full $._expression. Same rationale as
+  // subscript (col[0]:a); not the full $._expression. Same rationale as
   // collate_expression: avoids a bare-`:` suffix on every expression form
   // (which also collides with subscript slice `a[1:2]`), shrinking the table.
   variant_path_expression: $ => prec.left(10, seq(

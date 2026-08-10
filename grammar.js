@@ -24,7 +24,7 @@ export default grammar({
     [$.object_reference],
     // Local shift/reduce ambiguity at the same "what does a trailing NOT
     // belong to" boundary that between_expression/binary_expression already
-    // share above — bounded to one lookahead decision, not a duplicate
+    // share above; bounded to one lookahead decision, not a duplicate
     // derivation of the whole like_expression subtree.
     [$.between_expression, $.binary_expression, $.like_expression],
     [$.create_function],
@@ -60,7 +60,7 @@ export default grammar({
   // Strict ANSI base: ON is an ISO SQL reserved word. Reserving it stops `on`
   // from being lexed as a bare identifier / function name, so the PostgreSQL
   // `SELECT DISTINCT ON (…)` extension no longer parses accidentally as an
-  // `on(…)` invocation. `JOIN … ON` is unaffected — it references the
+  // `on(…)` invocation. `JOIN … ON` is unaffected; it references the
   // keyword_on token explicitly rather than an identifier position.
   reserved: {
     global: $ => [$.keyword_on],

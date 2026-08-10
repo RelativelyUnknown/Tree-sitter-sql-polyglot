@@ -1,6 +1,6 @@
 // Databricks refresh statements.
 //
-// CACHE / UNCACHE / CLEAR CACHE moved up to spark/grammar/cache.js — they are
+// CACHE / UNCACHE / CLEAR CACHE moved up to spark/grammar/cache.js; they are
 // OSS Spark statements, so Databricks now inherits them rather than owning
 // them. Only the Databricks-specific refresh forms remain here.
 export default {

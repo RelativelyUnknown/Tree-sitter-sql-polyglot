@@ -203,7 +203,7 @@ export default {
     ),
   )),
 
-  // col TYPE [AS (expr)] — external table virtual column projection
+  // col TYPE [AS (expr)]; external table virtual column projection
   external_table_column: $ => seq(
     field('name', $.identifier),
     field('type', $._type),

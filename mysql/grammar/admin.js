@@ -75,7 +75,7 @@ export default {
     field('value', $._expression),
   ),
 
-  // Narrow base create_role to ROLE/GROUP only — CREATE USER is handled by
+  // Narrow base create_role to ROLE/GROUP only; CREATE USER is handled by
   // create_user_statement with full MySQL account/auth syntax.
   create_role: $ => prec.left(seq(
     $.keyword_create,

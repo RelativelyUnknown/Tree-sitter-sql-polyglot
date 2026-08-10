@@ -234,7 +234,7 @@ export default {
     field('alias', $.identifier),
   ),
 
-  // Strict ANSI base: LIMIT/OFFSET are not ISO SQL — base keeps only the ANSI
+  // Strict ANSI base: LIMIT/OFFSET are not ISO SQL; base keeps only the ANSI
   // OFFSET … FETCH form (fromClause without limit). Dialects that support LIMIT
   // override `from` with fromClause($, { limit: true }).
   from: $ => fromClause($),

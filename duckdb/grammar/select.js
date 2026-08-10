@@ -3,7 +3,7 @@ import { comma_list, wrapped_in_parenthesis, optional_parenthesis, paren_list, m
 export default {
 
   // DuckDB: SELECT DISTINCT ON (expr, …) … (PostgreSQL-compatible). An explicit
-  // rule is required now that the strict ANSI base reserves ON — DISTINCT ON no
+  // rule is required now that the strict ANSI base reserves ON; DISTINCT ON no
   // longer falls back to an accidental on(…) function-call parse.
   select: $ => seq(
     $.keyword_select,

@@ -75,14 +75,14 @@ export default {
     choice(field('name', $.identifier), $.keyword_all),
   ),
 
-  // ABORT [ WORK | TRANSACTION ] [ AND [ NO ] CHAIN ] — synonym for ROLLBACK
+  // ABORT [ WORK | TRANSACTION ] [ AND [ NO ] CHAIN ]; synonym for ROLLBACK
   abort_statement: $ => prec.right(seq(
     $.keyword_abort,
     optional(choice($.keyword_work, $.keyword_transaction)),
     optional(seq($.keyword_and, optional($.keyword_no), $.keyword_chain)),
   )),
 
-  // END [WORK | TRANSACTION] [AND [NO] CHAIN] — PostgreSQL's synonym for
+  // END [WORK | TRANSACTION] [AND [NO] CHAIN]; PostgreSQL's synonym for
   // COMMIT. Negative precedence because END also closes a PL/pgSQL block: at
   // the end of a statement inside a body, closing the body has to win over
   // starting an END statement.

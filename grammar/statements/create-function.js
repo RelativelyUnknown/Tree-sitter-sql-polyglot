@@ -80,7 +80,7 @@ export default {
   // prec.right: without the ';' that used to terminate the bare-RETURN body, the
   // trailing expression is ambiguous against every operator that can continue it
   // (NOT LIKE / NOT IN / NOT BETWEEN / NOT SIMILAR TO …). Shifting is always the
-  // right call — RETURN takes the longest expression — so this resolves statically
+  // right call, since RETURN takes the longest expression, so this resolves statically
   // instead of costing a GLR conflict.
   _function_return: $ => prec.right(seq(
     $.keyword_return,
@@ -94,7 +94,7 @@ export default {
 
   // ANSI SQL ISO/IEC 9075-4 compound statement body
   function_body: $ => choice(
-    // Bare `RETURN expr` — no ';' here. The terminator belongs to `program`
+    // Bare `RETURN expr`; no ';' here. The terminator belongs to `program`
     // (`seq(statement, ';')`). Consuming it inside the body made the statement
     // parse in isolation, because `program` also allows one unterminated trailing
     // statement, while making every *following* statement an ERROR:

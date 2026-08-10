@@ -82,14 +82,14 @@ export default {
     optional(field('end_label', $.identifier)),
   ),
 
-  // PIPE {expr [, …] | row-variable} — emits a row from a pipelined table
+  // PIPE {expr [, …] | row-variable}; emits a row from a pipelined table
   // function.
   pipe_statement: $ => seq(
     $.keyword_pipe,
     comma_list($._expression, true),
   ),
 
-  // {BEGIN | END} DECLARE SECTION — the embedded-SQL host-variable section.
+  // {BEGIN | END} DECLARE SECTION; the embedded-SQL host-variable section.
   //
   // Lexed as one token per spelling rather than as three keywords. As three
   // keywords the END form is ambiguous with the END that closes every block

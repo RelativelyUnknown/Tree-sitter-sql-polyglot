@@ -3,7 +3,7 @@ import { make_keyword, optional_parenthesis, paren_list, wrapped_in_parenthesis 
 import spanner_ddl_rules from './grammar/ddl.js';
 import spanner_admin_rules from './grammar/admin.js';
 
-// Google Cloud Spanner — GoogleSQL, the same language family as BigQuery
+// Google Cloud Spanner; GoogleSQL, the same language family as BigQuery
 // (shared INT64/STRING types, backtick identifiers, THEN RETURN on DML).
 // Adds the Spanner-native schema surface: trailing PRIMARY KEY, INTERLEAVE
 // IN PARENT, STORING/NULL_FILTERED indexes, CHANGE STREAMs, ROW DELETION
@@ -11,7 +11,7 @@ import spanner_admin_rules from './grammar/admin.js';
 export default grammar(bigquery, {
   name: 'spanner_sql',
 
-  // conflicts do not propagate from the parent — bigquery's list is copied
+  // conflicts do not propagate from the parent; bigquery's list is copied
   // verbatim, followed by Spanner-specific entries.
   conflicts: $ => [
     // bigquery conflicts (copied verbatim)
@@ -20,7 +20,7 @@ export default grammar(bigquery, {
     [$._column, $._qualified_field],
     [$.object_reference],
     // Local shift/reduce ambiguity shared with like_expression's optional
-    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     [$.create_function],
     [$.add_constraint],
@@ -120,7 +120,7 @@ export default grammar(bigquery, {
       ),
     ),
 
-    // FOR UPDATE — Spanner supports no OF/NOWAIT/SKIP LOCKED modifiers
+    // FOR UPDATE; Spanner supports no OF/NOWAIT/SKIP LOCKED modifiers
     locking_clause: $ => seq(
       $.keyword_for,
       $.keyword_update,

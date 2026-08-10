@@ -2,7 +2,7 @@ import { comma_list, paren_list } from '../../grammar/helpers.js';
 
 // Clause completions from the Spark SQL syntax reference (79 statement
 // pages from spark.apache.org). Each override reproduces the inherited
-// body — an override replaces the parent rule wholesale.
+// body; an override replaces the parent rule wholesale.
 export default {
 
   // DATABASE, SCHEMA and NAMESPACE are interchangeable throughout Spark's

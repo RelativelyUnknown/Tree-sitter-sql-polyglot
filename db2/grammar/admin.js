@@ -249,7 +249,7 @@ export default {
   ),
 
   // ALLOCATE cursor-name CURSOR FOR RESULT SET rs-locator-variable
-  // The name precedes the CURSOR keyword — this is not the ANSI word order.
+  // The name precedes the CURSOR keyword; this is not the ANSI word order.
   allocate_cursor_statement: $ => seq(
     $.keyword_allocate,
     field('name', $.identifier),

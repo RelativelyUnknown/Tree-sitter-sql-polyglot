@@ -5,14 +5,14 @@ import teradata_statement_rules from './grammar/statements.js';
 import teradata_admin_rules from './grammar/admin.js';
 import teradata_analysis_rules from './grammar/analysis.js';
 
-// Teradata SQL — standalone lineage (since 1979), extends the ANSI base.
+// Teradata SQL; standalone lineage (since 1979), extends the ANSI base.
 // Adds SEL/DEL abbreviations, SET/MULTISET/VOLATILE tables, PRIMARY INDEX,
 // RANGE_N/CASE_N partitioning, COLLECT STATISTICS, CREATE MACRO, TOP n,
 // and QUALIFY.
 export default grammar(base, {
   name: 'teradata_sql',
 
-  // conflicts do not propagate from the parent — base's list is copied
+  // conflicts do not propagate from the parent; base's list is copied
   // verbatim.
   conflicts: $ => [
     [$.object_reference, $._qualified_field],
@@ -20,7 +20,7 @@ export default grammar(base, {
     [$._column, $._qualified_field],
     [$.object_reference],
     // Local shift/reduce ambiguity shared with like_expression's optional
-    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     [$.create_function],
     [$.list, $.grouping_set],
@@ -66,7 +66,7 @@ export default grammar(base, {
     //   USING option('value') …
     //   DO IMPORT WITH udf [, DO EXPORT WITH udf]
     // QueryGrid's remote-connection object. The USING options are
-    // space-separated name('value') pairs — no commas — while the DO clauses
+    // space-separated name('value') pairs with no commas, while the DO clauses
     // are comma-separated, which is why they are two different lists.
     create_foreign_server: $ => prec.left(seq(
       $.keyword_create,
@@ -229,7 +229,7 @@ export default grammar(base, {
     ),
 
     // Teradata SP cursor: DECLARE cursor_name CURSOR FOR <query> (ISO E121).
-    // Minimal override of the base rule — Teradata has no [NO] SCROLL option,
+    // Minimal override of the base rule; Teradata has no [NO] SCROLL option,
     // and dropping that optional sub-sequence keeps the parse table small.
     declare_cursor_statement: $ => seq(
       $.keyword_declare,
@@ -297,7 +297,7 @@ export default grammar(base, {
       optional($.qualify),
       optional($.window_clause),
       optional($.order_by),
-      // Teradata paging is TOP (in SELECT) / QUALIFY — no LIMIT or FETCH FIRST.
+      // Teradata paging is TOP (in SELECT) / QUALIFY; no LIMIT or FETCH FIRST.
     ),
 
     // base DDL dispatch plus COMMENT ON (Teradata: COMMENT ON TABLE t IS '…').

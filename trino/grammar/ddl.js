@@ -2,7 +2,7 @@ import { comma_list, paren_list } from '../../grammar/helpers.js';
 
 export default {
 
-  // WITH (key = value, ...) — Trino table/schema properties
+  // WITH (key = value, ...); Trino table/schema properties
   with_properties: $ => seq(
     $.keyword_with,
     '(',

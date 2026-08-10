@@ -19,7 +19,7 @@ export default grammar(base, {
     [$._column, $._qualified_field],
     [$.object_reference],
     // Local shift/reduce ambiguity shared with like_expression's optional
-    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     [$.create_function],
     [$.list, $.grouping_set],
@@ -28,9 +28,9 @@ export default grammar(base, {
     // output_clause's trailing optional paren column list after INTO <target>
     // is now resolved statically by prec.right on the rule itself (see
     // tsql/grammar/dml.js), so the [$.output_clause] GLR self-conflict is gone.
-    // EXPLAIN followed by keyword_continue / keyword_break is ambiguous — resolved by tree-sitter
+    // EXPLAIN followed by keyword_continue / keyword_break is ambiguous; resolved by tree-sitter
     // [$.statement] removed (tree-sitter reported it unnecessary)
-    // [$.option_clause] removed: tree-sitter reports it unnecessary — the
+    // [$.option_clause] removed: tree-sitter reports it unnecessary; the
     // close-paren ambiguity it was added for is resolved by prec.right on
     // _dml_read above.
     [$._function_return, $.return_statement],
@@ -63,7 +63,7 @@ export default grammar(base, {
         $._dml_write,
         optional_parenthesis($._dml_read),
         // T-SQL has no ANSI SAVEPOINT / RELEASE SAVEPOINT / ROLLBACK TO
-        // SAVEPOINT — it uses SAVE TRANSACTION instead, so the base
+        // SAVEPOINT; it uses SAVE TRANSACTION instead, so the base
         // _transaction_statement family is deliberately not wired in here.
         $.save_transaction_statement,
         // T-SQL procedural constructs
@@ -183,7 +183,7 @@ export default grammar(base, {
 
     // ── CREATE dispatch ───────────────────────────────────────────────────────
     // CREATE MATERIALIZED VIEW is Azure Synapse dedicated-SQL-pool syntax
-    // (this dialect covers Synapse — see grammar/synapse.js). Box-standard
+    // (this dialect covers Synapse; see grammar/synapse.js). Box-standard
     // SQL Server uses indexed views instead, but both share this grammar.
     _create_statement: $ => seq(
       choice(
@@ -209,7 +209,7 @@ export default grammar(base, {
       ),
     ),
 
-    // ALTER TABLE t SET (LOCK_ESCALATION = AUTO) — the table-option list,
+    // ALTER TABLE t SET (LOCK_ESCALATION = AUTO); the table-option list,
     // spelled with the same option entries CREATE TABLE's WITH (…) accepts.
     _alter_specifications: $ => choice(
       $.add_column,
@@ -240,7 +240,7 @@ export default grammar(base, {
       ),
     ),
 
-    // ── Identifier — add [bracket] and #temp/##global forms ──────────────────
+    // ── Identifier; add [bracket] and #temp/##global forms ──────────────────
     // T-SQL allows [schema].[table].[column] with square-bracket quoting and
     // #temp / ##global temp table prefixes.
     identifier: $ => choice(
@@ -253,7 +253,7 @@ export default grammar(base, {
     // patterns are disjoint ('[' vs '#') and both surface as a hidden child of
     // (identifier), so one terminal produces byte-identical trees while removing
     // a duplicate, always-identical action-table column (bracket and temp
-    // carried the same ACTIONS entry in every identifier-expecting state) —
+    // carried the same ACTIONS entry in every identifier-expecting state);
     // shrinking the generated table on tsql, the heaviest grammar.
     _tsql_quoted_identifier: _ => token(choice(
       /\[[^\]\n]*\]/,
@@ -266,7 +266,7 @@ export default grammar(base, {
     // op_unary_other when followed by an identifier character.
     variable: _ => token(prec(1, /@@?[A-Za-z_][A-Za-z0-9_]*/)),
 
-    // ── Expression — add @variable ────────────────────────────────────────────
+    // ── Expression; add @variable ────────────────────────────────────────────
     _expression: $ => prec(1,
       choice(
         $.literal,
@@ -413,7 +413,7 @@ export default grammar(base, {
     keyword_execute:          _ => token(prec(1, make_keyword("execute"))),
     keyword_save:             _ => token(prec(1, make_keyword("save"))),
     // T-SQL abbreviates TRANSACTION to TRAN (BEGIN/COMMIT/ROLLBACK/SAVE TRAN).
-    // Matched as ONE token with an optional tail — a separate keyword_tran
+    // Matched as ONE token with an optional tail; a separate keyword_tran
     // would shadow the TRAN prefix of TRANSACTION, because tree-sitter weighs
     // lexical precedence before match length. Same idiom as teradata's SEL.
     keyword_transaction:      _ => /[Tt][Rr][Aa][Nn]([Ss][Aa][Cc][Tt][Ii][Oo][Nn])?/,
@@ -427,7 +427,7 @@ export default grammar(base, {
     keyword_login:            _ => token(prec(1, make_keyword("login"))),
     keyword_must_change:      _ => token(prec(1, /[Mm][Uu][Ss][Tt]_[Cc][Hh][Aa][Nn][Gg][Ee]/)),
 
-    // ── Column constraints — add IDENTITY and computed AS … PERSISTED ────────
+    // ── Column constraints; add IDENTITY and computed AS … PERSISTED ────────
     // Re-enumerates the base _column_constraint alternatives (a dialect override
     // replaces the base rule entirely) and appends the two T-SQL forms:
     //   id INT IDENTITY(seed, increment)
@@ -523,7 +523,7 @@ export default grammar(base, {
       field('name', choice($.identifier, $.variable)),
     ),
 
-    // ROLLBACK { TRAN | TRANSACTION } [ name | @var ] — an explicit name rolls
+    // ROLLBACK { TRAN | TRANSACTION } [ name | @var ]; an explicit name rolls
     // back to that savepoint rather than the whole transaction. T-SQL spells
     // this without the ANSI "TO SAVEPOINT".
     _rollback: $ => seq(

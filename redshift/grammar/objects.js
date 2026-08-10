@@ -119,13 +119,13 @@ export default {
     optional(field('message', alias($._literal_string, $.literal))),
   )),
 
-  // ABORT [WORK | TRANSACTION] — Redshift's synonym for ROLLBACK.
+  // ABORT [WORK | TRANSACTION]; Redshift's synonym for ROLLBACK.
   abort_statement: $ => prec.right(seq(
     $.keyword_abort,
     optional(choice($.keyword_work, $.keyword_transaction)),
   )),
 
-  // END [WORK | TRANSACTION] — Redshift's synonym for COMMIT.
+  // END [WORK | TRANSACTION]; Redshift's synonym for COMMIT.
   // Negative precedence because base's BEGIN … END procedure body also ends
   // with a bare END: at the end of a statement inside a body, closing the
   // body has to win over starting an END statement.

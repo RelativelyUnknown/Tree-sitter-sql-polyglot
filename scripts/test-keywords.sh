@@ -2,7 +2,7 @@
 # Verify that every keyword reachable in a parse tree (i.e. present in
 # node-types.json) is also listed in the @keyword capture in highlights.scm.
 # Keywords defined in grammar.js but not yet referenced by any rule are
-# intentionally excluded — they cannot appear in highlights.scm until they
+# intentionally excluded; they cannot appear in highlights.scm until they
 # are actually used (tree-sitter rejects query captures for unreachable types).
 
 mkdir -p tmp/tree-sitter-sql/

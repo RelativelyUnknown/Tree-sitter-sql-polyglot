@@ -4,7 +4,7 @@ export default {
   // VACUUM [ ( option [,...] ) ] [ table_and_columns [,...] ]
   // VACUUM [FULL] [FREEZE] [VERBOSE] [ANALYZE] [ table_and_columns [,...] ]
   // Both spellings are documented; the second is the pre-9.0 form kept for
-  // compatibility. Everything after VACUUM is optional — a bare VACUUM
+  // compatibility. Everything after VACUUM is optional; a bare VACUUM
   // vacuums every table in the database.
   _vacuum_table: $ => prec.left(seq(
     $.keyword_vacuum,

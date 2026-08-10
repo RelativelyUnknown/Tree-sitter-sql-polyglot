@@ -77,7 +77,7 @@ export default {
     paren_list($.secret_option, true),
   ),
 
-  // TYPE s3 | KEY_ID 'x' | SCOPE 's3://…' — a bare `NAME value` pair, with
+  // TYPE s3 | KEY_ID 'x' | SCOPE 's3://…'; a bare `NAME value` pair, with
   // TYPE spelled out because it lexes as a keyword rather than an identifier.
   secret_option: $ => choice(
     seq($.keyword_type, field('value', choice($.identifier, $.literal))),

@@ -14,7 +14,7 @@ export default {
     field('condition', $._expression),
   ),
 
-  // ORDER SIBLINGS BY — used instead of ORDER BY in hierarchical queries
+  // ORDER SIBLINGS BY; used instead of ORDER BY in hierarchical queries
   order_siblings_by: $ => seq(
     $.keyword_order,
     $.keyword_siblings,

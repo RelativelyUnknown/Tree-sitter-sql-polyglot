@@ -9,7 +9,7 @@
  * Each dialect's grammar.js imports its parent's grammar.js SOURCE module
  * directly (e.g. spark/grammar.js does `import hive from '../hive/grammar.js'`)
  * and composes the merged grammar in-process before calling `tree-sitter
- * generate` — it never reads the parent's compiled src/parser.c. So there is
+ * generate`; it never reads the parent's compiled src/parser.c. So there is
  * no ordering dependency between dialects at generation time, and running
  * `node scripts/generate.js <dialect>` for every dialect concurrently is
  * safe: each is an independent process reading only source files and
@@ -33,7 +33,7 @@ const CLI = 'npx --yes --package=tree-sitter-cli@v0.26.3 -- tree-sitter';
 try {
   execSync(`${CLI} --version`, { cwd: ROOT, stdio: 'ignore' });
 } catch {
-  // Ignore — if the CLI is genuinely broken, the failure surfaces per-dialect
+  // Ignore; if the CLI is genuinely broken, the failure surfaces per-dialect
   // below where it can be attributed to a specific grammar.
 }
 
@@ -51,7 +51,7 @@ const targets = names.length ? names : DEFAULT_ALL;
 // larger/more conflict-heavy dialects (spark, databricks, oracle measured
 // locally at 2.5-5.5GB RSS each while generating). CPU-count concurrency
 // (4 on a standard GitHub-hosted runner, which also has ~16GB RAM) let 3-4
-// such processes run at once and exceed the runner's memory budget — the
+// such processes run at once and exceed the runner's memory budget; the
 // OOM took down the whole runner VM rather than just the offending
 // process, which surfaces in Actions as "the runner has received a
 // shutdown signal" instead of an ordinary failed step. Budget conservatively

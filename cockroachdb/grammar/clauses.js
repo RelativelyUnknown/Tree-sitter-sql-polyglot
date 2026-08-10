@@ -2,7 +2,7 @@ import { comma_list } from '../../grammar/helpers.js';
 
 // Clause completions from CockroachDB's generated EBNF
 // (docs/generated/sql/bnf in the cockroachdb/cockroach repository, 327
-// statement files — the published docs render these as SVG diagrams, but
+// statement files; the published docs render these as SVG diagrams, but
 // the generated .bnf sources are machine readable).
 export default {
 

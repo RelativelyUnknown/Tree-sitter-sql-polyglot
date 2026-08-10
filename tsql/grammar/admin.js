@@ -15,7 +15,7 @@ export default {
   ),
 
   // ── SET options ─────────────────────────────────────────────────────────
-  // SET is the largest statement family in T-SQL — roughly forty documented
+  // SET is the largest statement family in T-SQL; roughly forty documented
   // options. They fall into three shapes; the existing set_statement covers
   // only the ANSI transaction forms and @variable assignment.
   // https://learn.microsoft.com/en-us/sql/t-sql/statements/set-statements-transact-sql
@@ -327,8 +327,8 @@ export default {
   // ── Sensitivity classification ──────────────────────────────────────────
 
   // ADD SENSITIVITY CLASSIFICATION TO col [, …] WITH (option [, …])
-  // Every documented option — LABEL, LABEL_ID, INFORMATION_TYPE,
-  // INFORMATION_TYPE_ID, RANK — is a NAME = value pair, so tsql_option covers
+  // Every documented option; LABEL, LABEL_ID, INFORMATION_TYPE,
+  // INFORMATION_TYPE_ID, RANK; is a NAME = value pair, so tsql_option covers
   // them all; a separate rule for RANK duplicated it exactly and left a
   // reduce-reduce conflict.
   // DROP SENSITIVITY CLASSIFICATION FROM col [, …]

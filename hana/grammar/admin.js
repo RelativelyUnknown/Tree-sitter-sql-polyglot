@@ -248,7 +248,7 @@ export default {
       seq(
         $.keyword_from,
         optional(seq(field('file_type', $._hana_io_file_type), $.keyword_file)),
-        // HIVE PARTITION | DELTA LAKE — always two words, neither reserved.
+        // HIVE PARTITION | DELTA LAKE; always two words, neither reserved.
         optional(seq(
           $.keyword_in,
           field('directory_type', $.identifier),
@@ -284,7 +284,7 @@ export default {
     comma_list($.object_reference, true),
   ),
 
-  // CSV | PARQUET | JSON | CONTROL | RDF — always followed by FILE, which is
+  // CSV | PARQUET | JSON | CONTROL | RDF; always followed by FILE, which is
   // reserved here, so the leading word can stay an ordinary identifier.
   _hana_io_file_type: $ => choice($.identifier, $.keyword_rdf),
 

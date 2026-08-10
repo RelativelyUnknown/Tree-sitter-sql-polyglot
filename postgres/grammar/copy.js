@@ -4,7 +4,7 @@ export default {
 
   // COPY {table [(cols)] | (query)} {FROM | TO} {'file' | STDIN | STDOUT
   //   | PROGRAM 'cmd'} [[WITH] (option, …)] [WHERE cond]
-  // The column list and the option block are both optional — requiring them
+  // The column list and the option block are both optional; requiring them
   // rejected the plainest spelling, `COPY t FROM 'f.csv'`.
   _copy_statement: $ => prec.right(seq(
     $.keyword_copy,

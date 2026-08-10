@@ -13,7 +13,7 @@ export default grammar(trino, {
     [$.field, $._qualified_field],
     [$.object_reference],
     // Local shift/reduce ambiguity shared with like_expression's optional
-    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     [$.create_function],
     [$.list, $.grouping_set],
@@ -165,7 +165,7 @@ export default grammar(trino, {
     keyword_dbproperties: _ => token(prec(1, make_keyword("dbproperties"))),
     keyword_dialect:      _ => token(prec(1, make_keyword("dialect"))),
 
-    // Athena-specific keywords (not in Trino or base — defined here only)
+    // Athena-specific keywords (not in Trino or base; defined here only)
     keyword_unload:       _ => token(prec(1, make_keyword("unload"))),
     keyword_msck:         _ => token(prec(1, make_keyword("msck"))),
     keyword_repair:       _ => token(prec(1, make_keyword("repair"))),

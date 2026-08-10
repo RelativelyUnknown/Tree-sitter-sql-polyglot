@@ -2,7 +2,7 @@ import { comma_list, paren_list } from "../../grammar/helpers.js";
 
 export default {
 
-  // PERIOD FOR SYSTEM_TIME (start_col, end_col) — table-level pseudo-constraint
+  // PERIOD FOR SYSTEM_TIME (start_col, end_col); table-level pseudo-constraint
   period_for_system_time: $ => seq(
     $.keyword_period,
     $.keyword_for,

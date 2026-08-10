@@ -4,21 +4,21 @@ import crdb_statement_rules from './grammar/statements.js';
 import crdb_admin_rules from './grammar/admin.js';
 import crdb_clause_rules from './grammar/clauses.js';
 
-// CockroachDB SQL — PostgreSQL-compatible by design (wire protocol and
+// CockroachDB SQL; PostgreSQL-compatible by design (wire protocol and
 // syntax), layered on the postgres grammar. Adds the CockroachDB-native
 // distributed-SQL surface: AS OF SYSTEM TIME, UPSERT, BACKUP/RESTORE,
 // IMPORT INTO, CREATE CHANGEFEED, hash-sharded indexes, SHOW statements.
 export default grammar(postgres, {
   name: 'cockroachdb_sql',
 
-  // conflicts do not propagate from the parent — postgres's list is copied
+  // conflicts do not propagate from the parent; postgres's list is copied
   // verbatim, followed by CockroachDB-specific entries.
   conflicts: $ => [
     [$.object_reference, $._qualified_field],
     [$._column, $._qualified_field],
     [$.object_reference],
     // Local shift/reduce ambiguity shared with like_expression's optional
-    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     [$.create_function],
     [$.list, $.grouping_set],
@@ -140,7 +140,7 @@ export default grammar(postgres, {
         $.keyword_hash,
         optional($.crdb_options_clause),
       )),
-      // CockroachDB: STORING (col, ...) — non-key covered columns
+      // CockroachDB: STORING (col, ...); non-key covered columns
       optional(seq(
         $.keyword_storing,
         alias($._column_list, $.list),
@@ -224,7 +224,7 @@ export default grammar(postgres, {
     // Multi-region and zone-configuration vocabulary. SURVIVE, PLACEMENT and
     // CONVERT head an ALTER DATABASE alternative and are reserved like the
     // rest of this dialect's keywords; the others only ever follow a keyword,
-    // so they stay extracted — REGION is too common a column name to reserve.
+    // so they stay extracted; REGION is too common a column name to reserve.
 
 
     keyword_availability:    _ => make_keyword("availability"),
@@ -269,7 +269,7 @@ export default grammar(postgres, {
 
     // ── Keywords for the statements in grammar/admin.js ────────────────────
     // `job` and `setting` sit at the same precedence as the already-declared
-    // `jobs` and `settings`, so match length — not precedence — decides.
+    // `jobs` and `settings`, so match length (not precedence) decides.
     keyword_job:        _ => token(prec(1, make_keyword("job"))),
     keyword_setting:    _ => token(prec(1, make_keyword("setting"))),
     keyword_cancel:     _ => token(prec(1, make_keyword("cancel"))),

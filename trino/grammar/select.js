@@ -2,7 +2,7 @@ import { comma_list, optional_parenthesis } from '../../grammar/helpers.js';
 
 export default {
 
-  // TABLESAMPLE BERNOULLI(n) | SYSTEM(n)  — overrides base ROWS/PERCENT/BUCKET form
+  // TABLESAMPLE BERNOULLI(n) | SYSTEM(n) ; overrides base ROWS/PERCENT/BUCKET form
   tablesample: $ => seq(
     $.keyword_tablesample,
     choice(

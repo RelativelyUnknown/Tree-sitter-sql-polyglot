@@ -22,7 +22,7 @@ export default {
     $.alter_delete,
     $.alter_partition,
     $.alter_index_spec,
-    // MODIFY SETTING k = v [, …] / RESET SETTING k [, …] — the per-table
+    // MODIFY SETTING k = v [, …] / RESET SETTING k [, …]; the per-table
     // option list. SETTING is an extracted keyword, so the lexer hands the
     // parser keyword_setting rather than an identifier here and this branch
     // never competes with modify_column (the same arrangement ADD INDEX
@@ -73,7 +73,7 @@ export default {
     $.where,
   ),
 
-  // IN PARTITION partition_expr — scopes a mutation to one partition.
+  // IN PARTITION partition_expr; scopes a mutation to one partition.
   // `IN PARTITION` is disambiguated from the binary IN operator by the
   // keyword_partition token (see the conflicts entry in grammar.js).
   in_partition_clause: $ => seq(
@@ -102,7 +102,7 @@ export default {
     ),
   )),
 
-  // EXCHANGE TABLES t1 AND t2 [ON CLUSTER c] — atomic table swap
+  // EXCHANGE TABLES t1 AND t2 [ON CLUSTER c]; atomic table swap
   exchange_tables_statement: $ => seq(
     $.keyword_exchange,
     $.keyword_tables,
@@ -134,7 +134,7 @@ export default {
   // The ID form is one token, not a keyword followed by a string. `id` is an
   // ordinary column name in ClickHouse, so reserving it is not an option, and
   // as an extracted keyword the lexer settles it against the word token
-  // before the parser can weigh the alternatives — the string that follows
+  // before the parser can weigh the alternatives; the string that follows
   // then has nowhere to go. Matching the whole marker lexically decides it by
   // length instead: `ID '…'` is longer than the identifier `id`, while a bare
   // `id` still lexes as an identifier. The cost is that the quoted id is not

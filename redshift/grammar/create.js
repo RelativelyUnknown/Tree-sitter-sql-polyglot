@@ -284,7 +284,7 @@ export default {
       $.keyword_drop, $.keyword_partition,
       paren_list(seq($.identifier, '=', $._expression), true),
     ),
-    // SET TABLE PROPERTIES ('numRows' = '1000', …) — the external-table
+    // SET TABLE PROPERTIES ('numRows' = '1000', …); the external-table
     // option list.
     seq(
       $.keyword_set, $.keyword_table, $.keyword_properties,

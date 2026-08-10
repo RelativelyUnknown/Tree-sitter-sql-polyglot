@@ -2,13 +2,13 @@ import { comma_list, paren_list, wrapped_in_parenthesis } from '../../grammar/he
 
 export default {
 
-  // DESCRIPTOR(col1, col2, ...) — special TVF argument
+  // DESCRIPTOR(col1, col2, ...); special TVF argument
   descriptor_call: $ => seq(
     $.keyword_descriptor,
     paren_list($.identifier, true),
   ),
 
-  // Window TVF call — used inside TABLE(window_tvf(...))
+  // Window TVF call; used inside TABLE(window_tvf(...))
   // TUMBLE(TABLE t, DESCRIPTOR(time_col), INTERVAL '...')
   tumble_tvf: $ => seq(
     $.keyword_tumble,
@@ -76,7 +76,7 @@ export default {
     $.session_tvf,
   ),
 
-  // FOR SYSTEM_TIME AS OF expr — temporal join clause
+  // FOR SYSTEM_TIME AS OF expr; temporal join clause
   for_system_time_as_of: $ => seq(
     $.keyword_for,
     $.keyword_system_time,

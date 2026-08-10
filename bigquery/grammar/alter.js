@@ -109,7 +109,7 @@ export default {
         field('name', $.identifier),
         $.constraint,
       ),
-      // The unnamed forms only — $.constraint as a whole would also match
+      // The unnamed forms only; $.constraint as a whole would also match
       // CONSTRAINT name …, which the named alternative above already covers.
       choice(
         $._primary_key_constraint,

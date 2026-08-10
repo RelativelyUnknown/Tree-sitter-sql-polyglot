@@ -21,7 +21,7 @@ export default grammar(base, {
     [$._column, $._qualified_field],
     [$.object_reference],
     // Local shift/reduce ambiguity shared with like_expression's optional
-    // ESCAPE tail — kept in sync with the base grammar's conflicts.
+    // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     [$.create_function],
     [$.add_constraint],
@@ -76,7 +76,7 @@ export default grammar(base, {
       ),
     ),
 
-    // ── DML: THEN RETURN — BigQuery's RETURNING equivalent (#117) ───────────
+    // ── DML: THEN RETURN; BigQuery's RETURNING equivalent (#117) ───────────
     _insert_statement: $ => seq(
       $.insert,
       optional($.then_return_clause),
@@ -260,7 +260,7 @@ export default grammar(base, {
       optional($.qualify),
       optional($.window_clause),
       optional($.order_by),
-      // GoogleSQL paging is LIMIT/OFFSET only — no ANSI OFFSET…FETCH FIRST.
+      // GoogleSQL paging is LIMIT/OFFSET only; no ANSI OFFSET…FETCH FIRST.
       optional($.limit),
     ),
 

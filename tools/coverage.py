@@ -7,8 +7,8 @@ For every (dialect, feature) probe in tools/coverage-probes.yml this tool record
   ours          does THIS grammar's compiled tree-sitter parser accept the probe
   <corroborator> does each independent reference parser accept it
 
-The independent corroborators — SQLGlot, ANTLR (grammars-v4), pglast
-(libpg_query, the real PostgreSQL parser) and sqlfluff — are what make the
+The independent corroborators; SQLGlot, ANTLR (grammars-v4), pglast
+(libpg_query, the real PostgreSQL parser) and sqlfluff; are what make the
 metric trustworthy instead of self-referential. Agreement/disagreement is the
 signal:
 
@@ -19,9 +19,9 @@ signal:
 
 The base ("ANSI") grammar is scored as a first-class row against the ISO Core
 features (ansi: true, observable). If you can write it as ANSI SQL and the base
-cannot parse it, that is a real base gap — nothing is hidden in an
+cannot parse it, that is a real base gap; nothing is hidden in an
 "out-of-scope" bucket. Only features with literally no probeable surface syntax
-(observable: false — SQLSTATE status codes, host-language binding) are excluded.
+(observable: false; SQLSTATE status codes, host-language binding) are excluded.
 
 Score = Σ weight(implemented) / Σ weight(applicable, observable).
 
@@ -35,7 +35,7 @@ Usage:
 Corroborators are HARD dependencies: a required corroborator that is entirely
 unavailable aborts the run (exit 2) unless listed via --skip-corroborator. A
 corroborator that simply does not know a given dialect reports that pair as
-"unsupported" and is dropped from that probe's corroboration set — not a failure.
+"unsupported" and is dropped from that probe's corroboration set; not a failure.
 
 Artifacts:
   tools/coverage.json   machine-readable results (committed baseline for --check)
@@ -84,7 +84,7 @@ TS_BIN = os.environ.get(
 # Each maps our dialect names → the reference tool's own dialect id. A dialect
 # absent from a map is "unsupported" by that corroborator (dropped from the
 # probe's corroboration set, never counted as a rejection). Maps stay
-# conservative — only native dialects, no approximations — so that a rejection
+# conservative (only native dialects, no approximations) so that a rejection
 # genuinely means "this reference parser does not accept this SQL".
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -160,7 +160,7 @@ class SqlglotCorroborator(Corroborator):
         # sqlglot does not raise on syntax it has no model for: it warns
         # ("falling back to parsing as a 'Command'") and returns a Command node
         # wrapping the raw text. Counting that as acceptance made every
-        # statement sqlglot has never heard of look like a gap in ours — 29 of
+        # statement sqlglot has never heard of look like a gap in ours; 29 of
         # the 83 confirmed gaps were this, CREATE RULE and CREATE DATABASE LINK
         # among them. A Command result means "not modelled", so: not parsed.
         from sqlglot import expressions as sqlglot_exp
