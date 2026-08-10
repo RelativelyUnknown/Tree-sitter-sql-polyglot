@@ -63,6 +63,7 @@
 (keyword_sends) @keyword
 (keyword_settings) @keyword
 (keyword_setting) @keyword
+(keyword_ilike) @keyword
 (keyword_source) @keyword
 (keyword_start) @keyword
 (keyword_step) @keyword
