@@ -71,6 +71,69 @@ export default grammar(base, {
 
     keyword_hash: _ => token(prec(1, make_keyword("hash"))),
 
+    // CREATE DATABASE db [FROM owner] AS PERM = n [BYTES], SPOOL = n, …
+    // Teradata's space/attribute list, not the ANSI `WITH setting` tail the
+    // base rule carries. CREATE USER shares the same option list.
+    create_database: $ => prec.left(seq(
+      $.keyword_create,
+      $.keyword_database,
+      optional($._if_not_exists),
+      field('name', $.identifier),
+      optional(seq($.keyword_from, field('owner', $.identifier))),
+      optional(seq($.keyword_as, comma_list($.database_option, true))),
+    )),
+
+    database_option: $ => choice(
+      seq(
+        choice($.keyword_permanent, $.keyword_perm, $.keyword_spool, $.keyword_temporary),
+        '=',
+        $._expression,
+        optional($.keyword_bytes),
+      ),
+      seq($.keyword_account, '=', $.literal),
+      seq($.keyword_default, $.keyword_map, '=', $.identifier),
+      // The protection/journalling attributes a database shares with a table.
+      seq(optional($.keyword_no), $.keyword_fallback, optional($.keyword_protection)),
+      seq(
+        optional(choice(
+          $.keyword_no,
+          $.keyword_dual,
+          $.keyword_local,
+          seq($.keyword_not, $.keyword_local),
+        )),
+        optional(choice($.keyword_before, $.keyword_after)),
+        $.keyword_journal,
+      ),
+    ),
+
+    // ALTER TABLE t, NO FALLBACK, NO BEFORE JOURNAL
+    // Teradata attaches its table-attribute list with leading commas, exactly
+    // as CREATE TABLE does. The leading comma is what separates this form from
+    // the ANSI action list, so the two branches stay LR-decidable. The base
+    // rule's ROW LEVEL SECURITY branch is dropped: Teradata has no such action.
+    alter_table: $ => seq(
+      $.keyword_alter,
+      $.keyword_table,
+      optional($._if_exists),
+      optional($.keyword_only),
+      $.object_reference,
+      choice(
+        repeat1(seq(',', $.alter_table_option)),
+        seq(
+          $._alter_specifications,
+          repeat(seq(',', $._alter_specifications)),
+        ),
+      ),
+    ),
+
+    // PERM is a prefix of PERMANENT: both stay at the same token precedence so
+    // longest-match, not precedence, picks the spelling actually written.
+    keyword_perm:      _ => token(prec(1, make_keyword("perm"))),
+    keyword_permanent: _ => token(prec(1, make_keyword("permanent"))),
+    keyword_spool:     _ => token(prec(1, make_keyword("spool"))),
+    keyword_bytes:     _ => token(prec(1, make_keyword("bytes"))),
+    keyword_account:   _ => token(prec(1, make_keyword("account"))),
+
     // base statement dispatch plus Teradata statement forms
     statement: $ => seq(
       optional(seq(

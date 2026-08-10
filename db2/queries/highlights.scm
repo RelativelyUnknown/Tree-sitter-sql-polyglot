@@ -3,6 +3,15 @@
 ; Db2-specific keywords
 [
   (keyword_prepare)
+  (keyword_component)
+  (keyword_components)
+  (keyword_override)
+  (keyword_authorized)
+  (keyword_tree)
+  (keyword_append)
+  (keyword_activate)
+  (keyword_reorg)
+  (keyword_indexes)
   (keyword_wrapper)
   (keyword_nickname)
   (keyword_module)

@@ -50,7 +50,28 @@ export default {
     $.keyword_rows,
   ),
 
+  // CREATE TABLE's attribute list. The BLOCKCOMPRESSION entry carries a
+  // GLR-ambiguous optional paren list, so it is kept separate from the
+  // unambiguous attributes: ALTER TABLE reuses only the latter (see
+  // alter_table in ../grammar.js). Pulling the ambiguous entry into a second
+  // context made teradata's LR table construction blow up.
   table_option: $ => choice(
+    $._table_attribute,
+    // BLOCKCOMPRESSION = mode [(column defs)] — the parens are ambiguous with
+    // the table's own column list (…=NEVER (a INT) vs …=AUTOTEMP(c1 INT));
+    // GLR explores both and prec.dynamic(-1) prefers the table-column reading
+    // when both survive.
+    seq(
+      $.keyword_blockcompression,
+      '=',
+      choice(
+        $.keyword_default,
+        seq($.identifier, optional(prec.dynamic(-1, paren_list($.column_definition, true)))),
+      ),
+    ),
+  ),
+
+  _table_attribute: $ => choice(
     // [NO] FALLBACK [PROTECTION]
     seq(optional($.keyword_no), $.keyword_fallback, optional($.keyword_protection)),
     // [NO|DUAL|LOCAL|NOT LOCAL] [BEFORE|AFTER] JOURNAL
@@ -82,20 +103,16 @@ export default {
     ),
     // FREESPACE = n [PERCENT]
     seq($.keyword_freespace, '=', $.literal, optional($.keyword_percent)),
-    // BLOCKCOMPRESSION = mode [(column defs)] — the parens are ambiguous with
-    // the table's own column list (…=NEVER (a INT) vs …=AUTOTEMP(c1 INT));
-    // GLR explores both and prec.dynamic(-1) prefers the table-column reading
-    // when both survive.
-    seq(
-      $.keyword_blockcompression,
-      '=',
-      choice(
-        $.keyword_default,
-        seq($.identifier, optional(prec.dynamic(-1, paren_list($.column_definition, true)))),
-      ),
-    ),
     // CHECKSUM = ON | OFF | DEFAULT
     seq($.keyword_checksum, '=', choice($.keyword_on, $.keyword_default, $.identifier)),
+  ),
+
+  // ALTER TABLE t, <attribute> — the same attributes CREATE TABLE takes, with
+  // BLOCKCOMPRESSION in its unambiguous spelling (no trailing column list to
+  // weigh against a table's own column definitions).
+  alter_table_option: $ => choice(
+    $._table_attribute,
+    seq($.keyword_blockcompression, '=', choice($.keyword_default, $.identifier)),
   ),
 
   primary_index: $ => seq(

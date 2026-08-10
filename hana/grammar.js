@@ -68,6 +68,27 @@ export default grammar(base, {
       seq($.keyword_add, paren_list($.column_definition, true)),
     ),
 
+    // base _alter_specifications plus HANA's table-level attributes:
+    //   ALTER TABLE t UNLOAD PRIORITY 5
+    //   ALTER TABLE t {ENABLE | DISABLE} DELTA LOG
+    //   ALTER TABLE t PERSISTENT MEMORY {ON | OFF}
+    _alter_specifications: $ => choice(
+      $.add_column,
+      $.add_constraint,
+      $.drop_constraint,
+      $.alter_column,
+      $.modify_column,
+      $.change_column,
+      $.drop_column,
+      $.rename_object,
+      $.rename_column,
+      $.set_schema,
+      $.change_ownership,
+      seq($.keyword_unload, $.keyword_priority, field('priority', $.literal)),
+      seq(choice($.keyword_enable, $.keyword_disable), $.keyword_delta, $.keyword_log),
+      seq($.keyword_persistent, $.keyword_memory, choice($.keyword_on, $.keyword_off)),
+    ),
+
     // base statement dispatch plus HANA statement forms; WITH HINT is wired
     // on query statements (its main HANA use) to avoid trailing-WITH
     // ambiguity with GRANT/type clauses
@@ -204,6 +225,18 @@ export default grammar(base, {
     keyword_delta:       _ => token(prec(1, make_keyword("delta"))),
     keyword_load:        _ => token(prec(1, make_keyword("load"))),
     keyword_unload:      _ => token(prec(1, make_keyword("unload"))),
+    // ALTER TABLE table-attribute vocabulary.
+    keyword_priority:    _ => token(prec(1, make_keyword("priority"))),
+    keyword_log:         _ => token(prec(1, make_keyword("log"))),
+    // keyword_log at prec(1) would shadow base keyword_logged (precedence
+    // beats match length); re-declare it at equal precedence, the same guard
+    // teradata uses.
+    keyword_logged:      _ => token(prec(1, make_keyword("logged"))),
+    keyword_persistent:  _ => token(prec(1, make_keyword("persistent"))),
+    keyword_memory:      _ => token(prec(1, make_keyword("memory"))),
+    keyword_off:         _ => token(prec(1, make_keyword("off"))),
+    // keyword_off is a strict prefix of keyword_offset; same guard.
+    keyword_offset:      _ => token(prec(1, make_keyword("offset"))),
     keyword_statistics:  _ => token(prec(1, make_keyword("statistics"))),
     keyword_pse:         _ => token(prec(1, make_keyword("pse"))),
     keyword_vector:      _ => token(prec(1, make_keyword("vector"))),
@@ -236,7 +269,6 @@ export default grammar(base, {
     keyword_partition:     _ => token(prec(1, make_keyword("partition"))),
     keyword_partitions:    _ => token(prec(1, make_keyword("partitions"))),
     keyword_partitioned:   _ => token(prec(1, make_keyword("partitioned"))),
-    keyword_parameters:    _ => token(prec(1, make_keyword("parameters"))),
     keyword_parameter:     _ => token(prec(1, make_keyword("parameter"))),
     keyword_saml:        _ => token(prec(1, make_keyword("saml"))),
     keyword_x509:        _ => token(prec(1, make_keyword("x509"))),
@@ -273,7 +305,6 @@ export default grammar(base, {
     // tokens above now claim.
     keyword_called:      _ => token(prec(1, make_keyword("called"))),
     keyword_connection:  _ => token(prec(1, make_keyword("connection"))),
-    keyword_locked:      _ => token(prec(1, make_keyword("locked"))),
     keyword_locked:    _ => token(prec(1, make_keyword("locked"))),
     keyword_hint:      _ => token(prec(1, make_keyword("hint"))),
     keyword_sqlscript: _ => token(prec(1, make_keyword("sqlscript"))),

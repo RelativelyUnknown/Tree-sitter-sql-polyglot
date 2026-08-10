@@ -33,16 +33,4 @@ export default {
   ),
 
   // TRANSFER OWNERSHIP OF TABLE|VIEW t TO USER|GROUP|ROLE name PRESERVE PRIVILEGES
-  transfer_ownership: $ => seq(
-    $.keyword_transfer,
-    $.keyword_ownership,
-    $.keyword_of,
-    choice($.keyword_table, $.keyword_view, $.keyword_function, $.keyword_procedure),
-    field('object', $.object_reference),
-    $.keyword_to,
-    choice($.keyword_user, $.keyword_group, $.keyword_role),
-    field('owner', $.identifier),
-    optional(seq($.keyword_preserve, $.keyword_privileges)),
-  ),
-
 };

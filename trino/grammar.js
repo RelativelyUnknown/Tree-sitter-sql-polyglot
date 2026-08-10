@@ -50,7 +50,47 @@ export default grammar(base, {
   rules: {
 
     // Re-add non-ANSI CREATE forms this dialect supports over the strict ANSI base.
-    _create_statement: $ => seq(choice(...createStatementChoices($, { materializedView: true }))),
+    _create_statement: $ => seq(choice(
+      ...createStatementChoices($, { materializedView: true }),
+      $.create_catalog,
+    )),
+
+    // Re-enumerate the base DROP dispatch to add DROP CATALOG.
+    _drop_statement: $ => seq(choice(
+      $.drop_table,
+      $.drop_view,
+      $.drop_materialized_view,
+      $.drop_index,
+      $.drop_type,
+      $.drop_schema,
+      $.drop_database,
+      $.drop_role,
+      $.drop_sequence,
+      $.drop_function,
+      $.drop_procedure,
+      $.drop_catalog,
+    )),
+
+    // CREATE CATALOG c USING connector [COMMENT 'c'] [WITH (k = v, …)]
+    // Dynamic catalog management (catalog.management=dynamic). Connector
+    // names are bare identifiers; every property value is a varchar.
+    create_catalog: $ => seq(
+      $.keyword_create,
+      $.keyword_catalog,
+      optional($._if_not_exists),
+      field('name', $.identifier),
+      $.keyword_using,
+      field('connector', $.identifier),
+      optional(seq($.keyword_comment, alias($._literal_string, $.literal))),
+      optional($.with_properties),
+    ),
+
+    drop_catalog: $ => seq(
+      $.keyword_drop,
+      $.keyword_catalog,
+      optional($._if_exists),
+      field('name', $.identifier),
+    ),
 
     // Trino has its own comment_on_statement (richer than base comment_statement);
     // exclude the base rule from the inherited DDL dispatch to avoid ambiguity (#126)
@@ -249,6 +289,9 @@ export default grammar(base, {
     keyword_next:            _ => token(prec(1, make_keyword("next"))),
     keyword_show:            _ => token(prec(1, make_keyword("show"))),
     keyword_catalogs:        _ => token(prec(1, make_keyword("catalogs"))),
+    // Prefix of keyword_catalogs; both sit at prec(1) so longest-match — not
+    // precedence — decides between CATALOG and CATALOGS (see AGENTS.md).
+    keyword_catalog:         _ => token(prec(1, make_keyword("catalog"))),
     keyword_schemas:         _ => token(prec(1, make_keyword("schemas"))),
     keyword_columns:         _ => token(prec(1, make_keyword("columns"))),
     keyword_functions:       _ => token(prec(1, make_keyword("functions"))),

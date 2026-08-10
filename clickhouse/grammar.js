@@ -292,6 +292,9 @@ export default grammar(base, {
     keyword_totals:        _ => token(prec(1, make_keyword("totals"))),
     keyword_format:        _ => token(prec(1, make_keyword("format"))),
     keyword_settings:      _ => token(prec(1, make_keyword("settings"))),
+    // Prefix of keyword_settings; both at prec(1) so longest-match decides
+    // between SETTING and SETTINGS (see AGENTS.md on prefix shadowing).
+    keyword_setting:       _ => token(prec(1, make_keyword("setting"))),
     keyword_dictionary:    _ => token(prec(1, make_keyword("dictionary"))),
     keyword_dictionaries:  _ => token(prec(1, make_keyword("dictionaries"))),
     keyword_live:          _ => token(prec(1, make_keyword("live"))),

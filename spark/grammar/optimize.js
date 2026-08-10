@@ -59,4 +59,20 @@ export default {
     optional(seq($.keyword_using, $.keyword_bin_pack)),
     optional($.where),
   ),
+
+  // OPTIMIZE t [WHERE p] [ZORDER BY (cols)] — Delta Lake's compaction
+  // statement. Open source since Delta 2.0, so it belongs to Spark rather
+  // than to Databricks; Databricks inherits it from here.
+  // Distinguished from the Iceberg form above by the token after the table
+  // reference (REWRITE vs WHERE/ZORDER/end), so the two stay LR-decidable.
+  _delta_optimize: $ => seq(
+    $.keyword_optimize,
+    $.object_reference,
+    optional($.where),
+    optional(seq(
+      $.keyword_zorder,
+      $.keyword_by,
+      paren_list($.field, true),
+    )),
+  ),
 };

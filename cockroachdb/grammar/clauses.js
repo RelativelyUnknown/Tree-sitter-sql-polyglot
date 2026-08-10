@@ -96,8 +96,12 @@ export default {
     optional($.keyword_with),
     repeat(choice(
       $._with_settings,
-      seq($.keyword_primary, $.keyword_region, field('region', $.identifier)),
-      seq($.keyword_regions, comma_list(field('region', $.identifier), true)),
+      // Region names are written either bare/quoted as identifiers or as
+      // string literals ('us-east1'); both spellings are accepted.
+      seq($.keyword_primary, $.keyword_region,
+          field('region', choice($.identifier, alias($._literal_string, $.literal)))),
+      seq($.keyword_regions,
+          comma_list(field('region', choice($.identifier, alias($._literal_string, $.literal))), true)),
       $._survive_clause,
       seq($.keyword_connection, $.keyword_limit, field('limit', $._expression)),
     )),

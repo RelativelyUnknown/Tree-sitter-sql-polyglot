@@ -86,6 +86,26 @@ export default {
     ),
   )),
 
+  // CREATE DATABASE db [WITH] [OWNER [=] u] [CONNECTION LIMIT n]
+  //   [COLLATE …] [ISOLATION LEVEL …]
+  // Redshift's own option list, in place of the base rule's generic
+  // `name [=] value` settings — the same options ALTER DATABASE accepts,
+  // plus OWNER.
+  create_database: $ => prec.left(seq(
+    $.keyword_create,
+    $.keyword_database,
+    optional($._if_not_exists),
+    field('name', $.identifier),
+    optional($.keyword_with),
+    repeat(choice(
+      // OWNER lives here rather than in _redshift_db_option: ALTER DATABASE
+      // reuses that rule alongside change_ownership (OWNER TO …), and both
+      // starting with OWNER would put the two in conflict.
+      seq($.keyword_owner, optional('='), field('owner', $.identifier)),
+      $._redshift_db_option,
+    )),
+  )),
+
   _redshift_db_option: $ => choice(
     seq($.keyword_connection, $.keyword_limit,
         field('limit', choice($.literal, $.keyword_unlimited))),

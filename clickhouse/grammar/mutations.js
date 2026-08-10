@@ -22,6 +22,13 @@ export default {
     $.alter_delete,
     $.alter_partition,
     $.alter_index_spec,
+    // MODIFY SETTING k = v [, …] / RESET SETTING k [, …] — the per-table
+    // option list. SETTING is an extracted keyword, so the lexer hands the
+    // parser keyword_setting rather than an identifier here and this branch
+    // never competes with modify_column (the same arrangement ADD INDEX
+    // already relies on above).
+    seq($.keyword_modify, $.keyword_setting, comma_list($.setting_item, true)),
+    seq($.keyword_reset, $.keyword_setting, comma_list($.identifier, true)),
   ),
 
   // Data-skipping index management:

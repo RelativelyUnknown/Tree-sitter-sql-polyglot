@@ -80,6 +80,7 @@ export default grammar(base, {
         $.create_materialized_view_log,
         $.create_materialized_zonemap,
         $.create_directory_statement,
+        $.create_operator,
         prec.left(seq(
           $.create_schema,
           repeat($._create_statement),
@@ -420,7 +421,6 @@ export default grammar(base, {
     // Oracle DDL extension keywords
     keyword_scn:            _ => token(prec(1, make_keyword("scn"))),
     keyword_synonym:        _ => token(prec(1, make_keyword("synonym"))),
-    keyword_shared:         _ => token(prec(1, make_keyword("shared"))),
     keyword_identified:     _ => token(prec(1, make_keyword("identified"))),
     keyword_link:           _ => token(prec(1, make_keyword("link"))),
 
@@ -457,8 +457,6 @@ export default grammar(base, {
 
     // Locking / MODEL / ALTER SYSTEM/SESSION / DIRECTORY / ANALYZE (#101, #107, #108, #111)
     keyword_skip:           _ => token(prec(1, make_keyword("skip"))),
-    keyword_locked:         _ => token(prec(1, make_keyword("locked"))),
-    keyword_model:          _ => token(prec(1, make_keyword("model"))),
     keyword_nav:            _ => token(prec(1, make_keyword("nav"))),
     keyword_keep:           _ => token(prec(1, make_keyword("keep"))),
     keyword_updated:        _ => token(prec(1, make_keyword("updated"))),
@@ -583,6 +581,10 @@ export default grammar(base, {
       $.set_schema,
       $.change_ownership,
       $.alter_partition,
+      // ALTER TABLE t PCTFREE 10 | STORAGE (NEXT 1M) | NOLOGGING …
+      // The physical-attributes clause, already defined for the materialized
+      // view statements, is equally an ALTER TABLE action.
+      $._oracle_physical_attribute,
     ),
 
     ...oracle_hierarchical_rules,
@@ -661,6 +663,10 @@ export default grammar(base, {
     keyword_authenticated: _ => token(prec(1, make_keyword("authenticated"))),
     keyword_online:       _ => token(prec(1, make_keyword("online"))),
     keyword_pctfree:      _ => token(prec(1, make_keyword("pctfree"))),
+    // CREATE DATABASE / CREATE OPERATOR vocabulary.
+    keyword_national:     _ => token(prec(1, make_keyword("national"))),
+    keyword_operator:     _ => token(prec(1, make_keyword("operator"))),
+    keyword_binding:      _ => token(prec(1, make_keyword("binding"))),
     keyword_pctused:      _ => token(prec(1, make_keyword("pctused"))),
     keyword_initrans:     _ => token(prec(1, make_keyword("initrans"))),
     keyword_noparallel:   _ => token(prec(1, make_keyword("noparallel"))),

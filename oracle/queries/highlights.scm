@@ -3,6 +3,9 @@
 ; Oracle/PL-SQL keywords
 [
   (keyword_connect)
+  (keyword_national)
+  (keyword_operator)
+  (keyword_binding)
   (keyword_prior)
   (keyword_nocycle)
   (keyword_siblings)

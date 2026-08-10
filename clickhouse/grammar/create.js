@@ -78,6 +78,21 @@ export default {
     ),
   ),
 
+  // CREATE DATABASE [IF NOT EXISTS] db [ON CLUSTER c] [ENGINE = Atomic[(…)]]
+  //   [COMMENT 'c'] [SETTINGS k = v, …]
+  // The database engine (Atomic, Replicated, MySQL, …) is what makes this a
+  // ClickHouse database rather than the base rule's `name = value` settings.
+  create_database: $ => prec.left(seq(
+    $.keyword_create,
+    $.keyword_database,
+    optional($._if_not_exists),
+    field('name', $.identifier),
+    optional($.on_cluster),
+    optional($.engine_clause),
+    optional(seq($.keyword_comment, alias($._literal_string, $.literal))),
+    optional($.settings_clause),
+  )),
+
   // ENGINE = EngineName[(args)]
   engine_clause: $ => seq(
     $.keyword_engine,

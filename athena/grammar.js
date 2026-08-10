@@ -1,4 +1,5 @@
 import trino from '../trino/grammar.js';
+import { createStatementChoices } from '../grammar/statements/create.js';
 import { optional_parenthesis, paren_list, make_keyword } from '../grammar/helpers.js';
 import athena_statement_rules from './grammar/statements.js';
 import athena_create_rules from './grammar/create.js';
@@ -37,6 +38,28 @@ export default grammar(trino, {
   ],
 
   rules: {
+
+    // Athena is managed Trino: catalogs are registered through Glue and Lambda
+    // connectors, never with SQL. Take Trino's dynamic-catalog statements back
+    // out of the inherited dispatch lists rather than inheriting syntax the
+    // engine rejects.
+    _create_statement: $ => seq(choice(
+      ...createStatementChoices($, { materializedView: true }),
+    )),
+
+    _drop_statement: $ => seq(choice(
+      $.drop_table,
+      $.drop_view,
+      $.drop_materialized_view,
+      $.drop_index,
+      $.drop_type,
+      $.drop_schema,
+      $.drop_database,
+      $.drop_role,
+      $.drop_sequence,
+      $.drop_function,
+      $.drop_procedure,
+    )),
 
     statement: $ => seq(
       optional(seq(
