@@ -29,7 +29,7 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 // (ETXTBSY) or spawning it mid-extraction (ENOENT). Warm the cache with a
 // single serial call before starting the concurrent pool so every worker
 // below finds it already fully extracted.
-const CLI = 'npx --yes --package=tree-sitter-cli@v0.26.3 -- tree-sitter';
+const CLI = 'npx tree-sitter';
 try {
   execSync(`${CLI} --version`, { cwd: ROOT, stdio: 'ignore' });
 } catch {

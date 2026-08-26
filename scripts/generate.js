@@ -40,7 +40,7 @@ function sampleMemory(label) {
   }
 }
 
-const CLI = 'npx --yes --package=tree-sitter-cli@v0.26.3 -- tree-sitter';
+const CLI = 'npx tree-sitter';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 function hashDir(dir) {
