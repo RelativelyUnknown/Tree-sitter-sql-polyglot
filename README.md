@@ -9,8 +9,8 @@ Upstream ships a single "permissive" grammar that mixes several dialects togethe
 that into a strict ANSI base and one grammar per dialect, so each engine's syntax is parsed on its
 own terms.
 
-[Docs site](https://redpandamc.github.io/tree-sitter-sql-extended/) and
-[dialect coverage](https://redpandamc.github.io/tree-sitter-sql-extended/coverage), which carries the
+[Docs site](https://relativelyunknown.github.io/tree-sitter-sql-extended/) and
+[dialect coverage](https://relativelyunknown.github.io/tree-sitter-sql-extended/coverage), which carries the
 per-dialect feature scores and is regenerated from the live parsers on every push to `main`.
 
 ---
@@ -57,7 +57,7 @@ Regenerate the child when a parent grammar changes. See [AGENTS.md](AGENTS.md) f
 ```toml
 # Cargo.toml
 [dependencies]
-tree-sitter-sql-extended = { git = "https://github.com/RedPandaMC/tree-sitter-sql-extended", branch = "main" }
+tree-sitter-sql-extended = { git = "https://github.com/RelativelyUnknown/tree-sitter-sql-extended", branch = "main" }
 tree-sitter = "0.25"
 ```
 

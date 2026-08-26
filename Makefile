@@ -1,5 +1,5 @@
 LANGUAGE_NAME := tree-sitter-sql
-HOMEPAGE_URL := git+https://github.com/redpandamc/tree-sitter-sql-extended.git
+HOMEPAGE_URL := git+https://github.com/relativelyunknown/tree-sitter-sql-extended.git
 VERSION := 0.3.11
 
 # repository

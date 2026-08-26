@@ -5,7 +5,7 @@
 Clone the repository and install dependencies.
 
 ```
-git clone https://github.com/redpandamc/tree-sitter-sql-extended.git
+git clone https://github.com/relativelyunknown/tree-sitter-sql-extended.git
 cd tree-sitter-sql-extended
 npm install
 ```

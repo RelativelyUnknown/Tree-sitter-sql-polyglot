@@ -13,7 +13,7 @@ hero:
       link: /coverage
     - theme: alt
       text: View on GitHub
-      link: https://github.com/RedPandaMC/tree-sitter-sql-extended
+      link: https://github.com/RelativelyUnknown/tree-sitter-sql-extended
     - theme: alt
       text: Downloads
       link: /downloads
@@ -32,8 +32,8 @@ features:
 The grammar restructures the upstream [DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql)
 "permissive" grammar into a strict ANSI SQL base plus dialect extensions. Each dialect compiles to its
 own `<dialect>/src/parser.c` and can be used independently. The
-[README](https://github.com/RedPandaMC/tree-sitter-sql-extended#readme) has the full dialect table and
-install instructions, and [AGENTS.md](https://github.com/RedPandaMC/tree-sitter-sql-extended/blob/main/AGENTS.md)
+[README](https://github.com/RelativelyUnknown/tree-sitter-sql-extended#readme) has the full dialect table and
+install instructions, and [AGENTS.md](https://github.com/RelativelyUnknown/tree-sitter-sql-extended/blob/main/AGENTS.md)
 covers the grammar architecture.
 
 - [Dialect coverage](/coverage), generated on every CI run, with per-dialect scores, the inheritance
