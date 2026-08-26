@@ -247,7 +247,7 @@ directly, giving the chain `databricks -> spark -> hive -> base` and bringing th
 
 - `README.md`, `AGENTS.md` and `CONTRIBUTING.md` cover all 22 dialects and the current architecture.
 
-## [0.3.11](https://github.com/redpandamc/tree-sitter-sql-extended/releases/tag/v0.3.11) (2026-05-23)
+## [0.3.11](https://github.com/relativelyunknown/tree-sitter-sql-extended/releases/tag/v0.3.11) (2026-05-23)
 
 ### Features
 

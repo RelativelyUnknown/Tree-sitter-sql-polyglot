@@ -27,7 +27,7 @@ export default defineConfig({
       { text: 'Coverage', link: '/coverage' },
       { text: 'Changelog', link: '/changelog' },
       { text: 'Downloads', link: '/downloads' },
-      { text: 'GitHub', link: 'https://github.com/RedPandaMC/tree-sitter-sql-extended' },
+      { text: 'GitHub', link: 'https://github.com/RelativelyUnknown/tree-sitter-sql-extended' },
     ],
 
     sidebar: [
@@ -43,13 +43,13 @@ export default defineConfig({
     ],
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/RedPandaMC/tree-sitter-sql-extended' },
+      { icon: 'github', link: 'https://github.com/RelativelyUnknown/tree-sitter-sql-extended' },
     ],
 
     search: { provider: 'local' },
 
     editLink: {
-      pattern: 'https://github.com/RedPandaMC/tree-sitter-sql-extended/edit/main/docs/:path',
+      pattern: 'https://github.com/RelativelyUnknown/tree-sitter-sql-extended/edit/main/docs/:path',
       text: 'Edit this page on GitHub',
     },
   },

@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.13)
 project(tree-sitter-sql
         VERSION "0.3.11"
         DESCRIPTION "Tree-sitter Grammar for SQL"
-        HOMEPAGE_URL "git+https://github.com/redpandamc/tree-sitter-sql-extended.git"
+        HOMEPAGE_URL "git+https://github.com/relativelyunknown/tree-sitter-sql-extended.git"
         LANGUAGES C)
 
 option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
