@@ -58,20 +58,126 @@ jobs:
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
 
-  # PyPI: tree-sitter's reusable workflow doesn't yet support OIDC trusted
-  # publishing end-to-end (pypi/warehouse#11096), so this still needs a
-  # stored PYPI_API_TOKEN. The reusable workflow's own `package` job runs
-  # under the "pypi" GitHub Environment (environment-name input below), so
-  # storing PYPI_API_TOKEN as an environment secret on "pypi" (not a bare
-  # repo secret) gets it the same environment-protection benefits as the
-  # other two jobs.
-  pypi-publish:
+  # PyPI: can't get OIDC by calling tree-sitter/workflows' reusable
+  # package-pypi.yml (as we do for npm/cargo) because PyPI validates the
+  # OIDC token's job_workflow_ref against the *actual* workflow file that
+  # runs the publish step. Inside a called reusable workflow that's
+  # tree-sitter/workflows' own file, not this repo's — it can never match a
+  # trusted publisher configured for this project, so PyPI rejects it. The
+  # build_sdist/build_wheels/pypi-publish jobs below are vendored from
+  # https://github.com/tree-sitter/workflows/blob/main/.github/workflows/package-pypi.yml
+  # (as of 2026-08) so the publish step runs directly in *this* workflow
+  # file and can use OIDC. Re-diff against that source occasionally in case
+  # upstream changes the build matrix, cibuildwheel version, or ABI default.
+  build_sdist:
+    name: Build source dist
+    runs-on: ubuntu-latest
+    continue-on-error: true
     permissions:
       contents: read
-    uses: tree-sitter/workflows/.github/workflows/package-pypi.yml@main
-    with:
-      python-version: 3.11
-      generate: true
-      environment-name: pypi
-    secrets:
-      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: tree-sitter/setup-action/cli@v2
+      - name: Install dependencies
+        run: |-
+          if jq -e "$JQ_SCRIPT" package.json >/dev/null; then
+            npm i --ignore-scripts --omit peer --omit optional
+          fi
+        env:
+          JQ_SCRIPT: >-
+            .dependencies + .devDependencies |
+            with_entries(select(
+            (.key | startswith("tree-sitter-"))
+            and (.key != "tree-sitter-cli")
+            )) | length > 0
+      - name: Regenerate parser
+        shell: bash
+        run: |
+          while read -r grammar_dir; do
+            pushd "$grammar_dir"
+            tree-sitter generate
+            popd > /dev/null
+          done < <(jq -r '.grammars[].path // "."' tree-sitter.json)
+        env:
+          TREE_SITTER_ABI_VERSION: 15
+      - run: pip install --upgrade pip build setuptools wheel
+      - run: python -mbuild -n -s
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist-sources
+          path: dist/*.tar.gz
+          retention-days: 2
+
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        os:
+          - windows-2025
+          - windows-11-arm
+          - ubuntu-24.04
+          - ubuntu-24.04-arm
+          - macos-15
+          - macos-15-intel
+    steps:
+      - uses: actions/checkout@v4
+      - uses: tree-sitter/setup-action/cli@v2
+      - name: Install dependencies
+        shell: bash
+        run: |-
+          if jq -e "$JQ_SCRIPT" package.json >/dev/null; then
+            npm i --ignore-scripts --omit peer --omit optional
+          fi
+        env:
+          JQ_SCRIPT: >-
+            .dependencies + .devDependencies |
+            with_entries(select(
+            (.key | startswith("tree-sitter-"))
+            and (.key != "tree-sitter-cli")
+            )) | length > 0
+      - name: Regenerate parser
+        shell: bash
+        run: |
+          while read -r grammar_dir; do
+            grammar_dir="${grammar_dir%$'\r'}"
+            pushd "$grammar_dir"
+            tree-sitter generate
+            popd > /dev/null
+          done < <(jq -r '.grammars[].path // "."' tree-sitter.json)
+        env:
+          TREE_SITTER_ABI_VERSION: 15
+      - uses: pypa/cibuildwheel@v4.1
+        with:
+          output-dir: dist
+        env:
+          CIBW_ARCHS: native
+      - uses: actions/upload-artifact@v4
+        with:
+          path: dist/*.whl
+          name: dist-wheels-${{ matrix.os }}
+          retention-days: 2
+
+  pypi-publish:
+    name: Publish Python package
+    needs: [build_sdist, build_wheels]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/tree-sitter-sql-extended/
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          pattern: dist-*
+          merge-multiple: true
+      - run: ls -l dist
+      - uses: pypa/gh-action-pypi-publish@release/v1
