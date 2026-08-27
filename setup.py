@@ -56,20 +56,22 @@ class BuildExt(build_ext):
         if self.compiler.compiler_type != "msvc":
             ext.extra_compile_args = ["-std=c11", "-fvisibility=hidden"]
         else:
-            # /GL (whole-program optimization) forces the linker into /LTCG,
-            # which has to hold cross-module codegen state for all 22
-            # dialects' enormous parser.c translation units at once; measured
-            # locally, that runs the 64-bit linker out of heap space
-            # (LNK1102). Disabling it costs some inlining across translation
-            # units, not correctness - each dialect's parser is independent.
+            # /GL (whole-program optimization) forces the linker into /LTCG;
+            # measured locally, linking all 22 dialects' enormous parser.c
+            # translation units into one module that way ran the 64-bit
+            # linker out of heap space (LNK1102) before this extension got
+            # split one-per-dialect. Kept off for all extensions since it
+            # costs nothing per-dialect either (no cross-module inlining to
+            # lose - each is its own single-parser.c module now).
             ext.extra_compile_args = ["/std:c11", "/utf-8", "/GL-"]
             ext.extra_link_args = ["/LTCG:OFF"]
-        if path.exists("src/scanner.c"):
-            ext.sources.append("src/scanner.c")
-        for dialect in DIALECT_DIRS:
-            scanner = path.join(dialect, "src", "scanner.c")
-            if path.exists(scanner):
-                ext.sources.append(scanner)
+        # Each extension gets only its OWN scanner.c (its include_dirs[0] is
+        # that dialect's own src/ dir) - not every dialect's, which is what a
+        # blanket "append every scanner.c to whatever's building" loop would
+        # do now that there are 23 separate extensions instead of 1.
+        scanner = path.join(ext.include_dirs[0], "scanner.c")
+        if path.exists(scanner):
+            ext.sources.append(scanner)
         if ext.py_limited_api:
             ext.define_macros.append(("Py_LIMITED_API", "0x030A0000"))
         super().build_extension(ext)
@@ -101,21 +103,42 @@ setup(
         "tree_sitter_sql.queries": ["*.scm"],
     },
     ext_package="tree_sitter_sql",
+    # One extension module per dialect (+ base) instead of one `_binding`
+    # module compiling all 44 parser.c/scanner.c files together - that's what
+    # lets __init__.py's lazy __getattr__ (see generate-bindings.js's Python
+    # section) import only the dialect actually accessed, instead of always
+    # dlopen-ing all 22 dialects' compiled parse tables at `import
+    # tree_sitter_sql` time.
     ext_modules=[
         Extension(
             name="_binding",
             sources=[
                 "bindings/python/tree_sitter_sql/binding.c",
                 "src/parser.c",
-                *[path.join(d, "src", "parser.c") for d in DIALECT_DIRS],
             ],
             define_macros=[
                 ("PY_SSIZE_T_CLEAN", None),
                 ("TREE_SITTER_HIDE_SYMBOLS", None),
             ],
-            include_dirs=["src", *[path.join(d, "src") for d in DIALECT_DIRS]],
+            include_dirs=["src"],
             py_limited_api=not get_config_var("Py_GIL_DISABLED"),
-        )
+        ),
+        *[
+            Extension(
+                name=f"_binding_{dialect}",
+                sources=[
+                    f"bindings/python/tree_sitter_sql/binding_{dialect}.c",
+                    path.join(dialect, "src", "parser.c"),
+                ],
+                define_macros=[
+                    ("PY_SSIZE_T_CLEAN", None),
+                    ("TREE_SITTER_HIDE_SYMBOLS", None),
+                ],
+                include_dirs=[path.join(dialect, "src")],
+                py_limited_api=not get_config_var("Py_GIL_DISABLED"),
+            )
+            for dialect in DIALECT_DIRS
+        ],
     ],
     cmdclass={
         "build": Build,

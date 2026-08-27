@@ -2,10 +2,10 @@
 
 typedef struct TSLanguage TSLanguage;
 
-TSLanguage *tree_sitter_sql(void);
+TSLanguage *tree_sitter_athena_sql(void);
 
-static PyObject* _binding_language(PyObject *Py_UNUSED(self), PyObject *Py_UNUSED(args)) {
-    return PyCapsule_New(tree_sitter_sql(), "tree_sitter.Language", NULL);
+static PyObject* _binding_language_athena(PyObject *Py_UNUSED(self), PyObject *Py_UNUSED(args)) {
+    return PyCapsule_New(tree_sitter_athena_sql(), "tree_sitter.Language", NULL);
 }
 
 static struct PyModuleDef_Slot slots[] = {
@@ -16,20 +16,20 @@ static struct PyModuleDef_Slot slots[] = {
 };
 
 static PyMethodDef methods[] = {
-    {"language", _binding_language, METH_NOARGS,
-     "Get the tree-sitter language for this grammar."},
+    {"language_athena", _binding_language_athena, METH_NOARGS,
+     "Get the tree-sitter language for the athena_sql dialect."},
     {NULL, NULL, 0, NULL}
 };
 
 static struct PyModuleDef module = {
     .m_base = PyModuleDef_HEAD_INIT,
-    .m_name = "_binding",
+    .m_name = "_binding_athena",
     .m_doc = NULL,
     .m_size = 0,
     .m_methods = methods,
     .m_slots = slots,
 };
 
-PyMODINIT_FUNC PyInit__binding(void) {
+PyMODINIT_FUNC PyInit__binding_athena(void) {
     return PyModuleDef_Init(&module);
 }

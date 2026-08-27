@@ -70,28 +70,72 @@ fn compile(name: &str, ident: &str, src_dir: &Path) {
 
 fn main() {
     compile("tree-sitter-sql", "base", "src".as_ref());
-    compile("tree-sitter-sql-spark", "spark", "spark/src".as_ref());
-    compile("tree-sitter-sql-postgres", "postgres", "postgres/src".as_ref());
-    compile("tree-sitter-sql-mysql", "mysql", "mysql/src".as_ref());
-    compile("tree-sitter-sql-databricks", "databricks", "databricks/src".as_ref());
-    compile("tree-sitter-sql-snowflake", "snowflake", "snowflake/src".as_ref());
-    compile("tree-sitter-sql-bigquery", "bigquery", "bigquery/src".as_ref());
-    compile("tree-sitter-sql-mariadb", "mariadb", "mariadb/src".as_ref());
-    compile("tree-sitter-sql-sqlite", "sqlite", "sqlite/src".as_ref());
-    compile("tree-sitter-sql-hive", "hive", "hive/src".as_ref());
-    compile("tree-sitter-sql-oracle", "oracle", "oracle/src".as_ref());
-    compile("tree-sitter-sql-db2", "db2", "db2/src".as_ref());
-    compile("tree-sitter-sql-tsql", "tsql", "tsql/src".as_ref());
-    compile("tree-sitter-sql-duckdb", "duckdb", "duckdb/src".as_ref());
-    compile("tree-sitter-sql-trino", "trino", "trino/src".as_ref());
-    compile("tree-sitter-sql-athena", "athena", "athena/src".as_ref());
-    compile("tree-sitter-sql-redshift", "redshift", "redshift/src".as_ref());
-    compile("tree-sitter-sql-clickhouse", "clickhouse", "clickhouse/src".as_ref());
-    compile("tree-sitter-sql-flink", "flink", "flink/src".as_ref());
-    compile("tree-sitter-sql-cockroachdb", "cockroachdb", "cockroachdb/src".as_ref());
-    compile("tree-sitter-sql-spanner", "spanner", "spanner/src".as_ref());
-    compile("tree-sitter-sql-teradata", "teradata", "teradata/src".as_ref());
-    compile("tree-sitter-sql-hana", "hana", "hana/src".as_ref());
+    if env::var("CARGO_FEATURE_SPARK").is_ok() {
+        compile("tree-sitter-sql-spark", "spark", "spark/src".as_ref());
+    }
+    if env::var("CARGO_FEATURE_POSTGRES").is_ok() {
+        compile("tree-sitter-sql-postgres", "postgres", "postgres/src".as_ref());
+    }
+    if env::var("CARGO_FEATURE_MYSQL").is_ok() {
+        compile("tree-sitter-sql-mysql", "mysql", "mysql/src".as_ref());
+    }
+    if env::var("CARGO_FEATURE_DATABRICKS").is_ok() {
+        compile("tree-sitter-sql-databricks", "databricks", "databricks/src".as_ref());
+    }
+    if env::var("CARGO_FEATURE_SNOWFLAKE").is_ok() {
+        compile("tree-sitter-sql-snowflake", "snowflake", "snowflake/src".as_ref());
+    }
+    if env::var("CARGO_FEATURE_BIGQUERY").is_ok() {
+        compile("tree-sitter-sql-bigquery", "bigquery", "bigquery/src".as_ref());
+    }
+    if env::var("CARGO_FEATURE_MARIADB").is_ok() {
+        compile("tree-sitter-sql-mariadb", "mariadb", "mariadb/src".as_ref());
+    }
+    if env::var("CARGO_FEATURE_SQLITE").is_ok() {
+        compile("tree-sitter-sql-sqlite", "sqlite", "sqlite/src".as_ref());
+    }
+    if env::var("CARGO_FEATURE_HIVE").is_ok() {
+        compile("tree-sitter-sql-hive", "hive", "hive/src".as_ref());
+    }
+    if env::var("CARGO_FEATURE_ORACLE").is_ok() {
+        compile("tree-sitter-sql-oracle", "oracle", "oracle/src".as_ref());
+    }
+    if env::var("CARGO_FEATURE_DB2").is_ok() {
+        compile("tree-sitter-sql-db2", "db2", "db2/src".as_ref());
+    }
+    if env::var("CARGO_FEATURE_TSQL").is_ok() {
+        compile("tree-sitter-sql-tsql", "tsql", "tsql/src".as_ref());
+    }
+    if env::var("CARGO_FEATURE_DUCKDB").is_ok() {
+        compile("tree-sitter-sql-duckdb", "duckdb", "duckdb/src".as_ref());
+    }
+    if env::var("CARGO_FEATURE_TRINO").is_ok() {
+        compile("tree-sitter-sql-trino", "trino", "trino/src".as_ref());
+    }
+    if env::var("CARGO_FEATURE_ATHENA").is_ok() {
+        compile("tree-sitter-sql-athena", "athena", "athena/src".as_ref());
+    }
+    if env::var("CARGO_FEATURE_REDSHIFT").is_ok() {
+        compile("tree-sitter-sql-redshift", "redshift", "redshift/src".as_ref());
+    }
+    if env::var("CARGO_FEATURE_CLICKHOUSE").is_ok() {
+        compile("tree-sitter-sql-clickhouse", "clickhouse", "clickhouse/src".as_ref());
+    }
+    if env::var("CARGO_FEATURE_FLINK").is_ok() {
+        compile("tree-sitter-sql-flink", "flink", "flink/src".as_ref());
+    }
+    if env::var("CARGO_FEATURE_COCKROACHDB").is_ok() {
+        compile("tree-sitter-sql-cockroachdb", "cockroachdb", "cockroachdb/src".as_ref());
+    }
+    if env::var("CARGO_FEATURE_SPANNER").is_ok() {
+        compile("tree-sitter-sql-spanner", "spanner", "spanner/src".as_ref());
+    }
+    if env::var("CARGO_FEATURE_TERADATA").is_ok() {
+        compile("tree-sitter-sql-teradata", "teradata", "teradata/src".as_ref());
+    }
+    if env::var("CARGO_FEATURE_HANA").is_ok() {
+        compile("tree-sitter-sql-hana", "hana", "hana/src".as_ref());
+    }
 
     println!("cargo:rustc-check-cfg=cfg(with_highlights_query)");
     if !"queries/highlights.scm".is_empty() && std::path::Path::new("queries/highlights.scm").exists() {
