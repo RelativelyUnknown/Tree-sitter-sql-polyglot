@@ -23,10 +23,13 @@ sed -i "0,/^version = .*/s/^version = .*/version = \"$VERSION\"/" Cargo.toml
 # pyproject.toml
 sed -i "s/^version = .*/version = \"$VERSION\"/" pyproject.toml
 
-# CMakeLists.txt
-sed -i "s/set(PROJECT_VERSION [^)]*)/set(PROJECT_VERSION $VERSION)/" CMakeLists.txt
+# CMakeLists.txt (the `project(... VERSION "x.y.z" ...)` call)
+sed -i "s/VERSION \"[^\"]*\"/VERSION \"$VERSION\"/" CMakeLists.txt
+
+# package-lock.json's root version, kept in sync with package.json
+npm install --package-lock-only >/dev/null
 
 echo "Bumped all manifests to $VERSION"
 echo ""
 echo "Verify with:"
-echo "  grep -n 'version' package.json tree-sitter.json Cargo.toml pyproject.toml CMakeLists.txt"
+echo "  grep -n 'version' package.json package-lock.json tree-sitter.json Cargo.toml pyproject.toml CMakeLists.txt"
