@@ -54,24 +54,75 @@ Regenerate the child when a parent grammar changes. See [AGENTS.md](AGENTS.md) f
 
 ## Using in Rust
 
+The base (ANSI) grammar is always compiled. Each dialect is gated behind its own Cargo feature, so
+`cargo build` only compiles the parsers you actually asked for — none of the other 21's `parser.c`
+(each is large; compiling every one on every build for a consumer who only wants one dialect would be
+wasteful). By default **no feature is enabled**, so you must opt in to a dialect explicitly, or use
+`full` for all 22 at once:
+
 ```toml
 # Cargo.toml
 [dependencies]
-tree-sitter-sql-extended = { git = "https://github.com/RelativelyUnknown/tree-sitter-sql-extended", branch = "main" }
+tree-sitter-sql-extended = { git = "https://github.com/RelativelyUnknown/tree-sitter-sql-extended", branch = "main", features = ["postgres"] }
+# or: features = ["full"]   # every dialect
 tree-sitter = "0.25"
 ```
 
 ```rust
-use tree_sitter_sql_extended::LANGUAGE;
+use tree_sitter_sql_extended::{LANGUAGE, LANGUAGE_POSTGRES};
 
 let mut parser = tree_sitter::Parser::new();
-parser.set_language(&LANGUAGE.into()).unwrap();
+parser.set_language(&LANGUAGE.into()).unwrap();       // base ANSI grammar
+// parser.set_language(&LANGUAGE_POSTGRES.into()).unwrap();  // needs features = ["postgres"] or "full"
 
 let tree = parser.parse(sql_source, None).unwrap();
 // tree is valid even on syntax errors: partial results, not None
 ```
 
 A syntax error in one statement produces an `ERROR` node; the rest of the file continues to parse.
+Each dialect's feature name matches its row in the [dialect table](#dialects) above (e.g. `postgres`,
+`databricks`, `cockroachdb`).
+
+---
+
+## Using in Node.js
+
+```bash
+npm install @relativelyunknown/tree-sitter-sql-extended
+```
+
+Every dialect is compiled into its own native addon and loaded lazily: importing `{ postgres }` never
+loads the other 21 dialects' compiled parsers — only `postgres`'s addon is loaded, and only the first
+time `.language` is actually read.
+
+```js
+import Parser from "tree-sitter";
+import SQL, { postgres } from "@relativelyunknown/tree-sitter-sql-extended";
+
+const parser = new Parser();
+parser.setLanguage(SQL);              // default export: base ANSI grammar
+// parser.setLanguage(postgres.language);  // named export per dialect
+```
+
+---
+
+## Using in Python
+
+```bash
+pip install tree-sitter-sql-extended
+```
+
+Same laziness as Node: each dialect lives in its own extension module, and `import tree_sitter_sql`
+only loads the base grammar. Calling `language_postgres()` is what actually loads the postgres
+extension — the other 21 stay unloaded until (and unless) you call their own `language_*()`.
+
+```python
+from tree_sitter import Language, Parser
+import tree_sitter_sql
+
+parser = Parser(Language(tree_sitter_sql.language()))                # base ANSI grammar
+# parser = Parser(Language(tree_sitter_sql.language_postgres()))     # per dialect
+```
 
 ---
 

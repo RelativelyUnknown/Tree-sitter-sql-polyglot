@@ -268,6 +268,28 @@ Use `spark/grammar.js` as the canonical example of `grammar(base, overrides)`.
    ```
    and a `parser-test-action` step for `grammar-path: my_dialect`.
 
+8. Wire the dialect into the compiled Rust/Node/Python packages (this is separate from step 4's
+   per-dialect `<dialect>/tree-sitter.json`, which only registers it for standalone tree-sitter CLI use):
+   - Add its entry to the root `tree-sitter.json`'s `grammars` array (copy the per-dialect one).
+   - Add `my_dialect` to the `DIALECT_DIRS` list at the top of `scripts/generate-bindings.js`, then run
+     `node scripts/generate-bindings.js`. This regenerates `bindings/rust/{lib,build}.rs`,
+     `binding.gyp` + `bindings/node/{binding.cc,binding_my_dialect.cc,index.js,index.d.ts}`, and
+     `bindings/python/tree_sitter_sql/{binding.c,binding_my_dialect.c,__init__.py,__init__.pyi}` — the
+     new dialect gets its own Cargo `#[cfg(feature = "my_dialect")]`-gated consts, its own native addon
+     (Node) and extension module (Python), each loaded lazily; see "Using in Rust/Node.js/Python" in the
+     [README](README.md#using-in-rust) for what that means for consumers.
+   - Add `my_dialect` to `Cargo.toml`'s `[features]` list (a bare `my_dialect = []` plus the `full`
+     array) and its `include` glob lines, and to `package.json`'s `files` list — these three are
+     hand-maintained, not generated (same reason `DIALECT_DIRS`/`DEFAULT_ALL` is hand-maintained in
+     `scripts/generate-bindings.js`, `scripts/generate-all.js`, `scripts/compress-parsers.js`,
+     `scripts/inflate-parsers.js`, and `setup.py`: it's the single list a dialect's addition/removal
+     must touch by hand in each). `setup.py`'s per-dialect
+     `Extension` list does *not* need hand-editing — it's built programmatically from `DIALECT_DIRS`.
+   - Run `node scripts/compress-parsers.js my_dialect` and commit the resulting
+     `my_dialect/src/parser.c.br` / `node-types.json.br` (the raw `parser.c`/`node-types.json` stay
+     gitignored — see `scripts/inflate-parsers.js`, which reconstructs them at build time in all three
+     bindings instead of the ~354MB of near-duplicate generated text ever being committed).
+
 ---
 
 ## Dev workflow
