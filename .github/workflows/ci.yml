@@ -127,17 +127,6 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         if: matrix.shard == 'base'
 
-      # tree-sitter.json declares all 22 dialects for packaging; --grammar-path
-      # below validates every declared grammar's grammar.json even though
-      # only base's tests run here. --no-parser generates just that, skipping
-      # the LR-table build.
-      - name: Generate grammar.json for other dialects
-        if: matrix.shard == 'base'
-        run: |
-          for d in spark postgres mysql databricks snowflake bigquery mariadb sqlite hive oracle db2 tsql duckdb trino athena redshift clickhouse flink cockroachdb spanner teradata hana; do
-            (cd "$d" && tree-sitter generate --no-parser)
-          done
-
       - name: Run tests (base SQL)
         if: matrix.shard == 'base'
         uses: tree-sitter/parser-test-action@v3
@@ -148,9 +137,15 @@ jobs:
           # generate: true (the default) would regenerate every grammar.js in
           # the checkout, not just base; base is already generated above.
           generate: false
-          # A bare `tree-sitter test` walks every grammar tree-sitter.json
-          # declares; --grammar-path scopes the run to base only.
-          test-parser-cmd: tree-sitter test --grammar-path .
+          # --grammar-path implies --rebuild, which compiles every grammar
+          # tree-sitter.json declares, not just the one selected; that needs
+          # all 22 dialects' parser.c, which this shard never generates.
+          # Scope tree-sitter.json itself to base for this run instead.
+          test-parser-cmd: |
+            jq '.grammars |= map(select(.path == "."))' tree-sitter.json > /tmp/tree-sitter.json
+            cp /tmp/tree-sitter.json tree-sitter.json
+            tree-sitter test --grammar-path .
+            git checkout -- tree-sitter.json
 
       - name: Keyword/highlights sync check
         if: matrix.shard == 'base'
