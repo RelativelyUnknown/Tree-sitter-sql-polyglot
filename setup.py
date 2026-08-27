@@ -1,6 +1,7 @@
-from os import path
+from os import path, makedirs, stat
 from sysconfig import get_config_var
 
+import brotli
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build import build
 from setuptools.command.build_ext import build_ext
@@ -24,12 +25,45 @@ DIALECT_DIRS = [
 ]
 
 
+def _inflate(src_dir):
+    """Decompresses `<src_dir>/parser.c.br` into `<src_dir>/parser.c` if the
+    plain file is missing or older than the blob. Only the Brotli-compressed
+    blob is committed (see scripts/compress-parsers.js); this must run before
+    the Extension's sources are compiled.
+    """
+    plain_path = path.join(src_dir, "parser.c")
+    blob_path = f"{plain_path}.br"
+    if not path.exists(blob_path):
+        raise FileNotFoundError(
+            f"missing {blob_path} (run `node scripts/compress-parsers.js`)"
+        )
+    if path.exists(plain_path) and stat(plain_path).st_mtime >= stat(blob_path).st_mtime:
+        return
+    makedirs(src_dir, exist_ok=True)
+    with open(blob_path, "rb") as f:
+        data = brotli.decompress(f.read())
+    with open(plain_path, "wb") as f:
+        f.write(data)
+
+
+_inflate("src")
+for _dialect in DIALECT_DIRS:
+    _inflate(path.join(_dialect, "src"))
+
+
 class BuildExt(build_ext):
     def build_extension(self, ext: Extension):
         if self.compiler.compiler_type != "msvc":
             ext.extra_compile_args = ["-std=c11", "-fvisibility=hidden"]
         else:
-            ext.extra_compile_args = ["/std:c11", "/utf-8"]
+            # /GL (whole-program optimization) forces the linker into /LTCG,
+            # which has to hold cross-module codegen state for all 22
+            # dialects' enormous parser.c translation units at once; measured
+            # locally, that runs the 64-bit linker out of heap space
+            # (LNK1102). Disabling it costs some inlining across translation
+            # units, not correctness - each dialect's parser is independent.
+            ext.extra_compile_args = ["/std:c11", "/utf-8", "/GL-"]
+            ext.extra_link_args = ["/LTCG:OFF"]
         if path.exists("src/scanner.c"):
             ext.sources.append("src/scanner.c")
         for dialect in DIALECT_DIRS:

@@ -43,7 +43,7 @@ const DIALECTS = DIALECT_DIRS.map((dir) => {
 pub const LANGUAGE_${d.upper}: LanguageFn = unsafe { LanguageFn::from_raw(${d.cSymbol}) };
 
 /// The content of the \`node-types.json\` file for the ${d.grammarName} dialect.
-pub const NODE_TYPES_${d.upper}: &str = include_str!("../../${d.dir}/src/node-types.json");
+pub const NODE_TYPES_${d.upper}: &str = include_str!(concat!(env!("OUT_DIR"), "/${d.dir}_node-types.json"));
 
 /// The syntax highlighting query for the ${d.grammarName} dialect.
 pub const HIGHLIGHTS_QUERY_${d.upper}: &str = include_str!("../../${d.dir}/queries/highlights.scm");`).join('\n');
@@ -93,7 +93,7 @@ pub const LANGUAGE: LanguageFn = unsafe { LanguageFn::from_raw(tree_sitter_sql) 
 /// The content of the [\`node-types.json\`][] file for this grammar.
 ///
 /// [\`node-types.json\`]: https://tree-sitter.github.io/tree-sitter/using-parsers#static-node-types
-pub const NODE_TYPES: &str = include_str!("../../src/node-types.json");
+pub const NODE_TYPES: &str = include_str!(concat!(env!("OUT_DIR"), "/base_node-types.json"));
 
 pub const HIGHLIGHTS_QUERY: &str = include_str!("../../queries/highlights.scm");
 ${consts}
@@ -115,13 +115,42 @@ ${tests}
 
 // ── Rust: bindings/rust/build.rs ────────────────────────────────────────────
 {
-  const compileCalls = [`    compile("tree-sitter-sql", "src".as_ref());`]
-    .concat(DIALECTS.map((d) => `    compile("tree-sitter-sql-${d.ident}", "${d.dir}/src".as_ref());`))
+  const compileCalls = [`    compile("tree-sitter-sql", "base", "src".as_ref());`]
+    .concat(DIALECTS.map((d) => `    compile("tree-sitter-sql-${d.ident}", "${d.dir}", "${d.dir}/src".as_ref());`))
     .join('\n');
 
-  const content = `use std::path::Path;
+  const content = `use std::env;
+use std::fs;
+use std::path::{Path, PathBuf};
 
-fn compile(name: &str, src_dir: &Path) {
+fn out_dir() -> PathBuf {
+    PathBuf::from(env::var("OUT_DIR").unwrap())
+}
+
+/// Decompresses the committed \`<src_dir>/<file>.br\` blob into
+/// \`<OUT_DIR>/<ident>_<file>\` and returns that path. The crate ships only
+/// Brotli-compressed parser.c/node-types.json (see
+/// scripts/compress-parsers.js) to stay under crates.io's size limit;
+/// \`cargo publish\`'s verify step forbids build scripts from writing back into
+/// the source tree, so the inflated file must live under OUT_DIR instead.
+fn inflate(src_dir: &Path, ident: &str, file: &str) -> PathBuf {
+    let blob_path = src_dir.join(format!("{file}.br"));
+    println!("cargo:rerun-if-changed={}", blob_path.display());
+
+    let compressed = fs::read(&blob_path).unwrap_or_else(|e| {
+        panic!("missing {}: {e} (run \`node scripts/compress-parsers.js\`)", blob_path.display())
+    });
+
+    let mut out = Vec::new();
+    brotli::BrotliDecompress(&mut compressed.as_slice(), &mut out)
+        .unwrap_or_else(|e| panic!("failed to inflate {}: {e}", blob_path.display()));
+
+    let out_path = out_dir().join(format!("{ident}_{file}"));
+    fs::write(&out_path, out).unwrap_or_else(|e| panic!("failed to write {}: {e}", out_path.display()));
+    out_path
+}
+
+fn compile(name: &str, ident: &str, src_dir: &Path) {
     let mut c_config = cc::Build::new();
     c_config.std("c11").include(src_dir);
 
@@ -146,9 +175,10 @@ fn compile(name: &str, src_dir: &Path) {
         ]);
     }
 
-    let parser_path = src_dir.join("parser.c");
+    let parser_path = inflate(src_dir, ident, "parser.c");
     c_config.file(&parser_path);
-    println!("cargo:rerun-if-changed={}", parser_path.to_str().unwrap());
+
+    inflate(src_dir, ident, "node-types.json");
 
     let scanner_path = src_dir.join("scanner.c");
     if scanner_path.exists() {
