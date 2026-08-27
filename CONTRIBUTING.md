@@ -16,6 +16,14 @@ native addon per dialect, loaded lazily (see "Using in Node.js" in the [README](
 It does **not** run `tree-sitter generate`; that only happens when you actually edit a grammar (see
 below).
 
+This project is a fork of [DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql).
+To pull in upstream fixes, add it as a second remote:
+
+```bash
+git remote add upstream https://github.com/DerekStride/tree-sitter-sql.git
+git fetch upstream
+```
+
 ## Development Workflow
 
 ### 1. Edit grammar files
@@ -153,21 +161,46 @@ BREAKING CHANGE: The `(foo_node)` node has been renamed to `(bar_node)`
 
 ## Releasing a New Version
 
+Releases don't route through `main` — `main` never carries a version-bump commit. Instead,
+each minor line gets its own `release/x.y` branch, cut from `main` once, that receives the
+version bump and any later hotfixes for that line.
+
+### First release of a line (e.g. 0.1.0)
+
 ```bash
-bash scripts/bump-version.sh <version>   # bumps package.json, tree-sitter.json, Cargo.toml, pyproject.toml, CMakeLists.txt
-npm run release                           # generates a docs/changelog.md entry and commits
-git push
+git checkout -b release/0.1 main
+git push -u origin release/0.1
 ```
 
-Once the PR is merged, tag the release from main:
+```bash
+bash scripts/bump-version.sh 0.1.0   # bumps package.json, tree-sitter.json, Cargo.toml, pyproject.toml, CMakeLists.txt
+npm run release                       # generates a docs/changelog.md entry and commits
+git push                              # open a PR into release/0.1, not main
+```
+
+Once that PR merges into `release/0.1`:
 
 ```bash
-git pull origin main
-git tag v<version>
+git checkout release/0.1 && git pull
+git tag v0.1.0
 git push --tags
 ```
 
-Pushing the tag triggers CI to build artifacts and publish to npm, crates.io, and PyPI.
+Pushing the tag triggers `tag.yml`, which builds artifacts and opens a **draft** GitHub
+release. Publishing that draft (a separate, manual step on GitHub) is what fires
+`publish.yml` and actually pushes to npm, crates.io, and PyPI.
+
+### Hotfixing an already-released line
+
+```bash
+git checkout -b hotfix/0.1-<desc> release/0.1
+# make the fix, open a PR into release/0.1
+```
+
+Once merged into `release/0.1`, bump to the next patch (`bash scripts/bump-version.sh
+0.1.1`, `npm run release`, PR into `release/0.1`), then tag `v0.1.1` from `release/0.1` the
+same way as above. Afterwards, open a second PR forward-porting just the code fix (not the
+version bump) into `main`, so it isn't lost once the next minor line branches off.
 
 ## Docs site (local preview)
 
