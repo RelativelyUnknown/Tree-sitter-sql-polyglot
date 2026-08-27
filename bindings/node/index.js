@@ -34,4 +34,27 @@ for (const [prop, path] of queries) {
   });
 }
 
+export const spark = binding.spark;
+export const postgres = binding.postgres;
+export const mysql = binding.mysql;
+export const databricks = binding.databricks;
+export const snowflake = binding.snowflake;
+export const bigquery = binding.bigquery;
+export const mariadb = binding.mariadb;
+export const sqlite = binding.sqlite;
+export const hive = binding.hive;
+export const oracle = binding.oracle;
+export const db2 = binding.db2;
+export const tsql = binding.tsql;
+export const duckdb = binding.duckdb;
+export const trino = binding.trino;
+export const athena = binding.athena;
+export const redshift = binding.redshift;
+export const clickhouse = binding.clickhouse;
+export const flink = binding.flink;
+export const cockroachdb = binding.cockroachdb;
+export const spanner = binding.spanner;
+export const teradata = binding.teradata;
+export const hana = binding.hana;
+
 export default binding;

@@ -16,6 +16,14 @@ class Build(build):
         super().run()
 
 
+DIALECT_DIRS = [
+    "spark", "postgres", "mysql", "databricks", "snowflake", "bigquery",
+    "mariadb", "sqlite", "hive", "oracle", "db2", "tsql", "duckdb", "trino",
+    "athena", "redshift", "clickhouse", "flink", "cockroachdb", "spanner",
+    "teradata", "hana",
+]
+
+
 class BuildExt(build_ext):
     def build_extension(self, ext: Extension):
         if self.compiler.compiler_type != "msvc":
@@ -24,6 +32,10 @@ class BuildExt(build_ext):
             ext.extra_compile_args = ["/std:c11", "/utf-8"]
         if path.exists("src/scanner.c"):
             ext.sources.append("src/scanner.c")
+        for dialect in DIALECT_DIRS:
+            scanner = path.join(dialect, "src", "scanner.c")
+            if path.exists(scanner):
+                ext.sources.append(scanner)
         if ext.py_limited_api:
             ext.define_macros.append(("Py_LIMITED_API", "0x030A0000"))
         super().build_extension(ext)
@@ -42,6 +54,9 @@ class EggInfo(egg_info):
         super().find_sources()
         self.filelist.recursive_include("queries", "*.scm")
         self.filelist.include("src/tree_sitter/*.h")
+        for dialect in DIALECT_DIRS:
+            self.filelist.include(f"{dialect}/src/tree_sitter/*.h")
+            self.filelist.include(f"{dialect}/src/scanner.c")
 
 
 setup(
@@ -58,12 +73,13 @@ setup(
             sources=[
                 "bindings/python/tree_sitter_sql/binding.c",
                 "src/parser.c",
+                *[path.join(d, "src", "parser.c") for d in DIALECT_DIRS],
             ],
             define_macros=[
                 ("PY_SSIZE_T_CLEAN", None),
                 ("TREE_SITTER_HIDE_SYMBOLS", None),
             ],
-            include_dirs=["src"],
+            include_dirs=["src", *[path.join(d, "src") for d in DIALECT_DIRS]],
             py_limited_api=not get_config_var("Py_GIL_DISABLED"),
         )
     ],

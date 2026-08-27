@@ -2,7 +2,7 @@
 
 from importlib.resources import files as _files
 
-from ._binding import language
+from ._binding import language, language_spark, language_postgres, language_mysql, language_databricks, language_snowflake, language_bigquery, language_mariadb, language_sqlite, language_hive, language_oracle, language_db2, language_tsql, language_duckdb, language_trino, language_athena, language_redshift, language_clickhouse, language_flink, language_cockroachdb, language_spanner, language_teradata, language_hana
 
 
 def _get_query(name, file):
@@ -28,6 +28,28 @@ def __getattr__(name):
 
 __all__ = [
     "language",
+    "language_spark",
+    "language_postgres",
+    "language_mysql",
+    "language_databricks",
+    "language_snowflake",
+    "language_bigquery",
+    "language_mariadb",
+    "language_sqlite",
+    "language_hive",
+    "language_oracle",
+    "language_db2",
+    "language_tsql",
+    "language_duckdb",
+    "language_trino",
+    "language_athena",
+    "language_redshift",
+    "language_clickhouse",
+    "language_flink",
+    "language_cockroachdb",
+    "language_spanner",
+    "language_teradata",
+    "language_hana",
     "HIGHLIGHTS_QUERY",
     # "INJECTIONS_QUERY",
     # "LOCALS_QUERY",
