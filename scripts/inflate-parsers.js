@@ -1,15 +1,10 @@
 #!/usr/bin/env node
 /**
  * Build-time counterpart to scripts/compress-parsers.js: decompresses each
- * committed src/parser.c.br / src/node-types.json.br back into real files
- * before node-gyp compiles them, using Node's built-in zlib (no extra
- * dependency).
- *
- * This runs on every `npm install`/`npm run build` instead of a full
- * `tree-sitter generate` pass, so installing this package never needs to
- * regenerate any of the 22 dialects' LR tables (clickhouse alone takes
- * ~80 minutes) - it just inflates already-generated, already-verified
- * sources. Skips a file that's already newer than its .br (nothing to do).
+ * committed parser.c.br/node-types.json.br blob back into a real file, using
+ * Node's built-in zlib. Runs on install/build for Node, Go and Swift so none
+ * of them need a full `tree-sitter generate` pass. Skips files already newer
+ * than their .br.
  */
 
 import { brotliDecompressSync } from 'zlib';

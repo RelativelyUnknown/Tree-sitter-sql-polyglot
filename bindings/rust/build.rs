@@ -6,12 +6,8 @@ fn out_dir() -> PathBuf {
     PathBuf::from(env::var("OUT_DIR").unwrap())
 }
 
-/// Decompresses the committed `<src_dir>/<file>.br` blob into
-/// `<OUT_DIR>/<ident>_<file>` and returns that path. The crate ships only
-/// Brotli-compressed parser.c/node-types.json (see
-/// scripts/compress-parsers.js) to stay under crates.io's size limit;
-/// `cargo publish`'s verify step forbids build scripts from writing back into
-/// the source tree, so the inflated file must live under OUT_DIR instead.
+/// Decompresses the committed `.br` blob into OUT_DIR (`cargo publish`
+/// forbids build scripts from writing back into the source tree).
 fn inflate(src_dir: &Path, ident: &str, file: &str) -> PathBuf {
     let blob_path = src_dir.join(format!("{file}.br"));
     println!("cargo:rerun-if-changed={}", blob_path.display());

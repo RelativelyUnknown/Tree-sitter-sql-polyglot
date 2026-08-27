@@ -7,12 +7,8 @@ const root = fileURLToPath(new URL("../..", import.meta.url));
 const isBun = typeof process.versions.bun === "string";
 const require = isBun ? null : createRequire(import.meta.url);
 
-// node-gyp-build itself always resolves to "whichever .node file sorts first
-// alphabetically" in build/Release/ (see its getFirst()) - fine when a
-// package only ever compiles one native addon, not when it compiles 23. This
-// mirrors its directory search order (dev build output, then a
-// platform/arch prebuild) but for one exact target filename, so only that
-// dialect's addon is dlopen'd.
+// node-gyp-build always resolves to the alphabetically first .node file,
+// which breaks with 23 targets. Mirror its search order for one exact name.
 function loadTarget(targetName) {
   const candidates = [
     join(root, "build", "Release", `${targetName}.node`),
@@ -31,11 +27,8 @@ function lazyDialect(grammarName, targetName, getBunBinding) {
     configurable: true,
     enumerable: true,
     get() {
-      // Bun's bundler needs statically analyzable import() calls to find
-      // .node files at `bun build --compile` time, so it can't share
-      // loadTarget()'s fully dynamic require() path - it gets its own
-      // eager-but-per-dialect import above instead (still not the OTHER 21
-      // dialects, just not deferred the way Node's require() path is).
+      // Bun needs statically analyzable import() calls to find .node files
+      // at build time, so it can't use loadTarget()'s dynamic require().
       const value = (isBun ? getBunBinding() : loadTarget(targetName)).language;
       Object.defineProperty(dialect, "language", { value, enumerable: true, configurable: true });
       return value;

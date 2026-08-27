@@ -40,10 +40,7 @@ const DIALECTS = DIALECT_DIRS.map((dir) => {
 });
 
 // ── Rust: bindings/rust/lib.rs ──────────────────────────────────────────────
-// Each dialect is gated behind its own Cargo feature (see [features] in
-// Cargo.toml) so a consumer who only enables e.g. "postgres" doesn't compile
-// or link the other 21 - `cargo build --no-default-features --features
-// postgres` only builds base + postgres. The "full" feature enables all 22.
+// One Cargo feature per dialect (see Cargo.toml [features]); "full" enables all.
 {
   const externs = DIALECTS.map((d) => `    #[cfg(feature = "${d.dir}")]\n    fn ${d.cSymbol}() -> *const ();`).join('\n');
   const consts = DIALECTS.map((d) => `
@@ -126,10 +123,7 @@ ${tests}
 }
 
 // ── Rust: bindings/rust/build.rs ────────────────────────────────────────────
-// Each dialect's compile() call only runs when Cargo has that dialect's
-// feature enabled (CARGO_FEATURE_<NAME> is the env var Cargo sets for an
-// active feature) - so `cargo build --features postgres` never even
-// compiles the other 21 dialects' parser.c, not just fails to link them.
+// compile() only runs per-dialect when Cargo's CARGO_FEATURE_<NAME> is set.
 {
   const compileCalls = [`    compile("tree-sitter-sql", "base", "src".as_ref());`]
     .concat(DIALECTS.map((d) => `    if env::var("CARGO_FEATURE_${d.upper}").is_ok() {
@@ -145,12 +139,8 @@ fn out_dir() -> PathBuf {
     PathBuf::from(env::var("OUT_DIR").unwrap())
 }
 
-/// Decompresses the committed \`<src_dir>/<file>.br\` blob into
-/// \`<OUT_DIR>/<ident>_<file>\` and returns that path. The crate ships only
-/// Brotli-compressed parser.c/node-types.json (see
-/// scripts/compress-parsers.js) to stay under crates.io's size limit;
-/// \`cargo publish\`'s verify step forbids build scripts from writing back into
-/// the source tree, so the inflated file must live under OUT_DIR instead.
+/// Decompresses the committed \`.br\` blob into OUT_DIR (\`cargo publish\`
+/// forbids build scripts from writing back into the source tree).
 fn inflate(src_dir: &Path, ident: &str, file: &str) -> PathBuf {
     let blob_path = src_dir.join(format!("{file}.br"));
     println!("cargo:rerun-if-changed={}", blob_path.display());
@@ -232,11 +222,8 @@ ${compileCalls}
 }
 
 // ── Node: bindings/node/binding.cc + binding_<dialect>.cc ───────────────────
-// Each dialect is compiled into its OWN native addon (own NODE_API_MODULE,
-// own .node file - see binding.gyp) instead of one combined addon with all
-// 22 registered in a single Init(). That's what lets index.js dlopen only
-// the dialect actually used instead of always loading all 22's compiled
-// parse tables. base's binding.cc keeps today's shape (no exportBlocks).
+// One native addon per dialect (own NODE_API_MODULE), so index.js can load
+// just one instead of all 22.
 const LANGUAGE_TYPE_TAG_DECL = `// "tree-sitter", "language" hashed with BLAKE2
 const napi_type_tag LANGUAGE_TYPE_TAG = {
     0x8AF2E5212AD58ABF, 0xD5006CAD83ABBA16
@@ -287,9 +274,7 @@ NODE_API_MODULE(tree_sitter_sql_${d.ident}_binding, Init)
 }
 
 // ── Node: binding.gyp ────────────────────────────────────────────────────────
-// One node-gyp target per dialect (+ base), each producing its own .node
-// file under build/Release/ - see bindings/node/index.js for why (a single
-// combined addon can't be loaded "one dialect at a time").
+// One node-gyp target per dialect (+ base); see index.js for why.
 {
   const cflagsConditions = `            "conditions": [
                 ["OS!='win'", {
@@ -342,10 +327,8 @@ ${[baseTarget, dialectTargets].join(',\n')}
 }
 
 // ── Node: bindings/node/index.js ────────────────────────────────────────────
-// Each dialect is its own compiled addon (see binding.gyp), so importing
-// { postgres } shouldn't dlopen the other 21's. A dialect's `language` is
-// therefore a lazy, self-caching getter: the addon is only require()'d the
-// first time `.language` is actually read, not at import time.
+// Each dialect's `language` is a lazy, self-caching getter: the addon loads
+// only when `.language` is first read.
 {
   const isBunImports = DIALECTS.map((d) => `const ${d.ident}Bun = isBun ? await import(\`\${root}/prebuilds/\${process.platform}-\${process.arch}/tree_sitter_sql_${d.ident}_binding.node\`) : null;`).join('\n');
 
@@ -360,12 +343,8 @@ const root = fileURLToPath(new URL("../..", import.meta.url));
 const isBun = typeof process.versions.bun === "string";
 const require = isBun ? null : createRequire(import.meta.url);
 
-// node-gyp-build itself always resolves to "whichever .node file sorts first
-// alphabetically" in build/Release/ (see its getFirst()) - fine when a
-// package only ever compiles one native addon, not when it compiles 23. This
-// mirrors its directory search order (dev build output, then a
-// platform/arch prebuild) but for one exact target filename, so only that
-// dialect's addon is dlopen'd.
+// node-gyp-build always resolves to the alphabetically first .node file,
+// which breaks with 23 targets. Mirror its search order for one exact name.
 function loadTarget(targetName) {
   const candidates = [
     join(root, "build", "Release", \`\${targetName}.node\`),
@@ -384,11 +363,8 @@ function lazyDialect(grammarName, targetName, getBunBinding) {
     configurable: true,
     enumerable: true,
     get() {
-      // Bun's bundler needs statically analyzable import() calls to find
-      // .node files at \`bun build --compile\` time, so it can't share
-      // loadTarget()'s fully dynamic require() path - it gets its own
-      // eager-but-per-dialect import above instead (still not the OTHER 21
-      // dialects, just not deferred the way Node's require() path is).
+      // Bun needs statically analyzable import() calls to find .node files
+      // at build time, so it can't use loadTarget()'s dynamic require().
       const value = (isBun ? getBunBinding() : loadTarget(targetName)).language;
       Object.defineProperty(dialect, "language", { value, enumerable: true, configurable: true });
       return value;
@@ -509,11 +485,8 @@ ${dialectDecls}
 }
 
 // ── Python: binding.c + binding_<dialect>.c ─────────────────────────────────
-// Each dialect gets its own extension module (own PyInit_, own .pyd/.so - see
-// setup.py) instead of one combined `_binding` module registering all 22
-// language_* functions. That's what lets __init__.py's __getattr__ import
-// only the dialect actually accessed instead of always loading all 22's
-// compiled parse tables at `import tree_sitter_sql` time.
+// One extension module per dialect (own PyInit_), so __init__.py's
+// __getattr__ can import just one on first access.
 {
   const content = `#include <Python.h>
 
@@ -595,13 +568,8 @@ PyMODINIT_FUNC PyInit__binding_${d.ident}(void) {
 }
 
 // ── Python: bindings/python/tree_sitter_sql/__init__.py ─────────────────────
-// Each dialect's language_<x>() lives in its own extension module
-// (_binding_<x>, see binding_<dialect>.c / setup.py) instead of all being
-// re-exported eagerly from one combined `_binding` module - a plain `from
-// ._binding import language_postgres, language_mysql, ...` would import
-// (and dlopen) all 22 the moment anyone did `import tree_sitter_sql`. The
-// module-level __getattr__ (PEP 562) below only imports a dialect's own
-// module the first time that dialect's function is actually accessed.
+// PEP 562 module-level __getattr__ imports each dialect's extension module
+// only on first access, instead of eagerly re-exporting all 22.
 {
   const reexports = DIALECTS.map((d) => `"language_${d.ident}": "_binding_${d.ident}",`).join('\n    ');
   const allNames = DIALECTS.map((d) => `"language_${d.ident}"`).join(',\n    ');
@@ -694,14 +662,8 @@ ${fnDecls}
 }
 
 // ── Go: bindings/go/<dialect>/binding.go + binding_test.go ──────────────────
-// bindings/go/binding.go (base) is hand-maintained and untouched here - it's
-// its own separate package, not part of this loop. Each dialect gets its own
-// importable subpackage (own cgo directive compiling only that dialect's own
-// parser.c/scanner.c) rather than anything resembling a Cargo feature flag:
-// Go doesn't have those, but doesn't need them either - cgo only ever
-// compiles the .go files actually part of a build, so a package nothing
-// imports is never compiled or linked. `go get .../bindings/go/postgres`
-// alone never touches the other 21 dialects.
+// bindings/go/binding.go (base) is hand-maintained, not generated here. Each
+// dialect is its own subpackage; cgo only compiles what's actually imported.
 for (const d of DIALECTS) {
   const dir = `${ROOT}/bindings/go/${d.ident}`;
   mkdirSync(dir, { recursive: true });
@@ -742,11 +704,7 @@ func TestCanLoadGrammar(t *testing.T) {
 }
 
 // ── Swift: Package.swift + bindings/swift/TreeSitterSql<Dialect>/*.h ───────
-// One SPM target + library product per dialect (own header, own sources),
-// alongside the existing base "TreeSitterSql" target/product - SPM already
-// supports multiple targets/products in one Package.swift (the standard
-// umbrella-package shape), so a consumer depending on only
-// "TreeSitterSqlPostgres" only ever builds that target, not the other 21.
+// One SPM target + library product per dialect, alongside base.
 {
   const headerGuard = (d) => `TREE_SITTER_${d.upper}_SQL_H_`;
 

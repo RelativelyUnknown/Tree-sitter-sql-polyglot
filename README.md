@@ -55,10 +55,8 @@ Regenerate the child when a parent grammar changes. See [AGENTS.md](AGENTS.md) f
 ## Using in Rust
 
 The base (ANSI) grammar is always compiled. Each dialect is gated behind its own Cargo feature, so
-`cargo build` only compiles the parsers you actually asked for — none of the other 21's `parser.c`
-(each is large; compiling every one on every build for a consumer who only wants one dialect would be
-wasteful). By default **no feature is enabled**, so you must opt in to a dialect explicitly, or use
-`full` for all 22 at once:
+`cargo build` only compiles the parsers you actually asked for. By default **no feature is enabled**,
+so you must opt in to a dialect explicitly, or use `full` for all 22 at once:
 
 ```toml
 # Cargo.toml
@@ -92,8 +90,8 @@ npm install @relativelyunknown/tree-sitter-sql-extended
 ```
 
 Every dialect is compiled into its own native addon and loaded lazily: importing `{ postgres }` never
-loads the other 21 dialects' compiled parsers — only `postgres`'s addon is loaded, and only the first
-time `.language` is actually read.
+loads the other 21 dialects' compiled parsers. Only `postgres`'s addon loads, and only the first time
+`.language` is actually read.
 
 ```js
 import Parser from "tree-sitter";
@@ -113,8 +111,8 @@ pip install tree-sitter-sql-extended
 ```
 
 Same laziness as Node: each dialect lives in its own extension module, and `import tree_sitter_sql`
-only loads the base grammar. Calling `language_postgres()` is what actually loads the postgres
-extension — the other 21 stay unloaded until (and unless) you call their own `language_*()`.
+only loads the base grammar. Calling `language_postgres()` is what loads the postgres extension; the
+other 21 stay unloaded until you call their own `language_*()`.
 
 ```python
 from tree_sitter import Language, Parser
@@ -128,9 +126,8 @@ parser = Parser(Language(tree_sitter_sql.language()))                # base ANSI
 
 ## Using in Go
 
-Each dialect is its own importable subpackage (`bindings/go/postgres`, `bindings/go/cockroachdb`, ...),
-so only the dialects you actually import get compiled — Go doesn't need a feature-flag equivalent for
-this, since cgo never compiles a package nothing imports.
+Each dialect is its own importable subpackage (`bindings/go/postgres`, `bindings/go/cockroachdb`, ...).
+Go doesn't need a feature-flag equivalent: cgo never compiles a package nothing imports.
 
 ```go
 import (

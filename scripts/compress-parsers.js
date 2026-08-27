@@ -1,23 +1,11 @@
 #!/usr/bin/env node
 /**
- * Maintainer tool: Brotli-compresses each grammar's generated src/parser.c
- * and src/node-types.json into src/parser.c.br / src/node-types.json.br,
- * which ARE committed to git (unlike the plain files, which stay
- * generated-only/gitignored).
+ * Brotli-compresses each grammar's parser.c/node-types.json into committed
+ * .br blobs, keeping the published crate/npm/pypi packages under crates.io's
+ * 10 MiB limit. See scripts/inflate-parsers.js for the reverse step.
  *
- * Both are huge as text (parser.c: 300+ MB across all 22 dialects + base;
- * node-types.json: ~23 MB) but almost entirely redundant (LR-table data /
- * repeated node-shape descriptions); Brotli quality 11 gets ~35-40x
- * compression on them (measured), bringing the committed footprint down to a
- * few MB total. This is what keeps the published crate/npm/pypi packages
- * under crates.io's 10 MiB limit without splitting into a separate package -
- * see scripts/inflate-parsers.js for the build-time reverse step.
- * src/grammar.json is NOT compressed/committed: nothing in bindings/
- * reads it, so it stays a local generated-only artifact.
+ * Run after regenerating a grammar, then commit the updated .br file(s).
  *
- * Run this after `node scripts/generate-all.js` whenever a dialect's
- * grammar.js/grammar/ actually changes, then commit the updated .br file(s).
- * Usage:
  *   node scripts/compress-parsers.js                # base + all 22 dialects
  *   node scripts/compress-parsers.js hive spark ...  # only the named ones
  */

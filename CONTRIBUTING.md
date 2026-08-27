@@ -11,7 +11,7 @@ npm install
 ```
 
 `npm install` decompresses the committed, Brotli-compressed `<dialect>/src/parser.c.br` /
-`node-types.json.br` blobs (see `scripts/inflate-parsers.js`) and compiles the Node.js bindings — one
+`node-types.json.br` blobs (see `scripts/inflate-parsers.js`) and compiles the Node.js bindings: one
 native addon per dialect, loaded lazily (see "Using in Node.js" in the [README](README.md#using-in-nodejs)).
 It does **not** run `tree-sitter generate`; that only happens when you actually edit a grammar (see
 below).
@@ -126,12 +126,12 @@ added to every dialect's `conflicts` array too.
    `node scripts/generate-bindings.js` to regenerate the Rust/Node/Python/Go/Swift glue files (adds the
    new dialect's named export/feature/function/subpackage/target everywhere) and
    `node scripts/compress-parsers.js <dialect>` to produce its committed
-   `parser.c.br`/`node-types.json.br` — commit those `.br` blobs, not the raw
+   `parser.c.br`/`node-types.json.br`. Commit those `.br` blobs, not the raw
    `parser.c`/`node-types.json` (gitignored on purpose; see `scripts/inflate-parsers.js`).
 8. Add the new dialect's name to `Cargo.toml`'s `[features]` list (one boolean feature per dialect,
    plus the `full` array) and to its `include` list, and to `setup.py`'s/`package.json`'s dialect-dir
-   lists, so it's compiled/packaged like the other 22 (not auto-generated — mirrors how `DIALECT_DIRS`
-   is hand-maintained in each of those files).
+   lists, so it's compiled/packaged like the other 22. These aren't auto-generated; they mirror how
+   `DIALECT_DIRS` is hand-maintained in each of those files.
 
 ## Commit Messages
 
