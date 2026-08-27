@@ -24,6 +24,7 @@ export default defineConfig({
 
   themeConfig: {
     nav: [
+      { text: 'Usage', link: '/usage' },
       { text: 'Coverage', link: '/coverage' },
       { text: 'Changelog', link: '/changelog' },
       { text: 'Downloads', link: '/downloads' },
@@ -35,6 +36,7 @@ export default defineConfig({
         text: 'tree-sitter-sql-extended',
         items: [
           { text: 'Overview', link: '/' },
+          { text: 'Usage', link: '/usage' },
           { text: 'Dialect coverage', link: '/coverage' },
           { text: 'Changelog', link: '/changelog' },
           { text: 'Downloads', link: '/downloads' },
