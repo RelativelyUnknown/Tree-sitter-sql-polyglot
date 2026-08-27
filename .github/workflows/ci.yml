@@ -366,6 +366,37 @@ jobs:
       - run: npm ci
       - run: node --test bindings/node/*_test.js
 
+  # ── Go native binding (OS matrix) ────────────────────────────────────────────
+  # cgo compiles each dialect's parser.c/scanner.c into its own subpackage
+  # (bindings/go/<dialect>/) - genuinely independent compilation units, not
+  # just a naming convention, so this also catches a broken relative #include
+  # path in any one dialect's binding.go.
+  test_go:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+          cache-dependency-path: go.sum
+      - run: go build ./bindings/go/...
+      - run: go test ./bindings/go/...
+
+  # ── Swift native binding (macOS only) ────────────────────────────────────────
+  # SwiftPM's toolchain is only reliably available on macOS runners; one
+  # target + product per dialect in Package.swift (see
+  # scripts/generate-bindings.js), so `swift build` here exercises all 22.
+  test_swift:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: swift build --build-tests
+      - run: swift test --skip-build -q
+
   # ── Validate corpus file integrity ──────────────────────────────────────────
   validate_tests:
     runs-on: ["ubuntu-latest"]

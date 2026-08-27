@@ -9,10 +9,12 @@
  * already exist) and whenever a dialect is added or removed.
  */
 
-import { readFileSync, writeFileSync } from 'fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
+
+const GO_MODULE = readFileSync(`${ROOT}/go.mod`, 'utf8').match(/^module\s+(\S+)/m)[1];
 
 const DIALECT_DIRS = [
   'spark', 'postgres', 'mysql', 'databricks', 'snowflake', 'bigquery',
@@ -32,6 +34,8 @@ const DIALECTS = DIALECT_DIRS.map((dir) => {
     // Rust/JS/Python identifier suffix, e.g. "databricks"
     ident: dir,
     upper: dir.toUpperCase(),
+    // PascalCase for Swift target/product names, e.g. "cockroachdb" -> "Cockroachdb"
+    pascal: dir[0].toUpperCase() + dir.slice(1),
   };
 });
 
@@ -689,4 +693,169 @@ ${fnDecls}
   writeFileSync(`${ROOT}/bindings/python/tree_sitter_sql/__init__.pyi`, content);
 }
 
-console.log(`generate-bindings: wrote Rust/Node/Python bindings for base + ${DIALECTS.length} dialects.`);
+// ── Go: bindings/go/<dialect>/binding.go + binding_test.go ──────────────────
+// bindings/go/binding.go (base) is hand-maintained and untouched here - it's
+// its own separate package, not part of this loop. Each dialect gets its own
+// importable subpackage (own cgo directive compiling only that dialect's own
+// parser.c/scanner.c) rather than anything resembling a Cargo feature flag:
+// Go doesn't have those, but doesn't need them either - cgo only ever
+// compiles the .go files actually part of a build, so a package nothing
+// imports is never compiled or linked. `go get .../bindings/go/postgres`
+// alone never touches the other 21 dialects.
+for (const d of DIALECTS) {
+  const dir = `${ROOT}/bindings/go/${d.ident}`;
+  mkdirSync(dir, { recursive: true });
+
+  const binding = `package ${d.ident}
+
+// #cgo CFLAGS: -std=c11 -fPIC
+// #include "../../../${d.dir}/src/parser.c"
+// #include "../../../${d.dir}/src/scanner.c"
+import "C"
+
+import "unsafe"
+
+// Language returns the tree-sitter Language for the ${d.grammarName} dialect.
+func Language() unsafe.Pointer {
+	return unsafe.Pointer(C.${d.cSymbol}())
+}
+`;
+  writeFileSync(`${dir}/binding.go`, binding);
+
+  const test = `package ${d.ident}_test
+
+import (
+	"testing"
+
+	${d.ident} "${GO_MODULE}/bindings/go/${d.ident}"
+	tree_sitter "github.com/tree-sitter/go-tree-sitter"
+)
+
+func TestCanLoadGrammar(t *testing.T) {
+	language := tree_sitter.NewLanguage(${d.ident}.Language())
+	if language == nil {
+		t.Errorf("Error loading ${d.grammarName} grammar")
+	}
+}
+`;
+  writeFileSync(`${dir}/binding_test.go`, test);
+}
+
+// ── Swift: Package.swift + bindings/swift/TreeSitterSql<Dialect>/*.h ───────
+// One SPM target + library product per dialect (own header, own sources),
+// alongside the existing base "TreeSitterSql" target/product - SPM already
+// supports multiple targets/products in one Package.swift (the standard
+// umbrella-package shape), so a consumer depending on only
+// "TreeSitterSqlPostgres" only ever builds that target, not the other 21.
+{
+  const headerGuard = (d) => `TREE_SITTER_${d.upper}_SQL_H_`;
+
+  for (const d of DIALECTS) {
+    const headerDir = `${ROOT}/bindings/swift/TreeSitterSql${d.pascal}`;
+    mkdirSync(headerDir, { recursive: true });
+    writeFileSync(`${headerDir}/${d.ident}.h`, `#ifndef ${headerGuard(d)}
+#define ${headerGuard(d)}
+
+typedef struct TSLanguage TSLanguage;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+const TSLanguage *${d.cSymbol}(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // ${headerGuard(d)}
+`);
+
+    const testDir = `${ROOT}/bindings/swift/TreeSitterSql${d.pascal}Tests`;
+    mkdirSync(testDir, { recursive: true });
+    writeFileSync(`${testDir}/TreeSitterSql${d.pascal}Tests.swift`, `import XCTest
+import SwiftTreeSitter
+import TreeSitterSql${d.pascal}
+
+final class TreeSitterSql${d.pascal}Tests: XCTestCase {
+    func testCanLoadGrammar() throws {
+        let parser = Parser()
+        let language = Language(language: ${d.cSymbol}())
+        XCTAssertNoThrow(try parser.setLanguage(language),
+                         "Error loading ${d.grammarName} grammar")
+    }
+}
+`);
+  }
+
+  const dialectProducts = DIALECTS.map((d) => `        .library(name: "TreeSitterSql${d.pascal}", targets: ["TreeSitterSql${d.pascal}"]),`).join('\n');
+
+  const dialectTargets = DIALECTS.map((d) => `        .target(
+            name: "TreeSitterSql${d.pascal}",
+            dependencies: [],
+            path: ".",
+            sources: [
+                "${d.dir}/src/parser.c",
+                "${d.dir}/src/scanner.c"
+            ],
+            resources: [
+                .copy("${d.dir}/queries")
+            ],
+            publicHeadersPath: "bindings/swift/TreeSitterSql${d.pascal}",
+            cSettings: [.headerSearchPath("${d.dir}/src")]
+        ),`).join('\n');
+
+  const dialectTestTargets = DIALECTS.map((d) => `        .testTarget(
+            name: "TreeSitterSql${d.pascal}Tests",
+            dependencies: [
+                "SwiftTreeSitter",
+                "TreeSitterSql${d.pascal}",
+            ],
+            path: "bindings/swift/TreeSitterSql${d.pascal}Tests"
+        ),`).join('\n');
+
+  const content = `// swift-tools-version:5.3
+import PackageDescription
+
+let package = Package(
+    name: "TreeSitterSql",
+    products: [
+        .library(name: "TreeSitterSql", targets: ["TreeSitterSql"]),
+${dialectProducts}
+    ],
+    dependencies: [
+        .package(name: "SwiftTreeSitter", url: "https://github.com/tree-sitter/swift-tree-sitter", from: "0.8.0"),
+    ],
+    targets: [
+        .target(
+            name: "TreeSitterSql",
+            dependencies: [],
+            path: ".",
+            sources: [
+                "src/parser.c",
+                "src/scanner.c"
+            ],
+            resources: [
+                .copy("queries")
+            ],
+            publicHeadersPath: "bindings/swift/TreeSitterSql",
+            cSettings: [.headerSearchPath("src")]
+        ),
+${dialectTargets}
+        .testTarget(
+            name: "TreeSitterSqlTests",
+            dependencies: [
+                "SwiftTreeSitter",
+                "TreeSitterSql",
+            ],
+            path: "bindings/swift/TreeSitterSqlTests"
+        ),
+${dialectTestTargets}
+    ],
+    cLanguageStandard: .c11
+)
+`;
+  writeFileSync(`${ROOT}/Package.swift`, content);
+}
+
+console.log(`generate-bindings: wrote Rust/Node/Python/Go/Swift bindings for base + ${DIALECTS.length} dialects.`);

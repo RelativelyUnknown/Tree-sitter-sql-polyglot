@@ -126,6 +126,42 @@ parser = Parser(Language(tree_sitter_sql.language()))                # base ANSI
 
 ---
 
+## Using in Go
+
+Each dialect is its own importable subpackage (`bindings/go/postgres`, `bindings/go/cockroachdb`, ...),
+so only the dialects you actually import get compiled — Go doesn't need a feature-flag equivalent for
+this, since cgo never compiles a package nothing imports.
+
+```go
+import (
+    tree_sitter_sql "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go"
+    postgres "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/postgres"
+    tree_sitter "github.com/tree-sitter/go-tree-sitter"
+)
+
+language := tree_sitter.NewLanguage(tree_sitter_sql.Language())   // base ANSI grammar
+// language := tree_sitter.NewLanguage(postgres.Language())       // per dialect
+```
+
+## Using in Swift
+
+Each dialect is its own SwiftPM target and library product (`TreeSitterSqlPostgres`,
+`TreeSitterSqlCockroachdb`, ...); your `Package.swift` only builds the products it depends on.
+
+```swift
+import SwiftTreeSitter
+import TreeSitterSql
+import TreeSitterSqlPostgres
+
+let language = Language(language: tree_sitter_sql())            // base ANSI grammar
+// let language = Language(language: tree_sitter_postgres_sql())  // per dialect
+```
+
+See the [Usage page](https://relativelyunknown.github.io/tree-sitter-sql-extended/usage) for the full
+dialect identifier reference and a per-language breakdown of how the lazy loading works.
+
+---
+
 ## Development
 
 ### Prerequisites

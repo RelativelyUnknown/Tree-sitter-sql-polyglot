@@ -6,15 +6,16 @@ title: Usage
 
 The grammar is published to three package registries — [crates.io](https://crates.io/crates/tree-sitter-sql-extended),
 [npm](https://www.npmjs.com/package/@relativelyunknown/tree-sitter-sql-extended), and
-[PyPI](https://pypi.org/project/tree-sitter-sql-extended/) — each exposing the ANSI SQL base grammar
-plus all 22 dialect extensions. All three are designed so that using one dialect never compiles or
-loads the other 21's parsers; see [Lazy loading](#lazy-loading-per-dialect) below for how that works
-and what it means for you in practice.
+[PyPI](https://pypi.org/project/tree-sitter-sql-extended/) — plus Go (resolved directly from this
+repo) and Swift (via Swift Package Manager). All five expose the ANSI SQL base grammar plus all 22
+dialect extensions, and all five are designed so that using one dialect never compiles or loads the
+other 21's parsers; see [Lazy loading](#lazy-loading-per-dialect) below for how that works in each and
+what it means for you in practice.
 
 Every dialect uses the same identifier everywhere it appears (Cargo feature name, npm named export,
-Python function suffix) — see the [dialect identifier reference](#dialect-identifier-reference) at the
-bottom of this page. The full extends-from table and per-dialect syntax highlights are on the
-[Overview](/) page.
+Python function suffix, Go subpackage name, Swift product name minus the `TreeSitterSql` prefix) — see
+the [dialect identifier reference](#dialect-identifier-reference) at the bottom of this page. The full
+extends-from table and per-dialect syntax highlights are on the [Overview](/) page.
 
 ## Rust (crates.io)
 
@@ -87,46 +88,69 @@ Same shape as Node: `import tree_sitter_sql` only loads the base grammar. Callin
 `language_postgres()` is what actually loads the postgres extension module — other dialects stay
 unloaded until (and unless) you call their own `language_*()`.
 
-## Other bindings (C, Go, Swift)
+## Go
 
-`bindings/c`, `bindings/go`, and `bindings/swift` currently expose **only the base ANSI grammar** —
-they were not extended with the 22 dialects the way Rust/Node/Python were, so there's no
-`tree_sitter_postgres_sql()` equivalent to call yet in Go or Swift. See
-[AGENTS.md](https://github.com/RelativelyUnknown/tree-sitter-sql-extended/blob/main/AGENTS.md) if
-you're interested in adding that.
+Go doesn't have a Cargo-style feature flag mechanism, but doesn't need one here: each dialect is its
+own importable subpackage, with its own `#cgo` directive compiling only that dialect's own
+`parser.c`/`scanner.c`. cgo only ever compiles the `.go` files actually reachable from your build, so
+importing `bindings/go/postgres` alone never touches the other 21 dialects' C sources at all — not
+"excluded from linking," never compiled in the first place.
+
+```bash
+go get github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/postgres
+```
 
 ```go
 import (
-    tree_sitter_sql "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go"
+    tree_sitter_sql "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go"          // base
+    postgres "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/postgres"        // per dialect
     tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
-language := tree_sitter.NewLanguage(tree_sitter_sql.Language())
+baseLanguage := tree_sitter.NewLanguage(tree_sitter_sql.Language())
+postgresLanguage := tree_sitter.NewLanguage(postgres.Language())
+```
+
+Each dialect subpackage name is the identifier from the
+[reference table](#dialect-identifier-reference) below (`bindings/go/cockroachdb`, etc).
+
+## Swift
+
+Swift Package Manager already supports multiple targets and library products in one `Package.swift` —
+that's the standard shape for an umbrella package — so each dialect is its own SPM target + product,
+built from only that dialect's own sources. A consumer's `Package.swift` names only the product(s) it
+wants, and SwiftPM only builds those.
+
+```swift
+// Package.swift
+.package(url: "https://github.com/RelativelyUnknown/tree-sitter-sql-extended", from: "1.0.0"),
+// ...
+.product(name: "TreeSitterSql", package: "tree-sitter-sql-extended"),           // base
+.product(name: "TreeSitterSqlPostgres", package: "tree-sitter-sql-extended"),   // per dialect
 ```
 
 ```swift
 import SwiftTreeSitter
 import TreeSitterSql
+import TreeSitterSqlPostgres
 
-let language = Language(language: tree_sitter_sql())
-try parser.setLanguage(language)
+let base = Language(language: tree_sitter_sql())
+let postgres = Language(language: tree_sitter_postgres_sql())
 ```
 
-If dialects are added there in the future, both ecosystems can express the same "only compile/load
-what you use" property Rust/Node/Python have, via mechanisms native to each:
+Each dialect's product name is `TreeSitterSql<Dialect>`, where `<Dialect>` is the identifier from the
+table below with its first letter capitalized (`postgres` → `TreeSitterSqlPostgres`,
+`cockroachdb` → `TreeSitterSqlCockroachdb`).
 
-- **Go**: cgo compiles whatever `.go` file is actually part of the build, so the natural approach is
-  one importable subpackage per dialect (`bindings/go/postgres`, own `#cgo` directive over
-  `postgres/src/parser.c`) rather than a Cargo-style feature flag — Go doesn't have those, but its own
-  package-import graph already gives you the same result: a package nothing imports is never compiled
-  or linked, full stop.
-- **Swift**: Swift Package Manager already supports multiple targets/library products in one
-  `Package.swift` (that's how umbrella packages normally work), so the equivalent is one SPM target +
-  product per dialect; a consumer only depends on the products they want, and SPM only builds those.
+## Other bindings (C)
 
-Both are genuinely possible and, in fact, arguably more natural fits than Rust's Cargo-feature
-approach — they'd just require building out the 22-dialect exposure for Go/Swift first, which hasn't
-happened yet.
+`bindings/c` still exposes only the base ANSI grammar — the C binding is a thin header/pkg-config
+wrapper meant for embedding the whole repo's build system directly (CMake, Make) rather than a
+per-dialect package boundary the way Go/Swift/Rust/Node/Python each have, so "one artifact per dialect"
+doesn't map onto it the same way. See
+[AGENTS.md](https://github.com/RelativelyUnknown/tree-sitter-sql-extended/blob/main/AGENTS.md) if
+you're embedding a specific dialect's `parser.c` directly — every dialect's C sources are exactly as
+usable standalone as base's, just not packaged as a separate `bindings/c` target per dialect.
 
 ## Lazy loading per dialect
 
@@ -140,12 +164,16 @@ idiomatic for compiling/loading only what's referenced:
 | **Rust** | Cargo feature flags gate `build.rs`'s `cc::Build` calls and `lib.rs`'s `#[cfg(feature = ...)]` items | Nothing — an unrequested dialect is never compiled, not just excluded from linking |
 | **Node.js** | 23 separate native addons (one `.node` file per dialect); a self-caching lazy getter on `.language` | Nothing at import time — a dialect's addon only `dlopen`s the first time `.language` is read |
 | **Python** | 23 separate extension modules (`_binding`, `_binding_postgres`, ...); a module-level `__getattr__` (PEP 562) | Nothing at import time — a dialect's extension only loads the first time its `language_*()` is called |
+| **Go** | 23 separate subpackages (`bindings/go/postgres`, ...), each its own `#cgo` compilation unit | Nothing — cgo never compiles a subpackage nothing imports |
+| **Swift** | 23 separate SPM targets/library products | Nothing — SwiftPM only builds the products your `Package.swift` names |
 
 ## Dialect identifier reference
 
-The same identifier is used for the Cargo feature name, the npm named export, and the `language_<x>`
-suffix in Python — e.g. `cockroachdb` is `features = ["cockroachdb"]` in Rust, `import { cockroachdb }`
-in Node, and `language_cockroachdb()` in Python.
+The same identifier is used everywhere: the Cargo feature name, the npm named export, the
+`language_<x>` suffix in Python, the Go subpackage name, and the Swift product name (capitalize the
+first letter and prepend `TreeSitterSql`) — e.g. `cockroachdb` is `features = ["cockroachdb"]` in Rust,
+`import { cockroachdb }` in Node, `language_cockroachdb()` in Python,
+`bindings/go/cockroachdb` in Go, and `TreeSitterSqlCockroachdb` in Swift.
 
 `spark`, `postgres`, `mysql`, `databricks`, `snowflake`, `bigquery`, `mariadb`, `sqlite`, `hive`,
 `oracle`, `db2`, `tsql`, `duckdb`, `trino`, `athena`, `redshift`, `clickhouse`, `flink`, `cockroachdb`,
