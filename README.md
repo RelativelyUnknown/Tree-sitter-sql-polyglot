@@ -157,17 +157,8 @@ ones stay here.
 
 ## Fork history & attribution
 
-This repo was forked from [DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql)
-with its full git history preserved, rather than starting from a fresh commit. That's deliberate: the
-ANSI base and the original grammar structure this rework built on top of are Derek Stride's and every
-upstream contributor's work, and preserving history keeps that attribution intact and `git blame`
-meaningful all the way back.
-
-One side effect: GitHub's Contributors graph is computed from commit authorship across a repo's *entire*
-history, not just commits since the fork. So it lists every author who ever committed to the upstream
-project - including people who never touched the dialect-extension rework here - alongside this repo's
-actual contributors. That list is purely historical record; it grants no repo access and implies no
-involvement in this fork's work. Actual ownership and review responsibility live in
-[CODEOWNERS](.github/CODEOWNERS), a separate and much shorter list. `LICENSE` reflects the same split:
-the original 2021 copyright notice stays (required by its MIT terms), with a second line added for this
-fork's own contributions.
+This repo preserves the full git history of
+[DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql), so GitHub's Contributors
+graph includes upstream authors alongside this fork's own. Current maintainership is
+[CODEOWNERS](.github/CODEOWNERS). `LICENSE` carries both the original 2021 copyright notice and this
+fork's.
