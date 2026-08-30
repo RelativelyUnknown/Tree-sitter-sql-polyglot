@@ -22,14 +22,15 @@ import { fileURLToPath } from 'url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
-// Must match the CLI constant in generate.js. npx extracts a cold-cache
-// package into a shared ~/.npm/_npx/<hash>/ directory on first use; when
-// several generate.js children race to do that extract-then-execute at once,
-// one can end up executing the binary while another is still writing it
-// (ETXTBSY) or spawning it mid-extraction (ENOENT). Warm the cache with a
-// single serial call before starting the concurrent pool so every worker
-// below finds it already fully extracted.
-const CLI = 'npx tree-sitter';
+// Must match the CLI constant in generate.js. Resolved via $PATH (the CI
+// runner's tree-sitter/setup-action, or a contributor's local/global
+// install) rather than `npx tree-sitter`: npx has no local node_modules
+// install to find in CI, and its on-demand fetch-and-cache resolution of a
+// package.json-declared devDependency (what made bare `npx tree-sitter`
+// work before) is no longer reliable across npm versions. Verify it
+// resolves once, serially, before starting the concurrent worker pool below,
+// so a missing/broken CLI fails fast with one clear error instead of N.
+const CLI = 'tree-sitter';
 try {
   execSync(`${CLI} --version`, { cwd: ROOT, stdio: 'ignore' });
 } catch {
