@@ -52,110 +52,31 @@ Regenerate the child when a parent grammar changes. See [AGENTS.md](AGENTS.md) f
 
 ---
 
-## Using in Rust
+## Installation
 
-The base (ANSI) grammar is always compiled. Each dialect is gated behind its own Cargo feature, so
-`cargo build` only compiles the parsers you actually asked for. By default **no feature is enabled**,
-so you must opt in to a dialect explicitly, or use `full` for all 22 at once:
+Every dialect is compiled/loaded lazily in all five: importing or depending on the package never pulls
+in more than the base grammar until you actually ask for a specific dialect.
 
-```toml
-# Cargo.toml
-[dependencies]
-tree-sitter-sql-extended = { git = "https://github.com/RelativelyUnknown/tree-sitter-sql-extended", branch = "main", features = ["postgres"] }
-# or: features = ["full"]   # every dialect
-tree-sitter = "0.25"
+```bash
+cargo add tree-sitter-sql-extended --features postgres   # or: --features full (all 22)
+npm install @relativelyunknown/tree-sitter-sql-extended
+pip install tree-sitter-sql-extended
+go get github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/postgres
+# Swift: add https://github.com/RelativelyUnknown/tree-sitter-sql-extended as a package dependency
 ```
 
 ```rust
 use tree_sitter_sql_extended::{LANGUAGE, LANGUAGE_POSTGRES};
 
 let mut parser = tree_sitter::Parser::new();
-parser.set_language(&LANGUAGE.into()).unwrap();       // base ANSI grammar
-// parser.set_language(&LANGUAGE_POSTGRES.into()).unwrap();  // needs features = ["postgres"] or "full"
-
-let tree = parser.parse(sql_source, None).unwrap();
-// tree is valid even on syntax errors: partial results, not None
+parser.set_language(&LANGUAGE.into()).unwrap();            // base ANSI grammar
+// parser.set_language(&LANGUAGE_POSTGRES.into()).unwrap(); // needs features = ["postgres"] or "full"
 ```
 
-A syntax error in one statement produces an `ERROR` node; the rest of the file continues to parse.
-Each dialect's feature name matches its row in the [dialect table](#dialects) above (e.g. `postgres`,
-`databricks`, `cockroachdb`).
-
----
-
-## Using in Node.js
-
-```bash
-npm install @relativelyunknown/tree-sitter-sql-extended
-```
-
-Every dialect is compiled into its own native addon and loaded lazily: importing `{ postgres }` never
-loads the other 21 dialects' compiled parsers. Only `postgres`'s addon loads, and only the first time
-`.language` is actually read.
-
-```js
-import Parser from "tree-sitter";
-import SQL, { postgres } from "@relativelyunknown/tree-sitter-sql-extended";
-
-const parser = new Parser();
-parser.setLanguage(SQL);              // default export: base ANSI grammar
-// parser.setLanguage(postgres.language);  // named export per dialect
-```
-
----
-
-## Using in Python
-
-```bash
-pip install tree-sitter-sql-extended
-```
-
-Same laziness as Node: each dialect lives in its own extension module, and `import tree_sitter_sql`
-only loads the base grammar. Calling `language_postgres()` is what loads the postgres extension; the
-other 21 stay unloaded until you call their own `language_*()`.
-
-```python
-from tree_sitter import Language, Parser
-import tree_sitter_sql
-
-parser = Parser(Language(tree_sitter_sql.language()))                # base ANSI grammar
-# parser = Parser(Language(tree_sitter_sql.language_postgres()))     # per dialect
-```
-
----
-
-## Using in Go
-
-Each dialect is its own importable subpackage (`bindings/go/postgres`, `bindings/go/cockroachdb`, ...).
-Go doesn't need a feature-flag equivalent: cgo never compiles a package nothing imports.
-
-```go
-import (
-    tree_sitter_sql "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go"
-    postgres "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/postgres"
-    tree_sitter "github.com/tree-sitter/go-tree-sitter"
-)
-
-language := tree_sitter.NewLanguage(tree_sitter_sql.Language())   // base ANSI grammar
-// language := tree_sitter.NewLanguage(postgres.Language())       // per dialect
-```
-
-## Using in Swift
-
-Each dialect is its own SwiftPM target and library product (`TreeSitterSqlPostgres`,
-`TreeSitterSqlCockroachdb`, ...); your `Package.swift` only builds the products it depends on.
-
-```swift
-import SwiftTreeSitter
-import TreeSitterSql
-import TreeSitterSqlPostgres
-
-let language = Language(language: tree_sitter_sql())            // base ANSI grammar
-// let language = Language(language: tree_sitter_postgres_sql())  // per dialect
-```
-
-See the [Usage page](https://relativelyunknown.github.io/tree-sitter-sql-extended/usage) for the full
-dialect identifier reference and a per-language breakdown of how the lazy loading works.
+Each dialect's identifier (`postgres`, `databricks`, `cockroachdb`, ...) is the same everywhere it
+appears: Cargo feature, npm/Python/Go/Swift name. See the [Usage
+page](https://relativelyunknown.github.io/tree-sitter-sql-extended/usage) for full import examples in
+every language, the lazy-loading mechanism per binding, and the complete identifier reference.
 
 ---
 
@@ -231,3 +152,22 @@ ones stay here.
 - [DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql): upstream
 - [takegue/tree-sitter-sql-bigquery](https://github.com/takegue/tree-sitter-sql-bigquery): BigQuery fork
 - [m-novikov/tree-sitter-sql](https://github.com/m-novikov/tree-sitter-sql)
+
+---
+
+## Fork history & attribution
+
+This repo was forked from [DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql)
+with its full git history preserved, rather than starting from a fresh commit. That's deliberate: the
+ANSI base and the original grammar structure this rework built on top of are Derek Stride's and every
+upstream contributor's work, and preserving history keeps that attribution intact and `git blame`
+meaningful all the way back.
+
+One side effect: GitHub's Contributors graph is computed from commit authorship across a repo's *entire*
+history, not just commits since the fork. So it lists every author who ever committed to the upstream
+project - including people who never touched the dialect-extension rework here - alongside this repo's
+actual contributors. That list is purely historical record; it grants no repo access and implies no
+involvement in this fork's work. Actual ownership and review responsibility live in
+[CODEOWNERS](.github/CODEOWNERS), a separate and much shorter list. `LICENSE` reflects the same split:
+the original 2021 copyright notice stays (required by its MIT terms), with a second line added for this
+fork's own contributions.
