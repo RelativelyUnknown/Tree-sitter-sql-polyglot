@@ -76,7 +76,7 @@ pub const HIGHLIGHTS_QUERY_${d.upper}: &str = include_str!("../../${d.dir}/queri
 //! let code = r#"
 //! "#;
 //! let mut parser = tree_sitter::Parser::new();
-//! let language = tree_sitter_sql_extended::LANGUAGE;
+//! let language = tree_sitter_sql_polyglot::LANGUAGE;
 //! parser
 //!     .set_language(&language.into())
 //!     .expect("Error loading Sql parser");

@@ -32,7 +32,7 @@ tree-sitter = "0.25"
 ```
 
 ```rust
-use tree_sitter_sql_extended::{LANGUAGE, LANGUAGE_POSTGRES};
+use tree_sitter_sql_polyglot::{LANGUAGE, LANGUAGE_POSTGRES};
 
 let mut parser = tree_sitter::Parser::new();
 parser.set_language(&LANGUAGE.into())?;                    // base ANSI grammar, always available
