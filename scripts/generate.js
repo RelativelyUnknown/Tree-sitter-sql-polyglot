@@ -40,7 +40,9 @@ function sampleMemory(label) {
   }
 }
 
-const CLI = 'npx tree-sitter';
+// Resolved via $PATH rather than `npx tree-sitter` - see generate-all.js's
+// CLI constant comment for why.
+const CLI = 'tree-sitter';
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 function hashDir(dir) {
