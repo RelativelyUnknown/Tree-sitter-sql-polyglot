@@ -54,7 +54,7 @@ Regenerate the child when a parent grammar changes. See [AGENTS.md](AGENTS.md) f
 
 ## Installation
 
-Every dialect is compiled/loaded lazily in all five: importing or depending on the package never pulls
+Every dialect is compiled/loaded lazily in all six: importing or depending on the package never pulls
 in more than the base grammar until you actually ask for a specific dialect.
 
 ```bash
@@ -63,6 +63,7 @@ npm install @relativelyunknown/tree-sitter-sql-polyglot
 pip install tree-sitter-sql-polyglot
 go get github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/postgres
 # Swift: add https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot as a package dependency
+# CMake: cmake -B build -DTREE_SITTER_SQL_POSTGRES=ON && cmake --build build   (or no flag for base)
 ```
 
 ```rust
@@ -121,14 +122,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md) for more detai
 
 ---
 
-## Upstream
-
-This fork tracks [`DerekStride/tree-sitter-sql`](https://github.com/DerekStride/tree-sitter-sql).
-General extensions are worth sending upstream if the maintainers there want them. Vendor-specific
-ones stay here.
-
----
-
 ## References
 
 - [Wikipedia SQL syntax](https://en.wikipedia.org/wiki/SQL_syntax)
@@ -161,4 +154,5 @@ This repo preserves the full git history of
 [DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql), so GitHub's Contributors
 graph includes upstream authors alongside this fork's own. Current maintainership is
 [CODEOWNERS](.github/CODEOWNERS). `LICENSE` carries both the original 2021 copyright notice and this
-fork's.
+fork's. General extensions are worth sending upstream if the maintainers there want them;
+vendor-specific ones stay here.

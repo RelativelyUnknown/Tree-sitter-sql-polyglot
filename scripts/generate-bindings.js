@@ -16,6 +16,14 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
 const GO_MODULE = readFileSync(`${ROOT}/go.mod`, 'utf8').match(/^module\s+(\S+)/m)[1];
 
+// CMakeLists.txt is itself one of this script's outputs (see the C/CMake
+// section below), so its version/URL are read from package.json - the same
+// manifest bump-version.sh updates first - rather than from the file this
+// script is about to overwrite.
+const PKG = JSON.parse(readFileSync(`${ROOT}/package.json`, 'utf8'));
+const CMAKE_VERSION = PKG.version;
+const CMAKE_HOMEPAGE_URL = PKG.repository.url;
+
 const DIALECT_DIRS = [
   'spark', 'postgres', 'mysql', 'databricks', 'snowflake', 'bigquery',
   'mariadb', 'sqlite', 'hive', 'oracle', 'db2', 'tsql', 'duckdb', 'trino',
@@ -816,4 +824,187 @@ ${dialectTestTargets}
   writeFileSync(`${ROOT}/Package.swift`, content);
 }
 
-console.log(`generate-bindings: wrote Rust/Node/Python/Go/Swift bindings for base + ${DIALECTS.length} dialects.`);
+// ── C/CMake: CMakeLists.txt + bindings/c/ ───────────────────────────────────
+// One CMake project (not one per dialect), with a CMake option per dialect
+// that's OFF by default - the same shape as Cargo.toml's [features]: a plain
+// `cmake -B build` builds base only, `-DTREE_SITTER_SQL_POSTGRES=ON` adds
+// postgres to that same configure/build, and `-DTREE_SITTER_SQL_FULL=ON`
+// enables every dialect at once. Each enabled dialect still gets its own
+// library target/artifact (`tree-sitter-sql-postgres`, ...), same as Cargo
+// still produces one compiled object per feature under the hood - CMake has
+// no equivalent of a single artifact exposing conditional symbols the way a
+// Rust crate does with #[cfg(feature = ...)].
+//
+// Regenerates parser.c straight from each grammar.js via the tree-sitter
+// CLI, same as before - it does not use the compressed .br blobs the other
+// five bindings ship, since CMake consumers are expected to have the CLI.
+{
+  const headerGuard = (d) => `TREE_SITTER_SQL_${d.upper}_H_`;
+
+  mkdirSync(`${ROOT}/bindings/c/tree_sitter`, { recursive: true });
+
+  for (const d of DIALECTS) {
+    writeFileSync(`${ROOT}/bindings/c/tree_sitter/tree-sitter-sql-${d.ident}.h`, `#ifndef ${headerGuard(d)}
+#define ${headerGuard(d)}
+
+typedef struct TSLanguage TSLanguage;
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+const TSLanguage *${d.cSymbol}(void);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // ${headerGuard(d)}
+`);
+
+    writeFileSync(`${ROOT}/bindings/c/tree-sitter-sql-${d.ident}.pc.in`, `prefix=@CMAKE_INSTALL_PREFIX@
+libdir=\${prefix}/@CMAKE_INSTALL_LIBDIR@
+includedir=\${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
+
+Name: tree-sitter-sql-${d.ident}
+Description: Tree-sitter Grammar for SQL (${d.grammarName} dialect)
+URL: @PROJECT_HOMEPAGE_URL@
+Version: @PROJECT_VERSION@
+Requires: @TS_REQUIRES@
+Libs: -L\${libdir} -ltree-sitter-sql-${d.ident}
+Cflags: -I\${includedir}
+`);
+  }
+
+  const dialectBlocks = DIALECTS.map((d) => `
+option(TREE_SITTER_SQL_${d.upper} "Enable the ${d.grammarName} dialect extension" OFF)
+if(TREE_SITTER_SQL_${d.upper} OR TREE_SITTER_SQL_FULL)
+  add_custom_command(OUTPUT "\${CMAKE_CURRENT_SOURCE_DIR}/${d.dir}/src/grammar.json"
+                            "\${CMAKE_CURRENT_SOURCE_DIR}/${d.dir}/src/node-types.json"
+                     DEPENDS "\${CMAKE_CURRENT_SOURCE_DIR}/${d.dir}/grammar.js"
+                     COMMAND "\${TREE_SITTER_CLI}" generate grammar.js --no-parser
+                     WORKING_DIRECTORY "\${CMAKE_CURRENT_SOURCE_DIR}/${d.dir}"
+                     COMMENT "Generating ${d.dir}/grammar.json")
+  add_custom_command(OUTPUT "\${CMAKE_CURRENT_SOURCE_DIR}/${d.dir}/src/parser.c"
+                     BYPRODUCTS "\${CMAKE_CURRENT_SOURCE_DIR}/${d.dir}/src/tree_sitter/parser.h"
+                                "\${CMAKE_CURRENT_SOURCE_DIR}/${d.dir}/src/tree_sitter/alloc.h"
+                                "\${CMAKE_CURRENT_SOURCE_DIR}/${d.dir}/src/tree_sitter/array.h"
+                     DEPENDS "\${CMAKE_CURRENT_SOURCE_DIR}/${d.dir}/src/grammar.json"
+                     COMMAND "\${TREE_SITTER_CLI}" generate src/grammar.json
+                              --abi=\${TREE_SITTER_ABI_VERSION}
+                     WORKING_DIRECTORY "\${CMAKE_CURRENT_SOURCE_DIR}/${d.dir}"
+                     COMMENT "Generating ${d.dir}/parser.c")
+
+  add_library(tree-sitter-sql-${d.ident} ${d.dir}/src/parser.c)
+  if(EXISTS ${d.dir}/src/scanner.c)
+    target_sources(tree-sitter-sql-${d.ident} PRIVATE ${d.dir}/src/scanner.c)
+  endif()
+  target_include_directories(tree-sitter-sql-${d.ident}
+                             PRIVATE ${d.dir}/src
+                             INTERFACE $<BUILD_INTERFACE:\${CMAKE_CURRENT_SOURCE_DIR}/bindings/c>
+                                       $<INSTALL_INTERFACE:\${CMAKE_INSTALL_INCLUDEDIR}>)
+  target_compile_definitions(tree-sitter-sql-${d.ident} PRIVATE
+                             $<$<BOOL:\${TREE_SITTER_REUSE_ALLOCATOR}>:TREE_SITTER_REUSE_ALLOCATOR>
+                             $<$<CONFIG:Debug>:TREE_SITTER_DEBUG>)
+  set_target_properties(tree-sitter-sql-${d.ident}
+                        PROPERTIES
+                        C_STANDARD 11
+                        POSITION_INDEPENDENT_CODE ON
+                        SOVERSION "\${TREE_SITTER_ABI_VERSION}.\${PROJECT_VERSION_MAJOR}"
+                        DEFINE_SYMBOL "")
+  configure_file(bindings/c/tree-sitter-sql-${d.ident}.pc.in
+                 "\${CMAKE_CURRENT_BINARY_DIR}/tree-sitter-sql-${d.ident}.pc" @ONLY)
+  install(FILES "\${CMAKE_CURRENT_BINARY_DIR}/tree-sitter-sql-${d.ident}.pc"
+          DESTINATION "\${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig")
+  install(TARGETS tree-sitter-sql-${d.ident}
+          LIBRARY DESTINATION "\${CMAKE_INSTALL_LIBDIR}")
+endif()
+`).join('');
+
+  const cmakeContent = `cmake_minimum_required(VERSION 3.13)
+
+project(tree-sitter-sql
+        VERSION "${CMAKE_VERSION}"
+        DESCRIPTION "Tree-sitter Grammar for SQL"
+        HOMEPAGE_URL "${CMAKE_HOMEPAGE_URL}"
+        LANGUAGES C)
+
+option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
+option(TREE_SITTER_REUSE_ALLOCATOR "Reuse the library allocator" OFF)
+option(TREE_SITTER_SQL_FULL "Enable every dialect extension" OFF)
+
+set(TREE_SITTER_ABI_VERSION 14 CACHE STRING "Tree-sitter ABI version")
+if(NOT \${TREE_SITTER_ABI_VERSION} MATCHES "^[0-9]+$")
+    unset(TREE_SITTER_ABI_VERSION CACHE)
+    message(FATAL_ERROR "TREE_SITTER_ABI_VERSION must be an integer")
+endif()
+
+find_program(TREE_SITTER_CLI tree-sitter DOC "Tree-sitter CLI")
+include(GNUInstallDirs)
+
+# ── base grammar (always built) ─────────────────────────────────────────────
+add_custom_command(OUTPUT "\${CMAKE_CURRENT_SOURCE_DIR}/src/grammar.json"
+                          "\${CMAKE_CURRENT_SOURCE_DIR}/src/node-types.json"
+                   DEPENDS "\${CMAKE_CURRENT_SOURCE_DIR}/grammar.js"
+                   COMMAND "\${TREE_SITTER_CLI}" generate grammar.js --no-parser
+                   WORKING_DIRECTORY "\${CMAKE_CURRENT_SOURCE_DIR}"
+                   COMMENT "Generating grammar.json")
+
+add_custom_command(OUTPUT "\${CMAKE_CURRENT_SOURCE_DIR}/src/parser.c"
+                   BYPRODUCTS "\${CMAKE_CURRENT_SOURCE_DIR}/src/tree_sitter/parser.h"
+                              "\${CMAKE_CURRENT_SOURCE_DIR}/src/tree_sitter/alloc.h"
+                              "\${CMAKE_CURRENT_SOURCE_DIR}/src/tree_sitter/array.h"
+                   DEPENDS "\${CMAKE_CURRENT_SOURCE_DIR}/src/grammar.json"
+                   COMMAND "\${TREE_SITTER_CLI}" generate src/grammar.json
+                            --abi=\${TREE_SITTER_ABI_VERSION}
+                   WORKING_DIRECTORY "\${CMAKE_CURRENT_SOURCE_DIR}"
+                   COMMENT "Generating parser.c")
+
+add_library(tree-sitter-sql src/parser.c)
+if(EXISTS src/scanner.c)
+  target_sources(tree-sitter-sql PRIVATE src/scanner.c)
+endif()
+target_include_directories(tree-sitter-sql
+                           PRIVATE src
+                           INTERFACE $<BUILD_INTERFACE:\${CMAKE_CURRENT_SOURCE_DIR}/bindings/c>
+                                     $<INSTALL_INTERFACE:\${CMAKE_INSTALL_INCLUDEDIR}>)
+
+target_compile_definitions(tree-sitter-sql PRIVATE
+                           $<$<BOOL:\${TREE_SITTER_REUSE_ALLOCATOR}>:TREE_SITTER_REUSE_ALLOCATOR>
+                           $<$<CONFIG:Debug>:TREE_SITTER_DEBUG>)
+
+set_target_properties(tree-sitter-sql
+                      PROPERTIES
+                      C_STANDARD 11
+                      POSITION_INDEPENDENT_CODE ON
+                      SOVERSION "\${TREE_SITTER_ABI_VERSION}.\${PROJECT_VERSION_MAJOR}"
+                      DEFINE_SYMBOL "")
+
+configure_file(bindings/c/tree-sitter-sql.pc.in
+               "\${CMAKE_CURRENT_BINARY_DIR}/tree-sitter-sql.pc" @ONLY)
+
+install(DIRECTORY "\${CMAKE_CURRENT_SOURCE_DIR}/bindings/c/tree_sitter"
+        DESTINATION "\${CMAKE_INSTALL_INCLUDEDIR}"
+        FILES_MATCHING PATTERN "*.h")
+install(FILES "\${CMAKE_CURRENT_BINARY_DIR}/tree-sitter-sql.pc"
+        DESTINATION "\${CMAKE_INSTALL_DATAROOTDIR}/pkgconfig")
+install(TARGETS tree-sitter-sql
+        LIBRARY DESTINATION "\${CMAKE_INSTALL_LIBDIR}")
+
+# ── dialect extensions: one CMake option each, off by default ──────────────
+# Mirrors Cargo.toml's [features]: no dialect is enabled by default (a plain
+# \`cmake -B build\` builds base only); enable one or more with
+# \`-DTREE_SITTER_SQL_<DIALECT>=ON\`, or every dialect at once with
+# \`-DTREE_SITTER_SQL_FULL=ON\`. Generated by scripts/generate-bindings.js -
+# do not hand-edit this section; it's rewritten whenever that script runs.
+${dialectBlocks}
+add_custom_target(ts-test "\${TREE_SITTER_CLI}" test
+                  WORKING_DIRECTORY "\${CMAKE_CURRENT_SOURCE_DIR}"
+                  COMMENT "tree-sitter test")
+
+# vim:ft=cmake:
+`;
+  writeFileSync(`${ROOT}/CMakeLists.txt`, cmakeContent);
+}
+
+console.log(`generate-bindings: wrote Rust/Node/Python/Go/Swift/CMake bindings for base + ${DIALECTS.length} dialects.`);

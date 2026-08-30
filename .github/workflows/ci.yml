@@ -135,7 +135,9 @@ jobs:
         with:
           test-rust: true
           test-node: false
-          test-python: true
+          # Python (base + postgres, cross-OS) now lives entirely in
+          # test_python_os; this shard doesn't need its own Python run too.
+          test-python: false
           # generate: true (the default) would regenerate every grammar.js in
           # the checkout, not just base; base is already generated above.
           generate: false
@@ -269,10 +271,13 @@ jobs:
             tools/coverage.json
           retention-days: 30
 
-  # ── Node native binding (OS matrix) ─────────────────────────────────────────
-  # node-gyp compiles parser.c to a native .node addon. The result is
-  # platform-specific, so this job stays as a 3-OS matrix.
-  test_node:
+  # ── Go native binding (OS matrix) ────────────────────────────────────────────
+  # Go already has a can-load-grammar test per dialect (bindings/go/<dialect>),
+  # so Ubuntu runs the full 23-dialect suite; macOS/Windows only need
+  # base+postgres to confirm cgo compiles there too (same Layer-2 tradeoff as
+  # the other package types below, testing all 22 dialects on every OS is
+  # unnecessary cost this account's runner budget doesn't have).
+  test_go:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -283,36 +288,109 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-
-      # npm ci runs the install hook: inflate-parsers.js decompresses the
-      # committed .br blobs, then node-gyp-build compiles the native addons.
-      - run: npm ci
-      - run: node --test bindings/node/*_test.js
-
-  # ── Go native binding (OS matrix) ────────────────────────────────────────────
-  # cgo compiles each dialect's parser.c/scanner.c into its own subpackage.
-  test_go:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
       # cgo needs the real parser.c/scanner.c on disk; inflate the committed
-      # .br blobs the same way test_node does.
+      # .br blobs.
       - run: node scripts/inflate-parsers.js
       - uses: actions/setup-go@v5
         with:
           go-version: "1.23"
           cache-dependency-path: go.sum
-      - run: go build ./bindings/go/...
-      - run: go test ./bindings/go/...
+      - name: Build and test (all 22 dialects)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          go build ./bindings/go/...
+          go test ./bindings/go/...
+      - name: Build and test (base + postgres)
+        if: matrix.os != 'ubuntu-latest'
+        run: |
+          go build ./bindings/go ./bindings/go/postgres
+          go test ./bindings/go ./bindings/go/postgres
 
-  # ── Swift native binding (macOS only) ───────────────────────────────────────
+  # ── Per-package-type OS matrices (base + postgres only) ─────────────────────
+  # Every packaging surface below gets the same treatment: does the native
+  # build toolchain for this language work on macOS/Ubuntu/Windows? Base and
+  # postgres (simple + full-featured) are enough signal for that - Go above is
+  # the one language that also gets a full 22-dialect pass, on Ubuntu only.
+
+  test_node_os:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-2025]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      # npm ci runs the install hook: inflate-parsers.js decompresses the
+      # committed .br blobs, then node-gyp-build compiles the native addons
+      # (all 22, since binding.gyp declares every dialect as its own target -
+      # there's no cheaper "just build postgres" option here, unlike Go/Rust).
+      - run: npm ci
+      - run: node --test bindings/node/binding_test.js bindings/node/binding_postgres_test.js
+
+  test_python_os:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-2025]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node scripts/inflate-parsers.js
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # setup.py builds every dialect's extension module unconditionally
+      # (same all-or-nothing shape as the Node addon build above). The
+      # `core` extra pulls in the `tree_sitter` runtime package the tests
+      # import - pyproject.toml keeps it optional so consumers can bring
+      # their own tree-sitter version instead.
+      - run: pip install -e ".[core]"
+      - run: python -m unittest discover -s bindings/python/tests -p "test_*.py" -v
+
+  test_rust_os:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-2025]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: node scripts/inflate-parsers.js
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      # --no-default-features: default is already empty, but explicit here
+      # since `postgres` alone should compile base + postgres, not all 22.
+      - run: cargo test --no-default-features --features postgres
+
+  test_c_os:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-2025]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: tree-sitter/setup-action/cli@v2
+      # -DTREE_SITTER_SQL_POSTGRES=ON mirrors `cargo build --features
+      # postgres`: one configure/build produces base + postgres together.
+      - name: Configure and build base + postgres
+        run: |
+          cmake -S . -B build -DTREE_SITTER_SQL_POSTGRES=ON
+          cmake --build build --config Release
+
+  # ── Swift native binding (macOS only, full dialect suite) ───────────────────
+  # No Linux/Windows Swift toolchain here, so there's no separate OS matrix to
+  # trim - this one job already covers all 22 dialects + base on Swift's only
+  # supported OS in this CI, base+postgres included.
   test_swift:
     runs-on: macos-latest
     steps:
@@ -321,7 +399,7 @@ jobs:
         with:
           node-version: "22"
       # Package.swift's targets compile parser.c/scanner.c directly; inflate
-      # the committed .br blobs first, same as test_node/test_go.
+      # the committed .br blobs first, same as the other bindings.
       - run: node scripts/inflate-parsers.js
       - run: swift build --build-tests
       - run: swift test --skip-build -q
@@ -357,3 +435,17 @@ jobs:
             fi
           done
           exit $STATUS
+
+  # ── Aggregate gate for branch protection ────────────────────────────────────
+  # Branch protection requires this single check instead of every matrix-shard
+  # context individually, so adding/renaming a shard never needs a settings
+  # change. See .github/branch-protection/main.json.
+  ci-passed:
+    if: always()
+    needs: [test, coverage, test_go, test_node_os, test_python_os, test_rust_os, test_c_os, test_swift, validate_tests]
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            exit 1
+          fi

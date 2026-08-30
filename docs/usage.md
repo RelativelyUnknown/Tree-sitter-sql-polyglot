@@ -6,15 +6,17 @@ title: Usage
 
 The grammar is published to [crates.io](https://crates.io/crates/tree-sitter-sql-polyglot),
 [npm](https://www.npmjs.com/package/@relativelyunknown/tree-sitter-sql-polyglot), and
-[PyPI](https://pypi.org/project/tree-sitter-sql-polyglot/), plus Go (resolved directly from this repo)
-and Swift (via Swift Package Manager). All five expose the ANSI SQL base grammar plus all 22 dialect
-extensions; see [Lazy loading](#lazy-loading-per-dialect) below for how each one avoids compiling or
-loading dialects you don't use.
+[PyPI](https://pypi.org/project/tree-sitter-sql-polyglot/), plus Go (resolved directly from this repo),
+Swift (via Swift Package Manager), and CMake (also resolved directly from this repo) for C consumers.
+All six expose the ANSI SQL base grammar plus all 22 dialect extensions; see [Lazy
+loading](#lazy-loading-per-dialect) below for how each one avoids compiling or loading dialects you
+don't use.
 
 Every dialect uses the same identifier everywhere it appears: Cargo feature name, npm named export,
-Python function suffix, Go subpackage name, and Swift product name minus the `TreeSitterSql` prefix.
-See the [dialect identifier reference](#dialect-identifier-reference) at the bottom of this page. The
-full extends-from table and per-dialect syntax highlights are on the [Overview](/) page.
+Python function suffix, Go subpackage name, Swift product name minus the `TreeSitterSql` prefix, and
+CMake option/target name (`TREE_SITTER_SQL_<DIALECT>` / `tree-sitter-sql-<dialect>`). See the [dialect
+identifier reference](#dialect-identifier-reference) at the bottom of this page. The full extends-from
+table and per-dialect syntax highlights are on the [Overview](/) page.
 
 ## Rust (crates.io)
 
@@ -136,13 +138,34 @@ Each dialect's product name is `TreeSitterSql<Dialect>`, where `<Dialect>` is th
 table below with its first letter capitalized (`postgres` becomes `TreeSitterSqlPostgres`,
 `cockroachdb` becomes `TreeSitterSqlCockroachdb`).
 
-## Other bindings (C)
+## CMake / C
 
-`bindings/c` exposes only the base ANSI grammar. It's a thin header/pkg-config wrapper for embedding
-this repo's build system directly (CMake, Make), not a per-dialect package like the other five. See
-[AGENTS.md](https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot/blob/main/AGENTS.md) if you
-want to embed a specific dialect's `parser.c` directly; every dialect's C sources work standalone the
-same way base's does.
+One CMake project, the same shape as the Cargo feature flags above: a plain `cmake -B build` builds
+only base, and each dialect is a CMake option that's off by default. Enable one or more with
+`-DTREE_SITTER_SQL_<DIALECT>=ON`, or every dialect at once with `-DTREE_SITTER_SQL_FULL=ON` (the CMake
+equivalent of Cargo's `full` feature). Each enabled dialect still produces its own library target/file
+(CMake has no equivalent of one artifact exposing conditional symbols the way a Rust crate does), and
+regenerates its `parser.c` from `grammar.js` via the `tree-sitter` CLI, so that needs to be on `PATH` —
+unlike the other five bindings, which ship a precompiled/committed parser.
+
+```bash
+cmake -B build && cmake --build build                                    # base only
+cmake -B build -DTREE_SITTER_SQL_POSTGRES=ON && cmake --build build      # base + postgres
+cmake -B build -DTREE_SITTER_SQL_FULL=ON && cmake --build build          # base + all 22
+```
+
+```c
+#include <tree_sitter/tree-sitter-sql.h>           // base
+#include <tree_sitter/tree-sitter-sql-postgres.h>  // per dialect
+
+const TSLanguage *base = tree_sitter_sql();
+const TSLanguage *postgres = tree_sitter_postgres_sql();
+```
+
+Each dialect's CMake option and library name is `TREE_SITTER_SQL_<DIALECT>` /
+`tree-sitter-sql-<dialect>`, using the identifier from the [reference
+table](#dialect-identifier-reference) below (`TREE_SITTER_SQL_COCKROACHDB` /
+`tree-sitter-sql-cockroachdb`, etc).
 
 ## Lazy loading per dialect
 
@@ -156,14 +179,17 @@ just one, so each binding uses whatever mechanism is idiomatic for its language:
 | **Python** | 23 separate extension modules (`_binding`, `_binding_postgres`, ...); a module-level `__getattr__` (PEP 562) | Nothing at import time: a dialect's extension only loads the first time its `language_*()` is called |
 | **Go** | 23 separate subpackages (`bindings/go/postgres`, ...), each its own `#cgo` compilation unit | Nothing: cgo never compiles a subpackage nothing imports |
 | **Swift** | 23 separate SPM targets/library products | Nothing: SwiftPM only builds the products your `Package.swift` names |
+| **CMake / C** | One `option()` per dialect, off by default, gating that dialect's `add_library()` | Nothing: an unrequested dialect's option stays OFF, so its target is never defined or built |
 
 ## Dialect identifier reference
 
 The same identifier is used everywhere: the Cargo feature name, the npm named export, the
-`language_<x>` suffix in Python, the Go subpackage name, and the Swift product name (capitalize the
-first letter and prepend `TreeSitterSql`). For example, `cockroachdb` is `features = ["cockroachdb"]`
-in Rust, `import { cockroachdb }` in Node, `language_cockroachdb()` in Python,
-`bindings/go/cockroachdb` in Go, and `TreeSitterSqlCockroachdb` in Swift.
+`language_<x>` suffix in Python, the Go subpackage name, the Swift product name (capitalize the first
+letter and prepend `TreeSitterSql`), and the CMake option/target name
+(`TREE_SITTER_SQL_<DIALECT>` / prepend `tree-sitter-sql-`). For example, `cockroachdb` is
+`features = ["cockroachdb"]` in Rust, `import { cockroachdb }` in Node, `language_cockroachdb()` in
+Python, `bindings/go/cockroachdb` in Go, `TreeSitterSqlCockroachdb` in Swift, and
+`-DTREE_SITTER_SQL_COCKROACHDB=ON` / `tree-sitter-sql-cockroachdb` in CMake.
 
 `spark`, `postgres`, `mysql`, `databricks`, `snowflake`, `bigquery`, `mariadb`, `sqlite`, `hive`,
 `oracle`, `db2`, `tsql`, `duckdb`, `trino`, `athena`, `redshift`, `clickhouse`, `flink`, `cockroachdb`,
