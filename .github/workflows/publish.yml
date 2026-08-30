@@ -93,6 +93,19 @@ jobs:
             (.key | startswith("tree-sitter-"))
             and (.key != "tree-sitter-cli")
             )) | length > 0
+      # ClickHouse's generate step can peak near the runner's memory limit;
+      # swap gives it headroom instead of an OOM kill ("the runner has
+      # received a shutdown signal"). Same issue and fix as ci.yml's
+      # clickhouse shard - this job regenerates every grammar sequentially
+      # on the same runner, so it hits the identical ceiling.
+      - name: Increase swap (ClickHouse generate is memory-bound)
+        run: |
+          sudo swapoff -a || true
+          sudo fallocate -l 12G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
       - name: Regenerate parser
         shell: bash
         run: |
@@ -117,6 +130,10 @@ jobs:
     permissions:
       contents: read
     strategy:
+      # A single arch OOMing during generate shouldn't cancel the others -
+      # they're independent wheels, and cancelling them wastes a full
+      # rebuild on the next retry.
+      fail-fast: false
       matrix:
         os:
           - windows-2025
@@ -141,6 +158,19 @@ jobs:
             (.key | startswith("tree-sitter-"))
             and (.key != "tree-sitter-cli")
             )) | length > 0
+      # Linux-only: fallocate/mkswap/swapon need sudo and a Linux kernel.
+      # ClickHouse's generate step is the one that peaks near the runner's
+      # memory limit (see ci.yml's clickhouse shard); swap gives it headroom
+      # instead of an OOM kill ("the runner has received a shutdown signal").
+      - name: Increase swap (ClickHouse generate is memory-bound)
+        if: runner.os == 'Linux'
+        run: |
+          sudo swapoff -a || true
+          sudo fallocate -l 12G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
       - name: Regenerate parser
         shell: bash
         run: |
