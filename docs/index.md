@@ -36,8 +36,8 @@ own `<dialect>/src/parser.c` and can be used independently. The
 install instructions, and [AGENTS.md](https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot/blob/main/AGENTS.md)
 covers the grammar architecture.
 
-- [Usage](/usage), install/import snippets for Rust, Node.js, and Python, plus how per-dialect lazy
-  loading works in each.
+- [Usage](/usage), install/import snippets for Rust, Node.js, Python, Go, Swift, and CMake/C, plus how
+  per-dialect lazy loading works in each.
 - [Dialect coverage](/coverage), generated on every CI run, with per-dialect scores, the inheritance
   tree and the full feature-by-dialect matrix.
 - [Changelog](/changelog), the release history.

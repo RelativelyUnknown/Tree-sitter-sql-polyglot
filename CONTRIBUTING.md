@@ -12,9 +12,9 @@ npm install
 
 `npm install` decompresses the committed, Brotli-compressed `<dialect>/src/parser.c.br` /
 `node-types.json.br` blobs (see `scripts/inflate-parsers.js`) and compiles the Node.js bindings: one
-native addon per dialect, loaded lazily (see "Using in Node.js" in the [README](README.md#using-in-nodejs)).
-It does **not** run `tree-sitter generate`; that only happens when you actually edit a grammar (see
-below).
+native addon per dialect, loaded lazily (see the [Usage
+page](https://relativelyunknown.github.io/tree-sitter-sql-polyglot/usage)). It does **not** run
+`tree-sitter generate`; that only happens when you actually edit a grammar (see below).
 
 This project is a fork of [DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql).
 To pull in upstream fixes, add it as a second remote:
@@ -35,30 +35,19 @@ architecture and the parent/child dependency chains.
 
 ### 2. Regenerate the parser
 
-```bash
-npm run generate            # base grammar
-npm run generate:spark      # a single dialect
-npm run generate:all        # base + all 22 dialects
-```
-
-Generation uses a content hash to skip `tree-sitter generate` when the relevant grammar files haven't
-changed, saving ~60s on repeated runs. To force regeneration regardless:
-
-```bash
-npm run generate:force
-```
-
-A change to the base grammar ripples to all 22 parsers, so regenerate and test all of them. Changing a
-dialect requires regenerating its child too (`databricks` after `spark`/`hive`; `mariadb` after `mysql`).
+`npm run generate[:<dialect>|:all|:force]` — see [AGENTS.md](AGENTS.md#dev-workflow) for the full
+command list and the hash-caching behind it. A change to the base grammar ripples to all 22 parsers, so
+regenerate and test all of them. Changing a dialect requires regenerating its child too (`databricks`
+after `spark`/`hive`; `mariadb` after `mysql`).
 
 ### 3. Run the tests
 
+`npm run test:corpus[:<dialect>]` and `npm run test:keywords` — see
+[AGENTS.md](AGENTS.md#dev-workflow) for the per-dialect list. Also:
+
 ```bash
-npm run test:corpus            # base corpus tests (test/corpus/*.txt)
-npm run test:corpus:spark      # a single dialect's corpus (<dialect>/test/corpus/*.txt)
-npm run test:keywords          # keywords in sync with queries/highlights.scm
-npm run test:node              # Node.js binding test
-npm test                       # the full sequence
+npm run test:node    # Node.js binding test
+npm test             # the full sequence (corpus + keywords + node)
 ```
 
 ### 4. Debug a parse
@@ -76,41 +65,19 @@ make format
 
 ### Corpus test format
 
-Each file in `test/corpus/` is a suite of named test cases:
-
-```
-================================================================================
-Select with WHERE
-================================================================================
-
-SELECT id, name FROM users WHERE active = true
-
---------------------------------------------------------------------------------
-
-(program
-  (statement
-    (select
-      (keyword_select)
-      ...)))
-```
-
-Add new test cases to the relevant file, or create a new file for a new feature area.
-Run `make format` before committing to normalise spacing.
+Each file in `test/corpus/` is a suite of named test cases; see
+[AGENTS.md](AGENTS.md#corpus-test-format) for the format and an example. Add new test cases to the
+relevant file, or create a new file for a new feature area. Run `make format` before committing to
+normalise spacing.
 
 ## Adding a New SQL Statement
 
-1. Find the right file in `grammar/statements/` (e.g. `create.js` for a new CREATE variant).
-2. Add the rule definition.
-3. Wire it into the relevant dispatch list in `grammar/statements/index.js`
-   (e.g. `_ddl_statement`, `_drop_statement`).
-4. If the statement uses new keywords, define them with `make_keyword()`. ANSI keywords go in
-   `grammar/keywords.js`; dialect-specific keywords go in that dialect's own `grammar.js` rules
-   block. Each parser runs its own keyword extraction, so there is no shared keyword pool.
-5. If the keyword is reachable from the base grammar, add it to `queries/highlights.scm` as a
-   `@keyword` capture. Keywords only reachable through a dialect override go in that dialect's
-   `<dialect>/queries/highlights.scm` instead; adding them to the base file fails the sync check.
-6. Run `npm run generate && npm run test:keywords`. The sync check fails if step 5 is wrong.
-7. Add corpus tests in `test/corpus/` (or `<dialect>/test/corpus/` for a dialect feature).
+See [AGENTS.md](AGENTS.md#how-to-add-a-new-ansi-sql-statement) for the full walkthrough (dispatch
+lists, keyword placement, the `test:keywords` sync check). In short: add the rule in
+`grammar/statements/`, wire it into the dispatch list in `grammar/statements/index.js`, define any new
+keywords (ANSI in `grammar/keywords.js`, dialect-specific in that dialect's own `grammar.js`), add the
+`@keyword` capture to the matching `highlights.scm`, then `npm run generate && npm run test:keywords`
+and add corpus tests.
 
 ### A note on overrides and conflicts
 
@@ -131,9 +98,9 @@ added to every dialect's `conflicts` array too.
 5. Add corpus tests in `<dialect>/test/corpus/`.
 6. Add a CI step to generate and test the new grammar.
 7. `node scripts/generate-all.js <dialect>` to generate its parser, then
-   `node scripts/generate-bindings.js` to regenerate the Rust/Node/Python/Go/Swift glue files (adds the
-   new dialect's named export/feature/function/subpackage/target everywhere) and
-   `node scripts/compress-parsers.js <dialect>` to produce its committed
+   `node scripts/generate-bindings.js` to regenerate the Rust/Node/Python/Go/Swift/CMake glue files
+   (adds the new dialect's named export/feature/function/subpackage/target/CMake option everywhere)
+   and `node scripts/compress-parsers.js <dialect>` to produce its committed
    `parser.c.br`/`node-types.json.br`. Commit those `.br` blobs, not the raw
    `parser.c`/`node-types.json` (gitignored on purpose; see `scripts/inflate-parsers.js`).
 8. Add the new dialect's name to `Cargo.toml`'s `[features]` list (one boolean feature per dialect,
