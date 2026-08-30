@@ -271,13 +271,18 @@ jobs:
             tools/coverage.json
           retention-days: 30
 
-  # ── Go native binding, full dialect suite (Ubuntu only) ──────────────────────
+  # ── Go native binding (OS matrix) ────────────────────────────────────────────
   # Go already has a can-load-grammar test per dialect (bindings/go/<dialect>),
-  # so it's the one binding language that exercises all 22 dialects + base.
-  # OS coverage for the build toolchain itself lives separately in
-  # test_go_os, below - this job only needs to run once.
+  # so Ubuntu runs the full 23-dialect suite; macOS/Windows only need
+  # base+postgres to confirm cgo compiles there too (same Layer-2 tradeoff as
+  # the other package types below, testing all 22 dialects on every OS is
+  # unnecessary cost this account's runner budget doesn't have).
   test_go:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-2025]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -290,32 +295,22 @@ jobs:
         with:
           go-version: "1.23"
           cache-dependency-path: go.sum
-      - run: go build ./bindings/go/...
-      - run: go test ./bindings/go/...
+      - name: Build and test (all 22 dialects)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          go build ./bindings/go/...
+          go test ./bindings/go/...
+      - name: Build and test (base + postgres)
+        if: matrix.os != 'ubuntu-latest'
+        run: |
+          go build ./bindings/go ./bindings/go/postgres
+          go test ./bindings/go ./bindings/go/postgres
 
   # ── Per-package-type OS matrices (base + postgres only) ─────────────────────
   # Every packaging surface below gets the same treatment: does the native
   # build toolchain for this language work on macOS/Ubuntu/Windows? Base and
-  # postgres (simple + full-featured) are enough signal for that; testing all
-  # 22 dialects on every OS is what test_go covers once, cheaply, on Ubuntu.
-  test_go_os:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest, ubuntu-latest, windows-2025]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - run: node scripts/inflate-parsers.js
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "1.23"
-          cache-dependency-path: go.sum
-      - run: go build ./bindings/go ./bindings/go/postgres
-      - run: go test ./bindings/go ./bindings/go/postgres
+  # postgres (simple + full-featured) are enough signal for that - Go above is
+  # the one language that also gets a full 22-dialect pass, on Ubuntu only.
 
   test_node_os:
     runs-on: ${{ matrix.os }}
@@ -351,8 +346,11 @@ jobs:
         with:
           python-version: "3.12"
       # setup.py builds every dialect's extension module unconditionally
-      # (same all-or-nothing shape as the Node addon build above).
-      - run: pip install -e .
+      # (same all-or-nothing shape as the Node addon build above). The
+      # `core` extra pulls in the `tree_sitter` runtime package the tests
+      # import - pyproject.toml keeps it optional so consumers can bring
+      # their own tree-sitter version instead.
+      - run: pip install -e ".[core]"
       - run: python -m unittest discover -s bindings/python/tests -p "test_*.py" -v
 
   test_rust_os:
@@ -444,7 +442,7 @@ jobs:
   # change. See .github/branch-protection/main.json.
   ci-passed:
     if: always()
-    needs: [test, coverage, test_go, test_go_os, test_node_os, test_python_os, test_rust_os, test_c_os, test_swift, validate_tests]
+    needs: [test, coverage, test_go, test_node_os, test_python_os, test_rust_os, test_c_os, test_swift, validate_tests]
     runs-on: ubuntu-latest
     steps:
       - run: |
