@@ -3,7 +3,7 @@ package flink_test
 import (
 	"testing"
 
-	flink "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/flink"
+	flink "github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/flink"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 

@@ -3,7 +3,7 @@ package tsql_test
 import (
 	"testing"
 
-	tsql "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/tsql"
+	tsql "github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/tsql"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 

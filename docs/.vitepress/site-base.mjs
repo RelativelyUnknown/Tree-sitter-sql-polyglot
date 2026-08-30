@@ -3,4 +3,4 @@
 // does NOT use this: root-relative markdown links (e.g. /artifacts/foo) are
 // rewritten with `base` by VitePress itself at build time, so prefixing
 // them here too would double it up.
-export const SITE_BASE = '/tree-sitter-sql-extended/';
+export const SITE_BASE = '/Tree-sitter-sql-polyglot/';

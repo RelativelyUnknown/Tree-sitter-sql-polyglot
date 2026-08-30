@@ -3,7 +3,7 @@ package clickhouse_test
 import (
 	"testing"
 
-	clickhouse "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/clickhouse"
+	clickhouse "github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/clickhouse"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 

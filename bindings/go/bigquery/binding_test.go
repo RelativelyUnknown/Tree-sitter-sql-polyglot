@@ -3,7 +3,7 @@ package bigquery_test
 import (
 	"testing"
 
-	bigquery "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/bigquery"
+	bigquery "github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/bigquery"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 

@@ -1,4 +1,4 @@
-module github.com/relativelyunknown/tree-sitter-sql-extended
+module github.com/relativelyunknown/tree-sitter-sql-polyglot
 
 go 1.23
 

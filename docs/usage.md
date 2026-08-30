@@ -4,9 +4,9 @@ title: Usage
 
 # Usage
 
-The grammar is published to [crates.io](https://crates.io/crates/tree-sitter-sql-extended),
-[npm](https://www.npmjs.com/package/@relativelyunknown/tree-sitter-sql-extended), and
-[PyPI](https://pypi.org/project/tree-sitter-sql-extended/), plus Go (resolved directly from this repo)
+The grammar is published to [crates.io](https://crates.io/crates/tree-sitter-sql-polyglot),
+[npm](https://www.npmjs.com/package/@relativelyunknown/tree-sitter-sql-polyglot), and
+[PyPI](https://pypi.org/project/tree-sitter-sql-polyglot/), plus Go (resolved directly from this repo)
 and Swift (via Swift Package Manager). All five expose the ANSI SQL base grammar plus all 22 dialect
 extensions; see [Lazy loading](#lazy-loading-per-dialect) below for how each one avoids compiling or
 loading dialects you don't use.
@@ -25,14 +25,14 @@ exactly the dialects you use, or `full` for all 22 at once:
 ```toml
 # Cargo.toml
 [dependencies]
-tree-sitter-sql-extended = { version = "1", features = ["postgres"] }
+tree-sitter-sql-polyglot = { version = "1", features = ["postgres"] }
 # features = ["postgres", "mysql"]  # more than one
 # features = ["full"]               # every dialect
 tree-sitter = "0.25"
 ```
 
 ```rust
-use tree_sitter_sql_extended::{LANGUAGE, LANGUAGE_POSTGRES};
+use tree_sitter_sql_polyglot::{LANGUAGE, LANGUAGE_POSTGRES};
 
 let mut parser = tree_sitter::Parser::new();
 parser.set_language(&LANGUAGE.into())?;                    // base ANSI grammar, always available
@@ -48,12 +48,12 @@ Each dialect also exposes `NODE_TYPES_<DIALECT>` (the `node-types.json` content)
 ## Node.js (npm)
 
 ```bash
-npm install @relativelyunknown/tree-sitter-sql-extended
+npm install @relativelyunknown/tree-sitter-sql-polyglot
 ```
 
 ```js
 import Parser from "tree-sitter";
-import SQL, { postgres, mysql } from "@relativelyunknown/tree-sitter-sql-extended";
+import SQL, { postgres, mysql } from "@relativelyunknown/tree-sitter-sql-polyglot";
 
 const parser = new Parser();
 parser.setLanguage(SQL);                 // default export: base ANSI grammar
@@ -69,7 +69,7 @@ dialects.
 ## Python (PyPI)
 
 ```bash
-pip install tree-sitter-sql-extended
+pip install tree-sitter-sql-polyglot
 ```
 
 ```python
@@ -93,13 +93,13 @@ dialect's `parser.c`/`scanner.c`. Importing `bindings/go/postgres` never compile
 dialects' C sources.
 
 ```bash
-go get github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/postgres
+go get github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/postgres
 ```
 
 ```go
 import (
-    tree_sitter_sql "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go"          // base
-    postgres "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/postgres"        // per dialect
+    tree_sitter_sql "github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go"          // base
+    postgres "github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/postgres"        // per dialect
     tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
@@ -117,10 +117,10 @@ consumer's `Package.swift` names only the product(s) it wants.
 
 ```swift
 // Package.swift
-.package(url: "https://github.com/RelativelyUnknown/tree-sitter-sql-extended", from: "1.0.0"),
+.package(url: "https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot", from: "1.0.0"),
 // ...
-.product(name: "TreeSitterSql", package: "tree-sitter-sql-extended"),           // base
-.product(name: "TreeSitterSqlPostgres", package: "tree-sitter-sql-extended"),   // per dialect
+.product(name: "TreeSitterSql", package: "tree-sitter-sql-polyglot"),           // base
+.product(name: "TreeSitterSqlPostgres", package: "tree-sitter-sql-polyglot"),   // per dialect
 ```
 
 ```swift
@@ -140,7 +140,7 @@ table below with its first letter capitalized (`postgres` becomes `TreeSitterSql
 
 `bindings/c` exposes only the base ANSI grammar. It's a thin header/pkg-config wrapper for embedding
 this repo's build system directly (CMake, Make), not a per-dialect package like the other five. See
-[AGENTS.md](https://github.com/RelativelyUnknown/tree-sitter-sql-extended/blob/main/AGENTS.md) if you
+[AGENTS.md](https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot/blob/main/AGENTS.md) if you
 want to embed a specific dialect's `parser.c` directly; every dialect's C sources work standalone the
 same way base's does.
 

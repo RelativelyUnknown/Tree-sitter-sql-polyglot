@@ -1,12 +1,12 @@
-# Contributing to tree-sitter-sql-extended
+# Contributing to tree-sitter-sql-polyglot
 
 ## Getting Started
 
 Clone the repository and install dependencies.
 
 ```
-git clone https://github.com/relativelyunknown/tree-sitter-sql-extended.git
-cd tree-sitter-sql-extended
+git clone https://github.com/relativelyunknown/tree-sitter-sql-polyglot.git
+cd tree-sitter-sql-polyglot
 npm install
 ```
 

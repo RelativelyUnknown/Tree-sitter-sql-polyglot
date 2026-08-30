@@ -3,7 +3,7 @@ package postgres_test
 import (
 	"testing"
 
-	postgres "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/postgres"
+	postgres "github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/postgres"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 

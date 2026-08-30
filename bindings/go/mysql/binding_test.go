@@ -3,7 +3,7 @@ package mysql_test
 import (
 	"testing"
 
-	mysql "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/mysql"
+	mysql "github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/mysql"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 

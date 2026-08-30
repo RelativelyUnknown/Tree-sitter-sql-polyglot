@@ -1,4 +1,4 @@
-# tree-sitter-sql-extended
+# tree-sitter-sql-polyglot
 
 A multi-dialect SQL parser for [tree-sitter](https://tree-sitter.github.io/). It provides an ANSI SQL
 base plus 22 independently compiled dialect grammars, each layered on top with tree-sitter's
@@ -9,8 +9,8 @@ Upstream ships a single "permissive" grammar that mixes several dialects togethe
 that into a strict ANSI base and one grammar per dialect, so each engine's syntax is parsed on its
 own terms.
 
-[Docs site](https://relativelyunknown.github.io/tree-sitter-sql-extended/) and
-[dialect coverage](https://relativelyunknown.github.io/tree-sitter-sql-extended/coverage), which carries the
+[Docs site](https://relativelyunknown.github.io/tree-sitter-sql-polyglot/) and
+[dialect coverage](https://relativelyunknown.github.io/tree-sitter-sql-polyglot/coverage), which carries the
 per-dialect feature scores and is regenerated from the live parsers on every push to `main`.
 
 ---
@@ -58,15 +58,15 @@ Every dialect is compiled/loaded lazily in all five: importing or depending on t
 in more than the base grammar until you actually ask for a specific dialect.
 
 ```bash
-cargo add tree-sitter-sql-extended --features postgres   # or: --features full (all 22)
-npm install @relativelyunknown/tree-sitter-sql-extended
-pip install tree-sitter-sql-extended
-go get github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/postgres
-# Swift: add https://github.com/RelativelyUnknown/tree-sitter-sql-extended as a package dependency
+cargo add tree-sitter-sql-polyglot --features postgres   # or: --features full (all 22)
+npm install @relativelyunknown/tree-sitter-sql-polyglot
+pip install tree-sitter-sql-polyglot
+go get github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/postgres
+# Swift: add https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot as a package dependency
 ```
 
 ```rust
-use tree_sitter_sql_extended::{LANGUAGE, LANGUAGE_POSTGRES};
+use tree_sitter_sql_polyglot::{LANGUAGE, LANGUAGE_POSTGRES};
 
 let mut parser = tree_sitter::Parser::new();
 parser.set_language(&LANGUAGE.into()).unwrap();            // base ANSI grammar
@@ -75,7 +75,7 @@ parser.set_language(&LANGUAGE.into()).unwrap();            // base ANSI grammar
 
 Each dialect's identifier (`postgres`, `databricks`, `cockroachdb`, ...) is the same everywhere it
 appears: Cargo feature, npm/Python/Go/Swift name. See the [Usage
-page](https://relativelyunknown.github.io/tree-sitter-sql-extended/usage) for full import examples in
+page](https://relativelyunknown.github.io/tree-sitter-sql-polyglot/usage) for full import examples in
 every language, the lazy-loading mechanism per binding, and the complete identifier reference.
 
 ---

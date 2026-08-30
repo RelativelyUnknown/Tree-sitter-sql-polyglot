@@ -3,7 +3,7 @@ package databricks_test
 import (
 	"testing"
 
-	databricks "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/databricks"
+	databricks "github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/databricks"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 

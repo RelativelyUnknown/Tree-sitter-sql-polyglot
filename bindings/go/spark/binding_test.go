@@ -3,7 +3,7 @@ package spark_test
 import (
 	"testing"
 
-	spark "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/spark"
+	spark "github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/spark"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 

@@ -3,7 +3,7 @@ package redshift_test
 import (
 	"testing"
 
-	redshift "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/redshift"
+	redshift "github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/redshift"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 

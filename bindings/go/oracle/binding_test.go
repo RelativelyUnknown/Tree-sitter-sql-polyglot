@@ -3,7 +3,7 @@ package oracle_test
 import (
 	"testing"
 
-	oracle "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/oracle"
+	oracle "github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/oracle"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 

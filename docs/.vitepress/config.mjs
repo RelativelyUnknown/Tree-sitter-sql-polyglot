@@ -2,7 +2,7 @@ import { defineConfig } from 'vitepress';
 import { SITE_BASE } from './site-base.mjs';
 
 export default defineConfig({
-  title: 'tree-sitter-sql-extended',
+  title: 'tree-sitter-sql-polyglot',
   description: 'A multi-dialect SQL grammar for tree-sitter; ANSI base plus 22 dialect extensions.',
   base: SITE_BASE,
   cleanUrls: true,
@@ -28,12 +28,12 @@ export default defineConfig({
       { text: 'Coverage', link: '/coverage' },
       { text: 'Changelog', link: '/changelog' },
       { text: 'Downloads', link: '/downloads' },
-      { text: 'GitHub', link: 'https://github.com/RelativelyUnknown/tree-sitter-sql-extended' },
+      { text: 'GitHub', link: 'https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot' },
     ],
 
     sidebar: [
       {
-        text: 'tree-sitter-sql-extended',
+        text: 'tree-sitter-sql-polyglot',
         items: [
           { text: 'Overview', link: '/' },
           { text: 'Usage', link: '/usage' },
@@ -45,13 +45,13 @@ export default defineConfig({
     ],
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/RelativelyUnknown/tree-sitter-sql-extended' },
+      { icon: 'github', link: 'https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot' },
     ],
 
     search: { provider: 'local' },
 
     editLink: {
-      pattern: 'https://github.com/RelativelyUnknown/tree-sitter-sql-extended/edit/main/docs/:path',
+      pattern: 'https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot/edit/main/docs/:path',
       text: 'Edit this page on GitHub',
     },
   },

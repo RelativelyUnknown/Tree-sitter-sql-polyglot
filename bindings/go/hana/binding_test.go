@@ -3,7 +3,7 @@ package hana_test
 import (
 	"testing"
 
-	hana "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/hana"
+	hana "github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/hana"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 

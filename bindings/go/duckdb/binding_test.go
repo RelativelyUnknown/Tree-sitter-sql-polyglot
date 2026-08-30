@@ -3,7 +3,7 @@ package duckdb_test
 import (
 	"testing"
 
-	duckdb "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/duckdb"
+	duckdb "github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/duckdb"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
