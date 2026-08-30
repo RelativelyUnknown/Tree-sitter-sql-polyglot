@@ -3,7 +3,7 @@ package spanner_test
 import (
 	"testing"
 
-	spanner "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/spanner"
+	spanner "github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/spanner"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 

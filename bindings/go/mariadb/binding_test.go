@@ -3,7 +3,7 @@ package mariadb_test
 import (
 	"testing"
 
-	mariadb "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/mariadb"
+	mariadb "github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/mariadb"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 

@@ -3,7 +3,7 @@ package athena_test
 import (
 	"testing"
 
-	athena "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/athena"
+	athena "github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/athena"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 

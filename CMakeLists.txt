@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.13)
 
 project(tree-sitter-sql
-        VERSION "0.3.11"
+        VERSION "2.0.0"
         DESCRIPTION "Tree-sitter Grammar for SQL"
-        HOMEPAGE_URL "git+https://github.com/relativelyunknown/tree-sitter-sql-extended.git"
+        HOMEPAGE_URL "git+https://github.com/relativelyunknown/tree-sitter-sql-polyglot.git"
         LANGUAGES C)
 
 option(BUILD_SHARED_LIBS "Build using shared libraries" ON)
@@ -52,7 +52,7 @@ set_target_properties(tree-sitter-sql
                       PROPERTIES
                       C_STANDARD 11
                       POSITION_INDEPENDENT_CODE ON
-                      SOVERSION "${TREE_SITTER_ABI_VERSION}.${PROJECT_VERSION_MAJOR}"
+                      SOVERSION "2.0.0"
                       DEFINE_SYMBOL "")
 
 configure_file(bindings/c/tree-sitter-sql.pc.in

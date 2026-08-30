@@ -3,7 +3,7 @@ package cockroachdb_test
 import (
 	"testing"
 
-	cockroachdb "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/cockroachdb"
+	cockroachdb "github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/cockroachdb"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 

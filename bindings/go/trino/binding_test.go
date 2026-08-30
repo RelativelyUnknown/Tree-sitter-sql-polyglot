@@ -3,7 +3,7 @@ package trino_test
 import (
 	"testing"
 
-	trino "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/trino"
+	trino "github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/trino"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 

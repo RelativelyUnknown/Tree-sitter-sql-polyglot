@@ -1,10 +1,10 @@
 ---
 layout: home
-title: tree-sitter-sql-extended
+title: tree-sitter-sql-polyglot
 editLink: false
 
 hero:
-  name: tree-sitter-sql-extended
+  name: tree-sitter-sql-polyglot
   text: A multi-dialect SQL grammar for tree-sitter
   tagline: An ANSI SQL base plus 22 independently compiled dialect grammars, layered with tree-sitter's grammar(parent, overrides) composition.
   actions:
@@ -13,7 +13,7 @@ hero:
       link: /coverage
     - theme: alt
       text: View on GitHub
-      link: https://github.com/RelativelyUnknown/tree-sitter-sql-extended
+      link: https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot
     - theme: alt
       text: Downloads
       link: /downloads
@@ -32,8 +32,8 @@ features:
 The grammar restructures the upstream [DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql)
 "permissive" grammar into a strict ANSI SQL base plus dialect extensions. Each dialect compiles to its
 own `<dialect>/src/parser.c` and can be used independently. The
-[README](https://github.com/RelativelyUnknown/tree-sitter-sql-extended#readme) has the full dialect table and
-install instructions, and [AGENTS.md](https://github.com/RelativelyUnknown/tree-sitter-sql-extended/blob/main/AGENTS.md)
+[README](https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot#readme) has the full dialect table and
+install instructions, and [AGENTS.md](https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot/blob/main/AGENTS.md)
 covers the grammar architecture.
 
 - [Usage](/usage), install/import snippets for Rust, Node.js, and Python, plus how per-dialect lazy

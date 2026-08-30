@@ -3,7 +3,7 @@ package sqlite_test
 import (
 	"testing"
 
-	sqlite "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/sqlite"
+	sqlite "github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/sqlite"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 

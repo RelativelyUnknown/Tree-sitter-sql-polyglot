@@ -3,7 +3,7 @@ package snowflake_test
 import (
 	"testing"
 
-	snowflake "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/snowflake"
+	snowflake "github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/snowflake"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 

@@ -1,4 +1,4 @@
-# tree-sitter-sql-extended
+# tree-sitter-sql-polyglot
 
 A multi-dialect SQL parser for [tree-sitter](https://tree-sitter.github.io/). It provides an ANSI SQL
 base plus 22 independently compiled dialect grammars, each layered on top with tree-sitter's
@@ -9,8 +9,8 @@ Upstream ships a single "permissive" grammar that mixes several dialects togethe
 that into a strict ANSI base and one grammar per dialect, so each engine's syntax is parsed on its
 own terms.
 
-[Docs site](https://relativelyunknown.github.io/tree-sitter-sql-extended/) and
-[dialect coverage](https://relativelyunknown.github.io/tree-sitter-sql-extended/coverage), which carries the
+[Docs site](https://relativelyunknown.github.io/tree-sitter-sql-polyglot/) and
+[dialect coverage](https://relativelyunknown.github.io/tree-sitter-sql-polyglot/coverage), which carries the
 per-dialect feature scores and is regenerated from the live parsers on every push to `main`.
 
 ---
@@ -61,7 +61,7 @@ so you must opt in to a dialect explicitly, or use `full` for all 22 at once:
 ```toml
 # Cargo.toml
 [dependencies]
-tree-sitter-sql-extended = { git = "https://github.com/RelativelyUnknown/tree-sitter-sql-extended", branch = "main", features = ["postgres"] }
+tree-sitter-sql-polyglot = { git = "https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot", branch = "main", features = ["postgres"] }
 # or: features = ["full"]   # every dialect
 tree-sitter = "0.25"
 ```
@@ -86,7 +86,7 @@ Each dialect's feature name matches its row in the [dialect table](#dialects) ab
 ## Using in Node.js
 
 ```bash
-npm install @relativelyunknown/tree-sitter-sql-extended
+npm install @relativelyunknown/tree-sitter-sql-polyglot
 ```
 
 Every dialect is compiled into its own native addon and loaded lazily: importing `{ postgres }` never
@@ -95,7 +95,7 @@ loads the other 21 dialects' compiled parsers. Only `postgres`'s addon loads, an
 
 ```js
 import Parser from "tree-sitter";
-import SQL, { postgres } from "@relativelyunknown/tree-sitter-sql-extended";
+import SQL, { postgres } from "@relativelyunknown/tree-sitter-sql-polyglot";
 
 const parser = new Parser();
 parser.setLanguage(SQL);              // default export: base ANSI grammar
@@ -107,7 +107,7 @@ parser.setLanguage(SQL);              // default export: base ANSI grammar
 ## Using in Python
 
 ```bash
-pip install tree-sitter-sql-extended
+pip install tree-sitter-sql-polyglot
 ```
 
 Same laziness as Node: each dialect lives in its own extension module, and `import tree_sitter_sql`
@@ -131,8 +131,8 @@ Go doesn't need a feature-flag equivalent: cgo never compiles a package nothing 
 
 ```go
 import (
-    tree_sitter_sql "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go"
-    postgres "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/postgres"
+    tree_sitter_sql "github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go"
+    postgres "github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/postgres"
     tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
@@ -154,7 +154,7 @@ let language = Language(language: tree_sitter_sql())            // base ANSI gra
 // let language = Language(language: tree_sitter_postgres_sql())  // per dialect
 ```
 
-See the [Usage page](https://relativelyunknown.github.io/tree-sitter-sql-extended/usage) for the full
+See the [Usage page](https://relativelyunknown.github.io/tree-sitter-sql-polyglot/usage) for the full
 dialect identifier reference and a per-language breakdown of how the lazy loading works.
 
 ---

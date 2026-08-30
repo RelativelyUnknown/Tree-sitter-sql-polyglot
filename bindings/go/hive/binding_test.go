@@ -3,7 +3,7 @@ package hive_test
 import (
 	"testing"
 
-	hive "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/hive"
+	hive "github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/hive"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 

@@ -1,4 +1,4 @@
-# tree-sitter-sql-extended: Architecture Guide
+# tree-sitter-sql-polyglot: Architecture Guide
 
 ## What this repo is
 
@@ -281,7 +281,7 @@ Use `spark/grammar.js` as the canonical example of `grammar(base, overrides)`.
      `#[cfg(feature = "my_dialect")]`-gated consts, its own native addon (Node), extension module
      (Python), importable subpackage (Go), and SPM target/product (Swift), each loaded lazily; see
      "Using in Rust/Node.js/Python/Go/Swift" in the [README](README.md#using-in-rust) and the
-     [Usage page](https://relativelyunknown.github.io/tree-sitter-sql-extended/usage) for what that
+     [Usage page](https://relativelyunknown.github.io/tree-sitter-sql-polyglot/usage) for what that
      means for consumers.
    - Add `my_dialect` to `Cargo.toml`'s `[features]` list (a bare `my_dialect = []` plus the `full`
      array) and its `include` glob lines, and to `package.json`'s `files` list. These three are

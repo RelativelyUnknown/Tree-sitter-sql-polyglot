@@ -3,7 +3,7 @@ package db2_test
 import (
 	"testing"
 
-	db2 "github.com/relativelyunknown/tree-sitter-sql-extended/bindings/go/db2"
+	db2 "github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/db2"
 	tree_sitter "github.com/tree-sitter/go-tree-sitter"
 )
 
