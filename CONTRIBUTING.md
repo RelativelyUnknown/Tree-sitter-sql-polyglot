@@ -13,7 +13,7 @@ npm install
 `npm install` decompresses the committed, Brotli-compressed `<dialect>/src/parser.c.br` /
 `node-types.json.br` blobs (see `scripts/inflate-parsers.js`) and compiles the Node.js bindings: one
 native addon per dialect, loaded lazily (see the [Usage
-page](https://relativelyunknown.github.io/tree-sitter-sql-polyglot/usage)). It does **not** run
+page](https://relativelyunknown.github.io/Tree-sitter-sql-polyglot/usage)). It does **not** run
 `tree-sitter generate`; that only happens when you actually edit a grammar (see below).
 
 This project is a fork of [DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql).

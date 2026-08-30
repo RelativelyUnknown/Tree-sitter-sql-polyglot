@@ -285,7 +285,7 @@ Use `spark/grammar.js` as the canonical example of `grammar(base, overrides)`.
      `#[cfg(feature = "my_dialect")]`-gated consts, its own native addon (Node), extension module
      (Python), importable subpackage (Go), SPM target/product (Swift), and CMake option/target (C,
      off by default, same shape as the Cargo feature), each loaded lazily; see the [Usage
-     page](https://relativelyunknown.github.io/tree-sitter-sql-polyglot/usage) (`docs/usage.md`) for
+     page](https://relativelyunknown.github.io/Tree-sitter-sql-polyglot/usage) (`docs/usage.md`) for
      what that means for consumers.
    - Add `my_dialect` to `Cargo.toml`'s `[features]` list (a bare `my_dialect = []` plus the `full`
      array) and its `include` glob lines, and to `package.json`'s `files` list. These three are

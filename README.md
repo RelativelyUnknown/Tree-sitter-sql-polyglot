@@ -9,8 +9,8 @@ Upstream ships a single "permissive" grammar that mixes several dialects togethe
 that into a strict ANSI base and one grammar per dialect, so each engine's syntax is parsed on its
 own terms.
 
-[Docs site](https://relativelyunknown.github.io/tree-sitter-sql-polyglot/) and
-[dialect coverage](https://relativelyunknown.github.io/tree-sitter-sql-polyglot/coverage), which carries the
+[Docs site](https://relativelyunknown.github.io/Tree-sitter-sql-polyglot/) and
+[dialect coverage](https://relativelyunknown.github.io/Tree-sitter-sql-polyglot/coverage), which carries the
 per-dialect feature scores and is regenerated from the live parsers on every push to `main`.
 
 ---
@@ -76,7 +76,7 @@ parser.set_language(&LANGUAGE.into()).unwrap();            // base ANSI grammar
 
 Each dialect's identifier (`postgres`, `databricks`, `cockroachdb`, ...) is the same everywhere it
 appears: Cargo feature, npm/Python/Go/Swift name. See the [Usage
-page](https://relativelyunknown.github.io/tree-sitter-sql-polyglot/usage) for full import examples in
+page](https://relativelyunknown.github.io/Tree-sitter-sql-polyglot/usage) for full import examples in
 every language, the lazy-loading mechanism per binding, and the complete identifier reference.
 
 ---
