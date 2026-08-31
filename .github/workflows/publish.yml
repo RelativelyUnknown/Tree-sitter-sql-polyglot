@@ -116,7 +116,13 @@ jobs:
           done < <(jq -r '.grammars[].path // "."' tree-sitter.json)
         env:
           TREE_SITTER_ABI_VERSION: 15
-      - run: pip install --upgrade pip build setuptools wheel
+      # `python -mbuild -n` below builds *without* isolation, so pyproject's
+      # [build-system].requires are not installed for us. brotli is one of
+      # them - setup.py inflates the committed parser.c.br blobs at import
+      # time and dies with ModuleNotFoundError without it. Upstream's
+      # package-pypi.yml has no brotli dependency, so keep this addition when
+      # re-diffing against it.
+      - run: pip install --upgrade pip build setuptools wheel brotli
       - run: python -mbuild -n -s
       - uses: actions/upload-artifact@v4
         with:

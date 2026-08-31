@@ -1,7 +1,6 @@
 from os import path, makedirs, stat
 from sysconfig import get_config_var
 
-import brotli
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build import build
 from setuptools.command.build_ext import build_ext
@@ -34,11 +33,22 @@ def _inflate(src_dir):
     plain_path = path.join(src_dir, "parser.c")
     blob_path = f"{plain_path}.br"
     if not path.exists(blob_path):
+        # An sdist ships the already-inflated parser.c and no .br blob: the
+        # blobs are a git-checkout build input, not a distributed source
+        # (EggInfo.find_sources never adds them, while parser.c comes along
+        # as an Extension source). Missing blob + present parser.c is that
+        # case and there is nothing to inflate; missing both is a broken tree.
+        if path.exists(plain_path):
+            return
         raise FileNotFoundError(
             f"missing {blob_path} (run `node scripts/compress-parsers.js`)"
         )
     if path.exists(plain_path) and stat(plain_path).st_mtime >= stat(blob_path).st_mtime:
         return
+    # Imported lazily so the sdist path above, which never inflates anything,
+    # does not need brotli installed at all.
+    import brotli
+
     makedirs(src_dir, exist_ok=True)
     with open(blob_path, "rb") as f:
         data = brotli.decompress(f.read())
@@ -90,6 +100,11 @@ class EggInfo(egg_info):
         super().find_sources()
         self.filelist.recursive_include("queries", "*.scm")
         self.filelist.include("src/tree_sitter/*.h")
+        # The base scanner: compiled into _binding, and #included by every
+        # dialect's own scanner.c. Neither route puts it in an Extension's
+        # `sources` at sdist time (build_ext appends it later), so without
+        # this the sdist ships 22 dialect scanners that can't compile.
+        self.filelist.include("src/scanner.c")
         for dialect in DIALECT_DIRS:
             self.filelist.include(f"{dialect}/src/tree_sitter/*.h")
             self.filelist.include(f"{dialect}/src/scanner.c")
