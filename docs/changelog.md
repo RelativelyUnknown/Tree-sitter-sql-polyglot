@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.2](https://github.com/relativelyunknown/tree-sitter-sql-polyglot/releases/tag/v0.1.2) (2026-10-02)
+
+Packaging-only release, and the first 0.1.x patch on npm: npm rejected 0.1.1. No grammar changes.
+
+### Fixes
+
+- **npm publish works with provenance.** npm verifies `repository.url` in `package.json` against the
+  GitHub repository recorded in the provenance statement, and that comparison is case-sensitive. The
+  URL now spells the repository exactly as GitHub does (`RelativelyUnknown/Tree-sitter-sql-polyglot`).
+
 ## [0.1.1](https://github.com/relativelyunknown/tree-sitter-sql-polyglot/releases/tag/v0.1.1) (2026-10-02)
 
 Packaging-only release. 0.1.0 reached npm and crates.io but never PyPI; this is the first release
