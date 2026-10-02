@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [0.1.1](https://github.com/relativelyunknown/tree-sitter-sql-polyglot/releases/tag/v0.1.1) (2026-10-02)
+
+Packaging-only release. 0.1.0 reached npm and crates.io but never PyPI; this is the first release
+published there. No grammar changes.
+
+### Fixes
+
+- **PyPI sdist builds again.** The sdist job now installs `brotli`, which `setup.py` needs to inflate
+  the committed `parser.c.br` blobs.
+- **The sdist is installable.** `setup.py` falls back to the already-inflated `parser.c` when there
+  is no `.br` blob, imports `brotli` only when it actually inflates something, and the sdist now
+  includes the base `src/scanner.c` that every dialect scanner `#include`s.
+- **A failed sdist build blocks the PyPI publish** instead of uploading wheels without a source
+  distribution.
+
 ## [0.1.0](https://github.com/relativelyunknown/tree-sitter-sql-polyglot/releases/tag/v0.1.0) (2026-08-31)
 
 0.3.11 shipped an ANSI base with four dialects on top. There are now 22, the base grammar is
