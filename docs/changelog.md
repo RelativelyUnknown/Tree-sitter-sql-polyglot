@@ -4,9 +4,16 @@ All notable changes to this project will be documented in this file. See [commit
 
 ## [0.1.2](https://github.com/relativelyunknown/tree-sitter-sql-polyglot/releases/tag/v0.1.2) (2026-10-02)
 
-Packaging-only release, and the first 0.1.x patch on npm: npm rejected 0.1.1. No grammar changes.
+Packaging-only release, and the first 0.1.x patch on npm (npm rejected 0.1.1). No grammar changes.
 
 ### Fixes
+
+- **Per-dialect syntax highlighting works in every package.** The base highlights query names ANSI
+  keywords that each of the 22 dialects drops at least one of, so it failed to compile against any
+  dialect language. Python and npm shipped no dialect query at all, and Rust's
+  `HIGHLIGHTS_QUERY_<DIALECT>` held only the dialect's additions. Each dialect now has a standalone
+  query (base + the grammars it extends + its own, minus what the dialect can't compile), exposed as
+  `HIGHLIGHTS_QUERY_<DIALECT>` in Rust and Python and as `<dialect>.HIGHLIGHTS_QUERY` in Node.
 
 - **npm publish works with provenance.** npm verifies `repository.url` in `package.json` against the
   GitHub repository recorded in the provenance statement, and that comparison is case-sensitive. The

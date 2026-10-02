@@ -100,6 +100,7 @@ scripts/
   generate.js                   # Hash-cached wrapper around tree-sitter generate
   generate-all.js               # Generates every parser, concurrency capped by memory
   test-keywords.sh              # Checks keyword and highlights.scm sync
+  bundle-highlights.js          # Writes <dialect>/queries/highlights.bundled.scm for the packages
   bump-version.sh               # Bumps the version in all 5 manifest files
   docs-prep.js                  # Prepares generated pages for the VitePress site
 bindings/                       # Node/Python/Rust/Go/Swift language bindings
@@ -191,6 +192,12 @@ dispatch list has to re-enumerate all base alternatives alongside the new ones.
 
 6. Run `npm run generate && npm run test:corpus`. The keyword sync check in `test:keywords` fails
    if step 5 is missing.
+
+   After any change to a `highlights.scm` or to a grammar's `node-types.json.br`, run
+   `node scripts/bundle-highlights.js` and commit the regenerated
+   `<dialect>/queries/highlights.bundled.scm` files. Those are the standalone per-dialect queries the
+   Rust/Node/Python packages ship (base + parent chain + dialect, minus whatever the dialect's grammar
+   lacks); CI fails on a stale one via `--check`.
 
 7. Add a corpus test case to the relevant file in `test/corpus/`.
 

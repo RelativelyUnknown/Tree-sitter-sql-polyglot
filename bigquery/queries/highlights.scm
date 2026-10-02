@@ -1,3 +1,5 @@
+; inherits: sql
+
 ; BigQuery-specific keywords
 [
   (keyword_int64)

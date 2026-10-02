@@ -1,4 +1,4 @@
-; inherits: sql
+; inherits: hive
 
 ; Spark/Hive/Iceberg-specific keywords
 [

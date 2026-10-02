@@ -1,3 +1,5 @@
+; inherits: sql
+
 ; Redshift-specific keywords
 (keyword_prepare) @keyword
 (keyword_deallocate) @keyword

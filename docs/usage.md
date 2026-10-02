@@ -45,7 +45,8 @@ assert!(!tree.root_node().has_error());
 ```
 
 Each dialect also exposes `NODE_TYPES_<DIALECT>` (the `node-types.json` content) and
-`HIGHLIGHTS_QUERY_<DIALECT>` (its syntax highlighting query), gated behind the same feature.
+`HIGHLIGHTS_QUERY_<DIALECT>` (its syntax highlighting query, see [Syntax
+highlighting](#syntax-highlighting)), gated behind the same feature.
 
 ## Node.js (npm)
 
@@ -87,6 +88,33 @@ tree = parser.parse(b"SELECT * FROM users WHERE id = 1")
 Same shape as Node: `import tree_sitter_sql` only loads the base grammar, and `language_postgres()` is
 what loads the postgres extension module. Other dialects stay unloaded until you call their own
 `language_*()`.
+
+## Syntax highlighting
+
+Use the highlights query that belongs to the grammar you parse with. The base `HIGHLIGHTS_QUERY` names
+ANSI keywords that every dialect drops at least one of, so it fails to compile against any dialect
+language. Each dialect has its own standalone query: the base highlights plus those of every grammar
+it extends, minus the patterns that dialect can't compile.
+
+| | Base | Dialect |
+|---|---|---|
+| Rust | `HIGHLIGHTS_QUERY` | `HIGHLIGHTS_QUERY_POSTGRES` (behind its feature) |
+| Node | `SQL.HIGHLIGHTS_QUERY` | `postgres.HIGHLIGHTS_QUERY` |
+| Python | `tree_sitter_sql.HIGHLIGHTS_QUERY` | `tree_sitter_sql.HIGHLIGHTS_QUERY_POSTGRES` |
+
+```python
+from tree_sitter import Language, Parser, Query, QueryCursor
+import tree_sitter_sql
+
+language = Language(tree_sitter_sql.language_postgres())
+query = Query(language, tree_sitter_sql.HIGHLIGHTS_QUERY_POSTGRES)
+tree = Parser(language).parse(b"SELECT a FROM t WHERE b ILIKE 'x%'")
+captures = QueryCursor(query).captures(tree.root_node)   # {"keyword": [...], "field": [...], ...}
+```
+
+The dialect queries are generated into `<dialect>/queries/highlights.bundled.scm` by
+`scripts/bundle-highlights.js`. Editors that resolve `; inherits:` themselves (nvim-treesitter, Helix)
+can keep using the hand-written `<dialect>/queries/highlights.scm` instead.
 
 ## Go
 

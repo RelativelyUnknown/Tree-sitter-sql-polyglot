@@ -155,6 +155,12 @@ jobs:
         if: matrix.shard == 'base'
         run: scripts/test-keywords.sh
 
+      # The packages ship <dialect>/queries/highlights.bundled.scm, generated
+      # from the hand-written highlights.scm files and node-types.json.br.
+      - name: Bundled highlights are up to date
+        if: matrix.shard == 'base'
+        run: node scripts/bundle-highlights.js --check
+
       - name: Run dialect corpus tests
         if: matrix.dialects != ''
         run: |
@@ -350,7 +356,10 @@ jobs:
       # `core` extra pulls in the `tree_sitter` runtime package the tests
       # import - pyproject.toml keeps it optional so consumers can bring
       # their own tree-sitter version instead.
-      - run: pip install -e ".[core]"
+      # A regular (not editable) install, so the tests see the wheel's real
+      # layout: setup.py's build step copies the highlights queries into the
+      # package, and an editable install skips that step.
+      - run: pip install ".[core]"
       - run: python -m unittest discover -s bindings/python/tests -p "test_*.py" -v
 
   test_rust_os:

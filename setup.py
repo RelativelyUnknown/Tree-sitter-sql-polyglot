@@ -10,9 +10,16 @@ from wheel.bdist_wheel import bdist_wheel
 
 class Build(build):
     def run(self):
+        dest = path.join(self.build_lib, "tree_sitter_sql", "queries")
         if path.isdir("queries"):
-            dest = path.join(self.build_lib, "tree_sitter_sql", "queries")
             self.copy_tree("queries", dest)
+        # Each dialect's standalone highlights query (scripts/bundle-highlights.js),
+        # flattened next to the base one: queries/highlights_<dialect>.scm.
+        for dialect in DIALECT_DIRS:
+            bundled = path.join(dialect, "queries", "highlights.bundled.scm")
+            if path.exists(bundled):
+                self.mkpath(dest)
+                self.copy_file(bundled, path.join(dest, f"highlights_{dialect}.scm"))
         super().run()
 
 
@@ -108,6 +115,7 @@ class EggInfo(egg_info):
         for dialect in DIALECT_DIRS:
             self.filelist.include(f"{dialect}/src/tree_sitter/*.h")
             self.filelist.include(f"{dialect}/src/scanner.c")
+            self.filelist.include(f"{dialect}/queries/highlights.bundled.scm")
 
 
 setup(

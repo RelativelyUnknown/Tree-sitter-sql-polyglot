@@ -1,3 +1,5 @@
+; inherits: sql
+
 ; ClickHouse dialect keyword highlights
 (keyword_alias) @keyword
 (keyword_attach) @keyword

@@ -1,4 +1,4 @@
-; inherits: spark
+; inherits: sql
 
 ; Hive-specific keywords
 [
