@@ -439,6 +439,21 @@
   (keyword_verbose)
 ] @keyword
 
+[
+  (keyword_catalogs)
+  (keyword_columns)
+  (keyword_describe)
+  (keyword_extended)
+  (keyword_functions)
+  (keyword_grants)
+  (keyword_match)
+  (keyword_properties)
+  (keyword_roles)
+  (keyword_schemas)
+  (keyword_show)
+  (keyword_text)
+] @keyword
+
 ; ── athena/queries/highlights.scm ───────────────────────────────────────────
 
 [
@@ -470,4 +485,15 @@
   (keyword_explain)
   (keyword_analyze)
   (keyword_verbose)
+] @keyword
+
+[
+  (keyword_bin_pack)
+  (keyword_databases)
+  (keyword_dbproperties)
+  (keyword_dialect)
+  (keyword_optimize)
+  (keyword_rewrite)
+  (keyword_vacuum)
+  (keyword_views)
 ] @keyword

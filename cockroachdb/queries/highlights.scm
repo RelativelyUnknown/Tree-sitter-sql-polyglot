@@ -24,3 +24,40 @@
   (keyword_analyze)
   (keyword_verbose)
 ] @keyword
+
+; ============================================================
+; Remaining cockroachdb keywords
+; ============================================================
+
+[
+  (keyword_at)
+  (keyword_availability)
+  (keyword_cancel)
+  (keyword_configuration)
+  (keyword_configure)
+  (keyword_convert)
+  (keyword_expiration)
+  (keyword_export)
+  (keyword_failure)
+  (keyword_family)
+  (keyword_global)
+  (keyword_job)
+  (keyword_locality)
+  (keyword_parent)
+  (keyword_pause)
+  (keyword_placement)
+  (keyword_queries)
+  (keyword_query)
+  (keyword_region)
+  (keyword_regional)
+  (keyword_regions)
+  (keyword_resume)
+  (keyword_scatter)
+  (keyword_schedule)
+  (keyword_schedules)
+  (keyword_sessions)
+  (keyword_setting)
+  (keyword_split)
+  (keyword_survive)
+  (keyword_unsplit)
+] @keyword

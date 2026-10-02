@@ -45,3 +45,49 @@
   (keyword_analyze)
   (keyword_verbose)
 ] @keyword
+
+; ============================================================
+; Remaining bigquery keywords
+; ============================================================
+
+[
+  (keyword_access)
+  (keyword_aggregate)
+  (keyword_assignment)
+  (keyword_bi_capacity)
+  (keyword_capacity)
+  (keyword_clone)
+  (keyword_cluster)
+  (keyword_copy)
+  (keyword_data_policy)
+  (keyword_do)
+  (keyword_enforced)
+  (keyword_exception)
+  (keyword_extension)
+  (keyword_files)
+  (keyword_hash)
+  (keyword_include)
+  (keyword_iterate)
+  (keyword_leave)
+  (keyword_load)
+  (keyword_loop)
+  (keyword_options)
+  (keyword_organization)
+  (keyword_overwrite)
+  (keyword_pivot)
+  (keyword_policies)
+  (keyword_policy)
+  (keyword_project)
+  (keyword_qualify)
+  (keyword_rebuild)
+  (keyword_replica)
+  (keyword_reservation)
+  (keyword_system_time)
+  (keyword_undrop)
+  (keyword_unpivot)
+  (keyword_while)
+] @keyword
+
+[
+  (keyword_elseif)
+] @conditional

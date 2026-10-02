@@ -431,6 +431,32 @@
   (keyword_verbose)
 ] @keyword
 
+[
+  (keyword_aggregate)
+  (keyword_do)
+  (keyword_enforced)
+  (keyword_exception)
+  (keyword_extension)
+  (keyword_files)
+  (keyword_hash)
+  (keyword_include)
+  (keyword_iterate)
+  (keyword_leave)
+  (keyword_load)
+  (keyword_loop)
+  (keyword_options)
+  (keyword_overwrite)
+  (keyword_pivot)
+  (keyword_policy)
+  (keyword_qualify)
+  (keyword_unpivot)
+  (keyword_while)
+] @keyword
+
+[
+  (keyword_elseif)
+] @conditional
+
 ; ── spanner/queries/highlights.scm ──────────────────────────────────────────
 
 [
@@ -447,4 +473,26 @@
   (keyword_explain)
   (keyword_analyze)
   (keyword_verbose)
+] @keyword
+
+[
+  (keyword_auto_increment)
+  (keyword_bit_reversed_positive)
+  (keyword_bundle)
+  (keyword_counter)
+  (keyword_hidden)
+  (keyword_identity)
+  (keyword_ignore)
+  (keyword_locality)
+  (keyword_max)
+  (keyword_older_than)
+  (keyword_output)
+  (keyword_placement)
+  (keyword_proto)
+  (keyword_remote)
+  (keyword_skip)
+  (keyword_sql)
+  (keyword_statistics)
+  (keyword_stored)
+  (keyword_synonym)
 ] @keyword

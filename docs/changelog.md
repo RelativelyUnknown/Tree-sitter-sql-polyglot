@@ -15,6 +15,10 @@ Packaging-only release, and the first 0.1.x patch on npm (npm rejected 0.1.1). N
   query (base + the grammars it extends + its own, minus what the dialect can't compile), exposed as
   `HIGHLIGHTS_QUERY_<DIALECT>` in Rust and Python and as `<dialect>.HIGHLIGHTS_QUERY` in Node.
 
+- **Every dialect keyword is highlighted.** 1,361 keywords across the 22 dialects (Postgres `VACUUM`,
+  `COPY` and `STDIN`, MySQL `SHOW` and `ENGINE`, Oracle `VARCHAR2` and `NUMBER`, ...) parsed but had no
+  highlight capture. They're now captured, and CI fails on a dialect keyword without one.
+
 - **npm publish works with provenance.** npm verifies `repository.url` in `package.json` against the
   GitHub repository recorded in the provenance statement, and that comparison is case-sensitive. The
   URL now spells the repository exactly as GitHub does (`RelativelyUnknown/Tree-sitter-sql-polyglot`).

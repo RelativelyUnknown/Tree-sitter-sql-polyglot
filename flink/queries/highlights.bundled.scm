@@ -455,3 +455,26 @@
   (keyword_analyze)
   (keyword_verbose)
 ] @keyword
+
+[
+  (keyword_catalog)
+  (keyword_define)
+  (keyword_extension)
+  (keyword_hash)
+  (keyword_include)
+  (keyword_match)
+  (keyword_match_recognize)
+  (keyword_measures)
+  (keyword_one)
+  (keyword_overwrite)
+  (keyword_past)
+  (keyword_pattern)
+  (keyword_per)
+  (keyword_skip)
+  (keyword_sql)
+  (keyword_use)
+] @keyword
+
+[
+  (keyword_map)
+] @type.builtin

@@ -408,3 +408,20 @@
   (keyword_analyze)
   (keyword_verbose)
 ] @keyword
+
+[
+  (keyword_autoincrement)
+  (keyword_conflict)
+  (keyword_do)
+  (keyword_exclusive)
+  (keyword_glob)
+  (keyword_hash)
+  (keyword_ignore)
+  (keyword_include)
+  (keyword_match)
+  (keyword_nothing)
+  (keyword_returning)
+  (keyword_stored)
+  (keyword_vacuum)
+  (keyword_virtual)
+] @keyword

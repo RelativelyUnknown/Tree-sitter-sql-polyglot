@@ -17,9 +17,13 @@
  * inside a top-level [...] list, that names a node type, field or anonymous
  * token missing from the dialect's node-types.json.
  *
+ * --check also fails if a keyword the dialect's parser can produce (one in
+ * its node-types.json) has no capture in the bundle: the dialect counterpart
+ * of scripts/test-keywords.sh, which only covers the base grammar.
+ *
  * Usage:
  *   node scripts/bundle-highlights.js            # write all bundles
- *   node scripts/bundle-highlights.js --check    # fail if a bundle is stale
+ *   node scripts/bundle-highlights.js --check    # fail if a bundle is stale or misses a keyword
  *   node scripts/bundle-highlights.js postgres   # write one dialect
  */
 
@@ -188,17 +192,24 @@ function bundle(dir) {
 ; with every pattern the ${dir} grammar cannot compile removed. Edit the
 ; queries/highlights.scm files listed below, then rerun the script.
 `;
-  return { text: `${header}\n${sections.join('\n\n')}\n`, dropped: [...new Set(dropped)] };
+  const text = `${header}\n${sections.join('\n\n')}\n`;
+  const captured = new Set([...text.matchAll(/\((keyword_\w+)\)/g)].map((m) => m[1]));
+  const uncaptured = [...types.named].filter((t) => t.startsWith('keyword_') && !captured.has(t)).sort();
+  return { text, dropped: [...new Set(dropped)], uncaptured };
 }
 
 let stale = 0;
 for (const dir of targets) {
   const out = `${ROOT}/${dir}/queries/highlights.bundled.scm`;
-  const { text, dropped } = bundle(dir);
+  const { text, dropped, uncaptured } = bundle(dir);
   const current = existsSync(out) ? readFileSync(out, 'utf8') : null;
   if (check) {
     if (current !== text) {
       console.error(`${dir}/queries/highlights.bundled.scm is out of date`);
+      stale++;
+    }
+    if (uncaptured.length) {
+      console.error(`${dir}: keywords with no highlight capture (add them to ${dir}/queries/highlights.scm): ${uncaptured.join(' ')}`);
       stale++;
     }
     continue;
@@ -208,6 +219,6 @@ for (const dir of targets) {
   console.log(`${dir}: ${chain(dir).map((d) => d || 'base').join(' -> ')}${note}`);
 }
 if (stale) {
-  console.error(`\n${stale} stale bundle(s): run \`node scripts/bundle-highlights.js\` and commit the result.`);
+  console.error(`\n${stale} problem(s): fix the highlights.scm files above if needed, then run \`node scripts/bundle-highlights.js\` and commit the result.`);
   process.exit(1);
 }
