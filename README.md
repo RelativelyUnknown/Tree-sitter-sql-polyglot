@@ -1,4 +1,8 @@
+
+
 # tree-sitter-sql-polyglot
+
+[![Publish Packages](https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot/actions/workflows/publish.yml/badge.svg)](https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot/actions/workflows/publish.yml)
 
 A multi-dialect SQL parser for [tree-sitter](https://tree-sitter.github.io/). It provides an ANSI SQL
 base plus 22 independently compiled dialect grammars, each layered on top with tree-sitter's
