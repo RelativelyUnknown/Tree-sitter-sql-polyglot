@@ -151,6 +151,7 @@ ${tests}
   const compileCalls = [`    compile("tree-sitter-sql", "base", "src".as_ref());`]
     .concat(DIALECTS.map((d) => `    if env::var("CARGO_FEATURE_${d.upper}").is_ok() {
         compile("tree-sitter-sql-${d.ident}", "${d.dir}", "${d.dir}/src".as_ref());
+        bundle_highlights("${d.dir}");
     }`))
     .join('\n');
 
@@ -179,6 +180,26 @@ fn inflate(src_dir: &Path, ident: &str, file: &str) -> PathBuf {
     let out_path = out_dir().join(format!("{ident}_{file}"));
     fs::write(&out_path, out).unwrap_or_else(|e| panic!("failed to write {}: {e}", out_path.display()));
     out_path
+}
+
+/// lib.rs \`include_str!\`s each enabled dialect's highlights.bundled.scm. A
+/// published crate ships them; a git checkout has to build them, which takes
+/// Node (scripts/bundle-highlights.js, the same step inflate-parsers.js runs).
+fn bundle_highlights(dir: &str) {
+    let bundle = Path::new(dir).join("queries").join("highlights.bundled.scm");
+    println!("cargo:rerun-if-changed={}", bundle.display());
+    if bundle.exists() {
+        return;
+    }
+    let status = std::process::Command::new("node")
+        .args(["scripts/bundle-highlights.js", dir])
+        .status();
+    if !matches!(status, Ok(s) if s.success()) || !bundle.exists() {
+        panic!(
+            "missing {} and could not build it: run \`node scripts/inflate-parsers.js\` (needs Node)",
+            bundle.display()
+        );
+    }
 }
 
 fn compile(name: &str, ident: &str, src_dir: &Path) {
