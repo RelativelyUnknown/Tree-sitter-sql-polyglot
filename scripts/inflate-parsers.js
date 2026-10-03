@@ -4,7 +4,8 @@
  * committed parser.c.br/node-types.json.br blob back into a real file, using
  * Node's built-in zlib. Runs on install/build for Node, Go and Swift so none
  * of them need a full `tree-sitter generate` pass. Skips files already newer
- * than their .br.
+ * than their .br. Also writes each dialect's highlights.bundled.scm (see
+ * scripts/bundle-highlights.js).
  */
 
 import { brotliDecompressSync } from 'zlib';
@@ -52,3 +53,9 @@ if (failed) {
   console.error('inflate-parsers: one or more .br blobs are missing');
   process.exit(1);
 }
+
+// The per-dialect highlights.bundled.scm files are generated from the
+// hand-written queries plus node-types.json, and gitignored the same way.
+// An installed npm package has no sources and ships them prebuilt instead.
+const { hasSources, writeBundles } = await import('./bundle-highlights.js');
+if (hasSources()) writeBundles();

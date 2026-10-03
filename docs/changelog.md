@@ -19,6 +19,13 @@ Packaging-only release, and the first 0.1.x patch on npm (npm rejected 0.1.1). N
   `COPY` and `STDIN`, MySQL `SHOW` and `ENGINE`, Oracle `VARCHAR2` and `NUMBER`, ...) parsed but had no
   highlight capture. They're now captured, and CI fails on a dialect keyword without one.
 
+- **The npm package installs.** Its `install` script runs `scripts/inflate-parsers.js`, which the
+  package never shipped, so `npm install` failed with `Cannot find module` (0.1.0 included).
+- **Node dialects pass straight to `setLanguage`.** The documented `parser.setLanguage(postgres.language)`
+  crashed on the first tree access (`Cannot read properties of undefined`), because node-tree-sitter
+  caches node classes on the object it's given. Use `parser.setLanguage(postgres)`, as with the default
+  export; dialect objects now also carry `nodeTypeInfo`.
+
 - **npm publish works with provenance.** npm verifies `repository.url` in `package.json` against the
   GitHub repository recorded in the provenance statement, and that comparison is case-sensitive. The
   URL now spells the repository exactly as GitHub does (`RelativelyUnknown/Tree-sitter-sql-polyglot`).

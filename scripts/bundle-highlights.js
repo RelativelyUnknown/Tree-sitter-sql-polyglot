@@ -17,19 +17,24 @@
  * inside a top-level [...] list, that names a node type, field or anonymous
  * token missing from the dialect's node-types.json.
  *
- * --check also fails if a keyword the dialect's parser can produce (one in
- * its node-types.json) has no capture in the bundle: the dialect counterpart
- * of scripts/test-keywords.sh, which only covers the base grammar.
+ * The bundles are build outputs, gitignored like parser.c: inflate-parsers.js
+ * (run by `npm install` and before every Rust/Python/Go/Swift build in CI and
+ * publish.yml) calls writeBundles() after inflating the parsers. The Cargo
+ * `include` list and npm `files` list ship them regardless of .gitignore.
+ *
+ * --check writes nothing and fails if a keyword the dialect's parser can
+ * produce (one in its node-types.json) has no capture in its bundle: the
+ * dialect counterpart of scripts/test-keywords.sh, which only covers base.
  *
  * Usage:
  *   node scripts/bundle-highlights.js            # write all bundles
- *   node scripts/bundle-highlights.js --check    # fail if a bundle is stale or misses a keyword
+ *   node scripts/bundle-highlights.js --check    # fail if a dialect keyword has no capture
  *   node scripts/bundle-highlights.js postgres   # write one dialect
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { brotliDecompressSync } from 'zlib';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
@@ -39,11 +44,6 @@ const DIALECT_DIRS = [
   'athena', 'redshift', 'clickhouse', 'flink', 'cockroachdb', 'spanner',
   'teradata', 'hana',
 ];
-
-const args = process.argv.slice(2);
-const check = args.includes('--check');
-const only = args.filter((a) => !a.startsWith('--'));
-const targets = only.length ? only : DIALECT_DIRS;
 
 // '' is the base grammar at the repo root.
 function grammarParent(dir) {
@@ -190,7 +190,7 @@ function bundle(dir) {
 ;
 ; Standalone highlights query for ${dir}: ${dirs.map((d) => d || 'base').join(' -> ')},
 ; with every pattern the ${dir} grammar cannot compile removed. Edit the
-; queries/highlights.scm files listed below, then rerun the script.
+; queries/highlights.scm files listed below instead.
 `;
   const text = `${header}\n${sections.join('\n\n')}\n`;
   const captured = new Set([...text.matchAll(/\((keyword_\w+)\)/g)].map((m) => m[1]));
@@ -198,27 +198,45 @@ function bundle(dir) {
   return { text, dropped: [...new Set(dropped)], uncaptured };
 }
 
-let stale = 0;
-for (const dir of targets) {
-  const out = `${ROOT}/${dir}/queries/highlights.bundled.scm`;
-  const { text, dropped, uncaptured } = bundle(dir);
-  const current = existsSync(out) ? readFileSync(out, 'utf8') : null;
-  if (check) {
-    if (current !== text) {
-      console.error(`${dir}/queries/highlights.bundled.scm is out of date`);
-      stale++;
-    }
+// The hand-written sources only exist in a repo checkout. An installed npm
+// package ships the bundles already built, so there is nothing to redo there.
+export function hasSources(dirs = DIALECT_DIRS) {
+  return dirs.every((d) => existsSync(`${ROOT}/${d}/queries/highlights.scm`) && existsSync(`${ROOT}/${d}/grammar.js`));
+}
+
+export function writeBundles(dirs = DIALECT_DIRS, { log = () => {} } = {}) {
+  for (const dir of dirs) {
+    const out = `${ROOT}/${dir}/queries/highlights.bundled.scm`;
+    const { text, dropped } = bundle(dir);
+    if (!existsSync(out) || readFileSync(out, 'utf8') !== text) writeFileSync(out, text);
+    const note = dropped.length ? ` (dropped ${dropped.length}: ${dropped.slice(0, 6).join(', ')}${dropped.length > 6 ? ', ...' : ''})` : '';
+    log(`${dir}: ${chain(dir).map((d) => d || 'base').join(' -> ')}${note}`);
+  }
+}
+
+export function checkKeywords(dirs = DIALECT_DIRS) {
+  let problems = 0;
+  for (const dir of dirs) {
+    const { uncaptured } = bundle(dir);
     if (uncaptured.length) {
       console.error(`${dir}: keywords with no highlight capture (add them to ${dir}/queries/highlights.scm): ${uncaptured.join(' ')}`);
-      stale++;
+      problems++;
     }
-    continue;
   }
-  if (current !== text) writeFileSync(out, text);
-  const note = dropped.length ? ` (dropped ${dropped.length}: ${dropped.slice(0, 6).join(', ')}${dropped.length > 6 ? ', ...' : ''})` : '';
-  console.log(`${dir}: ${chain(dir).map((d) => d || 'base').join(' -> ')}${note}`);
+  return problems;
 }
-if (stale) {
-  console.error(`\n${stale} problem(s): fix the highlights.scm files above if needed, then run \`node scripts/bundle-highlights.js\` and commit the result.`);
-  process.exit(1);
+
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  const args = process.argv.slice(2);
+  const only = args.filter((a) => !a.startsWith('--'));
+  const targets = only.length ? only : DIALECT_DIRS;
+  if (args.includes('--check')) {
+    const problems = checkKeywords(targets);
+    if (problems) {
+      console.error(`\n${problems} dialect(s) with uncaptured keywords. Add them to the highest dialect in the grammar chain that produces them.`);
+      process.exit(1);
+    }
+  } else {
+    writeBundles(targets, { log: console.log });
+  }
 }

@@ -13,13 +13,18 @@ class Build(build):
         dest = path.join(self.build_lib, "tree_sitter_sql", "queries")
         if path.isdir("queries"):
             self.copy_tree("queries", dest)
-        # Each dialect's standalone highlights query (scripts/bundle-highlights.js),
-        # flattened next to the base one: queries/highlights_<dialect>.scm.
+        # Each dialect's standalone highlights query, flattened next to the base
+        # one: queries/highlights_<dialect>.scm. The bundles are gitignored
+        # build outputs (like parser.c): an sdist ships them, a git checkout
+        # has to generate them first.
         for dialect in DIALECT_DIRS:
             bundled = path.join(dialect, "queries", "highlights.bundled.scm")
-            if path.exists(bundled):
-                self.mkpath(dest)
-                self.copy_file(bundled, path.join(dest, f"highlights_{dialect}.scm"))
+            if not path.exists(bundled):
+                raise FileNotFoundError(
+                    f"missing {bundled} (run `node scripts/inflate-parsers.js`)"
+                )
+            self.mkpath(dest)
+            self.copy_file(bundled, path.join(dest, f"highlights_{dialect}.scm"))
         super().run()
 
 

@@ -401,6 +401,21 @@ function lazyDialect(grammarName, targetName, getBunBinding, dir) {
   // whatever this dialect's grammar lacks removed (scripts/bundle-highlights.js),
   // so it compiles against \`dialect.language\` on its own.
   lazyQuery(dialect, "HIGHLIGHTS_QUERY", \`\${root}/\${dir}/queries/highlights.bundled.scm\`);
+  // Pass the dialect object itself to parser.setLanguage(), like the default
+  // export: node-tree-sitter caches per-language node classes on that object
+  // (built from nodeTypeInfo), which it can't do on the bare \`language\` value.
+  Object.defineProperty(dialect, "nodeTypeInfo", {
+    configurable: true,
+    enumerable: true,
+    get() {
+      let value;
+      try {
+        value = JSON.parse(readFileSync(\`\${root}/\${dir}/src/node-types.json\`, "utf8"));
+      } catch { }
+      Object.defineProperty(dialect, "nodeTypeInfo", { value, enumerable: true, configurable: true });
+      return value;
+    }
+  });
   Object.defineProperty(dialect, "language", {
     configurable: true,
     enumerable: true,
@@ -512,7 +527,10 @@ declare const binding: {
 
 export default binding;
 
-/** A dialect grammar, loaded lazily on first access to \`language\`. */
+/**
+ * A dialect grammar, loaded lazily on first access to \`language\`. Pass the
+ * object itself to \`parser.setLanguage(postgres)\`, like the default export.
+ */
 type Dialect = {
   /** The grammar name, e.g. \`"postgres_sql"\`. */
   name: string;
@@ -522,6 +540,9 @@ type Dialect = {
    * @private
    */
   language: unknown;
+
+  /** The content of this dialect's \`node-types.json\` file. */
+  nodeTypeInfo: NodeInfo[];
 
   /**
    * The syntax highlighting query for this dialect: the base highlights plus

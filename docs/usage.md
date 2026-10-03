@@ -60,7 +60,7 @@ import SQL, { postgres, mysql } from "@relativelyunknown/tree-sitter-sql-polyglo
 
 const parser = new Parser();
 parser.setLanguage(SQL);                 // default export: base ANSI grammar
-parser.setLanguage(postgres.language);   // named export per dialect: { name, language }
+parser.setLanguage(postgres);            // named export per dialect: { name, language, ... }
 
 const tree = parser.parse("SELECT * FROM users WHERE id = 1");
 ```
@@ -99,7 +99,7 @@ it extends, minus the patterns that dialect can't compile.
 | | Base | Dialect |
 |---|---|---|
 | Rust | `HIGHLIGHTS_QUERY` | `HIGHLIGHTS_QUERY_POSTGRES` (behind its feature) |
-| Node | `SQL.HIGHLIGHTS_QUERY` | `postgres.HIGHLIGHTS_QUERY` |
+| Node | `SQL.HIGHLIGHTS_QUERY` | `postgres.HIGHLIGHTS_QUERY` (with `new Parser.Query(postgres, ...)`) |
 | Python | `tree_sitter_sql.HIGHLIGHTS_QUERY` | `tree_sitter_sql.HIGHLIGHTS_QUERY_POSTGRES` |
 
 ```python
@@ -112,8 +112,8 @@ tree = Parser(language).parse(b"SELECT a FROM t WHERE b ILIKE 'x%'")
 captures = QueryCursor(query).captures(tree.root_node)   # {"keyword": [...], "field": [...], ...}
 ```
 
-The dialect queries are generated into `<dialect>/queries/highlights.bundled.scm` by
-`scripts/bundle-highlights.js`. Editors that resolve `; inherits:` themselves (nvim-treesitter, Helix)
+The dialect queries are built into `<dialect>/queries/highlights.bundled.scm` by
+`scripts/bundle-highlights.js` at build time (they aren't committed). Editors that resolve `; inherits:` themselves (nvim-treesitter, Helix)
 can keep using the hand-written `<dialect>/queries/highlights.scm` instead.
 
 ## Go

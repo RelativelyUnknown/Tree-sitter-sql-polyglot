@@ -59,7 +59,10 @@ declare const binding: {
 
 export default binding;
 
-/** A dialect grammar, loaded lazily on first access to `language`. */
+/**
+ * A dialect grammar, loaded lazily on first access to `language`. Pass the
+ * object itself to `parser.setLanguage(postgres)`, like the default export.
+ */
 type Dialect = {
   /** The grammar name, e.g. `"postgres_sql"`. */
   name: string;
@@ -69,6 +72,9 @@ type Dialect = {
    * @private
    */
   language: unknown;
+
+  /** The content of this dialect's `node-types.json` file. */
+  nodeTypeInfo: NodeInfo[];
 
   /**
    * The syntax highlighting query for this dialect: the base highlights plus
