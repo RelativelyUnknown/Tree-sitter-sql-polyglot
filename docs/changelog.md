@@ -4,55 +4,42 @@ All notable changes to this project will be documented in this file. See [commit
 
 ## [0.1.2](https://github.com/relativelyunknown/tree-sitter-sql-polyglot/releases/tag/v0.1.2) (2026-10-02)
 
-Packaging-only release, and the first 0.1.x patch on npm (npm rejected 0.1.1). No grammar changes.
+Packaging fixes. The grammars are unchanged.
 
 ### Fixes
 
-- **Per-dialect syntax highlighting works in every package.** The base highlights query names ANSI
-  keywords that each of the 22 dialects drops at least one of, so it failed to compile against any
-  dialect language. Python and npm shipped no dialect query at all, and Rust's
-  `HIGHLIGHTS_QUERY_<DIALECT>` held only the dialect's additions. Each dialect now has a standalone
-  query (base + the grammars it extends + its own, minus what the dialect can't compile), exposed as
-  `HIGHLIGHTS_QUERY_<DIALECT>` in Rust and Python and as `<dialect>.HIGHLIGHTS_QUERY` in Node.
-
-- **Every dialect keyword is highlighted.** 1,361 keywords across the 22 dialects (Postgres `VACUUM`,
-  `COPY` and `STDIN`, MySQL `SHOW` and `ENGINE`, Oracle `VARCHAR2` and `NUMBER`, ...) parsed but had no
-  highlight capture. They're now captured, and CI fails on a dialect keyword without one.
-
-- **The npm package installs.** Its `install` script runs `scripts/inflate-parsers.js`, which the
-  package never shipped, so `npm install` failed with `Cannot find module` (0.1.0 included).
-- **Node dialects pass straight to `setLanguage`.** The documented `parser.setLanguage(postgres.language)`
-  crashed on the first tree access (`Cannot read properties of undefined`), because node-tree-sitter
-  caches node classes on the object it's given. Use `parser.setLanguage(postgres)`, as with the default
-  export; dialect objects now also carry `nodeTypeInfo`.
-
-- **npm publish works with provenance.** npm verifies `repository.url` in `package.json` against the
-  GitHub repository recorded in the provenance statement, and that comparison is case-sensitive. The
-  URL now spells the repository exactly as GitHub does (`RelativelyUnknown/Tree-sitter-sql-polyglot`).
+- npm: the package can be installed. Its install script ran `scripts/inflate-parsers.js`, which
+  wasn't included in the package, so `npm install` failed (0.1.0 too).
+- npm: the 0.1.1 publish was rejected because `repository.url` in `package.json` didn't match the
+  repository's capitalization, which npm's provenance check compares exactly.
+- Node: pass a dialect straight to `parser.setLanguage(postgres)`. The documented
+  `setLanguage(postgres.language)` crashed as soon as you read the tree. Dialect objects now also have
+  `nodeTypeInfo`.
+- Highlighting now works for dialects. The base query doesn't compile against any dialect, Python
+  and npm had no dialect queries, and Rust's only held each dialect's additions. Every dialect now
+  ships a complete query: `HIGHLIGHTS_QUERY_<DIALECT>` in Rust and Python, `<dialect>.HIGHLIGHTS_QUERY`
+  in Node.
+- 1,361 dialect keywords that had no highlight (Postgres `VACUUM` and `COPY`, MySQL `SHOW`, Oracle
+  `VARCHAR2`, ...) are now highlighted, and CI fails if a new one is missed.
 
 ## [0.1.1](https://github.com/relativelyunknown/tree-sitter-sql-polyglot/releases/tag/v0.1.1) (2026-10-02)
 
-Packaging-only release. 0.1.0 reached npm and crates.io but never PyPI; this is the first release
-published there. No grammar changes.
+First release on PyPI; 0.1.0 only reached npm and crates.io. The grammars are unchanged.
 
 ### Fixes
 
-- **PyPI sdist builds again.** The sdist job now installs `brotli`, which `setup.py` needs to inflate
-  the committed `parser.c.br` blobs.
-- **The sdist is installable.** `setup.py` falls back to the already-inflated `parser.c` when there
-  is no `.br` blob, imports `brotli` only when it actually inflates something, and the sdist now
-  includes the base `src/scanner.c` that every dialect scanner `#include`s.
-- **A failed sdist build blocks the PyPI publish** instead of uploading wheels without a source
-  distribution.
+- The PyPI source distribution builds again (the build job was missing `brotli`).
+- The source distribution installs: it now includes `src/scanner.c`, and installing it no longer
+  needs `brotli`.
+- A failed source build now stops the PyPI publish instead of uploading wheels without it.
 
 ## [0.1.0](https://github.com/relativelyunknown/tree-sitter-sql-polyglot/releases/tag/v0.1.0) (2026-08-31)
 
-0.3.11 shipped an ANSI base with four dialects on top. There are now 22, the base grammar is
-strictly ISO SQL, and coverage is measured against outside parsers rather than against our own test
-suite. This is also, in practice, the project's first real release: nothing under the previous
-0.3.x line was ever published to npm, crates.io or PyPI, so the version starts fresh at 0.1.0
-instead of continuing 0.3.x — don't read the number as a downgrade or expect SemVer continuity with
-anything before it.
+0.3.11 had an ANSI base and four dialects. There are now 22, the base grammar is strict ISO SQL, and
+coverage is checked against other parsers instead of our own tests.
+
+Nothing from the 0.3.x line was ever published to npm, crates.io or PyPI, so this is the first real
+release and the version restarts at 0.1.0. It isn't a downgrade.
 
 ### Breaking changes
 

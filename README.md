@@ -1,162 +1,112 @@
-
-
 # tree-sitter-sql-polyglot
 
-[![Publish Packages](https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot/actions/workflows/publish.yml/badge.svg)](https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot/actions/workflows/publish.yml)
+[![CI](https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot/actions/workflows/ci.yml/badge.svg)](https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot/actions/workflows/ci.yml)
+[![Publish](https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot/actions/workflows/publish.yml/badge.svg)](https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot/actions/workflows/publish.yml)
+[![crates.io](https://img.shields.io/crates/v/tree-sitter-sql-polyglot?logo=rust)](https://crates.io/crates/tree-sitter-sql-polyglot)
+[![npm](https://img.shields.io/npm/v/@relativelyunknown/tree-sitter-sql-polyglot?logo=npm)](https://www.npmjs.com/package/@relativelyunknown/tree-sitter-sql-polyglot)
+[![PyPI](https://img.shields.io/pypi/v/tree-sitter-sql-polyglot?logo=python&logoColor=white)](https://pypi.org/project/tree-sitter-sql-polyglot/)
+[![Python](https://img.shields.io/pypi/pyversions/tree-sitter-sql-polyglot)](https://pypi.org/project/tree-sitter-sql-polyglot/)
+[![Docs](https://img.shields.io/badge/docs-site-blue)](https://relativelyunknown.github.io/Tree-sitter-sql-polyglot/)
+[![License: MIT](https://img.shields.io/github/license/RelativelyUnknown/Tree-sitter-sql-polyglot)](LICENSE)
 
-A multi-dialect SQL parser for [tree-sitter](https://tree-sitter.github.io/). It provides an ANSI SQL
-base plus 22 independently compiled dialect grammars, each layered on top with tree-sitter's
-`grammar(parent, overrides)` composition.
+SQL grammars for [tree-sitter](https://tree-sitter.github.io/): a strict ANSI base and 22 dialects
+built on top of it. Each dialect is its own parser, so Postgres code is parsed as Postgres and T-SQL
+as T-SQL.
 
-The grammar is a fork of [DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql).
-Upstream ships a single "permissive" grammar that mixes several dialects together. This fork splits
-that into a strict ANSI base and one grammar per dialect, so each engine's syntax is parsed on its
-own terms.
+Forked from [DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql), which
+mixes several dialects into one permissive grammar.
 
-[Docs site](https://relativelyunknown.github.io/Tree-sitter-sql-polyglot/) and
-[dialect coverage](https://relativelyunknown.github.io/Tree-sitter-sql-polyglot/coverage), which carries the
-per-dialect feature scores and is regenerated from the live parsers on every push to `main`.
+## Install
 
----
+```bash
+pip install tree-sitter-sql-polyglot
+npm install @relativelyunknown/tree-sitter-sql-polyglot
+cargo add tree-sitter-sql-polyglot --features postgres   # or --features full for all 22
+go get github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/postgres
+```
+
+Swift (SwiftPM) and C (CMake) are supported too. See the
+[usage docs](https://relativelyunknown.github.io/Tree-sitter-sql-polyglot/usage).
+
+```python
+from tree_sitter import Language, Parser
+import tree_sitter_sql
+
+parser = Parser(Language(tree_sitter_sql.language_postgres()))
+tree = parser.parse(b"SELECT id FROM users WHERE name ILIKE 'a%'")
+```
+
+```js
+import Parser from "tree-sitter";
+import { postgres } from "@relativelyunknown/tree-sitter-sql-polyglot";
+
+const parser = new Parser();
+parser.setLanguage(postgres);
+const tree = parser.parse("SELECT id FROM users WHERE name ILIKE 'a%'");
+```
+
+Only the dialects you use get compiled or loaded. Each one also ships its own highlights query
+(`HIGHLIGHTS_QUERY_POSTGRES` in Python and Rust, `postgres.HIGHLIGHTS_QUERY` in Node).
 
 ## Dialects
 
-Each dialect compiles to its own `<dialect>/src/parser.c` and can be used independently.
+| Dialect | Extends | Notable syntax |
+|---|---|---|
+| base | | ANSI SQL: `GROUPING SETS`, `OFFSET ... FETCH`, `WITHIN GROUP`, `GRANT`/`REVOKE` |
+| postgres | base | `COPY`, `VACUUM`, `::` casts, `PARTITION OF`, row-level security policies |
+| cockroachdb | postgres | `AS OF SYSTEM TIME`, `UPSERT`, `BACKUP`/`RESTORE`, changefeeds |
+| mysql | base | `ENGINE=`, index hints, `SHOW`, `LIMIT offset, count`, `@@` variables |
+| mariadb | mysql | system-versioned tables, `RETURNING`, `INVISIBLE` columns |
+| sqlite | base | `INSERT OR REPLACE`, `AUTOINCREMENT`, `INDEXED BY` |
+| oracle | base | PL/SQL blocks and packages, `CONNECT BY`, `BULK COLLECT` |
+| db2 | base | SQL PL, modules, audit policies, federated objects |
+| tsql | base | T-SQL scripting, `CROSS APPLY`, query hints, `#temp` tables |
+| hana | base | column/row tables, `UPSERT ... WITH PRIMARY KEY`, SQLScript |
+| teradata | base | `SEL`/`DEL`, `PRIMARY INDEX`, `RANGE_N`, `COLLECT STATISTICS` |
+| bigquery | base | `STRUCT<...>`/`ARRAY<...>`, `UNNEST`, `QUALIFY` |
+| spanner | bigquery | `INTERLEAVE IN PARENT`, change streams, row deletion policies |
+| snowflake | base | scripting, `LATERAL FLATTEN`, time travel, `@stage` |
+| redshift | base | `DISTKEY`/`SORTKEY`, external schemas, `COPY`/`UNLOAD` |
+| duckdb | base | FROM-first `SELECT`, `EXCLUDE`/`REPLACE`, lambdas, `ASOF JOIN` |
+| clickhouse | base | `ENGINE = MergeTree`, `PREWHERE`, `FINAL`, `ARRAY JOIN`, `LIMIT BY` |
+| trino | base | `MATCH_RECOGNIZE`, `PREPARE`/`EXECUTE`, lambdas, `ROW` types |
+| athena | trino | `UNLOAD ... TO 's3://...'`, `MSCK REPAIR TABLE` |
+| flink | base | connector DDL, `WATERMARK FOR`, window TVFs, temporal joins |
+| hive | base | `LATERAL VIEW`, `STORED AS`, multi-table `INSERT` |
+| spark | hive | `PIVOT`, `QUALIFY`, scripting, Iceberg, `VARIANT` |
+| databricks | spark | Delta `OPTIMIZE`/`VACUUM`, Unity Catalog, `COPY INTO` |
 
-| Dialect | Extends | Highlights |
-|---------|---------|-----------|
-| **base** (ANSI) | none | `GRANT`/`REVOKE`, `GROUP BY ROLLUP`/`CUBE`/`GROUPING SETS`, `FETCH FIRST`/`OFFSET ... FETCH`, `WITHIN GROUP`, `TRIM(... FROM ...)`, interval qualifiers |
-| **hana** | base | `CREATE COLUMN/ROW TABLE`, `UPSERT ... WITH PRIMARY KEY`, `WITH HINT (...)`, SQLScript procedures (`LANGUAGE SQLSCRIPT`, `DECLARE`, `:=`, `:param`) |
-| **hive** | base | `LATERAL VIEW`, `STORED AS`/`STORED BY`, multi-table `INSERT`, `LOAD DATA INPATH`, `CLUSTER`/`DISTRIBUTE`/`SORT BY` |
-| **spark** | hive | `QUALIFY`, `PIVOT`/`UNPIVOT`, time travel, scripting (`IF`/`WHILE`/`LOOP`), Iceberg, `VARIANT`, `CREATE TABLE ... USING/OPTIONS` |
-| **databricks** | spark | Delta/DLT (`OPTIMIZE ... ZORDER BY`, `VACUUM`, `RESTORE`), Unity Catalog (`CATALOG`/`VOLUME`/`EXTERNAL LOCATION`, `GRANT`), Iceberg `CALL` |
-| **postgres** | base | `COPY`, `VACUUM`, `PARTITION BY`/`PARTITION OF`, `CREATE TABLE (LIKE ...)`, `INHERITS`, extensions, RLS policies, `::` cast |
-| **mysql** | base | `ENGINE=`/`CHARSET=`, index hints, `SHOW`, `DESCRIBE`, `LIMIT offset, count`, `@`/`@@` variables |
-| **mariadb** | mysql | `INVISIBLE` columns (plus inherited MySQL features) |
-| **oracle** | base | `CONNECT BY`, PL/SQL blocks, packages, cursors, `FORALL`, `BULK COLLECT`, numeric `FOR ... IN 1..10` |
-| **db2** | base | SQL PL (`BEGIN...END`, `IF`/`WHILE`/`LOOP`, `LEAVE`/`ITERATE`), modules, audit policies, federated objects |
-| **tsql** | base | T-SQL scripting, `CROSS`/`OUTER APPLY`, query hints, `#temp`/`##global` identifiers |
-| **bigquery** | base | `INT64`/`STRUCT<...>`/`ARRAY<...>` types, `UNNEST`, backtick identifiers, `QUALIFY` |
-| **snowflake** | base | scripting, `LATERAL FLATTEN`, time travel, `@stage` sources, `::` cast |
-| **sqlite** | base | `INSERT OR REPLACE/IGNORE`, UPSERT, `AUTOINCREMENT`, `INDEXED BY` |
-| **spanner** | bigquery | trailing `PRIMARY KEY`, `INTERLEAVE IN PARENT ... ON DELETE CASCADE`, `NULL_FILTERED`/`STORING` indexes, `CREATE CHANGE STREAM`, `ROW DELETION POLICY`, `STRING(n\|MAX)`/`BYTES(n\|MAX)` |
-| **duckdb** | base | FROM-first `SELECT`, `SELECT * EXCLUDE/REPLACE/RENAME`, lambdas, struct/map/list literals, `ASOF`/`POSITIONAL JOIN`, `ATTACH` |
-| **teradata** | base | `SEL`/`DEL` abbreviations, `SET`/`MULTISET`/`VOLATILE` tables, `[UNIQUE] PRIMARY INDEX`/`NO PRIMARY INDEX`, `PARTITION BY RANGE_N`/`CASE_N`, `COLLECT STATISTICS`, `CREATE MACRO`, `TOP n`, `QUALIFY`, `:param` references |
-| **trino** | base | `PREPARE`/`EXECUTE`/`DEALLOCATE`, `MATCH_RECOGNIZE`, `TABLESAMPLE BERNOULLI/SYSTEM`, `ARRAY`/`MAP`/`ROW` types, lambdas |
-| **athena** | trino | `UNLOAD ... TO 's3://...'`, `MSCK REPAIR TABLE ... PARTITIONS` (managed Trino plus data-lake semantics) |
-| **redshift** | base | `DISTKEY`/`SORTKEY`/`DISTSTYLE`/`ENCODE`, `CREATE EXTERNAL SCHEMA/TABLE`, `COPY`/`UNLOAD`, `VACUUM REINDEX`, `APPROXIMATE COUNT` |
-| **cockroachdb** | postgres | `AS OF SYSTEM TIME`, `UPSERT INTO`, `BACKUP`/`RESTORE`, `IMPORT INTO ... CSV DATA`, `CREATE CHANGEFEED`, hash-sharded indexes (`USING HASH`), `STORING (...)`, `SHOW JOBS`/`GRANTS`/`DATABASES` |
-| **clickhouse** | base | `ENGINE = MergeTree() ...`, column `MATERIALIZED`/`ALIAS`/`EPHEMERAL`/`CODEC`/`TTL`, `PREWHERE`, `FINAL`, `ARRAY JOIN`, `LIMIT n BY`, `SAMPLE`, `WITH TOTALS`, `QUALIFY`, `ORDER BY ... WITH FILL`, `LIMIT ... WITH TIES`, `INTO OUTFILE`/`FORMAT`, `ALTER ... UPDATE`/`DELETE`, `OPTIMIZE ... FINAL`, `CREATE DICTIONARY`/`LIVE VIEW`, `SYSTEM ...`, `Map`/`Tuple`/`Nested`/`LowCardinality`/`Nullable` types |
-| **flink** | base | connector DDL (`WITH (...)`), `WATERMARK FOR`, windowing TVFs (`TUMBLE`/`HOP`/`CUMULATE`), `MATCH_RECOGNIZE`, temporal joins, `CREATE CATALOG`, `LOAD`/`UNLOAD MODULE`, statement sets |
-
-Dependency chains: `databricks -> spark -> hive -> base`, `mariadb -> mysql -> base`, `athena -> trino -> base`,
-`cockroachdb -> postgres -> base`, and `spanner -> bigquery -> base`. The chains follow real dialect
-genealogy: CockroachDB is PostgreSQL-compatible by design, and Spanner and BigQuery share GoogleSQL.
-Regenerate the child when a parent grammar changes. See [AGENTS.md](AGENTS.md) for the full architecture.
-
----
-
-## Installation
-
-Every dialect is compiled/loaded lazily in all six: importing or depending on the package never pulls
-in more than the base grammar until you actually ask for a specific dialect.
-
-```bash
-cargo add tree-sitter-sql-polyglot --features postgres   # or: --features full (all 22)
-npm install @relativelyunknown/tree-sitter-sql-polyglot
-pip install tree-sitter-sql-polyglot
-go get github.com/relativelyunknown/tree-sitter-sql-polyglot/bindings/go/postgres
-# Swift: add https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot as a package dependency
-# CMake: cmake -B build -DTREE_SITTER_SQL_POSTGRES=ON && cmake --build build   (or no flag for base)
-```
-
-```rust
-use tree_sitter_sql_polyglot::{LANGUAGE, LANGUAGE_POSTGRES};
-
-let mut parser = tree_sitter::Parser::new();
-parser.set_language(&LANGUAGE.into()).unwrap();            // base ANSI grammar
-// parser.set_language(&LANGUAGE_POSTGRES.into()).unwrap(); // needs features = ["postgres"] or "full"
-```
-
-Each dialect's identifier (`postgres`, `databricks`, `cockroachdb`, ...) is the same everywhere it
-appears: Cargo feature, npm/Python/Go/Swift name. See the [Usage
-page](https://relativelyunknown.github.io/Tree-sitter-sql-polyglot/usage) for full import examples in
-every language, the lazy-loading mechanism per binding, and the complete identifier reference.
-
----
+A child dialect only adds what its engine adds; it gets the rest from its parent. How much of each
+engine's syntax is covered, checked against SQLGlot, ANTLR, pglast and sqlfluff, is on the
+[coverage page](https://relativelyunknown.github.io/Tree-sitter-sql-polyglot/coverage).
 
 ## Development
 
-### Prerequisites
+You need Node and the tree-sitter CLI (`npm install -g tree-sitter-cli`).
 
 ```bash
-npm install -g tree-sitter-cli
+npm install                  # unpacks the committed parsers and builds the Node addons
+npm run generate             # regenerate the base parser after editing grammar/
+npm run generate:postgres    # or a single dialect
+npm run generate:all         # or everything
+npm run test:corpus          # base corpus tests
+npm run test:corpus:postgres # a dialect's corpus tests
 ```
 
-### Workflow
+A base grammar change affects every dialect, so regenerate and test all of them. Generation is
+cached by file hash; `npm run generate:force` skips the cache.
 
-```bash
-# Regenerate the base parser after editing grammar.js or grammar/**/*.js
-npm run generate
+[CONTRIBUTING.md](CONTRIBUTING.md) covers the workflow and [AGENTS.md](AGENTS.md) the grammar
+layout.
 
-# Regenerate a single dialect (and its parent chain as needed)
-npm run generate:spark
+## Related
 
-# Regenerate every parser (base + all 22 dialects)
-npm run generate:all
-
-# Run corpus tests for the base grammar
-npm run test:corpus
-
-# Run corpus tests for a specific dialect
-npm run test:corpus:spark
-
-# Check that base keywords are in sync with queries/highlights.scm
-npm run test:keywords
-```
-
-Generation is hash-cached: `npm run generate*` skips `tree-sitter generate` when the relevant grammar
-sources are unchanged. Use `npm run generate:force` to bypass the cache.
-
-Base grammar rules are split across `grammar/` (e.g. `grammar/statements/*.js`, `grammar/expressions.js`,
-`grammar/keywords.js`). Dialect rules live under `<dialect>/grammar/`. A change to the base ripples to all
-22 parsers, so regenerate and test all of them after editing base files.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md) for more detail.
-
----
-
-## References
-
-- [Wikipedia SQL syntax](https://en.wikipedia.org/wiki/SQL_syntax)
-- [Databricks SQL reference](https://docs.databricks.com/en/sql/language-manual/index.html)
-- [Apache Spark SQL reference](https://spark.apache.org/docs/latest/sql-ref.html)
-- [Apache Hive language manual](https://cwiki.apache.org/confluence/display/Hive/LanguageManual)
-- [Unity Catalog SQL reference](https://docs.databricks.com/en/data-governance/unity-catalog/index.html)
-- [Apache Iceberg Spark procedures](https://iceberg.apache.org/docs/latest/spark-procedures/)
-- [PostgreSQL syntax](https://www.postgresql.org/docs/current/sql-commands.html)
-- [MySQL reference manual](https://dev.mysql.com/doc/refman/8.4/en/)
-- [MariaDB SQL statements](https://mariadb.com/kb/en/sql-statements/)
-- [Oracle PL/SQL language reference](https://docs.oracle.com/en/database/oracle/oracle-database/19/lnpls/index.html)
-- [IBM Db2 SQL reference](https://www.ibm.com/docs/en/db2/11.5?topic=reference-sql)
-- [Microsoft T-SQL reference](https://learn.microsoft.com/en-us/sql/t-sql/language-reference)
-- [BigQuery SQL reference](https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax)
-- [Snowflake SQL reference](https://docs.snowflake.com/en/sql-reference)
-- [SQLite SQL syntax](https://www.sqlite.org/lang.html)
-
-### Other SQL tree-sitter grammars
-
-- [DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql): upstream
-- [takegue/tree-sitter-sql-bigquery](https://github.com/takegue/tree-sitter-sql-bigquery): BigQuery fork
+- [DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql), the upstream grammar
+- [takegue/tree-sitter-sql-bigquery](https://github.com/takegue/tree-sitter-sql-bigquery)
 - [m-novikov/tree-sitter-sql](https://github.com/m-novikov/tree-sitter-sql)
 
----
+## License
 
-## Fork history & attribution
-
-This repo preserves the full git history of
-[DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql), so GitHub's Contributors
-graph includes upstream authors alongside this fork's own. Current maintainership is
-[CODEOWNERS](.github/CODEOWNERS). `LICENSE` carries both the original 2021 copyright notice and this
-fork's. General extensions are worth sending upstream if the maintainers there want them;
-vendor-specific ones stay here.
+MIT. The git history from upstream is kept, so upstream authors show up in the contributors list;
+[CODEOWNERS](.github/CODEOWNERS) lists who maintains this fork. `LICENSE` carries both copyright
+notices.
