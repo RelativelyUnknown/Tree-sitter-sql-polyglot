@@ -1,0 +1,147 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: insert
+    name: INSERT
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-dml-insert-into
+    tier: high
+    probes:
+      - id: into_values
+        sql: "INSERT INTO t VALUES (1, 'a');"
+      - id: into_table_keyword
+        sql: "INSERT INTO TABLE t VALUES (1, 'a');"
+      - id: into_values_multi_row
+        sql: "INSERT INTO t VALUES (1, 'a'), (2, 'b');"
+      - id: into_values_default
+        sql: "INSERT INTO t VALUES (1, DEFAULT);"
+      - id: into_select
+        sql: "INSERT INTO t SELECT c1, c2 FROM s;"
+      - id: into_table_clause
+        sql: "INSERT INTO t TABLE s;"
+      - id: into_column_list
+        sql: "INSERT INTO t (c1, c2) VALUES (1, 'a');"
+      - id: into_column_list_select
+        sql: "INSERT INTO t (c1, c2) SELECT c1, c2 FROM s;"
+      - id: into_by_name
+        sql: "INSERT INTO t BY NAME SELECT 1 AS c2, 'a' AS c1;"
+      - id: into_partition_static
+        sql: "INSERT INTO t PARTITION (p = 1) SELECT c1, c2 FROM s;"
+      - id: into_partition_static_values
+        sql: "INSERT INTO t PARTITION (p = 1) VALUES ('a', 'b');"
+      - id: into_partition_dynamic
+        sql: "INSERT INTO t PARTITION (p) SELECT c1, c2, p FROM s;"
+      - id: into_partition_column_list
+        sql: "INSERT INTO t PARTITION (p = 1) (c1, c2) VALUES ('a', 'b');"
+      - id: into_partition_by_name
+        sql: "INSERT INTO t PARTITION (p = 1) BY NAME SELECT 'b' AS c2, 'a' AS c1;"
+      - id: into_path_table
+        sql: "INSERT INTO delta.`/path/to/t` VALUES (1, 'a');"
+      - id: into_options_spec
+        sql: "INSERT INTO t WITH ('write.split-size' = 10) SELECT * FROM s;"
+      - id: into_qualified_name
+        sql: "INSERT INTO main.sch.t SELECT * FROM s;"
+      - id: with_cte
+        sql: "WITH q AS (SELECT 1 AS c1) INSERT INTO t SELECT * FROM q;"
+      - id: overwrite
+        sql: "INSERT OVERWRITE t SELECT * FROM s;"
+      - id: overwrite_table_keyword
+        sql: "INSERT OVERWRITE TABLE t SELECT * FROM s;"
+      - id: overwrite_values
+        sql: "INSERT OVERWRITE t VALUES (1, 'a'), (2, 'b');"
+      - id: overwrite_table_clause
+        sql: "INSERT OVERWRITE t TABLE s;"
+      - id: overwrite_partition
+        sql: "INSERT OVERWRITE t PARTITION (p = 1) SELECT c1, c2 FROM s;"
+      - id: overwrite_partition_dynamic
+        sql: "INSERT OVERWRITE t PARTITION (p) SELECT c1, c2, p FROM s;"
+      - id: overwrite_partition_column_list
+        sql: "INSERT OVERWRITE t PARTITION (p = 1) (c1, c2) SELECT c1, c2 FROM s;"
+      - id: overwrite_by_name
+        sql: "INSERT OVERWRITE t BY NAME SELECT 'a' AS c1, 1 AS c2;"
+      - id: overwrite_path_table
+        sql: "INSERT OVERWRITE delta.`/path/to/t` VALUES (1, 'a');"
+      - id: with_schema_evolution_into
+        sql: "INSERT WITH SCHEMA EVOLUTION INTO t SELECT * FROM s;"
+      - id: with_schema_evolution_into_table
+        sql: "INSERT WITH SCHEMA EVOLUTION INTO TABLE t SELECT * FROM s;"
+      - id: with_schema_evolution_overwrite
+        sql: "INSERT WITH SCHEMA EVOLUTION OVERWRITE t SELECT * FROM s;"
+      - id: with_schema_evolution_by_name
+        sql: "INSERT WITH SCHEMA EVOLUTION INTO t BY NAME SELECT * FROM s;"
+      - id: replace_where
+        sql: "INSERT INTO t REPLACE WHERE c1 BETWEEN 1 AND 10 SELECT * FROM s;"
+      - id: replace_where_values
+        sql: "INSERT INTO t REPLACE WHERE c1 = 1 VALUES (1, 'a'), (1, 'b');"
+      - id: replace_where_column_list
+        sql: "INSERT INTO t (c1, c2) REPLACE WHERE c1 = 1 SELECT c1, c2 FROM s;"
+      - id: replace_where_by_name
+        sql: "INSERT INTO t BY NAME REPLACE WHERE c1 = 1 SELECT 'a' AS c2, 1 AS c1;"
+      - id: replace_using
+        sql: "INSERT INTO t REPLACE USING (c1) SELECT * FROM s;"
+      - id: replace_using_table_keyword
+        sql: "INSERT INTO TABLE t REPLACE USING (c1, c2) SELECT * FROM s;"
+      - id: replace_using_by_name
+        sql: "INSERT INTO TABLE t BY NAME REPLACE USING (c1) SELECT * FROM s;"
+      - id: replace_on
+        sql: "INSERT INTO t REPLACE ON t.c1 = s.c1 SELECT * FROM s;"
+      - id: replace_on_target_alias
+        sql: "INSERT INTO TABLE t AS tgt REPLACE ON tgt.c1 <=> src.c1 (SELECT * FROM s) AS src;"
+      - id: replace_on_subquery_source_alias
+        sql: "INSERT INTO t AS tgt REPLACE ON tgt.c1 = src.c1 (SELECT c1, c2 FROM s) src;"
+      - id: replace_on_by_name
+        sql: "INSERT INTO TABLE t AS tgt BY NAME REPLACE ON tgt.c1 <=> src.c1 SELECT * FROM s AS src;"
+      - id: replace_on_column_list
+        sql: "INSERT INTO TABLE t (c2, c1) AS tgt REPLACE ON tgt.c1 <=> src.c1 SELECT * FROM s AS src;"
+    examples:
+      - "INSERT INTO students (name, student_id) VALUES ('Grayson Miller', 222222);"
+      - "INSERT INTO students PARTITION (student_id = 444444) SELECT name, address FROM persons WHERE name = \"Dora Williams\";"
+      - "INSERT INTO TABLE students REPLACE USING (country) SELECT * FROM new_students;"
+
+  - id: update
+    name: UPDATE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/delta-update
+    tier: high
+    probes:
+      - id: set_no_where
+        sql: "UPDATE t SET c = 1;"
+      - id: set_where
+        sql: "UPDATE t SET c = 1 WHERE d = 2;"
+      - id: set_multiple
+        sql: "UPDATE t SET c = 1, d = 'x' WHERE e > 0;"
+      - id: set_expr_references_columns
+        sql: "UPDATE t SET c = c + 1, d = upper(d) WHERE e IS NOT NULL;"
+      - id: set_default
+        sql: "UPDATE t SET c = DEFAULT WHERE d = 'unknown';"
+      - id: set_default_and_value
+        sql: "UPDATE t SET c = DEFAULT, d = 5;"
+      - id: set_struct_field
+        sql: "UPDATE t SET s.a = 1 WHERE d = 2;"
+      - id: set_nested_struct_field
+        sql: "UPDATE t SET s.a.b = 1, s.c = 'x';"
+      - id: table_alias_as
+        sql: "UPDATE t AS t1 SET c = 1 WHERE t1.d = 2;"
+      - id: table_alias_bare
+        sql: "UPDATE t t1 SET c = 1 WHERE t1.d = 2;"
+      - id: set_alias_qualified_column
+        sql: "UPDATE t AS t1 SET t1.c = 1;"
+      - id: qualified_table_name
+        sql: "UPDATE main.sch.t SET c = 1 WHERE d = 2;"
+      - id: where_scalar_subquery
+        sql: "UPDATE t SET c = 0, ignored = true WHERE c < (SELECT min(c) FROM good);"
+      - id: where_exists_subquery
+        sql: "UPDATE orders AS t1 SET order_status = 'returned' WHERE EXISTS (SELECT oid FROM returned_orders WHERE t1.oid = oid);"
+      - id: where_in_subquery
+        sql: "UPDATE t SET c = 1 WHERE d IN (SELECT d FROM s);"
+      - id: where_not_in_subquery
+        sql: "UPDATE events SET category = 'undefined' WHERE category NOT IN (SELECT category FROM events2 WHERE date > '2001-01-01');"
+      - id: set_scalar_subquery_expr
+        sql: "UPDATE t SET c = (SELECT max(c) FROM s);"
+      - id: with_cte
+        sql: "WITH q AS (SELECT d FROM s) UPDATE t SET c = 1 WHERE d IN (SELECT d FROM q);"
+    examples:
+      - "UPDATE events SET eventType = 'click' WHERE eventType = 'clk';"
+      - "UPDATE all_events SET session_time = 0, ignored = true WHERE session_time < (SELECT min(session_time) FROM good_events);"
+      - "UPDATE events SET ignored = DEFAULT WHERE eventType = 'unknown';"
