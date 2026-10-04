@@ -221,7 +221,7 @@ statements:
     probes:
       - { id: select_union_select, sql: "SELECT a FROM t1 UNION SELECT a FROM t2;" }
       - { id: table_union_select, sql: "TABLE t1 UNION SELECT * FROM t2;" }
-      - { id: values_union_table, sql: "VALUES ROW(4,-2), ROW(5,9) UNION TABLE t2;" }
+      - { id: values_union_table, sql: "VALUES ROW(4,-2), ROW(5,9) UNION TABLE t2;", note: "set-operations.html: query_block can be VALUES or TABLE (doc example VALUES ROW(4,-2), ROW(5,9) UNION TABLE t2)" }
       - { id: select_union_values, sql: "SELECT * FROM t1 UNION VALUES ROW(4,-2), ROW(5,9);" }
       - { id: parenthesized_blocks_order_limit, sql: "(SELECT a FROM t1 WHERE a = 10 ORDER BY a LIMIT 10) UNION (SELECT a FROM t2 WHERE a = 11 ORDER BY a LIMIT 10);" }
       - { id: trailing_order_limit, sql: "SELECT a FROM t1 EXCEPT SELECT a FROM t2 ORDER BY a LIMIT 10;" }
@@ -230,7 +230,7 @@ statements:
       - { id: mixed_precedence, sql: "TABLE r EXCEPT TABLE s INTERSECT TABLE t;" }
       - { id: with_clause_body, sql: "WITH cte AS (SELECT 1 AS a) SELECT a FROM cte UNION SELECT a FROM t;" }
       - { id: into_after_union, sql: "SELECT a FROM t1 UNION SELECT a FROM t2 INTO OUTFILE '/tmp/u.txt';" }
-      - { id: derived_table_column_list_union, sql: "SELECT * FROM (TABLE t2) AS t(x, y) UNION TABLE t1;" }
+      - { id: derived_table_column_list_union, sql: "SELECT * FROM (TABLE t2) AS t(x, y) UNION TABLE t1;", note: "Doc example on set-operations.html: SELECT * FROM (TABLE t2) AS t(x,y) UNION TABLE t1" }
     examples:
       - |-
         (SELECT a FROM t1 WHERE a=10 AND b=1 ORDER BY a LIMIT 10)
@@ -301,8 +301,8 @@ statements:
       - { id: parenthesized_union_limit, sql: "(SELECT 1 AS r UNION SELECT 2) LIMIT 1 OFFSET 1;" }
       - { id: parenthesized_order_limit, sql: "(SELECT 1 AS r UNION SELECT 2) ORDER BY r DESC LIMIT 1;" }
       - { id: inner_and_outer_limit, sql: "(SELECT 'a' UNION SELECT 'b' LIMIT 2) LIMIT 3;" }
-      - { id: parenthesized_into, sql: "(SELECT 1 AS r UNION SELECT 2) ORDER BY r LIMIT 1 INTO @v;" }
-      - { id: parenthesized_table_order, sql: "(TABLE t1 ORDER BY a) UNION (TABLE t2 ORDER BY b) ORDER BY a;" }
+      - { id: parenthesized_into, sql: "(SELECT 1 AS r UNION SELECT 2) ORDER BY r LIMIT 1 INTO @v;", note: "Doc example on parenthesized-query-expressions.html ([into_clause] after the parenthesized expression)" }
+      - { id: parenthesized_table_order, sql: "(TABLE t1 ORDER BY a) UNION (TABLE t2 ORDER BY b) ORDER BY a;", note: "Doc example: (TABLE t1 ORDER BY a) UNION (TABLE t2 ORDER BY b) ORDER BY z" }
       - { id: parenthesized_values_limit, sql: "(VALUES ROW(1), ROW(2) LIMIT 2) EXCEPT (SELECT 2 LIMIT 1);" }
       - { id: nested_parentheses, sql: "((SELECT 1) UNION (SELECT 2));" }
     examples:
@@ -383,10 +383,10 @@ statements:
       - { id: into_vars, sql: "TABLE t LIMIT 1 INTO @a, @b;" }
       - { id: into_outfile_options, sql: "TABLE t INTO OUTFILE '/tmp/t.txt' FIELDS TERMINATED BY ',' LINES TERMINATED BY ';';" }
       - { id: into_dumpfile, sql: "TABLE t LIMIT 1 INTO DUMPFILE '/tmp/t.bin';" }
-      - { id: in_subquery, sql: "SELECT * FROM t1 WHERE a IN (TABLE t2);" }
+      - { id: in_subquery, sql: "SELECT * FROM t1 WHERE a IN (TABLE t2);", note: "table.html: SELECT * FROM t1 WHERE a IN (TABLE t2); references lack TABLE as subquery" }
       - { id: insert_table, sql: "INSERT INTO t1 TABLE t2;" }
-      - { id: create_table_table, sql: "CREATE TABLE t2 TABLE t1;" }
-      - { id: create_view_table, sql: "CREATE VIEW v AS TABLE t;" }
+      - { id: create_table_table, sql: "CREATE TABLE t2 TABLE t1;", note: "table.html: TABLE can replace SELECT in CREATE TABLE ... SELECT; create-table-select.html example CREATE TABLE tt1 TABLE t1" }
+      - { id: create_view_table, sql: "CREATE VIEW v AS TABLE t;", note: "table.html: TABLE can replace SELECT in CREATE VIEW ... SELECT" }
     examples:
       - "TABLE t;"
       - "TABLE t ORDER BY b LIMIT 3 OFFSET 2;"
@@ -717,7 +717,7 @@ statements:
       - { id: column_comment, sql: "CREATE TABLE t (a INT COMMENT 'the a column');" }
       - { id: column_collate, sql: "CREATE TABLE t (c CHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);" }
       - { id: column_format, sql: "CREATE TABLE t (a INT COLUMN_FORMAT FIXED, b INT COLUMN_FORMAT DYNAMIC);" }
-      - { id: column_engine_attribute, sql: "CREATE TABLE t (a INT ENGINE_ATTRIBUTE = '{\"k\":\"v\"}' SECONDARY_ENGINE_ATTRIBUTE '{}');" }
+      - { id: column_engine_attribute, sql: "CREATE TABLE t (a INT ENGINE_ATTRIBUTE = '{\"k\":\"v\"}' SECONDARY_ENGINE_ATTRIBUTE '{}');", note: "column_definition: [ENGINE_ATTRIBUTE [=] 'string'] [SECONDARY_ENGINE_ATTRIBUTE [=] 'string']" }
       - { id: column_storage, sql: "CREATE TABLE t (a INT STORAGE DISK, b INT STORAGE MEMORY) TABLESPACE ts_1 ENGINE NDB;" }
       - { id: column_references, sql: "CREATE TABLE t (a INT REFERENCES t2 (id) ON DELETE CASCADE);" }
       - { id: column_check, sql: "CREATE TABLE t (a INT CHECK (a > 0), b INT CONSTRAINT b_pos CHECK (b > 0) NOT ENFORCED);" }
@@ -853,7 +853,7 @@ statements:
       - { id: ignore_select, sql: "CREATE TABLE t (UNIQUE (n)) IGNORE SELECT n FROM t2;" }
       - { id: replace_select, sql: "CREATE TABLE t (UNIQUE (n)) REPLACE SELECT n FROM t2;" }
       - { id: values_source, sql: "CREATE TABLE t VALUES ROW(1, 3, 5), ROW(2, 4, 6);" }
-      - { id: table_source, sql: "CREATE TABLE t TABLE t2;" }
+      - { id: table_source, sql: "CREATE TABLE t TABLE t2;", note: "create-table-select.html example: CREATE TABLE tt1 TABLE t1" }
       - { id: columns_and_table, sql: "CREATE TABLE t (x INT) TABLE t2;" }
       - { id: partition_and_select, sql: "CREATE TABLE t (a INT) PARTITION BY HASH (a) PARTITIONS 2 SELECT a FROM t2;" }
     examples:
@@ -1285,7 +1285,7 @@ statements:
       - { id: multi_word_privilege, sql: "GRANT CREATE ROUTINE, ALTER ROUTINE, CREATE TEMPORARY TABLES, LOCK TABLES, SHOW VIEW ON db1.* TO u1;" }
       - { id: dynamic_privilege, sql: "GRANT BINLOG_ADMIN, SYSTEM_VARIABLES_ADMIN ON *.* TO u1;" }
       - { id: with_grant_option, sql: "GRANT USAGE ON *.* TO 'u1'@'h1' WITH GRANT OPTION;" }
-      - { id: as_user, sql: "GRANT SELECT, INSERT ON *.* TO u3 AS u1;" }
+      - { id: as_user, sql: "GRANT SELECT, INSERT ON *.* TO u3 AS u1;", note: "GRANT ... [AS user [WITH ROLE ...]] (doc example GRANT SELECT, INSERT, UPDATE ON *.* TO u3 AS u1)" }
       - { id: as_user_with_role, sql: "GRANT SELECT ON *.* TO u4 AS u1 WITH ROLE r1, r2;" }
       - { id: as_user_with_role_all_except, sql: "GRANT SELECT ON *.* TO u4 AS u1 WITH ROLE ALL EXCEPT r1;" }
       - { id: proxy, sql: "GRANT PROXY ON 'localuser'@'localhost' TO 'externaluser'@'somehost';" }
@@ -1333,18 +1333,18 @@ statements:
       - { id: format_json, sql: "EXPLAIN FORMAT=JSON SELECT a FROM t;" }
       - { id: format_tree, sql: "EXPLAIN FORMAT = TREE SELECT a FROM t;" }
       - { id: format_traditional, sql: "EXPLAIN FORMAT=TRADITIONAL SELECT a FROM t;" }
-      - { id: into_variable, sql: "EXPLAIN FORMAT=JSON INTO @v SELECT a FROM t WHERE id = 2;" }
-      - { id: for_schema, sql: "EXPLAIN FORMAT=TREE FOR SCHEMA s1 SELECT * FROM t WHERE c2 > 50;" }
-      - { id: for_database, sql: "EXPLAIN FOR DATABASE s1 SELECT * FROM t;" }
-      - { id: for_connection, sql: "EXPLAIN FOR CONNECTION 4;" }
+      - { id: into_variable, sql: "EXPLAIN FORMAT=JSON INTO @v SELECT a FROM t WHERE id = 2;", note: "{EXPLAIN} [explain_type] [INTO variable] explainable_stmt (doc example EXPLAIN FORMAT=JSON INTO @myselect SELECT ...)" }
+      - { id: for_schema, sql: "EXPLAIN FORMAT=TREE FOR SCHEMA s1 SELECT * FROM t WHERE c2 > 50;", note: "schema_spec: FOR {SCHEMA | DATABASE} schema_name (doc example)" }
+      - { id: for_database, sql: "EXPLAIN FOR DATABASE s1 SELECT * FROM t;", note: "schema_spec: FOR {SCHEMA | DATABASE} schema_name" }
+      - { id: for_connection, sql: "EXPLAIN FOR CONNECTION 4;", note: "{EXPLAIN} ... FOR CONNECTION connection_id" }
       - { id: explain_table_stmt, sql: "EXPLAIN TABLE t;" }
       - { id: explain_insert, sql: "EXPLAIN INSERT INTO t VALUES (1);" }
       - { id: explain_replace, sql: "EXPLAIN REPLACE INTO t VALUES (1);" }
-      - { id: explain_update, sql: "EXPLAIN FORMAT=JSON INTO @u UPDATE t SET a = 'x' WHERE id = 3;" }
+      - { id: explain_update, sql: "EXPLAIN FORMAT=JSON INTO @u UPDATE t SET a = 'x' WHERE id = 3;", note: "Doc example: EXPLAIN FORMAT=JSON INTO @myupdate UPDATE a SET ..." }
       - { id: explain_delete, sql: "EXPLAIN DELETE FROM t WHERE a LIKE '%e%';" }
       - { id: analyze, sql: "EXPLAIN ANALYZE SELECT * FROM t1 JOIN t2 ON (t1.c1 = t2.c2);" }
       - { id: analyze_format_tree, sql: "EXPLAIN ANALYZE FORMAT=TREE SELECT * FROM t WHERE pk > 17;" }
-      - { id: analyze_for_schema, sql: "EXPLAIN ANALYZE FOR SCHEMA s1 SELECT * FROM t;" }
+      - { id: analyze_for_schema, sql: "EXPLAIN ANALYZE FOR SCHEMA s1 SELECT * FROM t;", note: "EXPLAIN ANALYZE [FORMAT = TREE] [schema_spec] select_statement" }
     examples:
       - "DESCRIBE City;"
       - |-
@@ -2101,7 +2101,7 @@ expressions:
     probes:
       - { id: cast_signed_unsigned, sql: "SELECT CAST(a AS SIGNED), CAST(a AS UNSIGNED INTEGER), CAST(a AS SIGNED INTEGER) FROM t;" }
       - { id: cast_char_binary, sql: "SELECT CAST(a AS CHAR), CAST(a AS CHAR(10)), CAST(a AS BINARY), CAST(a AS BINARY(4)) FROM t;" }
-      - { id: cast_char_charset, sql: "SELECT CAST('test' AS CHAR CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);" }
+      - { id: cast_char_charset, sql: "SELECT CAST('test' AS CHAR CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);", note: "Doc example on cast-functions.html: CAST('test' AS CHAR CHARACTER SET utf8mb4 COLLATE utf8mb4_bin)" }
       - { id: cast_char_ascii_unicode, sql: "SELECT CAST(a AS CHAR(10) ASCII), CAST(a AS CHAR UNICODE), CAST(a AS NCHAR(5)) FROM t;" }
       - { id: cast_temporal, sql: "SELECT CAST(a AS DATE), CAST(a AS DATETIME(6)), CAST(a AS TIME(3)), CAST(a AS YEAR) FROM t;" }
       - { id: cast_numeric, sql: "SELECT CAST(a AS DECIMAL(10, 2)), CAST(a AS DECIMAL), CAST(a AS DOUBLE), CAST(a AS FLOAT(10)), CAST(a AS REAL) FROM t;" }
@@ -2112,7 +2112,7 @@ expressions:
       - { id: cast_at_time_zone_interval, sql: "SELECT CAST(c AT TIME ZONE INTERVAL '+00:00' AS DATETIME(2)) FROM tz;" }
       - { id: convert_type, sql: "SELECT CONVERT(a, SIGNED), CONVERT('test', CHAR CHARACTER SET utf8mb4) FROM t;" }
       - { id: convert_using, sql: "SELECT CONVERT('abc' USING utf8mb4), CONVERT(_latin1'Müller' USING utf8mb4);" }
-      - { id: convert_using_collate, sql: "SELECT CONVERT('test' USING utf8mb4 COLLATE utf8mb4_bin);" }
+      - { id: convert_using_collate, sql: "SELECT CONVERT('test' USING utf8mb4 COLLATE utf8mb4_bin);", note: "Doc example on cast-functions.html: CONVERT('test' USING utf8mb4 COLLATE utf8mb4_bin)" }
       - { id: binary_operator, sql: "SELECT BINARY 'a' = 'A';" }
     examples:
       - "SELECT CAST(c AT TIME ZONE 'UTC' AS DATETIME(2)) AS u FROM tz;"
@@ -2462,7 +2462,7 @@ expressions:
       - { id: any, sql: "SELECT s1 FROM t1 WHERE s1 > ANY (SELECT s1 FROM t2);" }
       - { id: in, sql: "SELECT s1 FROM t1 WHERE s1 IN (SELECT s1 FROM t2);" }
       - { id: some, sql: "SELECT s1 FROM t1 WHERE s1 <> SOME (SELECT s1 FROM t2);" }
-      - { id: in_table, sql: "SELECT s1 FROM t1 WHERE s1 IN (TABLE t2);" }
+      - { id: in_table, sql: "SELECT s1 FROM t1 WHERE s1 IN (TABLE t2);", note: "Doc example on any-in-some-subqueries.html: s1 IN (TABLE t2)" }
     examples:
       - "SELECT s1 FROM t1 WHERE s1 > ANY (SELECT s1 FROM t2);"
       - "SELECT s1 FROM t1 WHERE s1 IN    (SELECT s1 FROM t2);"
@@ -2476,7 +2476,7 @@ expressions:
     probes:
       - { id: all, sql: "SELECT s1 FROM t1 WHERE s1 > ALL (SELECT s1 FROM t2);" }
       - { id: not_equal_all, sql: "SELECT s1 FROM t1 WHERE s1 <> ALL (SELECT s1 FROM t2);" }
-      - { id: all_table, sql: "SELECT s1 FROM t1 WHERE s1 <> ALL (TABLE t2);" }
+      - { id: all_table, sql: "SELECT s1 FROM t1 WHERE s1 <> ALL (TABLE t2);", note: "Doc example on all-subqueries.html: s1 <> ALL (TABLE t2)" }
     examples:
       - "SELECT s1 FROM t1 WHERE s1 > ALL (SELECT s1 FROM t2);"
       - "SELECT * FROM t1 WHERE 1 > ALL (SELECT MAX(s1) FROM t2);"
@@ -2508,7 +2508,7 @@ expressions:
     probes:
       - { id: exists, sql: "SELECT c1 FROM t1 WHERE EXISTS (SELECT * FROM t2);" }
       - { id: not_exists_correlated, sql: "SELECT DISTINCT a FROM t1 WHERE NOT EXISTS (SELECT * FROM t2 WHERE t2.a = t1.a);" }
-      - { id: exists_table, sql: "SELECT c1 FROM t1 WHERE EXISTS (TABLE t2);" }
+      - { id: exists_table, sql: "SELECT c1 FROM t1 WHERE EXISTS (TABLE t2);", note: "Doc example on exists-and-not-exists-subqueries.html: EXISTS (TABLE t2)" }
     examples:
       - |-
         SELECT DISTINCT store_type FROM stores
@@ -2578,12 +2578,12 @@ expressions:
       - { id: char_varchar, sql: "CREATE TABLE t (a CHAR, b CHAR(10), c VARCHAR(255), d CHARACTER(5), e CHARACTER VARYING(20));" }
       - { id: charset_collate, sql: "CREATE TABLE t (c1 VARCHAR(20) CHARACTER SET utf8mb4, c2 TEXT CHARACTER SET latin1 COLLATE latin1_general_cs, c3 CHAR(3) CHARSET ascii);" }
       - { id: national, sql: "CREATE TABLE t (a NATIONAL CHAR(10), b NCHAR(10), c NATIONAL VARCHAR(10), d NVARCHAR(10));" }
-      - { id: binary_types, sql: "CREATE TABLE t (a BINARY(16), b VARBINARY(255), c CHAR BYTE);" }
+      - { id: binary_types, sql: "CREATE TABLE t (a BINARY(16), b VARBINARY(255), c CHAR BYTE);", note: "string-type-syntax.html: The CHAR BYTE data type is an alias for the BINARY data type" }
       - { id: blob_types, sql: "CREATE TABLE t (a TINYBLOB, b BLOB, c BLOB(1000), d MEDIUMBLOB, e LONGBLOB);" }
       - { id: text_types, sql: "CREATE TABLE t (a TINYTEXT, b TEXT, c TEXT(1000), d MEDIUMTEXT, e LONGTEXT, f LONG VARCHAR);" }
       - { id: enum_set, sql: "CREATE TABLE t (a ENUM('x', 'y', 'z'), b SET('a', 'b', 'c') CHARACTER SET binary);" }
       - { id: binary_attribute, sql: "CREATE TABLE t (c1 VARCHAR(10) CHARACTER SET latin1 BINARY, c2 TEXT BINARY);" }
-      - { id: ascii_unicode_attributes, sql: "CREATE TABLE t (c1 CHAR(10) ASCII, c2 VARCHAR(10) UNICODE);" }
+      - { id: ascii_unicode_attributes, sql: "CREATE TABLE t (c1 CHAR(10) ASCII, c2 VARCHAR(10) UNICODE);", note: "string-type-syntax.html: ASCII and UNICODE attributes (deprecated shorthands for CHARACTER SET latin1 / ucs2)" }
     examples:
       - |-
         CREATE TABLE t

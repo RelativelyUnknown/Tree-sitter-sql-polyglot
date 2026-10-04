@@ -43,6 +43,7 @@ statements:
         sql: "WITH XMLNAMESPACES ('urn:x' AS ns) SELECT c AS 'ns:c' FROM t FOR XML RAW;"
       - id: with_xmlnamespaces_and_cte
         sql: "WITH XMLNAMESPACES ('urn:x' AS ns), cte AS (SELECT c FROM t) SELECT c FROM cte FOR XML PATH;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the SELECT syntax on the cited page (with xmlnamespaces and cte)."
       - id: union
         sql: "SELECT c FROM t UNION SELECT c FROM u;"
       - id: except
@@ -153,8 +154,10 @@ statements:
         sql: "SELECT * INTO ##t FROM t;"
       - id: on_filegroup
         sql: "SELECT * INTO t2 ON FG2 FROM t;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the SELECT - INTO clause syntax on the cited page (on filegroup)."
       - id: on_bracketed_filegroup
         sql: "SELECT * INTO t2 ON [PRIMARY] FROM t;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the SELECT - INTO clause syntax on the cited page (on bracketed filegroup)."
       - id: identity_function
         sql: "SELECT IDENTITY(INT, 100, 5) AS id, c INTO t2 FROM t;"
       - id: four_part_source
@@ -881,19 +884,25 @@ statements:
         sql: "SELECT c FROM t OPTION (USE PLAN N'<ShowPlanXML xmlns=\"http://schemas.microsoft.com/sqlserver/2004/07/showplan\" Version=\"1.0\"></ShowPlanXML>');"
       - id: table_hint_index
         sql: "SELECT c FROM t AS a WHERE c = 1 OPTION (TABLE HINT (a, INDEX (ix_c)));"
+        note: "Rejected; reference parsers don't cover this form. Taken from the Hints - Query syntax on the cited page (table hint index)."
       - id: table_hint_index_equals
         sql: "SELECT c FROM t AS a OPTION (TABLE HINT (a, INDEX = (ix_c)));"
+        note: "Rejected; reference parsers don't cover this form. Taken from the Hints - Query syntax on the cited page (table hint index equals)."
       - id: table_hint_forceseek_columns
         sql: "SELECT c FROM t AS a OPTION (TABLE HINT (a, FORCESEEK (ix_c (c))));"
+        note: "Rejected; reference parsers don't cover this form. Taken from the Hints - Query syntax on the cited page (table hint forceseek columns)."
       - id: table_hint_multiple
         sql: "SELECT c FROM t AS a OPTION (TABLE HINT (a, NOLOCK, INDEX (ix_c), FORCESCAN));"
+        note: "Rejected; reference parsers don't cover this form. Taken from the Hints - Query syntax on the cited page (table hint multiple)."
       - id: table_hint_no_hints
         sql: "SELECT c FROM t AS a WITH (INDEX (ix_c)) OPTION (TABLE HINT (a));"
         note: "TABLE HINT ( exposed_object_name ) with no table_hint clears the hints on that object."
       - id: table_hint_noexpand_index
         sql: "SELECT c FROM v OPTION (TABLE HINT (v, NOEXPAND, INDEX (ix_v)));"
+        note: "Rejected; reference parsers don't cover this form. Taken from the Hints - Query syntax on the cited page (table hint noexpand index)."
       - id: table_hint_spatial_window_max_cells
         sql: "SELECT c FROM t OPTION (TABLE HINT (t, SPATIAL_WINDOW_MAX_CELLS = 512));"
+        note: "Rejected; reference parsers don't cover this form. Taken from the Hints - Query syntax on the cited page (table hint spatial window max cells)."
       - id: multiple_hints
         sql: "SELECT c FROM t OPTION (RECOMPILE, MAXDOP 1, USE HINT ('QUERY_OPTIMIZER_COMPATIBILITY_LEVEL_110'));"
     examples:
@@ -1279,6 +1288,7 @@ statements:
         sql: "WITH XMLNAMESPACES ('uri' AS ns) SELECT x.value('(/ns:root/@id)[1]', 'int') FROM t;"
       - id: before_cte
         sql: "WITH XMLNAMESPACES ('uri' AS ns), cte AS (SELECT c FROM t) SELECT c FROM cte FOR XML RAW;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the WITH XMLNAMESPACES syntax on the cited page (before cte)."
 
   - id: set_operators_union
     name: "Set Operators - UNION"
@@ -1535,6 +1545,7 @@ statements:
         sql: "UPDATE t SET c = 4 OUTPUT DELETED.c, INSERTED.c, p.name INTO @tv FROM t AS w INNER JOIN p ON w.pid = p.id;"
       - id: output_into_and_output
         sql: "DELETE t OUTPUT DELETED.id INTO @tv OUTPUT DELETED.id, GETDATE() AS d FROM t INNER JOIN u ON t.id = u.id;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the OUTPUT clause syntax on the cited page (output into and output)."
       - id: merge_action
         sql: "MERGE t USING u ON t.id = u.id WHEN MATCHED THEN DELETE OUTPUT $action, DELETED.id;"
       - id: merge_action_into
@@ -1594,16 +1605,21 @@ statements:
     probes:
       - id: simple
         sql: "SELECT p2.name FROM Person p1, friend, Person p2 WHERE MATCH(p1-(friend)->p2) AND p1.name = 'Alice';"
+        note: "Accepted only by ours; reference parsers don't cover this form. Taken from the MATCH (SQL Graph) syntax on the cited page (simple)."
       - id: reverse_arrow
         sql: "SELECT p2.name FROM Person p1, friend, Person p2 WHERE MATCH(p2<-(friend)-p1);"
       - id: chain
         sql: "SELECT p3.name FROM Person p1, friend f1, Person p2, friend f2, Person p3 WHERE MATCH(p1-(f1)->p2-(f2)->p3);"
+        note: "Accepted only by ours; reference parsers don't cover this form. Taken from the MATCH (SQL Graph) syntax on the cited page (chain)."
       - id: and_pattern
         sql: "SELECT p1.name FROM Person p1, friend f1, Person p2, friend f2, Person p0 WHERE MATCH(p1-(f1)->p0 AND p2-(f2)->p0);"
+        note: "Accepted only by ours; reference parsers don't cover this form. Taken from the MATCH (SQL Graph) syntax on the cited page (and pattern)."
       - id: shortest_path_plus
         sql: "SELECT p1.name, STRING_AGG(p2.name, '->') WITHIN GROUP (GRAPH PATH) AS path FROM Person AS p1, friendOf FOR PATH AS fo, Person FOR PATH AS p2 WHERE MATCH(SHORTEST_PATH(p1(-(fo)->p2)+));"
+        note: "Rejected; reference parsers don't cover this form. Taken from the MATCH (SQL Graph) syntax on the cited page (shortest path plus)."
       - id: shortest_path_bounded
         sql: "SELECT p1.name, COUNT(p2.name) WITHIN GROUP (GRAPH PATH) AS hops FROM Person AS p1, friendOf FOR PATH AS fo, Person FOR PATH AS p2 WHERE MATCH(SHORTEST_PATH(p1(-(fo)->p2){1,3})) AND p1.name = 'Jacob';"
+        note: "Rejected; reference parsers don't cover this form. Taken from the MATCH (SQL Graph) syntax on the cited page (shortest path bounded)."
       - id: last_node_predicate
         sql: "SELECT p1.name FROM Person AS p1, friendOf FOR PATH AS fo, Person FOR PATH AS p2, friendOf FOR PATH AS fo2, Person FOR PATH AS p3 WHERE MATCH(SHORTEST_PATH(p1(-(fo)->p2)+) AND LAST_NODE(p2) = LAST_NODE(p3));"
         note: "<arbitrary_length_match_last_node_predicate> ::= LAST_NODE( node_alias ) = LAST_NODE( node_alias )."
@@ -1650,6 +1666,7 @@ statements:
         sql: "SELECT d.*, p.Score FROM PREDICT(MODEL = @model, DATA = dbo.mytable AS d) WITH (Score FLOAT) AS p;"
       - id: model_literal_result_set
         sql: "SELECT p.* FROM PREDICT(MODEL = 0x01, DATA = t AS d) WITH (label NVARCHAR(10) COLLATE Latin1_General_CI_AS NOT NULL, score FLOAT NULL) AS p;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the PREDICT syntax on the cited page (model literal result set)."
     examples:
       - |-
         SELECT d.*, p.Score
@@ -1789,6 +1806,7 @@ statements:
         sql: "INSERT INTO dbo.friend ($from_id, $to_id, start_date) SELECT p1.$node_id, p2.$node_id, '2011-09-15' FROM dbo.Person p1, dbo.Person p2 WHERE p1.ID = 1 AND p2.ID = 2;"
       - id: match_in_where
         sql: "INSERT INTO dbo.likes ($from_id, $to_id) SELECT p1.$node_id, r.$node_id FROM dbo.Person p1, dbo.friend f, dbo.Person p2, dbo.Restaurant r WHERE MATCH(p1-(f)->p2) AND r.ID = 1;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the INSERT (SQL Graph) syntax on the cited page (match in where)."
     examples:
       - "INSERT INTO dbo.Person VALUES (2,'John');"
       - |-
@@ -2025,6 +2043,7 @@ statements:
         sql: "MERGE t USING u ON t.id = u.id WHEN MATCHED THEN DELETE OPTION (LOOP JOIN);"
       - id: graph_match_on
         sql: "MERGE livesIn USING ((SELECT @p, @c, @s) AS T (pid, cid, s) JOIN Person ON T.pid = Person.ID JOIN City ON T.cid = City.ID) ON MATCH (Person-(livesIn)->City) WHEN MATCHED THEN UPDATE SET StreetAddress = @s WHEN NOT MATCHED THEN INSERT ($from_id, $to_id, StreetAddress) VALUES (Person.$node_id, City.$node_id, @s);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the MERGE syntax on the cited page (graph match on)."
     examples:
       - |-
         MERGE INTO Sales.SalesReason AS tgt
@@ -2159,6 +2178,7 @@ statements:
         sql: "CREATE TABLE t (c1 INT PRIMARY KEY, c2 VARCHAR(50) SPARSE NULL);"
       - id: column_set
         sql: "CREATE TABLE t (c1 INT PRIMARY KEY, c2 VARCHAR(50) SPARSE NULL, cs XML COLUMN_SET FOR ALL_SPARSE_COLUMNS);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE TABLE syntax on the cited page (column set)."
       - id: filestream
         sql: "CREATE TABLE t (id UNIQUEIDENTIFIER ROWGUIDCOL NOT NULL UNIQUE, photo VARBINARY(MAX) FILESTREAM NULL);"
       - id: rowguidcol
@@ -2215,6 +2235,7 @@ statements:
         sql: "CREATE TABLE t (c1 INT, c2 INT, INDEX cci CLUSTERED COLUMNSTORE);"
       - id: table_index_clustered_columnstore_order
         sql: "CREATE TABLE t (c1 INT, c2 INT, INDEX cci CLUSTERED COLUMNSTORE ORDER (c1));"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE TABLE syntax on the cited page (table index clustered columnstore order)."
       - id: table_index_nonclustered_columnstore
         sql: "CREATE TABLE t (c1 INT, c2 INT, INDEX ncci NONCLUSTERED COLUMNSTORE (c1, c2));"
       - id: on_filegroup
@@ -2241,15 +2262,19 @@ statements:
         sql: "CREATE TABLE t (id INT, d DATETIME2) WITH (DATA_DELETION = ON (FILTER_COLUMN = d, RETENTION_PERIOD = 1 YEAR));"
       - id: ledger
         sql: "CREATE TABLE t (id INT, c INT) WITH (SYSTEM_VERSIONING = ON, LEDGER = ON (LEDGER_VIEW = dbo.t_ledger (TRANSACTION_ID_COLUMN_NAME = tid, SEQUENCE_NUMBER_COLUMN_NAME = sn, OPERATION_TYPE_COLUMN_NAME = op, OPERATION_TYPE_DESC_COLUMN_NAME = op_desc)));"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE TABLE syntax on the cited page (ledger)."
       - id: remote_data_archive
         sql: "CREATE TABLE t (c INT) WITH (REMOTE_DATA_ARCHIVE = ON (MIGRATION_STATE = OUTBOUND));"
         note: "Stretch Database option; the feature is deprecated but the option is still in the CREATE TABLE syntax block."
       - id: memory_optimized
         sql: "CREATE TABLE t (id INT NOT NULL PRIMARY KEY NONCLUSTERED HASH WITH (BUCKET_COUNT = 1024), c NVARCHAR(50)) WITH (MEMORY_OPTIMIZED = ON, DURABILITY = SCHEMA_ONLY);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE TABLE syntax on the cited page (memory optimized)."
       - id: memory_optimized_table_index_hash
         sql: "CREATE TABLE t (a INT NOT NULL, b INT NOT NULL, INDEX ix_hash HASH (a, b) WITH (BUCKET_COUNT = 64), CONSTRAINT pk PRIMARY KEY NONCLUSTERED (a)) WITH (MEMORY_OPTIMIZED = ON, DURABILITY = SCHEMA_AND_DATA);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE TABLE syntax on the cited page (memory optimized table index hash)."
       - id: memory_optimized_column_index_hash
         sql: "CREATE TABLE t (a INT NOT NULL INDEX ix_a HASH WITH (BUCKET_COUNT = 64), b INT NOT NULL PRIMARY KEY NONCLUSTERED) WITH (MEMORY_OPTIMIZED = ON);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE TABLE syntax on the cited page (memory optimized column index hash)."
     examples:
       - |-
         CREATE TABLE dbo.PurchaseOrderDetail
@@ -2435,10 +2460,12 @@ statements:
         sql: "ALTER TABLE t ADD b INT IDENTITY CONSTRAINT b_pk PRIMARY KEY, c INT NULL CONSTRAINT c_fk FOREIGN KEY REFERENCES t (a), e DECIMAL(3, 3) CONSTRAINT e_default DEFAULT .081;"
       - id: add_column_default_with_values
         sql: "ALTER TABLE t ADD d SMALLDATETIME NULL CONSTRAINT df_d DEFAULT GETDATE() WITH VALUES;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the ALTER TABLE syntax on the cited page (add column default with values)."
       - id: add_computed_column
         sql: "ALTER TABLE t ADD total AS (price * qty) PERSISTED;"
       - id: add_column_set
         sql: "ALTER TABLE t ADD cs XML COLUMN_SET FOR ALL_SPARSE_COLUMNS;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the ALTER TABLE syntax on the cited page (add column set)."
       - id: add_constraint_check_nocheck
         sql: "ALTER TABLE t WITH NOCHECK ADD CONSTRAINT ck_a CHECK (a > 1);"
       - id: add_constraint_default_for
@@ -2467,10 +2494,12 @@ statements:
         sql: "ALTER TABLE t DROP CONSTRAINT IF EXISTS ck_a;"
       - id: drop_constraints_and_column
         sql: "ALTER TABLE t DROP CONSTRAINT c1, CONSTRAINT c2, COLUMN d;"
+        note: "Doc example B 'Remove two constraints and one column' uses DROP CONSTRAINT ..., COLUMN ... in one list; syntax: DROP { [ CONSTRAINT ] [ IF EXISTS ] constraint_name | COLUMN ... } [ ,...n ]."
       - id: drop_clustered_constraint_online
         sql: "ALTER TABLE t DROP CONSTRAINT pk_t WITH (ONLINE = ON, MAXDOP = 4);"
       - id: drop_clustered_constraint_move_to
         sql: "ALTER TABLE t DROP CONSTRAINT pk_t WITH (MOVE TO fg2);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the ALTER TABLE syntax on the cited page (drop clustered constraint move to)."
       - id: drop_period
         sql: "ALTER TABLE t DROP PERIOD FOR SYSTEM_TIME;"
       - id: nocheck_constraint
@@ -2483,8 +2512,10 @@ statements:
         sql: "ALTER TABLE t ENABLE TRIGGER ALL;"
       - id: enable_change_tracking
         sql: "ALTER TABLE t ENABLE CHANGE_TRACKING WITH (TRACK_COLUMNS_UPDATED = ON);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the ALTER TABLE syntax on the cited page (enable change tracking)."
       - id: disable_change_tracking
         sql: "ALTER TABLE t DISABLE CHANGE_TRACKING;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the ALTER TABLE syntax on the cited page (disable change tracking)."
       - id: switch_partition
         sql: "ALTER TABLE t SWITCH PARTITION 2 TO u;"
       - id: switch_partition_to_partition
@@ -2509,16 +2540,21 @@ statements:
         sql: "ALTER TABLE t REBUILD PARTITION = ALL WITH (DATA_COMPRESSION = PAGE ON PARTITIONS (1));"
       - id: rebuild_online_low_priority
         sql: "ALTER TABLE t REBUILD WITH (PAD_INDEX = ON, ONLINE = ON (WAIT_AT_LOW_PRIORITY (MAX_DURATION = 4 MINUTES, ABORT_AFTER_WAIT = BLOCKERS)));"
+        note: "Rejected; reference parsers don't cover this form. Taken from the ALTER TABLE syntax on the cited page (rebuild online low priority)."
       - id: filetable_namespace
         sql: "ALTER TABLE ft DISABLE FILETABLE_NAMESPACE;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the ALTER TABLE syntax on the cited page (filetable namespace)."
       - id: filetable_directory
         sql: "ALTER TABLE ft SET (FILETABLE_DIRECTORY = 'docs2');"
       - id: remote_data_archive
         sql: "ALTER TABLE t SET (REMOTE_DATA_ARCHIVE (MIGRATION_STATE = INBOUND));"
+        note: "Rejected; reference parsers don't cover this form. Taken from the ALTER TABLE syntax on the cited page (remote data archive)."
       - id: memory_optimized_add_index
         sql: "ALTER TABLE t ADD INDEX ix_hash HASH (c) WITH (BUCKET_COUNT = 1024);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the ALTER TABLE syntax on the cited page (memory optimized add index)."
       - id: memory_optimized_alter_index
         sql: "ALTER TABLE t ALTER INDEX ix_hash REBUILD WITH (BUCKET_COUNT = 2048);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the ALTER TABLE syntax on the cited page (memory optimized alter index)."
       - id: memory_optimized_drop_index
         sql: "ALTER TABLE t DROP INDEX IF EXISTS ix_hash;"
     examples:
@@ -2589,6 +2625,7 @@ statements:
         sql: "ALTER TABLE t ADD d VARBINARY(MAX) FILESTREAM NULL;"
       - id: default_with_values
         sql: "ALTER TABLE t ADD c INT NULL CONSTRAINT df_c DEFAULT 0 WITH VALUES;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the ALTER TABLE column_definition syntax on the cited page (default with values)."
       - id: identity_not_for_replication
         sql: "ALTER TABLE t ADD id INT IDENTITY(1, 1) NOT FOR REPLICATION;"
       - id: rowguidcol_sparse
@@ -2633,6 +2670,7 @@ statements:
         sql: "ALTER TABLE t ADD CONSTRAINT pk_t PRIMARY KEY CLUSTERED (id) WITH (ONLINE = ON, RESUMABLE = ON, MAX_DURATION = 240 MINUTES);"
       - id: single_partition_online_low_priority
         sql: "ALTER TABLE t REBUILD PARTITION = 2 WITH (ONLINE = ON (WAIT_AT_LOW_PRIORITY (MAX_DURATION = 5 MINUTES, ABORT_AFTER_WAIT = SELF)));"
+        note: "Rejected; reference parsers don't cover this form. Taken from the ALTER TABLE index_option syntax on the cited page (single partition online low priority)."
 
   - id: alter_table_table_constraint
     name: "ALTER TABLE table_constraint"
@@ -2647,6 +2685,7 @@ statements:
         sql: "ALTER TABLE t ADD CONSTRAINT fk_t FOREIGN KEY (a, b) REFERENCES p (x, y) ON DELETE SET NULL ON UPDATE SET DEFAULT NOT FOR REPLICATION;"
       - id: connection
         sql: "ALTER TABLE friendOf ADD CONSTRAINT ec_friend CONNECTION (Person TO Person) ON DELETE NO ACTION;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the ALTER TABLE table_constraint syntax on the cited page (connection)."
       - id: default_for_with_values
         sql: "ALTER TABLE t ADD CONSTRAINT df_c DEFAULT 'x' FOR c WITH VALUES;"
       - id: check
@@ -2975,8 +3014,10 @@ statements:
     probes:
       - id: secondary_selective
         sql: "CREATE XML INDEX sxi_c ON t (x) USING XML INDEX sxi FOR (pathabc);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE XML INDEX (Selective XML Indexes) syntax on the cited page (secondary selective)."
       - id: with_options
         sql: "CREATE XML INDEX sxi_c ON dbo.t (x) USING XML INDEX sxi FOR (pathabc) WITH (PAD_INDEX = ON, MAXDOP = 1);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE XML INDEX (Selective XML Indexes) syntax on the cited page (with options)."
     examples:
       - |-
         CREATE XML INDEX filt_sxi_index_c
@@ -2991,12 +3032,16 @@ statements:
     probes:
       - id: xquery_paths
         sql: "CREATE SELECTIVE XML INDEX sxi ON t (x) FOR (p1 = '/a/b' AS XQUERY 'node()', p2 = '/a/b/c' AS XQUERY 'xs:double', p3 = '/a/b/d/text()' AS XQUERY 'xs:string' MAXLENGTH(200) SINGLETON);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE SELECTIVE XML INDEX syntax on the cited page (xquery paths)."
       - id: sql_path
         sql: "CREATE SELECTIVE XML INDEX sxi ON t (x) FOR (p = '/a/b/e' AS SQL NVARCHAR(100));"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE SELECTIVE XML INDEX syntax on the cited page (sql path)."
       - id: xmlnamespaces
         sql: "CREATE SELECTIVE XML INDEX sxi ON t (x) WITH XMLNAMESPACES ('https://www.tempuri.org/' AS myns) FOR (p1 = '/myns:book/myns:author/text()') WITH (PAD_INDEX = ON);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE SELECTIVE XML INDEX syntax on the cited page (xmlnamespaces)."
       - id: untyped_path
         sql: "CREATE SELECTIVE XML INDEX sxi ON t (x) FOR (p = '/a/b');"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE SELECTIVE XML INDEX syntax on the cited page (untyped path)."
     examples:
       - |-
         CREATE SELECTIVE XML INDEX sxi_index
@@ -3015,18 +3060,25 @@ statements:
     probes:
       - id: geometry_bounding_box
         sql: "CREATE SPATIAL INDEX sidx ON t (g) WITH (BOUNDING_BOX = (0, 0, 500, 200));"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE SPATIAL INDEX syntax on the cited page (geometry bounding box)."
       - id: geometry_auto_grid
         sql: "CREATE SPATIAL INDEX sidx ON t (g) USING GEOMETRY_AUTO_GRID WITH (BOUNDING_BOX = (0, 0, 500, 200), CELLS_PER_OBJECT = 8);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE SPATIAL INDEX syntax on the cited page (geometry auto grid)."
       - id: geometry_grid_named_bbox
         sql: "CREATE SPATIAL INDEX sidx ON t (g) USING GEOMETRY_GRID WITH (BOUNDING_BOX = (xmin = 0, ymin = 0, xmax = 500, ymax = 200), GRIDS = (LOW, LOW, MEDIUM, HIGH), CELLS_PER_OBJECT = 64, PAD_INDEX = ON);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE SPATIAL INDEX syntax on the cited page (geometry grid named bbox)."
       - id: grid_levels
         sql: "CREATE SPATIAL INDEX sidx ON t (g) WITH (BOUNDING_BOX = (0, 0, 500, 200), GRIDS = (LEVEL_4 = HIGH, LEVEL_3 = MEDIUM));"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE SPATIAL INDEX syntax on the cited page (grid levels)."
       - id: geography_default
         sql: "CREATE SPATIAL INDEX sidx ON t (geo);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE SPATIAL INDEX syntax on the cited page (geography default)."
       - id: geography_grid
         sql: "CREATE SPATIAL INDEX sidx ON t (geo) USING GEOGRAPHY_GRID WITH (GRIDS = (MEDIUM, LOW, MEDIUM, HIGH), CELLS_PER_OBJECT = 64, PAD_INDEX = ON);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE SPATIAL INDEX syntax on the cited page (geography grid)."
       - id: geography_auto_grid_on_filegroup
         sql: "CREATE SPATIAL INDEX sidx ON t (geo) USING GEOGRAPHY_AUTO_GRID WITH (CELLS_PER_OBJECT = 12, DATA_COMPRESSION = PAGE) ON [PRIMARY];"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE SPATIAL INDEX syntax on the cited page (geography auto grid on filegroup)."
     examples:
       - |-
         CREATE SPATIAL INDEX SIndx_SpatialTable_geometry_col2
@@ -3066,10 +3118,13 @@ statements:
     probes:
       - id: basic
         sql: "CREATE JSON INDEX jidx ON docs (content);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE JSON INDEX syntax on the cited page (basic)."
       - id: paths_options
         sql: "CREATE JSON INDEX jidx ON dbo.docs (content) FOR ('$.a', '$.b') WITH (FILLFACTOR = 80, OPTIMIZE_FOR_ARRAY_SEARCH = ON, MAXDOP = 2);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE JSON INDEX syntax on the cited page (paths options)."
       - id: on_filegroup
         sql: "CREATE JSON INDEX jidx ON docs (content) WITH (DATA_COMPRESSION = PAGE) ON \"default\";"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE JSON INDEX syntax on the cited page (on filegroup)."
     examples:
       - |-
         CREATE JSON INDEX json_content_index
@@ -3089,8 +3144,10 @@ statements:
     probes:
       - id: basic
         sql: "CREATE VECTOR INDEX vidx ON t (v) WITH (METRIC = 'cosine');"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE VECTOR INDEX syntax on the cited page (basic)."
       - id: all_options_filegroup
         sql: "CREATE VECTOR INDEX vidx ON dbo.t (v) WITH (METRIC = 'dot', TYPE = 'DiskANN', MAXDOP = 8) ON [SECONDARY];"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE VECTOR INDEX syntax on the cited page (all options filegroup)."
     examples:
       - |-
         CREATE VECTOR INDEX vec_idx
@@ -3168,8 +3225,10 @@ statements:
     probes:
       - id: add_remove_paths
         sql: "ALTER INDEX sxi ON t FOR (ADD pathm = '/a/b/m' AS XQUERY 'node()', REMOVE pathabe);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the ALTER INDEX (Selective XML Indexes) syntax on the cited page (add remove paths)."
       - id: xmlnamespaces_with_options
         sql: "ALTER INDEX sxi ON dbo.t WITH XMLNAMESPACES ('https://www.tempuri.org/' AS myns) FOR (ADD p2 = '/myns:a/myns:b' AS SQL INT SINGLETON) WITH (PAD_INDEX = ON);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the ALTER INDEX (Selective XML Indexes) syntax on the cited page (xmlnamespaces with options)."
     examples:
       - |-
         ALTER INDEX sxi_index
@@ -3193,10 +3252,13 @@ statements:
         sql: "DROP INDEX ix1 ON t1, ix2 ON db.dbo.t2;"
       - id: with_online_maxdop
         sql: "DROP INDEX ix ON t WITH (ONLINE = ON, MAXDOP = 2);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the DROP INDEX syntax on the cited page (with online maxdop)."
       - id: move_to_filegroup
         sql: "DROP INDEX ix ON t WITH (ONLINE = ON, MOVE TO NewGroup);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the DROP INDEX syntax on the cited page (move to filegroup)."
       - id: move_to_partition_scheme_filestream
         sql: "DROP INDEX ix ON t WITH (MOVE TO ps (c), FILESTREAM_ON ps);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the DROP INDEX syntax on the cited page (move to partition scheme filestream)."
       - id: backward_compatible
         sql: "DROP INDEX t.ix;"
       - id: backward_compatible_owner
@@ -3230,6 +3292,7 @@ statements:
         sql: "DROP INDEX sxi ON t;"
       - id: with_options
         sql: "DROP INDEX sxi ON dbo.t WITH (MAXDOP = 1, ONLINE = OFF);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the DROP INDEX (Selective XML Indexes) syntax on the cited page (with options)."
 
   - id: create_function
     name: "CREATE FUNCTION"
@@ -3284,8 +3347,10 @@ statements:
         sql: "CREATE FUNCTION dbo.len_s (@str NVARCHAR(4000)) RETURNS BIGINT AS EXTERNAL NAME [SurrogateStringFunction].[Microsoft.Samples.SqlServer.SurrogateStringFunction].[LenS];"
       - id: clr_table_order
         sql: "CREATE FUNCTION dbo.clr_tvf (@p INT) RETURNS TABLE (a INT, b NVARCHAR(10)) WITH EXECUTE AS CALLER ORDER (a ASC) AS EXTERNAL NAME asm.cls.method;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE FUNCTION syntax on the cited page (clr table order)."
       - id: natively_compiled
         sql: "CREATE FUNCTION dbo.f (@a INT NOT NULL) RETURNS INT WITH NATIVE_COMPILATION, SCHEMABINDING AS BEGIN ATOMIC WITH (TRANSACTION ISOLATION LEVEL = SNAPSHOT, LANGUAGE = N'English') RETURN @a * 2; END;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE FUNCTION syntax on the cited page (natively compiled)."
     examples:
       - |-
         CREATE FUNCTION dbo.ISOweek (@DATE DATETIME)
@@ -3719,20 +3784,24 @@ statements:
         sql: "CREATE DATABASE db ON (FILENAME = 'D:\\db.mdf') FOR ATTACH;"
       - id: for_attach_with_broker
         sql: "CREATE DATABASE db ON (FILENAME = 'D:\\db.mdf') FOR ATTACH WITH ENABLE_BROKER, RESTRICTED_USER;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE DATABASE syntax on the cited page (for attach with broker)."
       - id: for_attach_rebuild_log
         sql: "CREATE DATABASE db ON (FILENAME = 'D:\\db.mdf') FOR ATTACH_REBUILD_LOG;"
       - id: snapshot
         sql: "CREATE DATABASE db_ss ON (NAME = d1, FILENAME = 'D:\\d1.ss') AS SNAPSHOT OF db;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE DATABASE syntax on the cited page (snapshot)."
       - id: azure_edition
         sql: "CREATE DATABASE db (EDITION = 'GeneralPurpose');"
       - id: azure_edition_options
         sql: "CREATE DATABASE db COLLATE Japanese_XJIS_140 (MAXSIZE = 500 MB, EDITION = 'GeneralPurpose', SERVICE_OBJECTIVE = 'GP_Gen5_8') WITH CATALOG_COLLATION = DATABASE_DEFAULT;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE DATABASE syntax on the cited page (azure edition options)."
       - id: azure_elastic_pool
         sql: "CREATE DATABASE db (SERVICE_OBJECTIVE = ELASTIC_POOL (NAME = S3M100));"
       - id: azure_backup_storage_redundancy
         sql: "CREATE DATABASE db WITH BACKUP_STORAGE_REDUNDANCY = 'ZONE';"
       - id: azure_copy_of
         sql: "CREATE DATABASE db_copy AS COPY OF srv.db_original (SERVICE_OBJECTIVE = 'GP_Gen5_8') WITH (BACKUP_STORAGE_REDUNDANCY = 'LOCAL');"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CREATE DATABASE syntax on the cited page (azure copy of)."
     examples:
       - |-
         CREATE DATABASE Sales
@@ -3832,6 +3901,7 @@ statements:
         sql: "ALTER DATABASE db SET RECOVERY FULL;"
       - id: multiple_options
         sql: "ALTER DATABASE db SET RECOVERY SIMPLE, PAGE_VERIFY CHECKSUM;"
+        note: "SET <option_spec> [ ,...n ] in the ALTER DATABASE SET Options syntax block."
       - id: user_access_termination
         sql: "ALTER DATABASE db SET SINGLE_USER WITH ROLLBACK AFTER 30 SECONDS;"
       - id: read_only_no_wait
@@ -3840,6 +3910,7 @@ statements:
         sql: "ALTER DATABASE db SET OFFLINE;"
       - id: auto_options
         sql: "ALTER DATABASE db SET AUTO_CREATE_STATISTICS ON (INCREMENTAL = ON), AUTO_UPDATE_STATISTICS_ASYNC ON, AUTO_SHRINK OFF;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the ALTER DATABASE SET Options syntax on the cited page (auto options)."
       - id: snapshot_isolation
         sql: "ALTER DATABASE db SET ALLOW_SNAPSHOT_ISOLATION ON;"
       - id: read_committed_snapshot
@@ -3848,8 +3919,10 @@ statements:
         sql: "ALTER DATABASE db SET CHANGE_TRACKING = ON (AUTO_CLEANUP = ON, CHANGE_RETENTION = 2 DAYS);"
       - id: query_store
         sql: "ALTER DATABASE db SET QUERY_STORE = ON (OPERATION_MODE = READ_WRITE, CLEANUP_POLICY = (STALE_QUERY_THRESHOLD_DAYS = 90), QUERY_CAPTURE_MODE = CUSTOM, QUERY_CAPTURE_POLICY = (STALE_CAPTURE_POLICY_THRESHOLD = 24 HOURS, EXECUTION_COUNT = 30));"
+        note: "Rejected; reference parsers don't cover this form. Taken from the ALTER DATABASE SET Options syntax on the cited page (query store)."
       - id: query_store_clear
         sql: "ALTER DATABASE db SET QUERY_STORE CLEAR ALL;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the ALTER DATABASE SET Options syntax on the cited page (query store clear)."
       - id: compatibility_level
         sql: "ALTER DATABASE db SET COMPATIBILITY_LEVEL = 160;"
       - id: sql_options
@@ -3858,8 +3931,10 @@ statements:
         sql: "ALTER DATABASE db SET DELAYED_DURABILITY = FORCED;"
       - id: accelerated_database_recovery
         sql: "ALTER DATABASE db SET ACCELERATED_DATABASE_RECOVERY = ON (PERSISTENT_VERSION_STORE_FILEGROUP = [VersionStoreFG]);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the ALTER DATABASE SET Options syntax on the cited page (accelerated database recovery)."
       - id: automatic_tuning
         sql: "ALTER DATABASE CURRENT SET AUTOMATIC_TUNING (FORCE_LAST_GOOD_PLAN = ON);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the ALTER DATABASE SET Options syntax on the cited page (automatic tuning)."
       - id: target_recovery_time
         sql: "ALTER DATABASE db SET TARGET_RECOVERY_TIME = 60 SECONDS;"
       - id: encryption
@@ -3868,10 +3943,12 @@ statements:
         sql: "ALTER DATABASE db SET ENABLE_BROKER, TRUSTWORTHY ON;"
       - id: filestream
         sql: "ALTER DATABASE db SET FILESTREAM (NON_TRANSACTED_ACCESS = FULL, DIRECTORY_NAME = N'dbfs');"
+        note: "Rejected; reference parsers don't cover this form. Taken from the ALTER DATABASE SET Options syntax on the cited page (filestream)."
       - id: optimized_locking
         sql: "ALTER DATABASE db SET OPTIMIZED_LOCKING = ON;"
       - id: suspend_for_snapshot_backup
         sql: "ALTER DATABASE db SET SUSPEND_FOR_SNAPSHOT_BACKUP = ON (MODE = COPY_ONLY);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the ALTER DATABASE SET Options syntax on the cited page (suspend for snapshot backup)."
     examples:
       - |-
         ALTER DATABASE [database_name]
@@ -3908,6 +3985,7 @@ statements:
         sql: "ALTER DATABASE db ADD FILE (NAME = f1, FILENAME = 'C:\\f1.ndf', SIZE = 5MB, MAXSIZE = 100MB, FILEGROWTH = 5MB), (NAME = f2, FILENAME = 'C:\\f2.ndf') TO FILEGROUP fg1;"
       - id: add_log_file
         sql: "ALTER DATABASE db ADD LOG FILE (NAME = l2, FILENAME = 'C:\\l2.ldf', SIZE = 5MB, MAXSIZE = UNLIMITED, FILEGROWTH = 10 %);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the ALTER DATABASE File and Filegroup Options syntax on the cited page (add log file)."
       - id: remove_file
         sql: "ALTER DATABASE db REMOVE FILE f2;"
       - id: modify_file
@@ -3972,6 +4050,7 @@ statements:
     probes:
       - id: partner_server
         sql: "ALTER DATABASE db SET PARTNER = 'TCP://srv2.contoso.com:5022';"
+        note: "PARTNER = 'partner_server' in the <partner_option> syntax of ALTER DATABASE Database Mirroring."
       - id: partner_failover
         sql: "ALTER DATABASE db SET PARTNER FAILOVER;"
       - id: partner_safety_timeout
@@ -4071,6 +4150,7 @@ statements:
         sql: "COMMIT TRANSACTION @TranName;"
       - id: delayed_durability
         sql: "COMMIT TRANSACTION WITH (DELAYED_DURABILITY = ON);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the COMMIT TRANSACTION syntax on the cited page (delayed durability)."
       - id: named_delayed_durability
         sql: "COMMIT TRAN t1 WITH (DELAYED_DURABILITY = OFF);"
     examples:
@@ -4502,8 +4582,10 @@ statements:
     probes:
       - id: basic
         sql: "REVOKE VIEW DEFINITION ON AVAILABILITY GROUP::MyAg TO ZArifin;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the REVOKE Availability Group Permissions syntax on the cited page (basic)."
       - id: cascade
         sql: "REVOKE TAKE OWNERSHIP ON AVAILABILITY GROUP::MyAg FROM PKomosinski CASCADE;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the REVOKE Availability Group Permissions syntax on the cited page (cascade)."
     examples:
       - "REVOKE VIEW DEFINITION ON AVAILABILITY GROUP::MyAg TO ZArifin;"
       - |-
@@ -4549,6 +4631,7 @@ statements:
         sql: "REVOKE VIEW DEFINITION ON ROLE::SammamishParking FROM JinghaoLiu CASCADE;"
       - id: application_role
         sql: "REVOKE ALTER ON APPLICATION ROLE::app1 FROM u1;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the REVOKE Database Principal Permissions syntax on the cited page (application role)."
     examples:
       - "REVOKE CONTROL ON USER::Wanida FROM RolandX;"
       - |-
@@ -4562,8 +4645,10 @@ statements:
     probes:
       - id: basic
         sql: "REVOKE CONTROL ON DATABASE SCOPED CREDENTIAL::cred1 FROM u1;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the REVOKE Database Scoped Credential Permissions syntax on the cited page (basic)."
       - id: cascade
         sql: "REVOKE GRANT OPTION FOR REFERENCES ON DATABASE SCOPED CREDENTIAL :: cred1 TO u1 CASCADE AS dbo;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the REVOKE Database Scoped Credential Permissions syntax on the cited page (cascade)."
 
   - id: revoke_endpoint_permissions
     name: "REVOKE Endpoint Permissions"
@@ -4572,8 +4657,10 @@ statements:
     probes:
       - id: basic
         sql: "REVOKE VIEW DEFINITION ON ENDPOINT::Mirror7 FROM ZArifin;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the REVOKE Endpoint Permissions syntax on the cited page (basic)."
       - id: cascade
         sql: "REVOKE TAKE OWNERSHIP ON ENDPOINT::Shipping83 FROM PKomosinski CASCADE;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the REVOKE Endpoint Permissions syntax on the cited page (cascade)."
     examples:
       - "REVOKE VIEW DEFINITION ON ENDPOINT::Mirror7 FROM ZArifin;"
       - |-
@@ -4603,6 +4690,7 @@ statements:
         sql: "REVOKE GRANT OPTION FOR SELECT ON dbo.t FROM u1 CASCADE;"
       - id: object_columns_to
         sql: "REVOKE SELECT ON dbo.t (c1) TO u1 AS dbo;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the REVOKE Object Permissions syntax on the cited page (object columns to)."
       - id: all
         sql: "REVOKE ALL ON OBJECT::dbo.t FROM u1;"
     examples:
@@ -4656,6 +4744,7 @@ statements:
         sql: "REVOKE IMPERSONATE ON LOGIN::WanidaBenshoof FROM [AdvWorks\\YoonM];"
       - id: server_role
         sql: "REVOKE VIEW DEFINITION ON SERVER ROLE::Sales TO Auditors CASCADE;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the REVOKE Server Principal Permissions syntax on the cited page (server role)."
     examples:
       - "REVOKE IMPERSONATE ON LOGIN::WanidaBenshoof FROM [AdvWorks\\YoonM];"
       - |-
@@ -4669,8 +4758,10 @@ statements:
     probes:
       - id: service
         sql: "REVOKE SEND ON SERVICE::[//Adventure-Works.com/Expenses] FROM u1;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the REVOKE Service Broker Permissions syntax on the cited page (service)."
       - id: route_cascade
         sql: "REVOKE CONTROL ON ROUTE::r1 FROM u1 CASCADE;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the REVOKE Service Broker Permissions syntax on the cited page (route cascade)."
 
   - id: revoke_symmetric_key_permissions
     name: "REVOKE Symmetric Key Permissions"
@@ -5028,8 +5119,10 @@ statements:
         sql: "WAITFOR TIME '22:20';"
       - id: receive
         sql: "WAITFOR (RECEIVE TOP (1) * FROM ExpenseQueue);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the WAITFOR syntax on the cited page (receive)."
       - id: receive_timeout
         sql: "WAITFOR (RECEIVE message_body FROM q1), TIMEOUT 60000;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the WAITFOR syntax on the cited page (receive timeout)."
       - id: get_conversation_group
         sql: "WAITFOR (GET CONVERSATION GROUP @cg FROM ExpenseQueue), TIMEOUT 1000;"
     examples:
@@ -5143,6 +5236,7 @@ statements:
         sql: "SET @p = point.SetXY(23.5, 23.5);"
       - id: clr_mutator
         sql: "SET @p.SetXY (22, 23);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the SET @local_variable syntax on the cited page (clr mutator)."
       - id: cursor_variable_to_cursor
         sql: "SET @my_variable = my_cursor;"
       - id: cursor_definition
@@ -5415,6 +5509,7 @@ expressions:
         sql: |-
           SELECT 0xabc\
           def AS [ColumnResult];
+        note: "Rejected; reference parsers don't cover this form. Taken from the Backslash (Line Continuation) syntax on the cited page (binary string)."
     examples:
       - |-
         SELECT 0xabc\
@@ -5585,6 +5680,7 @@ expressions:
         sql: "SELECT @mybin1 || @mybin2;"
       - id: pipes_equals
         sql: "SET @v1 ||= 'b';"
+        note: "Rejected; reference parsers don't cover this form. Taken from the String concatenation (+, ||, +=, ||=) syntax on the cited page (pipes equals)."
 
   - id: logical_operators
     name: "Logical operators (ALL, AND, ANY, BETWEEN, EXISTS, IN, LIKE, NOT, OR, SOME)"
@@ -5817,6 +5913,7 @@ expressions:
         sql: "SELECT c FROM t WHERE EXISTS (SELECT * FROM u WHERE u.a = t.a);"
       - id: match_and_predicate
         sql: "SELECT p2.name FROM Person p1, friend, Person p2 WHERE MATCH(p1-(friend)->p2) AND p1.name = 'Alice';"
+        note: "Accepted only by ours; reference parsers don't cover this form. Taken from the Search condition syntax on the cited page (match and predicate)."
 
   - id: contains
     name: "CONTAINS"
@@ -5841,6 +5938,7 @@ expressions:
         sql: "SELECT c FROM t WHERE CONTAINS(c, @SearchWord);"
       - id: property_language
         sql: "SELECT c FROM t WHERE CONTAINS(PROPERTY(Document, 'Title'), 'Maintenance', LANGUAGE 1033);"
+        note: "Rejected; reference parsers don't cover this form. Taken from the CONTAINS syntax on the cited page (property language)."
     examples:
       - |-
         SELECT Name, ListPrice
@@ -5874,6 +5972,7 @@ expressions:
         sql: "SELECT c FROM t WHERE FREETEXT(Description, 'vital safety components');"
       - id: all_columns_language
         sql: "SELECT c FROM t WHERE FREETEXT(*, @SearchWord, LANGUAGE N'English');"
+        note: "Rejected; reference parsers don't cover this form. Taken from the FREETEXT syntax on the cited page (all columns language)."
       - id: column_list
         sql: "SELECT c FROM t WHERE FREETEXT((Name, Description), 'bike');"
     examples:
@@ -6348,8 +6447,10 @@ expressions:
     probes:
       - id: approximate_top
         sql: "SELECT TOP (10) WITH APPROXIMATE t.id, r.distance FROM VECTOR_SEARCH(TABLE = dbo.articles AS t, COLUMN = content_vector, SIMILAR_TO = @qv, METRIC = 'cosine') AS r ORDER BY r.distance;"
+        note: "Rejected; reference parsers don't cover this form. Taken from the VECTOR_SEARCH and SELECT TOP (N) WITH APPROXIMATE syntax on the cited page (approximate top)."
       - id: top_n_argument
         sql: "SELECT TOP (10) s.id, r.distance FROM VECTOR_SEARCH(TABLE = dbo.sessions AS s, COLUMN = embedding, SIMILAR_TO = @qv, METRIC = 'cosine', TOP_N = 10) AS r WHERE accepted = 1 ORDER BY r.distance;"
+        note: "Earlier-version VECTOR_SEARCH form with TOP_N = k, shown in the page's 'Earlier vector index versions' example (deprecated, still documented)."
 
   - id: data_types
     name: "Data types"
