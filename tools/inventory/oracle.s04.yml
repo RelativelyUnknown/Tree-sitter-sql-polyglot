@@ -1,0 +1,327 @@
+dialect: oracle
+engine: Oracle AI Database
+version: "26ai"
+source: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/toc.htm
+
+statements:
+  - id: analyze
+    name: ANALYZE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ANALYZE.html
+    tier: medium
+    probes:
+      - id: table_validate_structure
+        sql: "ANALYZE TABLE t VALIDATE STRUCTURE;"
+      - id: index_validate_structure
+        sql: "ANALYZE INDEX s.idx VALIDATE STRUCTURE;"
+      - id: cluster_validate_structure_cascade
+        sql: "ANALYZE CLUSTER c VALIDATE STRUCTURE CASCADE;"
+      - id: table_partition
+        sql: "ANALYZE TABLE t PARTITION (p1) VALIDATE STRUCTURE;"
+      - id: table_partition_for
+        sql: "ANALYZE TABLE t PARTITION FOR (10) VALIDATE STRUCTURE;"
+      - id: table_subpartition
+        sql: "ANALYZE TABLE t SUBPARTITION (sp1) VALIDATE STRUCTURE;"
+      - id: validate_ref_update
+        sql: "ANALYZE TABLE t VALIDATE REF UPDATE;"
+      - id: validate_ref_update_set_dangling
+        sql: "ANALYZE TABLE t VALIDATE REF UPDATE SET DANGLING TO NULL;"
+      - id: cascade_fast
+        sql: "ANALYZE TABLE t VALIDATE STRUCTURE CASCADE FAST;"
+      - id: cascade_complete_online_into
+        sql: "ANALYZE TABLE t VALIDATE STRUCTURE CASCADE COMPLETE ONLINE INTO s.invalid_rows;"
+      - id: cascade_complete_offline
+        sql: "ANALYZE TABLE t VALIDATE STRUCTURE CASCADE COMPLETE OFFLINE;"
+      - id: list_chained_rows
+        sql: "ANALYZE TABLE t LIST CHAINED ROWS;"
+      - id: list_chained_rows_into
+        sql: "ANALYZE TABLE t LIST CHAINED ROWS INTO chained_rows;"
+      - id: delete_statistics
+        sql: "ANALYZE TABLE t DELETE STATISTICS;"
+      - id: delete_system_statistics
+        sql: "ANALYZE INDEX idx DELETE SYSTEM STATISTICS;"
+    examples:
+      - "ANALYZE TABLE orders DELETE STATISTICS;"
+      - "ANALYZE INDEX inv_product_ix VALIDATE STRUCTURE;"
+      - |-
+        ANALYZE CLUSTER personnel
+            VALIDATE STRUCTURE CASCADE;
+
+  - id: comment
+    name: COMMENT
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/COMMENT.html
+    tier: medium
+    probes:
+      - id: on_table
+        sql: "COMMENT ON TABLE t IS 'a table';"
+      - id: on_table_schema_view
+        sql: "COMMENT ON TABLE s.v IS 'a view';"
+      - id: on_column
+        sql: "COMMENT ON COLUMN s.t.c IS 'a column';"
+      - id: on_materialized_view
+        sql: "COMMENT ON MATERIALIZED VIEW mv IS 'a materialized view';"
+      - id: on_indextype
+        sql: "COMMENT ON INDEXTYPE s.it IS 'an indextype';"
+      - id: on_operator
+        sql: "COMMENT ON OPERATOR s.op IS 'an operator';"
+      - id: on_mining_model
+        sql: "COMMENT ON MINING MODEL s.m IS 'a mining model';"
+      - id: on_edition
+        sql: "COMMENT ON EDITION e IS 'an edition';"
+      - id: on_audit_policy
+        sql: "COMMENT ON AUDIT POLICY pol IS 'an audit policy';"
+      - id: on_property_graph
+        sql: "COMMENT ON PROPERTY GRAPH s.g IS 'a property graph';"
+      - id: empty_string
+        sql: "COMMENT ON TABLE t IS '';"
+    examples:
+      - |-
+        COMMENT ON COLUMN employees.job_id
+           IS 'abbreviated job title';
+      - "COMMENT ON COLUMN employees.job_id IS '';"
+
+  - id: create_context
+    name: CREATE CONTEXT
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-CONTEXT.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE CONTEXT ns USING pkg;"
+      - id: or_replace_schema_package
+        sql: "CREATE OR REPLACE CONTEXT ns USING s.pkg;"
+      - id: initialized_externally
+        sql: "CREATE CONTEXT ns USING pkg INITIALIZED EXTERNALLY;"
+      - id: initialized_globally
+        sql: "CREATE CONTEXT ns USING pkg INITIALIZED GLOBALLY;"
+      - id: accessed_globally
+        sql: "CREATE CONTEXT ns USING pkg ACCESSED GLOBALLY;"
+    examples:
+      - "CREATE CONTEXT hr_context USING emp_mgmt;"
+
+  - id: create_database_link
+    name: CREATE DATABASE LINK
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-DATABASE-LINK.html
+    tier: medium
+    probes:
+      - id: using
+        sql: "CREATE DATABASE LINK dblink USING 'remote';"
+      - id: public
+        sql: "CREATE PUBLIC DATABASE LINK dblink USING 'remote';"
+      - id: if_not_exists
+        sql: "CREATE DATABASE LINK IF NOT EXISTS dblink USING 'remote';"
+      - id: connect_to_user
+        sql: "CREATE DATABASE LINK dblink CONNECT TO u IDENTIFIED BY p USING 'remote';"
+      - id: connect_to_current_user
+        sql: "CREATE DATABASE LINK dblink CONNECT TO CURRENT_USER USING 'remote';"
+      - id: connect_with_credential
+        sql: "CREATE DATABASE LINK dblink CONNECT WITH cred USING 'remote';"
+      - id: shared_authenticated_by
+        sql: "CREATE SHARED PUBLIC DATABASE LINK dblink CONNECT TO u IDENTIFIED BY p AUTHENTICATED BY u2 IDENTIFIED BY p2 USING 'remote';"
+      - id: authenticated_with_credential
+        sql: "CREATE SHARED DATABASE LINK dblink CONNECT TO u IDENTIFIED BY p AUTHENTICATED WITH CREDENTIAL USING 'remote';"
+      - id: dotted_link_name
+        sql: "CREATE DATABASE LINK remote.us.example.com CONNECT TO CURRENT_USER USING 'remote';"
+    examples:
+      - |-
+        CREATE PUBLIC DATABASE LINK remote
+           USING 'remote';
+      - |-
+        CREATE DATABASE LINK local
+           CONNECT TO hr IDENTIFIED BY password
+           USING 'local';
+      - |-
+        CREATE DATABASE LINK remote.us.example.com
+           CONNECT TO CURRENT_USER
+           USING 'remote';
+
+  - id: create_directory
+    name: CREATE DIRECTORY
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-DIRECTORY.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE DIRECTORY dir AS '/disk1/oracle/admin';"
+      - id: or_replace
+        sql: "CREATE OR REPLACE DIRECTORY dir AS '/disk1/oracle/admin';"
+      - id: if_not_exists
+        sql: "CREATE DIRECTORY IF NOT EXISTS dir AS '/disk1/oracle/admin';"
+      - id: sharing_metadata
+        sql: "CREATE DIRECTORY dir SHARING = METADATA AS '/disk1/oracle/admin';"
+      - id: sharing_none
+        sql: "CREATE DIRECTORY dir SHARING = NONE AS '/disk1/oracle/admin';"
+    examples:
+      - "CREATE DIRECTORY admin AS '/disk1/oracle/admin';"
+      - "CREATE OR REPLACE DIRECTORY bfile_dir AS '/usr/bin/bfile_dir';"
+
+  - id: create_domain
+    name: CREATE DOMAIN
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-domain.html
+    tier: medium
+    probes:
+      - id: single_column
+        sql: "CREATE DOMAIN d AS NUMBER;"
+      - id: usecase_if_not_exists_schema
+        sql: "CREATE USECASE DOMAIN IF NOT EXISTS s.d AS VARCHAR2(10);"
+      - id: column_properties
+        sql: "CREATE DOMAIN d AS VARCHAR2(20) DEFAULT 'x' NOT NULL CONSTRAINT c CHECK (d <> 'y') COLLATE BINARY_CI;"
+      - id: default_on_null
+        sql: "CREATE DOMAIN d AS NUMBER DEFAULT ON NULL FOR INSERT ONLY 0;"
+      - id: display_order_annotations
+        sql: "CREATE DOMAIN d AS NUMBER DISPLAY TO_CHAR(d) ORDER d ANNOTATIONS (Description 'a domain');"
+      - id: enum
+        sql: "CREATE DOMAIN d AS ENUM (a, b, c);"
+      - id: enum_values_aliases
+        sql: "CREATE DOMAIN d AS ENUM (a = x = 1, b = y, c = z);"
+      - id: multi_column
+        sql: "CREATE DOMAIN d AS (c1 AS NUMBER, c2 AS VARCHAR2(10));"
+      - id: multi_column_strict
+        sql: "CREATE DOMAIN d AS (c1 AS NUMBER STRICT NOT NULL, c2 AS VARCHAR2(10) STRICT);"
+      - id: flexible_case
+        sql: "CREATE FLEXIBLE DOMAIN d (c1, c2) CHOOSE DOMAIN USING (t VARCHAR2(10)) FROM CASE WHEN t = 'a' THEN d1(c1, c2) ELSE d2(c1, c2) END;"
+      - id: flexible_decode
+        sql: "CREATE FLEXIBLE DOMAIN d (c1, c2) CHOOSE DOMAIN USING (t VARCHAR2(10)) FROM DECODE (t, 'a', d1(c1, c2), 'b', d2(c1, c2));"
+    examples:
+      - |-
+        CREATE DOMAIN order_status AS
+          ENUM (
+            New ,
+            Open ,
+            Shipped ,
+            Closed ,
+            Cancelled
+          );
+      - |-
+        CREATE DOMAIN days_of_week AS
+          ENUM (
+            Sunday     = Su  = 0,
+            Monday     = Mo,
+            Tuesday    = Tu,
+            Wednesday  = We,
+            Thursday   = Th,
+            Friday     = Fr,
+            Saturday   = Sa
+          );
+
+  - id: create_hybrid_vector_index
+    name: CREATE HYBRID VECTOR INDEX
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-hybrid-vector-index.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE HYBRID VECTOR INDEX idx ON t(c) PARAMETERS ('MODEL m');"
+      - id: schema_qualified
+        sql: "CREATE HYBRID VECTOR INDEX s.idx ON s.t(c) PARAMETERS ('MODEL m');"
+
+  - id: create_iceberg_table
+    name: CREATE ICEBERG TABLE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-iceberg-table.html
+    tier: medium
+    probes:
+      - id: partition_by_year
+        sql: |-
+          CREATE ICEBERG TABLE s.t (id INT, ts TIMESTAMP)
+            WITHIN CATALOG cat
+            STORAGE LOCATION "s3://bucket/prefix"
+            PARTITION BY YEAR (ts);
+      - id: partition_by_bucket
+        sql: |-
+          CREATE ICEBERG TABLE s.t (id INT, name STRING)
+            WITHIN CATALOG cat
+            STORAGE LOCATION "s3://bucket/prefix"
+            PARTITION BY BUCKET (16, id);
+      - id: partition_by_multiple_transforms
+        sql: |-
+          CREATE ICEBERG TABLE s.t (id INT, d DATE)
+            WITHIN CATALOG cat
+            STORAGE LOCATION "s3://bucket/prefix"
+            PARTITION BY MONTH (d), DAY (d), HOUR (d), BUCKET (4, id);
+
+  - id: create_json_relational_duality_view
+    name: CREATE JSON RELATIONAL DUALITY VIEW
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-json-relational-duality-view.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE JSON RELATIONAL DUALITY VIEW v AS SELECT JSON {'_id' : t.id, 'name' : t.name} FROM t t;"
+      - id: json_duality_short_form
+        sql: "CREATE JSON DUALITY VIEW v AS SELECT JSON {'_id' : t.id} FROM t t;"
+      - id: or_replace_force_editionable
+        sql: "CREATE OR REPLACE FORCE EDITIONABLE JSON RELATIONAL DUALITY VIEW v AS SELECT JSON {'_id' : t.id} FROM t t;"
+      - id: no_force_noneditionable
+        sql: "CREATE NO FORCE NONEDITIONABLE JSON RELATIONAL DUALITY VIEW v AS SELECT JSON {'_id' : t.id} FROM t t;"
+      - id: if_not_exists
+        sql: "CREATE JSON RELATIONAL DUALITY VIEW IF NOT EXISTS v AS SELECT JSON {'_id' : t.id} FROM t t;"
+      - id: table_tags
+        sql: "CREATE JSON RELATIONAL DUALITY VIEW v AS SELECT JSON {'_id' : t.id} FROM t t WITH INSERT UPDATE DELETE;"
+      - id: table_tags_check_etag
+        sql: "CREATE JSON RELATIONAL DUALITY VIEW v AS SELECT JSON {'_id' : t.id} FROM t t WITH NOCHECK ETAG NOINSERT NOUPDATE NODELETE;"
+      - id: column_tags
+        sql: "CREATE JSON RELATIONAL DUALITY VIEW v AS SELECT JSON {'_id' : t.id, 'name' : t.name WITH NOCHECK, 'age' : t.age WITH NOUPDATE} FROM t t;"
+      - id: key_is_form
+        sql: "CREATE JSON RELATIONAL DUALITY VIEW v AS SELECT JSON {KEY 'id' IS t.id, 'name' IS t.name} FROM t t;"
+      - id: nested_singleton_subquery
+        sql: "CREATE JSON RELATIONAL DUALITY VIEW v AS SELECT JSON {'_id' : t.id, 'owner' : (SELECT JSON {'oid' : o.id, 'oname' : o.name} FROM o o WHERE o.id = t.owner_id)} FROM t t;"
+      - id: nested_array_subquery
+        sql: "CREATE JSON RELATIONAL DUALITY VIEW v AS SELECT JSON {'_id' : t.id, 'items' : [SELECT JSON {'iid' : i.id} FROM i i WITH INSERT UPDATE WHERE i.tid = t.id]} FROM t t;"
+      - id: unnest
+        sql: "CREATE JSON RELATIONAL DUALITY VIEW v AS SELECT JSON {'_id' : t.id, UNNEST (SELECT JSON {'oname' : o.name} FROM o o WHERE o.id = t.owner_id)} FROM t t;"
+      - id: flex_column
+        sql: "CREATE JSON RELATIONAL DUALITY VIEW v AS SELECT JSON {'_id' : t.id, extra AS FLEX} FROM t t;"
+        note: flex_clause is "column_name AS FLEX [ COLUMN ]" in the syntax block.
+      - id: graphql_form
+        sql: "CREATE JSON RELATIONAL DUALITY VIEW v AS t @insert @update @delete {_id : id, name : name};"
+        note: graphql_query form of the syntax block; the block draws it inside parentheses but the doc's GraphQL examples and the engine take it bare.
+
+  - id: create_materialized_view_log
+    name: CREATE MATERIALIZED VIEW LOG
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-MATERIALIZED-VIEW-LOG.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE MATERIALIZED VIEW LOG ON t;"
+      - id: if_not_exists_schema
+        sql: "CREATE MATERIALIZED VIEW LOG IF NOT EXISTS ON s.t;"
+      - id: sharing
+        sql: "CREATE MATERIALIZED VIEW LOG ON t SHARING = METADATA;"
+      - id: physical_attributes_tablespace
+        sql: "CREATE MATERIALIZED VIEW LOG ON t PCTFREE 5 INITRANS 2 TABLESPACE ts STORAGE (INITIAL 10K);"
+      - id: logging_cache
+        sql: "CREATE MATERIALIZED VIEW LOG ON t NOLOGGING NOCACHE;"
+      - id: parallel
+        sql: "CREATE MATERIALIZED VIEW LOG ON t PARALLEL 4;"
+      - id: partitioning
+        sql: "CREATE MATERIALIZED VIEW LOG ON t PARTITION BY RANGE (c) (PARTITION p1 VALUES LESS THAN (10), PARTITION p2 VALUES LESS THAN (MAXVALUE));"
+      - id: with_primary_key_rowid
+        sql: "CREATE MATERIALIZED VIEW LOG ON t WITH PRIMARY KEY, ROWID;"
+      - id: with_object_id
+        sql: "CREATE MATERIALIZED VIEW LOG ON t WITH OBJECT ID;"
+      - id: with_commit_scn
+        sql: "CREATE MATERIALIZED VIEW LOG ON t WITH COMMIT SCN;"
+      - id: with_columns
+        sql: "CREATE MATERIALIZED VIEW LOG ON t WITH (a, b);"
+      - id: with_sequence_columns_including_new_values
+        sql: "CREATE MATERIALIZED VIEW LOG ON t WITH ROWID, SEQUENCE (a, b) INCLUDING NEW VALUES;"
+      - id: excluding_new_values
+        sql: "CREATE MATERIALIZED VIEW LOG ON t WITH PRIMARY KEY (a) EXCLUDING NEW VALUES;"
+      - id: purge_immediate
+        sql: "CREATE MATERIALIZED VIEW LOG ON t PURGE IMMEDIATE;"
+      - id: purge_immediate_asynchronous
+        sql: "CREATE MATERIALIZED VIEW LOG ON t PURGE IMMEDIATE ASYNCHRONOUS;"
+      - id: purge_start_with_next
+        sql: "CREATE MATERIALIZED VIEW LOG ON t PURGE START WITH SYSDATE NEXT SYSDATE + 1;"
+      - id: purge_repeat_interval
+        sql: "CREATE MATERIALIZED VIEW LOG ON t PURGE REPEAT INTERVAL '5' DAY;"
+      - id: for_fast_refresh
+        sql: "CREATE MATERIALIZED VIEW LOG ON t FOR FAST REFRESH;"
+      - id: for_synchronous_refresh
+        sql: "CREATE MATERIALIZED VIEW LOG ON t FOR SYNCHRONOUS REFRESH USING stage_log;"
+    examples:
+      - |-
+        CREATE MATERIALIZED VIEW LOG ON customers
+           PCTFREE 5
+           TABLESPACE example
+           STORAGE (INITIAL 10K);
+      - "CREATE MATERIALIZED VIEW LOG ON customers WITH PRIMARY KEY, ROWID;"
+      - |-
+        CREATE MATERIALIZED VIEW LOG ON sales
+           WITH ROWID, SEQUENCE(amount_sold, time_id, prod_id)
+           INCLUDING NEW VALUES;
