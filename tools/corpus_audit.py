@@ -133,7 +133,7 @@ def sqlfluff_fixtures(dialect: str) -> list:
                         continue
                     sql = seg.raw.strip()
                     if sql:
-                        out.append(sql.rstrip(";") + ";")
+                        out.append(sql)
         return out
     return _cached(f"sqlfluff-{dialect}", build)
 
@@ -170,7 +170,7 @@ def sqlglot_tests(dialect: str) -> list:
         for s in out:
             first = re.match(r"\s*\(?\s*([A-Za-z_]+)", s)
             if first and first.group(1).upper() in STARTERS:
-                keep.append(s.strip().rstrip(";") + ";")
+                keep.append(s.strip())
         return keep
     return _cached(f"sqlglot-{dialect}", build)
 
@@ -208,7 +208,7 @@ def postgres_regress() -> list:
                     pglast.parse_sql(s)
                 except Exception:
                     continue
-                out.append(s + ";")
+                out.append(s)
         return out
     return _cached("postgres-regress", build)
 
@@ -223,7 +223,7 @@ def cockroach_testdata() -> list:
             for m in re.finditer(r"(?ms)^parse\n(.*?)\n----\n", text):
                 s = m.group(1).strip()
                 if s:
-                    out.append(s.rstrip(";") + ";")
+                    out.append(s)
         return out
     return _cached("cockroach-testdata", build)
 
@@ -246,7 +246,7 @@ def duckdb_tests() -> list:
                         i += 1
                     s = "\n".join(body).strip()
                     if s and "${" not in s and "__TEST_DIR__" not in s:
-                        out.append(s.rstrip(";") + ";")
+                        out.append(s)
                 i += 1
         return out
     return _cached("duckdb-tests", build)
@@ -306,9 +306,20 @@ def clickhouse_tests() -> list:
                 body = re.sub(r"--[^\n]*$", "", s.strip()).strip()
                 body = re.sub(r"^(\s*--[^\n]*\n)+", "", body).strip()
                 if body and not body.startswith("--"):
-                    out.append(body.rstrip(";") + ";")
+                    out.append(body)
         return out
     return _cached("clickhouse-tests", build)
+
+
+def terminate(sql: str) -> str:
+    """Adapters store statements as the source wrote them. Add the `;` our
+    program rule expects unless the statement already ends in one, or in a
+    client terminator line (SQL*Plus `/` after a PL/SQL block, T-SQL `GO`)."""
+    s = sql.rstrip()
+    last = s.rsplit("\n", 1)[-1].strip()
+    if s.endswith(";") or last == "/" or last.upper() == "GO":
+        return s
+    return s + ";"
 
 
 def statements_for(adapter: str) -> list:
@@ -395,7 +406,7 @@ def audit_dialect(dialect: str, adapters: list, show: int) -> dict:
     seen = set()
     for adapter in adapters:
         stmts = []
-        for s in statements_for(adapter):
+        for s in map(terminate, statements_for(adapter)):
             norm = re.sub(r"\s+", " ", s).strip()
             if norm and norm not in seen:
                 seen.add(norm)
@@ -414,7 +425,9 @@ def audit_dialect(dialect: str, adapters: list, show: int) -> dict:
             err = first_error(tree.root_node)
             key = cluster_key(b, err) if err is not None else f"{lead_of(s)} … ?"
             clusters[key] += 1
-            if key not in examples or len(s) < len(examples[key]):
+            # CockroachDB's test data isn't under an open-source license, so
+            # its statements are counted but never copied into corpus.json.
+            if adapter != "cockroach_testdata" and (key not in examples or len(s) < len(examples[key])):
                 examples[key] = s
         rec = {"total": len(stmts), "parsed": ok,
                "rate": round(100.0 * ok / len(stmts), 1) if stmts else None}
@@ -424,13 +437,14 @@ def audit_dialect(dialect: str, adapters: list, show: int) -> dict:
         sources[adapter] = rec
     total = sum(r["total"] for r in sources.values())
     parsed = sum(r["parsed"] for r in sources.values())
-    top = [{"prefix": k, "count": c, "example": examples[k][:400]} for k, c in clusters.most_common(40)]
+    top = [{"prefix": k, "count": c, **({"example": examples[k][:300]} if k in examples else {})}
+           for k, c in clusters.most_common(40)]
     res = {"sources": sources, "total": total, "parsed": parsed,
            "rate": round(100.0 * parsed / total, 1) if total else None, "clusters": top}
     line = ", ".join(f"{a} {r['parsed']}/{r['total']}" for a, r in sources.items())
     print(f"[corpus] {dialect:<12} {res['rate'] if res['rate'] is not None else '-':>5}%  ({line})")
     for c in top[:show]:
-        print(f"    {c['count']:>5}  {c['prefix']}\n           e.g. {c['example'][:150]!r}")
+        print(f"    {c['count']:>5}  {c['prefix']}\n           e.g. {c.get('example', '')[:150]!r}")
     return res
 
 
