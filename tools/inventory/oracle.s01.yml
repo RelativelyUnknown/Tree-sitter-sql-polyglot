@@ -1,0 +1,82 @@
+dialect: oracle
+engine: Oracle AI Database
+version: "26ai"
+source: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/toc.htm
+
+statements:
+  - id: call
+    name: CALL
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CALL.html
+    tier: high
+    probes:
+      - id: procedure
+        sql: "CALL p();"
+      - id: procedure_args_positional
+        sql: "CALL p(3, 4);"
+      - id: procedure_args_named
+        sql: "CALL p(arg1 => 3, arg2 => 4);"
+      - id: procedure_args_mixed
+        sql: "CALL p(3, arg2 => 4);"
+      - id: schema_qualified
+        sql: "CALL s.p(1);"
+      - id: package_routine
+        sql: "CALL pkg.p(1);"
+      - id: schema_package_routine
+        sql: "CALL s.pkg.p(1);"
+      - id: dblink
+        sql: "CALL s.p@dblink(1);"
+      - id: function_into
+        sql: "CALL f(1) INTO :x;"
+      - id: function_into_indicator
+        sql: "CALL f(1) INTO :x :ind;"
+      - id: function_into_indicator_keyword
+        sql: "CALL f(1) INTO :x INDICATOR :ind;"
+      - id: object_access_expression
+        sql: "CALL warehouse_typ(456, 'Warehouse 456', 2236).ret_name() INTO :x;"
+    examples:
+      - "CALL emp_mgmt.remove_dept(162);"
+      - "CALL warehouse_typ(456, 'Warehouse 456', 2236).ret_name() INTO :x;"
+      - "CALL ret_warehouse_typ(warehouse_typ(234, 'Warehouse 234', 2235)).ret_name() INTO :x;"
+
+  - id: lock_table
+    name: LOCK TABLE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/LOCK-TABLE.html
+    tier: high
+    probes:
+      - id: row_share
+        sql: "LOCK TABLE t IN ROW SHARE MODE;"
+      - id: row_exclusive
+        sql: "LOCK TABLE t IN ROW EXCLUSIVE MODE;"
+      - id: share_update
+        sql: "LOCK TABLE t IN SHARE UPDATE MODE;"
+      - id: share
+        sql: "LOCK TABLE t IN SHARE MODE;"
+      - id: share_row_exclusive
+        sql: "LOCK TABLE t IN SHARE ROW EXCLUSIVE MODE;"
+      - id: exclusive
+        sql: "LOCK TABLE t IN EXCLUSIVE MODE;"
+      - id: schema_qualified
+        sql: "LOCK TABLE s.t IN EXCLUSIVE MODE;"
+      - id: view
+        sql: "LOCK TABLE s.v IN SHARE MODE;"
+      - id: nowait
+        sql: "LOCK TABLE t IN EXCLUSIVE MODE NOWAIT;"
+      - id: wait
+        sql: "LOCK TABLE t IN EXCLUSIVE MODE WAIT 10;"
+      - id: dblink
+        sql: "LOCK TABLE t@remote IN SHARE MODE;"
+      - id: partition
+        sql: "LOCK TABLE t PARTITION (p1) IN SHARE MODE;"
+      - id: partition_for
+        sql: "LOCK TABLE t PARTITION FOR (10) IN SHARE MODE;"
+      - id: subpartition
+        sql: "LOCK TABLE t SUBPARTITION (sp1) IN SHARE MODE;"
+      - id: subpartition_for
+        sql: "LOCK TABLE t SUBPARTITION FOR (10, 20) IN SHARE MODE;"
+      - id: multiple_tables
+        sql: "LOCK TABLE t1, t2 IN EXCLUSIVE MODE;"
+      - id: multiple_mixed_clauses
+        sql: "LOCK TABLE s.t1 PARTITION (p1), t2@remote, v IN ROW SHARE MODE NOWAIT;"
+    examples:
+      - "LOCK TABLE employees IN EXCLUSIVE MODE NOWAIT;"
+      - "LOCK TABLE employees@remote IN SHARE MODE;"
