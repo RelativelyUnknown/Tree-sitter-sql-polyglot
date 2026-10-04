@@ -6,3 +6,163 @@ source: https://docs.databricks.com/aws/en/sql/language-manual/
 statements: []
 
 expressions:
+  - id: a_integer_literals
+    name: Integral numeric literals (TINYINT, SMALLINT, INT, BIGINT)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/data-types/bigint-type
+    tier: high
+    probes:
+      - { id: int, sql: "SELECT 1, +1, -1, 2147483648;" }
+      - { id: bigint_l_suffix, sql: "SELECT +1L, 5l;" }
+      - { id: smallint_s_suffix, sql: "SELECT +1S, 5s;" }
+      - { id: tinyint_y_suffix, sql: "SELECT +1Y, 5y;" }
+    examples:
+      - "SELECT +1L;"
+      - "SELECT +1S;"
+      - "SELECT +1Y;"
+
+  - id: a_decimal_literals
+    name: DECIMAL literals (BD suffix, exponent)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/data-types/decimal-type
+    tier: high
+    probes:
+      - { id: decimal_point, sql: "SELECT 6.45, -6.45, .5, 5.;" }
+      - { id: bd_suffix, sql: "SELECT +1BD, 5.321BD, 1.5bd;" }
+      - { id: exponent_bd, sql: "SELECT 5E3BD, 5.321E2BD, 1e-2bd;" }
+    examples:
+      - "SELECT +1BD;"
+      - "SELECT 5E3BD;"
+      - "SELECT 5.321E2BD;"
+
+  - id: a_floating_point_literals
+    name: FLOAT and DOUBLE literals (D and F suffix, exponent)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/data-types/double-type
+    tier: high
+    probes:
+      - { id: exponent, sql: "SELECT 5E10, 5.3E10, 1e-5, 1E+5;" }
+      - { id: double_d_suffix, sql: "SELECT +1D, 2.D, -.1D, 5E10D, 1d;" }
+      - { id: float_f_suffix, sql: "SELECT +1F, 2.F, -.1F, 5E10F, 1f;" }
+    examples:
+      - "SELECT +1D;"
+      - "SELECT 5E10;"
+      - "SELECT -.1D;"
+      - "SELECT +1F;"
+      - "SELECT 5.3E10F;"
+
+  - id: a_special_floating_point_values
+    name: Special floating point values (Inf, NaN)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/data-types/special-floating-point-values
+    tier: medium
+    probes:
+      - { id: cast_infinity, sql: "SELECT double('infinity'), CAST('-Inf' AS DOUBLE), CAST('NaN' AS FLOAT);" }
+    examples:
+      - "SELECT double('infinity');"
+
+  - id: a_boolean_literals
+    name: BOOLEAN and NULL literals
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/data-types/boolean-type
+    tier: high
+    probes:
+      - { id: true_false, sql: "SELECT TRUE, FALSE, true, false;" }
+      - { id: null_literal, sql: "SELECT NULL;" }
+      - { id: cast_boolean, sql: "SELECT CAST(0 AS BOOLEAN), CAST(NULL AS BOOLEAN);" }
+    examples:
+      - "SELECT true;"
+      - "SELECT CAST(0 AS BOOLEAN);"
+      - "SELECT CAST(NULL AS BOOLEAN);"
+
+  - id: a_string_literals
+    name: STRING literals (quotes, escapes, raw prefix, chaining)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/data-types/string-type
+    tier: high
+    probes:
+      - { id: single_quoted, sql: "SELECT 'Spark', '';" }
+      - { id: double_quoted, sql: "SELECT \"Spark\";" }
+      - { id: backslash_escaped_quote, sql: "SELECT 'O\\'Connell';" }
+      - { id: escape_sequences, sql: "SELECT 'Some \\nText', '\\\\', '\\t\\0';" }
+      - { id: raw_prefix, sql: "SELECT r'Some \\nText', R'\\\\', r\"x\";" }
+      - { id: unicode_content, sql: "SELECT '서울시';" }
+      - { id: chained_literals, sql: "SELECT 'a' 'b' 'c';", note: "Chaining string literals needs Databricks Runtime 18.0 or later." }
+    examples:
+      - "SELECT 'Spark';"
+      - "SELECT 'O\\'Connell';"
+      - "SELECT r'Some \\nText';"
+      - "SELECT '서울시';"
+      - "SELECT '\\\\';"
+
+  - id: a_binary_literals
+    name: BINARY literals (X prefix)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/data-types/binary-type
+    tier: medium
+    probes:
+      - { id: hex_single_quoted, sql: "SELECT X'1ABF', x'1', X'';" }
+      - { id: hex_double_quoted, sql: "SELECT X\"1ABF\";" }
+    examples:
+      - "SELECT X'1';"
+      - "SELECT X'1ABF';"
+      - "SELECT X'';"
+
+  - id: a_date_literals
+    name: DATE literals
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/data-types/date-type
+    tier: high
+    probes:
+      - { id: date_year_month_day, sql: "SELECT DATE '2020-12-31', date '2021-7-1';" }
+      - { id: date_year_only, sql: "SELECT DATE '0000', DATE '2021-07';" }
+      - { id: date_trailing_t, sql: "SELECT DATE '2021-7-1T';" }
+      - { id: date_signed_year, sql: "SELECT DATE '-10000-01-01', DATE '+10000-01-01';" }
+    examples:
+      - "SELECT DATE '0000';"
+      - "SELECT DATE '2020-12-31';"
+      - "SELECT DATE '2021-7-1T';"
+
+  - id: a_timestamp_literals
+    name: TIMESTAMP and TIMESTAMP_NTZ literals
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/data-types/timestamp-type
+    tier: high
+    probes:
+      - { id: timestamp_date_only, sql: "SELECT TIMESTAMP '2020-12-31', TIMESTAMP '0000';" }
+      - { id: timestamp_fraction, sql: "SELECT TIMESTAMP '2021-7-1T8:43:28.123456';" }
+      - { id: timestamp_zone_offset, sql: "SELECT TIMESTAMP '2021-7-1T8:43:28UTC+3', TIMESTAMP '2021-07-01 08:43:28+05:30', TIMESTAMP '2021-07-01 08:43:28Z';" }
+      - { id: timestamp_region_zone, sql: "SELECT TIMESTAMP '2021-07-01 08:43:28 Europe/Paris';" }
+      - { id: timestamp_signed_year, sql: "SELECT TIMESTAMP '+10000';" }
+      - { id: timestamp_ltz_prefix, sql: "SELECT TIMESTAMP_LTZ '2020-12-31 10:00:00';" }
+      - { id: timestamp_ntz_prefix, sql: "SELECT TIMESTAMP_NTZ '2020-12-31', TIMESTAMP_NTZ '2021-7-1T8:43:28.123456';" }
+    examples:
+      - "SELECT TIMESTAMP '2020-12-31';"
+      - "SELECT TIMESTAMP '2021-7-1T8:43:28.123456';"
+      - "SELECT current_timezone(), TIMESTAMP '2021-7-1T8:43:28UTC+3';"
+
+  - id: a_time_literals
+    name: TIME literals
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/data-types/time-type
+    tier: medium
+    probes:
+      - { id: time_hour_minute, sql: "SELECT TIME '08:15';" }
+      - { id: time_seconds, sql: "SELECT TIME '10:30:00', TIME '23:59:59.123456';" }
+      - { id: time_am_pm, sql: "SELECT TIME '8:15 PM', TIME '08:15:30 AM';" }
+    examples:
+      - "SELECT TIME '10:30:00';"
+      - "SELECT TIME '08:15';"
+      - "SELECT TIME '23:59:59.123456';"
+
+  - id: a_interval_literals
+    name: INTERVAL literals (year-month and day-time)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/data-types/interval-type
+    tier: high
+    probes:
+      - { id: year_to_month, sql: "SELECT INTERVAL '100-00' YEAR TO MONTH;" }
+      - { id: year_only, sql: "SELECT INTERVAL '5' YEAR;" }
+      - { id: month_only, sql: "SELECT INTERVAL '-3600' MONTH;" }
+      - { id: day_only, sql: "SELECT INTERVAL '5' DAY;" }
+      - { id: day_to_hour, sql: "SELECT INTERVAL '5 12' DAY TO HOUR;" }
+      - { id: day_to_minute, sql: "SELECT INTERVAL '5 12:30' DAY TO MINUTE;" }
+      - { id: day_to_second, sql: "SELECT INTERVAL '5 12:30:15.123' DAY TO SECOND;" }
+      - { id: hour_to_second, sql: "SELECT INTERVAL '200:13:50.3' HOUR TO SECOND;" }
+      - { id: hour_to_minute, sql: "SELECT INTERVAL '12:30' HOUR TO MINUTE;" }
+      - { id: minute_to_second, sql: "SELECT INTERVAL '30:15' MINUTE TO SECOND;" }
+      - { id: second_only, sql: "SELECT INTERVAL '45.5' SECOND;" }
+      - { id: sign_before_string, sql: "SELECT INTERVAL -'200:13:50.3' HOUR TO SECOND, INTERVAL +'1' DAY;" }
+    examples:
+      - "SELECT INTERVAL '100-00' YEAR TO MONTH;"
+      - "SELECT INTERVAL '-3600' MONTH;"
+      - "SELECT INTERVAL -'200:13:50.3' HOUR TO SECOND;"
