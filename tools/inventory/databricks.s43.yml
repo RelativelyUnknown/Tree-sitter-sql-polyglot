@@ -1,0 +1,164 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: reorg_table
+    name: REORG TABLE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/delta-reorg-table
+    tier: medium
+    probes:
+      - id: apply_purge
+        sql: "REORG TABLE t APPLY (PURGE);"
+      - id: without_table_keyword
+        sql: "REORG t APPLY (PURGE);"
+      - id: where_apply_purge
+        sql: "REORG TABLE t WHERE c >= 5 APPLY (PURGE);"
+      - id: apply_upgrade_uniform
+        sql: "REORG TABLE t APPLY (UPGRADE UNIFORM (ICEBERG_COMPAT_VERSION = 2));"
+      - id: apply_checkpoint
+        sql: "REORG TABLE t APPLY (CHECKPOINT);"
+      - id: apply_set_parquet
+        sql: "REORG TABLE t APPLY (SET PARQUET (FORMAT_VERSION = '2.12.0'));"
+    examples:
+      - "REORG TABLE events APPLY (PURGE);"
+      - "REORG TABLE events WHERE date >= '2022-01-01' APPLY (PURGE);"
+      - "REORG TABLE events APPLY (UPGRADE UNIFORM (ICEBERG_COMPAT_VERSION = 2));"
+
+  - id: describe_history
+    name: DESCRIBE HISTORY
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/delta-describe-history
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DESCRIBE HISTORY t;"
+      - id: qualified_name
+        sql: "DESCRIBE HISTORY s.t;"
+      - id: path_name
+        sql: "DESCRIBE HISTORY delta.`/tmp/delta/t`;"
+
+  - id: cache_table
+    name: CACHE TABLE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-cache-cache-table
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CACHE TABLE t;"
+      - id: lazy
+        sql: "CACHE LAZY TABLE t;"
+      - id: options_storage_level
+        sql: "CACHE TABLE t OPTIONS ('storageLevel' 'DISK_ONLY');"
+      - id: options_storage_level_equals
+        sql: "CACHE TABLE t OPTIONS ('storageLevel' = 'MEMORY_ONLY');"
+      - id: as_query
+        sql: "CACHE TABLE t AS SELECT * FROM s;"
+      - id: query_without_as
+        sql: "CACHE TABLE t SELECT * FROM s;"
+      - id: lazy_options_query
+        sql: "CACHE LAZY TABLE t OPTIONS ('storageLevel' 'DISK_ONLY') SELECT * FROM s;"
+    examples:
+      - "CACHE TABLE testCache OPTIONS ('storageLevel' 'DISK_ONLY') SELECT * FROM testData;"
+
+  - id: clear_cache
+    name: CLEAR CACHE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-cache-clear-cache
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CLEAR CACHE;"
+    examples:
+      - "CLEAR CACHE;"
+
+  - id: refresh_cache
+    name: REFRESH CACHE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-cache-refresh
+    tier: medium
+    probes:
+      - id: resource_path_string
+        sql: "REFRESH 'hdfs://path/to/table';"
+      - id: resource_path_double_quoted
+        sql: 'REFRESH "hdfs://path/to/table";'
+    examples:
+      - 'REFRESH "hdfs://path/to/table";'
+
+  - id: refresh_table
+    name: REFRESH TABLE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-cache-refresh-table
+    tier: medium
+    probes:
+      - id: with_table_keyword
+        sql: "REFRESH TABLE t;"
+      - id: without_table_keyword
+        sql: "REFRESH t;"
+      - id: qualified_name
+        sql: "REFRESH TABLE s.v;"
+    examples:
+      - "REFRESH TABLE tbl1;"
+      - "REFRESH TABLE tempDB.view1;"
+
+  - id: uncache_table
+    name: UNCACHE TABLE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-cache-uncache-table
+    tier: medium
+    probes:
+      - id: basic
+        sql: "UNCACHE TABLE t;"
+      - id: if_exists
+        sql: "UNCACHE TABLE IF EXISTS t;"
+    examples:
+      - "UNCACHE TABLE t1;"
+
+  - id: describe_database
+    name: DESCRIBE DATABASE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-describe-database
+    tier: medium
+    probes:
+      - id: describe_database
+        sql: "DESCRIBE DATABASE s;"
+        note: The page is an alias for DESCRIBE SCHEMA; syntax is { DESC | DESCRIBE } SCHEMA [ EXTENDED ] schema_name.
+      - id: describe_database_extended
+        sql: "DESCRIBE DATABASE EXTENDED s;"
+      - id: desc_database
+        sql: "DESC DATABASE s;"
+      - id: describe_schema
+        sql: "DESCRIBE SCHEMA s;"
+      - id: describe_schema_extended
+        sql: "DESCRIBE SCHEMA EXTENDED s;"
+      - id: desc_schema_extended
+        sql: "DESC SCHEMA EXTENDED s;"
+
+  - id: describe_function
+    name: DESCRIBE FUNCTION
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-describe-function
+    tier: medium
+    probes:
+      - id: describe
+        sql: "DESCRIBE FUNCTION f;"
+      - id: desc
+        sql: "DESC FUNCTION f;"
+      - id: extended
+        sql: "DESCRIBE FUNCTION EXTENDED f;"
+      - id: qualified_name
+        sql: "DESCRIBE FUNCTION s.f;"
+    examples:
+      - "DESCRIBE FUNCTION abs;"
+      - "DESCRIBE FUNCTION EXTENDED abs;"
+      - "DESCRIBE FUNCTION max;"
+
+  - id: describe_procedure
+    name: DESCRIBE PROCEDURE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-describe-procedure
+    tier: medium
+    probes:
+      - id: describe
+        sql: "DESCRIBE PROCEDURE p;"
+      - id: desc
+        sql: "DESC PROCEDURE p;"
+      - id: extended
+        sql: "DESCRIBE PROCEDURE EXTENDED p;"
+      - id: qualified_name
+        sql: "DESCRIBE PROCEDURE s.p;"
+    examples:
+      - "DESCRIBE PROCEDURE greeting;"
+      - "DESCRIBE PROCEDURE EXTENDED greeting;"
