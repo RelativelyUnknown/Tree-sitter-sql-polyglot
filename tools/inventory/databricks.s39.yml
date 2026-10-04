@@ -1,0 +1,272 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: create_schema
+    name: CREATE SCHEMA
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-schema
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE SCHEMA s;"
+      - id: if_not_exists
+        sql: "CREATE SCHEMA IF NOT EXISTS s;"
+      - id: comment
+        sql: "CREATE SCHEMA s COMMENT 'a schema';"
+      - id: default_collation
+        sql: "CREATE SCHEMA s DEFAULT COLLATION UNICODE_CI;"
+      - id: location
+        sql: "CREATE SCHEMA s LOCATION '/samplepath';"
+      - id: managed_location
+        sql: "CREATE SCHEMA s MANAGED LOCATION 's3://depts/finance';"
+      - id: retain_dropped_for
+        sql: "CREATE SCHEMA s RETAIN DROPPED FOR 14 DAYS;"
+      - id: with_dbproperties
+        sql: "CREATE SCHEMA s WITH DBPROPERTIES (id = 1, name = 'John');"
+    examples:
+      - "CREATE SCHEMA customer_sc;"
+      - "CREATE SCHEMA IF NOT EXISTS customer_sc COMMENT 'This is customer schema' LOCATION '/samplepath' WITH DBPROPERTIES (ID = 001, Name = 'John');"
+      - "CREATE SCHEMA customer_sc RETAIN DROPPED FOR 14 DAYS;"
+
+  - id: create_database
+    name: CREATE DATABASE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-database
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE DATABASE d;"
+        note: Alias for CREATE SCHEMA per the doc page.
+      - id: if_not_exists_comment
+        sql: "CREATE DATABASE IF NOT EXISTS d COMMENT 'a database';"
+      - id: with_dbproperties
+        sql: "CREATE DATABASE d LOCATION '/samplepath' WITH DBPROPERTIES (id = 1);"
+
+  - id: alter_schema
+    name: ALTER SCHEMA
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-alter-schema
+    tier: medium
+    probes:
+      - id: default_collation
+        sql: "ALTER SCHEMA s DEFAULT COLLATION UNICODE_CI_AI;"
+      - id: set_dbproperties
+        sql: "ALTER SCHEMA s SET DBPROPERTIES ('Edited-by' = 'John', 'Edit-date' = '01/01/2001');"
+      - id: owner_to
+        sql: "ALTER SCHEMA s OWNER TO `alf@melmak.et`;"
+      - id: set_owner_to
+        sql: "ALTER SCHEMA s SET OWNER TO `alf@melmak.et`;"
+      - id: set_tags
+        sql: "ALTER SCHEMA s SET TAGS ('tag1' = 'val1', 'tag2' = 'val2');"
+      - id: unset_tags
+        sql: "ALTER SCHEMA s UNSET TAGS ('tag1', 'tag2');"
+      - id: enable_predictive_optimization
+        sql: "ALTER SCHEMA s ENABLE PREDICTIVE OPTIMIZATION;"
+      - id: disable_predictive_optimization
+        sql: "ALTER SCHEMA s DISABLE PREDICTIVE OPTIMIZATION;"
+      - id: inherit_predictive_optimization
+        sql: "ALTER SCHEMA s INHERIT PREDICTIVE OPTIMIZATION;"
+      - id: set_managed_location
+        sql: "ALTER SCHEMA c.s SET MANAGED LOCATION 's3://my-bucket/schemas/s/';"
+      - id: retain_dropped_to
+        sql: "ALTER SCHEMA c.s RETAIN DROPPED TO 14 DAYS;"
+      - id: set_retain_dropped_to
+        sql: "ALTER SCHEMA c.s SET RETAIN DROPPED TO 7 DAYS;"
+    examples:
+      - "ALTER SCHEMA inventory SET DBPROPERTIES ('Edited-by' = 'John', 'Edit-date' = '01/01/2001');"
+      - "ALTER SCHEMA test SET TAGS ('tag1' = 'val1', 'tag2' = 'val2', 'tag3' = 'val3');"
+      - "ALTER SCHEMA my_schema ENABLE PREDICTIVE OPTIMIZATION;"
+
+  - id: alter_database
+    name: ALTER DATABASE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-alter-database
+    tier: medium
+    probes:
+      - id: set_dbproperties
+        sql: "ALTER DATABASE d SET DBPROPERTIES ('Edited-by' = 'John');"
+        note: Alias for ALTER SCHEMA per the doc page.
+      - id: owner_to
+        sql: "ALTER DATABASE d OWNER TO `alf@melmak.et`;"
+      - id: set_tags
+        sql: "ALTER DATABASE d SET TAGS ('tag1' = 'val1');"
+
+  - id: drop_schema
+    name: DROP SCHEMA
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-drop-schema
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP SCHEMA s;"
+      - id: if_exists
+        sql: "DROP SCHEMA IF EXISTS s;"
+      - id: restrict
+        sql: "DROP SCHEMA s RESTRICT;"
+      - id: cascade
+        sql: "DROP SCHEMA IF EXISTS s CASCADE;"
+    examples:
+      - "DROP SCHEMA inventory_schema CASCADE;"
+      - "DROP SCHEMA IF EXISTS inventory_schema CASCADE;"
+
+  - id: drop_database
+    name: DROP DATABASE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-drop-database
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP DATABASE d;"
+        note: Alias for DROP SCHEMA per the doc page.
+      - id: if_exists_cascade
+        sql: "DROP DATABASE IF EXISTS d CASCADE;"
+      - id: restrict
+        sql: "DROP DATABASE d RESTRICT;"
+
+  - id: create_streaming_table
+    name: CREATE STREAMING TABLE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-streaming-table
+    tier: medium
+    probes:
+      - id: create_as_query
+        sql: "CREATE STREAMING TABLE t AS SELECT * FROM STREAM src;"
+      - id: if_not_exists
+        sql: "CREATE STREAMING TABLE IF NOT EXISTS t AS SELECT * FROM STREAM src;"
+      - id: create_or_refresh
+        sql: "CREATE OR REFRESH STREAMING TABLE t AS SELECT * FROM STREAM read_files('s3://bucket/path');"
+      - id: column_list
+        sql: "CREATE OR REFRESH STREAMING TABLE t (id int, ts timestamp, event string) AS SELECT * FROM STREAM src;"
+      - id: identity_column
+        sql: "CREATE OR REFRESH STREAMING TABLE t (id BIGINT GENERATED ALWAYS AS IDENTITY, name string) AS SELECT name FROM STREAM src;"
+      - id: column_constraint_and_mask
+        sql: "CREATE OR REFRESH STREAMING TABLE t (id int PRIMARY KEY, ssn string MASK catalog.schema.ssn_mask_fn) AS SELECT * FROM STREAM src;"
+      - id: expectation
+        sql: "CREATE OR REFRESH STREAMING TABLE t (CONSTRAINT date_parsing EXPECT (to_date(dt) >= '2000-01-01') ON VIOLATION FAIL UPDATE) AS SELECT * FROM STREAM src;"
+      - id: table_constraint
+        sql: "CREATE OR REFRESH STREAMING TABLE t (id int, CONSTRAINT pk_id PRIMARY KEY (id)) AS SELECT * FROM STREAM src;"
+      - id: partitioned_by
+        sql: "CREATE STREAMING TABLE t PARTITIONED BY (c) AS SELECT * FROM STREAM src;"
+      - id: cluster_by
+        sql: "CREATE OR REFRESH STREAMING TABLE t CLUSTER BY (order_date, customer_id) AS SELECT * FROM STREAM src;"
+      - id: comment_tblproperties
+        sql: "CREATE OR REFRESH STREAMING TABLE t COMMENT 'raw data' TBLPROPERTIES ('delta.appendOnly' = 'true') AS SELECT * FROM STREAM src;"
+      - id: default_collation
+        sql: "CREATE STREAMING TABLE t DEFAULT COLLATION UTF8_BINARY AS SELECT * FROM STREAM src;"
+      - id: schedule_every
+        sql: "CREATE STREAMING TABLE t SCHEDULE EVERY 1 HOUR AS SELECT * FROM STREAM src;"
+      - id: schedule_refresh_cron
+        sql: "CREATE STREAMING TABLE t SCHEDULE REFRESH CRON '0 0 0 * * ? *' AT TIME ZONE 'America/Los_Angeles' AS SELECT * FROM STREAM src;"
+      - id: trigger_on_update
+        sql: "CREATE STREAMING TABLE t TRIGGER ON UPDATE AT MOST EVERY INTERVAL 1 hour AS SELECT * FROM STREAM src;"
+      - id: row_filter
+        sql: "CREATE OR REFRESH STREAMING TABLE t (id int, region string) WITH ROW FILTER catalog.schema.us_filter_fn ON (region) AS SELECT * FROM STREAM src;"
+      - id: flow_insert_by_name
+        sql: "CREATE OR REFRESH STREAMING TABLE t FLOW INSERT BY NAME SELECT * FROM STREAM read_files('abfss://my_path');"
+      - id: flow_auto_cdc
+        sql: "CREATE OR REFRESH STREAMING TABLE t FLOW AUTO CDC FROM stream(cdc_data.users) KEYS (userId) SEQUENCE BY sequenceNum STORED AS SCD TYPE 1;"
+        note: The auto_cdc_flow_spec form is taken from the page's example; the syntax block only names the spec.
+      - id: flow_replace_where
+        sql: "CREATE OR REFRESH STREAMING TABLE t FLOW REPLACE WHERE c > 1 BY NAME SELECT * FROM STREAM src;"
+      - id: flow_replace_using
+        sql: "CREATE OR REFRESH STREAMING TABLE t FLOW REPLACE USING (payment_id) SEQUENCE BY payment_date BY NAME SELECT payment_id, payment_date FROM STREAM src;"
+    examples:
+      - "CREATE OR REFRESH STREAMING TABLE raw_data AS SELECT * FROM STREAM read_files('abfss://container@storageAccount.dfs.core.windows.net/base/path');"
+      - "CREATE OR REFRESH STREAMING TABLE orders_with_cluster_by CLUSTER BY (order_date, customer_id) AS SELECT o_orderkey AS order_id, o_custkey AS customer_id, o_orderdate AS order_date, o_totalprice AS total_price FROM STREAM(samples.tpch.orders);"
+      - "CREATE STREAMING TABLE firehose_bronze SCHEDULE EVERY 1 HOUR AS SELECT from_json(raw_data, 'schema_string') data, * EXCEPT (raw_data) FROM STREAM firehose_raw;"
+
+  - id: alter_streaming_table
+    name: ALTER STREAMING TABLE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-alter-streaming-table
+    tier: medium
+    probes:
+      - id: add_schedule_every
+        sql: "ALTER STREAMING TABLE t ADD SCHEDULE EVERY 1 HOUR;"
+      - id: add_trigger_on_update
+        sql: "ALTER STREAMING TABLE t ADD TRIGGER ON UPDATE;"
+      - id: alter_trigger_at_most_every
+        sql: "ALTER STREAMING TABLE t ALTER TRIGGER ON UPDATE AT MOST EVERY INTERVAL 1 hour;"
+      - id: alter_schedule_cron
+        sql: "ALTER STREAMING TABLE t ALTER SCHEDULE CRON '0 0 0 * * ? *' AT TIME ZONE 'America/Los_Angeles';"
+      - id: drop_schedule
+        sql: "ALTER STREAMING TABLE t DROP SCHEDULE;"
+      - id: alter_column_comment
+        sql: "ALTER STREAMING TABLE t ALTER COLUMN c COMMENT 'test';"
+      - id: alter_column_set_mask
+        sql: "ALTER STREAMING TABLE t ALTER COLUMN c SET MASK catalog.schema.mask_fn;"
+      - id: alter_column_drop_mask
+        sql: "ALTER STREAMING TABLE t ALTER COLUMN c DROP MASK;"
+      - id: alter_column_set_tags
+        sql: "ALTER STREAMING TABLE t ALTER COLUMN c SET TAGS ('tag1' = 'val1');"
+      - id: set_row_filter
+        sql: "ALTER STREAMING TABLE t SET ROW FILTER catalog.schema.us_filter_fn ON (region);"
+      - id: drop_row_filter
+        sql: "ALTER STREAMING TABLE t DROP ROW FILTER;"
+      - id: set_tags
+        sql: "ALTER STREAMING TABLE t SET TAGS ('tag1' = 'val1');"
+      - id: unset_tags
+        sql: "ALTER STREAMING TABLE t UNSET TAGS ('tag1');"
+      - id: set_owner_to
+        sql: "ALTER STREAMING TABLE t SET OWNER TO `someone@databricks.com`;"
+    examples:
+      - "ALTER STREAMING TABLE my_st ADD TRIGGER ON UPDATE;"
+      - "ALTER STREAMING TABLE my_st ALTER SCHEDULE CRON '0 0 0 * * ? *' AT TIME ZONE 'America/Los_Angeles';"
+      - "ALTER STREAMING TABLE my_st DROP SCHEDULE;"
+
+  - id: create_catalog
+    name: CREATE CATALOG
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-catalog
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE CATALOG c;"
+      - id: if_not_exists
+        sql: "CREATE CATALOG IF NOT EXISTS c;"
+      - id: using_share
+        sql: "CREATE CATALOG c USING SHARE cdc.vaccinedata;"
+      - id: managed_location
+        sql: "CREATE CATALOG c MANAGED LOCATION 's3://depts/finance';"
+      - id: retain_dropped_for
+        sql: "CREATE CATALOG c RETAIN DROPPED FOR 30 DAYS;"
+      - id: comment
+        sql: "CREATE CATALOG c COMMENT 'a catalog';"
+      - id: default_collation
+        sql: "CREATE CATALOG c DEFAULT COLLATION UNICODE_CI_AI;"
+      - id: options
+        sql: "CREATE CATALOG c OPTIONS (option_name = 'v');"
+      - id: foreign_catalog
+        sql: "CREATE FOREIGN CATALOG c USING CONNECTION conn OPTIONS (database = 'postgresdb');"
+      - id: foreign_catalog_if_not_exists_comment
+        sql: "CREATE FOREIGN CATALOG IF NOT EXISTS c USING CONNECTION conn COMMENT 'foreign' OPTIONS (database = 'postgresdb');"
+    examples:
+      - "CREATE CATALOG IF NOT EXISTS customer_cat COMMENT 'This is customer catalog';"
+      - "CREATE CATALOG customer_cat USING SHARE cdc.vaccinedata;"
+      - "CREATE FOREIGN CATALOG postgresql_catalog USING CONNECTION postgresql_connection OPTIONS (database = 'postgresdb');"
+
+  - id: alter_catalog
+    name: ALTER CATALOG
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-alter-catalog
+    tier: medium
+    probes:
+      - id: default_collation
+        sql: "ALTER CATALOG c DEFAULT COLLATION UNICODE_CS;"
+      - id: owner_to
+        sql: "ALTER CATALOG c OWNER TO `alf@melmak.et`;"
+      - id: set_owner_to
+        sql: "ALTER CATALOG c SET OWNER TO `alf@melmak.et`;"
+      - id: set_tags
+        sql: "ALTER CATALOG c SET TAGS ('tag1' = 'val1', 'tag2' = 'val2');"
+      - id: unset_tags
+        sql: "ALTER CATALOG c UNSET TAGS ('tag1', 'tag2');"
+      - id: enable_predictive_optimization
+        sql: "ALTER CATALOG c ENABLE PREDICTIVE OPTIMIZATION;"
+      - id: inherit_predictive_optimization
+        sql: "ALTER CATALOG c INHERIT PREDICTIVE OPTIMIZATION;"
+      - id: options
+        sql: "ALTER CATALOG c OPTIONS (authorized_paths 'path/to/dir1, path/to/dir2');"
+      - id: set_managed_location
+        sql: "ALTER CATALOG c SET MANAGED LOCATION 's3://my-bucket/managed/';"
+      - id: retain_dropped_to
+        sql: "ALTER CATALOG c RETAIN DROPPED TO 30 DAYS;"
+      - id: set_retain_dropped_to
+        sql: "ALTER CATALOG c SET RETAIN DROPPED TO 0 DAYS;"
+    examples:
+      - "ALTER CATALOG some_cat OWNER TO `alf@melmak.et`;"
+      - "ALTER CATALOG test SET TAGS ('tag1' = 'val1', 'tag2' = 'val2', 'tag3' = 'val3');"
+      - "ALTER CATALOG my_catalog SET MANAGED LOCATION 's3://my-bucket/managed/';"
