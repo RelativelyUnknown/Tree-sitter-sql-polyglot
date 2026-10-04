@@ -309,3 +309,156 @@ expressions:
       - "CREATE TABLE tbl1 (u UNION(num INTEGER, str VARCHAR));"
       - "INSERT INTO tbl1 VALUES (1), ('two'), (union_value(str := 'three'));"
       - "SELECT union_extract(u, 'str') AS str\nFROM tbl1;"
+
+  - id: c_json_operators
+    name: JSON extraction operators and literals
+    doc: https://duckdb.org/docs/stable/data/json/json_functions
+    tier: high
+    probes:
+      - { id: arrow, sql: "SELECT j -> '$.family' FROM example;" }
+      - { id: arrow_text, sql: "SELECT j ->> '$.family' FROM example;" }
+      - { id: arrow_array_path, sql: "SELECT j -> '$.species[0]' FROM example;" }
+      - { id: arrow_wildcard_path, sql: "SELECT j -> '$.species[*]' FROM example;" }
+      - { id: arrow_text_array_path, sql: "SELECT j ->> '$.species[0]' FROM example;" }
+      - { id: arrow_chained, sql: "SELECT j -> '$.species' -> 0 FROM example;" }
+      - { id: arrow_integer_index, sql: "SELECT j -> 'species' ->> 0 FROM example;" }
+      - { id: arrow_list_of_paths, sql: "SELECT j -> 'species' -> ['/0', '/1'] FROM example;" }
+      - { id: arrow_text_list_of_paths, sql: "SELECT j -> 'species' ->> ['/0', '/1'] FROM example;" }
+      - { id: arrow_parenthesized_comparison, sql: "SELECT ((JSON '{\"field\": 42}') -> 'field') = 42;" }
+      - { id: arrow_text_in_where, sql: "SELECT count(*) FROM (VALUES ('{}'::JSON)) t(j) WHERE (j ->> 'field') IS NOT NULL;" }
+      - { id: json_literal, sql: "SELECT JSON '{\"duck\": [1, 2, 3]}';" }
+      - { id: cast_to_json, sql: "SELECT '{\"duck\": 42}'::JSON;" }
+      - { id: json_column_type, sql: "CREATE TABLE example (j JSON);" }
+      - { id: dot_access, sql: "SELECT j.family FROM example;" }
+      - { id: dot_access_index, sql: "SELECT j.species[0] FROM example;" }
+    examples:
+      - "SELECT j -> '$.family' FROM example;"
+      - "SELECT j ->> '$.family' FROM example;"
+      - "SELECT j -> '$.species[0]' FROM example;"
+
+  - id: c_json_functions
+    name: JSON function families
+    doc: https://duckdb.org/docs/stable/data/json/json_functions
+    tier: medium
+    probes:
+      - { id: extract, sql: "SELECT json_extract(j, '$.family') FROM example;" }
+      - { id: extract_path_pointer, sql: "SELECT json_extract('{\"duck\": [1, 2, 3]}', '/duck/0');" }
+      - { id: extract_array_path_negative, sql: "SELECT json_extract('{\"duck\": [1, 2, 3]}', '$.duck[#-1]');" }
+      - { id: extract_path_list, sql: "SELECT json_extract(j, ['family', 'species']) AS extracted_list FROM example;" }
+      - { id: extract_string, sql: "SELECT json_extract_string(j, '$.family') FROM example;" }
+      - { id: json_value_exists, sql: "SELECT json_value(j, '$.family'), json_exists(j, '$.family') FROM example;" }
+      - { id: json_array_length, sql: "SELECT json_array_length('[\"duck\", \"goose\", \"swan\", null]'), json_array_length(j, 'species') FROM example;" }
+      - { id: json_type_keys, sql: "SELECT json_type(j), json_keys(j), json_structure(j), json_valid(j), json(j) FROM example;" }
+      - { id: json_contains, sql: "SELECT json_contains('{\"key\": \"value\"}', '\"value\"');" }
+      - { id: json_transform, sql: "SELECT json_transform(j, '{\"family\": \"VARCHAR\", \"coolness\": \"DOUBLE\"}') FROM example;" }
+      - { id: json_create, sql: "SELECT to_json('duck'), to_json([1, 2, 3]), to_json({duck: 42}), to_json(MAP(['duck'], [42])) FROM t;" }
+      - { id: json_array_object, sql: "SELECT json_array('duck', 42, 'goose', 123), json_object('duck', 42, 'goose', 123), json_merge_patch('{\"duck\": 42}', '{\"goose\": 123}');" }
+      - { id: json_group_aggregates, sql: "SELECT json_group_array(v), json_group_object(k, v), json_group_structure(j) FROM example1;" }
+      - { id: json_each, sql: "SELECT je.*, je.rowid FROM example AS e, json_each(e.j) AS je;" }
+      - { id: json_tree, sql: "SELECT * FROM json_tree('{\"a\": [1, 2]}');" }
+    examples:
+      - "SELECT json_extract(j, '$.family') FROM example;"
+      - "SELECT json_extract_string(j, '$.family') FROM example;"
+      - "SELECT json_group_array(v) FROM example1;"
+
+  - id: c_numeric_operators_functions
+    name: Numeric operators and functions
+    doc: https://duckdb.org/docs/stable/sql/functions/numeric
+    tier: high
+    probes:
+      - { id: arithmetic, sql: "SELECT 2 + 3, 2 - 3, 2 * 3, 5 / 2, 5 // 2, 5 % 4;" }
+      - { id: exponent, sql: "SELECT 3 ** 4, 3 ^ 4;" }
+      - { id: bitwise, sql: "SELECT 91 & 15, 32 | 3, 1 << 4, 8 >> 2, ~15, xor(5, 3);" }
+      - { id: unary, sql: "SELECT -x, +x, @x, x! FROM t;" }
+      - { id: rounding, sql: "SELECT round(x, 2), floor(x), ceil(x), ceiling(x), trunc(x) FROM t;" }
+      - { id: powers_logs, sql: "SELECT sqrt(x), cbrt(x), pow(x, 2), power(x, 2), exp(x), ln(x), log(x), log2(x), log10(x) FROM t;" }
+      - { id: trigonometry, sql: "SELECT sin(x), cos(x), tan(x), asin(x), acos(x), atan(x), atan2(y, x), degrees(x), radians(x), pi() FROM t;" }
+      - { id: sign_abs, sql: "SELECT abs(x), sign(x), even(x), factorial(x), gcd(x, y), lcm(x, y), greatest(x, y, 3), least(x, y, 3) FROM t;" }
+      - { id: float_checks, sql: "SELECT isnan(x), isfinite(x), isinf(x), nextafter(x, y), fdiv(x, y), fmod(x, y) FROM t;" }
+      - { id: random, sql: "SELECT random(), setseed(0.5);" }
+      - { id: numeric_literals, sql: "SELECT 1, 1.5, 1e3, 1.5E-3, 0x1F, 0b101, 1_000_000;" }
+
+  - id: c_string_functions
+    name: String functions and operators
+    doc: https://duckdb.org/docs/stable/sql/functions/text
+    tier: high
+    probes:
+      - { id: concat_operator, sql: "SELECT 'Duck' || 'DB';" }
+      - { id: concat_functions, sql: "SELECT concat(a, b, c), concat_ws(',', a, b) FROM t;" }
+      - { id: index, sql: "SELECT s[1] FROM t;" }
+      - { id: slice, sql: "SELECT s[2:4], s[:3], s[-3:] FROM t;" }
+      - { id: prefix_operator, sql: "SELECT s ^@ 'abc' FROM t;" }
+      - { id: case_trim, sql: "SELECT upper(s), lower(s), ucase(s), lcase(s), trim(s), ltrim(s), rtrim(s), trim(s, 'xy') FROM t;" }
+      - { id: substring, sql: "SELECT substring(s, 2, 3), substr(s, 2), left(s, 2), right(s, 2) FROM t;" }
+      - { id: pad_repeat, sql: "SELECT lpad(s, 10, '*'), rpad(s, 10, '*'), repeat(s, 3), reverse(s) FROM t;" }
+      - { id: search_replace, sql: "SELECT replace(s, 'a', 'b'), translate(s, 'abc', 'xyz'), contains(s, 'a'), starts_with(s, 'a'), ends_with(s, 'a'), instr(s, 'a') FROM t;" }
+      - { id: split, sql: "SELECT string_split(s, ','), str_split(s, ','), split_part(s, ',', 1), string_to_array(s, ',') FROM t;" }
+      - { id: length_functions, sql: "SELECT length(s), len(s), char_length(s), bit_length(s), octet_length(s), strlen(s) FROM t;" }
+      - { id: codepoints, sql: "SELECT ascii(s), chr(65), ord(s), unicode(s) FROM t;" }
+      - { id: distance, sql: "SELECT levenshtein(a, b), hamming(a, b), jaccard(a, b), damerau_levenshtein(a, b) FROM t;" }
+      - { id: formatting, sql: "SELECT format('{}: {}', a, b), printf('%s=%d', a, b), format_bytes(1024) FROM t;" }
+      - { id: hashing_encoding, sql: "SELECT md5(s), sha256(s), hash(s), hex(s), unhex(s), to_base(10, 2), strip_accents(s), nfc_normalize(s) FROM t;" }
+      - { id: like_escape_functions, sql: "SELECT like_escape(s, 'a$%c', '$'), not_like_escape(s, 'a%', '$'), ilike_escape(s, 'a%', '$') FROM t;" }
+
+  - id: c_regexp_functions
+    name: Regular expression functions
+    doc: https://duckdb.org/docs/stable/sql/functions/regular_expressions
+    tier: medium
+    probes:
+      - { id: matches, sql: "SELECT regexp_matches('anabanana', 'an'), regexp_full_match('anabanana', '(an)*');" }
+      - { id: matches_options, sql: "SELECT regexp_matches('ABC', 'abc', 'i');" }
+      - { id: extract, sql: "SELECT regexp_extract('abc', '([a-z])(b)', 1);" }
+      - { id: extract_names, sql: "SELECT regexp_extract('2023-04-15', '(\\d+)-(\\d+)-(\\d+)', ['y', 'm', 'd']);" }
+      - { id: extract_all, sql: "SELECT regexp_extract_all('Peter: 33, Paul:14', '(\\w+):\\s*(\\d+)', 2);" }
+      - { id: replace, sql: "SELECT regexp_replace('hello', 'l', 'L', 'g');" }
+      - { id: split, sql: "SELECT regexp_split_to_array('a b c', ' '), regexp_escape('a.b');" }
+      - { id: split_to_table, sql: "SELECT regexp_split_to_table('a b c', ' ');" }
+      - { id: matches_in_where, sql: "SELECT * FROM t WHERE regexp_matches(s, '^a.*z$');" }
+
+  - id: c_datetime_functions
+    name: Date, time, timestamp and interval functions and operators
+    doc: https://duckdb.org/docs/stable/sql/functions/timestamp
+    tier: high
+    probes:
+      - { id: date_arithmetic, sql: "SELECT DATE '1992-03-22' + 5, DATE '1992-03-22' + INTERVAL 5 DAY, DATE '1992-03-27' - DATE '1992-03-22', DATE '1992-03-27' - INTERVAL 5 DAY;" }
+      - { id: variable_interval, sql: "SELECT DATE '1992-03-22' + INTERVAL (d.days) DAY FROM (VALUES (5), (11)) d(days);" }
+      - { id: timestamp_arithmetic, sql: "SELECT TIMESTAMP '1992-03-22 01:02:03' + INTERVAL 5 DAY, TIMESTAMP '1992-03-27' - TIMESTAMP '1992-03-22';" }
+      - { id: interval_arithmetic, sql: "SELECT INTERVAL 1 HOUR + INTERVAL 30 MINUTE, INTERVAL 2 DAY * 3, INTERVAL 6 HOUR / 2;" }
+      - { id: date_part_functions, sql: "SELECT date_part('minute', TIMESTAMP '1992-09-20 20:38:40'), datepart('year', d), date_trunc('month', d), dayname(d), monthname(d), year(d), month(d), day(d), dayofweek(d), last_day(d) FROM t;" }
+      - { id: date_part_list, sql: "SELECT date_part(['year', 'month', 'day'], d) FROM t;" }
+      - { id: date_diff_sub, sql: "SELECT date_diff('month', d1, d2), datediff('day', d1, d2), date_sub('hour', d1, d2), datesub('day', d1, d2), date_add(d, INTERVAL 1 DAY) FROM t;" }
+      - { id: age, sql: "SELECT age(TIMESTAMP '2001-04-10', TIMESTAMP '1992-09-20'), age(ts) FROM t;" }
+      - { id: constructors, sql: "SELECT make_date(2020, 1, 1), make_time(1, 2, 3.5), make_timestamp(2020, 1, 1, 0, 0, 0), make_timestamptz(2020, 1, 1, 0, 0, 0, 'UTC') FROM t;" }
+      - { id: current_values, sql: "SELECT current_date, current_time, current_timestamp, now(), today(), get_current_timestamp(), transaction_timestamp();" }
+      - { id: epoch_functions, sql: "SELECT epoch(ts), epoch_ms(ts), epoch_us(ts), epoch_ns(ts), to_timestamp(1284352323.5) FROM t;" }
+      - { id: time_bucket, sql: "SELECT time_bucket(INTERVAL '2 days', ts), time_bucket(INTERVAL '2 days', ts, TIMESTAMP '2000-01-01') FROM t;" }
+      - { id: strftime_strptime, sql: "SELECT strftime(ts, '%Y-%m-%d'), strptime('2020-01-01', '%Y-%m-%d'), try_strptime(s, '%Y-%m-%d') FROM t;" }
+      - { id: infinity_checks, sql: "SELECT isfinite(d), isinf(d), greatest(d1, d2), least(d1, d2) FROM t;" }
+      - { id: timezone_function, sql: "SELECT timezone('America/Denver', TIMESTAMP '2001-02-16 20:38:40');" }
+      - { id: interval_functions, sql: "SELECT to_days(5), to_hours(2), to_minutes(30), to_months(3), to_years(1), to_seconds(1.5), epoch(INTERVAL 1 HOUR) FROM t;" }
+      - { id: time_functions, sql: "SELECT date_part('minute', TIME '14:21:13'), date_diff('hour', TIME '01:02:03', TIME '06:01:03'), TIME '14:21:13' + INTERVAL 1 HOUR;" }
+      - { id: generate_series_timestamps, sql: "SELECT generate_series(TIMESTAMP '2001-04-10', TIMESTAMP '2001-04-11', INTERVAL 30 MINUTE);" }
+
+  - id: c_blob_bit_functions
+    name: Blob and bitstring functions
+    doc: https://duckdb.org/docs/stable/sql/functions/blob
+    tier: low
+    probes:
+      - { id: blob_functions, sql: "SELECT encode(s), decode(b), base64(b), from_base64(s), hex(b), unhex(s), octet_length(b), md5(b), sha1(b), sha256(b), repeat(b, 3) FROM t;" }
+      - { id: blob_concat, sql: "SELECT '\\xAA'::BLOB || '\\xBB'::BLOB;" }
+      - { id: bitstring_operators, sql: "SELECT '101'::BITSTRING & '001'::BITSTRING, '101'::BITSTRING | '001'::BITSTRING, xor('101'::BITSTRING, '001'::BITSTRING), ~'101'::BITSTRING, '101'::BITSTRING << 1;" }
+      - { id: bitstring_functions, sql: "SELECT bit_count('1101011'::BITSTRING), bit_length(b), bit_position('010'::BITSTRING, b), bitstring(b, 8), get_bit(b, 0), set_bit(b, 1, 0) FROM t;" }
+
+  - id: c_enum_utility_functions
+    name: Enum and utility functions
+    doc: https://duckdb.org/docs/stable/sql/functions/utility
+    tier: medium
+    probes:
+      - { id: enum_functions, sql: "SELECT enum_first(NULL::mood), enum_last(NULL::mood), enum_range(NULL::mood), enum_code('happy'::mood), enum_range_boundary(NULL, 'happy'::mood);" }
+      - { id: null_handling, sql: "SELECT coalesce(a, b, 0), ifnull(a, 0), nullif(a, 0), constant_or_null(a, b) FROM t;" }
+      - { id: typeof_alias, sql: "SELECT typeof(a), alias(a), current_setting('threads'), version(), current_database(), current_schema() FROM t;" }
+      - { id: uuid_hash, sql: "SELECT uuid(), gen_random_uuid(), hash(a, b), md5(a) FROM t;" }
+      - { id: error_function, sql: "SELECT CASE WHEN a < 0 THEN error('negative') ELSE a END FROM t;" }
+      - { id: sequence_functions, sql: "SELECT nextval('seq'), currval('seq');" }
+      - { id: getvariable_function, sql: "SELECT getvariable('my_var');" }
+      - { id: cast_check_functions, sql: "SELECT can_cast_implicitly(1::INTEGER, 1::BIGINT), try_cast(a AS INTEGER), cast_to_type(a, NULL::INTEGER) FROM t;" }

@@ -352,3 +352,95 @@ expressions:
       - { id: percentile_cont, sql: "SELECT PERCENTILE_CONT(a, 0.5) OVER (PARTITION BY b) FROM t;" }
       - { id: percentile_cont_ignore_nulls, sql: "SELECT PERCENTILE_CONT(a, 0.5 IGNORE NULLS) OVER () FROM t;" }
       - { id: percentile_disc, sql: "SELECT PERCENTILE_DISC(a, 0.5) OVER (PARTITION BY b) FROM t;" }
+
+  - id: d_function_math
+    name: "Mathematical functions"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/mathematical_functions
+    tier: high
+    probes:
+      - { id: abs_round_floor, sql: "SELECT ABS(a), ROUND(a, 2), TRUNC(a), CEIL(a), FLOOR(a), SIGN(a) FROM t;" }
+      - { id: power_sqrt_log, sql: "SELECT POW(a, 2), SQRT(a), LN(a), LOG(a, 10), LOG10(a), EXP(a), MOD(a, 3) FROM t;" }
+      - { id: safe_functions, sql: "SELECT SAFE_DIVIDE(a, b), SAFE_ADD(a, b), SAFE_SUBTRACT(a, b), SAFE_MULTIPLY(a, b), SAFE_NEGATE(a) FROM t;" }
+      - { id: trig, sql: "SELECT SIN(a), COS(a), TAN(a), ASIN(a), ATAN2(a, b), SINH(a) FROM t;" }
+      - { id: ieee_divide, sql: "SELECT IEEE_DIVIDE(a, b), IS_NAN(a), IS_INF(a) FROM t;" }
+      - { id: greatest_least, sql: "SELECT GREATEST(a, b, c), LEAST(a, b, c) FROM t;" }
+      - { id: rand_range_bucket, sql: "SELECT RAND(), RANGE_BUCKET(a, [0, 10, 20]) FROM t;" }
+      - { id: div_function, sql: "SELECT DIV(a, b), CBRT(a), COT(a) FROM t;" }
+
+  - id: d_function_string
+    name: "String and bytes functions"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/string_functions
+    tier: high
+    probes:
+      - { id: concat_length_case, sql: "SELECT CONCAT(a, b), LENGTH(a), UPPER(a), LOWER(a), INITCAP(a) FROM t;" }
+      - { id: substr_instr_replace, sql: "SELECT SUBSTR(a, 2, 3), SUBSTRING(a, 2), INSTR(a, 'x'), STRPOS(a, 'x'), REPLACE(a, 'x', 'y') FROM t;" }
+      - { id: trim_pad, sql: "SELECT TRIM(a), TRIM(a, 'x'), LTRIM(a), RTRIM(a, 'x'), LPAD(a, 5, '0'), RPAD(a, 5) FROM t;" }
+      - { id: left_right_repeat, sql: "SELECT LEFT(a, 2), RIGHT(a, 2), REPEAT(a, 3), REVERSE(a) FROM t;" }
+      - { id: starts_ends_contains, sql: "SELECT STARTS_WITH(a, 'x'), ENDS_WITH(a, 'x'), CONTAINS_SUBSTR(a, 'x') FROM t;" }
+      - { id: regexp_functions, sql: "SELECT REGEXP_CONTAINS(a, r'^x'), REGEXP_EXTRACT(a, r'(\\d+)'), REGEXP_EXTRACT_ALL(a, r'\\d'), REGEXP_REPLACE(a, r'x', 'y'), REGEXP_INSTR(a, r'x') FROM t;" }
+      - { id: split_and_join, sql: "SELECT SPLIT(a, ','), ARRAY_TO_STRING(arr, ','), ARRAY_TO_STRING(arr, ',', 'null') FROM t;" }
+      - { id: format_function, sql: "SELECT FORMAT('%d items at %.2f', a, b) FROM t;" }
+      - { id: normalize_nfc, sql: "SELECT NORMALIZE(a, NFC), NORMALIZE(a, NFKD), NORMALIZE_AND_CASEFOLD(a, NFKC), NORMALIZE(a) FROM t;" }
+      - { id: code_points, sql: "SELECT ASCII(a), CHR(65), UNICODE(a), TO_CODE_POINTS(a), CODE_POINTS_TO_STRING([65, 66]), CODE_POINTS_TO_BYTES([65, 66]) FROM t;" }
+      - { id: encode_decode, sql: "SELECT TO_HEX(b), FROM_HEX(a), TO_BASE64(b), FROM_BASE64(a), TO_BASE32(b), FROM_BASE32(a) FROM t;" }
+      - { id: translate_soundex, sql: "SELECT TRANSLATE(a, 'abc', 'xyz'), SOUNDEX(a), EDIT_DISTANCE(a, b), COLLATE(a, 'und:ci') FROM t;" }
+      - { id: safe_convert_bytes, sql: "SELECT SAFE_CONVERT_BYTES_TO_STRING(b), LENGTH(b), BYTE_LENGTH(a), CHAR_LENGTH(a), OCTET_LENGTH(a) FROM t;" }
+      - { id: parse_numeric, sql: "SELECT PARSE_NUMERIC(a), PARSE_BIGNUMERIC(a) FROM t;" }
+
+  - id: d_function_datetime
+    name: "Date, time, datetime and timestamp functions"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/date_functions
+    tier: high
+    probes:
+      - { id: constructors, sql: "SELECT DATE(2020, 1, 2), DATE(ts), DATE(ts, 'UTC'), TIME(12, 30, 0), TIME(ts), DATETIME(2020, 1, 2, 3, 4, 5), DATETIME(d, tm), TIMESTAMP(dt), TIMESTAMP(d, 'UTC') FROM t;" }
+      - { id: format_parse, sql: "SELECT FORMAT_DATE('%Y-%m-%d', d), PARSE_DATE('%Y%m%d', a), FORMAT_TIMESTAMP('%c', ts, 'UTC'), PARSE_TIMESTAMP('%Y-%m-%d', a), FORMAT_DATETIME('%F', dt), PARSE_DATETIME('%F', a), FORMAT_TIME('%T', tm), PARSE_TIME('%T', a) FROM t;" }
+      - { id: unix_conversions, sql: "SELECT UNIX_DATE(d), DATE_FROM_UNIX_DATE(1), UNIX_SECONDS(ts), UNIX_MILLIS(ts), UNIX_MICROS(ts), TIMESTAMP_SECONDS(1), TIMESTAMP_MILLIS(1), TIMESTAMP_MICROS(1) FROM t;" }
+      - { id: string_timestamp, sql: "SELECT STRING(ts), STRING(ts, 'America/New_York') FROM t;" }
+      - { id: bucket_functions, sql: "SELECT DATE_BUCKET(d, INTERVAL 1 WEEK), TIMESTAMP_BUCKET(ts, INTERVAL 15 MINUTE), DATETIME_BUCKET(dt, INTERVAL 1 DAY) FROM t;" }
+
+  - id: d_function_array
+    name: "Array functions"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/array_functions
+    tier: high
+    probes:
+      - { id: array_length_concat, sql: "SELECT ARRAY_LENGTH(arr), ARRAY_CONCAT(a, b), ARRAY_REVERSE(arr) FROM t;" }
+      - { id: array_to_string, sql: "SELECT ARRAY_TO_STRING(arr, ', ') FROM t;" }
+      - { id: generate_array, sql: "SELECT GENERATE_ARRAY(1, 10), GENERATE_ARRAY(1, 10, 2) FROM t;" }
+      - { id: array_subquery, sql: "SELECT ARRAY(SELECT x FROM u WHERE x > 1) FROM t;" }
+      - { id: array_subquery_struct, sql: "SELECT ARRAY(SELECT AS STRUCT a, b FROM u) FROM t;" }
+      - { id: array_subquery_value, sql: "SELECT ARRAY(SELECT AS VALUE STRUCT(a, b) FROM u) FROM t;" }
+      - { id: array_offset_ordinal, sql: "SELECT arr[OFFSET(0)], arr[ORDINAL(1)], arr[SAFE_OFFSET(5)], arr[SAFE_ORDINAL(5)] FROM t;" }
+      - { id: array_first_last, sql: "SELECT ARRAY_FIRST(arr), ARRAY_LAST(arr), ARRAY_SLICE(arr, 0, 2) FROM t;" }
+      - { id: array_is_distinct, sql: "SELECT ARRAY_IS_DISTINCT(arr) FROM t;" }
+
+  - id: d_function_json
+    name: "JSON functions"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/json_functions
+    tier: high
+    probes:
+      - { id: json_extract_family, sql: "SELECT JSON_EXTRACT(j, '$.a'), JSON_EXTRACT_SCALAR(j, '$.a'), JSON_EXTRACT_ARRAY(j, '$.a'), JSON_EXTRACT_STRING_ARRAY(j, '$.a') FROM t;" }
+      - { id: json_query_value, sql: "SELECT JSON_QUERY(j, '$.a'), JSON_VALUE(j, '$.a'), JSON_QUERY_ARRAY(j, '$.a'), JSON_VALUE_ARRAY(j, '$.a') FROM t;" }
+      - { id: parse_to_json, sql: "SELECT PARSE_JSON('{\"a\": 1}'), TO_JSON(t), TO_JSON_STRING(t), TO_JSON_STRING(t, TRUE) FROM t;" }
+      - { id: to_json_named_arg, sql: "SELECT TO_JSON(c, stringify_wide_numbers => TRUE) FROM t;" }
+      - { id: json_constructors, sql: "SELECT JSON_OBJECT('a', 1, 'b', 2), JSON_ARRAY(1, 2, 3), JSON_SET(j, '$.a', 1), JSON_REMOVE(j, '$.a'), JSON_STRIP_NULLS(j) FROM t;" }
+      - { id: json_type_lax, sql: "SELECT JSON_TYPE(j), LAX_BOOL(j), LAX_INT64(j), LAX_FLOAT64(j), LAX_STRING(j), BOOL(j), INT64(j), FLOAT64(j), STRING(j) FROM t;" }
+      - { id: json_subscript, sql: "SELECT j.a, j['a'], j.a.b[0] FROM t;" }
+      - { id: json_flatten_keys, sql: "SELECT JSON_KEYS(j), JSON_FLATTEN(j), JSON_ARRAY_APPEND(j, '$.a', 1) FROM t;" }
+
+  - id: d_function_other
+    name: "Hash, net, geography, bit, range, interval, security, utility and search functions"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/functions-all
+    tier: medium
+    probes:
+      - { id: hash_functions, sql: "SELECT MD5(a), SHA1(a), SHA256(a), SHA512(a), FARM_FINGERPRINT(a) FROM t;" }
+      - { id: net_functions, sql: "SELECT NET.HOST(u), NET.PUBLIC_SUFFIX(u), NET.REG_DOMAIN(u), NET.IP_FROM_STRING(a), NET.IP_TO_STRING(b), NET.IPV4_TO_INT64(b), NET.SAFE_IP_FROM_STRING(a) FROM t;" }
+      - { id: geography_functions, sql: "SELECT ST_GEOGPOINT(-122, 47), ST_DISTANCE(a, b), ST_ASTEXT(g), ST_GEOGFROMTEXT('POINT(1 2)'), ST_CONTAINS(a, b), ST_BUFFER(g, 100) FROM t;" }
+      - { id: bit_functions, sql: "SELECT BIT_COUNT(a), a & b, a | b, a ^ b, ~a, a << 1, a >> 1 FROM t;" }
+      - { id: range_functions, sql: "SELECT RANGE(DATE '2020-01-01', DATE '2020-01-06'), RANGE_START(r), RANGE_END(r), RANGE_CONTAINS(r, d), RANGE_OVERLAPS(r1, r2), RANGE_INTERSECT(r1, r2) FROM t;" }
+      - { id: generate_range_array, sql: "SELECT GENERATE_RANGE_ARRAY(RANGE(DATE '2020-01-01', DATE '2020-01-06'), INTERVAL 1 DAY);" }
+      - { id: security_utility_functions, sql: "SELECT SESSION_USER(), GENERATE_UUID(), CURRENT_TIMESTAMP() FROM t;" }
+      - { id: debugging_functions, sql: "SELECT IF(a > 0, a, ERROR('negative value')) FROM t;" }
+      - { id: search_function, sql: "SELECT SEARCH(t, 'foo'), SEARCH(a, 'foo bar', analyzer => 'LOG_ANALYZER') FROM t;" }
+      - { id: aead_keys_functions, sql: "SELECT KEYS.NEW_KEYSET('AEAD_AES_GCM_256'), AEAD.ENCRYPT(keyset, 'plaintext', 'aad'), AEAD.DECRYPT_STRING(keyset, ciphertext, 'aad') FROM t;" }
+      - { id: safe_prefix, sql: "SELECT SAFE.SUBSTR(a, 0, 2), SAFE.LOG(a, 10), SAFE.TIMESTAMP(a) FROM t;" }
+      - { id: named_argument_function, sql: "SELECT MAKE_INTERVAL(year => 1) FROM t;" }
