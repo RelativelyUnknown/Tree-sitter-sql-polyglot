@@ -1854,7 +1854,7 @@ expressions:
     tier: high
     probes:
       - { id: true_false, sql: "SELECT TRUE, true, FALSE, false;" }
-      - { id: null, sql: "SELECT NULL, null;" }
+      - { id: null_literal, sql: "SELECT NULL, null;" }
       - { id: is_true, sql: "SELECT * FROM t WHERE flag = TRUE OR c IS NULL;" }
 
   - id: identifiers
@@ -2140,3 +2140,246 @@ expressions:
       - "SELECT EXTRACT(DAY_MINUTE FROM '2019-07-02 01:02:03');"
       - "SELECT DATE_FORMAT('2003-10-03',GET_FORMAT(DATE,'EUR'));"
       - "SELECT NOW(), SLEEP(2), NOW();"
+
+  - id: aggregate_functions
+    name: Aggregate functions
+    doc: https://dev.mysql.com/doc/refman/8.4/en/aggregate-functions.html
+    tier: high
+    probes:
+      - { id: count_star, sql: "SELECT COUNT(*) FROM t;" }
+      - { id: count_distinct_multi, sql: "SELECT COUNT(DISTINCT a), COUNT(DISTINCT a, b) FROM t;" }
+      - { id: distinct_in_aggregates, sql: "SELECT SUM(DISTINCT a), AVG(DISTINCT a), MIN(DISTINCT a), MAX(DISTINCT a) FROM t;" }
+      - { id: common_aggregates, sql: "SELECT AVG(a), SUM(a), MIN(a), MAX(a), STD(a), STDDEV_SAMP(a), VAR_POP(a), VARIANCE(a), BIT_AND(a), BIT_OR(a), BIT_XOR(a) FROM t;" }
+      - { id: group_concat, sql: "SELECT GROUP_CONCAT(a) FROM t;" }
+      - { id: group_concat_full, sql: "SELECT GROUP_CONCAT(DISTINCT a, b ORDER BY a DESC, b ASC SEPARATOR '; ') FROM t;" }
+      - { id: group_concat_order_position, sql: "SELECT GROUP_CONCAT(a ORDER BY 1 SEPARATOR '') FROM t;" }
+      - { id: json_aggregates, sql: "SELECT JSON_ARRAYAGG(a), JSON_OBJECTAGG(k, v) FROM t GROUP BY g;" }
+      - { id: aggregate_over, sql: "SELECT SUM(a) OVER (), JSON_OBJECTAGG(c, i) OVER (ORDER BY i DESC) FROM t;" }
+      - { id: any_value, sql: "SELECT ANY_VALUE(a), b FROM t GROUP BY b;" }
+    examples:
+      - |-
+        SELECT student_name, AVG(test_score)
+               FROM student
+               GROUP BY student_name;
+      - "SELECT COUNT(DISTINCT results) FROM student;"
+      - "SELECT SEC_TO_TIME(SUM(TIME_TO_SEC(time_col))) FROM tbl_name;"
+      - |-
+        SELECT student_name,
+                 GROUP_CONCAT(DISTINCT test_score
+                              ORDER BY test_score DESC SEPARATOR ' ')
+               FROM student
+               GROUP BY student_name;
+      - |-
+        SELECT JSON_OBJECTAGG(c, i)
+               OVER (ORDER BY i DESC) AS json_object FROM t;
+
+  - id: group_by_modifiers
+    name: GROUP BY modifiers (WITH ROLLUP, GROUPING)
+    doc: https://dev.mysql.com/doc/refman/8.4/en/group-by-modifiers.html
+    tier: high
+    probes:
+      - { id: with_rollup, sql: "SELECT year, SUM(profit) AS profit FROM sales GROUP BY year WITH ROLLUP;" }
+      - { id: rollup_function_syntax, sql: "SELECT year, SUM(profit) AS profit FROM sales GROUP BY ROLLUP (year);" }
+      - { id: grouping_function, sql: "SELECT year, country, GROUPING(year), GROUPING(year, country) FROM sales GROUP BY year, country WITH ROLLUP;" }
+      - { id: grouping_in_having, sql: "SELECT year, SUM(profit) FROM sales GROUP BY year WITH ROLLUP HAVING GROUPING(year) = 1;" }
+      - { id: rollup_order_by_limit, sql: "SELECT year, SUM(profit) AS p FROM sales GROUP BY year WITH ROLLUP ORDER BY p DESC LIMIT 5;" }
+    examples:
+      - |-
+        SELECT year, SUM(profit) AS profit
+               FROM sales
+               GROUP BY year WITH ROLLUP;
+      - |-
+        SELECT
+            year, country, product, SUM(profit) AS profit,
+            GROUPING(year) AS grp_year,
+            GROUPING(country) AS grp_country,
+            GROUPING(product) AS grp_product
+        FROM sales
+        GROUP BY ROLLUP (year, country, product);
+      - |-
+        SELECT
+                 IF(GROUPING(year), 'All years', year) AS year,
+                 IF(GROUPING(country), 'All countries', country) AS country,
+                 IF(GROUPING(product), 'All products', product) AS product,
+                 SUM(profit) AS profit
+               FROM sales
+               GROUP BY year, country, product WITH ROLLUP;
+
+  - id: window_syntax
+    name: Window function concepts and syntax
+    doc: https://dev.mysql.com/doc/refman/8.4/en/window-functions-usage.html
+    tier: high
+    probes:
+      - { id: over_empty, sql: "SELECT SUM(profit) OVER () AS total FROM sales;" }
+      - { id: over_partition, sql: "SELECT SUM(profit) OVER (PARTITION BY country) FROM sales;" }
+      - { id: over_partition_order, sql: "SELECT ROW_NUMBER() OVER (PARTITION BY country ORDER BY year, product DESC) FROM sales;" }
+      - { id: over_partition_multiple_exprs, sql: "SELECT RANK() OVER (PARTITION BY country, YEAR(d) ORDER BY profit DESC) FROM sales;" }
+      - { id: over_window_name, sql: "SELECT ROW_NUMBER() OVER w FROM sales WINDOW w AS (ORDER BY year);" }
+      - { id: over_no_space, sql: "SELECT SUM(profit) OVER(PARTITION BY country) FROM sales;" }
+    examples:
+      - |-
+        SELECT
+                 year, country, product, profit,
+                 SUM(profit) OVER() AS total_profit,
+                 SUM(profit) OVER(PARTITION BY country) AS country_profit
+               FROM sales
+               ORDER BY country, year, product, profit;
+      - |-
+        SELECT
+                 year, country, product, profit,
+                 ROW_NUMBER() OVER(PARTITION BY country) AS row_num1,
+                 ROW_NUMBER() OVER(PARTITION BY country ORDER BY year, product) AS row_num2
+               FROM sales;
+
+  - id: window_functions
+    name: Window functions
+    doc: https://dev.mysql.com/doc/refman/8.4/en/window-function-descriptions.html
+    tier: high
+    probes:
+      - { id: ranking, sql: "SELECT ROW_NUMBER() OVER w, RANK() OVER w, DENSE_RANK() OVER w, PERCENT_RANK() OVER w, CUME_DIST() OVER w FROM t WINDOW w AS (ORDER BY val);" }
+      - { id: ntile, sql: "SELECT NTILE(4) OVER (ORDER BY val) FROM t;" }
+      - { id: lag_lead, sql: "SELECT LAG(val) OVER w, LAG(val, 2) OVER w, LEAD(val, 1, 0) OVER w FROM t WINDOW w AS (ORDER BY ts);" }
+      - { id: lag_respect_nulls, sql: "SELECT LAG(val, 1) RESPECT NULLS OVER (ORDER BY ts) FROM t;" }
+      - { id: first_last_value, sql: "SELECT FIRST_VALUE(val) OVER w, LAST_VALUE(val) RESPECT NULLS OVER w FROM t WINDOW w AS (ORDER BY ts);" }
+      - { id: nth_value, sql: "SELECT NTH_VALUE(val, 2) OVER (ORDER BY ts) FROM t;" }
+      - { id: nth_value_from_first, sql: "SELECT NTH_VALUE(val, 2) FROM FIRST RESPECT NULLS OVER (ORDER BY ts) FROM t;" }
+    examples:
+      - |-
+        SELECT
+                 time, subject, val,
+                 FIRST_VALUE(val)  OVER w AS 'first',
+                 LAST_VALUE(val)   OVER w AS 'last',
+                 NTH_VALUE(val, 2) OVER w AS 'second',
+                 NTH_VALUE(val, 4) OVER w AS 'fourth'
+               FROM observations
+               WINDOW w AS (PARTITION BY subject ORDER BY time
+                            ROWS UNBOUNDED PRECEDING);
+
+  - id: window_frames
+    name: Window function frame specification
+    doc: https://dev.mysql.com/doc/refman/8.4/en/window-functions-frames.html
+    tier: high
+    probes:
+      - { id: rows_unbounded_preceding, sql: "SELECT SUM(val) OVER (PARTITION BY s ORDER BY ts ROWS UNBOUNDED PRECEDING) FROM t;" }
+      - { id: rows_between_n, sql: "SELECT AVG(val) OVER (ORDER BY ts ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;" }
+      - { id: rows_current_row, sql: "SELECT SUM(val) OVER (ORDER BY ts ROWS CURRENT ROW) FROM t;" }
+      - { id: rows_between_unbounded, sql: "SELECT SUM(val) OVER (ORDER BY ts ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: range_between_current, sql: "SELECT SUM(val) OVER (ORDER BY ts RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: range_n_preceding, sql: "SELECT SUM(val) OVER (ORDER BY n RANGE 10 PRECEDING) FROM t;" }
+      - { id: range_interval, sql: "SELECT SUM(val) OVER (ORDER BY d RANGE BETWEEN INTERVAL 5 DAY PRECEDING AND INTERVAL '2:30' MINUTE_SECOND FOLLOWING) FROM t;" }
+      - { id: rows_between_current_and_n_following, sql: "SELECT SUM(val) OVER (ORDER BY ts ROWS BETWEEN CURRENT ROW AND 5 FOLLOWING) FROM t;" }
+    examples:
+      - |-
+        SELECT
+                 time, subject, val,
+                 SUM(val) OVER (PARTITION BY subject ORDER BY time
+                                ROWS UNBOUNDED PRECEDING)
+                   AS running_total,
+                 AVG(val) OVER (PARTITION BY subject ORDER BY time
+                                ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING)
+                   AS running_average
+               FROM observations;
+
+  - id: named_windows
+    name: Named windows
+    doc: https://dev.mysql.com/doc/refman/8.4/en/window-functions-named-windows.html
+    tier: high
+    probes:
+      - { id: window_clause, sql: "SELECT val, ROW_NUMBER() OVER w, RANK() OVER w FROM numbers WINDOW w AS (ORDER BY val);" }
+      - { id: refine_named_window, sql: "SELECT FIRST_VALUE(year) OVER (w ORDER BY year ASC) FROM sales WINDOW w AS (PARTITION BY country);" }
+      - { id: window_referencing_window, sql: "SELECT SUM(a) OVER w3 FROM t WINDOW w1 AS (w2), w2 AS (), w3 AS (w1);" }
+      - { id: window_with_frame, sql: "SELECT SUM(a) OVER w FROM t WINDOW w AS (PARTITION BY b ORDER BY c ROWS BETWEEN 2 PRECEDING AND CURRENT ROW);" }
+    examples:
+      - |-
+        SELECT
+          val,
+          ROW_NUMBER() OVER w AS 'row_number',
+          RANK()       OVER w AS 'rank',
+          DENSE_RANK() OVER w AS 'dense_rank'
+        FROM numbers
+        WINDOW w AS (ORDER BY val);
+      - |-
+        SELECT
+          DISTINCT year, country,
+          FIRST_VALUE(year) OVER (w ORDER BY year ASC) AS first,
+          FIRST_VALUE(year) OVER (w ORDER BY year DESC) AS last
+        FROM sales
+        WINDOW w AS (PARTITION BY country);
+
+  - id: json_operators
+    name: JSON column-path operators and MEMBER OF
+    doc: https://dev.mysql.com/doc/refman/8.4/en/json-search-functions.html
+    tier: high
+    probes:
+      - { id: arrow, sql: "SELECT c->'$.id' FROM t WHERE c->'$.id' > 1 ORDER BY c->'$.name';" }
+      - { id: arrow_double_quoted_path, sql: "SELECT a->\"$[4][1]\" FROM t;" }
+      - { id: double_arrow, sql: "SELECT c->>'$.name' AS name FROM t WHERE g > 2;" }
+      - { id: arrow_in_update, sql: "UPDATE t SET n = 1 WHERE c->'$.id' = '4';" }
+      - { id: member_of, sql: "SELECT 17 MEMBER OF ('[23, \"abc\", 17, \"ab\", 10]');" }
+      - { id: member_of_arrow, sql: "SELECT * FROM t WHERE 94507 MEMBER OF (custinfo->'$.zipcode');" }
+      - { id: json_value_returning, sql: "SELECT JSON_VALUE('{\"price\": \"49.95\"}', '$.price' RETURNING DECIMAL(4,2)) AS price;" }
+      - { id: json_value_on_empty_error, sql: "SELECT JSON_VALUE(j, '$.id' RETURNING UNSIGNED DEFAULT 0 ON EMPTY ERROR ON ERROR) FROM t;" }
+      - { id: json_value_null_on, sql: "SELECT JSON_VALUE(j, '$.a' NULL ON EMPTY NULL ON ERROR) FROM t;" }
+      - { id: json_functions, sql: "SELECT JSON_EXTRACT(c, '$.a', '$.b'), JSON_CONTAINS(c, '1', '$.a'), JSON_OBJECT('a', 1), JSON_ARRAY(1, 2) FROM t;" }
+    examples:
+      - "SELECT a->\"$[4]\" FROM tj10;"
+      - "SELECT * FROM tj10 WHERE a->\"$[4][1]\" IS NOT NULL;"
+      - "SELECT a->>\"$[3]\", a->>\"$[4][1]\" FROM tj10;"
+      - "SELECT JSON_VALUE('{\"fname\": \"Joe\", \"lname\": \"Palmer\"}', '$.fname');"
+
+  - id: json_table
+    name: JSON_TABLE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/json-table-functions.html
+    tier: high
+    probes:
+      - { id: path_column, sql: "SELECT * FROM JSON_TABLE('[{\"x\":2}]', '$[*]' COLUMNS (xval VARCHAR(100) PATH '$.x')) AS jt;" }
+      - { id: for_ordinality, sql: "SELECT * FROM JSON_TABLE('[1,2]', '$[*]' COLUMNS (rowid FOR ORDINALITY, v INT PATH '$')) jt;" }
+      - { id: exists_path, sql: "SELECT * FROM JSON_TABLE('[{\"b\":1}]', '$[*]' COLUMNS (bx INT EXISTS PATH '$.b')) AS jt;" }
+      - { id: on_empty_on_error, sql: "SELECT * FROM JSON_TABLE('[{\"a\":1}]', '$[*]' COLUMNS (ac VARCHAR(100) PATH '$.a' DEFAULT '111' ON EMPTY DEFAULT '999' ON ERROR)) AS jt;" }
+      - { id: null_and_error_on, sql: "SELECT * FROM JSON_TABLE('[{\"c1\":null}]', '$[*]' COLUMNS (c1 INT PATH '$.c1' NULL ON EMPTY ERROR ON ERROR)) AS jt;" }
+      - { id: nested_path, sql: "SELECT * FROM JSON_TABLE('[{\"a\":1,\"b\":[11,111]}]', '$[*]' COLUMNS (a INT PATH '$.a', NESTED PATH '$.b[*]' COLUMNS (b INT PATH '$'))) AS jt WHERE b IS NOT NULL;" }
+      - { id: nested_without_path_keyword, sql: "SELECT * FROM JSON_TABLE('[{\"b\":[1]}]', '$[*]' COLUMNS (NESTED '$.b[*]' COLUMNS (b INT PATH '$'))) AS jt;" }
+      - { id: lateral_column_reference, sql: "SELECT t.id, jt.v FROM t, JSON_TABLE(t.doc, '$[*]' COLUMNS (v INT PATH '$')) AS jt;" }
+    examples:
+      - |-
+        SELECT *
+          FROM
+            JSON_TABLE(
+              '[ {"c1": null} ]',
+              '$[*]' COLUMNS( c1 INT PATH '$.c1' ERROR ON ERROR )
+            ) as jt;
+      - |-
+        SELECT *
+        FROM
+          JSON_TABLE(
+            '[{"a":"3"},{"a":2},{"b":1},{"a":0},{"a":[1,2]}]',
+            "$[*]"
+            COLUMNS(
+              rowid FOR ORDINALITY,
+              ac VARCHAR(100) PATH "$.a" DEFAULT '111' ON EMPTY DEFAULT '999' ON ERROR,
+              aj JSON PATH "$.a" DEFAULT '{"x": 333}' ON EMPTY,
+              bx INT EXISTS PATH "$.b"
+            )
+          ) AS tt;
+      - |-
+        SELECT *
+        FROM
+          JSON_TABLE(
+            '[ {"a": 1, "b": [11,111]}, {"a": 2, "b": [22,222]}, {"a":3}]',
+            '$[*]' COLUMNS(
+                    a INT PATH '$.a',
+                    NESTED PATH '$.b[*]' COLUMNS (b INT PATH '$')
+                   )
+           ) AS jt
+        WHERE b IS NOT NULL;
+      - |-
+        SELECT *
+        FROM
+          JSON_TABLE(
+            '[{"a": 1, "b": [11,111]}, {"a": 2, "b": [22,222]}]',
+            '$[*]' COLUMNS(
+                a INT PATH '$.a',
+                NESTED PATH '$.b[*]' COLUMNS (b1 INT PATH '$'),
+                NESTED PATH '$.b[*]' COLUMNS (b2 INT PATH '$')
+            )
+        ) AS jt;

@@ -3231,3 +3231,200 @@ statements:
       - id: with_options
         sql: "DROP INDEX sxi ON dbo.t WITH (MAXDOP = 1, ONLINE = OFF);"
 
+  - id: create_function
+    name: "CREATE FUNCTION"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-function-transact-sql
+    tier: high
+    probes:
+      - id: scalar
+        sql: "CREATE FUNCTION dbo.f (@a INT) RETURNS INT AS BEGIN RETURN @a + 1; END;"
+      - id: scalar_no_as
+        sql: "CREATE FUNCTION dbo.f (@a INT) RETURNS INT BEGIN RETURN (@a * 2); END;"
+      - id: scalar_body_statements
+        sql: "CREATE FUNCTION dbo.f (@d DATETIME) RETURNS INT AS BEGIN DECLARE @w INT; SET @w = DATEPART(wk, @d); IF (@w = 0) SET @w = 1; RETURN (@w); END;"
+      - id: no_parameters
+        sql: "CREATE FUNCTION dbo.f () RETURNS DATETIME AS BEGIN RETURN GETDATE(); END;"
+      - id: or_alter
+        sql: "CREATE OR ALTER FUNCTION dbo.f (@a INT) RETURNS INT AS BEGIN RETURN @a; END;"
+      - id: parameter_as_default_null
+        sql: "CREATE FUNCTION dbo.f (@a AS INT = 1, @b NVARCHAR(10) NULL = NULL) RETURNS INT AS BEGIN RETURN @a; END;"
+      - id: parameter_type_schema
+        sql: "CREATE FUNCTION dbo.f (@p dbo.MyType) RETURNS INT AS BEGIN RETURN 1; END;"
+      - id: table_valued_parameter_readonly
+        sql: "CREATE FUNCTION dbo.f (@tvp dbo.IdList READONLY) RETURNS INT AS BEGIN RETURN (SELECT COUNT(*) FROM @tvp); END;"
+      - id: with_schemabinding
+        sql: "CREATE FUNCTION dbo.f (@a INT) RETURNS INT WITH SCHEMABINDING AS BEGIN RETURN @a; END;"
+      - id: with_encryption
+        sql: "CREATE FUNCTION dbo.f (@a INT) RETURNS INT WITH ENCRYPTION AS BEGIN RETURN @a; END;"
+      - id: returns_null_on_null_input
+        sql: "CREATE FUNCTION dbo.f (@a INT) RETURNS INT WITH RETURNS NULL ON NULL INPUT AS BEGIN RETURN @a; END;"
+      - id: called_on_null_input
+        sql: "CREATE FUNCTION dbo.f (@a INT) RETURNS INT WITH CALLED ON NULL INPUT AS BEGIN RETURN @a; END;"
+      - id: execute_as_caller
+        sql: "CREATE FUNCTION dbo.f (@a INT) RETURNS INT WITH EXECUTE AS CALLER AS BEGIN RETURN @a; END;"
+      - id: execute_as_owner_self_user
+        sql: "CREATE FUNCTION dbo.f (@a INT) RETURNS INT WITH EXECUTE AS 'dbuser' AS BEGIN RETURN @a; END;"
+      - id: inline_on
+        sql: "CREATE FUNCTION dbo.f (@a INT) RETURNS INT WITH INLINE = ON AS BEGIN RETURN @a; END;"
+      - id: multiple_options
+        sql: "CREATE FUNCTION dbo.f (@a INT) RETURNS INT WITH SCHEMABINDING, RETURNS NULL ON NULL INPUT, INLINE = OFF AS BEGIN RETURN @a; END;"
+      - id: inline_tvf
+        sql: "CREATE FUNCTION dbo.f (@id INT) RETURNS TABLE AS RETURN (SELECT c FROM t WHERE id = @id);"
+      - id: inline_tvf_no_parens
+        sql: "CREATE FUNCTION dbo.f (@id INT) RETURNS TABLE AS RETURN SELECT c FROM t WHERE id = @id;"
+      - id: inline_tvf_with_options
+        sql: "CREATE FUNCTION dbo.f (@id INT) RETURNS TABLE WITH SCHEMABINDING AS RETURN (SELECT c FROM dbo.t WHERE id = @id);"
+      - id: inline_tvf_cte
+        sql: "CREATE FUNCTION dbo.f () RETURNS TABLE AS RETURN WITH cte AS (SELECT c FROM t) SELECT c FROM cte;"
+      - id: multi_statement_tvf
+        sql: "CREATE FUNCTION dbo.f (@id INT) RETURNS @r TABLE (id INT PRIMARY KEY NOT NULL, name NVARCHAR(255) NOT NULL) AS BEGIN INSERT @r SELECT id, name FROM t WHERE pid = @id; RETURN; END;"
+      - id: multi_statement_tvf_table_definition
+        sql: "CREATE FUNCTION dbo.f () RETURNS @r TABLE (id INT IDENTITY(1, 1), c NVARCHAR(10) DEFAULT 'x' COLLATE Latin1_General_CI_AS, g UNIQUEIDENTIFIER ROWGUIDCOL, total AS id * 2, UNIQUE CLUSTERED (id DESC) WITH FILLFACTOR = 80, CHECK (id > 0)) AS BEGIN RETURN; END;"
+      - id: clr_scalar
+        sql: "CREATE FUNCTION dbo.len_s (@str NVARCHAR(4000)) RETURNS BIGINT AS EXTERNAL NAME [SurrogateStringFunction].[Microsoft.Samples.SqlServer.SurrogateStringFunction].[LenS];"
+      - id: clr_table_order
+        sql: "CREATE FUNCTION dbo.clr_tvf (@p INT) RETURNS TABLE (a INT, b NVARCHAR(10)) WITH EXECUTE AS CALLER ORDER (a ASC) AS EXTERNAL NAME asm.cls.method;"
+      - id: natively_compiled
+        sql: "CREATE FUNCTION dbo.f (@a INT NOT NULL) RETURNS INT WITH NATIVE_COMPILATION, SCHEMABINDING AS BEGIN ATOMIC WITH (TRANSACTION ISOLATION LEVEL = SNAPSHOT, LANGUAGE = N'English') RETURN @a * 2; END;"
+    examples:
+      - |-
+        CREATE FUNCTION dbo.ISOweek (@DATE DATETIME)
+        RETURNS INT
+        WITH EXECUTE AS CALLER
+        AS
+        BEGIN
+            DECLARE @ISOweek INT;
+
+            SET @ISOweek = DATEPART(wk, @DATE) + 1 -
+                DATEPART(wk, CAST(DATEPART(yy, @DATE) AS CHAR(4)) + '0104');
+
+            --Special cases: Jan 1-3 may belong to the previous year
+            IF (@ISOweek = 0)
+                SET @ISOweek = dbo.ISOweek(CAST(DATEPART(yy, @DATE) - 1 AS CHAR(4))
+                   + '12' + CAST(24 + DATEPART(DAY, @DATE) AS CHAR(2))) + 1;
+
+            --Special case: Dec 29-31 may belong to the next year
+            IF ((DATEPART(mm, @DATE) = 12)
+                AND ((DATEPART(dd, @DATE) - DATEPART(dw, @DATE)) >= 28))
+            SET @ISOweek = 1;
+
+            RETURN (@ISOweek);
+        END;
+      - |-
+        CREATE FUNCTION Sales.ufn_SalesByStore (@storeid INT)
+        RETURNS TABLE
+        AS
+        RETURN (
+            SELECT P.ProductID, P.Name, SUM(SD.LineTotal) AS 'Total'
+            FROM Production.Product AS P
+            INNER JOIN Sales.SalesOrderDetail AS SD ON SD.ProductID = P.ProductID
+            INNER JOIN Sales.SalesOrderHeader AS SH ON SH.SalesOrderID = SD.SalesOrderID
+            INNER JOIN Sales.Customer AS C ON SH.CustomerID = C.CustomerID
+            WHERE C.StoreID = @storeid
+            GROUP BY P.ProductID, P.Name
+        );
+      - |-
+        CREATE FUNCTION dbo.ufn_FindReports (@InEmpID INT)
+        RETURNS @retFindReports TABLE (
+            EmployeeID INT PRIMARY KEY NOT NULL,
+            FirstName NVARCHAR(255) NOT NULL,
+            LastName NVARCHAR(255) NOT NULL,
+            JobTitle NVARCHAR(50) NOT NULL,
+            RecursionLevel INT NOT NULL
+            )
+            --Returns a result set that lists all the employees who report to the
+            --specific employee directly or indirectly.
+        AS
+        BEGIN
+            WITH EMP_cte (
+                EmployeeID,
+                OrganizationNode,
+                FirstName,
+                LastName,
+                JobTitle,
+                RecursionLevel
+                ) -- CTE name and columns
+            AS (
+                -- Get the initial list of Employees for Manager n
+                SELECT e.BusinessEntityID,
+                    OrganizationNode = ISNULL(e.OrganizationNode, CAST('/' AS HIERARCHYID)),
+                    p.FirstName,
+                    p.LastName,
+                    e.JobTitle,
+                    0
+                FROM HumanResources.Employee e
+                INNER JOIN Person.Person p
+                    ON p.BusinessEntityID = e.BusinessEntityID
+                WHERE e.BusinessEntityID = @InEmpID
+
+                UNION ALL
+
+                -- Join recursive member to anchor
+                SELECT e.BusinessEntityID,
+                    e.OrganizationNode,
+                    p.FirstName,
+                    p.LastName,
+                    e.JobTitle,
+                    RecursionLevel + 1
+                FROM HumanResources.Employee e
+                INNER JOIN EMP_cte
+                    ON e.OrganizationNode.GetAncestor(1) = EMP_cte.OrganizationNode
+                INNER JOIN Person.Person p
+                    ON p.BusinessEntityID = e.BusinessEntityID
+                )
+            -- Copy the required columns to the result of the function
+            INSERT @retFindReports
+            SELECT EmployeeID,
+                FirstName,
+                LastName,
+                JobTitle,
+                RecursionLevel
+            FROM EMP_cte
+
+            RETURN
+        END;
+      - |-
+        CREATE FUNCTION [dbo].[len_s] (@str NVARCHAR(4000))
+        RETURNS BIGINT
+        AS
+        EXTERNAL NAME [SurrogateStringFunction].[Microsoft.Samples.SqlServer.SurrogateStringFunction].[LenS];
+
+  - id: create_function_fabric_synapse
+    name: "CREATE FUNCTION (Fabric and Synapse Analytics)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-function-sql-data-warehouse
+    tier: low
+    status: not-applicable
+    reason: "The page's monikerRange is '=azure-sqldw-latest || =fabric' (title 'CREATE FUNCTION (Microsoft Fabric, Azure Synapse Analytics)'); SQL Server and Azure SQL Database use the CREATE FUNCTION page instead."
+
+  - id: alter_function
+    name: "ALTER FUNCTION"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-function-transact-sql
+    tier: high
+    probes:
+      - id: scalar
+        sql: "ALTER FUNCTION dbo.f (@a INT) RETURNS INT AS BEGIN RETURN @a + 2; END;"
+      - id: scalar_with_options
+        sql: "ALTER FUNCTION dbo.f (@a AS INT = 0) RETURNS INT WITH SCHEMABINDING, EXECUTE AS OWNER AS BEGIN RETURN @a; END;"
+      - id: inline_tvf
+        sql: "ALTER FUNCTION dbo.f (@id INT) RETURNS TABLE AS RETURN (SELECT c FROM t WHERE id = @id);"
+      - id: multi_statement_tvf
+        sql: "ALTER FUNCTION dbo.f () RETURNS @r TABLE (id INT) AS BEGIN INSERT @r VALUES (1); RETURN; END;"
+      - id: clr
+        sql: "ALTER FUNCTION dbo.len_s (@str NVARCHAR(4000)) RETURNS BIGINT WITH RETURNS NULL ON NULL INPUT AS EXTERNAL NAME asm.cls.LenS;"
+      - id: natively_compiled
+        sql: "ALTER FUNCTION dbo.f (@a INT) RETURNS INT WITH NATIVE_COMPILATION, SCHEMABINDING AS BEGIN ATOMIC WITH (TRANSACTION ISOLATION LEVEL = SNAPSHOT, LANGUAGE = N'us_english') RETURN @a; END;"
+
+  - id: drop_function
+    name: "DROP FUNCTION"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-function-transact-sql
+    tier: high
+    probes:
+      - id: basic
+        sql: "DROP FUNCTION dbo.f;"
+      - id: if_exists
+        sql: "DROP FUNCTION IF EXISTS dbo.f;"
+      - id: multiple
+        sql: "DROP FUNCTION dbo.f1, f2;"
+    examples:
+      - "DROP FUNCTION Sales.fn_SalesByStore;"
+
