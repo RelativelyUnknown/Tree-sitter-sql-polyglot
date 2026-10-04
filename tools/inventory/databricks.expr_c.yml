@@ -172,7 +172,7 @@ expressions:
       - { id: window_multiple_uses, sql: "SELECT avg(a) OVER w, min(b) OVER w, max(b) OVER w FROM t WINDOW w AS (ORDER BY e);" }
       - { id: window_distribute_sort, sql: "SELECT sum(c) OVER w FROM t WINDOW w AS (DISTRIBUTE BY d SORT BY e);" }
       - { id: window_with_group_by, sql: "SELECT d, sum(sum(c)) OVER w FROM t GROUP BY d WINDOW w AS (ORDER BY d);" }
-      - { id: window_with_qualify, sql: "SELECT c FROM t WINDOW w AS (PARTITION BY d ORDER BY e) QUALIFY row_number() OVER w = 1;" }
+      - { id: window_with_qualify, sql: "SELECT c FROM t QUALIFY row_number() OVER w = 1 WINDOW w AS (PARTITION BY d ORDER BY e);" }
     examples:
       - "SELECT round(avg(age) OVER win, 1) AS avgage, round(avg(salary) OVER win, 1) AS avgsalary, min(salary) OVER win AS minsalary, max(salary) OVER win AS maxsalary, count(1) OVER win AS numEmps FROM employees WINDOW win AS (ORDER BY age ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING);"
 
@@ -408,7 +408,7 @@ expressions:
       - { id: session_functions, sql: "SELECT current_user(), current_catalog(), current_schema(), current_database(), version(), is_member('admins');" }
       - { id: crypto_functions, sql: "SELECT aes_encrypt(c, 'k'), aes_decrypt(c, 'k'), base64(c), unbase64(c), hex(c), unhex(c) FROM t;" }
       - { id: geospatial_functions, sql: "SELECT st_point(1, 2), st_astext(g), st_distance(g1, g2) FROM t;" }
-      - { id: ai_functions, sql: "SELECT ai_query('endpoint', c), ai_classify(c, array('a', 'b')), ai_summarize(c) FROM t;" }
+      - { id: ai_functions, sql: "SELECT ai_query('endpoint', c), ai_analyze_sentiment(c), ai_summarize(c) FROM t;" }
       - { id: table_valued_function_range, sql: "SELECT * FROM range(1, 10, 2);" }
       - { id: table_valued_function_explode, sql: "SELECT * FROM explode(array(1, 2, 3));" }
       - { id: table_valued_function_system, sql: "SELECT * FROM read_files('/path', format => 'csv');" }

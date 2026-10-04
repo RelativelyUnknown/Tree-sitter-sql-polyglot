@@ -1,0 +1,138 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements:
+  - id: select
+    name: SELECT
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-manipulation/selecting-data/select
+    tier: high
+    probes:
+      - { id: basic, sql: "SELECT a, b FROM t;" }
+      - { id: no_from, sql: "SELECT 1;" }
+      - { id: from_dual, sql: "SELECT 1 FROM DUAL;" }
+      - { id: star, sql: "SELECT * FROM t;" }
+      - { id: qualified_star, sql: "SELECT t.* FROM t;" }
+      - { id: db_qualified_column, sql: "SELECT db.t.a FROM db.t;" }
+      - { id: backtick_identifiers, sql: "SELECT `t`.`a` FROM `t`;" }
+      - { id: column_alias, sql: "SELECT a AS x, b y FROM t;" }
+      - { id: table_alias, sql: "SELECT x.a FROM t AS x;" }
+      - { id: all, sql: "SELECT ALL a FROM t;" }
+      - { id: distinct, sql: "SELECT DISTINCT a FROM t;" }
+      - { id: distinctrow, sql: "SELECT DISTINCTROW a FROM t;" }
+      - { id: high_priority, sql: "SELECT HIGH_PRIORITY a FROM t;" }
+      - { id: straight_join_modifier, sql: "SELECT STRAIGHT_JOIN a FROM t;" }
+      - { id: sql_small_result, sql: "SELECT SQL_SMALL_RESULT a, COUNT(*) FROM t GROUP BY a;" }
+      - { id: sql_big_result, sql: "SELECT SQL_BIG_RESULT a, COUNT(*) FROM t GROUP BY a;" }
+      - { id: sql_buffer_result, sql: "SELECT SQL_BUFFER_RESULT a FROM t;" }
+      - { id: sql_cache, sql: "SELECT SQL_CACHE a FROM t;" }
+      - { id: sql_no_cache, sql: "SELECT SQL_NO_CACHE a FROM t;" }
+      - { id: sql_calc_found_rows, sql: "SELECT SQL_CALC_FOUND_ROWS a FROM t LIMIT 10;" }
+      - { id: all_modifiers, sql: "SELECT DISTINCT HIGH_PRIORITY STRAIGHT_JOIN SQL_SMALL_RESULT SQL_BUFFER_RESULT SQL_NO_CACHE SQL_CALC_FOUND_ROWS a FROM t;" }
+      - { id: optimizer_hint, sql: "SELECT /*+ NO_RANGE_OPTIMIZATION(t PRIMARY) */ a FROM t;", note: "[/*+ hints */] syntax, available from MariaDB 11.8" }
+      - { id: join_order_hint, sql: "SELECT /*+ JOIN_ORDER(t1, t2) */ t1.a FROM t1, t2;", note: "join order hints, MariaDB 12.0+" }
+      - { id: max_execution_time_hint, sql: "SELECT /*+ MAX_EXECUTION_TIME(1000) */ a FROM t;", note: "MariaDB 12.0+" }
+      - { id: where, sql: "SELECT f1, f2 FROM t1 WHERE (f3 <= 10) AND (f4 = 'y');" }
+      - { id: group_by, sql: "SELECT a, COUNT(*) FROM t GROUP BY a;" }
+      - { id: group_by_position, sql: "SELECT a, COUNT(*) FROM t GROUP BY 1;" }
+      - { id: group_by_expr, sql: "SELECT a + 1, COUNT(*) FROM t GROUP BY a + 1;" }
+      - { id: group_by_asc_desc, sql: "SELECT a, b, COUNT(*) FROM t GROUP BY a ASC, b DESC;" }
+      - { id: group_by_with_rollup, sql: "SELECT a, b, SUM(c) FROM t GROUP BY a, b WITH ROLLUP;" }
+      - { id: group_by_null, sql: "SELECT COUNT(*) FROM t GROUP BY NULL;" }
+      - { id: having, sql: "SELECT a, COUNT(*) FROM t GROUP BY a HAVING COUNT(*) > 1;" }
+      - { id: order_by, sql: "SELECT a FROM t ORDER BY a;" }
+      - { id: order_by_asc_desc, sql: "SELECT a, b FROM t ORDER BY a ASC, b DESC;" }
+      - { id: order_by_position, sql: "SELECT a, b FROM t ORDER BY 2;" }
+      - { id: order_by_expr, sql: "SELECT a FROM t ORDER BY a + 1;" }
+      - { id: limit, sql: "SELECT a FROM t LIMIT 10;" }
+      - { id: limit_offset_comma, sql: "SELECT a FROM t LIMIT 5, 10;" }
+      - { id: limit_offset_keyword, sql: "SELECT a FROM t LIMIT 10 OFFSET 5;" }
+      - { id: limit_rows_examined, sql: "SELECT a FROM t LIMIT 10 ROWS EXAMINED 1000;" }
+      - { id: limit_offset_rows_examined, sql: "SELECT a FROM t LIMIT 10 OFFSET 5 ROWS EXAMINED 1000;" }
+      - { id: offset_row, sql: "SELECT a FROM t ORDER BY a OFFSET 1 ROW;" }
+      - { id: offset_rows, sql: "SELECT a FROM t ORDER BY a OFFSET 5 ROWS;" }
+      - { id: fetch_first_rows_only, sql: "SELECT a FROM t ORDER BY a FETCH FIRST 3 ROWS ONLY;" }
+      - { id: fetch_next_row_only, sql: "SELECT a FROM t ORDER BY a FETCH NEXT ROW ONLY;" }
+      - { id: fetch_first_with_ties, sql: "SELECT a FROM t ORDER BY a FETCH FIRST 3 ROWS WITH TIES;" }
+      - { id: offset_fetch, sql: "SELECT a FROM t ORDER BY a OFFSET 2 ROWS FETCH NEXT 3 ROWS ONLY;" }
+      - { id: procedure, sql: "SELECT a FROM t PROCEDURE ANALYSE();" }
+      - { id: procedure_args, sql: "SELECT a FROM t PROCEDURE ANALYSE(10, 2000);" }
+      - { id: into_outfile, sql: "SELECT a FROM t INTO OUTFILE '/tmp/out.txt';" }
+      - { id: into_outfile_charset, sql: "SELECT a FROM t INTO OUTFILE '/tmp/out.txt' CHARACTER SET utf8mb4;" }
+      - { id: into_outfile_fields, sql: "SELECT a, b FROM t INTO OUTFILE '/tmp/out.csv' FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' ESCAPED BY '\\\\';" }
+      - { id: into_outfile_columns, sql: "SELECT a, b FROM t INTO OUTFILE '/tmp/out.csv' COLUMNS TERMINATED BY '\\t';" }
+      - { id: into_outfile_lines, sql: "SELECT a, b FROM t INTO OUTFILE '/tmp/out.csv' LINES STARTING BY 'x' TERMINATED BY '\\n';" }
+      - { id: into_outfile_fields_lines, sql: "SELECT a, b FROM t INTO OUTFILE '/tmp/out.csv' FIELDS TERMINATED BY ',' ENCLOSED BY '\"' LINES TERMINATED BY '\\n';" }
+      - { id: into_dumpfile, sql: "SELECT a FROM t LIMIT 1 INTO DUMPFILE '/tmp/dump.bin';" }
+      - { id: into_variable, sql: "SELECT a INTO @x FROM t LIMIT 1;" }
+      - { id: into_variables, sql: "SELECT a, b INTO @x, @y FROM t LIMIT 1;" }
+      - { id: into_after_from, sql: "SELECT a FROM t LIMIT 1 INTO @x;" }
+      - { id: for_update, sql: "SELECT a FROM t FOR UPDATE;" }
+      - { id: for_update_wait, sql: "SELECT a FROM t FOR UPDATE WAIT 5;" }
+      - { id: for_update_nowait, sql: "SELECT a FROM t FOR UPDATE NOWAIT;" }
+      - { id: for_update_skip_locked, sql: "SELECT a FROM t FOR UPDATE SKIP LOCKED;" }
+      - { id: lock_in_share_mode, sql: "SELECT a FROM t LOCK IN SHARE MODE;" }
+      - { id: lock_in_share_mode_wait, sql: "SELECT a FROM t LOCK IN SHARE MODE WAIT 5;" }
+      - { id: lock_in_share_mode_nowait, sql: "SELECT a FROM t LOCK IN SHARE MODE NOWAIT;" }
+      - { id: lock_in_share_mode_skip_locked, sql: "SELECT a FROM t LOCK IN SHARE MODE SKIP LOCKED;" }
+      - { id: partition_selection, sql: "SELECT a FROM t PARTITION (p0, p1);" }
+      - { id: set_statement_max_statement_time, sql: "SET STATEMENT max_statement_time=100 FOR SELECT a FROM t ORDER BY a;" }
+      - { id: inner_join_on, sql: "SELECT t1.a FROM t1 INNER JOIN t2 ON t1.id = t2.id;" }
+      - { id: join_using, sql: "SELECT a FROM t1 JOIN t2 USING (id);" }
+      - { id: left_join, sql: "SELECT t1.a FROM t1 LEFT JOIN t2 ON t1.id = t2.id;" }
+      - { id: right_outer_join, sql: "SELECT t1.a FROM t1 RIGHT OUTER JOIN t2 ON t1.id = t2.id;" }
+      - { id: cross_join, sql: "SELECT t1.a FROM t1 CROSS JOIN t2;" }
+      - { id: natural_join, sql: "SELECT a FROM t1 NATURAL JOIN t2;" }
+      - { id: natural_left_join, sql: "SELECT a FROM t1 NATURAL LEFT JOIN t2;" }
+      - { id: straight_join_operator, sql: "SELECT t1.a FROM t1 STRAIGHT_JOIN t2 ON t1.id = t2.id;" }
+      - { id: comma_join, sql: "SELECT t1.a FROM t1, t2 WHERE t1.id = t2.id;" }
+      - { id: index_hint, sql: "SELECT a FROM t USE INDEX (idx) WHERE a = 1;" }
+      - { id: force_index_hint, sql: "SELECT a FROM t FORCE INDEX (idx) WHERE a = 1;" }
+      - { id: ignore_index_hint, sql: "SELECT a FROM t IGNORE INDEX (idx) WHERE a = 1;" }
+      - { id: derived_table, sql: "SELECT d.a FROM (SELECT a FROM t) AS d;" }
+      - { id: scalar_subquery, sql: "SELECT (SELECT MAX(a) FROM t2) FROM t1;" }
+      - { id: in_subquery, sql: "SELECT a FROM t1 WHERE a IN (SELECT a FROM t2);" }
+      - { id: exists_subquery, sql: "SELECT a FROM t1 WHERE EXISTS (SELECT 1 FROM t2 WHERE t2.a = t1.a);" }
+      - { id: union, sql: "SELECT a FROM t1 UNION SELECT a FROM t2;" }
+      - { id: union_all, sql: "SELECT a FROM t1 UNION ALL SELECT a FROM t2;" }
+      - { id: union_distinct, sql: "SELECT a FROM t1 UNION DISTINCT SELECT a FROM t2;" }
+      - { id: union_order_limit, sql: "(SELECT a FROM t1) UNION (SELECT a FROM t2) ORDER BY a LIMIT 5;" }
+      - { id: intersect, sql: "SELECT a FROM t1 INTERSECT SELECT a FROM t2;" }
+      - { id: intersect_all, sql: "SELECT a FROM t1 INTERSECT ALL SELECT a FROM t2;" }
+      - { id: except, sql: "SELECT a FROM t1 EXCEPT SELECT a FROM t2;" }
+      - { id: except_all, sql: "SELECT a FROM t1 EXCEPT ALL SELECT a FROM t2;" }
+      - { id: window_function, sql: "SELECT a, ROW_NUMBER() OVER (PARTITION BY b ORDER BY c) FROM t;" }
+      - { id: named_window, sql: "SELECT a, SUM(c) OVER w FROM t WINDOW w AS (PARTITION BY b ORDER BY c);" }
+      - { id: window_frame, sql: "SELECT a, SUM(c) OVER (ORDER BY c ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;" }
+      - { id: values_row_constructor, sql: "SELECT a FROM t WHERE (a, b) IN ((1, 2), (3, 4));" }
+      - { id: clause_order_all, sql: "SELECT DISTINCT a, COUNT(*) AS n FROM t WHERE b > 0 GROUP BY a HAVING n > 1 ORDER BY n DESC LIMIT 10 OFFSET 5;" }
+      - { id: oracle_select_unique, sql: "SELECT UNIQUE a FROM t;", note: "SELECT UNIQUE is listed under DISTINCT as an Oracle mode synonym" }
+    examples:
+      - "SET STATEMENT max_statement_time=100 FOR SELECT field1 FROM table_name ORDER BY field1;"
+      - "SELECT f1,f2 FROM t1 WHERE (f3<=10) AND (f4='y');"
+
+  - id: with
+    name: WITH (common table expressions)
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-manipulation/selecting-data/common-table-expressions/with
+    tier: high
+    probes:
+      - { id: basic, sql: "WITH t AS (SELECT a FROM t1) SELECT * FROM t;" }
+      - { id: column_list, sql: "WITH t (x) AS (SELECT a FROM t1) SELECT x FROM t;" }
+      - { id: multiple_ctes, sql: "WITH t2 AS (SELECT a FROM t1), t3 AS (SELECT a FROM t2) SELECT * FROM t3;" }
+      - { id: recursive, sql: "WITH RECURSIVE r (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r WHERE n < 5) SELECT * FROM r;" }
+      - { id: recursive_union_distinct, sql: "WITH RECURSIVE r (n) AS (SELECT 1 UNION DISTINCT SELECT n + 1 FROM r WHERE n < 5) SELECT * FROM r;" }
+      - { id: cycle_restrict, sql: "WITH RECURSIVE r (a, b) AS (SELECT 1, 2 UNION SELECT r.b, r.a FROM r) CYCLE a, b RESTRICT SELECT * FROM r;" }
+      - { id: cycle_restrict_single_column, sql: "WITH RECURSIVE r (a) AS (SELECT 1 UNION ALL SELECT a FROM r) CYCLE a RESTRICT SELECT * FROM r;" }
+      - { id: in_subquery, sql: "SELECT a FROM t1 WHERE a IN (WITH t AS (SELECT a FROM t2) SELECT a FROM t);" }
+      - { id: in_derived_table, sql: "SELECT * FROM (WITH t AS (SELECT a FROM t1) SELECT a FROM t) AS d;" }
+      - { id: with_explain, sql: "EXPLAIN WITH t AS (SELECT a FROM t1) SELECT * FROM t;" }
+      - { id: with_union_body, sql: "WITH t AS (SELECT a FROM t1 UNION SELECT a FROM t2) SELECT * FROM t;" }
+      - { id: with_joined_ctes, sql: "WITH t AS (SELECT a FROM t1) SELECT * FROM t2, t WHERE t2.c = t.a;" }
+      - { id: with_insert_select, sql: "INSERT INTO t2 WITH t AS (SELECT a FROM t1) SELECT a FROM t;", note: "WITH may be used in the SELECT part of INSERT ... SELECT; page says WITH can be used 'with EXPLAIN and SELECT'" }
+      - { id: with_update_where_subquery, sql: "UPDATE t2 SET c = 1 WHERE a IN (WITH t AS (SELECT a FROM t1) SELECT a FROM t);" }
+      - { id: with_create_table_as, sql: "CREATE TABLE t2 AS WITH t AS (SELECT a FROM t1) SELECT a FROM t;" }
+    examples:
+      - "WITH t AS (SELECT a FROM t1 WHERE b >= 'c') SELECT * FROM t2, t WHERE t2.c = t.a;"
+      - "SELECT t1.a, t1.b FROM t1, t2 WHERE t1.a > t2.c AND t2.c IN(WITH t AS (SELECT * FROM t1 WHERE t1.a < 5) SELECT t2.c FROM t2, t WHERE t2.c = t.a);"
+      - "WITH RECURSIVE cte (depth, from_, to_) AS ( SELECT 0,1,1 UNION SELECT depth+1, t1.from_, t1.to_ FROM t1, cte WHERE t1.from_ = cte.to_ ) CYCLE from_, to_ RESTRICT SELECT * FROM cte;"
