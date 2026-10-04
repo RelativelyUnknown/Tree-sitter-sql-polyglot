@@ -1,0 +1,130 @@
+dialect: postgres
+engine: PostgreSQL
+version: "17"
+source: https://www.postgresql.org/docs/17/sql-commands.html
+
+statements:
+  - id: drop_routine
+    name: DROP ROUTINE
+    doc: https://www.postgresql.org/docs/17/sql-droproutine.html
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP ROUTINE r;" }
+      - { id: if_exists, sql: "DROP ROUTINE IF EXISTS r;" }
+      - { id: with_empty_args, sql: "DROP ROUTINE r();" }
+      - { id: with_arg_types, sql: "DROP ROUTINE r(integer, text);" }
+      - { id: with_argmode_and_name, sql: "DROP ROUTINE r(IN a integer, OUT b text);" }
+      - { id: with_variadic_and_inout, sql: "DROP ROUTINE r(INOUT a integer, VARIADIC b text[]);" }
+      - { id: schema_qualified, sql: "DROP ROUTINE s.r(integer);" }
+      - { id: multiple, sql: "DROP ROUTINE r1(integer), s.r2(text), r3;" }
+      - { id: cascade, sql: "DROP ROUTINE r(integer) CASCADE;" }
+      - { id: restrict, sql: "DROP ROUTINE r(integer) RESTRICT;" }
+      - { id: if_exists_multiple_cascade, sql: "DROP ROUTINE IF EXISTS r1(integer), r2() CASCADE;" }
+    examples:
+      - "DROP ROUTINE foo(integer);"
+
+  - id: alter_default_privileges
+    name: ALTER DEFAULT PRIVILEGES
+    doc: https://www.postgresql.org/docs/17/sql-alterdefaultprivileges.html
+    tier: medium
+    probes:
+      - { id: grant_tables, sql: "ALTER DEFAULT PRIVILEGES GRANT SELECT, INSERT ON TABLES TO r;" }
+      - { id: for_role_in_schema, sql: "ALTER DEFAULT PRIVILEGES FOR ROLE r1 IN SCHEMA s GRANT ALL PRIVILEGES ON TABLES TO PUBLIC WITH GRANT OPTION;" }
+      - { id: for_user_group_grantee, sql: "ALTER DEFAULT PRIVILEGES FOR USER r1, r2 IN SCHEMA s1, s2 GRANT UPDATE ON SEQUENCES TO GROUP g;" }
+      - { id: grant_functions, sql: "ALTER DEFAULT PRIVILEGES GRANT EXECUTE ON FUNCTIONS TO r;" }
+      - { id: grant_routines, sql: "ALTER DEFAULT PRIVILEGES GRANT EXECUTE ON ROUTINES TO r;" }
+      - { id: grant_types, sql: "ALTER DEFAULT PRIVILEGES GRANT USAGE ON TYPES TO r;" }
+      - { id: grant_schemas, sql: "ALTER DEFAULT PRIVILEGES GRANT USAGE, CREATE ON SCHEMAS TO r;" }
+      - { id: revoke_tables, sql: "ALTER DEFAULT PRIVILEGES REVOKE SELECT ON TABLES FROM PUBLIC;" }
+      - { id: revoke_grant_option_cascade, sql: "ALTER DEFAULT PRIVILEGES REVOKE GRANT OPTION FOR ALL ON SEQUENCES FROM r CASCADE;" }
+      - { id: revoke_functions_restrict, sql: "ALTER DEFAULT PRIVILEGES FOR ROLE r REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC RESTRICT;" }
+    examples:
+      - "ALTER DEFAULT PRIVILEGES IN SCHEMA myschema GRANT SELECT ON TABLES TO PUBLIC;"
+      - "ALTER DEFAULT PRIVILEGES IN SCHEMA myschema GRANT INSERT ON TABLES TO webuser;"
+      - "ALTER DEFAULT PRIVILEGES FOR ROLE admin REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;"
+
+  - id: alter_domain
+    name: ALTER DOMAIN
+    doc: https://www.postgresql.org/docs/17/sql-alterdomain.html
+    tier: medium
+    probes:
+      - { id: set_default, sql: "ALTER DOMAIN d SET DEFAULT 'x';" }
+      - { id: drop_default, sql: "ALTER DOMAIN d DROP DEFAULT;" }
+      - { id: set_not_null, sql: "ALTER DOMAIN d SET NOT NULL;" }
+      - { id: drop_not_null, sql: "ALTER DOMAIN d DROP NOT NULL;" }
+      - { id: add_check_constraint_not_valid, sql: "ALTER DOMAIN d ADD CONSTRAINT c CHECK (VALUE > 0) NOT VALID;" }
+      - { id: add_not_null_constraint, sql: "ALTER DOMAIN d ADD CONSTRAINT c NOT NULL;" }
+      - { id: drop_constraint, sql: "ALTER DOMAIN d DROP CONSTRAINT IF EXISTS c CASCADE;" }
+      - { id: rename_constraint, sql: "ALTER DOMAIN d RENAME CONSTRAINT c TO c2;" }
+      - { id: validate_constraint, sql: "ALTER DOMAIN d VALIDATE CONSTRAINT c;" }
+      - { id: owner_to, sql: "ALTER DOMAIN d OWNER TO CURRENT_USER;" }
+      - { id: rename_to, sql: "ALTER DOMAIN d RENAME TO d2;" }
+      - { id: set_schema, sql: "ALTER DOMAIN d SET SCHEMA s;" }
+    examples:
+      - "ALTER DOMAIN zipcode SET NOT NULL;"
+      - "ALTER DOMAIN zipcode ADD CONSTRAINT zipchk CHECK (char_length(VALUE) = 5);"
+      - "ALTER DOMAIN zipcode RENAME CONSTRAINT zipchk TO zip_check;"
+
+  - id: alter_extension
+    name: ALTER EXTENSION
+    doc: https://www.postgresql.org/docs/17/sql-alterextension.html
+    tier: medium
+    probes:
+      - { id: update, sql: "ALTER EXTENSION e UPDATE;" }
+      - { id: update_to_version, sql: "ALTER EXTENSION e UPDATE TO '2.0';" }
+      - { id: set_schema, sql: "ALTER EXTENSION e SET SCHEMA s;" }
+      - { id: add_function, sql: "ALTER EXTENSION e ADD FUNCTION f(integer, text);" }
+      - { id: drop_table, sql: "ALTER EXTENSION e DROP TABLE t;" }
+      - { id: add_aggregate, sql: "ALTER EXTENSION e ADD AGGREGATE a(integer);" }
+      - { id: add_cast, sql: "ALTER EXTENSION e ADD CAST (integer AS text);" }
+      - { id: add_operator, sql: "ALTER EXTENSION e ADD OPERATOR === (integer, integer);" }
+      - { id: add_operator_class, sql: "ALTER EXTENSION e ADD OPERATOR CLASS oc USING btree;" }
+      - { id: add_text_search_dictionary, sql: "ALTER EXTENSION e ADD TEXT SEARCH DICTIONARY d;" }
+      - { id: add_transform, sql: "ALTER EXTENSION e ADD TRANSFORM FOR hstore LANGUAGE plpython3u;" }
+      - { id: add_procedural_language, sql: "ALTER EXTENSION e ADD PROCEDURAL LANGUAGE l;" }
+    examples:
+      - "ALTER EXTENSION hstore UPDATE TO '2.0';"
+      - "ALTER EXTENSION hstore SET SCHEMA utils;"
+      - "ALTER EXTENSION hstore ADD FUNCTION populate_record(anyelement, hstore);"
+
+  - id: alter_foreign_table
+    name: ALTER FOREIGN TABLE
+    doc: https://www.postgresql.org/docs/17/sql-alterforeigntable.html
+    tier: medium
+    probes:
+      - { id: add_column, sql: "ALTER FOREIGN TABLE IF EXISTS ONLY ft * ADD COLUMN IF NOT EXISTS c integer COLLATE \"C\" NOT NULL;" }
+      - { id: drop_column, sql: "ALTER FOREIGN TABLE ft DROP COLUMN IF EXISTS c CASCADE;" }
+      - { id: alter_column_type, sql: "ALTER FOREIGN TABLE ft ALTER COLUMN c SET DATA TYPE text COLLATE \"C\";" }
+      - { id: set_default, sql: "ALTER FOREIGN TABLE ft ALTER COLUMN c SET DEFAULT 0;" }
+      - { id: set_not_null, sql: "ALTER FOREIGN TABLE ft ALTER COLUMN c SET NOT NULL;" }
+      - { id: set_statistics, sql: "ALTER FOREIGN TABLE ft ALTER COLUMN c SET STATISTICS 100;" }
+      - { id: set_attribute_options, sql: "ALTER FOREIGN TABLE ft ALTER COLUMN c SET (n_distinct = 10), ALTER COLUMN c RESET (n_distinct);" }
+      - { id: set_storage, sql: "ALTER FOREIGN TABLE ft ALTER COLUMN c SET STORAGE EXTERNAL;" }
+      - { id: column_options, sql: "ALTER FOREIGN TABLE ft ALTER COLUMN c OPTIONS (ADD o1 'v', SET o2 'v2', DROP o3);" }
+      - { id: add_constraint_not_valid, sql: "ALTER FOREIGN TABLE ft ADD CONSTRAINT k CHECK (c > 0) NOT VALID;" }
+      - { id: validate_and_drop_constraint, sql: "ALTER FOREIGN TABLE ft VALIDATE CONSTRAINT k, DROP CONSTRAINT IF EXISTS k2 RESTRICT;" }
+      - { id: triggers, sql: "ALTER FOREIGN TABLE ft DISABLE TRIGGER ALL, ENABLE REPLICA TRIGGER tg, ENABLE ALWAYS TRIGGER tg2;" }
+      - { id: inherit, sql: "ALTER FOREIGN TABLE ft INHERIT parent;" }
+      - { id: no_inherit, sql: "ALTER FOREIGN TABLE ft NO INHERIT parent;" }
+      - { id: set_without_oids, sql: "ALTER FOREIGN TABLE ft SET WITHOUT OIDS;" }
+      - { id: owner_to, sql: "ALTER FOREIGN TABLE ft OWNER TO r;" }
+      - { id: table_options, sql: "ALTER FOREIGN TABLE ft OPTIONS (ADD o1 'v', SET o2 'v2', DROP o3);" }
+      - { id: rename_column, sql: "ALTER FOREIGN TABLE IF EXISTS ft RENAME COLUMN c TO c2;" }
+      - { id: rename_to, sql: "ALTER FOREIGN TABLE ft RENAME TO ft2;" }
+      - { id: set_schema, sql: "ALTER FOREIGN TABLE ft SET SCHEMA s;" }
+    examples:
+      - "ALTER FOREIGN TABLE distributors ALTER COLUMN street SET NOT NULL;"
+      - "ALTER FOREIGN TABLE myschema.distributors OPTIONS (ADD opt1 'value', SET opt2 'value2', DROP opt3);"
+
+  - id: alter_group
+    name: ALTER GROUP
+    doc: https://www.postgresql.org/docs/17/sql-altergroup.html
+    tier: medium
+    probes:
+      - { id: add_user, sql: "ALTER GROUP g ADD USER u1, u2;" }
+      - { id: drop_user, sql: "ALTER GROUP g DROP USER u;" }
+      - { id: current_user_spec, sql: "ALTER GROUP CURRENT_USER ADD USER u;" }
+      - { id: rename_to, sql: "ALTER GROUP g RENAME TO g2;" }
+    examples:
+      - "ALTER GROUP staff ADD USER karl, john;"
+      - "ALTER GROUP workers DROP USER beth;"
