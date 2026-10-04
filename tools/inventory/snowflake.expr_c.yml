@@ -876,3 +876,312 @@ expressions:
             CAST ([1,2,3]::VARIANT AS ARRAY(NUMBER))
           ) AS variant_cast_type;
 
+  - id: c_semistructured_function_families
+    name: Semi-structured and structured function families
+    doc: https://docs.snowflake.com/en/sql-reference/functions-semistructured
+    tier: medium
+    probes:
+      - id: parse_and_check
+        sql: |-
+          SELECT PARSE_JSON('[1, 2]'), TRY_PARSE_JSON(s), CHECK_JSON(s), TO_JSON(v) FROM t;
+      - id: array_construct_modify
+        sql: |-
+          SELECT ARRAY_APPEND(a, 1), ARRAY_PREPEND(a, 0), ARRAY_CAT(a, b), ARRAY_INSERT(a, 1, 99), ARRAY_COMPACT(a), ARRAY_FLATTEN(a) FROM t;
+      - id: array_inspect
+        sql: |-
+          SELECT ARRAY_SIZE(a), ARRAY_CONTAINS(1::VARIANT, a), ARRAY_POSITION(1::VARIANT, a), ARRAYS_OVERLAP(a, b), ARRAY_MIN(a), ARRAY_MAX(a) FROM t;
+      - id: array_transform_fns
+        sql: |-
+          SELECT ARRAY_SORT(a, FALSE, TRUE), ARRAY_SLICE(a, 0, 2), ARRAY_DISTINCT(a), ARRAY_INTERSECTION(a, b), ARRAY_EXCEPT(a, b), ARRAY_REMOVE(a, 1::VARIANT) FROM t;
+      - id: array_to_string_split
+        sql: |-
+          SELECT ARRAY_TO_STRING(a, ','), SPLIT(s, ','), STRTOK_TO_ARRAY(s, ',') FROM t;
+      - id: array_generate_range
+        sql: |-
+          SELECT ARRAY_GENERATE_RANGE(0, 10, 2);
+      - id: object_modify
+        sql: |-
+          SELECT OBJECT_INSERT(o, 'k', 'v'), OBJECT_INSERT(o, 'k', 'v', TRUE), OBJECT_DELETE(o, 'a', 'b'), OBJECT_PICK(o, 'a', 'b'), OBJECT_PICK(o, ARRAY_CONSTRUCT('a', 'b')) FROM t;
+      - id: object_inspect
+        sql: |-
+          SELECT OBJECT_KEYS(o), GET(o, 'a'), GET_PATH(o, 'a.b') FROM t;
+      - id: variant_predicates
+        sql: |-
+          SELECT IS_ARRAY(v), IS_OBJECT(v), IS_INTEGER(v), IS_VARCHAR(v), IS_NULL_VALUE(v), TYPEOF(v) FROM t;
+      - id: variant_extractors
+        sql: |-
+          SELECT AS_INTEGER(v), AS_VARCHAR(v), AS_ARRAY(v), AS_OBJECT(v), STRIP_NULL_VALUE(v) FROM t;
+      - id: map_functions
+        sql: |-
+          SELECT MAP_CAT(m1, m2), MAP_KEYS(m), MAP_CONTAINS_KEY('k', m), MAP_SIZE(m) FROM t;
+
+  - id: c_table_function_calls
+    name: Table functions and named arguments
+    doc: https://docs.snowflake.com/en/sql-reference/functions-table
+    tier: high
+    probes:
+      - id: flatten_named_input
+        sql: |-
+          SELECT * FROM TABLE(FLATTEN(INPUT => PARSE_JSON('[1, 2]')));
+      - id: flatten_all_args
+        sql: |-
+          SELECT * FROM TABLE(FLATTEN(INPUT => v, PATH => 'a.b', OUTER => TRUE, RECURSIVE => FALSE, MODE => 'BOTH'));
+      - id: flatten_positional_table
+        sql: |-
+          SELECT value FROM TABLE(FLATTEN(b));
+      - id: flatten_lateral
+        sql: |-
+          SELECT a.v, f.key, f.value FROM t AS a, LATERAL FLATTEN(INPUT => a.v) AS f;
+      - id: flatten_lateral_recursive
+        sql: |-
+          SELECT f.path, TYPEOF(f.value) FROM t, LATERAL FLATTEN(v, RECURSIVE => TRUE) f;
+      - id: flatten_output_columns
+        sql: |-
+          SELECT f.seq, f.key, f.path, f.index, f.value, f.this FROM t, TABLE(FLATTEN(INPUT => t.v)) AS f;
+      - id: generator_rowcount
+        sql: |-
+          SELECT SEQ4() FROM TABLE(GENERATOR(ROWCOUNT => 10));
+      - id: generator_timelimit
+        sql: |-
+          SELECT UNIFORM(1, 10, RANDOM()) FROM TABLE(GENERATOR(ROWCOUNT => 100, TIMELIMIT => 5));
+      - id: result_scan
+        sql: |-
+          SELECT * FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
+      - id: table_function_with_alias_columns
+        sql: |-
+          SELECT x.a FROM TABLE(my_udtf(1, 2)) AS x(a, b);
+      - id: named_argument_function
+        sql: |-
+          SELECT my_udf(arg1 => 1, arg2 => 'x');
+    examples:
+      - |-
+        SELECT value FROM TABLE(FLATTEN(b));
+
+  - id: c_function_family_string
+    name: String function families
+    doc: https://docs.snowflake.com/en/sql-reference/functions-string
+    tier: medium
+    probes:
+      - id: basic
+        sql: |-
+          SELECT UPPER(s), LOWER(s), INITCAP(s), LENGTH(s), REVERSE(s) FROM t;
+      - id: concat
+        sql: |-
+          SELECT CONCAT(a, b), CONCAT_WS(',', a, b), a || b FROM t;
+      - id: substring_family
+        sql: |-
+          SELECT SUBSTR(s, 2, 3), SUBSTRING(s, 2), LEFT(s, 2), RIGHT(s, 2) FROM t;
+      - id: search_family
+        sql: |-
+          SELECT CHARINDEX('a', s), POSITION('a', s), CONTAINS(s, 'a'), STARTSWITH(s, 'a'), ENDSWITH(s, 'a') FROM t;
+      - id: trim_pad_family
+        sql: |-
+          SELECT TRIM(s), LTRIM(s, ' '), RTRIM(s, 'x'), LPAD(s, 10, '0'), RPAD(s, 10) FROM t;
+      - id: replace_translate
+        sql: |-
+          SELECT REPLACE(s, 'a', 'b'), TRANSLATE(s, 'abc', 'xyz'), INSERT(s, 1, 2, 'zz'), REPEAT(s, 3) FROM t;
+      - id: split_part
+        sql: |-
+          SELECT SPLIT_PART(s, ',', 2), STRTOK(s, ',', 1) FROM t;
+      - id: like_ilike_functions
+        sql: |-
+          SELECT s LIKE ANY ('a%', 'b%'), ILIKE(s, 'a%'), s ILIKE ANY ('a%') FROM t;
+      - id: collation
+        sql: |-
+          SELECT COLLATE(s, 'en-ci'), COLLATION(s) FROM t;
+      - id: encoding
+        sql: |-
+          SELECT BASE64_ENCODE(s), HEX_ENCODE(s), TRY_BASE64_DECODE_STRING(s), UNICODE(s), CHR(65), ASCII(s) FROM t;
+      - id: similarity
+        sql: |-
+          SELECT EDITDISTANCE(a, b), JAROWINKLER_SIMILARITY(a, b), SOUNDEX(s) FROM t;
+
+  - id: c_function_family_regexp
+    name: Regular expression function families
+    doc: https://docs.snowflake.com/en/sql-reference/functions-regexp
+    tier: medium
+    probes:
+      - id: regexp_like
+        sql: |-
+          SELECT REGEXP_LIKE(s, 'a.*'), REGEXP_LIKE(s, 'a.*', 'i'), s RLIKE 'a.*', s REGEXP 'a.*' FROM t;
+      - id: regexp_substr_all
+        sql: |-
+          SELECT REGEXP_SUBSTR(s, '[0-9]+', 1, 2, 'e', 1), REGEXP_SUBSTR_ALL(s, '[0-9]+') FROM t;
+      - id: regexp_replace
+        sql: |-
+          SELECT REGEXP_REPLACE(s, '\\d+', 'N'), REGEXP_REPLACE(s, '(a)(b)', '\\2\\1', 1, 0, 'i') FROM t;
+      - id: regexp_count_instr
+        sql: |-
+          SELECT REGEXP_COUNT(s, 'a'), REGEXP_INSTR(s, 'a', 1, 1, 0, 'i') FROM t;
+
+  - id: c_function_family_numeric
+    name: Numeric function families
+    doc: https://docs.snowflake.com/en/sql-reference/functions-numeric
+    tier: medium
+    probes:
+      - id: rounding
+        sql: |-
+          SELECT ROUND(c, 2), ROUND(c, -1, 'HALF_TO_EVEN'), CEIL(c, 1), FLOOR(c), TRUNC(c, 1), TRUNCATE(c) FROM t;
+      - id: arithmetic_functions
+        sql: |-
+          SELECT ABS(c), SIGN(c), MOD(a, b), DIV0(a, b), DIV0NULL(a, b), SQRT(c), CBRT(c), POWER(a, 2), POW(a, 2), EXP(c), LN(c), LOG(10, c) FROM t;
+      - id: trig
+        sql: |-
+          SELECT SIN(c), COS(c), TAN(c), ASIN(c), ATAN2(a, b), DEGREES(c), RADIANS(c), PI() FROM t;
+      - id: bucket_and_range
+        sql: |-
+          SELECT WIDTH_BUCKET(c, 0, 100, 10), GREATEST(a, b, c), LEAST(a, b, c), FACTORIAL(5) FROM t;
+      - id: bit_functions
+        sql: |-
+          SELECT BITAND(a, b), BITOR(a, b), BITXOR(a, b), BITNOT(a), BITSHIFTLEFT(a, 2), BITSHIFTRIGHT(a, 2) FROM t;
+      - id: random
+        sql: |-
+          SELECT RANDOM(), RANDOM(42), UNIFORM(1, 10, RANDOM()), NORMAL(0, 1, RANDOM()), SEQ4(), UUID_STRING() FROM t;
+
+  - id: c_function_family_datetime
+    name: Date and time function families
+    doc: https://docs.snowflake.com/en/sql-reference/functions-date-time
+    tier: medium
+    probes:
+      - id: current_now
+        sql: |-
+          SELECT CURRENT_DATE(), CURRENT_TIMESTAMP(), CURRENT_TIME(), SYSDATE(), GETDATE(), LOCALTIMESTAMP() FROM t;
+      - id: current_no_parens
+        sql: |-
+          SELECT CURRENT_DATE, CURRENT_TIMESTAMP, CURRENT_TIME, LOCALTIMESTAMP;
+      - id: construct
+        sql: |-
+          SELECT DATE_FROM_PARTS(2024, 1, 31), TIME_FROM_PARTS(12, 30, 0), TIMESTAMP_FROM_PARTS(2024, 1, 31, 12, 30, 0) FROM t;
+      - id: dateadd_datediff
+        sql: |-
+          SELECT DATEADD(day, 1, d), DATEADD('month', -1, d), DATEDIFF(day, a, b), TIMEADD(hour, 2, ts), TIMESTAMPDIFF(second, a, b) FROM t;
+      - id: truncate_part
+        sql: |-
+          SELECT DATE_TRUNC('month', d), DATE_TRUNC(week, d), DATE_PART(year, d), DATE_PART('epoch_second', ts), YEAR(d), MONTH(d), DAYOFWEEK(d), WEEKISO(d), QUARTER(d) FROM t;
+      - id: add_months_last_day
+        sql: |-
+          SELECT ADD_MONTHS(d, 1), LAST_DAY(d), LAST_DAY(d, 'year'), NEXT_DAY(d, 'monday'), PREVIOUS_DAY(d, 'friday'), MONTHNAME(d), DAYNAME(d) FROM t;
+      - id: time_slice
+        sql: |-
+          SELECT TIME_SLICE(ts, 15, 'MINUTE'), TIME_SLICE(ts, 1, 'DAY', 'END') FROM t;
+      - id: convert_timezone
+        sql: |-
+          SELECT CONVERT_TIMEZONE('UTC', 'America/Los_Angeles', ts), CONVERT_TIMEZONE('Europe/Warsaw', ts) FROM t;
+      - id: generators
+        sql: |-
+          SELECT DATE_FROM_PARTS(y, m, d), TIMESTAMP_NTZ_FROM_PARTS(2024, 1, 1, 0, 0, 0), TIMESTAMP_TZ_FROM_PARTS(2024, 1, 1, 0, 0, 0, 0, 'UTC') FROM t;
+      - id: epoch_conversion
+        sql: |-
+          SELECT TO_TIMESTAMP(1700000000), TO_TIMESTAMP(1700000000, 3), DATE_PART(EPOCH_SECOND, ts) FROM t;
+
+  - id: c_function_family_conversion
+    name: Conversion function families
+    doc: https://docs.snowflake.com/en/sql-reference/functions-conversion
+    tier: medium
+    probes:
+      - id: to_number_family
+        sql: |-
+          SELECT TO_NUMBER('12.3', 10, 2), TO_DECIMAL(s, '999.99', 10, 2), TO_DOUBLE(s), TO_NUMERIC(s), TO_BOOLEAN(s), TO_BINARY(s, 'HEX') FROM t;
+      - id: to_char_varchar
+        sql: |-
+          SELECT TO_CHAR(n, '999.99'), TO_VARCHAR(d, 'YYYY-MM-DD'), TO_CHAR(ts) FROM t;
+      - id: to_date_time
+        sql: |-
+          SELECT TO_DATE(s), TO_DATE(s, 'YYYY-MM-DD'), TO_TIME(s), TO_TIMESTAMP(s, 'YYYY-MM-DD HH24:MI:SS'), TO_TIMESTAMP_NTZ(s), TO_TIMESTAMP_LTZ(s), TO_TIMESTAMP_TZ(s) FROM t;
+      - id: try_family
+        sql: |-
+          SELECT TRY_CAST(s AS INT), TRY_TO_NUMBER(s), TRY_TO_DATE(s, 'YYYY-MM-DD'), TRY_TO_TIMESTAMP(s), TRY_TO_BOOLEAN(s), TRY_TO_DOUBLE(s) FROM t;
+      - id: cast_function
+        sql: |-
+          SELECT CAST(c AS VARCHAR(10)), CAST(c AS NUMBER(10, 2)), CAST(s AS TIMESTAMP_NTZ(3)), CAST(c AS FLOAT) FROM t;
+      - id: double_colon_cast_chain
+        sql: |-
+          SELECT c::INT, c::VARCHAR::DATE, c::NUMBER(10, 2) FROM t;
+      - id: to_geo
+        sql: |-
+          SELECT TO_GEOGRAPHY('POINT(-122.35 37.55)'), TO_GEOMETRY(s) FROM t;
+
+  - id: c_function_family_conditional
+    name: Conditional expression function families
+    doc: https://docs.snowflake.com/en/sql-reference/expressions-conditional
+    tier: medium
+    probes:
+      - id: iff
+        sql: |-
+          SELECT IFF(c > 0, 'pos', 'neg') FROM t;
+      - id: coalesce_nvl
+        sql: |-
+          SELECT COALESCE(a, b, 0), NVL(a, 0), NVL2(a, 'set', 'unset'), IFNULL(a, 0), NULLIF(a, 0) FROM t;
+      - id: zeroifnull_nullifzero
+        sql: |-
+          SELECT ZEROIFNULL(a), NULLIFZERO(a), EQUAL_NULL(a, b), NULLIFZERO(a) FROM t;
+      - id: decode
+        sql: |-
+          SELECT DECODE(c, 1, 'one', 2, 'two', 'other') FROM t;
+      - id: greatest_least_booleans
+        sql: |-
+          SELECT GREATEST(a, b, c), LEAST(a, b, c), BOOLAND(a, b), BOOLOR(a, b), BOOLXOR(a, b), BOOLNOT(a) FROM t;
+      - id: is_null_function
+        sql: |-
+          SELECT IS_NULL_VALUE(v), a IS DISTINCT FROM b, a IS NOT DISTINCT FROM b FROM t;
+      - id: case_with_functions
+        sql: |-
+          SELECT CASE WHEN IFF(a > 0, TRUE, FALSE) THEN 'x' ELSE 'y' END FROM t;
+      - id: regr_nvl_nested
+        sql: |-
+          SELECT NVL(NULLIF(TRIM(s), ''), 'n/a') FROM t;
+
+  - id: c_function_family_hash_encryption_misc
+    name: Hash, encryption, context and system function families
+    doc: https://docs.snowflake.com/en/sql-reference/functions-hash-scalar
+    tier: medium
+    probes:
+      - id: hash_functions
+        sql: |-
+          SELECT HASH(a, b), HASH(*), MD5(s), SHA1(s), SHA2(s, 256), MD5_HEX(s), SHA2_HEX(s, 512) FROM t;
+      - id: encryption
+        sql: |-
+          SELECT ENCRYPT(s, 'pass'), DECRYPT(b, 'pass'), TRY_DECRYPT(b, 'pass'), ENCRYPT_RAW(b, k, iv) FROM t;
+      - id: context_functions
+        sql: |-
+          SELECT CURRENT_USER(), CURRENT_ROLE(), CURRENT_DATABASE(), CURRENT_SCHEMA(), CURRENT_WAREHOUSE(), CURRENT_SESSION(), CURRENT_VERSION();
+      - id: context_no_parens
+        sql: |-
+          SELECT CURRENT_USER, CURRENT_ROLE, CURRENT_DATABASE, CURRENT_SCHEMA;
+      - id: system_functions
+        sql: |-
+          SELECT SYSTEM$TYPEOF(c), SYSTEM$WAIT(1), SYSTEM$CLUSTERING_INFORMATION('t', '(c)');
+      - id: metadata_columns
+        sql: |-
+          SELECT METADATA$FILENAME, METADATA$FILE_ROW_NUMBER FROM @stage;
+      - id: get_ddl
+        sql: |-
+          SELECT GET_DDL('TABLE', 't'), GET_DDL('VIEW', 'v', TRUE);
+      - id: uuid_sequence
+        sql: |-
+          SELECT UUID_STRING(), UUID_STRING('fe971b24-9572-4005-b22f-351e9c09274d', 'name');
+
+  - id: c_function_family_geospatial_vector
+    name: Geospatial and vector function families
+    doc: https://docs.snowflake.com/en/sql-reference/functions-geospatial
+    tier: medium
+    probes:
+      - id: geography_constructors
+        sql: |-
+          SELECT ST_POINT(-122.35, 37.55), ST_MAKEPOINT(1, 2), ST_GEOGFROMTEXT('POINT(1 2)'), ST_MAKELINE(a, b), ST_POLYGON(l) FROM t;
+      - id: geography_measures
+        sql: |-
+          SELECT ST_DISTANCE(a, b), ST_AREA(g), ST_LENGTH(g), ST_PERIMETER(g), ST_X(p), ST_Y(p) FROM t;
+      - id: geography_predicates
+        sql: |-
+          SELECT ST_CONTAINS(a, b), ST_INTERSECTS(a, b), ST_WITHIN(a, b), ST_DWITHIN(a, b, 1000) FROM t;
+      - id: geography_output
+        sql: |-
+          SELECT ST_ASTEXT(g), ST_ASGEOJSON(g), ST_ASWKB(g), ST_CENTROID(g), ST_BUFFER(g, 10) FROM t;
+      - id: vector_similarity
+        sql: |-
+          SELECT VECTOR_COSINE_SIMILARITY(a, b), VECTOR_INNER_PRODUCT(a, b), VECTOR_L2_DISTANCE(a, b), VECTOR_L1_DISTANCE(a, b) FROM t;
+      - id: vector_cast
+        sql: |-
+          SELECT [1.1, 2.2, 3]::VECTOR(FLOAT, 3), c::VECTOR(INT, 16) FROM t;
+
