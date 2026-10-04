@@ -1,0 +1,240 @@
+dialect: snowflake
+engine: Snowflake
+version: "current (docs read 2026-10-04)"
+source: https://docs.snowflake.com/en/sql-reference/sql-all
+
+statements:
+  - id: create_network_policy
+    name: CREATE NETWORK POLICY
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-network-policy
+    tier: medium
+    probes:
+      - id: allowed_network_rule_list
+        sql: "CREATE NETWORK POLICY np ALLOWED_NETWORK_RULE_LIST = ('r1', 'r2');"
+      - id: blocked_network_rule_list
+        sql: "CREATE NETWORK POLICY np BLOCKED_NETWORK_RULE_LIST = ('r1');"
+      - id: ip_lists
+        sql: "CREATE NETWORK POLICY np ALLOWED_IP_LIST = ('192.168.1.0/24') BLOCKED_IP_LIST = ('192.168.1.99');"
+      - id: or_replace_if_not_exists_comment
+        sql: "CREATE OR REPLACE NETWORK POLICY IF NOT EXISTS np ALLOWED_IP_LIST = ('10.0.0.1') COMMENT = 'c';"
+      - id: create_or_alter
+        sql: "CREATE OR ALTER NETWORK POLICY np ALLOWED_NETWORK_RULE_LIST = ('r1') COMMENT = 'c';"
+    examples:
+      - "CREATE NETWORK POLICY allow_vpceid_block_public_policy ALLOWED_NETWORK_RULE_LIST = ('allow_vpceid_access') BLOCKED_NETWORK_RULE_LIST = ('block_public_access');"
+      - "CREATE OR ALTER NETWORK POLICY allow_vpceid_block_public_policy ALLOWED_NETWORK_RULE_LIST = ('allow_vpceid_access') BLOCKED_NETWORK_RULE_LIST = ('block_public_access') COMMENT = 'Allow VPCE ID, block all public access';"
+
+  - id: create_network_rule
+    name: CREATE NETWORK RULE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-network-rule
+    tier: medium
+    probes:
+      - id: ipv4_ingress
+        sql: "CREATE NETWORK RULE nr TYPE = IPV4 VALUE_LIST = ('47.88.25.32/27') MODE = INGRESS;"
+      - id: host_port_egress
+        sql: "CREATE NETWORK RULE nr TYPE = HOST_PORT MODE = EGRESS VALUE_LIST = ('example.com', 'example.com:443');"
+      - id: awsvpceid_internal_stage_comment
+        sql: "CREATE NETWORK RULE nr TYPE = AWSVPCEID VALUE_LIST = ('vpce-123abc3420c1931') MODE = INTERNAL_STAGE COMMENT = 'c';"
+      - id: or_replace
+        sql: "CREATE OR REPLACE NETWORK RULE nr TYPE = IPV4 VALUE_LIST = ('1.2.3.4') MODE = INGRESS;"
+      - id: create_or_alter
+        sql: "CREATE OR ALTER NETWORK RULE nr TYPE = HOST_PORT VALUE_LIST = ('example.com') MODE = EGRESS COMMENT = 'c';"
+    examples:
+      - "CREATE NETWORK RULE corporate_network TYPE = AWSVPCEID VALUE_LIST = ('vpce-123abc3420c1931') MODE = INTERNAL_STAGE COMMENT = 'corporate privatelink endpoint';"
+      - "CREATE NETWORK RULE cloud_network TYPE = IPV4 VALUE_LIST = ('47.88.25.32/27') COMMENT = 'cloud egress ip range';"
+      - "CREATE NETWORK RULE external_access_rule TYPE = HOST_PORT MODE = EGRESS VALUE_LIST = ('example.com', 'example.com:443');"
+
+  - id: create_pipe
+    name: CREATE PIPE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-pipe
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE PIPE p AS COPY INTO t FROM @s;"
+      - id: auto_ingest_aws_sns_topic
+        sql: "CREATE PIPE p AUTO_INGEST = TRUE AWS_SNS_TOPIC = 'arn:aws:sns:us-west-2:001234567890:topic' AS COPY INTO t FROM @s FILE_FORMAT = (TYPE = 'JSON');"
+      - id: integration_error_integration_comment
+        sql: "CREATE PIPE p AUTO_INGEST = TRUE ERROR_INTEGRATION = ei INTEGRATION = 'MYINT' COMMENT = 'c' AS COPY INTO t FROM @s;"
+      - id: or_replace_if_not_exists
+        sql: "CREATE OR REPLACE PIPE IF NOT EXISTS p AS COPY INTO t FROM @s;"
+      - id: copy_with_transform
+        sql: "CREATE PIPE p AS COPY INTO t (c1, c2) FROM (SELECT $5, $4 FROM @s) FILE_FORMAT = (TYPE = 'JSON');"
+      - id: create_or_alter_execution_paused
+        sql: "CREATE OR ALTER PIPE p PIPE_EXECUTION_PAUSED = TRUE COMMENT = 'c' AS COPY INTO t FROM @s;"
+    examples:
+      - "CREATE PIPE mypipe AS COPY INTO mytable FROM @mystage FILE_FORMAT = (TYPE = 'JSON');"
+      - "CREATE PIPE mypipe2 AS COPY INTO mytable (C1, C2) FROM (SELECT $5, $4 FROM @mystage) FILE_FORMAT = (TYPE = 'JSON');"
+      - "CREATE PIPE mypipe_s3 AUTO_INGEST = TRUE AWS_SNS_TOPIC = 'arn:aws:sns:us-west-2:001234567890:s3_mybucket' AS COPY INTO snowpipe_db.public.mytable FROM @snowpipe_db.public.mystage FILE_FORMAT = (TYPE = 'JSON');"
+
+  - id: create_role
+    name: CREATE ROLE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-role
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE ROLE r;"
+      - id: or_replace_if_not_exists_comment
+        sql: "CREATE OR REPLACE ROLE IF NOT EXISTS r COMMENT = 'c';"
+      - id: with_tag
+        sql: "CREATE ROLE r WITH TAG (tag1 = 'v1', tag2 = 'v2');"
+      - id: tag_without_with
+        sql: "CREATE ROLE r TAG (tag1 = 'v1');"
+      - id: create_or_alter
+        sql: "CREATE OR ALTER ROLE r COMMENT = 'c';"
+    examples:
+      - "CREATE ROLE myrole;"
+
+  - id: create_row_access_policy
+    name: CREATE ROW ACCESS POLICY
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-row-access-policy
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE ROW ACCESS POLICY rap AS (c VARCHAR) RETURNS BOOLEAN -> TRUE;"
+      - id: multiple_args_case_body
+        sql: "CREATE ROW ACCESS POLICY rap AS (a VARCHAR, b NUMBER) RETURNS BOOLEAN -> CASE WHEN CURRENT_ROLE() = 'ADMIN' THEN TRUE ELSE FALSE END;"
+      - id: or_replace_if_not_exists_comment
+        sql: "CREATE OR REPLACE ROW ACCESS POLICY IF NOT EXISTS rap AS (c VARCHAR) RETURNS BOOLEAN -> c = 'x' COMMENT = 'c';"
+      - id: exists_subquery_body
+        sql: "CREATE ROW ACCESS POLICY rap AS (region VARCHAR) RETURNS BOOLEAN -> EXISTS (SELECT 1 FROM m WHERE r = CURRENT_ROLE() AND m.region = region);"
+      - id: create_or_alter
+        sql: "CREATE OR ALTER ROW ACCESS POLICY rap AS (c VARCHAR) RETURNS BOOLEAN -> TRUE COMMENT = 'c';"
+    examples:
+      - |-
+        create or replace row access policy rap_it as (empl_id varchar) returns boolean ->
+          case when 'it_admin' = current_role() then true
+          else false
+          end;
+      - |-
+        create or replace row access policy rap_sales_manager_regions_1 as (sales_region varchar) returns boolean ->
+          'sales_executive_role' = current_role()
+          or exists (
+            select 1 from salesmanagerregions
+              where sales_manager = current_role()
+                and region = sales_region
+          );
+
+  - id: create_secret
+    name: CREATE SECRET
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-secret
+    tier: medium
+    probes:
+      - id: oauth2_client_credentials
+        sql: "CREATE SECRET s TYPE = OAUTH2 API_AUTHENTICATION = si OAUTH_SCOPES = ('useraccount') COMMENT = 'c';"
+      - id: oauth2_authorization_code
+        sql: "CREATE SECRET s TYPE = OAUTH2 OAUTH_REFRESH_TOKEN = 'tok' OAUTH_REFRESH_TOKEN_EXPIRY_TIME = '2022-01-06 20:00:00' API_AUTHENTICATION = si;"
+      - id: cloud_provider_token
+        sql: "CREATE SECRET s TYPE = CLOUD_PROVIDER_TOKEN API_AUTHENTICATION = si ENABLED = TRUE;"
+      - id: password
+        sql: "CREATE SECRET s TYPE = PASSWORD USERNAME = 'u' PASSWORD = 'p' COMMENT = 'c';"
+      - id: generic_string
+        sql: "CREATE OR REPLACE SECRET IF NOT EXISTS s TYPE = GENERIC_STRING SECRET_STRING = 'x';"
+      - id: symmetric_key
+        sql: "CREATE SECRET s TYPE = SYMMETRIC_KEY ALGORITHM = GENERIC;"
+      - id: workload_identity_federation
+        sql: "CREATE SECRET db.sch.s TYPE = WORKLOAD_IDENTITY_FEDERATION;"
+    examples:
+      - "CREATE OR REPLACE SECRET mysecret TYPE = OAUTH2 API_AUTHENTICATION = mysecurityintegration OAUTH_SCOPES = ('useraccount') COMMENT = 'secret for the ServiceNow connector';"
+      - "CREATE SECRET aws_secret TYPE = CLOUD_PROVIDER_TOKEN API_AUTHENTICATION = myawsiamintegration ENABLED = TRUE;"
+      - "CREATE SECRET my_db.auth.my_workload TYPE = WORKLOAD_IDENTITY_FEDERATION;"
+
+  - id: create_sequence
+    name: CREATE SEQUENCE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-sequence
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE SEQUENCE s;"
+      - id: start_increment_equals
+        sql: "CREATE SEQUENCE s START = 1 INCREMENT = 5;"
+      - id: with_start_with_increment_by
+        sql: "CREATE SEQUENCE s WITH START WITH 10 INCREMENT BY 2;"
+      - id: order_comment
+        sql: "CREATE SEQUENCE s ORDER COMMENT = 'c';"
+      - id: noorder_or_replace_if_not_exists
+        sql: "CREATE OR REPLACE SEQUENCE IF NOT EXISTS s NOORDER;"
+      - id: create_or_alter
+        sql: "CREATE OR ALTER SEQUENCE s START = 1 INCREMENT = 1 ORDER;"
+    examples:
+      - "CREATE OR REPLACE SEQUENCE seq_01 START = 1 INCREMENT = 1;"
+      - "CREATE OR REPLACE SEQUENCE seq_5 START = 1 INCREMENT = 5;"
+      - "CREATE OR REPLACE SEQUENCE seq90;"
+
+  - id: create_share
+    name: CREATE SHARE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-share
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE SHARE sh;"
+      - id: secure_objects_only_comment
+        sql: "CREATE SHARE sh SECURE_OBJECTS_ONLY = FALSE COMMENT = 'c';"
+      - id: or_replace_if_not_exists
+        sql: "CREATE OR REPLACE SHARE IF NOT EXISTS sh;"
+      - id: create_or_alter
+        sql: "CREATE OR ALTER SHARE sh COMMENT = 'c';"
+    examples:
+      - "CREATE SHARE sales_s;"
+      - "CREATE OR ALTER SHARE sales_s COMMENT = 'Sales data share for consumer accounts';"
+
+  - id: create_stage
+    name: CREATE STAGE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-stage
+    tier: medium
+    probes:
+      - id: internal_basic
+        sql: "CREATE STAGE s;"
+      - id: temporary_internal
+        sql: "CREATE OR REPLACE TEMPORARY STAGE IF NOT EXISTS s;"
+      - id: internal_encryption
+        sql: "CREATE STAGE s ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE');"
+      - id: internal_directory_table
+        sql: "CREATE STAGE s DIRECTORY = (ENABLE = TRUE AUTO_REFRESH = TRUE);"
+      - id: file_format_name
+        sql: "CREATE STAGE s FILE_FORMAT = (FORMAT_NAME = 'my_fmt');"
+      - id: file_format_type_options
+        sql: "CREATE STAGE s FILE_FORMAT = (TYPE = CSV FIELD_DELIMITER = '|' SKIP_HEADER = 1 NULL_IF = ('NULL', 'null') COMPRESSION = GZIP);"
+      - id: comment_and_tag
+        sql: "CREATE STAGE s COMMENT = 'c' WITH TAG (t1 = 'v1');"
+      - id: s3_storage_integration
+        sql: "CREATE STAGE s URL = 's3://load/files/' STORAGE_INTEGRATION = myint;"
+      - id: s3_credentials_key
+        sql: "CREATE STAGE s URL = 's3://load/files/' CREDENTIALS = (AWS_KEY_ID = '1a2b3c' AWS_SECRET_KEY = '4x5y6z');"
+      - id: s3_credentials_role
+        sql: "CREATE STAGE s URL = 's3://load/files/' CREDENTIALS = (AWS_ROLE = 'arn:aws:iam::001234567890:role/r');"
+      - id: s3_encryption_kms
+        sql: "CREATE STAGE s URL = 's3://load/files/' STORAGE_INTEGRATION = myint ENCRYPTION = (TYPE = 'AWS_SSE_KMS' KMS_KEY_ID = 'aws/key');"
+      - id: s3_directory_table
+        sql: "CREATE STAGE s URL = 's3://load/files/' STORAGE_INTEGRATION = myint DIRECTORY = (ENABLE = TRUE REFRESH_ON_CREATE = FALSE AUTO_REFRESH = TRUE AWS_SNS_TOPIC = 'arn:aws:sns:us-west-2:001234567890:topic');"
+      - id: gcs
+        sql: "CREATE STAGE s URL = 'gcs://load/files/' STORAGE_INTEGRATION = myint ENCRYPTION = (TYPE = 'GCS_SSE_KMS' KMS_KEY_ID = 'k');"
+      - id: azure_sas_token
+        sql: "CREATE STAGE s URL = 'azure://myaccount.blob.core.windows.net/mycontainer/files/' CREDENTIALS = (AZURE_SAS_TOKEN = 'tok');"
+      - id: s3_compatible
+        sql: "CREATE STAGE s URL = 's3compat://bucket/path/' ENDPOINT = 'example.com' CREDENTIALS = (AWS_KEY_ID = 'k' AWS_SECRET_KEY = 's');"
+      - id: create_or_alter
+        sql: "CREATE OR ALTER STAGE s DIRECTORY = (ENABLE = TRUE) COMMENT = 'c';"
+    examples:
+      - "CREATE STAGE my_int_stage ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE');"
+      - "CREATE STAGE my_ext_stage URL = 's3://load/files/' STORAGE_INTEGRATION = myint;"
+      - "CREATE STAGE my_ext_stage1 URL = 's3://load/files/' CREDENTIALS = (AWS_KEY_ID = '1a2b3c' AWS_SECRET_KEY = '4x5y6z');"
+
+  - id: create_storage_integration
+    name: CREATE STORAGE INTEGRATION
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-storage-integration
+    tier: medium
+    probes:
+      - id: s3
+        sql: "CREATE STORAGE INTEGRATION si TYPE = EXTERNAL_STAGE STORAGE_PROVIDER = 'S3' STORAGE_AWS_ROLE_ARN = 'arn:aws:iam::001234567890:role/myrole' ENABLED = TRUE STORAGE_ALLOWED_LOCATIONS = ('s3://b1/p1/', 's3://b2/p2/');"
+      - id: s3_options
+        sql: "CREATE STORAGE INTEGRATION si TYPE = EXTERNAL_STAGE STORAGE_PROVIDER = 'S3' STORAGE_AWS_ROLE_ARN = 'arn:aws:iam::001234567890:role/myrole' STORAGE_AWS_EXTERNAL_ID = 'x' STORAGE_AWS_OBJECT_ACL = 'bucket-owner-full-control' USE_PRIVATELINK_ENDPOINT = TRUE ENABLED = TRUE STORAGE_ALLOWED_LOCATIONS = ('*');"
+      - id: gcs
+        sql: "CREATE STORAGE INTEGRATION si TYPE = EXTERNAL_STAGE STORAGE_PROVIDER = 'GCS' ENABLED = TRUE STORAGE_ALLOWED_LOCATIONS = ('gcs://b1/p1/');"
+      - id: azure
+        sql: "CREATE STORAGE INTEGRATION si TYPE = EXTERNAL_STAGE STORAGE_PROVIDER = 'AZURE' ENABLED = TRUE AZURE_TENANT_ID = 'tid' STORAGE_ALLOWED_LOCATIONS = ('azure://myaccount.blob.core.windows.net/c/p1/');"
+      - id: blocked_locations_comment
+        sql: "CREATE STORAGE INTEGRATION si TYPE = EXTERNAL_STAGE STORAGE_PROVIDER = 'GCS' ENABLED = TRUE STORAGE_ALLOWED_LOCATIONS = ('*') STORAGE_BLOCKED_LOCATIONS = ('gcs://b3/p3/') COMMENT = 'c';"
+      - id: or_replace_if_not_exists
+        sql: "CREATE OR REPLACE STORAGE INTEGRATION IF NOT EXISTS si TYPE = EXTERNAL_STAGE STORAGE_PROVIDER = 'GCS' ENABLED = FALSE STORAGE_ALLOWED_LOCATIONS = ('gcs://b1/p1/');"
+    examples:
+      - "CREATE STORAGE INTEGRATION s3_int TYPE = EXTERNAL_STAGE STORAGE_PROVIDER = 'S3' STORAGE_AWS_ROLE_ARN = 'arn:aws:iam::001234567890:role/myrole' ENABLED = TRUE STORAGE_ALLOWED_LOCATIONS = ('s3://mybucket1/path1/', 's3://mybucket2/path2/');"
+      - "CREATE STORAGE INTEGRATION gcs_int TYPE = EXTERNAL_STAGE STORAGE_PROVIDER = 'GCS' ENABLED = TRUE STORAGE_ALLOWED_LOCATIONS = ('gcs://mybucket1/path1/', 'gcs://mybucket2/path2/');"

@@ -1,0 +1,101 @@
+dialect: snowflake
+engine: Snowflake
+version: "current (docs read 2026-10-04)"
+source: https://docs.snowflake.com/en/sql-reference/sql-all
+
+statements:
+  - id: create_storage_integration_postgres_internal_storage
+    name: CREATE STORAGE INTEGRATION (Postgres Internal Storage)
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-storage-integration-postgres-internal
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE STORAGE INTEGRATION si TYPE = POSTGRES_INTERNAL_STORAGE POSTGRES_INSTANCE = 'pg1';"
+      - id: or_replace_enabled_comment
+        sql: "CREATE OR REPLACE STORAGE INTEGRATION si TYPE = POSTGRES_INTERNAL_STORAGE POSTGRES_INSTANCE = 'pg1' ENABLED = FALSE COMMENT = 'c';"
+      - id: if_not_exists
+        sql: "CREATE STORAGE INTEGRATION IF NOT EXISTS si TYPE = POSTGRES_INTERNAL_STORAGE POSTGRES_INSTANCE = 'pg1' ENABLED = TRUE;"
+    examples:
+      - "CREATE STORAGE INTEGRATION postgres_internal TYPE = POSTGRES_INTERNAL_STORAGE POSTGRES_INSTANCE = 'my_pg_instance';"
+
+  - id: create_stream
+    name: CREATE STREAM
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-stream
+    tier: medium
+    probes:
+      - id: on_table
+        sql: "CREATE STREAM s ON TABLE t;"
+      - id: or_replace_copy_grants_tag
+        sql: "CREATE OR REPLACE STREAM s WITH TAG (tg = 'v') COPY GRANTS ON TABLE t;"
+      - id: if_not_exists
+        sql: "CREATE STREAM IF NOT EXISTS s ON TABLE t;"
+      - id: table_at_timestamp
+        sql: "CREATE STREAM s ON TABLE t AT (TIMESTAMP => TO_TIMESTAMP(0));"
+      - id: table_before_statement
+        sql: "CREATE STREAM s ON TABLE t BEFORE (STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726');"
+      - id: table_at_offset
+        sql: "CREATE STREAM s ON TABLE t AT (OFFSET => -300);"
+      - id: table_at_stream
+        sql: "CREATE STREAM s ON TABLE t AT (STREAM => 'old');"
+      - id: table_append_only_show_initial_rows_comment
+        sql: "CREATE STREAM s ON TABLE t APPEND_ONLY = TRUE SHOW_INITIAL_ROWS = FALSE COMMENT = 'c';"
+      - id: on_event_table
+        sql: "CREATE STREAM s ON EVENT TABLE t COMMENT = 'c';"
+      - id: on_external_table
+        sql: "CREATE STREAM s ON EXTERNAL TABLE t INSERT_ONLY = TRUE;"
+      - id: on_stage
+        sql: "CREATE STREAM s ON STAGE st COMMENT = 'c';"
+      - id: on_dynamic_table
+        sql: "CREATE STREAM s ON DYNAMIC TABLE t;"
+      - id: on_view
+        sql: "CREATE STREAM s ON VIEW v APPEND_ONLY = TRUE;"
+      - id: clone
+        sql: "CREATE OR REPLACE STREAM s CLONE s2 COPY GRANTS;"
+      - id: create_or_alter
+        sql: "CREATE OR ALTER STREAM s ON TABLE t COMMENT = 'c';"
+    examples:
+      - "CREATE STREAM mystream ON TABLE mytable;"
+      - "CREATE STREAM mystream ON TABLE mytable BEFORE (TIMESTAMP => TO_TIMESTAMP(40 * 365 * 86400));"
+      - "CREATE STREAM mystream ON VIEW myview;"
+
+  - id: create_tag
+    name: CREATE TAG
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-tag
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE TAG tg;"
+      - id: or_replace_comment
+        sql: "CREATE OR REPLACE TAG tg COMMENT = 'c';"
+      - id: if_not_exists_allowed_values
+        sql: "CREATE TAG IF NOT EXISTS tg ALLOWED_VALUES 'a', 'b', 'c';"
+      - id: multi_value
+        sql: "CREATE TAG tg MULTI_VALUE = TRUE;"
+      - id: propagate
+        sql: "CREATE TAG tg PROPAGATE = ON_DEPENDENCY;"
+      - id: propagate_on_conflict_string
+        sql: "CREATE TAG tg PROPAGATE = ON_DEPENDENCY_AND_DATA_MOVEMENT ON_CONFLICT = 'none';"
+      - id: propagate_on_conflict_merge
+        sql: "CREATE TAG tg PROPAGATE = ON_DATA_MOVEMENT ON_CONFLICT = MERGE COMMENT = 'c';"
+      - id: create_or_alter
+        sql: "CREATE OR ALTER TAG tg ALLOWED_VALUES 'a', 'b' COMMENT = 'c';"
+    examples:
+      - "CREATE TAG cost_center COMMENT = 'cost_center tag';"
+      - "CREATE OR ALTER TAG cost_center ALLOWED_VALUES 'finance', 'engineering', 'sales';"
+
+  - id: create_type
+    name: CREATE TYPE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-type
+    tier: medium
+    probes:
+      - id: as_number
+        sql: "CREATE TYPE age AS NUMBER(3, 0);"
+      - id: or_replace_comment
+        sql: "CREATE OR REPLACE TYPE age AS NUMBER(3, 0) COMMENT = 'c';"
+      - id: if_not_exists
+        sql: "CREATE TYPE IF NOT EXISTS name_t AS VARCHAR(100);"
+      - id: as_object
+        sql: "CREATE TYPE path AS OBJECT (relative BOOLEAN, segments ARRAY(STRING));"
+    examples:
+      - "CREATE TYPE age AS NUMBER(3, 0);"
+      - "CREATE TYPE path AS OBJECT (relative BOOLEAN, segments ARRAY(STRING));"
