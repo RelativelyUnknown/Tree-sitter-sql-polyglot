@@ -1,0 +1,623 @@
+dialect: bigquery
+engine: BigQuery GoogleSQL
+version: "current (docs read 2026-10-04)"
+source: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax
+
+statements:
+  - id: select
+    name: "SELECT"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#select_list
+    tier: high
+    probes:
+      - { id: star, sql: "SELECT * FROM t;" }
+      - { id: no_from, sql: "SELECT 1 + 1;" }
+      - { id: column_alias_as, sql: "SELECT a AS x FROM t;" }
+      - { id: column_alias_no_as, sql: "SELECT a x FROM t;" }
+      - { id: select_all, sql: "SELECT ALL c FROM t;" }
+      - { id: distinct, sql: "SELECT DISTINCT c FROM t;" }
+      - { id: qualified_star, sql: "SELECT g.* FROM t AS g;" }
+      - { id: struct_field_star, sql: "SELECT l.location.* FROM t l;" }
+      - { id: star_except, sql: "SELECT * EXCEPT (c) FROM t;" }
+      - { id: star_except_multiple, sql: "SELECT * EXCEPT (a, b) FROM t;" }
+      - { id: star_replace, sql: "SELECT * REPLACE ('widget' AS c) FROM t;" }
+      - { id: star_replace_multiple, sql: "SELECT * REPLACE (a / 2 AS a, b + 1 AS b) FROM t;" }
+      - { id: star_except_replace, sql: "SELECT * EXCEPT (a) REPLACE (b + 1 AS b) FROM t;" }
+      - { id: qualified_star_except, sql: "SELECT x.* EXCEPT (a) FROM t AS x;" }
+      - { id: as_struct, sql: "SELECT AS STRUCT 1 a, 2 b;" }
+      - { id: as_struct_subquery, sql: "SELECT ARRAY(SELECT AS STRUCT 1 a, 2 b);" }
+      - { id: as_value, sql: "SELECT AS VALUE STRUCT(1 AS a, 2 AS b) xyz;" }
+      - { id: distinct_as_struct, sql: "SELECT DISTINCT AS STRUCT a, b FROM t;" }
+      - { id: differential_privacy, sql: "SELECT WITH DIFFERENTIAL_PRIVACY OPTIONS (epsilon = 10, delta = .01, max_groups_contributed = 2, privacy_unit_column = id) item, AVG(quantity) AS q FROM t GROUP BY item;" }
+      - { id: aggregation_threshold, sql: "SELECT WITH AGGREGATION_THRESHOLD OPTIONS (threshold = 3, privacy_unit_column = last_name) test_id, COUNT(DISTINCT last_name) AS n FROM t GROUP BY test_id;" }
+      - id: aggregation_threshold_no_options
+        sql: "SELECT WITH AGGREGATION_THRESHOLD test_id, COUNT(*) AS n FROM v GROUP BY test_id;"
+        note: "Syntax for an aggregation threshold analysis rule-enforced view: WITH AGGREGATION_THRESHOLD [ OPTIONS (...) ]."
+      - { id: parenthesized_query, sql: "(SELECT a FROM t);" }
+      - { id: all_clauses, sql: "SELECT a, COUNT(*) AS n FROM t WHERE b > 0 GROUP BY a HAVING COUNT(*) > 1 QUALIFY ROW_NUMBER() OVER (ORDER BY a) <= 5 ORDER BY a LIMIT 10 OFFSET 2;" }
+    examples:
+      - "SELECT * FROM (SELECT \"apple\" AS fruit, \"carrot\" AS vegetable);"
+      - |-
+        WITH groceries AS
+         (SELECT "milk" AS dairy,
+         "eggs" AS protein,
+         "bread" AS grain)
+        SELECT g.*
+        FROM groceries AS g;
+      - |-
+        WITH locations AS
+         (SELECT STRUCT("Seattle" AS city, "Washington" AS state) AS location
+         UNION ALL
+         SELECT STRUCT("Phoenix" AS city, "Arizona" AS state) AS location)
+        SELECT l.location.*
+        FROM locations l;
+      - |-
+        WITH orders AS
+         (SELECT 5 as order_id,
+         "sprocket" as item_name,
+         200 as quantity)
+        SELECT * EXCEPT (order_id)
+        FROM orders;
+      - |-
+        WITH orders AS
+         (SELECT 5 as order_id,
+         "sprocket" as item_name,
+         200 as quantity)
+        SELECT * REPLACE ("widget" AS item_name)
+        FROM orders;
+
+  - id: from
+    name: "FROM clause"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#from_clause
+    tier: high
+    probes:
+      - { id: table, sql: "SELECT * FROM t;" }
+      - { id: dataset_qualified, sql: "SELECT * FROM dataset.Roster;" }
+      - { id: project_qualified, sql: "SELECT * FROM project.dataset.Roster;" }
+      - { id: backtick_project_dashes, sql: "SELECT * FROM `my-project.dataset.t`;" }
+      - { id: backtick_parts, sql: "SELECT * FROM `my-project`.dataset.t;" }
+      - { id: table_alias_as, sql: "SELECT x.a FROM t AS x;" }
+      - { id: table_alias_no_as, sql: "SELECT x.a FROM t x;" }
+      - { id: subquery, sql: "SELECT * FROM (SELECT a FROM t) AS s;" }
+      - { id: subquery_no_alias, sql: "SELECT * FROM (SELECT a FROM t);" }
+      - { id: multiple_from_items, sql: "SELECT * FROM t1, t2;" }
+      - { id: field_path, sql: "SELECT * FROM t1 x, x.array_column;" }
+      - { id: field_path_nested, sql: "SELECT * FROM t1 x, x.struct_column.array_field;" }
+      - { id: field_path_alias, sql: "SELECT a.f FROM t1 x, x.array_of_structs a;" }
+      - { id: field_path_in_subquery, sql: "SELECT (SELECT ARRAY_AGG(c) FROM x.array_column c) FROM t1 x;" }
+      - { id: for_system_time, sql: "SELECT * FROM t FOR SYSTEM_TIME AS OF TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 HOUR);" }
+      - { id: for_system_time_literal, sql: "SELECT * FROM t FOR SYSTEM_TIME AS OF '2017-01-01 10:00:00-07:00';" }
+      - { id: for_system_time_alias, sql: "SELECT * FROM t AS x FOR SYSTEM_TIME AS OF CURRENT_TIMESTAMP();" }
+      - { id: table_function_call, sql: "SELECT * FROM mydataset.f(1, 'a');" }
+      - { id: table_function_table_arg, sql: "SELECT * FROM f(TABLE t);" }
+      - { id: graph_table, sql: "SELECT * FROM GRAPH_TABLE(g MATCH (n) RETURN n.id AS id);" }
+    examples:
+      - "SELECT * FROM Roster;"
+      - "SELECT * FROM dataset.Roster;"
+      - "SELECT * FROM project.dataset.Roster;"
+      - |-
+        SELECT *
+        FROM t
+         FOR SYSTEM_TIME AS OF TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 HOUR);
+      - |-
+        SELECT *
+        FROM t
+         FOR SYSTEM_TIME AS OF '2017-01-01 10:00:00-07:00';
+
+  - id: join
+    name: "Join operation"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#join_types
+    tier: high
+    probes:
+      - { id: join_on, sql: "SELECT * FROM a JOIN b ON a.x = b.x;" }
+      - { id: inner_join_on, sql: "SELECT * FROM a INNER JOIN b ON a.w = b.y;" }
+      - { id: inner_join_using, sql: "SELECT * FROM a INNER JOIN b USING (x);" }
+      - { id: using_multiple, sql: "SELECT * FROM a INNER JOIN b USING (x, y);" }
+      - { id: cross_join, sql: "SELECT * FROM a CROSS JOIN b;" }
+      - { id: comma_cross_join, sql: "SELECT * FROM a, b;" }
+      - { id: full_join, sql: "SELECT * FROM a FULL JOIN b ON a.x = b.x;" }
+      - { id: full_outer_join_using, sql: "SELECT * FROM a FULL OUTER JOIN b USING (x);" }
+      - { id: left_join, sql: "SELECT * FROM a LEFT JOIN b ON a.x = b.x;" }
+      - { id: left_outer_join_using, sql: "SELECT * FROM a LEFT OUTER JOIN b USING (x);" }
+      - { id: right_join, sql: "SELECT * FROM a RIGHT JOIN b ON a.x = b.x;" }
+      - { id: right_outer_join_using, sql: "SELECT * FROM a RIGHT OUTER JOIN b USING (x);" }
+      - { id: join_sequence, sql: "SELECT * FROM a JOIN b USING (x) JOIN c USING (x);" }
+      - { id: parenthesized_join, sql: "SELECT * FROM ((a JOIN b USING (x)) JOIN c USING (x));" }
+      - { id: nested_join_conditions, sql: "SELECT * FROM a JOIN b JOIN c JOIN d USING (w) ON b.x = c.y ON a.z = b.x;" }
+      - { id: comma_then_parenthesized_join, sql: "SELECT * FROM a, (b RIGHT JOIN c ON TRUE);" }
+      - { id: correlated_join_unnest, sql: "SELECT * FROM a JOIN UNNEST(a.array_of_ids) AS c;" }
+      - { id: correlated_join_path, sql: "SELECT * FROM a JOIN a.array_of_ids AS ids;" }
+      - { id: correlated_left_join_unnest_on_true, sql: "SELECT * FROM a LEFT JOIN UNNEST(a.arr) AS e ON TRUE;" }
+    examples:
+      - |-
+        SELECT Roster.LastName, TeamMascot.Mascot
+        FROM Roster JOIN TeamMascot ON Roster.SchoolID = TeamMascot.SchoolID;
+      - |-
+        SELECT Roster.LastName, TeamMascot.Mascot
+        FROM Roster CROSS JOIN TeamMascot;
+      - |-
+        SELECT Roster.LastName, TeamMascot.Mascot
+        FROM Roster, TeamMascot;
+      - |-
+        SELECT Roster.LastName, TeamMascot.Mascot
+        FROM Roster FULL JOIN TeamMascot ON Roster.SchoolID = TeamMascot.SchoolID;
+      - "SELECT * FROM Roster INNER JOIN TeamMascot USING (SchoolID);"
+
+  - id: unnest
+    name: "UNNEST operator"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#unnest_operator
+    tier: high
+    probes:
+      - { id: unnest_literal, sql: "SELECT * FROM UNNEST([10, 20, 30]);" }
+      - { id: unnest_alias, sql: "SELECT n FROM UNNEST([10, 20, 30]) AS n;" }
+      - { id: unnest_alias_no_as, sql: "SELECT n FROM UNNEST([10, 20, 30]) n;" }
+      - { id: with_offset, sql: "SELECT * FROM UNNEST([10, 20, 30]) AS numbers WITH OFFSET;" }
+      - { id: with_offset_alias, sql: "SELECT n, o FROM UNNEST([10, 20, 30]) AS n WITH OFFSET AS o;" }
+      - { id: with_offset_alias_no_as, sql: "SELECT n, o FROM UNNEST([10, 20, 30]) n WITH OFFSET o;" }
+      - { id: unnest_array_path, sql: "SELECT r FROM t, UNNEST(t.position) AS r;" }
+      - { id: implicit_unnest, sql: "SELECT r FROM t, t.position AS r;" }
+      - { id: implicit_unnest_with_offset, sql: "SELECT r, o FROM t, t.position AS r WITH OFFSET AS o;" }
+      - { id: unnest_typed_struct_array, sql: "SELECT * FROM UNNEST(ARRAY<STRUCT<x INT64, y STRING>>[(1, 'foo'), (3, 'bar')]);" }
+      - { id: unnest_in_predicate, sql: "SELECT * FROM t WHERE c IN UNNEST([1, 2, 3]);" }
+      - { id: unnest_subquery_array, sql: "SELECT * FROM a JOIN UNNEST(ARRAY(SELECT AS STRUCT * FROM b WHERE a.id = b.id)) AS c;" }
+    examples:
+      - "SELECT * FROM UNNEST ([10,20,30]) as numbers WITH OFFSET;"
+      - |-
+        WITH Coordinates AS (SELECT [1,2] AS position)
+        SELECT results FROM Coordinates, UNNEST(Coordinates.position) AS results;
+      - |-
+        WITH Coordinates AS (SELECT [1,2] AS position)
+        SELECT results FROM Coordinates, Coordinates.position AS results;
+      - |-
+        SELECT *, struct_value
+        FROM UNNEST(
+         ARRAY<
+         STRUCT<
+         x INT64,
+         y STRING>>[
+         (1, 'foo'),
+         (3, 'bar')]) AS struct_value;
+
+  - id: pivot
+    name: "PIVOT operator"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#pivot_operator
+    tier: high
+    probes:
+      - { id: basic, sql: "SELECT * FROM t PIVOT(SUM(sales) FOR quarter IN ('Q1', 'Q2', 'Q3', 'Q4'));" }
+      - { id: subquery_input, sql: "SELECT * FROM (SELECT product, sales, quarter FROM t) PIVOT(SUM(sales) FOR quarter IN ('Q1', 'Q2'));" }
+      - { id: multiple_aggregates_prefix, sql: "SELECT * FROM t PIVOT(SUM(sales) AS total_sales, COUNT(*) AS num_records FOR quarter IN ('Q1', 'Q2'));" }
+      - { id: prefix_no_as, sql: "SELECT * FROM t PIVOT(SUM(sales) total FOR quarter IN ('Q1', 'Q2'));" }
+      - { id: pivot_column_alias, sql: "SELECT * FROM t PIVOT(SUM(sales) AS s FOR quarter IN ('Q1' AS first_quarter, 'Q2' AS second_quarter));" }
+      - { id: pivot_column_alias_no_as, sql: "SELECT * FROM t PIVOT(SUM(sales) FOR quarter IN ('Q1' q1, 'Q2' q2));" }
+      - { id: table_alias, sql: "SELECT p.product FROM t PIVOT(SUM(sales) FOR quarter IN ('Q1', 'Q2')) AS p;" }
+      - { id: integer_values, sql: "SELECT * FROM t PIVOT(SUM(sales) FOR yr IN (2020, 2021));" }
+    examples:
+      - |-
+        SELECT * FROM
+         Produce
+         PIVOT(SUM(sales) FOR quarter IN ('Q1', 'Q2', 'Q3', 'Q4'));
+      - |-
+        SELECT * FROM
+         (SELECT product, sales, quarter FROM Produce)
+         PIVOT(SUM(sales) FOR quarter IN ('Q1', 'Q2', 'Q3', 'Q4'));
+      - |-
+        SELECT * FROM
+         (SELECT product, sales, quarter FROM Produce)
+         PIVOT(SUM(sales) AS total_sales, COUNT(*) AS num_records FOR quarter IN ('Q1', 'Q2'));
+      - |-
+        SELECT
+         pivoted_sales.product,
+         pivoted_sales.sales_first_quarter,
+         pivoted_sales.sales_second_quarter
+        FROM
+         (SELECT product, sales, quarter FROM Produce)
+         PIVOT(SUM(sales) AS sales FOR quarter IN ('Q1' AS first_quarter, 'Q2' AS second_quarter)) AS pivoted_sales;
+
+  - id: unpivot
+    name: "UNPIVOT operator"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#unpivot_operator
+    tier: high
+    probes:
+      - { id: single_column, sql: "SELECT * FROM t UNPIVOT(sales FOR quarter IN (q1, q2, q3, q4));" }
+      - { id: include_nulls, sql: "SELECT * FROM t UNPIVOT INCLUDE NULLS (sales FOR quarter IN (q1, q2));" }
+      - { id: exclude_nulls, sql: "SELECT * FROM t UNPIVOT EXCLUDE NULLS (sales FOR quarter IN (q1, q2));" }
+      - { id: row_value_alias, sql: "SELECT * FROM t UNPIVOT(sales FOR quarter IN (q1 AS 'first', q2 AS 'second'));" }
+      - { id: row_value_alias_integer, sql: "SELECT * FROM t UNPIVOT(sales FOR quarter IN (q1 AS 1, q2 AS 2));" }
+      - { id: multi_column, sql: "SELECT * FROM t UNPIVOT((h1, h2) FOR semesters IN ((q1, q2) AS 'semester_1', (q3, q4) AS 'semester_2'));" }
+      - { id: unpivot_alias, sql: "SELECT u.sales FROM t UNPIVOT(sales FOR quarter IN (q1, q2)) AS u;" }
+    examples:
+      - |-
+        SELECT * FROM Produce
+        UNPIVOT(sales FOR quarter IN (Q1, Q2, Q3, Q4));
+      - |-
+        SELECT * FROM Produce
+        UNPIVOT(
+         (first_half_sales, second_half_sales)
+         FOR semesters
+         IN ((Q1, Q2) AS 'semester_1', (Q3, Q4) AS 'semester_2'));
+
+  - id: tablesample
+    name: "TABLESAMPLE operator"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#tablesample_operator
+    tier: high
+    probes:
+      - { id: system_percent, sql: "SELECT * FROM t TABLESAMPLE SYSTEM (10 PERCENT);" }
+      - { id: with_alias, sql: "SELECT * FROM t AS x TABLESAMPLE SYSTEM (10 PERCENT);" }
+      - { id: query_parameter, sql: "SELECT * FROM t TABLESAMPLE SYSTEM (@pct PERCENT);" }
+      - { id: in_join, sql: "SELECT * FROM a TABLESAMPLE SYSTEM (10 PERCENT) JOIN b ON a.x = b.x;" }
+    examples:
+      - "SELECT * FROM dataset.my_table TABLESAMPLE SYSTEM (10 PERCENT);"
+
+  - id: match_recognize
+    name: "MATCH_RECOGNIZE clause"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#match_recognize_clause
+    tier: medium
+    probes:
+      - { id: basic, sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY x MEASURES ARRAY_AGG(lo.x) AS lo_agg PATTERN (lo) DEFINE lo AS x <= 2);" }
+      - { id: partition_after_match, sql: "SELECT * FROM t MATCH_RECOGNIZE (PARTITION BY c ORDER BY d DESC NULLS LAST MEASURES SUM(a) AS s AFTER MATCH SKIP PAST LAST ROW PATTERN (p+ q*?) DEFINE p AS a > 0, q AS TRUE);" }
+      - { id: skip_to_next_row_alternation, sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY x MEASURES ARRAY_AGG(hi.x) AS h AFTER MATCH SKIP TO NEXT ROW PATTERN (lo | hi) DEFINE lo AS x <= 2, hi AS x >= 2);" }
+      - { id: quantifiers_anchors, sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY x MEASURES COUNT(*) AS n PATTERN (^ a{2} b{1,} c{,3}? (d e)?? $) DEFINE a AS x = 1, b AS x = 2, c AS x = 3, d AS x = 4, e AS x = 5);" }
+      - { id: measure_functions, sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY x MEASURES FIRST(a.x) AS f, LAST(a.x) AS l, MATCH_NUMBER() AS m PATTERN (a+) DEFINE a AS x > 0);" }
+      - { id: options, sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY x MEASURES COUNT(*) AS n PATTERN (a | b+) DEFINE a AS x = 1, b AS x = 2 OPTIONS (use_longest_match = TRUE));" }
+    examples:
+      - |-
+        SELECT * FROM (
+         SELECT 1 as x
+         UNION ALL
+         SELECT 2
+         UNION ALL
+         SELECT 3
+        )
+        MATCH_RECOGNIZE(
+         ORDER BY x
+         MEASURES
+         ARRAY_AGG(high.x) AS high_agg,
+         ARRAY_AGG(low.x) AS low_agg
+         AFTER MATCH SKIP TO NEXT ROW
+         PATTERN (low | high)
+         DEFINE
+         low AS x <= 2,
+         high AS x >= 2
+        );
+      - |-
+        SELECT *
+        FROM
+         Sales
+        MATCH_RECOGNIZE (
+         PARTITION BY customer
+         ORDER BY sale_date
+         MEASURES
+         ARRAY_AGG(STRUCT(sale_date, product_category, amount)) AS sales,
+         SUM(amount) AS total_sale_amount,
+         SUM(software.amount) AS software_sale_amount
+         PATTERN (electronics+ any_category*? software+)
+         DEFINE
+         electronics AS product_category = 'Electronics',
+         software AS product_category = 'Software',
+         any_category AS TRUE
+        );
+
+  - id: where
+    name: "WHERE clause"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#where_clause
+    tier: high
+    probes:
+      - { id: simple, sql: "SELECT * FROM t WHERE c = 52;" }
+      - { id: boolean_combination, sql: "SELECT * FROM t WHERE STARTS_WITH(c, 'Mc') OR STARTS_WITH(c, 'Mac');" }
+      - { id: subquery_predicate, sql: "SELECT * FROM t WHERE c IN (SELECT c FROM u);" }
+    examples:
+      - |-
+        SELECT * FROM Roster
+        WHERE SchoolID = 52;
+      - |-
+        SELECT * FROM Roster
+        WHERE STARTS_WITH(LastName, "Mc") OR STARTS_WITH(LastName, "Mac");
+
+  - id: group_by
+    name: "GROUP BY clause"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#group_by_clause
+    tier: high
+    probes:
+      - { id: column, sql: "SELECT a, SUM(b) FROM t GROUP BY a;" }
+      - { id: multiple_columns, sql: "SELECT a, b, SUM(c) FROM t GROUP BY a, b;" }
+      - { id: select_alias, sql: "SELECT a AS x, SUM(b) FROM t GROUP BY x;" }
+      - { id: expression, sql: "SELECT a + 1, SUM(b) FROM t GROUP BY a + 1;" }
+      - { id: ordinals, sql: "SELECT SUM(c), a, b FROM t GROUP BY 2, 3;" }
+      - { id: group_by_all, sql: "SELECT a, b, SUM(c) FROM t GROUP BY ALL;" }
+      - { id: grand_total_empty, sql: "SELECT SUM(c) FROM t GROUP BY ();" }
+      - { id: grouping_sets, sql: "SELECT a, b, SUM(c) FROM t GROUP BY GROUPING SETS (a, (a, b));" }
+      - { id: grouping_sets_empty_set, sql: "SELECT a, SUM(c) FROM t GROUP BY GROUPING SETS (a, ());" }
+      - { id: grouping_sets_with_rollup_cube, sql: "SELECT a, b, c, d, SUM(e) FROM t GROUP BY GROUPING SETS (a, ROLLUP(b, c), CUBE(c, d));" }
+      - { id: rollup, sql: "SELECT a, b, SUM(c) FROM t GROUP BY ROLLUP (a, b);" }
+      - { id: rollup_item_set, sql: "SELECT a, b, d, SUM(c) FROM t GROUP BY ROLLUP (a, (b, d));" }
+      - { id: cube, sql: "SELECT a, b, SUM(c) FROM t GROUP BY CUBE (a, b);" }
+      - { id: cube_item_set, sql: "SELECT a, b, d, SUM(c) FROM t GROUP BY CUBE (a, (b, d));" }
+      - { id: grouping_function, sql: "SELECT a, GROUPING(a) AS g, SUM(c) FROM t GROUP BY ROLLUP (a);" }
+    examples:
+      - |-
+        SELECT SUM(PointsScored) AS total_points, LastName
+        FROM PlayerStats
+        GROUP BY LastName;
+      - |-
+        SELECT SUM(PointsScored) AS total_points, LastName, FirstName
+        FROM PlayerStats
+        GROUP BY 2, 3;
+      - |-
+        SELECT
+         SUM(PointsScored) AS total_points,
+         FirstName AS first_name,
+         LastName AS last_name
+        FROM PlayerStats
+        GROUP BY ALL;
+
+  - id: having
+    name: "HAVING clause"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#having_clause
+    tier: high
+    probes:
+      - { id: aggregate, sql: "SELECT a, SUM(b) AS total FROM t GROUP BY a HAVING SUM(b) > 15;" }
+      - { id: alias, sql: "SELECT a, SUM(b) AS total FROM t GROUP BY a HAVING total > 15;" }
+      - { id: without_group_by, sql: "SELECT SUM(b) FROM t HAVING COUNT(*) > 1;" }
+    examples:
+      - |-
+        SELECT LastName
+        FROM Roster
+        GROUP BY LastName
+        HAVING SUM(PointsScored) > 15;
+
+  - id: qualify
+    name: "QUALIFY clause"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#qualify_clause
+    tier: high
+    probes:
+      - { id: alias, sql: "SELECT a, RANK() OVER (PARTITION BY b ORDER BY c DESC) AS r FROM t QUALIFY r <= 3;" }
+      - { id: window_function, sql: "SELECT a FROM t WHERE b = 'x' QUALIFY RANK() OVER (PARTITION BY b ORDER BY c DESC) <= 3;" }
+      - { id: with_group_having, sql: "SELECT a, SUM(b) FROM t GROUP BY a HAVING SUM(b) > 0 QUALIFY ROW_NUMBER() OVER (ORDER BY SUM(b)) = 1;" }
+    examples:
+      - |-
+        SELECT
+         item,
+         RANK() OVER (PARTITION BY category ORDER BY purchases DESC) as rank
+        FROM Produce
+        WHERE Produce.category = 'vegetable'
+        QUALIFY rank <= 3;
+      - |-
+        SELECT item
+        FROM Produce
+        WHERE Produce.category = 'vegetable'
+        QUALIFY RANK() OVER (PARTITION BY category ORDER BY purchases DESC) <= 3;
+
+  - id: window
+    name: "WINDOW clause"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#window_clause
+    tier: high
+    probes:
+      - { id: named_window, sql: "SELECT LAST_VALUE(a) OVER (w) FROM t WINDOW w AS (PARTITION BY b ORDER BY c ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING);" }
+      - { id: over_window_name, sql: "SELECT LAST_VALUE(a) OVER w FROM t WINDOW w AS (PARTITION BY b);" }
+      - { id: chained_windows, sql: "SELECT LAST_VALUE(a) OVER (d) FROM t WINDOW a1 AS (PARTITION BY b), b1 AS (a1 ORDER BY c), c1 AS (b1 ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING), d AS (c1);" }
+      - { id: alias_of_window, sql: "SELECT LAST_VALUE(a) OVER (c1) FROM t WINDOW a1 AS (PARTITION BY b), c1 AS a1;" }
+      - { id: refine_in_over, sql: "SELECT LAST_VALUE(a) OVER (w ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING) FROM t WINDOW w AS (PARTITION BY b ORDER BY c);" }
+      - { id: empty_spec, sql: "SELECT COUNT(*) OVER (w) FROM t WINDOW w AS ();" }
+    examples:
+      - |-
+        SELECT item, purchases, category, LAST_VALUE(item)
+         OVER (item_window) AS most_popular
+        FROM Produce
+        WINDOW item_window AS (
+         PARTITION BY category
+         ORDER BY purchases
+         ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING);
+      - |-
+        SELECT item, purchases, category, LAST_VALUE(item)
+         OVER (d) AS most_popular
+        FROM Produce
+        WINDOW
+         a AS (PARTITION BY category),
+         b AS (a ORDER BY purchases),
+         c AS (b ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING),
+         d AS (c);
+      - |-
+        SELECT item, purchases, category, LAST_VALUE(item)
+         OVER (c ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING) AS most_popular
+        FROM Produce
+        WINDOW
+         a AS (PARTITION BY category),
+         b AS (a ORDER BY purchases),
+         c AS b;
+
+  - id: order_by
+    name: "ORDER BY clause"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#order_by_clause
+    tier: high
+    probes:
+      - { id: column, sql: "SELECT a FROM t ORDER BY a;" }
+      - { id: asc_desc, sql: "SELECT a, b FROM t ORDER BY a ASC, b DESC;" }
+      - { id: nulls_first, sql: "SELECT a FROM t ORDER BY a NULLS FIRST;" }
+      - { id: desc_nulls_last, sql: "SELECT a FROM t ORDER BY a DESC NULLS LAST;" }
+      - { id: ordinal, sql: "SELECT SUM(b), a FROM t GROUP BY a ORDER BY 2;" }
+      - { id: expression, sql: "SELECT a FROM t ORDER BY LENGTH(a) * 2;" }
+      - { id: set_operation, sql: "SELECT a FROM t UNION ALL SELECT a FROM u ORDER BY a;" }
+      - { id: parenthesized_set_operation, sql: "(SELECT a FROM t UNION ALL SELECT a FROM u) ORDER BY a;" }
+    examples:
+      - |-
+        SELECT x, y
+        FROM (SELECT 1 AS x, true AS y UNION ALL
+         SELECT 9, true UNION ALL
+         SELECT NULL, false)
+        ORDER BY x;
+      - |-
+        SELECT x, y
+        FROM (SELECT 1 AS x, true AS y UNION ALL
+         SELECT 9, true UNION ALL
+         SELECT NULL, false)
+        ORDER BY x DESC NULLS FIRST;
+      - |-
+        SELECT LastName, PointsScored, OpponentID
+        FROM PlayerStats
+        ORDER BY SchoolID, LastName;
+      - |-
+        ( SELECT * FROM Roster
+         UNION ALL
+         SELECT * FROM TeamMascot )
+        ORDER BY SchoolID;
+
+  - id: limit_offset
+    name: "LIMIT and OFFSET clause"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#limit_and_offset_clause
+    tier: high
+    probes:
+      - { id: limit, sql: "SELECT a FROM t LIMIT 10;" }
+      - { id: limit_offset, sql: "SELECT a FROM t ORDER BY a LIMIT 2 OFFSET 1;" }
+      - { id: limit_parameter, sql: "SELECT a FROM t LIMIT @n;" }
+      - { id: set_operation_limit, sql: "SELECT a FROM t UNION ALL SELECT a FROM u LIMIT 5;" }
+    examples:
+      - |-
+        SELECT *
+        FROM UNNEST(ARRAY<STRING>['a', 'b', 'c', 'd', 'e']) AS letter
+        ORDER BY letter ASC LIMIT 2;
+      - |-
+        SELECT *
+        FROM UNNEST(ARRAY<STRING>['a', 'b', 'c', 'd', 'e']) AS letter
+        ORDER BY letter ASC LIMIT 3 OFFSET 1;
+
+  - id: with
+    name: "WITH clause"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#with_clause
+    tier: high
+    probes:
+      - { id: cte, sql: "WITH c AS (SELECT a FROM t) SELECT a FROM c;" }
+      - { id: multiple_ctes, sql: "WITH c1 AS (SELECT a FROM t), c2 AS (SELECT a FROM c1) SELECT * FROM c2;" }
+      - { id: set_operation_body, sql: "WITH c1 AS (SELECT a FROM t), c2 AS (SELECT b FROM u) SELECT * FROM c1 UNION ALL SELECT * FROM c2;" }
+      - { id: nested_with_in_subquery, sql: "WITH q1 AS (SELECT 1 AS x) SELECT * FROM (WITH q2 AS (SELECT * FROM q1) SELECT * FROM q2);" }
+      - { id: recursive, sql: "WITH RECURSIVE t1 AS ((SELECT 1 AS n) UNION ALL (SELECT n + 2 FROM t1 WHERE n < 4)) SELECT * FROM t1 ORDER BY n;" }
+      - { id: recursive_unparenthesized_terms, sql: "WITH RECURSIVE t1 AS (SELECT 1 AS n UNION ALL SELECT n + 1 FROM t1 WHERE n < 4) SELECT * FROM t1;" }
+      - { id: recursive_mixed, sql: "WITH RECURSIVE t0 AS (SELECT 1 AS n), t1 AS ((SELECT * FROM t0) UNION ALL (SELECT n + 1 FROM t1 WHERE n < 4)) SELECT * FROM t1;" }
+    examples:
+      - |-
+        WITH subQ1 AS (SELECT SchoolID FROM Roster),
+         subQ2 AS (SELECT OpponentID FROM PlayerStats)
+        SELECT * FROM subQ1
+        UNION ALL
+        SELECT * FROM subQ2;
+      - |-
+        WITH RECURSIVE
+         T1 AS (
+         (SELECT 1 AS n) UNION ALL
+         (SELECT n + 2 FROM T1 WHERE n < 4))
+        SELECT * FROM T1 ORDER BY n;
+      - |-
+        WITH RECURSIVE
+         T0 AS (SELECT 1 AS n),
+         T1 AS ((SELECT * FROM T0) UNION ALL (SELECT n + 1 FROM T1 WHERE n < 4)),
+         T2 AS ((SELECT 1 AS n) UNION ALL (SELECT n + 1 FROM T2 WHERE n < 4)),
+         T3 AS (SELECT * FROM T1 INNER JOIN T2 USING (n))
+        SELECT * FROM T3 ORDER BY n;
+      - |-
+        WITH RECURSIVE
+         T0 AS (SELECT * FROM UNNEST ([60, 20, 30])),
+         T1 AS ((SELECT 1 AS n) UNION ALL (SELECT n + (SELECT COUNT(*) FROM T0) FROM T1 WHERE n < 4))
+        SELECT * FROM T1 ORDER BY n;
+
+  - id: set_operations
+    name: "Set operators"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#set_operators
+    tier: high
+    probes:
+      - { id: union_all, sql: "SELECT a FROM t UNION ALL SELECT a FROM u;" }
+      - { id: union_distinct, sql: "SELECT a FROM t UNION DISTINCT SELECT a FROM u;" }
+      - { id: intersect_distinct, sql: "SELECT a FROM t INTERSECT DISTINCT SELECT a FROM u;" }
+      - { id: except_distinct, sql: "SELECT a FROM t EXCEPT DISTINCT SELECT a FROM u;" }
+      - { id: chained, sql: "SELECT 1 UNION DISTINCT SELECT 2 UNION DISTINCT SELECT 3;" }
+      - { id: parenthesized_operands, sql: "(SELECT a FROM t) UNION ALL (SELECT a FROM u);" }
+      - { id: by_name, sql: "SELECT 1 AS a, 10 AS b UNION ALL BY NAME SELECT 20 AS b, 2 AS a;" }
+      - { id: by_name_on, sql: "SELECT 1 AS a, 10 AS b UNION ALL BY NAME ON (b, a) SELECT 20 AS b, 2 AS a;" }
+      - { id: strict_corresponding, sql: "SELECT 1 AS a, 10 AS b UNION ALL STRICT CORRESPONDING SELECT 20 AS b, 2 AS a;" }
+      - { id: corresponding, sql: "SELECT 1 AS a, 10 AS b UNION ALL CORRESPONDING SELECT 20 AS b, 2 AS a;" }
+      - { id: corresponding_by, sql: "SELECT 1 AS a, 10 AS b UNION ALL CORRESPONDING BY (a) SELECT 20 AS b, 2 AS a;" }
+      - { id: inner_by_name, sql: "SELECT 1 AS a, 10 AS b INNER UNION ALL BY NAME SELECT 20 AS b, 2 AS c;" }
+      - { id: full_outer_by_name, sql: "SELECT 1 AS a, 10 AS b FULL OUTER UNION ALL BY NAME SELECT 20 AS b, 2 AS c;" }
+      - { id: outer_by_name, sql: "SELECT 1 AS a, 10 AS b OUTER UNION ALL BY NAME SELECT 20 AS b, 2 AS c;" }
+      - { id: left_by_name, sql: "SELECT 1 AS a, 10 AS b LEFT UNION ALL BY NAME SELECT 20 AS b, 2 AS c;" }
+      - { id: left_outer_corresponding, sql: "SELECT 1 AS a, 10 AS b LEFT OUTER UNION ALL CORRESPONDING SELECT 20 AS b, 2 AS c;" }
+      - { id: intersect_by_name, sql: "SELECT 1 AS a, 10 AS b INTERSECT DISTINCT BY NAME SELECT 10 AS b, 1 AS a;" }
+    examples:
+      - |-
+        SELECT * FROM UNNEST(ARRAY<INT64>[1, 2, 3]) AS number
+        UNION ALL
+        SELECT 1;
+      - |-
+        SELECT * FROM UNNEST(ARRAY<INT64>[1, 2, 3]) AS number
+        UNION DISTINCT
+        SELECT 1
+        UNION DISTINCT
+        SELECT 2;
+      - |-
+        SELECT 1 AS one_digit, 10 AS two_digit
+        UNION ALL BY NAME
+        SELECT 20 AS two_digit, 2 AS one_digit;
+      - |-
+        SELECT 1 AS one_digit, 10 AS two_digit, 100 AS three_digit
+        INNER UNION ALL BY NAME
+        SELECT 20 AS two_digit, 2 AS one_digit, 1000 AS four_digit;
+      - |-
+        SELECT 1 AS one_digit, 10 AS two_digit, 100 AS three_digit
+        FULL OUTER UNION ALL BY NAME ON (three_digit, two_digit)
+        SELECT 20 AS two_digit, 2 AS one_digit, 1000 AS four_digit;
+
+  - id: pipe_syntax
+    name: "Pipe query syntax"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/pipe-syntax
+    tier: medium
+    probes:
+      - { id: from_only, sql: "FROM t;" }
+      - { id: from_where_select, sql: "FROM t |> WHERE a > 0 |> SELECT a, b;" }
+      - { id: select_window, sql: "FROM t |> SELECT a, SUM(b) OVER w AS s WINDOW w AS (PARTITION BY c);" }
+      - { id: extend, sql: "FROM t |> EXTEND a + 1 AS a1, SUM(b) OVER () AS total;" }
+      - { id: set, sql: "FROM t |> SET x = x * x, y = 3;" }
+      - { id: drop, sql: "FROM t |> DROP a, b;" }
+      - { id: rename, sql: "FROM t |> RENAME a AS x, b y;" }
+      - { id: as_alias, sql: "FROM t |> AS u |> SELECT u.a;" }
+      - { id: aggregate_full_table, sql: "FROM t |> AGGREGATE COUNT(*) AS n, SUM(b) AS s;" }
+      - { id: aggregate_group_by, sql: "FROM t |> AGGREGATE COUNT(*) AS n GROUP BY a;" }
+      - { id: aggregate_group_and_order_by, sql: "FROM t |> AGGREGATE SUM(b) AS s DESC GROUP AND ORDER BY a DESC NULLS LAST;" }
+      - { id: distinct, sql: "FROM t |> SELECT a |> DISTINCT;" }
+      - { id: join, sql: "FROM t |> JOIN u USING (a);" }
+      - { id: left_join_on, sql: "FROM t |> LEFT JOIN u AS v ON t.a = v.a;" }
+      - { id: cross_join, sql: "FROM t |> CROSS JOIN u;" }
+      - { id: call_tvf, sql: "FROM t |> CALL f(1) AS r;" }
+      - { id: order_by, sql: "FROM t |> ORDER BY a DESC NULLS FIRST;" }
+      - { id: limit_offset, sql: "FROM t |> LIMIT 10 OFFSET 2;" }
+      - { id: union, sql: "FROM t |> UNION ALL (SELECT * FROM u), (SELECT * FROM v);" }
+      - { id: union_by_name, sql: "FROM t |> UNION ALL BY NAME (SELECT * FROM u);" }
+      - { id: intersect, sql: "FROM t |> INTERSECT DISTINCT (SELECT * FROM u);" }
+      - { id: except, sql: "FROM t |> EXCEPT DISTINCT (SELECT * FROM u);" }
+      - { id: tablesample, sql: "FROM t |> TABLESAMPLE SYSTEM (1 PERCENT);" }
+      - { id: with, sql: "FROM t |> WITH c AS (SELECT 1 AS x) |> JOIN c ON TRUE;" }
+      - { id: pivot, sql: "FROM t |> PIVOT (SUM(sales) FOR quarter IN ('Q1', 'Q2')) AS p;" }
+      - { id: unpivot, sql: "FROM t |> UNPIVOT (sales FOR quarter IN (q1, q2)) AS u;" }
+      - { id: match_recognize, sql: "FROM t |> MATCH_RECOGNIZE (ORDER BY x MEASURES COUNT(*) AS n PATTERN (a+) DEFINE a AS x > 0);" }
+      - { id: select_then_pipe, sql: "SELECT a, b FROM t |> WHERE a > 0;" }
+      - { id: subquery_with_pipes, sql: "SELECT * FROM (FROM t |> WHERE a > 0) AS s;" }
+    examples:
+      - |-
+        FROM Produce
+        |> WHERE
+         item != 'bananas'
+         AND category IN ('fruit', 'nut')
+        |> AGGREGATE COUNT(*) AS num_items, SUM(sales) AS total_sales
+         GROUP BY item
+        |> ORDER BY item DESC;
+      - |-
+        FROM (SELECT 'apples' AS item, 2 AS sales)
+        |> SELECT item AS fruit_name;
+      - |-
+        FROM Produce
+        |> SELECT item, sales, category, SUM(sales) OVER item_window AS category_total
+         WINDOW item_window AS (PARTITION BY category);
+      - |-
+        FROM (SELECT 2 AS x, 3 AS y) AS t
+        |> SET x = x * x, y = 8
+        |> SELECT t.x AS original_x, x, y;
+      - |-
+        SELECT 'apples' AS item, 2 AS sales, 'fruit' AS category
+        |> DROP sales, category;
+
