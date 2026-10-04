@@ -1,0 +1,42 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: distribute_by
+    name: DISTRIBUTE BY clause
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-distributeby
+    tier: high
+    probes:
+      - id: single_expression
+        sql: "SELECT a, b FROM t DISTRIBUTE BY a;"
+      - id: multiple_expressions
+        sql: "SELECT a, b FROM t DISTRIBUTE BY a, b;"
+      - id: function_expression
+        sql: "SELECT a, b FROM t DISTRIBUTE BY a + 1, upper(b);"
+    examples:
+      - "CREATE TEMP VIEW person (name, age) AS VALUES ('Zen Hui', 25), ('Anil B', 18), ('Shone S', 16), ('Mike A', 25), ('John A', 18), ('Jack N', 16);"
+      - "SET spark.sql.shuffle.partitions = 2;"
+      - "SELECT age, name FROM person DISTRIBUTE BY age;"
+
+  - id: limit
+    name: LIMIT clause
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-limit
+    tier: high
+    probes:
+      - id: limit_integer
+        sql: "SELECT c FROM t LIMIT 2;"
+      - id: limit_all
+        sql: "SELECT c FROM t LIMIT ALL;"
+      - id: limit_function_expression
+        sql: "SELECT c FROM t ORDER BY c LIMIT length('SPARK');"
+      - id: limit_with_order_by
+        sql: "SELECT c FROM t ORDER BY c LIMIT 10;"
+      - id: limit_offset
+        sql: "SELECT c FROM t ORDER BY c LIMIT 2 OFFSET 3;"
+        note: The page's examples combine LIMIT with the OFFSET clause (separate page).
+    examples:
+      - "SELECT name, age FROM person ORDER BY name LIMIT 2;"
+      - "SELECT name, age FROM person ORDER BY name LIMIT 2 OFFSET 3;"
+      - "SELECT name, age FROM person ORDER BY name LIMIT ALL;"
