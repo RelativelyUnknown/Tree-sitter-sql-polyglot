@@ -1,0 +1,127 @@
+dialect: oracle
+engine: Oracle AI Database
+version: "26ai"
+source: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/toc.htm
+
+statements:
+  - id: alter_pmem_filestore
+    name: ALTER PMEM FILESTORE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/alter-pmem-filestore.html
+    tier: low
+    probes:
+      - id: resize
+        sql: "ALTER PMEM FILESTORE fs RESIZE 100M;"
+      - id: mount_force
+        sql: "ALTER PMEM FILESTORE fs MOUNT MOUNTPOINT '/mnt/fs' BACKINGFILE '/bk/fs' FORCE;"
+
+  - id: alter_resource_cost
+    name: ALTER RESOURCE COST
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-RESOURCE-COST.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "ALTER RESOURCE COST CPU_PER_SESSION 100 CONNECT_TIME 1 LOGICAL_READS_PER_SESSION 2 PRIVATE_SGA 3;"
+
+  - id: alter_rollback_segment
+    name: ALTER ROLLBACK SEGMENT
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-ROLLBACK-SEGMENT.html
+    tier: low
+    probes:
+      - id: online
+        sql: "ALTER ROLLBACK SEGMENT rbs ONLINE;"
+      - id: shrink_to
+        sql: "ALTER ROLLBACK SEGMENT rbs SHRINK TO 10M;"
+
+  - id: alter_tablespace_set
+    name: ALTER TABLESPACE SET
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-TABLESPACE-SET.html
+    tier: low
+    probes:
+      - id: resize
+        sql: "ALTER TABLESPACE SET ts RESIZE 100M;"
+      - id: add_datafile
+        sql: "ALTER TABLESPACE SET ts ADD DATAFILE SIZE 10M;"
+
+  - id: associate_statistics
+    name: ASSOCIATE STATISTICS
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ASSOCIATE-STATISTICS.html
+    tier: low
+    probes:
+      - id: columns
+        sql: "ASSOCIATE STATISTICS WITH COLUMNS t.c USING stats_type;"
+      - id: functions_default_cost
+        sql: "ASSOCIATE STATISTICS WITH FUNCTIONS f DEFAULT COST (100, 5, 0), DEFAULT SELECTIVITY 10;"
+
+  - id: audit_traditional
+    name: AUDIT (Traditional Auditing)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/AUDIT-Traditional-Auditing.html
+    tier: low
+    status: not-applicable
+    reason: 'The page states "Traditional Auditing is desupported in Oracle Database Release 23. Oracle recommends that you use unified auditing instead."'
+
+  - id: audit_unified
+    name: AUDIT (Unified Auditing)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/AUDIT-Unified-Auditing.html
+    tier: low
+    probes:
+      - id: policy
+        sql: "AUDIT POLICY p BY u WHENEVER SUCCESSFUL;"
+      - id: context_namespace
+        sql: "AUDIT CONTEXT NAMESPACE ns ATTRIBUTES a1, a2 BY u;"
+
+  - id: alter_system
+    name: ALTER SYSTEM
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-SYSTEM.html
+    tier: low
+    probes:
+      - id: set_parameter
+        sql: "ALTER SYSTEM SET open_cursors = 500 COMMENT = 'raised' SCOPE = BOTH SID = '*';"
+      - id: reset_parameter
+        sql: "ALTER SYSTEM RESET open_cursors SCOPE = SPFILE;"
+      - id: kill_session
+        sql: "ALTER SYSTEM KILL SESSION '10, 100' IMMEDIATE;"
+      - id: flush_shared_pool
+        sql: "ALTER SYSTEM FLUSH SHARED_POOL;"
+      - id: switch_logfile
+        sql: "ALTER SYSTEM SWITCH LOGFILE;"
+      - id: checkpoint
+        sql: "ALTER SYSTEM CHECKPOINT GLOBAL;"
+      - id: enable_restricted_session
+        sql: "ALTER SYSTEM ENABLE RESTRICTED SESSION;"
+
+  - id: alter_pluggable_database
+    name: ALTER PLUGGABLE DATABASE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-PLUGGABLE-DATABASE.html
+    tier: low
+    probes:
+      - id: open
+        sql: "ALTER PLUGGABLE DATABASE pdb1 OPEN READ WRITE;"
+      - id: close_immediate
+        sql: "ALTER PLUGGABLE DATABASE pdb1 CLOSE IMMEDIATE;"
+      - id: open_all_except
+        sql: "ALTER PLUGGABLE DATABASE ALL EXCEPT pdb2 OPEN;"
+      - id: unplug
+        sql: "ALTER PLUGGABLE DATABASE pdb1 UNPLUG INTO '/tmp/pdb1.xml';"
+      - id: storage_clause
+        sql: "ALTER PLUGGABLE DATABASE pdb1 STORAGE (MAXSIZE 2G);"
+      - id: datafile_online
+        sql: "ALTER PLUGGABLE DATABASE pdb1 DATAFILE ALL ONLINE;"
+      - id: refresh_mode
+        sql: "ALTER PLUGGABLE DATABASE pdb1 REFRESH MODE EVERY 10 MINUTES;"
+      - id: application_begin_install
+        sql: "ALTER PLUGGABLE DATABASE APPLICATION app BEGIN INSTALL '1.0';"
+
+  - id: create_analytic_view
+    name: CREATE ANALYTIC VIEW
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-ANALYTIC-VIEW.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE ANALYTIC VIEW av USING sales_fact DIMENSION BY (time_attr_dim KEY time_id REFERENCES time_id HIERARCHIES (time_hier DEFAULT)) MEASURES (sales FACT sales_amt AGGREGATE BY SUM, units FACT unit_cnt) DEFAULT MEASURE sales;"
+      - id: or_replace_calc_measure
+        sql: "CREATE OR REPLACE ANALYTIC VIEW av USING sales_fact DIMENSION BY (d KEY k REFERENCES k HIERARCHIES (h)) MEASURES (m FACT f, m2 AS (m * 2));"
+
+  - id: create_application_identity
+    name: CREATE APPLICATION IDENTITY
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-application-identity.html
+    tier: low
