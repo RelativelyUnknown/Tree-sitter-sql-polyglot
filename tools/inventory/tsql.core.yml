@@ -2390,3 +2390,774 @@ statements:
     status: not-applicable
     reason: "Applies to: Warehouse in Microsoft Fabric only (page banner 'fabric-dw'); not available in SQL Server or Azure SQL Database."
 
+  - id: alter_table
+    name: "ALTER TABLE"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-table-transact-sql
+    tier: high
+    probes:
+      - id: alter_column_type
+        sql: "ALTER TABLE t ALTER COLUMN c DECIMAL(5, 2);"
+      - id: alter_column_not_null
+        sql: "ALTER TABLE t ALTER COLUMN c NVARCHAR(20) NOT NULL;"
+      - id: alter_column_collate
+        sql: "ALTER TABLE t ALTER COLUMN c VARCHAR(50) COLLATE Latin1_General_BIN;"
+      - id: alter_column_max
+        sql: "ALTER TABLE t ALTER COLUMN c VARCHAR(MAX) NULL;"
+      - id: alter_column_xml_schema
+        sql: "ALTER TABLE t ALTER COLUMN c XML(dbo.sc);"
+      - id: alter_column_sparse
+        sql: "ALTER TABLE t ALTER COLUMN c INT NULL SPARSE;"
+      - id: alter_column_add_sparse
+        sql: "ALTER TABLE t ALTER COLUMN c ADD SPARSE;"
+      - id: alter_column_drop_sparse
+        sql: "ALTER TABLE t ALTER COLUMN c DROP SPARSE;"
+      - id: alter_column_add_rowguidcol
+        sql: "ALTER TABLE t ALTER COLUMN g ADD ROWGUIDCOL;"
+      - id: alter_column_drop_persisted
+        sql: "ALTER TABLE t ALTER COLUMN c DROP PERSISTED;"
+      - id: alter_column_add_not_for_replication
+        sql: "ALTER TABLE t ALTER COLUMN id ADD NOT FOR REPLICATION;"
+      - id: alter_column_add_hidden
+        sql: "ALTER TABLE t ALTER COLUMN vf ADD HIDDEN;"
+      - id: alter_column_add_masked
+        sql: "ALTER TABLE t ALTER COLUMN c ADD MASKED WITH (FUNCTION = 'partial(2, \"XX\", 0)');"
+      - id: alter_column_drop_masked
+        sql: "ALTER TABLE t ALTER COLUMN c DROP MASKED;"
+      - id: alter_column_online
+        sql: "ALTER TABLE t ALTER COLUMN c DECIMAL(5, 2) WITH (ONLINE = ON);"
+      - id: alter_column_encrypted
+        sql: "ALTER TABLE t ALTER COLUMN c VARCHAR(50) ENCRYPTED WITH (COLUMN_ENCRYPTION_KEY = key1, ENCRYPTION_TYPE = RANDOMIZED, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256') NULL;"
+      - id: add_column
+        sql: "ALTER TABLE t ADD c VARCHAR(20) NULL;"
+      - id: add_column_constraint
+        sql: "ALTER TABLE t ADD c VARCHAR(20) NULL CONSTRAINT uq_c UNIQUE;"
+      - id: add_multiple_columns
+        sql: "ALTER TABLE t ADD b INT IDENTITY CONSTRAINT b_pk PRIMARY KEY, c INT NULL CONSTRAINT c_fk FOREIGN KEY REFERENCES t (a), e DECIMAL(3, 3) CONSTRAINT e_default DEFAULT .081;"
+      - id: add_column_default_with_values
+        sql: "ALTER TABLE t ADD d SMALLDATETIME NULL CONSTRAINT df_d DEFAULT GETDATE() WITH VALUES;"
+      - id: add_computed_column
+        sql: "ALTER TABLE t ADD total AS (price * qty) PERSISTED;"
+      - id: add_column_set
+        sql: "ALTER TABLE t ADD cs XML COLUMN_SET FOR ALL_SPARSE_COLUMNS;"
+      - id: add_constraint_check_nocheck
+        sql: "ALTER TABLE t WITH NOCHECK ADD CONSTRAINT ck_a CHECK (a > 1);"
+      - id: add_constraint_default_for
+        sql: "ALTER TABLE t ADD CONSTRAINT df_b DEFAULT 50 FOR b;"
+      - id: add_constraint_primary_key_options
+        sql: "ALTER TABLE t WITH NOCHECK ADD CONSTRAINT pk_t PRIMARY KEY CLUSTERED (id) WITH (FILLFACTOR = 75, ONLINE = ON, PAD_INDEX = ON);"
+      - id: add_constraint_primary_key_resumable
+        sql: "ALTER TABLE t ADD CONSTRAINT pk_t PRIMARY KEY CLUSTERED (a) WITH (ONLINE = ON, MAXDOP = 2, RESUMABLE = ON, MAX_DURATION = 240);"
+      - id: add_constraint_foreign_key
+        sql: "ALTER TABLE t ADD CONSTRAINT fk_t FOREIGN KEY (pid) REFERENCES p (id) ON DELETE CASCADE ON UPDATE CASCADE;"
+      - id: add_period_for_system_time
+        sql: "ALTER TABLE t ADD vf DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN DEFAULT SYSUTCDATETIME() NOT NULL, vt DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN DEFAULT CONVERT(DATETIME2, '9999-12-31 23:59:59.9999999') NOT NULL, PERIOD FOR SYSTEM_TIME (vf, vt);"
+      - id: add_period_only
+        sql: "ALTER TABLE t ADD PERIOD FOR SYSTEM_TIME (vf, vt);"
+      - id: drop_column
+        sql: "ALTER TABLE t DROP COLUMN c;"
+      - id: drop_columns
+        sql: "ALTER TABLE t DROP COLUMN c, d;"
+      - id: drop_column_if_exists
+        sql: "ALTER TABLE t DROP COLUMN IF EXISTS c;"
+      - id: drop_constraint_implicit
+        sql: "ALTER TABLE t DROP my_constraint;"
+      - id: drop_constraint
+        sql: "ALTER TABLE t DROP CONSTRAINT ck_a;"
+      - id: drop_constraint_if_exists
+        sql: "ALTER TABLE t DROP CONSTRAINT IF EXISTS ck_a;"
+      - id: drop_constraints_and_column
+        sql: "ALTER TABLE t DROP CONSTRAINT c1, CONSTRAINT c2, COLUMN d;"
+      - id: drop_clustered_constraint_online
+        sql: "ALTER TABLE t DROP CONSTRAINT pk_t WITH (ONLINE = ON, MAXDOP = 4);"
+      - id: drop_clustered_constraint_move_to
+        sql: "ALTER TABLE t DROP CONSTRAINT pk_t WITH (MOVE TO fg2);"
+      - id: drop_period
+        sql: "ALTER TABLE t DROP PERIOD FOR SYSTEM_TIME;"
+      - id: nocheck_constraint
+        sql: "ALTER TABLE t NOCHECK CONSTRAINT ck_a;"
+      - id: check_constraint_all
+        sql: "ALTER TABLE t WITH CHECK CHECK CONSTRAINT ALL;"
+      - id: disable_trigger
+        sql: "ALTER TABLE t DISABLE TRIGGER trig1;"
+      - id: enable_trigger_all
+        sql: "ALTER TABLE t ENABLE TRIGGER ALL;"
+      - id: enable_change_tracking
+        sql: "ALTER TABLE t ENABLE CHANGE_TRACKING WITH (TRACK_COLUMNS_UPDATED = ON);"
+      - id: disable_change_tracking
+        sql: "ALTER TABLE t DISABLE CHANGE_TRACKING;"
+      - id: switch_partition
+        sql: "ALTER TABLE t SWITCH PARTITION 2 TO u;"
+      - id: switch_partition_to_partition
+        sql: "ALTER TABLE t SWITCH PARTITION 2 TO u PARTITION 2 WITH (WAIT_AT_LOW_PRIORITY (MAX_DURATION = 1 MINUTES, ABORT_AFTER_WAIT = BLOCKERS));"
+      - id: switch_table
+        sql: "ALTER TABLE staging SWITCH TO t;"
+      - id: set_filestream_on
+        sql: "ALTER TABLE t SET (FILESTREAM_ON = \"NULL\");"
+      - id: set_system_versioning_on
+        sql: "ALTER TABLE t SET (SYSTEM_VERSIONING = ON (HISTORY_TABLE = dbo.t_history, DATA_CONSISTENCY_CHECK = ON, HISTORY_RETENTION_PERIOD = 1 YEAR));"
+      - id: set_system_versioning_off
+        sql: "ALTER TABLE t SET (SYSTEM_VERSIONING = OFF);"
+      - id: set_data_deletion
+        sql: "ALTER TABLE t SET (DATA_DELETION = ON (FILTER_COLUMN = d, RETENTION_PERIOD = 1 DAY));"
+      - id: set_lock_escalation
+        sql: "ALTER TABLE t SET (LOCK_ESCALATION = AUTO);"
+      - id: rebuild
+        sql: "ALTER TABLE t REBUILD WITH (DATA_COMPRESSION = PAGE);"
+      - id: rebuild_partition
+        sql: "ALTER TABLE t REBUILD PARTITION = 1 WITH (DATA_COMPRESSION = COLUMNSTORE_ARCHIVE);"
+      - id: rebuild_partition_all
+        sql: "ALTER TABLE t REBUILD PARTITION = ALL WITH (DATA_COMPRESSION = PAGE ON PARTITIONS (1));"
+      - id: rebuild_online_low_priority
+        sql: "ALTER TABLE t REBUILD WITH (PAD_INDEX = ON, ONLINE = ON (WAIT_AT_LOW_PRIORITY (MAX_DURATION = 4 MINUTES, ABORT_AFTER_WAIT = BLOCKERS)));"
+      - id: filetable_namespace
+        sql: "ALTER TABLE ft DISABLE FILETABLE_NAMESPACE;"
+      - id: filetable_directory
+        sql: "ALTER TABLE ft SET (FILETABLE_DIRECTORY = 'docs2');"
+      - id: remote_data_archive
+        sql: "ALTER TABLE t SET (REMOTE_DATA_ARCHIVE (MIGRATION_STATE = INBOUND));"
+      - id: memory_optimized_add_index
+        sql: "ALTER TABLE t ADD INDEX ix_hash HASH (c) WITH (BUCKET_COUNT = 1024);"
+      - id: memory_optimized_alter_index
+        sql: "ALTER TABLE t ALTER INDEX ix_hash REBUILD WITH (BUCKET_COUNT = 2048);"
+      - id: memory_optimized_drop_index
+        sql: "ALTER TABLE t DROP INDEX IF EXISTS ix_hash;"
+    examples:
+      - |-
+        ALTER TABLE dbo.doc_exe
+
+            -- Add a PRIMARY KEY identity column.
+            ADD column_b INT IDENTITY
+                CONSTRAINT column_b_pk PRIMARY KEY,
+
+            -- Add a column that references another column in the same table.
+                column_c INT NULL
+                    CONSTRAINT column_c_fk FOREIGN KEY REFERENCES doc_exe (column_a),
+
+            -- Add a column with a constraint to enforce that
+            -- nonnull data is in a valid telephone number format.
+                column_d VARCHAR (16) NULL
+                    CONSTRAINT column_d_chk CHECK (column_d LIKE '[0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]'
+                                               OR column_d LIKE '([0-9][0-9][0-9]) [0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]'),
+
+            -- Add a nonnull column with a default.
+                column_e DECIMAL (3, 3)
+                    CONSTRAINT column_e_default DEFAULT .081;
+      - |-
+        ALTER TABLE Production.TransactionHistoryArchive WITH NOCHECK
+            ADD CONSTRAINT PK_TransactionHistoryArchive_TransactionID
+                PRIMARY KEY CLUSTERED (TransactionID) WITH (FILLFACTOR = 75, ONLINE = ON, PAD_INDEX = ON);
+      - |-
+        ALTER TABLE table1
+        ADD CONSTRAINT PK_Constrain PRIMARY KEY CLUSTERED (a)
+        WITH (ONLINE = ON, MAXDOP = 2, RESUMABLE = ON, MAX_DURATION = 240);
+      - |-
+        ALTER TABLE T1 REBUILD WITH (
+            PAD_INDEX = ON,
+            ONLINE = ON (
+                WAIT_AT_LOW_PRIORITY (MAX_DURATION = 4 MINUTES, ABORT_AFTER_WAIT = BLOCKERS)
+            )
+        );
+      - |-
+        --Alter non-temporal table to define periods for system versioning
+        ALTER TABLE InsurancePolicy
+            ADD ValidFrom DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN
+                    DEFAULT SYSUTCDATETIME() NOT NULL,
+                ValidTo DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN
+                    DEFAULT CONVERT (DATETIME2, '9999-12-31 23:59:59.99999999') NOT NULL,
+                PERIOD FOR SYSTEM_TIME (ValidFrom, ValidTo);
+
+  - id: alter_table_column_constraint
+    name: "ALTER TABLE column_constraint"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-table-column-constraint-transact-sql
+    tier: medium
+    probes:
+      - id: primary_key_clustered
+        sql: "ALTER TABLE t ADD id INT NOT NULL CONSTRAINT pk_t PRIMARY KEY CLUSTERED WITH FILLFACTOR = 80 ON [PRIMARY];"
+      - id: unique_index_options
+        sql: "ALTER TABLE t ADD c INT NULL UNIQUE NONCLUSTERED WITH (PAD_INDEX = ON, FILLFACTOR = 70);"
+      - id: references_actions
+        sql: "ALTER TABLE t ADD pid INT CONSTRAINT fk_p REFERENCES dbo.p (id) ON DELETE SET DEFAULT ON UPDATE NO ACTION NOT FOR REPLICATION;"
+      - id: check_not_for_replication
+        sql: "ALTER TABLE t ADD r INT CONSTRAINT ck_r CHECK NOT FOR REPLICATION (r > 0);"
+
+  - id: alter_table_column_definition
+    name: "ALTER TABLE column_definition"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-table-column-definition-transact-sql
+    tier: medium
+    probes:
+      - id: filestream_rowguidcol
+        sql: "ALTER TABLE t ADD d VARBINARY(MAX) FILESTREAM NULL;"
+      - id: default_with_values
+        sql: "ALTER TABLE t ADD c INT NULL CONSTRAINT df_c DEFAULT 0 WITH VALUES;"
+      - id: identity_not_for_replication
+        sql: "ALTER TABLE t ADD id INT IDENTITY(1, 1) NOT FOR REPLICATION;"
+      - id: rowguidcol_sparse
+        sql: "ALTER TABLE t ADD g UNIQUEIDENTIFIER ROWGUIDCOL NOT NULL DEFAULT NEWID(), s INT SPARSE NULL;"
+      - id: masked
+        sql: "ALTER TABLE t ADD e VARCHAR(100) MASKED WITH (FUNCTION = 'email()') NULL;"
+      - id: encrypted
+        sql: "ALTER TABLE t ADD p NVARCHAR(100) ENCRYPTED WITH (COLUMN_ENCRYPTION_KEY = MyCEK, ENCRYPTION_TYPE = RANDOMIZED, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256');"
+      - id: xml_content_type
+        sql: "ALTER TABLE t ADD x XML(CONTENT dbo.sc) NULL;"
+
+  - id: alter_table_computed_column_definition
+    name: "ALTER TABLE computed_column_definition"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-table-computed-column-definition-transact-sql
+    tier: medium
+    probes:
+      - id: basic
+        sql: "ALTER TABLE t ADD total AS qty * price;"
+      - id: persisted_not_null
+        sql: "ALTER TABLE t ADD total AS qty * price PERSISTED NOT NULL;"
+      - id: primary_key
+        sql: "ALTER TABLE t ADD k AS id * 2 PERSISTED CONSTRAINT pk_k PRIMARY KEY NONCLUSTERED WITH (FILLFACTOR = 90);"
+      - id: foreign_key
+        sql: "ALTER TABLE t ADD k AS id + 1 PERSISTED FOREIGN KEY REFERENCES p (id) ON DELETE NO ACTION;"
+      - id: check
+        sql: "ALTER TABLE t ADD k AS id + 1 CHECK (k > 0);"
+
+  - id: alter_table_index_option
+    name: "ALTER TABLE index_option"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-table-index-option-transact-sql
+    tier: medium
+    probes:
+      - id: basic_options
+        sql: "ALTER TABLE t ADD CONSTRAINT pk_t PRIMARY KEY (id) WITH (PAD_INDEX = ON, FILLFACTOR = 80, IGNORE_DUP_KEY = OFF, STATISTICS_NORECOMPUTE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = ON);"
+      - id: sort_in_tempdb_maxdop_online
+        sql: "ALTER TABLE t ADD CONSTRAINT uq_c UNIQUE (c) WITH (SORT_IN_TEMPDB = ON, MAXDOP = 4, ONLINE = ON);"
+      - id: rebuild_compression_partitions
+        sql: "ALTER TABLE t REBUILD WITH (DATA_COMPRESSION = NONE ON PARTITIONS (1), DATA_COMPRESSION = ROW ON PARTITIONS (2, 4, 6 TO 8), DATA_COMPRESSION = PAGE ON PARTITIONS (3, 5));"
+      - id: rebuild_xml_compression
+        sql: "ALTER TABLE t REBUILD PARTITION = ALL WITH (XML_COMPRESSION = ON ON PARTITIONS (1 TO 3));"
+      - id: resumable_max_duration
+        sql: "ALTER TABLE t ADD CONSTRAINT pk_t PRIMARY KEY CLUSTERED (id) WITH (ONLINE = ON, RESUMABLE = ON, MAX_DURATION = 240 MINUTES);"
+      - id: single_partition_online_low_priority
+        sql: "ALTER TABLE t REBUILD PARTITION = 2 WITH (ONLINE = ON (WAIT_AT_LOW_PRIORITY (MAX_DURATION = 5 MINUTES, ABORT_AFTER_WAIT = SELF)));"
+
+  - id: alter_table_table_constraint
+    name: "ALTER TABLE table_constraint"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-table-table-constraint-transact-sql
+    tier: medium
+    probes:
+      - id: primary_key
+        sql: "ALTER TABLE t ADD CONSTRAINT pk_t PRIMARY KEY CLUSTERED (a ASC, b DESC) WITH FILLFACTOR = 90 ON [PRIMARY];"
+      - id: unique_partition_scheme
+        sql: "ALTER TABLE t ADD CONSTRAINT uq_t UNIQUE NONCLUSTERED (a) ON ps (a);"
+      - id: foreign_key
+        sql: "ALTER TABLE t ADD CONSTRAINT fk_t FOREIGN KEY (a, b) REFERENCES p (x, y) ON DELETE SET NULL ON UPDATE SET DEFAULT NOT FOR REPLICATION;"
+      - id: connection
+        sql: "ALTER TABLE friendOf ADD CONSTRAINT ec_friend CONNECTION (Person TO Person) ON DELETE NO ACTION;"
+      - id: default_for_with_values
+        sql: "ALTER TABLE t ADD CONSTRAINT df_c DEFAULT 'x' FOR c WITH VALUES;"
+      - id: check
+        sql: "ALTER TABLE t ADD CONSTRAINT ck_t CHECK NOT FOR REPLICATION (a < b);"
+
+  - id: drop_table
+    name: "DROP TABLE"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-table-transact-sql
+    tier: high
+    probes:
+      - id: basic
+        sql: "DROP TABLE t;"
+      - id: three_part
+        sql: "DROP TABLE db.dbo.t;"
+      - id: if_exists
+        sql: "DROP TABLE IF EXISTS t;"
+      - id: multiple
+        sql: "DROP TABLE t1, dbo.t2, db.dbo.t3;"
+      - id: if_exists_multiple
+        sql: "DROP TABLE IF EXISTS t1, t2;"
+      - id: temp_table
+        sql: "DROP TABLE #t;"
+    examples:
+      - "DROP TABLE ProductVendor1;"
+      - "DROP TABLE AdventureWorks2022.dbo.SalesPerson2 ;"
+      - "DROP TABLE IF EXISTS T1;"
+
+  - id: create_view
+    name: "CREATE VIEW"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-view-transact-sql
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE VIEW v AS SELECT c FROM t;"
+      - id: schema_qualified
+        sql: "CREATE VIEW dbo.v AS SELECT c FROM t;"
+      - id: column_list
+        sql: "CREATE VIEW v (a, b) AS SELECT c, d FROM t;"
+      - id: or_alter
+        sql: "CREATE OR ALTER VIEW v AS SELECT c FROM t;"
+      - id: with_encryption
+        sql: "CREATE VIEW v WITH ENCRYPTION AS SELECT c FROM t;"
+      - id: with_schemabinding
+        sql: "CREATE VIEW dbo.v WITH SCHEMABINDING AS SELECT c FROM dbo.t;"
+      - id: with_view_metadata
+        sql: "CREATE VIEW v WITH VIEW_METADATA AS SELECT c FROM t;"
+      - id: multiple_attributes
+        sql: "CREATE VIEW dbo.v WITH ENCRYPTION, SCHEMABINDING, VIEW_METADATA AS SELECT c FROM dbo.t;"
+      - id: with_check_option
+        sql: "CREATE VIEW v AS SELECT c FROM t WHERE c = 'Seattle' WITH CHECK OPTION;"
+      - id: cte_body
+        sql: "CREATE VIEW v AS WITH cte AS (SELECT c FROM t) SELECT c FROM cte;"
+      - id: union_all_partitioned
+        sql: "CREATE VIEW v AS SELECT * FROM db.dbo.t1 UNION ALL SELECT * FROM srv2.db.dbo.t2;"
+      - id: top_order_by
+        sql: "CREATE VIEW v AS SELECT TOP (100) PERCENT c FROM t ORDER BY c;"
+    examples:
+      - |-
+        --Partitioned view as defined on Server1
+        CREATE VIEW Customers
+        AS
+        --Select from local member table.
+        SELECT *
+        FROM CompanyData.dbo.Customers_33
+        UNION ALL
+        --Select from member table on Server2.
+        SELECT *
+        FROM Server2.CompanyData.dbo.Customers_66
+        UNION ALL
+        --Select from member table on Server3.
+        SELECT *
+        FROM Server3.CompanyData.dbo.Customers_99;
+      - |-
+        CREATE VIEW Purchasing.PurchaseOrderReject
+        WITH ENCRYPTION
+        AS
+        SELECT PurchaseOrderID, ReceivedQty, RejectedQty,
+            RejectedQty / ReceivedQty AS RejectRatio, DueDate
+        FROM Purchasing.PurchaseOrderDetail
+        WHERE RejectedQty / ReceivedQty > 0
+        AND DueDate > CONVERT(DATETIME,'20010630',101) ;
+      - |-
+        CREATE VIEW dbo.SeattleOnly
+        AS
+        SELECT p.LastName, p.FirstName, e.JobTitle, a.City, sp.StateProvinceCode
+        FROM HumanResources.Employee e
+        INNER JOIN Person.Person p
+        ON p.BusinessEntityID = e.BusinessEntityID
+            INNER JOIN Person.BusinessEntityAddress bea
+            ON bea.BusinessEntityID = e.BusinessEntityID
+            INNER JOIN Person.Address a
+            ON a.AddressID = bea.AddressID
+            INNER JOIN Person.StateProvince sp
+            ON sp.StateProvinceID = a.StateProvinceID
+        WHERE a.City = 'Seattle'
+        WITH CHECK OPTION ;
+      - |-
+        --Create the view that combines all supplier tables.
+        CREATE VIEW dbo.all_supplier_view
+        WITH SCHEMABINDING
+        AS
+        SELECT supplyID, supplier
+          FROM dbo.SUPPLY1
+        UNION ALL
+        SELECT supplyID, supplier
+          FROM dbo.SUPPLY2
+        UNION ALL
+        SELECT supplyID, supplier
+          FROM dbo.SUPPLY3
+        UNION ALL
+        SELECT supplyID, supplier
+          FROM dbo.SUPPLY4;
+
+  - id: alter_view
+    name: "ALTER VIEW"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-view-transact-sql
+    tier: high
+    probes:
+      - id: basic
+        sql: "ALTER VIEW v AS SELECT c FROM t WHERE c > 0;"
+      - id: column_list
+        sql: "ALTER VIEW dbo.v (a, b) AS SELECT c, d FROM t;"
+      - id: with_attributes
+        sql: "ALTER VIEW dbo.v WITH SCHEMABINDING, VIEW_METADATA AS SELECT c FROM dbo.t;"
+      - id: with_encryption
+        sql: "ALTER VIEW v WITH ENCRYPTION AS SELECT c FROM t;"
+      - id: with_check_option
+        sql: "ALTER VIEW v AS SELECT c FROM t WHERE c = 1 WITH CHECK OPTION;"
+    examples:
+      - |-
+        ALTER VIEW HumanResources.EmployeeHireDate
+        AS
+        SELECT p.FirstName, p.LastName, e.HireDate
+        FROM HumanResources.Employee AS e JOIN Person.Person AS p
+        ON e.BusinessEntityID = p.BusinessEntityID
+        WHERE HireDate < CONVERT(DATETIME,'20020101',101) ;
+
+  - id: drop_view
+    name: "DROP VIEW"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-view-transact-sql
+    tier: high
+    probes:
+      - id: basic
+        sql: "DROP VIEW v;"
+      - id: if_exists
+        sql: "DROP VIEW IF EXISTS dbo.v;"
+      - id: multiple
+        sql: "DROP VIEW dbo.v1, v2;"
+    examples:
+      - "DROP VIEW IF EXISTS dbo.Reorder ;"
+
+  - id: create_materialized_view_as_select
+    name: "CREATE MATERIALIZED VIEW AS SELECT"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-materialized-view-as-select-transact-sql
+    tier: low
+    status: not-applicable
+    reason: "Applies to: Azure Synapse Analytics (page banner 'Azure Synapse Analytics'); SQL Server and Azure SQL Database implement materialization as indexed views (CREATE VIEW WITH SCHEMABINDING plus CREATE UNIQUE CLUSTERED INDEX)."
+
+  - id: alter_materialized_view
+    name: "ALTER MATERIALIZED VIEW"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-materialized-view-transact-sql
+    tier: low
+    status: not-applicable
+    reason: "Applies to: Azure Synapse Analytics (page banner 'asa'); not available in SQL Server or Azure SQL Database."
+
+  - id: create_index
+    name: "CREATE INDEX"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-index-transact-sql
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE INDEX ix ON t (c);"
+      - id: unique
+        sql: "CREATE UNIQUE INDEX ix ON t (c);"
+      - id: clustered
+        sql: "CREATE CLUSTERED INDEX ix ON db.dbo.t (c);"
+      - id: unique_nonclustered
+        sql: "CREATE UNIQUE NONCLUSTERED INDEX ix ON dbo.t (c);"
+      - id: asc_desc
+        sql: "CREATE INDEX ix ON t (a DESC, b ASC, c DESC);"
+      - id: omitted_schema
+        sql: "CREATE INDEX ix ON db..t (c);"
+      - id: include
+        sql: "CREATE NONCLUSTERED INDEX ix ON t (a) INCLUDE (b, c);"
+      - id: filtered
+        sql: "CREATE NONCLUSTERED INDEX ix ON t (a, b) WHERE c IS NOT NULL;"
+      - id: filtered_in_and
+        sql: "CREATE INDEX ix ON t (a) WHERE b IN (533, 324) AND c > '20000101' AND d <= '20000630';"
+      - id: on_view
+        sql: "CREATE UNIQUE CLUSTERED INDEX ix ON dbo.v (a, b);"
+      - id: on_filegroup
+        sql: "CREATE INDEX ix ON t (c) ON [PRIMARY];"
+      - id: on_default
+        sql: "CREATE INDEX ix ON t (c) ON \"default\";"
+      - id: on_partition_scheme
+        sql: "CREATE NONCLUSTERED INDEX ix ON t (a) ON ps (d);"
+      - id: filestream_on
+        sql: "CREATE UNIQUE CLUSTERED INDEX ix ON t (id) FILESTREAM_ON fs_fg;"
+      - id: with_basic_options
+        sql: "CREATE INDEX ix ON t (c) WITH (PAD_INDEX = ON, FILLFACTOR = 80, SORT_IN_TEMPDB = ON, STATISTICS_NORECOMPUTE = OFF, STATISTICS_INCREMENTAL = ON);"
+      - id: ignore_dup_key
+        sql: "CREATE UNIQUE INDEX ix ON #t (c) WITH (IGNORE_DUP_KEY = ON);"
+      - id: drop_existing
+        sql: "CREATE NONCLUSTERED INDEX ix ON t (c) WITH (FILLFACTOR = 80, PAD_INDEX = ON, DROP_EXISTING = ON);"
+      - id: online_low_priority
+        sql: "CREATE CLUSTERED INDEX ix ON dbo.t (a) WITH (ONLINE = ON (WAIT_AT_LOW_PRIORITY (MAX_DURATION = 5 MINUTES, ABORT_AFTER_WAIT = SELF)));"
+      - id: resumable
+        sql: "CREATE INDEX ix ON t (c) WITH (ONLINE = ON, RESUMABLE = ON, MAX_DURATION = 240 MINUTES, MAXDOP = 1);"
+      - id: locks_sequential_key
+        sql: "CREATE INDEX ix ON t (c) WITH (ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = ON);"
+      - id: data_compression_partitions
+        sql: "CREATE CLUSTERED INDEX ix ON t (c) WITH (DATA_COMPRESSION = PAGE ON PARTITIONS (1), DATA_COMPRESSION = ROW ON PARTITIONS (2 TO 4));"
+      - id: xml_compression
+        sql: "CREATE NONCLUSTERED INDEX ix ON t (c) WITH (XML_COMPRESSION = ON);"
+      - id: backward_compatible_options
+        sql: "CREATE INDEX ix ON t (c) WITH PAD_INDEX, FILLFACTOR = 80, IGNORE_DUP_KEY, DROP_EXISTING;"
+        note: "'Backward compatible relational index' syntax block: options without '= ON' and without parentheses."
+      - id: backward_compatible_owner
+        sql: "CREATE INDEX ix ON db.owner1.t (c) ON \"default\";"
+    examples:
+      - "CREATE UNIQUE INDEX index1 ON schema1.table1 (column1 DESC, column2 ASC, column3 DESC);"
+      - |-
+        CREATE NONCLUSTERED INDEX IX_WorkOrder_ProductID
+          ON Production.WorkOrder(ProductID)
+            WITH (FILLFACTOR = 80,
+              PAD_INDEX = ON,
+              DROP_EXISTING = ON);
+      - |-
+        CREATE NONCLUSTERED INDEX IX_Address_PostalCode
+          ON Person.Address (PostalCode)
+          INCLUDE (AddressLine1, AddressLine2, City, StateProvinceID);
+      - |-
+        CREATE NONCLUSTERED INDEX "FIBillOfMaterialsWithEndDate"
+          ON Production.BillOfMaterials (ComponentID, StartDate)
+          WHERE EndDate IS NOT NULL;
+      - |-
+        CREATE CLUSTERED INDEX IX_PartTab2Col1
+          ON PartitionTable1 (Col1)
+          WITH (
+            DATA_COMPRESSION = PAGE ON PARTITIONS(1),
+            DATA_COMPRESSION = ROW ON PARTITIONS (2 TO 4)
+          );
+
+  - id: create_columnstore_index
+    name: "CREATE COLUMNSTORE INDEX"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-columnstore-index-transact-sql
+    tier: high
+    probes:
+      - id: clustered
+        sql: "CREATE CLUSTERED COLUMNSTORE INDEX cci ON dbo.t;"
+      - id: clustered_order
+        sql: "CREATE CLUSTERED COLUMNSTORE INDEX cci ON t ORDER (a, b);"
+      - id: clustered_drop_existing
+        sql: "CREATE CLUSTERED COLUMNSTORE INDEX cci ON t WITH (DROP_EXISTING = ON);"
+      - id: clustered_options
+        sql: "CREATE CLUSTERED COLUMNSTORE INDEX cci ON t WITH (MAXDOP = 2, ONLINE = ON, COMPRESSION_DELAY = 10 MINUTES);"
+      - id: clustered_archive_partitions
+        sql: "CREATE CLUSTERED COLUMNSTORE INDEX cci ON t WITH (DATA_COMPRESSION = COLUMNSTORE_ARCHIVE ON PARTITIONS (1, 2 TO 4));"
+      - id: clustered_on_partition_scheme
+        sql: "CREATE CLUSTERED COLUMNSTORE INDEX cci ON t ON ps (d);"
+      - id: nonclustered
+        sql: "CREATE NONCLUSTERED COLUMNSTORE INDEX ncci ON t (a, b, c);"
+      - id: columnstore_without_nonclustered
+        sql: "CREATE COLUMNSTORE INDEX ncci ON t (a, b) WITH (ONLINE = ON);"
+      - id: nonclustered_order
+        sql: "CREATE NONCLUSTERED COLUMNSTORE INDEX ncci ON t (a, b) ORDER (a);"
+      - id: nonclustered_filtered
+        sql: "CREATE NONCLUSTERED COLUMNSTORE INDEX ncci ON t (a, b) WHERE c IS NOT NULL AND d IN (1, 2);"
+      - id: nonclustered_on_filegroup
+        sql: "CREATE NONCLUSTERED COLUMNSTORE INDEX ncci ON t (a) WITH (COMPRESSION_DELAY = 0) ON \"default\";"
+    examples:
+      - |-
+        CREATE CLUSTERED COLUMNSTORE INDEX cci
+            ON Sales.OrderLines WITH (COMPRESSION_DELAY = 10 MINUTES);
+      - |-
+        CREATE COLUMNSTORE INDEX ncci
+            ON Sales.OrderLines(StockItemID, Quantity, UnitPrice, TaxRate) WITH (ONLINE = ON);
+      - |-
+        CREATE NONCLUSTERED COLUMNSTORE INDEX csindx_simple
+            ON dbo.SimpleTable(OrderDateKey, DueDateKey, ShipDateKey);
+      - |-
+        CREATE NONCLUSTERED COLUMNSTORE INDEX csindx_simple
+            ON SimpleTable(OrderDateKey, DueDateKey, ShipDateKey) WITH (DROP_EXISTING = ON, MAXDOP = 2)
+            ON "DEFAULT";
+      - |-
+        CREATE CLUSTERED COLUMNSTORE INDEX cci
+            ON Sales.OrderLines ORDER(SHIPDATE);
+
+  - id: create_xml_index
+    name: "CREATE XML INDEX"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-xml-index-transact-sql
+    tier: medium
+    probes:
+      - id: primary
+        sql: "CREATE PRIMARY XML INDEX pxml ON t (x);"
+      - id: secondary_path
+        sql: "CREATE XML INDEX ixml_path ON t (x) USING XML INDEX pxml FOR PATH;"
+      - id: secondary_value
+        sql: "CREATE XML INDEX ixml_value ON dbo.t (x) USING XML INDEX pxml FOR VALUE;"
+      - id: secondary_property
+        sql: "CREATE XML INDEX ixml_prop ON t (x) USING XML INDEX pxml FOR PROPERTY;"
+      - id: with_options
+        sql: "CREATE PRIMARY XML INDEX pxml ON t (x) WITH (PAD_INDEX = ON, FILLFACTOR = 80, SORT_IN_TEMPDB = ON, DROP_EXISTING = OFF, MAXDOP = 2, XML_COMPRESSION = ON);"
+    examples:
+      - |-
+        CREATE PRIMARY XML INDEX PXML_ProductModel_CatalogDescription
+            ON Production.ProductModel (CatalogDescription);
+      - |-
+        CREATE PRIMARY XML INDEX PXML_ProductModel_CatalogDescription
+            ON Production.ProductModel (CatalogDescription)
+            WITH (XML_COMPRESSION = ON);
+      - |-
+        CREATE XML INDEX IXML_ProductModel_CatalogDescription_Path
+            ON Production.ProductModel (CatalogDescription)
+            USING XML INDEX PXML_ProductModel_CatalogDescription FOR PATH ;
+      - |-
+        CREATE XML INDEX IXML_ProductModel_CatalogDescription_Path
+            ON Production.ProductModel (CatalogDescription)
+            USING XML INDEX PXML_ProductModel_CatalogDescription FOR PATH
+            WITH (XML_COMPRESSION = ON);
+
+  - id: create_xml_index_selective
+    name: "CREATE XML INDEX (Selective XML Indexes)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-xml-index-selective-xml-indexes
+    tier: low
+    probes:
+      - id: secondary_selective
+        sql: "CREATE XML INDEX sxi_c ON t (x) USING XML INDEX sxi FOR (pathabc);"
+      - id: with_options
+        sql: "CREATE XML INDEX sxi_c ON dbo.t (x) USING XML INDEX sxi FOR (pathabc) WITH (PAD_INDEX = ON, MAXDOP = 1);"
+    examples:
+      - |-
+        CREATE XML INDEX filt_sxi_index_c
+        ON Tbl(xmlcol)
+        USING XML INDEX sxi_index
+        FOR ( pathabc );
+
+  - id: create_selective_xml_index
+    name: "CREATE SELECTIVE XML INDEX"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-selective-xml-index-transact-sql
+    tier: low
+    probes:
+      - id: xquery_paths
+        sql: "CREATE SELECTIVE XML INDEX sxi ON t (x) FOR (p1 = '/a/b' AS XQUERY 'node()', p2 = '/a/b/c' AS XQUERY 'xs:double', p3 = '/a/b/d/text()' AS XQUERY 'xs:string' MAXLENGTH(200) SINGLETON);"
+      - id: sql_path
+        sql: "CREATE SELECTIVE XML INDEX sxi ON t (x) FOR (p = '/a/b/e' AS SQL NVARCHAR(100));"
+      - id: xmlnamespaces
+        sql: "CREATE SELECTIVE XML INDEX sxi ON t (x) WITH XMLNAMESPACES ('https://www.tempuri.org/' AS myns) FOR (p1 = '/myns:book/myns:author/text()') WITH (PAD_INDEX = ON);"
+      - id: untyped_path
+        sql: "CREATE SELECTIVE XML INDEX sxi ON t (x) FOR (p = '/a/b');"
+    examples:
+      - |-
+        CREATE SELECTIVE XML INDEX sxi_index
+        ON Tbl(xmlcol)
+        FOR(
+            pathab   = '/a/b' as XQUERY 'node()',
+            pathabc  = '/a/b/c' as XQUERY 'xs:double',
+            pathdtext = '/a/b/d/text()' as XQUERY 'xs:string' MAXLENGTH(200) SINGLETON,
+            pathabe = '/a/b/e' as SQL NVARCHAR(100)
+        );
+
+  - id: create_spatial_index
+    name: "CREATE SPATIAL INDEX"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-spatial-index-transact-sql
+    tier: medium
+    probes:
+      - id: geometry_bounding_box
+        sql: "CREATE SPATIAL INDEX sidx ON t (g) WITH (BOUNDING_BOX = (0, 0, 500, 200));"
+      - id: geometry_auto_grid
+        sql: "CREATE SPATIAL INDEX sidx ON t (g) USING GEOMETRY_AUTO_GRID WITH (BOUNDING_BOX = (0, 0, 500, 200), CELLS_PER_OBJECT = 8);"
+      - id: geometry_grid_named_bbox
+        sql: "CREATE SPATIAL INDEX sidx ON t (g) USING GEOMETRY_GRID WITH (BOUNDING_BOX = (xmin = 0, ymin = 0, xmax = 500, ymax = 200), GRIDS = (LOW, LOW, MEDIUM, HIGH), CELLS_PER_OBJECT = 64, PAD_INDEX = ON);"
+      - id: grid_levels
+        sql: "CREATE SPATIAL INDEX sidx ON t (g) WITH (BOUNDING_BOX = (0, 0, 500, 200), GRIDS = (LEVEL_4 = HIGH, LEVEL_3 = MEDIUM));"
+      - id: geography_default
+        sql: "CREATE SPATIAL INDEX sidx ON t (geo);"
+      - id: geography_grid
+        sql: "CREATE SPATIAL INDEX sidx ON t (geo) USING GEOGRAPHY_GRID WITH (GRIDS = (MEDIUM, LOW, MEDIUM, HIGH), CELLS_PER_OBJECT = 64, PAD_INDEX = ON);"
+      - id: geography_auto_grid_on_filegroup
+        sql: "CREATE SPATIAL INDEX sidx ON t (geo) USING GEOGRAPHY_AUTO_GRID WITH (CELLS_PER_OBJECT = 12, DATA_COMPRESSION = PAGE) ON [PRIMARY];"
+    examples:
+      - |-
+        CREATE SPATIAL INDEX SIndx_SpatialTable_geometry_col2
+           ON SpatialTable(geometry_col)
+           USING GEOMETRY_GRID
+           WITH (
+            BOUNDING_BOX = ( xmin=0, ymin=0, xmax=500, ymax=200 ),
+            GRIDS = (LOW, LOW, MEDIUM, HIGH),
+            CELLS_PER_OBJECT = 64,
+            PAD_INDEX  = ON );
+      - |-
+        CREATE SPATIAL INDEX SIndx_SpatialTable_geometry_col3
+           ON SpatialTable(geometry_col)
+           WITH (
+            BOUNDING_BOX = ( 0, 0, 500, 200 ),
+            GRIDS = ( LEVEL_4 = HIGH, LEVEL_3 = MEDIUM ) );
+      - |-
+        CREATE SPATIAL INDEX SIndx_SpatialTable_geography_col1
+           ON SpatialTable2(object);
+      - |-
+        CREATE SPATIAL INDEX SIndx_SpatialTable_geography_col2
+           ON SpatialTable2(object)
+           USING GEOGRAPHY_GRID
+           WITH (
+            GRIDS = (MEDIUM, LOW, MEDIUM, HIGH ),
+            CELLS_PER_OBJECT = 64,
+            PAD_INDEX  = ON );
+      - |-
+        CREATE SPATIAL INDEX SIndx_SpatialTable_geography_col3
+           ON SpatialTable2(object)
+           WITH ( GRIDS = ( LEVEL_3 = HIGH, LEVEL_2 = HIGH ) );
+
+  - id: create_json_index
+    name: "CREATE JSON INDEX"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-json-index-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE JSON INDEX jidx ON docs (content);"
+      - id: paths_options
+        sql: "CREATE JSON INDEX jidx ON dbo.docs (content) FOR ('$.a', '$.b') WITH (FILLFACTOR = 80, OPTIMIZE_FOR_ARRAY_SEARCH = ON, MAXDOP = 2);"
+      - id: on_filegroup
+        sql: "CREATE JSON INDEX jidx ON docs (content) WITH (DATA_COMPRESSION = PAGE) ON \"default\";"
+    examples:
+      - |-
+        CREATE JSON INDEX json_content_index
+            ON docs (content);
+      - |-
+        CREATE JSON INDEX json_content_index
+            ON docs (content)
+            FOR ('$.a', '$.b') WITH (FILLFACTOR = 80);
+      - |-
+        CREATE JSON INDEX CustomersJsonIndex
+            ON dbo.Customers (customer_info) WITH (OPTIMIZE_FOR_ARRAY_SEARCH = ON);
+
+  - id: create_vector_index
+    name: "CREATE VECTOR INDEX"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-vector-index-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE VECTOR INDEX vidx ON t (v) WITH (METRIC = 'cosine');"
+      - id: all_options_filegroup
+        sql: "CREATE VECTOR INDEX vidx ON dbo.t (v) WITH (METRIC = 'dot', TYPE = 'DiskANN', MAXDOP = 8) ON [SECONDARY];"
+    examples:
+      - |-
+        CREATE VECTOR INDEX vec_idx
+            ON dbo.wikipedia_articles (title_vector)
+            WITH (
+                TYPE = 'DISKANN',
+                METRIC = 'COSINE'
+            );
+      - |-
+        CREATE VECTOR INDEX vec_idx
+            ON [dbo].[wikipedia_articles] ([title_vector])
+                WITH (METRIC = 'COSINE', TYPE = 'DISKANN');
+      - |-
+        CREATE VECTOR INDEX vec_idx
+            ON [dbo].[wikipedia_articles] ([title_vector])
+                WITH (METRIC = 'DOT', TYPE = 'DISKANN', MAXDOP = 8)
+            ON [SECONDARY];
+
+  - id: alter_index
+    name: "ALTER INDEX"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-index-transact-sql
+    tier: high
+    probes:
+      - id: rebuild
+        sql: "ALTER INDEX ix ON t REBUILD;"
+      - id: rebuild_all
+        sql: "ALTER INDEX ALL ON dbo.t REBUILD;"
+      - id: rebuild_with_options
+        sql: "ALTER INDEX ALL ON t REBUILD WITH (FILLFACTOR = 80, SORT_IN_TEMPDB = ON, STATISTICS_NORECOMPUTE = ON, PAD_INDEX = ON, IGNORE_DUP_KEY = OFF, STATISTICS_INCREMENTAL = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, MAXDOP = 4);"
+      - id: rebuild_online_low_priority
+        sql: "ALTER INDEX ix ON t REBUILD WITH (ONLINE = ON (WAIT_AT_LOW_PRIORITY (MAX_DURATION = 10 MINUTES, ABORT_AFTER_WAIT = SELF)));"
+      - id: rebuild_resumable
+        sql: "ALTER INDEX ix ON t REBUILD WITH (ONLINE = ON, RESUMABLE = ON, MAX_DURATION = 240);"
+      - id: rebuild_partition_all
+        sql: "ALTER INDEX ix ON t REBUILD PARTITION = ALL WITH (DATA_COMPRESSION = PAGE ON PARTITIONS (1, 3 TO 5));"
+      - id: rebuild_single_partition
+        sql: "ALTER INDEX ix ON t REBUILD PARTITION = 5 WITH (ONLINE = ON (WAIT_AT_LOW_PRIORITY (MAX_DURATION = 10 MINUTES, ABORT_AFTER_WAIT = SELF)));"
+      - id: rebuild_columnstore_archive
+        sql: "ALTER INDEX cci ON t REBUILD WITH (DATA_COMPRESSION = COLUMNSTORE_ARCHIVE);"
+      - id: rebuild_xml_compression
+        sql: "ALTER INDEX ix ON t REBUILD WITH (XML_COMPRESSION = ON);"
+      - id: disable
+        sql: "ALTER INDEX ix ON t DISABLE;"
+      - id: reorganize
+        sql: "ALTER INDEX ix ON t REORGANIZE;"
+      - id: reorganize_partition_options
+        sql: "ALTER INDEX cci ON t REORGANIZE PARTITION = 0 WITH (COMPRESS_ALL_ROW_GROUPS = ON);"
+      - id: reorganize_lob_compaction
+        sql: "ALTER INDEX ix ON t REORGANIZE WITH (LOB_COMPACTION = ON);"
+      - id: set_options
+        sql: "ALTER INDEX ix ON t SET (STATISTICS_NORECOMPUTE = ON, IGNORE_DUP_KEY = ON, ALLOW_PAGE_LOCKS = ON, ALLOW_ROW_LOCKS = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = ON);"
+      - id: set_compression_delay
+        sql: "ALTER INDEX cci ON t SET (COMPRESSION_DELAY = 30 MINUTES);"
+      - id: resume
+        sql: "ALTER INDEX ix ON t RESUME;"
+      - id: resume_with_options
+        sql: "ALTER INDEX ix ON t RESUME WITH (MAXDOP = 2, MAX_DURATION = 240 MINUTES, WAIT_AT_LOW_PRIORITY (MAX_DURATION = 10, ABORT_AFTER_WAIT = BLOCKERS));"
+      - id: pause
+        sql: "ALTER INDEX ix ON t PAUSE;"
+      - id: abort
+        sql: "ALTER INDEX ix ON t ABORT;"
+    examples:
+      - |-
+        ALTER INDEX ALL ON Production.Product
+        REBUILD WITH (FILLFACTOR = 80, SORT_IN_TEMPDB = ON, STATISTICS_NORECOMPUTE = ON);
+      - "ALTER INDEX PK_ProductPhoto_ProductPhotoID ON Production.ProductPhoto REORGANIZE WITH (LOB_COMPACTION = ON);"
+      - "ALTER INDEX IX_Employee_ManagerID ON HumanResources.Employee DISABLE;"
+      - "ALTER INDEX test_idx on test_table REBUILD WITH (ONLINE = ON, MAXDOP = 1, RESUMABLE = ON);"
+      - "ALTER INDEX test_idx on test_table PAUSE;"
+

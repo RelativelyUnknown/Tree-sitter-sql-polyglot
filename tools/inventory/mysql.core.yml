@@ -1767,3 +1767,356 @@ statements:
       - "SELECT @@GLOBAL.sql_mode, @@SESSION.sql_mode, @@sql_mode;"
 
 expressions:
+  - id: string_literals
+    name: String literals
+    doc: https://dev.mysql.com/doc/refman/8.4/en/string-literals.html
+    tier: high
+    probes:
+      - { id: single_quoted, sql: "SELECT 'a string';" }
+      - { id: double_quoted, sql: "SELECT \"another string\";", note: "Double quotes delimit strings unless ANSI_QUOTES is enabled (default sql_mode)" }
+      - { id: adjacent_concatenation, sql: "SELECT 'a' ' ' 'string';" }
+      - { id: doubled_quote, sql: "SELECT 'hel''lo', \"hel\"\"lo\";" }
+      - id: backslash_escapes
+        sql: |-
+          SELECT '\'hello', "\"hello", 'This\nIs\tTabbed\\', '\0\b\r\Z\%\_';
+      - { id: charset_introducer, sql: "SELECT _latin1'string', _binary'string';" }
+      - { id: introducer_collate, sql: "SELECT _utf8mb4'string' COLLATE utf8mb4_danish_ci;" }
+      - { id: national_string, sql: "SELECT N'some text', n'some text';" }
+      - { id: introducer_with_space, sql: "SELECT _utf8mb4 'string';" }
+    examples:
+      - "SELECT _latin1'string';"
+      - "SELECT _binary'string';"
+      - "SELECT _utf8mb4'string' COLLATE utf8mb4_danish_ci;"
+      - "SELECT N'some text';"
+      - "SELECT 'hello', '\"hello\"', '\"\"hello\"\"', 'hel''lo', '\\'hello';"
+
+  - id: numeric_literals
+    name: Numeric literals
+    doc: https://dev.mysql.com/doc/refman/8.4/en/number-literals.html
+    tier: high
+    probes:
+      - { id: integers, sql: "SELECT 1, -5, +9;" }
+      - { id: decimals, sql: "SELECT .2, 3.4, -6.78, +9.10;" }
+      - { id: scientific, sql: "SELECT 1.2E3, 1.2E-3, -1.2E3, 2.34e0;" }
+      - { id: big_integer, sql: "SELECT 18446744073709551615;" }
+
+  - id: datetime_literals
+    name: Date and time literals
+    doc: https://dev.mysql.com/doc/refman/8.4/en/date-and-time-literals.html
+    tier: high
+    probes:
+      - { id: typed_date, sql: "SELECT DATE '2012-12-31';" }
+      - { id: typed_time, sql: "SELECT TIME '11:30:45';" }
+      - { id: typed_timestamp, sql: "SELECT TIMESTAMP '2012-12-31 11:30:45.123456';" }
+      - { id: typed_no_space, sql: "SELECT DATE'2012-12-31', TIMESTAMP'2012-12-31 11:30:45';" }
+      - { id: odbc_escapes, sql: "SELECT { d '2012-12-31' }, { t '11:30:45' }, { ts '2012-12-31 11:30:45' };" }
+      - { id: string_and_number_forms, sql: "SELECT * FROM t WHERE d = '20070523' OR d = 19830905;" }
+    examples:
+      - "SELECT DATE'2012@12@31';"
+      - "SELECT TIMESTAMP'2012^12^31 11*30*45';"
+      - "SELECT TIMESTAMP'2012-12-31  11:30:45';"
+
+  - id: hexadecimal_literals
+    name: Hexadecimal literals
+    doc: https://dev.mysql.com/doc/refman/8.4/en/hexadecimal-literals.html
+    tier: medium
+    probes:
+      - { id: x_quoted, sql: "SELECT X'01AF', x'01af';" }
+      - { id: zero_x, sql: "SELECT 0x01AF, 0x5461626c65;" }
+      - { id: introducer_collate, sql: "SELECT _utf8mb4 0x4D7953514C COLLATE utf8mb4_danish_ci;" }
+      - { id: introducer_x_quoted, sql: "SELECT _latin1 X'4D7953514C';" }
+      - { id: empty, sql: "SELECT X''+0;" }
+    examples:
+      - "SELECT _latin1 X'4D7953514C';"
+      - "SELECT _utf8mb4 0x4D7953514C COLLATE utf8mb4_danish_ci;"
+      - "SELECT X'4D7953514C', CHARSET(X'4D7953514C');"
+      - "SET @v3 = CAST(X'41' AS UNSIGNED);"
+      - "SET @v2 = _binary X'000D' | X'0BC0';"
+
+  - id: bit_value_literals
+    name: Bit-value literals
+    doc: https://dev.mysql.com/doc/refman/8.4/en/bit-value-literals.html
+    tier: medium
+    probes:
+      - { id: b_quoted, sql: "SELECT b'1000001', B'01';" }
+      - { id: zero_b, sql: "SELECT 0b1100001;" }
+      - { id: introducer_collate, sql: "SELECT _utf8mb4 0b1000001 COLLATE utf8mb4_danish_ci;" }
+      - { id: insert_bit, sql: "INSERT INTO t SET b = b'1010';" }
+    examples:
+      - "SELECT _latin1 b'1000001';"
+      - "SELECT _utf8mb4 0b1000001 COLLATE utf8mb4_danish_ci;"
+      - "SELECT b'1000001', CHARSET(b'1000001');"
+      - "SET @v3 = CAST(b'1100001' AS UNSIGNED);"
+
+  - id: boolean_and_null_literals
+    name: Boolean literals and NULL
+    doc: https://dev.mysql.com/doc/refman/8.4/en/boolean-literals.html
+    tier: high
+    probes:
+      - { id: true_false, sql: "SELECT TRUE, true, FALSE, false;" }
+      - { id: null, sql: "SELECT NULL, null;" }
+      - { id: is_true, sql: "SELECT * FROM t WHERE flag = TRUE OR c IS NULL;" }
+
+  - id: identifiers
+    name: Identifiers and quoting
+    doc: https://dev.mysql.com/doc/refman/8.4/en/identifiers.html
+    tier: high
+    probes:
+      - { id: backtick_reserved_word, sql: "SELECT * FROM `select` WHERE `select`.id > 100;" }
+      - { id: backtick_special_chars, sql: "CREATE TABLE `a``b` (`c\"d` INT, `my col` INT);" }
+      - { id: leading_digit, sql: "SELECT 1abc FROM t;" }
+      - { id: dollar_and_underscore, sql: "SELECT a$b, _c FROM t;" }
+      - { id: string_alias, sql: "SELECT 1 AS `one`, 2 AS 'two', 3 AS \"three\";" }
+      - { id: unicode_identifier, sql: "SELECT größe FROM tabelle;" }
+    examples:
+      - "SELECT * FROM `select` WHERE `select`.id > 100;"
+      - "CREATE TABLE `a``b` (`c\"d` INT);"
+      - "SELECT 1 AS `one`, 2 AS 'two';"
+
+  - id: identifier_qualifiers
+    name: Identifier qualifiers
+    doc: https://dev.mysql.com/doc/refman/8.4/en/identifier-qualifiers.html
+    tier: high
+    probes:
+      - { id: table_column, sql: "SELECT t.c1 FROM t WHERE t.c2 > 100;" }
+      - { id: db_table_column, sql: "SELECT db1.t.c1 FROM db1.t WHERE db1.t.c2 > 100;" }
+      - { id: quoted_parts, sql: "SELECT `my-table`.`my-column` FROM `my-db`.`my-table`;" }
+      - { id: spaced_period, sql: "SELECT t . c FROM db1 . t;" }
+      - { id: reserved_word_after_period, sql: "SELECT t.select, t.from FROM t;" }
+    examples:
+      - |-
+        SELECT mydb.mytable.c1 FROM mydb.mytable
+        WHERE mydb.mytable.c2 > 100;
+      - |-
+        SELECT c1, c2, db1.t.c FROM db1.t INNER JOIN db2.t
+        WHERE db2.t.c > 100;
+      - |-
+        SELECT c1, c2, t1.c FROM db1.t AS t1 INNER JOIN db2.t AS t2
+        WHERE t2.c > 100;
+
+  - id: user_variables
+    name: User-defined variables
+    doc: https://dev.mysql.com/doc/refman/8.4/en/user-variables.html
+    tier: high
+    probes:
+      - { id: reference, sql: "SELECT @v1, @v2 FROM t;" }
+      - { id: name_with_dot_dollar, sql: "SELECT @my.var, @a$b, @_x;" }
+      - { id: quoted_names, sql: "SELECT @'my-var', @\"my-var\", @`my-var`;" }
+      - { id: assign_in_select, sql: "SELECT @a := @a + 1, c FROM t;" }
+      - { id: assign_in_where, sql: "SELECT * FROM t WHERE (@x := c) > 0;" }
+      - { id: in_where, sql: "SELECT * FROM t WHERE c = @col;" }
+      - { id: set_multiple, sql: "SET @v1 = X'41', @v2 = X'41' + 0;" }
+    examples:
+      - "SET @v3 = CAST(b'1000001' AS UNSIGNED);"
+      - "SELECT @v1, @v2, @v3;"
+      - "SET @s = CONCAT(\"SELECT \", @c, \" FROM t\");"
+      - "SELECT @col FROM t;"
+
+  - id: system_variables
+    name: System variable references
+    doc: https://dev.mysql.com/doc/refman/8.4/en/using-system-variables.html
+    tier: high
+    probes:
+      - { id: at_at, sql: "SELECT @@sql_mode;" }
+      - { id: global_session_local, sql: "SELECT @@GLOBAL.sql_mode, @@SESSION.sql_mode, @@LOCAL.sql_mode;" }
+      - { id: lowercase_scope, sql: "SELECT @@global.max_connections, @@session.autocommit;" }
+      - { id: in_expression, sql: "SET GLOBAL max_allowed_packet = 16*1024*1024;" }
+      - { id: compare_in_where, sql: "SELECT * FROM t WHERE c < @@max_join_size;" }
+    examples:
+      - "SET @@PERSIST_ONLY.back_log = 1000;"
+      - "SET GLOBAL max_allowed_packet=16*1024*1024;"
+
+  - id: comments
+    name: Comments
+    doc: https://dev.mysql.com/doc/refman/8.4/en/comments.html
+    tier: high
+    probes:
+      - { id: hash_comment, sql: "SELECT 1+1;     # This comment continues to the end of line" }
+      - { id: double_dash_comment, sql: "SELECT 1+1;     -- This comment continues to the end of line" }
+      - { id: inline_block_comment, sql: "SELECT 1 /* this is an in-line comment */ + 1;" }
+      - id: multiline_block_comment
+        sql: |-
+          SELECT 1+
+          /*
+          this is a
+          multiple-line comment
+          */
+          1;
+      - { id: executable_comment, sql: "SELECT /*! STRAIGHT_JOIN */ c FROM t1, t2;" }
+      - { id: versioned_executable_comment, sql: "CREATE TABLE t1(a INT, KEY (a)) /*!50110 KEY_BLOCK_SIZE=1024 */;" }
+      - { id: optimizer_hint_comment, sql: "SELECT /*+ BKA(t1) */ c FROM t1;" }
+    examples:
+      - "SELECT 1 /* this is an in-line comment */ + 1;"
+      - "CREATE TABLE t1(a INT, KEY (a)) /*!50110 KEY_BLOCK_SIZE=1024 */;"
+
+  - id: expression_syntax
+    name: Expression syntax and operators
+    doc: https://dev.mysql.com/doc/refman/8.4/en/expressions.html
+    tier: high
+    probes:
+      - { id: or_and_not, sql: "SELECT * FROM t WHERE a = 1 OR NOT b = 2 AND c = 3;" }
+      - { id: pipes_or, sql: "SELECT a || b FROM t;", note: "|| is logical OR unless PIPES_AS_CONCAT is enabled" }
+      - { id: double_ampersand, sql: "SELECT a && b FROM t;" }
+      - { id: xor, sql: "SELECT a XOR b FROM t;" }
+      - { id: bang_not, sql: "SELECT !a, ! (a > 1) FROM t;" }
+      - { id: is_true_false_unknown, sql: "SELECT a IS TRUE, a IS NOT FALSE, a IS UNKNOWN, a IS NOT UNKNOWN FROM t;" }
+      - { id: is_null, sql: "SELECT a IS NULL, a IS NOT NULL FROM t;" }
+      - { id: null_safe_equal, sql: "SELECT a <=> b FROM t;" }
+      - { id: comparison_operators, sql: "SELECT a = 1, a >= 1, a > 1, a <= 1, a < 1, a <> 1, a != 1 FROM t;" }
+      - { id: comparison_all_any, sql: "SELECT * FROM t WHERE a > ALL (SELECT b FROM t2) AND a = ANY (SELECT b FROM t2);" }
+      - { id: in_list, sql: "SELECT * FROM t WHERE a IN (1, 2, 3) AND b NOT IN ('x', 'y');" }
+      - { id: in_subquery, sql: "SELECT * FROM t WHERE a NOT IN (SELECT b FROM t2);" }
+      - { id: between, sql: "SELECT * FROM t WHERE a BETWEEN 1 AND 10 AND b NOT BETWEEN 2 AND 3;" }
+      - { id: sounds_like, sql: "SELECT * FROM t WHERE a SOUNDS LIKE 'smith';" }
+      - { id: like_escape, sql: "SELECT * FROM t WHERE a LIKE 'x|%' ESCAPE '|' AND b NOT LIKE 'y%';" }
+      - { id: regexp, sql: "SELECT * FROM t WHERE a REGEXP '^ab' AND b NOT REGEXP 'c$' AND c RLIKE 'd';" }
+      - { id: bit_operators, sql: "SELECT a | b, a & b, a << 2, a >> 1, a ^ b, ~a FROM t;" }
+      - { id: arithmetic_operators, sql: "SELECT a + b, a - b, a * b, a / b, a DIV b, a MOD b, a % b, -a, +a FROM t;" }
+      - { id: interval_arithmetic, sql: "SELECT d + INTERVAL 1 DAY, d - INTERVAL 2 HOUR, INTERVAL 1 DAY + d FROM t;" }
+      - { id: collate, sql: "SELECT a COLLATE utf8mb4_bin FROM t WHERE b = 'x' COLLATE utf8mb4_general_ci;" }
+      - { id: param_marker, sql: "SELECT * FROM t WHERE a = ? AND b > ?;", note: "param_marker in the expr grammar; valid in statements prepared through PREPARE or the C API" }
+      - { id: binary_operator, sql: "SELECT BINARY 'a' = 'A';" }
+      - { id: row_constructor, sql: "SELECT * FROM t WHERE (a, b) = (1, 2) AND ROW(a, b) <> ROW(3, 4);" }
+      - { id: scalar_subquery, sql: "SELECT (SELECT MAX(b) FROM t2) AS m FROM t;" }
+      - { id: exists, sql: "SELECT * FROM t WHERE EXISTS (SELECT 1 FROM t2 WHERE t2.a = t.a) AND NOT EXISTS (SELECT 1 FROM t3);" }
+      - { id: odbc_escape, sql: "SELECT { fn CONCAT('a', 'b') };", note: "simple_expr: {identifier expr} (ODBC escape)" }
+      - { id: match_expr, sql: "SELECT * FROM t WHERE MATCH (a) AGAINST ('word');" }
+      - { id: case_expr, sql: "SELECT CASE a WHEN 1 THEN 'one' ELSE 'other' END FROM t;" }
+      - { id: nested_parentheses, sql: "SELECT ((a + 1) * (b - 2)) / 3 FROM t;" }
+    examples:
+      - "SELECT DATE_ADD('2018-05-01',INTERVAL 1 DAY);"
+      - "SELECT '2018-12-31 23:59:59' + INTERVAL 1 SECOND;"
+      - "SELECT INTERVAL 1 DAY + '2018-12-31';"
+      - "SELECT EXTRACT(YEAR_MONTH FROM '2019-07-02 01:02:03');"
+      - |-
+        SELECT DATE_ADD('1970-01-01 12:00:00',
+                        INTERVAL CAST(6/4 AS DECIMAL(3,1)) HOUR_MINUTE);
+
+  - id: temporal_intervals
+    name: Temporal intervals
+    doc: https://dev.mysql.com/doc/refman/8.4/en/expressions.html
+    tier: high
+    probes:
+      - { id: simple_units, sql: "SELECT DATE_ADD(d, INTERVAL 1 MICROSECOND), DATE_ADD(d, INTERVAL 1 WEEK), DATE_ADD(d, INTERVAL 1 QUARTER), DATE_ADD(d, INTERVAL 1 YEAR) FROM t;" }
+      - { id: compound_units, sql: "SELECT DATE_ADD(d, INTERVAL '1:1' MINUTE_SECOND), DATE_SUB(d, INTERVAL '1 1:1:1' DAY_SECOND), DATE_ADD(d, INTERVAL '-1 10' DAY_HOUR) FROM t;" }
+      - { id: microsecond_units, sql: "SELECT DATE_ADD(d, INTERVAL '1.999999' SECOND_MICROSECOND), DATE_ADD(d, INTERVAL '1-2' YEAR_MONTH) FROM t;" }
+      - { id: expression_interval, sql: "SELECT DATE_ADD(d, INTERVAL 6/4 HOUR_MINUTE) FROM t;" }
+      - { id: interval_in_where, sql: "SELECT * FROM t WHERE d > NOW() - INTERVAL 7 DAY;" }
+
+  - id: comparison_functions
+    name: Comparison functions and operators
+    doc: https://dev.mysql.com/doc/refman/8.4/en/comparison-operators.html
+    tier: high
+    probes:
+      - { id: row_comparison, sql: "SELECT (a, b) = (1, 2), (a, b) <=> (1, NULL), (a, b) < (3, 4) FROM t;" }
+      - { id: row_in, sql: "SELECT (3, 4) IN ((1, 2), (3, 4));" }
+      - { id: coalesce_greatest_least, sql: "SELECT COALESCE(a, b, 0), GREATEST(a, b), LEAST(a, b) FROM t;" }
+      - { id: isnull_function, sql: "SELECT ISNULL(a), STRCMP(a, b) FROM t;" }
+      - { id: interval_function, sql: "SELECT INTERVAL(23, 1, 15, 17, 30, 44, 200);" }
+      - { id: between_expressions, sql: "SELECT * FROM t WHERE a BETWEEN b - 1 AND b + 1;" }
+    examples:
+      - "SELECT 1 <=> 1, NULL <=> NULL, 1 <=> NULL;"
+      - "SELECT '.01' <> '0.01';"
+      - "SELECT 10 IS TRUE;"
+      - "SELECT ! (1+1);"
+
+  - id: flow_control_functions
+    name: Flow control functions (CASE, IF, IFNULL, NULLIF)
+    doc: https://dev.mysql.com/doc/refman/8.4/en/flow-control-functions.html
+    tier: high
+    probes:
+      - { id: simple_case, sql: "SELECT CASE a WHEN 1 THEN 'one' WHEN 2 THEN 'two' ELSE 'more' END FROM t;" }
+      - { id: searched_case, sql: "SELECT CASE WHEN a > 0 THEN 'pos' WHEN a < 0 THEN 'neg' END FROM t;" }
+      - { id: case_binary_operand, sql: "SELECT CASE BINARY 'B' WHEN 'a' THEN 1 WHEN 'b' THEN 2 END;" }
+      - { id: if_function, sql: "SELECT IF(a > 2, 'yes', 'no') FROM t;" }
+      - { id: ifnull_nullif, sql: "SELECT IFNULL(a, 0), NULLIF(a, b) FROM t;" }
+    examples:
+      - |-
+        SELECT CASE 1 WHEN 1 THEN 'one'
+            WHEN 2 THEN 'two' ELSE 'more' END;
+      - "SELECT CASE WHEN 1>0 THEN 'true' ELSE 'false' END;"
+      - "SELECT IF(STRCMP('test','test1'),'no','yes');"
+      - "SELECT IFNULL(1/0,'yes');"
+      - "SELECT NULLIF(1,2);"
+
+  - id: assignment_operators
+    name: Assignment operators
+    doc: https://dev.mysql.com/doc/refman/8.4/en/assignment-operators.html
+    tier: medium
+    probes:
+      - { id: colon_equals_select, sql: "SELECT @var1 := COUNT(*) FROM t1;" }
+      - { id: colon_equals_chain, sql: "SELECT @var1, @var2 := @var1;" }
+      - { id: colon_equals_in_where, sql: "UPDATE t1 SET c1 = 2 WHERE c1 = @var1 := 1;" }
+      - { id: equals_in_set, sql: "SET @var1 = 1, @var2 := 2;" }
+    examples:
+      - "SELECT @var1 := 1, @var2;"
+      - "SELECT @var1:=COUNT(*) FROM t1;"
+      - "UPDATE t1 SET c1 = 2 WHERE c1 = @var1:= 1;"
+
+  - id: string_functions
+    name: String functions with special syntax
+    doc: https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+    tier: high
+    probes:
+      - { id: ordinary_call, sql: "SELECT CONCAT(a, '-', b), CONCAT_WS(',', a, b), LENGTH(a), UPPER(a) FROM t;" }
+      - { id: trim_forms, sql: "SELECT TRIM('  bar   '), TRIM(LEADING 'x' FROM 'xxxbarxxx'), TRIM(BOTH 'x' FROM 'xxxbarxxx'), TRIM(TRAILING 'xyz' FROM 'barxxyz');" }
+      - { id: trim_remstr_from, sql: "SELECT TRIM('x' FROM 'xxbarxx'), TRIM(LEADING FROM '  bar');" }
+      - { id: substring_from_for, sql: "SELECT SUBSTRING('foobarbar' FROM 4), SUBSTRING('Sakila' FROM -4 FOR 2);" }
+      - { id: substring_commas, sql: "SELECT SUBSTRING('Quadratically', 5, 6), SUBSTR('Sakila', -3), MID('abc', 2, 1);" }
+      - { id: substr_mid_from_for, sql: "SELECT SUBSTR('foobar' FROM 2 FOR 3), MID('foobar' FROM 2 FOR 3);" }
+      - { id: position_in, sql: "SELECT POSITION('bar' IN 'foobarbar');" }
+      - { id: char_using, sql: "SELECT CHAR(77, 121, 83, 81, '76' USING utf8mb4);" }
+      - { id: weight_string_as, sql: "SELECT HEX(WEIGHT_STRING('ab' AS CHAR(4))), HEX(WEIGHT_STRING('ab' AS BINARY(4)));" }
+      - { id: keyword_named_functions, sql: "SELECT INSERT('Quadratic', 3, 4, 'What'), LEFT('foobarbar', 5), RIGHT('abc', 1), REPEAT('MySQL', 3), REPLACE('www.mysql.com', 'w', 'Ww');" }
+      - { id: sounds_like_operator, sql: "SELECT 'Hello' SOUNDS LIKE 'Hollo';" }
+    examples:
+      - "SELECT CHAR(77,121,83,81,'76' USING utf8mb4);"
+      - "SELECT SUBSTRING('Sakila' FROM -4 FOR 2);"
+      - "SELECT TRIM(TRAILING 'xyz' FROM 'barxxyz');"
+      - "SELECT HEX(WEIGHT_STRING('ab' AS CHAR(4)));"
+      - "SELECT LOWER(@str), LOWER(CONVERT(@str USING utf8mb4));"
+
+  - id: pattern_matching
+    name: LIKE, ESCAPE and regular expressions
+    doc: https://dev.mysql.com/doc/refman/8.4/en/string-comparison-functions.html
+    tier: high
+    probes:
+      - { id: like, sql: "SELECT 'David!' LIKE 'David_', 'David!' NOT LIKE '%D%v%';" }
+      - { id: like_escape, sql: "SELECT 'David_' LIKE 'David|_' ESCAPE '|';" }
+      - { id: like_collate_introducer, sql: "SELECT 'abc' LIKE _utf8mb4 'ABC' COLLATE utf8mb4_bin;" }
+      - { id: like_binary, sql: "SELECT 'abc' LIKE BINARY 'ABC';" }
+      - { id: regexp_rlike, sql: "SELECT 'a' REGEXP '^[a-d]', 'b' RLIKE 'b', 'c' NOT REGEXP 'x';" }
+      - { id: regexp_functions, sql: "SELECT REGEXP_LIKE('abc', 'ABC', 'c'), REGEXP_INSTR('dog cat dog', 'dog', 2), REGEXP_REPLACE('abc def ghi', '[a-z]+', 'X', 1, 3), REGEXP_SUBSTR('abc def ghi', '[a-z]+', 1, 3);" }
+    examples:
+      - "SELECT 'ä' LIKE 'ae' COLLATE latin1_german2_ci;"
+      - "SELECT 'David_' LIKE 'David|_' ESCAPE '|';"
+      - "SELECT 'abc' LIKE _utf8mb4 'ABC' COLLATE utf8mb4_0900_as_cs;"
+      - "SELECT filename, filename LIKE '%\\\\' FROM t1;"
+      - "SELECT REGEXP_LIKE('CamelCase', 'CAMELCASE' COLLATE utf8mb4_0900_as_cs);"
+
+  - id: cast_functions
+    name: Cast functions and operators
+    doc: https://dev.mysql.com/doc/refman/8.4/en/cast-functions.html
+    tier: high
+    probes:
+      - { id: cast_signed_unsigned, sql: "SELECT CAST(a AS SIGNED), CAST(a AS UNSIGNED INTEGER), CAST(a AS SIGNED INTEGER) FROM t;" }
+      - { id: cast_char_binary, sql: "SELECT CAST(a AS CHAR), CAST(a AS CHAR(10)), CAST(a AS BINARY), CAST(a AS BINARY(4)) FROM t;" }
+      - { id: cast_char_charset, sql: "SELECT CAST('test' AS CHAR CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);" }
+      - { id: cast_char_ascii_unicode, sql: "SELECT CAST(a AS CHAR(10) ASCII), CAST(a AS CHAR UNICODE), CAST(a AS NCHAR(5)) FROM t;" }
+      - { id: cast_temporal, sql: "SELECT CAST(a AS DATE), CAST(a AS DATETIME(6)), CAST(a AS TIME(3)), CAST(a AS YEAR) FROM t;" }
+      - { id: cast_numeric, sql: "SELECT CAST(a AS DECIMAL(10, 2)), CAST(a AS DECIMAL), CAST(a AS DOUBLE), CAST(a AS FLOAT(10)), CAST(a AS REAL) FROM t;" }
+      - { id: cast_json, sql: "SELECT CAST('[1,2]' AS JSON);" }
+      - { id: cast_spatial, sql: "SELECT CAST(ST_GeomFromText('POINT(1 1)') AS POINT);" }
+      - { id: cast_array, sql: "CREATE TABLE t (j JSON, INDEX zips ((CAST(j->'$.zipcode' AS UNSIGNED ARRAY))));" }
+      - { id: cast_at_time_zone, sql: "SELECT CAST(c AT TIME ZONE '+00:00' AS DATETIME) AS u FROM tz;" }
+      - { id: cast_at_time_zone_interval, sql: "SELECT CAST(c AT TIME ZONE INTERVAL '+00:00' AS DATETIME(2)) FROM tz;" }
+      - { id: convert_type, sql: "SELECT CONVERT(a, SIGNED), CONVERT('test', CHAR CHARACTER SET utf8mb4) FROM t;" }
+      - { id: convert_using, sql: "SELECT CONVERT('abc' USING utf8mb4), CONVERT(_latin1'Müller' USING utf8mb4);" }
+      - { id: convert_using_collate, sql: "SELECT CONVERT('test' USING utf8mb4 COLLATE utf8mb4_bin);" }
+      - { id: binary_operator, sql: "SELECT BINARY 'a' = 'A';" }
+    examples:
+      - "SELECT CAST(c AT TIME ZONE 'UTC' AS DATETIME(2)) AS u FROM tz;"
+      - "SELECT CONVERT('test' USING utf8mb4) COLLATE utf8mb4_bin;"
+      - "SELECT CONVERT('test', CHAR CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);"
+      - "SELECT CAST(\"11:35:00\" AS YEAR), CAST(TIME \"11:35:00\" AS YEAR);"
+      - "SELECT _binary 'a' = 'A';"

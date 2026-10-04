@@ -1999,3 +1999,133 @@ expressions:
               title text FORMAT JSON PATH '$.title' OMIT QUOTES,
               director text PATH '$.director' KEEP QUOTES))) AS jt;
 
+  - id: conditional_expressions
+    name: Conditional expressions
+    doc: https://www.postgresql.org/docs/17/functions-conditional.html
+    tier: high
+    probes:
+      - { id: searched_case, sql: "SELECT a, CASE WHEN a = 1 THEN 'one' WHEN a = 2 THEN 'two' ELSE 'other' END FROM test;" }
+      - { id: simple_case, sql: "SELECT a, CASE a WHEN 1 THEN 'one' WHEN 2 THEN 'two' ELSE 'other' END FROM test;" }
+      - { id: case_without_else, sql: "SELECT CASE WHEN x > 0 THEN 1 END FROM t;" }
+      - { id: coalesce, sql: "SELECT COALESCE(description, short_description, '(none)') FROM t;" }
+      - { id: nullif, sql: "SELECT NULLIF(value, '(none)') FROM t;" }
+      - { id: greatest_least, sql: "SELECT GREATEST(1, 2, 3), LEAST(a, b) FROM t;" }
+
+  - id: array_functions_operators
+    name: Array functions and operators
+    doc: https://www.postgresql.org/docs/17/functions-array.html
+    tier: high
+    probes:
+      - { id: containment_overlap, sql: "SELECT ARRAY[1,4,3] @> ARRAY[3,1,3], ARRAY[2,2,7] <@ ARRAY[1,7,4,2,6], ARRAY[1,4,3] && ARRAY[2,1];" }
+      - { id: concatenation, sql: "SELECT ARRAY[1,2,3] || ARRAY[4,5,6], ARRAY[1,2,3] || ARRAY[[4,5,6],[7,8,9]], 3 || ARRAY[4,5,6], ARRAY[4,5,6] || 7;" }
+      - { id: comparison, sql: "SELECT ARRAY[1,2,3] = ARRAY[1,2,3], ARRAY[1,2,3] < ARRAY[1,2,4];" }
+      - { id: functions, sql: "SELECT array_append(ARRAY[1,2], 3), array_cat(ARRAY[1,2], ARRAY[3]), array_length(ARRAY[1,2,3], 1), array_position(ARRAY['a','b'], 'b'), cardinality(ARRAY[[1,2],[3,4]]), array_to_string(ARRAY[1, 2, 3, NULL, 5], ',', '*');" }
+      - { id: unnest_multiple, sql: "SELECT * FROM unnest(ARRAY[1,2], ARRAY['foo','bar','baz']) AS x (a, b);" }
+
+  - id: range_functions_operators
+    name: Range and multirange functions and operators
+    doc: https://www.postgresql.org/docs/17/functions-range.html
+    tier: medium
+    probes:
+      - { id: containment, sql: "SELECT int4range(2,4) @> int4range(2,3), '[2011-01-01,2011-03-01)'::tsrange @> '2011-01-10'::timestamp, 42 <@ int4range(1,7);" }
+      - { id: position_operators, sql: "SELECT int8range(3,7) && int8range(4,12), int8range(1,10) << int8range(100,110), int8range(50,60) >> int8range(20,30), int8range(1,20) &< int8range(18,20), int8range(7,20) &> int8range(5,10), numrange(1.1,2.2) -|- numrange(2.2,3.3);" }
+      - { id: set_operators, sql: "SELECT numrange(5,15) + numrange(10,20), int8range(5,15) * int8range(10,20), int8range(5,15) - int8range(10,20);" }
+      - { id: functions, sql: "SELECT lower(numrange(1.1,2.2)), upper(numrange(1.1,2.2)), isempty(numrange(1.1,2.2)), range_merge('[0,1)'::numrange, '[2,3)'::numrange), multirange(int4range(1,3)), unnest('{[1,2), [3,4)}'::int4multirange);" }
+
+  - id: aggregate_functions
+    name: Aggregate functions
+    doc: https://www.postgresql.org/docs/17/functions-aggregate.html
+    tier: high
+    probes:
+      - { id: general_purpose, sql: "SELECT any_value(a), array_agg(a), avg(a), bit_and(a), bool_and(b), bool_or(b), every(b), count(a), max(a), min(a), string_agg(c, ','), sum(a) FROM t;" }
+      - { id: json_xml_aggregates, sql: "SELECT json_agg(a), jsonb_object_agg(k, v), json_object_agg_unique(k, v), xmlagg(x) FROM t;" }
+      - { id: statistical, sql: "SELECT corr(y, x), covar_pop(y, x), regr_slope(y, x), stddev(x), stddev_samp(x), var_pop(x), variance(x) FROM t;" }
+      - { id: ordered_set, sql: "SELECT mode() WITHIN GROUP (ORDER BY a), percentile_cont(ARRAY[0.25, 0.5]) WITHIN GROUP (ORDER BY a), percentile_disc(0.5) WITHIN GROUP (ORDER BY a) FROM t;" }
+      - { id: hypothetical_set, sql: "SELECT rank(1, 'x') WITHIN GROUP (ORDER BY a, b), dense_rank(1) WITHIN GROUP (ORDER BY a), percent_rank(1) WITHIN GROUP (ORDER BY a), cume_dist(1) WITHIN GROUP (ORDER BY a) FROM t;" }
+      - { id: grouping_operation, sql: "SELECT make, model, GROUPING(make, model), sum(sales) FROM items_sold GROUP BY ROLLUP(make, model);" }
+
+  - id: window_functions
+    name: Window functions
+    doc: https://www.postgresql.org/docs/17/functions-window.html
+    tier: high
+    probes:
+      - { id: ranking, sql: "SELECT row_number() OVER w, rank() OVER w, dense_rank() OVER w, percent_rank() OVER w, cume_dist() OVER w, ntile(4) OVER w FROM t WINDOW w AS (ORDER BY a);" }
+      - { id: value_functions, sql: "SELECT lag(a) OVER w, lag(a, 2, 0) OVER w, lead(a, 1) OVER w, first_value(a) OVER w, last_value(a) OVER w, nth_value(a, 2) OVER w FROM t WINDOW w AS (ORDER BY b ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING);" }
+      - { id: aggregate_as_window, sql: "SELECT depname, empno, salary, avg(salary) OVER (PARTITION BY depname) FROM empsalary;" }
+
+  - id: subquery_expressions
+    name: Subquery expressions
+    doc: https://www.postgresql.org/docs/17/functions-subquery.html
+    tier: high
+    probes:
+      - { id: exists, sql: "SELECT col1 FROM tab1 WHERE EXISTS (SELECT 1 FROM tab2 WHERE col2 = tab1.col2);" }
+      - { id: not_exists, sql: "SELECT col1 FROM tab1 WHERE NOT EXISTS (SELECT 1 FROM tab2 WHERE col2 = tab1.col2);" }
+      - { id: in_subquery, sql: "SELECT * FROM t WHERE a IN (SELECT a FROM u);" }
+      - { id: not_in_subquery, sql: "SELECT * FROM t WHERE a NOT IN (SELECT a FROM u);" }
+      - { id: row_in_subquery, sql: "SELECT * FROM t WHERE (a, b) IN (SELECT a, b FROM u);" }
+      - { id: any_some_subquery, sql: "SELECT * FROM t WHERE a = ANY (SELECT a FROM u) OR a > SOME (SELECT a FROM u);" }
+      - { id: all_subquery, sql: "SELECT * FROM t WHERE a > ALL (SELECT a FROM u);" }
+      - { id: row_any_subquery, sql: "SELECT * FROM t WHERE ROW(a, b) = ANY (SELECT a, b FROM u);" }
+      - { id: row_compare_subquery, sql: "SELECT * FROM t WHERE (a, b) = (SELECT a, b FROM u LIMIT 1);" }
+
+  - id: row_and_array_comparisons
+    name: Row and array comparisons
+    doc: https://www.postgresql.org/docs/17/functions-comparisons.html
+    tier: high
+    probes:
+      - { id: in_list, sql: "SELECT * FROM t WHERE a IN (1, 2, 3) AND b NOT IN ('x', 'y');" }
+      - { id: any_array, sql: "SELECT * FROM t WHERE a = ANY (ARRAY[1, 2, 3]) OR b LIKE ANY ('{a%,b%}');" }
+      - { id: some_all_array, sql: "SELECT * FROM t WHERE a < SOME (arr) AND b <> ALL (ARRAY[1, 2]);" }
+      - { id: row_constructor_comparison, sql: "SELECT ROW(1, 2) < ROW(1, 3), (a, b) <= (c, d), (a, b) <> (1, 2) FROM t;" }
+      - { id: row_is_distinct_from, sql: "SELECT ROW(a, b) IS DISTINCT FROM ROW(c, d), ROW(a, b) IS NOT DISTINCT FROM ROW(c, d) FROM t;" }
+      - { id: row_is_null, sql: "SELECT ROW(a, b) IS NULL, ROW(a, b) IS NOT NULL FROM t;" }
+      - { id: composite_comparison, sql: "SELECT t1 = t2, t1 IS DISTINCT FROM t2 FROM t1, t2;" }
+      - { id: record_image_operators, sql: "SELECT t1 *= t2, t1 *<> t2, t1 *< t2, t1 *<= t2, t1 *> t2, t1 *>= t2 FROM t1, t2;" }
+
+  - id: set_returning_functions
+    name: Set returning functions
+    doc: https://www.postgresql.org/docs/17/functions-srf.html
+    tier: medium
+    probes:
+      - { id: generate_series, sql: "SELECT * FROM generate_series(2, 4), generate_series('2008-03-01 00:00'::timestamp, '2008-03-04 12:00', '10 hours');" }
+      - { id: srf_in_select_list, sql: "SELECT generate_series(1, 3), generate_subscripts('{NULL,1,NULL,2}'::int[], 1) AS s;" }
+      - { id: with_ordinality, sql: "SELECT * FROM pg_ls_dir('.') WITH ORDINALITY AS t (ls, n);" }
+
+  - id: system_information_functions
+    name: System information functions and SQL value keywords
+    doc: https://www.postgresql.org/docs/17/functions-info.html
+    tier: high
+    probes:
+      - { id: session_keywords, sql: "SELECT CURRENT_CATALOG, CURRENT_ROLE, CURRENT_SCHEMA, CURRENT_USER, SESSION_USER, SYSTEM_USER, USER;" }
+      - { id: function_forms, sql: "SELECT current_database(), current_schema(), current_schemas(true), version(), pg_backend_pid();" }
+      - { id: privilege_and_catalog_functions, sql: "SELECT has_table_privilege('myschema.mytable', 'select'), pg_get_viewdef('v'::regclass), format_type(23, NULL), pg_typeof(1);" }
+
+  - id: sequence_functions
+    name: Sequence manipulation functions
+    doc: https://www.postgresql.org/docs/17/functions-sequence.html
+    tier: medium
+    probes:
+      - { id: functions, sql: "SELECT nextval('foo'), currval('foo'), lastval(), setval('myseq', 42, false), nextval('foo'::regclass);" }
+
+  - id: uuid_functions
+    name: UUID functions
+    doc: https://www.postgresql.org/docs/17/functions-uuid.html
+    tier: low
+    probes:
+      - { id: gen_random_uuid, sql: "SELECT gen_random_uuid();" }
+
+  - id: merge_support_functions
+    name: Merge support functions
+    doc: https://www.postgresql.org/docs/17/functions-merge-support.html
+    tier: medium
+    probes:
+      - id: merge_action
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN DELETE WHEN NOT MATCHED THEN INSERT VALUES (s.id) RETURNING merge_action(), t.id;"
+        note: merge_action() is only valid in the RETURNING list of MERGE.
+
+  - id: domain_types
+    name: Domain types
+    doc: https://www.postgresql.org/docs/17/domains.html
+    tier: low
+    probes:
+      - { id: domain_column_and_cast, sql: "SELECT '12345'::us_postal_code, CAST(a AS posint) FROM t;" }
