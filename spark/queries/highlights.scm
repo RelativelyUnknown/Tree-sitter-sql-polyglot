@@ -1,4 +1,4 @@
-; inherits: sql
+; inherits: hive
 
 ; Spark/Hive/Iceberg-specific keywords
 [
@@ -49,4 +49,58 @@
 [
   (keyword_geometry)
   (keyword_geography)
+] @type.builtin
+
+; ============================================================
+; Remaining spark keywords
+; ============================================================
+
+[
+  (keyword_call)
+  (keyword_clone)
+  (keyword_compute)
+  (keyword_condition)
+  (keyword_deep)
+  (keyword_delta)
+  (keyword_diagnostics)
+  (keyword_distributed)
+  (keyword_field)
+  (keyword_get)
+  (keyword_include)
+  (keyword_incremental)
+  (keyword_iterate)
+  (keyword_leave)
+  (keyword_loop)
+  (keyword_message_text)
+  (keyword_metadata)
+  (keyword_name)
+  (keyword_noscan)
+  (keyword_options)
+  (keyword_ordered)
+  (keyword_pivot)
+  (keyword_properties)
+  (keyword_purge)
+  (keyword_qualify)
+  (keyword_repeat)
+  (keyword_resignal)
+  (keyword_returned_sqlstate)
+  (keyword_shallow)
+  (keyword_signal)
+  (keyword_source)
+  (keyword_sqlstate)
+  (keyword_statistics)
+  (keyword_stats)
+  (keyword_unpivot)
+  (keyword_var)
+  (keyword_variable)
+  (keyword_version)
+  (keyword_while)
+] @keyword
+
+[
+  (keyword_elseif)
+] @conditional
+
+[
+  (keyword_variant)
 ] @type.builtin

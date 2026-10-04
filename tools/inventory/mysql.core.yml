@@ -1,0 +1,2142 @@
+dialect: mysql
+engine: MySQL
+version: "8.4"
+source: https://dev.mysql.com/doc/refman/8.4/en/sql-statements.html
+
+statements:
+  - id: select
+    name: SELECT
+    doc: https://dev.mysql.com/doc/refman/8.4/en/select.html
+    tier: high
+    probes:
+      - { id: no_from, sql: "SELECT 1 + 1;" }
+      - { id: from_dual, sql: "SELECT 1 + 1 FROM DUAL;" }
+      - { id: star, sql: "SELECT * FROM t;" }
+      - { id: qualified_star, sql: "SELECT t.*, c FROM t;" }
+      - { id: alias_as, sql: "SELECT c AS a FROM t;" }
+      - { id: alias_no_as, sql: "SELECT c a FROM t;" }
+      - { id: table_alias, sql: "SELECT x.c FROM t AS x, t2 y WHERE x.c = y.c;" }
+      - { id: all, sql: "SELECT ALL c FROM t;" }
+      - { id: distinct, sql: "SELECT DISTINCT c FROM t;" }
+      - { id: distinctrow, sql: "SELECT DISTINCTROW c FROM t;" }
+      - { id: high_priority, sql: "SELECT HIGH_PRIORITY c FROM t;" }
+      - { id: straight_join_modifier, sql: "SELECT STRAIGHT_JOIN c FROM t, t2;" }
+      - { id: sql_small_result, sql: "SELECT SQL_SMALL_RESULT c FROM t GROUP BY c;" }
+      - { id: sql_big_result, sql: "SELECT SQL_BIG_RESULT c FROM t GROUP BY c;" }
+      - { id: sql_buffer_result, sql: "SELECT SQL_BUFFER_RESULT c FROM t;" }
+      - { id: sql_no_cache, sql: "SELECT SQL_NO_CACHE c FROM t;" }
+      - { id: sql_calc_found_rows, sql: "SELECT SQL_CALC_FOUND_ROWS c FROM t LIMIT 10;" }
+      - { id: combined_modifiers, sql: "SELECT DISTINCT HIGH_PRIORITY STRAIGHT_JOIN SQL_SMALL_RESULT SQL_BUFFER_RESULT SQL_CALC_FOUND_ROWS c FROM t;" }
+      - { id: partition, sql: "SELECT * FROM t PARTITION (p0, p1);" }
+      - { id: where, sql: "SELECT c FROM t WHERE c > 0;" }
+      - { id: group_by, sql: "SELECT c, COUNT(*) FROM t GROUP BY c;" }
+      - { id: group_by_position, sql: "SELECT c, COUNT(*) FROM t GROUP BY 1;" }
+      - { id: group_by_with_rollup, sql: "SELECT a, b, SUM(c) FROM t GROUP BY a, b WITH ROLLUP;" }
+      - { id: group_by_rollup_function, sql: "SELECT a, b, SUM(c) FROM t GROUP BY ROLLUP (a, b);" }
+      - { id: having, sql: "SELECT c, COUNT(*) FROM t GROUP BY c HAVING COUNT(*) > 1;" }
+      - { id: having_without_group_by, sql: "SELECT c FROM t HAVING c > 0;" }
+      - { id: window_clause, sql: "SELECT SUM(c) OVER w FROM t WINDOW w AS (PARTITION BY a ORDER BY b);" }
+      - { id: window_clause_multiple, sql: "SELECT SUM(c) OVER w1, AVG(c) OVER w2 FROM t WINDOW w1 AS (PARTITION BY a), w2 AS (w1 ORDER BY b);" }
+      - { id: order_by, sql: "SELECT c FROM t ORDER BY c;" }
+      - { id: order_by_asc_desc, sql: "SELECT a, b FROM t ORDER BY a ASC, b DESC;" }
+      - { id: order_by_position, sql: "SELECT a, b FROM t ORDER BY 2, 1;" }
+      - { id: order_by_with_rollup, sql: "SELECT a, SUM(c) FROM t GROUP BY a ORDER BY a WITH ROLLUP;", note: "From the syntax block: [ORDER BY {col_name | expr | position} [ASC | DESC], ... [WITH ROLLUP]]" }
+      - { id: limit, sql: "SELECT c FROM t LIMIT 5;" }
+      - { id: limit_offset_comma, sql: "SELECT c FROM t LIMIT 5, 10;" }
+      - { id: limit_offset_keyword, sql: "SELECT c FROM t LIMIT 10 OFFSET 5;" }
+      - { id: into_vars_after_select_list, sql: "SELECT c, d INTO @x, @y FROM t LIMIT 1;" }
+      - { id: into_vars_before_locking, sql: "SELECT c FROM t LIMIT 1 INTO @x;" }
+      - { id: into_vars_after_locking, sql: "SELECT c FROM t LIMIT 1 FOR UPDATE INTO @x;" }
+      - { id: into_outfile, sql: "SELECT * FROM t INTO OUTFILE '/tmp/t.txt';" }
+      - id: into_outfile_options
+        sql: |-
+          SELECT * FROM t INTO OUTFILE '/tmp/t.txt' CHARACTER SET utf8mb4 FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"' ESCAPED BY '\\' LINES STARTING BY '>' TERMINATED BY '\n';
+      - { id: into_outfile_columns, sql: "SELECT * FROM t INTO OUTFILE '/tmp/t.txt' COLUMNS TERMINATED BY ',' ENCLOSED BY '\"';" }
+      - { id: into_dumpfile, sql: "SELECT c FROM t LIMIT 1 INTO DUMPFILE '/tmp/c.bin';" }
+      - { id: for_update, sql: "SELECT c FROM t WHERE c = 1 FOR UPDATE;" }
+      - { id: for_share, sql: "SELECT c FROM t WHERE c = 1 FOR SHARE;" }
+      - { id: for_update_of, sql: "SELECT * FROM t, t2 FOR UPDATE OF t;" }
+      - { id: for_share_of_multiple, sql: "SELECT * FROM t, t2, t3 FOR SHARE OF t, t2;" }
+      - { id: for_update_nowait, sql: "SELECT c FROM t FOR UPDATE NOWAIT;" }
+      - { id: for_share_skip_locked, sql: "SELECT c FROM t FOR SHARE SKIP LOCKED;" }
+      - { id: multiple_locking_clauses, sql: "SELECT * FROM t1, t2 FOR SHARE OF t1 FOR UPDATE OF t2 NOWAIT;" }
+      - { id: lock_in_share_mode, sql: "SELECT c FROM t LOCK IN SHARE MODE;" }
+      - { id: full_clause_order, sql: "SELECT DISTINCT a, SUM(b) OVER w AS s FROM t PARTITION (p0) WHERE a > 0 GROUP BY a, b HAVING SUM(b) > 1 WINDOW w AS (ORDER BY a) ORDER BY a DESC LIMIT 1, 10 FOR UPDATE SKIP LOCKED;" }
+    examples:
+      - "SELECT 1 + 1 FROM DUAL;"
+      - |-
+        SELECT CONCAT(last_name,', ',first_name) AS full_name
+          FROM mytable ORDER BY full_name;
+      - |-
+        SELECT college, region AS r, seed AS s FROM tournament
+          ORDER BY r, s;
+      - |-
+        SELECT user, MAX(salary) FROM users
+          GROUP BY user HAVING MAX(salary) > 10;
+      - "SELECT * FROM t1, t2 FOR SHARE OF t1 FOR UPDATE OF t2;"
+
+  - id: select_into
+    name: SELECT ... INTO
+    doc: https://dev.mysql.com/doc/refman/8.4/en/select-into.html
+    tier: high
+    probes:
+      - { id: into_before_from, sql: "SELECT c INTO @x FROM t LIMIT 1;" }
+      - { id: into_before_locking_clause, sql: "SELECT c FROM t LIMIT 1 INTO @x FOR UPDATE;", note: "Documented position, deprecated but still accepted in 8.4" }
+      - { id: into_at_end, sql: "SELECT c FROM t LIMIT 1 FOR UPDATE INTO @x;" }
+      - { id: into_var_list, sql: "SELECT a, b INTO @x, @y FROM t LIMIT 1;" }
+      - { id: table_statement_into, sql: "TABLE t ORDER BY c LIMIT 1 INTO @x, @y;" }
+      - { id: values_derived_into, sql: "SELECT * FROM (VALUES ROW(1,2,3)) AS t(a,b,c) INTO @x, @y, @z;" }
+      - id: into_outfile_before_from
+        sql: |-
+          SELECT a, b INTO OUTFILE '/tmp/result.txt' FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"' LINES TERMINATED BY '\n' FROM t;
+      - { id: table_statement_into_outfile, sql: "TABLE t ORDER BY c LIMIT 1000 INTO OUTFILE '/tmp/t.txt';" }
+      - { id: into_dumpfile, sql: "SELECT c INTO DUMPFILE '/tmp/c.bin' FROM t LIMIT 1;" }
+    examples:
+      - "SELECT * INTO @myvar FROM t1;"
+      - "SELECT * FROM t1 INTO @myvar FOR UPDATE;"
+      - "SELECT * FROM t1 FOR UPDATE INTO @myvar;"
+      - "SELECT id, data INTO @x, @y FROM test.t1 LIMIT 1;"
+      - |-
+        SELECT a,b,a+b INTO OUTFILE '/tmp/result.txt'
+          FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
+          LINES TERMINATED BY '\n'
+          FROM test_table;
+
+  - id: join
+    name: JOIN clause
+    doc: https://dev.mysql.com/doc/refman/8.4/en/join.html
+    tier: high
+    probes:
+      - { id: comma_join, sql: "SELECT * FROM t1, t2 WHERE t1.a = t2.a;" }
+      - { id: inner_join_on, sql: "SELECT * FROM t1 INNER JOIN t2 ON t1.a = t2.a;" }
+      - { id: join_on, sql: "SELECT * FROM t1 JOIN t2 ON t1.a = t2.a;" }
+      - { id: join_without_condition, sql: "SELECT * FROM t1 JOIN t2;" }
+      - { id: cross_join, sql: "SELECT * FROM t1 CROSS JOIN t2;" }
+      - { id: cross_join_on, sql: "SELECT * FROM t1 CROSS JOIN t2 ON t1.a = t2.a;", note: "joined_table: table_reference {[INNER | CROSS] JOIN | STRAIGHT_JOIN} table_factor [join_specification]" }
+      - { id: inner_join_using, sql: "SELECT * FROM t1 INNER JOIN t2 USING (a, b);" }
+      - { id: straight_join, sql: "SELECT * FROM t1 STRAIGHT_JOIN t2;" }
+      - { id: straight_join_on, sql: "SELECT * FROM t1 STRAIGHT_JOIN t2 ON t1.a = t2.a;" }
+      - { id: left_join, sql: "SELECT * FROM t1 LEFT JOIN t2 ON t1.a = t2.a;" }
+      - { id: left_outer_join, sql: "SELECT * FROM t1 LEFT OUTER JOIN t2 ON t1.a = t2.a;" }
+      - { id: right_join, sql: "SELECT * FROM t1 RIGHT JOIN t2 ON t1.a = t2.a;" }
+      - { id: right_outer_join_using, sql: "SELECT * FROM t1 RIGHT OUTER JOIN t2 USING (a);" }
+      - { id: natural_join, sql: "SELECT * FROM t1 NATURAL JOIN t2;" }
+      - { id: natural_inner_join, sql: "SELECT * FROM t1 NATURAL INNER JOIN t2;" }
+      - { id: natural_left_join, sql: "SELECT * FROM t1 NATURAL LEFT JOIN t2;" }
+      - { id: natural_left_outer_join, sql: "SELECT * FROM t1 NATURAL LEFT OUTER JOIN t2;" }
+      - { id: natural_right_join, sql: "SELECT * FROM t1 NATURAL RIGHT JOIN t2;" }
+      - { id: chained_joins, sql: "SELECT * FROM t1 LEFT JOIN t2 ON t1.a = t2.a LEFT JOIN t3 ON t2.a = t3.a;" }
+      - { id: nested_join_list, sql: "SELECT * FROM t1 LEFT JOIN (t2, t3, t4) ON (t2.a = t1.a AND t3.b = t1.b AND t4.c = t1.c);" }
+      - { id: nested_join_parenthesized, sql: "SELECT * FROM t1 LEFT JOIN (t2 CROSS JOIN t3) ON (t2.a = t1.a AND t3.b = t1.b);" }
+      - { id: parenthesized_table_references, sql: "SELECT * FROM (t1, t2) JOIN t3 ON (t1.a = t3.a);" }
+      - { id: odbc_oj_escape, sql: "SELECT * FROM { OJ t1 LEFT OUTER JOIN t2 ON t1.a = t2.a };" }
+      - { id: derived_table, sql: "SELECT * FROM (SELECT 1, 2, 3) AS t1;" }
+      - { id: derived_table_no_as, sql: "SELECT * FROM (SELECT 1 AS a) t1;" }
+      - { id: derived_table_column_list, sql: "SELECT * FROM (SELECT 1, 2) AS t1 (a, b);" }
+      - { id: lateral_derived_table, sql: "SELECT * FROM t1, LATERAL (SELECT t2.c FROM t2 WHERE t2.a = t1.a) AS dt;" }
+      - { id: partition_in_join, sql: "SELECT * FROM t1 PARTITION (p0) AS x JOIN t2 PARTITION (p1, p2) AS y ON x.a = y.a;" }
+    examples:
+      - |-
+        SELECT t1.name, t2.salary
+          FROM employee AS t1 INNER JOIN info AS t2 ON t1.name = t2.name;
+      - |-
+        SELECT left_tbl.*
+          FROM left_tbl LEFT JOIN right_tbl ON left_tbl.id = right_tbl.id
+          WHERE right_tbl.id IS NULL;
+      - |-
+        SELECT left_tbl.*
+            FROM { OJ left_tbl LEFT OUTER JOIN right_tbl
+                   ON left_tbl.id = right_tbl.id }
+            WHERE right_tbl.id IS NULL;
+      - |-
+        SELECT * FROM table1 LEFT JOIN table2 ON table1.id = table2.id
+          LEFT JOIN table3 ON table2.id = table3.id;
+      - "SELECT * FROM t1, t2 JOIN t3 ON (t1.i1 = t3.i3);"
+
+  - id: index_hints
+    name: Index hints
+    doc: https://dev.mysql.com/doc/refman/8.4/en/index-hints.html
+    tier: high
+    probes:
+      - { id: use_index, sql: "SELECT * FROM t USE INDEX (i1, i2) WHERE a = 1;" }
+      - { id: use_key, sql: "SELECT * FROM t USE KEY (i1);" }
+      - { id: use_index_empty, sql: "SELECT * FROM t USE INDEX ();" }
+      - { id: ignore_index, sql: "SELECT * FROM t IGNORE INDEX (i1);" }
+      - { id: force_index, sql: "SELECT * FROM t FORCE INDEX (i1);" }
+      - { id: force_key, sql: "SELECT * FROM t FORCE KEY (i1);" }
+      - { id: for_join, sql: "SELECT * FROM t USE INDEX FOR JOIN (i1);" }
+      - { id: for_order_by, sql: "SELECT * FROM t IGNORE INDEX FOR ORDER BY (i1) ORDER BY a;" }
+      - { id: for_group_by, sql: "SELECT a FROM t FORCE INDEX FOR GROUP BY (i1) GROUP BY a;" }
+      - { id: hint_list, sql: "SELECT * FROM t USE INDEX (i1) IGNORE INDEX FOR ORDER BY (i2) ORDER BY a;" }
+      - { id: with_alias, sql: "SELECT * FROM t AS x FORCE INDEX (i1) JOIN t2 y USE INDEX (i2) ON x.a = y.a;" }
+      - { id: in_delete_multi_table, sql: "DELETE t.* FROM t USE INDEX (i1) WHERE a BETWEEN 1 AND 100;" }
+      - { id: in_update, sql: "UPDATE t FORCE INDEX (i1) SET a = 1 WHERE b = 2;" , note: "UPDATE table_references accept index hints (update.html: table_references as in SELECT)" }
+    examples:
+      - |-
+        SELECT * FROM table1 USE INDEX (col1_index,col2_index)
+          WHERE col1=1 AND col2=2 AND col3=3;
+      - "SELECT * FROM t1 USE INDEX (i1) IGNORE INDEX FOR ORDER BY (i2) ORDER BY a;"
+      - "SELECT * FROM t1 USE INDEX FOR JOIN (i1) FORCE INDEX FOR JOIN (i2);"
+      - |-
+        SELECT * FROM t1
+          USE INDEX () IGNORE INDEX (i2) USE INDEX (i1) USE INDEX (i2);
+      - "SELECT * FROM t1 USE INDEX (i1) USE INDEX (i1,i1);"
+
+  - id: optimizer_hints
+    name: Optimizer hints
+    doc: https://dev.mysql.com/doc/refman/8.4/en/optimizer-hints.html
+    tier: medium
+    probes:
+      - { id: select_hint, sql: "SELECT /*+ BKA(t1) NO_BKA(t2) */ * FROM t1 INNER JOIN t2 ON t1.a = t2.a;" }
+      - { id: index_level_hint, sql: "SELECT /*+ NO_RANGE_OPTIMIZATION(t PRIMARY, i1) */ c FROM t WHERE c > 30;" }
+      - { id: query_block_name, sql: "SELECT /*+ QB_NAME(qb1) */ c FROM t;" }
+      - { id: table_at_query_block, sql: "SELECT /*+ JOIN_ORDER(t4@subq1, t3) */ COUNT(*) FROM t3 WHERE t3.a IN (SELECT /*+ QB_NAME(subq1) */ a FROM t4);" }
+      - { id: max_execution_time, sql: "SELECT /*+ MAX_EXECUTION_TIME(1000) */ * FROM t;" }
+      - { id: set_var, sql: "SELECT /*+ SET_VAR(sort_buffer_size = 16M) */ c FROM t ORDER BY c;" }
+      - { id: insert_hint, sql: "INSERT /*+ SET_VAR(foreign_key_checks=OFF) */ INTO t VALUES (2);" }
+      - { id: replace_hint, sql: "REPLACE /*+ NO_ICP(t) */ INTO t VALUES (2);" }
+      - { id: update_hint, sql: "UPDATE /*+ NO_MERGE(t) */ t SET c = 1;" }
+      - { id: delete_hint, sql: "DELETE /*+ MAX_EXECUTION_TIME(1000) */ FROM t WHERE c = 1;" }
+      - { id: subquery_hint, sql: "SELECT * FROM t WHERE a IN (SELECT /*+ SUBQUERY(MATERIALIZATION) */ a FROM t2);" }
+    examples:
+      - |-
+        SELECT /*+ NO_RANGE_OPTIMIZATION(t3 PRIMARY, f2_idx) */ f1
+          FROM t3 WHERE f1 > 30 AND f1 < 33;
+      - "SELECT /*+ MERGE(dt) */ * FROM (SELECT * FROM t1) AS dt;"
+      - "INSERT /*+ SET_VAR(foreign_key_checks=OFF) */ INTO t2 VALUES(2);"
+      - |-
+        SELECT
+        /*+ JOIN_PREFIX(t2, t5@subq2, t4@subq1)
+            JOIN_ORDER(t4@subq1, t3)
+            JOIN_SUFFIX(t1) */
+        COUNT(*) FROM t1 JOIN t2 JOIN t3
+                   WHERE t1.f1 IN (SELECT /*+ QB_NAME(subq1) */ f1 FROM t4)
+                     AND t2.f1 IN (SELECT /*+ QB_NAME(subq2) */ f1 FROM t5);
+      - "SELECT /*+ NO_BNL() BKA(t1) */ t1.* FROM t1 INNER JOIN t2 INNER JOIN t3;"
+
+  - id: set_operations
+    name: Set Operations with UNION, INTERSECT, and EXCEPT
+    doc: https://dev.mysql.com/doc/refman/8.4/en/set-operations.html
+    tier: high
+    probes:
+      - { id: select_union_select, sql: "SELECT a FROM t1 UNION SELECT a FROM t2;" }
+      - { id: table_union_select, sql: "TABLE t1 UNION SELECT * FROM t2;" }
+      - { id: values_union_table, sql: "VALUES ROW(4,-2), ROW(5,9) UNION TABLE t2;" }
+      - { id: select_union_values, sql: "SELECT * FROM t1 UNION VALUES ROW(4,-2), ROW(5,9);" }
+      - { id: parenthesized_blocks_order_limit, sql: "(SELECT a FROM t1 WHERE a = 10 ORDER BY a LIMIT 10) UNION (SELECT a FROM t2 WHERE a = 11 ORDER BY a LIMIT 10);" }
+      - { id: trailing_order_limit, sql: "SELECT a FROM t1 EXCEPT SELECT a FROM t2 ORDER BY a LIMIT 10;" }
+      - { id: parenthesized_with_trailing_order, sql: "(SELECT a FROM t1) EXCEPT (SELECT a FROM t2) ORDER BY a LIMIT 10;" }
+      - { id: nested_parentheses, sql: "TABLE r EXCEPT (TABLE s INTERSECT TABLE t);" }
+      - { id: mixed_precedence, sql: "TABLE r EXCEPT TABLE s INTERSECT TABLE t;" }
+      - { id: with_clause_body, sql: "WITH cte AS (SELECT 1 AS a) SELECT a FROM cte UNION SELECT a FROM t;" }
+      - { id: into_after_union, sql: "SELECT a FROM t1 UNION SELECT a FROM t2 INTO OUTFILE '/tmp/u.txt';" }
+      - { id: derived_table_column_list_union, sql: "SELECT * FROM (TABLE t2) AS t(x, y) UNION TABLE t1;" }
+    examples:
+      - |-
+        (SELECT a FROM t1 WHERE a=10 AND b=1 ORDER BY a LIMIT 10)
+        UNION
+        (SELECT a FROM t2 WHERE a=11 AND b=2 ORDER BY a LIMIT 10);
+      - |-
+        (TABLE t1 ORDER BY x LIMIT 10) 
+        INTERSECT 
+        (TABLE t2 ORDER BY a LIMIT 10);
+      - |-
+        SELECT a FROM t1
+        EXCEPT
+        SELECT a FROM t2 WHERE a=11 AND b=2
+        ORDER BY a LIMIT 10;
+      - "VALUES ROW(4,-2), ROW(5,9) UNION VALUES ROW(4,-2),ROW(5,9);"
+      - |-
+        (TABLE t1 ORDER BY a LIMIT 10) 
+        UNION 
+        TABLE t2 
+        ORDER BY a LIMIT 10;
+
+  - id: union
+    name: UNION clause
+    doc: https://dev.mysql.com/doc/refman/8.4/en/union.html
+    tier: high
+    probes:
+      - { id: union, sql: "SELECT a FROM t1 UNION SELECT a FROM t2;" }
+      - { id: union_all, sql: "SELECT a FROM t1 UNION ALL SELECT a FROM t2;" }
+      - { id: union_distinct, sql: "SELECT a FROM t1 UNION DISTINCT SELECT a FROM t2;" }
+      - { id: union_chain, sql: "SELECT 1 UNION ALL SELECT 2 UNION DISTINCT SELECT 3;" }
+    examples:
+      - "SELECT 1, 2 UNION SELECT 'a', 'b';"
+
+  - id: intersect
+    name: INTERSECT clause
+    doc: https://dev.mysql.com/doc/refman/8.4/en/intersect.html
+    tier: high
+    probes:
+      - { id: intersect, sql: "TABLE a INTERSECT TABLE b;" }
+      - { id: intersect_all, sql: "SELECT m FROM a INTERSECT ALL SELECT m FROM b;" }
+      - { id: intersect_distinct, sql: "SELECT m FROM a INTERSECT DISTINCT SELECT m FROM b;" }
+    examples:
+      - "TABLE a INTERSECT TABLE b;"
+      - "TABLE c INTERSECT DISTINCT TABLE c;"
+      - "TABLE c INTERSECT ALL TABLE c;"
+      - "TABLE r EXCEPT TABLE s INTERSECT TABLE t;"
+      - "TABLE r EXCEPT (TABLE s INTERSECT TABLE t);"
+
+  - id: except
+    name: EXCEPT clause
+    doc: https://dev.mysql.com/doc/refman/8.4/en/except.html
+    tier: high
+    probes:
+      - { id: except, sql: "TABLE a EXCEPT TABLE b;" }
+      - { id: except_all, sql: "SELECT m FROM a EXCEPT ALL SELECT m FROM b;" }
+      - { id: except_distinct, sql: "SELECT m FROM a EXCEPT DISTINCT SELECT m FROM b;" }
+    examples:
+      - "TABLE a EXCEPT TABLE b;"
+      - "TABLE c EXCEPT DISTINCT TABLE a;"
+      - "TABLE c EXCEPT ALL TABLE a;"
+
+  - id: parenthesized_query_expressions
+    name: Parenthesized Query Expressions
+    doc: https://dev.mysql.com/doc/refman/8.4/en/parenthesized-query-expressions.html
+    tier: high
+    probes:
+      - { id: parenthesized_select, sql: "(SELECT 1);" }
+      - { id: parenthesized_union_limit, sql: "(SELECT 1 AS r UNION SELECT 2) LIMIT 1 OFFSET 1;" }
+      - { id: parenthesized_order_limit, sql: "(SELECT 1 AS r UNION SELECT 2) ORDER BY r DESC LIMIT 1;" }
+      - { id: inner_and_outer_limit, sql: "(SELECT 'a' UNION SELECT 'b' LIMIT 2) LIMIT 3;" }
+      - { id: parenthesized_into, sql: "(SELECT 1 AS r UNION SELECT 2) ORDER BY r LIMIT 1 INTO @v;" }
+      - { id: parenthesized_table_order, sql: "(TABLE t1 ORDER BY a) UNION (TABLE t2 ORDER BY b) ORDER BY a;" }
+      - { id: parenthesized_values_limit, sql: "(VALUES ROW(1), ROW(2) LIMIT 2) EXCEPT (SELECT 2 LIMIT 1);" }
+      - { id: nested_parentheses, sql: "((SELECT 1) UNION (SELECT 2));" }
+    examples:
+      - "(SELECT 1);"
+      - "(SELECT * FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = 'mysql');"
+      - "SELECT a FROM t1 EXCEPT (SELECT b FROM t2 INTERSECT SELECT c FROM t3);"
+      - "(SELECT 1 LIMIT 1) UNION (SELECT 2 LIMIT 1) LIMIT 1;"
+      - "VALUES ROW(1), ROW(2) INTERSECT VALUES ROW(2), ROW(1) LIMIT 1;"
+
+  - id: with
+    name: WITH (Common Table Expressions)
+    doc: https://dev.mysql.com/doc/refman/8.4/en/with.html
+    tier: high
+    probes:
+      - { id: single_cte, sql: "WITH cte AS (SELECT a FROM t) SELECT a FROM cte;" }
+      - { id: multiple_ctes, sql: "WITH c1 AS (SELECT a FROM t1), c2 AS (SELECT b FROM t2) SELECT a, b FROM c1 JOIN c2 ON c1.a = c2.b;" }
+      - { id: column_list, sql: "WITH cte (c1, c2) AS (SELECT 1, 2 UNION ALL SELECT 3, 4) SELECT c1, c2 FROM cte;" }
+      - { id: recursive, sql: "WITH RECURSIVE cte (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM cte WHERE n < 5) SELECT * FROM cte;" }
+      - { id: recursive_with_limit, sql: "WITH RECURSIVE cte (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM cte LIMIT 100) SELECT * FROM cte;" }
+      - { id: with_update, sql: "WITH cte AS (SELECT a FROM t2) UPDATE t, cte SET t.b = 1 WHERE t.a = cte.a;" }
+      - { id: with_delete, sql: "WITH cte AS (SELECT a FROM t2) DELETE t FROM t JOIN cte ON t.a = cte.a;" }
+      - { id: in_subquery, sql: "SELECT * FROM t WHERE a IN (WITH cte AS (SELECT a FROM t2) SELECT a FROM cte);" }
+      - { id: in_derived_table, sql: "SELECT * FROM (WITH cte AS (SELECT 1 AS a) SELECT a FROM cte) AS dt;" }
+      - { id: insert_with_select, sql: "INSERT INTO t (a) WITH cte AS (SELECT 1 AS a) SELECT a FROM cte;" }
+      - { id: create_table_with_select, sql: "CREATE TABLE t2 WITH cte AS (SELECT 1 AS a) SELECT a FROM cte;" }
+      - { id: create_view_with_select, sql: "CREATE VIEW v AS WITH cte AS (SELECT 1 AS a) SELECT a FROM cte;" }
+      - { id: explain_with_select, sql: "EXPLAIN WITH cte AS (SELECT 1 AS a) SELECT a FROM cte;" }
+      - { id: with_table_statement, sql: "WITH cte AS (SELECT 1 AS a) TABLE cte;", note: "query_expression: [with_clause] query_expression_body, and query_block includes TABLE (set-operations.html)" }
+    examples:
+      - |-
+        WITH
+          cte1 AS (SELECT a, b FROM table1),
+          cte2 AS (SELECT c, d FROM table2)
+        SELECT b, d FROM cte1 JOIN cte2
+        WHERE cte1.a = cte2.c;
+      - |-
+        WITH cte (col1, col2) AS
+        (
+          SELECT 1, 2
+          UNION ALL
+          SELECT 3, 4
+        )
+        SELECT col1, col2 FROM cte;
+      - |-
+        WITH cte1 AS (SELECT 1)
+        SELECT * FROM (WITH cte2 AS (SELECT 2) SELECT * FROM cte2 JOIN cte1) AS dt;
+      - |-
+        WITH RECURSIVE cte (n) AS
+        (
+          SELECT 1
+          UNION ALL
+          SELECT n + 1 FROM cte
+        )
+        SELECT /*+ SET_VAR(cte_max_recursion_depth = 1M) */ * FROM cte;
+      - |-
+        WITH RECURSIVE dates (date) AS
+        (
+          SELECT MIN(date) FROM sales
+          UNION ALL
+          SELECT date + INTERVAL 1 DAY FROM dates
+          WHERE date + INTERVAL 1 DAY <= (SELECT MAX(date) FROM sales)
+        )
+        SELECT dates.date, COALESCE(SUM(price), 0) AS sum_price
+        FROM dates LEFT JOIN sales ON dates.date = sales.date
+        GROUP BY dates.date
+        ORDER BY dates.date;
+
+  - id: table
+    name: TABLE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/table.html
+    tier: high
+    probes:
+      - { id: basic, sql: "TABLE t;" }
+      - { id: order_by, sql: "TABLE t ORDER BY b;" }
+      - { id: limit, sql: "TABLE t LIMIT 3;" }
+      - { id: order_by_limit_offset, sql: "TABLE t ORDER BY b LIMIT 3 OFFSET 2;" }
+      - { id: qualified_name, sql: "TABLE db1.t;" }
+      - { id: into_vars, sql: "TABLE t LIMIT 1 INTO @a, @b;" }
+      - { id: into_outfile_options, sql: "TABLE t INTO OUTFILE '/tmp/t.txt' FIELDS TERMINATED BY ',' LINES TERMINATED BY ';';" }
+      - { id: into_dumpfile, sql: "TABLE t LIMIT 1 INTO DUMPFILE '/tmp/t.bin';" }
+      - { id: in_subquery, sql: "SELECT * FROM t1 WHERE a IN (TABLE t2);" }
+      - { id: insert_table, sql: "INSERT INTO t1 TABLE t2;" }
+      - { id: create_table_table, sql: "CREATE TABLE t2 TABLE t1;" }
+      - { id: create_view_table, sql: "CREATE VIEW v AS TABLE t;" }
+    examples:
+      - "TABLE t;"
+      - "TABLE t ORDER BY b LIMIT 3 OFFSET 2;"
+      - "TABLE t1 UNION TABLE t2;"
+      - "SELECT * FROM t1 WHERE a IN (TABLE t2);"
+
+  - id: values
+    name: VALUES
+    doc: https://dev.mysql.com/doc/refman/8.4/en/values.html
+    tier: high
+    probes:
+      - { id: basic, sql: "VALUES ROW(1, -2, 3), ROW(5, 7, 9);" }
+      - { id: order_by_column_designator, sql: "VALUES ROW(1, -2, 3), ROW(5, 7, 9) ORDER BY column_1;" }
+      - { id: limit, sql: "VALUES ROW(1), ROW(2), ROW(3) LIMIT 2;" }
+      - { id: mixed_types, sql: "VALUES ROW('q', 42, '2019-12-18'), ROW(23, 'abc', 98.6);" }
+      - { id: derived_table, sql: "SELECT * FROM (VALUES ROW(1, 2), ROW(3, 4)) AS v (a, b);" }
+      - { id: join_values, sql: "SELECT * FROM t JOIN (VALUES ROW(1, 'x')) AS v (a, b) ON t.a = v.a;" }
+      - { id: in_subquery, sql: "SELECT * FROM t WHERE (a, b) IN (VALUES ROW(1, 2), ROW(3, 4));" }
+      - { id: create_table_values, sql: "CREATE TABLE t2 VALUES ROW(1, 2), ROW(3, 4);" }
+      - { id: create_view_values, sql: "CREATE VIEW v AS VALUES ROW(1, 2);" }
+    examples:
+      - "VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8);"
+      - "VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8) ORDER BY column_1;"
+      - |-
+        VALUES ROW("q", 42, '2019-12-18'),
+            ROW(23, "abc", 98.6),
+            ROW(27.0002, "Mary Smith", '{"a": 10, "b": 25}');
+      - "VALUES ROW(1,2) UNION VALUES ROW(10,15);"
+      - "VALUES ROW(1,2), ROW(3,4), ROW(5,6), ROW(10,15), ROW(20,25);"
+
+  - id: derived_tables
+    name: Derived Tables
+    doc: https://dev.mysql.com/doc/refman/8.4/en/derived-tables.html
+    tier: high
+    probes:
+      - { id: derived_as, sql: "SELECT * FROM (SELECT 1, 2, 3, 4) AS dt;" }
+      - { id: derived_no_as, sql: "SELECT * FROM (SELECT a FROM t) dt WHERE dt.a > 1;" }
+      - { id: derived_column_list, sql: "SELECT * FROM (SELECT 1, 2, 3, 4) AS dt (a, b, c, d);" }
+      - { id: derived_json_table, sql: "SELECT * FROM JSON_TABLE('[1,2]', '$[*]' COLUMNS (x INT PATH '$')) AS jt;" }
+      - { id: derived_union, sql: "SELECT * FROM (SELECT a FROM t1 UNION SELECT a FROM t2) AS dt;" }
+    examples:
+      - |-
+        SELECT sb1,sb2,sb3
+          FROM (SELECT s1 AS sb1, s2 AS sb2, s3*2 AS sb3 FROM t1) AS sb
+          WHERE sb1 > 1;
+      - |-
+        SELECT AVG(sum_column1)
+          FROM (SELECT SUM(column1) AS sum_column1
+                FROM t1 GROUP BY column1) AS t1;
+      - "SELECT * FROM (SELECT 1, 2, 3, 4) AS dt;"
+      - "SELECT * FROM (SELECT 1, 2, 3, 4) AS dt (a, b, c, d);"
+
+  - id: lateral_derived_tables
+    name: Lateral Derived Tables
+    doc: https://dev.mysql.com/doc/refman/8.4/en/lateral-derived-tables.html
+    tier: high
+    probes:
+      - { id: comma_lateral, sql: "SELECT * FROM t1, LATERAL (SELECT MAX(a) AS m FROM t2 WHERE t2.id = t1.id) AS dt;" }
+      - { id: join_lateral_on, sql: "SELECT * FROM t1 JOIN LATERAL (SELECT a FROM t2 WHERE t2.id = t1.id) AS dt ON TRUE;" }
+      - { id: cross_join_lateral, sql: "SELECT * FROM t1 CROSS JOIN LATERAL (SELECT a FROM t2 WHERE t2.id = t1.id) AS dt;" }
+      - { id: left_join_lateral, sql: "SELECT * FROM t1 LEFT JOIN LATERAL (SELECT a FROM t2 WHERE t2.id = t1.id ORDER BY a DESC LIMIT 1) AS dt ON TRUE;" }
+      - { id: lateral_column_list, sql: "SELECT * FROM t1, LATERAL (SELECT t1.a + 1, t1.a + 2) AS dt (x, y);" }
+    examples:
+      - |-
+        SELECT
+          salesperson.name,
+          max_sale.amount,
+          max_sale_customer.customer_name
+        FROM
+          salesperson,
+          -- calculate maximum size, cache it in transient derived table max_sale
+          LATERAL
+          (SELECT MAX(amount) AS amount
+            FROM all_sales
+            WHERE all_sales.salesperson_id = salesperson.id)
+          AS max_sale,
+          -- find customer, reusing cached maximum size
+          LATERAL
+          (SELECT customer_name
+            FROM all_sales
+            WHERE all_sales.salesperson_id = salesperson.id
+            AND all_sales.amount =
+                -- the cached maximum size
+                max_sale.amount)
+          AS max_sale_customer;
+      - |-
+        SELECT
+          salesperson.name,
+          max_sale.amount,
+          max_sale.customer_name
+        FROM
+          salesperson,
+          -- find maximum size and customer at same time
+          LATERAL
+          (SELECT amount, customer_name
+            FROM all_sales
+            WHERE all_sales.salesperson_id = salesperson.id
+            ORDER BY amount DESC LIMIT 1)
+          AS max_sale;
+
+  - id: insert
+    name: INSERT
+    doc: https://dev.mysql.com/doc/refman/8.4/en/insert.html
+    tier: high
+    probes:
+      - { id: values_basic, sql: "INSERT INTO t VALUES (1, 'a');" }
+      - { id: without_into, sql: "INSERT t VALUES (1, 'a');" }
+      - { id: value_keyword, sql: "INSERT INTO t (a, b) VALUE (1, 2);" }
+      - { id: column_list, sql: "INSERT INTO t (a, b) VALUES (1, 2);" }
+      - { id: multi_row, sql: "INSERT INTO t (a, b) VALUES (1, 2), (3, 4), (5, 6);" }
+      - { id: empty_column_list, sql: "INSERT INTO t () VALUES ();" }
+      - { id: default_value, sql: "INSERT INTO t (a, b) VALUES (DEFAULT, 2);" }
+      - { id: expression_value, sql: "INSERT INTO t (a, b) VALUES (15, a * 2);" }
+      - { id: low_priority, sql: "INSERT LOW_PRIORITY INTO t VALUES (1);" }
+      - { id: delayed, sql: "INSERT DELAYED INTO t VALUES (1);", note: "DELAYED is in the syntax block; the server parses and ignores it (insert-delayed.html)" }
+      - { id: high_priority, sql: "INSERT HIGH_PRIORITY INTO t VALUES (1);" }
+      - { id: ignore, sql: "INSERT IGNORE INTO t VALUES (1);" }
+      - { id: low_priority_ignore, sql: "INSERT LOW_PRIORITY IGNORE INTO t (a) VALUES (1);" }
+      - { id: partition, sql: "INSERT INTO t PARTITION (p0, p1) (a, b) VALUES (1, 2);" }
+      - { id: values_row_constructor, sql: "INSERT INTO t (a, b, c) VALUES ROW(1, 2, 3), ROW(4, 5, 6);" }
+      - { id: set_form, sql: "INSERT INTO t SET a = 1, b = DEFAULT;" }
+      - { id: row_alias, sql: "INSERT INTO t (a, b) VALUES (1, 2) AS new ON DUPLICATE KEY UPDATE b = new.b;" }
+      - { id: row_alias_column_aliases, sql: "INSERT INTO t (a, b) VALUES (1, 2) AS new (m, n) ON DUPLICATE KEY UPDATE b = m + n;" }
+      - { id: set_form_row_alias, sql: "INSERT INTO t SET a = 1, b = 2 AS new ON DUPLICATE KEY UPDATE b = new.a + new.b;" }
+      - { id: on_duplicate_key_update, sql: "INSERT INTO t (a, b) VALUES (1, 2) ON DUPLICATE KEY UPDATE b = b + 1, c = 0;" }
+      - { id: insert_select, sql: "INSERT INTO t (a) SELECT a FROM t2 WHERE a > 100;" }
+      - { id: insert_table, sql: "INSERT INTO t TABLE t2;" }
+    examples:
+      - "INSERT INTO tbl_name () VALUES();"
+      - "INSERT INTO tbl_name (col1,col2) VALUES(15,col1*2);"
+      - |-
+        INSERT INTO tbl_name (a,b,c)
+            VALUES(1,2,3), (4,5,6), (7,8,9);
+      - |-
+        INSERT INTO tbl_name (a,b,c)
+            VALUES ROW(1,2,3), ROW(4,5,6), ROW(7,8,9);
+
+  - id: insert_select
+    name: INSERT ... SELECT
+    doc: https://dev.mysql.com/doc/refman/8.4/en/insert-select.html
+    tier: high
+    probes:
+      - { id: select, sql: "INSERT INTO t (a) SELECT b FROM t2 WHERE b > 100;" }
+      - { id: select_no_column_list, sql: "INSERT INTO t SELECT * FROM t2;" }
+      - { id: priority_ignore, sql: "INSERT HIGH_PRIORITY IGNORE INTO t SELECT * FROM t2;" }
+      - { id: partition, sql: "INSERT INTO t PARTITION (p0) (a) SELECT a FROM t2 PARTITION (p1);" }
+      - { id: table_source, sql: "INSERT INTO t TABLE t2;" }
+      - { id: values_source, sql: "INSERT INTO t (a, b) VALUES ROW(1, 2), ROW(3, 4);" }
+      - { id: parenthesized_select, sql: "INSERT INTO t (a) (SELECT b FROM t2);" }
+      - { id: union_source, sql: "INSERT INTO t (a) SELECT b FROM t2 UNION SELECT c FROM t3;" }
+      - { id: on_duplicate_key_update, sql: "INSERT INTO t (a, b) SELECT * FROM (SELECT c, d AS e FROM t2) AS dt ON DUPLICATE KEY UPDATE b = e;" }
+    examples:
+      - |-
+        INSERT INTO tbl_temp2 (fld_id)
+          SELECT tbl_temp1.fld_order_id
+          FROM tbl_temp1 WHERE tbl_temp1.fld_order_id > 100;
+      - "INSERT INTO ta TABLE tb;"
+
+  - id: insert_on_duplicate
+    name: INSERT ... ON DUPLICATE KEY UPDATE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/insert-on-duplicate.html
+    tier: high
+    probes:
+      - { id: basic, sql: "INSERT INTO t (a, b, c) VALUES (1, 2, 3) ON DUPLICATE KEY UPDATE c = c + 1;" }
+      - { id: values_function, sql: "INSERT INTO t (a, b, c) VALUES (1, 2, 3), (4, 5, 6) ON DUPLICATE KEY UPDATE c = VALUES(a) + VALUES(b);", note: "VALUES() in the UPDATE clause is deprecated but still accepted in 8.4" }
+      - { id: row_alias, sql: "INSERT INTO t (a, b, c) VALUES (1, 2, 3), (4, 5, 6) AS new ON DUPLICATE KEY UPDATE c = new.a + new.b;" }
+      - { id: row_and_column_alias, sql: "INSERT INTO t (a, b, c) VALUES (1, 2, 3) AS new (m, n, p) ON DUPLICATE KEY UPDATE c = m + n;" }
+      - { id: set_form_alias, sql: "INSERT INTO t SET a = 1, b = 2, c = 3 AS new (m, n, p) ON DUPLICATE KEY UPDATE c = m + n;" }
+      - { id: ignore_values_row, sql: "INSERT IGNORE INTO t VALUES ROW(2, 3), ROW(3, 3) ON DUPLICATE KEY UPDATE a = a + 1, b = b - 1;" }
+      - { id: select_source, sql: "INSERT INTO t SELECT c, c + d FROM t2 ON DUPLICATE KEY UPDATE b = VALUES(b);" }
+      - { id: table_source, sql: "INSERT INTO t TABLE t2 ON DUPLICATE KEY UPDATE b = 0;" }
+    examples:
+      - |-
+        INSERT INTO t1 (a,b,c) VALUES (1,2,3)
+          ON DUPLICATE KEY UPDATE c=c+1;
+      - |-
+        INSERT INTO t1 (a,b,c) VALUES (1,2,3),(4,5,6)
+          ON DUPLICATE KEY UPDATE c=VALUES(a)+VALUES(b);
+      - |-
+        INSERT INTO t1 (a,b,c) VALUES (1,2,3),(4,5,6) AS new(m,n,p)
+          ON DUPLICATE KEY UPDATE c = m+n;
+      - |-
+        INSERT INTO t1 SET a=1,b=2,c=3 AS new
+          ON DUPLICATE KEY UPDATE c = new.a+new.b;
+      - |-
+        INSERT INTO t1 (a, b)
+        SELECT * FROM
+          (SELECT c, d FROM t2
+           UNION
+           SELECT e, f FROM t3) AS dt
+        ON DUPLICATE KEY UPDATE b = b + c;
+
+  - id: insert_delayed
+    name: INSERT DELAYED
+    doc: https://dev.mysql.com/doc/refman/8.4/en/insert-delayed.html
+    tier: low
+    probes:
+      - { id: insert_delayed, sql: "INSERT DELAYED INTO t (a) VALUES (1);", note: "The server recognizes but ignores the DELAYED keyword (converted to INSERT with a warning)" }
+      - { id: replace_delayed, sql: "REPLACE DELAYED INTO t (a) VALUES (1);" }
+
+  - id: replace
+    name: REPLACE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/replace.html
+    tier: high
+    probes:
+      - { id: values, sql: "REPLACE INTO t VALUES (1, 'a');" }
+      - { id: without_into, sql: "REPLACE t VALUES (1, 'a');" }
+      - { id: value_keyword, sql: "REPLACE INTO t (a, b) VALUE (1, 2);" }
+      - { id: column_list_multi_row, sql: "REPLACE INTO t (a, b) VALUES (1, 2), (3, DEFAULT);" }
+      - { id: low_priority, sql: "REPLACE LOW_PRIORITY INTO t VALUES (1);" }
+      - { id: delayed, sql: "REPLACE DELAYED INTO t VALUES (1);" }
+      - { id: partition, sql: "REPLACE INTO t PARTITION (p0, p1) (a) VALUES (1);" }
+      - { id: values_row_constructor, sql: "REPLACE INTO t (a, b) VALUES ROW(1, 2), ROW(3, 4);" }
+      - { id: set_form, sql: "REPLACE INTO t SET a = 1, b = 'x';" }
+      - { id: select_source, sql: "REPLACE INTO t (a, b) SELECT a, b FROM t2;" }
+      - { id: table_source, sql: "REPLACE INTO t TABLE t2;" }
+    examples:
+      - "REPLACE INTO test VALUES (1, 'Old', '2014-08-20 18:47:00');"
+      - "REPLACE INTO test2 VALUES (1, 'New', '2014-08-20 18:47:42');"
+
+  - id: update
+    name: UPDATE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/update.html
+    tier: high
+    probes:
+      - { id: basic, sql: "UPDATE t SET a = a + 1;" }
+      - { id: multiple_assignments, sql: "UPDATE t SET a = a + 1, b = a;" }
+      - { id: default_value, sql: "UPDATE t SET a = DEFAULT WHERE b = 1;" }
+      - { id: where, sql: "UPDATE t SET a = 1 WHERE b > 2;" }
+      - { id: order_by_limit, sql: "UPDATE t SET a = a + 1 WHERE b > 0 ORDER BY a DESC LIMIT 10;" }
+      - { id: low_priority, sql: "UPDATE LOW_PRIORITY t SET a = 1;" }
+      - { id: ignore, sql: "UPDATE IGNORE t SET a = 1;" }
+      - { id: low_priority_ignore, sql: "UPDATE LOW_PRIORITY IGNORE t SET a = 1;" }
+      - { id: table_alias, sql: "UPDATE t AS x SET x.a = 1 WHERE x.b = 2;" }
+      - { id: partition, sql: "UPDATE t PARTITION (p0) SET a = 1 WHERE b = 2;" }
+      - { id: multi_table_comma, sql: "UPDATE items, month SET items.price = month.price WHERE items.id = month.id;" }
+      - { id: multi_table_join, sql: "UPDATE t1 INNER JOIN t2 ON t1.id = t2.id SET t1.a = t2.a, t2.b = 0;" }
+      - { id: multi_table_left_join, sql: "UPDATE t1 LEFT JOIN t2 ON t1.id = t2.id SET t1.a = 0 WHERE t2.id IS NULL;" }
+      - { id: multi_table_derived, sql: "UPDATE t, (SELECT id FROM t2 WHERE a > 1) AS d SET t.a = t.a * 0.9 WHERE t.id = d.id;" }
+      - { id: subquery_in_set, sql: "UPDATE t SET a = (SELECT MAX(b) FROM t2) WHERE id = 1;" }
+      - { id: with_cte, sql: "WITH cte AS (SELECT id FROM t2) UPDATE t JOIN cte ON t.id = cte.id SET t.a = 1;" }
+    examples:
+      - "UPDATE t1 SET col1 = col1 + 1, col2 = col1;"
+      - "UPDATE t SET id = id + 1 ORDER BY id DESC;"
+      - |-
+        UPDATE items,month SET items.price=month.price
+        WHERE items.id=month.id;
+      - |-
+        UPDATE /*+ NO_MERGE(discounted) */ items,
+               (SELECT id FROM items
+                WHERE retail / wholesale >= 1.3 AND quantity < 100)
+                AS discounted
+            SET items.retail = items.retail * 0.9
+            WHERE items.id = discounted.id;
+      - |-
+        UPDATE items,
+               (SELECT id, retail / wholesale AS markup, quantity FROM items)
+               AS discounted
+            SET items.retail = items.retail * 0.9
+            WHERE discounted.markup >= 1.3
+            AND discounted.quantity < 100
+            AND items.id = discounted.id;
+
+  - id: delete
+    name: DELETE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/delete.html
+    tier: high
+    probes:
+      - { id: basic, sql: "DELETE FROM t;" }
+      - { id: where, sql: "DELETE FROM t WHERE a = 1;" }
+      - { id: order_by_limit, sql: "DELETE FROM t WHERE a = 'x' ORDER BY b LIMIT 1;" }
+      - { id: low_priority, sql: "DELETE LOW_PRIORITY FROM t WHERE a = 1;" }
+      - { id: quick, sql: "DELETE QUICK FROM t WHERE a = 1;" }
+      - { id: ignore, sql: "DELETE IGNORE FROM t WHERE a = 1;" }
+      - { id: all_modifiers, sql: "DELETE LOW_PRIORITY QUICK IGNORE FROM t WHERE a = 1;" }
+      - { id: table_alias_as, sql: "DELETE FROM t AS x WHERE x.a = 1;" }
+      - { id: table_alias_no_as, sql: "DELETE FROM t x WHERE x.a = 1;" }
+      - { id: partition, sql: "DELETE FROM t PARTITION (p0, p1) WHERE a < 5;" }
+      - { id: multi_table_from, sql: "DELETE t1, t2 FROM t1 INNER JOIN t2 INNER JOIN t3 WHERE t1.id = t2.id AND t2.id = t3.id;" }
+      - { id: multi_table_using, sql: "DELETE FROM t1, t2 USING t1 INNER JOIN t2 INNER JOIN t3 WHERE t1.id = t2.id AND t2.id = t3.id;" }
+      - { id: multi_table_star, sql: "DELETE t1.*, t2.* FROM t1 JOIN t2 ON t1.id = t2.id;" }
+      - { id: multi_table_left_join, sql: "DELETE t1 FROM t1 LEFT JOIN t2 ON t1.id = t2.id WHERE t2.id IS NULL;" }
+      - { id: multi_table_aliases, sql: "DELETE a1, a2 FROM t1 AS a1 INNER JOIN t2 AS a2 WHERE a1.id = a2.id;" }
+      - { id: using_star, sql: "DELETE FROM t1.*, t2.* USING t1 JOIN t2 ON t1.id = t2.id;" }
+      - { id: subquery_where, sql: "DELETE FROM t WHERE a IN (SELECT a FROM t2);" }
+      - { id: with_cte, sql: "WITH cte AS (SELECT id FROM t2) DELETE FROM t WHERE id IN (SELECT id FROM cte);" }
+    examples:
+      - |-
+        DELETE FROM somelog WHERE user = 'jcole'
+        ORDER BY timestamp_column LIMIT 1;
+      - |-
+        DELETE t1, t2 FROM t1 INNER JOIN t2 INNER JOIN t3
+        WHERE t1.id=t2.id AND t2.id=t3.id;
+      - |-
+        DELETE FROM t1, t2 USING t1 INNER JOIN t2 INNER JOIN t3
+        WHERE t1.id=t2.id AND t2.id=t3.id;
+      - "DELETE t1 FROM t1 LEFT JOIN t2 ON t1.id=t2.id WHERE t2.id IS NULL;"
+      - |-
+        DELETE FROM a1, a2 USING t1 AS a1 INNER JOIN t2 AS a2
+        WHERE a1.id=a2.id;
+
+  - id: truncate_table
+    name: TRUNCATE TABLE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/truncate-table.html
+    tier: medium
+    probes:
+      - { id: truncate_table, sql: "TRUNCATE TABLE t;" }
+      - { id: truncate_without_table, sql: "TRUNCATE t;" }
+      - { id: qualified_name, sql: "TRUNCATE TABLE db1.t;" }
+
+  - id: create_table
+    name: CREATE TABLE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-table.html
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE TABLE t (a INT, b VARCHAR(10));" }
+      - { id: temporary, sql: "CREATE TEMPORARY TABLE t (a INT);" }
+      - { id: if_not_exists, sql: "CREATE TABLE IF NOT EXISTS t (a INT);" }
+      - { id: qualified_name, sql: "CREATE TABLE db1.t (a INT);" }
+      - { id: not_null_null, sql: "CREATE TABLE t (a INT NOT NULL, b INT NULL);" }
+      - { id: default_literal, sql: "CREATE TABLE t (a INT DEFAULT 0, b VARCHAR(10) DEFAULT 'x');" }
+      - { id: default_expression, sql: "CREATE TABLE t (a DOUBLE DEFAULT (RAND() * RAND()), b JSON DEFAULT (JSON_ARRAY()));" }
+      - { id: default_current_timestamp_on_update, sql: "CREATE TABLE t (ts TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);" }
+      - { id: invisible_column, sql: "CREATE TABLE t (a INT, b INT INVISIBLE, c INT VISIBLE);" }
+      - { id: auto_increment_primary_key, sql: "CREATE TABLE t (id INT NOT NULL AUTO_INCREMENT PRIMARY KEY);" }
+      - { id: column_key, sql: "CREATE TABLE t (id INT KEY, b INT);" }
+      - { id: column_unique_key, sql: "CREATE TABLE t (a INT UNIQUE KEY, b INT UNIQUE);" }
+      - { id: column_comment, sql: "CREATE TABLE t (a INT COMMENT 'the a column');" }
+      - { id: column_collate, sql: "CREATE TABLE t (c CHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);" }
+      - { id: column_format, sql: "CREATE TABLE t (a INT COLUMN_FORMAT FIXED, b INT COLUMN_FORMAT DYNAMIC);" }
+      - { id: column_engine_attribute, sql: "CREATE TABLE t (a INT ENGINE_ATTRIBUTE = '{\"k\":\"v\"}' SECONDARY_ENGINE_ATTRIBUTE '{}');" }
+      - { id: column_storage, sql: "CREATE TABLE t (a INT STORAGE DISK, b INT STORAGE MEMORY) TABLESPACE ts_1 ENGINE NDB;" }
+      - { id: column_references, sql: "CREATE TABLE t (a INT REFERENCES t2 (id) ON DELETE CASCADE);" }
+      - { id: column_check, sql: "CREATE TABLE t (a INT CHECK (a > 0), b INT CONSTRAINT b_pos CHECK (b > 0) NOT ENFORCED);" }
+      - { id: generated_virtual, sql: "CREATE TABLE t (a INT, b INT GENERATED ALWAYS AS (a * 2) VIRTUAL);" }
+      - { id: generated_stored, sql: "CREATE TABLE t (a INT, b INT AS (a + 1) STORED NOT NULL UNIQUE KEY COMMENT 'g');" }
+      - { id: generated_collate, sql: "CREATE TABLE t (a VARCHAR(10), b VARCHAR(10) COLLATE utf8mb4_bin AS (UPPER(a)));" }
+      - { id: index, sql: "CREATE TABLE t (a INT, INDEX idx (a));" }
+      - { id: key_unnamed, sql: "CREATE TABLE t (a INT, KEY (a));" }
+      - { id: index_using_btree, sql: "CREATE TABLE t (id INT, INDEX USING BTREE (id)) ENGINE = MEMORY;" }
+      - { id: index_using_hash_option, sql: "CREATE TABLE t (id INT, KEY idx (id) USING HASH) ENGINE = MEMORY;" }
+      - { id: index_prefix_length, sql: "CREATE TABLE t (b BLOB, INDEX (b(10)));" }
+      - { id: index_functional_key_part, sql: "CREATE TABLE t (a INT, b INT, INDEX idx ((a + b)));" }
+      - { id: index_desc_key_part, sql: "CREATE TABLE t (a INT, b INT, INDEX idx (a ASC, b DESC));" }
+      - { id: index_options, sql: "CREATE TABLE t (a INT, INDEX idx (a) KEY_BLOCK_SIZE = 8 COMMENT 'c' INVISIBLE);" }
+      - { id: index_engine_attribute, sql: "CREATE TABLE t (a INT, INDEX idx (a) ENGINE_ATTRIBUTE '{}' SECONDARY_ENGINE_ATTRIBUTE = '{}');" }
+      - { id: fulltext_index, sql: "CREATE TABLE t (body TEXT, FULLTEXT INDEX ft (body) WITH PARSER ngram);" }
+      - { id: fulltext_key, sql: "CREATE TABLE t (body TEXT, FULLTEXT KEY (body));" }
+      - { id: spatial_index, sql: "CREATE TABLE t (g GEOMETRY NOT NULL, SPATIAL INDEX (g));" }
+      - { id: primary_key_constraint, sql: "CREATE TABLE t (a INT, b INT, CONSTRAINT pk PRIMARY KEY USING BTREE (a, b));" }
+      - { id: primary_key_unnamed_constraint, sql: "CREATE TABLE t (a INT, CONSTRAINT PRIMARY KEY (a));" }
+      - { id: unique_constraint, sql: "CREATE TABLE t (a INT, CONSTRAINT uq UNIQUE KEY idx_a (a));" }
+      - { id: unique_index, sql: "CREATE TABLE t (a INT, UNIQUE INDEX (a));" }
+      - { id: foreign_key, sql: "CREATE TABLE t (a INT, FOREIGN KEY (a) REFERENCES t2 (id));" }
+      - { id: foreign_key_named_actions, sql: "CREATE TABLE t (a INT, CONSTRAINT fk FOREIGN KEY fk_idx (a) REFERENCES t2 (id) ON DELETE SET NULL ON UPDATE CASCADE);" }
+      - { id: foreign_key_match, sql: "CREATE TABLE t (a INT, FOREIGN KEY (a) REFERENCES t2 (id) MATCH FULL ON DELETE NO ACTION ON UPDATE RESTRICT);" }
+      - { id: foreign_key_set_default, sql: "CREATE TABLE t (a INT, FOREIGN KEY (a) REFERENCES t2 (id) MATCH SIMPLE ON DELETE SET DEFAULT);" }
+      - { id: check_constraint, sql: "CREATE TABLE t (a INT, b INT, CONSTRAINT chk CHECK (a < b) ENFORCED);" }
+      - { id: check_constraint_unnamed, sql: "CREATE TABLE t (a INT, CHECK (a <> 0));" }
+      - { id: engine_option, sql: "CREATE TABLE t (a INT) ENGINE = InnoDB;" }
+      - { id: engine_without_equals, sql: "CREATE TABLE t (a INT) ENGINE InnoDB;" }
+      - { id: charset_collate_options, sql: "CREATE TABLE t (a INT) DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;" }
+      - { id: charset_shorthand, sql: "CREATE TABLE t (a INT) DEFAULT CHARSET=utf8mb4;" }
+      - { id: auto_increment_option, sql: "CREATE TABLE t (id INT AUTO_INCREMENT PRIMARY KEY) AUTO_INCREMENT = 100;" }
+      - { id: comment_option, sql: "CREATE TABLE t (a INT) COMMENT = 'table comment';" }
+      - { id: row_format_option, sql: "CREATE TABLE t (a INT) ROW_FORMAT = COMPRESSED KEY_BLOCK_SIZE = 8;" }
+      - { id: comma_separated_options, sql: "CREATE TABLE t (a INT) ENGINE = InnoDB, AUTO_INCREMENT = 5, COMMENT = 'x';" }
+      - { id: storage_tuning_options, sql: "CREATE TABLE t (a INT) AVG_ROW_LENGTH = 100 MAX_ROWS = 1000 MIN_ROWS = 10 PACK_KEYS = DEFAULT CHECKSUM = 1 DELAY_KEY_WRITE = 0;" }
+      - { id: stats_options, sql: "CREATE TABLE t (a INT) STATS_PERSISTENT = 1 STATS_AUTO_RECALC = DEFAULT STATS_SAMPLE_PAGES = 25;" }
+      - { id: compression_encryption, sql: "CREATE TABLE t (a INT) COMPRESSION = 'ZLIB' ENCRYPTION = 'Y';" }
+      - { id: data_index_directory, sql: "CREATE TABLE t (a INT) ENGINE = MyISAM DATA DIRECTORY = '/var/data' INDEX DIRECTORY = '/var/idx';" }
+      - { id: autoextend_size, sql: "CREATE TABLE t (a INT) AUTOEXTEND_SIZE = 4M;" }
+      - { id: tablespace_option, sql: "CREATE TABLE t (a INT) TABLESPACE = innodb_file_per_table;" }
+      - { id: tablespace_storage_disk, sql: "CREATE TABLE t (a INT) TABLESPACE ts1 STORAGE DISK ENGINE = NDB;" }
+      - { id: merge_union_insert_method, sql: "CREATE TABLE t (a INT) ENGINE = MERGE UNION = (t1, t2) INSERT_METHOD = LAST;" }
+      - { id: connection_option, sql: "CREATE TABLE t (a INT) ENGINE = FEDERATED CONNECTION = 'mysql://u@h:3306/db/t';" }
+      - { id: table_engine_attribute, sql: "CREATE TABLE t (a INT) ENGINE_ATTRIBUTE = '{\"key\":\"value\"}' SECONDARY_ENGINE_ATTRIBUTE = '{}';" }
+      - { id: start_transaction_option, sql: "CREATE TABLE t START TRANSACTION SELECT * FROM t2;", note: "table_option START TRANSACTION, valid only with CREATE TABLE ... SELECT (atomic DDL)" }
+      - { id: partition_by_hash, sql: "CREATE TABLE t (a INT, d DATETIME) PARTITION BY HASH (YEAR(d)) PARTITIONS 4;" }
+      - { id: partition_by_linear_hash, sql: "CREATE TABLE t (a INT) PARTITION BY LINEAR HASH (a) PARTITIONS 3;" }
+      - { id: partition_by_key, sql: "CREATE TABLE t (a INT, d DATE) PARTITION BY KEY (d) PARTITIONS 4;" }
+      - { id: partition_by_linear_key_algorithm, sql: "CREATE TABLE t (a INT) PARTITION BY LINEAR KEY ALGORITHM=2 (a) PARTITIONS 5;" }
+      - { id: partition_by_range, sql: "CREATE TABLE t (y INT) PARTITION BY RANGE (y) (PARTITION p0 VALUES LESS THAN (1991), PARTITION p1 VALUES LESS THAN MAXVALUE);" }
+      - { id: partition_by_range_columns, sql: "CREATE TABLE t (a INT, b INT) PARTITION BY RANGE COLUMNS (a, b) (PARTITION p0 VALUES LESS THAN (10, 5), PARTITION p1 VALUES LESS THAN (MAXVALUE, MAXVALUE));" }
+      - { id: partition_by_list, sql: "CREATE TABLE t (id INT) PARTITION BY LIST (id) (PARTITION r0 VALUES IN (1, 5, 9), PARTITION r1 VALUES IN (2, 6, 10));" }
+      - { id: partition_by_list_columns, sql: "CREATE TABLE t (a INT, b INT) PARTITION BY LIST COLUMNS (a, b) (PARTITION p0 VALUES IN ((0, 0), (NULL, NULL)), PARTITION p1 VALUES IN ((0, 1), (1, 1)));" }
+      - { id: subpartition_by_hash, sql: "CREATE TABLE t (id INT, d DATE) PARTITION BY RANGE (YEAR(d)) SUBPARTITION BY HASH (TO_DAYS(d)) SUBPARTITIONS 2 (PARTITION p0 VALUES LESS THAN (1990), PARTITION p1 VALUES LESS THAN MAXVALUE);" }
+      - { id: subpartition_by_linear_key, sql: "CREATE TABLE t (id INT, d DATE) PARTITION BY RANGE (YEAR(d)) SUBPARTITION BY LINEAR KEY ALGORITHM=1 (id) SUBPARTITIONS 2 (PARTITION p0 VALUES LESS THAN (1990), PARTITION p1 VALUES LESS THAN MAXVALUE);" }
+      - { id: partition_definition_options, sql: "CREATE TABLE t (id INT) PARTITION BY LIST (id) (PARTITION p1 VALUES IN (1, 2) ENGINE = InnoDB COMMENT = 'c' DATA DIRECTORY = '/d1' INDEX DIRECTORY = '/i1' MAX_ROWS = 100 MIN_ROWS = 1);" }
+      - { id: partition_tablespace_storage_engine, sql: "CREATE TABLE t (id INT) PARTITION BY HASH (id) (PARTITION p0 STORAGE ENGINE = InnoDB TABLESPACE = ts1, PARTITION p1);" }
+      - { id: subpartition_definitions, sql: "CREATE TABLE t (id INT, d DATE) PARTITION BY RANGE (YEAR(d)) SUBPARTITION BY HASH (TO_DAYS(d)) (PARTITION p0 VALUES LESS THAN (1990) (SUBPARTITION s0 ENGINE = InnoDB, SUBPARTITION s1 COMMENT = 'x'), PARTITION p1 VALUES LESS THAN MAXVALUE (SUBPARTITION s2, SUBPARTITION s3));" }
+      - { id: create_as_select, sql: "CREATE TABLE t AS SELECT * FROM t2;" }
+      - { id: create_like, sql: "CREATE TABLE t LIKE t2;" }
+    examples:
+      - "CREATE TABLE t (c CHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);"
+      - "CREATE TABLE test (blob_col BLOB, INDEX(blob_col(10)));"
+      - |-
+        CREATE TABLE lookup
+          (id INT, INDEX USING BTREE (id)
+        ) ENGINE = MEMORY;
+      - |-
+        CREATE TABLE rc (
+            a INT NOT NULL,
+            b INT NOT NULL
+        )
+        PARTITION BY RANGE COLUMNS(a,b) (
+            PARTITION p0 VALUES LESS THAN (10,5),
+            PARTITION p1 VALUES LESS THAN (20,10),
+            PARTITION p2 VALUES LESS THAN (50,MAXVALUE),
+            PARTITION p3 VALUES LESS THAN (65,MAXVALUE),
+            PARTITION p4 VALUES LESS THAN (MAXVALUE,MAXVALUE)
+        );
+      - |-
+        CREATE TABLE th (id INT, name VARCHAR(30), adate DATE)
+        PARTITION BY LIST(YEAR(adate))
+        (
+          PARTITION p1999 VALUES IN (1995, 1999, 2003)
+            DATA DIRECTORY = '/var/appdata/95/data'
+            INDEX DIRECTORY = '/var/appdata/95/idx',
+          PARTITION p2000 VALUES IN (1996, 2000, 2004)
+            DATA DIRECTORY = '/var/appdata/96/data'
+            INDEX DIRECTORY = '/var/appdata/96/idx',
+          PARTITION p2001 VALUES IN (1997, 2001, 2005)
+            DATA DIRECTORY = '/var/appdata/97/data'
+            INDEX DIRECTORY = '/var/appdata/97/idx',
+          PARTITION p2002 VALUES IN (1998, 2002, 2006)
+            DATA DIRECTORY = '/var/appdata/98/data'
+            INDEX DIRECTORY = '/var/appdata/98/idx'
+        );
+
+  - id: create_temporary_table
+    name: CREATE TEMPORARY TABLE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-temporary-table.html
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE TEMPORARY TABLE t (a INT) ENGINE = MEMORY;" }
+      - { id: if_not_exists, sql: "CREATE TEMPORARY TABLE IF NOT EXISTS t (a INT);" }
+      - { id: as_select, sql: "CREATE TEMPORARY TABLE t SELECT * FROM t2 LIMIT 0;" }
+      - { id: like, sql: "CREATE TEMPORARY TABLE t LIKE t2;" }
+      - { id: drop_temporary, sql: "DROP TEMPORARY TABLE t;" }
+    examples:
+      - "CREATE TEMPORARY TABLE new_tbl SELECT * FROM orig_tbl LIMIT 0;"
+
+  - id: create_table_like
+    name: CREATE TABLE ... LIKE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-table-like.html
+    tier: high
+    probes:
+      - { id: like, sql: "CREATE TABLE t LIKE t2;" }
+      - { id: like_parenthesized, sql: "CREATE TABLE t (LIKE t2);" }
+      - { id: if_not_exists_like, sql: "CREATE TABLE IF NOT EXISTS t LIKE db1.t2;" }
+    examples:
+      - "CREATE TABLE new_tbl LIKE orig_tbl;"
+
+  - id: create_table_select
+    name: CREATE TABLE ... SELECT
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-table-select.html
+    tier: high
+    probes:
+      - { id: select, sql: "CREATE TABLE t SELECT * FROM t2;" }
+      - { id: as_select, sql: "CREATE TABLE t AS SELECT * FROM t2;" }
+      - { id: columns_and_select, sql: "CREATE TABLE t (m INT) SELECT n FROM t2;" }
+      - { id: keys_options_select, sql: "CREATE TABLE t (a INT NOT NULL AUTO_INCREMENT, PRIMARY KEY (a), KEY (b)) ENGINE = InnoDB SELECT b, c FROM t2;" }
+      - { id: ignore_select, sql: "CREATE TABLE t (UNIQUE (n)) IGNORE SELECT n FROM t2;" }
+      - { id: replace_select, sql: "CREATE TABLE t (UNIQUE (n)) REPLACE SELECT n FROM t2;" }
+      - { id: values_source, sql: "CREATE TABLE t VALUES ROW(1, 3, 5), ROW(2, 4, 6);" }
+      - { id: table_source, sql: "CREATE TABLE t TABLE t2;" }
+      - { id: columns_and_table, sql: "CREATE TABLE t (x INT) TABLE t2;" }
+      - { id: partition_and_select, sql: "CREATE TABLE t (a INT) PARTITION BY HASH (a) PARTITIONS 2 SELECT a FROM t2;" }
+    examples:
+      - "CREATE TABLE new_tbl AS SELECT * FROM orig_tbl;"
+      - |-
+        CREATE TABLE test (a INT NOT NULL AUTO_INCREMENT,
+               PRIMARY KEY (a), KEY(b))
+               ENGINE=InnoDB SELECT b,c FROM test2;
+      - "CREATE TABLE bar (UNIQUE (n)) SELECT n FROM foo;"
+      - |-
+        CREATE TABLE artists_and_works
+          SELECT artist.name, COUNT(work.artist_id) AS number_of_works
+          FROM artist LEFT JOIN work ON artist.id = work.artist_id
+          GROUP BY artist.id;
+      - "CREATE TABLE foo (a TINYINT NOT NULL) SELECT b+1 AS a FROM bar;"
+
+  - id: alter_table
+    name: ALTER TABLE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/alter-table.html
+    tier: high
+    probes:
+      - { id: add_column, sql: "ALTER TABLE t ADD COLUMN c INT;" }
+      - { id: add_without_column_keyword, sql: "ALTER TABLE t ADD c INT NOT NULL DEFAULT 0;" }
+      - { id: add_column_first, sql: "ALTER TABLE t ADD COLUMN c INT FIRST;" }
+      - { id: add_column_after, sql: "ALTER TABLE t ADD COLUMN c INT AFTER b;" }
+      - { id: add_columns_parenthesized, sql: "ALTER TABLE t ADD COLUMN (c INT, d VARCHAR(10));" }
+      - { id: add_generated_column, sql: "ALTER TABLE t ADD COLUMN c INT GENERATED ALWAYS AS (a + b) VIRTUAL;" }
+      - { id: add_index, sql: "ALTER TABLE t ADD INDEX idx (a);" }
+      - { id: add_key_type_options, sql: "ALTER TABLE t ADD KEY idx USING BTREE (a, b DESC) COMMENT 'c' INVISIBLE;" }
+      - { id: add_functional_index, sql: "ALTER TABLE t ADD INDEX idx ((a + b));" }
+      - { id: add_fulltext, sql: "ALTER TABLE t ADD FULLTEXT INDEX ft (body) WITH PARSER ngram;" }
+      - { id: add_spatial, sql: "ALTER TABLE t ADD SPATIAL INDEX sp (g);" }
+      - { id: add_primary_key, sql: "ALTER TABLE t ADD PRIMARY KEY (id);" }
+      - { id: add_constraint_primary_key, sql: "ALTER TABLE t ADD CONSTRAINT pk PRIMARY KEY USING BTREE (id);" }
+      - { id: add_unique, sql: "ALTER TABLE t ADD CONSTRAINT uq UNIQUE INDEX uq_a (a);" }
+      - { id: add_foreign_key, sql: "ALTER TABLE t ADD CONSTRAINT fk FOREIGN KEY (a) REFERENCES t2 (id) ON DELETE CASCADE ON UPDATE SET NULL;" }
+      - { id: add_check, sql: "ALTER TABLE t ADD CONSTRAINT chk CHECK (a > 0) NOT ENFORCED;" }
+      - { id: drop_check, sql: "ALTER TABLE t DROP CHECK chk;" }
+      - { id: drop_constraint, sql: "ALTER TABLE t DROP CONSTRAINT chk;" }
+      - { id: alter_check_enforced, sql: "ALTER TABLE t ALTER CHECK chk NOT ENFORCED;" }
+      - { id: alter_constraint_enforced, sql: "ALTER TABLE t ALTER CONSTRAINT chk ENFORCED;" }
+      - { id: algorithm, sql: "ALTER TABLE t ADD COLUMN c INT, ALGORITHM = INSTANT;" }
+      - { id: lock, sql: "ALTER TABLE t ADD INDEX idx (a), ALGORITHM = INPLACE, LOCK = NONE;" }
+      - { id: alter_column_set_default, sql: "ALTER TABLE t ALTER COLUMN a SET DEFAULT 1;" }
+      - { id: alter_column_set_default_expr, sql: "ALTER TABLE t ALTER a SET DEFAULT (RAND() * 10);" }
+      - { id: alter_column_drop_default, sql: "ALTER TABLE t ALTER COLUMN a DROP DEFAULT;" }
+      - { id: alter_column_set_invisible, sql: "ALTER TABLE t ALTER COLUMN a SET INVISIBLE;" }
+      - { id: alter_index_visibility, sql: "ALTER TABLE t ALTER INDEX idx INVISIBLE;" }
+      - { id: change_column, sql: "ALTER TABLE t CHANGE a b BIGINT NOT NULL;" }
+      - { id: change_column_keyword_first, sql: "ALTER TABLE t CHANGE COLUMN a b INT FIRST;" }
+      - { id: modify_column, sql: "ALTER TABLE t MODIFY b INT NOT NULL;" }
+      - { id: modify_column_after, sql: "ALTER TABLE t MODIFY COLUMN b BIGINT UNSIGNED DEFAULT 1 COMMENT 'my column' AFTER a;" }
+      - { id: table_charset, sql: "ALTER TABLE t CHARACTER SET = utf8mb4;" }
+      - { id: default_charset_collate, sql: "ALTER TABLE t DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;" }
+      - { id: convert_to_charset, sql: "ALTER TABLE t CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;" }
+      - { id: disable_enable_keys, sql: "ALTER TABLE t DISABLE KEYS;" }
+      - { id: discard_tablespace, sql: "ALTER TABLE t DISCARD TABLESPACE;" }
+      - { id: import_tablespace, sql: "ALTER TABLE t IMPORT TABLESPACE;" }
+      - { id: drop_column, sql: "ALTER TABLE t DROP COLUMN c, DROP d;" }
+      - { id: drop_index, sql: "ALTER TABLE t DROP INDEX idx;" }
+      - { id: drop_key, sql: "ALTER TABLE t DROP KEY idx;" }
+      - { id: drop_primary_key, sql: "ALTER TABLE t DROP PRIMARY KEY;" }
+      - { id: drop_foreign_key, sql: "ALTER TABLE t DROP FOREIGN KEY fk;" }
+      - { id: force, sql: "ALTER TABLE t FORCE;" }
+      - { id: order_by, sql: "ALTER TABLE t ORDER BY a, b;" }
+      - { id: rename_column, sql: "ALTER TABLE t RENAME COLUMN a TO b;" }
+      - { id: rename_index, sql: "ALTER TABLE t RENAME INDEX i1 TO i2;" }
+      - { id: rename_key, sql: "ALTER TABLE t RENAME KEY i1 TO i2;" }
+      - { id: rename_table_to, sql: "ALTER TABLE t RENAME TO t2;" }
+      - { id: rename_table_as, sql: "ALTER TABLE t RENAME AS t2;" }
+      - { id: rename_table_bare, sql: "ALTER TABLE t RENAME t2;" }
+      - { id: with_validation, sql: "ALTER TABLE t MODIFY COLUMN c INT AS (a + 1) STORED, WITH VALIDATION;" }
+      - { id: without_validation, sql: "ALTER TABLE t MODIFY COLUMN c INT AS (a + 1) STORED, WITHOUT VALIDATION;" }
+      - { id: table_options, sql: "ALTER TABLE t ENGINE = InnoDB, ROW_FORMAT = COMPRESSED, AUTO_INCREMENT = 13, COMMENT = 'new comment';" }
+      - { id: table_options_misc, sql: "ALTER TABLE t KEY_BLOCK_SIZE = 8 STATS_PERSISTENT = 0 ENCRYPTION = 'N' TABLESPACE ts1 STORAGE DISK;" }
+      - { id: multiple_operations, sql: "ALTER TABLE t ADD COLUMN c INT, DROP COLUMN d, RENAME COLUMN a TO b, ADD INDEX (c);" }
+      - { id: partition_by, sql: "ALTER TABLE t PARTITION BY HASH (id) PARTITIONS 8;" }
+      - { id: remove_partitioning, sql: "ALTER TABLE t REMOVE PARTITIONING;" }
+    examples:
+      - "ALTER TABLE t2 DROP COLUMN c, DROP COLUMN d;"
+      - "ALTER TABLE t1 CHANGE a b BIGINT NOT NULL;"
+      - "ALTER TABLE t1 MODIFY col1 BIGINT UNSIGNED DEFAULT 1 COMMENT 'my column';"
+      - |-
+        ALTER TABLE t1 RENAME COLUMN a TO b,
+                       RENAME COLUMN b TO a;
+      - "ALTER TABLE t1 CHARACTER SET = utf8mb4;"
+
+  - id: alter_table_partition_operations
+    name: ALTER TABLE Partition Operations
+    doc: https://dev.mysql.com/doc/refman/8.4/en/alter-table-partition-operations.html
+    tier: medium
+    probes:
+      - { id: partition_by, sql: "ALTER TABLE t PARTITION BY HASH (id) PARTITIONS 8;" }
+      - { id: add_partition, sql: "ALTER TABLE t ADD PARTITION (PARTITION p3 VALUES LESS THAN (2002));" }
+      - { id: drop_partition, sql: "ALTER TABLE t DROP PARTITION p0, p1;" }
+      - { id: discard_partition_tablespace, sql: "ALTER TABLE t DISCARD PARTITION p2, p3 TABLESPACE;" }
+      - { id: import_partition_all_tablespace, sql: "ALTER TABLE t IMPORT PARTITION ALL TABLESPACE;" }
+      - { id: truncate_partition, sql: "ALTER TABLE t TRUNCATE PARTITION p1, p3;" }
+      - { id: coalesce_partition, sql: "ALTER TABLE t COALESCE PARTITION 2;" }
+      - { id: reorganize_partition, sql: "ALTER TABLE t REORGANIZE PARTITION p0, p1 INTO (PARTITION p0 VALUES LESS THAN (1995), PARTITION p1 VALUES LESS THAN (2000));" }
+      - { id: exchange_partition, sql: "ALTER TABLE t EXCHANGE PARTITION p0 WITH TABLE t2 WITHOUT VALIDATION;" }
+      - { id: analyze_partition, sql: "ALTER TABLE t ANALYZE PARTITION p1, p2;" }
+      - { id: check_partition_all, sql: "ALTER TABLE t CHECK PARTITION ALL;" }
+      - { id: optimize_partition, sql: "ALTER TABLE t OPTIMIZE PARTITION p0;" }
+      - { id: rebuild_partition, sql: "ALTER TABLE t REBUILD PARTITION p0, p1;" }
+      - { id: repair_partition, sql: "ALTER TABLE t REPAIR PARTITION p0;" }
+      - { id: remove_partitioning, sql: "ALTER TABLE t REMOVE PARTITIONING;" }
+    examples:
+      - "ALTER TABLE t1 ADD PARTITION (PARTITION p3 VALUES LESS THAN (2002));"
+      - "ALTER TABLE t1 DROP PARTITION p0, p1;"
+      - "ALTER TABLE t1 DISCARD PARTITION p2, p3 TABLESPACE;"
+      - "ALTER TABLE t1 TRUNCATE PARTITION p1, p3;"
+      - "ALTER TABLE t2 COALESCE PARTITION 2;"
+
+  - id: drop_table
+    name: DROP TABLE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/drop-table.html
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP TABLE t;" }
+      - { id: if_exists, sql: "DROP TABLE IF EXISTS t;" }
+      - { id: multiple, sql: "DROP TABLE t1, db1.t2;" }
+      - { id: temporary, sql: "DROP TEMPORARY TABLE IF EXISTS t;" }
+      - { id: restrict, sql: "DROP TABLE t RESTRICT;" }
+      - { id: cascade, sql: "DROP TABLE IF EXISTS t1, t2 CASCADE;" }
+
+  - id: create_view
+    name: CREATE VIEW
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-view.html
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE VIEW v AS SELECT * FROM t;" }
+      - { id: or_replace, sql: "CREATE OR REPLACE VIEW v AS SELECT a FROM t;" }
+      - { id: column_list, sql: "CREATE VIEW v (x, y) AS SELECT a, b FROM t;" }
+      - { id: qualified_name, sql: "CREATE VIEW db1.v AS SELECT * FROM t;" }
+      - { id: algorithm, sql: "CREATE ALGORITHM = MERGE VIEW v AS SELECT a FROM t;" }
+      - { id: algorithm_temptable, sql: "CREATE ALGORITHM = TEMPTABLE VIEW v AS SELECT a FROM t;" }
+      - { id: definer_user, sql: "CREATE DEFINER = 'admin'@'localhost' VIEW v AS SELECT a FROM t;" }
+      - { id: definer_current_user, sql: "CREATE DEFINER = CURRENT_USER VIEW v AS SELECT a FROM t;" }
+      - { id: sql_security, sql: "CREATE SQL SECURITY INVOKER VIEW v AS SELECT a FROM t;" }
+      - { id: all_characteristics, sql: "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER() SQL SECURITY DEFINER VIEW v AS SELECT a FROM t;" }
+      - { id: with_check_option, sql: "CREATE VIEW v AS SELECT a FROM t WHERE a > 0 WITH CHECK OPTION;" }
+      - { id: with_cascaded_check_option, sql: "CREATE VIEW v AS SELECT a FROM t WHERE a > 0 WITH CASCADED CHECK OPTION;" }
+      - { id: with_local_check_option, sql: "CREATE VIEW v AS SELECT a FROM t WHERE a > 0 WITH LOCAL CHECK OPTION;" }
+      - { id: union_body, sql: "CREATE VIEW v AS SELECT a FROM t1 UNION SELECT a FROM t2;" }
+    examples:
+      - "CREATE VIEW test.v AS SELECT * FROM t;"
+      - "CREATE VIEW v_today (today) AS SELECT CURRENT_DATE;"
+      - "CREATE VIEW v AS SELECT qty, price, qty*price AS value FROM t;"
+      - "CREATE VIEW v (mycol) AS SELECT 'abc';"
+      - "CREATE VIEW v AS SELECT * FROM t WHERE t.id = f(t.name);"
+
+  - id: alter_view
+    name: ALTER VIEW
+    doc: https://dev.mysql.com/doc/refman/8.4/en/alter-view.html
+    tier: high
+    probes:
+      - { id: basic, sql: "ALTER VIEW v AS SELECT a FROM t;" }
+      - { id: column_list, sql: "ALTER VIEW v (x) AS SELECT a FROM t;" }
+      - { id: algorithm_definer_security, sql: "ALTER ALGORITHM = MERGE DEFINER = 'admin'@'%' SQL SECURITY INVOKER VIEW v AS SELECT a FROM t;" }
+      - { id: with_check_option, sql: "ALTER VIEW v AS SELECT a FROM t WHERE a > 0 WITH LOCAL CHECK OPTION;" }
+
+  - id: drop_view
+    name: DROP VIEW
+    doc: https://dev.mysql.com/doc/refman/8.4/en/drop-view.html
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP VIEW v;" }
+      - { id: if_exists_multiple, sql: "DROP VIEW IF EXISTS v1, db1.v2;" }
+      - { id: restrict_cascade, sql: "DROP VIEW v1, v2 CASCADE;" }
+
+  - id: create_index
+    name: CREATE INDEX
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-index.html
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE INDEX idx ON t (a);" }
+      - { id: unique, sql: "CREATE UNIQUE INDEX idx ON t (a, b);" }
+      - { id: fulltext, sql: "CREATE FULLTEXT INDEX idx ON t (body);" }
+      - { id: spatial, sql: "CREATE SPATIAL INDEX idx ON t (g);" }
+      - { id: prefix_length, sql: "CREATE INDEX idx ON t (name(10));" }
+      - { id: asc_desc, sql: "CREATE INDEX idx ON t (a ASC, b DESC);" }
+      - { id: functional_key_part, sql: "CREATE INDEX idx ON t ((a + b), (a - b), a);" }
+      - { id: multi_valued_index, sql: "CREATE INDEX idx ON t ((CAST(j->'$.zipcode' AS UNSIGNED ARRAY)));" }
+      - { id: index_type_before_on, sql: "CREATE INDEX idx USING BTREE ON t (a);" }
+      - { id: index_type_option, sql: "CREATE INDEX idx ON t (a) USING HASH;" }
+      - { id: key_block_size, sql: "CREATE INDEX idx ON t (a) KEY_BLOCK_SIZE = 8;" }
+      - { id: with_parser, sql: "CREATE FULLTEXT INDEX idx ON t (body) WITH PARSER ngram;" }
+      - { id: comment, sql: "CREATE INDEX idx ON t (a) COMMENT 'MERGE_THRESHOLD=40';" }
+      - { id: invisible, sql: "CREATE INDEX idx ON t (a) INVISIBLE;" }
+      - { id: engine_attribute, sql: "CREATE INDEX idx ON t (a) ENGINE_ATTRIBUTE = '{}' SECONDARY_ENGINE_ATTRIBUTE '{}';" }
+      - { id: algorithm_option, sql: "CREATE INDEX idx ON t (a) ALGORITHM = INPLACE;" }
+      - { id: lock_option, sql: "CREATE INDEX idx ON t (a) LOCK = NONE;" }
+      - { id: algorithm_and_lock, sql: "CREATE INDEX idx ON t (a) ALGORITHM INPLACE LOCK SHARED;" }
+    examples:
+      - "CREATE INDEX part_of_name ON customer (name(10));"
+      - "CREATE INDEX idx1 ON t1 ((col1 + col2));"
+      - "CREATE INDEX idx2 ON t1 ((col1 + col2), (col1 - col2), col1);"
+      - "ALTER TABLE t1 ADD INDEX ((col1 * 40) DESC);"
+      - "CREATE INDEX zips ON customers ( (CAST(custinfo->'$.zipcode' AS UNSIGNED ARRAY)) );"
+
+  - id: drop_index
+    name: DROP INDEX
+    doc: https://dev.mysql.com/doc/refman/8.4/en/drop-index.html
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP INDEX idx ON t;" }
+      - { id: primary, sql: "DROP INDEX `PRIMARY` ON t;" }
+      - { id: algorithm_lock, sql: "DROP INDEX idx ON t ALGORITHM = INPLACE LOCK = DEFAULT;" }
+    examples:
+      - "DROP INDEX `PRIMARY` ON t;"
+
+  - id: create_procedure
+    name: CREATE PROCEDURE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-procedure.html
+    tier: high
+    probes:
+      - { id: no_params_single_statement, sql: "CREATE PROCEDURE p() SELECT 1;" }
+      - { id: begin_end_body, sql: "CREATE PROCEDURE p() BEGIN SELECT 1; SELECT 2; END;" }
+      - { id: in_out_inout_params, sql: "CREATE PROCEDURE p(IN a INT, OUT b INT, INOUT c VARCHAR(10)) BEGIN SET b = a; SET c = CONCAT(c, 'x'); END;" }
+      - { id: param_without_mode, sql: "CREATE PROCEDURE p(a INT) SELECT a;" }
+      - { id: param_charset_collate, sql: "CREATE PROCEDURE p(a VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin) SELECT a;" }
+      - { id: if_not_exists, sql: "CREATE PROCEDURE IF NOT EXISTS p() SELECT 1;" }
+      - { id: definer, sql: "CREATE DEFINER = 'admin'@'localhost' PROCEDURE p() SELECT 1;" }
+      - { id: definer_current_user, sql: "CREATE DEFINER = CURRENT_USER PROCEDURE p() SELECT 1;" }
+      - { id: comment, sql: "CREATE PROCEDURE p() COMMENT 'does things' SELECT 1;" }
+      - { id: language_sql, sql: "CREATE PROCEDURE p() LANGUAGE SQL SELECT 1;" }
+      - { id: deterministic, sql: "CREATE PROCEDURE p() DETERMINISTIC SELECT 1;" }
+      - { id: not_deterministic, sql: "CREATE PROCEDURE p() NOT DETERMINISTIC SELECT 1;" }
+      - { id: contains_sql, sql: "CREATE PROCEDURE p() CONTAINS SQL SELECT 1;" }
+      - { id: no_sql, sql: "CREATE PROCEDURE p() NO SQL SELECT 1;" }
+      - { id: reads_sql_data, sql: "CREATE PROCEDURE p() READS SQL DATA SELECT a FROM t;" }
+      - { id: modifies_sql_data, sql: "CREATE PROCEDURE p() MODIFIES SQL DATA DELETE FROM t;" }
+      - { id: sql_security, sql: "CREATE PROCEDURE p() SQL SECURITY INVOKER SELECT 1;" }
+      - { id: multiple_characteristics, sql: "CREATE PROCEDURE p() COMMENT 'c' LANGUAGE SQL NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN DELETE FROM t; END;" }
+      - { id: select_into_out_param, sql: "CREATE PROCEDURE p(IN country CHAR(3), OUT cities INT) BEGIN SELECT COUNT(*) INTO cities FROM city WHERE code = country; END;" }
+      - { id: labeled_body, sql: "CREATE PROCEDURE p() lbl: BEGIN LEAVE lbl; END lbl;" }
+    examples:
+      - |-
+        CREATE DEFINER = 'admin'@'localhost' PROCEDURE account_count()
+        BEGIN
+          SELECT 'Number of accounts:', COUNT(*) FROM mysql.user;
+        END;
+      - |-
+        CREATE DEFINER = 'admin'@'localhost' PROCEDURE account_count()
+        SQL SECURITY INVOKER
+        BEGIN
+          SELECT 'Number of accounts:', COUNT(*) FROM mysql.user;
+        END;
+
+  - id: create_function
+    name: CREATE FUNCTION (stored function)
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-procedure.html
+    tier: high
+    probes:
+      - { id: return_body, sql: "CREATE FUNCTION f(s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ', s, '!');" }
+      - { id: no_params, sql: "CREATE FUNCTION f() RETURNS INT NO SQL RETURN 1;" }
+      - { id: begin_end_body, sql: "CREATE FUNCTION f(a INT) RETURNS INT DETERMINISTIC BEGIN DECLARE b INT DEFAULT 0; SET b = a * 2; RETURN b; END;" }
+      - { id: if_not_exists, sql: "CREATE FUNCTION IF NOT EXISTS f(a INT) RETURNS INT DETERMINISTIC RETURN a;" }
+      - { id: definer, sql: "CREATE DEFINER = 'admin'@'localhost' FUNCTION f() RETURNS INT DETERMINISTIC RETURN 1;" }
+      - { id: returns_charset_collate, sql: "CREATE FUNCTION f(a VARCHAR(10)) RETURNS VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DETERMINISTIC RETURN UPPER(a);" }
+      - { id: returns_decimal, sql: "CREATE FUNCTION f(a DECIMAL(10,2)) RETURNS DECIMAL(10,2) DETERMINISTIC RETURN a * 1.1;" }
+      - { id: characteristics, sql: "CREATE FUNCTION f() RETURNS INT COMMENT 'c' LANGUAGE SQL NOT DETERMINISTIC READS SQL DATA SQL SECURITY INVOKER RETURN (SELECT COUNT(*) FROM t);" }
+      - { id: contains_sql, sql: "CREATE FUNCTION f() RETURNS INT CONTAINS SQL DETERMINISTIC RETURN 1;" }
+      - { id: modifies_sql_data, sql: "CREATE FUNCTION f(p INT) RETURNS INT MODIFIES SQL DATA BEGIN INSERT INTO t VALUES (p); RETURN p; END;" }
+    examples:
+      - |-
+        CREATE FUNCTION hello (s CHAR(20))
+          RETURNS CHAR(50) DETERMINISTIC
+          RETURN CONCAT('Hello, ',s,'!');
+
+  - id: alter_procedure
+    name: ALTER PROCEDURE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/alter-procedure.html
+    tier: high
+    probes:
+      - { id: comment, sql: "ALTER PROCEDURE p COMMENT 'new comment';" }
+      - { id: sql_security, sql: "ALTER PROCEDURE p SQL SECURITY INVOKER;" }
+      - { id: data_access, sql: "ALTER PROCEDURE p READS SQL DATA;" }
+      - { id: multiple_characteristics, sql: "ALTER PROCEDURE p LANGUAGE SQL MODIFIES SQL DATA SQL SECURITY DEFINER COMMENT 'x';" }
+
+  - id: alter_function
+    name: ALTER FUNCTION
+    doc: https://dev.mysql.com/doc/refman/8.4/en/alter-function.html
+    tier: high
+    probes:
+      - { id: comment, sql: "ALTER FUNCTION f COMMENT 'new comment';" }
+      - { id: sql_security, sql: "ALTER FUNCTION f SQL SECURITY DEFINER;" }
+      - { id: multiple_characteristics, sql: "ALTER FUNCTION f NO SQL LANGUAGE SQL COMMENT 'x';" }
+
+  - id: drop_procedure
+    name: DROP PROCEDURE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/drop-procedure.html
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP PROCEDURE p;" }
+      - { id: if_exists, sql: "DROP PROCEDURE IF EXISTS db1.p;" }
+
+  - id: drop_function
+    name: DROP FUNCTION
+    doc: https://dev.mysql.com/doc/refman/8.4/en/drop-procedure.html
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP FUNCTION f;" }
+      - { id: if_exists, sql: "DROP FUNCTION IF EXISTS db1.f;" }
+
+  - id: create_function_loadable
+    name: CREATE FUNCTION (loadable function)
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-function-loadable.html
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE FUNCTION metaphon RETURNS STRING SONAME 'udf_example.so';" }
+      - { id: aggregate_if_not_exists, sql: "CREATE AGGREGATE FUNCTION IF NOT EXISTS avgcost RETURNS REAL SONAME 'udf_example.so';" }
+
+  - id: drop_function_loadable
+    name: DROP FUNCTION (loadable function)
+    doc: https://dev.mysql.com/doc/refman/8.4/en/drop-function-loadable.html
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP FUNCTION IF EXISTS metaphon;" }
+
+  - id: create_database
+    name: CREATE DATABASE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-database.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE DATABASE db1;" }
+      - { id: schema_if_not_exists, sql: "CREATE SCHEMA IF NOT EXISTS db1;" }
+      - { id: charset_collate, sql: "CREATE DATABASE db1 DEFAULT CHARACTER SET = utf8mb4 DEFAULT COLLATE = utf8mb4_0900_ai_ci;" }
+      - { id: charset_no_default, sql: "CREATE DATABASE db1 CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;" }
+      - { id: encryption, sql: "CREATE DATABASE db1 DEFAULT ENCRYPTION = 'Y';" }
+
+  - id: alter_database
+    name: ALTER DATABASE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/alter-database.html
+    tier: medium
+    probes:
+      - { id: charset, sql: "ALTER DATABASE db1 CHARACTER SET = utf8mb4;" }
+      - { id: schema_default_collate, sql: "ALTER SCHEMA db1 DEFAULT COLLATE utf8mb4_bin;" }
+      - { id: no_db_name, sql: "ALTER DATABASE DEFAULT CHARACTER SET utf8mb4;" }
+      - { id: encryption, sql: "ALTER DATABASE db1 ENCRYPTION = 'N';" }
+      - { id: read_only, sql: "ALTER DATABASE db1 READ ONLY = 1;" }
+      - { id: read_only_default, sql: "ALTER DATABASE db1 READ ONLY DEFAULT;" }
+    examples:
+      - "ALTER DATABASE mydb READ ONLY = 0 DEFAULT COLLATE utf8mb4_bin;"
+      - "ALTER DATABASE mydb READ ONLY = 1 DEFAULT COLLATE utf8mb4_bin;"
+      - "ALTER DATABASE mydb READ ONLY = 1;"
+
+  - id: drop_database
+    name: DROP DATABASE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/drop-database.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP DATABASE db1;" }
+      - { id: schema_if_exists, sql: "DROP SCHEMA IF EXISTS db1;" }
+
+  - id: start_transaction_commit_rollback
+    name: START TRANSACTION, COMMIT, and ROLLBACK
+    doc: https://dev.mysql.com/doc/refman/8.4/en/commit.html
+    tier: high
+    probes:
+      - { id: start_transaction, sql: "START TRANSACTION;" }
+      - { id: start_transaction_consistent_snapshot, sql: "START TRANSACTION WITH CONSISTENT SNAPSHOT;" }
+      - { id: start_transaction_read_only, sql: "START TRANSACTION READ ONLY;" }
+      - { id: start_transaction_read_write, sql: "START TRANSACTION READ WRITE;" }
+      - { id: start_transaction_multiple, sql: "START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY;" }
+      - { id: begin, sql: "BEGIN;" }
+      - { id: begin_work, sql: "BEGIN WORK;" }
+      - { id: commit, sql: "COMMIT;" }
+      - { id: commit_work, sql: "COMMIT WORK;" }
+      - { id: commit_and_chain, sql: "COMMIT AND CHAIN;" }
+      - { id: commit_and_no_chain_no_release, sql: "COMMIT WORK AND NO CHAIN NO RELEASE;" }
+      - { id: commit_release, sql: "COMMIT RELEASE;" }
+      - { id: rollback, sql: "ROLLBACK;" }
+      - { id: rollback_work, sql: "ROLLBACK WORK;" }
+      - { id: rollback_and_chain, sql: "ROLLBACK AND CHAIN;" }
+      - { id: rollback_release, sql: "ROLLBACK AND NO CHAIN RELEASE;" }
+      - { id: set_autocommit, sql: "SET autocommit = 0;" }
+    examples:
+      - "START TRANSACTION;"
+      - "SELECT @A:=SUM(salary) FROM table1 WHERE type=1;"
+      - "UPDATE table2 SET summary=@A WHERE type=1;"
+      - "COMMIT;"
+      - "SET autocommit=0;"
+
+  - id: savepoint
+    name: SAVEPOINT, ROLLBACK TO SAVEPOINT, and RELEASE SAVEPOINT
+    doc: https://dev.mysql.com/doc/refman/8.4/en/savepoint.html
+    tier: high
+    probes:
+      - { id: savepoint, sql: "SAVEPOINT sp1;" }
+      - { id: rollback_to_savepoint, sql: "ROLLBACK TO SAVEPOINT sp1;" }
+      - { id: rollback_work_to, sql: "ROLLBACK WORK TO sp1;" }
+      - { id: rollback_to, sql: "ROLLBACK TO sp1;" }
+      - { id: release_savepoint, sql: "RELEASE SAVEPOINT sp1;" }
+
+  - id: set_transaction
+    name: SET TRANSACTION
+    doc: https://dev.mysql.com/doc/refman/8.4/en/set-transaction.html
+    tier: high
+    probes:
+      - { id: isolation_serializable, sql: "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;" }
+      - { id: isolation_repeatable_read, sql: "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;" }
+      - { id: isolation_read_committed, sql: "SET TRANSACTION ISOLATION LEVEL READ COMMITTED;" }
+      - { id: isolation_read_uncommitted, sql: "SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;" }
+      - { id: read_only, sql: "SET TRANSACTION READ ONLY;" }
+      - { id: global, sql: "SET GLOBAL TRANSACTION ISOLATION LEVEL READ COMMITTED;" }
+      - { id: session_multiple, sql: "SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ WRITE;" }
+      - { id: variable_form, sql: "SET @@SESSION.transaction_isolation = 'READ-COMMITTED';" }
+      - { id: persist_variable_form, sql: "SET PERSIST transaction_read_only = OFF;" }
+    examples:
+      - "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;"
+      - "SELECT @@GLOBAL.transaction_isolation, @@GLOBAL.transaction_read_only;"
+      - "SELECT @@SESSION.transaction_isolation, @@SESSION.transaction_read_only;"
+
+  - id: grant
+    name: GRANT
+    doc: https://dev.mysql.com/doc/refman/8.4/en/grant.html
+    tier: medium
+    probes:
+      - { id: all_on_db, sql: "GRANT ALL ON db1.* TO 'jeffrey'@'localhost';" }
+      - { id: all_privileges, sql: "GRANT ALL PRIVILEGES ON *.* TO 'u1'@'%';" }
+      - { id: privilege_list_table, sql: "GRANT SELECT, INSERT, UPDATE, DELETE ON db1.t TO u1;" }
+      - { id: column_privileges, sql: "GRANT SELECT (c1), INSERT (c1, c2) ON db1.t TO 'u1'@'h1';" }
+      - { id: global_star, sql: "GRANT SELECT ON * TO u1;" }
+      - { id: object_type_table, sql: "GRANT SELECT ON TABLE db1.t TO u1;" }
+      - { id: object_type_procedure, sql: "GRANT EXECUTE ON PROCEDURE db1.p TO 'u1'@'h1';" }
+      - { id: object_type_function, sql: "GRANT EXECUTE ON FUNCTION db1.f TO u1;" }
+      - { id: multi_word_privilege, sql: "GRANT CREATE ROUTINE, ALTER ROUTINE, CREATE TEMPORARY TABLES, LOCK TABLES, SHOW VIEW ON db1.* TO u1;" }
+      - { id: dynamic_privilege, sql: "GRANT BINLOG_ADMIN, SYSTEM_VARIABLES_ADMIN ON *.* TO u1;" }
+      - { id: with_grant_option, sql: "GRANT USAGE ON *.* TO 'u1'@'h1' WITH GRANT OPTION;" }
+      - { id: as_user, sql: "GRANT SELECT, INSERT ON *.* TO u3 AS u1;" }
+      - { id: as_user_with_role, sql: "GRANT SELECT ON *.* TO u4 AS u1 WITH ROLE r1, r2;" }
+      - { id: as_user_with_role_all_except, sql: "GRANT SELECT ON *.* TO u4 AS u1 WITH ROLE ALL EXCEPT r1;" }
+      - { id: proxy, sql: "GRANT PROXY ON 'localuser'@'localhost' TO 'externaluser'@'somehost';" }
+      - { id: roles, sql: "GRANT 'role1', 'role2' TO 'user1'@'localhost', 'user2'@'localhost';" }
+      - { id: roles_with_admin_option, sql: "GRANT r1 TO u1 WITH ADMIN OPTION;" }
+      - { id: quoted_wildcard_db, sql: "GRANT SELECT ON `d_`.* TO u;" }
+    examples:
+      - "GRANT ALL ON db1.* TO 'jeffrey'@'localhost';"
+      - "GRANT SELECT (col1), INSERT (col1, col2) ON mydb.mytbl TO 'someuser'@'somehost';"
+      - "GRANT EXECUTE ON PROCEDURE mydb.myproc TO 'someuser'@'somehost';"
+      - "GRANT PROXY ON 'localuser'@'localhost' TO 'externaluser'@'somehost';"
+      - "GRANT USAGE ON *.* TO 'someuser'@'somehost' WITH GRANT OPTION;"
+
+  - id: revoke
+    name: REVOKE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/revoke.html
+    tier: medium
+    probes:
+      - { id: privilege, sql: "REVOKE INSERT ON *.* FROM 'jeffrey'@'localhost';" }
+      - { id: privilege_list_columns, sql: "REVOKE SELECT (c1), UPDATE ON db1.t FROM u1, u2;" }
+      - { id: object_type, sql: "REVOKE EXECUTE ON PROCEDURE db1.p FROM u1;" }
+      - { id: if_exists, sql: "REVOKE IF EXISTS SELECT ON test.t1 FROM jerry@localhost;" }
+      - { id: ignore_unknown_user, sql: "REVOKE SELECT ON test.t1 FROM jerry@localhost IGNORE UNKNOWN USER;" }
+      - { id: all_grant_option, sql: "REVOKE ALL PRIVILEGES, GRANT OPTION FROM u1, u2;" }
+      - { id: all_on, sql: "REVOKE ALL ON *.* FROM u1;" }
+      - { id: proxy, sql: "REVOKE PROXY ON 'localuser'@'localhost' FROM 'externaluser'@'somehost';" }
+      - { id: roles, sql: "REVOKE 'role1', 'role2' FROM 'user1'@'localhost', 'user2'@'localhost';" }
+    examples:
+      - "REVOKE INSERT ON *.* FROM 'jeffrey'@'localhost';"
+      - "REVOKE 'role1', 'role2' FROM 'user1'@'localhost', 'user2'@'localhost';"
+      - "REVOKE SELECT ON world.* FROM 'role3';"
+      - "REVOKE IF EXISTS SELECT ON test.t1 FROM jerry@localhost;"
+      - "REVOKE SELECT ON test.t1 FROM jerry@localhost IGNORE UNKNOWN USER;"
+
+  - id: explain
+    name: EXPLAIN
+    doc: https://dev.mysql.com/doc/refman/8.4/en/explain.html
+    tier: medium
+    probes:
+      - { id: table_columns, sql: "EXPLAIN t;" }
+      - { id: describe_table_column, sql: "DESCRIBE t c;" }
+      - { id: desc_table_wild, sql: "DESC t 'c%';" }
+      - { id: explain_select, sql: "EXPLAIN SELECT a FROM t WHERE b LIKE 'A%';" }
+      - { id: describe_select, sql: "DESCRIBE SELECT a FROM t;" }
+      - { id: format_json, sql: "EXPLAIN FORMAT=JSON SELECT a FROM t;" }
+      - { id: format_tree, sql: "EXPLAIN FORMAT = TREE SELECT a FROM t;" }
+      - { id: format_traditional, sql: "EXPLAIN FORMAT=TRADITIONAL SELECT a FROM t;" }
+      - { id: into_variable, sql: "EXPLAIN FORMAT=JSON INTO @v SELECT a FROM t WHERE id = 2;" }
+      - { id: for_schema, sql: "EXPLAIN FORMAT=TREE FOR SCHEMA s1 SELECT * FROM t WHERE c2 > 50;" }
+      - { id: for_database, sql: "EXPLAIN FOR DATABASE s1 SELECT * FROM t;" }
+      - { id: for_connection, sql: "EXPLAIN FOR CONNECTION 4;" }
+      - { id: explain_table_stmt, sql: "EXPLAIN TABLE t;" }
+      - { id: explain_insert, sql: "EXPLAIN INSERT INTO t VALUES (1);" }
+      - { id: explain_replace, sql: "EXPLAIN REPLACE INTO t VALUES (1);" }
+      - { id: explain_update, sql: "EXPLAIN FORMAT=JSON INTO @u UPDATE t SET a = 'x' WHERE id = 3;" }
+      - { id: explain_delete, sql: "EXPLAIN DELETE FROM t WHERE a LIKE '%e%';" }
+      - { id: analyze, sql: "EXPLAIN ANALYZE SELECT * FROM t1 JOIN t2 ON (t1.c1 = t2.c2);" }
+      - { id: analyze_format_tree, sql: "EXPLAIN ANALYZE FORMAT=TREE SELECT * FROM t WHERE pk > 17;" }
+      - { id: analyze_for_schema, sql: "EXPLAIN ANALYZE FOR SCHEMA s1 SELECT * FROM t;" }
+    examples:
+      - "DESCRIBE City;"
+      - |-
+        EXPLAIN FORMAT=JSON INTO @myselect 
+            SELECT name FROM a WHERE id = 2;
+      - |-
+        EXPLAIN FORMAT=JSON INTO @mydelete 
+            DELETE FROM a WHERE name1 LIKE '%e%';
+      - "EXPLAIN SELECT Name FROM country WHERE Code Like 'A%';"
+      - "EXPLAIN FORMAT=JSON SELECT Name FROM country WHERE Code LIKE 'A%';"
+
+  - id: begin_end
+    name: BEGIN ... END compound statement
+    doc: https://dev.mysql.com/doc/refman/8.4/en/begin-end.html
+    tier: high
+    probes:
+      - { id: begin_end, sql: "CREATE PROCEDURE p() BEGIN SELECT 1; SELECT 2; END;" }
+      - { id: empty_block, sql: "CREATE PROCEDURE p() BEGIN END;" }
+      - { id: nested_block, sql: "CREATE PROCEDURE p() BEGIN DECLARE a INT; BEGIN DECLARE b INT; SET b = 1; END; END;" }
+      - { id: labeled_block, sql: "CREATE PROCEDURE p() blk: BEGIN SELECT 1; END blk;" }
+      - { id: labeled_block_no_end_label, sql: "CREATE PROCEDURE p() BEGIN inner_blk: BEGIN SELECT 1; END; END;" }
+      - { id: in_function, sql: "CREATE FUNCTION f() RETURNS INT DETERMINISTIC BEGIN DECLARE x INT DEFAULT 1; RETURN x; END;" }
+
+  - id: statement_labels
+    name: Statement labels
+    doc: https://dev.mysql.com/doc/refman/8.4/en/statement-labels.html
+    tier: medium
+    probes:
+      - { id: labeled_begin, sql: "CREATE PROCEDURE p() lbl: BEGIN LEAVE lbl; END lbl;" }
+      - { id: labeled_loop, sql: "CREATE PROCEDURE p() BEGIN lbl: LOOP LEAVE lbl; END LOOP lbl; END;" }
+      - { id: labeled_repeat, sql: "CREATE PROCEDURE p() BEGIN DECLARE i INT DEFAULT 0; lbl: REPEAT SET i = i + 1; UNTIL i > 3 END REPEAT lbl; END;" }
+      - { id: labeled_while, sql: "CREATE PROCEDURE p() BEGIN DECLARE i INT DEFAULT 0; lbl: WHILE i < 3 DO SET i = i + 1; END WHILE lbl; END;" }
+      - { id: label_without_end_label, sql: "CREATE PROCEDURE p() BEGIN lbl: LOOP LEAVE lbl; END LOOP; END;" }
+    examples:
+      - |-
+        CREATE PROCEDURE doiterate(p1 INT)
+        BEGIN
+          label1: LOOP
+            SET p1 = p1 + 1;
+            IF p1 < 10 THEN ITERATE label1; END IF;
+            LEAVE label1;
+          END LOOP label1;
+        END;
+
+  - id: declare_local_variable
+    name: DECLARE (local variable)
+    doc: https://dev.mysql.com/doc/refman/8.4/en/declare-local-variable.html
+    tier: high
+    probes:
+      - { id: declare, sql: "CREATE PROCEDURE p() BEGIN DECLARE a INT; SET a = 1; END;" }
+      - { id: declare_default, sql: "CREATE PROCEDURE p() BEGIN DECLARE a INT DEFAULT 5; SELECT a; END;" }
+      - { id: declare_multiple_names, sql: "CREATE PROCEDURE p() BEGIN DECLARE a, b, c VARCHAR(20) DEFAULT 'x'; SELECT a, b, c; END;" }
+      - { id: declare_default_expression, sql: "CREATE PROCEDURE p() BEGIN DECLARE d DATETIME DEFAULT NOW(); DECLARE n INT DEFAULT (SELECT COUNT(*) FROM t); SELECT d, n; END;" }
+      - { id: declare_charset_collate, sql: "CREATE PROCEDURE p() BEGIN DECLARE s VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin; SET s = 'a'; END;" }
+
+  - id: case_statement
+    name: CASE statement
+    doc: https://dev.mysql.com/doc/refman/8.4/en/case.html
+    tier: high
+    probes:
+      - { id: simple_case, sql: "CREATE PROCEDURE p(v INT) BEGIN CASE v WHEN 2 THEN SELECT v; WHEN 3 THEN SELECT 0; ELSE BEGIN END; END CASE; END;" }
+      - { id: searched_case, sql: "CREATE PROCEDURE p(v INT) BEGIN CASE WHEN v > 0 THEN SET @s = 'pos'; WHEN v < 0 THEN SET @s = 'neg'; ELSE SET @s = 'zero'; END CASE; END;" }
+      - { id: case_without_else, sql: "CREATE PROCEDURE p(v INT) BEGIN CASE v WHEN 1 THEN SELECT 'one'; END CASE; END;" }
+      - { id: multiple_statements_per_branch, sql: "CREATE PROCEDURE p(v INT) BEGIN CASE WHEN v = 1 THEN SET @a = 1; SET @b = 2; ELSE SET @a = 0; END CASE; END;" }
+
+  - id: if_statement
+    name: IF statement
+    doc: https://dev.mysql.com/doc/refman/8.4/en/if.html
+    tier: high
+    probes:
+      - { id: if_then, sql: "CREATE PROCEDURE p(n INT) BEGIN IF n > 0 THEN SELECT 'pos'; END IF; END;" }
+      - { id: if_else, sql: "CREATE PROCEDURE p(n INT) BEGIN IF n > 0 THEN SELECT 'pos'; ELSE SELECT 'not pos'; END IF; END;" }
+      - { id: if_elseif_else, sql: "CREATE FUNCTION f(n INT, m INT) RETURNS VARCHAR(20) DETERMINISTIC BEGIN DECLARE s VARCHAR(20); IF n > m THEN SET s = '>'; ELSEIF n = m THEN SET s = '='; ELSE SET s = '<'; END IF; RETURN s; END;" }
+      - { id: nested_if, sql: "CREATE PROCEDURE p(n INT, m INT) BEGIN IF n = m THEN SET @s = 'eq'; ELSE IF n > m THEN SET @s = 'gt'; ELSE SET @s = 'lt'; END IF; END IF; END;" }
+
+  - id: iterate
+    name: ITERATE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/iterate.html
+    tier: high
+    probes:
+      - { id: iterate, sql: "CREATE PROCEDURE p(p1 INT) BEGIN lbl: LOOP SET p1 = p1 + 1; IF p1 < 10 THEN ITERATE lbl; END IF; LEAVE lbl; END LOOP lbl; END;" }
+
+  - id: leave
+    name: LEAVE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/leave.html
+    tier: high
+    probes:
+      - { id: leave_loop, sql: "CREATE PROCEDURE p() BEGIN lbl: LOOP LEAVE lbl; END LOOP lbl; END;" }
+      - { id: leave_block, sql: "CREATE PROCEDURE p(n INT) proc: BEGIN IF n IS NULL THEN LEAVE proc; END IF; SELECT n; END proc;" }
+
+  - id: loop
+    name: LOOP
+    doc: https://dev.mysql.com/doc/refman/8.4/en/loop.html
+    tier: high
+    probes:
+      - { id: labeled_loop, sql: "CREATE PROCEDURE p(p1 INT) BEGIN label1: LOOP SET p1 = p1 + 1; IF p1 >= 10 THEN LEAVE label1; END IF; END LOOP label1; END;" }
+    examples:
+      - |-
+        CREATE PROCEDURE doiterate(p1 INT)
+        BEGIN
+          label1: LOOP
+            SET p1 = p1 + 1;
+            IF p1 < 10 THEN
+              ITERATE label1;
+            END IF;
+            LEAVE label1;
+          END LOOP label1;
+          SET @x = p1;
+        END;
+
+  - id: repeat
+    name: REPEAT
+    doc: https://dev.mysql.com/doc/refman/8.4/en/repeat.html
+    tier: high
+    probes:
+      - { id: repeat_until, sql: "CREATE PROCEDURE p(p1 INT) BEGIN SET @x = 0; REPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT; END;" }
+      - { id: labeled_repeat, sql: "CREATE PROCEDURE p(p1 INT) BEGIN SET @x = 0; r: REPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT r; END;" }
+
+  - id: return
+    name: RETURN
+    doc: https://dev.mysql.com/doc/refman/8.4/en/return.html
+    tier: high
+    probes:
+      - { id: return_expression, sql: "CREATE FUNCTION f(a INT) RETURNS INT DETERMINISTIC BEGIN RETURN a + 1; END;" }
+      - { id: return_subquery, sql: "CREATE FUNCTION f() RETURNS INT READS SQL DATA RETURN (SELECT MAX(a) FROM t);" }
+
+  - id: while
+    name: WHILE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/while.html
+    tier: high
+    probes:
+      - { id: while_do, sql: "CREATE PROCEDURE p() BEGIN DECLARE v1 INT DEFAULT 5; WHILE v1 > 0 DO SET v1 = v1 - 1; END WHILE; END;" }
+      - { id: labeled_while, sql: "CREATE PROCEDURE p() BEGIN DECLARE v1 INT DEFAULT 5; w: WHILE v1 > 0 DO SET v1 = v1 - 1; END WHILE w; END;" }
+
+  - id: cursors
+    name: Cursors
+    doc: https://dev.mysql.com/doc/refman/8.4/en/cursors.html
+    tier: high
+    probes:
+      - { id: cursor_lifecycle, sql: "CREATE PROCEDURE p() BEGIN DECLARE a INT; DECLARE cur CURSOR FOR SELECT id FROM t; OPEN cur; FETCH cur INTO a; CLOSE cur; END;" }
+    examples:
+      - |-
+        CREATE PROCEDURE curdemo()
+        BEGIN
+          DECLARE done INT DEFAULT FALSE;
+          DECLARE a CHAR(16);
+          DECLARE b, c INT;
+          DECLARE cur1 CURSOR FOR SELECT id,data FROM test.t1;
+          DECLARE cur2 CURSOR FOR SELECT i FROM test.t2;
+          DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+          OPEN cur1;
+          OPEN cur2;
+
+          read_loop: LOOP
+            FETCH cur1 INTO a, b;
+            FETCH cur2 INTO c;
+            IF done THEN
+              LEAVE read_loop;
+            END IF;
+            IF b < c THEN
+              INSERT INTO test.t3 VALUES (a,b);
+            ELSE
+              INSERT INTO test.t3 VALUES (a,c);
+            END IF;
+          END LOOP;
+
+          CLOSE cur1;
+          CLOSE cur2;
+        END;
+
+  - id: declare_cursor
+    name: DECLARE ... CURSOR
+    doc: https://dev.mysql.com/doc/refman/8.4/en/declare-cursor.html
+    tier: high
+    probes:
+      - { id: declare_cursor, sql: "CREATE PROCEDURE p() BEGIN DECLARE cur CURSOR FOR SELECT a, b FROM t WHERE a > 0; OPEN cur; CLOSE cur; END;" }
+      - { id: declare_cursor_with_cte, sql: "CREATE PROCEDURE p() BEGIN DECLARE cur CURSOR FOR WITH c AS (SELECT 1 AS a) SELECT a FROM c; OPEN cur; CLOSE cur; END;" }
+      - { id: declare_cursor_union, sql: "CREATE PROCEDURE p() BEGIN DECLARE cur CURSOR FOR SELECT a FROM t1 UNION SELECT a FROM t2; OPEN cur; CLOSE cur; END;" }
+
+  - id: open
+    name: OPEN (cursor)
+    doc: https://dev.mysql.com/doc/refman/8.4/en/open.html
+    tier: high
+    probes:
+      - { id: open, sql: "CREATE PROCEDURE p() BEGIN DECLARE cur CURSOR FOR SELECT a FROM t; OPEN cur; END;" }
+
+  - id: fetch
+    name: FETCH (cursor)
+    doc: https://dev.mysql.com/doc/refman/8.4/en/fetch.html
+    tier: high
+    probes:
+      - { id: fetch_into, sql: "CREATE PROCEDURE p() BEGIN DECLARE a, b INT; DECLARE cur CURSOR FOR SELECT x, y FROM t; OPEN cur; FETCH cur INTO a, b; CLOSE cur; END;" }
+      - { id: fetch_from, sql: "CREATE PROCEDURE p() BEGIN DECLARE a INT; DECLARE cur CURSOR FOR SELECT x FROM t; OPEN cur; FETCH FROM cur INTO a; CLOSE cur; END;" }
+      - { id: fetch_next_from, sql: "CREATE PROCEDURE p() BEGIN DECLARE a INT; DECLARE cur CURSOR FOR SELECT x FROM t; OPEN cur; FETCH NEXT FROM cur INTO a; CLOSE cur; END;" }
+
+  - id: close
+    name: CLOSE (cursor)
+    doc: https://dev.mysql.com/doc/refman/8.4/en/close.html
+    tier: high
+    probes:
+      - { id: close, sql: "CREATE PROCEDURE p() BEGIN DECLARE cur CURSOR FOR SELECT a FROM t; OPEN cur; CLOSE cur; END;" }
+
+  - id: declare_condition
+    name: DECLARE ... CONDITION
+    doc: https://dev.mysql.com/doc/refman/8.4/en/declare-condition.html
+    tier: medium
+    probes:
+      - { id: error_code, sql: "CREATE PROCEDURE p() BEGIN DECLARE no_such_table CONDITION FOR 1051; DECLARE CONTINUE HANDLER FOR no_such_table SET @e = 1; DROP TABLE missing_t; END;" }
+      - { id: sqlstate, sql: "CREATE PROCEDURE p() BEGIN DECLARE no_such_table CONDITION FOR SQLSTATE '42S02'; DECLARE EXIT HANDLER FOR no_such_table SET @e = 1; DROP TABLE missing_t; END;" }
+      - { id: sqlstate_value, sql: "CREATE PROCEDURE p() BEGIN DECLARE c CONDITION FOR SQLSTATE VALUE '45000'; SIGNAL c; END;" }
+
+  - id: declare_handler
+    name: DECLARE ... HANDLER
+    doc: https://dev.mysql.com/doc/refman/8.4/en/declare-handler.html
+    tier: high
+    probes:
+      - { id: continue_error_code, sql: "CREATE PROCEDURE p() BEGIN DECLARE CONTINUE HANDLER FOR 1051 BEGIN END; DROP TABLE missing_t; END;" }
+      - { id: continue_sqlstate, sql: "CREATE PROCEDURE p() BEGIN DECLARE CONTINUE HANDLER FOR SQLSTATE '23000' SET @x2 = 1; INSERT INTO t VALUES (1); END;" }
+      - { id: sqlstate_value_keyword, sql: "CREATE PROCEDURE p() BEGIN DECLARE CONTINUE HANDLER FOR SQLSTATE VALUE '23000' SET @x2 = 1; INSERT INTO t VALUES (1); END;" }
+      - { id: exit_sqlexception, sql: "CREATE PROCEDURE p() BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN ROLLBACK; RESIGNAL; END; START TRANSACTION; INSERT INTO t VALUES (1); COMMIT; END;" }
+      - { id: sqlwarning, sql: "CREATE PROCEDURE p() BEGIN DECLARE CONTINUE HANDLER FOR SQLWARNING BEGIN END; INSERT INTO t VALUES (1); END;" }
+      - { id: not_found, sql: "CREATE PROCEDURE p() BEGIN DECLARE done INT DEFAULT FALSE; DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE; SELECT a INTO @a FROM t WHERE 1 = 0; END;" }
+      - { id: condition_name, sql: "CREATE PROCEDURE p() BEGIN DECLARE c CONDITION FOR 1051; DECLARE EXIT HANDLER FOR c SET @e = 1; DROP TABLE missing_t; END;" }
+      - { id: multiple_condition_values, sql: "CREATE PROCEDURE p() BEGIN DECLARE EXIT HANDLER FOR SQLWARNING, NOT FOUND, SQLEXCEPTION, 1051 SET @e = 1; DROP TABLE missing_t; END;" }
+    examples:
+      - |-
+        CREATE PROCEDURE p ()
+        BEGIN
+          DECLARE i INT DEFAULT 3;
+          retry:
+            REPEAT
+              BEGIN
+                DECLARE CONTINUE HANDLER FOR SQLWARNING
+                  BEGIN
+                    ITERATE retry;    # illegal
+                  END;
+                IF i < 0 THEN
+                  LEAVE retry;        # legal
+                END IF;
+                SET i = i - 1;
+              END;
+            UNTIL FALSE END REPEAT;
+        END;
+      - |-
+        CREATE PROCEDURE p ()
+        BEGIN
+          DECLARE i INT DEFAULT 3;
+          DECLARE done INT DEFAULT FALSE;
+          retry:
+            REPEAT
+              BEGIN
+                DECLARE CONTINUE HANDLER FOR SQLWARNING
+                  BEGIN
+                    SET done = TRUE;
+                  END;
+                IF done OR i < 0 THEN
+                  LEAVE retry;
+                END IF;
+                SET i = i - 1;
+              END;
+            UNTIL FALSE END REPEAT;
+        END;
+
+  - id: get_diagnostics
+    name: GET DIAGNOSTICS
+    doc: https://dev.mysql.com/doc/refman/8.4/en/get-diagnostics.html
+    tier: medium
+    probes:
+      - { id: statement_items, sql: "GET DIAGNOSTICS @p1 = NUMBER, @p2 = ROW_COUNT;" }
+      - { id: condition_items, sql: "GET DIAGNOSTICS CONDITION 1 @p3 = RETURNED_SQLSTATE, @p4 = MESSAGE_TEXT;" }
+      - { id: condition_variable_number, sql: "GET DIAGNOSTICS CONDITION @cno @errno = MYSQL_ERRNO;" }
+      - { id: current, sql: "GET CURRENT DIAGNOSTICS @n = NUMBER;" }
+      - { id: all_condition_items, sql: "GET DIAGNOSTICS CONDITION 1 @a = CLASS_ORIGIN, @b = SUBCLASS_ORIGIN, @c = CONSTRAINT_CATALOG, @d = CONSTRAINT_SCHEMA, @e = CONSTRAINT_NAME, @f = CATALOG_NAME, @g = SCHEMA_NAME, @h = TABLE_NAME, @i = COLUMN_NAME, @j = CURSOR_NAME;" }
+      - { id: stacked_in_handler, sql: "CREATE PROCEDURE p() BEGIN DECLARE msg TEXT; DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN GET STACKED DIAGNOSTICS CONDITION 1 msg = MESSAGE_TEXT; SELECT msg; END; DROP TABLE missing_t; END;" }
+      - { id: local_variable_targets, sql: "CREATE PROCEDURE p() BEGIN DECLARE nrows INT; INSERT INTO t VALUES (1); GET DIAGNOSTICS nrows = ROW_COUNT; END;" }
+    examples:
+      - "GET DIAGNOSTICS @p1 = NUMBER, @p2 = ROW_COUNT;"
+      - |-
+        GET DIAGNOSTICS CONDITION 1
+          @p3 = RETURNED_SQLSTATE, @p4 = MESSAGE_TEXT;
+      - "GET DIAGNOSTICS CONDITION 1 @errno = MYSQL_ERRNO;"
+      - "GET DIAGNOSTICS CONDITION @cno @errno = MYSQL_ERRNO;"
+      - |-
+        CREATE PROCEDURE do_insert(value INT)
+        BEGIN
+          -- Declare variables to hold diagnostics area information
+          DECLARE code CHAR(5) DEFAULT '00000';
+          DECLARE msg TEXT;
+          DECLARE nrows INT;
+          DECLARE result TEXT;
+          -- Declare exception handler for failed insert
+          DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+            BEGIN
+              GET DIAGNOSTICS CONDITION 1
+                code = RETURNED_SQLSTATE, msg = MESSAGE_TEXT;
+            END;
+
+          -- Perform the insert
+          INSERT INTO t1 (int_col) VALUES(value);
+          -- Check whether the insert was successful
+          IF code = '00000' THEN
+            GET DIAGNOSTICS nrows = ROW_COUNT;
+            SET result = CONCAT('insert succeeded, row count = ',nrows);
+          ELSE
+            SET result = CONCAT('insert failed, error = ',code,', message = ',msg);
+          END IF;
+          -- Say what happened
+          SELECT result;
+        END;
+
+  - id: signal
+    name: SIGNAL
+    doc: https://dev.mysql.com/doc/refman/8.4/en/signal.html
+    tier: medium
+    probes:
+      - { id: sqlstate, sql: "SIGNAL SQLSTATE '77777';" }
+      - { id: sqlstate_value, sql: "SIGNAL SQLSTATE VALUE '45000';" }
+      - { id: set_message_text, sql: "SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'An error occurred';" }
+      - { id: set_multiple_items, sql: "SIGNAL SQLSTATE '01000' SET MESSAGE_TEXT = 'A warning occurred', MYSQL_ERRNO = 1000, TABLE_NAME = 't', CLASS_ORIGIN = 'x';" }
+      - { id: condition_name, sql: "CREATE PROCEDURE p(divisor INT) BEGIN DECLARE divide_by_zero CONDITION FOR SQLSTATE '22012'; IF divisor = 0 THEN SIGNAL divide_by_zero; END IF; END;" }
+      - { id: set_from_variable, sql: "CREATE PROCEDURE p(msg VARCHAR(100)) BEGIN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = msg; END;" }
+    examples:
+      - |-
+        CREATE PROCEDURE p (pval INT)
+        BEGIN
+          DECLARE specialty CONDITION FOR SQLSTATE '45000';
+          IF pval = 0 THEN
+            SIGNAL SQLSTATE '01000';
+          ELSEIF pval = 1 THEN
+            SIGNAL SQLSTATE '45000'
+              SET MESSAGE_TEXT = 'An error occurred';
+          ELSEIF pval = 2 THEN
+            SIGNAL specialty
+              SET MESSAGE_TEXT = 'An error occurred';
+          ELSE
+            SIGNAL SQLSTATE '01000'
+              SET MESSAGE_TEXT = 'A warning occurred', MYSQL_ERRNO = 1000;
+            SIGNAL SQLSTATE '45000'
+              SET MESSAGE_TEXT = 'An error occurred', MYSQL_ERRNO = 1001;
+          END IF;
+        END;
+      - "SIGNAL SQLSTATE '77777';"
+      - |-
+        CREATE PROCEDURE p (divisor INT)
+        BEGIN
+          DECLARE my_error CONDITION FOR SQLSTATE '45000';
+          IF divisor = 0 THEN
+            BEGIN
+              DECLARE my_error CONDITION FOR SQLSTATE '22012';
+              SIGNAL my_error;
+            END;
+          END IF;
+          SIGNAL my_error;
+        END;
+      - |-
+        CREATE PROCEDURE p ()
+        BEGIN
+          DECLARE EXIT HANDLER FOR SQLEXCEPTION
+          BEGIN
+            SIGNAL SQLSTATE VALUE '99999'
+              SET MESSAGE_TEXT = 'An error occurred';
+          END;
+          DROP TABLE no_such_table;
+        END;
+
+  - id: resignal
+    name: RESIGNAL
+    doc: https://dev.mysql.com/doc/refman/8.4/en/resignal.html
+    tier: medium
+    probes:
+      - { id: bare, sql: "CREATE PROCEDURE p() BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN SET @error_count = @error_count + 1; IF @a = 0 THEN RESIGNAL; END IF; END; DROP TABLE xx; END;" }
+      - { id: set_items, sql: "CREATE PROCEDURE p() BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN RESIGNAL SET MYSQL_ERRNO = 5, MESSAGE_TEXT = 'x'; END; DROP TABLE xx; END;" }
+      - { id: sqlstate_set, sql: "CREATE PROCEDURE p() BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN RESIGNAL SQLSTATE '45000' SET MYSQL_ERRNO = 5; END; DROP TABLE xx; END;" }
+      - { id: condition_name, sql: "CREATE PROCEDURE p() BEGIN DECLARE c CONDITION FOR SQLSTATE VALUE '45000'; DECLARE EXIT HANDLER FOR SQLEXCEPTION RESIGNAL c; DROP TABLE xx; END;" }
+      - { id: procedure_body, sql: "CREATE PROCEDURE p() RESIGNAL;" }
+    examples:
+      - "CREATE PROCEDURE p () RESIGNAL;"
+      - "SET @@max_error_count = 2;"
+
+  - id: set_variable
+    name: SET (variable assignment)
+    doc: https://dev.mysql.com/doc/refman/8.4/en/set-variable.html
+    tier: high
+    probes:
+      - { id: user_variable, sql: "SET @name = 43;" }
+      - { id: user_variable_colon_equals, sql: "SET @name := 43;" }
+      - { id: user_variable_subquery, sql: "SET @total = (SELECT SUM(c) FROM t);" }
+      - { id: multiple_assignments, sql: "SET @x = 1, @y = 'a';" }
+      - { id: local_variable, sql: "CREATE PROCEDURE p(increment INT) BEGIN DECLARE counter INT DEFAULT 0; SET counter = counter + increment; END;" }
+      - { id: global, sql: "SET GLOBAL max_connections = 1000;" }
+      - { id: global_at_at, sql: "SET @@GLOBAL.max_connections = 1000;" }
+      - { id: session, sql: "SET SESSION sql_mode = 'TRADITIONAL';" }
+      - { id: local_keyword, sql: "SET LOCAL sql_mode = 'TRADITIONAL';" }
+      - { id: session_at_at, sql: "SET @@SESSION.sql_mode = 'TRADITIONAL';" }
+      - { id: local_at_at, sql: "SET @@LOCAL.sql_mode = 'TRADITIONAL';" }
+      - { id: at_at_bare, sql: "SET @@sql_mode = 'TRADITIONAL';" }
+      - { id: bare_system_variable, sql: "SET sql_mode = 'TRADITIONAL';" }
+      - { id: persist, sql: "SET PERSIST max_connections = 1000;" }
+      - { id: persist_at_at, sql: "SET @@PERSIST.max_connections = 1000;" }
+      - { id: persist_only, sql: "SET PERSIST_ONLY back_log = 100;" }
+      - { id: persist_only_at_at, sql: "SET @@PERSIST_ONLY.back_log = 100;" }
+      - { id: default_value, sql: "SET @@SESSION.max_join_size = DEFAULT;" }
+      - { id: from_global, sql: "SET @@SESSION.max_join_size = @@GLOBAL.max_join_size;" }
+      - { id: mixed_scopes, sql: "SET @x = 1, SESSION sql_mode = '';" }
+      - { id: on_off_values, sql: "SET GLOBAL general_log = ON, SESSION autocommit = OFF;" }
+    examples:
+      - "SET @total_tax = (SELECT SUM(tax) FROM taxable_transactions);"
+      - |-
+        CREATE PROCEDURE p(increment INT)
+        BEGIN
+          DECLARE counter INT DEFAULT 0;
+          WHILE counter < 10 DO
+            -- ... do work ...
+            SET counter = counter + increment;
+          END WHILE;
+        END;
+      - "SET @@GLOBAL.sort_buffer_size = 1000000, @@LOCAL.sort_buffer_size = 1000000;"
+      - "SET @@SESSION.max_join_size = @@GLOBAL.max_join_size;"
+      - "SELECT @@GLOBAL.sql_mode, @@SESSION.sql_mode, @@sql_mode;"
+
+expressions:
+  - id: string_literals
+    name: String literals
+    doc: https://dev.mysql.com/doc/refman/8.4/en/string-literals.html
+    tier: high
+    probes:
+      - { id: single_quoted, sql: "SELECT 'a string';" }
+      - { id: double_quoted, sql: "SELECT \"another string\";", note: "Double quotes delimit strings unless ANSI_QUOTES is enabled (default sql_mode)" }
+      - { id: adjacent_concatenation, sql: "SELECT 'a' ' ' 'string';" }
+      - { id: doubled_quote, sql: "SELECT 'hel''lo', \"hel\"\"lo\";" }
+      - id: backslash_escapes
+        sql: |-
+          SELECT '\'hello', "\"hello", 'This\nIs\tTabbed\\', '\0\b\r\Z\%\_';
+      - { id: charset_introducer, sql: "SELECT _latin1'string', _binary'string';" }
+      - { id: introducer_collate, sql: "SELECT _utf8mb4'string' COLLATE utf8mb4_danish_ci;" }
+      - { id: national_string, sql: "SELECT N'some text', n'some text';" }
+      - { id: introducer_with_space, sql: "SELECT _utf8mb4 'string';" }
+    examples:
+      - "SELECT _latin1'string';"
+      - "SELECT _binary'string';"
+      - "SELECT _utf8mb4'string' COLLATE utf8mb4_danish_ci;"
+      - "SELECT N'some text';"
+      - "SELECT 'hello', '\"hello\"', '\"\"hello\"\"', 'hel''lo', '\\'hello';"
+
+  - id: numeric_literals
+    name: Numeric literals
+    doc: https://dev.mysql.com/doc/refman/8.4/en/number-literals.html
+    tier: high
+    probes:
+      - { id: integers, sql: "SELECT 1, -5, +9;" }
+      - { id: decimals, sql: "SELECT .2, 3.4, -6.78, +9.10;" }
+      - { id: scientific, sql: "SELECT 1.2E3, 1.2E-3, -1.2E3, 2.34e0;" }
+      - { id: big_integer, sql: "SELECT 18446744073709551615;" }
+
+  - id: datetime_literals
+    name: Date and time literals
+    doc: https://dev.mysql.com/doc/refman/8.4/en/date-and-time-literals.html
+    tier: high
+    probes:
+      - { id: typed_date, sql: "SELECT DATE '2012-12-31';" }
+      - { id: typed_time, sql: "SELECT TIME '11:30:45';" }
+      - { id: typed_timestamp, sql: "SELECT TIMESTAMP '2012-12-31 11:30:45.123456';" }
+      - { id: typed_no_space, sql: "SELECT DATE'2012-12-31', TIMESTAMP'2012-12-31 11:30:45';" }
+      - { id: odbc_escapes, sql: "SELECT { d '2012-12-31' }, { t '11:30:45' }, { ts '2012-12-31 11:30:45' };" }
+      - { id: string_and_number_forms, sql: "SELECT * FROM t WHERE d = '20070523' OR d = 19830905;" }
+    examples:
+      - "SELECT DATE'2012@12@31';"
+      - "SELECT TIMESTAMP'2012^12^31 11*30*45';"
+      - "SELECT TIMESTAMP'2012-12-31  11:30:45';"
+
+  - id: hexadecimal_literals
+    name: Hexadecimal literals
+    doc: https://dev.mysql.com/doc/refman/8.4/en/hexadecimal-literals.html
+    tier: medium
+    probes:
+      - { id: x_quoted, sql: "SELECT X'01AF', x'01af';" }
+      - { id: zero_x, sql: "SELECT 0x01AF, 0x5461626c65;" }
+      - { id: introducer_collate, sql: "SELECT _utf8mb4 0x4D7953514C COLLATE utf8mb4_danish_ci;" }
+      - { id: introducer_x_quoted, sql: "SELECT _latin1 X'4D7953514C';" }
+      - { id: empty, sql: "SELECT X''+0;" }
+    examples:
+      - "SELECT _latin1 X'4D7953514C';"
+      - "SELECT _utf8mb4 0x4D7953514C COLLATE utf8mb4_danish_ci;"
+      - "SELECT X'4D7953514C', CHARSET(X'4D7953514C');"
+      - "SET @v3 = CAST(X'41' AS UNSIGNED);"
+      - "SET @v2 = _binary X'000D' | X'0BC0';"
+
+  - id: bit_value_literals
+    name: Bit-value literals
+    doc: https://dev.mysql.com/doc/refman/8.4/en/bit-value-literals.html
+    tier: medium
+    probes:
+      - { id: b_quoted, sql: "SELECT b'1000001', B'01';" }
+      - { id: zero_b, sql: "SELECT 0b1100001;" }
+      - { id: introducer_collate, sql: "SELECT _utf8mb4 0b1000001 COLLATE utf8mb4_danish_ci;" }
+      - { id: insert_bit, sql: "INSERT INTO t SET b = b'1010';" }
+    examples:
+      - "SELECT _latin1 b'1000001';"
+      - "SELECT _utf8mb4 0b1000001 COLLATE utf8mb4_danish_ci;"
+      - "SELECT b'1000001', CHARSET(b'1000001');"
+      - "SET @v3 = CAST(b'1100001' AS UNSIGNED);"
+
+  - id: boolean_and_null_literals
+    name: Boolean literals and NULL
+    doc: https://dev.mysql.com/doc/refman/8.4/en/boolean-literals.html
+    tier: high
+    probes:
+      - { id: true_false, sql: "SELECT TRUE, true, FALSE, false;" }
+      - { id: null, sql: "SELECT NULL, null;" }
+      - { id: is_true, sql: "SELECT * FROM t WHERE flag = TRUE OR c IS NULL;" }
+
+  - id: identifiers
+    name: Identifiers and quoting
+    doc: https://dev.mysql.com/doc/refman/8.4/en/identifiers.html
+    tier: high
+    probes:
+      - { id: backtick_reserved_word, sql: "SELECT * FROM `select` WHERE `select`.id > 100;" }
+      - { id: backtick_special_chars, sql: "CREATE TABLE `a``b` (`c\"d` INT, `my col` INT);" }
+      - { id: leading_digit, sql: "SELECT 1abc FROM t;" }
+      - { id: dollar_and_underscore, sql: "SELECT a$b, _c FROM t;" }
+      - { id: string_alias, sql: "SELECT 1 AS `one`, 2 AS 'two', 3 AS \"three\";" }
+      - { id: unicode_identifier, sql: "SELECT größe FROM tabelle;" }
+    examples:
+      - "SELECT * FROM `select` WHERE `select`.id > 100;"
+      - "CREATE TABLE `a``b` (`c\"d` INT);"
+      - "SELECT 1 AS `one`, 2 AS 'two';"
+
+  - id: identifier_qualifiers
+    name: Identifier qualifiers
+    doc: https://dev.mysql.com/doc/refman/8.4/en/identifier-qualifiers.html
+    tier: high
+    probes:
+      - { id: table_column, sql: "SELECT t.c1 FROM t WHERE t.c2 > 100;" }
+      - { id: db_table_column, sql: "SELECT db1.t.c1 FROM db1.t WHERE db1.t.c2 > 100;" }
+      - { id: quoted_parts, sql: "SELECT `my-table`.`my-column` FROM `my-db`.`my-table`;" }
+      - { id: spaced_period, sql: "SELECT t . c FROM db1 . t;" }
+      - { id: reserved_word_after_period, sql: "SELECT t.select, t.from FROM t;" }
+    examples:
+      - |-
+        SELECT mydb.mytable.c1 FROM mydb.mytable
+        WHERE mydb.mytable.c2 > 100;
+      - |-
+        SELECT c1, c2, db1.t.c FROM db1.t INNER JOIN db2.t
+        WHERE db2.t.c > 100;
+      - |-
+        SELECT c1, c2, t1.c FROM db1.t AS t1 INNER JOIN db2.t AS t2
+        WHERE t2.c > 100;
+
+  - id: user_variables
+    name: User-defined variables
+    doc: https://dev.mysql.com/doc/refman/8.4/en/user-variables.html
+    tier: high
+    probes:
+      - { id: reference, sql: "SELECT @v1, @v2 FROM t;" }
+      - { id: name_with_dot_dollar, sql: "SELECT @my.var, @a$b, @_x;" }
+      - { id: quoted_names, sql: "SELECT @'my-var', @\"my-var\", @`my-var`;" }
+      - { id: assign_in_select, sql: "SELECT @a := @a + 1, c FROM t;" }
+      - { id: assign_in_where, sql: "SELECT * FROM t WHERE (@x := c) > 0;" }
+      - { id: in_where, sql: "SELECT * FROM t WHERE c = @col;" }
+      - { id: set_multiple, sql: "SET @v1 = X'41', @v2 = X'41' + 0;" }
+    examples:
+      - "SET @v3 = CAST(b'1000001' AS UNSIGNED);"
+      - "SELECT @v1, @v2, @v3;"
+      - "SET @s = CONCAT(\"SELECT \", @c, \" FROM t\");"
+      - "SELECT @col FROM t;"
+
+  - id: system_variables
+    name: System variable references
+    doc: https://dev.mysql.com/doc/refman/8.4/en/using-system-variables.html
+    tier: high
+    probes:
+      - { id: at_at, sql: "SELECT @@sql_mode;" }
+      - { id: global_session_local, sql: "SELECT @@GLOBAL.sql_mode, @@SESSION.sql_mode, @@LOCAL.sql_mode;" }
+      - { id: lowercase_scope, sql: "SELECT @@global.max_connections, @@session.autocommit;" }
+      - { id: in_expression, sql: "SET GLOBAL max_allowed_packet = 16*1024*1024;" }
+      - { id: compare_in_where, sql: "SELECT * FROM t WHERE c < @@max_join_size;" }
+    examples:
+      - "SET @@PERSIST_ONLY.back_log = 1000;"
+      - "SET GLOBAL max_allowed_packet=16*1024*1024;"
+
+  - id: comments
+    name: Comments
+    doc: https://dev.mysql.com/doc/refman/8.4/en/comments.html
+    tier: high
+    probes:
+      - { id: hash_comment, sql: "SELECT 1+1;     # This comment continues to the end of line" }
+      - { id: double_dash_comment, sql: "SELECT 1+1;     -- This comment continues to the end of line" }
+      - { id: inline_block_comment, sql: "SELECT 1 /* this is an in-line comment */ + 1;" }
+      - id: multiline_block_comment
+        sql: |-
+          SELECT 1+
+          /*
+          this is a
+          multiple-line comment
+          */
+          1;
+      - { id: executable_comment, sql: "SELECT /*! STRAIGHT_JOIN */ c FROM t1, t2;" }
+      - { id: versioned_executable_comment, sql: "CREATE TABLE t1(a INT, KEY (a)) /*!50110 KEY_BLOCK_SIZE=1024 */;" }
+      - { id: optimizer_hint_comment, sql: "SELECT /*+ BKA(t1) */ c FROM t1;" }
+    examples:
+      - "SELECT 1 /* this is an in-line comment */ + 1;"
+      - "CREATE TABLE t1(a INT, KEY (a)) /*!50110 KEY_BLOCK_SIZE=1024 */;"
+
+  - id: expression_syntax
+    name: Expression syntax and operators
+    doc: https://dev.mysql.com/doc/refman/8.4/en/expressions.html
+    tier: high
+    probes:
+      - { id: or_and_not, sql: "SELECT * FROM t WHERE a = 1 OR NOT b = 2 AND c = 3;" }
+      - { id: pipes_or, sql: "SELECT a || b FROM t;", note: "|| is logical OR unless PIPES_AS_CONCAT is enabled" }
+      - { id: double_ampersand, sql: "SELECT a && b FROM t;" }
+      - { id: xor, sql: "SELECT a XOR b FROM t;" }
+      - { id: bang_not, sql: "SELECT !a, ! (a > 1) FROM t;" }
+      - { id: is_true_false_unknown, sql: "SELECT a IS TRUE, a IS NOT FALSE, a IS UNKNOWN, a IS NOT UNKNOWN FROM t;" }
+      - { id: is_null, sql: "SELECT a IS NULL, a IS NOT NULL FROM t;" }
+      - { id: null_safe_equal, sql: "SELECT a <=> b FROM t;" }
+      - { id: comparison_operators, sql: "SELECT a = 1, a >= 1, a > 1, a <= 1, a < 1, a <> 1, a != 1 FROM t;" }
+      - { id: comparison_all_any, sql: "SELECT * FROM t WHERE a > ALL (SELECT b FROM t2) AND a = ANY (SELECT b FROM t2);" }
+      - { id: in_list, sql: "SELECT * FROM t WHERE a IN (1, 2, 3) AND b NOT IN ('x', 'y');" }
+      - { id: in_subquery, sql: "SELECT * FROM t WHERE a NOT IN (SELECT b FROM t2);" }
+      - { id: between, sql: "SELECT * FROM t WHERE a BETWEEN 1 AND 10 AND b NOT BETWEEN 2 AND 3;" }
+      - { id: sounds_like, sql: "SELECT * FROM t WHERE a SOUNDS LIKE 'smith';" }
+      - { id: like_escape, sql: "SELECT * FROM t WHERE a LIKE 'x|%' ESCAPE '|' AND b NOT LIKE 'y%';" }
+      - { id: regexp, sql: "SELECT * FROM t WHERE a REGEXP '^ab' AND b NOT REGEXP 'c$' AND c RLIKE 'd';" }
+      - { id: bit_operators, sql: "SELECT a | b, a & b, a << 2, a >> 1, a ^ b, ~a FROM t;" }
+      - { id: arithmetic_operators, sql: "SELECT a + b, a - b, a * b, a / b, a DIV b, a MOD b, a % b, -a, +a FROM t;" }
+      - { id: interval_arithmetic, sql: "SELECT d + INTERVAL 1 DAY, d - INTERVAL 2 HOUR, INTERVAL 1 DAY + d FROM t;" }
+      - { id: collate, sql: "SELECT a COLLATE utf8mb4_bin FROM t WHERE b = 'x' COLLATE utf8mb4_general_ci;" }
+      - { id: param_marker, sql: "SELECT * FROM t WHERE a = ? AND b > ?;", note: "param_marker in the expr grammar; valid in statements prepared through PREPARE or the C API" }
+      - { id: binary_operator, sql: "SELECT BINARY 'a' = 'A';" }
+      - { id: row_constructor, sql: "SELECT * FROM t WHERE (a, b) = (1, 2) AND ROW(a, b) <> ROW(3, 4);" }
+      - { id: scalar_subquery, sql: "SELECT (SELECT MAX(b) FROM t2) AS m FROM t;" }
+      - { id: exists, sql: "SELECT * FROM t WHERE EXISTS (SELECT 1 FROM t2 WHERE t2.a = t.a) AND NOT EXISTS (SELECT 1 FROM t3);" }
+      - { id: odbc_escape, sql: "SELECT { fn CONCAT('a', 'b') };", note: "simple_expr: {identifier expr} (ODBC escape)" }
+      - { id: match_expr, sql: "SELECT * FROM t WHERE MATCH (a) AGAINST ('word');" }
+      - { id: case_expr, sql: "SELECT CASE a WHEN 1 THEN 'one' ELSE 'other' END FROM t;" }
+      - { id: nested_parentheses, sql: "SELECT ((a + 1) * (b - 2)) / 3 FROM t;" }
+    examples:
+      - "SELECT DATE_ADD('2018-05-01',INTERVAL 1 DAY);"
+      - "SELECT '2018-12-31 23:59:59' + INTERVAL 1 SECOND;"
+      - "SELECT INTERVAL 1 DAY + '2018-12-31';"
+      - "SELECT EXTRACT(YEAR_MONTH FROM '2019-07-02 01:02:03');"
+      - |-
+        SELECT DATE_ADD('1970-01-01 12:00:00',
+                        INTERVAL CAST(6/4 AS DECIMAL(3,1)) HOUR_MINUTE);
+
+  - id: temporal_intervals
+    name: Temporal intervals
+    doc: https://dev.mysql.com/doc/refman/8.4/en/expressions.html
+    tier: high
+    probes:
+      - { id: simple_units, sql: "SELECT DATE_ADD(d, INTERVAL 1 MICROSECOND), DATE_ADD(d, INTERVAL 1 WEEK), DATE_ADD(d, INTERVAL 1 QUARTER), DATE_ADD(d, INTERVAL 1 YEAR) FROM t;" }
+      - { id: compound_units, sql: "SELECT DATE_ADD(d, INTERVAL '1:1' MINUTE_SECOND), DATE_SUB(d, INTERVAL '1 1:1:1' DAY_SECOND), DATE_ADD(d, INTERVAL '-1 10' DAY_HOUR) FROM t;" }
+      - { id: microsecond_units, sql: "SELECT DATE_ADD(d, INTERVAL '1.999999' SECOND_MICROSECOND), DATE_ADD(d, INTERVAL '1-2' YEAR_MONTH) FROM t;" }
+      - { id: expression_interval, sql: "SELECT DATE_ADD(d, INTERVAL 6/4 HOUR_MINUTE) FROM t;" }
+      - { id: interval_in_where, sql: "SELECT * FROM t WHERE d > NOW() - INTERVAL 7 DAY;" }
+
+  - id: comparison_functions
+    name: Comparison functions and operators
+    doc: https://dev.mysql.com/doc/refman/8.4/en/comparison-operators.html
+    tier: high
+    probes:
+      - { id: row_comparison, sql: "SELECT (a, b) = (1, 2), (a, b) <=> (1, NULL), (a, b) < (3, 4) FROM t;" }
+      - { id: row_in, sql: "SELECT (3, 4) IN ((1, 2), (3, 4));" }
+      - { id: coalesce_greatest_least, sql: "SELECT COALESCE(a, b, 0), GREATEST(a, b), LEAST(a, b) FROM t;" }
+      - { id: isnull_function, sql: "SELECT ISNULL(a), STRCMP(a, b) FROM t;" }
+      - { id: interval_function, sql: "SELECT INTERVAL(23, 1, 15, 17, 30, 44, 200);" }
+      - { id: between_expressions, sql: "SELECT * FROM t WHERE a BETWEEN b - 1 AND b + 1;" }
+    examples:
+      - "SELECT 1 <=> 1, NULL <=> NULL, 1 <=> NULL;"
+      - "SELECT '.01' <> '0.01';"
+      - "SELECT 10 IS TRUE;"
+      - "SELECT ! (1+1);"
+
+  - id: flow_control_functions
+    name: Flow control functions (CASE, IF, IFNULL, NULLIF)
+    doc: https://dev.mysql.com/doc/refman/8.4/en/flow-control-functions.html
+    tier: high
+    probes:
+      - { id: simple_case, sql: "SELECT CASE a WHEN 1 THEN 'one' WHEN 2 THEN 'two' ELSE 'more' END FROM t;" }
+      - { id: searched_case, sql: "SELECT CASE WHEN a > 0 THEN 'pos' WHEN a < 0 THEN 'neg' END FROM t;" }
+      - { id: case_binary_operand, sql: "SELECT CASE BINARY 'B' WHEN 'a' THEN 1 WHEN 'b' THEN 2 END;" }
+      - { id: if_function, sql: "SELECT IF(a > 2, 'yes', 'no') FROM t;" }
+      - { id: ifnull_nullif, sql: "SELECT IFNULL(a, 0), NULLIF(a, b) FROM t;" }
+    examples:
+      - |-
+        SELECT CASE 1 WHEN 1 THEN 'one'
+            WHEN 2 THEN 'two' ELSE 'more' END;
+      - "SELECT CASE WHEN 1>0 THEN 'true' ELSE 'false' END;"
+      - "SELECT IF(STRCMP('test','test1'),'no','yes');"
+      - "SELECT IFNULL(1/0,'yes');"
+      - "SELECT NULLIF(1,2);"
+
+  - id: assignment_operators
+    name: Assignment operators
+    doc: https://dev.mysql.com/doc/refman/8.4/en/assignment-operators.html
+    tier: medium
+    probes:
+      - { id: colon_equals_select, sql: "SELECT @var1 := COUNT(*) FROM t1;" }
+      - { id: colon_equals_chain, sql: "SELECT @var1, @var2 := @var1;" }
+      - { id: colon_equals_in_where, sql: "UPDATE t1 SET c1 = 2 WHERE c1 = @var1 := 1;" }
+      - { id: equals_in_set, sql: "SET @var1 = 1, @var2 := 2;" }
+    examples:
+      - "SELECT @var1 := 1, @var2;"
+      - "SELECT @var1:=COUNT(*) FROM t1;"
+      - "UPDATE t1 SET c1 = 2 WHERE c1 = @var1:= 1;"
+
+  - id: string_functions
+    name: String functions with special syntax
+    doc: https://dev.mysql.com/doc/refman/8.4/en/string-functions.html
+    tier: high
+    probes:
+      - { id: ordinary_call, sql: "SELECT CONCAT(a, '-', b), CONCAT_WS(',', a, b), LENGTH(a), UPPER(a) FROM t;" }
+      - { id: trim_forms, sql: "SELECT TRIM('  bar   '), TRIM(LEADING 'x' FROM 'xxxbarxxx'), TRIM(BOTH 'x' FROM 'xxxbarxxx'), TRIM(TRAILING 'xyz' FROM 'barxxyz');" }
+      - { id: trim_remstr_from, sql: "SELECT TRIM('x' FROM 'xxbarxx'), TRIM(LEADING FROM '  bar');" }
+      - { id: substring_from_for, sql: "SELECT SUBSTRING('foobarbar' FROM 4), SUBSTRING('Sakila' FROM -4 FOR 2);" }
+      - { id: substring_commas, sql: "SELECT SUBSTRING('Quadratically', 5, 6), SUBSTR('Sakila', -3), MID('abc', 2, 1);" }
+      - { id: substr_mid_from_for, sql: "SELECT SUBSTR('foobar' FROM 2 FOR 3), MID('foobar' FROM 2 FOR 3);" }
+      - { id: position_in, sql: "SELECT POSITION('bar' IN 'foobarbar');" }
+      - { id: char_using, sql: "SELECT CHAR(77, 121, 83, 81, '76' USING utf8mb4);" }
+      - { id: weight_string_as, sql: "SELECT HEX(WEIGHT_STRING('ab' AS CHAR(4))), HEX(WEIGHT_STRING('ab' AS BINARY(4)));" }
+      - { id: keyword_named_functions, sql: "SELECT INSERT('Quadratic', 3, 4, 'What'), LEFT('foobarbar', 5), RIGHT('abc', 1), REPEAT('MySQL', 3), REPLACE('www.mysql.com', 'w', 'Ww');" }
+      - { id: sounds_like_operator, sql: "SELECT 'Hello' SOUNDS LIKE 'Hollo';" }
+    examples:
+      - "SELECT CHAR(77,121,83,81,'76' USING utf8mb4);"
+      - "SELECT SUBSTRING('Sakila' FROM -4 FOR 2);"
+      - "SELECT TRIM(TRAILING 'xyz' FROM 'barxxyz');"
+      - "SELECT HEX(WEIGHT_STRING('ab' AS CHAR(4)));"
+      - "SELECT LOWER(@str), LOWER(CONVERT(@str USING utf8mb4));"
+
+  - id: pattern_matching
+    name: LIKE, ESCAPE and regular expressions
+    doc: https://dev.mysql.com/doc/refman/8.4/en/string-comparison-functions.html
+    tier: high
+    probes:
+      - { id: like, sql: "SELECT 'David!' LIKE 'David_', 'David!' NOT LIKE '%D%v%';" }
+      - { id: like_escape, sql: "SELECT 'David_' LIKE 'David|_' ESCAPE '|';" }
+      - { id: like_collate_introducer, sql: "SELECT 'abc' LIKE _utf8mb4 'ABC' COLLATE utf8mb4_bin;" }
+      - { id: like_binary, sql: "SELECT 'abc' LIKE BINARY 'ABC';" }
+      - { id: regexp_rlike, sql: "SELECT 'a' REGEXP '^[a-d]', 'b' RLIKE 'b', 'c' NOT REGEXP 'x';" }
+      - { id: regexp_functions, sql: "SELECT REGEXP_LIKE('abc', 'ABC', 'c'), REGEXP_INSTR('dog cat dog', 'dog', 2), REGEXP_REPLACE('abc def ghi', '[a-z]+', 'X', 1, 3), REGEXP_SUBSTR('abc def ghi', '[a-z]+', 1, 3);" }
+    examples:
+      - "SELECT 'ä' LIKE 'ae' COLLATE latin1_german2_ci;"
+      - "SELECT 'David_' LIKE 'David|_' ESCAPE '|';"
+      - "SELECT 'abc' LIKE _utf8mb4 'ABC' COLLATE utf8mb4_0900_as_cs;"
+      - "SELECT filename, filename LIKE '%\\\\' FROM t1;"
+      - "SELECT REGEXP_LIKE('CamelCase', 'CAMELCASE' COLLATE utf8mb4_0900_as_cs);"
+
+  - id: cast_functions
+    name: Cast functions and operators
+    doc: https://dev.mysql.com/doc/refman/8.4/en/cast-functions.html
+    tier: high
+    probes:
+      - { id: cast_signed_unsigned, sql: "SELECT CAST(a AS SIGNED), CAST(a AS UNSIGNED INTEGER), CAST(a AS SIGNED INTEGER) FROM t;" }
+      - { id: cast_char_binary, sql: "SELECT CAST(a AS CHAR), CAST(a AS CHAR(10)), CAST(a AS BINARY), CAST(a AS BINARY(4)) FROM t;" }
+      - { id: cast_char_charset, sql: "SELECT CAST('test' AS CHAR CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);" }
+      - { id: cast_char_ascii_unicode, sql: "SELECT CAST(a AS CHAR(10) ASCII), CAST(a AS CHAR UNICODE), CAST(a AS NCHAR(5)) FROM t;" }
+      - { id: cast_temporal, sql: "SELECT CAST(a AS DATE), CAST(a AS DATETIME(6)), CAST(a AS TIME(3)), CAST(a AS YEAR) FROM t;" }
+      - { id: cast_numeric, sql: "SELECT CAST(a AS DECIMAL(10, 2)), CAST(a AS DECIMAL), CAST(a AS DOUBLE), CAST(a AS FLOAT(10)), CAST(a AS REAL) FROM t;" }
+      - { id: cast_json, sql: "SELECT CAST('[1,2]' AS JSON);" }
+      - { id: cast_spatial, sql: "SELECT CAST(ST_GeomFromText('POINT(1 1)') AS POINT);" }
+      - { id: cast_array, sql: "CREATE TABLE t (j JSON, INDEX zips ((CAST(j->'$.zipcode' AS UNSIGNED ARRAY))));" }
+      - { id: cast_at_time_zone, sql: "SELECT CAST(c AT TIME ZONE '+00:00' AS DATETIME) AS u FROM tz;" }
+      - { id: cast_at_time_zone_interval, sql: "SELECT CAST(c AT TIME ZONE INTERVAL '+00:00' AS DATETIME(2)) FROM tz;" }
+      - { id: convert_type, sql: "SELECT CONVERT(a, SIGNED), CONVERT('test', CHAR CHARACTER SET utf8mb4) FROM t;" }
+      - { id: convert_using, sql: "SELECT CONVERT('abc' USING utf8mb4), CONVERT(_latin1'Müller' USING utf8mb4);" }
+      - { id: convert_using_collate, sql: "SELECT CONVERT('test' USING utf8mb4 COLLATE utf8mb4_bin);" }
+      - { id: binary_operator, sql: "SELECT BINARY 'a' = 'A';" }
+    examples:
+      - "SELECT CAST(c AT TIME ZONE 'UTC' AS DATETIME(2)) AS u FROM tz;"
+      - "SELECT CONVERT('test' USING utf8mb4) COLLATE utf8mb4_bin;"
+      - "SELECT CONVERT('test', CHAR CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);"
+      - "SELECT CAST(\"11:35:00\" AS YEAR), CAST(TIME \"11:35:00\" AS YEAR);"
+      - "SELECT _binary 'a' = 'A';"
+
+  - id: date_time_functions
+    name: Date and time functions with special syntax
+    doc: https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+    tier: high
+    probes:
+      - { id: date_add_sub, sql: "SELECT DATE_ADD('2008-01-02', INTERVAL 31 DAY), DATE_SUB('1998-01-02', INTERVAL 31 DAY);" }
+      - { id: adddate_subdate, sql: "SELECT ADDDATE('2008-01-02', INTERVAL 31 DAY), ADDDATE('2008-01-02', 31), SUBDATE('2008-01-02', INTERVAL 31 DAY);" }
+      - { id: extract, sql: "SELECT EXTRACT(YEAR FROM d), EXTRACT(YEAR_MONTH FROM d), EXTRACT(DAY_MINUTE FROM d), EXTRACT(MICROSECOND FROM d) FROM t;" }
+      - { id: timestampadd_diff, sql: "SELECT TIMESTAMPADD(MINUTE, 1, '2003-01-02'), TIMESTAMPDIFF(MONTH, '2003-02-01', '2003-05-01'), TIMESTAMPADD(SQL_TSI_DAY, 1, d) FROM t;" }
+      - { id: get_format, sql: "SELECT DATE_FORMAT('2003-10-03', GET_FORMAT(DATE, 'EUR')), GET_FORMAT(DATETIME, 'ISO'), GET_FORMAT(TIME, 'USA'), GET_FORMAT(TIMESTAMP, 'JIS');" }
+      - { id: niladic_keywords, sql: "SELECT CURRENT_DATE, CURRENT_TIME, CURRENT_TIMESTAMP, LOCALTIME, LOCALTIMESTAMP, UTC_DATE, UTC_TIME, UTC_TIMESTAMP;" }
+      - { id: niladic_with_parens, sql: "SELECT CURRENT_DATE(), CURRENT_TIME(3), CURRENT_TIMESTAMP(6), NOW(), NOW(3), LOCALTIMESTAMP(), UTC_TIMESTAMP(6), SYSDATE();" }
+      - { id: ordinary_calls, sql: "SELECT DATE_FORMAT(d, '%W %M %Y'), STR_TO_DATE('01,5,2013', '%d,%m,%Y'), CONVERT_TZ(d, '+00:00', '+10:00'), DATEDIFF(d, NOW()) FROM t;" }
+    examples:
+      - "SELECT DATE_ADD('2006-05-00',INTERVAL 1 DAY);"
+      - "SELECT ADDDATE('2008-01-02', 31);"
+      - "SELECT EXTRACT(DAY_MINUTE FROM '2019-07-02 01:02:03');"
+      - "SELECT DATE_FORMAT('2003-10-03',GET_FORMAT(DATE,'EUR'));"
+      - "SELECT NOW(), SLEEP(2), NOW();"
