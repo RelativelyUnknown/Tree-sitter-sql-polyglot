@@ -1,0 +1,317 @@
+dialect: tsql
+engine: SQL Server 2022 / Azure SQL Database
+version: "2022"
+source: https://learn.microsoft.com/en-us/sql/t-sql/statements/statements
+
+statements:
+  - id: create_remote_service_binding
+    name: CREATE REMOTE SERVICE BINDING
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-remote-service-binding-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE REMOTE SERVICE BINDING b TO SERVICE 'svc' WITH USER = u;" }
+      - { id: authorization_anonymous, sql: "CREATE REMOTE SERVICE BINDING b AUTHORIZATION dbo TO SERVICE 'svc' WITH USER = u, ANONYMOUS = ON;" }
+
+  - id: create_remote_table_as_select
+    name: CREATE REMOTE TABLE AS SELECT
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-remote-table-as-select-parallel-data-warehouse
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE REMOTE TABLE db.dbo.t AT ('Data Source = 10.0.0.1, 1433; User ID = u; Password = p;') AS SELECT c FROM src;" }
+      - { id: batch_size, sql: "CREATE REMOTE TABLE t AT ('Data Source = host; User ID = u; Password = p;') WITH (BATCH_SIZE = 5000) AS SELECT c FROM src;" }
+
+  - id: create_resource_pool
+    name: CREATE RESOURCE POOL
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-resource-pool-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE RESOURCE POOL p;" }
+      - { id: cpu_memory, sql: "CREATE RESOURCE POOL p WITH (MIN_CPU_PERCENT = 10, MAX_CPU_PERCENT = 50, CAP_CPU_PERCENT = 60, MIN_MEMORY_PERCENT = 5, MAX_MEMORY_PERCENT = 40);" }
+      - { id: affinity_scheduler, sql: "CREATE RESOURCE POOL p WITH (AFFINITY SCHEDULER = (0, 2 TO 4));" }
+      - { id: affinity_auto, sql: "CREATE RESOURCE POOL p WITH (AFFINITY SCHEDULER = AUTO);" }
+      - { id: affinity_numanode, sql: "CREATE RESOURCE POOL p WITH (AFFINITY NUMANODE = (0 TO 1));" }
+      - { id: iops, sql: "CREATE RESOURCE POOL p WITH (MIN_IOPS_PER_VOLUME = 10, MAX_IOPS_PER_VOLUME = 100);" }
+
+  - id: create_route
+    name: CREATE ROUTE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-route-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE ROUTE r WITH ADDRESS = 'LOCAL';" }
+      - { id: all_options, sql: "CREATE ROUTE r AUTHORIZATION dbo WITH SERVICE_NAME = 'svc', BROKER_INSTANCE = 'bi', LIFETIME = 1000, ADDRESS = 'TCP://host:4022', MIRROR_ADDRESS = 'TCP://mirror:4022';" }
+
+  - id: create_rule
+    name: CREATE RULE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-rule-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE RULE r AS @value > 0;" }
+      - { id: qualified, sql: "CREATE RULE dbo.r AS @value IN ('a', 'b');" }
+
+  - id: create_search_property_list
+    name: CREATE SEARCH PROPERTY LIST
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-search-property-list-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE SEARCH PROPERTY LIST l;" }
+      - { id: from_source, sql: "CREATE SEARCH PROPERTY LIST l FROM db.src AUTHORIZATION dbo;" }
+
+  - id: create_security_policy
+    name: CREATE SECURITY POLICY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-security-policy-transact-sql
+    tier: low
+    probes:
+      - { id: filter_predicate, sql: "CREATE SECURITY POLICY s ADD FILTER PREDICATE sec.fn(c) ON dbo.t;" }
+      - { id: block_predicate, sql: "CREATE SECURITY POLICY s ADD BLOCK PREDICATE sec.fn(c) ON dbo.t AFTER INSERT;" }
+      - { id: block_before, sql: "CREATE SECURITY POLICY s ADD BLOCK PREDICATE sec.fn(c) ON dbo.t BEFORE DELETE;" }
+      - { id: multiple_predicates, sql: "CREATE SECURITY POLICY s ADD FILTER PREDICATE sec.fn(c) ON dbo.t, ADD BLOCK PREDICATE sec.fn(c) ON dbo.t AFTER UPDATE;" }
+      - { id: with_state, sql: "CREATE SECURITY POLICY s ADD FILTER PREDICATE sec.fn(c) ON dbo.t WITH (STATE = ON, SCHEMABINDING = OFF);" }
+      - { id: not_for_replication, sql: "CREATE SECURITY POLICY s ADD FILTER PREDICATE sec.fn(c) ON dbo.t NOT FOR REPLICATION;" }
+
+  - id: create_server_audit
+    name: CREATE SERVER AUDIT
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-server-audit-transact-sql
+    tier: low
+    probes:
+      - { id: to_file, sql: "CREATE SERVER AUDIT a TO FILE (FILEPATH = 'C:\\audit\\');" }
+      - { id: file_options, sql: "CREATE SERVER AUDIT a TO FILE (FILEPATH = 'C:\\audit\\', MAXSIZE = 100 MB, MAX_ROLLOVER_FILES = UNLIMITED, RESERVE_DISK_SPACE = OFF);" }
+      - { id: application_log, sql: "CREATE SERVER AUDIT a TO APPLICATION_LOG;" }
+      - { id: security_log, sql: "CREATE SERVER AUDIT a TO SECURITY_LOG;" }
+      - { id: with_options, sql: "CREATE SERVER AUDIT a TO APPLICATION_LOG WITH (QUEUE_DELAY = 1000, ON_FAILURE = CONTINUE);" }
+      - { id: where_predicate, sql: "CREATE SERVER AUDIT a TO APPLICATION_LOG WHERE database_name = 'db' AND schema_name <> 'sys';" }
+
+  - id: create_server_audit_specification
+    name: CREATE SERVER AUDIT SPECIFICATION
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-server-audit-specification-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE SERVER AUDIT SPECIFICATION s FOR SERVER AUDIT a ADD (FAILED_LOGIN_GROUP);" }
+      - { id: multiple_with_state, sql: "CREATE SERVER AUDIT SPECIFICATION s FOR SERVER AUDIT a ADD (FAILED_LOGIN_GROUP), ADD (SUCCESSFUL_LOGIN_GROUP) WITH (STATE = ON);" }
+
+  - id: create_server_role
+    name: CREATE SERVER ROLE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-server-role-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE SERVER ROLE r;" }
+      - { id: authorization, sql: "CREATE SERVER ROLE r AUTHORIZATION sa;" }
+
+  - id: create_service
+    name: CREATE SERVICE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-service-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE SERVICE s ON QUEUE q;" }
+      - { id: contract, sql: "CREATE SERVICE s AUTHORIZATION dbo ON QUEUE dbo.q (c1, [DEFAULT]);" }
+
+  - id: create_symmetric_key
+    name: CREATE SYMMETRIC KEY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-symmetric-key-transact-sql
+    tier: low
+    probes:
+      - { id: encryption_by_certificate, sql: "CREATE SYMMETRIC KEY k WITH ALGORITHM = AES_256 ENCRYPTION BY CERTIFICATE c;" }
+      - { id: encryption_by_password, sql: "CREATE SYMMETRIC KEY k WITH ALGORITHM = AES_128 ENCRYPTION BY PASSWORD = 'p@ssw0rd!';" }
+      - { id: key_source_identity, sql: "CREATE SYMMETRIC KEY k AUTHORIZATION u WITH KEY_SOURCE = 'phrase', ALGORITHM = TRIPLE_DES, IDENTITY_VALUE = 'ident' ENCRYPTION BY SYMMETRIC KEY k2;" }
+      - { id: from_provider, sql: "CREATE SYMMETRIC KEY k FROM PROVIDER prov WITH PROVIDER_KEY_NAME = 'kn', CREATION_DISPOSITION = CREATE_NEW;" }
+
+  - id: create_workload_classifier
+    name: CREATE WORKLOAD CLASSIFIER
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-workload-classifier-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE WORKLOAD CLASSIFIER c WITH (WORKLOAD_GROUP = 'wg', MEMBERNAME = 'user1');" }
+      - { id: all_options, sql: "CREATE WORKLOAD CLASSIFIER c WITH (WORKLOAD_GROUP = 'wg', MEMBERNAME = 'user1', WLM_LABEL = 'lbl', WLM_CONTEXT = 'ctx', START_TIME = '18:00', END_TIME = '07:00', IMPORTANCE = HIGH);" }
+
+  - id: create_workload_group
+    name: CREATE WORKLOAD GROUP
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-workload-group-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE WORKLOAD GROUP g;" }
+      - { id: with_options, sql: "CREATE WORKLOAD GROUP g WITH (IMPORTANCE = HIGH, REQUEST_MAX_MEMORY_GRANT_PERCENT = 25, REQUEST_MAX_CPU_TIME_SEC = 30, REQUEST_MEMORY_GRANT_TIMEOUT_SEC = 10, MAX_DOP = 4, GROUP_MAX_REQUESTS = 100);" }
+      - { id: using_pool, sql: "CREATE WORKLOAD GROUP g USING p;" }
+      - { id: using_pool_external, sql: "CREATE WORKLOAD GROUP g WITH (IMPORTANCE = LOW) USING p, EXTERNAL ep;" }
+
+  - id: create_xml_schema_collection
+    name: CREATE XML SCHEMA COLLECTION
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-xml-schema-collection-transact-sql
+    tier: low
+    probes:
+      - { id: string_literal, sql: "CREATE XML SCHEMA COLLECTION sc AS N'<schema xmlns=\"http://www.w3.org/2001/XMLSchema\"><element name=\"a\" type=\"string\"/></schema>';" }
+      - { id: qualified_variable, sql: "CREATE XML SCHEMA COLLECTION dbo.sc AS @schema;" }
+
+  - id: drop_aggregate
+    name: DROP AGGREGATE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-aggregate-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP AGGREGATE a;" }
+      - { id: if_exists_qualified, sql: "DROP AGGREGATE IF EXISTS dbo.a;" }
+
+  - id: drop_application_role
+    name: DROP APPLICATION ROLE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-application-role-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP APPLICATION ROLE r;" }
+
+  - id: drop_assembly
+    name: DROP ASSEMBLY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-assembly-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP ASSEMBLY a;" }
+      - { id: if_exists_multiple_no_dependents, sql: "DROP ASSEMBLY IF EXISTS a, b WITH NO DEPENDENTS;" }
+
+  - id: drop_asymmetric_key
+    name: DROP ASYMMETRIC KEY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-asymmetric-key-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP ASYMMETRIC KEY k;" }
+      - { id: remove_provider_key, sql: "DROP ASYMMETRIC KEY k REMOVE PROVIDER KEY;" }
+
+  - id: drop_availability_group
+    name: DROP AVAILABILITY GROUP
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-availability-group-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP AVAILABILITY GROUP ag;" }
+
+  - id: drop_broker_priority
+    name: DROP BROKER PRIORITY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-broker-priority-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP BROKER PRIORITY p;" }
+
+  - id: drop_certificate
+    name: DROP CERTIFICATE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-certificate-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP CERTIFICATE c;" }
+
+  - id: drop_column_encryption_key
+    name: DROP COLUMN ENCRYPTION KEY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-column-encryption-key-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP COLUMN ENCRYPTION KEY k;" }
+
+  - id: drop_column_master_key
+    name: DROP COLUMN MASTER KEY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-column-master-key-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP COLUMN MASTER KEY k;" }
+
+  - id: drop_contract
+    name: DROP CONTRACT
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-contract-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP CONTRACT c;" }
+
+  - id: drop_credential
+    name: DROP CREDENTIAL
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-credential-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP CREDENTIAL c;" }
+
+  - id: drop_cryptographic_provider
+    name: DROP CRYPTOGRAPHIC PROVIDER
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-cryptographic-provider-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP CRYPTOGRAPHIC PROVIDER p;" }
+
+  - id: drop_database_audit_specification
+    name: DROP DATABASE AUDIT SPECIFICATION
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-database-audit-specification-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP DATABASE AUDIT SPECIFICATION s;" }
+
+  - id: drop_database_encryption_key
+    name: DROP DATABASE ENCRYPTION KEY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-database-encryption-key-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP DATABASE ENCRYPTION KEY;" }
+
+  - id: drop_database_scoped_credential
+    name: DROP DATABASE SCOPED CREDENTIAL
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-database-scoped-credential-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP DATABASE SCOPED CREDENTIAL c;" }
+
+  - id: drop_default
+    name: DROP DEFAULT
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-default-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP DEFAULT d;" }
+      - { id: if_exists_multiple, sql: "DROP DEFAULT IF EXISTS dbo.d1, d2;" }
+
+  - id: drop_endpoint
+    name: DROP ENDPOINT
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-endpoint-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP ENDPOINT e;" }
+
+  - id: drop_external_data_source
+    name: DROP EXTERNAL DATA SOURCE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-external-data-source-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP EXTERNAL DATA SOURCE ds;" }
+
+  - id: drop_external_file_format
+    name: DROP EXTERNAL FILE FORMAT
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-external-file-format-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP EXTERNAL FILE FORMAT ff;" }
+
+  - id: drop_external_language
+    name: DROP EXTERNAL LANGUAGE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-external-language-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP EXTERNAL LANGUAGE l;" }
+
+  - id: drop_external_library
+    name: DROP EXTERNAL LIBRARY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-external-library-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP EXTERNAL LIBRARY l;" }
+      - { id: authorization, sql: "DROP EXTERNAL LIBRARY l AUTHORIZATION u;" }
+
+  - id: drop_external_resource_pool
+    name: DROP EXTERNAL RESOURCE POOL
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-external-resource-pool-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP EXTERNAL RESOURCE POOL p;" }
+
+  - id: drop_event_notification
+    name: DROP EVENT NOTIFICATION
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-event-notification-transact-sql
+    tier: low
+    probes:
+      - { id: on_server, sql: "DROP EVENT NOTIFICATION n ON SERVER;" }
+      - { id: multiple_on_database, sql: "DROP EVENT NOTIFICATION n1, n2 ON DATABASE;" }
+      - { id: on_queue, sql: "DROP EVENT NOTIFICATION n ON QUEUE q;" }
+
+  - id: drop_event_session
+    name: DROP EVENT SESSION
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-event-session-transact-sql
+    tier: low
+    probes:
+      - { id: on_server, sql: "DROP EVENT SESSION s ON SERVER;" }
+      - { id: on_database, sql: "DROP EVENT SESSION s ON DATABASE;" }
