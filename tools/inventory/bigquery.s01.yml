@@ -1,0 +1,227 @@
+dialect: bigquery
+engine: BigQuery GoogleSQL
+version: "current"
+source: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language
+
+statements:
+  - id: create_row_access_policy
+    name: CREATE ROW ACCESS POLICY
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_row_access_policy_statement
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE ROW ACCESS POLICY p ON t FILTER USING (TRUE);"
+      - id: or_replace
+        sql: "CREATE OR REPLACE ROW ACCESS POLICY p ON ds.t FILTER USING (c = 1);"
+      - id: if_not_exists
+        sql: "CREATE ROW ACCESS POLICY IF NOT EXISTS p ON t FILTER USING (c = 1);"
+      - id: grant_to
+        sql: "CREATE ROW ACCESS POLICY p ON t GRANT TO ('user:alice@example.com', 'group:admins@example.com') FILTER USING (c = 1);"
+      - id: filter_session_user
+        sql: "CREATE ROW ACCESS POLICY p ON t GRANT TO ('domain:example.com') FILTER USING (owner = SESSION_USER());"
+
+  - id: drop_row_access_policy
+    name: DROP ROW ACCESS POLICY
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_row_access_policy_statement
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP ROW ACCESS POLICY p ON t;"
+      - id: if_exists
+        sql: "DROP ROW ACCESS POLICY IF EXISTS p ON ds.t;"
+      - id: all_policies
+        sql: "DROP ALL ROW ACCESS POLICIES ON t;"
+    examples:
+      - "DROP ROW ACCESS POLICY my_row_filter ON project.dataset.my_table;"
+      - "DROP ALL ROW ACCESS POLICIES ON project.dataset.my_table;"
+
+  - id: export_data
+    name: EXPORT DATA
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/export-statements#export_data_statement
+    tier: medium
+    probes:
+      - id: basic
+        sql: "EXPORT DATA OPTIONS (uri = 'gs://bucket/folder/*.csv', format = 'CSV') AS SELECT c FROM t;"
+      - id: with_connection
+        sql: "EXPORT DATA WITH CONNECTION `proj.us.conn` OPTIONS (uri = 's3://bucket/folder/*', format = 'JSON') AS SELECT c FROM t;"
+      - id: parenthesized_query
+        sql: "EXPORT DATA OPTIONS (format = 'CLOUD_PUBSUB', uri = 'https://pubsub.googleapis.com/projects/p/topics/tp') AS (SELECT TO_JSON_STRING(STRUCT(c)) AS message FROM t);"
+    examples:
+      - |-
+        EXPORT DATA OPTIONS (
+          uri = 'gs://bucket/folder/*.csv',
+          format = 'CSV',
+          overwrite = true,
+          header = true,
+          field_delimiter = ';')
+        AS SELECT field1, field2 FROM mydataset.table1 ORDER BY field1 LIMIT 10;
+      - |-
+        EXPORT DATA OPTIONS (
+          uri = 'gs://bucket/folder/*',
+          format = 'AVRO',
+          compression = 'SNAPPY')
+        AS SELECT field1, field2 FROM mydataset.table1 ORDER BY field1 LIMIT 10;
+      - |-
+        EXPORT DATA WITH CONNECTION myproject.us.myconnection
+        OPTIONS (
+          uri = 's3://bucket/folder/*',
+          format = 'JSON',
+          overwrite = true)
+        AS SELECT field1, field2 FROM mydataset.table1 ORDER BY field1 LIMIT 10;
+
+  - id: load_data
+    name: LOAD DATA
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/load-statements#load_data_statement
+    tier: medium
+    probes:
+      - id: into
+        sql: "LOAD DATA INTO ds.t FROM FILES (format = 'AVRO', uris = ['gs://bucket/path/file.avro']);"
+      - id: overwrite
+        sql: "LOAD DATA OVERWRITE ds.t FROM FILES (format = 'AVRO', uris = ['gs://bucket/path/file.avro']);"
+      - id: temp_table
+        sql: "LOAD DATA INTO TEMP TABLE ds.t FROM FILES (format = 'AVRO', uris = ['gs://bucket/path/file.avro']);"
+      - id: column_list
+        sql: "LOAD DATA INTO ds.t (x INT64, y STRING) FROM FILES (skip_leading_rows = 1, format = 'CSV', uris = ['gs://bucket/path/file.csv']);"
+      - id: partition_cluster_options
+        sql: "LOAD DATA INTO ds.t PARTITION BY d CLUSTER BY c OPTIONS (partition_expiration_days = 3) FROM FILES (format = 'AVRO', uris = ['gs://bucket/path/file.avro']);"
+      - id: partitions_clause
+        sql: "LOAD DATA INTO ds.t PARTITIONS (_PARTITIONTIME = TIMESTAMP '2016-01-01') PARTITION BY _PARTITIONTIME FROM FILES (format = 'AVRO', uris = ['gs://bucket/path/file.avro']);"
+      - id: with_partition_columns
+        sql: "LOAD DATA INTO ds.t FROM FILES (format = 'AVRO', uris = ['gs://bucket/path/*'], hive_partition_uri_prefix = 'gs://bucket/path') WITH PARTITION COLUMNS (field_1 STRING, field_2 INT64);"
+      - id: with_connection
+        sql: "LOAD DATA INTO ds.t FROM FILES (uris = ['s3://test-bucket/sample.parquet'], format = 'PARQUET') WITH CONNECTION `aws-us-east-1.test-connection`;"
+    examples:
+      - "LOAD DATA INTO mydataset.table1 FROM FILES (format = 'AVRO', uris = ['gs://bucket/path/file.avro']);"
+      - "LOAD DATA INTO mydataset.table1 (x INT64, y STRING) FROM FILES (skip_leading_rows = 1, format = 'CSV', uris = ['gs://bucket/path/file.csv']);"
+      - "LOAD DATA OVERWRITE mydataset.table1 FROM FILES (format = 'AVRO', uris = ['gs://bucket/path/file.avro']);"
+
+  - id: assert
+    name: ASSERT
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/debugging-statements#assert
+    tier: medium
+    probes:
+      - id: basic
+        sql: "ASSERT (SELECT COUNT(*) FROM t) > 0;"
+      - id: with_description
+        sql: "ASSERT (SELECT COUNT(*) FROM t) > 0 AS 'Table must not be empty.';"
+      - id: exists
+        sql: "ASSERT EXISTS (SELECT c FROM t WHERE c = 1) AS 'Column c must contain 1.';"
+    examples:
+      - "ASSERT ((SELECT COUNT(*) > 5 FROM UNNEST([1, 2, 3, 4, 5, 6]))) AS 'Table must contain more than 5 rows.';"
+      - "ASSERT EXISTS ((SELECT X FROM UNNEST([7877, 7879, 7883, 7901, 7907]) AS X WHERE X = 7907)) AS 'Column X must contain the value 7907.';"
+
+  - id: create_model
+    name: CREATE MODEL
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-create
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE MODEL m OPTIONS (model_type = 'LINEAR_REG', input_label_cols = ['label']) AS SELECT * FROM t;"
+      - id: if_not_exists
+        sql: "CREATE MODEL IF NOT EXISTS ds.m OPTIONS (model_type = 'LOGISTIC_REG') AS SELECT * FROM t;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE MODEL ds.m OPTIONS (model_type = 'KMEANS', num_clusters = 3) AS SELECT * FROM t;"
+      - id: transform
+        sql: "CREATE OR REPLACE MODEL ds.m TRANSFORM (ML.QUANTILE_BUCKETIZE(f3) OVER () AS buckets, label_col) OPTIONS (model_type = 'LINEAR_REG', input_label_cols = ['label_col']) AS SELECT * FROM t;"
+      - id: remote_with_connection
+        sql: "CREATE MODEL ds.m REMOTE WITH CONNECTION `proj.us.conn` OPTIONS (endpoint = 'https://example.com/endpoint');"
+      - id: remote_default_connection
+        sql: "CREATE MODEL ds.m REMOTE WITH CONNECTION DEFAULT OPTIONS (endpoint = 'gemini-2.0-flash');"
+      - id: input_output
+        sql: "CREATE MODEL ds.m INPUT (f1 FLOAT64, f2 STRING) OUTPUT (out1 ARRAY<FLOAT64>) REMOTE WITH CONNECTION `proj.us.conn` OPTIONS (endpoint = 'https://example.com/endpoint');"
+      - id: arima_training_data
+        sql: "CREATE OR REPLACE MODEL ds.m OPTIONS (model_type = 'ARIMA_PLUS', holiday_region = 'US') AS (training_data AS (SELECT * FROM ds.timeseries_data), custom_holiday AS (SELECT 'US' AS region, 'Halloween' AS holiday_name, primary_date, 5 AS preholiday_days, 1 AS postholiday_days FROM UNNEST([DATE('2018-10-31'), DATE('2019-10-31')]) AS primary_date));"
+    examples:
+      - "CREATE OR REPLACE MODEL `myproject.mydataset.mymodel` TRANSFORM (ML.FEATURE_CROSS(STRUCT(f1, f2)) AS cross_f, ML.QUANTILE_BUCKETIZE(f3) OVER () AS buckets, label_col) OPTIONS (model_type = 'linear_reg', input_label_cols = ['label_col']) AS SELECT * FROM t;"
+
+  - id: drop_model
+    name: DROP MODEL
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/bigqueryml-syntax-drop-model
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP MODEL m;"
+      - id: qualified
+        sql: "DROP MODEL ds.m;"
+      - id: if_exists
+        sql: "DROP MODEL IF EXISTS ds.m;"
+
+  - id: create_property_graph
+    name: CREATE PROPERTY GRAPH
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/graph-schema-statements#gql_create_graph
+    tier: medium
+    probes:
+      - id: node_tables_only
+        sql: "CREATE PROPERTY GRAPH g NODE TABLES (Account, Person);"
+      - id: or_replace_with_edges
+        sql: "CREATE OR REPLACE PROPERTY GRAPH graph_db.g NODE TABLES (graph_db.Account, graph_db.Person) EDGE TABLES (graph_db.PersonOwnAccount SOURCE KEY (id) REFERENCES Person (id) DESTINATION KEY (account_id) REFERENCES Account (id) LABEL Owns);"
+      - id: if_not_exists
+        sql: "CREATE PROPERTY GRAPH IF NOT EXISTS g NODE TABLES (Account);"
+      - id: element_alias_and_key
+        sql: "CREATE PROPERTY GRAPH g NODE TABLES (Location AS GeoLocation KEY (id) DEFAULT LABEL PROPERTIES ALL COLUMNS);"
+      - id: label_properties
+        sql: "CREATE PROPERTY GRAPH g NODE TABLES (Customer LABEL Client PROPERTIES (cid, name));"
+      - id: properties_all_columns_except
+        sql: "CREATE PROPERTY GRAPH g NODE TABLES (Account PROPERTIES ARE ALL COLUMNS EXCEPT (secret));"
+      - id: no_properties_edge
+        sql: "CREATE PROPERTY GRAPH g NODE TABLES (Customer, Account) EDGE TABLES (Own SOURCE KEY (cid) REFERENCES Customer (cid) DESTINATION KEY (aid) REFERENCES Account NO PROPERTIES);"
+      - id: derived_property_options
+        sql: "CREATE PROPERTY GRAPH g NODE TABLES (Account DEFAULT LABEL OPTIONS (description = 'An account', synonyms = ['acct']) PROPERTIES (id, UPPER(name) AS upper_name OPTIONS (description = 'Upper-cased name')));"
+    examples:
+      - |-
+        CREATE OR REPLACE PROPERTY GRAPH graph_db.FinGraph
+          NODE TABLES (graph_db.Account, graph_db.Person)
+          EDGE TABLES (
+            graph_db.PersonOwnAccount
+              SOURCE KEY (id) REFERENCES Person (id)
+              DESTINATION KEY (account_id) REFERENCES Account (id)
+              LABEL Owns,
+            graph_db.AccountTransferAccount
+              SOURCE KEY (id) REFERENCES Account (id)
+              DESTINATION KEY (to_id) REFERENCES Account (id)
+              LABEL Transfers
+          );
+
+  - id: drop_property_graph
+    name: DROP PROPERTY GRAPH
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/graph-schema-statements#gql_drop_graph
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP PROPERTY GRAPH g;"
+      - id: if_exists
+        sql: "DROP PROPERTY GRAPH IF EXISTS graph_db.g;"
+    examples:
+      - "DROP PROPERTY GRAPH graph_db.FinGraph;"
+
+  - id: graph_query
+    name: GRAPH query (GQL)
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/graph-query-statements#graph_query
+    tier: medium
+    probes:
+      - id: match_return
+        sql: "GRAPH g MATCH (p:Person) RETURN p.name;"
+      - id: edge_pattern
+        sql: "GRAPH graph_db.g MATCH (:Account)-[:Transfers]->(account:Account) RETURN account, COUNT(*) AS n GROUP BY account;"
+      - id: filter_order_limit
+        sql: "GRAPH g MATCH (p:Person)-[o:Owns]->(a:Account) FILTER WHERE p.Id <> 1 RETURN p.name, a.Id AS account_id ORDER BY p.name LIMIT 3;"
+      - id: next_chain
+        sql: "GRAPH g MATCH (a:Account) RETURN a NEXT MATCH (a)<-[:Owns]-(o:Person) RETURN o.name;"
+      - id: quantified_path
+        sql: "GRAPH g MATCH (src:Account {id: 7})-[e:Transfers]->{1,3}(dst:Account) WHERE src != dst RETURN ARRAY_LENGTH(e) AS hops, dst.id AS destination_account_id;"
+      - id: let_for_with
+        sql: "GRAPH g MATCH (p:Person) LET a = 1 FOR element IN [1, 2] WITH OFFSET WITH DISTINCT p RETURN p.name;"
+      - id: optional_match_call
+        sql: "GRAPH g MATCH (p:Person) OPTIONAL MATCH (p)-[:Owns]->(a:Account) CALL (p) { MATCH (p)-[:Owns]->(b:Account) RETURN count(b) AS n } RETURN p.name, a.id, n;"
+      - id: set_operation
+        sql: "GRAPH g MATCH (p:Person) RETURN p.name, 1 AS group_id UNION ALL MATCH (p:Person) RETURN p.name, 2 AS group_id;"
+    examples:
+      - |-
+        GRAPH graph_db.FinGraph
+        MATCH (p:Person)
+        RETURN p.name;
+      - |-
+        GRAPH graph_db.FinGraph
+        MATCH (p:Person)-[o:Owns]->(a:Account)
+        FILTER WHERE p.Id <> 1
+        RETURN p.name, a.Id AS account_id;
