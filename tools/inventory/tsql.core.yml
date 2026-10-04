@@ -3161,3 +3161,73 @@ statements:
       - "ALTER INDEX test_idx on test_table REBUILD WITH (ONLINE = ON, MAXDOP = 1, RESUMABLE = ON);"
       - "ALTER INDEX test_idx on test_table PAUSE;"
 
+  - id: alter_index_selective_xml
+    name: "ALTER INDEX (Selective XML Indexes)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-index-selective-xml-indexes
+    tier: low
+    probes:
+      - id: add_remove_paths
+        sql: "ALTER INDEX sxi ON t FOR (ADD pathm = '/a/b/m' AS XQUERY 'node()', REMOVE pathabe);"
+      - id: xmlnamespaces_with_options
+        sql: "ALTER INDEX sxi ON dbo.t WITH XMLNAMESPACES ('https://www.tempuri.org/' AS myns) FOR (ADD p2 = '/myns:a/myns:b' AS SQL INT SINGLETON) WITH (PAD_INDEX = ON);"
+    examples:
+      - |-
+        ALTER INDEX sxi_index
+        ON Tbl
+        FOR
+        (
+            ADD pathm = '/a/b/m' as XQUERY 'node()' ,
+            REMOVE pathabe
+        );
+
+  - id: drop_index
+    name: "DROP INDEX"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-index-transact-sql
+    tier: high
+    probes:
+      - id: basic
+        sql: "DROP INDEX ix ON t;"
+      - id: if_exists
+        sql: "DROP INDEX IF EXISTS ix ON dbo.t;"
+      - id: multiple
+        sql: "DROP INDEX ix1 ON t1, ix2 ON db.dbo.t2;"
+      - id: with_online_maxdop
+        sql: "DROP INDEX ix ON t WITH (ONLINE = ON, MAXDOP = 2);"
+      - id: move_to_filegroup
+        sql: "DROP INDEX ix ON t WITH (ONLINE = ON, MOVE TO NewGroup);"
+      - id: move_to_partition_scheme_filestream
+        sql: "DROP INDEX ix ON t WITH (MOVE TO ps (c), FILESTREAM_ON ps);"
+      - id: backward_compatible
+        sql: "DROP INDEX t.ix;"
+      - id: backward_compatible_owner
+        sql: "DROP INDEX dbo.t.ix, dbo.u.ix2;"
+    examples:
+      - |-
+        DROP INDEX IX_ProductVendor_BusinessEntityID
+            ON Purchasing.ProductVendor;
+      - |-
+        DROP INDEX
+            IX_PurchaseOrderHeader_EmployeeID ON Purchasing.PurchaseOrderHeader,
+            IX_Address_StateProvinceID ON Person.Address;
+      - |-
+        DROP INDEX AK_BillOfMaterials_ProductAssemblyID_ComponentID_StartDate
+            ON Production.BillOfMaterials WITH (ONLINE = ON, MAXDOP = 2);
+      - |-
+        DROP INDEX PXML_ProductModel_CatalogDescription
+            ON Production.ProductModel;
+      - |-
+        DROP INDEX PK_MyClusteredIndex
+            ON dbo.MyTable
+            WITH (MOVE TO MyPartitionScheme,
+                  FILESTREAM_ON MyPartitionScheme);
+
+  - id: drop_index_selective_xml
+    name: "DROP INDEX (Selective XML Indexes)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-index-selective-xml-indexes
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP INDEX sxi ON t;"
+      - id: with_options
+        sql: "DROP INDEX sxi ON dbo.t WITH (MAXDOP = 1, ONLINE = OFF);"
+

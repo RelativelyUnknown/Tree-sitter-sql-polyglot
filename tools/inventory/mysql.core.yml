@@ -2120,3 +2120,23 @@ expressions:
       - "SELECT CONVERT('test', CHAR CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);"
       - "SELECT CAST(\"11:35:00\" AS YEAR), CAST(TIME \"11:35:00\" AS YEAR);"
       - "SELECT _binary 'a' = 'A';"
+
+  - id: date_time_functions
+    name: Date and time functions with special syntax
+    doc: https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html
+    tier: high
+    probes:
+      - { id: date_add_sub, sql: "SELECT DATE_ADD('2008-01-02', INTERVAL 31 DAY), DATE_SUB('1998-01-02', INTERVAL 31 DAY);" }
+      - { id: adddate_subdate, sql: "SELECT ADDDATE('2008-01-02', INTERVAL 31 DAY), ADDDATE('2008-01-02', 31), SUBDATE('2008-01-02', INTERVAL 31 DAY);" }
+      - { id: extract, sql: "SELECT EXTRACT(YEAR FROM d), EXTRACT(YEAR_MONTH FROM d), EXTRACT(DAY_MINUTE FROM d), EXTRACT(MICROSECOND FROM d) FROM t;" }
+      - { id: timestampadd_diff, sql: "SELECT TIMESTAMPADD(MINUTE, 1, '2003-01-02'), TIMESTAMPDIFF(MONTH, '2003-02-01', '2003-05-01'), TIMESTAMPADD(SQL_TSI_DAY, 1, d) FROM t;" }
+      - { id: get_format, sql: "SELECT DATE_FORMAT('2003-10-03', GET_FORMAT(DATE, 'EUR')), GET_FORMAT(DATETIME, 'ISO'), GET_FORMAT(TIME, 'USA'), GET_FORMAT(TIMESTAMP, 'JIS');" }
+      - { id: niladic_keywords, sql: "SELECT CURRENT_DATE, CURRENT_TIME, CURRENT_TIMESTAMP, LOCALTIME, LOCALTIMESTAMP, UTC_DATE, UTC_TIME, UTC_TIMESTAMP;" }
+      - { id: niladic_with_parens, sql: "SELECT CURRENT_DATE(), CURRENT_TIME(3), CURRENT_TIMESTAMP(6), NOW(), NOW(3), LOCALTIMESTAMP(), UTC_TIMESTAMP(6), SYSDATE();" }
+      - { id: ordinary_calls, sql: "SELECT DATE_FORMAT(d, '%W %M %Y'), STR_TO_DATE('01,5,2013', '%d,%m,%Y'), CONVERT_TZ(d, '+00:00', '+10:00'), DATEDIFF(d, NOW()) FROM t;" }
+    examples:
+      - "SELECT DATE_ADD('2006-05-00',INTERVAL 1 DAY);"
+      - "SELECT ADDDATE('2008-01-02', 31);"
+      - "SELECT EXTRACT(DAY_MINUTE FROM '2019-07-02 01:02:03');"
+      - "SELECT DATE_FORMAT('2003-10-03',GET_FORMAT(DATE,'EUR'));"
+      - "SELECT NOW(), SLEEP(2), NOW();"
