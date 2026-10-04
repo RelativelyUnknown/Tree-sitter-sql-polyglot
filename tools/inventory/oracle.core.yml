@@ -2540,3 +2540,2240 @@ statements:
         sql: "DROP PROCEDURE IF EXISTS s.p;"
     examples:
       - "DROP PROCEDURE IF EXISTS hr.remove_emp;"
+
+  - id: create_schema
+    name: CREATE SCHEMA
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-SCHEMA.html
+    tier: medium
+    probes:
+      - id: create_table
+        sql: "CREATE SCHEMA AUTHORIZATION s CREATE TABLE t (c NUMBER PRIMARY KEY);"
+      - id: table_view_grant
+        sql: "CREATE SCHEMA AUTHORIZATION s CREATE TABLE t (c VARCHAR2(10) PRIMARY KEY, q NUMBER) CREATE VIEW v AS SELECT c, q FROM t WHERE c = 'RED' GRANT SELECT ON v TO u;"
+    examples:
+      - |-
+        CREATE SCHEMA AUTHORIZATION oe
+           CREATE TABLE new_product
+              (color VARCHAR2(10)  PRIMARY KEY, quantity NUMBER)
+           CREATE VIEW new_product_view
+              AS SELECT color, quantity FROM new_product WHERE color = 'RED'
+           GRANT select ON new_product_view TO hr;
+
+  - id: create_database
+    name: CREATE DATABASE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-DATABASE.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE DATABASE db USER SYS IDENTIFIED BY pw1 USER SYSTEM IDENTIFIED BY pw2 CHARACTER SET AL32UTF8 NATIONAL CHARACTER SET AL16UTF16;"
+      - id: files_and_tablespaces
+        sql: "CREATE DATABASE db CONTROLFILE REUSE LOGFILE GROUP 1 ('log1.log') SIZE 50M, GROUP 2 ('log2.log') SIZE 50M ARCHIVELOG DATAFILE 'df1.dbf' AUTOEXTEND ON EXTENT MANAGEMENT LOCAL DEFAULT TEMPORARY TABLESPACE temp_ts UNDO TABLESPACE undo_ts SET TIME_ZONE = '+02:00';"
+      - id: enable_pluggable_database
+        sql: "CREATE DATABASE cdb ENABLE PLUGGABLE DATABASE SEED FILE_NAME_CONVERT = ('/c/', '/c/pdbseed/');"
+    examples:
+      - |-
+        CREATE DATABASE sample
+           CONTROLFILE REUSE
+           LOGFILE
+              GROUP 1 ('diskx:log1.log', 'disky:log1.log') SIZE 50K,
+              GROUP 2 ('diskx:log2.log', 'disky:log2.log') SIZE 50K
+           MAXLOGFILES 5
+           MAXLOGHISTORY 100
+           MAXDATAFILES 10
+           MAXINSTANCES 2
+           ARCHIVELOG
+           CHARACTER SET AL32UTF8
+           NATIONAL CHARACTER SET AL16UTF16
+           DATAFILE
+              'disk1:df1.dbf' AUTOEXTEND ON,
+              'disk2:df2.dbf' AUTOEXTEND ON NEXT 10M MAXSIZE UNLIMITED
+           DEFAULT TEMPORARY TABLESPACE temp_ts
+           UNDO TABLESPACE undo_ts
+           SET TIME_ZONE = '+02:00';
+
+  - id: alter_database
+    name: ALTER DATABASE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-DATABASE.html
+    tier: low
+    probes:
+      - id: open_read_only
+        sql: "ALTER DATABASE OPEN READ ONLY;"
+      - id: open_resetlogs
+        sql: "ALTER DATABASE OPEN READ WRITE RESETLOGS;"
+      - id: mount
+        sql: "ALTER DATABASE MOUNT;"
+      - id: recover_tablespace
+        sql: "ALTER DATABASE RECOVER TABLESPACE tbs_03 PARALLEL;"
+      - id: add_logfile
+        sql: "ALTER DATABASE ADD LOGFILE GROUP 3 ('log3a.log', 'log3b.log') SIZE 50M;"
+      - id: drop_logfile_group
+        sql: "ALTER DATABASE DROP LOGFILE GROUP 3;"
+      - id: default_temporary_tablespace
+        sql: "ALTER DATABASE DEFAULT TEMPORARY TABLESPACE tbs_05;"
+      - id: datafile_resize
+        sql: "ALTER DATABASE DATAFILE 'df1.dbf' RESIZE 100M;"
+      - id: archivelog
+        sql: "ALTER DATABASE ARCHIVELOG;"
+      - id: begin_backup
+        sql: "ALTER DATABASE BEGIN BACKUP;"
+      - id: rename_global_name
+        sql: "ALTER DATABASE RENAME GLOBAL_NAME TO db.example.com;"
+    examples:
+      - "ALTER DATABASE OPEN READ ONLY;"
+      - |-
+        ALTER DATABASE
+           RECOVER TABLESPACE tbs_03
+           PARALLEL;
+      - |-
+        ALTER DATABASE
+          ADD LOGFILE GROUP 3
+            ('diska:log3.log' ,
+             'diskb:log3.log') SIZE 50K;
+      - |-
+        ALTER DATABASE
+            SET DEFAULT BIGFILE TABLESPACE;
+      - |-
+        ALTER DATABASE
+            CREATE DATAFILE 'tbs_f03.dbf'
+                         AS 'tbs_f04.dbf';
+
+  - id: drop_database
+    name: DROP DATABASE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/DROP-DATABASE.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP DATABASE;"
+
+  - id: commit
+    name: COMMIT
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/COMMIT.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "COMMIT;"
+      - id: work
+        sql: "COMMIT WORK;"
+      - id: comment
+        sql: "COMMIT COMMENT 'In-doubt transaction Code 36';"
+      - id: write_batch
+        sql: "COMMIT WRITE BATCH;"
+      - id: write_wait_immediate
+        sql: "COMMIT WRITE WAIT IMMEDIATE;"
+      - id: write_nowait
+        sql: "COMMIT WORK WRITE NOWAIT BATCH;"
+      - id: force
+        sql: "COMMIT FORCE '22.57.53';"
+      - id: force_scn
+        sql: "COMMIT FORCE '22.57.53', 1234567;"
+    examples:
+      - "COMMIT WORK;"
+      - "COMMIT WRITE BATCH;"
+      - |-
+        COMMIT
+            COMMENT 'In-doubt transaction Code 36, Call (415) 555-2637';
+      - "COMMIT FORCE '22.57.53';"
+
+  - id: rollback
+    name: ROLLBACK
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ROLLBACK.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "ROLLBACK;"
+      - id: work
+        sql: "ROLLBACK WORK;"
+      - id: to_savepoint
+        sql: "ROLLBACK TO SAVEPOINT sp1;"
+      - id: to_without_savepoint_keyword
+        sql: "ROLLBACK WORK TO sp1;"
+      - id: force
+        sql: "ROLLBACK FORCE '25.32.87';"
+    examples:
+      - "ROLLBACK;"
+      - "ROLLBACK TO SAVEPOINT banda_sal;"
+      - |-
+        ROLLBACK WORK
+            FORCE '25.32.87';
+
+  - id: savepoint
+    name: SAVEPOINT
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/SAVEPOINT.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "SAVEPOINT sp1;"
+    examples:
+      - "SAVEPOINT banda_sal;"
+
+  - id: set_transaction
+    name: SET TRANSACTION
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/SET-TRANSACTION.html
+    tier: high
+    probes:
+      - id: read_only
+        sql: "SET TRANSACTION READ ONLY;"
+      - id: read_write
+        sql: "SET TRANSACTION READ WRITE;"
+      - id: isolation_serializable
+        sql: "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;"
+      - id: isolation_read_committed
+        sql: "SET TRANSACTION ISOLATION LEVEL READ COMMITTED;"
+      - id: use_rollback_segment
+        sql: "SET TRANSACTION USE ROLLBACK SEGMENT rbs_one;"
+      - id: read_only_name
+        sql: "SET TRANSACTION READ ONLY NAME 'West Coast';"
+      - id: name_only
+        sql: "SET TRANSACTION NAME 'tx1';"
+    examples:
+      - "SET TRANSACTION READ ONLY NAME 'West Coast';"
+
+  - id: grant
+    name: GRANT
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/GRANT.html
+    tier: medium
+    probes:
+      - id: system_privilege
+        sql: "GRANT CREATE SESSION TO u;"
+      - id: system_privileges_admin_option
+        sql: "GRANT CREATE ANY MATERIALIZED VIEW, ALTER ANY MATERIALIZED VIEW, QUERY REWRITE TO r WITH ADMIN OPTION;"
+      - id: identified_by
+        sql: "GRANT CREATE SESSION TO u1, u2 IDENTIFIED BY pw1, pw2;"
+      - id: role_delegate_option
+        sql: "GRANT r1 TO u WITH DELEGATE OPTION;"
+      - id: all_privileges
+        sql: "GRANT ALL PRIVILEGES TO u;"
+      - id: container_all
+        sql: "GRANT CREATE TABLE TO c##u CONTAINER = ALL;"
+      - id: schema_privilege
+        sql: "GRANT SELECT ANY TABLE ON SCHEMA s TO u;"
+        note: "grant_schema_privileges (23ai and later); the page's syntax diagram for it has no text description, so the probe follows the documented schema-privilege form."
+      - id: object_privilege
+        sql: "GRANT SELECT ON s.t TO u;"
+      - id: object_privileges_public
+        sql: "GRANT SELECT, UPDATE ON v TO PUBLIC;"
+      - id: column_privileges
+        sql: "GRANT REFERENCES (id), UPDATE (id, salary) ON s.t TO u;"
+      - id: all_on_with_grant_option
+        sql: "GRANT ALL ON t TO u WITH GRANT OPTION;"
+      - id: with_hierarchy_option
+        sql: "GRANT SELECT ON v TO u WITH HIERARCHY OPTION;"
+      - id: on_directory
+        sql: "GRANT READ ON DIRECTORY d TO u WITH GRANT OPTION;"
+      - id: on_user
+        sql: "GRANT INHERIT PRIVILEGES ON USER s TO u;"
+      - id: on_edition
+        sql: "GRANT USE ON EDITION e1 TO u;"
+      - id: on_java_source
+        sql: "GRANT EXECUTE ON JAVA SOURCE s.j TO u;"
+      - id: on_mining_model
+        sql: "GRANT SELECT ON MINING MODEL s.m TO u;"
+      - id: execute_on_procedure
+        sql: "GRANT EXECUTE ON s.p TO r;"
+      - id: roles_to_program
+        sql: "GRANT r1, r2 TO PROCEDURE s.p, PACKAGE pkg;"
+    examples:
+      - |-
+        GRANT CREATE SESSION
+           TO hr;
+      - |-
+        GRANT
+             CREATE ANY MATERIALIZED VIEW
+           , ALTER ANY MATERIALIZED VIEW
+           , DROP ANY MATERIALIZED VIEW
+           , QUERY REWRITE
+           , GLOBAL QUERY REWRITE
+           TO dw_manager
+           WITH ADMIN OPTION;
+      - "GRANT INHERIT PRIVILEGES ON USER sh TO hr;"
+      - |-
+        GRANT ALL ON bonuses TO hr
+           WITH GRANT OPTION;
+      - |-
+        GRANT REFERENCES (employee_id),
+              UPDATE (employee_id, salary, commission_pct)
+           ON hr.employees
+           TO oe;
+
+  - id: grant_data_role
+    name: GRANT DATA ROLE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/grant-data-role.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "GRANT DATA ROLE r TO eu;"
+      - id: if_exists_time_window
+        sql: "GRANT DATA ROLE IF EXISTS r1, r2 TO eu1, eu2 START TIME TIMESTAMP '2026-01-01 00:00:00' END TIME TIMESTAMP '2026-12-31 00:00:00';"
+    examples:
+      - "GRANT DATA ROLE manager_role TO marvin;"
+      - "GRANT DATA ROLE employee_role TO manager_role;"
+
+  - id: revoke
+    name: REVOKE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/REVOKE.html
+    tier: medium
+    probes:
+      - id: system_privilege
+        sql: "REVOKE DROP ANY TABLE FROM u1, u2;"
+      - id: role
+        sql: "REVOKE r FROM u;"
+      - id: all_privileges
+        sql: "REVOKE ALL PRIVILEGES FROM u;"
+      - id: container_all
+        sql: "REVOKE CREATE TABLE FROM c##u CONTAINER = ALL;"
+      - id: schema_privilege
+        sql: "REVOKE SELECT ANY TABLE ON SCHEMA s FROM u;"
+        note: "revoke_schema_privileges (23ai and later); the page's syntax diagram for it has no text description, so the probe follows the documented schema-privilege form."
+      - id: object_privilege
+        sql: "REVOKE DELETE ON t FROM u;"
+      - id: all_on_object
+        sql: "REVOKE ALL ON s.t FROM u, PUBLIC;"
+      - id: cascade_constraints
+        sql: "REVOKE REFERENCES ON t FROM u CASCADE CONSTRAINTS;"
+      - id: force
+        sql: "REVOKE EXECUTE ON s.typ FROM u FORCE;"
+      - id: on_directory
+        sql: "REVOKE READ ON DIRECTORY d FROM u;"
+      - id: roles_from_program
+        sql: "REVOKE r1 FROM PROCEDURE s.p;"
+      - id: all_from_program
+        sql: "REVOKE ALL FROM FUNCTION f;"
+    examples:
+      - |-
+        REVOKE DROP ANY TABLE
+            FROM hr, oe;
+      - |-
+        REVOKE dw_manager
+            FROM sh;
+      - |-
+        REVOKE DELETE
+           ON orders FROM hr;
+      - |-
+        REVOKE ALL
+           ON orders FROM hr;
+      - |-
+        REVOKE UPDATE
+            ON emp_details_view FROM public;
+
+  - id: revoke_data_role
+    name: REVOKE DATA ROLE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/revoke-data-role.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "REVOKE DATA ROLE r FROM eu;"
+      - id: if_exists_list
+        sql: "REVOKE DATA ROLE IF EXISTS r1, r2 FROM eu1, eu2;"
+    examples:
+      - "REVOKE DATA ROLE manager_role FROM marvin;"
+
+  - id: explain_plan
+    name: EXPLAIN PLAN
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/EXPLAIN-PLAN.html
+    tier: medium
+    probes:
+      - id: select
+        sql: "EXPLAIN PLAN FOR SELECT c FROM t WHERE d = 1;"
+      - id: statement_id_into
+        sql: "EXPLAIN PLAN SET STATEMENT_ID = 'q1' INTO s.plan_table FOR SELECT c FROM t;"
+      - id: into_dblink
+        sql: "EXPLAIN PLAN INTO plan_table@remote FOR SELECT c FROM t;"
+      - id: update
+        sql: "EXPLAIN PLAN FOR UPDATE t SET c = c * 1.1 WHERE d = 1;"
+      - id: insert
+        sql: "EXPLAIN PLAN FOR INSERT INTO t SELECT * FROM u;"
+      - id: delete
+        sql: "EXPLAIN PLAN FOR DELETE FROM t WHERE c = 1;"
+      - id: merge
+        sql: "EXPLAIN PLAN FOR MERGE INTO t USING u ON (t.id = u.id) WHEN MATCHED THEN UPDATE SET t.c = u.c;"
+      - id: create_table_as
+        sql: "EXPLAIN PLAN FOR CREATE TABLE t2 AS SELECT * FROM t;"
+      - id: create_index
+        sql: "EXPLAIN PLAN FOR CREATE INDEX idx ON t (c);"
+    examples:
+      - |-
+        EXPLAIN PLAN
+            SET STATEMENT_ID = 'Raise in Tokyo'
+            INTO plan_table
+            FOR UPDATE employees
+                SET salary = salary * 1.10
+                WHERE department_id =
+                   (SELECT department_id FROM departments
+                       WHERE location_id = 1700);
+      - |-
+        EXPLAIN PLAN FOR
+          SELECT * FROM sales
+             WHERE time_id BETWEEN :h AND '01-OCT-2000';
+
+  - id: plsql_block
+    name: PL/SQL block (anonymous block)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/block.html
+    tier: high
+    probes:
+      - id: begin_end
+        sql: "BEGIN NULL; END;"
+      - id: declare_begin_end
+        sql: "DECLARE v NUMBER := 1; BEGIN v := v + 1; END;"
+      - id: exception_section
+        sql: "DECLARE v NUMBER; BEGIN SELECT c INTO v FROM t WHERE id = 1; EXCEPTION WHEN NO_DATA_FOUND THEN v := 0; WHEN OTHERS THEN RAISE; END;"
+      - id: labeled_block
+        sql: "<<outer>> DECLARE v NUMBER := 1; BEGIN NULL; END outer;"
+      - id: nested_block
+        sql: "BEGIN DECLARE v NUMBER; BEGIN v := 1; END; END;"
+      - id: end_with_name
+        sql: "DECLARE v NUMBER; BEGIN v := 1; END blk;"
+      - id: dml_in_block
+        sql: "BEGIN INSERT INTO t (c) VALUES (1); UPDATE t SET c = 2 WHERE c = 1; DELETE FROM t WHERE c = 2; COMMIT; END;"
+      - id: transaction_statements_in_block
+        sql: "BEGIN SAVEPOINT sp1; UPDATE t SET c = 1; ROLLBACK TO SAVEPOINT sp1; SET TRANSACTION READ ONLY; COMMIT; END;"
+      - id: merge_lock_in_block
+        sql: "BEGIN LOCK TABLE t IN EXCLUSIVE MODE NOWAIT; MERGE INTO t USING u ON (t.id = u.id) WHEN MATCHED THEN UPDATE SET t.c = u.c; END;"
+      - id: declare_types_cursor_items
+        sql: "DECLARE TYPE num_tab IS TABLE OF NUMBER; CURSOR c IS SELECT id FROM t; v NUMBER; e EXCEPTION; BEGIN NULL; END;"
+      - id: declare_nested_subprograms
+        sql: "DECLARE FUNCTION f (a NUMBER) RETURN NUMBER IS BEGIN RETURN a * 2; END; PROCEDURE p IS BEGIN NULL; END; BEGIN p; END;"
+      - id: subtype_definition
+        sql: "DECLARE SUBTYPE balance IS NUMBER(8,2) NOT NULL; SUBTYPE small IS PLS_INTEGER RANGE 0 .. 9; b balance := 0; BEGIN NULL; END;"
+      - id: statement_label
+        sql: "BEGIN <<lbl>> NULL; END;"
+      - id: slash_terminated
+        sql: |-
+          BEGIN
+            NULL;
+          END;
+          /
+        note: "In SQL*Plus and SQLcl scripts a PL/SQL block ends with a line containing only /."
+      - id: block_then_sql_statement
+        sql: |-
+          BEGIN
+            NULL;
+          END;
+          /
+          SELECT 1 FROM DUAL;
+        note: "A script mixing a PL/SQL block (ended by /) and a SQL statement (ended by ;)."
+      - id: comments_in_block
+        sql: |-
+          DECLARE
+            v NUMBER; -- counter
+          BEGIN
+            /* multi-line
+               comment */
+            v := 1;
+          END;
+    examples:
+      - |-
+        DECLARE
+          acct_id INTEGER(4) NOT NULL := 9999;
+          a NATURALN                  := 9999;
+          b POSITIVEN                 := 9999;
+          c SIMPLE_INTEGER            := 9999;
+        BEGIN
+          NULL;
+        END;
+        /
+      - |-
+        DECLARE
+          PROCEDURE p (
+            sales  NUMBER,
+            quota  NUMBER,
+            emp_id NUMBER
+          )
+          IS
+            bonus    NUMBER := 0;
+            updated  VARCHAR2(3) := 'No';
+          BEGIN
+            IF sales > (quota + 200) THEN
+              bonus := (sales - quota)/4;
+         
+              UPDATE employees
+              SET salary = salary + bonus 
+              WHERE employee_id = emp_id;
+         
+              updated := 'Yes';
+            END IF;
+         
+            DBMS_OUTPUT.PUT_LINE (
+              'Table updated?  ' || updated || ', ' || 
+              'bonus = ' || bonus || '.'
+            );
+          END p;
+        BEGIN
+          p(10100, 10000, 120);
+          p(10500, 10000, 121);
+        END;
+        /
+
+  - id: sqlplus_slash
+    name: / (slash) terminator in SQL*Plus scripts
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqpug/slash.html
+    tier: high
+    probes:
+      - id: after_block
+        sql: |-
+          BEGIN
+            NULL;
+          END;
+          /
+      - id: after_create_procedure
+        sql: |-
+          CREATE OR REPLACE PROCEDURE p IS
+          BEGIN
+            NULL;
+          END p;
+          /
+      - id: two_units
+        sql: |-
+          CREATE OR REPLACE FUNCTION f RETURN NUMBER IS
+          BEGIN
+            RETURN 1;
+          END;
+          /
+          BEGIN
+            DBMS_OUTPUT.PUT_LINE(f);
+          END;
+          /
+      - id: sql_statement_ended_by_slash
+        sql: |-
+          SELECT c
+          FROM t
+          /
+        note: "A SQL statement entered without ; is sent from the buffer by the / line."
+      - id: slash_between_sql_statements
+        sql: |-
+          DECLARE
+            v NUMBER;
+          BEGIN
+            v := 1;
+          END;
+          /
+          INSERT INTO t VALUES (1);
+          COMMIT;
+    examples:
+      - |-
+        DECLARE
+          surname  employees.last_name%TYPE;
+        BEGIN
+          DBMS_OUTPUT.PUT_LINE('surname=' || surname);
+        END;
+        /
+
+  - id: plsql_variable_declaration
+    name: PL/SQL scalar variable declaration
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/scalar-variable-declaration.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "DECLARE v NUMBER(6); s VARCHAR2(20); b BOOLEAN; BEGIN NULL; END;"
+      - id: initial_value
+        sql: "DECLARE v NUMBER := 0; d DATE := SYSDATE; BEGIN NULL; END;"
+      - id: default_value
+        sql: "DECLARE v NUMBER DEFAULT 0; BEGIN NULL; END;"
+      - id: not_null
+        sql: "DECLARE v INTEGER(4) NOT NULL := 9999; BEGIN NULL; END;"
+      - id: plsql_types
+        sql: "DECLARE a PLS_INTEGER := 1; b BINARY_INTEGER; c SIMPLE_INTEGER := 0; d NATURALN := 1; e POSITIVE; BEGIN NULL; END;"
+      - id: initializer_expression
+        sql: "DECLARE pi CONSTANT REAL := 3.14159; r REAL := 1; area REAL := (pi * r**2); valid BOOLEAN := (r != 0); BEGIN NULL; END;"
+    examples:
+      - |-
+        DECLARE
+          part_number       NUMBER(6);
+          part_name         VARCHAR2(20);
+          in_stock          BOOLEAN;
+          part_price        NUMBER(6,2);
+          part_description  VARCHAR2(50);
+        BEGIN
+          NULL;
+        END;
+        /
+      - |-
+        DECLARE
+          null_string  VARCHAR2(80) := TO_CHAR('');
+          address      VARCHAR2(80);
+          zip_code     VARCHAR2(80) := SUBSTR(address, 25, 0);
+          name         VARCHAR2(80);
+          valid        BOOLEAN      := (name != '');
+        BEGIN
+          NULL;
+        END;
+        /
+
+  - id: plsql_constant_declaration
+    name: PL/SQL constant declaration
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/constant-declaration.html
+    tier: high
+    probes:
+      - id: assign
+        sql: "DECLARE c CONSTANT NUMBER := 5000; BEGIN NULL; END;"
+      - id: default
+        sql: "DECLARE c CONSTANT INTEGER DEFAULT 366; BEGIN NULL; END;"
+      - id: not_null
+        sql: "DECLARE c CONSTANT BOOLEAN NOT NULL := FALSE; BEGIN NULL; END;"
+    examples:
+      - |-
+        DECLARE
+          credit_limit     CONSTANT REAL    := 5000.00;
+          max_days_in_year CONSTANT INTEGER := 366;
+          urban_legend     CONSTANT BOOLEAN := FALSE;
+        BEGIN
+          NULL;
+        END;
+        /
+
+  - id: plsql_type_attribute
+    name: PL/SQL %TYPE attribute
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/TYPE-attribute.html
+    tier: high
+    probes:
+      - id: table_column
+        sql: "DECLARE v t.c%TYPE; BEGIN NULL; END;"
+      - id: schema_table_column
+        sql: "DECLARE v s.t.c%TYPE; BEGIN NULL; END;"
+      - id: variable
+        sql: "DECLARE a VARCHAR2(25) NOT NULL := 'x'; b a%TYPE := 'y'; BEGIN NULL; END;"
+      - id: record_field
+        sql: "DECLARE r t%ROWTYPE; v r.c%TYPE; BEGIN NULL; END;"
+      - id: parameter_type
+        sql: "DECLARE PROCEDURE p (a IN t.c%TYPE) IS BEGIN NULL; END; BEGIN p(1); END;"
+    examples:
+      - |-
+        DECLARE
+          surname  employees.last_name%TYPE;
+        BEGIN
+          DBMS_OUTPUT.PUT_LINE('surname=' || surname);
+        END;
+        /
+      - |-
+        DECLARE
+          name     VARCHAR(25) NOT NULL := 'Smith';
+          surname  name%TYPE := 'Jones';
+        BEGIN
+          DBMS_OUTPUT.PUT_LINE('name=' || name);
+          DBMS_OUTPUT.PUT_LINE('surname=' || surname);
+        END;
+        /
+
+  - id: plsql_rowtype_attribute
+    name: PL/SQL %ROWTYPE attribute
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/ROWTYPE-attribute.html
+    tier: high
+    probes:
+      - id: table
+        sql: "DECLARE r t%ROWTYPE; BEGIN SELECT * INTO r FROM t WHERE id = 1; END;"
+      - id: schema_table
+        sql: "DECLARE r s.t%ROWTYPE; BEGIN NULL; END;"
+      - id: cursor
+        sql: "DECLARE CURSOR c IS SELECT id, name FROM t; r c%ROWTYPE; BEGIN OPEN c; FETCH c INTO r; CLOSE c; END;"
+      - id: field_access
+        sql: "DECLARE r t%ROWTYPE; BEGIN r.id := 1; r.name := 'x'; INSERT INTO t VALUES r; END;"
+    examples:
+      - |-
+        DECLARE
+          TYPE name_rec IS RECORD (
+            first  employees.first_name%TYPE,
+            last   employees.last_name%TYPE
+          );
+         
+          TYPE contact IS RECORD (
+            name  name_rec,                    -- nested record
+            phone employees.phone_number%TYPE
+          );
+         
+          friend contact;
+        BEGIN
+          friend.name.first := 'John';
+          friend.name.last := 'Smith';
+          friend.phone := '1-650-555-1234';
+          
+          DBMS_OUTPUT.PUT_LINE (
+            friend.name.first  || ' ' ||
+            friend.name.last   || ', ' ||
+            friend.phone
+          );
+        END;
+        /
+
+  - id: plsql_collection_types
+    name: PL/SQL collection type definition and variable declaration
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/collection-variable.html
+    tier: high
+    probes:
+      - id: associative_array_pls_integer
+        sql: "DECLARE TYPE aa_t IS TABLE OF VARCHAR2(20) INDEX BY PLS_INTEGER; aa aa_t; BEGIN aa(1) := 'one'; END;"
+      - id: associative_array_varchar2
+        sql: "DECLARE TYPE pop_t IS TABLE OF NUMBER INDEX BY VARCHAR2(64); p pop_t; BEGIN p('Midland') := 750000; END;"
+      - id: associative_array_binary_integer_not_null
+        sql: "DECLARE TYPE aa_t IS TABLE OF NUMBER NOT NULL INDEX BY BINARY_INTEGER; BEGIN NULL; END;"
+      - id: varray
+        sql: "DECLARE TYPE v_t IS VARRAY(4) OF VARCHAR2(15); v v_t := v_t('a', 'b'); BEGIN NULL; END;"
+      - id: varying_array
+        sql: "DECLARE TYPE v_t IS VARYING ARRAY(10) OF NUMBER NOT NULL; BEGIN NULL; END;"
+      - id: nested_table
+        sql: "DECLARE TYPE nt_t IS TABLE OF VARCHAR2(10); nt nt_t := nt_t('a', 'b', 'c'); BEGIN NULL; END;"
+      - id: nested_table_of_rowtype
+        sql: "DECLARE TYPE rows_t IS TABLE OF t%ROWTYPE; r rows_t := rows_t(); BEGIN NULL; END;"
+      - id: collection_variable_type_attribute
+        sql: "DECLARE TYPE nt_t IS TABLE OF NUMBER; a nt_t; b a%TYPE; BEGIN NULL; END;"
+      - id: element_access
+        sql: "DECLARE TYPE nt_t IS TABLE OF NUMBER; nt nt_t := nt_t(1, 2); x NUMBER; BEGIN x := nt(2); nt(1) := x; END;"
+      - id: multidimensional
+        sql: "DECLARE TYPE t1 IS VARRAY(10) OF INTEGER; TYPE nt1 IS VARRAY(10) OF t1; va t1 := t1(2, 3, 5); nva nt1 := nt1(va, t1(55, 6, 73)); i INTEGER; BEGIN i := nva(2)(3); END;"
+    examples:
+      - |-
+        DECLARE
+          -- Associative array indexed by string:
+          
+          TYPE population IS TABLE OF NUMBER  -- Associative array type
+            INDEX BY VARCHAR2(64);            -- Indexed by string
+          
+          city_population  population;        -- Associative array variable
+          i  VARCHAR2(64);                    -- Scalar variable
+          
+        BEGIN
+          -- Add elements (key-value pairs) to associative array:
+         
+          city_population('Smallville')  := 2000;
+          city_population('Midland')     := 750000;
+          city_population('Megalopolis') := 1000000;
+         
+          -- Change value associated with key 'Smallville':
+         
+          city_population('Smallville') := 2001;
+         
+          -- Print associative array:
+         
+          i := city_population.FIRST;  -- Get first element of array
+         
+          WHILE i IS NOT NULL LOOP
+            DBMS_Output.PUT_LINE
+              ('Population of ' || i || ' is ' || city_population(i));
+            i := city_population.NEXT(i);  -- Get next element of array
+          END LOOP;
+        END;
+        /
+      - |-
+        DECLARE
+          TYPE My_AA IS TABLE OF VARCHAR2(20) INDEX BY PLS_INTEGER;
+          v CONSTANT My_AA := My_AA(-10=>'-ten', 0=>'zero', 1=>'one', 2=>'two', 3 => 'three', 4 => 'four', 9 => 'nine');
+        BEGIN
+          DECLARE
+            Idx PLS_INTEGER := v.FIRST();
+          BEGIN
+            WHILE Idx IS NOT NULL LOOP
+              DBMS_OUTPUT.PUT_LINE(TO_CHAR(Idx, '999')||LPAD(v(Idx), 7));
+              Idx := v.NEXT(Idx);
+            END LOOP;
+          END;
+        END;
+        /
+
+  - id: plsql_record_types
+    name: PL/SQL record type definition and record variable declaration
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/record-variable-declaration.html
+    tier: high
+    probes:
+      - id: record_type
+        sql: "DECLARE TYPE r_t IS RECORD (id NUMBER(4), name VARCHAR2(30)); r r_t; BEGIN r.id := 1; END;"
+      - id: field_defaults
+        sql: "DECLARE TYPE r_t IS RECORD (id NUMBER(4) NOT NULL := 10, name VARCHAR2(30) DEFAULT 'x'); r r_t; BEGIN NULL; END;"
+      - id: anchored_fields
+        sql: "DECLARE TYPE r_t IS RECORD (first t.first_name%TYPE, last t.last_name%TYPE); BEGIN NULL; END;"
+      - id: nested_record
+        sql: "DECLARE TYPE n_t IS RECORD (a NUMBER); TYPE c_t IS RECORD (n n_t, p VARCHAR2(20)); c c_t; BEGIN c.n.a := 1; END;"
+      - id: record_type_attribute
+        sql: "DECLARE TYPE r_t IS RECORD (a NUMBER); r1 r_t; r2 r1%TYPE; BEGIN r2 := r1; END;"
+      - id: record_constructor
+        sql: "DECLARE TYPE r_t IS RECORD (x NUMBER, y NUMBER); c CONSTANT r_t := r_t(32, 36); d r_t := r_t(x => 1, y => 2); BEGIN NULL; END;"
+    examples:
+      - |-
+        DECLARE
+          TYPE DeptRecTyp IS RECORD (
+            dept_id    NUMBER(4) NOT NULL := 10,
+            dept_name  VARCHAR2(30) NOT NULL := 'Administration',
+            mgr_id     NUMBER(6) := 200,
+            loc_id     NUMBER(4) := 1700
+          );
+         
+          dept_rec DeptRecTyp;
+        BEGIN
+          DBMS_OUTPUT.PUT_LINE('dept_id:   ' || dept_rec.dept_id);
+          DBMS_OUTPUT.PUT_LINE('dept_name: ' || dept_rec.dept_name);
+          DBMS_OUTPUT.PUT_LINE('mgr_id:    ' || dept_rec.mgr_id);
+          DBMS_OUTPUT.PUT_LINE('loc_id:    ' || dept_rec.loc_id);
+        END;
+        /
+      - |-
+        DECLARE
+          TYPE t_size IS RECORD (x NUMBER, y NUMBER);
+          c_small  CONSTANT t_size := t_size(32,36);
+          c_large  CONSTANT t_size := t_size(x => 192, y => 292);
+        BEGIN
+          DBMS_OUTPUT.PUT_LINE('Small size is ' || c_small.x  || ' by ' || c_small.y);
+          DBMS_OUTPUT.PUT_LINE('Large size is ' || c_large.x  || ' by ' || c_large.y);
+        END;
+        /
+
+  - id: plsql_collection_methods
+    name: PL/SQL collection method invocation
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/collection-method.html
+    tier: high
+    probes:
+      - id: count_first_last
+        sql: "DECLARE TYPE nt_t IS TABLE OF NUMBER; nt nt_t := nt_t(1, 2, 3); n NUMBER; BEGIN n := nt.COUNT + nt.FIRST + nt.LAST + nt.LIMIT; END;"
+      - id: extend
+        sql: "DECLARE TYPE nt_t IS TABLE OF NUMBER; nt nt_t := nt_t(1); BEGIN nt.EXTEND; nt.EXTEND(2); nt.EXTEND(2, 1); END;"
+      - id: delete
+        sql: "DECLARE TYPE nt_t IS TABLE OF NUMBER; nt nt_t := nt_t(1, 2, 3, 4); BEGIN nt.DELETE(2); nt.DELETE(3, 4); nt.DELETE; END;"
+      - id: trim
+        sql: "DECLARE TYPE nt_t IS TABLE OF NUMBER; nt nt_t := nt_t(1, 2, 3); BEGIN nt.TRIM; nt.TRIM(1); END;"
+      - id: exists_next_prior
+        sql: "DECLARE TYPE nt_t IS TABLE OF NUMBER; nt nt_t := nt_t(1, 2, 3); i PLS_INTEGER; BEGIN IF nt.EXISTS(2) THEN i := nt.NEXT(1); i := nt.PRIOR(i); END IF; END;"
+    examples:
+      - |-
+        DECLARE
+          TYPE My_AA IS TABLE OF VARCHAR2(20) INDEX BY PLS_INTEGER;
+          v CONSTANT My_AA := My_AA(-10=>'-ten', 0=>'zero', 1=>'one', 2=>'two', 3 => 'three', 4 => 'four', 9 => 'nine');
+        BEGIN
+          DECLARE
+            Idx PLS_INTEGER := v.FIRST();
+          BEGIN
+            WHILE Idx IS NOT NULL LOOP
+              DBMS_OUTPUT.PUT_LINE(TO_CHAR(Idx, '999')||LPAD(v(Idx), 7));
+              Idx := v.NEXT(Idx);
+            END LOOP;
+          END;
+        END;
+        /
+
+  - id: plsql_qualified_expression
+    name: PL/SQL qualified expression
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/qualified-expression.html
+    tier: medium
+    probes:
+      - id: positional
+        sql: "DECLARE TYPE r_t IS RECORD (a NUMBER, b NUMBER); r r_t; BEGIN r := r_t(1, 2); END;"
+      - id: named_and_others
+        sql: "DECLARE TYPE r_t IS RECORD (a PLS_INTEGER, b PLS_INTEGER, c NUMBER); r r_t; BEGIN r := r_t(1, c => 3.0, OTHERS => 2); END;"
+      - id: indexed_choices
+        sql: "DECLARE TYPE aa_t IS TABLE OF VARCHAR2(10) INDEX BY PLS_INTEGER; a aa_t; BEGIN a := aa_t(1 => 'one', 2 => 'two'); END;"
+      - id: empty
+        sql: "DECLARE TYPE aa_t IS TABLE OF NUMBER INDEX BY PLS_INTEGER; a aa_t; BEGIN a := aa_t(); END;"
+      - id: iterator_choice
+        sql: "DECLARE TYPE v_t IS TABLE OF NUMBER INDEX BY PLS_INTEGER; v v_t; BEGIN v := v_t(FOR i IN 1 .. 5 => i * 2); END;"
+      - id: index_iterator_choice
+        sql: "DECLARE TYPE v_t IS TABLE OF NUMBER INDEX BY PLS_INTEGER; v v_t; BEGIN v := v_t(FOR i IN 2 .. 10 BY 2 INDEX i / 2 => i); END;"
+      - id: sequence_iterator_choice
+        sql: "DECLARE TYPE v_t IS VARRAY(10) OF NUMBER; v v_t; BEGIN v := v_t(FOR i IN 1 .. 3 SEQUENCE => i); END;"
+    examples:
+      - |-
+        DECLARE 
+          TYPE r IS RECORD(a PLS_INTEGER, b PLS_INTEGER, c NUMBER);  
+          rec r;
+        BEGIN  
+          rec := r(1, c => 3.0, OTHERS => 2);  
+        -- rec contains [ 1, 2, 3.0 ]
+        END;
+        /
+      - |-
+        DECLARE 
+          TYPE v IS VARRAY(4) OF NUMBER;  
+          vec v;
+        BEGIN 
+          vec := v(1, 3 => 2, OTHERS => 3);  
+        END;
+        /
+
+  - id: plsql_assignment_statement
+    name: PL/SQL assignment statement
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/assignment-statement.html
+    tier: high
+    probes:
+      - id: scalar
+        sql: "DECLARE v NUMBER; BEGIN v := (40 * 22.5) + 150; END;"
+      - id: boolean_expression
+        sql: "DECLARE done BOOLEAN; n NUMBER := 0; BEGIN done := (n > 100); END;"
+      - id: record_field
+        sql: "DECLARE r t%ROWTYPE; BEGIN r.name := 'Antonio'; END;"
+      - id: nested_record_field
+        sql: "DECLARE TYPE a_t IS RECORD (x NUMBER); TYPE b_t IS RECORD (a a_t); b b_t; BEGIN b.a.x := 1; END;"
+      - id: record_to_record
+        sql: "DECLARE r1 t%ROWTYPE; r2 t%ROWTYPE; BEGIN r1 := r2; END;"
+      - id: collection_element
+        sql: "DECLARE TYPE aa_t IS TABLE OF NUMBER INDEX BY PLS_INTEGER; a aa_t; BEGIN a(5) := 20000 * 0.15; END;"
+      - id: host_variable
+        sql: "BEGIN :x := 1; END;"
+      - id: host_variable_indicator
+        sql: "BEGIN :x:ind := 1; END;"
+      - id: object_attribute
+        sql: "DECLARE o person_t := person_t('a', 1); BEGIN o.name := 'b'; END;"
+    examples:
+      - |-
+        DECLARE  -- You can assign initial values here
+          wages          NUMBER;
+          hours_worked   NUMBER := 40;
+          hourly_salary  NUMBER := 22.50;
+          bonus          NUMBER := 150;
+          country        VARCHAR2(128);
+          counter        NUMBER := 0;
+          done           BOOLEAN;
+          valid_id       BOOLEAN;
+          emp_rec1       employees%ROWTYPE;
+          emp_rec2       employees%ROWTYPE;
+          TYPE commissions IS TABLE OF NUMBER INDEX BY PLS_INTEGER;
+          comm_tab       commissions;
+         
+        BEGIN  -- You can assign values here too
+          wages := (hours_worked * hourly_salary) + bonus;
+          country := 'France';
+          country := UPPER('Canada');
+          done := (counter > 100);
+          valid_id := TRUE;
+          emp_rec1.first_name := 'Antonio';
+          emp_rec1.last_name := 'Ortiz';
+          emp_rec1 := emp_rec2;
+          comm_tab(5) := 20000 * 0.15;
+        END;
+        /
+
+  - id: plsql_procedure_call
+    name: PL/SQL procedure call
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/block.html
+    tier: high
+    probes:
+      - id: no_arguments
+        sql: "BEGIN p; END;"
+      - id: empty_parentheses
+        sql: "BEGIN p(); END;"
+      - id: positional
+        sql: "BEGIN p(1, 'a'); END;"
+      - id: named_notation
+        sql: "BEGIN p(amount => 50, emp_id => 120); END;"
+      - id: mixed_notation
+        sql: "BEGIN p(120, amount => 50); END;"
+      - id: package_qualified
+        sql: "BEGIN DBMS_OUTPUT.PUT_LINE('x'); s.pkg.p(1); END;"
+      - id: function_call_in_expression
+        sql: "DECLARE v NUMBER; BEGIN v := f(1) + s.pkg.g; END;"
+      - id: dblink_call
+        sql: "BEGIN p@remote(1); END;"
+    examples:
+      - |-
+        DECLARE
+          emp_num NUMBER(6) := 120;
+          bonus   NUMBER(6) := 50;
+
+          PROCEDURE raise_salary (
+            emp_id NUMBER,
+            amount NUMBER
+          ) IS
+          BEGIN
+            UPDATE employees
+            SET salary = salary + amount
+            WHERE employee_id = emp_id;
+          END raise_salary;
+
+        BEGIN
+          -- Equivalent invocations:
+
+          raise_salary(emp_num, bonus);                      -- positional notation
+          raise_salary(amount => bonus, emp_id => emp_num);  -- named notation
+          raise_salary(emp_id => emp_num, amount => bonus);  -- named notation
+          raise_salary(emp_num, amount => bonus);            -- mixed notation
+        END;
+        /
+
+  - id: plsql_if_statement
+    name: PL/SQL IF statement
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/IF-statement.html
+    tier: high
+    probes:
+      - id: if_then
+        sql: "BEGIN IF x > 0 THEN y := 1; END IF; END;"
+      - id: if_then_else
+        sql: "BEGIN IF x > 0 THEN y := 1; ELSE y := 0; END IF; END;"
+      - id: elsif
+        sql: "BEGIN IF x > 50000 THEN y := 1500; ELSIF x > 35000 THEN y := 500; ELSIF x > 0 THEN y := 100; ELSE y := 0; END IF; END;"
+      - id: nested
+        sql: "BEGIN IF a THEN IF b THEN NULL; END IF; END IF; END;"
+      - id: multiple_statements
+        sql: "BEGIN IF x > 0 THEN UPDATE t SET c = c + x; y := 'Yes'; END IF; END;"
+    examples:
+      - |-
+        DECLARE
+          PROCEDURE p (sales NUMBER)
+          IS
+            bonus  NUMBER := 0;
+          BEGIN 
+            IF sales > 50000 THEN
+              bonus := 1500;
+            ELSIF sales > 35000 THEN
+              bonus := 500;
+            ELSE
+              bonus := 100;
+            END IF;
+         
+            DBMS_OUTPUT.PUT_LINE (
+              'Sales = ' || sales || ', bonus = ' || bonus || '.'
+            );
+          END p;
+        BEGIN
+          p(55000);
+          p(40000);
+          p(30000);
+        END;
+        /
+      - |-
+        DECLARE
+          grade CHAR(1);
+        BEGIN
+          grade := 'B';
+          
+          IF grade = 'A' THEN
+            DBMS_OUTPUT.PUT_LINE('Excellent');
+          ELSIF grade = 'B' THEN
+            DBMS_OUTPUT.PUT_LINE('Very Good');
+          ELSIF grade = 'C' THEN
+            DBMS_OUTPUT.PUT_LINE('Good');
+          ELSIF grade = 'D' THEN
+            DBMS_OUTPUT. PUT_LINE('Fair');
+          ELSIF grade = 'F' THEN
+            DBMS_OUTPUT.PUT_LINE('Poor');
+          ELSE
+            DBMS_OUTPUT.PUT_LINE('No such grade');
+          END IF;
+        END;
+        /
+
+  - id: plsql_case_statement
+    name: PL/SQL CASE statement
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/CASE-statement.html
+    tier: high
+    probes:
+      - id: simple_case
+        sql: "BEGIN CASE g WHEN 'A' THEN r := 1; WHEN 'B' THEN r := 2; ELSE r := 0; END CASE; END;"
+      - id: simple_case_multiple_values
+        sql: "BEGIN CASE g WHEN 'A', 'B' THEN r := 1; END CASE; END;"
+      - id: simple_case_dangling_predicates
+        sql: "BEGIN CASE g WHEN < 0, > 100 THEN r := 'X'; WHEN > 89 THEN r := 'A'; WHEN IS NULL THEN r := '?'; ELSE r := 'F'; END CASE; END;"
+      - id: searched_case
+        sql: "BEGIN CASE WHEN g = 'A' THEN r := 1; WHEN g = 'B' THEN r := 2; ELSE r := 0; END CASE; END;"
+      - id: labeled_case
+        sql: "BEGIN <<c1>> CASE WHEN x > 0 THEN NULL; END CASE c1; END;"
+    examples:
+      - |-
+        DECLARE
+          grade CHAR(1);
+        BEGIN
+          grade := 'B';
+
+          CASE grade
+            WHEN 'A' THEN DBMS_OUTPUT.PUT_LINE('Excellent');
+            WHEN 'B' THEN DBMS_OUTPUT.PUT_LINE('Very Good');
+            WHEN 'C' THEN DBMS_OUTPUT.PUT_LINE('Good');
+            WHEN 'D' THEN DBMS_OUTPUT.PUT_LINE('Fair');
+            WHEN 'F' THEN DBMS_OUTPUT.PUT_LINE('Poor');
+            ELSE DBMS_OUTPUT.PUT_LINE('No such grade');
+          END CASE;
+        END;
+        /
+      - |-
+        DECLARE
+          grade NUMBER;
+        BEGIN
+          grade := '85';
+
+          CASE grade
+            WHEN < 0, > 100 THEN DBMS_OUTPUT.PUT_LINE('No such grade');
+            WHEN > 89 THEN DBMS_OUTPUT.PUT_LINE('A');
+            WHEN > 79 THEN DBMS_OUTPUT.PUT_LINE('B');
+            WHEN > 69 THEN DBMS_OUTPUT.PUT_LINE('C');
+            WHEN > 59 THEN DBMS_OUTPUT.PUT_LINE('D');
+            ELSE DBMS_OUTPUT.PUT_LINE('F');
+          END CASE;
+        END;
+        /
+      - |-
+        DECLARE
+          grade CHAR(1);
+        BEGIN
+          grade := 'B';
+          
+          CASE
+            WHEN grade = 'A' THEN DBMS_OUTPUT.PUT_LINE('Excellent');
+            WHEN grade = 'B' THEN DBMS_OUTPUT.PUT_LINE('Very Good');
+            WHEN grade = 'C' THEN DBMS_OUTPUT.PUT_LINE('Good');
+            WHEN grade = 'D' THEN DBMS_OUTPUT.PUT_LINE('Fair');
+            WHEN grade = 'F' THEN DBMS_OUTPUT.PUT_LINE('Poor');
+            ELSE DBMS_OUTPUT.PUT_LINE('No such grade');
+          END CASE;
+        END;
+        /
+
+  - id: plsql_basic_loop
+    name: PL/SQL basic LOOP statement
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/basic-LOOP-statement.html
+    tier: high
+    probes:
+      - id: loop_exit_when
+        sql: "BEGIN LOOP x := x + 1; EXIT WHEN x > 3; END LOOP; END;"
+      - id: labeled_loops
+        sql: "BEGIN <<outer>> LOOP <<inner>> LOOP EXIT outer WHEN x > 3; EXIT inner; END LOOP inner; END LOOP outer; END;"
+    examples:
+      - |-
+        DECLARE
+          s  PLS_INTEGER := 0;
+          i  PLS_INTEGER := 0;
+          j  PLS_INTEGER;
+        BEGIN
+          <<outer_loop>>
+          LOOP
+            i := i + 1;
+            j := 0;
+            <<inner_loop>>
+            LOOP
+              j := j + 1;
+              s := s + i * j; -- Sum several products
+              EXIT inner_loop WHEN (j > 5);
+              EXIT outer_loop WHEN ((i * j) > 15);
+            END LOOP inner_loop;
+          END LOOP outer_loop;
+          DBMS_OUTPUT.PUT_LINE
+            ('The sum of products equals: ' || TO_CHAR(s));
+        END;
+        /
+
+  - id: plsql_while_loop
+    name: PL/SQL WHILE LOOP statement
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/WHILE-LOOP-statement.html
+    tier: high
+    probes:
+      - id: while
+        sql: "BEGIN WHILE x < 10 LOOP x := x + 1; END LOOP; END;"
+      - id: while_not_labeled
+        sql: "BEGIN <<w>> WHILE NOT done LOOP done := TRUE; END LOOP w; END;"
+    examples:
+      - |-
+        DECLARE
+          done  BOOLEAN := FALSE;
+        BEGIN
+          WHILE done LOOP
+            DBMS_OUTPUT.PUT_LINE ('This line does not print.');
+            done := TRUE;  -- This assignment is not made.
+          END LOOP;
+
+          WHILE NOT done LOOP
+            DBMS_OUTPUT.PUT_LINE ('Hello, world!');
+            done := TRUE;
+          END LOOP;
+        END;
+        /
+
+  - id: plsql_for_loop
+    name: PL/SQL FOR LOOP statement (and iterator)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/FOR-LOOP-statement.html
+    tier: high
+    probes:
+      - id: numeric_range
+        sql: "BEGIN FOR i IN 1 .. 10 LOOP x := x + i; END LOOP; END;"
+      - id: range_no_spaces
+        sql: "BEGIN FOR i IN 1..3 LOOP NULL; END LOOP; END;"
+      - id: reverse
+        sql: "BEGIN FOR i IN REVERSE 1 .. 10 LOOP NULL; END LOOP; END;"
+      - id: expression_bounds
+        sql: "BEGIN FOR j IN 2 .. ROUND(SQRT(n)) LOOP NULL; END LOOP; END;"
+      - id: stepped_by
+        sql: "BEGIN FOR i IN 1 .. 10 BY 2 LOOP NULL; END LOOP; END;"
+      - id: typed_iterand
+        sql: "BEGIN FOR n NUMBER(5,1) IN 1.0 .. 3.0 BY 0.5 LOOP NULL; END LOOP; END;"
+      - id: mutable_iterand
+        sql: "BEGIN FOR i MUTABLE PLS_INTEGER IN 1 .. 10 LOOP i := i + 1; END LOOP; END;"
+      - id: single_expression
+        sql: "BEGIN FOR i IN 1 LOOP NULL; END LOOP; END;"
+      - id: multiple_controls
+        sql: "BEGIN FOR i IN 1 .. 3, REVERSE 10 .. 12, 20 LOOP NULL; END LOOP; END;"
+      - id: repeat_while
+        sql: "BEGIN FOR p IN 1, REPEAT p * 2 WHILE p <= 64 LOOP NULL; END LOOP; END;"
+      - id: when_filter
+        sql: "BEGIN FOR i IN 1 .. 10 WHEN MOD(i, 2) = 0 LOOP NULL; END LOOP; END;"
+      - id: values_of
+        sql: "DECLARE TYPE v_t IS TABLE OF PLS_INTEGER INDEX BY PLS_INTEGER; v v_t := v_t(3 => 10, 1 => 11); BEGIN FOR i IN VALUES OF v LOOP NULL; END LOOP; END;"
+      - id: indices_of
+        sql: "DECLARE TYPE v_t IS TABLE OF PLS_INTEGER INDEX BY PLS_INTEGER; v v_t := v_t(3 => 10, 1 => 11); BEGIN FOR i IN INDICES OF v LOOP NULL; END LOOP; END;"
+      - id: pairs_of
+        sql: "DECLARE TYPE v_t IS TABLE OF PLS_INTEGER INDEX BY PLS_INTEGER; v v_t := v_t(3 => 10, 1 => 11); BEGIN FOR i, j IN PAIRS OF v LOOP NULL; END LOOP; END;"
+      - id: values_of_dynamic_sql
+        sql: "DECLARE TYPE r_t IS RECORD (n VARCHAR2(25), id NUMBER); BEGIN FOR r r_t IN VALUES OF (EXECUTE IMMEDIATE 'SELECT n, id FROM t') WHEN r.id < 103 LOOP NULL; END LOOP; END;"
+      - id: values_of_sql_statement
+        sql: "BEGIN FOR r t%ROWTYPE IN VALUES OF (SELECT * FROM t) LOOP NULL; END LOOP; END;"
+      - id: labeled_qualified_index
+        sql: "BEGIN <<outer>> FOR i IN 1 .. 3 LOOP <<inner>> FOR i IN 1 .. 3 LOOP x := outer.i + inner.i; END LOOP inner; END LOOP outer; END;"
+    examples:
+      - |-
+        BEGIN
+          FOR i IN 1..3 LOOP
+             DBMS_OUTPUT.PUT_LINE (i);
+          END LOOP;
+        END;
+        /
+      - |-
+        BEGIN
+           FOR n NUMBER(5,1) IN 1.0 .. 3.0 BY 0.5 LOOP
+              DBMS_OUTPUT.PUT_LINE(n);
+           END LOOP;
+        END;
+        /
+      - |-
+        DECLARE
+           TYPE intvec_t IS TABLE OF PLS_INTEGER INDEX BY PLS_INTEGER;
+           vec  intvec_t := intvec_t(3 => 10, 1 => 11, 100 => 34);
+           result intvec_t;
+        BEGIN
+           result := intvec_t(FOR i,j IN PAIRS OF vec INDEX j => i);
+           FOR i,j IN PAIRS OF result LOOP
+              DBMS_OUTPUT.PUT_LINE(i || '=>'|| j);
+           END LOOP;
+        END;
+        /
+      - |-
+        DECLARE
+           cursor_str VARCHAR2(500) := 'SELECT last_name, employee_id FROM hr.employees ORDER BY last_name';
+           TYPE rec_t IS RECORD (last_name VARCHAR2(25),
+                                 employee_id NUMBER);
+        BEGIN
+           FOR r rec_t IN VALUES OF (EXECUTE IMMEDIATE cursor_str) WHEN r.employee_id < 103 LOOP
+              DBMS_OUTPUT.PUT_LINE(r.last_name || ', ' || r.employee_id);
+           END LOOP;
+        END;
+        /
+      - |-
+        BEGIN
+           FOR power IN 1, REPEAT power*2 WHILE power <= 64 LOOP
+              DBMS_OUTPUT.PUT_LINE(power);
+           END LOOP;
+        END;
+        /
+
+  - id: plsql_exit_statement
+    name: PL/SQL EXIT statement
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/EXIT-statement.html
+    tier: high
+    probes:
+      - id: exit
+        sql: "BEGIN LOOP IF x > 3 THEN EXIT; END IF; END LOOP; END;"
+      - id: exit_when
+        sql: "BEGIN LOOP x := x + 1; EXIT WHEN x > 3; END LOOP; END;"
+      - id: exit_label_when
+        sql: "BEGIN <<l>> LOOP EXIT l WHEN x > 3; END LOOP l; END;"
+    examples:
+      - |-
+        DECLARE
+          x NUMBER := 0;
+        BEGIN
+          LOOP
+            DBMS_OUTPUT.PUT_LINE ('Inside loop:  x = ' || TO_CHAR(x));
+            x := x + 1;
+            IF x > 3 THEN
+              EXIT;
+            END IF;
+          END LOOP;
+          -- After EXIT, control resumes here
+          DBMS_OUTPUT.PUT_LINE(' After loop:  x = ' || TO_CHAR(x));
+        END;
+        /
+      - |-
+        DECLARE
+          x NUMBER := 0;
+        BEGIN
+          LOOP
+            DBMS_OUTPUT.PUT_LINE('Inside loop:  x = ' || TO_CHAR(x));
+            x := x + 1;  -- prevents infinite loop
+            EXIT WHEN x > 3;
+          END LOOP;
+          -- After EXIT statement, control resumes here
+          DBMS_OUTPUT.PUT_LINE('After loop:  x = ' || TO_CHAR(x));
+        END;
+        /
+
+  - id: plsql_continue_statement
+    name: PL/SQL CONTINUE statement
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/CONTINUE-statement.html
+    tier: high
+    probes:
+      - id: continue
+        sql: "BEGIN LOOP x := x + 1; IF x < 3 THEN CONTINUE; END IF; EXIT WHEN x = 5; END LOOP; END;"
+      - id: continue_when
+        sql: "BEGIN LOOP x := x + 1; CONTINUE WHEN x < 3; EXIT WHEN x = 5; END LOOP; END;"
+      - id: continue_label_when
+        sql: "BEGIN <<o>> FOR i IN 1 .. 3 LOOP FOR j IN 1 .. 3 LOOP CONTINUE o WHEN j = 2; END LOOP; END LOOP o; END;"
+    examples:
+      - |-
+        DECLARE
+          x NUMBER := 0;
+        BEGIN
+          LOOP -- After CONTINUE statement, control resumes here
+            DBMS_OUTPUT.PUT_LINE ('Inside loop:  x = ' || TO_CHAR(x));
+            x := x + 1;
+            CONTINUE WHEN x < 3;
+            DBMS_OUTPUT.PUT_LINE
+              ('Inside loop, after CONTINUE:  x = ' || TO_CHAR(x));
+            EXIT WHEN x = 5;
+          END LOOP;
+          DBMS_OUTPUT.PUT_LINE (' After loop:  x = ' || TO_CHAR(x));
+        END;
+        /
+
+  - id: plsql_goto_statement
+    name: PL/SQL GOTO statement
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/GOTO-statement.html
+    tier: medium
+    probes:
+      - id: goto_label
+        sql: "BEGIN IF x = 0 THEN GOTO done; END IF; x := 1; <<done>> NULL; END;"
+      - id: goto_out_of_loop
+        sql: "BEGIN FOR j IN 1 .. 10 LOOP IF j = 5 THEN GOTO after_loop; END IF; END LOOP; <<after_loop>> x := 1; END;"
+    examples:
+      - |-
+        DECLARE
+          p  VARCHAR2(30);
+          n  PLS_INTEGER := 37;
+        BEGIN
+          FOR j in 2..ROUND(SQRT(n)) LOOP
+            IF n MOD j = 0 THEN
+              p := ' is not a prime number';
+              GOTO print_now;
+            END IF;
+          END LOOP;
+
+          p := ' is a prime number';
+         
+          <<print_now>>
+          DBMS_OUTPUT.PUT_LINE(TO_CHAR(n) || p);
+        END;
+        /
+
+  - id: plsql_null_statement
+    name: PL/SQL NULL statement
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/NULL-statement.html
+    tier: high
+    probes:
+      - id: null_only
+        sql: "BEGIN NULL; END;"
+      - id: null_in_branch
+        sql: "BEGIN IF x > 0 THEN x := 0; ELSE NULL; END IF; END;"
+
+  - id: plsql_return_statement
+    name: PL/SQL RETURN statement
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/RETURN-statement.html
+    tier: high
+    probes:
+      - id: return_expression_in_function
+        sql: "DECLARE FUNCTION f (a NUMBER) RETURN NUMBER IS BEGIN RETURN a * a; END; BEGIN NULL; END;"
+      - id: return_parenthesized
+        sql: "DECLARE FUNCTION f RETURN NUMBER IS v NUMBER := 1; BEGIN RETURN(v); END; BEGIN NULL; END;"
+      - id: return_in_procedure
+        sql: "DECLARE PROCEDURE p IS BEGIN IF x > 0 THEN RETURN; END IF; END; BEGIN p; END;"
+      - id: return_in_anonymous_block
+        sql: "BEGIN IF x > 0 THEN RETURN; END IF; x := 1; END;"
+
+  - id: plsql_cursor_for_loop
+    name: PL/SQL cursor FOR LOOP statement
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/cursor-FOR-LOOP-statement.html
+    tier: high
+    probes:
+      - id: implicit_cursor
+        sql: "BEGIN FOR r IN (SELECT c, d FROM t WHERE d > 0 ORDER BY c) LOOP x := r.c; END LOOP; END;"
+      - id: explicit_cursor
+        sql: "DECLARE CURSOR c1 IS SELECT c FROM t; BEGIN FOR r IN c1 LOOP NULL; END LOOP; END;"
+      - id: explicit_cursor_parameters
+        sql: "DECLARE CURSOR c1 (j VARCHAR2, w NUMBER) IS SELECT * FROM t WHERE job = j AND sal > w; BEGIN FOR r IN c1('CLERK', 3000) LOOP NULL; END LOOP; END;"
+      - id: labeled
+        sql: "BEGIN <<l>> FOR r IN (SELECT c FROM t) LOOP EXIT l WHEN r.c IS NULL; END LOOP l; END;"
+    examples:
+      - |-
+        BEGIN
+          FOR item IN (
+            SELECT last_name, job_id
+            FROM employees
+            WHERE job_id LIKE '%CLERK%'
+            AND manager_id > 120
+            ORDER BY last_name
+          )
+          LOOP
+            DBMS_OUTPUT.PUT_LINE
+              ('Name = ' || item.last_name || ', Job = ' || item.job_id);
+          END LOOP;
+        END;
+        /
+      - |-
+        DECLARE
+          CURSOR c1 (job VARCHAR2, max_wage NUMBER) IS
+            SELECT * FROM employees
+            WHERE job_id = job
+            AND salary > max_wage;
+        BEGIN
+          FOR person IN c1('ST_CLERK', 3000)
+          LOOP
+             -- process data record
+            DBMS_OUTPUT.PUT_LINE (
+              'Name = ' || person.last_name || ', salary = ' ||
+              person.salary || ', Job Id = ' || person.job_id
+            );
+          END LOOP;
+        END;
+        /
+
+  - id: plsql_explicit_cursor
+    name: PL/SQL explicit cursor declaration and definition
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/explicit-cursor-declaration-and-definition.html
+    tier: high
+    probes:
+      - id: definition
+        sql: "DECLARE CURSOR c IS SELECT c FROM t WHERE d > 0; BEGIN NULL; END;"
+      - id: declaration_then_definition
+        sql: "DECLARE CURSOR c RETURN t%ROWTYPE; CURSOR c RETURN t%ROWTYPE IS SELECT * FROM t; BEGIN NULL; END;"
+      - id: parameters_with_defaults
+        sql: "DECLARE CURSOR c (j IN VARCHAR2, w NUMBER := 0, z NUMBER DEFAULT 1) IS SELECT * FROM t WHERE job = j AND sal > w; BEGIN NULL; END;"
+      - id: return_record_type
+        sql: "DECLARE TYPE r_t IS RECORD (a NUMBER); CURSOR c RETURN r_t IS SELECT a FROM t; BEGIN NULL; END;"
+      - id: for_update
+        sql: "DECLARE CURSOR c IS SELECT c FROM t FOR UPDATE OF c NOWAIT; BEGIN NULL; END;"
+    examples:
+      - |-
+        DECLARE
+          CURSOR c1 RETURN departments%ROWTYPE;    -- Declare c1
+         
+          CURSOR c2 IS                             -- Declare and define c2
+            SELECT employee_id, job_id, salary FROM employees
+            WHERE salary > 2000; 
+         
+          CURSOR c1 RETURN departments%ROWTYPE IS  -- Define c1,
+            SELECT * FROM departments              -- repeating return type
+            WHERE department_id = 110;
+         
+          CURSOR c3 RETURN locations%ROWTYPE;      -- Declare c3
+         
+          CURSOR c3 IS                             -- Define c3,
+            SELECT * FROM locations                -- omitting return type
+            WHERE country_id = 'JP';
+        BEGIN
+          NULL;
+        END;
+        /
+
+  - id: plsql_open_statement
+    name: PL/SQL OPEN statement
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/OPEN-statement.html
+    tier: high
+    probes:
+      - id: open
+        sql: "DECLARE CURSOR c IS SELECT c FROM t; BEGIN OPEN c; CLOSE c; END;"
+      - id: open_with_parameters
+        sql: "DECLARE CURSOR c (j VARCHAR2) IS SELECT c FROM t WHERE job = j; BEGIN OPEN c('CLERK'); CLOSE c; END;"
+      - id: open_named_parameters
+        sql: "DECLARE CURSOR c (j VARCHAR2, w NUMBER) IS SELECT c FROM t WHERE job = j AND sal > w; BEGIN OPEN c(w => 1000, j => 'CLERK'); CLOSE c; END;"
+    examples:
+      - |-
+        DECLARE
+          CURSOR c1 IS
+            SELECT last_name, job_id FROM employees
+            WHERE REGEXP_LIKE (job_id, 'S[HT]_CLERK')
+            ORDER BY last_name;
+
+          v_lastname  employees.last_name%TYPE;  -- variable for last_name
+          v_jobid     employees.job_id%TYPE;     -- variable for job_id
+
+          CURSOR c2 IS
+            SELECT * FROM employees
+            WHERE REGEXP_LIKE (job_id, '[ACADFIMKSA]_M[ANGR]')
+            ORDER BY job_id;
+
+          v_employees employees%ROWTYPE;  -- record variable for row of table
+
+        BEGIN
+          OPEN c1;
+          LOOP  -- Fetches 2 columns into variables
+            FETCH c1 INTO v_lastname, v_jobid;
+            EXIT WHEN c1%NOTFOUND;
+            DBMS_OUTPUT.PUT_LINE( RPAD(v_lastname, 25, ' ') || v_jobid );
+          END LOOP;
+          CLOSE c1;
+          DBMS_OUTPUT.PUT_LINE( '-------------------------------------' );
+
+          OPEN c2;
+          LOOP  -- Fetches entire row into the v_employees record
+            FETCH c2 INTO v_employees;
+            EXIT WHEN c2%NOTFOUND;
+            DBMS_OUTPUT.PUT_LINE( RPAD(v_employees.last_name, 25, ' ') ||
+                                       v_employees.job_id );
+          END LOOP;
+          CLOSE c2;
+        END;
+        /
+
+  - id: plsql_fetch_statement
+    name: PL/SQL FETCH statement
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/FETCH-statement.html
+    tier: high
+    probes:
+      - id: into_variables
+        sql: "DECLARE CURSOR c IS SELECT a, b FROM t; x NUMBER; y NUMBER; BEGIN OPEN c; FETCH c INTO x, y; CLOSE c; END;"
+      - id: into_record
+        sql: "DECLARE CURSOR c IS SELECT * FROM t; r t%ROWTYPE; BEGIN OPEN c; LOOP FETCH c INTO r; EXIT WHEN c%NOTFOUND; END LOOP; CLOSE c; END;"
+      - id: bulk_collect
+        sql: "DECLARE TYPE nt IS TABLE OF NUMBER; a nt; CURSOR c IS SELECT c FROM t; BEGIN OPEN c; FETCH c BULK COLLECT INTO a; CLOSE c; END;"
+      - id: bulk_collect_limit
+        sql: "DECLARE TYPE nt IS TABLE OF t%ROWTYPE; a nt; CURSOR c IS SELECT * FROM t; BEGIN OPEN c; LOOP FETCH c BULK COLLECT INTO a LIMIT 100; EXIT WHEN a.COUNT = 0; END LOOP; CLOSE c; END;"
+      - id: host_cursor_variable
+        sql: "DECLARE r t%ROWTYPE; BEGIN FETCH :hcv INTO r; END;"
+    examples:
+      - |-
+        DECLARE
+          v_employees employees%ROWTYPE;
+          CURSOR c1 is SELECT * FROM employees;
+        BEGIN
+          OPEN c1;
+          -- Fetch entire row into v_employees record:
+          FOR i IN 1..10 LOOP
+            FETCH c1 INTO v_employees;
+            EXIT WHEN c1%NOTFOUND;
+            -- Process data here
+          END LOOP;
+          CLOSE c1;
+        END;
+        /
+      - |-
+        DECLARE
+          TYPE empcurtyp IS REF CURSOR;
+          TYPE namelist IS TABLE OF employees.last_name%TYPE;
+          TYPE sallist IS TABLE OF employees.salary%TYPE;
+          emp_cv  empcurtyp;
+          names   namelist;
+          sals    sallist;
+        BEGIN
+          OPEN emp_cv FOR
+            SELECT last_name, salary FROM employees
+            WHERE job_id = 'SA_REP'
+            ORDER BY salary DESC;
+
+          FETCH emp_cv BULK COLLECT INTO names, sals;
+          CLOSE emp_cv;
+          -- loop through the names and sals collections
+          FOR i IN names.FIRST .. names.LAST
+          LOOP
+            DBMS_OUTPUT.PUT_LINE
+              ('Name = ' || names(i) || ', salary = ' || sals(i));
+          END LOOP;
+        END;
+        /
+
+  - id: plsql_close_statement
+    name: PL/SQL CLOSE statement
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/CLOSE-statement.html
+    tier: high
+    probes:
+      - id: close_cursor
+        sql: "DECLARE CURSOR c IS SELECT c FROM t; BEGIN OPEN c; CLOSE c; END;"
+      - id: close_cursor_variable
+        sql: "DECLARE cv SYS_REFCURSOR; BEGIN OPEN cv FOR SELECT c FROM t; CLOSE cv; END;"
+      - id: close_host_cursor_variable
+        sql: "BEGIN CLOSE :hcv; END;"
+
+  - id: plsql_cursor_variable
+    name: PL/SQL cursor variable declaration (REF CURSOR)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/cursor-variable-declaration.html
+    tier: high
+    probes:
+      - id: weak_ref_cursor
+        sql: "DECLARE TYPE cur_t IS REF CURSOR; cv cur_t; BEGIN NULL; END;"
+      - id: strong_ref_cursor_rowtype
+        sql: "DECLARE TYPE cur_t IS REF CURSOR RETURN t%ROWTYPE; cv cur_t; BEGIN NULL; END;"
+      - id: strong_ref_cursor_record_type
+        sql: "DECLARE TYPE r_t IS RECORD (a NUMBER, b VARCHAR2(25)); TYPE cur_t IS REF CURSOR RETURN r_t; cv cur_t; BEGIN NULL; END;"
+      - id: sys_refcursor
+        sql: "DECLARE cv SYS_REFCURSOR; BEGIN NULL; END;"
+      - id: ref_cursor_parameter
+        sql: "CREATE OR REPLACE PROCEDURE p (cv OUT SYS_REFCURSOR) IS BEGIN OPEN cv FOR SELECT c FROM t; END;"
+    examples:
+      - |-
+        DECLARE
+          TYPE empcurtyp IS REF CURSOR RETURN employees%ROWTYPE;  -- strong type
+          TYPE genericcurtyp IS REF CURSOR;                       -- weak type
+
+          cursor1  empcurtyp;       -- strong cursor variable
+          cursor2  genericcurtyp;   -- weak cursor variable
+          my_cursor SYS_REFCURSOR;  -- weak cursor variable
+
+          TYPE deptcurtyp IS REF CURSOR RETURN departments%ROWTYPE;  -- strong type
+          dept_cv deptcurtyp;  -- strong cursor variable
+        BEGIN
+          NULL;
+        END;
+        /
+      - |-
+        DECLARE
+          TYPE EmpRecTyp IS RECORD (
+            employee_id NUMBER,
+            last_name VARCHAR2(25),
+            salary   NUMBER(8,2));
+
+          TYPE EmpCurTyp IS REF CURSOR RETURN EmpRecTyp;
+          emp_cv EmpCurTyp;
+        BEGIN
+          NULL;
+        END;
+        /
+
+  - id: plsql_open_for_statement
+    name: PL/SQL OPEN FOR statement
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/OPEN-FOR-statement.html
+    tier: high
+    probes:
+      - id: static_select
+        sql: "DECLARE cv SYS_REFCURSOR; BEGIN OPEN cv FOR SELECT c FROM t WHERE d = 1 ORDER BY c; END;"
+      - id: dynamic_string_using
+        sql: "DECLARE cv SYS_REFCURSOR; s VARCHAR2(200) := 'SELECT * FROM t WHERE job = :j'; BEGIN OPEN cv FOR s USING 'MANAGER'; END;"
+      - id: dynamic_literal_using_modes
+        sql: "DECLARE cv SYS_REFCURSOR; BEGIN OPEN cv FOR 'SELECT c FROM t WHERE a = :1 AND b = :2' USING IN 1, x; END;"
+      - id: host_cursor_variable
+        sql: "BEGIN OPEN :hcv FOR SELECT c FROM t; END;"
+    examples:
+      - |-
+        DECLARE
+          TYPE EmpCurTyp  IS REF CURSOR;
+          v_emp_cursor    EmpCurTyp;
+          emp_record      employees%ROWTYPE;
+          v_stmt_str      VARCHAR2(200);
+          v_e_job         employees.job_id%TYPE;
+        BEGIN
+          -- Dynamic SQL statement with placeholder:
+          v_stmt_str := 'SELECT * FROM employees WHERE job_id = :j';
+
+          -- Open cursor & specify bind variable in USING clause:
+          OPEN v_emp_cursor FOR v_stmt_str USING 'MANAGER';
+
+          -- Fetch rows from result set one at a time:
+          LOOP
+            FETCH v_emp_cursor INTO emp_record;
+            EXIT WHEN v_emp_cursor%NOTFOUND;
+          END LOOP;
+
+          -- Close cursor:
+          CLOSE v_emp_cursor;
+        END;
+        /
+
+  - id: plsql_named_cursor_attribute
+    name: PL/SQL named cursor attribute
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/named-cursor-attribute.html
+    tier: high
+    probes:
+      - id: found_notfound
+        sql: "DECLARE CURSOR c IS SELECT c FROM t; v NUMBER; BEGIN OPEN c; FETCH c INTO v; IF c%FOUND THEN NULL; ELSIF c%NOTFOUND THEN NULL; END IF; CLOSE c; END;"
+      - id: rowcount_isopen
+        sql: "DECLARE CURSOR c IS SELECT c FROM t; n NUMBER; BEGIN OPEN c; n := c%ROWCOUNT; IF c%ISOPEN THEN CLOSE c; END IF; END;"
+      - id: host_cursor_variable
+        sql: "BEGIN IF :hcv%ISOPEN THEN NULL; END IF; END;"
+
+  - id: plsql_implicit_cursor_attribute
+    name: PL/SQL implicit cursor attribute (SQL%)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/implicit-cursor-attribute.html
+    tier: high
+    probes:
+      - id: rowcount
+        sql: "DECLARE n NUMBER; BEGIN DELETE FROM t WHERE c = 1; n := SQL%ROWCOUNT; END;"
+      - id: found_notfound_isopen
+        sql: "BEGIN UPDATE t SET c = 1 WHERE d = 2; IF SQL%NOTFOUND THEN INSERT INTO t VALUES (1, 2); ELSIF SQL%FOUND AND NOT SQL%ISOPEN THEN NULL; END IF; END;"
+      - id: bulk_rowcount
+        sql: "DECLARE TYPE nt IS TABLE OF NUMBER; ids nt := nt(1, 2); BEGIN FORALL i IN 1 .. 2 DELETE FROM t WHERE id = ids(i); x := SQL%BULK_ROWCOUNT(1); END;"
+      - id: bulk_exceptions
+        sql: "BEGIN FOR i IN 1 .. SQL%BULK_EXCEPTIONS.COUNT LOOP x := SQL%BULK_EXCEPTIONS(i).ERROR_INDEX; y := SQL%BULK_EXCEPTIONS(i).ERROR_CODE; END LOOP; END;"
+
+  - id: plsql_select_into_statement
+    name: PL/SQL SELECT INTO statement
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/SELECT-INTO-statement.html
+    tier: high
+    probes:
+      - id: into_variable
+        sql: "DECLARE v NUMBER; BEGIN SELECT c * 0.1 INTO v FROM t WHERE id = 100; END;"
+      - id: into_variables
+        sql: "DECLARE a NUMBER; b VARCHAR2(20); BEGIN SELECT c, d INTO a, b FROM t WHERE id = 1; END;"
+      - id: into_record
+        sql: "DECLARE r t%ROWTYPE; BEGIN SELECT * INTO r FROM t WHERE id = 1; END;"
+      - id: distinct_into
+        sql: "DECLARE v NUMBER; BEGIN SELECT DISTINCT c INTO v FROM t WHERE id = 1; END;"
+      - id: bulk_collect_into
+        sql: "DECLARE TYPE nt IS TABLE OF t.c%TYPE; a nt; BEGIN SELECT c BULK COLLECT INTO a FROM t; END;"
+      - id: bulk_collect_into_multiple
+        sql: "DECLARE TYPE n1 IS TABLE OF NUMBER; TYPE n2 IS TABLE OF VARCHAR2(20); a n1; b n2; BEGIN SELECT c, d BULK COLLECT INTO a, b FROM t ORDER BY c FETCH FIRST 10 ROWS ONLY; END;"
+      - id: into_with_cte
+        sql: "DECLARE v NUMBER; BEGIN WITH q AS (SELECT c FROM t) SELECT MAX(c) INTO v FROM q; END;"
+    examples:
+      - |-
+        DECLARE
+          bonus   NUMBER(8,2);
+        BEGIN
+          SELECT salary * 0.10 INTO bonus
+          FROM employees
+          WHERE employee_id = 100;
+
+          DBMS_OUTPUT.PUT_LINE('bonus = ' || TO_CHAR(bonus));
+        END;
+
+        /
+
+  - id: plsql_forall_statement
+    name: PL/SQL FORALL statement
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/FORALL-statement.html
+    tier: high
+    probes:
+      - id: range_delete
+        sql: "DECLARE TYPE nt IS TABLE OF NUMBER; ids nt := nt(10, 30, 70); BEGIN FORALL i IN ids.FIRST .. ids.LAST DELETE FROM t WHERE d = ids(i); END;"
+      - id: range_insert
+        sql: "DECLARE TYPE nt IS TABLE OF t%ROWTYPE; r nt; BEGIN FORALL i IN 1 .. r.COUNT INSERT INTO t VALUES r(i); END;"
+      - id: range_update
+        sql: "DECLARE TYPE nt IS TABLE OF NUMBER; ids nt := nt(1, 2); BEGIN FORALL i IN 1 .. 2 UPDATE t SET c = c * 1.1 WHERE id = ids(i); END;"
+      - id: save_exceptions
+        sql: "DECLARE TYPE nt IS TABLE OF NUMBER; ids nt := nt(1, 2); BEGIN FORALL i IN 1 .. 2 SAVE EXCEPTIONS DELETE FROM t WHERE id = ids(i); END;"
+      - id: indices_of
+        sql: "DECLARE TYPE nt IS TABLE OF NUMBER; ids nt := nt(1, 2, 3); BEGIN ids.DELETE(2); FORALL i IN INDICES OF ids DELETE FROM t WHERE id = ids(i); END;"
+      - id: indices_of_between
+        sql: "DECLARE TYPE nt IS TABLE OF NUMBER; ids nt := nt(1, 2, 3); BEGIN FORALL i IN INDICES OF ids BETWEEN 1 AND 2 DELETE FROM t WHERE id = ids(i); END;"
+      - id: values_of
+        sql: "DECLARE TYPE nt IS TABLE OF NUMBER; TYPE ix IS TABLE OF PLS_INTEGER INDEX BY PLS_INTEGER; ids nt := nt(1, 2, 3); k ix; BEGIN k(1) := 3; FORALL i IN VALUES OF k DELETE FROM t WHERE id = ids(i); END;"
+      - id: execute_immediate
+        sql: "DECLARE TYPE nt IS TABLE OF NUMBER; ids nt := nt(1, 2); BEGIN FORALL i IN 1 .. 2 EXECUTE IMMEDIATE 'DELETE FROM t WHERE id = :1' USING ids(i); END;"
+      - id: returning_bulk_collect
+        sql: "DECLARE TYPE nt IS TABLE OF NUMBER; ids nt := nt(1, 2); out_c nt; BEGIN FORALL i IN 1 .. 2 DELETE FROM t WHERE id = ids(i) RETURNING c BULK COLLECT INTO out_c; END;"
+      - id: host_arrays
+        sql: "BEGIN FORALL i IN :lower .. :upper DELETE FROM t WHERE d = :depts(i); END;"
+    examples:
+      - |-
+        BEGIN
+          FORALL i IN :lower..:upper
+            DELETE FROM employees
+            WHERE department_id = :depts(i);
+        END;
+        /
+
+  - id: plsql_returning_into_clause
+    name: PL/SQL RETURNING INTO clause
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/RETURNING-INTO-clause.html
+    tier: high
+    probes:
+      - id: update_returning_into
+        sql: "DECLARE v NUMBER; BEGIN UPDATE t SET c = c * 1.1 WHERE id = 1 RETURNING c INTO v; END;"
+      - id: insert_returning_into_record
+        sql: "DECLARE TYPE r_t IS RECORD (id NUMBER, c NUMBER); r r_t; BEGIN INSERT INTO t (id, c) VALUES (s.NEXTVAL, 1) RETURNING id, c INTO r; END;"
+      - id: delete_returning_bulk_collect
+        sql: "DECLARE TYPE n1 IS TABLE OF NUMBER; TYPE n2 IS TABLE OF VARCHAR2(25); a n1; b n2; BEGIN DELETE FROM t WHERE d = 30 RETURNING id, name BULK COLLECT INTO a, b; END;"
+      - id: return_keyword
+        sql: "DECLARE v NUMBER; BEGIN DELETE FROM t WHERE id = 1 RETURN c INTO v; END;"
+      - id: dynamic_returning
+        sql: "DECLARE v NUMBER; BEGIN EXECUTE IMMEDIATE 'UPDATE t SET c = c + 1 WHERE id = :1 RETURNING c INTO :2' USING 1 RETURNING INTO v; END;"
+    examples:
+      - |-
+        DECLARE
+          TYPE NumList IS TABLE OF employees.employee_id%TYPE;
+          enums  NumList;
+          TYPE NameList IS TABLE OF employees.last_name%TYPE;
+          names  NameList;
+        BEGIN
+          DELETE FROM emp_temp
+          WHERE department_id = 30
+          RETURNING employee_id, last_name
+          BULK COLLECT INTO enums, names;
+
+          DBMS_OUTPUT.PUT_LINE ('Deleted ' || SQL%ROWCOUNT || ' rows:');
+          FOR i IN enums.FIRST .. enums.LAST
+          LOOP
+            DBMS_OUTPUT.PUT_LINE ('Employee #' || enums(i) || ': ' || names(i));
+          END LOOP;
+        END;
+        /
+
+  - id: plsql_bulk_collect
+    name: PL/SQL BULK COLLECT clause
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/bulk-sql-and-bulk-binding.html
+    tier: high
+    probes:
+      - id: select_bulk_collect
+        sql: "DECLARE TYPE nt IS TABLE OF NUMBER; a nt; BEGIN SELECT c BULK COLLECT INTO a FROM t SAMPLE (10); END;"
+      - id: fetch_bulk_collect_limit
+        sql: "DECLARE TYPE nt IS TABLE OF NUMBER INDEX BY PLS_INTEGER; a nt; CURSOR c1 IS SELECT c FROM t; BEGIN OPEN c1; LOOP FETCH c1 BULK COLLECT INTO a LIMIT 10; EXIT WHEN c1%NOTFOUND; END LOOP; CLOSE c1; END;"
+      - id: execute_immediate_bulk_collect
+        sql: "DECLARE TYPE nt IS TABLE OF NUMBER; a nt; BEGIN EXECUTE IMMEDIATE 'SELECT c FROM t' BULK COLLECT INTO a; END;"
+      - id: host_array
+        sql: "BEGIN SELECT c BULK COLLECT INTO :arr FROM t; END;"
+    examples:
+      - |-
+        DECLARE
+          TYPE SalList IS TABLE OF employees.salary%TYPE;
+          sals SalList;
+        BEGIN
+          SELECT salary BULK COLLECT INTO sals FROM employees
+            WHERE ROWNUM <= 50;
+         
+          SELECT salary BULK COLLECT INTO sals FROM employees
+            SAMPLE (10);
+         
+          SELECT salary BULK COLLECT INTO sals FROM employees
+            FETCH FIRST 50 ROWS ONLY;
+        END;
+        /
+      - |-
+        DECLARE
+          TYPE numtab IS TABLE OF NUMBER INDEX BY PLS_INTEGER;
+
+          CURSOR c1 IS
+            SELECT employee_id
+            FROM employees
+            WHERE department_id = 80
+            ORDER BY employee_id;
+
+          empids  numtab;
+        BEGIN
+          OPEN c1;
+          LOOP  -- Fetch 10 rows or fewer in each iteration
+            FETCH c1 BULK COLLECT INTO empids LIMIT 10;
+            DBMS_OUTPUT.PUT_LINE ('------- Results from One Bulk Fetch --------');
+            FOR i IN 1..empids.COUNT LOOP
+              DBMS_OUTPUT.PUT_LINE ('Employee Id: ' || empids(i));
+            END LOOP;
+            EXIT WHEN c1%NOTFOUND;
+          END LOOP;
+          CLOSE c1;
+        END;
+        /
+      - |-
+        DECLARE
+          TYPE NumTab IS TABLE OF employees.employee_id%TYPE;
+          TYPE NameTab IS TABLE OF employees.last_name%TYPE;
+         
+          enums NumTab;
+          names NameTab;
+         
+          PROCEDURE print_first_n (n POSITIVE) IS
+          BEGIN
+            IF enums.COUNT = 0 THEN
+              DBMS_OUTPUT.PUT_LINE ('Collections are empty.');
+            ELSE
+              DBMS_OUTPUT.PUT_LINE ('First ' || n || ' employees:');
+         
+              FOR i IN 1 .. n LOOP
+                DBMS_OUTPUT.PUT_LINE (
+                  '  Employee #' || enums(i) || ': ' || names(i));
+              END LOOP;
+            END IF;
+          END;
+         
+        BEGIN
+          SELECT employee_id, last_name
+          BULK COLLECT INTO enums, names
+          FROM employees
+          ORDER BY employee_id;
+         
+          print_first_n(3);
+          print_first_n(6);
+        END;
+        /
+
+  - id: plsql_execute_immediate
+    name: PL/SQL EXECUTE IMMEDIATE statement
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/EXECUTE-IMMEDIATE-statement.html
+    tier: high
+    probes:
+      - id: ddl_literal
+        sql: "BEGIN EXECUTE IMMEDIATE 'CREATE TABLE t2 (c NUMBER)'; END;"
+      - id: variable_statement
+        sql: "DECLARE s VARCHAR2(200) := 'DELETE FROM t'; BEGIN EXECUTE IMMEDIATE s; END;"
+      - id: into
+        sql: "DECLARE v NUMBER; BEGIN EXECUTE IMMEDIATE 'SELECT COUNT(*) FROM t WHERE c = :1' INTO v USING 10; END;"
+      - id: into_record
+        sql: "DECLARE r t%ROWTYPE; BEGIN EXECUTE IMMEDIATE 'SELECT * FROM t WHERE id = :id' INTO r USING 1; END;"
+      - id: using_modes
+        sql: "DECLARE a NUMBER := 1; b NUMBER; BEGIN EXECUTE IMMEDIATE 'BEGIN p(:x, :y); END;' USING IN a, OUT b; END;"
+      - id: using_in_out
+        sql: "DECLARE a NUMBER := 1; BEGIN EXECUTE IMMEDIATE 'BEGIN p(:x); END;' USING IN OUT a; END;"
+      - id: bulk_collect_into
+        sql: "DECLARE TYPE nt IS TABLE OF NUMBER; a nt; BEGIN EXECUTE IMMEDIATE 'SELECT c FROM t' BULK COLLECT INTO a; END;"
+      - id: using_returning_into
+        sql: "DECLARE v NUMBER; BEGIN EXECUTE IMMEDIATE 'UPDATE t SET c = c + 1 WHERE id = :1 RETURNING c INTO :2' USING 1 RETURNING INTO v; END;"
+      - id: concatenated_string
+        sql: "DECLARE n VARCHAR2(30) := 'T'; BEGIN EXECUTE IMMEDIATE 'DROP TABLE ' || n || ' PURGE'; END;"
+    examples:
+      - |-
+        CREATE OR REPLACE PROCEDURE p (x BOOLEAN) AUTHID DEFINER AS
+        BEGIN
+          IF x THEN
+            DBMS_OUTPUT.PUT_LINE('x is true');
+          END IF;
+        END;
+        /
+
+        DECLARE
+          dyn_stmt VARCHAR2(200);
+          b        BOOLEAN := TRUE;
+        BEGIN
+          dyn_stmt := 'BEGIN p(:x); END;';
+          EXECUTE IMMEDIATE dyn_stmt USING b;
+        END;
+        /
+      - |-
+        CREATE PROCEDURE calc_stats (
+          w NUMBER,
+          x NUMBER,
+          y NUMBER,
+          z NUMBER )
+        IS
+        BEGIN
+          DBMS_OUTPUT.PUT_LINE(w + x + y + z);
+        END;
+        /
+        DECLARE
+          a NUMBER := 4;
+          b NUMBER := 7;
+          plsql_block VARCHAR2(100);
+        BEGIN
+          plsql_block := 'BEGIN calc_stats(:x, :x, :y, :x); END;';
+          EXECUTE IMMEDIATE plsql_block USING a, b;  -- calc_stats(a, a, b, a)
+        END;
+        /
+
+  - id: plsql_exception_declaration
+    name: PL/SQL exception declaration
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/exception-declaration.html
+    tier: high
+    probes:
+      - id: declare_exception
+        sql: "DECLARE past_due EXCEPTION; BEGIN NULL; END;"
+      - id: declare_and_raise
+        sql: "DECLARE e EXCEPTION; BEGIN RAISE e; EXCEPTION WHEN e THEN NULL; END;"
+    examples:
+      - |-
+        CREATE PROCEDURE account_status (
+          due_date DATE,
+          today    DATE
+        ) AUTHID DEFINER
+        IS
+          past_due  EXCEPTION;  -- declare exception
+        BEGIN
+          IF due_date < today THEN
+            RAISE past_due;  -- explicitly raise exception
+          END IF;
+        EXCEPTION
+          WHEN past_due THEN  -- handle exception
+            DBMS_OUTPUT.PUT_LINE ('Account past due.');
+        END;
+        /
+         
+        BEGIN
+          account_status (TO_DATE('01-JUL-2010', 'DD-MON-YYYY'),
+                          TO_DATE('09-JUL-2010', 'DD-MON-YYYY'));
+        END;
+        /
+
+  - id: plsql_exception_init_pragma
+    name: PL/SQL EXCEPTION_INIT pragma
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/EXCEPTION_INIT-pragma.html
+    tier: medium
+    probes:
+      - id: exception_init
+        sql: "DECLARE deadlock_detected EXCEPTION; PRAGMA EXCEPTION_INIT(deadlock_detected, -60); BEGIN NULL; EXCEPTION WHEN deadlock_detected THEN NULL; END;"
+      - id: application_error_code
+        sql: "DECLARE past_due EXCEPTION; PRAGMA EXCEPTION_INIT (past_due, -20000); BEGIN NULL; END;"
+    examples:
+      - |-
+        CREATE OR REPLACE PROCEDURE account_status (
+          due_date DATE,
+          today    DATE
+        ) AUTHID DEFINER
+        IS
+        BEGIN
+          IF due_date < today THEN                   -- explicitly raise exception
+            RAISE_APPLICATION_ERROR(-20000, 'Account past due.');
+          END IF;
+        END;
+        /
+         
+        DECLARE
+          past_due  EXCEPTION;                       -- declare exception
+          PRAGMA EXCEPTION_INIT (past_due, -20000);  -- assign error code to exception
+        BEGIN
+          account_status (TO_DATE('01-JUL-2010', 'DD-MON-YYYY'),
+                          TO_DATE('09-JUL-2010', 'DD-MON-YYYY'));   -- invoke procedure
+
+        EXCEPTION
+          WHEN past_due THEN                         -- handle exception
+            DBMS_OUTPUT.PUT_LINE(TO_CHAR(SQLERRM(-20000)));
+        END;
+        /
+
+  - id: plsql_raise_statement
+    name: PL/SQL RAISE statement
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/RAISE-statement.html
+    tier: high
+    probes:
+      - id: raise_user_exception
+        sql: "DECLARE e EXCEPTION; BEGIN IF x > 0 THEN RAISE e; END IF; EXCEPTION WHEN e THEN NULL; END;"
+      - id: raise_predefined
+        sql: "BEGIN IF x IS NULL THEN RAISE VALUE_ERROR; END IF; END;"
+      - id: reraise
+        sql: "BEGIN NULL; EXCEPTION WHEN OTHERS THEN ROLLBACK; RAISE; END;"
+      - id: qualified_exception
+        sql: "BEGIN RAISE pkg.my_error; END;"
+      - id: raise_application_error
+        sql: "BEGIN RAISE_APPLICATION_ERROR(-20000, 'Account past due.'); END;"
+    examples:
+      - |-
+        DECLARE
+          salary_too_high   EXCEPTION;
+          current_salary    NUMBER := 20000;
+          max_salary        NUMBER := 10000;
+          erroneous_salary  NUMBER;
+        BEGIN
+
+          BEGIN
+            IF current_salary > max_salary THEN
+              RAISE salary_too_high;   -- raise exception
+            END IF;
+          EXCEPTION
+            WHEN salary_too_high THEN  -- start handling exception
+              erroneous_salary := current_salary;
+              DBMS_OUTPUT.PUT_LINE('Salary ' || erroneous_salary ||' is out of range.');
+              DBMS_OUTPUT.PUT_LINE ('Maximum salary is ' || max_salary || '.');
+              RAISE;  -- reraise current exception (exception name is optional)
+          END;
+
+        EXCEPTION
+          WHEN salary_too_high THEN    -- finish handling exception
+            current_salary := max_salary;
+
+            DBMS_OUTPUT.PUT_LINE (
+              'Revising salary from ' || erroneous_salary ||
+              ' to ' || current_salary || '.'
+            );
+        END;
+        /
+
+  - id: plsql_exception_handler
+    name: PL/SQL exception handler
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/exception-handler.html
+    tier: high
+    probes:
+      - id: when_named
+        sql: "BEGIN SELECT c INTO x FROM t WHERE id = 1; EXCEPTION WHEN NO_DATA_FOUND THEN x := NULL; END;"
+      - id: when_or
+        sql: "BEGIN SELECT c INTO x FROM t; EXCEPTION WHEN NO_DATA_FOUND OR TOO_MANY_ROWS THEN x := NULL; END;"
+      - id: multiple_handlers_others
+        sql: "BEGIN x := 1 / y; EXCEPTION WHEN ZERO_DIVIDE THEN x := 0; WHEN VALUE_ERROR THEN x := -1; WHEN OTHERS THEN x := NULL; END;"
+      - id: multiple_statements
+        sql: "BEGIN UPDATE t SET c = 1; EXCEPTION WHEN DUP_VAL_ON_INDEX THEN ROLLBACK; INSERT INTO log_t VALUES ('dup'); COMMIT; END;"
+      - id: sqlcode_sqlerrm
+        sql: "DECLARE code NUMBER; msg VARCHAR2(512); BEGIN NULL; EXCEPTION WHEN OTHERS THEN code := SQLCODE; msg := SUBSTR(SQLERRM, 1, 512); END;"
+    examples:
+      - |-
+        DECLARE
+          salary_too_high   EXCEPTION;
+          current_salary    NUMBER := 20000;
+          max_salary        NUMBER := 10000;
+          erroneous_salary  NUMBER;
+        BEGIN
+
+          BEGIN
+            IF current_salary > max_salary THEN
+              RAISE salary_too_high;   -- raise exception
+            END IF;
+          EXCEPTION
+            WHEN salary_too_high THEN  -- start handling exception
+              erroneous_salary := current_salary;
+              DBMS_OUTPUT.PUT_LINE('Salary ' || erroneous_salary ||' is out of range.');
+              DBMS_OUTPUT.PUT_LINE ('Maximum salary is ' || max_salary || '.');
+              RAISE;  -- reraise current exception (exception name is optional)
+          END;
+
+        EXCEPTION
+          WHEN salary_too_high THEN    -- finish handling exception
+            current_salary := max_salary;
+
+            DBMS_OUTPUT.PUT_LINE (
+              'Revising salary from ' || erroneous_salary ||
+              ' to ' || current_salary || '.'
+            );
+        END;
+        /
+
+  - id: plsql_sqlcode_sqlerrm
+    name: PL/SQL SQLCODE and SQLERRM functions
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/SQLERRM-function.html
+    tier: medium
+    probes:
+      - id: sqlcode
+        sql: "DECLARE n NUMBER; BEGIN NULL; EXCEPTION WHEN OTHERS THEN n := SQLCODE; END;"
+      - id: sqlerrm_no_argument
+        sql: "DECLARE m VARCHAR2(512); BEGIN NULL; EXCEPTION WHEN OTHERS THEN m := SQLERRM; END;"
+      - id: sqlerrm_error_code
+        sql: "DECLARE m VARCHAR2(512); BEGIN m := SQLERRM(-20000); END;"
+
+  - id: plsql_pipe_row
+    name: PL/SQL PIPE ROW statement
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/PIPE-ROW-statement.html
+    tier: medium
+    probes:
+      - id: pipe_row
+        sql: "CREATE FUNCTION f RETURN num_tab PIPELINED IS BEGIN FOR i IN 1 .. 3 LOOP PIPE ROW (i); END LOOP; RETURN; END;"
+      - id: pipe_row_record
+        sql: "CREATE FUNCTION f (c SYS_REFCURSOR) RETURN rec_tab PIPELINED IS r rec_t; BEGIN LOOP FETCH c INTO r; EXIT WHEN c%NOTFOUND; PIPE ROW (r); END LOOP; RETURN; END;"
+
+  - id: plsql_autonomous_transaction_pragma
+    name: PL/SQL AUTONOMOUS_TRANSACTION pragma
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/AUTONOMOUS_TRANSACTION-pragma.html
+    tier: medium
+    probes:
+      - id: in_block
+        sql: "DECLARE PRAGMA AUTONOMOUS_TRANSACTION; BEGIN INSERT INTO log_t VALUES ('x'); COMMIT; END;"
+      - id: in_procedure
+        sql: "CREATE OR REPLACE PROCEDURE p (m VARCHAR2) AS PRAGMA AUTONOMOUS_TRANSACTION; BEGIN INSERT INTO log_t VALUES (m); COMMIT; END;"
+
+  - id: plsql_inline_pragma
+    name: PL/SQL INLINE pragma
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/INLINE-pragma.html
+    tier: low
+    probes:
+      - id: inline
+        sql: "DECLARE FUNCTION f (a NUMBER) RETURN NUMBER IS BEGIN RETURN a; END; x NUMBER; BEGIN PRAGMA INLINE (f, 'YES'); x := f(1); END;"
+
+  - id: plsql_deprecate_pragma
+    name: PL/SQL DEPRECATE pragma
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/DEPRECATE-pragma.html
+    tier: low
+    probes:
+      - id: deprecate
+        sql: "CREATE OR REPLACE PROCEDURE p AUTHID DEFINER IS PRAGMA DEPRECATE (p, 'Use p2 instead'); BEGIN NULL; END;"
+
+  - id: plsql_suppresses_warning_6009_pragma
+    name: PL/SQL SUPPRESSES_WARNING_6009 pragma
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/Supresses-warning-pragma-6009.html
+    tier: low
+    probes:
+      - id: suppress_warning
+        sql: "CREATE OR REPLACE PROCEDURE p AUTHID DEFINER IS PRAGMA SUPPRESSES_WARNING_6009(p); BEGIN RAISE_APPLICATION_ERROR(-20000, 'x'); END;"
+        note: "The page's syntax diagram text spells it SUPPRESS_WARNING_6009; the page title, body and examples use SUPPRESSES_WARNING_6009."
+    examples:
+      - |-
+        CREATE PROCEDURE p1
+        AUTHID DEFINER
+        IS
+            PRAGMA SUPPRESSES_WARNING_6009(p1);
+        BEGIN
+            RAISE_APPLICATION_ERROR(-20000, 'Unexpected error raised');
+        END;
+        /
+
+  - id: plsql_coverage_pragma
+    name: PL/SQL COVERAGE pragma
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/COVERAGE-pragma.html
+    tier: low
+    probes:
+      - id: not_feasible
+        sql: "BEGIN IF x > 0 THEN PRAGMA COVERAGE ('NOT_FEASIBLE'); NULL; END IF; END;"
+
+  - id: plsql_udf_pragma
+    name: PL/SQL UDF pragma
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/UDF-pragma.html
+    tier: low
+    probes:
+      - id: udf
+        sql: "CREATE OR REPLACE FUNCTION f (a NUMBER) RETURN NUMBER IS PRAGMA UDF; BEGIN RETURN a * 2; END;"
+
+  - id: plsql_insert_statement_extension
+    name: PL/SQL INSERT statement extension (VALUES record)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/INSERT-statement-extension.html
+    tier: medium
+    probes:
+      - id: values_record
+        sql: "DECLARE r t%ROWTYPE; BEGIN r.id := 1; INSERT INTO t VALUES r; END;"
+      - id: values_record_alias
+        sql: "DECLARE r t%ROWTYPE; BEGIN INSERT INTO s.t x VALUES r RETURNING x.id INTO r.id; END;"
+
+  - id: plsql_update_statement_extensions
+    name: PL/SQL UPDATE statement extensions (SET ROW, CURRENT OF)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/UPDATE-statement-extensions.html
+    tier: medium
+    probes:
+      - id: set_row
+        sql: "DECLARE r t%ROWTYPE; BEGIN UPDATE t SET ROW = r WHERE id = r.id; END;"
+      - id: where_current_of
+        sql: "DECLARE CURSOR c IS SELECT c FROM t FOR UPDATE; BEGIN FOR r IN c LOOP UPDATE t SET c = r.c * 2 WHERE CURRENT OF c; END LOOP; END;"
+    examples:
+      - |-
+        DECLARE
+          default_week  schedule%ROWTYPE;
+        BEGIN
+          default_week.Mon := 'Day Off';
+          default_week.Tue := '0900-1800';
+          default_week.Wed := '0900-1800';
+          default_week.Thu := '0900-1800';
+          default_week.Fri := '0900-1800';
+          default_week.Sat := '0900-1800';
+          default_week.Sun := 'Day Off';
+         
+          FOR i IN 1..3 LOOP
+            default_week.week    := i;
+          
+            UPDATE schedule
+            SET ROW = default_week
+            WHERE week = i;
+          END LOOP;
+        END;
+        /
+
+  - id: plsql_delete_statement_extension
+    name: PL/SQL DELETE statement extension (CURRENT OF)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/DELETE-statement-extension.html
+    tier: medium
+    probes:
+      - id: where_current_of
+        sql: "DECLARE CURSOR c IS SELECT c FROM t FOR UPDATE; BEGIN FOR r IN c LOOP IF r.c < 0 THEN DELETE FROM t WHERE CURRENT OF c; END IF; END LOOP; END;"
+
+  - id: plsql_function_definition
+    name: PL/SQL function declaration and definition (nested)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/function-declaration-and-definition.html
+    tier: high
+    probes:
+      - id: definition
+        sql: "DECLARE FUNCTION f (p INTEGER) RETURN INTEGER IS BEGIN RETURN p; END f; BEGIN x := f(1); END;"
+      - id: forward_declaration
+        sql: "DECLARE FUNCTION f (p NUMBER) RETURN NUMBER; FUNCTION g RETURN NUMBER IS BEGIN RETURN f(1); END; FUNCTION f (p NUMBER) RETURN NUMBER IS BEGIN RETURN p; END; BEGIN NULL; END;"
+      - id: properties
+        sql: "DECLARE FUNCTION f (p NUMBER) RETURN NUMBER DETERMINISTIC RESULT_CACHE IS BEGIN RETURN p; END; BEGIN NULL; END;"
+      - id: parameter_modes_defaults
+        sql: "DECLARE FUNCTION f (a IN NUMBER DEFAULT 0, b OUT NUMBER, c IN OUT NOCOPY VARCHAR2) RETURN BOOLEAN AS v NUMBER; BEGIN b := a; RETURN TRUE; END; BEGIN NULL; END;"
+    examples:
+      - |-
+        DECLARE
+          FUNCTION test (p INTEGER) RETURN INTEGER IS
+          BEGIN
+            DBMS_OUTPUT.PUT_LINE('p = ' || p);
+            RETURN p;
+          END test;
+         
+        BEGIN
+          DBMS_OUTPUT.PUT_LINE('test(p) = ' || test(0.66));
+        END;
+        /
+
+  - id: plsql_procedure_definition
+    name: PL/SQL procedure declaration and definition (nested)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/procedure-declaration-and-definition.html
+    tier: high
+    probes:
+      - id: definition
+        sql: "DECLARE PROCEDURE p (a NUMBER, b NUMBER) IS BEGIN UPDATE t SET c = c + b WHERE id = a; END p; BEGIN p(1, 2); END;"
+      - id: no_parameters
+        sql: "DECLARE PROCEDURE p IS BEGIN NULL; END; BEGIN p; END;"
+      - id: forward_declaration
+        sql: "DECLARE PROCEDURE p2; PROCEDURE p1 IS BEGIN p2; END; PROCEDURE p2 IS BEGIN NULL; END; BEGIN p1; END;"
+      - id: declare_section
+        sql: "DECLARE PROCEDURE p (s NUMBER) IS bonus NUMBER := 0; updated VARCHAR2(3) := 'No'; BEGIN IF s > 0 THEN bonus := s / 4; END IF; END p; BEGIN p(100); END;"
+      - id: properties
+        sql: "DECLARE PROCEDURE p AUTHID CURRENT_USER IS BEGIN NULL; END; BEGIN p; END;"
