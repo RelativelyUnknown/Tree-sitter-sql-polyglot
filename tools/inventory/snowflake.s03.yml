@@ -28,11 +28,11 @@ statements:
       - id: database_include_internal_stages
         sql: "CREATE DATABASE db_clone CLONE db INCLUDE INTERNAL STAGES;"
       - id: database_all_options
-        sql: "CREATE OR REPLACE DATABASE IF NOT EXISTS db_clone CLONE db BEFORE (OFFSET => -60) IGNORE TABLES WITH INSUFFICIENT DATA RETENTION IGNORE HYBRID TABLES INCLUDE INTERNAL STAGES;"
-        note: OR REPLACE with IF NOT EXISTS is rejected by the engine at runtime but both are in the syntax block; kept as a combined-clause probe
+        sql: "CREATE DATABASE IF NOT EXISTS db_clone CLONE db BEFORE (OFFSET => -60) IGNORE TABLES WITH INSUFFICIENT DATA RETENTION IGNORE HYBRID TABLES INCLUDE INTERNAL STAGES;"
+        note: all optional clauses of the databases and schemas syntax block combined
       - id: schema
         sql: "CREATE SCHEMA s_clone CLONE s;"
-      - id: schema_or_replace_if_not_exists
+      - id: schema_if_not_exists
         sql: "CREATE SCHEMA IF NOT EXISTS s_clone CLONE s;"
       - id: schema_before_timestamp
         sql: "CREATE SCHEMA s_clone CLONE s BEFORE (TIMESTAMP => TO_TIMESTAMP(40 * 365 * 86400));"
@@ -70,7 +70,7 @@ statements:
         sql: "CREATE OR REPLACE ICEBERG TABLE it_clone CLONE it AT (TIMESTAMP => '2024-01-01 00:00:00'::TIMESTAMP_LTZ) COPY GRANTS;"
       - id: database_role
         sql: "CREATE DATABASE ROLE dr_clone CLONE dr;"
-      - id: database_role_or_replace_if_not_exists
+      - id: database_role_if_not_exists
         sql: "CREATE DATABASE ROLE IF NOT EXISTS dr_clone CLONE dr;"
       - id: alert
         sql: "CREATE ALERT a_clone CLONE a;"
@@ -84,9 +84,8 @@ statements:
         sql: "CREATE STREAM strm_clone CLONE strm;"
       - id: task
         sql: "CREATE TASK task_clone CLONE task;"
-      - id: other_object_or_replace_if_not_exists
-        sql: "CREATE OR REPLACE STAGE IF NOT EXISTS stg_clone CLONE stg;"
-        note: OR REPLACE and IF NOT EXISTS both appear in the syntax block for this form
+      - id: other_object_if_not_exists
+        sql: "CREATE STAGE IF NOT EXISTS stg_clone CLONE stg;"
     examples:
       - "CREATE DATABASE mytestdb_clone CLONE mytestdb;"
       - "CREATE SCHEMA mytestschema_clone CLONE testschema;"
