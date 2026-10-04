@@ -1,0 +1,109 @@
+dialect: oracle
+engine: Oracle AI Database
+version: "26ai"
+source: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/toc.htm
+
+statements:
+  - id: set_constraints
+    name: SET CONSTRAINT[S]
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/SET-CONSTRAINTS.html
+    tier: high
+    probes:
+      - { id: all_immediate, sql: "SET CONSTRAINTS ALL IMMEDIATE;" }
+      - { id: all_deferred, sql: "SET CONSTRAINTS ALL DEFERRED;" }
+      - { id: one_deferred, sql: "SET CONSTRAINT c1 DEFERRED;" }
+      - { id: one_immediate, sql: "SET CONSTRAINT c1 IMMEDIATE;" }
+      - { id: list_deferred, sql: "SET CONSTRAINTS c1, c2, c3 DEFERRED;" }
+      - { id: list_immediate, sql: "SET CONSTRAINTS c1, c2 IMMEDIATE;" }
+      - { id: schema_qualified, sql: "SET CONSTRAINTS hr.c1, hr.c2 DEFERRED;" }
+      - { id: remote_constraint, sql: "SET CONSTRAINTS c1, hr.c2@remote DEFERRED;" }
+    examples:
+      - "SET CONSTRAINTS ALL IMMEDIATE;"
+      - "SET CONSTRAINTS emp_job_nn, emp_salary_min, hr.jhist_dept_fk@remote DEFERRED;"
+
+  - id: alter_database_link
+    name: ALTER DATABASE LINK
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-DATABASE-LINK.html
+    tier: medium
+    probes:
+      - { id: private_link, sql: "ALTER DATABASE LINK dbl CONNECT TO u IDENTIFIED BY pw;" }
+      - { id: public_link, sql: "ALTER PUBLIC DATABASE LINK dbl CONNECT TO u IDENTIFIED BY pw;" }
+      - { id: shared_link, sql: "ALTER SHARED DATABASE LINK dbl CONNECT TO u IDENTIFIED BY pw;" }
+      - { id: shared_public_authenticated, sql: "ALTER SHARED PUBLIC DATABASE LINK dbl CONNECT TO u IDENTIFIED BY pw AUTHENTICATED BY a IDENTIFIED BY apw;" }
+      - { id: if_exists, sql: "ALTER DATABASE LINK IF EXISTS dbl CONNECT TO u IDENTIFIED BY pw;" }
+    examples:
+      - "ALTER DATABASE LINK private_link CONNECT TO hr IDENTIFIED BY hr_new_password;"
+      - "ALTER PUBLIC DATABASE LINK public_link CONNECT TO scott IDENTIFIED BY scott_new_password;"
+      - "ALTER SHARED PUBLIC DATABASE LINK shared_pub_link CONNECT TO scott IDENTIFIED BY scott_new_password AUTHENTICATED BY hr IDENTIFIED BY hr_new_password;"
+
+  - id: alter_domain
+    name: ALTER DOMAIN
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/alter-domain.html
+    tier: medium
+    probes:
+      - { id: add_display, sql: "ALTER DOMAIN d ADD DISPLAY UPPER(d);" }
+      - { id: modify_display, sql: "ALTER DOMAIN d MODIFY DISPLAY LOWER(d);" }
+      - { id: drop_display, sql: "ALTER DOMAIN d DROP DISPLAY;" }
+      - { id: add_order, sql: "ALTER DOMAIN d ADD ORDER FLOOR(d/100);" }
+      - { id: modify_order, sql: "ALTER DOMAIN d MODIFY ORDER MOD(d,100);" }
+      - { id: drop_order, sql: "ALTER DOMAIN d DROP ORDER;" }
+      - { id: annotations, sql: "ALTER DOMAIN d ANNOTATIONS(Display 'Day of week');" }
+      - { id: annotations_drop, sql: "ALTER DOMAIN d ANNOTATIONS(DROP Display);" }
+      - { id: usecase_if_exists, sql: "ALTER USECASE DOMAIN IF EXISTS s.d DROP DISPLAY;" }
+    examples:
+      - "ALTER DOMAIN day_of_week MODIFY DISPLAY LOWER(day_of_week);"
+      - "ALTER DOMAIN year_of_birth ADD ORDER FLOOR(year_of_birth/100);"
+      - "ALTER DOMAIN day_of_week ANNOTATIONS(Display 'Day of week');"
+
+  - id: alter_json_relational_duality_view
+    name: ALTER JSON RELATIONAL DUALITY VIEW
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/alter-json-relational-duality-view.html
+    tier: medium
+    probes:
+      - { id: enable_logical_replication, sql: "ALTER JSON RELATIONAL DUALITY VIEW v ENABLE LOGICAL REPLICATION;" }
+      - { id: disable_logical_replication, sql: "ALTER JSON RELATIONAL DUALITY VIEW v DISABLE LOGICAL REPLICATION;" }
+      - { id: schema_qualified, sql: "ALTER JSON RELATIONAL DUALITY VIEW s.v ENABLE LOGICAL REPLICATION;" }
+      - { id: if_exists, sql: "ALTER JSON RELATIONAL DUALITY VIEW IF EXISTS v DISABLE LOGICAL REPLICATION;" }
+
+  - id: alter_materialized_view_log
+    name: ALTER MATERIALIZED VIEW LOG
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-MATERIALIZED-VIEW-LOG.html
+    tier: medium
+    probes:
+      - { id: add_rowid, sql: "ALTER MATERIALIZED VIEW LOG ON t ADD ROWID;" }
+      - { id: add_primary_key, sql: "ALTER MATERIALIZED VIEW LOG ON t ADD PRIMARY KEY;" }
+      - { id: add_object_id, sql: "ALTER MATERIALIZED VIEW LOG ON t ADD OBJECT ID;" }
+      - { id: add_sequence_columns, sql: "ALTER MATERIALIZED VIEW LOG ON t ADD SEQUENCE (c1, c2);" }
+      - { id: add_column_excluding_new_values, sql: "ALTER MATERIALIZED VIEW LOG ON s.t ADD (c) EXCLUDING NEW VALUES;" }
+      - { id: force_including_new_values, sql: "ALTER MATERIALIZED VIEW LOG FORCE ON t ADD (c) INCLUDING NEW VALUES;" }
+      - { id: if_exists, sql: "ALTER MATERIALIZED VIEW LOG IF EXISTS ON t ADD ROWID;" }
+      - { id: physical_attributes, sql: "ALTER MATERIALIZED VIEW LOG ON t PCTFREE 10 PCTUSED 40 INITRANS 2;" }
+      - { id: logging, sql: "ALTER MATERIALIZED VIEW LOG ON t NOLOGGING;" }
+      - { id: parallel, sql: "ALTER MATERIALIZED VIEW LOG ON t PARALLEL 4;" }
+      - { id: allocate_extent, sql: "ALTER MATERIALIZED VIEW LOG ON t ALLOCATE EXTENT;" }
+      - { id: shrink_space, sql: "ALTER MATERIALIZED VIEW LOG ON t SHRINK SPACE CASCADE;" }
+      - { id: move, sql: "ALTER MATERIALIZED VIEW LOG ON t MOVE TABLESPACE ts;" }
+      - { id: purge_immediate, sql: "ALTER MATERIALIZED VIEW LOG ON t PURGE IMMEDIATE ASYNCHRONOUS;" }
+      - { id: purge_start_with_next, sql: "ALTER MATERIALIZED VIEW LOG ON t PURGE START WITH SYSDATE NEXT SYSDATE + 1;" }
+      - { id: purge_repeat_interval, sql: "ALTER MATERIALIZED VIEW LOG ON t PURGE REPEAT INTERVAL 1;" }
+      - { id: for_fast_refresh, sql: "ALTER MATERIALIZED VIEW LOG ON t FOR FAST REFRESH;" }
+      - { id: for_synchronous_refresh, sql: "ALTER MATERIALIZED VIEW LOG ON t FOR SYNCHRONOUS REFRESH;" }
+      - { id: snapshot_keyword, sql: "ALTER SNAPSHOT LOG ON t ADD ROWID;" }
+    examples:
+      - "ALTER MATERIALIZED VIEW LOG ON order_items ADD ROWID;"
+      - "ALTER MATERIALIZED VIEW LOG ON employees ADD (commission_pct) EXCLUDING NEW VALUES;"
+
+  - id: alter_package
+    name: ALTER PACKAGE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-PACKAGE.html
+    tier: medium
+    probes:
+      - { id: compile, sql: "ALTER PACKAGE pkg COMPILE;" }
+      - { id: compile_schema_qualified, sql: "ALTER PACKAGE s.pkg COMPILE;" }
+      - { id: compile_debug_body, sql: "ALTER PACKAGE pkg COMPILE DEBUG BODY;" }
+      - { id: compile_specification, sql: "ALTER PACKAGE pkg COMPILE SPECIFICATION;" }
+      - { id: compile_package, sql: "ALTER PACKAGE pkg COMPILE PACKAGE;" }
+      - { id: compile_parameters_reuse, sql: "ALTER PACKAGE pkg COMPILE PLSQL_OPTIMIZE_LEVEL = 2 REUSE SETTINGS;" }
+      - { id: editionable, sql: "ALTER PACKAGE pkg EDITIONABLE;" }
+      - { id: noneditionable, sql: "ALTER PACKAGE pkg NONEDITIONABLE;" }
+      - { id: if_exists, sql: "ALTER PACKAGE IF EXISTS pkg COMPILE;" }
