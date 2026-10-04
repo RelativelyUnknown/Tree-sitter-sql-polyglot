@@ -105,7 +105,7 @@ statements:
 
   - id: join
     name: "Join operation"
-    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#join_types
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#join_operation
     tier: high
     probes:
       - { id: join_on, sql: "SELECT * FROM a JOIN b ON a.x = b.x;" }
@@ -620,4 +620,2117 @@ statements:
       - |-
         SELECT 'apples' AS item, 2 AS sales, 'fruit' AS category
         |> DROP sales, category;
+
+  - id: insert
+    name: "INSERT"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax#insert_statement
+    tier: high
+    probes:
+      - { id: into_values, sql: "INSERT INTO t (a, b) VALUES (1, 'x');" }
+      - { id: without_into, sql: "INSERT t (a, b) VALUES (1, 'x');" }
+      - { id: multi_row_values, sql: "INSERT t (a, b) VALUES (1, 'x'), (2, 'y'), (3, 'z');" }
+      - { id: no_column_list, sql: "INSERT t VALUES (1, 'x'), (2, 'y');" }
+      - { id: default_value, sql: "INSERT t (a, b, c) VALUES (1, DEFAULT, 'x');" }
+      - { id: qualified_target, sql: "INSERT dataset.t (a) VALUES (1);" }
+      - { id: backtick_target, sql: "INSERT INTO `my-project.dataset.t` (a) VALUES (1);" }
+      - { id: select, sql: "INSERT t (a, b) SELECT a, b FROM u;" }
+      - { id: select_unnest, sql: "INSERT t (a, b) SELECT * FROM UNNEST([('x', 'WA'), ('y', 'CA')]);" }
+      - { id: with_select, sql: "INSERT t (a, b) WITH w AS (SELECT 1 AS a, 2 AS b) SELECT a, b FROM w;" }
+      - { id: values_subquery, sql: "INSERT t (a, b) VALUES ('x', (SELECT b FROM u WHERE a = 'y'));" }
+      - { id: struct_array_values, sql: "INSERT t VALUES ('x', 10, FALSE, [(CURRENT_DATE, 'c1')], ('white', '1 year', (30, 40, 28)));" }
+      - { id: range_value, sql: "INSERT t (a, d) VALUES (10, RANGE<DATE> '[2010-01-10, 2010-03-10)');" }
+    examples:
+      - |-
+        INSERT dataset.Inventory (product, quantity)
+        VALUES('top load washer', 10),
+         ('front load washer', 20),
+         ('dryer', 30),
+         ('refrigerator', 10),
+         ('microwave', 20),
+         ('dishwasher', 30),
+         ('oven', 5);
+      - |-
+        INSERT dataset.NewArrivals (product, quantity, warehouse)
+        VALUES('top load washer', DEFAULT, 'warehouse #1'),
+         ('dryer', 200, 'warehouse #2'),
+         ('oven', 300, 'warehouse #3');
+      - |-
+        INSERT dataset.Warehouse (warehouse, state)
+        WITH w AS (
+         SELECT ARRAY<STRUCT<warehouse string, state string>>
+         [('warehouse #1', 'WA'),
+         ('warehouse #2', 'CA'),
+         ('warehouse #3', 'WA')] col
+        )
+        SELECT warehouse, state FROM w, UNNEST(w.col);
+      - "INSERT dataset.Warehouse VALUES('warehouse #4', 'WA'), ('warehouse #5', 'NY');"
+      - |-
+        INSERT dataset.DetailedInventory
+        VALUES('top load washer', 10, FALSE, [(CURRENT_DATE, "comment1")], ("white","1 year",(30,40,28))),
+         ('front load washer', 20, FALSE, [(CURRENT_DATE, "comment1")], ("beige","1 year",(35,45,30)));
+
+  - id: delete
+    name: "DELETE"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax#delete_statement
+    tier: high
+    probes:
+      - { id: without_from, sql: "DELETE t WHERE a = 0;" }
+      - { id: with_from, sql: "DELETE FROM t WHERE a = 0;" }
+      - { id: alias, sql: "DELETE dataset.t x WHERE x.a NOT IN (SELECT a FROM u);" }
+      - { id: from_alias, sql: "DELETE FROM t x WHERE x.a = 1;" }
+      - { id: where_true, sql: "DELETE FROM t WHERE true;" }
+      - { id: not_exists, sql: "DELETE t WHERE NOT EXISTS (SELECT * FROM u WHERE t.a = u.a);" }
+    examples:
+      - |-
+        DELETE dataset.Inventory
+        WHERE quantity = 0;
+      - |-
+        DELETE dataset.Inventory i
+        WHERE i.product NOT IN (SELECT product from dataset.NewArrivals);
+      - |-
+        DELETE dataset.Inventory
+        WHERE NOT EXISTS
+         (SELECT * from dataset.NewArrivals
+         WHERE Inventory.product = NewArrivals.product);
+
+  - id: truncate_table
+    name: "TRUNCATE TABLE"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax#truncate_table_statement
+    tier: high
+    probes:
+      - { id: basic, sql: "TRUNCATE TABLE t;" }
+      - { id: project_dataset_qualified, sql: "TRUNCATE TABLE project.dataset.t;" }
+    examples:
+      - "TRUNCATE TABLE dataset.Inventory;"
+
+  - id: update
+    name: "UPDATE"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax#update_statement
+    tier: high
+    probes:
+      - { id: basic, sql: "UPDATE t SET a = a - 10 WHERE b LIKE '%washer%';" }
+      - { id: multiple_set, sql: "UPDATE t SET a = 1, b = 'x' WHERE true;" }
+      - { id: set_default, sql: "UPDATE t SET a = DEFAULT WHERE b = 1;" }
+      - { id: alias_as, sql: "UPDATE t AS x SET a = 1 WHERE x.b = 2;" }
+      - { id: alias_no_as, sql: "UPDATE t x SET a = 1 WHERE x.b = 2;" }
+      - { id: from_clause, sql: "UPDATE t i SET a = i.a + n.a FROM u n WHERE i.b = n.b;" }
+      - { id: from_multiple, sql: "UPDATE t SET a = true FROM u, v WHERE t.b = u.b AND u.c = v.c;" }
+      - { id: from_join, sql: "UPDATE t SET a = true FROM u INNER JOIN v ON u.c = v.c WHERE t.b = u.b;" }
+      - { id: nested_field, sql: "UPDATE t SET s.color = 'white', s.warranty = '1 year' WHERE true;" }
+      - { id: subquery_value, sql: "UPDATE t SET a = a + (SELECT a FROM u WHERE t.b = u.b) WHERE b IN (SELECT b FROM u);" }
+      - { id: array_subquery_value, sql: "UPDATE t SET c = ARRAY(SELECT x FROM UNNEST(c) AS x WHERE x.y NOT LIKE '%c2%') WHERE true;" }
+    examples:
+      - |-
+        UPDATE dataset.Inventory
+        SET quantity = quantity - 10,
+         supply_constrained = DEFAULT
+        WHERE product like '%washer%';
+      - |-
+        UPDATE dataset.Inventory i
+        SET quantity = i.quantity + n.quantity,
+         supply_constrained = false
+        FROM dataset.NewArrivals n
+        WHERE i.product = n.product;
+      - |-
+        UPDATE dataset.DetailedInventory
+        SET specifications.color = 'white',
+         specifications.warranty = '1 year'
+        WHERE product like '%washer%';
+      - |-
+        UPDATE dataset.DetailedInventory
+        SET specifications
+         = STRUCT<color STRING, warranty STRING,
+         dimensions STRUCT<depth FLOAT64, height FLOAT64, width FLOAT64>>('white', '1 year', NULL)
+        WHERE product like '%washer%';
+      - |-
+        UPDATE dataset.DetailedInventory
+        SET supply_constrained = true
+        FROM dataset.NewArrivals
+        INNER JOIN dataset.Warehouse
+        ON NewArrivals.warehouse = Warehouse.warehouse
+        WHERE DetailedInventory.product = NewArrivals.product AND
+         Warehouse.state = 'WA';
+
+  - id: merge
+    name: "MERGE"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/dml-syntax#merge_statement
+    tier: high
+    probes:
+      - { id: matched_update, sql: "MERGE t USING s ON t.a = s.a WHEN MATCHED THEN UPDATE SET b = s.b;" }
+      - { id: into_with_aliases, sql: "MERGE INTO t AS x USING s AS y ON x.a = y.a WHEN MATCHED THEN UPDATE SET b = y.b;" }
+      - { id: aliases_no_as, sql: "MERGE t x USING s y ON x.a = y.a WHEN MATCHED THEN DELETE;" }
+      - { id: matched_and_condition, sql: "MERGE t USING s ON t.a = s.a WHEN MATCHED AND t.c = 1 THEN UPDATE SET b = t.b + 20 WHEN MATCHED THEN DELETE;" }
+      - { id: not_matched_insert, sql: "MERGE t USING s ON t.a = s.a WHEN NOT MATCHED THEN INSERT (a, b) VALUES (a, b);" }
+      - { id: not_matched_by_target, sql: "MERGE t USING s ON t.a = s.a WHEN NOT MATCHED BY TARGET AND b < 20 THEN INSERT (a, b) VALUES (a, b);" }
+      - { id: insert_no_columns, sql: "MERGE t USING s ON t.a = s.a WHEN NOT MATCHED THEN INSERT VALUES (a, b, DEFAULT);" }
+      - { id: insert_row, sql: "MERGE t USING s ON FALSE WHEN NOT MATCHED THEN INSERT ROW;" }
+      - { id: not_matched_by_source_delete, sql: "MERGE t USING s ON FALSE WHEN NOT MATCHED BY SOURCE AND b LIKE '%x%' THEN DELETE;" }
+      - { id: not_matched_by_source_update, sql: "MERGE t USING s ON t.a = s.a WHEN NOT MATCHED BY SOURCE THEN UPDATE SET b = 0;" }
+      - { id: subquery_source, sql: "MERGE t USING (SELECT * FROM s WHERE c <> 'x') AS u ON t.a = u.a WHEN MATCHED THEN DELETE;" }
+      - { id: all_clauses, sql: "MERGE t USING s ON t.a = s.a WHEN MATCHED THEN UPDATE SET b = s.b WHEN NOT MATCHED THEN INSERT (a, b) VALUES (s.a, s.b) WHEN NOT MATCHED BY SOURCE THEN DELETE;" }
+    examples:
+      - |-
+        MERGE dataset.DetailedInventory T
+        USING dataset.Inventory S
+        ON T.product = S.product
+        WHEN NOT MATCHED AND quantity < 20 THEN
+         INSERT(product, quantity, supply_constrained, comments)
+         VALUES(product, quantity, true, ARRAY<STRUCT<created DATE, comment STRING>>[(DATE('2016-01-01'), 'comment1')])
+        WHEN NOT MATCHED THEN
+         INSERT(product, quantity, supply_constrained)
+         VALUES(product, quantity, false);
+      - |-
+        MERGE dataset.Inventory T
+        USING dataset.NewArrivals S
+        ON T.product = S.product
+        WHEN MATCHED THEN
+         UPDATE SET quantity = T.quantity + S.quantity
+        WHEN NOT MATCHED THEN
+         INSERT (product, quantity) VALUES(product, quantity);
+      - |-
+        MERGE dataset.NewArrivals T
+        USING (SELECT * FROM dataset.NewArrivals WHERE warehouse <> 'warehouse #2') S
+        ON T.product = S.product
+        WHEN MATCHED AND T.warehouse = 'warehouse #1' THEN
+         UPDATE SET quantity = T.quantity + 20
+        WHEN MATCHED THEN
+         DELETE;
+      - |-
+        MERGE dataset.Inventory T
+        USING dataset.NewArrivals S
+        ON FALSE
+        WHEN NOT MATCHED AND product LIKE '%washer%' THEN
+         INSERT (product, quantity) VALUES(product, quantity)
+        WHEN NOT MATCHED BY SOURCE AND product LIKE '%washer%' THEN
+         DELETE;
+      - |-
+        MERGE dataset.NewArrivals
+        USING (SELECT * FROM UNNEST([('microwave', 10, 'warehouse #1'),
+         ('dryer', 30, 'warehouse #1'),
+         ('oven', 20, 'warehouse #2')]))
+        ON FALSE
+        WHEN NOT MATCHED THEN
+         INSERT ROW
+        WHEN NOT MATCHED BY SOURCE THEN
+         DELETE;
+
+  - id: create_schema
+    name: "CREATE SCHEMA"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_schema_statement
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE SCHEMA s;" }
+      - { id: if_not_exists_project, sql: "CREATE SCHEMA IF NOT EXISTS p.s;" }
+      - { id: default_collate, sql: "CREATE SCHEMA s DEFAULT COLLATE 'und:ci';" }
+      - { id: options, sql: "CREATE SCHEMA s OPTIONS (location = 'us', default_table_expiration_days = 3.75, labels = [('l1', 'v1')]);" }
+      - { id: collate_and_options, sql: "CREATE SCHEMA s DEFAULT COLLATE 'und:ci' OPTIONS (is_case_insensitive = TRUE);" }
+    examples:
+      - |-
+        CREATE SCHEMA mydataset
+        OPTIONS(
+         location="us",
+         default_table_expiration_days=3.75,
+         labels=[("label1","value1"),("label2","value2")]
+         );
+      - |-
+        CREATE SCHEMA mydataset
+        OPTIONS(
+         is_case_insensitive=TRUE
+        );
+      - |-
+        CREATE SCHEMA mydataset
+        DEFAULT COLLATE 'und:ci';
+
+  - id: create_table
+    name: "CREATE TABLE"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_table_statement
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE TABLE t (x INT64, y STRING);" }
+      - { id: or_replace, sql: "CREATE OR REPLACE TABLE t (x INT64);" }
+      - { id: if_not_exists, sql: "CREATE TABLE IF NOT EXISTS t (x INT64);" }
+      - { id: temp, sql: "CREATE TEMP TABLE t (x INT64, y STRING);" }
+      - { id: temporary, sql: "CREATE TEMPORARY TABLE t (x INT64);" }
+      - { id: or_replace_temp, sql: "CREATE OR REPLACE TEMP TABLE t (x INT64);" }
+      - { id: qualified_name, sql: "CREATE TABLE p.d.t (x INT64);" }
+      - { id: backtick_name, sql: "CREATE TABLE `my-project.d.t` (x INT64);" }
+      - { id: struct_array_columns, sql: "CREATE TABLE t (x INT64, y STRUCT<a ARRAY<STRING>, b BOOL>);" }
+      - { id: not_null, sql: "CREATE TABLE t (x INT64 NOT NULL, y STRUCT<a ARRAY<STRING>, b BOOL NOT NULL> NOT NULL);" }
+      - { id: column_options, sql: "CREATE TABLE t (x INT64 OPTIONS (description = 'An optional INTEGER field'));" }
+      - { id: nested_field_options, sql: "CREATE TABLE t (y STRUCT<a ARRAY<STRING> OPTIONS (description = 'repeated'), b BOOL>);" }
+      - { id: parameterized_types, sql: "CREATE TABLE t (x STRING(10), y STRUCT<a ARRAY<BYTES(5)>, b NUMERIC(15, 2)>, z BIGNUMERIC(35));" }
+      - { id: column_collate, sql: "CREATE TABLE t (a STRING, b STRING COLLATE 'und:ci', c ARRAY<STRING COLLATE 'und:ci'>);" }
+      - { id: default_value, sql: "CREATE TABLE t (x INT64 DEFAULT 0, ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP());" }
+      - { id: identity_column, sql: "CREATE TABLE t (name STRING, id INT64 GENERATED ALWAYS AS IDENTITY (START WITH 0 INCREMENT BY 2));" }
+      - { id: identity_by_default, sql: "CREATE TABLE t (id INT64 GENERATED BY DEFAULT AS IDENTITY (START WITH 1));" }
+      - { id: identity_bare, sql: "CREATE TABLE t (id INT64 AS IDENTITY ());" }
+      - { id: embedding_generation, sql: "CREATE TABLE t (id INT64, content STRING, embedding STRUCT<result ARRAY<FLOAT64>, status STRING> GENERATED ALWAYS AS (AI.EMBED(content, connection_id => 'US.c', endpoint => 'text-embedding-005')) STORED OPTIONS (asynchronous = TRUE));" }
+      - { id: column_primary_key, sql: "CREATE TABLE t (x INT64 PRIMARY KEY NOT ENFORCED, y STRING);" }
+      - { id: column_references, sql: "CREATE TABLE t (x INT64 REFERENCES u(x) NOT ENFORCED);" }
+      - { id: table_primary_key, sql: "CREATE TABLE t (x INT64, y INT64, PRIMARY KEY (x, y) NOT ENFORCED);" }
+      - { id: table_foreign_key, sql: "CREATE TABLE t (x INT64, FOREIGN KEY (x) REFERENCES u(x) NOT ENFORCED);" }
+      - { id: named_foreign_key, sql: "CREATE TABLE t (x INT64, CONSTRAINT fk FOREIGN KEY (x) REFERENCES u(x) NOT ENFORCED);" }
+      - { id: default_collate, sql: "CREATE TABLE t (a STRING, b STRING) DEFAULT COLLATE 'und:ci';" }
+      - { id: partition_by_ingestion_date, sql: "CREATE TABLE t (x INT64) PARTITION BY _PARTITIONDATE;" }
+      - { id: partition_by_partitiontime, sql: "CREATE TABLE t (x INT64) PARTITION BY DATE(_PARTITIONTIME);" }
+      - { id: partition_by_date_column, sql: "CREATE TABLE t (id INT64, d DATE) PARTITION BY d;" }
+      - { id: partition_by_timestamp_trunc, sql: "CREATE TABLE t (ts TIMESTAMP, c STRING) PARTITION BY TIMESTAMP_TRUNC(ts, HOUR);" }
+      - { id: partition_by_datetime_trunc, sql: "CREATE TABLE t (dt DATETIME) PARTITION BY DATETIME_TRUNC(dt, MONTH);" }
+      - { id: partition_by_date_trunc, sql: "CREATE TABLE t (d DATE) PARTITION BY DATE_TRUNC(d, YEAR);" }
+      - { id: partition_by_range_bucket, sql: "CREATE TABLE t (n INT64) PARTITION BY RANGE_BUCKET(n, GENERATE_ARRAY(0, 100, 10));" }
+      - { id: cluster_by, sql: "CREATE TABLE t (ts TIMESTAMP, c STRING, n NUMERIC) PARTITION BY DATE(ts) CLUSTER BY c, n;" }
+      - { id: with_connection, sql: "CREATE TABLE t (x INT64) WITH CONNECTION `p.us.c` OPTIONS (file_format = 'PARQUET', table_format = 'ICEBERG', storage_uri = 'gs://b/p');" }
+      - { id: options, sql: "CREATE TABLE t (x INT64) OPTIONS (expiration_timestamp = TIMESTAMP '2025-01-01 00:00:00 UTC', partition_expiration_days = 1, description = 'd', labels = [('org_unit', 'development')]);" }
+      - { id: as_select, sql: "CREATE TABLE t AS SELECT a, b FROM u;" }
+      - { id: options_as_select, sql: "CREATE TABLE t OPTIONS (description = 'd') AS SELECT a FROM u;" }
+      - { id: partition_cluster_as_select, sql: "CREATE TABLE t PARTITION BY d CLUSTER BY c AS SELECT d, c FROM u;" }
+      - { id: columns_as_select, sql: "CREATE TABLE t (c STRING, n NUMERIC) CLUSTER BY c AS SELECT * FROM u;" }
+      - { id: as_with_query, sql: "CREATE TABLE t AS WITH w AS (SELECT 1 AS a) SELECT a FROM w;" }
+      - { id: all_clauses, sql: "CREATE OR REPLACE TABLE t (x INT64 NOT NULL, d DATE, s STRING) DEFAULT COLLATE 'und:ci' PARTITION BY d CLUSTER BY x OPTIONS (description = 'd');" }
+    examples:
+      - |-
+        CREATE TABLE mydataset.newtable
+        (
+         x INT64 OPTIONS(description="An optional INTEGER field"),
+         y STRUCT <
+         a ARRAY <STRING> OPTIONS(description="A repeated STRING field"),
+         b BOOL
+         >
+        )
+        PARTITION BY _PARTITIONDATE
+        OPTIONS(
+         expiration_timestamp=TIMESTAMP "2025-01-01 00:00:00 UTC",
+         partition_expiration_days=1,
+         description="a table that expires in 2025, with each partition living for 24 hours",
+         labels=[("org_unit", "development")]
+        );
+      - |-
+        CREATE TABLE mydataset.top_words
+        OPTIONS(
+         description="Top ten words per Shakespeare corpus"
+        ) AS
+        SELECT
+         corpus,
+         ARRAY_AGG(STRUCT(word, word_count) ORDER BY word_count DESC LIMIT 10) AS top_words
+        FROM `bigquery-public-data`.samples.shakespeare
+        GROUP BY corpus;
+      - |-
+        CREATE TABLE mydataset.newtable (
+         x STRING(10),
+         y STRUCT <
+         a ARRAY <BYTES(5)>,
+         b NUMERIC(15, 2) OPTIONS(rounding_mode = 'ROUND_HALF_EVEN'),
+         c FLOAT64
+         >,
+         z BIGNUMERIC(35)
+        );
+      - |-
+        CREATE TABLE mydataset.myclusteredtable
+        (
+         input_timestamp TIMESTAMP,
+         customer_id STRING,
+         transaction_amount NUMERIC
+        )
+        PARTITION BY TIMESTAMP_TRUNC(input_timestamp, HOUR)
+        CLUSTER BY customer_id
+        OPTIONS (
+         partition_expiration_days=3,
+         description="a table clustered by customer_id"
+        );
+      - |-
+        CREATE TABLE mydataset.identity_table (
+         name STRING,
+         id INT64 GENERATED ALWAYS AS IDENTITY(START WITH 0 INCREMENT BY 2)
+        );
+
+  - id: create_table_like
+    name: "CREATE TABLE LIKE"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_table_like
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE TABLE t LIKE d.src;" }
+      - { id: or_replace_if_not_exists_options, sql: "CREATE OR REPLACE TABLE t LIKE p.d.src OPTIONS (description = 'd');" }
+      - { id: like_as_select, sql: "CREATE TABLE t LIKE src AS SELECT * FROM u;" }
+      - id: like_partition_cluster
+        sql: "CREATE TABLE IF NOT EXISTS t LIKE src PARTITION BY d CLUSTER BY c;"
+        note: "The syntax block elides the remaining CREATE TABLE clauses with '...'; the page says the syntax is otherwise identical to CREATE TABLE."
+    examples:
+      - |-
+        CREATE TABLE mydataset.newtable
+        LIKE mydataset.sourcetable;
+      - |-
+        CREATE TABLE mydataset.newtable
+        LIKE mydataset.sourcetable
+        AS SELECT * FROM mydataset.myothertable;
+
+  - id: create_table_copy
+    name: "CREATE TABLE COPY"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_table_copy
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE TABLE t COPY src;" }
+      - { id: or_replace_options, sql: "CREATE OR REPLACE TABLE d.t COPY d.src OPTIONS (description = 'copy');" }
+      - { id: if_not_exists, sql: "CREATE TABLE IF NOT EXISTS t COPY p.d.src;" }
+    examples: []
+
+  - id: create_snapshot_table
+    name: "CREATE SNAPSHOT TABLE"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_snapshot_table_statement
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE SNAPSHOT TABLE snap CLONE t;" }
+      - { id: if_not_exists_options, sql: "CREATE SNAPSHOT TABLE IF NOT EXISTS `p.d.snap` CLONE `p.d.t` OPTIONS (expiration_timestamp = TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 48 HOUR), friendly_name = 'snap');" }
+      - { id: for_system_time, sql: "CREATE SNAPSHOT TABLE snap CLONE t FOR SYSTEM_TIME AS OF TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 1 HOUR);" }
+    examples:
+      - |-
+        CREATE SNAPSHOT TABLE `myproject.mydataset.mytablesnapshot`
+        CLONE `myproject.mydataset.mytable`
+        OPTIONS(
+         expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 48 HOUR),
+         friendly_name="my_table_snapshot",
+         description="A table snapshot that expires in 2 days",
+         labels=[("org_unit", "development")]
+        );
+
+  - id: create_table_clone
+    name: "CREATE TABLE CLONE"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_table_clone_statement
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE TABLE t CLONE src;" }
+      - { id: if_not_exists_options, sql: "CREATE TABLE IF NOT EXISTS `p.d.t` CLONE `p.d.snap` OPTIONS (friendly_name = 'my_table');" }
+      - { id: for_system_time, sql: "CREATE TABLE t CLONE src FOR SYSTEM_TIME AS OF '2024-01-01 00:00:00 UTC';" }
+    examples:
+      - |-
+        CREATE TABLE `myproject.mydataset.mytable`
+        CLONE `myproject.mydataset.mytablesnapshot`
+        OPTIONS(
+         expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 365 DAY),
+         friendly_name="my_table",
+         description="A table that expires in 1 year",
+         labels=[("org_unit", "development")]
+        );
+      - |-
+        CREATE TABLE IF NOT EXISTS `myproject.mydataset.mytableclone`
+        CLONE `myproject.mydataset.mytable`
+        OPTIONS(
+         expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 365 DAY),
+         friendly_name="my_table",
+         description="A table that expires in 1 year",
+         labels=[("org_unit", "development")]
+        );
+
+  - id: create_view
+    name: "CREATE VIEW"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_view_statement
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE VIEW v AS SELECT a, b FROM t;" }
+      - { id: or_replace, sql: "CREATE OR REPLACE VIEW v AS SELECT a FROM t;" }
+      - { id: if_not_exists, sql: "CREATE VIEW IF NOT EXISTS v AS SELECT a FROM t;" }
+      - { id: qualified_backtick, sql: "CREATE VIEW `p.d.v` AS SELECT a FROM `p.d.t`;" }
+      - { id: column_list, sql: "CREATE VIEW v (x, y) AS SELECT a, COUNT(*) FROM t GROUP BY a;" }
+      - { id: column_options, sql: "CREATE VIEW v (x OPTIONS (description = 'col x'), y) AS SELECT a, b FROM t;" }
+      - { id: options, sql: "CREATE VIEW v OPTIONS (expiration_timestamp = TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 48 HOUR), friendly_name = 'v', labels = [('org_unit', 'development')]) AS SELECT a FROM t;" }
+      - { id: privacy_policy_option, sql: "CREATE VIEW v OPTIONS (privacy_policy = '{\"aggregation_threshold_policy\": {\"threshold\": 50, \"privacy_unit_columns\": \"ID\"}}') AS SELECT * FROM t;" }
+      - { id: with_query, sql: "CREATE VIEW v AS WITH c AS (SELECT a FROM t) SELECT a FROM c;" }
+    examples:
+      - |-
+        CREATE VIEW mydataset.age_groups(age, count) AS SELECT age, COUNT(*)
+        FROM mydataset.people
+        group by age;
+      - |-
+        CREATE VIEW `myproject.mydataset.newview`
+        OPTIONS(
+         expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 48 HOUR),
+         friendly_name="newview",
+         description="a view that expires in 2 days",
+         labels=[("org_unit", "development")]
+        )
+        AS SELECT column_1, column_2, column_3 FROM `myproject.mydataset.mytable`;
+      - |-
+        CREATE OR REPLACE VIEW `myproject.mydataset.newview`
+        OPTIONS(
+         expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 48 HOUR),
+         friendly_name="newview",
+         description="a view that expires in 2 days",
+         labels=[("org_unit", "development")]
+        )
+        AS SELECT column_1, column_2, column_3 FROM `myproject.mydataset.mytable`;
+      - |-
+        CREATE VIEW `myproject.mydataset.newview` (
+         column_1_new_name OPTIONS (DESCRIPTION='Description of the column 1 contents'),
+         column_2_new_name OPTIONS (DESCRIPTION='Description of the column 2 contents'),
+         column_3_new_name OPTIONS (DESCRIPTION='Description of the column 3 contents')
+        )
+        AS SELECT column_1, column_2, column_3 FROM `myproject.mydataset.mytable`;
+
+  - id: create_materialized_view
+    name: "CREATE MATERIALIZED VIEW"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_materialized_view_statement
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE MATERIALIZED VIEW mv AS SELECT a, SUM(b) AS s FROM t GROUP BY a;" }
+      - { id: or_replace, sql: "CREATE OR REPLACE MATERIALIZED VIEW mv AS SELECT a FROM t;" }
+      - { id: if_not_exists, sql: "CREATE MATERIALIZED VIEW IF NOT EXISTS mv AS SELECT a FROM t;" }
+      - { id: partition_by, sql: "CREATE MATERIALIZED VIEW mv PARTITION BY DATE(ts) AS SELECT ts, COUNT(1) AS n FROM t GROUP BY ts;" }
+      - { id: cluster_by, sql: "CREATE MATERIALIZED VIEW mv CLUSTER BY a AS SELECT a, COUNT(1) AS n FROM t GROUP BY a;" }
+      - { id: options, sql: "CREATE MATERIALIZED VIEW mv OPTIONS (enable_refresh = true, refresh_interval_minutes = 20) AS SELECT a FROM t;" }
+      - { id: all_clauses, sql: "CREATE MATERIALIZED VIEW `p.d.mv` PARTITION BY DATE(ts) CLUSTER BY a OPTIONS (friendly_name = 'mv') AS SELECT a, ts, COUNT(1) AS n FROM t GROUP BY a, ts;" }
+    examples:
+      - |-
+        CREATE MATERIALIZED VIEW `myproject.mydataset.new_mv`
+        OPTIONS(
+         expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 48 HOUR),
+         friendly_name="new_mv",
+         description="a materialized view that expires in 2 days",
+         labels=[("org_unit", "development")],
+         enable_refresh=true,
+         refresh_interval_minutes=20
+        )
+        AS SELECT column_1, SUM(column_2) AS sum_2, AVG(column_3) AS avg_3
+        FROM `myproject.mydataset.mytable`
+        GROUP BY column_1;
+      - |-
+        CREATE MATERIALIZED VIEW IF NOT EXISTS `myproject.mydataset.new_mv`
+        OPTIONS(
+         expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 48 HOUR),
+         friendly_name="new_mv",
+         description="a view that expires in 2 days",
+         labels=[("org_unit", "development")],
+         enable_refresh=false
+        )
+        AS SELECT column_1, column_2, column_3 FROM `myproject.mydataset.mytable`;
+      - |-
+        CREATE MATERIALIZED VIEW `myproject.mydataset.new_mv`
+        PARTITION BY DATE(col_datetime)
+        CLUSTER BY col_int
+        AS SELECT col_int, col_datetime, COUNT(1) as cnt
+         FROM `myproject.mydataset.mv_base_table`
+         GROUP BY col_int, col_datetime;
+
+  - id: create_materialized_view_replica
+    name: "CREATE MATERIALIZED VIEW AS REPLICA OF"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_materialized_view_as_replica_of_statement
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE MATERIALIZED VIEW r AS REPLICA OF src_mv;" }
+      - { id: options, sql: "CREATE MATERIALIZED VIEW `p.d.r` OPTIONS (replication_interval_seconds = 600) AS REPLICA OF `p.s3.mv`;" }
+    examples:
+      - |-
+        CREATE MATERIALIZED VIEW `myproject.bq_dataset.mv_replica`
+        OPTIONS(
+         replication_interval_seconds=600
+        )
+        AS REPLICA OF `myproject.s3_dataset.my_s3_mv`;
+
+  - id: create_external_schema
+    name: "CREATE EXTERNAL SCHEMA"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_external_schema_statement
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE EXTERNAL SCHEMA IF NOT EXISTS s WITH CONNECTION p.`aws-us-east-1`.c OPTIONS (external_source = 'aws-glue://arn:aws:glue:us-east-1:123:database/db', location = 'aws-us-east-1');" }
+      - { id: options_only, sql: "CREATE EXTERNAL SCHEMA s OPTIONS (external_source = 'google-cloudspanner:/projects/p/instances/i/databases/d', location = 'US');" }
+    examples:
+      - |-
+        CREATE EXTERNAL SCHEMA mydataset
+        WITH CONNECTION myproject.`aws-us-east-1`.myconnection
+         OPTIONS (
+         external_source = 'aws-glue://arn:aws:glue:us-east-1:123456789:database/test_database',
+         location = 'aws-us-east-1');
+
+  - id: create_external_table
+    name: "CREATE EXTERNAL TABLE"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_external_table_statement
+    tier: medium
+    probes:
+      - { id: options_only, sql: "CREATE EXTERNAL TABLE t OPTIONS (format = 'CSV', uris = ['gs://b/p1.csv', 'gs://b/p2.csv']);" }
+      - { id: or_replace_columns, sql: "CREATE OR REPLACE EXTERNAL TABLE t (x INT64, y STRING) OPTIONS (format = 'CSV', uris = ['gs://b/p.csv'], field_delimiter = '|');" }
+      - { id: if_not_exists, sql: "CREATE EXTERNAL TABLE IF NOT EXISTS t OPTIONS (format = 'PARQUET', uris = ['gs://b/*']);" }
+      - { id: with_connection, sql: "CREATE EXTERNAL TABLE t (x INT64) WITH CONNECTION c OPTIONS (format = 'PARQUET', uris = ['gs://b/*'], metadata_cache_mode = 'AUTOMATIC');" }
+      - { id: with_connection_default, sql: "CREATE EXTERNAL TABLE t WITH CONNECTION DEFAULT OPTIONS (format = 'PARQUET', uris = ['gs://b/*']);" }
+      - { id: with_partition_columns_auto, sql: "CREATE EXTERNAL TABLE t WITH PARTITION COLUMNS OPTIONS (uris = ['gs://b/p/*'], format = 'PARQUET', hive_partition_uri_prefix = 'gs://b/p');" }
+      - { id: with_partition_columns_explicit, sql: "CREATE EXTERNAL TABLE t WITH PARTITION COLUMNS (f1 STRING, f2 INT64) OPTIONS (uris = ['gs://b/p/*'], format = 'PARQUET', hive_partition_uri_prefix = 'gs://b/p');" }
+    examples:
+      - |-
+        CREATE EXTERNAL TABLE dataset.CsvTable OPTIONS (
+         format = 'CSV',
+         uris = ['gs://bucket/path1.csv', 'gs://bucket/path2.csv']
+        );
+      - |-
+        CREATE OR REPLACE EXTERNAL TABLE dataset.CsvTable
+        (
+         x INT64,
+         y STRING
+        )
+        OPTIONS (
+         format = 'CSV',
+         uris = ['gs://bucket/path1.csv'],
+         field_delimiter = '|',
+         max_bad_records = 5
+        );
+      - |-
+        CREATE EXTERNAL TABLE dataset.AutoHivePartitionedTable
+        WITH PARTITION COLUMNS
+        OPTIONS (
+         uris = ['gs://bucket/path/*'],
+         format = 'PARQUET',
+         hive_partition_uri_prefix = 'gs://bucket/path',
+         require_hive_partition_filter = false);
+      - |-
+        CREATE EXTERNAL TABLE dataset.CustomHivePartitionedTable
+        WITH PARTITION COLUMNS (
+         field_1 STRING, -- column order must match the external path
+         field_2 INT64)
+        OPTIONS (
+         uris = ['gs://bucket/path/*'],
+         format = 'PARQUET',
+         hive_partition_uri_prefix = 'gs://bucket/path',
+         require_hive_partition_filter = false);
+
+  - id: create_function
+    name: "CREATE FUNCTION"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_function_statement
+    tier: high
+    probes:
+      - { id: sql_udf, sql: "CREATE FUNCTION d.f(x FLOAT64, y FLOAT64) RETURNS FLOAT64 AS (x * y);" }
+      - { id: sql_udf_no_returns, sql: "CREATE FUNCTION f(x INT64) AS (x + 1);" }
+      - { id: no_parameters, sql: "CREATE FUNCTION f() AS (1);" }
+      - { id: or_replace, sql: "CREATE OR REPLACE FUNCTION f(x INT64) RETURNS INT64 AS (x + 1);" }
+      - { id: temp, sql: "CREATE TEMP FUNCTION f(x INT64) AS (x + 1);" }
+      - { id: temporary_if_not_exists, sql: "CREATE TEMPORARY FUNCTION IF NOT EXISTS f(x INT64) AS (x + 1);" }
+      - { id: project_qualified, sql: "CREATE FUNCTION p.d.f(x INT64) AS (x + 1);" }
+      - { id: any_type_param, sql: "CREATE TEMP FUNCTION f(x ANY TYPE) AS (x);" }
+      - { id: struct_array_params, sql: "CREATE FUNCTION f(a ARRAY<STRUCT<k STRING, v INT64>>) RETURNS INT64 AS ((SELECT SUM(e.v) FROM UNNEST(a) AS e));" }
+      - { id: sql_udf_options, sql: "CREATE FUNCTION f(x INT64) AS (x + 1) OPTIONS (description = 'adds one');" }
+      - { id: js_udf, sql: "CREATE TEMP FUNCTION f(x FLOAT64, y FLOAT64) RETURNS FLOAT64 LANGUAGE js AS r'''return x*y;''';" }
+      - { id: js_deterministic, sql: "CREATE FUNCTION f(x FLOAT64) RETURNS FLOAT64 DETERMINISTIC LANGUAGE js AS 'return x;';" }
+      - { id: js_not_deterministic_options, sql: "CREATE FUNCTION f(x FLOAT64) RETURNS FLOAT64 NOT DETERMINISTIC LANGUAGE js OPTIONS (library = ['gs://b/lib.js']) AS 'return x;';" }
+      - { id: python_udf, sql: "CREATE FUNCTION d.f(x FLOAT64) RETURNS FLOAT64 LANGUAGE python OPTIONS (entry_point = 'run', runtime_version = 'python-3.11') AS r'''def run(x): return x''';" }
+      - { id: python_udf_connection, sql: "CREATE OR REPLACE FUNCTION d.f(x FLOAT64) RETURNS FLOAT64 LANGUAGE python WITH CONNECTION `p.us.c` OPTIONS (entry_point = 'run', runtime_version = 'python-3.11') AS 'def run(x): return x';" }
+      - { id: remote_function, sql: "CREATE FUNCTION d.f(x FLOAT64, y FLOAT64) RETURNS FLOAT64 REMOTE WITH CONNECTION us.c OPTIONS (endpoint = 'https://example.com/multiply');" }
+      - { id: remote_function_no_options, sql: "CREATE TEMP FUNCTION f(x STRING) RETURNS STRING REMOTE WITH CONNECTION `p.us.c`;" }
+    examples:
+      - |-
+        CREATE FUNCTION mydataset.multiplyInputs(x FLOAT64, y FLOAT64)
+        RETURNS FLOAT64
+        AS (x * y);
+      - |-
+        CREATE TEMP FUNCTION multiplyInputs(x FLOAT64, y FLOAT64)
+        RETURNS FLOAT64
+        LANGUAGE js
+        AS r"""
+         return x*y;
+        """;
+      - |-
+        CREATE TEMP FUNCTION tempRemoteMultiplyInputs(x FLOAT64, y FLOAT64)
+        RETURNS FLOAT64
+        REMOTE WITH CONNECTION us.myconnection
+        OPTIONS(endpoint="https://us-central1-myproject.cloudfunctions.net/multiply");
+      - |-
+        CREATE FUNCTION mydataset.remoteMultiplyInputs(x FLOAT64, y FLOAT64)
+        RETURNS FLOAT64
+        REMOTE WITH CONNECTION us.myconnection
+        OPTIONS(endpoint="https://us-central1-myproject.cloudfunctions.net/multiply");
+
+  - id: create_aggregate_function
+    name: "CREATE AGGREGATE FUNCTION (SQL)"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#sql-create-udaf-function
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE AGGREGATE FUNCTION d.f(x FLOAT64) RETURNS FLOAT64 AS (SUM(x));" }
+      - { id: not_aggregate_param, sql: "CREATE AGGREGATE FUNCTION f(x FLOAT64, y FLOAT64 NOT AGGREGATE) RETURNS FLOAT64 AS (SUM(x) / y);" }
+      - { id: or_replace_temp, sql: "CREATE OR REPLACE TEMP AGGREGATE FUNCTION f(x INT64) AS (COUNT(x));" }
+      - { id: if_not_exists_options, sql: "CREATE AGGREGATE FUNCTION IF NOT EXISTS f(x INT64) AS (SUM(x)) OPTIONS (description = 'd');" }
+    examples:
+      - |-
+        CREATE AGGREGATE FUNCTION myProject.myDataset.ScaledSum(
+         dividend FLOAT64,
+         divisor FLOAT64 NOT AGGREGATE)
+        RETURNS FLOAT64
+        AS (
+         SUM(dividend) / divisor
+        );
+
+  - id: create_aggregate_function_js
+    name: "CREATE AGGREGATE FUNCTION (JavaScript)"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#javascript-create-udaf-function
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE TEMP AGGREGATE FUNCTION f(x FLOAT64) RETURNS FLOAT64 LANGUAGE js AS r'''export function initialState() { return {sum: 0} }''';" }
+      - { id: not_aggregate_options, sql: "CREATE OR REPLACE AGGREGATE FUNCTION IF NOT EXISTS d.f(x FLOAT64, w FLOAT64 NOT AGGREGATE) RETURNS FLOAT64 LANGUAGE js OPTIONS (library = ['gs://b/lib.js']) AS 'export function finalize(s) { return s; }';" }
+    examples:
+      - |-
+        CREATE TEMP AGGREGATE FUNCTION SumPositive(x FLOAT64)
+        RETURNS FLOAT64
+        LANGUAGE js
+        AS r'''
+         export function initialState() {
+         return {sum: 0}
+         }
+         export function aggregate(state, x) {
+         if (x > 0) {
+         state.sum += x;
+         }
+         }
+         export function merge(state, partialState) {
+         state.sum += partialState.sum;
+         }
+         export function finalize(state) {
+         return state.sum;
+         }
+        ''';
+
+  - id: create_table_function
+    name: "CREATE TABLE FUNCTION"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_table_function_statement
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE TABLE FUNCTION d.f(y INT64) AS SELECT a, b FROM t WHERE c = y;" }
+      - { id: or_replace_if_not_exists, sql: "CREATE OR REPLACE TABLE FUNCTION f(y INT64) AS SELECT 1 AS x;" }
+      - { id: if_not_exists, sql: "CREATE TABLE FUNCTION IF NOT EXISTS f() AS SELECT 1 AS x;" }
+      - { id: returns_table, sql: "CREATE TABLE FUNCTION f(y INT64) RETURNS TABLE<name STRING, year INT64> AS SELECT name, year FROM t WHERE year = y;" }
+      - { id: any_type_param, sql: "CREATE TABLE FUNCTION f(x ANY TYPE) AS SELECT x AS v;" }
+      - { id: table_param, sql: "CREATE TABLE FUNCTION f(o TABLE<item STRING, sales INT64>, n STRING) AS (SELECT SUM(sales) AS s, item FROM o WHERE item = n GROUP BY item);" }
+      - { id: options, sql: "CREATE TABLE FUNCTION f(y INT64) OPTIONS (description = 'd') AS SELECT y AS v;" }
+    examples:
+      - |-
+        CREATE OR REPLACE TABLE FUNCTION mydataset.names_by_year(y INT64)
+        AS
+         SELECT year, name, SUM(number) AS total
+         FROM `bigquery-public-data.usa_names.usa_1910_current`
+         WHERE year = y
+         GROUP BY year, name;
+      - |-
+        CREATE OR REPLACE TABLE FUNCTION mydataset.names_by_year(y INT64)
+        RETURNS TABLE<name STRING, year INT64, total INT64>
+        AS
+         SELECT year, name, SUM(number) AS total
+         FROM `bigquery-public-data.usa_names.usa_1910_current`
+         WHERE year = y
+         GROUP BY year, name;
+      - |-
+        CREATE TABLE FUNCTION mydataset.compute_sales (
+         orders TABLE<item STRING, sales INT64>, item_name STRING)
+        AS (
+         SELECT SUM(sales) AS total_sales, item
+         FROM orders
+         WHERE item = item_name
+         GROUP BY item
+        );
+
+  - id: create_procedure
+    name: "CREATE PROCEDURE"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_procedure
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE PROCEDURE d.p(x INT64) BEGIN SELECT x; END;" }
+      - { id: no_args, sql: "CREATE PROCEDURE p() BEGIN SELECT 1; END;" }
+      - { id: or_replace, sql: "CREATE OR REPLACE PROCEDURE p() BEGIN SELECT 1; END;" }
+      - { id: if_not_exists, sql: "CREATE PROCEDURE IF NOT EXISTS p() BEGIN SELECT 1; END;" }
+      - { id: arg_modes, sql: "CREATE PROCEDURE p(IN a INT64, OUT b INT64, INOUT c INT64) BEGIN SET b = a; SET c = c + a; END;" }
+      - { id: options, sql: "CREATE PROCEDURE p(x INT64) OPTIONS (strict_mode = FALSE, description = 'd') BEGIN SELECT x; END;" }
+      - { id: multi_statement_body, sql: "CREATE PROCEDURE p(d DATE, OUT n INT64) BEGIN CREATE TEMP TABLE tt AS SELECT id FROM t WHERE dt = d; SET n = (SELECT COUNT(*) FROM tt); DROP TABLE tt; END;" }
+      - { id: spark_inline, sql: "CREATE PROCEDURE d.sp() WITH CONNECTION `p.us.c` OPTIONS (engine = 'SPARK', runtime_version = '1.1') LANGUAGE PYTHON AS r'''print(1)''';" }
+      - { id: spark_external_security, sql: "CREATE OR REPLACE PROCEDURE d.sp(x INT64) EXTERNAL SECURITY INVOKER WITH CONNECTION `p.us.c` OPTIONS (engine = 'SPARK', main_file_uri = 'gs://b/main.py') LANGUAGE PYTHON;" }
+    examples:
+      - |-
+        CREATE PROCEDURE mydataset.AddDelta(INOUT x INT64, delta INT64)
+        BEGIN
+         SET x = x + delta;
+        END;
+      - |-
+        CREATE PROCEDURE mydataset.SelectFromTablesAndAppend(
+         target_date DATE, OUT rows_added INT64)
+        BEGIN
+         CREATE TEMP TABLE DataForTargetDate AS
+         SELECT t1.id, t1.x, t2.y
+         FROM dataset.partitioned_table1 AS t1
+         JOIN dataset.partitioned_table2 AS t2
+         ON t1.id = t2.id
+         WHERE t1.date = target_date
+         AND t2.date = target_date;
+         SET rows_added = (SELECT COUNT(*) FROM DataForTargetDate);
+         SELECT id, x, y, target_date -- note that target_date is a parameter
+         FROM DataForTargetDate;
+         DROP TABLE DataForTargetDate;
+        END;
+
+  - id: create_search_index
+    name: "CREATE SEARCH INDEX"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_search_index_statement
+    tier: high
+    probes:
+      - { id: all_columns, sql: "CREATE SEARCH INDEX idx ON t(ALL COLUMNS);" }
+      - { id: if_not_exists_columns, sql: "CREATE SEARCH INDEX IF NOT EXISTS idx ON d.t(a, b);" }
+      - { id: column_options, sql: "CREATE SEARCH INDEX idx ON t(a OPTIONS (index_granularity = 'GLOBAL'), s, b);" }
+      - { id: all_columns_with_column_options, sql: "CREATE SEARCH INDEX idx ON t(ALL COLUMNS WITH COLUMN OPTIONS (a OPTIONS (index_granularity = 'GLOBAL')));" }
+      - { id: index_options, sql: "CREATE SEARCH INDEX idx ON t(a) OPTIONS (analyzer = 'NO_OP_ANALYZER', default_index_column_granularity = 'COLUMN');" }
+    examples:
+      - |-
+        CREATE SEARCH INDEX my_index
+        ON dataset.my_table(ALL COLUMNS);
+      - |-
+        CREATE SEARCH INDEX my_index
+        ON dataset.complex_table(
+         a OPTIONS(index_granularity = 'GLOBAL'),
+         my_struct,
+         b)
+        OPTIONS (
+         analyzer = 'NO_OP_ANALYZER',
+         default_index_column_granularity = 'COLUMN');
+
+  - id: create_vector_index
+    name: "CREATE VECTOR INDEX"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#create_vector_index_statement
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE VECTOR INDEX idx ON d.t(embedding) OPTIONS (index_type = 'IVF');" }
+      - { id: or_replace, sql: "CREATE OR REPLACE VECTOR INDEX idx ON t(embedding) OPTIONS (index_type = 'IVF', distance_type = 'COSINE');" }
+      - { id: if_not_exists, sql: "CREATE VECTOR INDEX IF NOT EXISTS idx ON t(embedding) OPTIONS (index_type = 'TREE_AH');" }
+      - { id: storing, sql: "CREATE VECTOR INDEX idx ON t(embedding) STORING (a, b) OPTIONS (index_type = 'IVF');" }
+      - { id: partition_by, sql: "CREATE VECTOR INDEX idx ON t(embedding) STORING (d) PARTITION BY d OPTIONS (index_type = 'TREE_AH', distance_type = 'EUCLIDEAN');" }
+    examples:
+      - |-
+        CREATE VECTOR INDEX my_index ON my_dataset.my_table(embedding)
+        OPTIONS (index_type = 'IVF');
+      - |-
+        CREATE VECTOR INDEX my_index ON my_dataset.my_table(embedding)
+        OPTIONS (
+         index_type = 'IVF',
+         distance_type = 'COSINE',
+         ivf_options = '{"num_lists":2500}');
+      - |-
+        CREATE VECTOR INDEX my_index ON my_dataset.my_table(embedding)
+        OPTIONS (
+         index_type = 'TREE_AH',
+         distance_type = 'EUCLIDEAN',
+         tree_ah_options = '{"normalization_type": "L2"}');
+
+  - id: alter_schema_set_default_collate
+    name: "ALTER SCHEMA SET DEFAULT COLLATE"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_schema_collate_statement
+    tier: medium
+    probes:
+      - { id: basic, sql: "ALTER SCHEMA s SET DEFAULT COLLATE 'und:ci';" }
+      - { id: if_exists_project, sql: "ALTER SCHEMA IF EXISTS p.s SET DEFAULT COLLATE '';" }
+    examples:
+      - |-
+        ALTER SCHEMA mydataset
+        SET DEFAULT COLLATE 'und:ci';
+
+  - id: alter_schema_set_options
+    name: "ALTER SCHEMA SET OPTIONS"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_schema_set_options_statement
+    tier: medium
+    probes:
+      - { id: basic, sql: "ALTER SCHEMA s SET OPTIONS (default_table_expiration_days = 3.75);" }
+      - { id: if_exists_project, sql: "ALTER SCHEMA IF EXISTS p.s SET OPTIONS (is_case_insensitive = TRUE, labels = [('k', 'v')]);" }
+    examples:
+      - |-
+        ALTER SCHEMA mydataset
+        SET OPTIONS(
+         default_table_expiration_days=3.75
+         );
+      - |-
+        ALTER SCHEMA mydataset
+        SET OPTIONS(
+         is_case_insensitive=TRUE
+        );
+
+  - id: alter_schema_add_replica
+    name: "ALTER SCHEMA ADD REPLICA"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_schema_add_replica_statement
+    tier: low
+    probes:
+      - { id: basic, sql: "ALTER SCHEMA s ADD REPLICA `EU` OPTIONS (location = 'eu');" }
+      - { id: if_exists_no_options, sql: "ALTER SCHEMA IF EXISTS p.s ADD REPLICA r;" }
+    examples:
+      - |-
+        ALTER SCHEMA cross_region_dataset
+        ADD REPLICA `EU` OPTIONS(location=`eu`);
+
+  - id: alter_schema_drop_replica
+    name: "ALTER SCHEMA DROP REPLICA"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_schema_drop_replica_statement
+    tier: low
+    probes:
+      - { id: basic, sql: "ALTER SCHEMA s DROP REPLICA `us-east4`;" }
+      - { id: if_exists, sql: "ALTER SCHEMA IF EXISTS s DROP REPLICA r;" }
+    examples: []
+
+  - id: alter_table_set_options
+    name: "ALTER TABLE SET OPTIONS"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_table_set_options_statement
+    tier: high
+    probes:
+      - { id: basic, sql: "ALTER TABLE t SET OPTIONS (description = 'd');" }
+      - { id: if_exists_multiple, sql: "ALTER TABLE IF EXISTS d.t SET OPTIONS (expiration_timestamp = TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 7 DAY), require_partition_filter = true);" }
+      - { id: null_value, sql: "ALTER TABLE t SET OPTIONS (expiration_timestamp = NULL);" }
+    examples:
+      - |-
+        ALTER TABLE mydataset.mytable
+        SET OPTIONS (
+         expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 7 DAY),
+         description="Table that expires seven days from now"
+        );
+      - |-
+        ALTER TABLE mydataset.mypartitionedtable
+        SET OPTIONS (require_partition_filter=true);
+      - |-
+        ALTER TABLE mydataset.mytable
+        SET OPTIONS (expiration_timestamp=NULL);
+
+  - id: alter_table_add_column
+    name: "ALTER TABLE ADD COLUMN"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_table_add_column_statement
+    tier: high
+    probes:
+      - { id: basic, sql: "ALTER TABLE t ADD COLUMN c STRING;" }
+      - { id: if_not_exists, sql: "ALTER TABLE t ADD COLUMN IF NOT EXISTS c GEOGRAPHY;" }
+      - { id: multiple, sql: "ALTER TABLE t ADD COLUMN a STRING, ADD COLUMN IF NOT EXISTS b GEOGRAPHY, ADD COLUMN c ARRAY<NUMERIC>;" }
+      - { id: column_options, sql: "ALTER TABLE t ADD COLUMN d DATE OPTIONS (description = 'my description');" }
+      - { id: struct_column, sql: "ALTER TABLE t ADD COLUMN a STRUCT<b GEOGRAPHY, c ARRAY<INT64>, d INT64 NOT NULL, e TIMESTAMP OPTIONS (description = 'creation time')>;" }
+      - { id: collate, sql: "ALTER TABLE t ADD COLUMN w STRING COLLATE 'und:ci';" }
+      - { id: default_value, sql: "ALTER TABLE t ADD COLUMN ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP();" }
+      - { id: embedding_column, sql: "ALTER TABLE t ADD COLUMN embedding STRUCT<result ARRAY<FLOAT64>, status STRING> GENERATED ALWAYS AS (AI.EMBED(content, connection_id => 'US.c', endpoint => 'text-embedding-005')) STORED OPTIONS (asynchronous = TRUE);" }
+    examples:
+      - |-
+        ALTER TABLE mydataset.mytable
+         ADD COLUMN A STRING,
+         ADD COLUMN IF NOT EXISTS B GEOGRAPHY,
+         ADD COLUMN C ARRAY <NUMERIC>,
+         ADD COLUMN D DATE OPTIONS(description="my description");
+      - |-
+        ALTER TABLE mydataset.mytable
+         ADD COLUMN A STRUCT<
+         B GEOGRAPHY,
+         C ARRAY <INT64>,
+         D INT64 NOT NULL,
+         E TIMESTAMP OPTIONS(description="creation time")
+         >;
+      - |-
+        ALTER TABLE mydataset.mytable
+        ADD COLUMN word STRING COLLATE 'und:ci';
+
+  - id: alter_table_add_foreign_key
+    name: "ALTER TABLE ADD FOREIGN KEY"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_table_add_foreign_key_statement
+    tier: medium
+    probes:
+      - { id: unnamed, sql: "ALTER TABLE fk ADD FOREIGN KEY (u, v) REFERENCES pk(x, y) NOT ENFORCED;" }
+      - { id: named, sql: "ALTER TABLE fk ADD CONSTRAINT my_fk FOREIGN KEY (u) REFERENCES pk(x) NOT ENFORCED;" }
+      - { id: named_if_not_exists, sql: "ALTER TABLE p.d.fk ADD CONSTRAINT IF NOT EXISTS my_fk FOREIGN KEY (u) REFERENCES pk(x) NOT ENFORCED;" }
+      - { id: multiple_adds, sql: "ALTER TABLE fk ADD PRIMARY KEY (x, y) NOT ENFORCED, ADD CONSTRAINT fk1 FOREIGN KEY (u, v) REFERENCES pk(x, y) NOT ENFORCED, ADD CONSTRAINT fk2 FOREIGN KEY (i, j) REFERENCES pk(x, y) NOT ENFORCED;" }
+    examples:
+      - |-
+        ALTER TABLE fk_table
+        ADD CONSTRAINT my_fk_name FOREIGN KEY (u, v)
+        REFERENCES pk_table(x, y) NOT ENFORCED;
+      - |-
+        ALTER TABLE fk_table
+        ADD PRIMARY KEY (x,y) NOT ENFORCED,
+        ADD CONSTRAINT fk FOREIGN KEY (u, v) REFERENCES pk_table(x, y) NOT ENFORCED,
+        ADD CONSTRAINT fk2 FOREIGN KEY (i, j) REFERENCES pk_table(x, y) NOT ENFORCED;
+
+  - id: alter_table_add_primary_key
+    name: "ALTER TABLE ADD PRIMARY KEY"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_table_add_primary_key_statement
+    tier: medium
+    probes:
+      - { id: basic, sql: "ALTER TABLE t ADD PRIMARY KEY (x, y) NOT ENFORCED;" }
+      - { id: qualified, sql: "ALTER TABLE p.d.t ADD PRIMARY KEY (x) NOT ENFORCED;" }
+    examples:
+      - "ALTER TABLE pk_table ADD PRIMARY KEY (x,y) NOT ENFORCED;"
+
+  - id: alter_table_rename_to
+    name: "ALTER TABLE RENAME TO"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_table_rename_to_statement
+    tier: high
+    probes:
+      - { id: basic, sql: "ALTER TABLE d.t RENAME TO t2;" }
+      - { id: if_exists, sql: "ALTER TABLE IF EXISTS d.t RENAME TO t2;" }
+    examples:
+      - "ALTER TABLE mydataset.mytable RENAME TO mynewtable;"
+
+  - id: alter_table_rename_column
+    name: "ALTER TABLE RENAME COLUMN"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_table_rename_column_statement
+    tier: high
+    probes:
+      - { id: basic, sql: "ALTER TABLE t RENAME COLUMN a TO b;" }
+      - { id: if_exists_both, sql: "ALTER TABLE IF EXISTS t RENAME COLUMN IF EXISTS a TO b;" }
+      - { id: multiple, sql: "ALTER TABLE t RENAME COLUMN a TO tmp, RENAME COLUMN b TO a, RENAME COLUMN tmp TO b;" }
+    examples:
+      - |-
+        ALTER TABLE mydataset.mytable
+         RENAME COLUMN A TO columnA,
+         RENAME COLUMN IF EXISTS B TO columnB;
+      - |-
+        ALTER TABLE mydataset.mytable
+         RENAME COLUMN columnA TO temp_col,
+         RENAME COLUMN columnB TO columnA,
+         RENAME COLUMN temp_col TO columnB;
+
+  - id: alter_table_drop_column
+    name: "ALTER TABLE DROP COLUMN"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_table_drop_column_statement
+    tier: high
+    probes:
+      - { id: basic, sql: "ALTER TABLE t DROP COLUMN a;" }
+      - { id: if_exists, sql: "ALTER TABLE t DROP COLUMN IF EXISTS a;" }
+      - { id: multiple, sql: "ALTER TABLE t DROP COLUMN a, DROP COLUMN IF EXISTS b;" }
+    examples:
+      - |-
+        ALTER TABLE mydataset.mytable
+         DROP COLUMN A,
+         DROP COLUMN IF EXISTS B;
+
+  - id: alter_table_drop_constraint
+    name: "ALTER TABLE DROP CONSTRAINT"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_table_drop_constraint_statement
+    tier: medium
+    probes:
+      - { id: basic, sql: "ALTER TABLE t DROP CONSTRAINT my_fk;" }
+      - { id: if_exists, sql: "ALTER TABLE p.d.t DROP CONSTRAINT IF EXISTS my_fk;" }
+    examples:
+      - "ALTER TABLE mytable DROP CONSTRAINT myConstraint;"
+
+  - id: alter_table_drop_primary_key
+    name: "ALTER TABLE DROP PRIMARY KEY"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_table_drop_primary_key_statement
+    tier: medium
+    probes:
+      - { id: basic, sql: "ALTER TABLE t DROP PRIMARY KEY;" }
+      - { id: if_exists, sql: "ALTER TABLE d.t DROP PRIMARY KEY IF EXISTS;" }
+    examples:
+      - |-
+        ALTER TABLE myTable
+        DROP PRIMARY KEY;
+
+  - id: alter_table_set_default_collate
+    name: "ALTER TABLE SET DEFAULT COLLATE"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_table_collate_statement
+    tier: medium
+    probes:
+      - { id: basic, sql: "ALTER TABLE t SET DEFAULT COLLATE 'und:ci';" }
+      - { id: empty_collation, sql: "ALTER TABLE d.t SET DEFAULT COLLATE '';" }
+    examples:
+      - |-
+        ALTER TABLE mydataset.mytable
+        SET DEFAULT COLLATE '';
+
+  - id: alter_column_set_options
+    name: "ALTER COLUMN SET OPTIONS"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_column_set_options_statement
+    tier: high
+    probes:
+      - { id: table_column, sql: "ALTER TABLE t ALTER COLUMN c SET OPTIONS (description = 'Price per unit');" }
+      - { id: if_exists_both, sql: "ALTER TABLE IF EXISTS t ALTER COLUMN IF EXISTS c SET OPTIONS (description = 'd');" }
+      - { id: view_column, sql: "ALTER VIEW v ALTER COLUMN total SET OPTIONS (description = 'Total sales');" }
+    examples:
+      - |-
+        ALTER TABLE mydataset.mytable
+        ALTER COLUMN price
+        SET OPTIONS (description = 'Price per unit');
+      - |-
+        ALTER VIEW mydataset.myview
+        ALTER COLUMN total
+        SET OPTIONS (description = 'Total sales of the product');
+
+  - id: alter_column_drop_not_null
+    name: "ALTER COLUMN DROP NOT NULL"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_column_drop_not_null_statement
+    tier: high
+    probes:
+      - { id: basic, sql: "ALTER TABLE t ALTER COLUMN c DROP NOT NULL;" }
+      - { id: if_exists_both, sql: "ALTER TABLE IF EXISTS t ALTER COLUMN IF EXISTS c DROP NOT NULL;" }
+    examples:
+      - |-
+        ALTER TABLE mydataset.mytable
+        ALTER COLUMN mycolumn
+        DROP NOT NULL;
+
+  - id: alter_column_set_data_type
+    name: "ALTER COLUMN SET DATA TYPE"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_column_set_data_type_statement
+    tier: high
+    probes:
+      - { id: basic, sql: "ALTER TABLE t ALTER COLUMN c SET DATA TYPE NUMERIC;" }
+      - { id: struct_type, sql: "ALTER TABLE t ALTER COLUMN s SET DATA TYPE STRUCT<a NUMERIC, b STRING>;" }
+      - { id: parameterized, sql: "ALTER TABLE IF EXISTS t ALTER COLUMN IF EXISTS c SET DATA TYPE NUMERIC(8, 2);" }
+    examples:
+      - "ALTER TABLE dataset.my_table ALTER COLUMN c1 SET DATA TYPE NUMERIC;"
+      - |-
+        ALTER TABLE dataset.my_table ALTER COLUMN s1
+        SET DATA TYPE STRUCT <a NUMERIC, b STRING>;
+      - |-
+        ALTER TABLE dataset.my_table
+        ALTER COLUMN pt
+        SET DATA TYPE NUMERIC(8,2);
+
+  - id: alter_column_set_default
+    name: "ALTER COLUMN SET DEFAULT"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_column_set_default_statement
+    tier: high
+    probes:
+      - { id: basic, sql: "ALTER TABLE t ALTER COLUMN c SET DEFAULT 100;" }
+      - { id: function_default, sql: "ALTER TABLE IF EXISTS t ALTER COLUMN IF EXISTS c SET DEFAULT CURRENT_TIME();" }
+    examples:
+      - |-
+        ALTER TABLE mydataset.mytable
+        ALTER COLUMN mycolumn
+        SET DEFAULT CURRENT_TIME();
+      - "ALTER TABLE dataset.NewArrivals ALTER COLUMN quantity SET DEFAULT 100;"
+
+  - id: alter_column_set_generated
+    name: "ALTER COLUMN SET GENERATED"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_column_set_generated_statement
+    tier: medium
+    probes:
+      - { id: always, sql: "ALTER TABLE t ALTER COLUMN id SET GENERATED ALWAYS AS IDENTITY (START WITH 100 INCREMENT BY 10);" }
+      - { id: by_default, sql: "ALTER TABLE IF EXISTS t ALTER COLUMN IF EXISTS id SET GENERATED BY DEFAULT AS IDENTITY ();" }
+      - id: no_mode
+        sql: "ALTER TABLE t ALTER COLUMN id SET GENERATED AS IDENTITY (START WITH 100 INCREMENT BY 10);"
+        note: "The page's own example omits { ALWAYS | BY DEFAULT }, although the syntax block shows it as required."
+    examples:
+      - |-
+        ALTER TABLE mydataset.mytable
+        ALTER COLUMN id
+        SET GENERATED AS IDENTITY (
+         START WITH 100
+         INCREMENT BY 10
+        );
+
+  - id: alter_column_drop_default
+    name: "ALTER COLUMN DROP DEFAULT"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_column_drop_default_statement
+    tier: high
+    probes:
+      - { id: basic, sql: "ALTER TABLE t ALTER COLUMN c DROP DEFAULT;" }
+      - { id: if_exists_both, sql: "ALTER TABLE IF EXISTS t ALTER COLUMN IF EXISTS c DROP DEFAULT;" }
+    examples:
+      - |-
+        ALTER TABLE mydataset.mytable
+        ALTER COLUMN mycolumn
+        DROP DEFAULT;
+
+  - id: alter_column_drop_generated
+    name: "ALTER COLUMN DROP GENERATED"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_column_drop_generated_statement
+    tier: medium
+    probes:
+      - { id: basic, sql: "ALTER TABLE t ALTER COLUMN id DROP GENERATED;" }
+      - { id: if_exists_both, sql: "ALTER TABLE IF EXISTS t ALTER COLUMN IF EXISTS id DROP GENERATED;" }
+    examples:
+      - |-
+        ALTER TABLE mydataset.mytable
+        ALTER COLUMN id_col
+        DROP GENERATED;
+
+  - id: alter_view_set_options
+    name: "ALTER VIEW SET OPTIONS"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_view_set_options_statement
+    tier: high
+    probes:
+      - { id: basic, sql: "ALTER VIEW v SET OPTIONS (description = 'd');" }
+      - { id: if_exists, sql: "ALTER VIEW IF EXISTS d.v SET OPTIONS (expiration_timestamp = TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 7 DAY));" }
+    examples:
+      - |-
+        ALTER VIEW mydataset.myview
+        SET OPTIONS (
+         expiration_timestamp=TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 7 DAY),
+         description="View that expires seven days from now"
+        );
+
+  - id: alter_materialized_view_set_options
+    name: "ALTER MATERIALIZED VIEW SET OPTIONS"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_materialized_view_set_options_statement
+    tier: high
+    probes:
+      - { id: basic, sql: "ALTER MATERIALIZED VIEW mv SET OPTIONS (enable_refresh = true, refresh_interval_minutes = 20);" }
+      - { id: if_exists, sql: "ALTER MATERIALIZED VIEW IF EXISTS d.mv SET OPTIONS (enable_refresh = false);" }
+    examples:
+      - |-
+        ALTER MATERIALIZED VIEW mydataset.my_mv
+        SET OPTIONS (
+         enable_refresh=true,
+         refresh_interval_minutes=20
+        );
+
+  - id: alter_search_index
+    name: "ALTER SEARCH INDEX"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_search_index_statement
+    tier: medium
+    probes:
+      - { id: set_options, sql: "ALTER SEARCH INDEX idx ON d.t SET OPTIONS (data_types = ['STRING', 'INT64']);" }
+      - { id: add_column, sql: "ALTER SEARCH INDEX idx ON t ADD COLUMN IF NOT EXISTS b OPTIONS (data_types = ['INT64'], index_granularity = 'COLUMN');" }
+      - { id: alter_column, sql: "ALTER SEARCH INDEX IF EXISTS idx ON t ALTER COLUMN IF EXISTS s SET OPTIONS (data_types = ['STRING', 'INT64']);" }
+      - { id: drop_column, sql: "ALTER SEARCH INDEX idx ON t DROP COLUMN IF EXISTS a;" }
+      - { id: multiple_actions_rebuild, sql: "ALTER SEARCH INDEX idx ON t ADD COLUMN b, DROP COLUMN a REBUILD;" }
+    examples:
+      - |-
+        ALTER SEARCH INDEX my_index ON dataset.complex_table
+        ADD COLUMN b OPTIONS (data_types = ['INT64'],
+         index_granularity = 'COLUMN');
+      - |-
+        ALTER SEARCH INDEX my_index ON dataset.complex_table
+        ALTER COLUMN my_struct SET OPTIONS(data_types = ['STRING', 'INT64']);
+      - |-
+        ALTER SEARCH INDEX my_index ON dataset.complex_table
+        SET OPTIONS(data_types = ['STRING', 'INT64']);
+      - |-
+        ALTER SEARCH INDEX my_index ON dataset.complex_table
+        DROP COLUMN a;
+      - |-
+        ALTER SEARCH INDEX my_index ON dataset.complex_table
+         ADD COLUMN b OPTIONS(data_types = ['INT64'], index_granularity = 'COLUMN'),
+         ALTER COLUMN my_struct SET OPTIONS(data_types = ['STRING', 'INT64']),
+         DROP COLUMN a,
+         SET OPTIONS(default_index_column_granularity = 'GLOBAL'),
+         REBUILD;
+
+  - id: alter_vector_index_rebuild
+    name: "ALTER VECTOR INDEX REBUILD"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#alter_vector_index_rebuild_statement
+    tier: medium
+    probes:
+      - { id: basic, sql: "ALTER VECTOR INDEX idx ON d.t REBUILD;" }
+      - { id: if_exists, sql: "ALTER VECTOR INDEX IF EXISTS idx ON d.t REBUILD;" }
+    examples:
+      - |-
+        ALTER VECTOR INDEX IF EXISTS index1
+        ON mydataset.sales
+        REBUILD;
+
+  - id: drop_schema
+    name: "DROP SCHEMA"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_schema_statement
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP SCHEMA s;" }
+      - { id: if_exists_cascade, sql: "DROP SCHEMA IF EXISTS p.s CASCADE;" }
+      - { id: restrict, sql: "DROP SCHEMA s RESTRICT;" }
+      - { id: external, sql: "DROP EXTERNAL SCHEMA IF EXISTS s;" }
+    examples:
+      - "DROP SCHEMA mydataset;"
+      - "DROP SCHEMA IF EXISTS mydataset CASCADE;"
+
+  - id: undrop_schema
+    name: "UNDROP SCHEMA"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#undrop_schema_statement
+    tier: low
+    probes:
+      - { id: basic, sql: "UNDROP SCHEMA s;" }
+      - { id: if_not_exists_options, sql: "UNDROP SCHEMA IF NOT EXISTS p.s OPTIONS (location = 'us');" }
+    examples:
+      - "UNDROP SCHEMA mydataset;"
+
+  - id: drop_table
+    name: "DROP TABLE"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_table_statement
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP TABLE t;" }
+      - { id: if_exists, sql: "DROP TABLE IF EXISTS d.t;" }
+      - { id: backtick_qualified, sql: "DROP TABLE `my-project.d.t`;" }
+    examples:
+      - "DROP TABLE mydataset.mytable;"
+      - "DROP TABLE IF EXISTS mydataset.mytable;"
+
+  - id: drop_snapshot_table
+    name: "DROP SNAPSHOT TABLE"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_snapshot_table_statement
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP SNAPSHOT TABLE d.snap;" }
+      - { id: if_exists, sql: "DROP SNAPSHOT TABLE IF EXISTS d.snap;" }
+    examples:
+      - "DROP SNAPSHOT TABLE mydataset.mytablesnapshot;"
+      - "DROP SNAPSHOT TABLE IF EXISTS mydataset.mytablesnapshot;"
+
+  - id: drop_external_table
+    name: "DROP EXTERNAL TABLE"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_external_table_statement
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP EXTERNAL TABLE d.t;" }
+      - { id: if_exists, sql: "DROP EXTERNAL TABLE IF EXISTS d.t;" }
+    examples:
+      - "DROP EXTERNAL TABLE mydataset.external_table;"
+      - "DROP EXTERNAL TABLE IF EXISTS mydataset.external_table;"
+
+  - id: drop_view
+    name: "DROP VIEW"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_view_statement
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP VIEW v;" }
+      - { id: if_exists, sql: "DROP VIEW IF EXISTS d.v;" }
+    examples:
+      - "DROP VIEW mydataset.myview;"
+      - "DROP VIEW IF EXISTS mydataset.myview;"
+
+  - id: drop_materialized_view
+    name: "DROP MATERIALIZED VIEW"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_materialized_view_statement
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP MATERIALIZED VIEW mv;" }
+      - { id: if_exists, sql: "DROP MATERIALIZED VIEW IF EXISTS d.mv;" }
+    examples:
+      - "DROP MATERIALIZED VIEW mydataset.my_mv;"
+      - "DROP MATERIALIZED VIEW IF EXISTS mydataset.my_mv;"
+
+  - id: drop_function
+    name: "DROP FUNCTION"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_function_statement
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP FUNCTION d.f;" }
+      - { id: if_exists_project, sql: "DROP FUNCTION IF EXISTS `other_project`.d.f;" }
+    examples:
+      - "DROP FUNCTION mydataset.parseJsonAsStruct;"
+      - "DROP FUNCTION `other_project`.sample_dataset.parseJsonAsStruct;"
+
+  - id: drop_table_function
+    name: "DROP TABLE FUNCTION"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_table_function
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP TABLE FUNCTION d.f;" }
+      - { id: if_exists, sql: "DROP TABLE FUNCTION IF EXISTS p.d.f;" }
+    examples:
+      - "DROP TABLE FUNCTION mydataset.my_table_function;"
+
+  - id: drop_procedure
+    name: "DROP PROCEDURE"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_procedure_statement
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP PROCEDURE d.p;" }
+      - { id: if_exists_project, sql: "DROP PROCEDURE IF EXISTS `other-project`.d.p;" }
+    examples:
+      - "DROP PROCEDURE mydataset.myProcedure;"
+      - "DROP PROCEDURE `other-project`.sample_dataset.myprocedure;"
+
+  - id: drop_search_index
+    name: "DROP SEARCH INDEX"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_search_index
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP SEARCH INDEX idx ON d.t;" }
+      - { id: if_exists, sql: "DROP SEARCH INDEX IF EXISTS idx ON d.t;" }
+    examples:
+      - "DROP SEARCH INDEX my_index ON dataset.my_table;"
+
+  - id: drop_vector_index
+    name: "DROP VECTOR INDEX"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#drop_vector_index
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP VECTOR INDEX idx ON d.t;" }
+      - { id: if_exists, sql: "DROP VECTOR INDEX IF EXISTS idx ON d.t;" }
+    examples:
+      - "DROP VECTOR INDEX my_index ON dataset.my_table;"
+
+  - id: declare
+    name: "DECLARE"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#declare
+    tier: high
+    probes:
+      - { id: type_only, sql: "DECLARE x INT64;" }
+      - { id: type_default, sql: "DECLARE d DATE DEFAULT CURRENT_DATE();" }
+      - { id: multiple_names, sql: "DECLARE x, y, z INT64 DEFAULT 0;" }
+      - { id: default_without_type, sql: "DECLARE item DEFAULT (SELECT item FROM t LIMIT 1);" }
+      - { id: parameterized_type, sql: "DECLARE s STRING(10) DEFAULT 'abc';" }
+      - { id: complex_type, sql: "DECLARE a ARRAY<STRUCT<k STRING, v INT64>> DEFAULT [];" }
+    examples:
+      - "DECLARE x INT64;"
+      - "DECLARE d DATE DEFAULT CURRENT_DATE();"
+      - "DECLARE x, y, z INT64 DEFAULT 0;"
+      - "DECLARE item DEFAULT (SELECT item FROM schema1.products LIMIT 1);"
+
+  - id: set
+    name: "SET"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#set
+    tier: high
+    probes:
+      - { id: single, sql: "SET x = 5;" }
+      - { id: multiple, sql: "SET (a, b, c) = (1 + 3, 'foo', false);" }
+      - { id: from_struct_subquery, sql: "SET (a, b) = (SELECT AS STRUCT COUNT(DISTINCT c), SUM(d) FROM t);" }
+      - { id: scalar_subquery, sql: "SET x = (SELECT MAX(a) FROM t);" }
+      - id: system_variable
+        sql: "SET @@dataset_id = 'mydataset';"
+        note: "System variables (DECLARE section: 'GoogleSQL also supports system variables'); assignment form from the system variables reference."
+    examples:
+      - "SET x = 5;"
+      - "SET (a, b, c) = (1 + 3, 'foo', false);"
+      - |-
+        SET (corpus_count, word_count) = (
+         SELECT AS STRUCT COUNT(DISTINCT corpus), SUM(word_count)
+         FROM bigquery-public-data.samples.shakespeare
+         WHERE LOWER(word) = target_word
+        );
+
+  - id: execute_immediate
+    name: "EXECUTE IMMEDIATE"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#execute_immediate
+    tier: high
+    probes:
+      - { id: basic, sql: "EXECUTE IMMEDIATE 'CREATE TEMP TABLE b (title STRING)';" }
+      - { id: into, sql: "EXECUTE IMMEDIATE 'SELECT MIN(a) FROM t' INTO x;" }
+      - { id: using_positional, sql: "EXECUTE IMMEDIATE 'SELECT ? * (? + 2)' INTO y USING 1, 3;" }
+      - { id: using_named, sql: "EXECUTE IMMEDIATE 'SELECT @a * (@b + 2)' INTO y USING 1 AS a, 3 AS b;" }
+      - { id: into_multiple, sql: "EXECUTE IMMEDIATE 'SELECT 1, 2' INTO a, b;" }
+      - { id: expression, sql: "EXECUTE IMMEDIATE CONCAT('INSERT INTO b (title) ', 'VALUES (''x'')');" }
+      - { id: variable_using, sql: "EXECUTE IMMEDIATE q USING v1, v2;" }
+    examples:
+      - "EXECUTE IMMEDIATE \"SELECT ? * (? + 2)\" INTO y USING 1, 3;"
+      - "EXECUTE IMMEDIATE \"SELECT @a * (@b + 2)\" INTO y USING 1 as a, 3 as b;"
+      - |-
+        EXECUTE IMMEDIATE
+         "CREATE TEMP TABLE Books (title STRING, publish_date INT64)";
+      - |-
+        EXECUTE IMMEDIATE
+         "INSERT INTO Books (title, publish_date) VALUES(@name, @year)"
+         USING 1815 as year, "Emma" as name;
+      - |-
+        EXECUTE IMMEDIATE
+         CONCAT(
+         "INSERT INTO Books (title, publish_date)", "VALUES('Middlemarch', 1871)"
+         );
+
+  - id: begin_end
+    name: "BEGIN...END"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#begin
+    tier: high
+    probes:
+      - { id: basic, sql: "BEGIN SELECT 1; END;" }
+      - { id: declare_inside, sql: "BEGIN DECLARE y INT64; SET y = 10; SELECT y; END;" }
+      - { id: nested, sql: "BEGIN BEGIN SELECT 1; END; SELECT 2; END;" }
+      - { id: labeled, sql: "label_1: BEGIN SELECT 1; BREAK label_1; END;" }
+      - { id: labeled_end_label, sql: "label_1: BEGIN SELECT 1; LEAVE label_1; END label_1;" }
+      - { id: quoted_path_label, sql: "`foo.bar`: BEGIN SELECT 1; END;" }
+    examples:
+      - |-
+        BEGIN
+         DECLARE y INT64;
+         SET y = x;
+         SELECT y;
+        END;
+
+  - id: begin_exception_end
+    name: "BEGIN...EXCEPTION...END"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#beginexceptionend
+    tier: high
+    probes:
+      - { id: basic, sql: "BEGIN SELECT 1/0; EXCEPTION WHEN ERROR THEN SELECT @@error.message; END;" }
+      - { id: error_variables, sql: "BEGIN SELECT 1/0; EXCEPTION WHEN ERROR THEN SELECT @@error.message, @@error.stack_trace, @@error.statement_text, @@error.formatted_stack_trace; END;" }
+      - { id: empty_handler, sql: "BEGIN SELECT 1/0; EXCEPTION WHEN ERROR THEN END;" }
+      - { id: nested_handlers, sql: "BEGIN BEGIN SELECT 1; EXCEPTION WHEN ERROR THEN SELECT 1/0; END; EXCEPTION WHEN ERROR THEN SELECT 2; END;" }
+      - { id: labeled_break_in_handler, sql: "label_1: BEGIN SELECT 1; EXCEPTION WHEN ERROR THEN BREAK label_1; END;" }
+    examples:
+      - |-
+        BEGIN
+         CALL schema1.proc2();
+        EXCEPTION WHEN ERROR THEN
+         SELECT
+         @@error.message,
+         @@error.stack_trace,
+         @@error.statement_text,
+         @@error.formatted_stack_trace;
+        END;
+      - |-
+        BEGIN
+         BEGIN TRANSACTION;
+         INSERT INTO myschema.NewArrivals
+         VALUES ('top load washer', 100, 'warehouse #1');
+         -- Trigger an error.
+         SELECT 1/0;
+         COMMIT TRANSACTION;
+        EXCEPTION WHEN ERROR THEN
+         -- Roll back the transaction inside the exception handler.
+         SELECT @@error.message;
+         ROLLBACK TRANSACTION;
+        END;
+
+  - id: case_statement
+    name: "CASE"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#case
+    tier: high
+    probes:
+      - { id: searched, sql: "CASE WHEN x > 0 THEN SELECT 'pos'; WHEN x < 0 THEN SELECT 'neg'; END CASE;" }
+      - { id: searched_else, sql: "CASE WHEN EXISTS(SELECT 1 FROM t WHERE a = 1) THEN SELECT 'found'; ELSE SELECT 'not found'; END CASE;" }
+      - { id: multiple_statements, sql: "CASE WHEN x > 0 THEN SET y = 1; SELECT y; END CASE;" }
+    examples:
+      - |-
+        CASE
+         WHEN
+         EXISTS(SELECT 1 FROM schema.products_a WHERE product_id = target_product_id)
+         THEN SELECT 'found product in products_a table';
+         WHEN
+         EXISTS(SELECT 1 FROM schema.products_b WHERE product_id = target_product_id)
+         THEN SELECT 'found product in products_b table';
+         ELSE
+         SELECT 'did not find product';
+        END CASE;
+
+  - id: case_search_expression
+    name: "CASE search_expression"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#case_search_expression
+    tier: high
+    probes:
+      - { id: basic, sql: "CASE x WHEN 1 THEN SELECT 'one'; WHEN 2 THEN SELECT 'two'; END CASE;" }
+      - { id: with_else, sql: "CASE x WHEN 1 THEN SELECT 'one'; ELSE SELECT 'other'; END CASE;" }
+    examples:
+      - |-
+        CASE product_id
+         WHEN 1 THEN
+         SELECT CONCAT('Product one');
+         WHEN 2 THEN
+         SELECT CONCAT('Product two');
+         ELSE
+         SELECT CONCAT('Invalid product');
+        END CASE;
+
+  - id: if
+    name: "IF"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#if
+    tier: high
+    probes:
+      - { id: if_then, sql: "IF x > 0 THEN SELECT 'pos'; END IF;" }
+      - { id: else, sql: "IF x > 0 THEN SELECT 'pos'; ELSE SELECT 'non-pos'; END IF;" }
+      - { id: elseif, sql: "IF x > 0 THEN SELECT 1; ELSEIF x < 0 THEN SELECT -1; ELSEIF x IS NULL THEN SELECT NULL; ELSE SELECT 0; END IF;" }
+      - { id: empty_then, sql: "IF EXISTS(SELECT 1 FROM t WHERE a = 1) THEN ELSE SELECT 'missing'; END IF;" }
+      - { id: nested, sql: "IF x > 0 THEN IF y > 0 THEN SELECT 1; END IF; END IF;" }
+    examples:
+      - |-
+        IF EXISTS(SELECT 1 FROM schema.products
+         WHERE product_id = target_product_id) THEN
+         SELECT CONCAT('found product ', CAST(target_product_id AS STRING));
+         ELSEIF EXISTS(SELECT 1 FROM schema.more_products
+         WHERE product_id = target_product_id) THEN
+         SELECT CONCAT('found product from more_products table',
+         CAST(target_product_id AS STRING));
+        ELSE
+         SELECT CONCAT('did not find product ', CAST(target_product_id AS STRING));
+        END IF;
+
+  - id: loop
+    name: "LOOP"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#loop
+    tier: high
+    probes:
+      - { id: basic, sql: "LOOP SET x = x + 1; IF x >= 10 THEN LEAVE; END IF; END LOOP;" }
+      - { id: labeled, sql: "label_1: LOOP BREAK label_1; END LOOP label_1;" }
+      - { id: labeled_no_end_label, sql: "label_1: LOOP CONTINUE label_1; END LOOP;" }
+    examples:
+      - |-
+        LOOP
+         SET x = x + 1;
+         IF x >= 10 THEN
+         LEAVE;
+         END IF;
+        END LOOP;
+      - |-
+        LOOP
+         SET heads = RAND() < 0.5;
+         IF heads THEN
+         SELECT 'Heads!';
+         SET heads_count = heads_count + 1;
+         ELSE
+         SELECT 'Tails!';
+         BREAK;
+         END IF;
+        END LOOP;
+
+  - id: repeat
+    name: "REPEAT"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#repeat
+    tier: high
+    probes:
+      - { id: basic, sql: "REPEAT SET x = x + 1; SELECT x; UNTIL x >= 3 END REPEAT;" }
+      - { id: labeled, sql: "label_1: REPEAT SET x = x + 1; UNTIL x >= 3 END REPEAT label_1;" }
+    examples:
+      - |-
+        REPEAT
+         SET x = x + 1;
+         SELECT x;
+         UNTIL x >= 3
+        END REPEAT;
+
+  - id: while
+    name: "WHILE"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#while
+    tier: high
+    probes:
+      - { id: basic, sql: "WHILE x < 10 DO SET x = x + 1; END WHILE;" }
+      - { id: labeled, sql: "label_1: WHILE x < 10 DO SET x = x + 1; END WHILE label_1;" }
+      - { id: nested_labeled_jumps, sql: "label_1: LOOP WHILE x < 1 DO IF y < 1 THEN CONTINUE label_1; ELSE BREAK label_1; END IF; END WHILE; END LOOP label_1;" }
+    examples: []
+
+  - id: break_leave
+    name: "BREAK / LEAVE"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#break
+    tier: high
+    probes:
+      - { id: break, sql: "LOOP BREAK; END LOOP;" }
+      - { id: leave, sql: "LOOP LEAVE; END LOOP;" }
+      - { id: break_label, sql: "label_1: LOOP BREAK label_1; END LOOP;" }
+      - { id: leave_label, sql: "label_1: BEGIN LEAVE label_1; END;" }
+    examples: []
+
+  - id: continue_iterate
+    name: "CONTINUE / ITERATE"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#continue
+    tier: high
+    probes:
+      - { id: continue, sql: "WHILE x < 10 DO SET x = x + 1; CONTINUE; END WHILE;" }
+      - { id: iterate, sql: "WHILE x < 10 DO SET x = x + 1; ITERATE; END WHILE;" }
+      - { id: continue_label, sql: "label_1: WHILE x < 10 DO SET x = x + 1; CONTINUE label_1; END WHILE;" }
+      - { id: iterate_label, sql: "label_1: LOOP ITERATE label_1; END LOOP;" }
+    examples:
+      - |-
+        LOOP
+         SET heads = RAND() < 0.5;
+         IF heads THEN
+         SELECT 'Heads!';
+         SET heads_count = heads_count + 1;
+         CONTINUE;
+         END IF;
+         SELECT 'Tails!';
+         BREAK;
+        END LOOP;
+
+  - id: for_in
+    name: "FOR...IN"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#for-in
+    tier: high
+    probes:
+      - { id: basic, sql: "FOR r IN (SELECT a, b FROM t LIMIT 5) DO SELECT r.a, r.b; END FOR;" }
+      - { id: labeled, sql: "label_1: FOR r IN (SELECT a FROM t) DO IF r.a > 0 THEN BREAK label_1; END IF; END FOR label_1;" }
+    examples:
+      - |-
+        FOR record IN
+         (SELECT word, word_count
+         FROM bigquery-public-data.samples.shakespeare
+         LIMIT 5)
+        DO
+         SELECT record.word, record.word_count;
+        END FOR;
+
+  - id: begin_transaction
+    name: "BEGIN TRANSACTION"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#begin_transaction
+    tier: high
+    probes:
+      - { id: begin_transaction, sql: "BEGIN TRANSACTION;" }
+      - { id: begin, sql: "BEGIN;" }
+    examples:
+      - "BEGIN TRANSACTION;"
+
+  - id: commit_transaction
+    name: "COMMIT TRANSACTION"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#commit_transaction
+    tier: high
+    probes:
+      - { id: commit_transaction, sql: "COMMIT TRANSACTION;" }
+      - { id: commit, sql: "COMMIT;" }
+    examples:
+      - "COMMIT TRANSACTION;"
+
+  - id: rollback_transaction
+    name: "ROLLBACK TRANSACTION"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#rollback_transaction
+    tier: high
+    probes:
+      - { id: rollback_transaction, sql: "ROLLBACK TRANSACTION;" }
+      - { id: rollback, sql: "ROLLBACK;" }
+    examples:
+      - "ROLLBACK TRANSACTION;"
+
+  - id: raise
+    name: "RAISE"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#raise
+    tier: high
+    probes:
+      - { id: reraise, sql: "BEGIN SELECT 1/0; EXCEPTION WHEN ERROR THEN RAISE; END;" }
+      - { id: using_message, sql: "RAISE USING MESSAGE = 'Something went wrong';" }
+      - { id: using_message_expression, sql: "RAISE USING MESSAGE = CONCAT('bad value: ', CAST(x AS STRING));" }
+    examples: []
+
+  - id: return
+    name: "RETURN"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#return
+    tier: high
+    probes:
+      - { id: basic, sql: "RETURN;" }
+      - { id: in_if, sql: "IF x IS NULL THEN RETURN; END IF;" }
+    examples: []
+
+  - id: call
+    name: "CALL"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/procedural-language#call
+    tier: high
+    probes:
+      - { id: basic, sql: "CALL d.p('someAccountId', ret_code);" }
+      - { id: no_args, sql: "CALL p();" }
+      - { id: expression_args, sql: "CALL p.d.proc(CURRENT_DATE(), x + 1);" }
+    examples:
+      - "CALL mySchema.UpdateSomeTables('someAccountId', retCode);"
+      - "CALL mydataset.AddDelta(accumulator, 5);"
+      - "CALL mydataset.SelectFromTablesAndAppend(CURRENT_DATE(), rows_added);"
+
+  - id: grant
+    name: "GRANT"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-control-language#grant_statement
+    tier: medium
+    probes:
+      - id: on_schema
+        sql: |-
+          GRANT `roles/bigquery.dataViewer` ON SCHEMA `p`.d TO "user:raha@example.com", "user:sasha@example.com";
+      - id: multiple_roles_on_project
+        sql: |-
+          GRANT `roles/aiplatform.user`, `roles/run.invoker` ON PROJECT `my-project` TO "connection:my-project.us.my-connection";
+      - id: on_table
+        sql: |-
+          GRANT `roles/bigquery.dataViewer` ON TABLE d.t TO "group:my-group@example.com";
+      - id: on_view
+        sql: |-
+          GRANT `roles/bigquery.dataViewer` ON VIEW d.v TO "serviceAccount:robot@example.iam.gserviceaccount.com";
+      - id: on_external_table
+        sql: |-
+          GRANT `roles/bigquery.dataViewer` ON EXTERNAL TABLE d.t TO "domain:example.com", "specialGroup:allAuthenticatedUsers";
+    examples:
+      - |-
+        GRANT `roles/bigquery.dataViewer` ON SCHEMA `myProject`.myDataset
+        TO "user:raha@example-pet-store.com", "user:sasha@example-pet-store.com";
+      - |-
+        GRANT `roles/aiplatform.user`, `roles/run.invoker`
+        ON PROJECT `my-vertex-project`
+        TO "connection:my-bq-project.us.my-connection", "connection:another-bq-project.eu.other-connection";
+
+  - id: revoke
+    name: "REVOKE"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-control-language#revoke_statement
+    tier: medium
+    probes:
+      - id: on_schema
+        sql: |-
+          REVOKE `roles/bigquery.admin` ON SCHEMA `p`.d FROM "group:team@example.com", "serviceAccount:user@test-project.iam.gserviceaccount.com";
+      - id: on_project
+        sql: |-
+          REVOKE `roles/run.invoker` ON PROJECT `my-project` FROM "connection:my-project.us.my-connection";
+      - id: on_table
+        sql: |-
+          REVOKE `roles/bigquery.dataViewer`, `roles/bigquery.dataEditor` ON TABLE d.t FROM "user:a@example.com";
+      - id: on_view
+        sql: |-
+          REVOKE `roles/bigquery.dataViewer` ON VIEW d.v FROM "specialGroup:allUsers";
+      - id: on_external_table
+        sql: |-
+          REVOKE `roles/bigquery.dataViewer` ON EXTERNAL TABLE d.t FROM "domain:example.com";
+    examples:
+      - |-
+        REVOKE `roles/bigquery.admin` ON SCHEMA `myProject`.myDataset
+        FROM "group:example-team@example-pet-store.com", "serviceAccount:user@test-project.iam.gserviceaccount.com";
+      - |-
+        REVOKE `roles/run.invoker`
+        ON PROJECT `my-vertex-project`
+        FROM "connection:my-bq-project.us.my-connection";
+
+expressions:
+  - id: identifiers
+    name: "Identifiers and path expressions"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#identifiers
+    tier: high
+    probes:
+      - { id: unquoted, sql: "SELECT _5abc.dataField FROM t AS _5abc;" }
+      - { id: quoted_leading_digit, sql: "SELECT `5abc`.dataField FROM t AS `5abc`;" }
+      - { id: quoted_reserved_word, sql: "SELECT `GROUP`.dataField FROM t AS `GROUP`;" }
+      - { id: reserved_word_after_dot, sql: "SELECT abc5.GROUP FROM t AS abc5;" }
+      - { id: quoted_column_with_dash, sql: "SELECT `column-a`, `287column` FROM t;" }
+      - { id: quoted_escape, sql: "SELECT 1 AS `a\\`b`;" }
+      - { id: dashed_project_unquoted, sql: "SELECT * FROM my-project.mydataset.mytable;" }
+      - { id: dashed_table_name, sql: "SELECT * FROM my-table;" }
+      - { id: quoted_full_path, sql: "SELECT * FROM `myproject.mydataset.mytable`;" }
+      - { id: quoted_table_leading_digit, sql: "SELECT * FROM `287mytable`;" }
+      - { id: function_result_field, sql: "SELECT foo().dataField;" }
+      - { id: parameter_field, sql: "SELECT @param.dataField;" }
+      - { id: case_insensitive_keywords, sql: "select a FrOm t wHeRe b = 1;" }
+
+  - id: string_bytes_literals
+    name: "String and bytes literals"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#string_and_bytes_literals
+    tier: high
+    probes:
+      - { id: double_quoted, sql: "SELECT \"abc\", \"it's\";" }
+      - { id: single_quoted_escape, sql: "SELECT 'it\\'s', 'Title: \"Boy\"';" }
+      - id: triple_quoted
+        sql: |-
+          SELECT """abc""", '''it's''', '''Title:"Boy"''', '''two
+          lines''', '''why\?''';
+      - { id: raw_strings, sql: "SELECT r\"abc+\", r'''abc+''', r\"\"\"abc+\"\"\", r'f\\(abc,(.*),def\\)';" }
+      - { id: bytes, sql: "SELECT B\"abc\", B'''abc''', b\"\"\"abc\"\"\";" }
+      - { id: raw_bytes, sql: "SELECT br'abc+', RB\"abc+\", RB'''abc''', rb'abc*', rB'abc*';" }
+      - { id: escape_sequences, sql: "SELECT '\\a\\b\\f\\n\\r\\t\\v\\\\\\?\\\"\\'\\`';" }
+      - { id: numeric_escapes, sql: "SELECT '\\101', '\\x41', '\\X41', '\\u0041', '\\U00000041';" }
+      - { id: adjacent_literal_concatenation, sql: "SELECT 'a' \"b\" '''c''';" }
+      - { id: concatenation_with_comments, sql: "SELECT r'\\n' /*raw*/ '\\n' \"b\";" }
+    examples:
+      - |-
+        SELECT
+         r'\n' /*Only the prev is raw!*/ '\n' "b" """c"d"e""" '''f'g'h''' "1" "2",
+         br'\n'/*Only the prev is raw!*/ b'\n' b"b" b"""c"d"e""" b'''f'g'h''' b"1" b"2",
+         NUMERIC "1" r'2',
+         DECIMAL /*whole:*/ '1' /*fractional:*/ ".23" /*exponent=*/ "e+6",
+         BIGNUMERIC '1' r"2",
+         BIGDECIMAL /*sign*/ '-' /*whole:*/ '1' /*fractional:*/ ".23" /*exponent=*/ "e+6",
+         RANGE<DATE> '[2014-01-01,' /*comment*/ "2015-01-01)",
+         DATE '2014' "-01-01",
+         DATETIME '2016-01-01 ' r"12:00:00",
+         TIMESTAMP '2018-10-01 ' "12:00:00+08";
+      - |-
+        SELECT
+         "\\n\nbc\"d\"ef'g'h12",
+         b"\\n\nbc\"d\"ef'g'h12",
+         NUMERIC "12",
+         DECIMAL '1.23e+6',
+         BIGNUMERIC '12',
+         BIGDECIMAL "-1.23e+6",
+         RANGE<DATE> '[2014-01-01 2015-01-01)',
+         DATE '2014-01-01',
+         DATETIME '2016-01-01 12:00:00',
+         TIMESTAMP "2018-10-01 12:00:00+08";
+
+  - id: numeric_literals
+    name: "Integer, NUMERIC, BIGNUMERIC and floating point literals"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#integer_literals
+    tier: high
+    probes:
+      - { id: integers, sql: "SELECT 123, -123;" }
+      - { id: hex_integer, sql: "SELECT 0xABC, 0x1f;" }
+      - { id: numeric, sql: "SELECT NUMERIC '-3.14', NUMERIC '1.23456e05';" }
+      - { id: decimal_alias, sql: "SELECT DECIMAL '1.23e+6';" }
+      - { id: bignumeric, sql: "SELECT BIGNUMERIC '-9.876e-3';" }
+      - { id: bigdecimal_alias, sql: "SELECT BIGDECIMAL '-1.23e+6';" }
+      - { id: floats, sql: "SELECT 123.456e-67, .1E4, 58., 4e2;" }
+      - { id: float_special_values, sql: "SELECT CAST('NaN' AS FLOAT64), CAST('-inf' AS FLOAT64);" }
+    examples:
+      - "SELECT NUMERIC '0';"
+      - "SELECT NUMERIC '-9.876e-3';"
+      - "SELECT BIGNUMERIC '1.23456e05';"
+
+  - id: datetime_literals
+    name: "Date, time, datetime and timestamp literals"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#date_literals
+    tier: high
+    probes:
+      - { id: date, sql: "SELECT DATE '2014-09-27';" }
+      - { id: time, sql: "SELECT TIME '12:30:00.45';" }
+      - { id: datetime, sql: "SELECT DATETIME '2014-09-27 12:30:00.45', DATETIME '2014-09-27T12:30:00.45';" }
+      - { id: timestamp, sql: "SELECT TIMESTAMP '2014-09-27 12:30:00.45-08', TIMESTAMP '2017-01-18T12:34:56.123456Z';" }
+      - { id: timestamp_named_zone, sql: "SELECT TIMESTAMP '2014-09-27 12:30:00 America/Argentina/Buenos_Aires';" }
+      - { id: string_coercion, sql: "SELECT * FROM t WHERE date_col = '2014-09-27';" }
+
+  - id: interval_literals
+    name: "Interval literals"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#interval_literals
+    tier: high
+    probes:
+      - { id: single_part, sql: "SELECT INTERVAL 5 DAY, INTERVAL -25 MONTH, INTERVAL 1 SECOND;" }
+      - { id: single_part_expression, sql: "SELECT INTERVAL n * 2 HOUR FROM t;" }
+      - { id: range_hour_to_second, sql: "SELECT INTERVAL '10:20:30.52' HOUR TO SECOND;" }
+      - { id: range_year_to_month, sql: "SELECT INTERVAL '1-2' YEAR TO MONTH;" }
+      - { id: range_year_to_minute, sql: "SELECT INTERVAL '-23-2 10 -12:30' YEAR TO MINUTE;" }
+      - { id: range_day_to_minute, sql: "SELECT INTERVAL '1 5:30' DAY TO MINUTE, INTERVAL '1 -15' MONTH TO DAY;" }
+    examples:
+      - "SELECT INTERVAL '-23-2 10 -0:30' YEAR TO MINUTE;"
+
+  - id: range_literals
+    name: "Range literals"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#range_literals
+    tier: medium
+    probes:
+      - { id: date_range, sql: "SELECT RANGE<DATE> '[2020-01-01, 2020-12-31)';" }
+      - { id: datetime_timestamp_range, sql: "SELECT RANGE<DATETIME> '[2020-01-01 12:00:00, 2020-12-31 12:00:00)', RANGE<TIMESTAMP> '[2020-10-01 12:00:00+08, 2020-12-31 12:00:00+08)';" }
+      - { id: unbounded, sql: "SELECT RANGE<DATE> '[UNBOUNDED, 2020-12-31)', RANGE<DATE> '[2020-01-01, NULL)';" }
+
+  - id: json_literals
+    name: "JSON literals"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#json_literals
+    tier: high
+    probes:
+      - { id: object, sql: "SELECT JSON '{\"id\": 10, \"name\": \"apple\", \"on_menu\": true}';" }
+      - id: multiline
+        sql: |-
+          SELECT JSON '
+          {
+           "recipes": {"salads": [{ "id": 2001 }]}
+          }
+          ';
+
+  - id: array_literals
+    name: "Array literals"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#array_literals
+    tier: high
+    probes:
+      - { id: brackets, sql: "SELECT [1, 2, 3], ['x', 'y', 'xy'];" }
+      - { id: array_keyword, sql: "SELECT ARRAY[1, 2, 3];" }
+      - { id: typed, sql: "SELECT ARRAY<STRING>['x', 'y', 'xy'];" }
+      - { id: typed_empty, sql: "SELECT ARRAY<INT64>[];" }
+      - { id: empty, sql: "SELECT [];" }
+      - { id: nested_struct_elements, sql: "SELECT [STRUCT(1 AS a, 'x' AS b), (2, 'y')];" }
+
+  - id: struct_literals
+    name: "Struct literals and constructors"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#struct_literals
+    tier: high
+    probes:
+      - { id: tuple, sql: "SELECT (1, 2, 3), (1, 'abc');" }
+      - { id: struct_named_fields, sql: "SELECT STRUCT(1 AS foo, 'abc' AS bar);" }
+      - { id: typed_struct, sql: "SELECT STRUCT<INT64, STRING>(1, 'abc');" }
+      - { id: typed_named_struct, sql: "SELECT STRUCT<x INT64, y STRING>(1, 'abc');" }
+      - { id: single_field, sql: "SELECT STRUCT(1), STRUCT<INT64>(1);" }
+      - { id: nested, sql: "SELECT STRUCT(1 AS a, STRUCT(2 AS c, [3] AS d) AS b);" }
+      - { id: struct_of_columns, sql: "SELECT STRUCT(a, b) FROM t;" }
+
+  - id: query_parameters
+    name: "Query parameters"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#query_parameters
+    tier: high
+    probes:
+      - { id: named, sql: "SELECT * FROM t WHERE c = @myparam;" }
+      - { id: named_quoted, sql: "SELECT * FROM t WHERE c = @`my param`;" }
+      - { id: named_reserved_keyword, sql: "SELECT * FROM t WHERE c = @select;" }
+      - { id: positional, sql: "SELECT * FROM t WHERE a = ? AND b = ?;" }
+    examples:
+      - "SELECT * FROM Roster WHERE LastName = @myparam;"
+      - "SELECT * FROM Roster WHERE FirstName = ? and LastName = ?;"
+
+  - id: system_variables
+    name: "System variables"
+    doc: https://cloud.google.com/bigquery/docs/reference/system-variables
+    tier: medium
+    probes:
+      - { id: read, sql: "SELECT @@project_id, @@dataset_id, @@time_zone;" }
+      - { id: nested_field, sql: "SELECT @@error.message, @@script.job_id;" }
+
+  - id: comments
+    name: "Comments"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#comments
+    tier: high
+    probes:
+      - id: hash_comment
+        sql: |-
+          # this is a single-line comment
+          SELECT book FROM library;
+      - id: dash_comment
+        sql: |-
+          -- this is a single-line comment
+          SELECT book FROM library;
+      - { id: block_comment_inline, sql: "SELECT book FROM library /* inline */ WHERE book = 'Ulysses';" }
+      - { id: trailing_hash_comment, sql: "SELECT book FROM library; # this is an inline comment" }
+      - id: multiline_block
+        sql: |-
+          SELECT book FROM library
+          /*
+           This is a multiline comment
+           on multiple lines
+          */
+          WHERE book = 'Ulysses';
+    examples:
+      - |-
+        SELECT book FROM library
+        /* this is a single-line comment */
+        WHERE book = "Ulysses";
+      - "SELECT book FROM library /* this is an inline comment */ WHERE book = \"Ulysses\";"
+
+  - id: trailing_commas
+    name: "Trailing commas"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#trailing_commas
+    tier: medium
+    probes:
+      - { id: select_list, sql: "SELECT name, release_date, FROM Books;" }
+    examples:
+      - "SELECT name, release_date, FROM Books;"
+
+  - id: field_access
+    name: "Field access operator"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#field_access_operator
+    tier: high
+    probes:
+      - { id: struct_field, sql: "SELECT s.address.country FROM t;" }
+      - { id: constructor_field, sql: "SELECT STRUCT(STRUCT('Yonge Street' AS street, 'Canada' AS country) AS address).address.country;" }
+      - { id: json_field, sql: "SELECT j.class.students FROM t;" }
+    examples:
+      - |-
+        SELECT
+         STRUCT(
+         STRUCT('Yonge Street' AS street, 'Canada' AS country)
+         AS address).address.country;
+
+  - id: subscript_operators
+    name: "Array, struct and JSON subscript operators"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#array_subscript_operator
+    tier: high
+    probes:
+      - { id: array_index, sql: "SELECT arr[0] FROM t;" }
+      - { id: array_offset, sql: "SELECT arr[OFFSET(0)], arr[SAFE_OFFSET(6)] FROM t;" }
+      - { id: array_ordinal, sql: "SELECT arr[ORDINAL(1)], arr[SAFE_ORDINAL(1)] FROM t;" }
+      - { id: literal_array_subscript, sql: "SELECT ['coffee', 'tea', 'milk'][OFFSET(1)];" }
+      - { id: struct_subscript, sql: "SELECT STRUCT<INT64, STRING, BOOL>(23, 'tea', FALSE)[OFFSET(0)], STRUCT<INT64, STRING, BOOL>(23, 'tea', FALSE)[ORDINAL(1)];" }
+      - { id: json_subscript, sql: "SELECT j.class.students[0]['name'] FROM t;" }
+      - { id: subscript_then_field, sql: "SELECT items[OFFSET(3)].dataField FROM t;" }
+    examples:
+      - |-
+        SELECT
+         ["coffee", "tea", "milk"] AS item_array,
+         ["coffee", "tea", "milk"][0] AS item_index,
+         ["coffee", "tea", "milk"][OFFSET(0)] AS item_offset,
+         ["coffee", "tea", "milk"][ORDINAL(1)] AS item_ordinal,
+         ["coffee", "tea", "milk"][SAFE_OFFSET(6)] AS item_safe_offset;
+      - |-
+        SELECT
+         STRUCT<INT64, STRING, BOOL>(23, "tea", FALSE)[0] AS field_index,
+         STRUCT<INT64, STRING, BOOL>(23, "tea", FALSE)[OFFSET(0)] AS field_offset,
+         STRUCT<INT64, STRING, BOOL>(23, "tea", FALSE)[ORDINAL(1)] AS field_ordinal;
+      - |-
+        SELECT json_value.class.students[0]['name'] AS first_student
+        FROM
+         UNNEST(
+         [
+         JSON '{"class" : {"students" : [{"name" : "Jane"}]}}',
+         JSON '{"class" : {"students" : []}}',
+         JSON '{"class" : {"students" : [{"name" : "John"}, {"name": "Jamie"}]}}'])
+         AS json_value;
+
+  - id: arithmetic_operators
+    name: "Arithmetic, date and interval arithmetic operators"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#arithmetic_operators
+    tier: high
+    probes:
+      - { id: binary, sql: "SELECT a + b, a - b, a * b, a / b FROM t;" }
+      - { id: unary, sql: "SELECT +a, -a, - -a FROM t;" }
+      - { id: date_plus_int, sql: "SELECT DATE '2020-09-22' + 1, DATE '2020-09-22' - 7;" }
+      - { id: datetime_subtraction, sql: "SELECT DATE '2021-05-20' - DATE '2020-04-19', TIMESTAMP '2021-06-01 12:34:56.789' - TIMESTAMP '2021-05-31 00:00:00';" }
+      - { id: interval_arithmetic, sql: "SELECT DATE '2021-04-20' + INTERVAL 25 HOUR, TIMESTAMP '2021-05-02 00:01:02.345+00' - INTERVAL 10 SECOND;" }
+      - { id: interval_multiply_divide, sql: "SELECT INTERVAL '1:2:3' HOUR TO SECOND * 10, INTERVAL 10 YEAR / 3;" }
+    examples:
+      - "SELECT DATE \"2020-09-22\" + 1 AS day_later, DATE \"2020-09-22\" - 7 AS week_ago;"
+      - |-
+        SELECT
+         DATE "2021-04-20" + INTERVAL 25 HOUR AS date_plus,
+         TIMESTAMP "2021-05-02 00:01:02.345+00" - INTERVAL 10 SECOND AS time_minus;
+      - |-
+        SELECT
+         INTERVAL '1:2:3' HOUR TO SECOND * 10 AS mul1,
+         INTERVAL 35 SECOND * 4 AS mul2,
+         INTERVAL 10 YEAR / 3 AS div1,
+         INTERVAL 1 MONTH / 12 AS div2;
+
+  - id: bitwise_operators
+    name: "Bitwise operators"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#bitwise_operators
+    tier: medium
+    probes:
+      - { id: not_and_or_xor, sql: "SELECT ~a, a | b, a ^ b, a & b FROM t;" }
+      - { id: shifts, sql: "SELECT a << 2, a >> 1 FROM t;" }
+
+  - id: logical_operators
+    name: "Logical operators"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#logical_operators
+    tier: high
+    probes:
+      - { id: and_or_not, sql: "SELECT * FROM t WHERE NOT a AND (b OR c);" }
+      - { id: not_precedence, sql: "SELECT NOT a = b FROM t;" }
+
+  - id: comparison_operators
+    name: "Comparison operators"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#comparison_operators
+    tier: high
+    probes:
+      - { id: relational, sql: "SELECT a < b, a <= b, a > b, a >= b, a = b, a != b, a <> b FROM t;" }
+      - { id: between, sql: "SELECT * FROM t WHERE a BETWEEN 1 AND 10 AND b NOT BETWEEN 2 AND 3;" }
+      - { id: struct_comparison, sql: "SELECT * FROM t WHERE (a, b) = (1, 'x');" }
+      - { id: is_distinct_from, sql: "SELECT 1 IS DISTINCT FROM 2, NULL IS NOT DISTINCT FROM NULL;" }
+    examples:
+      - "SELECT 1 IS DISTINCT FROM NULL;"
+      - "SELECT 1 IS NOT DISTINCT FROM 1;"
+
+  - id: is_operators
+    name: "IS operators"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#is_operators
+    tier: high
+    probes:
+      - { id: is_null, sql: "SELECT a IS NULL, a IS NOT NULL FROM t;" }
+      - { id: is_true_false, sql: "SELECT a IS TRUE, a IS NOT TRUE, a IS FALSE, a IS NOT FALSE FROM t;" }
+      - { id: is_unknown, sql: "SELECT a IS UNKNOWN, a IS NOT UNKNOWN FROM t;" }
+
+  - id: in_operator
+    name: "IN operator"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#in_operators
+    tier: high
+    probes:
+      - { id: list, sql: "SELECT * FROM t WHERE c IN ('Intend', 'Secure');" }
+      - { id: not_in, sql: "SELECT * FROM t WHERE c NOT IN ('Intend');" }
+      - { id: subquery, sql: "SELECT * FROM t WHERE c IN (SELECT c FROM u);" }
+      - { id: subquery_in_list, sql: "SELECT * FROM t WHERE c IN ((SELECT 'Intend'), 'Clarity');" }
+      - { id: unnest, sql: "SELECT * FROM t WHERE c IN UNNEST(['Secure', 'Clarity']);" }
+      - { id: unnest_parameter, sql: "SELECT * FROM t WHERE c IN UNNEST(@array_parameter);" }
+      - { id: multi_part_key, sql: "SELECT * FROM t WHERE (k1, k2) IN ((12, 34), (56, 78));" }
+      - { id: multi_part_key_subquery, sql: "SELECT * FROM t WHERE (k1, k2) IN (SELECT (u.a, u.b) FROM u);" }
+    examples:
+      - "SELECT * FROM Words WHERE value IN ('Intend', 'Secure');"
+      - "SELECT * FROM Words WHERE value IN ((SELECT 'Intend'), 'Clarity');"
+      - "SELECT * FROM Words WHERE value IN UNNEST(['Secure', 'Clarity']);"
+
+  - id: like_operators
+    name: "LIKE and quantified LIKE operators"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#like_operator
+    tier: high
+    probes:
+      - { id: like, sql: "SELECT 'apple' LIKE 'a%', 'apple' NOT LIKE 'a%';" }
+      - { id: like_any, sql: "SELECT * FROM t WHERE c LIKE ANY ('Intend%', '%intention%');" }
+      - { id: like_some, sql: "SELECT * FROM t WHERE c LIKE SOME ('a%', 'b%');" }
+      - { id: like_all, sql: "SELECT * FROM t WHERE c LIKE ALL ('%ity%');" }
+      - { id: not_like_any, sql: "SELECT * FROM t WHERE c NOT LIKE ANY ('a%', 'b%');" }
+      - { id: like_any_unnest, sql: "SELECT * FROM t WHERE c LIKE ANY UNNEST(['%ion%', '%and%']);" }
+    examples:
+      - "SELECT 'apple' LIKE 'a%';"
+      - "SELECT * FROM Words WHERE value LIKE ANY ('Intend%', '%intention%');"
+      - "SELECT * FROM Words WHERE value LIKE ALL ('%ity%');"
+      - "SELECT * FROM Words WHERE value LIKE ANY UNNEST(['%ion%', '%and%']);"
+
+  - id: exists_operator
+    name: "EXISTS operator"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#exists_operator
+    tier: high
+    probes:
+      - { id: exists, sql: "SELECT EXISTS(SELECT c FROM t WHERE d = 'south') AS result;" }
+      - { id: not_exists, sql: "SELECT * FROM t WHERE NOT EXISTS (SELECT 1 FROM u WHERE u.a = t.a);" }
+
+  - id: concatenation_operator
+    name: "Concatenation operator"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#concatenation_operator
+    tier: high
+    probes:
+      - { id: strings, sql: "SELECT 'A' || 'B' || 'C';" }
+      - { id: bytes, sql: "SELECT b'a' || b'b';" }
+      - { id: arrays, sql: "SELECT [1, 2] || [3];" }
+
+  - id: with_expression
+    name: "WITH expression"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/operators#with_expression
+    tier: medium
+    probes:
+      - { id: basic, sql: "SELECT WITH(a AS RAND(), a - a);" }
+      - { id: chained_variables, sql: "SELECT WITH(a AS 1, b AS a + 1, a * b);" }
+      - { id: aggregate_variables, sql: "SELECT WITH(s AS SUM(x), c AS COUNT(x), s / c) FROM UNNEST([1.0, 2.0, 3.0]) AS x;" }
+    examples:
+      - "SELECT WITH(a AS RAND(), a - a);"
+      - |-
+        SELECT WITH(s AS SUM(input), c AS COUNT(input), s/c)
+        FROM UNNEST([1.0, 2.0, 3.0]) AS input;
 

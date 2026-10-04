@@ -1,0 +1,1295 @@
+dialect: duckdb
+engine: DuckDB
+version: "1.5"
+source: https://duckdb.org/docs/stable/sql/statements/overview
+
+statements:
+  - id: select
+    name: SELECT
+    doc: https://duckdb.org/docs/stable/sql/query_syntax/select
+    tier: high
+    probes:
+      - { id: star, sql: "SELECT * FROM t;" }
+      - { id: no_from, sql: "SELECT 1 + 1;" }
+      - { id: alias_as, sql: "SELECT a + b AS res FROM t;" }
+      - { id: alias_no_as, sql: "SELECT a + b res FROM t;" }
+      - id: prefix_alias
+        sql: "SELECT res: a + b, root: sqrt(a) FROM t;"
+        note: "select-clause diagram: alias ':' expression (prefix aliases)"
+      - { id: distinct, sql: "SELECT DISTINCT c FROM t;" }
+      - { id: all, sql: "SELECT ALL c FROM t;" }
+      - { id: distinct_on, sql: "SELECT DISTINCT ON (a) a, b FROM t ORDER BY b DESC;" }
+      - { id: distinct_on_multiple, sql: "SELECT DISTINCT ON (a, b) a, b, c FROM t;" }
+      - { id: qualified_star, sql: "SELECT t.* FROM t;" }
+      - { id: star_exclude, sql: "SELECT * EXCLUDE (c) FROM t;" }
+      - { id: star_exclude_multiple, sql: "SELECT * EXCLUDE (a, b) FROM t;" }
+      - { id: star_replace, sql: "SELECT * REPLACE (lower(c) AS c) FROM t;" }
+      - { id: star_rename, sql: "SELECT * RENAME (a AS x, b AS y) FROM t;" }
+      - { id: star_like, sql: "SELECT * LIKE 'col%' FROM t;" }
+      - { id: star_not_like, sql: "SELECT * NOT LIKE 'col%' FROM t;" }
+      - { id: star_ilike, sql: "SELECT * ILIKE 'COL%' FROM t;" }
+      - { id: star_glob, sql: "SELECT * GLOB 'col*' FROM t;" }
+      - { id: star_similar_to, sql: "SELECT * SIMILAR TO 'col.*' FROM t;" }
+      - { id: qualified_star_exclude, sql: "SELECT t.* EXCLUDE (c) FROM t;" }
+      - { id: columns_regex, sql: "SELECT COLUMNS('number\\d+') FROM t;" }
+      - { id: columns_star, sql: "SELECT min(COLUMNS(*)) FROM t;" }
+      - { id: columns_star_exclude, sql: "SELECT COLUMNS(* EXCLUDE (c)) FROM t;" }
+      - { id: columns_lambda, sql: "SELECT COLUMNS(lambda c: c LIKE '%num%') FROM t;" }
+      - id: columns_lambda_index
+        sql: "SELECT COLUMNS(lambda c, i: i > 1) FROM t;"
+        note: "star-clause diagram: lambda c [, i] : lambda-filter"
+      - { id: columns_list, sql: "SELECT COLUMNS(['a', 'b']) FROM t;" }
+      - id: unpacked_columns
+        sql: "SELECT coalesce(*COLUMNS(['a', 'b'])) FROM t;"
+        note: "star-clause diagram: *COLUMNS(...) unpacked form"
+      - { id: quoted_identifier, sql: "SELECT \"Some Column Name\" FROM t;" }
+      - { id: positional_reference, sql: "SELECT #1, #3 FROM t;" }
+      - { id: rowid, sql: "SELECT rowid, id FROM t;" }
+      - { id: aggregate, sql: "SELECT count(*) FROM t;" }
+      - { id: window_function, sql: "SELECT row_number() OVER () FROM t;" }
+      - { id: unnest_select_list, sql: "SELECT unnest([1, 2, 3]);" }
+      - { id: trailing_comma, sql: "SELECT a, b, FROM t;" }
+      - { id: clause_order_full, sql: "SELECT a, count(*) FROM t USING SAMPLE 10% WHERE b > 0 GROUP BY a HAVING count(*) > 1 WINDOW w AS (ORDER BY a) QUALIFY row_number() OVER w = 1 ORDER BY a LIMIT 10;" }
+      - { id: subquery_row, sql: "SELECT d FROM (SELECT 1 AS a, 2 AS b) d;" }
+    examples:
+      - "SELECT * FROM tbl;"
+      - "SELECT col1 + col2 AS res, sqrt(col1) AS root FROM tbl;"
+      - "SELECT * EXCLUDE (city) FROM addresses;"
+      - "SELECT * REPLACE (lower(city) AS city) FROM addresses;"
+      - "SELECT COLUMNS('number\\d+') FROM addresses;"
+
+  - id: from
+    name: FROM and JOIN
+    doc: https://duckdb.org/docs/stable/sql/query_syntax/from
+    tier: high
+    probes:
+      - { id: table, sql: "SELECT * FROM t;" }
+      - { id: schema_qualified, sql: "SELECT * FROM s.t;" }
+      - { id: catalog_qualified, sql: "SELECT * FROM db.s.t;" }
+      - { id: from_first_select, sql: "FROM t SELECT a, b;" }
+      - { id: from_only, sql: "FROM t;" }
+      - { id: from_first_where, sql: "FROM range(100) AS t(i) SELECT sum(t.i) WHERE i % 2 = 0;" }
+      - { id: alias_as, sql: "SELECT x.* FROM t AS x;" }
+      - { id: alias_no_as, sql: "SELECT x.* FROM t x;" }
+      - { id: prefix_alias, sql: "SELECT x.* FROM x: t;" }
+      - { id: alias_column_list, sql: "SELECT x.i FROM range(100) AS x(i);" }
+      - { id: table_function, sql: "SELECT * FROM read_csv('test.csv');" }
+      - { id: schema_table_function, sql: "SELECT * FROM main.range(10);" }
+      - { id: with_ordinality, sql: "SELECT * FROM read_csv('test.csv') WITH ORDINALITY;" }
+      - { id: file_path, sql: "SELECT * FROM 'test.csv';" }
+      - { id: subquery, sql: "SELECT * FROM (SELECT * FROM t);" }
+      - { id: subquery_alias, sql: "SELECT * FROM (SELECT * FROM t) AS s(a, b);" }
+      - { id: values_in_from, sql: "SELECT * FROM (VALUES (1, 'a'), (2, 'b')) v(id, name);" }
+      - { id: table_as_row, sql: "SELECT t FROM t;" }
+      - { id: tablesample_percent, sql: "SELECT * FROM t TABLESAMPLE 10%;" }
+      - { id: tablesample_rows, sql: "SELECT * FROM t TABLESAMPLE 10 ROWS;" }
+      - { id: comma_join, sql: "SELECT * FROM a, b;" }
+      - { id: join_on, sql: "SELECT * FROM a JOIN b ON a.k = b.k;" }
+      - { id: inner_join, sql: "SELECT * FROM a INNER JOIN b ON a.k = b.k;" }
+      - { id: left_join, sql: "SELECT * FROM a LEFT JOIN b ON a.k = b.k;" }
+      - { id: left_outer_join, sql: "SELECT * FROM a LEFT OUTER JOIN b ON a.k = b.k;" }
+      - { id: right_join, sql: "SELECT * FROM a RIGHT JOIN b ON a.k = b.k;" }
+      - { id: right_outer_join, sql: "SELECT * FROM a RIGHT OUTER JOIN b ON a.k = b.k;" }
+      - { id: full_join, sql: "SELECT * FROM a FULL JOIN b ON a.k = b.k;" }
+      - { id: full_outer_join, sql: "SELECT * FROM a FULL OUTER JOIN b ON a.k = b.k;" }
+      - { id: cross_join, sql: "SELECT * FROM a CROSS JOIN b;" }
+      - { id: join_using, sql: "SELECT * FROM a JOIN b USING (k1, k2);" }
+      - { id: natural_join, sql: "SELECT * FROM a NATURAL JOIN b;" }
+      - { id: natural_left_join, sql: "SELECT * FROM a NATURAL LEFT JOIN b;" }
+      - { id: semi_join, sql: "SELECT * FROM a SEMI JOIN b USING (k);" }
+      - { id: anti_join, sql: "SELECT * FROM a ANTI JOIN b USING (k);" }
+      - { id: semi_join_on, sql: "SELECT * FROM a SEMI JOIN b ON a.k = b.k;" }
+      - { id: lateral, sql: "SELECT * FROM range(3) t(i), LATERAL (SELECT i + 1) t2(j);" }
+      - { id: positional_join, sql: "SELECT * FROM a POSITIONAL JOIN b;" }
+      - { id: asof_join, sql: "SELECT t.*, p.price FROM trades t ASOF JOIN prices p ON t.symbol = p.symbol AND t.ts >= p.ts;" }
+      - { id: asof_left_join, sql: "SELECT * FROM trades t ASOF LEFT JOIN prices p ON t.symbol = p.symbol AND t.ts >= p.ts;" }
+      - { id: asof_join_using, sql: "SELECT * FROM trades t ASOF JOIN prices p USING (symbol, ts);" }
+      - { id: implicit_lateral_join, sql: "SELECT * FROM a JOIN LATERAL (SELECT a.k + 1 AS j) s ON true;" }
+      - { id: parenthesized_join, sql: "SELECT * FROM (a JOIN b USING (k)) AS j;" }
+      - { id: join_alias_shorthand, sql: "SELECT * FROM t1 NATURAL JOIN t2 t2(x);" }
+      - { id: multiple_joins, sql: "SELECT * FROM a LEFT JOIN b ON a.k = b.k JOIN c USING (k);" }
+    examples:
+      - "FROM tbl\nSELECT *;"
+      - "SELECT tn.*\nFROM tn: tbl;"
+      - "SELECT t.i\nFROM range(100) AS t(i);"
+      - "SELECT *\nFROM trades t\nASOF JOIN prices p USING (symbol, \"when\");"
+      - "SELECT *\nFROM city_airport\nANTI JOIN airport_names\n    USING (iata);"
+
+  - id: where
+    name: WHERE
+    doc: https://duckdb.org/docs/stable/sql/query_syntax/where
+    tier: high
+    probes:
+      - { id: equals, sql: "SELECT * FROM t WHERE id = 3;" }
+      - { id: like, sql: "SELECT * FROM t WHERE name LIKE '%mark%';" }
+      - { id: ilike, sql: "SELECT * FROM t WHERE name ILIKE '%mark%';" }
+      - { id: or, sql: "SELECT * FROM t WHERE id = 3 OR id = 7;" }
+    examples:
+      - "SELECT *\nFROM tbl\nWHERE id = 3;"
+      - "SELECT *\nFROM tbl\nWHERE name LIKE '%mark%';"
+      - "SELECT *\nFROM tbl\nWHERE name ILIKE '%mark%';"
+      - "SELECT *\nFROM tbl\nWHERE id = 3 OR id = 7;"
+
+  - id: group_by
+    name: GROUP BY
+    doc: https://duckdb.org/docs/stable/sql/query_syntax/groupby
+    tier: high
+    probes:
+      - { id: single, sql: "SELECT a, count(*) FROM t GROUP BY a;" }
+      - { id: multiple, sql: "SELECT a, b, avg(c) FROM t GROUP BY a, b;" }
+      - { id: expression, sql: "SELECT a % 2, count(*) FROM t GROUP BY a % 2;" }
+      - { id: position, sql: "SELECT a, b, sum(c) FROM t GROUP BY 1, 2;" }
+      - { id: alias, sql: "SELECT a % 2 AS m, count(*) FROM t GROUP BY m;" }
+      - { id: group_by_all, sql: "SELECT a, b, avg(c) FROM t GROUP BY ALL;" }
+    examples:
+      - "SELECT city, count(*)\nFROM addresses\nGROUP BY city;"
+      - "SELECT city, street_name, avg(income)\nFROM addresses\nGROUP BY city, street_name;"
+      - "SELECT city, street_name\nFROM addresses\nGROUP BY ALL;"
+
+  - id: grouping_sets
+    name: GROUPING SETS
+    doc: https://duckdb.org/docs/stable/sql/query_syntax/grouping_sets
+    tier: high
+    probes:
+      - { id: grouping_sets, sql: "SELECT a, b, avg(c) FROM t GROUP BY GROUPING SETS ((a, b), (a), (b), ());" }
+      - { id: grouping_sets_bare_columns, sql: "SELECT a, b, count(*) FROM t GROUP BY GROUPING SETS ((a, b), a, b, ());" }
+      - { id: cube, sql: "SELECT a, b, avg(c) FROM t GROUP BY CUBE (a, b);" }
+      - { id: rollup, sql: "SELECT a, b, avg(c) FROM t GROUP BY ROLLUP (a, b);" }
+      - { id: mixed, sql: "SELECT a, b, c, count(*) FROM t GROUP BY a, ROLLUP (b, c);" }
+      - { id: grouping_id, sql: "SELECT a, b, GROUPING_ID(a, b) FROM t GROUP BY CUBE (a, b);" }
+      - { id: grouping, sql: "SELECT a, b, GROUPING(a) FROM t GROUP BY ROLLUP (a, b);" }
+    examples:
+      - "SELECT city, street_name, avg(income)\nFROM addresses\nGROUP BY GROUPING SETS ((city, street_name), (city), (street_name), ());"
+      - "SELECT city, street_name, avg(income)\nFROM addresses\nGROUP BY CUBE (city, street_name);"
+      - "SELECT city, street_name, avg(income)\nFROM addresses\nGROUP BY ROLLUP (city, street_name);"
+      - "SELECT course, type, count(*)\nFROM students\nGROUP BY GROUPING SETS ((course, type), course, type, ());"
+
+  - id: having
+    name: HAVING
+    doc: https://duckdb.org/docs/stable/sql/query_syntax/having
+    tier: high
+    probes:
+      - { id: having, sql: "SELECT a, count(*) FROM t GROUP BY a HAVING count(*) >= 50;" }
+      - { id: having_expression, sql: "SELECT a, b, avg(c) FROM t GROUP BY a, b HAVING avg(c) > 2 * median(c);" }
+    examples:
+      - "SELECT city, count(*)\nFROM addresses\nGROUP BY city\nHAVING count(*) >= 50;"
+      - "SELECT city, street_name, avg(income)\nFROM addresses\nGROUP BY city, street_name\nHAVING avg(income) > 2 * median(income);"
+
+  - id: order_by
+    name: ORDER BY
+    doc: https://duckdb.org/docs/stable/sql/query_syntax/orderby
+    tier: high
+    probes:
+      - { id: single, sql: "SELECT * FROM t ORDER BY c;" }
+      - { id: multiple, sql: "SELECT * FROM t ORDER BY a, b;" }
+      - { id: asc_desc, sql: "SELECT * FROM t ORDER BY a ASC, b DESC;" }
+      - { id: nulls_last, sql: "SELECT * FROM t ORDER BY c DESC NULLS LAST;" }
+      - { id: nulls_first, sql: "SELECT * FROM t ORDER BY c ASC NULLS FIRST;" }
+      - { id: collate, sql: "SELECT * FROM t ORDER BY c COLLATE DE;" }
+      - { id: position, sql: "SELECT a, b FROM t ORDER BY 2;" }
+      - { id: order_by_all, sql: "SELECT * FROM t ORDER BY ALL;" }
+      - { id: order_by_all_desc, sql: "SELECT * FROM t ORDER BY ALL DESC;" }
+      - { id: order_by_all_nulls, sql: "SELECT * FROM t ORDER BY ALL DESC NULLS FIRST;" }
+    examples:
+      - "SELECT *\nFROM addresses\nORDER BY city;"
+      - "SELECT *\nFROM addresses\nORDER BY city DESC NULLS LAST;"
+      - "SELECT *\nFROM addresses\nORDER BY city, zip;"
+      - "SELECT *\nFROM addresses\nORDER BY city COLLATE DE;"
+      - "SELECT *\nFROM addresses\nORDER BY ALL DESC;"
+
+  - id: limit
+    name: LIMIT and OFFSET
+    doc: https://duckdb.org/docs/stable/sql/query_syntax/limit
+    tier: high
+    probes:
+      - { id: limit, sql: "SELECT * FROM t LIMIT 5;" }
+      - { id: limit_offset, sql: "SELECT * FROM t LIMIT 5 OFFSET 5;" }
+      - { id: offset_only, sql: "SELECT * FROM t OFFSET 5;" }
+      - { id: limit_percent, sql: "SELECT * FROM t LIMIT 10%;" }
+      - { id: limit_percent_keyword, sql: "SELECT * FROM t LIMIT 10 PERCENT;" }
+      - { id: limit_expression, sql: "SELECT * FROM t LIMIT (SELECT count(*) FROM u) / 2;" }
+      - { id: order_by_limit, sql: "SELECT a, count(*) AS n FROM t GROUP BY a ORDER BY n DESC LIMIT 5;" }
+    examples:
+      - "SELECT *\nFROM addresses\nLIMIT 5;"
+      - "SELECT *\nFROM addresses\nLIMIT 5\nOFFSET 5;"
+      - "SELECT city, count(*) AS population\nFROM addresses\nGROUP BY city\nORDER BY population DESC\nLIMIT 5;"
+      - "SELECT *\nFROM addresses\nLIMIT 10%;"
+
+  - id: sample
+    name: SAMPLE
+    doc: https://duckdb.org/docs/stable/sql/samples
+    tier: high
+    probes:
+      - { id: using_sample_rows_bare, sql: "SELECT * FROM t USING SAMPLE 5;" }
+      - { id: using_sample_percent, sql: "SELECT * FROM t USING SAMPLE 10%;" }
+      - { id: using_sample_percent_keyword, sql: "SELECT * FROM t USING SAMPLE 10 PERCENT;" }
+      - { id: using_sample_rows, sql: "SELECT * FROM t USING SAMPLE 10 ROWS;" }
+      - { id: using_sample_method, sql: "SELECT * FROM t USING SAMPLE 10 PERCENT (bernoulli);" }
+      - { id: using_sample_method_seed, sql: "SELECT * FROM t USING SAMPLE 20% (system, 377);" }
+      - { id: using_sample_function_form, sql: "SELECT * FROM t USING SAMPLE reservoir(50 ROWS);" }
+      - { id: using_sample_repeatable, sql: "SELECT * FROM t USING SAMPLE reservoir(50 ROWS) REPEATABLE (100);" }
+      - { id: using_sample_after_where, sql: "SELECT * FROM t, u WHERE t.i = u.i USING SAMPLE reservoir(20%);" }
+      - { id: tablesample, sql: "SELECT * FROM t TABLESAMPLE reservoir(20%), u WHERE t.i = u.i;" }
+      - { id: tablesample_method_seed, sql: "SELECT * FROM t TABLESAMPLE 10% (bernoulli, 42);" }
+      - { id: tablesample_repeatable, sql: "SELECT * FROM t TABLESAMPLE system(10%) REPEATABLE (377);" }
+    examples:
+      - "SELECT *\nFROM tbl\nUSING SAMPLE 5;"
+      - "SELECT *\nFROM tbl\nUSING SAMPLE 10 PERCENT (bernoulli);"
+      - "SELECT *\nFROM tbl\nUSING SAMPLE reservoir(50 ROWS)\nREPEATABLE (100);"
+      - "SELECT *\nFROM tbl\nUSING SAMPLE 20% (system, 377);"
+      - "SELECT *\nFROM tbl TABLESAMPLE reservoir(20%), tbl2\nWHERE tbl.i = tbl2.i;"
+
+  - id: unnest
+    name: Unnesting
+    doc: https://duckdb.org/docs/stable/sql/query_syntax/unnest
+    tier: high
+    probes:
+      - { id: unnest_list, sql: "SELECT unnest([1, 2, 3]);" }
+      - { id: unnest_struct, sql: "SELECT unnest({'a': 42, 'b': 84});" }
+      - { id: unnest_multiple, sql: "SELECT unnest([1, 2, 3]), unnest([10, 11]);" }
+      - { id: unnest_column, sql: "SELECT unnest(l) + 10 FROM (VALUES ([1, 2, 3]), ([4, 5])) tbl(l);" }
+      - { id: unnest_recursive, sql: "SELECT unnest([[1, 2, 3], [4, 5]], recursive := true);" }
+      - { id: unnest_max_depth, sql: "SELECT unnest([[[1, 2], [3, 4]], [[5, 6]]], max_depth := 2) AS x;" }
+      - { id: unnest_keep_parent_names, sql: "SELECT unnest([{'a': 0, 'b': {'bb': 1}}], recursive := true, keep_parent_names := true);" }
+      - { id: unnest_table_function, sql: "SELECT * FROM unnest([1, 2, 3]);" }
+      - { id: unnest_table_function_ordinality, sql: "SELECT * FROM unnest(['a', 'b']) WITH ORDINALITY;" }
+    examples:
+      - "SELECT unnest([1, 2, 3]);"
+      - "SELECT unnest({'a': 42, 'b': 84});"
+      - "SELECT unnest([{'a': 42, 'b': 84}, {'a': 100, 'b': NULL}], recursive := true);"
+      - "SELECT unnest([[[1, 2], [3, 4]], [[5, 6], [7, 8, 9], []], [[10, 11]]], max_depth := 2);"
+      - "SELECT unnest(l) AS x, generate_subscripts(l, 1) AS index\nFROM (VALUES ([1, 2, 3]), ([4, 5])) tbl(l);"
+
+  - id: with
+    name: WITH
+    doc: https://duckdb.org/docs/stable/sql/query_syntax/with
+    tier: high
+    probes:
+      - { id: basic, sql: "WITH cte AS (SELECT 42 AS x) SELECT * FROM cte;" }
+      - { id: multiple, sql: "WITH c1 AS (SELECT 42 AS i), c2 AS (SELECT i * 100 AS x FROM c1) SELECT * FROM c2;" }
+      - { id: column_list, sql: "WITH cte(j) AS (SELECT 42 AS i) SELECT * FROM cte;" }
+      - { id: from_first_body, sql: "WITH cte(j) AS (SELECT 42 AS i) FROM cte;" }
+      - { id: materialized, sql: "WITH c(x) AS MATERIALIZED (SELECT 1) SELECT * FROM c AS c1, c AS c2;" }
+      - { id: not_materialized, sql: "WITH c(x) AS NOT MATERIALIZED (SELECT 1) SELECT * FROM c AS c1, c AS c2;" }
+      - { id: recursive, sql: "WITH RECURSIVE c(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM c WHERE i < 5) SELECT * FROM c;" }
+      - { id: recursive_recurring, sql: "WITH RECURSIVE c(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM c WHERE (SELECT max(i) FROM recurring.c) < 5) SELECT * FROM c;" }
+      - { id: recursive_using_key, sql: "WITH RECURSIVE c(a, b) USING KEY (a) AS (SELECT 1, 3 UNION ALL SELECT a + 1, b FROM c WHERE a < 3) SELECT * FROM c;" }
+      - { id: recursive_using_key_values, sql: "WITH RECURSIVE c(a, b) USING KEY (a) AS (VALUES (1, 3), (2, 4) UNION ALL SELECT a + 1, b FROM c WHERE a < 3) SELECT * FROM c;" }
+      - { id: table_body, sql: "WITH c AS (SELECT 1 AS id) TABLE c ORDER BY id;" }
+    examples:
+      - "WITH cte AS (SELECT 42 AS x)\nSELECT * FROM cte;"
+      - "WITH\n    cte1 AS (SELECT 42 AS i),\n    cte2 AS (SELECT i * 100 AS x FROM cte1)\nSELECT * FROM cte2;"
+      - "WITH cte(j) AS (SELECT 42 AS i)\nFROM cte;"
+      - "WITH RECURSIVE tbl(a, b) USING KEY (a) AS (\n    SELECT a, b\n    FROM (VALUES (1, 3), (2, 4)) t(a, b)\n        UNION ALL\n    SELECT a + 1, b\n    FROM tbl\n    WHERE a < 3\n)\nSELECT *\nFROM tbl;"
+      - "WITH RECURSIVE counter(i) AS (\n    SELECT 1\n        UNION ALL\n    SELECT i + 1\n    FROM counter\n    WHERE (SELECT max(i) FROM recurring.counter) < 5\n)\nSELECT *\nFROM counter;"
+
+  - id: window_clause
+    name: WINDOW
+    doc: https://duckdb.org/docs/stable/sql/query_syntax/window
+    tier: high
+    probes:
+      - { id: named_window, sql: "SELECT sum(c) OVER w FROM t WINDOW w AS (PARTITION BY a ORDER BY b);" }
+      - { id: multiple_windows, sql: "SELECT sum(c) OVER w1, rank() OVER w2 FROM t WINDOW w1 AS (ORDER BY a), w2 AS (PARTITION BY b ORDER BY a);" }
+      - { id: base_window, sql: "SELECT sum(c) OVER w2 FROM t WINDOW w1 AS (PARTITION BY a), w2 AS (w1 ORDER BY b);" }
+      - { id: window_with_frame, sql: "SELECT sum(c) OVER w FROM t WINDOW w AS (ORDER BY a ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING);" }
+      - { id: over_base_window_parens, sql: "SELECT sum(c) OVER (w ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t WINDOW w AS (ORDER BY a);" }
+
+  - id: qualify
+    name: QUALIFY
+    doc: https://duckdb.org/docs/stable/sql/query_syntax/qualify
+    tier: high
+    probes:
+      - { id: window_expression, sql: "SELECT a, b FROM t QUALIFY row_number() OVER (PARTITION BY a ORDER BY b) < 3;" }
+      - { id: alias, sql: "SELECT a, row_number() OVER (PARTITION BY a ORDER BY b) AS r FROM t QUALIFY r < 3;" }
+      - { id: named_window, sql: "SELECT a, b FROM t WINDOW w AS (PARTITION BY a ORDER BY b) QUALIFY row_number() OVER w < 3;" }
+      - { id: after_group_by, sql: "SELECT a, sum(b) AS s FROM t GROUP BY a QUALIFY rank() OVER (ORDER BY s DESC) = 1;" }
+    examples:
+      - "SELECT\n    schema_name,\n    function_name,\n    -- In this example the function_rank column in the select clause is for reference\n    row_number() OVER (PARTITION BY schema_name ORDER BY function_name) AS function_rank\nFROM duckdb_functions()\nQUALIFY\n    row_number() OVER (PARTITION BY schema_name ORDER BY function_name) < 3;"
+      - "SELECT\n    schema_name,\n    function_name,\n    row_number() OVER (PARTITION BY schema_name ORDER BY function_name) AS function_rank\nFROM duckdb_functions()\nQUALIFY\n    function_rank < 3;"
+      - "SELECT\n    schema_name,\n    function_name,\n    row_number() OVER my_window AS function_rank\nFROM duckdb_functions()\nWINDOW\n    my_window AS (PARTITION BY schema_name ORDER BY function_name)\nQUALIFY\n    function_rank < 3;"
+
+  - id: values
+    name: VALUES
+    doc: https://duckdb.org/docs/stable/sql/query_syntax/values
+    tier: high
+    probes:
+      - { id: standalone, sql: "VALUES ('Amsterdam', 1), ('London', 2);" }
+      - { id: in_from, sql: "SELECT * FROM (VALUES ('Amsterdam', 1), ('London', 2)) c(name, id);" }
+      - { id: insert_values, sql: "INSERT INTO t VALUES ('Amsterdam', 1), ('London', 2);" }
+      - { id: ctas_values, sql: "CREATE TABLE t AS SELECT * FROM (VALUES ('Amsterdam', 1), ('London', 2)) c(name, id);" }
+      - { id: values_order_by_limit, sql: "VALUES (1), (2), (3) ORDER BY 1 LIMIT 2;" }
+    examples:
+      - "VALUES ('Amsterdam', 1), ('London', 2);"
+      - "SELECT *\nFROM (VALUES ('Amsterdam', 1), ('London', 2)) cities(name, id);"
+      - "INSERT INTO cities\nVALUES ('Amsterdam', 1), ('London', 2);"
+      - "CREATE TABLE cities AS\n    SELECT *\n    FROM (VALUES ('Amsterdam', 1), ('London', 2)) cities(name, id);"
+
+  - id: set_operations
+    name: Set Operations
+    doc: https://duckdb.org/docs/stable/sql/query_syntax/setops
+    tier: high
+    probes:
+      - { id: union, sql: "SELECT a FROM t UNION SELECT a FROM u;" }
+      - { id: union_all, sql: "SELECT a FROM t UNION ALL SELECT a FROM u;" }
+      - { id: union_by_name, sql: "SELECT * FROM t UNION BY NAME SELECT * FROM u;" }
+      - { id: union_all_by_name, sql: "SELECT * FROM t UNION ALL BY NAME SELECT * FROM u;" }
+      - { id: intersect, sql: "SELECT a FROM t INTERSECT SELECT a FROM u;" }
+      - { id: intersect_all, sql: "SELECT a FROM t INTERSECT ALL SELECT a FROM u;" }
+      - { id: except, sql: "SELECT a FROM t EXCEPT SELECT a FROM u;" }
+      - { id: except_all, sql: "SELECT a FROM t EXCEPT ALL SELECT a FROM u;" }
+      - { id: parenthesized, sql: "(SELECT a FROM t) UNION (SELECT a FROM u) ORDER BY a;" }
+      - { id: chained, sql: "SELECT a FROM t UNION SELECT a FROM u EXCEPT SELECT a FROM v;" }
+      - { id: from_first_operands, sql: "FROM t UNION ALL FROM u;" }
+    examples:
+      - "SELECT * FROM range(2) t1(x)\nUNION\nSELECT * FROM range(3) t2(x);"
+      - "SELECT * FROM range(2) t1(x)\nUNION ALL\nSELECT * FROM range(3) t2(x);"
+      - "SELECT * FROM capitals\nUNION BY NAME\nSELECT * FROM weather;"
+      - "SELECT unnest([5, 5, 6, 6, 6, 6, 7, 8]) AS x\nINTERSECT ALL\nSELECT unnest([5, 6, 6, 7, 7, 9]);"
+      - "SELECT unnest([5, 5, 6, 6, 6, 6, 7, 8]) AS x\nEXCEPT ALL\nSELECT unnest([5, 6, 6, 7, 7, 9]);"
+
+  - id: prepare
+    name: PREPARE
+    doc: https://duckdb.org/docs/stable/sql/statements/prepare
+    tier: medium
+    probes:
+      - { id: basic, sql: "PREPARE q AS SELECT * FROM t WHERE a = ? AND b >= ?;" }
+      - { id: positional_params, sql: "PREPARE q AS SELECT * FROM t WHERE a = $2 AND b >= $1;" }
+      - { id: named_params, sql: "PREPARE q AS SELECT * FROM t WHERE a = $name_start AND b >= $minimum_age;" }
+      - { id: parameter_types, sql: "PREPARE add_values(INTEGER, INTEGER) AS SELECT $1 + $2;" }
+      - { id: prepare_insert, sql: "PREPARE ins AS INSERT INTO t VALUES ($1, $2);" }
+    examples:
+      - "PREPARE query_person AS\n    SELECT *\n    FROM person\n    WHERE starts_with(name, $name_start)\n      AND age >= $minimum_age;"
+      - "PREPARE add_values(INTEGER, INTEGER) AS\n    SELECT $1 + $2;"
+      - "PREPARE query_person AS\n    SELECT *\n    FROM person\n    WHERE starts_with(name, ?)\n      AND age >= ?;"
+
+  - id: execute
+    name: EXECUTE
+    doc: https://duckdb.org/docs/stable/sql/statements/prepare
+    tier: medium
+    probes:
+      - { id: positional_args, sql: "EXECUTE q('B', 40);" }
+      - { id: named_args, sql: "EXECUTE q(name_start := 'B', minimum_age := 40);" }
+      - { id: no_args, sql: "EXECUTE q;" }
+    examples:
+      - "EXECUTE query_person(name_start := 'B', minimum_age := 40);"
+      - "EXECUTE add_values(20, 22);"
+      - "EXECUTE query_person('B', 40);"
+
+  - id: deallocate
+    name: DEALLOCATE
+    doc: https://duckdb.org/docs/stable/sql/statements/prepare
+    tier: medium
+    probes:
+      - { id: basic, sql: "DEALLOCATE q;" }
+      - { id: prepare_keyword, sql: "DEALLOCATE PREPARE q;" }
+    examples:
+      - "DEALLOCATE query_person;"
+      - "DEALLOCATE PREPARE add_values;"
+
+  - id: insert
+    name: INSERT
+    doc: https://duckdb.org/docs/stable/sql/statements/insert
+    tier: high
+    probes:
+      - { id: values, sql: "INSERT INTO t VALUES (1), (2), (3);" }
+      - { id: select, sql: "INSERT INTO t SELECT * FROM u;" }
+      - { id: from_first_select, sql: "INSERT INTO t FROM u;" }
+      - { id: column_list, sql: "INSERT INTO t (i) VALUES (1), (2), (3);" }
+      - { id: default_in_values, sql: "INSERT INTO t (i) VALUES (1), (DEFAULT), (3);" }
+      - { id: default_values, sql: "INSERT INTO t DEFAULT VALUES;" }
+      - { id: qualified_table, sql: "INSERT INTO db.s.t VALUES (1);" }
+      - { id: table_alias, sql: "INSERT INTO t AS x VALUES (1, 2) ON CONFLICT DO UPDATE SET j = x.j + 1;" }
+      - { id: or_ignore, sql: "INSERT OR IGNORE INTO t (i) VALUES (1);" }
+      - { id: or_replace, sql: "INSERT OR REPLACE INTO t (i) VALUES (1);" }
+      - { id: by_position, sql: "INSERT INTO t BY POSITION VALUES (5, 42);" }
+      - { id: by_position_columns, sql: "INSERT INTO t BY POSITION (b, a) VALUES (5, 42);" }
+      - { id: by_name, sql: "INSERT INTO t BY NAME (SELECT 42 AS b, 32 AS a);" }
+      - { id: by_name_select, sql: "INSERT INTO t BY NAME SELECT 42 AS b;" }
+      - { id: on_conflict_do_nothing, sql: "INSERT INTO t VALUES (1, 84) ON CONFLICT DO NOTHING;" }
+      - { id: on_conflict_do_update, sql: "INSERT INTO t VALUES (1, 84) ON CONFLICT DO UPDATE SET j = EXCLUDED.j;" }
+      - { id: on_conflict_target, sql: "INSERT INTO t VALUES (1, 40, 700) ON CONFLICT (i) DO UPDATE SET k = 2 * EXCLUDED.k;" }
+      - { id: on_conflict_target_where, sql: "INSERT INTO t VALUES (1, 40) ON CONFLICT (i) WHERE i > 0 DO NOTHING;" }
+      - { id: on_conflict_update_where, sql: "INSERT INTO t VALUES (1, 40, 700) ON CONFLICT (i) DO UPDATE SET k = 2 * EXCLUDED.k WHERE k < 100;" }
+      - { id: on_conflict_multiple_set, sql: "INSERT INTO t VALUES (1, 2, 3) ON CONFLICT (i) DO UPDATE SET j = EXCLUDED.j, k = EXCLUDED.k;" }
+      - { id: by_name_on_conflict, sql: "INSERT INTO t BY NAME (SELECT 1 AS i, 336 AS j) ON CONFLICT DO UPDATE SET j = EXCLUDED.j;" }
+      - { id: returning_star, sql: "INSERT INTO t SELECT 42 RETURNING *;" }
+      - { id: returning_list, sql: "INSERT INTO t SELECT 2 AS i, 3 AS j RETURNING *, i * j AS i_times_j;" }
+      - { id: returning_expr, sql: "INSERT INTO t VALUES (1) RETURNING i;" }
+    examples:
+      - "INSERT INTO tbl\n    VALUES (1), (2), (3);"
+      - "INSERT INTO tbl (i)\n    VALUES (1), (DEFAULT), (3);"
+      - "INSERT OR REPLACE INTO tbl (i)\n    VALUES (1);"
+      - "INSERT INTO tbl\n    VALUES (1, 40, 700)\n    ON CONFLICT (i) DO UPDATE SET k = 2 * EXCLUDED.k WHERE k < 100;"
+      - "INSERT INTO t2\n    SELECT 2 AS i, 3 AS j\n    RETURNING *, i * j AS i_times_j;"
+
+  - id: update
+    name: UPDATE
+    doc: https://duckdb.org/docs/stable/sql/statements/update
+    tier: high
+    probes:
+      - { id: where, sql: "UPDATE t SET i = 0 WHERE i IS NULL;" }
+      - { id: multiple_set, sql: "UPDATE t SET i = 1, j = 2;" }
+      - { id: qualified_table, sql: "UPDATE db.s.t SET i = 1;" }
+      - { id: alias_as, sql: "UPDATE t AS x SET v = 1 WHERE x.k = 2;" }
+      - { id: alias_no_as, sql: "UPDATE t x SET v = 1 WHERE x.k = 2;" }
+      - { id: from, sql: "UPDATE o SET v = n.v FROM n WHERE o.k = n.k;" }
+      - { id: from_multiple, sql: "UPDATE o SET v = n.v FROM n, m WHERE o.k = n.k AND n.k = m.k;" }
+      - { id: scalar_subquery, sql: "UPDATE o SET v = (SELECT n.v FROM n WHERE o.k = n.k);" }
+      - { id: expression, sql: "UPDATE t SET revenue = revenue + 100 WHERE code = 'FR';" }
+    examples:
+      - "UPDATE tbl\nSET i = 0\nWHERE i IS NULL;"
+      - "UPDATE tbl\nSET i = 1, j = 2;"
+      - "UPDATE original\n    SET value = new.value\n    FROM new\n    WHERE original.key = new.key;"
+      - "UPDATE original AS true_original\n    SET value = (\n        SELECT\n            new.value || ' a change!' AS value\n        FROM original AS new\n        WHERE true_original.key = new.key\n    );"
+      - "UPDATE city\nSET revenue = revenue + 100\nFROM country\nWHERE city.country_code = country.code\n  AND country.name = 'France';"
+
+  - id: delete
+    name: DELETE
+    doc: https://duckdb.org/docs/stable/sql/statements/delete
+    tier: high
+    probes:
+      - { id: where, sql: "DELETE FROM t WHERE i = 2;" }
+      - { id: all_rows, sql: "DELETE FROM t;" }
+      - { id: qualified_table, sql: "DELETE FROM db.s.t WHERE i = 2;" }
+      - { id: using, sql: "DELETE FROM t USING u WHERE t.k = u.k;" }
+      - { id: using_multiple, sql: "DELETE FROM t USING u, v WHERE t.k = u.k AND u.k = v.k;" }
+      - { id: returning, sql: "DELETE FROM t RETURNING name, 2025 - age AS approx_birthyear;" }
+      - { id: returning_star, sql: "DELETE FROM t WHERE i = 2 RETURNING *;" }
+      - { id: returning_prefix_alias, sql: "DELETE FROM t RETURNING n: name;" }
+    examples:
+      - "DELETE FROM tbl WHERE i = 2;"
+      - "DELETE FROM tbl;"
+      - "DELETE FROM employees RETURNING name, 2025 - age AS approx_birthyear;"
+
+  - id: truncate
+    name: TRUNCATE
+    doc: https://duckdb.org/docs/stable/sql/statements/delete
+    tier: high
+    probes:
+      - { id: basic, sql: "TRUNCATE t;" }
+    examples:
+      - "TRUNCATE tbl;"
+
+  - id: merge_into
+    name: MERGE INTO
+    doc: https://duckdb.org/docs/stable/sql/statements/merge_into
+    tier: high
+    probes:
+      - { id: on_update_insert, sql: "MERGE INTO t USING s ON (s.id = t.id) WHEN MATCHED THEN UPDATE WHEN NOT MATCHED THEN INSERT;" }
+      - { id: target_alias, sql: "MERGE INTO t AS x USING s ON s.id = x.id WHEN MATCHED THEN DELETE;" }
+      - { id: subquery_source, sql: "MERGE INTO t USING (SELECT 1 AS id, 98000.0 AS salary) AS u ON u.id = t.id WHEN MATCHED THEN UPDATE SET salary = u.salary;" }
+      - { id: using_columns, sql: "MERGE INTO t USING (SELECT 1 AS id) AS d USING (id) WHEN MATCHED THEN DELETE;" }
+      - { id: update_set, sql: "MERGE INTO t USING s ON s.id = t.id WHEN MATCHED THEN UPDATE SET salary = s.salary, name = s.name;" }
+      - { id: matched_and_condition, sql: "MERGE INTO t USING s USING (id) WHEN MATCHED AND t.salary >= 100000 THEN DELETE;" }
+      - { id: multiple_matched, sql: "MERGE INTO t USING s USING (id) WHEN MATCHED AND t.v < 10 THEN UPDATE SET v = s.v WHEN MATCHED AND t.v > 10 THEN DELETE WHEN NOT MATCHED THEN INSERT BY NAME;" }
+      - { id: not_matched_insert_values, sql: "MERGE INTO t USING s ON s.id = t.id WHEN NOT MATCHED THEN INSERT VALUES (s.id, s.name);" }
+      - { id: not_matched_insert_columns, sql: "MERGE INTO t USING s ON s.id = t.id WHEN NOT MATCHED THEN INSERT (id, name) VALUES (s.id, s.name);" }
+      - { id: not_matched_and, sql: "MERGE INTO t USING s ON s.id = t.id WHEN NOT MATCHED AND s.v > 0 THEN INSERT;" }
+      - { id: insert_by_name, sql: "MERGE INTO t USING s ON s.id = t.id WHEN NOT MATCHED THEN INSERT BY NAME;" }
+      - { id: not_matched_by_source, sql: "MERGE INTO t USING (SELECT 1 AS id) s USING (id) WHEN MATCHED THEN UPDATE WHEN NOT MATCHED BY SOURCE THEN DELETE;" }
+      - { id: not_matched_by_target, sql: "MERGE INTO t USING s USING (id) WHEN NOT MATCHED BY TARGET THEN INSERT;" }
+      - { id: returning, sql: "MERGE INTO t USING s USING (id) WHEN MATCHED THEN UPDATE RETURNING merge_action, *;" }
+    examples:
+      - "MERGE INTO people\n    USING (\n        SELECT\n            unnest([3, 1]) AS id,\n            unnest(['Sarah', 'John']) AS name,\n            unnest([95_000.0, 105_000.0]) AS salary\n    ) AS upserts\n    ON (upserts.id = people.id)\n    WHEN MATCHED THEN UPDATE\n    WHEN NOT MATCHED THEN INSERT;"
+      - "MERGE INTO people\n    USING (\n        SELECT\n            1 AS id, \n            98_000.0 AS salary\n    ) AS salary_updates\n    USING (id)\n    WHEN MATCHED THEN UPDATE SET salary = salary_updates.salary;"
+      - "MERGE INTO people\n    USING (\n        SELECT\n            unnest([3, 2]) AS id, \n    ) AS deletes\n    USING (id)\n    WHEN MATCHED AND people.salary >= 100_000.0 THEN DELETE;"
+      - "MERGE INTO people\n    USING (\n        SELECT\n            unnest([3, 1]) AS id,\n            unnest([89_000.0, 70_000.0]) AS salary\n    ) AS upserts\n    USING (id)\n    WHEN MATCHED AND people.salary < 100_000.0 THEN UPDATE SET salary = upserts.salary\n    -- Second update or delete condition\n    WHEN MATCHED AND people.salary > 100_000.0 THEN DELETE\n    WHEN NOT MATCHED THEN INSERT BY NAME\n    RETURNING merge_action, *;"
+      - "MERGE INTO target\n    USING (SELECT 1 AS id) source\n    USING (id)\n    WHEN MATCHED THEN UPDATE\n    WHEN NOT MATCHED BY SOURCE THEN DELETE\n    RETURNING merge_action, *;"
+
+  - id: create_table
+    name: CREATE TABLE
+    doc: https://duckdb.org/docs/stable/sql/statements/create_table
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE TABLE t (i INTEGER, j INTEGER);" }
+      - { id: qualified_name, sql: "CREATE TABLE db.s.t (i INTEGER);" }
+      - { id: or_replace, sql: "CREATE OR REPLACE TABLE t (i INTEGER, j INTEGER);" }
+      - { id: if_not_exists, sql: "CREATE TABLE IF NOT EXISTS t (i INTEGER, j INTEGER);" }
+      - { id: temporary, sql: "CREATE TEMPORARY TABLE t (i INTEGER);" }
+      - { id: temp, sql: "CREATE TEMP TABLE t (i INTEGER);" }
+      - { id: column_primary_key, sql: "CREATE TABLE t (id INTEGER PRIMARY KEY, j VARCHAR);" }
+      - { id: column_not_null, sql: "CREATE TABLE t (i INTEGER NOT NULL);" }
+      - { id: column_null, sql: "CREATE TABLE t (i INTEGER NULL);" }
+      - { id: column_unique, sql: "CREATE TABLE t (d DATE UNIQUE);" }
+      - { id: column_check, sql: "CREATE TABLE t (d DOUBLE CHECK (d < 10));" }
+      - { id: column_default_literal, sql: "CREATE TABLE t (i INTEGER DEFAULT 0);" }
+      - { id: column_default_expression, sql: "CREATE TABLE t (i INTEGER DEFAULT (1 + 1), ts TIMESTAMP DEFAULT current_timestamp);" }
+      - { id: column_references, sql: "CREATE TABLE t (id INTEGER PRIMARY KEY, s_id INTEGER REFERENCES s(id));" }
+      - { id: column_collate, sql: "CREATE TABLE t (name VARCHAR COLLATE NOCASE);" }
+      - { id: column_multiple_constraints, sql: "CREATE TABLE t (i INTEGER NOT NULL DEFAULT 0 UNIQUE);" }
+      - { id: table_primary_key, sql: "CREATE TABLE t (id INTEGER, j VARCHAR, PRIMARY KEY (id, j));" }
+      - { id: table_unique, sql: "CREATE TABLE t (i INTEGER, j INTEGER, UNIQUE (i, j));" }
+      - { id: table_check, sql: "CREATE TABLE t (x INTEGER, y INTEGER, CHECK (x < y));" }
+      - { id: named_constraint, sql: "CREATE TABLE t (x INTEGER, y INTEGER, CONSTRAINT x_lt_y CHECK (x < y));" }
+      - { id: table_foreign_key, sql: "CREATE TABLE t (id INTEGER PRIMARY KEY, s_id INTEGER, FOREIGN KEY (s_id) REFERENCES s (id));" }
+      - { id: table_foreign_key_composite, sql: "CREATE TABLE t (a INTEGER, b VARCHAR, FOREIGN KEY (a, b) REFERENCES s(id, j));" }
+      - { id: generated_shorthand, sql: "CREATE TABLE t (x FLOAT, two_x AS (2 * x));" }
+      - { id: generated_always_virtual, sql: "CREATE TABLE t (x FLOAT, two_x FLOAT GENERATED ALWAYS AS (2 * x) VIRTUAL);" }
+      - { id: generated_stored, sql: "CREATE TABLE t (x FLOAT, two_x FLOAT GENERATED ALWAYS AS (2 * x) STORED);" }
+      - { id: generated_no_type, sql: "CREATE TABLE t (x FLOAT, two_x GENERATED ALWAYS AS (2 * x));" }
+      - { id: nested_types, sql: "CREATE TABLE t (l INTEGER[], s STRUCT(a INTEGER, b VARCHAR), m MAP(VARCHAR, INTEGER), a INTEGER[3]);" }
+      - { id: parameterized_types, sql: "CREATE TABLE t (i INTEGER, j VARCHAR(10), k DECIMAL(18, 3));" }
+      - { id: ctas, sql: "CREATE TABLE t AS SELECT 42 AS i, 84 AS j;" }
+      - { id: ctas_from_first, sql: "CREATE TABLE t AS FROM read_csv('path/file.csv');" }
+      - { id: ctas_file, sql: "CREATE TABLE t AS FROM 'https://duckdb.org/data/flights.csv';" }
+      - { id: ctas_or_replace, sql: "CREATE OR REPLACE TABLE t AS FROM u;" }
+      - { id: ctas_temp, sql: "CREATE TEMP TABLE t AS SELECT * FROM read_csv('path/file.csv');" }
+      - { id: ctas_with_no_data, sql: "CREATE TABLE t AS FROM u WITH NO DATA;" }
+      - { id: ctas_limit_0, sql: "CREATE TABLE t AS FROM u LIMIT 0;" }
+      - { id: ctas_parenthesized, sql: "CREATE OR REPLACE TABLE t AS (FROM range(10) r(i));" }
+      - { id: ctas_if_not_exists, sql: "CREATE TABLE IF NOT EXISTS t AS SELECT 1 AS i;" }
+    examples:
+      - "CREATE TABLE t1 (id INTEGER, j VARCHAR, PRIMARY KEY (id, j));"
+      - "CREATE TABLE t1 (\n    i INTEGER NOT NULL DEFAULT 0,\n    decimalnr DOUBLE CHECK (decimalnr < 10),\n    date DATE UNIQUE,\n    time TIMESTAMP\n);"
+      - "CREATE TABLE t1 AS\n    FROM read_csv('path/file.csv');"
+      - "CREATE TABLE t1 AS\n    FROM t2\n    WITH NO DATA;"
+      - "CREATE TABLE t1 (x FLOAT, two_x FLOAT GENERATED ALWAYS AS (2 * x) VIRTUAL);"
+
+  - id: alter_table
+    name: ALTER TABLE
+    doc: https://duckdb.org/docs/stable/sql/statements/alter_table
+    tier: high
+    probes:
+      - { id: add_column, sql: "ALTER TABLE t ADD COLUMN k INTEGER;" }
+      - { id: add_no_column_keyword, sql: "ALTER TABLE t ADD k INTEGER;" }
+      - { id: add_column_default, sql: "ALTER TABLE t ADD COLUMN l INTEGER DEFAULT 10;" }
+      - { id: add_column_if_not_exists, sql: "ALTER TABLE t ADD COLUMN IF NOT EXISTS k INTEGER;" }
+      - { id: add_column_constraints, sql: "ALTER TABLE t ADD COLUMN k INTEGER NOT NULL CHECK (k > 0);" }
+      - { id: add_struct_field, sql: "ALTER TABLE t ADD COLUMN s.k INTEGER;" }
+      - { id: if_exists, sql: "ALTER TABLE IF EXISTS t ADD COLUMN k INTEGER;" }
+      - { id: qualified_name, sql: "ALTER TABLE db.s.t ADD COLUMN k INTEGER;" }
+      - { id: drop_column, sql: "ALTER TABLE t DROP COLUMN k;" }
+      - { id: drop_no_column_keyword, sql: "ALTER TABLE t DROP k;" }
+      - { id: drop_column_if_exists, sql: "ALTER TABLE t DROP COLUMN IF EXISTS k;" }
+      - { id: drop_struct_field, sql: "ALTER TABLE t DROP COLUMN s.i;" }
+      - { id: alter_type, sql: "ALTER TABLE t ALTER i TYPE VARCHAR;" }
+      - { id: alter_column_type, sql: "ALTER TABLE t ALTER COLUMN i TYPE INTEGER;" }
+      - { id: set_data_type_using, sql: "ALTER TABLE t ALTER i SET DATA TYPE VARCHAR USING concat(i, '_', j);" }
+      - { id: set_type, sql: "ALTER TABLE t ALTER COLUMN i SET TYPE BIGINT;" }
+      - { id: type_collate, sql: "ALTER TABLE t ALTER COLUMN c TYPE VARCHAR COLLATE NOCASE;" }
+      - { id: type_using_only, sql: "ALTER TABLE t ALTER col TYPE USING struct_insert(col, a := 42, b := NULL::VARCHAR);" }
+      - { id: set_default, sql: "ALTER TABLE t ALTER COLUMN i SET DEFAULT 10;" }
+      - { id: drop_default, sql: "ALTER TABLE t ALTER COLUMN i DROP DEFAULT;" }
+      - { id: set_not_null, sql: "ALTER TABLE t ALTER COLUMN i SET NOT NULL;" }
+      - { id: drop_not_null, sql: "ALTER TABLE t ALTER COLUMN i DROP NOT NULL;" }
+      - { id: rename_to, sql: "ALTER TABLE t RENAME TO t_old;" }
+      - { id: rename_column, sql: "ALTER TABLE t RENAME COLUMN i TO j;" }
+      - { id: rename_no_column_keyword, sql: "ALTER TABLE t RENAME i TO j;" }
+      - { id: add_primary_key, sql: "ALTER TABLE t ADD PRIMARY KEY (i, j);" }
+      - { id: set_options, sql: "ALTER TABLE t SET ('option1' = 'value1', 'option2' = 'value2');" }
+      - { id: reset_options, sql: "ALTER TABLE t RESET ('option1', 'option2');" }
+    examples:
+      - "ALTER TABLE integers\nADD COLUMN l INTEGER DEFAULT 10;"
+      - "ALTER TABLE integers\nALTER i SET DATA TYPE VARCHAR USING concat(i, '_', j);"
+      - "ALTER TABLE integers\nALTER COLUMN i DROP NOT NULL;"
+      - "ALTER TABLE integers\nRENAME i TO ii;"
+      - "ALTER TABLE integers\nADD PRIMARY KEY (i);"
+
+  - id: create_view
+    name: CREATE VIEW
+    doc: https://duckdb.org/docs/stable/sql/statements/create_view
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE VIEW v AS SELECT * FROM t;" }
+      - { id: or_replace, sql: "CREATE OR REPLACE VIEW v AS SELECT 42;" }
+      - { id: column_list, sql: "CREATE VIEW v(a) AS SELECT 42;" }
+      - { id: temporary, sql: "CREATE TEMPORARY VIEW v AS SELECT 1;" }
+      - { id: temp, sql: "CREATE TEMP VIEW v AS SELECT 1;" }
+      - { id: if_not_exists, sql: "CREATE VIEW IF NOT EXISTS v AS SELECT 1;" }
+      - { id: qualified_name, sql: "CREATE VIEW db.s.v AS SELECT 1;" }
+      - { id: from_first_body, sql: "CREATE VIEW v AS FROM t;" }
+    examples:
+      - "CREATE VIEW view1 AS SELECT * FROM tbl;"
+      - "CREATE OR REPLACE VIEW view1 AS SELECT 42;"
+      - "CREATE VIEW view1(a) AS SELECT 42;"
+
+  - id: alter_view
+    name: ALTER VIEW
+    doc: https://duckdb.org/docs/stable/sql/statements/alter_view
+    tier: high
+    probes:
+      - { id: rename_to, sql: "ALTER VIEW v1 RENAME TO v2;" }
+    examples:
+      - "ALTER VIEW view1 RENAME TO view2;"
+
+  - id: create_schema
+    name: CREATE SCHEMA
+    doc: https://duckdb.org/docs/stable/sql/statements/create_schema
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE SCHEMA s1;" }
+      - { id: if_not_exists, sql: "CREATE SCHEMA IF NOT EXISTS s2;" }
+      - { id: or_replace, sql: "CREATE OR REPLACE SCHEMA s2;" }
+      - { id: catalog_qualified, sql: "CREATE SCHEMA db.s1;" }
+    examples:
+      - "CREATE SCHEMA s1;"
+      - "CREATE SCHEMA IF NOT EXISTS s2;"
+      - "CREATE OR REPLACE SCHEMA s2;"
+
+  - id: create_index
+    name: CREATE INDEX
+    doc: https://duckdb.org/docs/stable/sql/statements/create_index
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE INDEX idx ON t (c);" }
+      - { id: unique, sql: "CREATE UNIQUE INDEX idx ON t (id);" }
+      - { id: if_not_exists, sql: "CREATE INDEX IF NOT EXISTS idx ON t (c);" }
+      - { id: multi_column, sql: "CREATE INDEX idx ON t (a, b);" }
+      - { id: expression, sql: "CREATE INDEX idx ON t ((j + k));" }
+      - { id: using_type, sql: "CREATE INDEX idx ON t USING HNSW (vec);" }
+      - { id: with_options, sql: "CREATE INDEX idx ON t USING HNSW (vec) WITH (metric = 'cosine');" }
+      - { id: with_boolean_option, sql: "CREATE INDEX idx ON t (c) WITH (is_cool);" }
+      - { id: qualified_table, sql: "CREATE INDEX idx ON s.t (c);" }
+    examples:
+      - "CREATE UNIQUE INDEX films_id_idx ON films (id);"
+      - "CREATE INDEX s_idx ON films (revenue);"
+      - "CREATE INDEX IF NOT EXISTS s_idx ON films (revenue);"
+      - "CREATE INDEX gy_idx ON films (genre, year);"
+      - "CREATE INDEX i_index ON integers ((j + k));"
+
+  - id: drop
+    name: DROP
+    doc: https://duckdb.org/docs/stable/sql/statements/drop
+    tier: high
+    probes:
+      - { id: table, sql: "DROP TABLE t;" }
+      - { id: table_if_exists, sql: "DROP TABLE IF EXISTS t;" }
+      - { id: table_qualified, sql: "DROP TABLE db.s.t;" }
+      - { id: table_restrict, sql: "DROP TABLE t RESTRICT;" }
+      - { id: table_cascade, sql: "DROP TABLE t CASCADE;" }
+      - { id: view, sql: "DROP VIEW IF EXISTS v;" }
+      - { id: function, sql: "DROP FUNCTION f;" }
+      - { id: index, sql: "DROP INDEX idx;" }
+      - { id: index_if_exists, sql: "DROP INDEX IF EXISTS idx;" }
+      - { id: schema, sql: "DROP SCHEMA s;" }
+      - { id: schema_cascade, sql: "DROP SCHEMA s CASCADE;" }
+      - { id: sequence, sql: "DROP SEQUENCE seq;" }
+      - { id: macro, sql: "DROP MACRO m;" }
+      - { id: macro_table, sql: "DROP MACRO TABLE m;" }
+      - { id: type, sql: "DROP TYPE typ;" }
+    examples:
+      - "DROP TABLE tbl;"
+      - "DROP VIEW IF EXISTS view1;"
+      - "DROP MACRO TABLE mt; -- the `TABLE` is optional since v1.4.0"
+      - "DROP SCHEMA myschema CASCADE;"
+      - "DROP TABLE tbl RESTRICT;"
+
+  - id: create_macro
+    name: CREATE MACRO
+    doc: https://duckdb.org/docs/stable/sql/statements/create_macro
+    tier: high
+    probes:
+      - { id: scalar, sql: "CREATE MACRO add(a, b) AS a + b;" }
+      - { id: or_replace, sql: "CREATE OR REPLACE MACRO add(a, b) AS a + b;" }
+      - { id: if_not_exists, sql: "CREATE MACRO IF NOT EXISTS add(a, b) AS a + b;" }
+      - { id: temporary, sql: "CREATE TEMPORARY MACRO add(a, b) AS a + b;" }
+      - { id: temp, sql: "CREATE OR REPLACE TEMP MACRO add(a, b) AS a + b;" }
+      - { id: function_keyword, sql: "CREATE FUNCTION main.my_avg(x) AS sum(x) / count(x);" }
+      - { id: no_params, sql: "CREATE MACRO one() AS (SELECT 1);" }
+      - { id: case_body, sql: "CREATE MACRO ifelse(a, b, c) AS CASE WHEN a THEN b ELSE c END;" }
+      - { id: default_param, sql: "CREATE MACRO add_default(a, b := 5) AS a + b;" }
+      - { id: typed_param, sql: "CREATE MACRO is_maximal(a INTEGER) AS a = 2^31 - 1;" }
+      - { id: typed_default_param, sql: "CREATE MACRO m(a INTEGER, b INTEGER := 5) AS a + b;" }
+      - { id: table_macro, sql: "CREATE MACRO static_table() AS TABLE SELECT 'Hello' AS column1, 'World' AS column2;" }
+      - { id: table_macro_params, sql: "CREATE MACRO get_users(i) AS TABLE SELECT * FROM users WHERE uid IN (SELECT unnest(i));" }
+      - { id: table_macro_from_first, sql: "CREATE MACRO tm(tbl) AS TABLE FROM query_table(tbl);" }
+      - { id: overloads, sql: "CREATE MACRO add_x (a, b) AS a + b, (a, b, c) AS a + b + c;" }
+      - { id: typed_overloads, sql: "CREATE OR REPLACE MACRO is_maximal (a TINYINT) AS a = 2^7 - 1, (a INT) AS a = 2^31 - 1;" }
+      - { id: call_named_args, sql: "SELECT triple_add(40, c := 1, b := 1) AS x;" }
+    examples:
+      - "CREATE MACRO add_default(a, b := 5) AS a + b;"
+      - "CREATE MACRO is_maximal(a INTEGER) AS a = 2^31 - 1;"
+      - "CREATE OR REPLACE TEMP MACRO dynamic_table(col1_value, col2_value) AS TABLE\n    SELECT col1_value AS column1, col2_value AS column2\n    UNION ALL\n    SELECT 'Hello' AS col1_value, 456 AS col2_value;"
+      - "CREATE MACRO add_x\n    (a, b) AS a + b,\n    (a, b, c) AS a + b + c;"
+      - "CREATE FUNCTION main.my_avg(x) AS sum(x) / count(x);"
+
+  - id: begin_transaction
+    name: BEGIN TRANSACTION
+    doc: https://duckdb.org/docs/stable/sql/statements/transactions
+    tier: high
+    probes:
+      - { id: begin_transaction, sql: "BEGIN TRANSACTION;" }
+    examples:
+      - "BEGIN TRANSACTION;"
+
+  - id: commit
+    name: COMMIT
+    doc: https://duckdb.org/docs/stable/sql/statements/transactions
+    tier: high
+    probes:
+      - { id: commit, sql: "COMMIT;" }
+    examples:
+      - "COMMIT;"
+
+  - id: rollback
+    name: ROLLBACK / ABORT
+    doc: https://duckdb.org/docs/stable/sql/statements/transactions
+    tier: high
+    probes:
+      - { id: rollback, sql: "ROLLBACK;" }
+      - { id: abort, sql: "ABORT;" }
+    examples:
+      - "ROLLBACK;"
+      - "ABORT;"
+
+  - id: create_sequence
+    name: CREATE SEQUENCE
+    doc: https://duckdb.org/docs/stable/sql/statements/create_sequence
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE SEQUENCE serial;" }
+      - { id: start, sql: "CREATE SEQUENCE serial START 101;" }
+      - { id: start_with_increment_by, sql: "CREATE SEQUENCE serial START WITH 1 INCREMENT BY 2;" }
+      - { id: negative_increment_maxvalue, sql: "CREATE SEQUENCE serial START WITH 99 INCREMENT BY -1 MAXVALUE 99;" }
+      - { id: minvalue_no_maxvalue, sql: "CREATE SEQUENCE serial INCREMENT 1 MINVALUE 1 NO MAXVALUE;" }
+      - { id: cycle, sql: "CREATE SEQUENCE serial START WITH 1 MAXVALUE 10 CYCLE;" }
+      - { id: no_cycle, sql: "CREATE SEQUENCE serial NO MINVALUE NO CYCLE;" }
+      - { id: or_replace, sql: "CREATE OR REPLACE SEQUENCE serial;" }
+      - { id: if_not_exists, sql: "CREATE SEQUENCE IF NOT EXISTS serial;" }
+      - { id: temporary, sql: "CREATE TEMPORARY SEQUENCE serial;" }
+      - { id: nextval_currval, sql: "SELECT nextval('serial') AS nextval, currval('serial') AS currval;" }
+    examples:
+      - "CREATE SEQUENCE serial START 101;"
+      - "CREATE SEQUENCE serial START WITH 99 INCREMENT BY -1 MAXVALUE 99;"
+      - "CREATE SEQUENCE serial START WITH 1 MAXVALUE 10 CYCLE;"
+      - "CREATE SEQUENCE IF NOT EXISTS serial;"
+      - "INSERT INTO distributors VALUES (nextval('serial'), 'nothing');"
+
+  - id: create_type
+    name: CREATE TYPE
+    doc: https://duckdb.org/docs/stable/sql/statements/create_type
+    tier: medium
+    probes:
+      - { id: enum, sql: "CREATE TYPE mood AS ENUM ('happy', 'sad', 'curious');" }
+      - { id: struct, sql: "CREATE TYPE many_things AS STRUCT(k INTEGER, l VARCHAR);" }
+      - { id: union, sql: "CREATE TYPE one_thing AS UNION(number INTEGER, string VARCHAR);" }
+      - { id: alias, sql: "CREATE TYPE x_index AS INTEGER;" }
+      - { id: or_replace, sql: "CREATE OR REPLACE TYPE mood AS ENUM ('cheerful', 'gloomy');" }
+      - id: enum_from_query
+        sql: "CREATE TYPE region AS ENUM (SELECT region FROM sales_data);"
+        note: "documented on the ENUM data type page (data_types/enum)"
+    examples:
+      - "CREATE TYPE mood AS ENUM ('happy', 'sad', 'curious');"
+      - "CREATE TYPE many_things AS STRUCT(k INTEGER, l VARCHAR);"
+      - "CREATE TYPE one_thing AS UNION(number INTEGER, string VARCHAR);"
+      - "CREATE TYPE x_index AS INTEGER;"
+      - "CREATE OR REPLACE TYPE mood AS ENUM ('cheerful', 'gloomy');"
+
+  - id: create_secret
+    name: CREATE SECRET
+    doc: https://duckdb.org/docs/stable/sql/statements/create_secret
+    tier: medium
+    probes:
+      - { id: temporary_default, sql: "CREATE SECRET my_secret (TYPE s3, KEY_ID 'k', SECRET 'v', REGION 'r');" }
+      - { id: persistent, sql: "CREATE PERSISTENT SECRET my_secret (TYPE s3, KEY_ID 'k', SECRET 'v');" }
+      - { id: temporary_keyword, sql: "CREATE TEMPORARY SECRET my_secret (TYPE s3, KEY_ID 'k', SECRET 'v');" }
+      - { id: or_replace, sql: "CREATE OR REPLACE SECRET my_secret (TYPE s3, KEY_ID 'k', SECRET 'v');" }
+      - { id: if_not_exists, sql: "CREATE SECRET IF NOT EXISTS my_secret (TYPE s3, KEY_ID 'k', SECRET 'v');" }
+      - { id: unnamed, sql: "CREATE SECRET (TYPE s3, KEY_ID 'k', SECRET 'v');" }
+      - { id: in_storage, sql: "CREATE PERSISTENT SECRET my_secret IN local_file (TYPE s3, KEY_ID 'k', SECRET 'v');" }
+      - { id: scope, sql: "CREATE SECRET s1 (TYPE s3, KEY_ID 'k', SECRET 'v', SCOPE 's3://my-bucket');" }
+      - { id: provider, sql: "CREATE SECRET s1 (TYPE s3, PROVIDER credential_chain);" }
+    examples:
+      - "CREATE SECRET my_secret (\n    TYPE s3,\n    KEY_ID 'my_secret_key',\n    SECRET 'my_secret_value',\n    REGION 'my_region'\n);"
+      - "CREATE PERSISTENT SECRET my_persistent_secret (\n    TYPE s3,\n    KEY_ID 'my_secret_key',\n    SECRET 'my_secret_value'\n);"
+
+  - id: drop_secret
+    name: DROP SECRET
+    doc: https://duckdb.org/docs/stable/sql/statements/create_secret
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP SECRET my_secret;" }
+      - { id: persistent, sql: "DROP PERSISTENT SECRET my_secret;" }
+      - { id: temporary_if_exists, sql: "DROP TEMPORARY SECRET IF EXISTS my_secret;" }
+      - { id: from_storage, sql: "DROP SECRET my_secret FROM local_file;" }
+    examples:
+      - "DROP PERSISTENT SECRET my_persistent_secret;"
+
+  - id: attach
+    name: ATTACH
+    doc: https://duckdb.org/docs/stable/sql/statements/attach
+    tier: medium
+    probes:
+      - { id: basic, sql: "ATTACH 'file.db';" }
+      - { id: alias, sql: "ATTACH 'file.db' AS file_db;" }
+      - { id: database_keyword, sql: "ATTACH DATABASE 'file.db' AS file_db;" }
+      - { id: read_only, sql: "ATTACH 'file.db' (READ_ONLY);" }
+      - { id: type_option, sql: "ATTACH 'sqlite_file.db' AS sqlite_db (TYPE sqlite);" }
+      - { id: multiple_options, sql: "ATTACH 'encrypted.db' AS enc_db (ENCRYPTION_KEY 'quack_quack', ENCRYPTION_CIPHER 'CBC');" }
+      - { id: if_not_exists, sql: "ATTACH IF NOT EXISTS 'file.db' AS file_db;" }
+      - { id: or_replace, sql: "ATTACH OR REPLACE 'file2.db' AS file_db;" }
+      - { id: memory, sql: "ATTACH ':memory:' AS memory_db;" }
+    examples:
+      - "ATTACH 'file.db' AS file_db;"
+      - "ATTACH 'file.db' (BLOCK_SIZE 16_384);"
+      - "ATTACH 'sqlite_file.db' AS sqlite_db (TYPE sqlite);"
+      - "ATTACH OR REPLACE 'file2.db' AS file_db;"
+      - "ATTACH 'file.db' (STORAGE_VERSION 'v1.2.0');"
+
+  - id: detach
+    name: DETACH
+    doc: https://duckdb.org/docs/stable/sql/statements/attach
+    tier: medium
+    probes:
+      - { id: basic, sql: "DETACH file_db;" }
+      - { id: database_keyword, sql: "DETACH DATABASE file_db;" }
+      - { id: if_exists, sql: "DETACH DATABASE IF EXISTS file_db;" }
+    examples:
+      - "DETACH file;"
+
+  - id: use
+    name: USE
+    doc: https://duckdb.org/docs/stable/sql/statements/use
+    tier: medium
+    probes:
+      - { id: database, sql: "USE memory;" }
+      - { id: database_schema, sql: "USE duck.main;" }
+    examples:
+      - "USE memory;"
+      - "USE duck.main;"
+      - "USE main;"
+
+  - id: show
+    name: SHOW and SHOW DATABASES
+    doc: https://duckdb.org/docs/stable/sql/statements/show
+    tier: medium
+    probes:
+      - { id: show_table, sql: "SHOW t;" }
+      - { id: show_databases, sql: "SHOW DATABASES;" }
+      - { id: show_schemas, sql: "SHOW SCHEMAS;" }
+      - id: show_tables
+        sql: "SHOW TABLES;"
+        note: "documented in the 'List Tables' guide (guides/meta/list_tables) linked from the SHOW page"
+      - id: show_all_tables
+        sql: "SHOW ALL TABLES;"
+        note: "documented in the 'List Tables' guide (guides/meta/list_tables)"
+      - id: show_tables_from
+        sql: "SHOW TABLES FROM db.s1;"
+        note: "documented in the 'List Tables' guide (guides/meta/list_tables)"
+    examples:
+      - "SHOW DATABASES;"
+      - "SHOW SCHEMAS;"
+
+  - id: describe
+    name: DESCRIBE
+    doc: https://duckdb.org/docs/stable/sql/statements/describe
+    tier: medium
+    probes:
+      - { id: table, sql: "DESCRIBE t;" }
+      - { id: query, sql: "DESCRIBE SELECT * FROM t;" }
+      - id: in_subquery
+        sql: "CREATE TABLE d AS SELECT * FROM (DESCRIBE t);"
+        note: "documented in the DESCRIBE guide (guides/meta/describe) linked from this page"
+      - id: describe_table_file
+        sql: "DESCRIBE TABLE 'https://blobs.duckdb.org/data/Star_Trek-Season_1.csv';"
+        note: "documented in the DESCRIBE guide (guides/meta/describe)"
+    examples:
+      - "DESCRIBE tbl;"
+      - "DESCRIBE SELECT * FROM tbl;"
+
+  - id: summarize
+    name: SUMMARIZE
+    doc: https://duckdb.org/docs/stable/sql/statements/summarize
+    tier: medium
+    probes:
+      - { id: table, sql: "SUMMARIZE t;" }
+      - { id: query, sql: "SUMMARIZE SELECT * FROM t;" }
+      - id: in_subquery
+        sql: "CREATE TABLE s AS SELECT * FROM (SUMMARIZE t);"
+        note: "documented in the SUMMARIZE guide (guides/meta/summarize) linked from this page"
+      - id: summarize_table_file
+        sql: "SUMMARIZE TABLE 'https://blobs.duckdb.org/data/Star_Trek-Season_1.csv';"
+        note: "documented in the SUMMARIZE guide (guides/meta/summarize)"
+    examples:
+      - "SUMMARIZE tbl;"
+      - "SUMMARIZE SELECT * FROM tbl;"
+
+  - id: copy
+    name: COPY
+    doc: https://duckdb.org/docs/stable/sql/statements/copy
+    tier: medium
+    probes:
+      - { id: from_file, sql: "COPY t FROM 'lineitem.csv';" }
+      - { id: from_options, sql: "COPY t FROM 'lineitem.csv' (DELIMITER '|', HEADER);" }
+      - { id: from_format, sql: "COPY t FROM 'lineitem.json' (FORMAT json, AUTO_DETECT true);" }
+      - { id: from_with_options, sql: "COPY t FROM 'lineitem.csv' WITH (HEADER true);" }
+      - { id: from_column_list, sql: "COPY t(name) FROM 'names.csv';" }
+      - { id: from_quoted_identifier_path, sql: "COPY t FROM \"lineitem.csv\";" }
+      - { id: from_bare_path, sql: "COPY t FROM lineitem.csv;" }
+      - { id: from_expression, sql: "COPY t FROM (getvariable('source_file'));" }
+      - { id: to_file, sql: "COPY t TO 'lineitem.csv' (FORMAT csv, DELIMITER '|', HEADER);" }
+      - { id: to_column_list, sql: "COPY t(a) TO 'orderkey.tbl' (DELIMITER '|');" }
+      - { id: query_to, sql: "COPY (SELECT a, b FROM t) TO 'out.parquet' (COMPRESSION zstd);" }
+      - { id: to_partition_by, sql: "COPY t TO 'out' (FORMAT parquet, PARTITION_BY (year, month), OVERWRITE_OR_IGNORE);" }
+      - { id: to_struct_option, sql: "COPY (SELECT 128 AS i) TO 'my.parquet' (FIELD_IDS {i: 42});" }
+      - { id: to_expression, sql: "COPY (SELECT 'hello world') TO (getvariable('target_file'));" }
+      - { id: to_parameter, sql: "PREPARE v1 AS COPY (SELECT 42 AS i) TO $1;" }
+      - { id: from_database, sql: "COPY FROM DATABASE db1 TO db2;" }
+      - { id: from_database_schema, sql: "COPY FROM DATABASE db1 TO db2 (SCHEMA);" }
+    examples:
+      - "COPY lineitem FROM 'lineitem.json' (FORMAT json, AUTO_DETECT true);"
+      - "COPY lineitem TO 'lineitem.csv' (FORMAT csv, DELIMITER '|', HEADER);"
+      - "COPY (SELECT l_orderkey, l_partkey FROM lineitem) TO 'lineitem.parquet' (COMPRESSION zstd);"
+      - "COPY FROM DATABASE db1 TO db2 (SCHEMA);"
+      - "COPY\n    (SELECT 128 AS i, 256 AS j)\n    TO 'my.parquet'\n    (FIELD_IDS {i: 42, j: 43});"
+
+  - id: export_database
+    name: EXPORT DATABASE
+    doc: https://duckdb.org/docs/stable/sql/statements/export
+    tier: medium
+    probes:
+      - { id: basic, sql: "EXPORT DATABASE 'target_directory';" }
+      - { id: options, sql: "EXPORT DATABASE 'target_directory' (FORMAT csv, DELIMITER '|');" }
+      - { id: parquet_options, sql: "EXPORT DATABASE 'target_directory' (FORMAT parquet, COMPRESSION zstd, ROW_GROUP_SIZE 100_000);" }
+    examples:
+      - "EXPORT DATABASE 'target_directory';"
+      - "EXPORT DATABASE 'target_directory' (FORMAT csv, DELIMITER '|');"
+      - "EXPORT DATABASE 'target_directory' (FORMAT parquet);"
+      - "EXPORT DATABASE 'target_directory' (\n    FORMAT parquet,\n    COMPRESSION zstd,\n    ROW_GROUP_SIZE 100_000\n);"
+
+  - id: import_database
+    name: IMPORT DATABASE
+    doc: https://duckdb.org/docs/stable/sql/statements/export
+    tier: medium
+    probes:
+      - { id: basic, sql: "IMPORT DATABASE 'source_directory';" }
+      - { id: pragma_form, sql: "PRAGMA import_database('source_directory');" }
+    examples:
+      - "IMPORT DATABASE 'source_directory';"
+      - "PRAGMA import_database('source_directory');"
+
+  - id: install
+    name: INSTALL
+    doc: https://duckdb.org/docs/stable/sql/statements/load_and_install
+    tier: medium
+    probes:
+      - { id: basic, sql: "INSTALL httpfs;" }
+      - { id: from_repository, sql: "INSTALL h3 FROM community;" }
+      - { id: from_url, sql: "INSTALL ext FROM 'https://example.com/ext';" }
+      - { id: force, sql: "FORCE INSTALL httpfs;" }
+      - { id: version, sql: "INSTALL ext FROM community VERSION 'v1.0.0';" }
+    examples:
+      - "INSTALL httpfs;"
+      - "INSTALL h3 FROM community;"
+
+  - id: load
+    name: LOAD
+    doc: https://duckdb.org/docs/stable/sql/statements/load_and_install
+    tier: medium
+    probes:
+      - { id: name, sql: "LOAD httpfs;" }
+      - { id: path, sql: "LOAD '/path/to/ext.duckdb_extension';" }
+    examples:
+      - "LOAD httpfs;"
+      - "LOAD spatial;"
+
+  - id: update_extensions
+    name: UPDATE EXTENSIONS
+    doc: https://duckdb.org/docs/stable/sql/statements/update_extensions
+    tier: low
+    probes:
+      - { id: all, sql: "UPDATE EXTENSIONS;" }
+      - { id: selected, sql: "UPDATE EXTENSIONS (name_a, name_b, name_c);" }
+
+  - id: pivot
+    name: PIVOT
+    doc: https://duckdb.org/docs/stable/sql/statements/pivot
+    tier: high
+    probes:
+      - { id: on_using, sql: "PIVOT t ON year USING sum(population);" }
+      - { id: on_only, sql: "PIVOT t ON year;" }
+      - { id: pivot_wider, sql: "PIVOT_WIDER t ON year USING sum(population);" }
+      - { id: group_by, sql: "PIVOT t ON year USING sum(population) GROUP BY country;" }
+      - { id: on_in_filter, sql: "PIVOT t ON year IN (2000, 2010) USING sum(population) GROUP BY country;" }
+      - { id: multiple_on, sql: "PIVOT t ON country, name USING sum(population);" }
+      - { id: on_expression, sql: "PIVOT t ON country || '_' || name USING sum(population);" }
+      - { id: multiple_using_aliases, sql: "PIVOT t ON year USING sum(population) AS total, max(population) AS max GROUP BY country;" }
+      - { id: multiple_group_by, sql: "PIVOT t ON year USING sum(population) GROUP BY country, name;" }
+      - { id: order_by_limit_offset, sql: "PIVOT t ON year USING sum(population) GROUP BY country ORDER BY country DESC LIMIT 10 OFFSET 1;" }
+      - { id: subquery_source, sql: "PIVOT (SELECT * FROM t) ON year USING sum(population);" }
+      - { id: table_function_source, sql: "PIVOT read_csv('cities.csv') ON year USING sum(population);" }
+      - { id: in_cte, sql: "WITH p AS (PIVOT t ON year USING sum(population) GROUP BY country) SELECT * FROM p;" }
+      - { id: in_subquery, sql: "SELECT * FROM (PIVOT t ON year USING sum(population) GROUP BY country) p;" }
+      - { id: in_join, sql: "SELECT * FROM (PIVOT t ON year USING sum(population) GROUP BY country) a JOIN (PIVOT t ON name USING sum(population) GROUP BY country) b USING (country);" }
+      - { id: standard_pivot, sql: "SELECT * FROM t PIVOT (sum(population) FOR year IN (2000, 2010, 2020) GROUP BY country);" }
+      - { id: standard_pivot_multiple_for, sql: "SELECT * FROM t PIVOT (sum(population) AS total, count(population) AS count FOR year IN (2000, 2010) country IN ('NL', 'US'));" }
+      - { id: standard_pivot_no_group_by, sql: "SELECT * FROM t PIVOT (sum(population) FOR year IN (2000, 2010));" }
+      - { id: standard_pivot_alias, sql: "SELECT * FROM t PIVOT (sum(population) FOR year IN (2000, 2010)) AS p;" }
+    examples:
+      - "PIVOT cities\nON year\nUSING sum(population);"
+      - "PIVOT cities\nON year IN (2000, 2010)\nUSING sum(population)\nGROUP BY country;"
+      - "PIVOT cities\nON year\nUSING sum(population) AS total, max(population) AS max\nGROUP BY country;"
+      - "SELECT *\nFROM (PIVOT cities ON year USING sum(population) GROUP BY country) year_pivot\nJOIN (PIVOT cities ON name USING sum(population) GROUP BY country) name_pivot\nUSING (country);"
+      - "SELECT *\nFROM cities\nPIVOT (\n    sum(population) AS total,\n    count(population) AS count\n    FOR\n        year IN (2000, 2010)\n        country IN ('NL', 'US')\n);"
+
+  - id: unpivot
+    name: UNPIVOT
+    doc: https://duckdb.org/docs/stable/sql/statements/unpivot
+    tier: high
+    probes:
+      - { id: manual, sql: "UNPIVOT t ON jan, feb, mar INTO NAME month VALUE sales;" }
+      - { id: pivot_longer, sql: "PIVOT_LONGER t ON jan, feb, mar INTO NAME month VALUE sales;" }
+      - { id: on_only, sql: "UNPIVOT t ON jan, feb, mar;" }
+      - { id: columns_expression, sql: "UNPIVOT t ON COLUMNS(* EXCLUDE (empid, dept)) INTO NAME month VALUE sales;" }
+      - { id: multiple_value_columns, sql: "UNPIVOT t ON (jan, feb, mar) AS q1, (apr, may, jun) AS q2 INTO NAME quarter VALUE m1, m2, m3;" }
+      - { id: subquery_source_expressions, sql: "UNPIVOT (SELECT 42 AS col1, 'woot' AS col2) ON (col1 * 2)::VARCHAR, col2;" }
+      - { id: order_by_limit, sql: "UNPIVOT t ON jan, feb INTO NAME month VALUE sales ORDER BY month LIMIT 10;" }
+      - { id: in_cte, sql: "WITH u AS (UNPIVOT t ON COLUMNS(* EXCLUDE (empid, dept)) INTO NAME month VALUE sales) SELECT * FROM u;" }
+      - { id: in_subquery, sql: "SELECT * FROM (UNPIVOT t ON jan, feb INTO NAME month VALUE sales) u;" }
+      - { id: standard, sql: "FROM t UNPIVOT (sales FOR month IN (jan, feb, mar, apr, may, jun));" }
+      - { id: standard_select, sql: "SELECT * FROM t UNPIVOT (sales FOR month IN (jan, feb, mar));" }
+      - { id: standard_include_nulls, sql: "FROM t UNPIVOT INCLUDE NULLS (sales FOR month IN (jan, feb, mar));" }
+      - { id: standard_columns, sql: "FROM t UNPIVOT (sales FOR month IN (columns(* EXCLUDE (empid, dept))));" }
+      - { id: standard_multiple_values, sql: "FROM t UNPIVOT ((m1, m2, m3) FOR quarter IN ((jan, feb, mar) AS q1, (apr, may, jun) AS q2));" }
+    examples:
+      - "UNPIVOT monthly_sales\nON jan, feb, mar, apr, may, jun\nINTO\n    NAME month\n    VALUE sales;"
+      - "UNPIVOT monthly_sales\nON COLUMNS(* EXCLUDE (empid, dept))\nINTO\n    NAME month\n    VALUE sales;"
+      - "UNPIVOT monthly_sales\n    ON (jan, feb, mar) AS q1, (apr, may, jun) AS q2\n    INTO\n        NAME quarter\n        VALUE month_1_sales, month_2_sales, month_3_sales;"
+      - "FROM monthly_sales UNPIVOT (\n    sales\n    FOR month IN (jan, feb, mar, apr, may, jun)\n);"
+      - "FROM monthly_sales\nUNPIVOT (\n    (month_1_sales, month_2_sales, month_3_sales)\n    FOR quarter IN (\n        (jan, feb, mar) AS q1,\n        (apr, may, jun) AS q2\n    )\n);"
+
+  - id: set
+    name: SET
+    doc: https://duckdb.org/docs/stable/sql/statements/set
+    tier: medium
+    probes:
+      - { id: equals, sql: "SET memory_limit = '10GB';" }
+      - { id: to, sql: "SET threads TO 1;" }
+      - { id: session, sql: "SET SESSION default_collation = 'nocase';" }
+      - { id: global, sql: "SET GLOBAL threads = 4;" }
+      - { id: local, sql: "SET LOCAL threads = 4;" }
+    examples:
+      - "SET memory_limit = '10GB';"
+      - "SET threads TO 1;"
+      - "SET SESSION default_collation = 'nocase';"
+      - "SET GLOBAL sort_order = 'desc';"
+
+  - id: reset
+    name: RESET
+    doc: https://duckdb.org/docs/stable/sql/statements/set
+    tier: medium
+    probes:
+      - { id: basic, sql: "RESET threads;" }
+      - { id: scoped, sql: "RESET GLOBAL threads;" }
+    examples:
+      - "RESET threads;"
+
+  - id: set_variable
+    name: SET VARIABLE
+    doc: https://duckdb.org/docs/stable/sql/statements/set_variable
+    tier: medium
+    probes:
+      - { id: equals, sql: "SET VARIABLE my_var = 30;" }
+      - { id: to, sql: "SET VARIABLE my_var TO 30;" }
+      - { id: typed_literal, sql: "SET VARIABLE my_date = DATE '2018-07-13';" }
+      - { id: map_value, sql: "SET VARIABLE my_map = MAP {'k1': 10, 'k2': 20};" }
+      - { id: subquery_value, sql: "SET VARIABLE files = (SELECT list(file) FROM t);" }
+      - { id: getvariable, sql: "SELECT 20 + getvariable('my_var') AS total;" }
+    examples:
+      - "SET VARIABLE my_date = DATE '2018-07-13';"
+      - "SET VARIABLE my_string = 'Hello world';"
+      - "SET VARIABLE my_map = MAP {'k1': 10, 'k2': 20};"
+      - "SELECT getvariable('undefined_var') AS result;"
+
+  - id: reset_variable
+    name: RESET VARIABLE
+    doc: https://duckdb.org/docs/stable/sql/statements/set_variable
+    tier: medium
+    probes:
+      - { id: basic, sql: "RESET VARIABLE my_var;" }
+    examples:
+      - "RESET VARIABLE my_var;"
+
+  - id: call
+    name: CALL
+    doc: https://duckdb.org/docs/stable/sql/statements/call
+    tier: medium
+    probes:
+      - { id: no_args, sql: "CALL duckdb_functions();" }
+      - { id: args, sql: "CALL pragma_table_info('pg_am');" }
+      - { id: named_args, sql: "CALL dbgen(sf = 1);" }
+    examples:
+      - "CALL duckdb_functions();"
+      - "CALL pragma_table_info('pg_am');"
+
+  - id: checkpoint
+    name: CHECKPOINT
+    doc: https://duckdb.org/docs/stable/sql/statements/checkpoint
+    tier: low
+    probes:
+      - { id: basic, sql: "CHECKPOINT;" }
+      - { id: database, sql: "CHECKPOINT file_db;" }
+      - { id: force, sql: "FORCE CHECKPOINT;" }
+
+  - id: analyze
+    name: ANALYZE
+    doc: https://duckdb.org/docs/stable/sql/statements/analyze
+    tier: low
+    probes:
+      - { id: basic, sql: "ANALYZE;" }
+
+  - id: vacuum
+    name: VACUUM
+    doc: https://duckdb.org/docs/stable/sql/statements/vacuum
+    tier: low
+    probes:
+      - { id: basic, sql: "VACUUM;" }
+      - { id: analyze, sql: "VACUUM ANALYZE;" }
+      - { id: table_columns, sql: "VACUUM ANALYZE t(c);" }
+
+  - id: comment_on
+    name: COMMENT ON
+    doc: https://duckdb.org/docs/stable/sql/statements/comment_on
+    tier: medium
+    probes:
+      - { id: table, sql: "COMMENT ON TABLE t IS 'very nice table';" }
+      - { id: column, sql: "COMMENT ON COLUMN t.c IS 'very nice column';" }
+      - { id: view, sql: "COMMENT ON VIEW v IS 'very nice view';" }
+      - { id: index, sql: "COMMENT ON INDEX idx IS 'very nice index';" }
+      - { id: sequence, sql: "COMMENT ON SEQUENCE seq IS 'very nice sequence';" }
+      - { id: type, sql: "COMMENT ON TYPE typ IS 'very nice type';" }
+      - { id: macro, sql: "COMMENT ON MACRO m IS 'very nice macro';" }
+      - { id: macro_table, sql: "COMMENT ON MACRO TABLE m IS 'very nice table macro';" }
+      - { id: is_null, sql: "COMMENT ON TABLE t IS NULL;" }
+    examples:
+      - "COMMENT ON TABLE test_table IS 'very nice table';"
+      - "COMMENT ON COLUMN test_table.test_table_column IS 'very nice column';"
+      - "COMMENT ON MACRO TABLE test_table_macro IS 'very nice table macro';"
+      - "COMMENT ON TABLE test_table IS NULL;"
+
+  - id: explain
+    name: EXPLAIN / EXPLAIN ANALYZE
+    doc: https://duckdb.org/docs/stable/sql/statements/profiling
+    tier: medium
+    probes:
+      - { id: explain, sql: "EXPLAIN SELECT * FROM t;" }
+      - { id: explain_analyze, sql: "EXPLAIN ANALYZE SELECT * FROM t;" }
+      - id: explain_format
+        sql: "EXPLAIN (FORMAT html) SELECT 42 AS x;"
+        note: "FORMAT option documented in the EXPLAIN guide (guides/meta/explain)"
+    examples:
+      - "EXPLAIN\n    SELECT name\n    FROM students\n    JOIN exams USING (sid)\n    WHERE name LIKE 'Ma%';"
+
+
+  - id: pragma
+    name: PRAGMA
+    doc: https://duckdb.org/docs/stable/configuration/pragmas
+    tier: medium
+    probes:
+      - { id: bare, sql: "PRAGMA database_list;" }
+      - { id: call_form, sql: "PRAGMA table_info('table_name');" }
+      - { id: assignment, sql: "PRAGMA force_compression = 'bitpacking';" }
+      - { id: enable_flag, sql: "PRAGMA enable_progress_bar;" }
+      - { id: pragma_table_function, sql: "CALL pragma_table_info('table_name');" }
+    examples:
+      - "PRAGMA database_list;"
+      - "PRAGMA table_info('table_name');"
+      - "PRAGMA storage_info('table_name');"
+      - "PRAGMA version;"
+      - "PRAGMA disabled_compression_methods = 'fsst,rle';"
+
+expressions:
+  - id: case
+    name: CASE expression
+    doc: https://duckdb.org/docs/stable/sql/expressions/case
+    tier: high
+    probes:
+      - { id: searched, sql: "SELECT CASE WHEN i > 2 THEN 1 ELSE 0 END FROM t;" }
+      - { id: searched_multiple, sql: "SELECT CASE WHEN i = 1 THEN 10 WHEN i = 2 THEN 20 ELSE 0 END FROM t;" }
+      - { id: no_else, sql: "SELECT CASE WHEN i = 1 THEN 10 END FROM t;" }
+      - { id: simple, sql: "SELECT CASE i WHEN 1 THEN 10 WHEN 2 THEN 20 WHEN 3 THEN 30 END FROM t;" }
+      - { id: if_function, sql: "SELECT IF(i > 2, 1, 0) FROM t;" }
+      - { id: switch, sql: "SELECT SWITCH(i, MAP {1: 'one', 2: 'two'}, 'other') FROM t;" }
+    examples:
+      - "SELECT i, CASE WHEN i > 2 THEN 1 ELSE 0 END AS test\nFROM integers;"
+      - "SELECT i, IF(i > 2, 1, 0) AS test\nFROM integers;"
+      - "SELECT i, CASE i WHEN 1 THEN 10 WHEN 2 THEN 20 WHEN 3 THEN 30 END AS test\nFROM integers;"
+      - "SELECT i, SWITCH(i, MAP {1: 'one', 2: 'two', 3: 'three'}) AS test\nFROM integers;"
+
+  - id: cast
+    name: Casting
+    doc: https://duckdb.org/docs/stable/sql/expressions/cast
+    tier: high
+    probes:
+      - { id: cast, sql: "SELECT CAST(i AS VARCHAR) FROM t;" }
+      - { id: double_colon, sql: "SELECT i::DOUBLE FROM t;" }
+      - { id: try_cast, sql: "SELECT TRY_CAST('hello' AS INTEGER) AS i;" }
+      - { id: cast_parameterized, sql: "SELECT CAST(x AS DECIMAL(18, 3)), x::VARCHAR(10) FROM t;" }
+      - { id: cast_nested_type, sql: "SELECT CAST(x AS INTEGER[]), y::STRUCT(a INTEGER, b VARCHAR), z::MAP(VARCHAR, INTEGER) FROM t;" }
+      - { id: chained_casts, sql: "SELECT GROUPING_ID(y)::BIT::VARCHAR FROM t;" }
+      - { id: null_cast, sql: "SELECT cast_to_type('42', NULL::INTEGER) AS result;" }
+    examples:
+      - "SELECT CAST(i AS VARCHAR) AS i\nFROM generate_series(1, 3) tbl(i);"
+      - "SELECT i::DOUBLE AS i\nFROM generate_series(1, 3) tbl(i);"
+      - "SELECT TRY_CAST('hello' AS INTEGER) AS i;"
+      - "SELECT cast_to_type('42', NULL::INTEGER) AS result;"
+
+  - id: try
+    name: TRY expression
+    doc: https://duckdb.org/docs/stable/sql/expressions/try
+    tier: medium
+    probes:
+      - { id: try_cast_expression, sql: "SELECT TRY('abc'::INTEGER);" }
+      - { id: try_function, sql: "SELECT TRY(ln(0));" }
+    examples:
+      - "SELECT TRY('abc'::INTEGER);"
+      - "SELECT TRY(ln(0));"
+
+  - id: collations
+    name: Collations
+    doc: https://duckdb.org/docs/stable/sql/expressions/collations
+    tier: medium
+    probes:
+      - { id: collate, sql: "SELECT 'hello' COLLATE NOCASE = 'hElLO';" }
+      - { id: chained_collation, sql: "SELECT 'hello' COLLATE NOCASE.NOACCENT = 'hElLO';" }
+      - { id: column_collation, sql: "CREATE TABLE t (name VARCHAR COLLATE NOACCENT);" }
+      - { id: where_collate, sql: "SELECT name FROM t WHERE name = 'hannes' COLLATE NOCASE;" }
+      - { id: set_default_collation_ident, sql: "SET default_collation = NOCASE;" }
+    examples:
+      - "SELECT 'hello' COLLATE NOCASE = 'hElLO';"
+      - "SELECT 'hello' COLLATE NOACCENT = 'hëllo';"
+      - "SELECT 'hello' COLLATE NOCASE.NOACCENT = 'hElLÖ';"
+      - "SELECT names.name AS name, other_names.name AS other_name\nFROM names, other_names\nWHERE names.name COLLATE NOACCENT.NOCASE = other_names.name COLLATE NOACCENT.NOCASE;"
+
+  - id: comparison_operators
+    name: Comparison operators
+    doc: https://duckdb.org/docs/stable/sql/expressions/comparison_operators
+    tier: high
+    probes:
+      - { id: basic, sql: "SELECT 2 < 3, 2 > 3, 2 <= 3, 4 >= 2;" }
+      - { id: equals, sql: "SELECT a = b, a == b FROM t;" }
+      - { id: not_equals, sql: "SELECT a <> b, a != b FROM t;" }
+      - { id: is_distinct_from, sql: "SELECT 2 IS DISTINCT FROM NULL, NULL IS NOT DISTINCT FROM NULL;" }
+      - { id: between, sql: "SELECT a BETWEEN 1 AND 10, a NOT BETWEEN 1 AND 10 FROM t;" }
+      - { id: is_null, sql: "SELECT a IS NULL, a IS NOT NULL FROM t;" }
+      - { id: isnull_notnull, sql: "SELECT a ISNULL, a NOTNULL FROM t;" }
+    examples:
+      - "SELECT 1 = true;"
+      - "SELECT 1 = '1.1';"
+      - "SELECT\n    'B' NOT BETWEEN ('A' COLLATE NOCASE) AND 'a' AS between_result,\n    'B' < ('A' COLLATE NOCASE) OR 'B' > 'a' AS separate_result;"
+
+  - id: in
+    name: IN operator
+    doc: https://duckdb.org/docs/stable/sql/expressions/in
+    tier: high
+    probes:
+      - { id: tuple, sql: "SELECT 'Math' IN ('CS', 'Math');" }
+      - { id: not_in, sql: "SELECT 'Math' NOT IN ('CS', 'Math');" }
+      - { id: list, sql: "SELECT 'Math' IN ['CS', 'Math', NULL];" }
+      - { id: map, sql: "SELECT 'key1' IN MAP {'key1': 50, 'key2': 75};" }
+      - { id: subquery, sql: "SELECT 42 IN (SELECT unnest([32, 42, 52]) AS x);" }
+      - { id: string, sql: "SELECT 'Hello' IN 'Hello World';" }
+    examples:
+      - "SELECT 'Math' IN ('CS', 'Math', NULL);"
+      - "SELECT 'Math' IN ['CS', 'Math', NULL];"
+      - "SELECT 'key1' IN MAP {'key1': 50, 'key2': 75};"
+      - "SELECT 42 IN (SELECT unnest([32, 42, 52]) AS x);"
+      - "SELECT 'Hello' IN 'Hello World';"
+
+  - id: logical_operators
+    name: Logical operators
+    doc: https://duckdb.org/docs/stable/sql/expressions/logical_operators
+    tier: high
+    probes:
+      - { id: and_or_not, sql: "SELECT a AND b, a OR b, NOT a FROM t;" }
+
