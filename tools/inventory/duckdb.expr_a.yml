@@ -1,0 +1,412 @@
+dialect: duckdb
+engine: DuckDB
+version: "1.5"
+source: https://duckdb.org/docs/stable/sql/statements/overview
+
+statements: []
+
+expressions:
+  - id: a_numeric_literals
+    name: Numeric literals
+    doc: https://duckdb.org/docs/stable/sql/data_types/literal_types
+    tier: high
+    probes:
+      - { id: integer, sql: "SELECT 42, 1000, 0;" }
+      - { id: signed, sql: "SELECT -1, +1, - 5;" }
+      - { id: decimal, sql: "SELECT 1.5, 0.25;" }
+      - { id: decimal_omitted_int_part, sql: "SELECT .50;" }
+      - { id: decimal_omitted_frac_part, sql: "SELECT 2.;" }
+      - { id: exponent, sql: "SELECT 1e2, 6.02214e23, 1e-10, 1E+3;" }
+      - { id: underscore_integer, sql: "SELECT 100_000_000;" }
+      - { id: underscore_decimal_exponent, sql: "SELECT 1_2.1_2E0_1;" }
+      - { id: hex_string_cast, sql: "SELECT '0xFF'::INT;" }
+      - { id: hex_string_cast_underscore, sql: "SELECT '0xFF_FF'::INTEGER;" }
+      - { id: binary_string_cast_underscore, sql: "SELECT '0b0_1_0_1'::INTEGER;" }
+    examples:
+      - "SELECT 1.5;"
+      - "SELECT .50;"
+      - "SELECT 1_2.1_2E0_1;"
+
+  - id: a_string_literals
+    name: String literals and escapes
+    doc: https://duckdb.org/docs/stable/sql/data_types/literal_types
+    tier: high
+    probes:
+      - { id: single_quoted, sql: "SELECT 'Hello world';" }
+      - { id: doubled_quote, sql: "SELECT '''' AS s;" }
+      - { id: empty_string, sql: "SELECT '';" }
+      - id: implicit_concatenation
+        sql: |-
+          SELECT 'Hello'
+          ' '
+          'World' AS greeting;
+        note: "Adjacent single-quoted literals separated by whitespace containing a newline are concatenated"
+      - { id: escape_string_lower, sql: "SELECT e'Hello\\nworld' AS msg;" }
+      - { id: escape_string_upper, sql: "SELECT E'tab\\there', E'it''s';" }
+      - { id: escape_sequences, sql: "SELECT e'\\b\\f\\n\\r\\t';" }
+      - { id: dollar_quoted, sql: "SELECT $$The price is $9.95$$ AS msg;" }
+      - id: dollar_quoted_newline
+        sql: |-
+          SELECT $$Hello
+          world$$ AS msg;
+      - { id: dollar_quoted_tag, sql: "SELECT $tag$ it can contain 'single quotes', \"double quotes\" and $$dollar quotes$$ $tag$ AS msg;" }
+      - { id: chr_concat, sql: "SELECT 'Hello' || chr(10) || 'world' AS msg;" }
+    examples:
+      - "SELECT '''' AS s;"
+      - "SELECT e'Hello\\nworld' AS msg;"
+      - "SELECT $$The price is $9.95$$ AS msg;"
+
+  - id: a_boolean_null_literals
+    name: Boolean and NULL literals
+    doc: https://duckdb.org/docs/stable/sql/data_types/boolean
+    tier: medium
+    probes:
+      - { id: boolean_constants, sql: "SELECT true, false;" }
+      - { id: boolean_upper, sql: "SELECT TRUE, FALSE;" }
+      - { id: null_literal, sql: "SELECT NULL;" }
+      - { id: typed_null, sql: "SELECT true, false, NULL::BOOLEAN;" }
+    examples:
+      - "SELECT true, false, NULL::BOOLEAN;"
+
+  - id: a_datetime_literals
+    name: Date, time and timestamp literals
+    doc: https://duckdb.org/docs/stable/sql/data_types/timestamp
+    tier: high
+    probes:
+      - { id: date, sql: "SELECT DATE '1992-09-20';" }
+      - { id: time, sql: "SELECT TIME '1992-09-20 11:30:00.123456';" }
+      - { id: timetz, sql: "SELECT TIMETZ '1992-09-20 11:30:00.123456-02:00';" }
+      - { id: time_ns_cast, sql: "SELECT '15:30:00.123456789'::TIME_NS;" }
+      - { id: timestamp, sql: "SELECT TIMESTAMP '1992-09-20 11:30:00.123456789';" }
+      - { id: timestamp_ns, sql: "SELECT TIMESTAMP_NS '1992-09-20 11:30:00.123456789';" }
+      - { id: timestamp_ms, sql: "SELECT TIMESTAMP_MS '1992-09-20 11:30:00.123456789';" }
+      - { id: timestamp_s, sql: "SELECT TIMESTAMP_S '1992-09-20 11:30:00.123456789';" }
+      - { id: timestamptz, sql: "SELECT TIMESTAMPTZ '1992-09-20 12:30:00.123456789+01:00';" }
+      - { id: date_special_values, sql: "SELECT '-infinity'::DATE AS negative, 'epoch'::DATE AS epoch, 'infinity'::DATE AS positive;" }
+      - { id: timestamp_special_values, sql: "SELECT '-infinity'::TIMESTAMP, 'epoch'::TIMESTAMP, 'infinity'::TIMESTAMP;" }
+      - { id: timestamptz_named_zone, sql: "SELECT TIMESTAMPTZ '2001-02-16 04:38:40 Europe/Berlin';" }
+    examples:
+      - "SELECT DATE '1992-09-20';"
+      - "SELECT TIMESTAMPTZ '1992-09-20 12:30:00.123456789+01:00';"
+      - "SELECT '-infinity'::TIMESTAMP, 'epoch'::TIMESTAMP, 'infinity'::TIMESTAMP;"
+
+  - id: a_interval_literals
+    name: Interval literals
+    doc: https://duckdb.org/docs/stable/sql/data_types/interval
+    tier: high
+    probes:
+      - { id: single_unit, sql: "SELECT INTERVAL 1 YEAR;" }
+      - { id: plural_unit, sql: "SELECT INTERVAL 12 YEARS, INTERVAL 18 MONTHS, INTERVAL 30 DAYS;" }
+      - { id: sub_day_units, sql: "SELECT INTERVAL 2 HOURS, INTERVAL 5 MINUTES, INTERVAL 1_234 MILLISECONDS, INTERVAL 7 MICROSECONDS;" }
+      - { id: parenthesized_amount, sql: "SELECT INTERVAL (random() * 10) YEAR;" }
+      - { id: parenthesized_column, sql: "SELECT DATE '2000-01-01' + INTERVAL (i) MONTH FROM range(12) t(i);" }
+      - { id: string_multiple_units, sql: "SELECT INTERVAL '1 month 1 day';" }
+      - { id: string_with_unit_keyword, sql: "SELECT INTERVAL '1.5' YEARS;" }
+      - { id: string_with_unit_inside, sql: "SELECT INTERVAL '1.5 years';" }
+      - { id: string_cast, sql: "SELECT '16 months'::INTERVAL;" }
+      - { id: hms_string_cast, sql: "SELECT '48:00:00'::INTERVAL;" }
+      - { id: date_plus_interval, sql: "SELECT DATE '2000-01-01' + INTERVAL 1 YEAR;" }
+      - { id: timestamp_minus_interval, sql: "SELECT TIMESTAMP '2000-01-01 01:33:30' - INTERVAL '1 month 13 hours';" }
+      - { id: time_minus_interval, sql: "SELECT TIME '02:00:00' - INTERVAL '3 days 23 hours';" }
+      - { id: interval_comparison, sql: "SELECT INTERVAL 30 DAYS = INTERVAL 1 MONTH;" }
+      - { id: interval_sum, sql: "SELECT INTERVAL (random() * 123_456_789_123) MICROSECONDS + INTERVAL (random() * 12_345) DAYS + INTERVAL (random() * 12_345) MONTHS;" }
+    examples:
+      - "SELECT DATE '2000-01-01' + INTERVAL 1 YEAR;"
+      - "SELECT INTERVAL '1.5' YEARS;"
+      - "SELECT datepart('decade', INTERVAL 12 YEARS);"
+
+  - id: a_list_array_literals
+    name: LIST and ARRAY literals, indexing and slicing
+    doc: https://duckdb.org/docs/stable/sql/data_types/list
+    tier: high
+    probes:
+      - { id: bracket_list, sql: "SELECT [1, 2, 3];" }
+      - { id: list_with_null, sql: "SELECT ['duck', 'goose', NULL, 'heron'];" }
+      - { id: nested_list, sql: "SELECT [['duck', 'goose', 'heron'], NULL, ['frog', 'toad'], []];" }
+      - { id: empty_list, sql: "SELECT [];" }
+      - { id: trailing_comma, sql: "SELECT ['a', 'b', 'c',] AS y;", note: "Trailing commas are allowed when constructing LIST items (Friendly SQL page)" }
+      - { id: list_value_function, sql: "SELECT list_value(1, 2, 3);" }
+      - { id: array_value_function, sql: "SELECT array_value(1, 2, 3);" }
+      - { id: nested_array_value, sql: "SELECT array_value(array_value(1, 2), array_value(3, 4), array_value(5, 6));" }
+      - { id: array_of_structs, sql: "SELECT array_value({'a': 1, 'b': 2}, {'a': 3, 'b': 4});" }
+      - { id: index_positive, sql: "SELECT ['a', 'b', 'c'][3];" }
+      - { id: index_negative, sql: "SELECT ['a', 'b', 'c'][-1];" }
+      - { id: index_expression, sql: "SELECT ['a', 'b', 'c'][2 + 1];" }
+      - { id: index_column, sql: "SELECT id, arr[1] AS element FROM t;" }
+      - { id: index_function_result, sql: "SELECT array_value(1, 2, 3)[2];" }
+      - { id: slice, sql: "SELECT ['a', 'b', 'c'][1:2];" }
+      - { id: slice_open_begin, sql: "SELECT ['a', 'b', 'c'][:2];" }
+      - { id: slice_negative_open_end, sql: "SELECT ['a', 'b', 'c'][-2:];" }
+      - { id: slice_with_step, sql: "SELECT [1, 2, 3, 4][1:4:2];", note: "list[begin[:end][:step]]" }
+      - { id: list_comparison, sql: "SELECT [1, 2] < [1, 3] AS result;" }
+      - { id: list_cast_to_array, sql: "SELECT [3, 2, 1]::INTEGER[3];" }
+    examples:
+      - "SELECT [['duck', 'goose', 'heron'], NULL, ['frog', 'toad'], []];"
+      - "SELECT array_value(1, 2, 3)[2];"
+      - "SELECT [3, 2, 1]::INTEGER[3];"
+
+  - id: a_map_literals
+    name: MAP literals and lookup
+    doc: https://duckdb.org/docs/stable/sql/data_types/map
+    tier: high
+    probes:
+      - { id: map_braces, sql: "SELECT MAP {'key1': 10, 'key2': 20, 'key3': 30};" }
+      - { id: map_integer_keys, sql: "SELECT MAP {1: 42.001, 5: -32.1};" }
+      - { id: map_nested_keys_values, sql: "SELECT MAP {['a', 'b']: [1.1, 2.2], ['c', 'd']: [3.3, 4.4]};" }
+      - { id: map_empty, sql: "SELECT MAP {};" }
+      - { id: map_two_lists, sql: "SELECT MAP(['key1', 'key2', 'key3'], [10, 20, 30]);" }
+      - { id: map_from_entries, sql: "SELECT map_from_entries([('key1', 10), ('key2', 20), ('key3', 30)]);" }
+      - { id: map_bracket_lookup, sql: "SELECT MAP {'key1': 5, 'key2': 43}['key1'];" }
+      - { id: map_extract, sql: "SELECT map_extract(MAP {'key1': 5, 'key2': 43}, 'key1');" }
+      - { id: map_in_map_literal_in_struct, sql: "SELECT {'test': [MAP([1, 5], [42.1, 45]), MAP([1, 5], [42.1, 45])]};" }
+    examples:
+      - "SELECT MAP {'key1': 10, 'key2': 20, 'key3': 30};"
+      - "SELECT MAP(['key1', 'key2', 'key3'], [10, 20, 30]);"
+      - "SELECT MAP {'key1': 5, 'key2': 43}['key1'];"
+
+  - id: a_struct_literals
+    name: STRUCT literals and field access
+    doc: https://duckdb.org/docs/stable/sql/data_types/struct
+    tier: high
+    probes:
+      - { id: struct_braces, sql: "SELECT {'key1': 'value1', 'key2': 42} AS s;" }
+      - { id: struct_with_null, sql: "SELECT {'yes': 'duck', 'maybe': 'goose', 'huh': NULL, 'no': 'heron'} AS s;" }
+      - { id: struct_nested, sql: "SELECT {'birds': {'yes': 'duck', 'no': 'heron'}, 'aliens': NULL} AS s;" }
+      - { id: struct_with_lists, sql: "SELECT {'birds': ['duck', 'goose', 'heron'], 'aliens': NULL, 'amphibians': ['frog', 'toad']};" }
+      - { id: struct_unquoted_key, sql: "SELECT {duck: 42};", note: "Unquoted keys appear in the JSON creation page example to_json({duck : 42})" }
+      - { id: struct_pack, sql: "SELECT struct_pack(key1 := 'value1', key2 := 42) AS s;" }
+      - { id: struct_update, sql: "SELECT struct_update({'a': 1, 'b': 2}, b := 3, c := 4) AS s;" }
+      - { id: row_variable, sql: "SELECT d AS s FROM (SELECT 'value1' AS key1, 42 AS key2) d;" }
+      - { id: row_function, sql: "SELECT row(x, x + 1, y) FROM (SELECT 1 AS x, 'a' AS y) AS s;" }
+      - { id: implicit_row, sql: "SELECT (x, x + 1, y) AS s FROM (SELECT 1 AS x, 'a' AS y);" }
+      - { id: dot_access, sql: "SELECT a.x FROM (SELECT {'x': 1, 'y': 2, 'z': 3} AS a);" }
+      - { id: dot_access_quoted, sql: "SELECT a.\"x space\" FROM (SELECT {'x space': 1, 'y': 2, 'z': 3} AS a);" }
+      - { id: bracket_access, sql: "SELECT a['x space'] FROM (SELECT {'x space': 1, 'y': 2, 'z': 3} AS a);" }
+      - { id: struct_extract, sql: "SELECT struct_extract({'x space': 1, 'y': 2, 'z': 3}, 'x space');" }
+      - { id: unnest_struct, sql: "SELECT unnest(a) FROM (SELECT {'x': 1, 'y': 2, 'z': 3} AS a);" }
+      - { id: star_exclude_struct, sql: "SELECT a.* EXCLUDE ('y') FROM (SELECT {'x': 1, 'y': 2, 'z': 3} AS a);" }
+      - { id: multi_dot_path, sql: "SELECT part1.part2.part3 FROM tbl;" }
+      - { id: struct_comparison, sql: "SELECT {'k1': 0, 'k2': 0} < {'k1': 1, 'k2': 0};" }
+      - id: struct_multiline
+        sql: |-
+          SELECT {
+          'birds': {'yes': 'duck', 'maybe': 'goose', 'huh': NULL, 'no': 'heron'},
+          'aliens': NULL,
+          'amphibians': {'yes': 'frog', 'maybe': 'salamander', 'huh': 'dragon', 'no': 'toad'}
+          } AS s;
+    examples:
+      - "SELECT {'key1': 'value1', 'key2': 42} AS s;"
+      - "SELECT struct_pack(key1 := 'value1', key2 := 42) AS s;"
+      - "SELECT a.x FROM (SELECT {'x': 1, 'y': 2, 'z': 3} AS a);"
+
+  - id: a_union_values
+    name: UNION values and member access
+    doc: https://duckdb.org/docs/stable/sql/data_types/union
+    tier: medium
+    probes:
+      - { id: union_value, sql: "SELECT union_value(num := 2);" }
+      - { id: union_value_cast, sql: "SELECT union_value(str := 'ABC')::UNION(str VARCHAR, num INTEGER);" }
+      - { id: union_list, sql: "SELECT [union_value(num := 2), union_value(str := 'ABC')::UNION(str VARCHAR, num INTEGER)];" }
+      - { id: union_extract, sql: "SELECT union_extract(u, 'str') AS str FROM tbl1;" }
+      - { id: union_dot_access, sql: "SELECT u.str FROM tbl1;" }
+      - { id: union_tag, sql: "SELECT union_tag(u) AS t FROM tbl1;" }
+    examples:
+      - "SELECT union_extract(u, 'str') AS str FROM tbl1;"
+      - "SELECT u.str FROM tbl1;"
+      - "SELECT union_tag(u) AS t FROM tbl1;"
+
+  - id: a_blob_bit_literals
+    name: BLOB and BITSTRING values
+    doc: https://duckdb.org/docs/stable/sql/data_types/blob
+    tier: medium
+    probes:
+      - { id: blob_hex_escape, sql: "SELECT '\\xAA'::BLOB;" }
+      - { id: blob_multiple_bytes, sql: "SELECT '\\xAA\\xAB\\xAC'::BLOB;" }
+      - { id: blob_text, sql: "SELECT 'AB'::BLOB;" }
+      - { id: bitstring_cast, sql: "SELECT '101010'::BITSTRING AS b;" }
+      - { id: bitstring_from_integer, sql: "SELECT 123::BITSTRING AS b;" }
+      - { id: bitstring_function, sql: "SELECT bitstring('0101011', 12) AS b;" }
+    examples:
+      - "SELECT '\\xAA'::BLOB;"
+      - "SELECT '\\xAA\\xAB\\xAC'::BLOB;"
+      - "SELECT 'AB'::BLOB;"
+
+  - id: a_json_values
+    name: JSON values and extraction operators
+    doc: https://duckdb.org/docs/stable/data/json/overview
+    tier: high
+    probes:
+      - { id: json_cast, sql: "SELECT '{ \"family\": \"anatidae\", \"species\": [ \"duck\", \"goose\", \"swan\", null ] }'::JSON;" }
+      - { id: json_cast_function_form, sql: "SELECT CAST('[1, 2, 3]' AS JSON);" }
+      - { id: dot_key, sql: "SELECT j.family FROM example;" }
+      - { id: arrow_path, sql: "SELECT j->'$.family' FROM example;" }
+      - { id: double_arrow_path, sql: "SELECT j->>'$.family' FROM example;" }
+      - { id: arrow_literal_quoted_key, sql: "SELECT '{\"d[u]._\\\"ck\":42}'->'$.\"d[u]._\\\"ck\"' AS v;" }
+      - { id: arrow_index, sql: "SELECT '[1, 2, 3]'::JSON -> 0;" }
+      - { id: json_bracket_index, sql: "SELECT json[1] AS element FROM (SELECT '[\"first\", \"second\", \"third\"]'::JSON AS json);" }
+      - { id: to_json, sql: "SELECT to_json({duck : 42});" }
+      - { id: json_array, sql: "SELECT json_array('duck', 42, 'goose', 123);" }
+      - { id: json_object, sql: "SELECT json_object('duck', 42, 'goose', 123);" }
+      - { id: json_merge_patch, sql: "SELECT json_merge_patch('{\"duck\": 42}', '{\"goose\": 123}');" }
+    examples:
+      - "SELECT j.family FROM example;"
+      - "SELECT j->'$.family' FROM example;"
+      - "SELECT j->>'$.family' FROM example;"
+
+  - id: a_scalar_type_names
+    name: Built-in scalar type names and parameterized types
+    doc: https://duckdb.org/docs/stable/sql/data_types/overview
+    tier: high
+    probes:
+      - { id: signed_integers, sql: "SELECT x::TINYINT, x::SMALLINT, x::INTEGER, x::BIGINT, x::HUGEINT FROM t;" }
+      - { id: unsigned_integers, sql: "SELECT x::UTINYINT, x::USMALLINT, x::UINTEGER, x::UBIGINT, x::UHUGEINT FROM t;" }
+      - { id: integer_aliases, sql: "SELECT x::INT1, x::INT2, x::INT4, x::INT8, x::INT, x::SIGNED, x::SHORT, x::LONG FROM t;" }
+      - { id: bignum, sql: "SELECT x::BIGNUM FROM t;" }
+      - { id: floating_point, sql: "SELECT x::FLOAT, x::DOUBLE, x::REAL, x::FLOAT4, x::FLOAT8 FROM t;" }
+      - { id: decimal_no_args, sql: "SELECT 1.5::DECIMAL;" }
+      - { id: decimal_empty_parens, sql: "SELECT 1.5::DECIMAL();" }
+      - { id: decimal_width, sql: "SELECT 1.5::DECIMAL(10);" }
+      - { id: decimal_width_scale, sql: "SELECT 1.5::DECIMAL(18, 3);" }
+      - { id: decimal_trailing_comma, sql: "SELECT 1.5::DECIMAL(10,);", note: "A trailing comma after the WIDTH is accepted (numeric types page)" }
+      - { id: numeric_width_scale, sql: "SELECT CAST(x AS NUMERIC(10, 2)) FROM t;" }
+      - { id: text_types, sql: "SELECT x::VARCHAR, x::CHAR, x::BPCHAR, x::TEXT, x::STRING FROM t;" }
+      - { id: text_types_length, sql: "SELECT x::VARCHAR(10), x::CHAR(10), x::BPCHAR(10), x::STRING(10), x::TEXT(10) FROM t;" }
+      - { id: boolean_types, sql: "SELECT x::BOOLEAN, x::BOOL, x::LOGICAL FROM t;" }
+      - { id: binary_types, sql: "SELECT x::BLOB, x::BYTEA, x::BINARY, x::VARBINARY, x::BIT, x::BITSTRING FROM t;" }
+      - { id: uuid_json, sql: "SELECT x::UUID, x::JSON FROM t;" }
+      - { id: date_time_types, sql: "SELECT x::DATE, x::TIME, x::TIMETZ, x::TIME_NS, x::INTERVAL FROM t;" }
+      - { id: timestamp_types, sql: "SELECT x::TIMESTAMP, x::DATETIME, x::TIMESTAMP_S, x::TIMESTAMP_MS, x::TIMESTAMP_NS, x::TIMESTAMPTZ FROM t;" }
+      - { id: with_time_zone, sql: "SELECT CAST(x AS TIMESTAMP WITH TIME ZONE), CAST(y AS TIME WITH TIME ZONE) FROM t;" }
+      - { id: without_time_zone, sql: "SELECT CAST(x AS TIMESTAMP WITHOUT TIME ZONE), CAST(y AS TIME WITHOUT TIME ZONE) FROM t;" }
+      - { id: variant, sql: "SELECT 42::VARIANT;" }
+    examples:
+      - "SELECT 1.5::DECIMAL(10);"
+      - "SELECT 42::VARIANT;"
+
+  - id: a_nested_type_names
+    name: Nested type names (LIST, ARRAY, STRUCT, MAP, UNION, ENUM)
+    doc: https://duckdb.org/docs/stable/sql/data_types/overview
+    tier: high
+    probes:
+      - { id: list_type, sql: "SELECT x::INTEGER[] FROM t;" }
+      - { id: array_type, sql: "SELECT x::INTEGER[3] FROM t;" }
+      - { id: nested_list_type, sql: "SELECT x::VARCHAR[][] FROM t;" }
+      - { id: list_of_arrays_type, sql: "SELECT x::FLOAT[3][] FROM t;" }
+      - { id: struct_type, sql: "SELECT x::STRUCT(i INTEGER, j VARCHAR) FROM t;" }
+      - { id: struct_nested_type, sql: "SELECT x::STRUCT(a STRUCT(b INTEGER), c INTEGER[]) FROM t;" }
+      - { id: struct_list_type, sql: "SELECT x::STRUCT(i INTEGER, j VARCHAR)[] FROM t;" }
+      - { id: map_type, sql: "SELECT x::MAP(INTEGER, VARCHAR) FROM t;" }
+      - { id: map_nested_type, sql: "SELECT x::MAP(VARCHAR, STRUCT(a INTEGER)[]) FROM t;" }
+      - { id: union_type, sql: "SELECT x::UNION(num INTEGER, text VARCHAR) FROM t;" }
+      - { id: enum_type, sql: "SELECT 'clubs'::ENUM ('spades', 'hearts', 'diamonds', 'clubs');" }
+      - { id: user_defined_type, sql: "SELECT 'happy'::mood, CAST('sad' AS my_schema.mood);" }
+      - { id: cast_function_nested_type, sql: "SELECT CAST(x AS STRUCT(a INTEGER, b VARCHAR)[3]) FROM t;" }
+    examples:
+      - "SELECT 'clubs'::ENUM ('spades', 'hearts', 'diamonds', 'clubs');"
+
+  - id: a_typecasting_nested
+    name: Casting of nested values and special inputs
+    doc: https://duckdb.org/docs/stable/sql/data_types/typecasting
+    tier: medium
+    probes:
+      - { id: cast_decimal_to_integer, sql: "SELECT CAST(3.5 AS INTEGER);" }
+      - { id: cast_negative, sql: "SELECT CAST(-1.7 AS INTEGER);" }
+      - { id: cast_list_to_varchar_list, sql: "SELECT CAST([1, 2, 3] AS VARCHAR[]);" }
+      - { id: cast_list_roundtrip, sql: "SELECT CAST(CAST([1, 2, 3] AS VARCHAR) AS INTEGER[]);" }
+      - { id: cast_struct, sql: "SELECT CAST({'a': 42} AS STRUCT(a VARCHAR));" }
+      - { id: cast_struct_extra_field, sql: "SELECT CAST({'a': 42} AS STRUCT(a VARCHAR, b VARCHAR));" }
+      - { id: cast_struct_reorder, sql: "SELECT CAST({'a': 42, 'b': 84} AS STRUCT(b VARCHAR, a VARCHAR));" }
+      - { id: colon_cast_struct, sql: "SELECT a::STRUCT(y INTEGER) AS b FROM (SELECT {'x': 42} AS a);" }
+      - { id: infinity_cast, sql: "SELECT 'infinity'::DOUBLE, '-infinity'::FLOAT;" }
+      - { id: try_cast_overflow, sql: "SELECT TRY_CAST(999 AS TINYINT);" }
+    examples:
+      - "SELECT CAST(3.5 AS INTEGER);"
+      - "SELECT CAST([1, 2, 3] AS VARCHAR[]);"
+      - "SELECT CAST({'a': 42} AS STRUCT(a VARCHAR));"
+
+  - id: a_identifier_quoting
+    name: Identifiers and double-quote quoting
+    doc: https://duckdb.org/docs/stable/sql/dialect/keywords_and_identifiers
+    tier: high
+    probes:
+      - { id: unquoted, sql: "SELECT col_a FROM tbl;" }
+      - { id: quoted_keyword, sql: "SELECT 1 AS \"SELECT\";" }
+      - { id: quoted_special_chars, sql: "SELECT 1 AS \" § 🦆 ¶ \";" }
+      - { id: quoted_with_space, sql: "SELECT \"my col\" FROM \"my table\";" }
+      - { id: escaped_double_quote, sql: "SELECT 1 AS \"IDENTIFIER \"\"X\"\"\";" }
+      - { id: qualified_column, sql: "SELECT t.c FROM t;" }
+      - { id: qualified_schema_table, sql: "SELECT s.t.c FROM s.t;" }
+      - { id: qualified_database, sql: "SELECT db.s.t.c FROM db.s.t;" }
+      - { id: quoted_qualified, sql: "SELECT \"s\".\"t\".\"c\" FROM \"s\".\"t\";" }
+      - { id: mixed_case_keywords, sql: "select COS(Pi()) as CosineOfPi;" }
+      - { id: case_insensitive_reference, sql: "SELECT cosineofpi FROM tbl;" }
+      - { id: deduplicated_unnest, sql: "SELECT * FROM (SELECT unnest({'a': 42, 'b': {'a': 88, 'b': 99}}, recursive := true));" }
+    examples:
+      - "select COS(Pi()) as CosineOfPi;"
+      - "SELECT cosineofpi FROM tbl;"
+      - "SELECT * FROM (SELECT unnest({'a': 42, 'b': {'a': 88, 'b': 99}}, recursive := true));"
+
+  - id: a_comments
+    name: Comments
+    doc: https://duckdb.org/docs/stable/sql/introduction
+    tier: medium
+    probes:
+      - { id: line_comment_trailing, sql: "SELECT 1; -- trailing comment" }
+      - id: line_comment_leading
+        sql: |-
+          -- a leading comment
+          SELECT 1;
+      - { id: line_comment_inside, sql: "SELECT 1, -- first column\n 2;" }
+      - { id: block_comment, sql: "SELECT /* inline block comment */ 1;", note: "Block comments are inherited from the PostgreSQL grammar DuckDB is based on (sql/dialect/overview); the introduction page documents only --" }
+      - id: block_comment_multiline
+        sql: |-
+          /* a
+          multi-line block comment */
+          SELECT 1;
+      - { id: block_comment_nested, sql: "SELECT /* outer /* nested */ still outer */ 1;", note: "Nested block comments follow PostgreSQL rules" }
+    examples: []
+
+  - id: a_parameters
+    name: Prepared statement parameters
+    doc: https://duckdb.org/docs/stable/sql/query_syntax/prepared_statements
+    tier: high
+    probes:
+      - { id: auto_incremented, sql: "SELECT * FROM person WHERE starts_with(name, ?) AND age >= ?;" }
+      - { id: positional, sql: "SELECT * FROM person WHERE starts_with(name, $2) AND age >= $1;" }
+      - { id: named, sql: "SELECT * FROM person WHERE starts_with(name, $name_start_letter) AND age >= $minimum_age;" }
+      - { id: parameter_in_select_list, sql: "SELECT ?, ?, ?;" }
+      - { id: parameter_cast, sql: "SELECT ?::INTEGER, CAST(? AS VARCHAR);" }
+      - { id: parameter_in_limit, sql: "SELECT * FROM person LIMIT ?;" }
+    examples:
+      - |-
+        PREPARE query_person AS
+        SELECT *
+        FROM person
+        WHERE starts_with(name, ?)
+        AND age >= ?;
+      - |-
+        PREPARE query_person AS
+        SELECT *
+        FROM person
+        WHERE starts_with(name, $2)
+        AND age >= $1;
+      - |-
+        PREPARE query_person AS
+        SELECT *
+        FROM person
+        WHERE starts_with(name, $name_start_letter)
+        AND age >= $minimum_age;
+
+  - id: a_variables
+    name: SQL-level variables (getvariable)
+    doc: https://duckdb.org/docs/stable/sql/statements/set_variable
+    tier: medium
+    probes:
+      - { id: getvariable, sql: "SELECT 20 + getvariable('my_var') AS total;" }
+      - { id: getvariable_undefined, sql: "SELECT getvariable('undefined_var') AS result;" }
+      - { id: getvariable_in_table_function, sql: "SELECT * FROM read_csv(getvariable('list_of_files'), filename := True);" }
+      - { id: getvariable_in_columns_lambda, sql: "SELECT COLUMNS(c -> c != getvariable('column_to_exclude')) FROM tbl;" }
+    examples:
+      - "SELECT 20 + getvariable('my_var') AS total;"
+      - "SELECT getvariable('undefined_var') AS result;"
+      - "SELECT COLUMNS(c -> c != getvariable('column_to_exclude')) FROM tbl;"

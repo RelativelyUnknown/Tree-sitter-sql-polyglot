@@ -1,0 +1,356 @@
+dialect: bigquery
+engine: BigQuery GoogleSQL
+version: "current"
+source: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language
+
+statements: []
+
+expressions:
+  - id: d_data_types
+    name: "Data type names"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types
+    tier: high
+    probes:
+      - { id: int64_family, sql: "SELECT CAST(c AS INT64), CAST(c AS INT), CAST(c AS SMALLINT), CAST(c AS INTEGER), CAST(c AS BIGINT), CAST(c AS TINYINT), CAST(c AS BYTEINT) FROM t;" }
+      - { id: float64, sql: "SELECT CAST(c AS FLOAT64) FROM t;" }
+      - { id: numeric_family, sql: "SELECT CAST(c AS NUMERIC), CAST(c AS DECIMAL), CAST(c AS BIGNUMERIC), CAST(c AS BIGDECIMAL) FROM t;" }
+      - { id: bool_family, sql: "SELECT CAST(c AS BOOL), CAST(c AS BOOLEAN) FROM t;" }
+      - { id: string_bytes, sql: "SELECT CAST(c AS STRING), CAST(c AS BYTES) FROM t;" }
+      - { id: date_time_types, sql: "SELECT CAST(c AS DATE), CAST(c AS TIME), CAST(c AS DATETIME), CAST(c AS TIMESTAMP) FROM t;" }
+      - { id: interval_type, sql: "SELECT CAST(c AS INTERVAL) FROM t;" }
+      - { id: json_type, sql: "SELECT CAST(c AS JSON) FROM t;" }
+      - { id: geography_type, sql: "CREATE TABLE t (g GEOGRAPHY);" }
+      - { id: array_type, sql: "SELECT CAST(c AS ARRAY<INT64>) FROM t;" }
+      - { id: array_of_struct, sql: "SELECT CAST(c AS ARRAY<STRUCT<a INT64, b STRING>>) FROM t;" }
+      - { id: struct_named_fields, sql: "SELECT CAST(c AS STRUCT<a INT64, b STRING>) FROM t;" }
+      - { id: struct_unnamed_fields, sql: "SELECT CAST(c AS STRUCT<INT64, STRING>) FROM t;" }
+      - { id: struct_mixed_fields, sql: "SELECT CAST(c AS STRUCT<INT64, y STRING>) FROM t;" }
+      - { id: struct_nested, sql: "SELECT CAST(c AS STRUCT<a STRUCT<b ARRAY<INT64>, c STRING>, d FLOAT64>) FROM t;" }
+      - { id: array_in_struct, sql: "CREATE TABLE t (s STRUCT<x ARRAY<INT64>, y STRING>);" }
+      - { id: range_date, sql: "CREATE TABLE t (r RANGE<DATE>);" }
+      - { id: range_datetime, sql: "CREATE TABLE t (r RANGE<DATETIME>);" }
+      - { id: range_timestamp, sql: "CREATE TABLE t (r RANGE<TIMESTAMP>);" }
+      - { id: column_types_all, sql: "CREATE TABLE t (a INT64, b FLOAT64, c NUMERIC, d BIGNUMERIC, e BOOL, f STRING, g BYTES, h DATE, i TIME, j DATETIME, k TIMESTAMP, l INTERVAL, m JSON, n GEOGRAPHY);" }
+      - { id: array_column_type, sql: "CREATE TABLE t (a ARRAY<STRING>, b ARRAY<STRUCT<k STRING, v INT64>>);" }
+    examples:
+      - "DECLARE x STRING(10);"
+      - "DECLARE x NUMERIC(10) DEFAULT 12345;"
+      - "DECLARE y NUMERIC(5, 2) DEFAULT 123.45;"
+
+  - id: d_parameterized_types
+    name: "Parameterized data types"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types
+    tier: high
+    probes:
+      - { id: string_length_variable, sql: "DECLARE x STRING(10);" }
+      - { id: bytes_length_variable, sql: "DECLARE x BYTES(10);" }
+      - { id: numeric_precision_variable, sql: "DECLARE x NUMERIC(10);" }
+      - { id: numeric_precision_scale_variable, sql: "DECLARE y NUMERIC(5, 2) DEFAULT 123.45;" }
+      - { id: bignumeric_precision_scale_variable, sql: "DECLARE x BIGNUMERIC(40, 10);" }
+      - { id: bignumeric_precision_variable, sql: "DECLARE x BIGNUMERIC(40);" }
+      - { id: decimal_precision_scale_variable, sql: "DECLARE x DECIMAL(10, 2);" }
+      - { id: string_column, sql: "CREATE TABLE t (c STRING(10));" }
+      - { id: bytes_column, sql: "CREATE TABLE t (c BYTES(16));" }
+      - { id: numeric_column, sql: "CREATE TABLE t (c NUMERIC(10, 2));" }
+      - { id: bignumeric_column, sql: "CREATE TABLE t (c BIGNUMERIC(38, 10));" }
+      - { id: array_of_parameterized, sql: "CREATE TABLE t (c ARRAY<STRING(10)>);" }
+      - { id: struct_with_parameterized_field, sql: "CREATE TABLE t (c STRUCT<a NUMERIC(10, 2), b STRING(5)>);" }
+    examples:
+      - "DECLARE x NUMERIC(10) DEFAULT 12345;"
+      - "DECLARE y NUMERIC(5, 2) DEFAULT 123.45;"
+
+  - id: d_cast
+    name: "CAST and SAFE_CAST"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/conversion_functions
+    tier: high
+    probes:
+      - { id: cast_basic, sql: "SELECT CAST(c AS INT64) FROM t;" }
+      - { id: safe_cast_basic, sql: "SELECT SAFE_CAST(c AS INT64) FROM t;" }
+      - { id: cast_expression, sql: "SELECT CAST(a + b * 2 AS FLOAT64) FROM t;" }
+      - { id: cast_nested, sql: "SELECT CAST(CAST(c AS STRING) AS BYTES) FROM t;" }
+      - { id: cast_null_to_array, sql: "SELECT CAST(NULL AS ARRAY<FLOAT64>);" }
+      - { id: cast_to_struct, sql: "SELECT CAST(STRUCT(1, 'a') AS STRUCT<x INT64, y STRING>);" }
+      - { id: cast_array_literal, sql: "SELECT CAST([1, 2, 3] AS ARRAY<FLOAT64>);" }
+      - { id: cast_string_to_date, sql: "SELECT CAST('2020-06-02' AS DATE);" }
+      - { id: safe_cast_to_date, sql: "SELECT SAFE_CAST('not a date' AS DATE);" }
+      - { id: cast_format_date_to_string, sql: "SELECT CAST(DATE '2008-12-25' AS STRING FORMAT 'DAY');" }
+      - { id: cast_format_timestamp_to_string, sql: "SELECT CAST(TIMESTAMP '2008-12-25 00:00:00+00:00' AS STRING FORMAT 'YYYY-MM-DD HH24:MI:SS TZH:TZM');" }
+      - { id: cast_format_at_time_zone, sql: "SELECT CAST(TIMESTAMP '2008-12-25 00:00:00+00:00' AS STRING FORMAT 'YYYY-MM-DD HH24:MI:SS TZH:TZM' AT TIME ZONE 'Asia/Kolkata');" }
+      - { id: cast_format_string_to_timestamp, sql: "SELECT CAST('06/02/2020 17:00:53.110' AS TIMESTAMP FORMAT 'MM/DD/YYYY HH24:MI:SS.FF3' AT TIME ZONE 'UTC');" }
+      - { id: cast_format_string_to_datetime, sql: "SELECT CAST('06/02/2020 17:00:53' AS DATETIME FORMAT 'MM/DD/YYYY HH24:MI:SS');" }
+      - { id: cast_format_string_to_date, sql: "SELECT CAST('02-JUN-2020' AS DATE FORMAT 'DD-MON-YYYY');" }
+      - { id: cast_format_string_to_time, sql: "SELECT CAST('17:00:53' AS TIME FORMAT 'HH24:MI:SS');" }
+      - { id: cast_format_bytes_to_string, sql: "SELECT CAST(b'\\x48\\x65\\x6c\\x6c\\x6f' AS STRING FORMAT 'ASCII');" }
+      - { id: cast_format_string_to_bytes, sql: "SELECT CAST('SGVsbG8=' AS BYTES FORMAT 'BASE64');" }
+      - { id: cast_format_number_to_string, sql: "SELECT CAST(12345.67 AS STRING FORMAT '99999.99');" }
+      - { id: cast_format_string_to_numeric, sql: "SELECT CAST('12,345.67' AS NUMERIC FORMAT '99,999.99');" }
+      - { id: safe_cast_format, sql: "SELECT SAFE_CAST('06/02/2020' AS DATE FORMAT 'MM/DD/YYYY');" }
+      - { id: cast_to_interval, sql: "SELECT CAST('1-2 3 4:5:6' AS INTERVAL);" }
+      - { id: cast_to_json, sql: "SELECT CAST('{\"a\": 1}' AS JSON);" }
+      - { id: cast_in_where, sql: "SELECT c FROM t WHERE CAST(d AS STRING) = 'x';" }
+      - { id: cast_to_bignumeric, sql: "SELECT CAST(1.5 AS BIGNUMERIC);" }
+    examples:
+      - "SELECT CAST(TIMESTAMP '2008-12-25 00:00:00+00:00' AS STRING FORMAT 'YYYY-MM-DD HH24:MI:SS TZH:TZM' AT TIME ZONE 'Asia/Kolkata') AS date_time_to_string;"
+      - "SELECT CAST('06/02/2020 17:00:53.110' AS TIMESTAMP FORMAT 'MM/DD/YYYY HH24:MI:SS.FF3' AT TIME ZONE 'UTC') AS as_timestamp;"
+      - "SELECT CAST(NULL AS ARRAY<FLOAT64>);"
+
+  - id: d_conditional
+    name: "Conditional expressions"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/conditional_expressions
+    tier: high
+    probes:
+      - { id: case_simple, sql: "SELECT CASE c WHEN 1 THEN 'one' WHEN 2 THEN 'two' ELSE 'many' END FROM t;" }
+      - { id: case_simple_no_else, sql: "SELECT CASE c WHEN 1 THEN 'one' END FROM t;" }
+      - { id: case_searched, sql: "SELECT CASE WHEN a > 60 THEN 'red' WHEN b = 6 THEN 'blue' ELSE 'green' END AS result FROM t;" }
+      - { id: case_searched_no_else, sql: "SELECT CASE WHEN a > 60 THEN 'red' END FROM t;" }
+      - { id: case_nested, sql: "SELECT CASE WHEN a > 1 THEN CASE WHEN b > 1 THEN 'x' ELSE 'y' END ELSE 'z' END FROM t;" }
+      - { id: case_in_aggregate, sql: "SELECT SUM(CASE WHEN a > 1 THEN 1 ELSE 0 END) FROM t;" }
+      - { id: case_in_order_by, sql: "SELECT c FROM t ORDER BY CASE WHEN c IS NULL THEN 1 ELSE 0 END, c;" }
+      - { id: if_function, sql: "SELECT IF(a > 1, 'yes', 'no') FROM t;" }
+      - { id: if_nested, sql: "SELECT IF(a > 1, IF(b > 1, 'x', 'y'), 'z') FROM t;" }
+      - { id: ifnull, sql: "SELECT IFNULL(c, 0) FROM t;" }
+      - { id: nullif, sql: "SELECT NULLIF(c, 0) FROM t;" }
+      - { id: coalesce, sql: "SELECT COALESCE(a, b, 'C') FROM t;" }
+      - { id: coalesce_single, sql: "SELECT COALESCE(a) FROM t;" }
+      - { id: coalesce_subquery, sql: "SELECT COALESCE((SELECT MAX(x) FROM u), 0) FROM t;" }
+    examples:
+      - "SELECT IFNULL(NULL, 0) as result;"
+      - "SELECT NULLIF(10, 0) as result;"
+      - "SELECT COALESCE(NULL, 'B', 'C') as result;"
+
+  - id: d_extract
+    name: "EXTRACT"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/date_functions
+    tier: high
+    probes:
+      - { id: extract_year, sql: "SELECT EXTRACT(YEAR FROM DATE '2013-12-25');" }
+      - { id: extract_quarter, sql: "SELECT EXTRACT(QUARTER FROM d) FROM t;" }
+      - { id: extract_month, sql: "SELECT EXTRACT(MONTH FROM d) FROM t;" }
+      - { id: extract_week, sql: "SELECT EXTRACT(WEEK FROM d) FROM t;" }
+      - { id: extract_week_weekday, sql: "SELECT EXTRACT(WEEK(MONDAY) FROM d) FROM t;" }
+      - { id: extract_isoweek, sql: "SELECT EXTRACT(ISOWEEK FROM d) FROM t;" }
+      - { id: extract_isoyear, sql: "SELECT EXTRACT(ISOYEAR FROM DATE '2015-06-15');" }
+      - { id: extract_day, sql: "SELECT EXTRACT(DAY FROM DATE '2013-12-25');" }
+      - { id: extract_dayofweek, sql: "SELECT EXTRACT(DAYOFWEEK FROM d) FROM t;" }
+      - { id: extract_dayofyear, sql: "SELECT EXTRACT(DAYOFYEAR FROM d) FROM t;" }
+      - { id: extract_time_parts, sql: "SELECT EXTRACT(HOUR FROM ts), EXTRACT(MINUTE FROM ts), EXTRACT(SECOND FROM ts), EXTRACT(MILLISECOND FROM ts), EXTRACT(MICROSECOND FROM ts) FROM t;" }
+      - { id: extract_date_from_timestamp, sql: "SELECT EXTRACT(DATE FROM ts) FROM t;" }
+      - { id: extract_time_from_timestamp, sql: "SELECT EXTRACT(TIME FROM ts) FROM t;" }
+      - { id: extract_datetime_from_timestamp, sql: "SELECT EXTRACT(DATETIME FROM ts) FROM t;" }
+      - { id: extract_at_time_zone, sql: "SELECT EXTRACT(HOUR FROM ts AT TIME ZONE 'America/Los_Angeles') FROM t;" }
+      - { id: extract_from_interval, sql: "SELECT EXTRACT(MONTH FROM INTERVAL 14 MONTH);" }
+      - { id: extract_from_function, sql: "SELECT EXTRACT(YEAR FROM CURRENT_DATE());" }
+      - { id: extract_in_where, sql: "SELECT c FROM t WHERE EXTRACT(YEAR FROM d) = 2020;" }
+    examples:
+      - "SELECT EXTRACT(DAY FROM DATE '2013-12-25') AS the_day;"
+      - "SELECT EXTRACT(ISOYEAR FROM DATE '2015-06-15') AS isoyear;"
+
+  - id: d_date_trunc_parts
+    name: "Date, time and timestamp truncation, differences and parts"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/date_functions
+    tier: high
+    probes:
+      - { id: date_trunc_month, sql: "SELECT DATE_TRUNC(DATE '2008-12-25', MONTH);" }
+      - { id: date_trunc_year, sql: "SELECT DATE_TRUNC(d, YEAR) FROM t;" }
+      - { id: date_trunc_quarter, sql: "SELECT DATE_TRUNC(d, QUARTER) FROM t;" }
+      - { id: date_trunc_week, sql: "SELECT DATE_TRUNC(d, WEEK) FROM t;" }
+      - { id: date_trunc_week_weekday, sql: "SELECT DATE_TRUNC(d, WEEK(MONDAY)) FROM t;" }
+      - { id: date_trunc_isoweek, sql: "SELECT DATE_TRUNC(d, ISOWEEK) FROM t;" }
+      - { id: date_trunc_isoyear, sql: "SELECT DATE_TRUNC(d, ISOYEAR) FROM t;" }
+      - { id: date_trunc_day, sql: "SELECT DATE_TRUNC(d, DAY) FROM t;" }
+      - { id: datetime_trunc, sql: "SELECT DATETIME_TRUNC(dt, HOUR) FROM t;" }
+      - { id: time_trunc, sql: "SELECT TIME_TRUNC(tm, MINUTE) FROM t;" }
+      - { id: timestamp_trunc, sql: "SELECT TIMESTAMP_TRUNC(ts, DAY) FROM t;" }
+      - { id: timestamp_trunc_time_zone, sql: "SELECT TIMESTAMP_TRUNC(ts, DAY, 'America/Los_Angeles') FROM t;" }
+      - { id: date_diff_part, sql: "SELECT DATE_DIFF(DATE '2010-07-07', DATE '2008-12-25', DAY);" }
+      - { id: date_diff_week_weekday, sql: "SELECT DATE_DIFF(a, b, WEEK(MONDAY)) FROM t;" }
+      - { id: datetime_diff, sql: "SELECT DATETIME_DIFF(a, b, MINUTE) FROM t;" }
+      - { id: timestamp_diff, sql: "SELECT TIMESTAMP_DIFF(a, b, HOUR) FROM t;" }
+      - { id: time_diff, sql: "SELECT TIME_DIFF(a, b, SECOND) FROM t;" }
+      - { id: last_day_default, sql: "SELECT LAST_DAY(DATE '2008-11-25');" }
+      - { id: last_day_part, sql: "SELECT LAST_DAY(DATE '2008-11-25', MONTH);" }
+      - { id: last_day_week_weekday, sql: "SELECT LAST_DAY(d, WEEK(MONDAY)) FROM t;" }
+      - { id: current_date_keyword, sql: "SELECT CURRENT_DATE;" }
+      - { id: current_date_tz, sql: "SELECT CURRENT_DATE('America/New_York');" }
+      - { id: current_timestamp_keyword, sql: "SELECT CURRENT_TIMESTAMP;" }
+      - { id: current_datetime_time_keywords, sql: "SELECT CURRENT_DATETIME, CURRENT_TIME;" }
+      - { id: current_time_functions, sql: "SELECT CURRENT_DATETIME(), CURRENT_TIME(), CURRENT_TIMESTAMP();" }
+    examples:
+      - "SELECT DATE_TRUNC(DATE '2008-12-25', MONTH) AS month;"
+      - "SELECT LAST_DAY(DATE '2008-11-25', MONTH) AS last_day;"
+
+  - id: d_interval_arithmetic
+    name: "INTERVAL arithmetic in functions and operators"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/date_functions
+    tier: high
+    probes:
+      - { id: date_add_interval, sql: "SELECT DATE_ADD(DATE '2008-12-25', INTERVAL 5 DAY);" }
+      - { id: date_sub_interval, sql: "SELECT DATE_SUB(DATE '2008-12-25', INTERVAL 5 DAY);" }
+      - { id: date_add_month, sql: "SELECT DATE_ADD(d, INTERVAL 1 MONTH) FROM t;" }
+      - { id: date_add_year, sql: "SELECT DATE_ADD(d, INTERVAL 1 YEAR) FROM t;" }
+      - { id: date_add_quarter_week, sql: "SELECT DATE_ADD(d, INTERVAL 1 QUARTER), DATE_ADD(d, INTERVAL 2 WEEK) FROM t;" }
+      - { id: datetime_add, sql: "SELECT DATETIME_ADD(dt, INTERVAL 10 MINUTE) FROM t;" }
+      - { id: datetime_sub, sql: "SELECT DATETIME_SUB(dt, INTERVAL 10 HOUR) FROM t;" }
+      - { id: time_add, sql: "SELECT TIME_ADD(tm, INTERVAL 2 HOUR) FROM t;" }
+      - { id: time_sub, sql: "SELECT TIME_SUB(tm, INTERVAL 30 SECOND) FROM t;" }
+      - { id: timestamp_add, sql: "SELECT TIMESTAMP_ADD(ts, INTERVAL 10 MINUTE) FROM t;" }
+      - { id: timestamp_sub, sql: "SELECT TIMESTAMP_SUB(ts, INTERVAL 10 DAY) FROM t;" }
+      - { id: sub_second_units, sql: "SELECT TIMESTAMP_ADD(ts, INTERVAL 500 MILLISECOND), TIMESTAMP_ADD(ts, INTERVAL 5 MICROSECOND) FROM t;" }
+      - { id: interval_expression_count, sql: "SELECT DATE_ADD(d, INTERVAL n + 1 DAY) FROM t;" }
+      - { id: interval_param_count, sql: "SELECT DATE_ADD(d, INTERVAL @days DAY) FROM t;" }
+      - { id: interval_column_count, sql: "SELECT TIMESTAMP_ADD(ts, INTERVAL t.minutes MINUTE) FROM t;" }
+      - { id: date_plus_interval, sql: "SELECT d + INTERVAL 1 DAY FROM t;" }
+      - { id: date_minus_interval, sql: "SELECT d - INTERVAL 1 MONTH FROM t;" }
+      - { id: timestamp_plus_interval, sql: "SELECT ts + INTERVAL 10 MINUTE FROM t;" }
+      - { id: datetime_minus_interval, sql: "SELECT dt - INTERVAL 3 HOUR FROM t;" }
+      - { id: interval_plus_date, sql: "SELECT INTERVAL 1 DAY + d FROM t;" }
+      - { id: interval_plus_interval, sql: "SELECT INTERVAL 1 YEAR + INTERVAL 2 MONTH;" }
+      - { id: interval_multiply, sql: "SELECT INTERVAL 3 DAY * 2;" }
+      - { id: interval_divide, sql: "SELECT INTERVAL 10 DAY / 2;" }
+      - { id: interval_negate, sql: "SELECT -INTERVAL 1 DAY;" }
+      - { id: timestamp_minus_timestamp, sql: "SELECT TIMESTAMP '2020-01-02' - TIMESTAMP '2020-01-01';" }
+      - { id: date_minus_date, sql: "SELECT a - b FROM t;" }
+      - { id: interval_year_to_month_literal, sql: "SELECT d + INTERVAL '1-2' YEAR TO MONTH FROM t;" }
+      - { id: interval_day_to_second_literal, sql: "SELECT ts + INTERVAL '1 2:3:4' DAY TO SECOND FROM t;" }
+      - { id: generate_date_array, sql: "SELECT GENERATE_DATE_ARRAY(DATE '2016-10-05', DATE '2016-10-08', INTERVAL 1 DAY);" }
+      - { id: generate_timestamp_array, sql: "SELECT GENERATE_TIMESTAMP_ARRAY(TIMESTAMP '2016-10-05 00:00:00', TIMESTAMP '2016-10-07 00:00:00', INTERVAL 1 DAY);" }
+      - { id: make_interval, sql: "SELECT MAKE_INTERVAL(1, 6, 15);" }
+      - { id: make_interval_named, sql: "SELECT MAKE_INTERVAL(year => 1, month => 6, day => 15);" }
+      - { id: justify_interval_functions, sql: "SELECT JUSTIFY_DAYS(INTERVAL 29 DAY), JUSTIFY_HOURS(INTERVAL 25 HOUR), JUSTIFY_INTERVAL(INTERVAL 25 HOUR);" }
+    examples:
+      - "SELECT DATE_ADD(DATE '2008-12-25', INTERVAL 5 DAY) AS five_days_later;"
+      - "SELECT DATE_SUB(DATE '2008-12-25', INTERVAL 5 DAY) AS five_days_ago;"
+
+  - id: d_aggregate_calls
+    name: "Aggregate function call syntax"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate-function-calls
+    tier: high
+    probes:
+      - { id: count_star, sql: "SELECT COUNT(*) FROM t;" }
+      - { id: count_distinct, sql: "SELECT COUNT(DISTINCT c) FROM t;" }
+      - { id: sum_distinct, sql: "SELECT SUM(DISTINCT c) FROM t;" }
+      - { id: count_expression, sql: "SELECT COUNT(c) AS non_null_count, COUNTIF(c > 1) FROM t;" }
+      - { id: array_agg_basic, sql: "SELECT ARRAY_AGG(c) FROM t;" }
+      - { id: array_agg_distinct, sql: "SELECT ARRAY_AGG(DISTINCT c) FROM t;" }
+      - { id: array_agg_ignore_nulls, sql: "SELECT ARRAY_AGG(c IGNORE NULLS) FROM t;" }
+      - { id: array_agg_respect_nulls, sql: "SELECT ARRAY_AGG(c RESPECT NULLS) FROM t;" }
+      - { id: array_agg_order_by, sql: "SELECT ARRAY_AGG(c ORDER BY d) FROM t;" }
+      - { id: array_agg_order_by_desc, sql: "SELECT ARRAY_AGG(c ORDER BY d DESC, e ASC) FROM t;" }
+      - { id: array_agg_limit, sql: "SELECT ARRAY_AGG(c LIMIT 10) FROM t;" }
+      - { id: array_agg_order_limit, sql: "SELECT ARRAY_AGG(c ORDER BY d DESC LIMIT 5) FROM t;" }
+      - { id: array_agg_distinct_nulls_order_limit, sql: "SELECT ARRAY_AGG(DISTINCT c IGNORE NULLS ORDER BY c LIMIT 3) FROM t;" }
+      - { id: array_agg_struct, sql: "SELECT ARRAY_AGG(STRUCT(a, b) ORDER BY a) FROM t;" }
+      - { id: string_agg_separator, sql: "SELECT STRING_AGG(c, ', ') FROM t;" }
+      - { id: string_agg_order_by, sql: "SELECT STRING_AGG(c, ',' ORDER BY c DESC) FROM t;" }
+      - { id: string_agg_distinct_limit, sql: "SELECT STRING_AGG(DISTINCT c, ',' ORDER BY c LIMIT 5) FROM t;" }
+      - { id: array_concat_agg_order_limit, sql: "SELECT ARRAY_CONCAT_AGG(arr ORDER BY ARRAY_LENGTH(arr) LIMIT 2) FROM t;" }
+      - { id: any_value_having_max, sql: "SELECT ANY_VALUE(year HAVING MAX inches) AS any_year_with_max_inches FROM t;" }
+      - { id: any_value_having_min, sql: "SELECT ANY_VALUE(year HAVING MIN inches) AS any_year_with_min_inches FROM t;" }
+      - { id: array_agg_having_max, sql: "SELECT ARRAY_AGG(x HAVING MAX y) FROM t;" }
+      - { id: min_having_max, sql: "SELECT MIN(x HAVING MAX y) FROM t;" }
+      - { id: max_having_min, sql: "SELECT MAX(x HAVING MIN y) FROM t;" }
+      - { id: aggregate_where, sql: "SELECT AVG(inches WHERE season IN ('spring', 'summer')) AS wet_seasons_avg FROM t;", note: "WHERE inside an aggregate call is marked Preview in the aggregate-function-calls page" }
+      - { id: count_where, sql: "SELECT COUNT(*) WHERE c > 1 FROM t;", note: "Not valid; see count_star_where below" }
+      - { id: aggregate_group_by, sql: "SELECT AVG(SUM(revenue) GROUP BY DATE(time)) AS avg_daily_sales FROM t GROUP BY product;", note: "GROUP BY inside an aggregate call, documented on the aggregate-function-calls page" }
+      - { id: aggregate_group_by_having, sql: "SELECT SUM(AVG(inches) GROUP BY season HAVING season IN ('spring', 'summer')) AS e FROM t;" }
+      - { id: aggregate_group_by_having_aggregate, sql: "SELECT SUM(AVG(inches) GROUP BY season HAVING AVG(inches) > 3) AS e FROM t;" }
+      - { id: aggregate_group_by_multiple, sql: "SELECT AVG(ANY_VALUE(salary) GROUP BY empno, dept) FROM t;" }
+      - { id: sum_avg_min_max, sql: "SELECT SUM(a), AVG(a), MIN(a), MAX(a) FROM t;" }
+      - { id: logical_aggregates, sql: "SELECT LOGICAL_AND(a), LOGICAL_OR(b) FROM t;" }
+      - { id: bit_aggregates, sql: "SELECT BIT_AND(a), BIT_OR(a), BIT_XOR(a) FROM t;" }
+      - { id: aggregate_in_having, sql: "SELECT c FROM t GROUP BY c HAVING COUNT(*) > 1;" }
+      - { id: aggregate_in_order_by, sql: "SELECT c FROM t GROUP BY c ORDER BY SUM(d) DESC;" }
+      - { id: aggregate_arithmetic, sql: "SELECT SUM(a) / COUNT(*), MAX(a) - MIN(a) FROM t;" }
+      - { id: aggregate_over_window, sql: "SELECT SUM(a) OVER (PARTITION BY b) FROM t;" }
+    examples:
+      - "SELECT x, AVG(x) OVER (ORDER BY x ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) AS avg FROM UNNEST([0, 2, 4, 4, 5]) AS x;"
+
+  - id: d_aggregate_families
+    name: "Aggregate function families"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions
+    tier: high
+    probes:
+      - { id: approximate_count_distinct, sql: "SELECT APPROX_COUNT_DISTINCT(c) FROM t;" }
+      - { id: approximate_quantiles, sql: "SELECT APPROX_QUANTILES(c, 4) FROM t;" }
+      - { id: approximate_quantiles_distinct_nulls, sql: "SELECT APPROX_QUANTILES(DISTINCT c, 100 IGNORE NULLS) FROM t;" }
+      - { id: approximate_top_count, sql: "SELECT APPROX_TOP_COUNT(c, 3) FROM t;" }
+      - { id: approximate_top_sum, sql: "SELECT APPROX_TOP_SUM(c, w, 3) FROM t;" }
+      - { id: statistical_aggregates, sql: "SELECT CORR(a, b), COVAR_POP(a, b), COVAR_SAMP(a, b), STDDEV(a), STDDEV_POP(a), STDDEV_SAMP(a), VARIANCE(a), VAR_POP(a), VAR_SAMP(a) FROM t;" }
+      - { id: hll_count, sql: "SELECT HLL_COUNT.INIT(c), HLL_COUNT.MERGE(sketch), HLL_COUNT.MERGE_PARTIAL(sketch), HLL_COUNT.EXTRACT(sketch) FROM t;" }
+      - { id: hll_count_init_precision, sql: "SELECT HLL_COUNT.INIT(c, 14) FROM t;" }
+      - { id: json_aggregate, sql: "SELECT JSON_ARRAYAGG(c) FROM t;" }
+      - { id: grouping_function, sql: "SELECT a, GROUPING(a), SUM(b) FROM t GROUP BY ROLLUP(a);" }
+      - { id: sum_numeric, sql: "SELECT SUM(CAST(c AS NUMERIC)) FROM t;" }
+      - { id: max_by_min_by, sql: "SELECT MAX_BY(a, b), MIN_BY(a, b) FROM t;" }
+      - { id: any_value_plain, sql: "SELECT ANY_VALUE(c) FROM t;" }
+
+  - id: d_window_calls
+    name: "Window function calls (OVER, frames, named windows)"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/window-function-calls
+    tier: high
+    probes:
+      - { id: over_empty, sql: "SELECT SUM(c) OVER () FROM t;" }
+      - { id: over_partition_by, sql: "SELECT SUM(c) OVER (PARTITION BY a) FROM t;" }
+      - { id: over_partition_by_multiple, sql: "SELECT SUM(c) OVER (PARTITION BY a, b) FROM t;" }
+      - { id: over_order_by, sql: "SELECT SUM(c) OVER (ORDER BY a) FROM t;" }
+      - { id: over_order_by_desc, sql: "SELECT SUM(c) OVER (ORDER BY a DESC, b ASC) FROM t;" }
+      - { id: over_order_by_nulls, sql: "SELECT SUM(c) OVER (ORDER BY a NULLS FIRST, b DESC NULLS LAST) FROM t;" }
+      - { id: over_partition_order, sql: "SELECT SUM(c) OVER (PARTITION BY a ORDER BY b) FROM t;" }
+      - { id: rows_unbounded_preceding, sql: "SELECT SUM(c) OVER (ORDER BY a ROWS UNBOUNDED PRECEDING) FROM t;" }
+      - { id: rows_n_preceding, sql: "SELECT SUM(c) OVER (ORDER BY a ROWS 2 PRECEDING) FROM t;" }
+      - { id: rows_current_row, sql: "SELECT SUM(c) OVER (ORDER BY a ROWS CURRENT ROW) FROM t;" }
+      - { id: rows_between_unbounded_current, sql: "SELECT SUM(c) OVER (PARTITION BY a ORDER BY b ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: rows_between_unbounded_unbounded, sql: "SELECT SUM(c) OVER (PARTITION BY a ORDER BY b ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: rows_between_n_preceding_n_following, sql: "SELECT LAST_VALUE(item) OVER (ORDER BY purchases ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING) FROM t;" }
+      - { id: rows_between_current_unbounded_following, sql: "SELECT SUM(c) OVER (ORDER BY a ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: rows_between_n_preceding_current, sql: "SELECT AVG(x) OVER (ORDER BY x ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: rows_between_n_preceding_n_preceding, sql: "SELECT SUM(c) OVER (ORDER BY a ROWS BETWEEN 3 PRECEDING AND 1 PRECEDING) FROM t;" }
+      - { id: rows_between_current_n_following, sql: "SELECT SUM(c) OVER (ORDER BY a ROWS BETWEEN CURRENT ROW AND 2 FOLLOWING) FROM t;" }
+      - { id: rows_between_n_following_n_following, sql: "SELECT SUM(c) OVER (ORDER BY a ROWS BETWEEN 1 FOLLOWING AND 3 FOLLOWING) FROM t;" }
+      - { id: rows_between_param_offset, sql: "SELECT SUM(c) OVER (ORDER BY a ROWS BETWEEN @n PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: range_unbounded_current, sql: "SELECT LAST_VALUE(book) OVER (ORDER BY year RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: range_unbounded_preceding, sql: "SELECT SUM(c) OVER (ORDER BY a RANGE UNBOUNDED PRECEDING) FROM t;" }
+      - { id: range_n_preceding_n_following, sql: "SELECT SUM(c) OVER (ORDER BY a RANGE BETWEEN 5 PRECEDING AND 5 FOLLOWING) FROM t;" }
+      - { id: range_current_unbounded_following, sql: "SELECT SUM(c) OVER (ORDER BY a RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: window_clause, sql: "SELECT SUM(c) OVER w FROM t WINDOW w AS (PARTITION BY a ORDER BY b);" }
+      - { id: window_clause_multiple, sql: "SELECT SUM(c) OVER w1, AVG(c) OVER w2 FROM t WINDOW w1 AS (PARTITION BY a), w2 AS (ORDER BY b);" }
+      - { id: over_named_window_in_parens, sql: "SELECT SUM(c) OVER (w) FROM t WINDOW w AS (PARTITION BY a ORDER BY b);" }
+      - { id: over_named_window_with_frame, sql: "SELECT item, purchases, LAST_VALUE(item) OVER (ItemWindow ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING) AS most_popular FROM Produce WINDOW ItemWindow AS (ORDER BY purchases);" }
+      - { id: over_named_window_with_order, sql: "SELECT SUM(c) OVER (w ORDER BY b) FROM t WINDOW w AS (PARTITION BY a);" }
+      - { id: over_named_window_with_order_frame, sql: "SELECT SUM(c) OVER (w ORDER BY b ROWS 2 PRECEDING) FROM t WINDOW w AS (PARTITION BY a);" }
+      - { id: window_definition_refers_named_window, sql: "SELECT SUM(c) OVER w2 FROM t WINDOW w1 AS (PARTITION BY a), w2 AS (w1 ORDER BY b);" }
+      - { id: window_definition_alias_of_window, sql: "SELECT SUM(c) OVER w2 FROM t WINDOW w1 AS (PARTITION BY a ORDER BY b), w2 AS w1;" }
+      - { id: window_definition_frame_only, sql: "SELECT SUM(c) OVER (w) FROM t WINDOW w AS (ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING);" }
+      - { id: window_with_group_by, sql: "SELECT a, SUM(SUM(c)) OVER (ORDER BY a) FROM t GROUP BY a;" }
+      - { id: window_with_group_by_window_clause, sql: "SELECT a, RANK() OVER w FROM t GROUP BY a WINDOW w AS (ORDER BY a);" }
+      - { id: window_in_qualify, sql: "SELECT c FROM t WHERE TRUE QUALIFY ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) = 1;" }
+      - { id: window_in_order_by, sql: "SELECT c FROM t ORDER BY ROW_NUMBER() OVER (ORDER BY c);" }
+      - { id: window_in_expression, sql: "SELECT c - LAG(c) OVER (ORDER BY d) AS delta FROM t;" }
+      - { id: window_aggregate_ignore_nulls, sql: "SELECT FIRST_VALUE(c IGNORE NULLS) OVER (ORDER BY d) FROM t;" }
+      - { id: window_aggregate_respect_nulls, sql: "SELECT LAST_VALUE(c RESPECT NULLS) OVER (ORDER BY d) FROM t;" }
+      - { id: window_aggregate_order_by_inside, sql: "SELECT ARRAY_AGG(c ORDER BY d) OVER (PARTITION BY a) FROM t;", note: "ORDER BY inside an aggregate used as an analytic function" }
+      - { id: window_count_star, sql: "SELECT COUNT(*) OVER (PARTITION BY a) FROM t;" }
+    examples:
+      - "SELECT item, purchases, category, SUM(purchases) OVER () AS total_purchases FROM Produce;"
+      - "SELECT item, purchases, category, SUM(purchases) OVER (PARTITION BY category ORDER BY purchases ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS total_purchases FROM Produce;"
+      - "SELECT item, purchases, category, SUM(purchases) OVER (PARTITION BY category ORDER BY purchases ROWS UNBOUNDED PRECEDING) AS total_purchases FROM Produce;"
+
+  - id: d_window_functions
+    name: "Navigation, numbering and analytic window functions"
+    doc: https://cloud.google.com/bigquery/docs/reference/standard-sql/window-function-calls
+    tier: high
+    probes:
+      - { id: row_number, sql: "SELECT ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) FROM t;" }
+      - { id: rank, sql: "SELECT RANK() OVER (ORDER BY a DESC) FROM t;" }
+      - { id: dense_rank, sql: "SELECT DENSE_RANK() OVER (ORDER BY a) FROM t;" }
+      - { id: percent_rank, sql: "SELECT PERCENT_RANK() OVER (ORDER BY a) FROM t;" }
+      - { id: cume_dist, sql: "SELECT CUME_DIST() OVER (ORDER BY a) FROM t;" }
+      - { id: ntile, sql: "SELECT NTILE(4) OVER (ORDER BY a) FROM t;" }
+      - { id: lag_lead, sql: "SELECT LAG(a) OVER (ORDER BY b), LEAD(a) OVER (ORDER BY b) FROM t;" }
+      - { id: lag_offset_default, sql: "SELECT LAG(a, 2, 0) OVER (PARTITION BY c ORDER BY b), LEAD(a, 1, NULL) OVER (ORDER BY b) FROM t;" }
+      - { id: first_last_value, sql: "SELECT FIRST_VALUE(a) OVER (ORDER BY b), LAST_VALUE(a) OVER (ORDER BY b ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: nth_value, sql: "SELECT NTH_VALUE(a, 2) OVER (ORDER BY b) FROM t;" }
+      - { id: nth_value_ignore_nulls, sql: "SELECT NTH_VALUE(a, 2 IGNORE NULLS) OVER (ORDER BY b) FROM t;" }
+      - { id: percentile_cont, sql: "SELECT PERCENTILE_CONT(a, 0.5) OVER (PARTITION BY b) FROM t;" }
+      - { id: percentile_cont_ignore_nulls, sql: "SELECT PERCENTILE_CONT(a, 0.5 IGNORE NULLS) OVER () FROM t;" }
+      - { id: percentile_disc, sql: "SELECT PERCENTILE_DISC(a, 0.5) OVER (PARTITION BY b) FROM t;" }

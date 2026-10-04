@@ -1,0 +1,154 @@
+dialect: duckdb
+engine: DuckDB
+version: "1.5"
+source: https://duckdb.org/docs/stable/sql/statements/overview
+
+statements: []
+
+expressions:
+  - id: c_aggregate_syntax
+    name: Aggregate function syntax (DISTINCT, ORDER BY, FILTER, WITHIN GROUP)
+    doc: https://duckdb.org/docs/stable/sql/functions/aggregates
+    tier: high
+    probes:
+      - { id: count_star, sql: "SELECT count(*) FROM t;" }
+      - { id: distinct, sql: "SELECT count(DISTINCT region) FROM sales;" }
+      - { id: distinct_list, sql: "SELECT list(DISTINCT region) FROM sales;" }
+      - { id: filter, sql: "SELECT sum(amount), sum(amount) FILTER (region != 'north') FROM sales;" }
+      - id: filter_where
+        sql: "SELECT count(*) FILTER (WHERE i % 2 = 1) FROM t;"
+        note: "FILTER (WHERE ...) is the SQL-standard spelling; the FILTER page shows the form without WHERE"
+      - { id: filter_count_star, sql: "SELECT count(*) AS total_rows, count(*) FILTER (i <= 5) AS lte_five FROM t;" }
+      - { id: filter_distinct, sql: "SELECT count(DISTINCT a) FILTER (a > 0) FROM t;" }
+      - { id: filter_multiple, sql: "SELECT sum(x) FILTER (cat = 'a') AS a_sum, sum(x) FILTER (cat = 'b') AS b_sum FROM t;" }
+      - { id: order_by_list, sql: "SELECT list(region ORDER BY amount DESC) FROM sales;" }
+      - { id: order_by_first, sql: "SELECT first(amount ORDER BY date ASC) FROM sales;" }
+      - { id: order_by_string_agg, sql: "SELECT string_agg(s, ', ' ORDER BY s DESC) AS countdown FROM tbl;" }
+      - { id: order_by_multiple, sql: "SELECT list(a ORDER BY b ASC, c DESC) FROM t;" }
+      - { id: order_by_nulls, sql: "SELECT list(a ORDER BY b DESC NULLS LAST) FROM t;" }
+      - { id: distinct_order_by, sql: "SELECT list(DISTINCT a ORDER BY a) FROM t;" }
+      - { id: order_by_filter, sql: "SELECT list(a ORDER BY b) FILTER (a IS NOT NULL) FROM t;" }
+      - { id: within_group_mode, sql: "SELECT mode() WITHIN GROUP (ORDER BY c) FROM t;" }
+      - { id: within_group_percentile_cont, sql: "SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY c) FROM t;" }
+      - { id: within_group_percentile_cont_list, sql: "SELECT percentile_cont([0.25, 0.5, 0.75]) WITHIN GROUP (ORDER BY c DESC) FROM t;" }
+      - { id: within_group_percentile_disc, sql: "SELECT percentile_disc(0.5) WITHIN GROUP (ORDER BY c ASC) FROM t;" }
+      - { id: within_group_percentile_disc_list, sql: "SELECT percentile_disc([0.25, 0.5, 0.75]) WITHIN GROUP (ORDER BY c) FROM t;" }
+      - { id: ordered_set_equivalent, sql: "SELECT quantile_cont(c, 0.5 ORDER BY c) FROM t;" }
+      - { id: grouping, sql: "SELECT a, b, grouping(a, b) FROM t GROUP BY ROLLUP (a, b);" }
+      - { id: grouping_id, sql: "SELECT a, grouping_id(a) FROM t GROUP BY GROUPING SETS ((a), ());" }
+    examples:
+      - "SELECT count(DISTINCT region)\nFROM sales;"
+      - "SELECT sum(amount), sum(amount) FILTER (region != 'north')\nFROM sales;"
+      - "SELECT list(region ORDER BY amount DESC)\nFROM sales;"
+
+  - id: c_aggregate_functions
+    name: Aggregate function families
+    doc: https://duckdb.org/docs/stable/sql/functions/aggregates
+    tier: medium
+    probes:
+      - { id: general, sql: "SELECT sum(x), avg(x), min(x), max(x), product(x), any_value(x), arbitrary(x) FROM t;" }
+      - { id: arg_max, sql: "SELECT arg_max(a, b), arg_min(a, b), max_by(a, b), min_by(a, b) FROM t;" }
+      - { id: arg_max_n, sql: "SELECT arg_max(a, b, 2), max(a, 3), min(a, 3) FROM t;" }
+      - { id: list_agg, sql: "SELECT list(a), array_agg(a), first(a), last(a) FROM t;" }
+      - { id: string_agg, sql: "SELECT string_agg(s, ','), group_concat(s, ';'), listagg(s) FROM t;" }
+      - { id: boolean_bit, sql: "SELECT bool_and(a), bool_or(a), bit_and(x), bit_or(x), bit_xor(x), bitstring_agg(x) FROM t;" }
+      - { id: statistics, sql: "SELECT stddev(x), stddev_pop(x), var_samp(x), var_pop(x), kurtosis(x), skewness(x), entropy(x), mad(x) FROM t;" }
+      - { id: bivariate, sql: "SELECT corr(y, x), covar_pop(y, x), regr_slope(y, x), regr_intercept(y, x), regr_r2(y, x) FROM t;" }
+      - { id: quantiles, sql: "SELECT median(x), mode(x), quantile_cont(x, 0.5), quantile_disc(x, [0.25, 0.75]), approx_quantile(x, 0.5), reservoir_quantile(x, 0.5, 1024) FROM t;" }
+      - { id: approximate, sql: "SELECT approx_count_distinct(x), approx_top_k(x, 5) FROM t;" }
+      - { id: histogram, sql: "SELECT histogram(x), histogram(x, [0, 1, 10]) FROM t;" }
+      - { id: count_if, sql: "SELECT count_if(x > 0), countif(x < 0) FROM t;" }
+      - { id: float_sum, sql: "SELECT fsum(x), favg(x), geomean(x), sem(x) FROM t;" }
+
+  - id: c_window_syntax
+    name: Window functions (OVER, frames, named windows)
+    doc: https://duckdb.org/docs/stable/sql/functions/window_functions
+    tier: high
+    probes:
+      - { id: over_empty, sql: "SELECT row_number() OVER () FROM sales;" }
+      - { id: over_order_by, sql: "SELECT row_number() OVER (ORDER BY time) FROM sales;" }
+      - { id: over_partition_order, sql: "SELECT row_number() OVER (PARTITION BY region ORDER BY time) FROM sales;" }
+      - { id: over_partition_only, sql: "SELECT amount / sum(amount) OVER (PARTITION BY region) FROM sales;" }
+      - { id: over_order_desc_nulls, sql: "SELECT rank() OVER (PARTITION BY a, b ORDER BY c DESC NULLS LAST, d) FROM t;" }
+      - { id: lag_in_expression, sql: "SELECT amount - lag(amount) OVER (ORDER BY time) FROM sales;" }
+      - { id: named_window, sql: "SELECT min(\"MWh\") OVER seven AS lo, avg(\"MWh\") OVER seven AS av FROM gen WINDOW seven AS (PARTITION BY \"Plant\" ORDER BY \"Date\" ASC RANGE BETWEEN INTERVAL 3 DAYS PRECEDING AND INTERVAL 3 DAYS FOLLOWING);" }
+      - { id: named_windows_multiple, sql: "SELECT min(x) OVER seven, min(x) OVER three FROM t WINDOW seven AS (ORDER BY d ROWS BETWEEN 3 PRECEDING AND 3 FOLLOWING), three AS (ORDER BY d ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING);" }
+      - { id: named_window_ordered_args, sql: "SELECT first_value(time ORDER BY time ASC) OVER w AS record_time FROM meet_results WINDOW w AS (PARTITION BY event ORDER BY datetime);" }
+      - { id: rows_between, sql: "SELECT sum(points) OVER (ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS we FROM t;" }
+      - { id: rows_unbounded_current, sql: "SELECT sum(x) OVER (ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: rows_current_unbounded_following, sql: "SELECT sum(x) OVER (ORDER BY d ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: rows_preceding_following, sql: "SELECT sum(x) OVER (ORDER BY d ROWS BETWEEN 2 PRECEDING AND 1 FOLLOWING) FROM t;" }
+      - { id: rows_following_following, sql: "SELECT sum(x) OVER (ORDER BY d ROWS BETWEEN 1 FOLLOWING AND 3 FOLLOWING) FROM t;" }
+      - { id: rows_start_only, sql: "SELECT sum(x) OVER (ORDER BY d ROWS 2 PRECEDING) FROM t;" }
+      - { id: rows_unbounded_start_only, sql: "SELECT sum(x) OVER (ORDER BY d ROWS UNBOUNDED PRECEDING) FROM t;" }
+      - { id: range_interval, sql: "SELECT avg(\"MWh\") OVER (PARTITION BY \"Plant\" ORDER BY \"Date\" ASC RANGE BETWEEN INTERVAL 3 DAYS PRECEDING AND INTERVAL 3 DAYS FOLLOWING) FROM gen;" }
+      - { id: range_unbounded, sql: "SELECT sum(x) OVER (ORDER BY d RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: range_numeric_offset, sql: "SELECT sum(x) OVER (ORDER BY n RANGE BETWEEN 10 PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: groups_between, sql: "SELECT avg(\"MWh\") OVER (ORDER BY \"Date\" ASC GROUPS BETWEEN 3 PRECEDING AND 3 FOLLOWING) FROM gen;" }
+      - { id: exclude_current_row, sql: "SELECT avg(time) OVER (PARTITION BY event ORDER BY date RANGE BETWEEN INTERVAL 10 DAYS PRECEDING AND INTERVAL 10 DAYS FOLLOWING EXCLUDE CURRENT ROW) FROM results;" }
+      - { id: exclude_group, sql: "SELECT sum(x) OVER (ORDER BY d ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING EXCLUDE GROUP) FROM t;" }
+      - { id: exclude_ties, sql: "SELECT sum(x) OVER (ORDER BY d ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING EXCLUDE TIES) FROM t;" }
+      - { id: exclude_no_others, sql: "SELECT sum(x) OVER (ORDER BY d ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING EXCLUDE NO OTHERS) FROM t;" }
+      - { id: aggregate_filter_over, sql: "SELECT sum(x) FILTER (WHERE x > 0) OVER (ORDER BY d) FROM t;" }
+      - { id: aggregate_distinct_over, sql: "SELECT count(DISTINCT name) OVER (ORDER BY time) FROM sales;" }
+      - { id: aggregate_list_distinct_over, sql: "SELECT list(DISTINCT name) OVER (ORDER BY time) FROM sales;" }
+      - { id: aggregate_order_by_over, sql: "SELECT mode(value ORDER BY time DESC) OVER (ORDER BY time) FROM sales;" }
+      - { id: ignore_nulls, sql: "SELECT last_value(x IGNORE NULLS) OVER (ORDER BY d) FROM t;" }
+      - { id: respect_nulls, sql: "SELECT first_value(x RESPECT NULLS) OVER (ORDER BY d) FROM t;" }
+      - { id: lag_ignore_nulls, sql: "SELECT lag(x, 1, 0 IGNORE NULLS) OVER (ORDER BY d) FROM t;" }
+      - { id: lead_offset_default, sql: "SELECT lead(x, 2, -1) OVER (PARTITION BY a ORDER BY d) FROM t;" }
+      - { id: nth_value_ignore_nulls, sql: "SELECT nth_value(x, 2 IGNORE NULLS) OVER (ORDER BY d) FROM t;" }
+      - { id: argument_order_by, sql: "SELECT first_value(athlete ORDER BY time ASC) OVER (PARTITION BY event ORDER BY datetime) FROM meet_results;" }
+      - { id: rank_functions, sql: "SELECT rank() OVER w, dense_rank() OVER w, percent_rank() OVER w, cume_dist() OVER w, ntile(4) OVER w FROM t WINDOW w AS (ORDER BY x);" }
+      - { id: rank_argument_order_by, sql: "SELECT rank(ORDER BY y) OVER (ORDER BY x), row_number(ORDER BY y) OVER (ORDER BY x) FROM t;" }
+      - { id: fill, sql: "SELECT fill(x) OVER (ORDER BY d) FROM t;" }
+      - { id: multiple_over, sql: "SELECT row_number() OVER (ORDER BY a), sum(b) OVER (PARTITION BY c), lag(b) OVER (ORDER BY a) FROM t;" }
+    examples:
+      - "SELECT row_number() OVER ()\nFROM sales;"
+      - "SELECT row_number() OVER (PARTITION BY region ORDER BY time)\nFROM sales;"
+      - "SELECT amount - lag(amount) OVER (ORDER BY time)\nFROM sales;"
+
+  - id: c_lambda
+    name: Lambda functions
+    doc: https://duckdb.org/docs/stable/sql/functions/lambda
+    tier: high
+    probes:
+      - { id: transform, sql: "SELECT list_transform([1, 2, 3], lambda x : x + 1);" }
+      - { id: filter, sql: "SELECT list_filter([3, 4, 5], lambda x : x > 4);" }
+      - { id: reduce, sql: "SELECT list_reduce([1, 2, 3], lambda x, y : x + y);" }
+      - { id: reduce_initial_value, sql: "SELECT list_reduce(['a', 'b', 'c', 'd'], lambda x, y, i : x || ' - ' || CAST(i AS VARCHAR) || ' - ' || y, 'INITIAL');" }
+      - { id: index_parameter, sql: "SELECT list_filter([1, 3, 1, 5], lambda x, i : x > i);" }
+      - { id: function_in_body, sql: "SELECT list_transform(['Duck', 'Goose', 'Sparrow'], lambda s : concat(s, 'DB'));" }
+      - { id: nested, sql: "SELECT list_transform(list_filter([0, 1, 2, 3, 4, 5], lambda x : x % 2 = 0), lambda y : y * y);" }
+      - { id: nested_inside_body, sql: "SELECT list_transform([1, 2, 3], lambda x : list_reduce([4, 5, 6], lambda a, b : a + b) + x);" }
+      - { id: scoping_column_reference, sql: "SELECT list_apply([1, 2], lambda x : list_apply([4], lambda x : x + tbl.x)[1] + x) FROM tbl;" }
+      - { id: positional_reference, sql: "SELECT list_filter([1, 2, 3, 4], lambda x : x > #1) FROM range(4);" }
+      - { id: alias_apply, sql: "SELECT apply([1, 2, 3], lambda x : x * 2), array_transform([1, 2], lambda x : x), array_apply([1, 2], lambda x : x), list_apply([1, 2], lambda x : x);" }
+      - { id: alias_filter, sql: "SELECT filter([1, 2, 3], lambda x : x > 1), array_filter([1, 2, 3], lambda x : x > 1);" }
+      - { id: alias_reduce, sql: "SELECT reduce([1, 2, 3], lambda x, y : x + y), array_reduce([1, 2, 3], lambda x, y : x + y);" }
+      - { id: column_reference, sql: "SELECT list_transform(l, lambda x : x + 1) FROM t;" }
+      - { id: lambda_no_space, sql: "SELECT list_transform([1, 2, 3], lambda x: x + 1);" }
+      - id: single_arrow
+        sql: "SELECT list_transform([1, 2, 3], x -> x + 1);"
+        note: "Deprecated since 1.3; the lambda page says 1.5 is the last release accepting it without lambda_syntax = 'ENABLE_SINGLE_ARROW'"
+      - id: single_arrow_two_params
+        sql: "SELECT list_reduce([1, 2, 3], (x, y) -> x + y);"
+        note: "Deprecated single-arrow syntax, still enabled by default in 1.5"
+    examples:
+      - "SELECT list_transform([1, 2, NULL, 3], lambda x : x + 1);"
+      - "SELECT list_filter([5, -6, NULL, 7], lambda x : x > 0);"
+      - "SELECT list_reduce([1, 2, 3, 4], lambda acc, x : acc + x);"
+
+  - id: c_list_comprehension
+    name: List comprehension
+    doc: https://duckdb.org/docs/stable/sql/functions/list
+    tier: medium
+    probes:
+      - { id: map, sql: "SELECT [lower(x) FOR x IN strings] AS strings FROM (VALUES (['Hello', '', 'World'])) t(strings);" }
+      - { id: filter, sql: "SELECT [upper(x) FOR x IN strings IF len(x) > 0] AS strings FROM (VALUES (['Hello', '', 'World'])) t(strings);" }
+      - { id: with_index, sql: "SELECT [4, 5, 6] AS l, [x FOR x, i IN l IF i != 2] AS filtered;" }
+      - { id: literal_source, sql: "SELECT [x * 2 FOR x IN [1, 2, 3]];" }
+    examples:
+      - "SELECT [lower(x) FOR x IN strings] AS strings\nFROM (VALUES (['Hello', '', 'World'])) _(strings);"
+      - "SELECT [upper(x) FOR x IN strings IF len(x) > 0] AS strings\nFROM (VALUES (['Hello', '', 'World'])) _(strings);"
+      - "SELECT [4, 5, 6] AS l, [x FOR x, i IN l IF i != 2] AS filtered;"
