@@ -125,3 +125,92 @@ statements:
     name: CREATE APPLICATION IDENTITY
     doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-application-identity.html
     tier: low
+    probes:
+      - id: basic
+        sql: "CREATE APPLICATION IDENTITY app MAPPED TO 'id_string';"
+      - id: or_replace_if_not_exists
+        sql: "CREATE OR REPLACE APPLICATION IDENTITY IF NOT EXISTS app MAPPED TO 'id_string';"
+
+  - id: create_assertion
+    name: CREATE ASSERTION
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-assertion.html
+    tier: low
+    probes:
+      - id: not_exists
+        sql: "CREATE ASSERTION a CHECK (NOT EXISTS (SELECT 1 FROM t WHERE c < 0));"
+      - id: deferrable
+        sql: "CREATE ASSERTION s.a CHECK (EXISTS (SELECT 1 FROM t)) DEFERRABLE INITIALLY DEFERRED;"
+      - id: universal
+        sql: "CREATE ASSERTION a CHECK (ALL (SELECT * FROM t) x SATISFY (x.c > 0));"
+
+  - id: create_attribute_dimension
+    name: CREATE ATTRIBUTE DIMENSION
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-ATTRIBUTE-DIMENSION.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE ATTRIBUTE DIMENSION d USING t ATTRIBUTES (c1, c2 AS a2) LEVEL l1 KEY c1;"
+      - id: time_dimension_all_member
+        sql: "CREATE OR REPLACE ATTRIBUTE DIMENSION d DIMENSION TYPE TIME USING t ATTRIBUTES (c1) LEVEL l1 LEVEL TYPE YEARS KEY c1 ORDER BY MIN c1 ASC NULLS LAST ALL MEMBER NAME 'All';"
+
+  - id: create_audit_policy_unified
+    name: CREATE AUDIT POLICY (Unified Auditing)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing.html
+    tier: low
+    probes:
+      - id: privileges
+        sql: "CREATE AUDIT POLICY p PRIVILEGES CREATE ANY TABLE, DROP ANY TABLE;"
+      - id: actions_on_object
+        sql: "CREATE AUDIT POLICY p ACTIONS SELECT ON s.t, UPDATE ON s.t WHEN 'SYS_CONTEXT(''USERENV'', ''SESSION_USER'') = ''U''' EVALUATE PER SESSION;"
+      - id: roles_container
+        sql: "CREATE AUDIT POLICY p ROLES dba ONLY TOPLEVEL CONTAINER = ALL;"
+
+  - id: create_cluster
+    name: CREATE CLUSTER
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-CLUSTER.html
+    tier: low
+    probes:
+      - id: index_cluster
+        sql: "CREATE CLUSTER c (id NUMBER(4)) SIZE 512 TABLESPACE users;"
+      - id: hash_cluster
+        sql: "CREATE CLUSTER c (id NUMBER) SINGLE TABLE HASHKEYS 100 HASH IS id;"
+
+  - id: create_controlfile
+    name: CREATE CONTROLFILE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-CONTROLFILE.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE CONTROLFILE REUSE DATABASE db NORESETLOGS ARCHIVELOG MAXLOGFILES 5 DATAFILE '/u01/system.dbf' CHARACTER SET AL32UTF8;"
+      - id: logfile_resetlogs
+        sql: "CREATE CONTROLFILE SET DATABASE db LOGFILE GROUP 1 '/u01/redo1.log' SIZE 10M RESETLOGS;"
+
+  - id: create_data_grant
+    name: CREATE DATA GRANT
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-data-grant.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE DATA GRANT g AS SELECT ON t TO r;"
+      - id: columns_where_time
+        sql: "CREATE OR REPLACE DATA GRANT s.g AS SELECT (ALL COLUMNS EXCEPT c1), UPDATE (c2) ON s.t WHERE c3 > 0 TO r1, r2 START TIME TIMESTAMP '2026-01-01 00:00:00' END TIME TIMESTAMP '2027-01-01 00:00:00';"
+
+  - id: create_data_role
+    name: CREATE DATA ROLE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-data-role.html
+    tier: low
+    probes:
+      - id: local
+        sql: "CREATE DATA ROLE r ENABLED;"
+      - id: mapped
+        sql: "CREATE OR REPLACE DATA ROLE IF NOT EXISTS r MAPPED TO 'ext_role';"
+
+  - id: create_dimension
+    name: CREATE DIMENSION
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-DIMENSION.html
+    tier: low
+    probes:
+      - id: levels_hierarchy
+        sql: "CREATE DIMENSION d LEVEL city IS t.city LEVEL state IS t.state HIERARCHY geo (city CHILD OF state JOIN KEY t.state_id REFERENCES state);"
+      - id: attribute
+        sql: "CREATE DIMENSION d LEVEL city IS t.city ATTRIBUTE city DETERMINES (t.zip, t.area);"
