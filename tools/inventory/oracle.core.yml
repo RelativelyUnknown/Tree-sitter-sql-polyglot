@@ -118,8 +118,10 @@ statements:
         sql: "WITH q (id, pid) AS (SELECT id, pid FROM t WHERE pid IS NULL UNION ALL SELECT t.id, t.pid FROM q, t WHERE q.id = t.pid) SEARCH DEPTH FIRST BY id SET ord SELECT id FROM q ORDER BY ord;"
       - id: search_breadth_first
         sql: "WITH q (id, pid) AS (SELECT id, pid FROM t WHERE pid IS NULL UNION ALL SELECT t.id, t.pid FROM q, t WHERE q.id = t.pid) SEARCH BREADTH FIRST BY id DESC NULLS LAST SET ord SELECT id FROM q ORDER BY ord;"
+        note: "Taken from the SELECT (with_clause) syntax on the cited page (search breadth first); none of the reference parsers implements this Oracle syntax."
       - id: cycle
         sql: "WITH q (id, pid) AS (SELECT id, pid FROM t WHERE pid IS NULL UNION ALL SELECT t.id, t.pid FROM q, t WHERE q.id = t.pid) CYCLE id SET is_cycle TO 'Y' DEFAULT 'N' SELECT id, is_cycle FROM q;"
+        note: "Taken from the SELECT (with_clause) syntax on the cited page (cycle); none of the reference parsers implements this Oracle syntax."
       - id: values
         sql: "WITH x (a, b) AS (VALUES (1, 2), (3, 4)) SELECT a, b FROM x;"
       - id: nested_with
@@ -128,14 +130,19 @@ statements:
         sql: "SELECT c FROM t WHERE c > (WITH q AS (SELECT AVG(c) a FROM t) SELECT a FROM q);"
       - id: plsql_function
         sql: "WITH FUNCTION f(x NUMBER) RETURN NUMBER IS BEGIN RETURN x * 2; END; SELECT f(c) FROM t;"
+        note: "Taken from the SELECT (with_clause) syntax on the cited page (plsql function); none of the reference parsers implements this Oracle syntax."
       - id: plsql_procedure_and_function
         sql: "WITH PROCEDURE p(x NUMBER) IS BEGIN NULL; END; FUNCTION f(x NUMBER) RETURN NUMBER IS BEGIN p(x); RETURN x; END; SELECT f(c) FROM t;"
+        note: "Taken from the SELECT (with_clause) syntax on the cited page (plsql procedure and function); none of the reference parsers implements this Oracle syntax."
       - id: plsql_function_with_cte
         sql: "WITH FUNCTION f(x NUMBER) RETURN NUMBER IS BEGIN RETURN x; END; q AS (SELECT c FROM t) SELECT f(c) FROM q;"
+        note: "Taken from the SELECT (with_clause) syntax on the cited page (plsql function with cte); none of the reference parsers implements this Oracle syntax."
       - id: subav_factoring
         sql: "WITH a ANALYTIC VIEW AS (USING av HIERARCHIES (h) ADD MEASURES (m2 AS (LAG(m) OVER (HIERARCHY h OFFSET 1)))) SELECT h.member_name, m, m2 FROM a HIERARCHIES (h);"
+        note: "Taken from the SELECT (with_clause) syntax on the cited page (subav factoring); none of the reference parsers implements this Oracle syntax."
       - id: subav_filter_fact
         sql: "WITH a ANALYTIC VIEW AS (USING av HIERARCHIES (h) FILTER FACT (h TO level_name = 'YEAR')) SELECT m FROM a HIERARCHIES (h);"
+        note: "Taken from the SELECT (with_clause) syntax on the cited page (subav filter fact); none of the reference parsers implements this Oracle syntax."
     examples:
       - |-
         WITH
@@ -211,12 +218,15 @@ statements:
         sql: "SELECT c FROM t PARTITION (p1);"
       - id: partition_for
         sql: "SELECT c FROM t PARTITION FOR (100);"
+        note: "Taken from the SELECT (FROM clause, table_reference) syntax on the cited page (partition for); none of the reference parsers implements this Oracle syntax."
       - id: subpartition
         sql: "SELECT c FROM t SUBPARTITION (sp1);"
       - id: subpartition_for
         sql: "SELECT c FROM t SUBPARTITION FOR (100, 'A');"
+        note: "Taken from the SELECT (FROM clause, table_reference) syntax on the cited page (subpartition for); none of the reference parsers implements this Oracle syntax."
       - id: partition_with_alias
         sql: "SELECT x.c FROM t PARTITION (p1) x;"
+        note: "Taken from the SELECT (FROM clause, table_reference) syntax on the cited page (partition with alias); none of the reference parsers implements this Oracle syntax."
       - id: dblink
         sql: "SELECT c FROM t@remote;"
       - id: schema_dblink_qualified
@@ -233,6 +243,7 @@ statements:
         sql: "SELECT x.* FROM t, TABLE(t.arr) x;"
       - id: table_collection_outer
         sql: "SELECT x.* FROM t, TABLE(t.arr) (+) x;"
+        note: "Taken from the SELECT (FROM clause, table_reference) syntax on the cited page (table collection outer); none of the reference parsers implements this Oracle syntax."
       - id: table_collection_cast_multiset
         sql: "SELECT x.* FROM t, TABLE(CAST(MULTISET(SELECT c FROM u WHERE u.id = t.id) AS typ)) x;"
       - id: table_function
@@ -250,12 +261,15 @@ statements:
         sql: "SELECT * FROM (VALUES (1, 'a'), (2, 'b')) AS v (id, name);"
       - id: external_modify
         sql: "SELECT * FROM t EXTERNAL MODIFY (DEFAULT DIRECTORY d LOCATION ('f.csv') REJECT LIMIT UNLIMITED);"
+        note: "Taken from the SELECT (FROM clause, table_reference) syntax on the cited page (external modify); none of the reference parsers implements this Oracle syntax."
       - id: inline_external_table
         sql: "SELECT * FROM EXTERNAL ((c NUMBER, d VARCHAR2(10)) TYPE ORACLE_LOADER DEFAULT DIRECTORY dir ACCESS PARAMETERS (RECORDS DELIMITED BY NEWLINE FIELDS TERMINATED BY ',') LOCATION ('f.csv') REJECT LIMIT UNLIMITED) x;"
+        note: "Taken from the SELECT (FROM clause, table_reference) syntax on the cited page (inline external table); none of the reference parsers implements this Oracle syntax."
       - id: analytic_view_hierarchies
         sql: "SELECT h.member_name, m FROM av HIERARCHIES (h) WHERE h.level_name = 'YEAR';"
       - id: inline_analytic_view
         sql: "SELECT h.member_name, m2 FROM ANALYTIC VIEW (USING av HIERARCHIES (h) ADD MEASURES (m2 AS (LAG(m) OVER (HIERARCHY h OFFSET 1)))) x;"
+        note: "Taken from the SELECT (FROM clause, table_reference) syntax on the cited page (inline analytic view); none of the reference parsers implements this Oracle syntax."
     examples:
       - |-
         SELECT * FROM sales PARTITION (sales_q2_2000) s
@@ -321,10 +335,13 @@ statements:
         sql: "SELECT c FROM t NATURAL LEFT OUTER JOIN u;"
       - id: partitioned_outer_join_left_side
         sql: "SELECT t.c, u.d FROM t PARTITION BY (t.k) RIGHT OUTER JOIN u ON t.id = u.id;"
+        note: "Taken from the SELECT (join_clause) syntax on the cited page (partitioned outer join left side); none of the reference parsers implements this Oracle syntax."
       - id: partitioned_outer_join_right_side
         sql: "SELECT t.c, u.d FROM t LEFT OUTER JOIN u PARTITION BY (u.k) ON t.id = u.id;"
+        note: "Taken from the SELECT (join_clause) syntax on the cited page (partitioned outer join right side); none of the reference parsers implements this Oracle syntax."
       - id: partitioned_outer_join_unparenthesized
         sql: "SELECT t.c, u.d FROM t LEFT OUTER JOIN u PARTITION BY u.k, u.j ON t.id = u.id;"
+        note: "Taken from the SELECT (join_clause) syntax on the cited page (partitioned outer join unparenthesized); none of the reference parsers implements this Oracle syntax."
       - id: cross_apply
         sql: "SELECT t.c, v.d FROM t CROSS APPLY (SELECT d FROM u WHERE u.id = t.id) v;"
       - id: outer_apply
@@ -343,8 +360,10 @@ statements:
         sql: "SELECT t.c FROM t JOIN u ON t.id = u.id LEFT JOIN v ON u.id = v.id CROSS JOIN w;"
       - id: join_to_one
         sql: "SELECT oi.c, o.d FROM s.oi oi JOIN TO ONE (s.o o, s.p p);"
+        note: "Taken from the SELECT (join_clause) syntax on the cited page (join to one); none of the reference parsers implements this Oracle syntax."
       - id: join_to_one_outer
         sql: "SELECT oi.c, o.d FROM oi JOIN TO ONE (LEFT OUTER JOIN o ON oi.oid = o.id LEFT OUTER JOIN p ON oi.pid = p.id);"
+        note: "Taken from the SELECT (join_clause) syntax on the cited page (join to one outer); none of the reference parsers implements this Oracle syntax."
     examples:
       - |-
         SELECT d.department_id, e.last_name
@@ -383,20 +402,28 @@ statements:
     probes:
       - id: as_of_timestamp
         sql: "SELECT c FROM t AS OF TIMESTAMP (SYSTIMESTAMP - INTERVAL '1' MINUTE);"
+        note: "Documented Oracle 26ai syntax (as of timestamp) from the SELECT (flashback_query_clause) page; the reference parsers have no Oracle grammar for it."
       - id: as_of_timestamp_alias
         sql: "SELECT x.c FROM t AS OF TIMESTAMP TO_TIMESTAMP('2024-01-01 00:00:00', 'YYYY-MM-DD HH24:MI:SS') x WHERE x.c > 0;"
+        note: "Documented Oracle 26ai syntax (as of timestamp alias) from the SELECT (flashback_query_clause) page; the reference parsers have no Oracle grammar for it."
       - id: as_of_scn
         sql: "SELECT c FROM t AS OF SCN 1234567;"
+        note: "Documented Oracle 26ai syntax (as of scn) from the SELECT (flashback_query_clause) page; the reference parsers have no Oracle grammar for it."
       - id: as_of_period_for
         sql: "SELECT c FROM t AS OF PERIOD FOR valid_time DATE '2024-01-01';"
+        note: "Taken from the SELECT (flashback_query_clause) syntax on the cited page (as of period for); none of the reference parsers implements this Oracle syntax."
       - id: versions_between_timestamp
         sql: "SELECT c FROM t VERSIONS BETWEEN TIMESTAMP SYSTIMESTAMP - INTERVAL '10' MINUTE AND SYSTIMESTAMP - INTERVAL '1' MINUTE;"
+        note: "Taken from the SELECT (flashback_query_clause) syntax on the cited page (versions between timestamp); none of the reference parsers implements this Oracle syntax."
       - id: versions_between_scn_minmax
         sql: "SELECT c, versions_startscn, versions_operation FROM t VERSIONS BETWEEN SCN MINVALUE AND MAXVALUE;"
+        note: "Taken from the SELECT (flashback_query_clause) syntax on the cited page (versions between scn minmax); none of the reference parsers implements this Oracle syntax."
       - id: versions_period_for
         sql: "SELECT c FROM t VERSIONS PERIOD FOR valid_time BETWEEN DATE '2024-01-01' AND DATE '2024-12-31';"
+        note: "Taken from the SELECT (flashback_query_clause) syntax on the cited page (versions period for); none of the reference parsers implements this Oracle syntax."
       - id: as_of_in_join
         sql: "SELECT a.c FROM t AS OF SCN 100 a JOIN u ON a.id = u.id;"
+        note: "Documented Oracle 26ai syntax (as of in join) from the SELECT (flashback_query_clause) page; the reference parsers have no Oracle grammar for it."
     examples:
       - |-
         SELECT salary FROM employees
@@ -568,52 +595,76 @@ statements:
     probes:
       - id: basic
         sql: "SELECT y, s FROM t MODEL DIMENSION BY (y) MEASURES (s) RULES (s[2024] = s[2023] * 1.1);"
+        note: "Documented Oracle 26ai syntax (basic) from the SELECT (model_clause) page; the reference parsers have no Oracle grammar for it."
       - id: without_rules_keyword
         sql: "SELECT y, s FROM t MODEL DIMENSION BY (y) MEASURES (s) (s[2024] = s[2023]);"
+        note: "Taken from the SELECT (model_clause) syntax on the cited page (without rules keyword); none of the reference parsers implements this Oracle syntax."
       - id: partition_by
         sql: "SELECT c, y, s FROM t MODEL PARTITION BY (c) DIMENSION BY (y) MEASURES (s) RULES (s[2024] = s[2023]);"
+        note: "Documented Oracle 26ai syntax (partition by) from the SELECT (model_clause) page; the reference parsers have no Oracle grammar for it."
       - id: column_aliases
         sql: "SELECT c, y, s FROM t MODEL PARTITION BY (c x) DIMENSION BY (y yr) MEASURES (amt s, 0 csum) RULES (csum[2024] = s[2024]);"
+        note: "Documented Oracle 26ai syntax (column aliases) from the SELECT (model_clause) page; the reference parsers have no Oracle grammar for it."
       - id: ignore_nav_unique_dimension
         sql: "SELECT y, s FROM t MODEL IGNORE NAV UNIQUE DIMENSION DIMENSION BY (y) MEASURES (s) RULES (s[2024] = s[2023]);"
+        note: "Taken from the SELECT (model_clause) syntax on the cited page (ignore nav unique dimension); none of the reference parsers implements this Oracle syntax."
       - id: keep_nav_unique_single_reference
         sql: "SELECT y, s FROM t MODEL KEEP NAV UNIQUE SINGLE REFERENCE DIMENSION BY (y) MEASURES (s) RULES (s[2024] = s[2023]);"
+        note: "Taken from the SELECT (model_clause) syntax on the cited page (keep nav unique single reference); none of the reference parsers implements this Oracle syntax."
       - id: return_updated_rows
         sql: "SELECT y, s FROM t MODEL RETURN UPDATED ROWS DIMENSION BY (y) MEASURES (s) RULES (s[2024] = s[2023]);"
+        note: "Documented Oracle 26ai syntax (return updated rows) from the SELECT (model_clause) page; the reference parsers have no Oracle grammar for it."
       - id: return_all_rows
         sql: "SELECT y, s FROM t MODEL RETURN ALL ROWS DIMENSION BY (y) MEASURES (s) RULES (s[2024] = s[2023]);"
+        note: "Documented Oracle 26ai syntax (return all rows) from the SELECT (model_clause) page; the reference parsers have no Oracle grammar for it."
       - id: reference_model
         sql: "SELECT y, s FROM t MODEL REFERENCE r ON (SELECT k, v FROM u) DIMENSION BY (k) MEASURES (v) MAIN m DIMENSION BY (y) MEASURES (s) RULES (s[2024] = s[2023] * r.v[1]);"
+        note: "Taken from the SELECT (model_clause) syntax on the cited page (reference model); none of the reference parsers implements this Oracle syntax."
       - id: rules_upsert_sequential_order
         sql: "SELECT y, s FROM t MODEL DIMENSION BY (y) MEASURES (s) RULES UPSERT SEQUENTIAL ORDER (s[2024] = s[2023]);"
+        note: "Documented Oracle 26ai syntax (rules upsert sequential order) from the SELECT (model_clause) page; the reference parsers have no Oracle grammar for it."
       - id: rules_update_automatic_order
         sql: "SELECT y, s FROM t MODEL DIMENSION BY (y) MEASURES (s) RULES UPDATE AUTOMATIC ORDER (s[2024] = s[2023]);"
+        note: "Documented Oracle 26ai syntax (rules update automatic order) from the SELECT (model_clause) page; the reference parsers have no Oracle grammar for it."
       - id: rules_upsert_all
         sql: "SELECT c, y, s FROM t MODEL DIMENSION BY (c, y) MEASURES (s) RULES UPSERT ALL (s[ANY, 2024] = s[CV(c), 2023]);"
+        note: "Documented Oracle 26ai syntax (rules upsert all) from the SELECT (model_clause) page; the reference parsers have no Oracle grammar for it."
       - id: per_rule_upsert_update
         sql: "SELECT y, s FROM t MODEL DIMENSION BY (y) MEASURES (s) RULES (UPSERT s[2024] = 1, UPDATE s[2023] = 2);"
+        note: "Taken from the SELECT (model_clause) syntax on the cited page (per rule upsert update); none of the reference parsers implements this Oracle syntax."
       - id: iterate_until
         sql: "SELECT y, s FROM t MODEL DIMENSION BY (y) MEASURES (s) RULES ITERATE (10) UNTIL (PREVIOUS(s[1]) - s[1] < 1) (s[1] = s[1] / 2);"
+        note: "Documented Oracle 26ai syntax (iterate until) from the SELECT (model_clause) page; the reference parsers have no Oracle grammar for it."
       - id: symbolic_reference
         sql: "SELECT c, y, s FROM t MODEL DIMENSION BY (c, y) MEASURES (s) RULES (s[c = 'a', y = 2024] = s['a', 2023] + s['a', 2022]);"
+        note: "Taken from the SELECT (model_clause) syntax on the cited page (symbolic reference); none of the reference parsers implements this Oracle syntax."
       - id: any_and_cv
         sql: "SELECT y, s, csum FROM t MODEL DIMENSION BY (y) MEASURES (s, 0 csum) RULES (csum[ANY] = s[CV(y)] + 1);"
+        note: "Documented Oracle 26ai syntax (any and cv) from the SELECT (model_clause) page; the reference parsers have no Oracle grammar for it."
       - id: rule_order_by
         sql: "SELECT y, s FROM t MODEL DIMENSION BY (y) MEASURES (s) RULES (s[ANY] ORDER BY y DESC = s[CV(y) - 1]);"
+        note: "Taken from the SELECT (model_clause) syntax on the cited page (rule order by); none of the reference parsers implements this Oracle syntax."
       - id: for_in_literals
         sql: "SELECT y, s FROM t MODEL DIMENSION BY (y) MEASURES (s) RULES (s[FOR y IN (2024, 2025)] = s[CV(y) - 1]);"
+        note: "Taken from the SELECT (model_clause) syntax on the cited page (for in literals); none of the reference parsers implements this Oracle syntax."
       - id: for_in_subquery
         sql: "SELECT y, s FROM t MODEL DIMENSION BY (y) MEASURES (s) RULES (s[FOR y IN (SELECT y FROM u)] = 0);"
+        note: "Taken from the SELECT (model_clause) syntax on the cited page (for in subquery); none of the reference parsers implements this Oracle syntax."
       - id: for_from_to_increment
         sql: "SELECT y, s FROM t MODEL DIMENSION BY (y) MEASURES (s) RULES (s[FOR y FROM 2024 TO 2030 INCREMENT 1] = 0);"
+        note: "Taken from the SELECT (model_clause) syntax on the cited page (for from to increment); none of the reference parsers implements this Oracle syntax."
       - id: for_like_from_to_decrement
         sql: "SELECT p, s FROM t MODEL DIMENSION BY (p) MEASURES (s) RULES (s[FOR p LIKE 'p%' FROM 9 TO 1 DECREMENT 1] = 0);"
+        note: "Taken from the SELECT (model_clause) syntax on the cited page (for like from to decrement); none of the reference parsers implements this Oracle syntax."
       - id: multi_column_for_loop
         sql: "SELECT c, y, s FROM t MODEL DIMENSION BY (c, y) MEASURES (s) RULES (s[FOR (c, y) IN (('a', 2024), ('b', 2025))] = 0);"
+        note: "Documented Oracle 26ai syntax (multi column for loop) from the SELECT (model_clause) page; the reference parsers have no Oracle grammar for it."
       - id: analytic_in_rule
         sql: "SELECT c, y, s, csum FROM t MODEL DIMENSION BY (c, y) MEASURES (s, 0 csum) RULES (csum[ANY, ANY] = SUM(s) OVER (PARTITION BY c ORDER BY y ROWS UNBOUNDED PRECEDING));"
+        note: "Taken from the SELECT (model_clause) syntax on the cited page (analytic in rule); none of the reference parsers implements this Oracle syntax."
       - id: is_present_presentv
         sql: "SELECT y, s FROM t MODEL DIMENSION BY (y) MEASURES (s) RULES (s[2024] = CASE WHEN s[2023] IS PRESENT THEN PRESENTV(s[2023], s[2023], 0) ELSE PRESENTNNV(s[2022], s[2022], 0) END);"
+        note: "Documented Oracle 26ai syntax (is present presentv) from the SELECT (model_clause) page; the reference parsers have no Oracle grammar for it."
     examples:
       - |-
         SELECT country,prod,year,s
@@ -666,8 +717,10 @@ statements:
         sql: "SELECT * FROM (SELECT y, mode, amt FROM t) PIVOT (SUM(amt) FOR mode IN ('direct' AS store, 'online' AS internet));"
       - id: pivot_xml_any
         sql: "SELECT * FROM t PIVOT XML (SUM(amt) FOR mode IN (ANY));"
+        note: "Taken from the SELECT (pivot_clause, unpivot_clause) syntax on the cited page (pivot xml any); none of the reference parsers implements this Oracle syntax."
       - id: pivot_xml_subquery
         sql: "SELECT * FROM t PIVOT XML (SUM(amt) FOR mode IN (SELECT DISTINCT mode FROM u));"
+        note: "Taken from the SELECT (pivot_clause, unpivot_clause) syntax on the cited page (pivot xml subquery); none of the reference parsers implements this Oracle syntax."
       - id: unpivot
         sql: "SELECT * FROM t UNPIVOT (amt FOR mode IN (store AS 'direct', internet AS 'online'));"
       - id: unpivot_no_aliases
@@ -720,6 +773,7 @@ statements:
         sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts AFTER MATCH SKIP TO LAST b PATTERN (a b+) DEFINE b AS b.v > a.v);"
       - id: skip_to_variable
         sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts AFTER MATCH SKIP TO b PATTERN (a b+) DEFINE b AS b.v > a.v);"
+        note: "Taken from the SELECT (row_pattern_clause, MATCH_RECOGNIZE) syntax on the cited page (skip to variable); none of the reference parsers implements this Oracle syntax."
       - id: quantifiers
         sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts PATTERN (a b* c+ d? e{2} f{1,3} g{2,} h{,4}) DEFINE b AS b.v > 0);"
       - id: reluctant_quantifiers
@@ -734,8 +788,10 @@ statements:
         sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts PATTERN (PERMUTE (a, b, c)) DEFINE a AS a.v = 1, b AS b.v = 2, c AS c.v = 3);"
       - id: subset
         sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts MEASURES AVG(ab.v) AS av PATTERN (a b) SUBSET ab = (a, b) DEFINE a AS a.v > 0);"
+        note: "Taken from the SELECT (row_pattern_clause, MATCH_RECOGNIZE) syntax on the cited page (subset); none of the reference parsers implements this Oracle syntax."
       - id: navigation_functions
         sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts MEASURES RUNNING FIRST(b.v) AS fv, FINAL LAST(b.v, 1) AS lv, NEXT(b.v, 2) AS nv, PREV(FINAL LAST(b.v), 1) AS pv PATTERN (a b+) DEFINE b AS b.v > PREV(b.v));"
+        note: "Taken from the SELECT (row_pattern_clause, MATCH_RECOGNIZE) syntax on the cited page (navigation functions); none of the reference parsers implements this Oracle syntax."
       - id: aggregate_functions
         sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts MEASURES FINAL COUNT(b.*) AS cnt, RUNNING AVG(b.v) AS av PATTERN (a b+) DEFINE b AS b.v > AVG(b.v));"
     examples:
@@ -843,16 +899,22 @@ statements:
         sql: "SELECT c FROM t ORDER BY c FETCH FIRST 5 PERCENT ROWS WITH TIES;"
       - id: fetch_bind_expression
         sql: "SELECT c FROM t ORDER BY c OFFSET :o ROWS FETCH NEXT :n + 1 ROWS ONLY;"
+        note: "Taken from the SELECT (row_limiting_clause) syntax on the cited page (fetch bind expression); none of the reference parsers implements this Oracle syntax."
       - id: fetch_approx
         sql: "SELECT id FROM t ORDER BY VECTOR_DISTANCE(v, :q) FETCH APPROX FIRST 20 ROWS ONLY;"
+        note: "Taken from the SELECT (row_limiting_clause) syntax on the cited page (fetch approx); none of the reference parsers implements this Oracle syntax."
       - id: fetch_approximate_accuracy
         sql: "SELECT id FROM t ORDER BY VECTOR_DISTANCE(v, :q) FETCH APPROXIMATE FIRST 10 ROWS ONLY WITH TARGET ACCURACY 90;"
+        note: "Taken from the SELECT (row_limiting_clause) syntax on the cited page (fetch approximate accuracy); none of the reference parsers implements this Oracle syntax."
       - id: fetch_exact
         sql: "SELECT id FROM t ORDER BY VECTOR_DISTANCE(v, :q) FETCH EXACT FIRST 10 ROWS ONLY;"
+        note: "Taken from the SELECT (row_limiting_clause) syntax on the cited page (fetch exact); none of the reference parsers implements this Oracle syntax."
       - id: accuracy_parameters
         sql: "SELECT id FROM t ORDER BY VECTOR_DISTANCE(v, :q) FETCH APPROX FIRST 10 ROWS ONLY WITH TARGET ACCURACY PARAMETERS (EFSEARCH 500);"
+        note: "Taken from the SELECT (row_limiting_clause) syntax on the cited page (accuracy parameters); none of the reference parsers implements this Oracle syntax."
       - id: partitioned_row_limiting
         sql: "SELECT deptno, ename FROM emp ORDER BY sal DESC FETCH FIRST 2 PARTITIONS BY deptno, 3 ROWS ONLY;"
+        note: "Taken from the SELECT (row_limiting_clause) syntax on the cited page (partitioned row limiting); none of the reference parsers implements this Oracle syntax."
     examples:
       - |-
         SELECT employee_id, last_name
@@ -895,8 +957,10 @@ statements:
         sql: "SELECT c FROM t FOR UPDATE WAIT 5;"
       - id: wait_unit
         sql: "SELECT c FROM t FOR UPDATE WAIT 500 MILLISECONDS;"
+        note: "Taken from the SELECT (for_update_clause) syntax on the cited page (wait unit); none of the reference parsers implements this Oracle syntax."
       - id: wait_forever
         sql: "SELECT c FROM t FOR UPDATE WAIT FOREVER;"
+        note: "Taken from the SELECT (for_update_clause) syntax on the cited page (wait forever); none of the reference parsers implements this Oracle syntax."
       - id: skip_locked
         sql: "SELECT c FROM t FOR UPDATE SKIP LOCKED;"
       - id: of_column_skip_locked
@@ -950,12 +1014,15 @@ statements:
         sql: "INSERT INTO t SET c = 1, d = 'a';"
       - id: set_clause_parenthesized
         sql: "INSERT INTO t SET (c = 1, d = 'a');"
+        note: "Taken from the INSERT syntax on the cited page (set clause parenthesized); none of the reference parsers implements this Oracle syntax."
       - id: set_clause_multi_row
         sql: "INSERT INTO t SET (c = 1, d = 'a'), (c = 2, d = 'b');"
+        note: "Taken from the INSERT syntax on the cited page (set clause multi row); none of the reference parsers implements this Oracle syntax."
       - id: partition
         sql: "INSERT INTO t PARTITION (p1) VALUES (1, 'a');"
       - id: partition_for
         sql: "INSERT INTO t PARTITION FOR (100) (c, d) VALUES (100, 'a');"
+        note: "Taken from the INSERT syntax on the cited page (partition for); none of the reference parsers implements this Oracle syntax."
       - id: subpartition
         sql: "INSERT INTO t SUBPARTITION (sp1) VALUES (1, 'a');"
       - id: dblink
@@ -964,8 +1031,10 @@ statements:
         sql: "INSERT INTO (SELECT c, d FROM t) VALUES (1, 'a');"
       - id: into_subquery_check_option
         sql: "INSERT INTO (SELECT c, d FROM t WHERE c < 10 WITH CHECK OPTION) VALUES (1, 'a');"
+        note: "Taken from the INSERT syntax on the cited page (into subquery check option); none of the reference parsers implements this Oracle syntax."
       - id: into_table_collection
         sql: "INSERT INTO TABLE(SELECT h.people FROM h WHERE h.id = 1) VALUES ('Smith', 10);"
+        note: "Taken from the INSERT syntax on the cited page (into table collection); none of the reference parsers implements this Oracle syntax."
       - id: values_subquery
         sql: "INSERT INTO t (c) VALUES ((SELECT MAX(c) FROM u));"
       - id: sequence_nextval
@@ -980,6 +1049,7 @@ statements:
         sql: "INSERT INTO t VALUES (1, 'a') NOWAIT;"
       - id: wait
         sql: "INSERT INTO t VALUES (1, 'a') WAIT 10;"
+        note: "Taken from the INSERT syntax on the cited page (wait); none of the reference parsers implements this Oracle syntax."
       - id: log_errors
         sql: "INSERT INTO t SELECT c, d FROM u LOG ERRORS;"
       - id: log_errors_full
@@ -1034,6 +1104,7 @@ statements:
         sql: "INSERT ALL WHEN a > 0 THEN INTO t (c) VALUES (a) INTO u (c) VALUES (b) SELECT a, b FROM v;"
       - id: conditional_without_all
         sql: "INSERT WHEN a > 0 THEN INTO t VALUES (a, b) SELECT a, b FROM v;"
+        note: "Taken from the INSERT (multi_table_insert) syntax on the cited page (conditional without all); none of the reference parsers implements this Oracle syntax."
       - id: log_errors
         sql: "INSERT ALL INTO t VALUES (a, b) LOG ERRORS INTO errlog REJECT LIMIT UNLIMITED INTO u VALUES (a, b) SELECT a, b FROM v;"
       - id: set_clause
@@ -1119,14 +1190,18 @@ statements:
         sql: "UPDATE ONLY (v) SET c = 1;"
       - id: partition
         sql: "UPDATE t PARTITION (p1) x SET x.c = 1 WHERE d > 10;"
+        note: "Taken from the UPDATE syntax on the cited page (partition); none of the reference parsers implements this Oracle syntax."
       - id: partition_for
         sql: "UPDATE t PARTITION FOR (100) SET c = 1;"
+        note: "Taken from the UPDATE syntax on the cited page (partition for); none of the reference parsers implements this Oracle syntax."
       - id: dblink
         sql: "UPDATE t@remote SET c = c * 1.1 WHERE d = 'x';"
       - id: subquery_target
         sql: "UPDATE (SELECT c FROM t WHERE d > 0) SET c = 1;"
+        note: "Documented Oracle 26ai syntax (subquery target) from the UPDATE page; the reference parsers have no Oracle grammar for it."
       - id: subquery_target_check_option
         sql: "UPDATE (SELECT c, d FROM t WHERE d > 0 WITH CHECK OPTION) SET c = 1;"
+        note: "Taken from the UPDATE syntax on the cited page (subquery target check option); none of the reference parsers implements this Oracle syntax."
       - id: table_collection
         sql: "UPDATE TABLE(SELECT h.people FROM h WHERE h.id = 1) p SET p.salary = p.salary + 100;"
       - id: from_clause
@@ -1135,10 +1210,13 @@ statements:
         sql: "UPDATE t SET t.c = u.c FROM u JOIN v ON u.id = v.id WHERE u.id = t.id;"
       - id: using_clause
         sql: "UPDATE t SET t.c = u.c USING u WHERE u.id = t.id;"
+        note: "Taken from the UPDATE syntax on the cited page (using clause); none of the reference parsers implements this Oracle syntax."
       - id: nowait
         sql: "UPDATE t SET c = 1 WHERE id = 2 NOWAIT;"
+        note: "Taken from the UPDATE syntax on the cited page (nowait); none of the reference parsers implements this Oracle syntax."
       - id: wait_seconds
         sql: "UPDATE t SET c = 1 WHERE id = 2 WAIT 10 SECONDS;"
+        note: "Taken from the UPDATE syntax on the cited page (wait seconds); none of the reference parsers implements this Oracle syntax."
       - id: order_by
         sql: "UPDATE t SET c = c + 1 WHERE d > 0 ORDER BY id;"
       - id: returning_into
@@ -1151,6 +1229,7 @@ statements:
         sql: "UPDATE t SET c = 1 WHERE id = 2 RETURN c INTO :b1;"
       - id: log_errors
         sql: "UPDATE t SET c = c + 1 LOG ERRORS INTO errlog ('upd') REJECT LIMIT UNLIMITED;"
+        note: "Taken from the UPDATE syntax on the cited page (log errors); none of the reference parsers implements this Oracle syntax."
     examples:
       - |-
         UPDATE employees e
@@ -1217,22 +1296,27 @@ statements:
         sql: "DELETE TABLE(SELECT h.people FROM h WHERE h.id = 1) p WHERE p.salary > 1000;"
       - id: from_clause
         sql: "DELETE FROM t FROM u WHERE t.id = u.id;"
+        note: "Taken from the DELETE syntax on the cited page (from clause); none of the reference parsers implements this Oracle syntax."
       - id: from_join
         sql: "DELETE FROM t x FROM u JOIN v ON u.id = v.id WHERE x.id = u.id;"
+        note: "Taken from the DELETE syntax on the cited page (from join); none of the reference parsers implements this Oracle syntax."
       - id: using_clause
         sql: "DELETE FROM t USING u WHERE t.id = u.id;"
       - id: tuple_in_subquery
         sql: "DELETE t x WHERE (x.c, x.d) IN (SELECT c, MAX(d) FROM t GROUP BY c);"
       - id: nowait
         sql: "DELETE FROM t WHERE c = 1 NOWAIT;"
+        note: "Taken from the DELETE syntax on the cited page (nowait); none of the reference parsers implements this Oracle syntax."
       - id: wait
         sql: "DELETE FROM t WHERE c = 1 WAIT 10;"
+        note: "Taken from the DELETE syntax on the cited page (wait); none of the reference parsers implements this Oracle syntax."
       - id: returning_into
         sql: "DELETE FROM t WHERE c = 1 RETURNING d INTO :b1;"
       - id: returning_old
         sql: "DELETE FROM t WHERE c = 1 RETURNING OLD d INTO :b1;"
       - id: log_errors
         sql: "DELETE FROM t WHERE c = 1 LOG ERRORS INTO errlog REJECT LIMIT 10;"
+        note: "Taken from the DELETE syntax on the cited page (log errors); none of the reference parsers implements this Oracle syntax."
     examples:
       - |-
         DELETE FROM t
@@ -1279,6 +1363,7 @@ statements:
         sql: "MERGE INTO t USING (VALUES (1, 'a'), (2, 'b')) v (id, c) ON (t.id = v.id) WHEN MATCHED THEN UPDATE SET t.c = v.c WHEN NOT MATCHED THEN INSERT (id, c) VALUES (v.id, v.c);"
       - id: without_using
         sql: "MERGE INTO t ON (id = :id) WHEN MATCHED THEN UPDATE SET c = :c WHEN NOT MATCHED THEN INSERT (id, c) VALUES (:id, :c);"
+        note: "Taken from the MERGE syntax on the cited page (without using); none of the reference parsers implements this Oracle syntax."
       - id: update_where
         sql: "MERGE INTO t USING u ON (t.id = u.id) WHEN MATCHED THEN UPDATE SET t.c = u.c WHERE u.k > 0;"
       - id: update_delete_where
@@ -1291,15 +1376,19 @@ statements:
         sql: "MERGE INTO t USING u ON (t.id = u.id) WHEN NOT MATCHED THEN INSERT (id, c) VALUES (u.id, DEFAULT);"
       - id: insert_set
         sql: "MERGE INTO t USING u ON (t.id = u.id) WHEN NOT MATCHED THEN INSERT SET id = u.id, c = u.c;"
+        note: "Taken from the MERGE syntax on the cited page (insert set); none of the reference parsers implements this Oracle syntax."
       - id: insert_before_update
         sql: "MERGE INTO t USING u ON (t.id = u.id) WHEN NOT MATCHED THEN INSERT (id, c) VALUES (u.id, u.c) WHEN MATCHED THEN UPDATE SET t.c = u.c;"
         note: "The syntax lists merge_update_clause before merge_insert_clause; the semantics say the clauses can be specified in either order."
       - id: wait
         sql: "MERGE INTO t USING u ON (t.id = u.id) WHEN MATCHED THEN UPDATE SET t.c = u.c WAIT 10;"
+        note: "Taken from the MERGE syntax on the cited page (wait); none of the reference parsers implements this Oracle syntax."
       - id: nowait
         sql: "MERGE INTO t USING u ON (t.id = u.id) WHEN MATCHED THEN UPDATE SET t.c = u.c NOWAIT;"
+        note: "Taken from the MERGE syntax on the cited page (nowait); none of the reference parsers implements this Oracle syntax."
       - id: log_errors
         sql: "MERGE INTO t USING u ON (t.id = u.id) WHEN MATCHED THEN UPDATE SET t.c = u.c LOG ERRORS INTO errlog ('m') REJECT LIMIT UNLIMITED;"
+        note: "Taken from the MERGE syntax on the cited page (log errors); none of the reference parsers implements this Oracle syntax."
       - id: returning_into
         sql: "MERGE INTO t USING u ON (t.id = u.id) WHEN MATCHED THEN UPDATE SET t.c = u.c RETURNING NEW t.c INTO :b1;"
     examples:
@@ -1360,18 +1449,24 @@ statements:
         sql: "TRUNCATE TABLE s.t;"
       - id: preserve_mview_log
         sql: "TRUNCATE TABLE t PRESERVE MATERIALIZED VIEW LOG;"
+        note: "Taken from the TRUNCATE TABLE syntax on the cited page (preserve mview log); none of the reference parsers implements this Oracle syntax."
       - id: purge_mview_log
         sql: "TRUNCATE TABLE t PURGE MATERIALIZED VIEW LOG;"
+        note: "Taken from the TRUNCATE TABLE syntax on the cited page (purge mview log); none of the reference parsers implements this Oracle syntax."
       - id: drop_storage
         sql: "TRUNCATE TABLE t DROP STORAGE;"
+        note: "Taken from the TRUNCATE TABLE syntax on the cited page (drop storage); none of the reference parsers implements this Oracle syntax."
       - id: drop_all_storage
         sql: "TRUNCATE TABLE t DROP ALL STORAGE;"
+        note: "Taken from the TRUNCATE TABLE syntax on the cited page (drop all storage); none of the reference parsers implements this Oracle syntax."
       - id: reuse_storage
         sql: "TRUNCATE TABLE t REUSE STORAGE;"
+        note: "Taken from the TRUNCATE TABLE syntax on the cited page (reuse storage); none of the reference parsers implements this Oracle syntax."
       - id: cascade
         sql: "TRUNCATE TABLE t CASCADE;"
       - id: all_options
         sql: "TRUNCATE TABLE s.t PURGE MATERIALIZED VIEW LOG REUSE STORAGE CASCADE;"
+        note: "Taken from the TRUNCATE TABLE syntax on the cited page (all options); none of the reference parsers implements this Oracle syntax."
     examples:
       - "TRUNCATE TABLE employees_demo;"
       - "TRUNCATE TABLE sales_demo PRESERVE MATERIALIZED VIEW LOG;"
@@ -1384,8 +1479,10 @@ statements:
     probes:
       - id: basic
         sql: "TRUNCATE CLUSTER s.cl;"
+        note: "Documented Oracle 26ai syntax (basic) from the TRUNCATE CLUSTER page; the reference parsers have no Oracle grammar for it."
       - id: reuse_storage
         sql: "TRUNCATE CLUSTER cl REUSE STORAGE;"
+        note: "Documented Oracle 26ai syntax (reuse storage) from the TRUNCATE CLUSTER page; the reference parsers have no Oracle grammar for it."
 
   - id: create_table
     name: CREATE TABLE
@@ -1408,40 +1505,53 @@ statements:
         sql: "CREATE PRIVATE TEMPORARY TABLE ora$ptt_t (c NUMBER) ON COMMIT PRESERVE DEFINITION;"
       - id: sharded
         sql: "CREATE SHARDED TABLE t (id NUMBER NOT NULL, c VARCHAR2(20), CONSTRAINT t_pk PRIMARY KEY (id)) PARTITION BY CONSISTENT HASH (id) PARTITIONS AUTO TABLESPACE SET ts1;"
+        note: "Taken from the CREATE TABLE syntax on the cited page (sharded); none of the reference parsers implements this Oracle syntax."
       - id: duplicated
         sql: "CREATE DUPLICATED TABLE t (id NUMBER PRIMARY KEY, c VARCHAR2(20));"
+        note: "Taken from the CREATE TABLE syntax on the cited page (duplicated); none of the reference parsers implements this Oracle syntax."
       - id: blockchain
         sql: "CREATE BLOCKCHAIN TABLE t (c NUMBER, d DATE) NO DROP UNTIL 31 DAYS IDLE NO DELETE LOCKED HASHING USING SHA2_512 VERSION V2;"
+        note: "Taken from the CREATE TABLE syntax on the cited page (blockchain); none of the reference parsers implements this Oracle syntax."
       - id: immutable
         sql: "CREATE IMMUTABLE TABLE t (c NUMBER, d VARCHAR2(40)) NO DROP UNTIL 40 DAYS IDLE NO DELETE UNTIL 100 DAYS AFTER INSERT;"
+        note: "Taken from the CREATE TABLE syntax on the cited page (immutable); none of the reference parsers implements this Oracle syntax."
       - id: json_collection_table
         sql: "CREATE JSON COLLECTION TABLE t;"
+        note: "Taken from the CREATE TABLE syntax on the cited page (json collection table); none of the reference parsers implements this Oracle syntax."
       - id: sharing
         sql: "CREATE TABLE t SHARING = METADATA (c NUMBER);"
+        note: "Taken from the CREATE TABLE syntax on the cited page (sharing); none of the reference parsers implements this Oracle syntax."
       - id: default
         sql: "CREATE TABLE t (c NUMBER DEFAULT 0, d DATE DEFAULT SYSDATE);"
       - id: default_on_null
         sql: "CREATE TABLE t (c NUMBER DEFAULT ON NULL 0);"
+        note: "Taken from the CREATE TABLE syntax on the cited page (default on null); none of the reference parsers implements this Oracle syntax."
       - id: default_on_null_for_insert_and_update
         sql: "CREATE TABLE t (c NUMBER DEFAULT ON NULL FOR INSERT AND UPDATE 0);"
+        note: "Taken from the CREATE TABLE syntax on the cited page (default on null for insert and update); none of the reference parsers implements this Oracle syntax."
       - id: identity_always
         sql: "CREATE TABLE t (id NUMBER GENERATED ALWAYS AS IDENTITY);"
       - id: identity_by_default_options
         sql: "CREATE TABLE t (id NUMBER GENERATED BY DEFAULT ON NULL AS IDENTITY (START WITH 100 INCREMENT BY 10 MAXVALUE 1000 NOCYCLE CACHE 20 ORDER));"
       - id: invisible_column
         sql: "CREATE TABLE t (c NUMBER, d NUMBER INVISIBLE);"
+        note: "Taken from the CREATE TABLE syntax on the cited page (invisible column); none of the reference parsers implements this Oracle syntax."
       - id: collate_column
         sql: "CREATE TABLE t (c VARCHAR2(20) COLLATE BINARY_CI);"
       - id: virtual_column
         sql: "CREATE TABLE t (a NUMBER, b NUMBER, c NUMBER GENERATED ALWAYS AS (a + b) VIRTUAL);"
+        note: "Taken from the CREATE TABLE syntax on the cited page (virtual column); none of the reference parsers implements this Oracle syntax."
       - id: virtual_column_short
         sql: "CREATE TABLE t (a NUMBER, b AS (a * 2));"
       - id: encrypt_column
         sql: "CREATE TABLE t (c VARCHAR2(11) ENCRYPT USING 'AES256' NO SALT);"
+        note: "Taken from the CREATE TABLE syntax on the cited page (encrypt column); none of the reference parsers implements this Oracle syntax."
       - id: domain_column
         sql: "CREATE TABLE t (c VARCHAR2(100) DOMAIN email_d, d DOMAIN s.dn1);"
+        note: "Taken from the CREATE TABLE syntax on the cited page (domain column); none of the reference parsers implements this Oracle syntax."
       - id: annotations
         sql: "CREATE TABLE t (c NUMBER ANNOTATIONS (Operations 'Sort', Hidden)) ANNOTATIONS (Display 'Table T');"
+        note: "Taken from the CREATE TABLE syntax on the cited page (annotations); none of the reference parsers implements this Oracle syntax."
       - id: inline_constraints
         sql: "CREATE TABLE t (id NUMBER CONSTRAINT t_pk PRIMARY KEY, c VARCHAR2(20) NOT NULL, d VARCHAR2(20) UNIQUE, e NUMBER CHECK (e > 0), f NUMBER NULL);"
       - id: inline_references
@@ -1456,6 +1566,7 @@ statements:
         sql: "CREATE TABLE t (a NUMBER CONSTRAINT a_ck CHECK (a > 0) DISABLE);"
       - id: period_for
         sql: "CREATE TABLE t (c NUMBER, s DATE, e DATE, PERIOD FOR valid_time (s, e));"
+        note: "Taken from the CREATE TABLE syntax on the cited page (period for); none of the reference parsers implements this Oracle syntax."
       - id: physical_attributes
         sql: "CREATE TABLE t (c NUMBER) PCTFREE 10 PCTUSED 40 INITRANS 2 STORAGE (INITIAL 64K NEXT 1M MAXEXTENTS UNLIMITED) TABLESPACE users LOGGING;"
       - id: segment_creation_deferred
@@ -1470,56 +1581,78 @@ statements:
         sql: "CREATE TABLE t (c NUMBER, d CLOB) INMEMORY MEMCOMPRESS FOR QUERY LOW PRIORITY HIGH;"
       - id: organization_index
         sql: "CREATE TABLE t (id NUMBER PRIMARY KEY, c VARCHAR2(20)) ORGANIZATION INDEX PCTTHRESHOLD 20 OVERFLOW TABLESPACE users;"
+        note: "Taken from the CREATE TABLE syntax on the cited page (organization index); none of the reference parsers implements this Oracle syntax."
       - id: organization_external
         sql: "CREATE TABLE t (c NUMBER, d VARCHAR2(20)) ORGANIZATION EXTERNAL (TYPE ORACLE_LOADER DEFAULT DIRECTORY dir ACCESS PARAMETERS (RECORDS DELIMITED BY NEWLINE FIELDS TERMINATED BY ',') LOCATION ('f.csv')) REJECT LIMIT UNLIMITED;"
+        note: "Taken from the CREATE TABLE syntax on the cited page (organization external); none of the reference parsers implements this Oracle syntax."
       - id: cluster
         sql: "CREATE TABLE t (id NUMBER, c VARCHAR2(20)) CLUSTER cl (id);"
+        note: "Taken from the CREATE TABLE syntax on the cited page (cluster); none of the reference parsers implements this Oracle syntax."
       - id: lob_storage
         sql: "CREATE TABLE t (id NUMBER, doc CLOB) LOB (doc) STORE AS SECUREFILE (TABLESPACE users ENABLE STORAGE IN ROW CACHE);"
+        note: "Taken from the CREATE TABLE syntax on the cited page (lob storage); none of the reference parsers implements this Oracle syntax."
       - id: nested_table_storage
         sql: "CREATE TABLE t (id NUMBER, phones phone_list_t) NESTED TABLE phones STORE AS t_phones;"
+        note: "Taken from the CREATE TABLE syntax on the cited page (nested table storage); none of the reference parsers implements this Oracle syntax."
       - id: partition_by_range
         sql: "CREATE TABLE t (id NUMBER, d DATE) PARTITION BY RANGE (d) (PARTITION p1 VALUES LESS THAN (DATE '2024-01-01'), PARTITION p2 VALUES LESS THAN (MAXVALUE));"
+        note: "Documented Oracle 26ai syntax (partition by range) from the CREATE TABLE page; the reference parsers have no Oracle grammar for it."
       - id: partition_by_range_interval
         sql: "CREATE TABLE t (id NUMBER, d DATE) PARTITION BY RANGE (d) INTERVAL (NUMTOYMINTERVAL(1, 'MONTH')) (PARTITION p0 VALUES LESS THAN (DATE '2024-01-01'));"
+        note: "Taken from the CREATE TABLE syntax on the cited page (partition by range interval); none of the reference parsers implements this Oracle syntax."
       - id: partition_by_list
         sql: "CREATE TABLE t (id NUMBER, r VARCHAR2(10)) PARTITION BY LIST (r) (PARTITION pa VALUES ('A', 'B'), PARTITION pd VALUES (DEFAULT));"
+        note: "Documented Oracle 26ai syntax (partition by list) from the CREATE TABLE page; the reference parsers have no Oracle grammar for it."
       - id: partition_by_list_automatic
         sql: "CREATE TABLE t (id NUMBER, r VARCHAR2(10)) PARTITION BY LIST (r) AUTOMATIC (PARTITION pa VALUES ('A'));"
+        note: "Taken from the CREATE TABLE syntax on the cited page (partition by list automatic); none of the reference parsers implements this Oracle syntax."
       - id: partition_by_hash_quantity
         sql: "CREATE TABLE t (id NUMBER) PARTITION BY HASH (id) PARTITIONS 4 STORE IN (ts1, ts2);"
+        note: "Taken from the CREATE TABLE syntax on the cited page (partition by hash quantity); none of the reference parsers implements this Oracle syntax."
       - id: partition_by_hash_individual
         sql: "CREATE TABLE t (id NUMBER) PARTITION BY HASH (id) (PARTITION p1 TABLESPACE ts1, PARTITION p2 TABLESPACE ts2);"
+        note: "Taken from the CREATE TABLE syntax on the cited page (partition by hash individual); none of the reference parsers implements this Oracle syntax."
       - id: composite_range_hash
         sql: "CREATE TABLE t (id NUMBER, d DATE) PARTITION BY RANGE (d) SUBPARTITION BY HASH (id) SUBPARTITIONS 4 (PARTITION p1 VALUES LESS THAN (DATE '2024-01-01'), PARTITION p2 VALUES LESS THAN (MAXVALUE));"
+        note: "Documented Oracle 26ai syntax (composite range hash) from the CREATE TABLE page; the reference parsers have no Oracle grammar for it."
       - id: composite_range_list_template
         sql: "CREATE TABLE t (id NUMBER, d DATE, r VARCHAR2(2)) PARTITION BY RANGE (d) SUBPARTITION BY LIST (r) SUBPARTITION TEMPLATE (SUBPARTITION se VALUES ('SE'), SUBPARTITION other VALUES (DEFAULT)) (PARTITION p1 VALUES LESS THAN (DATE '2024-01-01'));"
+        note: "Taken from the CREATE TABLE syntax on the cited page (composite range list template); none of the reference parsers implements this Oracle syntax."
       - id: partition_by_reference
         sql: "CREATE TABLE c (id NUMBER, pid NUMBER NOT NULL, CONSTRAINT c_fk FOREIGN KEY (pid) REFERENCES p (id)) PARTITION BY REFERENCE (c_fk);"
       - id: partition_by_system
         sql: "CREATE TABLE t (id NUMBER) PARTITION BY SYSTEM (PARTITION p1, PARTITION p2);"
+        note: "Taken from the CREATE TABLE syntax on the cited page (partition by system); none of the reference parsers implements this Oracle syntax."
       - id: table_properties
         sql: "CREATE TABLE t (c NUMBER) CACHE PARALLEL 4 ROWDEPENDENCIES ENABLE ROW MOVEMENT;"
       - id: read_only
         sql: "CREATE TABLE t (c NUMBER) READ ONLY;"
+        note: "Taken from the CREATE TABLE syntax on the cited page (read only); none of the reference parsers implements this Oracle syntax."
       - id: result_cache
         sql: "CREATE TABLE t (c NUMBER) RESULT_CACHE (MODE FORCE);"
       - id: flashback_archive
         sql: "CREATE TABLE t (c NUMBER) FLASHBACK ARCHIVE fla1;"
       - id: row_archival
         sql: "CREATE TABLE t (c NUMBER) ROW ARCHIVAL;"
+        note: "Taken from the CREATE TABLE syntax on the cited page (row archival); none of the reference parsers implements this Oracle syntax."
       - id: default_collation
         sql: "CREATE TABLE t (c VARCHAR2(20)) DEFAULT COLLATION BINARY_CI;"
+        note: "Taken from the CREATE TABLE syntax on the cited page (default collation); none of the reference parsers implements this Oracle syntax."
       - id: object_table
         sql: "CREATE TABLE t OF person_t;"
+        note: "Taken from the CREATE TABLE syntax on the cited page (object table); none of the reference parsers implements this Oracle syntax."
       - id: object_table_oid
         sql: "CREATE TABLE t OF person_t (CONSTRAINT t_pk PRIMARY KEY (ssn)) OBJECT IDENTIFIER IS PRIMARY KEY;"
+        note: "Taken from the CREATE TABLE syntax on the cited page (object table oid); none of the reference parsers implements this Oracle syntax."
       - id: xmltype_table
         sql: "CREATE TABLE t OF XMLTYPE XMLTYPE STORE AS BINARY XML;"
+        note: "Taken from the CREATE TABLE syntax on the cited page (xmltype table); none of the reference parsers implements this Oracle syntax."
       - id: for_staging
         sql: "CREATE TABLE t (c NUMBER, d VARCHAR2(100)) FOR STAGING;"
+        note: "Taken from the CREATE TABLE syntax on the cited page (for staging); none of the reference parsers implements this Oracle syntax."
       - id: for_exchange_with_table
         sql: "CREATE TABLE t FOR EXCHANGE WITH TABLE s.u;"
+        note: "Taken from the CREATE TABLE syntax on the cited page (for exchange with table); none of the reference parsers implements this Oracle syntax."
       - id: as_select
         sql: "CREATE TABLE t AS SELECT * FROM u WHERE c = 80;"
       - id: as_select_column_names
@@ -1608,12 +1741,16 @@ statements:
         sql: "ALTER TABLE IF EXISTS t ADD (c NUMBER);"
       - id: add_virtual_column
         sql: "ALTER TABLE t ADD (c NUMBER GENERATED ALWAYS AS (a + b) VIRTUAL);"
+        note: "Taken from the ALTER TABLE syntax on the cited page (add virtual column); none of the reference parsers implements this Oracle syntax."
       - id: add_column_domain
         sql: "ALTER TABLE t ADD (c VARCHAR2(12) DOMAIN phone_number);"
+        note: "Taken from the ALTER TABLE syntax on the cited page (add column domain); none of the reference parsers implements this Oracle syntax."
       - id: add_column_default_on_null_sequence
         sql: "ALTER TABLE t ADD (id NUMBER DEFAULT ON NULL s1.NEXTVAL NOT NULL);"
+        note: "Taken from the ALTER TABLE syntax on the cited page (add column default on null sequence); none of the reference parsers implements this Oracle syntax."
       - id: add_column_encrypt
         sql: "ALTER TABLE t ADD (pw VARCHAR2(8) ENCRYPT 'NOMAC' NO SALT);"
+        note: "Taken from the ALTER TABLE syntax on the cited page (add column encrypt); none of the reference parsers implements this Oracle syntax."
       - id: modify_column_type
         sql: "ALTER TABLE t MODIFY (c NUMBER(3,2));"
       - id: modify_column_unparenthesized
@@ -1624,10 +1761,13 @@ statements:
         sql: "ALTER TABLE t MODIFY (c NULL);"
       - id: modify_column_identity
         sql: "ALTER TABLE t MODIFY (id GENERATED BY DEFAULT AS IDENTITY (START WITH LIMIT VALUE));"
+        note: "Taken from the ALTER TABLE syntax on the cited page (modify column identity); none of the reference parsers implements this Oracle syntax."
       - id: modify_column_drop_identity
         sql: "ALTER TABLE t MODIFY (id DROP IDENTITY);"
+        note: "Taken from the ALTER TABLE syntax on the cited page (modify column drop identity); none of the reference parsers implements this Oracle syntax."
       - id: modify_column_encrypt
         sql: "ALTER TABLE t MODIFY (c ENCRYPT USING 'AES256' 'NOMAC');"
+        note: "Taken from the ALTER TABLE syntax on the cited page (modify column encrypt); none of the reference parsers implements this Oracle syntax."
       - id: modify_column_decrypt
         sql: "ALTER TABLE t MODIFY (c DECRYPT);"
       - id: modify_column_visibility
@@ -1636,32 +1776,43 @@ statements:
         sql: "ALTER TABLE t MODIFY c ANNOTATIONS (ADD Hidden, DROP Identity);"
       - id: modify_add_domain
         sql: "ALTER TABLE t MODIFY c ADD DOMAIN s.dn1;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (modify add domain); none of the reference parsers implements this Oracle syntax."
       - id: modify_drop_domain
         sql: "ALTER TABLE t MODIFY c DROP DOMAIN PRESERVE CONSTRAINTS;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (modify drop domain); none of the reference parsers implements this Oracle syntax."
       - id: modify_lob
         sql: "ALTER TABLE t MODIFY LOB (doc) (CACHE);"
+        note: "Taken from the ALTER TABLE syntax on the cited page (modify lob); none of the reference parsers implements this Oracle syntax."
       - id: modify_nested_table_retrieval
         sql: "ALTER TABLE t MODIFY NESTED TABLE nt RETURN AS VALUE;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (modify nested table retrieval); none of the reference parsers implements this Oracle syntax."
       - id: drop_column
         sql: "ALTER TABLE t DROP COLUMN c;"
       - id: drop_columns
         sql: "ALTER TABLE t DROP (c, d) CASCADE CONSTRAINTS;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (drop columns); none of the reference parsers implements this Oracle syntax."
       - id: drop_column_checkpoint
         sql: "ALTER TABLE t DROP COLUMN c CHECKPOINT 250;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (drop column checkpoint); none of the reference parsers implements this Oracle syntax."
       - id: set_unused
         sql: "ALTER TABLE t SET UNUSED (c, d) ONLINE;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (set unused); none of the reference parsers implements this Oracle syntax."
       - id: set_unused_column
         sql: "ALTER TABLE t SET UNUSED COLUMN c CASCADE CONSTRAINTS;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (set unused column); none of the reference parsers implements this Oracle syntax."
       - id: drop_unused_columns
         sql: "ALTER TABLE t DROP UNUSED COLUMNS;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (drop unused columns); none of the reference parsers implements this Oracle syntax."
       - id: drop_columns_continue
         sql: "ALTER TABLE t DROP COLUMNS CONTINUE;"
       - id: rename_column
         sql: "ALTER TABLE t RENAME COLUMN c TO d;"
       - id: add_period
         sql: "ALTER TABLE t ADD (PERIOD FOR valid_time (s, e));"
+        note: "Taken from the ALTER TABLE syntax on the cited page (add period); none of the reference parsers implements this Oracle syntax."
       - id: drop_period
         sql: "ALTER TABLE t DROP (PERIOD FOR valid_time);"
+        note: "Taken from the ALTER TABLE syntax on the cited page (drop period); none of the reference parsers implements this Oracle syntax."
       - id: add_constraint_primary_key
         sql: "ALTER TABLE t ADD CONSTRAINT t_pk PRIMARY KEY (id);"
       - id: add_constraint_foreign_key
@@ -1674,8 +1825,10 @@ statements:
         sql: "ALTER TABLE t MODIFY (c CONSTRAINT c_nn NOT NULL);"
       - id: modify_constraint
         sql: "ALTER TABLE t MODIFY CONSTRAINT t_ck NOPRECHECK ENABLE NOVALIDATE;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (modify constraint); none of the reference parsers implements this Oracle syntax."
       - id: modify_primary_key
         sql: "ALTER TABLE t MODIFY PRIMARY KEY DISABLE CASCADE;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (modify primary key); none of the reference parsers implements this Oracle syntax."
       - id: rename_constraint
         sql: "ALTER TABLE t RENAME CONSTRAINT c1 TO c2;"
       - id: drop_constraint
@@ -1684,14 +1837,19 @@ statements:
         sql: "ALTER TABLE t DROP PRIMARY KEY CASCADE;"
       - id: drop_unique
         sql: "ALTER TABLE t DROP UNIQUE (c, d) ONLINE;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (drop unique); none of the reference parsers implements this Oracle syntax."
       - id: enable_validate_constraint_exceptions
         sql: "ALTER TABLE t ENABLE VALIDATE CONSTRAINT t_fk EXCEPTIONS INTO exceptions;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (enable validate constraint exceptions); none of the reference parsers implements this Oracle syntax."
       - id: disable_primary_key
         sql: "ALTER TABLE t DISABLE PRIMARY KEY KEEP INDEX;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (disable primary key); none of the reference parsers implements this Oracle syntax."
       - id: enable_all_triggers
         sql: "ALTER TABLE t ENABLE ALL TRIGGERS;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (enable all triggers); none of the reference parsers implements this Oracle syntax."
       - id: disable_table_lock
         sql: "ALTER TABLE t DISABLE TABLE LOCK;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (disable table lock); none of the reference parsers implements this Oracle syntax."
       - id: rename_to
         sql: "ALTER TABLE t RENAME TO u;"
       - id: read_only
@@ -1700,94 +1858,138 @@ statements:
         sql: "ALTER TABLE t READ WRITE;"
       - id: physical_attributes
         sql: "ALTER TABLE t PCTFREE 30 PCTUSED 60;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (physical attributes); none of the reference parsers implements this Oracle syntax."
       - id: parallel
         sql: "ALTER TABLE t PARALLEL 4;"
       - id: noparallel_nologging
         sql: "ALTER TABLE t NOPARALLEL NOLOGGING;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (noparallel nologging); none of the reference parsers implements this Oracle syntax."
       - id: cache
         sql: "ALTER TABLE t CACHE;"
+        note: "Documented Oracle 26ai syntax (cache) from the ALTER TABLE page; the reference parsers have no Oracle grammar for it."
       - id: compress
         sql: "ALTER TABLE t ROW STORE COMPRESS ADVANCED;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (compress); none of the reference parsers implements this Oracle syntax."
       - id: inmemory
         sql: "ALTER TABLE t INMEMORY PRIORITY HIGH;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (inmemory); none of the reference parsers implements this Oracle syntax."
       - id: row_movement
         sql: "ALTER TABLE t ENABLE ROW MOVEMENT;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (row movement); none of the reference parsers implements this Oracle syntax."
       - id: shrink_space
         sql: "ALTER TABLE t SHRINK SPACE CASCADE;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (shrink space); none of the reference parsers implements this Oracle syntax."
       - id: deallocate_unused
         sql: "ALTER TABLE t DEALLOCATE UNUSED KEEP 100K;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (deallocate unused); none of the reference parsers implements this Oracle syntax."
       - id: allocate_extent
         sql: "ALTER TABLE t ALLOCATE EXTENT (SIZE 1M);"
+        note: "Taken from the ALTER TABLE syntax on the cited page (allocate extent); none of the reference parsers implements this Oracle syntax."
       - id: result_cache
         sql: "ALTER TABLE t RESULT_CACHE (MODE DEFAULT);"
+        note: "Taken from the ALTER TABLE syntax on the cited page (result cache); none of the reference parsers implements this Oracle syntax."
       - id: flashback_archive
         sql: "ALTER TABLE t FLASHBACK ARCHIVE fla1;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (flashback archive); none of the reference parsers implements this Oracle syntax."
       - id: no_flashback_archive
         sql: "ALTER TABLE t NO FLASHBACK ARCHIVE;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (no flashback archive); none of the reference parsers implements this Oracle syntax."
       - id: annotations
         sql: "ALTER TABLE t ANNOTATIONS (DROP Operations, ADD Hidden);"
+        note: "Taken from the ALTER TABLE syntax on the cited page (annotations); none of the reference parsers implements this Oracle syntax."
       - id: default_collation
         sql: "ALTER TABLE t DEFAULT COLLATION BINARY_CI;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (default collation); none of the reference parsers implements this Oracle syntax."
       - id: move
         sql: "ALTER TABLE t MOVE TABLESPACE users;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (move); none of the reference parsers implements this Oracle syntax."
       - id: move_online_update_indexes
         sql: "ALTER TABLE t MOVE ONLINE TABLESPACE users COMPRESS UPDATE INDEXES;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (move online update indexes); none of the reference parsers implements this Oracle syntax."
       - id: modify_to_partitioned
         sql: "ALTER TABLE t MODIFY PARTITION BY RANGE (d) (PARTITION p1 VALUES LESS THAN (DATE '2024-01-01'), PARTITION p2 VALUES LESS THAN (MAXVALUE)) ONLINE UPDATE INDEXES (idx1 LOCAL);"
+        note: "Taken from the ALTER TABLE syntax on the cited page (modify to partitioned); none of the reference parsers implements this Oracle syntax."
       - id: add_partition_range
         sql: "ALTER TABLE t ADD PARTITION p3 VALUES LESS THAN (400) TABLESPACE users;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (add partition range); none of the reference parsers implements this Oracle syntax."
       - id: add_partition_list
         sql: "ALTER TABLE t ADD PARTITION pe VALUES ('E', 'F');"
+        note: "Taken from the ALTER TABLE syntax on the cited page (add partition list); none of the reference parsers implements this Oracle syntax."
       - id: add_partition_hash
         sql: "ALTER TABLE t ADD PARTITION;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (add partition hash); none of the reference parsers implements this Oracle syntax."
       - id: drop_partition
         sql: "ALTER TABLE t DROP PARTITION p3 UPDATE GLOBAL INDEXES;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (drop partition); none of the reference parsers implements this Oracle syntax."
       - id: drop_partition_for
         sql: "ALTER TABLE t DROP PARTITION FOR (DATE '2024-01-15');"
+        note: "Taken from the ALTER TABLE syntax on the cited page (drop partition for); none of the reference parsers implements this Oracle syntax."
       - id: truncate_partition
         sql: "ALTER TABLE t TRUNCATE PARTITION p1 DROP STORAGE;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (truncate partition); none of the reference parsers implements this Oracle syntax."
       - id: truncate_subpartition
         sql: "ALTER TABLE t TRUNCATE SUBPARTITION sp1 REUSE STORAGE UPDATE INDEXES;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (truncate subpartition); none of the reference parsers implements this Oracle syntax."
       - id: rename_partition
         sql: "ALTER TABLE t RENAME PARTITION p1 TO p_old;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (rename partition); none of the reference parsers implements this Oracle syntax."
       - id: move_partition
         sql: "ALTER TABLE t MOVE PARTITION p2 TABLESPACE ts1 ONLINE;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (move partition); none of the reference parsers implements this Oracle syntax."
       - id: split_partition_at
         sql: "ALTER TABLE t SPLIT PARTITION p4 AT (DATE '2024-11-15') INTO (PARTITION p4a, PARTITION p4b);"
+        note: "Documented Oracle 26ai syntax (split partition at) from the ALTER TABLE page; the reference parsers have no Oracle grammar for it."
       - id: split_partition_values
         sql: "ALTER TABLE t SPLIT PARTITION rest VALUES ('MEXICO', 'COLOMBIA') INTO (PARTITION south, PARTITION rest);"
+        note: "Taken from the ALTER TABLE syntax on the cited page (split partition values); none of the reference parsers implements this Oracle syntax."
       - id: merge_partitions
         sql: "ALTER TABLE t MERGE PARTITIONS p1, p2 INTO PARTITION p12;"
+        note: "Documented Oracle 26ai syntax (merge partitions) from the ALTER TABLE page; the reference parsers have no Oracle grammar for it."
       - id: merge_partitions_range
         sql: "ALTER TABLE t MERGE PARTITIONS p1 TO p4 INTO PARTITION p_all;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (merge partitions range); none of the reference parsers implements this Oracle syntax."
       - id: coalesce_partition
         sql: "ALTER TABLE t COALESCE PARTITION;"
+        note: "Documented Oracle 26ai syntax (coalesce partition) from the ALTER TABLE page; the reference parsers have no Oracle grammar for it."
       - id: exchange_partition
         sql: "ALTER TABLE t EXCHANGE PARTITION p1 WITH TABLE s.u INCLUDING INDEXES WITHOUT VALIDATION;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (exchange partition); none of the reference parsers implements this Oracle syntax."
       - id: modify_partition
         sql: "ALTER TABLE t MODIFY PARTITION p1 UNUSABLE LOCAL INDEXES;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (modify partition); none of the reference parsers implements this Oracle syntax."
       - id: modify_partition_add_values
         sql: "ALTER TABLE t MODIFY PARTITION pa ADD VALUES ('X');"
+        note: "Taken from the ALTER TABLE syntax on the cited page (modify partition add values); none of the reference parsers implements this Oracle syntax."
       - id: set_interval
         sql: "ALTER TABLE t SET INTERVAL (NUMTOYMINTERVAL(1, 'MONTH'));"
+        note: "Taken from the ALTER TABLE syntax on the cited page (set interval); none of the reference parsers implements this Oracle syntax."
       - id: set_subpartition_template
         sql: "ALTER TABLE t SET SUBPARTITION TEMPLATE (SUBPARTITION a VALUES ('A'), SUBPARTITION z VALUES (DEFAULT));"
+        note: "Taken from the ALTER TABLE syntax on the cited page (set subpartition template); none of the reference parsers implements this Oracle syntax."
       - id: modify_default_attributes
         sql: "ALTER TABLE t MODIFY DEFAULT ATTRIBUTES TABLESPACE ts1;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (modify default attributes); none of the reference parsers implements this Oracle syntax."
       - id: add_overflow
         sql: "ALTER TABLE t ADD OVERFLOW;"
+        note: "Documented Oracle 26ai syntax (add overflow) from the ALTER TABLE page; the reference parsers have no Oracle grammar for it."
       - id: immutable_no_drop
         sql: "ALTER TABLE t NO DROP UNTIL 50 DAYS IDLE;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (immutable no drop); none of the reference parsers implements this Oracle syntax."
       - id: memoptimize
         sql: "ALTER TABLE t MEMOPTIMIZE FOR READ;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (memoptimize); none of the reference parsers implements this Oracle syntax."
       - id: modify_opaque_type
         sql: "ALTER TABLE t MODIFY OPAQUE TYPE x STORE (XMLType, clob_typ) UNPACKED;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (modify opaque type); none of the reference parsers implements this Oracle syntax."
       - id: add_ref_with_rowid
         sql: "ALTER TABLE t ADD (REF(column_value) WITH ROWID);"
+        note: "Taken from the ALTER TABLE syntax on the cited page (add ref with rowid); none of the reference parsers implements this Oracle syntax."
       - id: add_scope
         sql: "ALTER TABLE t ADD (SCOPE FOR (dept) IS offices);"
+        note: "Taken from the ALTER TABLE syntax on the cited page (add scope); none of the reference parsers implements this Oracle syntax."
       - id: multiple_column_clauses
         sql: "ALTER TABLE t ADD (e NUMBER) MODIFY (c VARCHAR2(50)) DROP COLUMN d;"
+        note: "Taken from the ALTER TABLE syntax on the cited page (multiple column clauses); none of the reference parsers implements this Oracle syntax."
     examples:
       - |-
         ALTER TABLE sales SPLIT PARTITION SALES_Q4_2000
@@ -1842,6 +2044,7 @@ statements:
         sql: "CREATE VIEW v (a VISIBLE, b INVISIBLE) AS SELECT c, d FROM t;"
       - id: view_constraints
         sql: "CREATE VIEW v (id, email UNIQUE RELY DISABLE NOVALIDATE, CONSTRAINT v_pk PRIMARY KEY (id) RELY DISABLE NOVALIDATE) AS SELECT id, email FROM t;"
+        note: "Taken from the CREATE VIEW syntax on the cited page (view constraints); none of the reference parsers implements this Oracle syntax."
       - id: with_read_only
         sql: "CREATE VIEW v AS SELECT c FROM t WITH READ ONLY;"
       - id: with_check_option_constraint
@@ -1854,22 +2057,30 @@ statements:
         sql: "CREATE NONEDITIONABLE VIEW v AS SELECT c FROM t;"
       - id: json_collection_view
         sql: "CREATE OR REPLACE JSON COLLECTION VIEW v AS SELECT JSON { '_id' : id, 'name' : c } DATA FROM t;"
+        note: "Taken from the CREATE VIEW syntax on the cited page (json collection view); none of the reference parsers implements this Oracle syntax."
       - id: sharing
         sql: "CREATE VIEW v SHARING = METADATA AS SELECT c FROM t;"
       - id: default_collation
         sql: "CREATE VIEW v DEFAULT COLLATION BINARY_CI AS SELECT c FROM t;"
+        note: "Taken from the CREATE VIEW syntax on the cited page (default collation); none of the reference parsers implements this Oracle syntax."
       - id: bequeath
         sql: "CREATE VIEW v BEQUEATH CURRENT_USER AS SELECT c FROM t;"
+        note: "Taken from the CREATE VIEW syntax on the cited page (bequeath); none of the reference parsers implements this Oracle syntax."
       - id: annotations
         sql: "CREATE VIEW v (a ANNOTATIONS (display 'A')) ANNOTATIONS (Title 'V') AS SELECT c FROM t;"
+        note: "Taken from the CREATE VIEW syntax on the cited page (annotations); none of the reference parsers implements this Oracle syntax."
       - id: object_view
         sql: "CREATE VIEW v OF person_t WITH OBJECT IDENTIFIER (id) AS SELECT id, name FROM t;"
+        note: "Taken from the CREATE VIEW syntax on the cited page (object view); none of the reference parsers implements this Oracle syntax."
       - id: object_view_default_oid
         sql: "CREATE VIEW v OF person_t WITH OBJECT ID DEFAULT AS SELECT VALUE(p) FROM pt p;"
+        note: "Taken from the CREATE VIEW syntax on the cited page (object view default oid); none of the reference parsers implements this Oracle syntax."
       - id: object_subview
         sql: "CREATE VIEW v OF emp_t UNDER s.person_v AS SELECT id, name, salary FROM t;"
+        note: "Taken from the CREATE VIEW syntax on the cited page (object subview); none of the reference parsers implements this Oracle syntax."
       - id: xmltype_view
         sql: "CREATE VIEW v OF XMLTYPE WITH OBJECT ID (EXTRACT(OBJECT_VALUE, '/Warehouse/@id').getNumberVal()) AS SELECT x FROM t;"
+        note: "Taken from the CREATE VIEW syntax on the cited page (xmltype view); none of the reference parsers implements this Oracle syntax."
       - id: container_map
         sql: "CREATE VIEW v AS SELECT c FROM t CONTAINER_MAP;"
       - id: with_cte
@@ -1911,28 +2122,39 @@ statements:
     probes:
       - id: compile
         sql: "ALTER VIEW v COMPILE;"
+        note: "Documented Oracle 26ai syntax (compile) from the ALTER VIEW page; the reference parsers have no Oracle grammar for it."
       - id: recompile_if_exists
         sql: "ALTER VIEW IF EXISTS s.v RECOMPILE;"
+        note: "Taken from the ALTER VIEW syntax on the cited page (recompile if exists); none of the reference parsers implements this Oracle syntax."
       - id: add_constraint
         sql: "ALTER VIEW v ADD CONSTRAINT v_pk PRIMARY KEY (id) RELY DISABLE NOVALIDATE;"
+        note: "Taken from the ALTER VIEW syntax on the cited page (add constraint); none of the reference parsers implements this Oracle syntax."
       - id: modify_constraint
         sql: "ALTER VIEW v MODIFY CONSTRAINT v_pk NORELY;"
+        note: "Taken from the ALTER VIEW syntax on the cited page (modify constraint); none of the reference parsers implements this Oracle syntax."
       - id: modify_column_annotations
         sql: "ALTER VIEW v MODIFY (c ANNOTATIONS (ADD Hidden));"
+        note: "Taken from the ALTER VIEW syntax on the cited page (modify column annotations); none of the reference parsers implements this Oracle syntax."
       - id: drop_constraint
         sql: "ALTER VIEW v DROP CONSTRAINT v_pk;"
       - id: drop_primary_key
         sql: "ALTER VIEW v DROP PRIMARY KEY;"
+        note: "Taken from the ALTER VIEW syntax on the cited page (drop primary key); none of the reference parsers implements this Oracle syntax."
       - id: drop_unique
         sql: "ALTER VIEW v DROP UNIQUE (c, d);"
+        note: "Taken from the ALTER VIEW syntax on the cited page (drop unique); none of the reference parsers implements this Oracle syntax."
       - id: read_only
         sql: "ALTER VIEW v READ ONLY;"
+        note: "Documented Oracle 26ai syntax (read only) from the ALTER VIEW page; the reference parsers have no Oracle grammar for it."
       - id: read_write
         sql: "ALTER VIEW v READ WRITE;"
+        note: "Documented Oracle 26ai syntax (read write) from the ALTER VIEW page; the reference parsers have no Oracle grammar for it."
       - id: editionable
         sql: "ALTER VIEW v EDITIONABLE;"
+        note: "Taken from the ALTER VIEW syntax on the cited page (editionable); none of the reference parsers implements this Oracle syntax."
       - id: annotations
         sql: "ALTER VIEW v ANNOTATIONS (DROP Title, ADD Identity);"
+        note: "Taken from the ALTER VIEW syntax on the cited page (annotations); none of the reference parsers implements this Oracle syntax."
     examples:
       - |-
         ALTER VIEW customer_ro
@@ -1968,46 +2190,67 @@ statements:
         sql: "CREATE MATERIALIZED VIEW mv (a ENCRYPT, b) AS SELECT c, d FROM t;"
       - id: of_object_type
         sql: "CREATE MATERIALIZED VIEW mv OF s.person_t AS SELECT * FROM persons;"
+        note: "Taken from the CREATE MATERIALIZED VIEW syntax on the cited page (of object type); none of the reference parsers implements this Oracle syntax."
       - id: on_prebuilt_table
         sql: "CREATE MATERIALIZED VIEW mv ON PREBUILT TABLE WITH REDUCED PRECISION ENABLE QUERY REWRITE AS SELECT c, SUM(d) AS s FROM t GROUP BY c;"
+        note: "Taken from the CREATE MATERIALIZED VIEW syntax on the cited page (on prebuilt table); none of the reference parsers implements this Oracle syntax."
       - id: physical_properties
         sql: "CREATE MATERIALIZED VIEW mv PCTFREE 5 PCTUSED 60 TABLESPACE users STORAGE (INITIAL 50K) AS SELECT * FROM t;"
+        note: "Taken from the CREATE MATERIALIZED VIEW syntax on the cited page (physical properties); none of the reference parsers implements this Oracle syntax."
       - id: build_immediate_refresh_complete
         sql: "CREATE MATERIALIZED VIEW mv TABLESPACE users PARALLEL 4 BUILD IMMEDIATE REFRESH COMPLETE ENABLE QUERY REWRITE AS SELECT c, SUM(d) s FROM t GROUP BY c;"
+        note: "Documented Oracle 26ai syntax (build immediate refresh complete) from the CREATE MATERIALIZED VIEW page; the reference parsers have no Oracle grammar for it."
       - id: build_deferred
         sql: "CREATE MATERIALIZED VIEW mv BUILD DEFERRED REFRESH FORCE ON DEMAND AS SELECT * FROM t;"
+        note: "Documented Oracle 26ai syntax (build deferred) from the CREATE MATERIALIZED VIEW page; the reference parsers have no Oracle grammar for it."
       - id: refresh_fast_on_commit
         sql: "CREATE MATERIALIZED VIEW mv REFRESH FAST ON COMMIT AS SELECT c, COUNT(*) n FROM t GROUP BY c;"
+        note: "Documented Oracle 26ai syntax (refresh fast on commit) from the CREATE MATERIALIZED VIEW page; the reference parsers have no Oracle grammar for it."
       - id: refresh_on_statement
         sql: "CREATE MATERIALIZED VIEW mv REFRESH FAST ON STATEMENT AS SELECT t.c, u.d FROM t, u WHERE t.id = u.id;"
+        note: "Taken from the CREATE MATERIALIZED VIEW syntax on the cited page (refresh on statement); none of the reference parsers implements this Oracle syntax."
       - id: refresh_start_with_next
         sql: "CREATE MATERIALIZED VIEW mv REFRESH FAST START WITH SYSDATE NEXT SYSDATE + 1/4096 WITH PRIMARY KEY AS SELECT * FROM t;"
+        note: "Documented Oracle 26ai syntax (refresh start with next) from the CREATE MATERIALIZED VIEW page; the reference parsers have no Oracle grammar for it."
       - id: refresh_with_rowid
         sql: "CREATE MATERIALIZED VIEW mv REFRESH WITH ROWID AS SELECT * FROM t;"
+        note: "Documented Oracle 26ai syntax (refresh with rowid) from the CREATE MATERIALIZED VIEW page; the reference parsers have no Oracle grammar for it."
       - id: refresh_using_trusted_constraints
         sql: "CREATE MATERIALIZED VIEW mv REFRESH COMPLETE USING TRUSTED CONSTRAINTS AS SELECT * FROM t;"
+        note: "Taken from the CREATE MATERIALIZED VIEW syntax on the cited page (refresh using trusted constraints); none of the reference parsers implements this Oracle syntax."
       - id: never_refresh
         sql: "CREATE MATERIALIZED VIEW mv NEVER REFRESH AS SELECT * FROM t;"
+        note: "Documented Oracle 26ai syntax (never refresh) from the CREATE MATERIALIZED VIEW page; the reference parsers have no Oracle grammar for it."
       - id: using_index
         sql: "CREATE MATERIALIZED VIEW mv USING INDEX TABLESPACE idx_ts STORAGE (INITIAL 25K) AS SELECT * FROM t;"
+        note: "Taken from the CREATE MATERIALIZED VIEW syntax on the cited page (using index); none of the reference parsers implements this Oracle syntax."
       - id: using_no_index
         sql: "CREATE MATERIALIZED VIEW mv USING NO INDEX AS SELECT * FROM t;"
+        note: "Taken from the CREATE MATERIALIZED VIEW syntax on the cited page (using no index); none of the reference parsers implements this Oracle syntax."
       - id: partitioned
         sql: "CREATE MATERIALIZED VIEW mv PARTITION BY RANGE (d) (PARTITION p1 VALUES LESS THAN (DATE '2024-01-01'), PARTITION p2 VALUES LESS THAN (MAXVALUE)) AS SELECT d, SUM(c) s FROM t GROUP BY d;"
+        note: "Taken from the CREATE MATERIALIZED VIEW syntax on the cited page (partitioned); none of the reference parsers implements this Oracle syntax."
       - id: cache_nologging_compress
         sql: "CREATE MATERIALIZED VIEW mv NOLOGGING COMPRESS CACHE AS SELECT * FROM t;"
+        note: "Taken from the CREATE MATERIALIZED VIEW syntax on the cited page (cache nologging compress); none of the reference parsers implements this Oracle syntax."
       - id: on_query_computation
         sql: "CREATE MATERIALIZED VIEW mv REFRESH FAST ON DEMAND ENABLE ON QUERY COMPUTATION ENABLE QUERY REWRITE AS SELECT c, COUNT(*) n FROM t GROUP BY c;"
+        note: "Taken from the CREATE MATERIALIZED VIEW syntax on the cited page (on query computation); none of the reference parsers implements this Oracle syntax."
       - id: concurrent_refresh
         sql: "CREATE MATERIALIZED VIEW mv REFRESH FAST ON COMMIT ENABLE CONCURRENT REFRESH AS SELECT c, COUNT(*) n FROM t GROUP BY c;"
+        note: "Taken from the CREATE MATERIALIZED VIEW syntax on the cited page (concurrent refresh); none of the reference parsers implements this Oracle syntax."
       - id: disable_query_rewrite
         sql: "CREATE MATERIALIZED VIEW mv DISABLE QUERY REWRITE AS SELECT * FROM t;"
+        note: "Documented Oracle 26ai syntax (disable query rewrite) from the CREATE MATERIALIZED VIEW page; the reference parsers have no Oracle grammar for it."
       - id: evaluate_using
         sql: "CREATE MATERIALIZED VIEW mv EVALUATE USING CURRENT EDITION AS SELECT * FROM t;"
+        note: "Taken from the CREATE MATERIALIZED VIEW syntax on the cited page (evaluate using); none of the reference parsers implements this Oracle syntax."
       - id: default_collation
         sql: "CREATE MATERIALIZED VIEW mv DEFAULT COLLATION BINARY_CI AS SELECT * FROM t;"
+        note: "Taken from the CREATE MATERIALIZED VIEW syntax on the cited page (default collation); none of the reference parsers implements this Oracle syntax."
       - id: annotations
         sql: "CREATE MATERIALIZED VIEW mv (c ANNOTATIONS (Hidden)) ANNOTATIONS (Title 'MV', ADD Snapshot) AS SELECT c FROM t;"
+        note: "Taken from the CREATE MATERIALIZED VIEW syntax on the cited page (annotations); none of the reference parsers implements this Oracle syntax."
       - id: remote_source
         sql: "CREATE MATERIALIZED VIEW mv AS SELECT * FROM s.t@remote x WHERE EXISTS (SELECT * FROM s.u@remote y WHERE y.id = x.id);"
     examples:
@@ -2058,22 +2301,31 @@ statements:
     probes:
       - id: refresh_fast
         sql: "ALTER MATERIALIZED VIEW mv REFRESH FAST;"
+        note: "Documented Oracle 26ai syntax (refresh fast) from the ALTER MATERIALIZED VIEW page; the reference parsers have no Oracle grammar for it."
       - id: refresh_schedule
         sql: "ALTER MATERIALIZED VIEW IF EXISTS s.mv REFRESH COMPLETE START WITH TRUNC(SYSDATE + 1) + 9/24 NEXT SYSDATE + 7;"
+        note: "Documented Oracle 26ai syntax (refresh schedule) from the ALTER MATERIALIZED VIEW page; the reference parsers have no Oracle grammar for it."
       - id: refresh_on_commit
         sql: "ALTER MATERIALIZED VIEW mv REFRESH ON COMMIT;"
+        note: "Documented Oracle 26ai syntax (refresh on commit) from the ALTER MATERIALIZED VIEW page; the reference parsers have no Oracle grammar for it."
       - id: enable_query_rewrite
         sql: "ALTER MATERIALIZED VIEW mv ENABLE QUERY REWRITE;"
+        note: "Documented Oracle 26ai syntax (enable query rewrite) from the ALTER MATERIALIZED VIEW page; the reference parsers have no Oracle grammar for it."
       - id: compile
         sql: "ALTER MATERIALIZED VIEW mv COMPILE;"
+        note: "Documented Oracle 26ai syntax (compile) from the ALTER MATERIALIZED VIEW page; the reference parsers have no Oracle grammar for it."
       - id: consider_fresh
         sql: "ALTER MATERIALIZED VIEW mv CONSIDER FRESH;"
+        note: "Documented Oracle 26ai syntax (consider fresh) from the ALTER MATERIALIZED VIEW page; the reference parsers have no Oracle grammar for it."
       - id: physical_and_parallel
         sql: "ALTER MATERIALIZED VIEW mv PCTFREE 10 PARALLEL 4;"
+        note: "Documented Oracle 26ai syntax (physical and parallel) from the ALTER MATERIALIZED VIEW page; the reference parsers have no Oracle grammar for it."
       - id: shrink_space
         sql: "ALTER MATERIALIZED VIEW mv SHRINK SPACE CASCADE;"
+        note: "Taken from the ALTER MATERIALIZED VIEW syntax on the cited page (shrink space); none of the reference parsers implements this Oracle syntax."
       - id: annotations
         sql: "ALTER MATERIALIZED VIEW mv ANNOTATIONS (DROP Snapshot);"
+        note: "Taken from the ALTER MATERIALIZED VIEW syntax on the cited page (annotations); none of the reference parsers implements this Oracle syntax."
     examples:
       - |-
         ALTER MATERIALIZED VIEW sales_by_month_by_state
@@ -2100,6 +2352,7 @@ statements:
         sql: "DROP MATERIALIZED VIEW IF EXISTS s.mv;"
       - id: preserve_table
         sql: "DROP MATERIALIZED VIEW mv PRESERVE TABLE;"
+        note: "Taken from the DROP MATERIALIZED VIEW syntax on the cited page (preserve table); none of the reference parsers implements this Oracle syntax."
     examples:
       - "DROP MATERIALIZED VIEW emp_data;"
       - "DROP MATERIALIZED VIEW sales_by_month_by_state;"
@@ -2125,49 +2378,66 @@ statements:
         sql: "CREATE INDEX idx ON t (c + (c * d));"
       - id: table_alias_expression
         sql: "CREATE INDEX idx ON t x (EXTRACTVALUE(VALUE(x), '/W/Area'));"
+        note: "Taken from the CREATE INDEX syntax on the cited page (table alias expression); none of the reference parsers implements this Oracle syntax."
       - id: multivalue
         sql: "CREATE MULTIVALUE INDEX idx ON t x (x.jcol.credit_score.numberOnly());"
+        note: "Taken from the CREATE INDEX syntax on the cited page (multivalue); none of the reference parsers implements this Oracle syntax."
       - id: json_index
         sql: "CREATE JSON INDEX idx ON t (doc);"
         note: "26ai create_index syntax: CREATE [ JSON ] [ UNIQUE | BITMAP | MULTIVALUE | SPARSE | DENSE ] INDEX."
       - id: cluster_index
         sql: "CREATE INDEX idx ON CLUSTER cl;"
+        note: "Taken from the CREATE INDEX syntax on the cited page (cluster index); none of the reference parsers implements this Oracle syntax."
       - id: bitmap_join_index
         sql: "CREATE BITMAP INDEX idx ON t (u.c) FROM t, u WHERE t.id = u.id;"
+        note: "Taken from the CREATE INDEX syntax on the cited page (bitmap join index); none of the reference parsers implements this Oracle syntax."
       - id: compress
         sql: "CREATE INDEX idx ON t (c, d) COMPRESS 1;"
       - id: compress_advanced
         sql: "CREATE INDEX idx ON t (c) COMPRESS ADVANCED LOW;"
+        note: "Taken from the CREATE INDEX syntax on the cited page (compress advanced); none of the reference parsers implements this Oracle syntax."
       - id: index_attributes
         sql: "CREATE INDEX idx ON t (c) TABLESPACE users PCTFREE 10 INITRANS 2 STORAGE (INITIAL 64K) NOLOGGING ONLINE PARALLEL 4;"
       - id: reverse_nosort
         sql: "CREATE INDEX idx ON t (c) REVERSE NOSORT;"
+        note: "Taken from the CREATE INDEX syntax on the cited page (reverse nosort); none of the reference parsers implements this Oracle syntax."
       - id: invisible
         sql: "CREATE INDEX idx ON t (c) INVISIBLE;"
       - id: unusable
         sql: "CREATE INDEX idx ON t (c) UNUSABLE;"
+        note: "Taken from the CREATE INDEX syntax on the cited page (unusable); none of the reference parsers implements this Oracle syntax."
       - id: deferred_invalidation
         sql: "CREATE INDEX idx ON t (c) DEFERRED INVALIDATION;"
+        note: "Taken from the CREATE INDEX syntax on the cited page (deferred invalidation); none of the reference parsers implements this Oracle syntax."
       - id: indexing_partial
         sql: "CREATE INDEX idx ON t (c) LOCAL INDEXING PARTIAL;"
+        note: "Taken from the CREATE INDEX syntax on the cited page (indexing partial); none of the reference parsers implements this Oracle syntax."
       - id: local
         sql: "CREATE INDEX idx ON t (c) LOCAL;"
+        note: "Taken from the CREATE INDEX syntax on the cited page (local); none of the reference parsers implements this Oracle syntax."
       - id: local_partitions
         sql: "CREATE BITMAP INDEX idx ON t (c) LOCAL (PARTITION p1 TABLESPACE ts1, PARTITION p2, PARTITION p3 TABLESPACE ts2) TABLESPACE ts3;"
+        note: "Taken from the CREATE INDEX syntax on the cited page (local partitions); none of the reference parsers implements this Oracle syntax."
       - id: local_store_in
         sql: "CREATE INDEX idx ON t (c) LOCAL STORE IN (ts1, ts2);"
+        note: "Taken from the CREATE INDEX syntax on the cited page (local store in); none of the reference parsers implements this Oracle syntax."
       - id: global_partition_by_range
         sql: "CREATE INDEX idx ON t (c) GLOBAL PARTITION BY RANGE (c) (PARTITION p1 VALUES LESS THAN (1000), PARTITION p2 VALUES LESS THAN (MAXVALUE));"
+        note: "Taken from the CREATE INDEX syntax on the cited page (global partition by range); none of the reference parsers implements this Oracle syntax."
       - id: global_partition_by_hash
         sql: "CREATE INDEX idx ON t (c) GLOBAL PARTITION BY HASH (c) PARTITIONS 4;"
+        note: "Taken from the CREATE INDEX syntax on the cited page (global partition by hash); none of the reference parsers implements this Oracle syntax."
       - id: domain_index
         sql: "CREATE INDEX idx ON t (doc) INDEXTYPE IS ctxsys.context PARAMETERS ('SYNC (ON COMMIT)');"
+        note: "Taken from the CREATE INDEX syntax on the cited page (domain index); none of the reference parsers implements this Oracle syntax."
       - id: xmlindex
         sql: "CREATE INDEX idx ON t (x) INDEXTYPE IS XDB.XMLINDEX;"
+        note: "Taken from the CREATE INDEX syntax on the cited page (xmlindex); none of the reference parsers implements this Oracle syntax."
       - id: annotations
         sql: "CREATE INDEX idx ON t (c) ANNOTATIONS (Display 'C index');"
       - id: ilm
         sql: "CREATE INDEX idx ILM (ADD POLICY SEGMENT TIER TO LOW_COST_TBS) ON t (c);"
+        note: "Taken from the CREATE INDEX syntax on the cited page (ilm); none of the reference parsers implements this Oracle syntax."
     examples:
       - |-
         CREATE INDEX ord_customer_ix_demo
@@ -2201,26 +2471,33 @@ statements:
         sql: "ALTER INDEX idx REBUILD;"
       - id: rebuild_options
         sql: "ALTER INDEX s.idx REBUILD ONLINE TABLESPACE users PARALLEL 4 NOLOGGING COMPRESS;"
+        note: "Taken from the ALTER INDEX syntax on the cited page (rebuild options); none of the reference parsers implements this Oracle syntax."
       - id: rebuild_reverse
         sql: "ALTER INDEX idx REBUILD REVERSE;"
       - id: rebuild_partition
         sql: "ALTER INDEX idx REBUILD PARTITION p3 NOLOGGING;"
+        note: "Taken from the ALTER INDEX syntax on the cited page (rebuild partition); none of the reference parsers implements this Oracle syntax."
       - id: rename
         sql: "ALTER INDEX idx RENAME TO idx2;"
       - id: unusable
         sql: "ALTER INDEX idx UNUSABLE ONLINE;"
+        note: "Documented Oracle 26ai syntax (unusable) from the ALTER INDEX page; the reference parsers have no Oracle grammar for it."
       - id: visible
         sql: "ALTER INDEX idx VISIBLE;"
       - id: invisible
         sql: "ALTER INDEX idx INVISIBLE;"
       - id: physical_attributes
         sql: "ALTER INDEX idx INITRANS 5;"
+        note: "Documented Oracle 26ai syntax (physical attributes) from the ALTER INDEX page; the reference parsers have no Oracle grammar for it."
       - id: parallel
         sql: "ALTER INDEX idx PARALLEL;"
+        note: "Documented Oracle 26ai syntax (parallel) from the ALTER INDEX page; the reference parsers have no Oracle grammar for it."
       - id: coalesce
         sql: "ALTER INDEX idx COALESCE CLEANUP;"
+        note: "Taken from the ALTER INDEX syntax on the cited page (coalesce); none of the reference parsers implements this Oracle syntax."
       - id: shrink
         sql: "ALTER INDEX idx SHRINK SPACE COMPACT;"
+        note: "Taken from the ALTER INDEX syntax on the cited page (shrink); none of the reference parsers implements this Oracle syntax."
       - id: monitoring_usage
         sql: "ALTER INDEX idx MONITORING USAGE;"
       - id: compile
@@ -2229,20 +2506,27 @@ statements:
         sql: "ALTER INDEX idx DISABLE;"
       - id: modify_partition
         sql: "ALTER INDEX idx MODIFY PARTITION p2 UNUSABLE;"
+        note: "Taken from the ALTER INDEX syntax on the cited page (modify partition); none of the reference parsers implements this Oracle syntax."
       - id: modify_default_attributes
         sql: "ALTER INDEX idx MODIFY DEFAULT ATTRIBUTES INITRANS 5;"
+        note: "Taken from the ALTER INDEX syntax on the cited page (modify default attributes); none of the reference parsers implements this Oracle syntax."
       - id: rename_partition
         sql: "ALTER INDEX idx RENAME PARTITION p3 TO p3_q3;"
+        note: "Taken from the ALTER INDEX syntax on the cited page (rename partition); none of the reference parsers implements this Oracle syntax."
       - id: split_partition
         sql: "ALTER INDEX idx SPLIT PARTITION p2 AT (1500) INTO (PARTITION p2a TABLESPACE ts1 LOGGING, PARTITION p2b TABLESPACE ts2);"
+        note: "Taken from the ALTER INDEX syntax on the cited page (split partition); none of the reference parsers implements this Oracle syntax."
       - id: drop_partition
         sql: "ALTER INDEX idx DROP PARTITION p1;"
+        note: "Taken from the ALTER INDEX syntax on the cited page (drop partition); none of the reference parsers implements this Oracle syntax."
       - id: add_hash_partition
         sql: "ALTER INDEX idx ADD PARTITION p5 TABLESPACE ts1;"
+        note: "Taken from the ALTER INDEX syntax on the cited page (add hash partition); none of the reference parsers implements this Oracle syntax."
       - id: parameters
         sql: "ALTER INDEX idx PARAMETERS ('sync');"
       - id: annotations
         sql: "ALTER INDEX idx ANNOTATIONS (ADD Hidden);"
+        note: "Taken from the ALTER INDEX syntax on the cited page (annotations); none of the reference parsers implements this Oracle syntax."
     examples:
       - "ALTER INDEX ord_customer_ix REBUILD REVERSE;"
       - |-
@@ -2269,10 +2553,12 @@ statements:
         sql: "DROP INDEX IF EXISTS s.idx;"
       - id: online
         sql: "DROP INDEX idx ONLINE;"
+        note: "Taken from the DROP INDEX syntax on the cited page (online); none of the reference parsers implements this Oracle syntax."
       - id: force
         sql: "DROP INDEX idx FORCE;"
       - id: deferred_invalidation
         sql: "DROP INDEX idx ONLINE DEFERRED INVALIDATION;"
+        note: "Taken from the DROP INDEX syntax on the cited page (deferred invalidation); none of the reference parsers implements this Oracle syntax."
     examples:
       - "DROP INDEX ord_customer_ix_demo;"
 
@@ -2307,6 +2593,7 @@ statements:
         sql: "CREATE FUNCTION f RETURN NUMBER AUTHID DEFINER AS BEGIN RETURN 1; END;"
       - id: accessible_by
         sql: "CREATE FUNCTION f RETURN NUMBER ACCESSIBLE BY (PACKAGE s.pkg, PROCEDURE p) IS BEGIN RETURN 1; END;"
+        note: "Taken from the CREATE FUNCTION syntax on the cited page (accessible by); none of the reference parsers implements this Oracle syntax."
       - id: default_collation
         sql: "CREATE FUNCTION f RETURN VARCHAR2 DEFAULT COLLATION USING_NLS_COMP IS BEGIN RETURN 'x'; END;"
       - id: result_cache
@@ -2315,10 +2602,13 @@ statements:
         sql: "CREATE FUNCTION f (a NUMBER) RETURN NUMBER RESULT_CACHE RELIES_ON (t, u) IS BEGIN RETURN a; END;"
       - id: parallel_enable
         sql: "CREATE FUNCTION f (c SYS_REFCURSOR) RETURN num_tab PIPELINED PARALLEL_ENABLE (PARTITION c BY ANY) IS BEGIN RETURN; END;"
+        note: "Taken from the CREATE FUNCTION syntax on the cited page (parallel enable); none of the reference parsers implements this Oracle syntax."
       - id: parallel_enable_hash_streaming
         sql: "CREATE FUNCTION f (c ref_cur_t) RETURN num_tab PIPELINED PARALLEL_ENABLE (PARTITION c BY HASH (id)) ORDER c BY (id) IS BEGIN RETURN; END;"
+        note: "Taken from the CREATE FUNCTION syntax on the cited page (parallel enable hash streaming); none of the reference parsers implements this Oracle syntax."
       - id: pipelined
         sql: "CREATE FUNCTION f RETURN num_tab PIPELINED IS BEGIN FOR i IN 1 .. 3 LOOP PIPE ROW (i); END LOOP; RETURN; END;"
+        note: "Taken from the CREATE FUNCTION syntax on the cited page (pipelined); none of the reference parsers implements this Oracle syntax."
       - id: pipelined_using
         sql: "CREATE FUNCTION f (x NUMBER) RETURN num_tab PIPELINED USING s.impl_t;"
       - id: polymorphic_table_function
@@ -2329,20 +2619,26 @@ statements:
         sql: "CREATE FUNCTION f (job VARCHAR2) RETURN VARCHAR2 SQL_MACRO IS BEGIN RETURN q'{SELECT * FROM emp WHERE job = f.job}'; END;"
       - id: sql_macro_scalar
         sql: "CREATE FUNCTION f (a NUMBER) RETURN VARCHAR2 SQL_MACRO(SCALAR) IS BEGIN RETURN 'a * 2'; END;"
+        note: "Taken from the CREATE FUNCTION syntax on the cited page (sql macro scalar); none of the reference parsers implements this Oracle syntax."
       - id: sql_macro_type_named
         sql: "CREATE FUNCTION f RETURN VARCHAR2 SQL_MACRO(TYPE => TABLE) IS BEGIN RETURN 'SELECT 1 FROM DUAL'; END;"
+        note: "Taken from the CREATE FUNCTION syntax on the cited page (sql macro type named); none of the reference parsers implements this Oracle syntax."
       - id: shard_enable
         sql: "CREATE FUNCTION f (a NUMBER) RETURN NUMBER SHARD_ENABLE IS BEGIN RETURN a; END;"
       - id: sharing
         sql: "CREATE FUNCTION f SHARING = METADATA RETURN NUMBER IS BEGIN RETURN 1; END;"
+        note: "Taken from the CREATE FUNCTION syntax on the cited page (sharing); none of the reference parsers implements this Oracle syntax."
       - id: call_spec_java
         sql: "CREATE FUNCTION f (a VARCHAR2) RETURN VARCHAR2 AS LANGUAGE JAVA NAME 'Util.f(java.lang.String) return java.lang.String';"
       - id: call_spec_c
         sql: "CREATE FUNCTION f (x BINARY_INTEGER) RETURN BINARY_INTEGER AS LANGUAGE C NAME \"c_f\" LIBRARY c_utils WITH CONTEXT PARAMETERS (CONTEXT, x INT, RETURN INT);"
+        note: "Taken from the CREATE FUNCTION syntax on the cited page (call spec c); none of the reference parsers implements this Oracle syntax."
       - id: call_spec_external
         sql: "CREATE FUNCTION f (x BINARY_INTEGER) RETURN BINARY_INTEGER AS EXTERNAL LIBRARY c_utils NAME \"c_f\";"
+        note: "Taken from the CREATE FUNCTION syntax on the cited page (call spec external); none of the reference parsers implements this Oracle syntax."
       - id: call_spec_mle_module
         sql: "CREATE OR REPLACE FUNCTION f (\"p_who\" VARCHAR2) RETURN VARCHAR2 AS MLE MODULE hello_mod SIGNATURE 'hello';"
+        note: "Taken from the CREATE FUNCTION syntax on the cited page (call spec mle module); none of the reference parsers implements this Oracle syntax."
       - id: call_spec_mle_inline
         sql: |-
           CREATE OR REPLACE FUNCTION f ("who" VARCHAR2) RETURN VARCHAR2
@@ -2350,6 +2646,7 @@ statements:
           {{
             return `Hello, ${who}`;
           }};
+        note: "Taken from the CREATE FUNCTION syntax on the cited page (call spec mle inline); none of the reference parsers implements this Oracle syntax."
       - id: nested_subprogram
         sql: "CREATE FUNCTION f (a NUMBER) RETURN NUMBER IS FUNCTION g (b NUMBER) RETURN NUMBER IS BEGIN RETURN b * 2; END; BEGIN RETURN g(a); END;"
       - id: slash_terminated
@@ -2430,10 +2727,13 @@ statements:
         sql: "CREATE PROCEDURE p (m VARCHAR2) IS PRAGMA AUTONOMOUS_TRANSACTION; BEGIN INSERT INTO log_t VALUES (m); COMMIT; END;"
       - id: call_spec_c
         sql: "CREATE PROCEDURE p (x IN REAL) IS LANGUAGE C NAME c_find_root LIBRARY c_utils PARAMETERS (x BY REFERENCE);"
+        note: "Taken from the CREATE PROCEDURE syntax on the cited page (call spec c); none of the reference parsers implements this Oracle syntax."
       - id: call_spec_java
         sql: "CREATE PROCEDURE p (a VARCHAR2) AS LANGUAGE JAVA NAME 'Util.p(java.lang.String)';"
+        note: "Taken from the CREATE PROCEDURE syntax on the cited page (call spec java); none of the reference parsers implements this Oracle syntax."
       - id: call_spec_mle_module
         sql: "CREATE OR REPLACE PROCEDURE p (\"p_who\" VARCHAR2) AS MLE MODULE hello_mod SIGNATURE 'hello';"
+        note: "Taken from the CREATE PROCEDURE syntax on the cited page (call spec mle module); none of the reference parsers implements this Oracle syntax."
       - id: call_spec_mle_inline
         sql: |-
           CREATE OR REPLACE PROCEDURE p ("who" VARCHAR2)
@@ -2441,6 +2741,7 @@ statements:
           {{
             console.log(`Hello, ${who}`);
           }};
+        note: "Taken from the CREATE PROCEDURE syntax on the cited page (call spec mle inline); none of the reference parsers implements this Oracle syntax."
       - id: nested_subprograms
         sql: "CREATE PROCEDURE p IS PROCEDURE q (a NUMBER); PROCEDURE q (a NUMBER) IS BEGIN NULL; END; BEGIN q(1); END;"
       - id: slash_terminated
@@ -2496,6 +2797,7 @@ statements:
         sql: "ALTER FUNCTION IF EXISTS f COMPILE DEBUG;"
       - id: compiler_parameters_reuse
         sql: "ALTER FUNCTION f COMPILE PLSQL_OPTIMIZE_LEVEL = 3 PLSQL_CODE_TYPE = NATIVE REUSE SETTINGS;"
+        note: "Taken from the ALTER FUNCTION syntax on the cited page (compiler parameters reuse); none of the reference parsers implements this Oracle syntax."
       - id: editionable
         sql: "ALTER FUNCTION f NONEDITIONABLE;"
     examples:
@@ -2510,8 +2812,10 @@ statements:
         sql: "ALTER PROCEDURE s.p COMPILE;"
       - id: if_exists_compile_reuse
         sql: "ALTER PROCEDURE IF EXISTS p COMPILE DEBUG REUSE SETTINGS;"
+        note: "Taken from the ALTER PROCEDURE syntax on the cited page (if exists compile reuse); none of the reference parsers implements this Oracle syntax."
       - id: compiler_parameters
         sql: "ALTER PROCEDURE p COMPILE PLSQL_WARNINGS = 'ENABLE:ALL';"
+        note: "Taken from the ALTER PROCEDURE syntax on the cited page (compiler parameters); none of the reference parsers implements this Oracle syntax."
       - id: editionable
         sql: "ALTER PROCEDURE p EDITIONABLE;"
     examples:
@@ -2548,8 +2852,10 @@ statements:
     probes:
       - id: create_table
         sql: "CREATE SCHEMA AUTHORIZATION s CREATE TABLE t (c NUMBER PRIMARY KEY);"
+        note: "Documented Oracle 26ai syntax (create table) from the CREATE SCHEMA page; the reference parsers have no Oracle grammar for it."
       - id: table_view_grant
         sql: "CREATE SCHEMA AUTHORIZATION s CREATE TABLE t (c VARCHAR2(10) PRIMARY KEY, q NUMBER) CREATE VIEW v AS SELECT c, q FROM t WHERE c = 'RED' GRANT SELECT ON v TO u;"
+        note: "Taken from the CREATE SCHEMA syntax on the cited page (table view grant); none of the reference parsers implements this Oracle syntax."
     examples:
       - |-
         CREATE SCHEMA AUTHORIZATION oe
@@ -2566,10 +2872,13 @@ statements:
     probes:
       - id: basic
         sql: "CREATE DATABASE db USER SYS IDENTIFIED BY pw1 USER SYSTEM IDENTIFIED BY pw2 CHARACTER SET AL32UTF8 NATIONAL CHARACTER SET AL16UTF16;"
+        note: "Documented Oracle 26ai syntax (basic) from the CREATE DATABASE page; the reference parsers have no Oracle grammar for it."
       - id: files_and_tablespaces
         sql: "CREATE DATABASE db CONTROLFILE REUSE LOGFILE GROUP 1 ('log1.log') SIZE 50M, GROUP 2 ('log2.log') SIZE 50M ARCHIVELOG DATAFILE 'df1.dbf' AUTOEXTEND ON EXTENT MANAGEMENT LOCAL DEFAULT TEMPORARY TABLESPACE temp_ts UNDO TABLESPACE undo_ts SET TIME_ZONE = '+02:00';"
+        note: "Taken from the CREATE DATABASE syntax on the cited page (files and tablespaces); none of the reference parsers implements this Oracle syntax."
       - id: enable_pluggable_database
         sql: "CREATE DATABASE cdb ENABLE PLUGGABLE DATABASE SEED FILE_NAME_CONVERT = ('/c/', '/c/pdbseed/');"
+        note: "Taken from the CREATE DATABASE syntax on the cited page (enable pluggable database); none of the reference parsers implements this Oracle syntax."
     examples:
       - |-
         CREATE DATABASE sample
@@ -2598,26 +2907,37 @@ statements:
     probes:
       - id: open_read_only
         sql: "ALTER DATABASE OPEN READ ONLY;"
+        note: "Taken from the ALTER DATABASE syntax on the cited page (open read only); none of the reference parsers implements this Oracle syntax."
       - id: open_resetlogs
         sql: "ALTER DATABASE OPEN READ WRITE RESETLOGS;"
+        note: "Taken from the ALTER DATABASE syntax on the cited page (open resetlogs); none of the reference parsers implements this Oracle syntax."
       - id: mount
         sql: "ALTER DATABASE MOUNT;"
+        note: "Taken from the ALTER DATABASE syntax on the cited page (mount); none of the reference parsers implements this Oracle syntax."
       - id: recover_tablespace
         sql: "ALTER DATABASE RECOVER TABLESPACE tbs_03 PARALLEL;"
+        note: "Taken from the ALTER DATABASE syntax on the cited page (recover tablespace); none of the reference parsers implements this Oracle syntax."
       - id: add_logfile
         sql: "ALTER DATABASE ADD LOGFILE GROUP 3 ('log3a.log', 'log3b.log') SIZE 50M;"
+        note: "Taken from the ALTER DATABASE syntax on the cited page (add logfile); none of the reference parsers implements this Oracle syntax."
       - id: drop_logfile_group
         sql: "ALTER DATABASE DROP LOGFILE GROUP 3;"
+        note: "Taken from the ALTER DATABASE syntax on the cited page (drop logfile group); none of the reference parsers implements this Oracle syntax."
       - id: default_temporary_tablespace
         sql: "ALTER DATABASE DEFAULT TEMPORARY TABLESPACE tbs_05;"
+        note: "Taken from the ALTER DATABASE syntax on the cited page (default temporary tablespace); none of the reference parsers implements this Oracle syntax."
       - id: datafile_resize
         sql: "ALTER DATABASE DATAFILE 'df1.dbf' RESIZE 100M;"
+        note: "Taken from the ALTER DATABASE syntax on the cited page (datafile resize); none of the reference parsers implements this Oracle syntax."
       - id: archivelog
         sql: "ALTER DATABASE ARCHIVELOG;"
+        note: "Taken from the ALTER DATABASE syntax on the cited page (archivelog); none of the reference parsers implements this Oracle syntax."
       - id: begin_backup
         sql: "ALTER DATABASE BEGIN BACKUP;"
+        note: "Taken from the ALTER DATABASE syntax on the cited page (begin backup); none of the reference parsers implements this Oracle syntax."
       - id: rename_global_name
         sql: "ALTER DATABASE RENAME GLOBAL_NAME TO db.example.com;"
+        note: "Taken from the ALTER DATABASE syntax on the cited page (rename global name); none of the reference parsers implements this Oracle syntax."
     examples:
       - "ALTER DATABASE OPEN READ ONLY;"
       - |-
@@ -2644,6 +2964,7 @@ statements:
     probes:
       - id: basic
         sql: "DROP DATABASE;"
+        note: "Documented Oracle 26ai syntax (basic) from the DROP DATABASE page; the reference parsers have no Oracle grammar for it."
 
   - id: commit
     name: COMMIT
@@ -2656,16 +2977,22 @@ statements:
         sql: "COMMIT WORK;"
       - id: comment
         sql: "COMMIT COMMENT 'In-doubt transaction Code 36';"
+        note: "Taken from the COMMIT syntax on the cited page (comment); none of the reference parsers implements this Oracle syntax."
       - id: write_batch
         sql: "COMMIT WRITE BATCH;"
+        note: "Taken from the COMMIT syntax on the cited page (write batch); none of the reference parsers implements this Oracle syntax."
       - id: write_wait_immediate
         sql: "COMMIT WRITE WAIT IMMEDIATE;"
+        note: "Taken from the COMMIT syntax on the cited page (write wait immediate); none of the reference parsers implements this Oracle syntax."
       - id: write_nowait
         sql: "COMMIT WORK WRITE NOWAIT BATCH;"
+        note: "Taken from the COMMIT syntax on the cited page (write nowait); none of the reference parsers implements this Oracle syntax."
       - id: force
         sql: "COMMIT FORCE '22.57.53';"
+        note: "Taken from the COMMIT syntax on the cited page (force); none of the reference parsers implements this Oracle syntax."
       - id: force_scn
         sql: "COMMIT FORCE '22.57.53', 1234567;"
+        note: "Taken from the COMMIT syntax on the cited page (force scn); none of the reference parsers implements this Oracle syntax."
     examples:
       - "COMMIT WORK;"
       - "COMMIT WRITE BATCH;"
@@ -2689,6 +3016,7 @@ statements:
         sql: "ROLLBACK WORK TO sp1;"
       - id: force
         sql: "ROLLBACK FORCE '25.32.87';"
+        note: "Taken from the ROLLBACK syntax on the cited page (force); none of the reference parsers implements this Oracle syntax."
     examples:
       - "ROLLBACK;"
       - "ROLLBACK TO SAVEPOINT banda_sal;"
@@ -2721,10 +3049,13 @@ statements:
         sql: "SET TRANSACTION ISOLATION LEVEL READ COMMITTED;"
       - id: use_rollback_segment
         sql: "SET TRANSACTION USE ROLLBACK SEGMENT rbs_one;"
+        note: "Taken from the SET TRANSACTION syntax on the cited page (use rollback segment); none of the reference parsers implements this Oracle syntax."
       - id: read_only_name
         sql: "SET TRANSACTION READ ONLY NAME 'West Coast';"
+        note: "Taken from the SET TRANSACTION syntax on the cited page (read only name); none of the reference parsers implements this Oracle syntax."
       - id: name_only
         sql: "SET TRANSACTION NAME 'tx1';"
+        note: "Taken from the SET TRANSACTION syntax on the cited page (name only); none of the reference parsers implements this Oracle syntax."
     examples:
       - "SET TRANSACTION READ ONLY NAME 'West Coast';"
 
@@ -2772,6 +3103,7 @@ statements:
         sql: "GRANT EXECUTE ON s.p TO r;"
       - id: roles_to_program
         sql: "GRANT r1, r2 TO PROCEDURE s.p, PACKAGE pkg;"
+        note: "Taken from the GRANT syntax on the cited page (roles to program); none of the reference parsers implements this Oracle syntax."
     examples:
       - |-
         GRANT CREATE SESSION
@@ -2802,8 +3134,10 @@ statements:
     probes:
       - id: basic
         sql: "GRANT DATA ROLE r TO eu;"
+        note: "Taken from the GRANT DATA ROLE syntax on the cited page (basic); none of the reference parsers implements this Oracle syntax."
       - id: if_exists_time_window
         sql: "GRANT DATA ROLE IF EXISTS r1, r2 TO eu1, eu2 START TIME TIMESTAMP '2026-01-01 00:00:00' END TIME TIMESTAMP '2026-12-31 00:00:00';"
+        note: "Taken from the GRANT DATA ROLE syntax on the cited page (if exists time window); none of the reference parsers implements this Oracle syntax."
     examples:
       - "GRANT DATA ROLE manager_role TO marvin;"
       - "GRANT DATA ROLE employee_role TO manager_role;"
@@ -2862,8 +3196,10 @@ statements:
     probes:
       - id: basic
         sql: "REVOKE DATA ROLE r FROM eu;"
+        note: "Taken from the REVOKE DATA ROLE syntax on the cited page (basic); none of the reference parsers implements this Oracle syntax."
       - id: if_exists_list
         sql: "REVOKE DATA ROLE IF EXISTS r1, r2 FROM eu1, eu2;"
+        note: "Taken from the REVOKE DATA ROLE syntax on the cited page (if exists list); none of the reference parsers implements this Oracle syntax."
     examples:
       - "REVOKE DATA ROLE manager_role FROM marvin;"
 
@@ -2874,22 +3210,31 @@ statements:
     probes:
       - id: select
         sql: "EXPLAIN PLAN FOR SELECT c FROM t WHERE d = 1;"
+        note: "Documented Oracle 26ai syntax (select) from the EXPLAIN PLAN page; the reference parsers have no Oracle grammar for it."
       - id: statement_id_into
         sql: "EXPLAIN PLAN SET STATEMENT_ID = 'q1' INTO s.plan_table FOR SELECT c FROM t;"
+        note: "Documented Oracle 26ai syntax (statement id into) from the EXPLAIN PLAN page; the reference parsers have no Oracle grammar for it."
       - id: into_dblink
         sql: "EXPLAIN PLAN INTO plan_table@remote FOR SELECT c FROM t;"
+        note: "Taken from the EXPLAIN PLAN syntax on the cited page (into dblink); none of the reference parsers implements this Oracle syntax."
       - id: update
         sql: "EXPLAIN PLAN FOR UPDATE t SET c = c * 1.1 WHERE d = 1;"
+        note: "Documented Oracle 26ai syntax (update) from the EXPLAIN PLAN page; the reference parsers have no Oracle grammar for it."
       - id: insert
         sql: "EXPLAIN PLAN FOR INSERT INTO t SELECT * FROM u;"
+        note: "Documented Oracle 26ai syntax (insert) from the EXPLAIN PLAN page; the reference parsers have no Oracle grammar for it."
       - id: delete
         sql: "EXPLAIN PLAN FOR DELETE FROM t WHERE c = 1;"
+        note: "Documented Oracle 26ai syntax (delete) from the EXPLAIN PLAN page; the reference parsers have no Oracle grammar for it."
       - id: merge
         sql: "EXPLAIN PLAN FOR MERGE INTO t USING u ON (t.id = u.id) WHEN MATCHED THEN UPDATE SET t.c = u.c;"
+        note: "Documented Oracle 26ai syntax (merge) from the EXPLAIN PLAN page; the reference parsers have no Oracle grammar for it."
       - id: create_table_as
         sql: "EXPLAIN PLAN FOR CREATE TABLE t2 AS SELECT * FROM t;"
+        note: "Documented Oracle 26ai syntax (create table as) from the EXPLAIN PLAN page; the reference parsers have no Oracle grammar for it."
       - id: create_index
         sql: "EXPLAIN PLAN FOR CREATE INDEX idx ON t (c);"
+        note: "Documented Oracle 26ai syntax (create index) from the EXPLAIN PLAN page; the reference parsers have no Oracle grammar for it."
     examples:
       - |-
         EXPLAIN PLAN
@@ -2918,6 +3263,7 @@ statements:
         sql: "DECLARE v NUMBER; BEGIN SELECT c INTO v FROM t WHERE id = 1; EXCEPTION WHEN NO_DATA_FOUND THEN v := 0; WHEN OTHERS THEN RAISE; END;"
       - id: labeled_block
         sql: "<<outer>> DECLARE v NUMBER := 1; BEGIN NULL; END outer;"
+        note: "Taken from the PL/SQL block (anonymous block) syntax on the cited page (labeled block); none of the reference parsers implements this Oracle syntax."
       - id: nested_block
         sql: "BEGIN DECLARE v NUMBER; BEGIN v := 1; END; END;"
       - id: end_with_name
@@ -2928,14 +3274,17 @@ statements:
         sql: "BEGIN SAVEPOINT sp1; UPDATE t SET c = 1; ROLLBACK TO SAVEPOINT sp1; SET TRANSACTION READ ONLY; COMMIT; END;"
       - id: merge_lock_in_block
         sql: "BEGIN LOCK TABLE t IN EXCLUSIVE MODE NOWAIT; MERGE INTO t USING u ON (t.id = u.id) WHEN MATCHED THEN UPDATE SET t.c = u.c; END;"
+        note: "Documented Oracle 26ai syntax (merge lock in block) from the PL/SQL block (anonymous block) page; the reference parsers have no Oracle grammar for it."
       - id: declare_types_cursor_items
         sql: "DECLARE TYPE num_tab IS TABLE OF NUMBER; CURSOR c IS SELECT id FROM t; v NUMBER; e EXCEPTION; BEGIN NULL; END;"
       - id: declare_nested_subprograms
         sql: "DECLARE FUNCTION f (a NUMBER) RETURN NUMBER IS BEGIN RETURN a * 2; END; PROCEDURE p IS BEGIN NULL; END; BEGIN p; END;"
       - id: subtype_definition
         sql: "DECLARE SUBTYPE balance IS NUMBER(8,2) NOT NULL; SUBTYPE small IS PLS_INTEGER RANGE 0 .. 9; b balance := 0; BEGIN NULL; END;"
+        note: "Taken from the PL/SQL block (anonymous block) syntax on the cited page (subtype definition); none of the reference parsers implements this Oracle syntax."
       - id: statement_label
         sql: "BEGIN <<lbl>> NULL; END;"
+        note: "Taken from the PL/SQL block (anonymous block) syntax on the cited page (statement label); none of the reference parsers implements this Oracle syntax."
       - id: slash_terminated
         sql: |-
           BEGIN
@@ -3208,6 +3557,7 @@ statements:
         sql: "DECLARE TYPE v_t IS VARRAY(4) OF VARCHAR2(15); v v_t := v_t('a', 'b'); BEGIN NULL; END;"
       - id: varying_array
         sql: "DECLARE TYPE v_t IS VARYING ARRAY(10) OF NUMBER NOT NULL; BEGIN NULL; END;"
+        note: "Taken from the PL/SQL collection type definition and variable declaration syntax on the cited page (varying array); none of the reference parsers implements this Oracle syntax."
       - id: nested_table
         sql: "DECLARE TYPE nt_t IS TABLE OF VARCHAR2(10); nt nt_t := nt_t('a', 'b', 'c'); BEGIN NULL; END;"
       - id: nested_table_of_rowtype
@@ -3218,6 +3568,7 @@ statements:
         sql: "DECLARE TYPE nt_t IS TABLE OF NUMBER; nt nt_t := nt_t(1, 2); x NUMBER; BEGIN x := nt(2); nt(1) := x; END;"
       - id: multidimensional
         sql: "DECLARE TYPE t1 IS VARRAY(10) OF INTEGER; TYPE nt1 IS VARRAY(10) OF t1; va t1 := t1(2, 3, 5); nva nt1 := nt1(va, t1(55, 6, 73)); i INTEGER; BEGIN i := nva(2)(3); END;"
+        note: "Taken from the PL/SQL collection type definition and variable declaration syntax on the cited page (multidimensional); none of the reference parsers implements this Oracle syntax."
     examples:
       - |-
         DECLARE
@@ -3324,6 +3675,7 @@ statements:
         sql: "DECLARE TYPE nt_t IS TABLE OF NUMBER; nt nt_t := nt_t(1); BEGIN nt.EXTEND; nt.EXTEND(2); nt.EXTEND(2, 1); END;"
       - id: delete
         sql: "DECLARE TYPE nt_t IS TABLE OF NUMBER; nt nt_t := nt_t(1, 2, 3, 4); BEGIN nt.DELETE(2); nt.DELETE(3, 4); nt.DELETE; END;"
+        note: "Taken from the PL/SQL collection method invocation syntax on the cited page (delete); none of the reference parsers implements this Oracle syntax."
       - id: trim
         sql: "DECLARE TYPE nt_t IS TABLE OF NUMBER; nt nt_t := nt_t(1, 2, 3); BEGIN nt.TRIM; nt.TRIM(1); END;"
       - id: exists_next_prior
@@ -3356,14 +3708,18 @@ statements:
         sql: "DECLARE TYPE r_t IS RECORD (a PLS_INTEGER, b PLS_INTEGER, c NUMBER); r r_t; BEGIN r := r_t(1, c => 3.0, OTHERS => 2); END;"
       - id: indexed_choices
         sql: "DECLARE TYPE aa_t IS TABLE OF VARCHAR2(10) INDEX BY PLS_INTEGER; a aa_t; BEGIN a := aa_t(1 => 'one', 2 => 'two'); END;"
+        note: "Taken from the PL/SQL qualified expression syntax on the cited page (indexed choices); none of the reference parsers implements this Oracle syntax."
       - id: empty
         sql: "DECLARE TYPE aa_t IS TABLE OF NUMBER INDEX BY PLS_INTEGER; a aa_t; BEGIN a := aa_t(); END;"
       - id: iterator_choice
         sql: "DECLARE TYPE v_t IS TABLE OF NUMBER INDEX BY PLS_INTEGER; v v_t; BEGIN v := v_t(FOR i IN 1 .. 5 => i * 2); END;"
+        note: "Taken from the PL/SQL qualified expression syntax on the cited page (iterator choice); none of the reference parsers implements this Oracle syntax."
       - id: index_iterator_choice
         sql: "DECLARE TYPE v_t IS TABLE OF NUMBER INDEX BY PLS_INTEGER; v v_t; BEGIN v := v_t(FOR i IN 2 .. 10 BY 2 INDEX i / 2 => i); END;"
+        note: "Taken from the PL/SQL qualified expression syntax on the cited page (index iterator choice); none of the reference parsers implements this Oracle syntax."
       - id: sequence_iterator_choice
         sql: "DECLARE TYPE v_t IS VARRAY(10) OF NUMBER; v v_t; BEGIN v := v_t(FOR i IN 1 .. 3 SEQUENCE => i); END;"
+        note: "Taken from the PL/SQL qualified expression syntax on the cited page (sequence iterator choice); none of the reference parsers implements this Oracle syntax."
     examples:
       - |-
         DECLARE 
@@ -3553,12 +3909,15 @@ statements:
         sql: "BEGIN CASE g WHEN 'A' THEN r := 1; WHEN 'B' THEN r := 2; ELSE r := 0; END CASE; END;"
       - id: simple_case_multiple_values
         sql: "BEGIN CASE g WHEN 'A', 'B' THEN r := 1; END CASE; END;"
+        note: "Taken from the PL/SQL CASE statement syntax on the cited page (simple case multiple values); none of the reference parsers implements this Oracle syntax."
       - id: simple_case_dangling_predicates
         sql: "BEGIN CASE g WHEN < 0, > 100 THEN r := 'X'; WHEN > 89 THEN r := 'A'; WHEN IS NULL THEN r := '?'; ELSE r := 'F'; END CASE; END;"
+        note: "Taken from the PL/SQL CASE statement syntax on the cited page (simple case dangling predicates); none of the reference parsers implements this Oracle syntax."
       - id: searched_case
         sql: "BEGIN CASE WHEN g = 'A' THEN r := 1; WHEN g = 'B' THEN r := 2; ELSE r := 0; END CASE; END;"
       - id: labeled_case
         sql: "BEGIN <<c1>> CASE WHEN x > 0 THEN NULL; END CASE c1; END;"
+        note: "Taken from the PL/SQL CASE statement syntax on the cited page (labeled case); none of the reference parsers implements this Oracle syntax."
     examples:
       - |-
         DECLARE
@@ -3618,6 +3977,7 @@ statements:
         sql: "BEGIN LOOP x := x + 1; EXIT WHEN x > 3; END LOOP; END;"
       - id: labeled_loops
         sql: "BEGIN <<outer>> LOOP <<inner>> LOOP EXIT outer WHEN x > 3; EXIT inner; END LOOP inner; END LOOP outer; END;"
+        note: "Taken from the PL/SQL basic LOOP statement syntax on the cited page (labeled loops); none of the reference parsers implements this Oracle syntax."
     examples:
       - |-
         DECLARE
@@ -3651,6 +4011,7 @@ statements:
         sql: "BEGIN WHILE x < 10 LOOP x := x + 1; END LOOP; END;"
       - id: while_not_labeled
         sql: "BEGIN <<w>> WHILE NOT done LOOP done := TRUE; END LOOP w; END;"
+        note: "Taken from the PL/SQL WHILE LOOP statement syntax on the cited page (while not labeled); none of the reference parsers implements this Oracle syntax."
     examples:
       - |-
         DECLARE
@@ -3683,10 +4044,13 @@ statements:
         sql: "BEGIN FOR j IN 2 .. ROUND(SQRT(n)) LOOP NULL; END LOOP; END;"
       - id: stepped_by
         sql: "BEGIN FOR i IN 1 .. 10 BY 2 LOOP NULL; END LOOP; END;"
+        note: "Taken from the PL/SQL FOR LOOP statement (and iterator) syntax on the cited page (stepped by); none of the reference parsers implements this Oracle syntax."
       - id: typed_iterand
         sql: "BEGIN FOR n NUMBER(5,1) IN 1.0 .. 3.0 BY 0.5 LOOP NULL; END LOOP; END;"
+        note: "Taken from the PL/SQL FOR LOOP statement (and iterator) syntax on the cited page (typed iterand); none of the reference parsers implements this Oracle syntax."
       - id: mutable_iterand
         sql: "BEGIN FOR i MUTABLE PLS_INTEGER IN 1 .. 10 LOOP i := i + 1; END LOOP; END;"
+        note: "Taken from the PL/SQL FOR LOOP statement (and iterator) syntax on the cited page (mutable iterand); none of the reference parsers implements this Oracle syntax."
       - id: single_expression
         sql: "BEGIN FOR i IN 1 LOOP NULL; END LOOP; END;"
       - id: multiple_controls
@@ -3697,16 +4061,22 @@ statements:
         sql: "BEGIN FOR i IN 1 .. 10 WHEN MOD(i, 2) = 0 LOOP NULL; END LOOP; END;"
       - id: values_of
         sql: "DECLARE TYPE v_t IS TABLE OF PLS_INTEGER INDEX BY PLS_INTEGER; v v_t := v_t(3 => 10, 1 => 11); BEGIN FOR i IN VALUES OF v LOOP NULL; END LOOP; END;"
+        note: "Taken from the PL/SQL FOR LOOP statement (and iterator) syntax on the cited page (values of); none of the reference parsers implements this Oracle syntax."
       - id: indices_of
         sql: "DECLARE TYPE v_t IS TABLE OF PLS_INTEGER INDEX BY PLS_INTEGER; v v_t := v_t(3 => 10, 1 => 11); BEGIN FOR i IN INDICES OF v LOOP NULL; END LOOP; END;"
+        note: "Taken from the PL/SQL FOR LOOP statement (and iterator) syntax on the cited page (indices of); none of the reference parsers implements this Oracle syntax."
       - id: pairs_of
         sql: "DECLARE TYPE v_t IS TABLE OF PLS_INTEGER INDEX BY PLS_INTEGER; v v_t := v_t(3 => 10, 1 => 11); BEGIN FOR i, j IN PAIRS OF v LOOP NULL; END LOOP; END;"
+        note: "Taken from the PL/SQL FOR LOOP statement (and iterator) syntax on the cited page (pairs of); none of the reference parsers implements this Oracle syntax."
       - id: values_of_dynamic_sql
         sql: "DECLARE TYPE r_t IS RECORD (n VARCHAR2(25), id NUMBER); BEGIN FOR r r_t IN VALUES OF (EXECUTE IMMEDIATE 'SELECT n, id FROM t') WHEN r.id < 103 LOOP NULL; END LOOP; END;"
+        note: "Taken from the PL/SQL FOR LOOP statement (and iterator) syntax on the cited page (values of dynamic sql); none of the reference parsers implements this Oracle syntax."
       - id: values_of_sql_statement
         sql: "BEGIN FOR r t%ROWTYPE IN VALUES OF (SELECT * FROM t) LOOP NULL; END LOOP; END;"
+        note: "Taken from the PL/SQL FOR LOOP statement (and iterator) syntax on the cited page (values of sql statement); none of the reference parsers implements this Oracle syntax."
       - id: labeled_qualified_index
         sql: "BEGIN <<outer>> FOR i IN 1 .. 3 LOOP <<inner>> FOR i IN 1 .. 3 LOOP x := outer.i + inner.i; END LOOP inner; END LOOP outer; END;"
+        note: "Taken from the PL/SQL FOR LOOP statement (and iterator) syntax on the cited page (labeled qualified index); none of the reference parsers implements this Oracle syntax."
     examples:
       - |-
         BEGIN
@@ -3764,6 +4134,7 @@ statements:
         sql: "BEGIN LOOP x := x + 1; EXIT WHEN x > 3; END LOOP; END;"
       - id: exit_label_when
         sql: "BEGIN <<l>> LOOP EXIT l WHEN x > 3; END LOOP l; END;"
+        note: "Taken from the PL/SQL EXIT statement syntax on the cited page (exit label when); none of the reference parsers implements this Oracle syntax."
     examples:
       - |-
         DECLARE
@@ -3805,6 +4176,7 @@ statements:
         sql: "BEGIN LOOP x := x + 1; CONTINUE WHEN x < 3; EXIT WHEN x = 5; END LOOP; END;"
       - id: continue_label_when
         sql: "BEGIN <<o>> FOR i IN 1 .. 3 LOOP FOR j IN 1 .. 3 LOOP CONTINUE o WHEN j = 2; END LOOP; END LOOP o; END;"
+        note: "Taken from the PL/SQL CONTINUE statement syntax on the cited page (continue label when); none of the reference parsers implements this Oracle syntax."
     examples:
       - |-
         DECLARE
@@ -3829,8 +4201,10 @@ statements:
     probes:
       - id: goto_label
         sql: "BEGIN IF x = 0 THEN GOTO done; END IF; x := 1; <<done>> NULL; END;"
+        note: "Taken from the PL/SQL GOTO statement syntax on the cited page (goto label); none of the reference parsers implements this Oracle syntax."
       - id: goto_out_of_loop
         sql: "BEGIN FOR j IN 1 .. 10 LOOP IF j = 5 THEN GOTO after_loop; END IF; END LOOP; <<after_loop>> x := 1; END;"
+        note: "Taken from the PL/SQL GOTO statement syntax on the cited page (goto out of loop); none of the reference parsers implements this Oracle syntax."
     examples:
       - |-
         DECLARE
@@ -3888,6 +4262,7 @@ statements:
         sql: "DECLARE CURSOR c1 (j VARCHAR2, w NUMBER) IS SELECT * FROM t WHERE job = j AND sal > w; BEGIN FOR r IN c1('CLERK', 3000) LOOP NULL; END LOOP; END;"
       - id: labeled
         sql: "BEGIN <<l>> FOR r IN (SELECT c FROM t) LOOP EXIT l WHEN r.c IS NULL; END LOOP l; END;"
+        note: "Taken from the PL/SQL cursor FOR LOOP statement syntax on the cited page (labeled); none of the reference parsers implements this Oracle syntax."
     examples:
       - |-
         BEGIN
@@ -4134,6 +4509,7 @@ statements:
         sql: "DECLARE cv SYS_REFCURSOR; s VARCHAR2(200) := 'SELECT * FROM t WHERE job = :j'; BEGIN OPEN cv FOR s USING 'MANAGER'; END;"
       - id: dynamic_literal_using_modes
         sql: "DECLARE cv SYS_REFCURSOR; BEGIN OPEN cv FOR 'SELECT c FROM t WHERE a = :1 AND b = :2' USING IN 1, x; END;"
+        note: "Taken from the PL/SQL OPEN FOR statement syntax on the cited page (dynamic literal using modes); none of the reference parsers implements this Oracle syntax."
       - id: host_cursor_variable
         sql: "BEGIN OPEN :hcv FOR SELECT c FROM t; END;"
     examples:
@@ -4185,8 +4561,10 @@ statements:
         sql: "BEGIN UPDATE t SET c = 1 WHERE d = 2; IF SQL%NOTFOUND THEN INSERT INTO t VALUES (1, 2); ELSIF SQL%FOUND AND NOT SQL%ISOPEN THEN NULL; END IF; END;"
       - id: bulk_rowcount
         sql: "DECLARE TYPE nt IS TABLE OF NUMBER; ids nt := nt(1, 2); BEGIN FORALL i IN 1 .. 2 DELETE FROM t WHERE id = ids(i); x := SQL%BULK_ROWCOUNT(1); END;"
+        note: "Taken from the PL/SQL implicit cursor attribute (SQL%) syntax on the cited page (bulk rowcount); none of the reference parsers implements this Oracle syntax."
       - id: bulk_exceptions
         sql: "BEGIN FOR i IN 1 .. SQL%BULK_EXCEPTIONS.COUNT LOOP x := SQL%BULK_EXCEPTIONS(i).ERROR_INDEX; y := SQL%BULK_EXCEPTIONS(i).ERROR_CODE; END LOOP; END;"
+        note: "Taken from the PL/SQL implicit cursor attribute (SQL%) syntax on the cited page (bulk exceptions); none of the reference parsers implements this Oracle syntax."
 
   - id: plsql_select_into_statement
     name: PL/SQL SELECT INTO statement
@@ -4234,18 +4612,23 @@ statements:
         sql: "DECLARE TYPE nt IS TABLE OF NUMBER; ids nt := nt(1, 2); BEGIN FORALL i IN 1 .. 2 UPDATE t SET c = c * 1.1 WHERE id = ids(i); END;"
       - id: save_exceptions
         sql: "DECLARE TYPE nt IS TABLE OF NUMBER; ids nt := nt(1, 2); BEGIN FORALL i IN 1 .. 2 SAVE EXCEPTIONS DELETE FROM t WHERE id = ids(i); END;"
+        note: "Taken from the PL/SQL FORALL statement syntax on the cited page (save exceptions); none of the reference parsers implements this Oracle syntax."
       - id: indices_of
         sql: "DECLARE TYPE nt IS TABLE OF NUMBER; ids nt := nt(1, 2, 3); BEGIN ids.DELETE(2); FORALL i IN INDICES OF ids DELETE FROM t WHERE id = ids(i); END;"
+        note: "Taken from the PL/SQL FORALL statement syntax on the cited page (indices of); none of the reference parsers implements this Oracle syntax."
       - id: indices_of_between
         sql: "DECLARE TYPE nt IS TABLE OF NUMBER; ids nt := nt(1, 2, 3); BEGIN FORALL i IN INDICES OF ids BETWEEN 1 AND 2 DELETE FROM t WHERE id = ids(i); END;"
+        note: "Taken from the PL/SQL FORALL statement syntax on the cited page (indices of between); none of the reference parsers implements this Oracle syntax."
       - id: values_of
         sql: "DECLARE TYPE nt IS TABLE OF NUMBER; TYPE ix IS TABLE OF PLS_INTEGER INDEX BY PLS_INTEGER; ids nt := nt(1, 2, 3); k ix; BEGIN k(1) := 3; FORALL i IN VALUES OF k DELETE FROM t WHERE id = ids(i); END;"
       - id: execute_immediate
         sql: "DECLARE TYPE nt IS TABLE OF NUMBER; ids nt := nt(1, 2); BEGIN FORALL i IN 1 .. 2 EXECUTE IMMEDIATE 'DELETE FROM t WHERE id = :1' USING ids(i); END;"
+        note: "Taken from the PL/SQL FORALL statement syntax on the cited page (execute immediate); none of the reference parsers implements this Oracle syntax."
       - id: returning_bulk_collect
         sql: "DECLARE TYPE nt IS TABLE OF NUMBER; ids nt := nt(1, 2); out_c nt; BEGIN FORALL i IN 1 .. 2 DELETE FROM t WHERE id = ids(i) RETURNING c BULK COLLECT INTO out_c; END;"
       - id: host_arrays
         sql: "BEGIN FORALL i IN :lower .. :upper DELETE FROM t WHERE d = :depts(i); END;"
+        note: "Taken from the PL/SQL FORALL statement syntax on the cited page (host arrays); none of the reference parsers implements this Oracle syntax."
     examples:
       - |-
         BEGIN
@@ -4298,6 +4681,7 @@ statements:
     probes:
       - id: select_bulk_collect
         sql: "DECLARE TYPE nt IS TABLE OF NUMBER; a nt; BEGIN SELECT c BULK COLLECT INTO a FROM t SAMPLE (10); END;"
+        note: "Taken from the PL/SQL BULK COLLECT clause syntax on the cited page (select bulk collect); none of the reference parsers implements this Oracle syntax."
       - id: fetch_bulk_collect_limit
         sql: "DECLARE TYPE nt IS TABLE OF NUMBER INDEX BY PLS_INTEGER; a nt; CURSOR c1 IS SELECT c FROM t; BEGIN OPEN c1; LOOP FETCH c1 BULK COLLECT INTO a LIMIT 10; EXIT WHEN c1%NOTFOUND; END LOOP; CLOSE c1; END;"
       - id: execute_immediate_bulk_collect
@@ -4521,6 +4905,7 @@ statements:
         sql: "BEGIN NULL; EXCEPTION WHEN OTHERS THEN ROLLBACK; RAISE; END;"
       - id: qualified_exception
         sql: "BEGIN RAISE pkg.my_error; END;"
+        note: "Taken from the PL/SQL RAISE statement syntax on the cited page (qualified exception); none of the reference parsers implements this Oracle syntax."
       - id: raise_application_error
         sql: "BEGIN RAISE_APPLICATION_ERROR(-20000, 'Account past due.'); END;"
     examples:
@@ -4621,8 +5006,10 @@ statements:
     probes:
       - id: pipe_row
         sql: "CREATE FUNCTION f RETURN num_tab PIPELINED IS BEGIN FOR i IN 1 .. 3 LOOP PIPE ROW (i); END LOOP; RETURN; END;"
+        note: "Taken from the PL/SQL PIPE ROW statement syntax on the cited page (pipe row); none of the reference parsers implements this Oracle syntax."
       - id: pipe_row_record
         sql: "CREATE FUNCTION f (c SYS_REFCURSOR) RETURN rec_tab PIPELINED IS r rec_t; BEGIN LOOP FETCH c INTO r; EXIT WHEN c%NOTFOUND; PIPE ROW (r); END LOOP; RETURN; END;"
+        note: "Taken from the PL/SQL PIPE ROW statement syntax on the cited page (pipe row record); none of the reference parsers implements this Oracle syntax."
 
   - id: plsql_autonomous_transaction_pragma
     name: PL/SQL AUTONOMOUS_TRANSACTION pragma
@@ -4702,8 +5089,10 @@ statements:
     probes:
       - id: set_row
         sql: "DECLARE r t%ROWTYPE; BEGIN UPDATE t SET ROW = r WHERE id = r.id; END;"
+        note: "Documented Oracle 26ai syntax (set row) from the PL/SQL UPDATE statement extensions (SET ROW, CURRENT OF) page; the reference parsers have no Oracle grammar for it."
       - id: where_current_of
         sql: "DECLARE CURSOR c IS SELECT c FROM t FOR UPDATE; BEGIN FOR r IN c LOOP UPDATE t SET c = r.c * 2 WHERE CURRENT OF c; END LOOP; END;"
+        note: "Taken from the PL/SQL UPDATE statement extensions (SET ROW, CURRENT OF) syntax on the cited page (where current of); none of the reference parsers implements this Oracle syntax."
     examples:
       - |-
         DECLARE
@@ -4734,6 +5123,7 @@ statements:
     probes:
       - id: where_current_of
         sql: "DECLARE CURSOR c IS SELECT c FROM t FOR UPDATE; BEGIN FOR r IN c LOOP IF r.c < 0 THEN DELETE FROM t WHERE CURRENT OF c; END IF; END LOOP; END;"
+        note: "Taken from the PL/SQL DELETE statement extension (CURRENT OF) syntax on the cited page (where current of); none of the reference parsers implements this Oracle syntax."
 
   - id: plsql_function_definition
     name: PL/SQL function declaration and definition (nested)
@@ -4777,3 +5167,953 @@ statements:
         sql: "DECLARE PROCEDURE p (s NUMBER) IS bonus NUMBER := 0; updated VARCHAR2(3) := 'No'; BEGIN IF s > 0 THEN bonus := s / 4; END IF; END p; BEGIN p(100); END;"
       - id: properties
         sql: "DECLARE PROCEDURE p AUTHID CURRENT_USER IS BEGIN NULL; END; BEGIN p; END;"
+
+expressions:
+  - id: text_literals
+    name: Text literals
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Literals.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT 'Hello', 'Jackie''s raincoat' FROM DUAL;"
+      - id: national
+        sql: "SELECT N'nchar literal', n'x' FROM DUAL;"
+      - id: q_quote_brackets
+        sql: "SELECT q'[It's finished]', q'{SELECT * FROM t WHERE c = 'x';}', q'<'So,' she said>' FROM DUAL;"
+        note: "Taken from the Text literals syntax on the cited page (q quote brackets); none of the reference parsers implements this Oracle syntax."
+      - id: q_quote_same_delimiter
+        sql: "SELECT q'!name LIKE '%DBMS_%%'!', Q'#x#' FROM DUAL;"
+        note: "Taken from the Text literals syntax on the cited page (q quote same delimiter); none of the reference parsers implements this Oracle syntax."
+      - id: nq_quote
+        sql: "SELECT nq'[nchar text]' FROM DUAL;"
+      - id: empty_string
+        sql: "SELECT '' FROM DUAL;"
+      - id: multiline
+        sql: |-
+          SELECT 'line one
+          line two' FROM DUAL;
+
+  - id: numeric_literals
+    name: Numeric literals
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Literals.html
+    tier: high
+    probes:
+      - id: integers
+        sql: "SELECT 7, +255, -1 FROM DUAL;"
+      - id: decimals
+        sql: "SELECT 6.34, 0.5, .5, 5. FROM DUAL;"
+      - id: scientific
+        sql: "SELECT 25e-03, 1.2E3, 1E+10 FROM DUAL;"
+      - id: binary_float_double_suffix
+        sql: "SELECT 25f, +6.34F, 0.5d, -1D FROM DUAL;"
+      - id: special_float_constants
+        sql: "SELECT BINARY_FLOAT_NAN, BINARY_DOUBLE_INFINITY FROM DUAL;"
+
+  - id: datetime_literals
+    name: Datetime literals
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Literals.html
+    tier: high
+    probes:
+      - id: date
+        sql: "SELECT DATE '1998-12-25' FROM DUAL;"
+      - id: timestamp
+        sql: "SELECT TIMESTAMP '1997-01-31 09:26:50.124' FROM DUAL;"
+      - id: timestamp_with_offset
+        sql: "SELECT TIMESTAMP '1997-01-31 09:26:56.66 +02:00' FROM DUAL;"
+      - id: timestamp_with_region
+        sql: "SELECT TIMESTAMP '1999-10-29 01:30:00 US/Pacific PDT' FROM DUAL;"
+      - id: in_predicate
+        sql: "SELECT c FROM t WHERE d >= DATE '2024-01-01' AND ts < TIMESTAMP '2024-01-01 00:00:00';"
+
+  - id: interval_literals
+    name: Interval literals
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Literals.html
+    tier: high
+    probes:
+      - id: year_to_month
+        sql: "SELECT INTERVAL '123-2' YEAR(3) TO MONTH FROM DUAL;"
+      - id: year_month_single
+        sql: "SELECT INTERVAL '4' YEAR, INTERVAL '50' MONTH, INTERVAL '300' MONTH(3) FROM DUAL;"
+      - id: day_to_second
+        sql: "SELECT INTERVAL '4 5:12:10.222' DAY TO SECOND(3) FROM DUAL;"
+      - id: day_to_minute_hour
+        sql: "SELECT INTERVAL '4 5:12' DAY TO MINUTE, INTERVAL '400 5' DAY(3) TO HOUR FROM DUAL;"
+      - id: hour_minute_second
+        sql: "SELECT INTERVAL '11:12:10.2222222' HOUR TO SECOND(7), INTERVAL '10:22' MINUTE TO SECOND, INTERVAL '10' HOUR, INTERVAL '40' MINUTE FROM DUAL;"
+      - id: interval_arithmetic
+        sql: "SELECT INTERVAL '5-3' YEAR TO MONTH + INTERVAL '20' MONTH, SYSDATE + INTERVAL '1' DAY FROM DUAL;"
+
+  - id: boolean_literals
+    name: BOOLEAN values and literals
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Data-Types.html
+    tier: high
+    probes:
+      - id: true_false_null
+        sql: "INSERT INTO t VALUES (1, TRUE, NULL);"
+      - id: lowercase
+        sql: "INSERT INTO t VALUES (2, false, true);"
+      - id: string_and_number_forms
+        sql: "INSERT INTO t VALUES (3, 'yes', 0);"
+      - id: boolean_column_predicate
+        sql: "SELECT * FROM t WHERE c1 AND NOT c2 OR c1 = TRUE;"
+      - id: select_boolean_expression
+        sql: "SELECT c > 0 AS positive FROM t;"
+    examples:
+      - "CREATE TABLE example (id NUMBER, c1 BOOLEAN, c2 BOOL);"
+      - "INSERT INTO example VALUES (1, TRUE, NULL);"
+      - "INSERT INTO example VALUES (3, 0, 'off');"
+      - "SELECT * FROM example WHERE NOT c2;"
+      - "SELECT * FROM example WHERE c1 AND TRUE;"
+
+  - id: builtin_data_types
+    name: Oracle built-in data types
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Data-Types.html
+    tier: high
+    probes:
+      - id: character
+        sql: "CREATE TABLE t (a CHAR, b CHAR(10 BYTE), c VARCHAR2(20 CHAR), d NCHAR(5), e NVARCHAR2(30));"
+      - id: number
+        sql: "CREATE TABLE t (a NUMBER, b NUMBER(10), c NUMBER(8,2), d NUMBER(*,0), e FLOAT, f FLOAT(126), g BINARY_FLOAT, h BINARY_DOUBLE);"
+      - id: long_raw
+        sql: "CREATE TABLE t (a LONG, b RAW(16));"
+      - id: long_raw_type
+        sql: "CREATE TABLE t (a LONG RAW);"
+        note: "Documented Oracle 26ai syntax (long raw type) from the Oracle built-in data types page; the reference parsers have no Oracle grammar for it."
+      - id: datetime
+        sql: "CREATE TABLE t (a DATE, b TIMESTAMP, c TIMESTAMP(3), d TIMESTAMP WITH TIME ZONE, e TIMESTAMP(6) WITH LOCAL TIME ZONE);"
+      - id: interval
+        sql: "CREATE TABLE t (a INTERVAL YEAR TO MONTH, b INTERVAL YEAR(3) TO MONTH, c INTERVAL DAY TO SECOND, d INTERVAL DAY(2) TO SECOND(6));"
+      - id: lob
+        sql: "CREATE TABLE t (a BLOB, b CLOB, c NCLOB, d BFILE);"
+      - id: rowid
+        sql: "CREATE TABLE t (a ROWID, b UROWID, c UROWID(4000));"
+      - id: json
+        sql: "CREATE TABLE t (a JSON, b JSON(OBJECT), c JSON(ARRAY));"
+      - id: boolean
+        sql: "CREATE TABLE t (a BOOLEAN, b BOOL);"
+      - id: vector
+        sql: "CREATE TABLE t (a VECTOR, b VECTOR(768, FLOAT32), c VECTOR(*, INT8), d VECTOR(1024, FLOAT64, SPARSE), e VECTOR(*, *));"
+
+  - id: ansi_data_types
+    name: ANSI-supported data types
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Data-Types.html
+    tier: high
+    probes:
+      - id: character
+        sql: "CREATE TABLE t (a CHARACTER VARYING(10), b CHAR VARYING(10), c NCHAR VARYING(10), d VARCHAR(10), e NATIONAL CHARACTER VARYING(10), f NATIONAL CHAR(10), g CHARACTER(5));"
+        note: "Taken from the ANSI-supported data types syntax on the cited page (character); none of the reference parsers implements this Oracle syntax."
+      - id: numeric
+        sql: "CREATE TABLE t (a NUMERIC(10,2), b DECIMAL(5), c DEC, d INTEGER, e INT, f SMALLINT, g FLOAT(53), h DOUBLE PRECISION, i REAL);"
+
+  - id: user_defined_and_supplied_types
+    name: User-defined and Oracle-supplied types
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Data-Types.html
+    tier: medium
+    probes:
+      - id: object_and_ref
+        sql: "CREATE TABLE t (a s.person_t, b REF person_t);"
+        note: "Taken from the User-defined and Oracle-supplied types syntax on the cited page (object and ref); none of the reference parsers implements this Oracle syntax."
+      - id: supplied_types
+        sql: "CREATE TABLE t (a XMLType, b SYS.AnyData, c SDO_GEOMETRY, d URIType);"
+      - id: cast_to_object_type
+        sql: "SELECT CAST(c AS s.typ) FROM t;"
+
+  - id: identifiers
+    name: Database object names and qualifiers
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Database-Object-Names-and-Qualifiers.html
+    tier: high
+    probes:
+      - id: nonquoted_special_chars
+        sql: "SELECT emp_id$, last#name FROM hr.t_1;"
+      - id: quoted
+        sql: "SELECT \"Last Name\", \"select\" FROM \"My Table\";"
+      - id: quoted_qualified
+        sql: "SELECT \"x\".\"c\" FROM \"S\".\"T\" \"x\";"
+      - id: schema_object_dblink
+        sql: "SELECT s.t.c FROM s.t@remote.example.com;"
+      - id: dblink_connect_qualifier
+        sql: "SELECT c FROM t@remote@hq;"
+      - id: nonreserved_keywords_as_names
+        sql: "SELECT name, type, level_id, value FROM data;"
+      - id: unicode_identifier
+        sql: "SELECT ünits FROM tab_ü;"
+
+  - id: comments_and_hints
+    name: Comments and hints
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Comments.html
+    tier: high
+    probes:
+      - id: line_comment
+        sql: |-
+          SELECT c -- a comment
+          FROM t;
+      - id: block_comment
+        sql: "SELECT /* comment */ c FROM t /* another\nline */;"
+      - id: hint_block
+        sql: "SELECT /*+ INDEX(t idx) LEADING(t u) */ c FROM t, u WHERE t.id = u.id;"
+      - id: hint_line
+        sql: |-
+          SELECT --+ FULL(t)
+          c FROM t;
+      - id: hint_query_block
+        sql: "SELECT /*+ QB_NAME(qb1) NO_UNNEST(@qb1) */ c FROM t;"
+      - id: hint_in_dml
+        sql: "DELETE /*+ PARALLEL(t 4) */ FROM t WHERE c = 1;"
+      - id: rem_style_not_sql
+        sql: |-
+          /* header
+             comment */
+          SELECT 1 FROM DUAL;
+
+  - id: pseudocolumns
+    name: Pseudocolumns
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ROWNUM-Pseudocolumn.html
+    tier: high
+    probes:
+      - id: rownum
+        sql: "SELECT c FROM t WHERE ROWNUM <= 10;"
+      - id: rowid
+        sql: "SELECT ROWID, c FROM t WHERE ROWID = :r;"
+      - id: hierarchical
+        sql: "SELECT LEVEL, CONNECT_BY_ISLEAF, CONNECT_BY_ISCYCLE FROM t START WITH pid IS NULL CONNECT BY NOCYCLE PRIOR id = pid;"
+      - id: sequence_nextval_currval
+        sql: "SELECT s.seq.NEXTVAL, seq.CURRVAL FROM DUAL;"
+      - id: sequence_over_dblink
+        sql: "SELECT seq.NEXTVAL@remote FROM DUAL;"
+      - id: ora_rowscn
+        sql: "SELECT ORA_ROWSCN, c FROM t;"
+      - id: version_query
+        sql: "SELECT VERSIONS_STARTSCN, VERSIONS_ENDTIME, VERSIONS_XID, VERSIONS_OPERATION FROM t VERSIONS BETWEEN SCN MINVALUE AND MAXVALUE;"
+        note: "Taken from the Pseudocolumns syntax on the cited page (version query); none of the reference parsers implements this Oracle syntax."
+      - id: column_value
+        sql: "SELECT COLUMN_VALUE FROM TABLE(num_tab_t(1, 2, 3));"
+      - id: object_value
+        sql: "SELECT OBJECT_VALUE FROM xml_tab;"
+
+  - id: arithmetic_operators
+    name: Arithmetic operators
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Arithmetic-Operators.html
+    tier: high
+    probes:
+      - id: binary
+        sql: "SELECT a + b, a - b, a * b, a / b FROM t;"
+      - id: unary
+        sql: "SELECT -a, +b, - -c FROM t;"
+      - id: precedence_parentheses
+        sql: "SELECT (a + b) * c / (d - 1) FROM t;"
+      - id: date_arithmetic
+        sql: "SELECT SYSDATE - 1, hire_date + 30, d2 - d1 FROM t;"
+      - id: double_minus_not_comment
+        sql: "SELECT 1 - -1 FROM DUAL;"
+
+  - id: concatenation_operator
+    name: Concatenation operator
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Concatenation-Operator.html
+    tier: high
+    probes:
+      - id: concat
+        sql: "SELECT first_name || ' ' || last_name FROM t;"
+      - id: concat_null
+        sql: "SELECT 'a' || NULL || c FROM t;"
+
+  - id: collate_operator
+    name: COLLATE operator
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/COLLATE-Operator.html
+    tier: medium
+    probes:
+      - id: collate_in_where
+        sql: "SELECT c FROM t WHERE c COLLATE BINARY_CI = 'abc';"
+      - id: collate_in_order_by
+        sql: "SELECT c FROM t ORDER BY c COLLATE GENERIC_M_CI;"
+
+  - id: hierarchical_operators
+    name: Hierarchical query operators (PRIOR, CONNECT_BY_ROOT)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Hierarchical-Query-Operators.html
+    tier: high
+    probes:
+      - id: prior
+        sql: "SELECT c FROM t CONNECT BY PRIOR id = pid AND PRIOR c IS NOT NULL;"
+      - id: connect_by_root
+        sql: "SELECT CONNECT_BY_ROOT last_name AS manager, SYS_CONNECT_BY_PATH(last_name, '/') AS path FROM t START WITH pid IS NULL CONNECT BY PRIOR id = pid;"
+
+  - id: multiset_operators
+    name: Multiset operators and collection functions
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Multiset-Operators.html
+    tier: medium
+    probes:
+      - id: multiset_except
+        sql: "SELECT a MULTISET EXCEPT DISTINCT b FROM t;"
+      - id: multiset_intersect
+        sql: "SELECT a MULTISET INTERSECT ALL b FROM t;"
+      - id: multiset_union
+        sql: "SELECT a MULTISET UNION b FROM t;"
+      - id: cast_multiset
+        sql: "SELECT CAST(MULTISET(SELECT c FROM u WHERE u.id = t.id) AS num_tab) FROM t;"
+      - id: collection_functions
+        sql: "SELECT CARDINALITY(a), SET(a), COLLECT(DISTINCT c ORDER BY c) FROM t GROUP BY a;"
+
+  - id: graph_table_operator
+    name: GRAPH_TABLE operator
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/graph_table-operator.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SELECT * FROM GRAPH_TABLE (g MATCH (a IS person) -[e IS friends]- (b IS person) WHERE a.name = 'John' COLUMNS (b.name));"
+        note: "Taken from the GRAPH_TABLE operator syntax on the cited page (basic); none of the reference parsers implements this Oracle syntax."
+      - id: directed_edge
+        sql: "SELECT * FROM GRAPH_TABLE (g MATCH (a IS person) -[e IS knows]-> (b) COLUMNS (a.name AS a_name, b.name AS b_name));"
+        note: "Taken from the GRAPH_TABLE operator syntax on the cited page (directed edge); none of the reference parsers implements this Oracle syntax."
+      - id: quantified_path
+        sql: "SELECT * FROM GRAPH_TABLE (g MATCH (a) -[e]->{1,3} (b) COLUMNS (a.id, b.id AS b_id));"
+        note: "Taken from the GRAPH_TABLE operator syntax on the cited page (quantified path); none of the reference parsers implements this Oracle syntax."
+    examples:
+      - |-
+        SELECT *
+        FROM GRAPH_TABLE ( students_graph
+          MATCH (a IS person) -[e IS friends]- (b IS person)
+          WHERE a.name = 'John'
+          COLUMNS (b.name)
+        );
+
+  - id: case_expressions
+    name: CASE expressions
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CASE-Expressions.html
+    tier: high
+    probes:
+      - id: simple
+        sql: "SELECT CASE c WHEN 1 THEN 'one' WHEN 2 THEN 'two' ELSE 'many' END FROM t;"
+      - id: searched
+        sql: "SELECT CASE WHEN c < 0 THEN 'neg' WHEN c IS NULL THEN 'null' ELSE 'pos' END AS s FROM t;"
+      - id: no_else
+        sql: "SELECT CASE WHEN c > 0 THEN 1 END FROM t;"
+      - id: nested
+        sql: "SELECT CASE WHEN a > 0 THEN CASE b WHEN 1 THEN 'x' END ELSE 'y' END FROM t;"
+
+  - id: cursor_expressions
+    name: CURSOR expressions
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CURSOR-Expressions.html
+    tier: medium
+    probes:
+      - id: in_select_list
+        sql: "SELECT d.name, CURSOR(SELECT e.name FROM e WHERE e.did = d.id) FROM d;"
+      - id: as_function_argument
+        sql: "SELECT f(CURSOR(SELECT c FROM t)) FROM DUAL;"
+
+  - id: datetime_expressions
+    name: Datetime expressions (AT TIME ZONE, AT LOCAL)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Datetime-Expressions.html
+    tier: high
+    probes:
+      - id: at_time_zone_offset
+        sql: "SELECT ts AT TIME ZONE '-05:00' FROM t;"
+      - id: at_time_zone_region
+        sql: "SELECT FROM_TZ(CAST(d AS TIMESTAMP), 'America/New_York') AT TIME ZONE 'America/Los_Angeles' FROM t;"
+      - id: at_time_zone_keywords
+        sql: "SELECT ts AT TIME ZONE DBTIMEZONE, ts AT TIME ZONE SESSIONTIMEZONE FROM t;"
+      - id: at_local
+        sql: "SELECT ts AT LOCAL FROM t;"
+        note: "Taken from the Datetime expressions (AT TIME ZONE, AT LOCAL) syntax on the cited page (at local); none of the reference parsers implements this Oracle syntax."
+
+  - id: interval_expressions
+    name: Interval expressions
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Interval-Expressions.html
+    tier: medium
+    probes:
+      - id: day_to_second
+        sql: "SELECT (SYSTIMESTAMP - order_date) DAY(9) TO SECOND FROM orders;"
+      - id: year_to_month
+        sql: "SELECT (SYSDATE - hire_date) YEAR TO MONTH FROM t;"
+
+  - id: json_object_access
+    name: JSON object access expressions (dot notation)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/JSON-Object-Access-Expressions.html
+    tier: high
+    probes:
+      - id: dot_notation
+        sql: "SELECT po.doc.PONumber, po.doc.ShippingInstructions.Address.city FROM j_purchaseorder po;"
+      - id: array_step
+        sql: "SELECT po.doc.LineItems[0].Part.UPCCode FROM j_purchaseorder po;"
+      - id: array_wildcard_range
+        sql: "SELECT po.doc.LineItems[*].Quantity, po.doc.LineItems[0 to 2] FROM j_purchaseorder po;"
+        note: "Taken from the JSON object access expressions (dot notation) syntax on the cited page (array wildcard range); none of the reference parsers implements this Oracle syntax."
+      - id: item_method
+        sql: "SELECT po.doc.PONumber.number(), po.doc.Reference.string() FROM j_purchaseorder po;"
+      - id: quoted_key
+        sql: "SELECT po.doc.\"Special Instructions\" FROM j_purchaseorder po;"
+
+  - id: object_access_expressions
+    name: Object access expressions
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Object-Access-Expressions.html
+    tier: medium
+    probes:
+      - id: attribute
+        sql: "SELECT c.cust_address.city FROM customers c;"
+      - id: method_call
+        sql: "SELECT x.area(), x.get_name() FROM rect_tab x WHERE x.area() > 100;"
+      - id: value_function
+        sql: "SELECT VALUE(p) FROM persons p;"
+      - id: deref_ref
+        sql: "SELECT DEREF(e.mgr_ref), REF(e) FROM emp_tab e;"
+
+  - id: placeholder_expressions
+    name: Placeholder (bind variable) expressions
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Placeholder-Expressions.html
+    tier: high
+    probes:
+      - id: named
+        sql: "SELECT c FROM t WHERE id = :emp_id;"
+      - id: numbered
+        sql: "SELECT c FROM t WHERE a = :1 AND b = :2;"
+        note: "Taken from the Placeholder (bind variable) expressions syntax on the cited page (numbered); none of the reference parsers implements this Oracle syntax."
+      - id: indicator
+        sql: "SELECT c INTO :x:ind FROM t WHERE id = 1;"
+        note: "Taken from the Placeholder (bind variable) expressions syntax on the cited page (indicator); none of the reference parsers implements this Oracle syntax."
+
+  - id: scalar_subquery_expressions
+    name: Scalar subquery expressions
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Scalar-Subquery-Expressions.html
+    tier: high
+    probes:
+      - id: select_list
+        sql: "SELECT d.name, (SELECT COUNT(*) FROM e WHERE e.did = d.id) AS n FROM d;"
+      - id: in_expression
+        sql: "SELECT c FROM t WHERE c > (SELECT AVG(c) FROM t) * 2;"
+
+  - id: type_constructor_expressions
+    name: Type constructor expressions
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Type-Constructor-Expressions.html
+    tier: medium
+    probes:
+      - id: constructor
+        sql: "INSERT INTO persons VALUES (person_t('Bob', 1234));"
+      - id: new_constructor
+        sql: "SELECT NEW s.person_t('Bob', 1234) FROM DUAL;"
+        note: "Taken from the Type constructor expressions syntax on the cited page (new constructor); none of the reference parsers implements this Oracle syntax."
+      - id: collection_constructor
+        sql: "SELECT * FROM TABLE(num_tab(1, 2, 3));"
+
+  - id: expression_lists
+    name: Expression lists
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Expression-Lists.html
+    tier: high
+    probes:
+      - id: tuple_in_list
+        sql: "SELECT * FROM t WHERE (a, b) IN ((1, 2), (3, 4));"
+      - id: tuple_in_subquery
+        sql: "SELECT * FROM t WHERE (a, b) IN (SELECT a, b FROM u);"
+      - id: tuple_comparison
+        sql: "SELECT * FROM t WHERE (a, b) = ((SELECT a, b FROM u WHERE id = 1));"
+
+  - id: boolean_expressions
+    name: Boolean expressions
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/boolean-expressions.html
+    tier: high
+    probes:
+      - id: comparison_in_select_list
+        sql: "SELECT a > b, a = b AND c IS NULL FROM t;"
+      - id: boolean_column_in_where
+        sql: "SELECT * FROM t WHERE flag;"
+      - id: boolean_in_order_by
+        sql: "SELECT * FROM t ORDER BY flag DESC;"
+
+  - id: analytic_view_measure_expressions
+    name: Analytic view measure expressions
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/analytic-view-measure-expressions.html
+    tier: low
+    probes:
+      - id: lag_hierarchy
+        sql: "SELECT h.member_name, m2 FROM ANALYTIC VIEW (USING av HIERARCHIES (h) ADD MEASURES (m2 AS (LAG(m) OVER (HIERARCHY h OFFSET 1)))) x;"
+        note: "Taken from the Analytic view measure expressions syntax on the cited page (lag hierarchy); none of the reference parsers implements this Oracle syntax."
+      - id: share_of
+        sql: "SELECT h.member_name, s FROM ANALYTIC VIEW (USING av HIERARCHIES (h) ADD MEASURES (s AS (SHARE_OF(m HIERARCHY h PARENT)))) x;"
+        note: "Taken from the Analytic view measure expressions syntax on the cited page (share of); none of the reference parsers implements this Oracle syntax."
+
+  - id: comparison_conditions
+    name: Comparison conditions
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Comparison-Conditions.html
+    tier: high
+    probes:
+      - id: operators
+        sql: "SELECT * FROM t WHERE a = 1 AND b <> 2 AND c != 3 AND d ^= 4 AND e < 5 AND f <= 6 AND g > 7 AND h >= 8;"
+      - id: any_some_all_list
+        sql: "SELECT * FROM t WHERE a = ANY (1, 2, 3) AND b > SOME (1, 2) AND c < ALL (5, 6);"
+      - id: any_all_subquery
+        sql: "SELECT * FROM t WHERE a >= ALL (SELECT a FROM u) OR b = ANY (SELECT b FROM u);"
+
+  - id: floating_point_conditions
+    name: Floating-point conditions
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Floating-Point-Conditions.html
+    tier: medium
+    probes:
+      - id: is_nan_infinite
+        sql: "SELECT * FROM t WHERE f IS NOT NAN AND d IS NOT INFINITE OR f IS NAN OR d IS INFINITE;"
+
+  - id: logical_conditions
+    name: Logical conditions
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Logical-Conditions.html
+    tier: high
+    probes:
+      - id: and_or_not
+        sql: "SELECT * FROM t WHERE NOT (a = 1 AND b = 2) OR c = 3;"
+      - id: not_in_parentheses
+        sql: "SELECT * FROM t WHERE NOT a > 0;"
+
+  - id: model_conditions
+    name: Model conditions and functions
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Model-Conditions.html
+    tier: low
+    probes:
+      - id: is_any_is_present
+        sql: "SELECT y, s FROM t MODEL DIMENSION BY (y) MEASURES (s) RULES (s[y IS ANY] = CASE WHEN s[CV()] IS PRESENT THEN s[CV()] ELSE 0 END);"
+        note: "Documented Oracle 26ai syntax (is any is present) from the Model conditions and functions page; the reference parsers have no Oracle grammar for it."
+      - id: iteration_number_previous
+        sql: "SELECT y, s FROM t MODEL DIMENSION BY (y) MEASURES (s) RULES ITERATE (5) UNTIL (PREVIOUS(s[1]) = s[1]) (s[1] = s[1] + ITERATION_NUMBER);"
+        note: "Documented Oracle 26ai syntax (iteration number previous) from the Model conditions and functions page; the reference parsers have no Oracle grammar for it."
+
+  - id: multiset_conditions
+    name: Multiset conditions
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Multiset-Conditions.html
+    tier: medium
+    probes:
+      - id: is_a_set
+        sql: "SELECT * FROM t WHERE nt IS A SET AND nt2 IS NOT A SET;"
+        note: "Taken from the Multiset conditions syntax on the cited page (is a set); none of the reference parsers implements this Oracle syntax."
+      - id: is_empty
+        sql: "SELECT * FROM t WHERE nt IS NOT EMPTY;"
+      - id: member_of
+        sql: "SELECT * FROM t WHERE 'x' MEMBER OF nt AND 'y' NOT MEMBER nt;"
+        note: "Taken from the Multiset conditions syntax on the cited page (member of); none of the reference parsers implements this Oracle syntax."
+      - id: submultiset
+        sql: "SELECT * FROM t WHERE nt1 SUBMULTISET OF nt2 OR nt1 NOT SUBMULTISET nt3;"
+        note: "Taken from the Multiset conditions syntax on the cited page (submultiset); none of the reference parsers implements this Oracle syntax."
+
+  - id: pattern_matching_conditions
+    name: Pattern-matching conditions (LIKE, REGEXP_LIKE)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Pattern-matching-Conditions.html
+    tier: high
+    probes:
+      - id: like
+        sql: "SELECT * FROM t WHERE c LIKE 'SM%' AND d NOT LIKE '_a%';"
+      - id: like_escape
+        sql: "SELECT * FROM t WHERE c LIKE 'SA\\_%' ESCAPE '\\';"
+      - id: likec_like2_like4
+        sql: "SELECT * FROM t WHERE c LIKEC 'a%' OR c LIKE2 'b%' OR c LIKE4 'c%';"
+        note: "Taken from the Pattern-matching conditions (LIKE, REGEXP_LIKE) syntax on the cited page (likec like2 like4); none of the reference parsers implements this Oracle syntax."
+      - id: regexp_like
+        sql: "SELECT * FROM t WHERE REGEXP_LIKE (c, '^Ste(v|ph)en$', 'i');"
+      - id: not_regexp_like
+        sql: "SELECT * FROM t WHERE NOT REGEXP_LIKE (c, '[0-9]');"
+
+  - id: null_conditions
+    name: Null conditions
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Null-Conditions.html
+    tier: high
+    probes:
+      - id: is_null
+        sql: "SELECT * FROM t WHERE c IS NULL OR d IS NOT NULL;"
+
+  - id: xml_conditions
+    name: XML conditions (EQUALS_PATH, UNDER_PATH)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/XML-Conditions.html
+    tier: low
+    probes:
+      - id: equals_path
+        sql: "SELECT ANY_PATH FROM RESOURCE_VIEW WHERE EQUALS_PATH(res, '/sys/schemas/OE/www.example.com') = 1;"
+      - id: under_path
+        sql: "SELECT ANY_PATH FROM RESOURCE_VIEW WHERE UNDER_PATH(res, '/sys/schemas/OE/www.example.com') = 1;"
+
+  - id: sql_json_conditions
+    name: SQL/JSON conditions (IS JSON, JSON_EXISTS, JSON_EQUAL, JSON_TEXTCONTAINS)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/is-json-condition.html
+    tier: high
+    probes:
+      - id: is_json
+        sql: "SELECT * FROM t WHERE doc IS JSON;"
+      - id: is_not_json_strict
+        sql: "SELECT * FROM t WHERE doc IS NOT JSON (STRICT);"
+        note: "Documented Oracle 26ai syntax (is not json strict) from the SQL/JSON conditions (IS JSON, JSON_EXISTS, JSON_EQUAL, JSON_TEXTCONTAINS) page; the reference parsers have no Oracle grammar for it."
+      - id: is_json_options
+        sql: "SELECT * FROM t WHERE doc IS JSON (LAX DISALLOW SCALARS WITH UNIQUE KEYS);"
+        note: "Taken from the SQL/JSON conditions (IS JSON, JSON_EXISTS, JSON_EQUAL, JSON_TEXTCONTAINS) syntax on the cited page (is json options); none of the reference parsers implements this Oracle syntax."
+      - id: is_json_type_modifier
+        sql: "SELECT * FROM t WHERE doc IS JSON OBJECT;"
+      - id: is_json_validate
+        sql: "SELECT * FROM t WHERE doc IS JSON VALIDATE '{\"type\": \"object\"}';"
+        note: "Taken from the SQL/JSON conditions (IS JSON, JSON_EXISTS, JSON_EQUAL, JSON_TEXTCONTAINS) syntax on the cited page (is json validate); none of the reference parsers implements this Oracle syntax."
+      - id: json_exists
+        sql: "SELECT * FROM t WHERE JSON_EXISTS(doc, '$.LineItems[*]?(@.Part.UnitPrice > $p)' PASSING 10 AS \"p\" FALSE ON ERROR);"
+      - id: json_equal
+        sql: "SELECT * FROM t WHERE JSON_EQUAL(doc1, doc2);"
+      - id: json_textcontains
+        sql: "SELECT * FROM t WHERE JSON_TEXTCONTAINS(doc, '$.ShippingInstructions.Address', 'Oracle');"
+
+  - id: between_exists_in_conditions
+    name: BETWEEN, EXISTS and IN conditions
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/IN-Condition.html
+    tier: high
+    probes:
+      - id: between
+        sql: "SELECT * FROM t WHERE c BETWEEN 2000 AND 3000 AND d NOT BETWEEN 1 AND 5;"
+      - id: exists
+        sql: "SELECT * FROM d WHERE EXISTS (SELECT * FROM e WHERE e.did = d.id) AND NOT EXISTS (SELECT 1 FROM f WHERE f.id = d.id);"
+      - id: in_list
+        sql: "SELECT * FROM t WHERE c IN ('a', 'b') AND d NOT IN (1, 2);"
+      - id: in_subquery
+        sql: "SELECT * FROM t WHERE c IN (SELECT c FROM u WHERE u.k = 1);"
+
+  - id: is_of_type_condition
+    name: IS OF type condition
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/IS-OF-type-Condition.html
+    tier: low
+    probes:
+      - id: is_of_type
+        sql: "SELECT * FROM persons p WHERE VALUE(p) IS OF TYPE (employee_t);"
+      - id: is_of_only
+        sql: "SELECT * FROM persons p WHERE VALUE(p) IS OF (ONLY part_time_emp_t, s.student_t);"
+
+  - id: boolean_test_condition
+    name: Boolean test condition (IS TRUE, IS FALSE)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/boolean-test-condition.html
+    tier: high
+    probes:
+      - id: is_true_false
+        sql: "SELECT * FROM t WHERE flag IS TRUE OR other IS NOT FALSE;"
+      - id: expression_is_true
+        sql: "SELECT (a > b) IS NOT TRUE FROM t;"
+
+  - id: aggregate_functions
+    name: Aggregate function syntax
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Aggregate-Functions.html
+    tier: high
+    probes:
+      - id: count_star_distinct_all
+        sql: "SELECT COUNT(*), COUNT(DISTINCT c), COUNT(ALL c), SUM(UNIQUE d) FROM t;"
+        note: "Aggregate Functions page: DISTINCT and UNIQUE, which are synonymous, cause an aggregate function to consider only distinct values."
+      - id: filter_where
+        sql: "SELECT COUNT(*) FILTER (WHERE c > 0), SUM(d) FILTER (WHERE e = 'x') FROM t;"
+      - id: keep_dense_rank
+        sql: "SELECT d, MIN(s) KEEP (DENSE_RANK FIRST ORDER BY c), MAX(s) KEEP (DENSE_RANK LAST ORDER BY c DESC NULLS LAST) FROM t GROUP BY d;"
+      - id: within_group
+        sql: "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY s DESC), PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY s) FROM t;"
+      - id: hypothetical_rank
+        sql: "SELECT RANK(15500, .05) WITHIN GROUP (ORDER BY s, c) FROM t;"
+      - id: listagg
+        sql: "SELECT LISTAGG(c, '; ') WITHIN GROUP (ORDER BY d, c) FROM t;"
+      - id: listagg_distinct_overflow
+        sql: "SELECT LISTAGG(DISTINCT c, ',' ON OVERFLOW TRUNCATE '...' WITH COUNT) WITHIN GROUP (ORDER BY c) FROM t;"
+      - id: listagg_no_within_group
+        sql: "SELECT LISTAGG(c, ',') FROM t;"
+      - id: collect_order_by
+        sql: "SELECT COLLECT(DISTINCT c ORDER BY c) FROM t;"
+      - id: nested_aggregate
+        sql: "SELECT AVG(MAX(s)) FROM t GROUP BY d;"
+      - id: approximate_aggregates
+        sql: "SELECT APPROX_COUNT_DISTINCT(c), APPROX_MEDIAN(s), ANY_VALUE(d) FROM t;"
+      - id: boolean_aggregates
+        sql: "SELECT BOOLEAN_AND_AGG(flag), BOOLEAN_OR_AGG(flag), EVERY(c > 0) FROM t;"
+    examples:
+      - |-
+        SELECT LISTAGG(last_name, '; ')
+                 WITHIN GROUP (ORDER BY hire_date, last_name) "Emp_list",
+               MIN(hire_date) "Earliest"
+          FROM employees
+          WHERE department_id = 30;
+      - |-
+        SELECT department_id,
+               MIN(salary) KEEP (DENSE_RANK FIRST ORDER BY commission_pct) "Worst",
+               MAX(salary) KEEP (DENSE_RANK LAST ORDER BY commission_pct) "Best"
+          FROM employees
+          GROUP BY department_id
+          ORDER BY department_id;
+
+  - id: analytic_functions
+    name: Analytic function syntax (OVER, windowing)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Analytic-Functions.html
+    tier: high
+    probes:
+      - id: over_empty
+        sql: "SELECT c, SUM(s) OVER () FROM t;"
+      - id: partition_order
+        sql: "SELECT c, RANK() OVER (PARTITION BY d ORDER BY s DESC NULLS LAST) FROM t;"
+      - id: partition_parenthesized
+        sql: "SELECT ROW_NUMBER() OVER (PARTITION BY (d, e) ORDER BY s) FROM t;"
+      - id: rows_unbounded_preceding
+        sql: "SELECT SUM(s) OVER (ORDER BY d ROWS UNBOUNDED PRECEDING) FROM t;"
+      - id: rows_between
+        sql: "SELECT AVG(s) OVER (ORDER BY d ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;"
+      - id: range_interval
+        sql: "SELECT COUNT(*) OVER (ORDER BY d RANGE BETWEEN INTERVAL '30' DAY PRECEDING AND CURRENT ROW) FROM t;"
+      - id: range_unbounded_following
+        sql: "SELECT MAX(s) OVER (PARTITION BY c ORDER BY d RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM t;"
+      - id: groups_exclude
+        sql: "SELECT SUM(s) OVER (ORDER BY d GROUPS BETWEEN 1 PRECEDING AND 1 FOLLOWING EXCLUDE CURRENT ROW) FROM t;"
+      - id: exclude_ties_groups_no_others
+        sql: "SELECT SUM(s) OVER (ORDER BY d ROWS BETWEEN 2 PRECEDING AND CURRENT ROW EXCLUDE TIES), SUM(s) OVER (ORDER BY d ROWS 2 PRECEDING EXCLUDE NO OTHERS) FROM t;"
+      - id: named_window
+        sql: "SELECT SUM(s) OVER w, AVG(s) OVER (w ROWS UNBOUNDED PRECEDING) FROM t WINDOW w AS (PARTITION BY c ORDER BY d);"
+      - id: ignore_nulls
+        sql: "SELECT FIRST_VALUE(s IGNORE NULLS) OVER (ORDER BY d), LAST_VALUE(s) IGNORE NULLS OVER (ORDER BY d) FROM t;"
+      - id: nth_value_from_last
+        sql: "SELECT NTH_VALUE(s, 2) FROM LAST IGNORE NULLS OVER (ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;"
+      - id: lag_lead
+        sql: "SELECT LAG(s, 1, 0) OVER (ORDER BY d), LEAD(s IGNORE NULLS, 2) OVER (PARTITION BY c ORDER BY d) FROM t;"
+      - id: ranking_family
+        sql: "SELECT DENSE_RANK() OVER (ORDER BY s), NTILE(4) OVER (ORDER BY s), CUME_DIST() OVER (ORDER BY s), PERCENT_RANK() OVER (ORDER BY s), RATIO_TO_REPORT(s) OVER () FROM t;"
+      - id: analytic_filter
+        sql: "SELECT COUNT(*) FILTER (WHERE c > 0) OVER (PARTITION BY d) FROM t;"
+      - id: keep_over
+        sql: "SELECT MIN(s) KEEP (DENSE_RANK FIRST ORDER BY c) OVER (PARTITION BY d) FROM t;"
+      - id: listagg_over
+        sql: "SELECT LISTAGG(c, ',') WITHIN GROUP (ORDER BY c) OVER (PARTITION BY d) FROM t;"
+
+  - id: cast_function
+    name: CAST
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CAST.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT CAST(c AS VARCHAR2(30)), CAST('22-OCT-1997' AS TIMESTAMP WITH LOCAL TIME ZONE) FROM t;"
+      - id: default_on_conversion_error
+        sql: "SELECT CAST('N/A' AS NUMBER DEFAULT '0' ON CONVERSION ERROR) FROM DUAL;"
+      - id: format_nlsparam
+        sql: "SELECT CAST('January 15, 1989, 11:00 A.M.' AS DATE DEFAULT NULL ON CONVERSION ERROR, 'Month dd, YYYY, HH:MI A.M.', 'NLS_DATE_LANGUAGE = American') FROM DUAL;"
+        note: "Taken from the CAST syntax on the cited page (format nlsparam); none of the reference parsers implements this Oracle syntax."
+      - id: multiset
+        sql: "SELECT CAST(MULTISET(SELECT c FROM u) AS num_tab) FROM DUAL;"
+      - id: domain
+        sql: "SELECT CAST(c AS DOMAIN email_d) FROM t;"
+      - id: interval_type
+        sql: "SELECT CAST(c AS INTERVAL DAY(2) TO SECOND(6)) FROM t;"
+    examples:
+      - |-
+        SELECT CAST('N/A'
+               AS NUMBER
+               DEFAULT '0' ON CONVERSION ERROR)
+          FROM DUAL;
+
+  - id: conversion_function_special_forms
+    name: Conversion functions with keyword arguments
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/TO_DATE.html
+    tier: high
+    probes:
+      - id: to_date_fmt_nls
+        sql: "SELECT TO_DATE('January 15, 1989', 'Month dd, YYYY', 'NLS_DATE_LANGUAGE = American') FROM DUAL;"
+      - id: to_date_default_on_error
+        sql: "SELECT TO_DATE(c DEFAULT 'January 01, 2016' ON CONVERSION ERROR, 'Month dd, YYYY') FROM t;"
+        note: "Taken from the Conversion functions with keyword arguments syntax on the cited page (to date default on error); none of the reference parsers implements this Oracle syntax."
+      - id: to_number_default_on_error
+        sql: "SELECT TO_NUMBER(c DEFAULT 0 ON CONVERSION ERROR, '999G999D99') FROM t;"
+      - id: validate_conversion
+        sql: "SELECT VALIDATE_CONVERSION(c AS NUMBER), VALIDATE_CONVERSION(d AS DATE, 'YYYY-MM-DD') FROM t;"
+      - id: translate_using
+        sql: "SELECT TRANSLATE(c USING NCHAR_CS), TRANSLATE(d USING CHAR_CS) FROM t;"
+        note: "Taken from the Conversion functions with keyword arguments syntax on the cited page (translate using); none of the reference parsers implements this Oracle syntax."
+      - id: chr_using
+        sql: "SELECT CHR(196 USING NCHAR_CS) FROM DUAL;"
+      - id: treat
+        sql: "SELECT TREAT(VALUE(p) AS employee_t).salary, TREAT(doc AS JSON) FROM persons p, t;"
+      - id: to_char_formats
+        sql: "SELECT TO_CHAR(SYSDATE, 'FMDay, DD \"of\" Month YYYY'), TO_CHAR(1234.5, '$9,999.00') FROM DUAL;"
+    examples:
+      - |-
+        SELECT TO_DATE(
+          'January 15, 1989, 11:00 A.M.',
+          'Month dd, YYYY, HH:MI A.M.',
+          'NLS_DATE_LANGUAGE = American')
+            FROM DUAL;
+      - |-
+        SELECT TO_DATE('Febuary 15, 2016, 11:00 A.M.'
+               DEFAULT 'January 01, 2016 12:00 A.M.' ON CONVERSION ERROR,
+               'Month dd, YYYY, HH:MI A.M.') "Value"
+          FROM DUAL;
+
+  - id: extract_datetime
+    name: EXTRACT (datetime)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/EXTRACT-datetime.html
+    tier: high
+    probes:
+      - id: date_fields
+        sql: "SELECT EXTRACT(YEAR FROM d), EXTRACT(MONTH FROM d), EXTRACT(DAY FROM d) FROM t;"
+      - id: time_fields
+        sql: "SELECT EXTRACT(HOUR FROM ts), EXTRACT(MINUTE FROM ts), EXTRACT(SECOND FROM ts) FROM t;"
+      - id: timezone_fields
+        sql: "SELECT EXTRACT(TIMEZONE_REGION FROM TIMESTAMP '1999-01-01 10:00:00 -08:00'), EXTRACT(TIMEZONE_HOUR FROM ts), EXTRACT(TIMEZONE_ABBR FROM ts) FROM t;"
+    examples:
+      - |-
+        SELECT EXTRACT(YEAR FROM DATE '1998-03-07')
+          FROM DUAL;
+
+  - id: trim_function
+    name: TRIM
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/TRIM.html
+    tier: high
+    probes:
+      - id: plain
+        sql: "SELECT TRIM(c) FROM t;"
+      - id: leading_char_from
+        sql: "SELECT TRIM(LEADING 0 FROM c) FROM t;"
+      - id: trailing_both
+        sql: "SELECT TRIM(TRAILING 'x' FROM c), TRIM(BOTH FROM c) FROM t;"
+      - id: char_from
+        sql: "SELECT TRIM('*' FROM c) FROM t;"
+    examples:
+      - |-
+        SELECT employee_id,
+              TO_CHAR(TRIM(LEADING 0 FROM hire_date))
+              FROM employees
+              WHERE department_id = 60
+              ORDER BY employee_id;
+
+  - id: datetime_functions_26ai
+    name: Datetime functions with keyword arguments (DATEADD, DATEDIFF, TIMESTAMPDIFF, TIME_BUCKET)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/dateadd.html
+    tier: medium
+    probes:
+      - id: dateadd
+        sql: "SELECT DATEADD(MONTH, 3, hire_date), DATEADD(DAY, -1, SYSDATE) FROM t;"
+      - id: datediff
+        sql: "SELECT DATEDIFF(DAY, d1, d2), TIMESTAMPDIFF(HOUR, ts1, ts2) FROM t;"
+      - id: time_bucket
+        sql: "SELECT TIME_BUCKET(ts, INTERVAL '15' MINUTE, TIMESTAMP '2024-01-01 00:00:00') FROM t;"
+      - id: time_bucket_end
+        sql: "SELECT TIME_BUCKET(d, 'P1D', DATE '2024-01-01', END) FROM t;"
+      - id: ceil_floor_datetime
+        sql: "SELECT CEIL(d, 'MM'), FLOOR(d, 'YYYY'), TRUNC(d, 'Q'), ROUND(d) FROM t;"
+
+  - id: json_functions
+    name: SQL/JSON generation and query functions
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/JSON_VALUE.html
+    tier: high
+    probes:
+      - id: json_value
+        sql: "SELECT JSON_VALUE(doc, '$.PONumber') FROM t;"
+      - id: json_value_returning_on_error
+        sql: "SELECT JSON_VALUE(doc, '$.PONumber' RETURNING NUMBER(10) DEFAULT 0 ON ERROR NULL ON EMPTY) FROM t;"
+        note: "Taken from the SQL/JSON generation and query functions syntax on the cited page (json value returning on error); none of the reference parsers implements this Oracle syntax."
+      - id: json_value_passing
+        sql: "SELECT JSON_VALUE(doc, '$.items[$i].name' PASSING 1 AS \"i\" RETURNING VARCHAR2(100) TRUNCATE) FROM t;"
+      - id: json_query
+        sql: "SELECT JSON_QUERY(doc, '$.LineItems[*].Part' RETURNING VARCHAR2(4000) PRETTY WITH CONDITIONAL ARRAY WRAPPER EMPTY ARRAY ON ERROR) FROM t;"
+        note: "Taken from the SQL/JSON generation and query functions syntax on the cited page (json query); none of the reference parsers implements this Oracle syntax."
+      - id: json_query_keep_quotes
+        sql: "SELECT JSON_QUERY(doc, '$.name' RETURNING JSON OMIT QUOTES ON SCALAR STRING) FROM t;"
+        note: "Taken from the SQL/JSON generation and query functions syntax on the cited page (json query keep quotes); none of the reference parsers implements this Oracle syntax."
+      - id: json_object_key_value
+        sql: "SELECT JSON_OBJECT(KEY 'id' VALUE id, 'name' VALUE name ABSENT ON NULL RETURNING CLOB) FROM t;"
+      - id: json_object_colon
+        sql: "SELECT JSON_OBJECT('id' : id, 'doc' : doc FORMAT JSON WITH UNIQUE KEYS) FROM t;"
+      - id: json_object_star_wildcard
+        sql: "SELECT JSON_OBJECT(*), JSON_OBJECT('NAME' VALUE first_name, d.*) FROM t, d;"
+      - id: json_array
+        sql: "SELECT JSON_ARRAY(1, 'a', NULL NULL ON NULL RETURNING JSON) FROM DUAL;"
+      - id: json_arrayagg
+        sql: "SELECT JSON_ARRAYAGG(name ORDER BY id RETURNING CLOB) FROM t;"
+      - id: json_objectagg
+        sql: "SELECT JSON_OBJECTAGG(KEY name VALUE id) FROM t;"
+      - id: json_serialize
+        sql: "SELECT JSON_SERIALIZE(doc RETURNING VARCHAR2(4000) PRETTY ORDERED) FROM t;"
+      - id: json_transform
+        sql: "SELECT JSON_TRANSFORM(doc, SET '$.lastUpdated' = SYSTIMESTAMP, REMOVE '$.tmp', APPEND '$.tags' = 'new' CREATE ON MISSING RETURNING JSON) FROM t;"
+        note: "Taken from the SQL/JSON generation and query functions syntax on the cited page (json transform); none of the reference parsers implements this Oracle syntax."
+      - id: json_constructor
+        sql: "SELECT JSON('{\"a\": 1}'), JSON_SCALAR(42) FROM DUAL;"
+      - id: json_curly_brace_constructor
+        sql: "SELECT JSON { '_id' : deptno, 'deptName' : dname } FROM dept;"
+      - id: json_bracket_array_constructor
+        sql: "SELECT JSON [ 1, 2, deptno ] FROM dept;"
+      - id: json_mergepatch
+        sql: "SELECT JSON_MERGEPATCH(doc, '{\"a\": null}') FROM t;"
+
+  - id: json_table
+    name: JSON_TABLE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/JSON_TABLE.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT jt.* FROM t, JSON_TABLE(t.doc, '$' COLUMNS (po NUMBER PATH '$.PONumber', ref VARCHAR2(20) PATH '$.Reference')) jt;"
+      - id: column_kinds
+        sql: "SELECT jt.* FROM t, JSON_TABLE(t.doc, '$.items[*]' COLUMNS (rn FOR ORDINALITY, has_sku VARCHAR2(5) EXISTS PATH '$.sku', part VARCHAR2(4000) FORMAT JSON WITH WRAPPER PATH '$.part', qty NUMBER PATH '$.qty' DEFAULT 0 ON EMPTY)) jt;"
+        note: "Taken from the JSON_TABLE syntax on the cited page (column kinds); none of the reference parsers implements this Oracle syntax."
+      - id: nested_path
+        sql: "SELECT jt.* FROM t, JSON_TABLE(t.doc, '$' COLUMNS (po NUMBER PATH '$.PONumber', NESTED PATH '$.LineItems[*]' COLUMNS (item NUMBER PATH '$.ItemNumber'))) jt;"
+      - id: on_error_on_empty
+        sql: "SELECT jt.* FROM t, JSON_TABLE(t.doc, '$' ERROR ON ERROR NULL ON EMPTY COLUMNS (a NUMBER PATH '$.a')) jt;"
+      - id: simplified_column_names
+        sql: "SELECT jt.* FROM t LEFT OUTER JOIN JSON_TABLE(t.doc COLUMNS (PONumber, Reference, Requestor)) jt ON 1 = 1;"
+      - id: nested_dot_notation_shorthand
+        sql: "SELECT x.* FROM t NESTED doc COLUMNS (PONumber, NESTED LineItems[*] COLUMNS (ItemNumber, Quantity)) x;"
+        note: "Taken from the JSON_TABLE syntax on the cited page (nested dot notation shorthand); none of the reference parsers implements this Oracle syntax."
+    examples:
+      - |-
+        SELECT t.*
+        FROM j_purchaseOrder
+        NESTED po_document COLUMNS(PONumber, Reference, Requestor) t;
+      - |-
+        SELECT t.*
+        FROM j_purchaseOrder LEFT OUTER JOIN
+        JSON_TABLE(po_document COLUMNS(PONumber, Reference, Requestor)) t ON 1=1;
+      - |-
+        SELECT t.*
+        FROM j_purchaseorder
+        NESTED po_document COLUMNS(PONumber, Reference,
+        NESTED LineItems[*] COLUMNS(ItemNumber, Quantity)
+        ) t;
+
+  - id: xml_functions
+    name: SQL/XML functions
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/XMLTABLE.html
+    tier: medium
+    probes:
+      - id: xmltable
+        sql: "SELECT x.* FROM w, XMLTABLE('/Warehouse' PASSING w.spec COLUMNS water VARCHAR2(6) PATH 'WaterAccess', rail VARCHAR2(6) PATH 'RailAccess') x;"
+      - id: xmltable_namespaces_ordinality
+        sql: "SELECT x.* FROM t, XMLTABLE(XMLNAMESPACES('urn:x' AS \"p\"), '/p:a/p:b' PASSING t.doc COLUMNS rn FOR ORDINALITY, v NUMBER PATH '@v' DEFAULT 0) x;"
+      - id: xmlelement_attributes
+        sql: "SELECT XMLELEMENT(NAME \"Emp\", XMLATTRIBUTES(e.id AS \"ID\"), XMLFOREST(e.first_name, e.salary AS \"Sal\")) FROM e;"
+      - id: xmlagg
+        sql: "SELECT XMLAGG(XMLELEMENT(\"E\", name) ORDER BY name) FROM e;"
+      - id: xmlquery
+        sql: "SELECT XMLQUERY('//Area' PASSING spec RETURNING CONTENT NULL ON EMPTY) FROM w;"
+        note: "Taken from the SQL/XML functions syntax on the cited page (xmlquery); none of the reference parsers implements this Oracle syntax."
+      - id: xmlcast_xmlexists
+        sql: "SELECT XMLCAST(XMLQUERY('/a/b' PASSING doc RETURNING CONTENT) AS VARCHAR2(100)) FROM t WHERE XMLEXISTS('/a[b=1]' PASSING BY VALUE doc);"
+        note: "Taken from the SQL/XML functions syntax on the cited page (xmlcast xmlexists); none of the reference parsers implements this Oracle syntax."
+      - id: xmlserialize_xmlparse
+        sql: "SELECT XMLSERIALIZE(CONTENT doc AS CLOB INDENT SIZE = 2), XMLPARSE(DOCUMENT '<a/>' WELLFORMED) FROM t;"
+        note: "Taken from the SQL/XML functions syntax on the cited page (xmlserialize xmlparse); none of the reference parsers implements this Oracle syntax."
+
+  - id: vector_functions
+    name: Vector constructors, distance functions and operators
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/vector_distance.html
+    tier: medium
+    probes:
+      - id: vector_constructor
+        sql: "SELECT VECTOR('[1.1, 2.2, 3.3]', 3, FLOAT32) FROM DUAL;"
+      - id: to_vector
+        sql: "SELECT TO_VECTOR('[34.6, 77.8]', 2, FLOAT32), TO_VECTOR('[1,0]', *, *, SPARSE) FROM DUAL;"
+      - id: vector_distance_metric
+        sql: "SELECT VECTOR_DISTANCE(v, :q, COSINE), VECTOR_DISTANCE(v, :q, EUCLIDEAN), VECTOR_DISTANCE(v, :q) FROM t;"
+      - id: distance_operators
+        sql: "SELECT v <-> :q, v <=> :q, v <#> :q FROM t;"
+        note: "Taken from the Vector constructors, distance functions and operators syntax on the cited page (distance operators); none of the reference parsers implements this Oracle syntax."
+      - id: shorthand_functions
+        sql: "SELECT L2_DISTANCE(v, :q), COSINE_DISTANCE(v, :q), INNER_PRODUCT(v, :q) FROM t;"
+    examples:
+      - "SELECT TO_VECTOR('[34.6, 77.8]');"
+      - "SELECT TO_VECTOR('[34.6, 77.8]', 2, FLOAT32);"
+
+  - id: function_expressions
+    name: Function expressions (built-in and user-defined calls)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Function-Expressions.html
+    tier: high
+    probes:
+      - id: single_row_functions
+        sql: "SELECT NVL(c, 0), NVL2(c, 1, 0), DECODE(d, 1, 'one', 2, 'two', 'other'), COALESCE(a, b, c), NULLIF(a, b), GREATEST(a, b), SUBSTR(s, 1, 3), INSTR(s, 'x') FROM t;"
+      - id: no_parentheses_functions
+        sql: "SELECT SYSDATE, SYSTIMESTAMP, CURRENT_DATE, CURRENT_TIMESTAMP(3), LOCALTIMESTAMP, USER, UID, SESSIONTIMEZONE FROM DUAL;"
+      - id: user_defined_qualified
+        sql: "SELECT s.pkg.f(c), f@remote(c), f(a => 1, b => 2) FROM t;"
+      - id: regexp_functions
+        sql: "SELECT REGEXP_SUBSTR(s, '[^,]+', 1, 2), REGEXP_REPLACE(s, '(\\d+)', '<\\1>'), REGEXP_COUNT(s, 'a', 1, 'i') FROM t;"
+      - id: sys_context
+        sql: "SELECT SYS_CONTEXT('USERENV', 'SESSION_USER') FROM DUAL;"

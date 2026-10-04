@@ -1,0 +1,626 @@
+dialect: snowflake
+engine: Snowflake
+version: "current (docs read 2026-10-04)"
+source: https://docs.snowflake.com/en/sql-reference/sql-all
+
+statements:
+  - id: select
+    name: "SELECT"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/select
+    tier: high
+    probes:
+      - { id: star, sql: "SELECT * FROM t;" }
+      - { id: no_from, sql: "SELECT 1 + 1;" }
+      - { id: select_all, sql: "SELECT ALL c FROM t;" }
+      - { id: distinct, sql: "SELECT DISTINCT c FROM t;" }
+      - { id: top, sql: "SELECT TOP 10 c FROM t;" }
+      - { id: qualified_star, sql: "SELECT t.* FROM t;" }
+      - { id: alias_qualified_star, sql: "SELECT x.* FROM t AS x;" }
+      - { id: star_ilike, sql: "SELECT * ILIKE '%id%' FROM t;" }
+      - { id: star_exclude_one, sql: "SELECT * EXCLUDE c FROM t;" }
+      - { id: star_exclude_list, sql: "SELECT * EXCLUDE (a, b) FROM t;" }
+      - { id: star_replace, sql: "SELECT * REPLACE ('X-' || c AS c) FROM t;" }
+      - { id: star_replace_multiple, sql: "SELECT * REPLACE (a + 1 AS a, b * 2 AS b) FROM t;" }
+      - { id: star_rename_one, sql: "SELECT * RENAME c AS d FROM t;" }
+      - { id: star_rename_list, sql: "SELECT * RENAME (a AS x, b AS y) FROM t;" }
+      - { id: star_ilike_replace, sql: "SELECT * ILIKE '%id%' REPLACE ('X-' || id AS id) FROM t;" }
+      - { id: star_ilike_rename, sql: "SELECT * ILIKE '%id%' RENAME id AS ident FROM t;" }
+      - { id: star_exclude_replace_rename, sql: "SELECT * EXCLUDE a REPLACE (b + 1 AS b) RENAME b AS bb FROM t;" }
+      - { id: qualified_star_exclude, sql: "SELECT t.* EXCLUDE c, u.* RENAME d AS e FROM t JOIN u ON t.id = u.id;" }
+      - { id: column_alias_as, sql: "SELECT a AS x FROM t;" }
+      - { id: column_alias_no_as, sql: "SELECT a x FROM t;" }
+      - { id: positional_column, sql: "SELECT $1, t.$2 FROM t;" }
+      - { id: expression_no_from_alias, sql: "SELECT pi() * 2.0 AS area;" }
+      - id: trailing_comma_select_list
+        sql: "SELECT a, b, FROM t;"
+        note: "The syntax section shows \"SELECT emp_id, name, dept, FROM employees;\": a trailing comma after the last select item is accepted."
+      - { id: all_clauses, sql: "SELECT a, count(*) FROM t WHERE b > 0 GROUP BY a HAVING count(*) > 1 QUALIFY row_number() OVER (ORDER BY a) <= 5 ORDER BY a LIMIT 10;" }
+    examples:
+      - "SELECT * ILIKE '%id%' FROM employee_table;"
+      - "SELECT * EXCLUDE (department_id, employee_id) FROM employee_table;"
+      - "SELECT * EXCLUDE first_name RENAME (department_id AS department, employee_id AS id) FROM employee_table;"
+      - "SELECT * ILIKE '%id%' REPLACE('DEPT-' || department_id AS department_id) FROM employee_table;"
+      - "SELECT $2 FROM employee_table ORDER BY $2;"
+
+  - id: with
+    name: "WITH"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/with
+    tier: high
+    probes:
+      - { id: cte, sql: "WITH c AS (SELECT a FROM t) SELECT a FROM c;" }
+      - { id: cte_column_list, sql: "WITH c (x, y) AS (SELECT a, b FROM t) SELECT x, y FROM c;" }
+      - { id: multiple_ctes, sql: "WITH c1 AS (SELECT a FROM t), c2 AS (SELECT a FROM c1) SELECT * FROM c2;" }
+      - { id: recursive, sql: "WITH RECURSIVE c (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM c WHERE n < 10) SELECT n FROM c;" }
+      - id: recursive_implicit
+        sql: "WITH c (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM c WHERE n < 10) SELECT n FROM c;"
+        note: "RECURSIVE is optional in the recursive form (\"WITH [ RECURSIVE ]\")."
+      - { id: recursive_join, sql: "WITH RECURSIVE c (id, parent) AS (SELECT id, parent FROM t WHERE parent IS NULL UNION ALL SELECT t.id, t.parent FROM t JOIN c ON t.parent = c.id) SELECT * FROM c;" }
+    examples:
+      - |-
+        with
+          albums_1976 as (select * from music_albums where album_year = 1976)
+        select album_name from albums_1976 order by album_name;
+      - |-
+        with
+           album_info_1976 as (select m.album_ID, m.album_name, b.band_name
+              from music_albums as m inner join music_bands as b
+              where m.band_id = b.band_id and album_year = 1976),
+           Journey_album_info_1976 as (select *
+              from album_info_1976
+              where band_name = 'Journey')
+        select album_name, band_name
+           from Journey_album_info_1976;
+      - |-
+        with
+          musicians_in_bands as (
+             select distinct musicians.musician_id, musician_name, band_name
+              from musicians inner join musicians_and_albums inner join music_albums inner join music_bands
+              where musicians.musician_ID = musicians_and_albums.musician_ID
+                and musicians_and_albums.album_ID = music_albums.album_ID
+                and music_albums.band_ID = music_bands.band_ID)
+        select musician_ID, musician_name from musicians_in_bands where band_name = 'Santana'
+        intersect
+        select musician_ID, musician_name from musicians_in_bands where band_name = 'Journey'
+        order by musician_ID
+          ;
+
+  - id: top_n
+    name: "TOP <n>"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/top_n
+    tier: high
+    probes:
+      - { id: top, sql: "SELECT TOP 4 c FROM t;" }
+      - { id: top_order_by, sql: "SELECT TOP 4 c FROM t ORDER BY c;" }
+      - { id: top_distinct, sql: "SELECT DISTINCT TOP 4 c FROM t;" }
+    examples:
+      - "SELECT TOP 4 c1 FROM testtable;"
+
+  - id: into
+    name: "INTO"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/into
+    tier: high
+    probes:
+      - id: into_variable
+        sql: "SELECT c INTO :v FROM t WHERE id = 1;"
+        note: "INTO :<variable> is only valid inside Snowflake Scripting; outside a block the variable is unbound but the statement form is from the syntax block."
+      - { id: into_multiple_variables, sql: "SELECT a, b INTO :v1, :v2 FROM t WHERE id = 1;" }
+
+  - id: from
+    name: "FROM"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/from
+    tier: high
+    probes:
+      - { id: table, sql: "SELECT * FROM t;" }
+      - { id: qualified_table, sql: "SELECT * FROM db.s.t;" }
+      - { id: alias, sql: "SELECT x.c FROM t AS x;" }
+      - { id: alias_no_as, sql: "SELECT x.c FROM t x;" }
+      - { id: inline_view, sql: "SELECT v.c FROM (SELECT c FROM t) AS v;" }
+      - { id: inline_view_no_alias, sql: "SELECT * FROM (SELECT c FROM t);" }
+      - { id: lateral_inline_view, sql: "SELECT * FROM t, LATERAL (SELECT * FROM u WHERE u.id = t.id) AS v;" }
+      - { id: table_function, sql: "SELECT * FROM TABLE(f(1));" }
+      - { id: table_function_alias, sql: "SELECT * FROM TABLE(f(1)) AS x;" }
+      - { id: values_clause, sql: "SELECT * FROM (VALUES (1, 'a'), (2, 'b'));" }
+      - { id: values_no_parens, sql: "SELECT column1 FROM VALUES (1), (2);" }
+      - { id: stage, sql: "SELECT $1, $2 FROM @s;" }
+      - { id: stage_path_options, sql: "SELECT v.$1 FROM @db.sch.s/path/ (FILE_FORMAT => 'csv_format', PATTERN => '.*my_pattern.*') v;" }
+      - { id: user_stage, sql: "SELECT $1 FROM @~/data/;" }
+      - { id: table_stage, sql: "SELECT $1 FROM @%t;" }
+      - { id: directory, sql: "SELECT * FROM DIRECTORY(@s);" }
+      - { id: error_table, sql: "SELECT * FROM ERROR_TABLE(t);" }
+      - { id: dynamic_table_refresh_boundary, sql: "SELECT * FROM DYNAMIC_TABLE_REFRESH_BOUNDARY(dt) AS x;" }
+      - { id: semantic_view, sql: "SELECT * FROM SEMANTIC_VIEW(sv METRICS m DIMENSIONS d);" }
+    examples:
+      - |-
+        SELECT description, retail_price, wholesale_cost
+          FROM temporary_doc_test.ftable1;
+      - |-
+        SELECT v.profit
+          FROM (SELECT retail_price - wholesale_cost AS profit FROM ftable1) AS v;
+      - |-
+        SELECT *
+          FROM TABLE(Fibonacci_Sequence_UDTF(6.0::FLOAT));
+      - "SELECT * FROM DIRECTORY(@mystage);"
+      - "SELECT FILE_URL FROM DIRECTORY(@mystage) WHERE RELATIVE_PATH LIKE '%.csv';"
+
+  - id: join
+    name: "JOIN"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/join
+    tier: high
+    probes:
+      - { id: join, sql: "SELECT * FROM t JOIN u ON t.id = u.id;" }
+      - { id: inner_join, sql: "SELECT * FROM t INNER JOIN u ON t.id = u.id;" }
+      - { id: left_join, sql: "SELECT * FROM t LEFT JOIN u ON t.id = u.id;" }
+      - { id: left_outer_join, sql: "SELECT * FROM t LEFT OUTER JOIN u ON t.id = u.id;" }
+      - { id: right_outer_join, sql: "SELECT * FROM t RIGHT OUTER JOIN u ON t.id = u.id;" }
+      - { id: full_outer_join, sql: "SELECT * FROM t FULL OUTER JOIN u ON t.id = u.id;" }
+      - { id: full_join, sql: "SELECT * FROM t FULL JOIN u ON t.id = u.id;" }
+      - { id: cross_join, sql: "SELECT * FROM t CROSS JOIN u;" }
+      - { id: natural_join, sql: "SELECT * FROM t NATURAL JOIN u;" }
+      - { id: natural_inner_join, sql: "SELECT * FROM t NATURAL INNER JOIN u;" }
+      - { id: natural_full_outer_join, sql: "SELECT * FROM t NATURAL FULL OUTER JOIN u;" }
+      - { id: join_using, sql: "SELECT * FROM t JOIN u USING (id, k);" }
+      - { id: left_join_using, sql: "SELECT * FROM t LEFT JOIN u USING(id);" }
+      - id: join_without_on
+        sql: "SELECT * FROM t INNER JOIN u WHERE t.id = u.id;"
+        note: "The ON clause is optional in the syntax (\"[ ON <condition> ]\"); doc examples join with the condition in WHERE."
+      - { id: directed_join, sql: "SELECT * FROM t INNER DIRECTED JOIN u ON u.id = t.id;" }
+      - { id: left_directed_join, sql: "SELECT * FROM t LEFT OUTER DIRECTED JOIN u ON u.id = t.id;" }
+      - { id: cross_directed_join, sql: "SELECT * FROM t CROSS DIRECTED JOIN u;" }
+      - { id: natural_directed_join, sql: "SELECT * FROM t NATURAL INNER DIRECTED JOIN u;" }
+      - { id: directed_join_first, sql: "SELECT * FROM t INNER DIRECTED JOIN u ON u.id = t.id FIRST(u);" }
+      - { id: join_last, sql: "SELECT * FROM t INNER JOIN u ON u.id = t.id LAST(u);" }
+      - { id: implicit_join, sql: "SELECT * FROM t, u WHERE t.id = u.id;" }
+      - { id: chained_joins, sql: "SELECT * FROM t LEFT OUTER JOIN u ON (t.id = u.id) RIGHT OUTER JOIN v ON (v.id = u.id);" }
+      - { id: parenthesized_join, sql: "SELECT * FROM t LEFT OUTER JOIN (u RIGHT OUTER JOIN v ON (v.id = u.id)) ON (t.id = u.id);" }
+    examples:
+      - |-
+        SELECT t1.col1, t2.col1
+          FROM t1 INNER DIRECTED JOIN t2
+            ON t2.col1 = t1.col1
+          ORDER BY 1,2;
+      - |-
+        SELECT *
+          FROM d1 NATURAL FULL OUTER JOIN d2
+          ORDER BY id;
+      - |-
+        SELECT t1.*, t2.*, t3.*
+        FROM t1
+          LEFT OUTER JOIN
+            (t2 RIGHT OUTER JOIN t3 ON (t3.col1 = t2.col1))
+          ON (t1.col1 = t2.col1)
+        ORDER BY t1.col1;
+      - |-
+        WITH
+          l AS (
+               SELECT 'a' AS userid
+               ),
+          r AS (
+               SELECT 'b' AS userid
+               )
+        SELECT *
+          FROM l LEFT JOIN r USING(userid);
+      - |-
+        SELECT t1.col1, t2.col1, t3.col1
+          FROM t1
+            INNER JOIN t2 ON t2.col1 = t1.col1
+            INNER DIRECTED JOIN t3 ON t3.col1 = t2.col1 FIRST(t3)
+          ORDER BY 1,2,3;
+
+  - id: asof_join
+    name: "ASOF JOIN"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/asof-join
+    tier: high
+    probes:
+      - { id: asof_join, sql: "SELECT * FROM t ASOF JOIN u MATCH_CONDITION (t.ts >= u.ts);" }
+      - { id: asof_join_on, sql: "SELECT * FROM t ASOF JOIN u MATCH_CONDITION (t.ts >= u.ts) ON t.k = u.k;" }
+      - { id: asof_join_on_and, sql: "SELECT * FROM t ASOF JOIN u MATCH_CONDITION (t.ts < u.ts) ON t.k = u.k AND t.j = u.j;" }
+      - { id: asof_join_using, sql: "SELECT * FROM t ASOF JOIN u MATCH_CONDITION (t.ts <= u.ts) USING (k);" }
+      - { id: asof_join_then_join, sql: "SELECT * FROM t ASOF JOIN u MATCH_CONDITION (t.ts > u.ts) ON t.k = u.k INNER JOIN v ON v.k = t.k;" }
+    examples:
+      - |-
+        SELECT t.stock_symbol, t.trade_time, t.quantity, q.quote_time, q.price
+          FROM trades t ASOF JOIN quotes q
+            MATCH_CONDITION(t.trade_time >= quote_time)
+            ON t.stock_symbol=q.stock_symbol
+          ORDER BY t.stock_symbol;
+      - |-
+        SELECT t.stock_symbol, t.trade_time, t.quantity, q.quote_time, q.price
+          FROM trades t ASOF JOIN quotes q
+            MATCH_CONDITION(t.trade_time <= quote_time)
+            USING(stock_symbol)
+          ORDER BY t.stock_symbol;
+      - |-
+        SELECT *
+          FROM trades_unixtime tu
+            ASOF JOIN quotes_unixtime qu
+            MATCH_CONDITION(tu.trade_time>=qu.quote_time);
+
+  - id: lateral
+    name: "LATERAL"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/join-lateral
+    tier: high
+    probes:
+      - { id: lateral_subquery, sql: "SELECT * FROM t AS d, LATERAL (SELECT * FROM u AS e WHERE e.id = d.id) AS v;" }
+      - { id: inner_join_lateral, sql: "SELECT * FROM t AS d INNER JOIN LATERAL (SELECT * FROM u AS e WHERE e.id = d.id) AS v;" }
+      - { id: lateral_flatten, sql: "SELECT f.value FROM t, LATERAL FLATTEN(INPUT => t.c) f;" }
+      - { id: lateral_flatten_path, sql: "SELECT f.value FROM t p, LATERAL FLATTEN(INPUT => p.c, PATH => 'contact') f;" }
+      - { id: lateral_flatten_chained, sql: "SELECT f1.value FROM t p, LATERAL FLATTEN(INPUT => p.c) f, LATERAL FLATTEN(INPUT => f.value:business) f1;" }
+    examples:
+      - |-
+        SELECT *
+          FROM departments AS d,
+            LATERAL (SELECT * FROM employees AS e WHERE e.department_ID = d.department_ID) AS iv2
+          ORDER BY employee_ID;
+      - |-
+        SELECT *
+          FROM departments AS d INNER JOIN
+            LATERAL (SELECT * FROM employees AS e WHERE e.department_ID = d.department_ID) AS iv2
+          ORDER BY employee_ID;
+      - |-
+        SELECT id,
+            f1.value:type::STRING AS contact_type,
+            f1.value:content::STRING AS contact_details
+          FROM persons p,
+            LATERAL FLATTEN(INPUT => p.c, PATH => 'contact') f,
+            LATERAL FLATTEN(INPUT => f.value:business) f1;
+
+  - id: at_before
+    name: "AT"
+    doc: https://docs.snowflake.com/enBEFORE
+    tier: /sql-reference/constructs/at-before
+    probes:
+      - { id: at_timestamp, sql: "SELECT * FROM t AT(TIMESTAMP => '2024-06-05 17:50:00'::TIMESTAMP_LTZ);" }
+      - { id: at_offset, sql: "SELECT * FROM t AT(OFFSET => -60*5) AS x WHERE x.flag = 'valid';" }
+      - { id: at_statement, sql: "SELECT * FROM t AT(STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726');" }
+      - { id: at_stream, sql: "SELECT * FROM t AT(STREAM => 's1');" }
+      - { id: before_timestamp, sql: "SELECT * FROM t BEFORE(TIMESTAMP => TO_TIMESTAMP(1432669154242, 3));" }
+      - { id: before_offset, sql: "SELECT * FROM t BEFORE(OFFSET => -3600);" }
+      - { id: before_statement, sql: "SELECT * FROM t BEFORE(STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726');" }
+      - { id: at_in_join, sql: "SELECT * FROM t AT(TIMESTAMP => '2024-06-05 17:50:00'::TIMESTAMP_LTZ) h JOIN u AT(OFFSET => -60) x ON h.c = x.c;" }
+    examples:
+      - "SELECT * FROM my_table AT(TIMESTAMP => 'Wed, 26 Jun 2024 09:20:00 -0700'::TIMESTAMP_LTZ);"
+      - "SELECT * FROM my_table AT(TIMESTAMP => TO_TIMESTAMP(1432669154242, 3));"
+      - "SELECT * FROM my_table AT(OFFSET => -60*5) AS T WHERE T.flag = 'valid';"
+      - "SELECT * FROM my_table BEFORE(STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726');"
+      - |-
+        SELECT oldt.* ,newt.*
+          FROM my_table BEFORE(STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726') AS oldt
+            FULL OUTER JOIN my_table AT(STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726') AS newt
+            ON oldt.id = newt.id
+          WHERE oldt.id IS NULL OR newt.id IS NULL;
+
+  - id: changes
+    name: "CHANGES"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/changes
+    tier: high
+    probes:
+      - { id: changes_default_at_timestamp, sql: "SELECT * FROM t CHANGES(INFORMATION => DEFAULT) AT(TIMESTAMP => $ts1);" }
+      - { id: changes_append_only_at_offset, sql: "SELECT * FROM t CHANGES(INFORMATION => APPEND_ONLY) AT(OFFSET => -3600);" }
+      - { id: changes_at_stream, sql: "SELECT * FROM t CHANGES(INFORMATION => DEFAULT) AT(STREAM => 's1');" }
+      - { id: changes_before_statement, sql: "SELECT * FROM t CHANGES(INFORMATION => DEFAULT) BEFORE(STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726');" }
+      - { id: changes_end, sql: "SELECT * FROM t CHANGES(INFORMATION => DEFAULT) AT(TIMESTAMP => $ts1) END(TIMESTAMP => $ts2);" }
+      - { id: changes_end_offset, sql: "SELECT * FROM t CHANGES(INFORMATION => APPEND_ONLY) AT(STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726') END(OFFSET => -60);" }
+    examples:
+      - |-
+        SELECT *
+         FROM t1
+           CHANGES(INFORMATION => DEFAULT)
+           AT(TIMESTAMP => $ts1);
+      - |-
+        SELECT *
+         FROM t1
+           CHANGES(INFORMATION => APPEND_ONLY)
+           AT(TIMESTAMP => $ts1);
+
+  - id: connect_by
+    name: "CONNECT BY"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/connect-by
+    tier: high
+    probes:
+      - { id: start_with_connect_by, sql: "SELECT id, parent FROM t START WITH parent IS NULL CONNECT BY parent = PRIOR id;" }
+      - { id: prior_left, sql: "SELECT id FROM t START WITH id = 1 CONNECT BY PRIOR id = parent;" }
+      - { id: multiple_conditions, sql: "SELECT id FROM t START WITH id = 1 CONNECT BY parent = PRIOR id, k = PRIOR k;" }
+      - { id: level, sql: "SELECT id, LEVEL FROM t START WITH id = 1 CONNECT BY parent = PRIOR id;" }
+      - { id: connect_by_root, sql: "SELECT id, CONNECT_BY_ROOT title AS root_title FROM t START WITH id = 1 CONNECT BY parent = PRIOR id;" }
+      - { id: sys_connect_by_path, sql: "SELECT SYS_CONNECT_BY_PATH(title, ' -> ') FROM t START WITH id = 1 CONNECT BY parent = PRIOR id ORDER BY 1;" }
+      - id: connect_by_then_where
+        sql: "SELECT id FROM t START WITH id = 1 CONNECT BY parent = PRIOR id WHERE id > 1;"
+        note: "Usage notes: filters in a WHERE clause are processed after the CONNECT BY; the syntax block places the clause directly after the data source."
+    examples:
+      - |-
+        SELECT employee_ID, manager_ID, title
+          FROM employees
+            START WITH title = 'President'
+            CONNECT BY
+              manager_ID = PRIOR employee_id
+          ORDER BY employee_ID;
+      - |-
+        SELECT SYS_CONNECT_BY_PATH(title, ' -> '), employee_ID, manager_ID, title
+          FROM employees
+            START WITH title = 'President'
+            CONNECT BY
+              manager_ID = PRIOR employee_id
+          ORDER BY employee_ID;
+      - |-
+        SELECT
+        employee_ID, manager_ID, title,
+        CONNECT_BY_ROOT title AS root_title
+          FROM employees
+            START WITH title = 'President'
+            CONNECT BY
+              manager_ID = PRIOR employee_id
+          ORDER BY employee_ID;
+      - |-
+        SELECT
+          description,
+          quantity,
+          component_id,
+          parent_component_ID,
+          SYS_CONNECT_BY_PATH(component_ID, ' -> ') AS path
+          FROM components
+            START WITH component_ID = 1
+            CONNECT BY
+              parent_component_ID = PRIOR component_ID
+          ORDER BY path
+          ;
+
+  - id: match_recognize
+    name: "MATCH_RECOGNIZE"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/match_recognize
+    tier: high
+    probes:
+      - { id: minimal, sql: "SELECT * FROM t MATCH_RECOGNIZE(PATTERN (a b+) DEFINE b AS price < LAG(price));" }
+      - { id: partition_order, sql: "SELECT * FROM t MATCH_RECOGNIZE(PARTITION BY company ORDER BY d PATTERN (a b+) DEFINE b AS price < LAG(price));" }
+      - { id: measures, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d MEASURES MATCH_NUMBER() AS mn, FIRST(d) AS start_date, LAST(d) end_date, COUNT(b.*) AS nb PATTERN (a b+) DEFINE b AS price < LAG(price));" }
+      - { id: order_nulls, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d DESC NULLS LAST PATTERN (a) DEFINE a AS TRUE);" }
+      - { id: one_row_per_match, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d MEASURES MATCH_NUMBER() AS mn ONE ROW PER MATCH PATTERN (a b+) DEFINE b AS price < LAG(price));" }
+      - { id: all_rows_per_match, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d ALL ROWS PER MATCH PATTERN (a b+) DEFINE b AS price < LAG(price));" }
+      - { id: all_rows_show_empty, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d ALL ROWS PER MATCH SHOW EMPTY MATCHES PATTERN (a*) DEFINE a AS price > 10);" }
+      - { id: all_rows_omit_empty, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d ALL ROWS PER MATCH OMIT EMPTY MATCHES PATTERN (a*) DEFINE a AS price > 10);" }
+      - { id: all_rows_with_unmatched, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d ALL ROWS PER MATCH WITH UNMATCHED ROWS PATTERN (a+) DEFINE a AS price > 10);" }
+      - { id: skip_past_last_row, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d AFTER MATCH SKIP PAST LAST ROW PATTERN (a a) DEFINE a AS price < 45);" }
+      - { id: skip_to_next_row, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d AFTER MATCH SKIP TO NEXT ROW PATTERN (a a) DEFINE a AS price < 45);" }
+      - { id: skip_to_last, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d AFTER MATCH SKIP TO LAST b PATTERN (a b+) DEFINE b AS price > LAG(price));" }
+      - { id: skip_to_first, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d AFTER MATCH SKIP TO FIRST b PATTERN (a b+) DEFINE b AS price > LAG(price));" }
+      - { id: skip_to_symbol, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d AFTER MATCH SKIP TO b PATTERN (a b+) DEFINE b AS price > LAG(price));" }
+      - { id: pattern_operators, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d PATTERN (^ s1 s2*? ( {- s3 -} s4 )+ | PERMUTE(s1, s2){1,2} $) DEFINE s1 AS c = 1, s2 AS c = 2, s3 AS c = 3, s4 AS c = 4);" }
+      - { id: pattern_quantifier_ranges, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d PATTERN (a{1,3} b{,2} c{2} d?) DEFINE a AS c = 1, b AS c = 2, c AS c = 3, d AS c = 4);" }
+      - { id: running_final, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d MEASURES FINAL FIRST(a.price) AS ff, RUNNING LAST(a.price) AS rl ALL ROWS PER MATCH PATTERN (a a) DEFINE a AS price < 45);" }
+      - { id: classifier_sequence, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d MEASURES MATCH_SEQUENCE_NUMBER() AS msq, CLASSIFIER() AS cl ALL ROWS PER MATCH PATTERN (any_row up+) DEFINE any_row AS TRUE, up AS price > LAG(price));" }
+      - { id: on_subquery, sql: "SELECT * FROM (SELECT * FROM t WHERE k = 1) MATCH_RECOGNIZE(ORDER BY d PATTERN (a+) DEFINE a AS price > 10);" }
+    examples:
+      - |-
+        SELECT * FROM stock_price_history
+          MATCH_RECOGNIZE(
+            PARTITION BY company
+            ORDER BY price_date
+            MEASURES
+              MATCH_NUMBER() AS match_number,
+              FIRST(price_date) AS start_date,
+              LAST(price_date) AS end_date,
+              COUNT(*) AS rows_in_sequence,
+              COUNT(row_with_price_decrease.*) AS num_decreases,
+              COUNT(row_with_price_increase.*) AS num_increases
+            ONE ROW PER MATCH
+            AFTER MATCH SKIP TO LAST row_with_price_increase
+            PATTERN(row_before_decrease row_with_price_decrease+ row_with_price_increase+)
+            DEFINE
+              row_with_price_decrease AS price < LAG(price),
+              row_with_price_increase AS price > LAG(price)
+          )
+        ORDER BY company, match_number;
+      - |-
+        select price_date, match_number, msq, price, cl from
+          (select * from stock_price_history where company='ABCD') match_recognize(
+            order by price_date
+            measures
+                match_number() as "MATCH_NUMBER",
+                match_sequence_number() as msq,
+                classifier() as cl
+            all rows per match
+            pattern(ANY_ROW UP+)
+            define
+                ANY_ROW AS TRUE,
+                UP as price > lag(price)
+        )
+        order by match_number, msq;
+      - |-
+        select * from stock_price_history match_recognize(
+            partition by company
+            order by price_date
+            measures
+                match_number() as "MATCH_NUMBER"
+            all rows per match omit empty matches
+            pattern(OVERAVG*)
+            define
+                OVERAVG as price > avg(price) over (rows between unbounded
+                                          preceding and unbounded following)
+        )
+        order by company, price_date;
+      - |-
+        select * from stock_price_history match_recognize(
+            partition by company
+            order by price_date
+            measures
+                match_number() as "MATCH_NUMBER",
+                classifier() as cl
+            all rows per match with unmatched rows
+            pattern(OVERAVG+)
+            define
+                OVERAVG as price > avg(price) over (rows between unbounded
+                                         preceding and unbounded following)
+        )
+        order by company, price_date;
+      - |-
+        SELECT company, price_date, price, "FINAL FIRST(LT45.price)", "FINAL LAST(LT45.price)"
+            FROM stock_price_history
+               MATCH_RECOGNIZE (
+                   PARTITION BY company
+                   ORDER BY price_date
+                   MEASURES
+                       FINAL FIRST(LT45.price) AS "FINAL FIRST(LT45.price)",
+                       FINAL LAST(LT45.price)  AS "FINAL LAST(LT45.price)"
+                   ALL ROWS PER MATCH
+                   AFTER MATCH SKIP PAST LAST ROW
+                   PATTERN (LT45 LT45)
+                   DEFINE
+                       LT45 AS price < 45.00
+                   )
+            WHERE company = 'ABCD'
+            ORDER BY price_date;
+
+  - id: pivot
+    name: "PIVOT"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/pivot
+    tier: high
+    probes:
+      - { id: pivot_values, sql: "SELECT * FROM t PIVOT(SUM(amount) FOR quarter IN ('2023_Q1', '2023_Q2', '2023_Q3')) ORDER BY empid;" }
+      - { id: pivot_value_aliases, sql: "SELECT * FROM t PIVOT(SUM(amount) FOR quarter IN ('2023_Q1' AS q1, '2023_Q2' q2));" }
+      - { id: pivot_aggregate_alias, sql: "SELECT * FROM t PIVOT(SUM(amount) AS total FOR quarter IN ('2023_Q1', '2023_Q2'));" }
+      - { id: pivot_any, sql: "SELECT * FROM t PIVOT(SUM(amount) FOR quarter IN (ANY));" }
+      - { id: pivot_any_order_by, sql: "SELECT * FROM t PIVOT(SUM(amount) FOR quarter IN (ANY ORDER BY quarter));" }
+      - { id: pivot_subquery, sql: "SELECT * FROM t PIVOT(SUM(amount) FOR quarter IN (SELECT DISTINCT quarter FROM u WHERE flag = TRUE ORDER BY quarter));" }
+      - { id: pivot_default_on_null, sql: "SELECT * FROM t PIVOT(SUM(amount) FOR quarter IN ('2023_Q1', '2023_Q2') DEFAULT ON NULL (0));" }
+      - { id: pivot_table_alias, sql: "SELECT * FROM t PIVOT(SUM(amount) FOR quarter IN ('2023_Q1', '2023_Q2')) AS p (empid, q1, q2);" }
+      - { id: pivot_on_subquery, sql: "SELECT * FROM (SELECT empid, amount, quarter FROM t) PIVOT(SUM(amount) FOR quarter IN (ANY));" }
+    examples:
+      - |-
+        SELECT *
+          FROM quarterly_sales
+            PIVOT(SUM(amount) FOR quarter IN (ANY ORDER BY quarter))
+          ORDER BY empid;
+      - |-
+        SELECT *
+          FROM quarterly_sales
+            PIVOT(SUM(amount) AS total FOR quarter IN (ANY ORDER BY quarter))
+          ORDER BY empid;
+      - |-
+        SELECT *
+          FROM quarterly_sales
+            PIVOT(SUM(amount) FOR quarter IN (
+              SELECT DISTINCT quarter
+                FROM ad_campaign_types_by_quarter
+                WHERE television = TRUE
+                ORDER BY quarter))
+          ORDER BY empid;
+      - |-
+        SELECT *
+          FROM quarterly_sales
+            PIVOT(SUM(amount) FOR quarter IN (ANY ORDER BY quarter)
+              DEFAULT ON NULL (0))
+          ORDER BY empid;
+
+  - id: unpivot
+    name: "UNPIVOT"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/unpivot
+    tier: high
+    probes:
+      - { id: unpivot, sql: "SELECT * FROM t UNPIVOT (sales FOR month IN (jan, feb, mar, apr)) ORDER BY empid;" }
+      - { id: unpivot_column_aliases, sql: "SELECT * FROM t UNPIVOT (sales FOR month IN (jan AS january, feb february));" }
+      - { id: unpivot_include_nulls, sql: "SELECT * FROM t UNPIVOT INCLUDE NULLS (sales FOR month IN (jan, feb));" }
+      - { id: unpivot_exclude_nulls, sql: "SELECT * FROM t UNPIVOT EXCLUDE NULLS (sales FOR month IN (jan, feb));" }
+    examples:
+      - |-
+        SELECT *
+          FROM monthly_sales
+            UNPIVOT (sales FOR month IN (jan, feb, mar, apr))
+          ORDER BY empid;
+      - |-
+        SELECT *
+          FROM monthly_sales
+            UNPIVOT (sales FOR month IN (
+              jan AS january,
+              feb AS february,
+              mar AS march,
+              apr AS april)
+            )
+          ORDER BY empid;
+      - |-
+        SELECT *
+          FROM monthly_sales
+            UNPIVOT INCLUDE NULLS (sales FOR month IN (jan, feb, mar, apr))
+          ORDER BY empid;
+
+  - id: values
+    name: "VALUES"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/values
+    tier: high
+    probes:
+      - { id: values_in_from, sql: "SELECT * FROM (VALUES (1, 'one'), (2, 'two'), (3, 'three'));" }
+      - { id: values_alias_columns, sql: "SELECT c1, c2 FROM (VALUES (1, 'one'), (2, 'two')) AS v1 (c1, c2);" }
+      - { id: values_default_column_names, sql: "SELECT column1, $2 FROM (VALUES (1, 'one'), (2, 'two'));" }
+      - { id: values_join, sql: "SELECT v1.$2, v2.$2 FROM (VALUES (1, 'one'), (2, 'two')) AS v1 INNER JOIN (VALUES (1, 'One'), (3, 'three')) AS v2 WHERE v2.$1 = v1.$1;" }
+    examples:
+      - "SELECT * FROM (VALUES (1, 'one'), (2, 'two'), (3, 'three'));"
+      - "SELECT column1, $2 FROM (VALUES (1, 'one'), (2, 'two'), (3, 'three'));"
+      - |-
+        SELECT v1.$2, v2.$2
+          FROM (VALUES (1, 'one'), (2, 'two')) AS v1
+                INNER JOIN (VALUES (1, 'One'), (3, 'three')) AS v2
+          WHERE v2.$1 = v1.$1;
+      - |-
+        SELECT c1, c2
+          FROM (VALUES (1, 'one'), (2, 'two')) AS v1 (c1, c2);
+
+  - id: sample
+    name: "SAMPLE / TABLESAMPLE"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/sample
+    tier: high
+    probes:
+      - { id: sample_probability, sql: "SELECT * FROM t SAMPLE (10);" }
+      - { id: tablesample_probability, sql: "SELECT * FROM t TABLESAMPLE (100);" }
+      - { id: bernoulli, sql: "SELECT * FROM t TABLESAMPLE BERNOULLI (20.3);" }
+      - { id: row_method, sql: "SELECT * FROM t SAMPLE ROW (0);" }
+      - { id: fixed_rows, sql: "SELECT * FROM t SAMPLE (10 ROWS);" }
+      - { id: bernoulli_rows, sql: "SELECT * FROM t SAMPLE BERNOULLI (10 ROWS);" }
+      - { id: system_seed, sql: "SELECT * FROM t SAMPLE SYSTEM (3) SEED (82);" }
+      - { id: block_repeatable, sql: "SELECT * FROM t SAMPLE BLOCK (0.012) REPEATABLE (99992);" }
+      - { id: alias_then_sample, sql: "SELECT * FROM t AS x SAMPLE (25) INNER JOIN u AS y SAMPLE (50) WHERE y.j = x.i;" }
+      - { id: subquery_sample, sql: "SELECT * FROM (SELECT * FROM t JOIN u ON t.a = u.c) SAMPLE (1);" }
+    examples:
+      - "SELECT * FROM testtable TABLESAMPLE BERNOULLI (20.3);"
+      - "SELECT * FROM testtable SAMPLE ROW (0);"
+      - |-
+        SELECT i, j
+          FROM
+            table1 AS t1 SAMPLE (25)
+              INNER JOIN
+            table2 AS t2 SAMPLE (50)
+          WHERE t2.j = t1.i;
+      - "SELECT * FROM testtable SAMPLE SYSTEM (3) SEED (82);"
+      - "SELECT * FROM testtable SAMPLE (10 ROWS);"
+
+  - id: resample
+    name: "RESAMPLE"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/resample
+    tier: medium
+    probes:
+      - { id: resample, sql: "SELECT * FROM t RESAMPLE(USING ts INCREMENT BY INTERVAL '1 day');" }
+      - { id: resample_partition, sql: "SELECT * FROM t RESAMPLE(USING ts INCREMENT BY INTERVAL '5 minutes' PARTITION BY city, county);" }
+      - { id: resample_metadata_columns, sql: "SELECT * FROM t RESAMPLE(USING ts INCREMENT BY INTERVAL '5 minutes' METADATA_COLUMNS IS_GENERATED() AS generated_row, BUCKET_START());" }
+      - { id: resample_numeric, sql: "SELECT * FROM t AS x RESAMPLE(USING unixtime INCREMENT BY 1) ORDER BY unixtime;" }
+    examples:
+      - |-
+        SELECT * FROM sensor_data_unixtime
+          RESAMPLE(USING unixtime INCREMENT BY 1) ORDER BY unixtime;
+      - |-
+        CREATE OR REPLACE TABLE march_temps_every_five_mins AS
+          SELECT * FROM march_temps
+            RESAMPLE(
+              USING observed
+              INCREMENT BY INTERVAL '5 minutes'
+              PARTITION BY city, county
+              METADATA_COLUMNS IS_GENERATED() AS generated_row, BUCKET_START()
+              )
+          ORDER BY observed;
+      - |-
+        SELECT bucket_start, county, COUNT(*)
+          FROM march_temps
+            RESAMPLE(
+              USING observed
+              INCREMENT BY INTERVAL '1 day'
+              METADATA_COLUMNS IS_GENERATED(), BUCKET_START()
+              )
+          WHERE IS_GENERATED = 'False'
+          GROUP BY bucket_start, county;
+
