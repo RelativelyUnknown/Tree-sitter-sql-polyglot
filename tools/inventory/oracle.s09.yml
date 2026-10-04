@@ -128,8 +128,10 @@ statements:
     probes:
       - id: basic
         sql: "CREATE APPLICATION IDENTITY app MAPPED TO 'id_string';"
-      - id: or_replace_if_not_exists
-        sql: "CREATE OR REPLACE APPLICATION IDENTITY IF NOT EXISTS app MAPPED TO 'id_string';"
+      - id: or_replace
+        sql: "CREATE OR REPLACE APPLICATION IDENTITY app MAPPED TO 'id_string';"
+      - id: if_not_exists
+        sql: "CREATE APPLICATION IDENTITY IF NOT EXISTS app MAPPED TO 'id_string';"
 
   - id: create_assertion
     name: CREATE ASSERTION
@@ -203,7 +205,9 @@ statements:
       - id: local
         sql: "CREATE DATA ROLE r ENABLED;"
       - id: mapped
-        sql: "CREATE OR REPLACE DATA ROLE IF NOT EXISTS r MAPPED TO 'ext_role';"
+        sql: "CREATE OR REPLACE DATA ROLE r MAPPED TO 'ext_role';"
+      - id: if_not_exists
+        sql: "CREATE DATA ROLE IF NOT EXISTS r;"
 
   - id: create_dimension
     name: CREATE DIMENSION
@@ -263,6 +267,172 @@ statements:
       - id: basic
         sql: |-
           CREATE END USER CONTEXT hr.hcm USING JSON SCHEMA '{ "type": "object", "properties": { "emp_id": { "type": "integer" } } }';
-      - id: or_replace_if_not_exists
+      - id: if_not_exists
         sql: |-
-          CREATE OR REPLACE END USER CONTEXT IF NOT EXISTS ctx USING JSON SCHEMA '{ "type": "object", "properties": { "a": { "type": "string" } } }';
+          CREATE END USER CONTEXT IF NOT EXISTS ctx USING JSON SCHEMA '{ "type": "object", "properties": { "a": { "type": "string" } } }';
+
+  - id: create_flashback_archive
+    name: CREATE FLASHBACK ARCHIVE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-FLASHBACK-ARCHIVE.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE FLASHBACK ARCHIVE fba TABLESPACE ts RETENTION 1 YEAR;"
+      - id: default_quota_optimize
+        sql: "CREATE FLASHBACK ARCHIVE DEFAULT fba TABLESPACE ts QUOTA 10 G NO OPTIMIZE DATA RETENTION 5 DAY;"
+
+  - id: create_hierarchy
+    name: CREATE HIERARCHY
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-HIERARCHY.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE HIERARCHY h USING ad (month CHILD OF quarter CHILD OF year);"
+      - id: hierarchical_attributes
+        sql: "CREATE OR REPLACE HIERARCHY s.h USING s.ad (month CHILD OF year) HIERARCHICAL ATTRIBUTES (member_name, level_name);"
+
+  - id: create_indextype
+    name: CREATE INDEXTYPE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-INDEXTYPE.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE INDEXTYPE it FOR op(VARCHAR2, NUMBER) USING impl_type;"
+      - id: array_dml_local_partition
+        sql: "CREATE OR REPLACE INDEXTYPE s.it FOR s.op1(NUMBER), s.op2(VARCHAR2) USING s.impl_type WITH ARRAY DML WITH LOCAL RANGE PARTITION;"
+
+  - id: create_inmemory_join_group
+    name: CREATE INMEMORY JOIN GROUP
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-INMEMORY-JOIN-GROUP.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE INMEMORY JOIN GROUP jg (t1(c1), t2(c2));"
+      - id: if_not_exists_qualified
+        sql: "CREATE INMEMORY JOIN GROUP IF NOT EXISTS s.jg (s.t1(c1), s.t2(c2), s.t3(c3));"
+
+  - id: create_java
+    name: CREATE JAVA
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-JAVA.html
+    tier: low
+    probes:
+      - id: class_using_bfile
+        sql: "CREATE JAVA CLASS USING BFILE (java_dir, 'Agent.class');"
+      - id: source_named
+        sql: |-
+          CREATE OR REPLACE AND COMPILE JAVA SOURCE NAMED "Welcome" AS public class Welcome { public static String welcome() { return "Welcome World"; } };
+      - id: resource_named
+        sql: "CREATE JAVA RESOURCE NAMED \"appText\" USING BFILE (java_dir, 'textBundle.dat');"
+
+  - id: create_library
+    name: CREATE LIBRARY
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-LIBRARY.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE LIBRARY lib AS '/usr/lib/libx.so';"
+      - id: or_replace_agent
+        sql: "CREATE OR REPLACE LIBRARY s.lib IS '/usr/lib/libx.so' AGENT 'agent_link';"
+
+  - id: create_lockdown_profile
+    name: CREATE LOCKDOWN PROFILE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-LOCKDOWN-PROFILE.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE LOCKDOWN PROFILE lp;"
+      - id: from_base
+        sql: "CREATE LOCKDOWN PROFILE lp FROM base_lp;"
+      - id: including_base
+        sql: "CREATE LOCKDOWN PROFILE lp INCLUDING base_lp;"
+
+  - id: create_logical_partition_tracking
+    name: CREATE LOGICAL PARTITION TRACKING
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-logical-partition-tracking.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE LOGICAL PARTITION TRACKING ON t PARTITION BY RANGE (c) (PARTITION p1 VALUES LESS THAN (100), PARTITION p2 VALUES LESS THAN (200));"
+      - id: interval
+        sql: "CREATE LOGICAL PARTITION TRACKING ON t PARTITION BY RANGE (c) INTERVAL (100) (PARTITION p1 VALUES LESS THAN (100));"
+
+  - id: create_materialized_zonemap
+    name: CREATE MATERIALIZED ZONEMAP
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-MATERIALIZED-ZONEMAP.html
+    tier: low
+    probes:
+      - id: on_table
+        sql: "CREATE MATERIALIZED ZONEMAP zm ON t (c1, c2);"
+      - id: on_table_attributes
+        sql: "CREATE MATERIALIZED ZONEMAP zm TABLESPACE ts SCALE 8 REFRESH FAST ON COMMIT DISABLE PRUNING ON t (c1);"
+      - id: as_subquery
+        sql: "CREATE MATERIALIZED ZONEMAP zm AS SELECT SYS_OP_ZMAP_ID(f.rowid), MIN(f.c), MAX(f.c) FROM f f GROUP BY SYS_OP_ZMAP_ID(f.rowid);"
+
+  - id: create_mle_env
+    name: CREATE MLE ENV
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-mle-env.html
+    tier: low
+    probes:
+      - id: clone
+        sql: "CREATE MLE ENV e CLONE base_env;"
+      - id: imports_language_options
+        sql: "CREATE OR REPLACE MLE ENV e IMPORTS ('lib' MODULE m) LANGUAGE OPTIONS 'js.strict=true' PURE;"
+
+  - id: create_mle_module
+    name: CREATE MLE MODULE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-mle-module.html
+    tier: low
+    probes:
+      - id: inline_text
+        sql: |-
+          CREATE MLE MODULE m LANGUAGE JAVASCRIPT AS export function f() { return 1; } ;
+      - id: using_bfile
+        sql: "CREATE OR REPLACE MLE MODULE m LANGUAGE JAVASCRIPT VERSION '1.0' USING BFILE (dir, 'm.js');"
+
+  - id: create_operator
+    name: CREATE OPERATOR
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-OPERATOR.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE OPERATOR op BINDING (VARCHAR2, VARCHAR2) RETURN NUMBER USING f;"
+      - id: multiple_bindings_context
+        sql: "CREATE OR REPLACE OPERATOR s.op BINDING (NUMBER) RETURN NUMBER WITH INDEX CONTEXT, SCAN CONTEXT impl_type COMPUTE ANCILLARY DATA USING pkg.f1, (VARCHAR2) RETURN NUMBER USING f2;"
+      - id: ancillary
+        sql: "CREATE OPERATOR anc BINDING (NUMBER) RETURN NUMBER ANCILLARY TO prim (NUMBER) USING f;"
+
+  - id: create_outline
+    name: CREATE OUTLINE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-OUTLINE.html
+    tier: low
+    probes:
+      - id: on_statement
+        sql: "CREATE OUTLINE o FOR CATEGORY cat ON SELECT * FROM t;"
+      - id: from_source
+        sql: "CREATE OR REPLACE PRIVATE OUTLINE o FROM PUBLIC src;"
+
+  - id: create_pfile
+    name: CREATE PFILE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-PFILE.html
+    tier: low
+    probes:
+      - id: from_spfile
+        sql: "CREATE PFILE = '/tmp/init.ora' FROM SPFILE = '/tmp/spfile.ora';"
+      - id: from_memory
+        sql: "CREATE PFILE FROM MEMORY;"
+
+  - id: create_pluggable_database
+    name: CREATE PLUGGABLE DATABASE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-PLUGGABLE-DATABASE.html
+    tier: low
+    probes:
+      - id: from_seed
+        sql: "CREATE PLUGGABLE DATABASE pdb1 ADMIN USER admin IDENTIFIED BY pw ROLES = (dba) FILE_NAME_CONVERT = ('/seed/', '/pdb1/');"
+      - id: clone
+        sql: "CREATE PLUGGABLE DATABASE pdb2 FROM pdb1 SNAPSHOT COPY;"
+      - id: clone_over_dblink
+        sql: "CREATE PLUGGABLE DATABASE pdb2 FROM pdb1@lnk REFRESH MODE EVERY 10 MINUTES;"
+      - id: from_xml
+        sql: "CREATE PLUGGABLE DATABASE pdb3 USING '/tmp/pdb.xml' NOCOPY;"
+      - id: application_container
+        sql: "CREATE PLUGGABLE DATABASE app_root AS APPLICATION CONTAINER ADMIN USER admin IDENTIFIED BY pw;"

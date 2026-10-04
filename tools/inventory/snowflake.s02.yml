@@ -1,0 +1,110 @@
+dialect: snowflake
+engine: Snowflake
+version: "current (docs read 2026-10-04)"
+source: https://docs.snowflake.com/en/sql-reference/sql-all
+
+statements:
+  - id: copy_into_location
+    name: COPY INTO <location>
+    doc: https://docs.snowflake.com/en/sql-reference/sql/copy-into-location
+    tier: high
+    probes:
+      - id: table_stage_from_table
+        sql: "COPY INTO @%t FROM t;"
+      - id: named_stage_from_table
+        sql: "COPY INTO @s FROM t;"
+      - id: named_stage_path
+        sql: "COPY INTO @s/result/data_ FROM t;"
+      - id: namespace_stage
+        sql: "COPY INTO @db.sch.s/path FROM db.sch.t;"
+      - id: user_stage
+        sql: "COPY INTO @~ FROM t;"
+      - id: user_stage_path
+        sql: "COPY INTO @~/unload/ FROM t;"
+      - id: from_query
+        sql: "COPY INTO @s FROM (SELECT * FROM t);"
+      - id: from_query_limit
+        sql: "COPY INTO @s FROM (SELECT * FROM t LIMIT 5);"
+      - id: partition_by
+        sql: "COPY INTO @%t FROM t PARTITION BY ('date=' || to_varchar(dt, 'YYYY-MM-DD')) FILE_FORMAT = (TYPE = parquet);"
+      - id: file_format_name
+        sql: "COPY INTO @s FROM t FILE_FORMAT = (FORMAT_NAME = 'myformat');"
+      - id: file_format_name_namespace
+        sql: "COPY INTO @s FROM t FILE_FORMAT = (FORMAT_NAME = 'db.sch.myformat');"
+      - id: file_format_name_unquoted
+        sql: "COPY INTO @s FROM t FILE_FORMAT = (FORMAT_NAME = my_csv_format);"
+      - id: file_format_csv
+        sql: "COPY INTO @s FROM t FILE_FORMAT = (TYPE = CSV);"
+      - id: file_format_json
+        sql: "COPY INTO @s FROM t FILE_FORMAT = (TYPE = JSON);"
+      - id: file_format_parquet
+        sql: "COPY INTO @s FROM t FILE_FORMAT = (TYPE = PARQUET);"
+      - id: csv_compression
+        sql: "COPY INTO @s FROM t FILE_FORMAT = (TYPE = CSV COMPRESSION = GZIP);"
+      - id: csv_delimiters
+        sql: "COPY INTO @s FROM t FILE_FORMAT = (TYPE = CSV RECORD_DELIMITER = '\\n' FIELD_DELIMITER = '|');"
+      - id: csv_delimiters_none
+        sql: "COPY INTO @s FROM t FILE_FORMAT = (TYPE = CSV RECORD_DELIMITER = NONE FIELD_DELIMITER = NONE);"
+      - id: csv_file_extension
+        sql: "COPY INTO @s FROM t FILE_FORMAT = (TYPE = CSV FILE_EXTENSION = 'csv');"
+      - id: csv_escape
+        sql: "COPY INTO @s FROM t FILE_FORMAT = (TYPE = CSV ESCAPE = '\\\\' ESCAPE_UNENCLOSED_FIELD = '\\\\');"
+      - id: csv_formats
+        sql: "COPY INTO @s FROM t FILE_FORMAT = (TYPE = CSV DATE_FORMAT = 'YYYY-MM-DD' TIME_FORMAT = AUTO TIMESTAMP_FORMAT = 'YYYY-MM-DD HH24:MI:SS');"
+      - id: csv_binary_format
+        sql: "COPY INTO @s FROM t FILE_FORMAT = (TYPE = CSV BINARY_FORMAT = BASE64);"
+      - id: csv_enclosed_by
+        sql: "COPY INTO @s FROM t FILE_FORMAT = (TYPE = CSV FIELD_OPTIONALLY_ENCLOSED_BY = '\"');"
+      - id: csv_null_if_empty_as_null
+        sql: "COPY INTO @~ FROM t FILE_FORMAT = (TYPE = csv NULL_IF = ('NULL', 'null') EMPTY_FIELD_AS_NULL = false);"
+      - id: json_compression_extension
+        sql: "COPY INTO @s FROM t FILE_FORMAT = (TYPE = JSON COMPRESSION = BZ2 FILE_EXTENSION = 'json');"
+      - id: parquet_compression
+        sql: "COPY INTO @s FROM t FILE_FORMAT = (TYPE = PARQUET COMPRESSION = SNAPPY);"
+      - id: parquet_snappy_compression
+        sql: "COPY INTO @s FROM t FILE_FORMAT = (TYPE = PARQUET SNAPPY_COMPRESSION = TRUE);"
+      - id: copy_option_overwrite
+        sql: "COPY INTO @s FROM t OVERWRITE = TRUE;"
+      - id: copy_option_single
+        sql: "copy into @~ from t single = true;"
+      - id: copy_option_max_file_size
+        sql: "COPY INTO @s FROM t MAX_FILE_SIZE = 32000000;"
+      - id: copy_option_include_query_id
+        sql: "COPY INTO @%t FROM t FILE_FORMAT = (TYPE = parquet) INCLUDE_QUERY_ID = true;"
+      - id: copy_option_detailed_output
+        sql: "COPY INTO @s FROM t DETAILED_OUTPUT = TRUE;"
+      - id: copy_options_combined
+        sql: "COPY INTO @s FROM t OVERWRITE = TRUE SINGLE = FALSE MAX_FILE_SIZE = 5000000 INCLUDE_QUERY_ID = TRUE DETAILED_OUTPUT = FALSE;"
+      - id: header
+        sql: "COPY INTO @s FROM t FILE_FORMAT = (TYPE = CSV) HEADER = TRUE;"
+      - id: validation_mode
+        sql: "COPY INTO @s FROM (SELECT * FROM t LIMIT 5) VALIDATION_MODE = 'RETURN_ROWS';"
+      - id: validation_mode_unquoted
+        sql: "COPY INTO @s FROM (SELECT * FROM t) VALIDATION_MODE = RETURN_ROWS;"
+      - id: s3_storage_integration
+        sql: "COPY INTO 's3://mybucket/unload/' FROM t STORAGE_INTEGRATION = myint FILE_FORMAT = (FORMAT_NAME = my_csv_format);"
+      - id: s3_credentials
+        sql: "COPY INTO 's3://mybucket/unload/' FROM t CREDENTIALS = (AWS_KEY_ID = 'xxxx' AWS_SECRET_KEY = 'xxxxx' AWS_TOKEN = 'xxxxxx') FILE_FORMAT = (FORMAT_NAME = my_csv_format);"
+      - id: s3_encryption_cse
+        sql: "COPY INTO 's3://mybucket/unload/' FROM t STORAGE_INTEGRATION = myint ENCRYPTION = (TYPE = 'AWS_CSE' MASTER_KEY = 'eSxX0jzYfIamtnBKOEOwq80Au6NbSgPH5r4BDDwOaO8=');"
+      - id: s3_encryption_sse_s3
+        sql: "COPY INTO 's3://mybucket/unload/' FROM t STORAGE_INTEGRATION = myint ENCRYPTION = (TYPE = 'AWS_SSE_S3');"
+      - id: s3_encryption_sse_kms
+        sql: "COPY INTO 's3://mybucket/unload/' FROM t STORAGE_INTEGRATION = myint ENCRYPTION = (TYPE = 'AWS_SSE_KMS' KMS_KEY_ID = '1234abcd-12ab-34cd-56ef-1234567890ab');"
+      - id: s3_encryption_none
+        sql: "COPY INTO 's3://mybucket/unload/' FROM t STORAGE_INTEGRATION = myint ENCRYPTION = (TYPE = 'NONE');"
+      - id: gcs_storage_integration
+        sql: "COPY INTO 'gcs://mybucket/unload/' FROM t STORAGE_INTEGRATION = myint FILE_FORMAT = (FORMAT_NAME = my_csv_format);"
+      - id: gcs_encryption_kms
+        sql: "COPY INTO 'gcs://mybucket/unload/' FROM t STORAGE_INTEGRATION = myint ENCRYPTION = (TYPE = 'GCS_SSE_KMS' KMS_KEY_ID = 'key1');"
+      - id: azure_storage_integration
+        sql: "COPY INTO 'azure://myaccount.blob.core.windows.net/unload/' FROM t STORAGE_INTEGRATION = myint FILE_FORMAT = (FORMAT_NAME = my_csv_format);"
+      - id: azure_credentials
+        sql: "COPY INTO 'azure://myaccount.blob.core.windows.net/mycontainer/unload/' FROM t CREDENTIALS = (AZURE_SAS_TOKEN = 'xxxx') FILE_FORMAT = (FORMAT_NAME = my_csv_format);"
+      - id: azure_encryption
+        sql: "COPY INTO 'azure://myaccount.blob.core.windows.net/unload/' FROM t STORAGE_INTEGRATION = myint ENCRYPTION = (TYPE = 'AZURE_CSE' MASTER_KEY = 'kPxX0jzYfIamtnBKOEOwq80Au6NbSgPH5r4BDDwOaO8=');"
+    examples:
+      - "COPY INTO @%orderstiny/result/data_ FROM orderstiny FILE_FORMAT = (FORMAT_NAME = 'myformat' COMPRESSION = 'GZIP');"
+      - "COPY INTO @my_stage/result/data_ FROM (SELECT * FROM orderstiny) file_format =(format_name = 'myformat' compression = 'gzip');"
+      - "COPY INTO @%t1 FROM t1 PARTITION BY ('date=' || to_varchar(dt, 'YYYY-MM-DD') || '/hour=' || to_varchar(date_part(hour, ts))) FILE_FORMAT = (TYPE = parquet) MAX_FILE_SIZE = 32000000 HEADER = true;"
+
