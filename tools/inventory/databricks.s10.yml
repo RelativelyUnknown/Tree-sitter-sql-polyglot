@@ -1,0 +1,77 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: pivot
+    name: PIVOT clause
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-pivot
+    tier: high
+    probes:
+      - id: single_aggregate
+        sql: "SELECT * FROM t PIVOT (sum(c) FOR k IN (1, 2, 3));"
+      - id: aggregate_alias
+        sql: "SELECT * FROM t PIVOT (sum(c) AS total FOR k IN (1, 2, 3));"
+      - id: aggregate_alias_without_as
+        sql: "SELECT * FROM t PIVOT (sum(c) total FOR k IN (1, 2, 3));"
+      - id: multiple_aggregates
+        sql: "SELECT * FROM t PIVOT (sum(c) AS s, avg(c) AS a FOR k IN (1, 2, 3));"
+      - id: value_aliases_with_as
+        sql: "SELECT * FROM t PIVOT (sum(c) FOR k IN (1 AS q1, 2 AS q2, 3 AS q3));"
+      - id: value_aliases_without_as
+        sql: "SELECT * FROM t PIVOT (sum(c) FOR k IN (1 q1, 2 q2, 3 q3));"
+      - id: string_values
+        sql: "SELECT * FROM t PIVOT (sum(c) FOR k IN ('east', 'west'));"
+      - id: multi_column_for
+        sql: "SELECT * FROM t PIVOT (sum(c) FOR (k1, k2) IN ((1, 'east'), (1, 'west')));"
+      - id: multi_column_for_aliases
+        sql: "SELECT * FROM t PIVOT (sum(c) AS s FOR (k1, k2) IN ((1, 'east') AS q1_east, (1, 'west') AS q1_west));"
+      - id: single_column_in_parentheses
+        sql: "SELECT * FROM t PIVOT (sum(c) FOR (k) IN (1, 2));"
+      - id: table_alias
+        sql: "SELECT p.* FROM t PIVOT (sum(c) FOR k IN (1, 2)) AS p;"
+      - id: on_subquery
+        sql: "SELECT * FROM (SELECT a, k, c FROM t) PIVOT (sum(c) FOR k IN (1, 2));"
+      - id: with_join
+        sql: "SELECT * FROM t1 JOIN t2 ON t1.id = t2.id PIVOT (sum(c) FOR k IN (1, 2));"
+    examples:
+      - "SELECT year, region, q1, q2, q3, q4 FROM sales PIVOT (sum(sales) AS sales FOR quarter IN (1 AS q1, 2 AS q2, 3 AS q3, 4 AS q4));"
+      - "SELECT year, q1_east, q1_west, q2_east, q2_west, q3_east, q3_west, q4_east, q4_west FROM sales PIVOT (sum(sales) AS sales FOR (quarter, region) IN ((1, 'east') AS q1_east, (1, 'west') AS q1_west, (2, 'east') AS q2_east, (2, 'west') AS q2_west, (3, 'east') AS q3_east, (3, 'west') AS q3_west, (4, 'east') AS q4_east, (4, 'west') AS q4_west));"
+
+  - id: unpivot
+    name: UNPIVOT clause
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-unpivot
+    tier: high
+    probes:
+      - id: single_value
+        sql: "SELECT * FROM t UNPIVOT (v FOR k IN (a, b, c));"
+      - id: include_nulls
+        sql: "SELECT * FROM t UNPIVOT INCLUDE NULLS (v FOR k IN (a, b, c));"
+      - id: exclude_nulls
+        sql: "SELECT * FROM t UNPIVOT EXCLUDE NULLS (v FOR k IN (a, b, c));"
+      - id: column_aliases
+        sql: "SELECT * FROM t UNPIVOT (v FOR k IN (a AS x, b AS y, c AS z));"
+      - id: column_aliases_without_as
+        sql: "SELECT * FROM t UNPIVOT (v FOR k IN (a x, b y, c z));"
+      - id: qualified_column_name
+        sql: "SELECT * FROM t UNPIVOT (v FOR k IN (t.a, t.b));"
+      - id: single_value_in_parentheses
+        sql: "SELECT * FROM t UNPIVOT ((v) FOR k IN (a, b));"
+      - id: multi_value
+        sql: "SELECT * FROM t UNPIVOT ((v1, v2) FOR k IN ((a1, a2), (b1, b2)));"
+      - id: multi_value_aliases
+        sql: "SELECT * FROM t UNPIVOT ((v1, v2) FOR k IN ((a1, a2) AS first, (b1, b2) AS second));"
+      - id: multi_value_include_nulls
+        sql: "SELECT * FROM t UNPIVOT INCLUDE NULLS ((v1, v2) FOR k IN ((a1, a2), (b1, b2)));"
+      - id: table_alias
+        sql: "SELECT u.* FROM t UNPIVOT (v FOR k IN (a, b)) AS u;"
+      - id: table_alias_without_as
+        sql: "SELECT u.* FROM t UNPIVOT (v FOR k IN (a, b)) u;"
+      - id: table_alias_with_column_list
+        sql: "SELECT * FROM t UNPIVOT (v FOR k IN (a, b)) AS u (c1, c2);"
+      - id: on_subquery
+        sql: "SELECT * FROM (SELECT id, a, b FROM t) UNPIVOT (v FOR k IN (a, b));"
+    examples:
+      - "SELECT * FROM sales UNPIVOT INCLUDE NULLS (sales FOR quarter IN (q1 AS `Jan-Mar`, q2 AS `Apr-Jun`, q3 AS `Jul-Sep`, sales.q4 AS `Oct-Dec`));"
+      - "SELECT * FROM oncall UNPIVOT ((name, email, phone) FOR precedence IN ((name1, email1, phone1) AS primary, (name2, email2, phone2) AS secondary));"
