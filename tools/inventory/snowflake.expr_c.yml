@@ -492,3 +492,387 @@ expressions:
             (1, 10), (1, 11), (1, 12),
             (2, 20), (2, 21), (2, 22);
 
+  - id: c_lambda_expressions
+    name: Lambda expressions in higher-order functions
+    doc: https://docs.snowflake.com/en/sql-reference/functions/transform
+    tier: high
+    probes:
+      - id: transform_basic
+        sql: |-
+          SELECT TRANSFORM([1, 2, 3], a -> a * 2);
+      - id: transform_typed_arg
+        sql: |-
+          SELECT TRANSFORM([1, 2, 3], a INT -> a * 2);
+      - id: transform_structured_array
+        sql: |-
+          SELECT TRANSFORM([1, 2, 3]::ARRAY(INT), a INT -> a * 2);
+      - id: transform_path_access
+        sql: |-
+          SELECT TRANSFORM(c, x -> x:value || ' is the number') FROM t;
+      - id: transform_object_insert
+        sql: |-
+          SELECT TRANSFORM(o.detail, i -> OBJECT_INSERT(i, 'unit_price', (i:subtotal / i:quantity)::NUMERIC(10,2))) FROM t AS o;
+      - id: transform_outer_column
+        sql: |-
+          SELECT TRANSFORM(col1, v INT -> v + col2) FROM t;
+      - id: filter_basic
+        sql: |-
+          SELECT FILTER([1, NULL, 3, 5, NULL], a -> a IS NOT NULL);
+      - id: filter_path_comparison
+        sql: |-
+          SELECT FILTER([{'name':'Pat', 'value': 50}, {'name':'Dana', 'value': 25}], a -> a:value >= 50);
+      - id: filter_typed_arg
+        sql: |-
+          SELECT FILTER(col1, v INT -> v < col2) FROM t;
+      - id: reduce_basic
+        sql: |-
+          SELECT REDUCE([1, 2, 3], 0, (acc, val) -> acc + val);
+      - id: reduce_typed_args
+        sql: |-
+          SELECT REDUCE([1, 2, 3], 0, (acc INT, val INT) -> acc + val);
+      - id: reduce_structured_array
+        sql: |-
+          SELECT REDUCE([1, 2, 3]::ARRAY(INT), 0, (acc, val) -> acc + val);
+      - id: reduce_string_concat
+        sql: |-
+          SELECT REDUCE(['a', 'b', 'c'], '', (acc, val) -> acc || ' ' || val);
+      - id: reduce_array_accumulator
+        sql: |-
+          SELECT REDUCE([1, 2, 3, 4], [], (acc, val) -> ARRAY_PREPEND(acc, val));
+      - id: reduce_nested_function
+        sql: |-
+          SELECT REDUCE([1, NULL, 2], 0, (acc, val) -> acc + ZEROIFNULL(val));
+      - id: reduce_iff
+        sql: |-
+          SELECT REDUCE([5, 10, 15], 0, (acc, val) -> IFF(val < 7, acc + val * val, acc + val));
+      - id: reduce_path_access
+        sql: |-
+          SELECT REDUCE(o.detail, '', (acc, val) -> val:item || '\n' || acc) FROM t AS o;
+      - id: nested_lambda
+        sql: |-
+          SELECT TRANSFORM(c, x -> FILTER(x, y -> y > 0)) FROM t;
+      - id: lambda_in_where
+        sql: |-
+          SELECT c FROM t WHERE ARRAY_SIZE(FILTER(arr, x -> x > 1)) > 0;
+    examples:
+      - |-
+        SELECT TRANSFORM([1, 2, 3], a INT -> a * 2) AS "Multiply by Two";
+      - |-
+        SELECT TRANSFORM([1, 2, 3]::ARRAY(INT), a INT -> a * 2) AS "Multiply by Two (Structured)";
+      - |-
+        SELECT REDUCE([1,2,3],
+                      0,
+                      (acc, val) -> acc + val
+               ) AS sum_of_values;
+
+  - id: c_semistructured_path_access
+    name: Semi-structured path access
+    doc: https://docs.snowflake.com/en/sql-reference/user-guide/querying-semistructured
+    tier: high
+    probes:
+      - id: colon_dot
+        sql: |-
+          SELECT src:salesperson.name FROM car_sales;
+      - id: colon_single
+        sql: |-
+          SELECT src:dealership FROM car_sales;
+      - id: colon_quoted
+        sql: |-
+          SELECT src:"company name" FROM partners;
+      - id: colon_quoted_digits
+        sql: |-
+          SELECT zipcode_info:"94987" FROM addresses;
+      - id: colon_quoted_special
+        sql: |-
+          SELECT measurements:"#sPerSquareInch" FROM english_metrics;
+      - id: colon_quoted_chain
+        sql: |-
+          SELECT v:"object_outer_key1"."object_inner_key1a" FROM t;
+      - id: colon_quoted_colon_chain
+        sql: |-
+          SELECT v:"object_outer_key1":"object_inner_key1a" FROM t;
+      - id: colon_colon_chain
+        sql: |-
+          SELECT v:object_outer_key1:object_inner_key1a FROM t;
+      - id: bracket_string
+        sql: |-
+          SELECT src['salesperson']['name'] FROM car_sales;
+      - id: bracket_index
+        sql: |-
+          SELECT v[0] FROM t;
+      - id: bracket_index_chain
+        sql: |-
+          SELECT v[0][1] FROM t;
+      - id: colon_array_index
+        sql: |-
+          SELECT src:vehicle[0] FROM car_sales;
+      - id: colon_array_index_dot
+        sql: |-
+          SELECT src:customer[0].name, src:vehicle[0].price FROM car_sales;
+      - id: colon_quoted_array_index
+        sql: |-
+          SELECT v:"array2"[0]."id3" FROM t;
+      - id: colon_then_bracket_string
+        sql: |-
+          SELECT v:a['b'] FROM t;
+      - id: qualified_column
+        sql: |-
+          SELECT t.v:a.b FROM t;
+      - id: positional_column
+        sql: |-
+          SELECT S.$1:root[0].employees[0].firstName FROM t AS S;
+      - id: cast_double_colon
+        sql: |-
+          SELECT src:vehicle[0].price::NUMBER * 0.10 AS tax FROM car_sales;
+      - id: cast_varchar
+        sql: |-
+          SELECT src:dealership::VARCHAR FROM car_sales;
+      - id: cast_structured
+        sql: |-
+          SELECT v:items::ARRAY(INT) FROM t;
+      - id: path_in_where
+        sql: |-
+          SELECT * FROM car_sales WHERE src:dealership = 'Tindel Toyota';
+      - id: path_in_function
+        sql: |-
+          SELECT ARRAY_SIZE(v:a) FROM t;
+      - id: path_in_group_order
+        sql: |-
+          SELECT v:a::STRING, COUNT(*) FROM t GROUP BY 1 ORDER BY v:a::STRING;
+      - id: path_on_function_result
+        sql: |-
+          SELECT PARSE_JSON('{"a": [1, 2]}'):a[1];
+      - id: get_function
+        sql: |-
+          SELECT GET(v, ARRAY_SIZE(v) - 1) FROM colors;
+      - id: get_object_key
+        sql: |-
+          SELECT GET(v, 'a') FROM t;
+      - id: get_ignore_case
+        sql: |-
+          SELECT GET_IGNORE_CASE(v, 'A') FROM t;
+      - id: get_path_function
+        sql: |-
+          SELECT GET_PATH(v, 'array2[0].id3') FROM t;
+      - id: get_path_colon_separated
+        sql: |-
+          SELECT GET_PATH(v, 'object_outer_key1:object_inner_key1a') FROM t;
+      - id: map_bracket_access
+        sql: |-
+          SELECT m['a_key'] FROM t;
+    examples:
+      - |-
+        SELECT src:customer[0].name, src:vehicle[0].price
+            FROM car_sales
+            ORDER BY 1;
+      - |-
+        SELECT src:vehicle[0].price::NUMBER * 0.10 AS tax
+            FROM car_sales
+            ORDER BY tax;
+      - |-
+        SELECT id,
+               v:"array2"[0]."id3" AS id3_in_array2
+          FROM get_path_demo;
+
+  - id: c_semistructured_constructors
+    name: Array, object and VARIANT constructors
+    doc: https://docs.snowflake.com/en/sql-reference/data-types-semistructured
+    tier: high
+    probes:
+      - id: array_literal
+        sql: |-
+          SELECT [1, 2, 3];
+      - id: array_literal_empty
+        sql: |-
+          SELECT [];
+      - id: array_literal_mixed
+        sql: |-
+          SELECT [1, 'two', NULL, TRUE, [3, 4]];
+      - id: array_literal_expressions
+        sql: |-
+          SELECT [a + 1, UPPER(b), c::INT] FROM t;
+      - id: array_literal_index
+        sql: |-
+          SELECT [10, 20, 30][1];
+      - id: object_literal
+        sql: |-
+          SELECT {'a': 1, 'b': 'BBBB', 'c': NULL};
+      - id: object_literal_empty
+        sql: |-
+          SELECT {};
+      - id: object_literal_nested
+        sql: |-
+          SELECT {'a': {'b': [1, 2]}, 'c': 3};
+      - id: object_literal_expression_values
+        sql: |-
+          SELECT {'name': n, 'total': a + b} FROM t;
+      - id: object_literal_wildcard
+        sql: |-
+          SELECT {*} FROM t;
+      - id: object_literal_wildcard_exclude
+        sql: |-
+          SELECT {* EXCLUDE province} AS oc FROM demo_table_1;
+      - id: object_literal_wildcard_qualified
+        sql: |-
+          SELECT {my_table1.*} FROM my_table1 INNER JOIN my_table2 ON my_table2.col1 = my_table1.col1;
+      - id: object_literal_wildcard_exclude_list
+        sql: |-
+          SELECT {* EXCLUDE (col1, col2)} FROM my_table;
+      - id: object_literal_wildcard_ilike
+        sql: |-
+          SELECT {* ILIKE 'prov%'} FROM t;
+      - id: object_construct_pairs
+        sql: |-
+          SELECT OBJECT_CONSTRUCT('a', 1, 'b', 'BBBB', 'c', NULL);
+      - id: object_construct_empty
+        sql: |-
+          SELECT OBJECT_CONSTRUCT();
+      - id: object_construct_star
+        sql: |-
+          SELECT OBJECT_CONSTRUCT(*) AS oc FROM demo_table_1;
+      - id: object_construct_qualified_star
+        sql: |-
+          SELECT OBJECT_CONSTRUCT(t.*) FROM t;
+      - id: object_construct_star_ilike
+        sql: |-
+          SELECT OBJECT_CONSTRUCT(* ILIKE 'prov%') AS oc FROM demo_table_1;
+      - id: object_construct_star_exclude
+        sql: |-
+          SELECT OBJECT_CONSTRUCT(* EXCLUDE province) AS oc FROM demo_table_1;
+      - id: object_construct_subquery
+        sql: |-
+          SELECT OBJECT_CONSTRUCT('foo', 1234567, 'dataset_size', (SELECT COUNT(*) FROM demo_table_1)) FROM demo_table_1;
+      - id: object_construct_keep_null
+        sql: |-
+          SELECT OBJECT_CONSTRUCT_KEEP_NULL('a', NULL, 'b', 2);
+      - id: object_construct_variant_values
+        sql: |-
+          SELECT OBJECT_CONSTRUCT('name', 'Jones'::VARIANT, 'age', 42::VARIANT);
+      - id: array_construct
+        sql: |-
+          SELECT ARRAY_CONSTRUCT(10, 20, 30);
+      - id: array_construct_empty
+        sql: |-
+          SELECT ARRAY_CONSTRUCT();
+      - id: array_construct_nulls
+        sql: |-
+          SELECT ARRAY_CONSTRUCT(NULL, PARSE_JSON('null'), 'hello', 3::DOUBLE, 4, 5);
+      - id: array_construct_compact
+        sql: |-
+          SELECT ARRAY_CONSTRUCT_COMPACT(1, NULL, 3);
+      - id: parse_json_object
+        sql: |-
+          SELECT PARSE_JSON('{"a": 1, "b": [1, 2]}');
+      - id: try_parse_json
+        sql: |-
+          SELECT TRY_PARSE_JSON('{"a": 1}');
+      - id: variant_cast_literal
+        sql: |-
+          SELECT 'Sample'::VARIANT, 'Sample'::VARIANT::VARCHAR;
+      - id: to_variant_object_array
+        sql: |-
+          SELECT TO_VARIANT(c), TO_OBJECT(v), TO_ARRAY(c) FROM t;
+      - id: to_json_cast
+        sql: |-
+          SELECT TO_JSON(v), TO_JSON(v)::VARIANT FROM t;
+    examples:
+      - |-
+        SELECT OBJECT_CONSTRUCT('a', 1, 'b', 'BBBB', 'c', NULL);
+      - |-
+        SELECT OBJECT_CONSTRUCT(* EXCLUDE province) AS oc
+          FROM demo_table_1
+          ORDER BY oc['PROVINCE'];
+      - |-
+        SELECT ARRAY_CONSTRUCT(10, 20, 30);
+
+  - id: c_structured_types
+    name: Structured ARRAY, OBJECT and MAP types
+    doc: https://docs.snowflake.com/en/sql-reference/data-types-structured
+    tier: high
+    probes:
+      - id: cast_array_operator
+        sql: |-
+          SELECT [1, 2, 3]::ARRAY(NUMBER);
+      - id: cast_array_function
+        sql: |-
+          SELECT CAST([1, 2, 3] AS ARRAY(NUMBER));
+      - id: cast_array_precision
+        sql: |-
+          SELECT [1, 2, 3]::ARRAY(NUMBER(38, 0));
+      - id: cast_array_not_null
+        sql: |-
+          SELECT [1, 2, 3]::ARRAY(INT NOT NULL);
+      - id: cast_array_nested
+        sql: |-
+          SELECT [[1, 2], [3]]::ARRAY(ARRAY(INT));
+      - id: cast_variant_to_array
+        sql: |-
+          SELECT [1, 2, 3]::VARIANT::ARRAY(NUMBER);
+      - id: cast_object
+        sql: |-
+          SELECT {'str': 'test', 'num': 1}::OBJECT(str VARCHAR NOT NULL, num NUMBER);
+      - id: cast_object_empty
+        sql: |-
+          SELECT {}::OBJECT();
+      - id: cast_object_nested
+        sql: |-
+          SELECT {'a': {'b': 1}}::OBJECT(a OBJECT(b INT));
+      - id: cast_object_array_field
+        sql: |-
+          SELECT {'k': [1, 2]}::OBJECT(k ARRAY(INT));
+      - id: cast_map
+        sql: |-
+          SELECT {'a_key': 'a_val', 'b_key': 'b_val'}::MAP(VARCHAR, VARCHAR);
+      - id: cast_map_not_null
+        sql: |-
+          SELECT {'a': 1}::MAP(VARCHAR, NUMBER NOT NULL);
+      - id: cast_map_nested
+        sql: |-
+          SELECT {'a': [1]}::MAP(VARCHAR, ARRAY(INT));
+      - id: cast_function_object
+        sql: |-
+          SELECT CAST({'city': 'SF', 'state': 'CA'} AS OBJECT(city VARCHAR, state VARCHAR));
+      - id: column_array_type
+        sql: |-
+          CREATE TABLE t (c ARRAY(NUMBER));
+      - id: column_object_type
+        sql: |-
+          CREATE TABLE t (c OBJECT(str VARCHAR NOT NULL, num NUMBER(38, 0)));
+      - id: column_map_type
+        sql: |-
+          CREATE TABLE t (c MAP(VARCHAR, VARCHAR));
+      - id: column_nested_structured_type
+        sql: |-
+          CREATE TABLE t (c ARRAY(OBJECT(a INT, b MAP(VARCHAR, ARRAY(INT)))));
+      - id: structured_path_access
+        sql: |-
+          SELECT c:str, c['num'], d[0] FROM t;
+      - id: typeof_system_function
+        sql: |-
+          SELECT SYSTEM$TYPEOF([1, 2, 3]::ARRAY(NUMBER)) AS structured_array;
+    examples:
+      - |-
+        SELECT
+          SYSTEM$TYPEOF(
+            [1, 2, 3]::ARRAY(NUMBER)
+          ) AS structured_array,
+          SYSTEM$TYPEOF(
+            [1, 2, 3]
+          ) AS semi_structured_array;
+      - |-
+        SELECT
+          SYSTEM$TYPEOF(
+            {
+              'a_key': 'a_val',
+              'b_key': 'b_val'
+            }::MAP(VARCHAR, VARCHAR)
+          ) AS map_example;
+      - |-
+        SELECT
+          SYSTEM$TYPEOF(
+            CAST ([1,2,3] AS ARRAY(NUMBER))
+          ) AS array_cast_type,
+          SYSTEM$TYPEOF(
+            CAST ([1,2,3]::VARIANT AS ARRAY(NUMBER))
+          ) AS variant_cast_type;
+
