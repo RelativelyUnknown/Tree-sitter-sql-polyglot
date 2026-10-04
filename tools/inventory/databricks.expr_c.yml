@@ -1,0 +1,416 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements: []
+
+expressions:
+  - id: c_aggregate_filter_distinct
+    name: Aggregate functions (DISTINCT, ALL, FILTER)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/count
+    tier: high
+    probes:
+      - { id: count_star, sql: "SELECT count(*) FROM t;" }
+      - { id: count_all_star, sql: "SELECT count(ALL *) FROM t;" }
+      - { id: count_distinct_star, sql: "SELECT count(DISTINCT *) FROM t;" }
+      - { id: count_expr, sql: "SELECT count(c) FROM t;" }
+      - { id: count_distinct, sql: "SELECT count(DISTINCT c) FROM t;" }
+      - { id: count_distinct_multi, sql: "SELECT count(DISTINCT c1, c2) FROM t;" }
+      - { id: count_all, sql: "SELECT count(ALL c) FROM t;" }
+      - { id: count_filter, sql: "SELECT count(c) FILTER (WHERE c < 10) FROM t;" }
+      - { id: count_star_filter, sql: "SELECT count(*) FILTER (WHERE c < 10) FROM t;" }
+      - { id: count_distinct_filter, sql: "SELECT count(DISTINCT c) FILTER (WHERE c > 0) FROM t;" }
+      - { id: sum_distinct, sql: "SELECT sum(DISTINCT c) FROM t;" }
+      - { id: sum_all, sql: "SELECT sum(ALL c) FROM t;" }
+      - { id: sum_filter, sql: "SELECT sum(c) FILTER (WHERE d = 'a') FROM t;" }
+      - { id: multiple_filters, sql: "SELECT sum(c) FILTER (WHERE d = 'a') AS a_sum, sum(c) FILTER (WHERE d = 'b') AS b_sum FROM t;" }
+      - { id: count_if_filter, sql: "SELECT count_if(c > 0) FILTER (WHERE d IS NOT NULL) FROM t;" }
+      - { id: array_agg_distinct, sql: "SELECT array_agg(DISTINCT c) FROM t;" }
+      - { id: collect_list_filter, sql: "SELECT collect_list(c) FILTER (WHERE c > 0) FROM t;" }
+      - { id: collect_set_filter, sql: "SELECT collect_set(c) FILTER (WHERE c > 0) FROM t;" }
+      - { id: approx_count_distinct_filter, sql: "SELECT approx_count_distinct(c, 0.05) FILTER (WHERE c > 0) FROM t;" }
+      - { id: percentile_filter, sql: "SELECT percentile(DISTINCT c, 0.5, 1) FILTER (WHERE c > 0) FROM t;" }
+      - { id: median_filter, sql: "SELECT median(DISTINCT c) FILTER (WHERE c > 0) FROM t;" }
+      - { id: mode_filter, sql: "SELECT mode(c, true) FILTER (WHERE c > 0) FROM t;" }
+      - { id: max_by_filter, sql: "SELECT max_by(a, b) FILTER (WHERE b > 0) FROM t;" }
+      - { id: regr_slope_filter, sql: "SELECT regr_slope(DISTINCT y, x) FILTER (WHERE x > 0) FROM t;" }
+      - { id: first_ignore_nulls, sql: "SELECT first(c) FILTER (WHERE c > 0) IGNORE NULLS FROM t;" }
+      - { id: last_respect_nulls, sql: "SELECT last(c, false) RESPECT NULLS FROM t;" }
+      - { id: any_value_ignore_nulls, sql: "SELECT any_value(c) IGNORE NULLS FROM t;" }
+      - { id: first_value_ignore_nulls, sql: "SELECT first_value(c, true) FILTER (WHERE c > 0) IGNORE NULLS FROM t;" }
+      - { id: last_value_respect_nulls, sql: "SELECT last_value(c) RESPECT NULLS FROM t;" }
+      - { id: grouping, sql: "SELECT a, grouping(a) FROM t GROUP BY a WITH ROLLUP;" }
+      - { id: grouping_id, sql: "SELECT a, b, grouping_id(a, b) FROM t GROUP BY a, b WITH CUBE;" }
+    examples:
+      - "SELECT count(*) FROM VALUES (NULL), (5), (5), (20) AS tab(col);"
+      - "SELECT count(col) FILTER (WHERE col < 10) FROM VALUES (NULL), (5), (5), (20) AS tab(col);"
+      - "SELECT count(DISTINCT col1, col2) FROM VALUES (NULL, NULL), (5, NULL), (5, 1), (5, 2), (NULL, 2), (20, 2) AS tab(col1, col2);"
+
+  - id: c_aggregate_within_group
+    name: Ordered-set aggregates (WITHIN GROUP)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/listagg
+    tier: high
+    probes:
+      - { id: listagg_default, sql: "SELECT listagg(c) FROM t;" }
+      - { id: listagg_delimiter, sql: "SELECT listagg(c, ', ') FROM t;" }
+      - { id: listagg_distinct, sql: "SELECT listagg(DISTINCT c) FROM t;" }
+      - { id: listagg_all, sql: "SELECT listagg(ALL c, ',') FROM t;" }
+      - { id: listagg_within_group, sql: "SELECT listagg(c) WITHIN GROUP (ORDER BY c DESC) FROM t;" }
+      - { id: listagg_within_group_delimiter, sql: "SELECT listagg(c, ', ') WITHIN GROUP (ORDER BY c) FROM t;" }
+      - { id: listagg_within_group_asc_nulls, sql: "SELECT listagg(c) WITHIN GROUP (ORDER BY c ASC NULLS LAST) FROM t;" }
+      - { id: listagg_within_group_multi, sql: "SELECT listagg(c) WITHIN GROUP (ORDER BY c DESC NULLS FIRST, d ASC) FROM t;" }
+      - { id: listagg_within_group_filter, sql: "SELECT listagg(c, ',') WITHIN GROUP (ORDER BY c) FILTER (WHERE c IS NOT NULL) FROM t;" }
+      - { id: listagg_filter, sql: "SELECT listagg(c) FILTER (WHERE c <> 'x') FROM t;" }
+      - { id: string_agg_within_group, sql: "SELECT string_agg(c, ', ') WITHIN GROUP (ORDER BY c DESC NULLS LAST) FROM t;" }
+      - { id: string_agg_distinct_filter, sql: "SELECT string_agg(DISTINCT c) FILTER (WHERE c IS NOT NULL) FROM t;" }
+      - { id: percentile_cont, sql: "SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY c) FROM t;" }
+      - { id: percentile_cont_desc, sql: "SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY c DESC) FROM t;" }
+      - { id: percentile_cont_array, sql: "SELECT percentile_cont(array(0.5, 0.4, 0.1)) WITHIN GROUP (ORDER BY c) FROM t;" }
+      - { id: percentile_disc, sql: "SELECT percentile_disc(0.5) WITHIN GROUP (ORDER BY c ASC) FROM t;" }
+      - { id: percentile_disc_array, sql: "SELECT percentile_disc(array(0.25, 0.75)) WITHIN GROUP (ORDER BY c DESC) FROM t;" }
+      - { id: percentile_cont_over, sql: "SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY c) OVER (PARTITION BY d) FROM t;" }
+    examples:
+      - "SELECT listagg(col) FROM VALUES ('a'), ('b'), ('c') AS tab(col);"
+      - "SELECT listagg(col, ', ') FROM VALUES ('a'), ('b'), ('c') AS tab(col);"
+      - "SELECT listagg(col) WITHIN GROUP (ORDER BY col DESC) FROM VALUES ('a'), ('b'), ('c') AS tab(col);"
+
+  - id: c_window_over
+    name: Window functions (OVER clause)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-window-functions
+    tier: high
+    probes:
+      - { id: over_empty, sql: "SELECT sum(c) OVER () FROM t;" }
+      - { id: over_partition_by, sql: "SELECT sum(c) OVER (PARTITION BY d) FROM t;" }
+      - { id: over_partition_by_multi, sql: "SELECT sum(c) OVER (PARTITION BY d, e) FROM t;" }
+      - { id: over_order_by, sql: "SELECT sum(c) OVER (ORDER BY d) FROM t;" }
+      - { id: over_order_by_multi, sql: "SELECT sum(c) OVER (ORDER BY d DESC NULLS LAST, e ASC NULLS FIRST) FROM t;" }
+      - { id: over_partition_order, sql: "SELECT sum(c) OVER (PARTITION BY d ORDER BY e) FROM t;" }
+      - { id: over_partition_order_frame, sql: "SELECT sum(c) OVER (PARTITION BY d ORDER BY e ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: over_distribute_by, sql: "SELECT sum(c) OVER (DISTRIBUTE BY d) FROM t;" }
+      - { id: over_distribute_by_sort_by, sql: "SELECT sum(c) OVER (DISTRIBUTE BY d SORT BY e) FROM t;" }
+      - { id: over_distribute_by_multi, sql: "SELECT sum(c) OVER (DISTRIBUTE BY d, e SORT BY f DESC) FROM t;" }
+      - { id: over_cluster_by, sql: "SELECT sum(c) OVER (CLUSTER BY d) FROM t;" }
+      - { id: over_sort_by, sql: "SELECT sum(c) OVER (SORT BY e) FROM t;" }
+      - { id: over_partition_by_sort_by, sql: "SELECT sum(c) OVER (PARTITION BY d SORT BY e) FROM t;" }
+      - { id: row_number, sql: "SELECT row_number() OVER (PARTITION BY d ORDER BY e) FROM t;" }
+      - { id: rank, sql: "SELECT rank() OVER (PARTITION BY d ORDER BY e) FROM t;" }
+      - { id: dense_rank, sql: "SELECT dense_rank() OVER (ORDER BY e) FROM t;" }
+      - { id: percent_rank, sql: "SELECT percent_rank() OVER (ORDER BY e) FROM t;" }
+      - { id: ntile, sql: "SELECT ntile(4) OVER (ORDER BY e) FROM t;" }
+      - { id: ntile_no_arg, sql: "SELECT ntile() OVER (ORDER BY e) FROM t;" }
+      - { id: cume_dist_range, sql: "SELECT cume_dist() OVER (PARTITION BY d ORDER BY e RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: lag, sql: "SELECT lag(c) OVER (PARTITION BY d ORDER BY e) FROM t;" }
+      - { id: lag_offset_default, sql: "SELECT lag(c, 2, 0) OVER (PARTITION BY d ORDER BY e) FROM t;" }
+      - { id: lead_offset_default, sql: "SELECT lead(c, 1, 0) OVER (PARTITION BY d ORDER BY e) FROM t;" }
+      - { id: lag_ignore_nulls, sql: "SELECT lag(c, 1) IGNORE NULLS OVER (ORDER BY e) FROM t;" }
+      - { id: lead_respect_nulls, sql: "SELECT lead(c) RESPECT NULLS OVER (ORDER BY e) FROM t;" }
+      - { id: nth_value, sql: "SELECT nth_value(c, 2) OVER (ORDER BY e) FROM t;" }
+      - { id: nth_value_ignore_nulls, sql: "SELECT nth_value(c, 2) IGNORE NULLS OVER (ORDER BY e) FROM t;" }
+      - { id: first_value_ignore_nulls, sql: "SELECT first_value(c) IGNORE NULLS OVER (PARTITION BY d ORDER BY e) FROM t;" }
+      - { id: first_value_ignorenull_arg, sql: "SELECT first_value(c, true) OVER (PARTITION BY d ORDER BY e) FROM t;" }
+      - { id: last_value_respect_nulls, sql: "SELECT last_value(c) RESPECT NULLS OVER (PARTITION BY d ORDER BY e ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: first_over, sql: "SELECT first(c) OVER (PARTITION BY d ORDER BY e) FROM t;" }
+      - { id: last_ignore_nulls_over, sql: "SELECT last(c) IGNORE NULLS OVER (ORDER BY e) FROM t;" }
+      - { id: any_value_over, sql: "SELECT any_value(c) OVER (PARTITION BY d) FROM t;" }
+      - { id: count_star_over, sql: "SELECT count(*) OVER (PARTITION BY d) FROM t;" }
+      - { id: avg_over, sql: "SELECT avg(c) OVER (PARTITION BY d ORDER BY e) FROM t;" }
+      - { id: min_max_over, sql: "SELECT min(c) OVER (PARTITION BY d), max(c) OVER (PARTITION BY d) FROM t;" }
+      - { id: collect_list_over, sql: "SELECT collect_list(c) OVER (PARTITION BY d ORDER BY e) FROM t;" }
+      - { id: median_over, sql: "SELECT median(c) OVER (PARTITION BY d) FROM t;" }
+      - { id: listagg_over, sql: "SELECT listagg(c, ',') OVER (PARTITION BY d) FROM t;" }
+      - { id: window_in_expression, sql: "SELECT c - avg(c) OVER (PARTITION BY d) AS diff FROM t;" }
+      - { id: window_in_qualify, sql: "SELECT c FROM t QUALIFY row_number() OVER (PARTITION BY d ORDER BY e) = 1;" }
+      - { id: window_in_order_by, sql: "SELECT c FROM t ORDER BY rank() OVER (ORDER BY e);" }
+    examples:
+      - "SELECT name, dept, RANK() OVER (PARTITION BY dept ORDER BY salary) AS rank FROM employees;"
+      - "SELECT name, dept, DENSE_RANK() OVER (PARTITION BY dept ORDER BY salary ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS dense_rank FROM employees;"
+      - "SELECT name, salary, LAG(salary) OVER (PARTITION BY dept ORDER BY salary) AS lag, LEAD(salary, 1, 0) OVER (PARTITION BY dept ORDER BY salary) AS lead FROM employees;"
+
+  - id: c_window_frame
+    name: Window frame clause
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-window-functions-frame
+    tier: high
+    probes:
+      - { id: rows_unbounded_preceding, sql: "SELECT sum(c) OVER (ORDER BY e ROWS UNBOUNDED PRECEDING) FROM t;" }
+      - { id: rows_n_preceding, sql: "SELECT sum(c) OVER (ORDER BY e ROWS 2 PRECEDING) FROM t;" }
+      - { id: rows_current_row, sql: "SELECT sum(c) OVER (ORDER BY e ROWS CURRENT ROW) FROM t;" }
+      - { id: rows_n_following, sql: "SELECT sum(c) OVER (ORDER BY e ROWS 2 FOLLOWING) FROM t;" }
+      - { id: range_unbounded_preceding, sql: "SELECT sum(c) OVER (ORDER BY e RANGE UNBOUNDED PRECEDING) FROM t;" }
+      - { id: range_current_row, sql: "SELECT sum(c) OVER (ORDER BY e RANGE CURRENT ROW) FROM t;" }
+      - { id: rows_between_unbounded_current, sql: "SELECT sum(c) OVER (ORDER BY e ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: rows_between_unbounded_unbounded, sql: "SELECT sum(c) OVER (ORDER BY e ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: rows_between_n_preceding_following, sql: "SELECT avg(c) OVER (ORDER BY e ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING) FROM t;" }
+      - { id: rows_between_n_preceding_n_preceding, sql: "SELECT avg(c) OVER (ORDER BY e ROWS BETWEEN 3 PRECEDING AND 1 PRECEDING) FROM t;" }
+      - { id: rows_between_n_preceding_current, sql: "SELECT avg(c) OVER (ORDER BY e ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: rows_between_current_following, sql: "SELECT avg(c) OVER (ORDER BY e ROWS BETWEEN CURRENT ROW AND 2 FOLLOWING) FROM t;" }
+      - { id: rows_between_current_unbounded, sql: "SELECT sum(c) OVER (ORDER BY e ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: rows_between_n_following_n_following, sql: "SELECT sum(c) OVER (ORDER BY e ROWS BETWEEN 1 FOLLOWING AND 3 FOLLOWING) FROM t;" }
+      - { id: rows_between_current_current, sql: "SELECT sum(c) OVER (ORDER BY e ROWS BETWEEN CURRENT ROW AND CURRENT ROW) FROM t;" }
+      - { id: range_between_unbounded_current, sql: "SELECT sum(c) OVER (ORDER BY e RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: range_between_unbounded_unbounded, sql: "SELECT sum(c) OVER (ORDER BY e RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: range_between_current_unbounded, sql: "SELECT sum(c) OVER (ORDER BY e RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: range_between_n_preceding_following, sql: "SELECT sum(c) OVER (ORDER BY e RANGE BETWEEN 5 PRECEDING AND 5 FOLLOWING) FROM t;" }
+      - { id: range_between_interval, sql: "SELECT sum(c) OVER (ORDER BY ts RANGE BETWEEN INTERVAL 1 DAY PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: range_between_interval_following, sql: "SELECT sum(c) OVER (ORDER BY ts RANGE BETWEEN INTERVAL 1 DAY PRECEDING AND INTERVAL 1 DAY FOLLOWING) FROM t;" }
+      - { id: frame_with_partition, sql: "SELECT sum(c) OVER (PARTITION BY d ORDER BY e ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;" }
+    examples:
+      - "SELECT name, dept, age, CUME_DIST() OVER (PARTITION BY dept ORDER BY age RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS cume_dist FROM employees;"
+
+  - id: c_window_named
+    name: Named windows (WINDOW clause)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-named-window
+    tier: high
+    probes:
+      - { id: over_name, sql: "SELECT avg(c) OVER w FROM t WINDOW w AS (ORDER BY e);" }
+      - { id: over_name_parens, sql: "SELECT avg(c) OVER (w) FROM t WINDOW w AS (ORDER BY e);" }
+      - { id: window_partition, sql: "SELECT sum(c) OVER w FROM t WINDOW w AS (PARTITION BY d);" }
+      - { id: window_partition_order, sql: "SELECT sum(c) OVER w FROM t WINDOW w AS (PARTITION BY d ORDER BY e);" }
+      - { id: window_frame, sql: "SELECT min(salary) OVER win FROM t WINDOW win AS (ORDER BY age ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING);" }
+      - { id: window_empty, sql: "SELECT sum(c) OVER w FROM t WINDOW w AS ();" }
+      - { id: window_multiple_defs, sql: "SELECT sum(c) OVER w1, rank() OVER w2 FROM t WINDOW w1 AS (PARTITION BY d), w2 AS (ORDER BY e);" }
+      - { id: window_multiple_uses, sql: "SELECT avg(a) OVER w, min(b) OVER w, max(b) OVER w FROM t WINDOW w AS (ORDER BY e);" }
+      - { id: window_distribute_sort, sql: "SELECT sum(c) OVER w FROM t WINDOW w AS (DISTRIBUTE BY d SORT BY e);" }
+      - { id: window_with_group_by, sql: "SELECT d, sum(sum(c)) OVER w FROM t GROUP BY d WINDOW w AS (ORDER BY d);" }
+      - { id: window_with_qualify, sql: "SELECT c FROM t WINDOW w AS (PARTITION BY d ORDER BY e) QUALIFY row_number() OVER w = 1;" }
+    examples:
+      - "SELECT round(avg(age) OVER win, 1) AS avgage, round(avg(salary) OVER win, 1) AS avgsalary, min(salary) OVER win AS minsalary, max(salary) OVER win AS maxsalary, count(1) OVER win AS numEmps FROM employees WINDOW win AS (ORDER BY age ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING);"
+
+  - id: c_lambda_functions
+    name: Lambda functions
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-lambda-functions
+    tier: high
+    probes:
+      - { id: single_param, sql: "SELECT transform(array(1, 2, 3), x -> x + 1);" }
+      - { id: two_params, sql: "SELECT transform(array(1, 2, 3), (x, i) -> x + i);" }
+      - { id: one_param_parens, sql: "SELECT transform(array(1, 2, 3), (x) -> x * 2);" }
+      - { id: filter_lambda, sql: "SELECT filter(array(1, 2, 3), x -> x % 2 == 1);" }
+      - { id: filter_two_params, sql: "SELECT filter(array(0, 2, 3), (x, i) -> x > i);" }
+      - { id: filter_is_not_null, sql: "SELECT filter(array(0, NULL, 2, 3, NULL), x -> x IS NOT NULL);" }
+      - { id: exists_lambda, sql: "SELECT exists(array(1, 2, 3), x -> x % 2 == 0);" }
+      - { id: forall_lambda, sql: "SELECT forall(array(1, 2, 3), x -> x % 2 == 0);" }
+      - { id: aggregate_lambda, sql: "SELECT aggregate(array(1, 2, 3), 0, (acc, x) -> acc + x);" }
+      - { id: aggregate_finish, sql: "SELECT aggregate(array(1, 2, 3), 0, (acc, x) -> acc + x, acc -> acc * 10);" }
+      - { id: reduce_lambda, sql: "SELECT reduce(array(1, 2, 3), 0, (acc, x) -> acc + x, acc -> acc * 10);" }
+      - { id: aggregate_struct_acc, sql: "SELECT aggregate(array(1, 2, 3, 4), named_struct('sum', 0, 'cnt', 0), (acc, x) -> named_struct('sum', acc.sum + x, 'cnt', acc.cnt + 1), acc -> acc.sum / acc.cnt) AS avg;" }
+      - { id: array_sort_lambda, sql: "SELECT array_sort(array('Hello', 'World'), (p1, p2) -> CASE WHEN p1 = p2 THEN 0 WHEN reverse(p1) < reverse(p2) THEN -1 ELSE 1 END);" }
+      - { id: zip_with_lambda, sql: "SELECT zip_with(array(1, 2, 3), array(4, 5, 6), (x, y) -> x + y);" }
+      - { id: map_filter_lambda, sql: "SELECT map_filter(map(1, 0, 2, 2, 3, -1), (k, v) -> k > v);" }
+      - { id: map_zip_with_lambda, sql: "SELECT map_zip_with(map(1, 'a', 2, 'b'), map(1, 'x', 2, 'y'), (k, v1, v2) -> concat(v1, v2));" }
+      - { id: transform_keys_lambda, sql: "SELECT transform_keys(map_from_arrays(array(1, 2, 3), array(1, 2, 3)), (k, v) -> k + 1);" }
+      - { id: transform_values_lambda, sql: "SELECT transform_values(map_from_arrays(array(1, 2, 3), array(1, 2, 3)), (k, v) -> v + 1);" }
+      - { id: nested_lambda, sql: "SELECT transform(a, x -> transform(x, y -> y + 1)) FROM t;" }
+      - { id: lambda_captures_column, sql: "SELECT transform(a, x -> x + b) FROM t;" }
+      - { id: lambda_case, sql: "SELECT transform(a, x -> CASE WHEN x > 0 THEN 'pos' ELSE 'neg' END) FROM t;" }
+      - { id: lambda_function_call, sql: "SELECT transform(a, x -> upper(x)) FROM t;" }
+      - { id: lambda_in_where, sql: "SELECT * FROM t WHERE exists(a, x -> x > 0);" }
+      - { id: lambda_in_case, sql: "SELECT CASE WHEN forall(a, x -> x > 0) THEN 1 ELSE 0 END FROM t;" }
+    examples:
+      - "SELECT array_sort(array('Hello', 'World'), (p1, p2) -> CASE WHEN p1 = p2 THEN 0 WHEN reverse(p1) < reverse(p2) THEN -1 ELSE 1 END);"
+      - "SELECT transform(array(1, 2, 3), x -> x + 1);"
+      - "SELECT transform(array(1, 2, 3), (x, i) -> x + i);"
+
+  - id: c_array_map_access
+    name: Array and map access and constructors
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/bracketsign
+    tier: high
+    probes:
+      - { id: array_constructor, sql: "SELECT array(1, 2, 3);" }
+      - { id: array_constructor_empty, sql: "SELECT array();" }
+      - { id: array_constructor_mixed, sql: "SELECT array(1.0, 1, 'hello');" }
+      - { id: array_constructor_columns, sql: "SELECT array(c1, c2) FROM t;" }
+      - { id: array_nested, sql: "SELECT array(array(1, 2), array(3, 4));" }
+      - { id: bracket_index, sql: "SELECT a[2] FROM t;" }
+      - { id: bracket_index_expr, sql: "SELECT a[i + 1] FROM t;" }
+      - { id: bracket_on_constructor, sql: "SELECT array(1, 2, 3)[1];" }
+      - { id: bracket_nested, sql: "SELECT a[0][1] FROM t;" }
+      - { id: bracket_in_where, sql: "SELECT * FROM t WHERE a[0] > 1;" }
+      - { id: map_constructor, sql: "SELECT map(1.0, '2', 3.0, '4');" }
+      - { id: map_constructor_empty, sql: "SELECT map();" }
+      - { id: map_bracket_key, sql: "SELECT m[1] FROM t;" }
+      - { id: map_bracket_string_key, sql: "SELECT m['key'] FROM t;" }
+      - { id: map_bracket_on_constructor, sql: "SELECT map('three', 3)['three'];" }
+      - { id: map_dot_key, sql: "SELECT map('three', 3).three;" }
+      - { id: map_dot_backtick_key, sql: "SELECT map('서울시', 'Seoul').`서울시`;" }
+      - { id: map_from_arrays, sql: "SELECT map_from_arrays(array(1.0, 3.0), array('2', '4'));" }
+      - { id: map_from_entries, sql: "SELECT map_from_entries(array(struct(1, 'a'), struct(2, 'b')));" }
+      - { id: str_to_map, sql: "SELECT str_to_map('a:1,b:2', ',', ':');" }
+      - { id: element_at_array, sql: "SELECT element_at(array(1, 2, 3), 2);" }
+      - { id: element_at_map, sql: "SELECT element_at(map(1, 'a', 2, 'b'), 2);" }
+      - { id: try_element_at, sql: "SELECT try_element_at(array(1, 2, 3), 5);" }
+      - { id: get_array, sql: "SELECT get(array(1, 2, 3), 0);" }
+      - { id: array_contains, sql: "SELECT array_contains(array(1, 2, 3), 2);" }
+      - { id: size_array, sql: "SELECT size(array('b', 'd', 'c', 'a'));" }
+      - { id: sort_array, sql: "SELECT sort_array(array('b', 'd', NULL, 'c', 'a'), true);" }
+      - { id: sequence, sql: "SELECT sequence(1, 5);" }
+      - { id: sequence_step, sql: "SELECT sequence(to_date('2018-01-01'), to_date('2018-03-01'), INTERVAL 1 MONTH);" }
+      - { id: slice, sql: "SELECT slice(array(1, 2, 3, 4), 2, 2);" }
+      - { id: flatten, sql: "SELECT flatten(array(array(1, 2), array(3, 4)));" }
+      - { id: array_union, sql: "SELECT array_union(array(1, 2, 3), array(1, 3, 5));" }
+      - { id: arrays_zip, sql: "SELECT arrays_zip(array(1, 2, 3), array(2, 3, 4));" }
+      - { id: map_concat, sql: "SELECT map_concat(map(1, 'a', 2, 'b'), map(3, 'c'));" }
+      - { id: explode, sql: "SELECT explode(array(10, 20));" }
+      - { id: explode_map, sql: "SELECT explode(map(1, 'a', 2, 'b'));" }
+      - { id: posexplode, sql: "SELECT posexplode(array(10, 20));" }
+      - { id: inline_array_of_struct, sql: "SELECT inline(array(struct(1, 'a'), struct(2, 'b')));" }
+      - { id: stack, sql: "SELECT stack(2, 1, 2, 3);" }
+      - { id: array_agg_collect, sql: "SELECT collect_list(c), collect_set(c), array_agg(c) FROM t;" }
+    examples:
+      - "SELECT a[2] FROM VALUES (array(10, 20, 30)) AS T(a);"
+      - "SELECT m[1] FROM VALUES (map(1, 'Hello', 2, 'World')) AS T(m);"
+      - "SELECT array(1, 2, 3);"
+
+  - id: c_struct_access
+    name: Struct constructors and field access
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/dotsign
+    tier: high
+    probes:
+      - { id: struct_constructor, sql: "SELECT struct(c1, c2, c3) FROM t;" }
+      - { id: struct_alias, sql: "SELECT struct(1, 2 AS two, 3);" }
+      - { id: struct_alias_no_as, sql: "SELECT struct(1 one, 2 two);" }
+      - { id: named_struct, sql: "SELECT named_struct('a', 1, 'b', 2, 'c', 3);" }
+      - { id: named_struct_nested, sql: "SELECT named_struct('a', named_struct('x', 1), 'b', array(1, 2));" }
+      - { id: field_access, sql: "SELECT s.f FROM t;" }
+      - { id: field_access_nested, sql: "SELECT s.f.g FROM t;" }
+      - { id: field_access_table_qualified, sql: "SELECT t.s.f FROM t;" }
+      - { id: field_access_schema_qualified, sql: "SELECT a.a.a.a FROM a.a;" }
+      - { id: field_access_backtick, sql: "SELECT s.`field name` FROM t;" }
+      - { id: field_access_on_constructor, sql: "SELECT named_struct('a', 1, 'b', 2).a;" }
+      - { id: field_then_bracket, sql: "SELECT s.arr[0] FROM t;" }
+      - { id: bracket_then_field, sql: "SELECT arr[0].f FROM t;" }
+      - { id: field_access_in_where, sql: "SELECT * FROM t WHERE s.f > 1;" }
+      - { id: star_expansion_struct, sql: "SELECT s.* FROM t;" }
+      - { id: star_expansion_qualified, sql: "SELECT t.* FROM t;" }
+      - { id: star_in_function, sql: "SELECT struct(*) FROM t;" }
+      - { id: star_in_function_qualified, sql: "SELECT concat(t.*) FROM t;" }
+      - { id: star_count_table, sql: "SELECT count(t.*) FROM t;" }
+      - { id: struct_comparison, sql: "SELECT * FROM t WHERE s = named_struct('a', 1, 'b', 2);" }
+    examples:
+      - "SELECT struct(c1, c2, c3) FROM VALUES (1, 2, 3) AS T(c1, c2, c3);"
+      - "SELECT struct(1, 2 AS two, 3);"
+      - "SELECT named_struct('a', 1, 'b', 2, 'c', 3);"
+
+  - id: c_json_colon_path
+    name: JSON and VARIANT path expressions (colon operator)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-json-path-expression
+    tier: high
+    probes:
+      - { id: colon_identifier, sql: "SELECT raw:owner FROM store_data;" }
+      - { id: colon_multiple, sql: "SELECT raw:owner, raw:OWNER FROM store_data;" }
+      - { id: colon_bracket_field, sql: "SELECT raw:['owner'] FROM store_data;" }
+      - { id: colon_bracket_field_space, sql: "SELECT raw: ['owner'] FROM store_data;" }
+      - { id: colon_backtick, sql: "SELECT raw:`zip code` FROM store_data;" }
+      - { id: colon_backtick_space, sql: "SELECT raw: `zip code` FROM store_data;" }
+      - { id: colon_bracket_special_chars, sql: "SELECT raw:['fb:testid'] FROM store_data;" }
+      - { id: colon_dot_nested, sql: "SELECT raw:store.bicycle FROM store_data;" }
+      - { id: colon_bracket_nested, sql: "SELECT raw:['store']['bicycle'] FROM store_data;" }
+      - { id: colon_dot_nested_deep, sql: "SELECT raw:store.bicycle.price FROM store_data;" }
+      - { id: colon_array_index, sql: "SELECT raw:store.fruit[0], raw:store.fruit[1] FROM store_data;" }
+      - { id: colon_array_index_subfield, sql: "SELECT raw:store.fruit[0].type FROM store_data;" }
+      - { id: colon_array_wildcard, sql: "SELECT raw:store.book[*].isbn FROM store_data;" }
+      - { id: colon_array_wildcard_only, sql: "SELECT raw:store.basket[*] FROM store_data;" }
+      - { id: colon_array_of_arrays, sql: "SELECT raw:store.basket[*][0] FROM store_data;" }
+      - { id: colon_array_of_arrays_subfield, sql: "SELECT raw:store.basket[0][1] FROM store_data;" }
+      - { id: colon_table_qualified, sql: "SELECT t.raw:owner FROM store_data AS t;" }
+      - { id: colon_cast, sql: "SELECT raw:store.bicycle.price::double FROM store_data;" }
+      - { id: colon_cast_function, sql: "SELECT cast(raw:store.bicycle.price AS DOUBLE) FROM store_data;" }
+      - { id: colon_in_where, sql: "SELECT * FROM store_data WHERE raw:owner = 'amy';" }
+      - { id: colon_is_null, sql: "SELECT raw:owner IS NULL FROM store_data;" }
+      - { id: colon_in_function, sql: "SELECT upper(raw:owner) FROM store_data;" }
+      - { id: colon_from_json, sql: "SELECT from_json(raw:store.bicycle, 'price DOUBLE, color STRING') FROM store_data;" }
+      - { id: colon_variant, sql: "SELECT v:store.fruit[0].weight::int FROM t;" }
+      - { id: colon_on_function_result, sql: "SELECT parse_json(j):a.b FROM t;" }
+    examples:
+      - "SELECT raw:owner, raw:OWNER, raw:['owner'], raw:['OWNER'] FROM store_data;"
+      - "SELECT raw:store.bicycle FROM store_data;"
+      - "SELECT raw:['store']['bicycle'] FROM store_data;"
+
+  - id: c_json_variant_functions
+    name: JSON and VARIANT functions
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/from_json
+    tier: medium
+    probes:
+      - { id: from_json, sql: "SELECT from_json(j, 'a INT, b DOUBLE');" }
+      - { id: from_json_options, sql: "SELECT from_json(j, 'a INT', map('mode', 'FAILFAST'));" }
+      - { id: from_json_array_schema, sql: "SELECT from_json(j, 'array<struct<a: INT>>');" }
+      - { id: to_json, sql: "SELECT to_json(named_struct('a', 1, 'b', 2));" }
+      - { id: to_json_options, sql: "SELECT to_json(named_struct('t', timestamp'2015-08-26'), map('timestampFormat', 'dd/MM/yyyy'));" }
+      - { id: get_json_object, sql: "SELECT get_json_object(j, '$.a.b[0]');" }
+      - { id: json_tuple, sql: "SELECT json_tuple(j, 'a', 'b');" }
+      - { id: schema_of_json, sql: "SELECT schema_of_json(j);" }
+      - { id: json_array_length, sql: "SELECT json_array_length(j);" }
+      - { id: json_object_keys, sql: "SELECT json_object_keys(j);" }
+      - { id: parse_json, sql: "SELECT parse_json(j);" }
+      - { id: try_parse_json, sql: "SELECT try_parse_json(j);" }
+      - { id: variant_get, sql: "SELECT variant_get(v, '$.a', 'int');" }
+      - { id: try_variant_get, sql: "SELECT try_variant_get(v, '$.a', 'int');" }
+      - { id: schema_of_variant, sql: "SELECT schema_of_variant(v);" }
+      - { id: variant_explode, sql: "SELECT variant_explode(parse_json(j));" }
+      - { id: to_variant_object, sql: "SELECT to_variant_object(named_struct('a', 1));" }
+      - { id: is_variant_null, sql: "SELECT is_variant_null(v);" }
+      - { id: from_csv, sql: "SELECT from_csv(c, 'a INT, b STRING');" }
+      - { id: to_csv, sql: "SELECT to_csv(named_struct('a', 1, 'b', 2));" }
+      - { id: from_xml, sql: "SELECT from_xml(x, 'a INT');" }
+
+  - id: c_function_invocation
+    name: Function invocation (named parameters, table arguments)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-function-invocation
+    tier: medium
+    probes:
+      - { id: positional, sql: "SELECT f(1, 'a');" }
+      - { id: no_args, sql: "SELECT f();" }
+      - { id: qualified_name, sql: "SELECT s.f(1);" }
+      - { id: three_part_name, sql: "SELECT cat.s.f(1);" }
+      - { id: named_param, sql: "SELECT f(a => 1);" }
+      - { id: named_params_multi, sql: "SELECT f(a => 1, b => 'x');" }
+      - { id: mixed_invocation, sql: "SELECT f(1, b => 'x');" }
+      - { id: named_param_expr, sql: "SELECT f(a => c + 1) FROM t;" }
+      - { id: star_argument, sql: "SELECT f(*) FROM t;" }
+      - { id: star_argument_qualified, sql: "SELECT f(t.*) FROM t;" }
+      - { id: table_argument_name, sql: "SELECT * FROM f(TABLE(t));" }
+      - { id: table_argument_query, sql: "SELECT * FROM f(TABLE(SELECT * FROM t));" }
+      - { id: table_argument_with_single_partition, sql: "SELECT * FROM f(TABLE(t) WITH SINGLE PARTITION);" }
+      - { id: table_argument_partition_by, sql: "SELECT * FROM f(TABLE(t) PARTITION BY c);" }
+      - { id: table_argument_partition_by_list, sql: "SELECT * FROM f(TABLE(t) PARTITION BY (c, d));" }
+      - { id: table_argument_distribute_by, sql: "SELECT * FROM f(TABLE(t) DISTRIBUTE BY c);" }
+      - { id: table_argument_order_by, sql: "SELECT * FROM f(TABLE(t) PARTITION BY c ORDER BY d);" }
+      - { id: table_argument_sort_by_list, sql: "SELECT * FROM f(TABLE(t) PARTITION BY c SORT BY (d DESC, e));" }
+      - { id: table_argument_named, sql: "SELECT * FROM f(input => TABLE(t) PARTITION BY c);" }
+      - { id: table_argument_mixed, sql: "SELECT * FROM f(TABLE(t), param => 1);" }
+
+  - id: c_function_families
+    name: Ordinary function families
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-functions-builtin
+    tier: medium
+    probes:
+      - { id: math_round, sql: "SELECT round(2.5, 0), floor(c), ceil(c), abs(c), pow(2, 3), sqrt(c), mod(10, 3) FROM t;" }
+      - { id: math_try_divide, sql: "SELECT try_divide(3, 2), try_add(1, 2), try_multiply(2, 3);" }
+      - { id: string_functions, sql: "SELECT upper(c), lower(c), length(c), concat(a, b), concat_ws('-', a, b), substring(c, 1, 3), replace(c, 'a', 'b') FROM t;" }
+      - { id: string_regexp, sql: "SELECT regexp_extract(c, '(\\d+)', 1), regexp_replace(c, 'a', 'b'), regexp_like(c, 'a.*') FROM t;" }
+      - { id: string_split, sql: "SELECT split(c, ',', 2), split_part(c, ',', 1) FROM t;" }
+      - { id: string_format, sql: "SELECT format_string('%d-%s', 1, 'a'), lpad(c, 5, '0'), rpad(c, 5, '0'), trim(c), ltrim(c), rtrim(c) FROM t;" }
+      - { id: date_functions, sql: "SELECT current_date(), current_timestamp(), date_add(d, 1), date_sub(d, 1), datediff(d1, d2), months_between(d1, d2) FROM t;" }
+      - { id: date_trunc_format, sql: "SELECT date_trunc('MONTH', ts), date_format(ts, 'yyyy-MM'), to_date(s, 'yyyy-MM-dd'), to_timestamp(s), year(d), month(d), dayofweek(d) FROM t;" }
+      - { id: date_timestampadd, sql: "SELECT timestampadd(HOUR, 1, ts), timestampdiff(DAY, ts1, ts2), dateadd(MONTH, 1, d), datediff(DAY, d1, d2) FROM t;" }
+      - { id: date_make_interval, sql: "SELECT make_interval(1, 2), make_timestamp(2024, 1, 1, 0, 0, 0), make_date(2024, 1, 1) FROM t;" }
+      - { id: conditional_functions, sql: "SELECT coalesce(a, b, c), nvl(a, b), nvl2(a, b, c), nullif(a, b), ifnull(a, b), iff(a > 0, 'x', 'y'), if(a > 0, 1, 2) FROM t;" }
+      - { id: conditional_greatest, sql: "SELECT greatest(a, b, c), least(a, b, c), decode(a, 1, 'one', 2, 'two', 'other') FROM t;" }
+      - { id: conditional_try_functions, sql: "SELECT try_cast(c AS INT), try_to_number(c, '999'), try_to_timestamp(c) FROM t;" }
+      - { id: hash_functions, sql: "SELECT hash(a, b), xxhash64(a), md5(c), sha1(c), sha2(c, 256), crc32(c) FROM t;" }
+      - { id: bitwise_functions, sql: "SELECT bit_count(c), bit_and(c), bit_or(c), shiftleft(c, 2), getbit(c, 1) FROM t;" }
+      - { id: type_functions, sql: "SELECT typeof(c), cast(c AS STRING), to_number(c, '999.99'), to_char(c, '999,999') FROM t;" }
+      - { id: aggregate_statistics, sql: "SELECT avg(c), min(c), max(c), stddev(c), variance(c), corr(a, b), covar_pop(a, b), skewness(c), kurtosis(c) FROM t;" }
+      - { id: aggregate_bool, sql: "SELECT bool_and(c), bool_or(c), every(c), some(c), any(c), max_by(a, b), min_by(a, b) FROM t;" }
+      - { id: aggregate_approx, sql: "SELECT approx_percentile(c, 0.5), approx_percentile(c, array(0.25, 0.75), 100), percentile(c, 0.5), histogram_numeric(c, 5) FROM t;" }
+      - { id: aggregate_regr, sql: "SELECT regr_slope(y, x), regr_intercept(y, x), regr_r2(y, x), regr_count(y, x) FROM t;" }
+      - { id: aggregate_sketch, sql: "SELECT hll_sketch_agg(c), hll_union_agg(s), count_min_sketch(c, 0.1, 0.1, 42) FROM t;" }
+      - { id: generator_functions, sql: "SELECT uuid(), rand(), rand(42), randn(), monotonically_increasing_id(), spark_partition_id();" }
+      - { id: session_functions, sql: "SELECT current_user(), current_catalog(), current_schema(), current_database(), version(), is_member('admins');" }
+      - { id: crypto_functions, sql: "SELECT aes_encrypt(c, 'k'), aes_decrypt(c, 'k'), base64(c), unbase64(c), hex(c), unhex(c) FROM t;" }
+      - { id: geospatial_functions, sql: "SELECT st_point(1, 2), st_astext(g), st_distance(g1, g2) FROM t;" }
+      - { id: ai_functions, sql: "SELECT ai_query('endpoint', c), ai_classify(c, array('a', 'b')), ai_summarize(c) FROM t;" }
+      - { id: table_valued_function_range, sql: "SELECT * FROM range(1, 10, 2);" }
+      - { id: table_valued_function_explode, sql: "SELECT * FROM explode(array(1, 2, 3));" }
+      - { id: table_valued_function_system, sql: "SELECT * FROM read_files('/path', format => 'csv');" }
+      - { id: user_defined_function_call, sql: "SELECT main.default.my_udf(c) FROM t;" }
+      - { id: reserved_word_function, sql: "SELECT left(c, 3), right(c, 3), replace(c, 'a', 'b'), if(c, 1, 2), date(c), timestamp(c) FROM t;" }
