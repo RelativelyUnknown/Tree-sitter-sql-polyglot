@@ -511,3 +511,1882 @@ statements:
         HAVING DATEPART(yyyy, OrderDate) >= N'2003'
         ORDER BY DATEPART(yyyy, OrderDate);
 
+  - id: having
+    name: "SELECT - HAVING"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/select-having-transact-sql
+    tier: high
+    probes:
+      - id: aggregate
+        sql: "SELECT c, SUM(d) FROM t GROUP BY c HAVING SUM(d) > 100000.00;"
+      - id: compound
+        sql: "SELECT c FROM t GROUP BY c HAVING SUM(d) > $1000000.00 AND AVG(e) < 3;"
+      - id: without_group_by
+        sql: "SELECT COUNT(*) FROM t HAVING COUNT(*) > 1;"
+    examples:
+      - |-
+        SELECT SalesOrderID,
+               SUM(LineTotal) AS SubTotal
+        FROM Sales.SalesOrderDetail
+        GROUP BY SalesOrderID
+        HAVING SUM(LineTotal) > 100000.00
+        ORDER BY SalesOrderID;
+      - |-
+        -- Uses AdventureWorks
+        SELECT OrderDateKey,
+               SUM(SalesAmount) AS TotalSales
+        FROM FactInternetSales
+        GROUP BY OrderDateKey
+        HAVING SUM(SalesAmount) > 80000
+        ORDER BY OrderDateKey;
+
+  - id: order_by
+    name: "SELECT - ORDER BY clause"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/select-order-by-clause-transact-sql
+    tier: high
+    probes:
+      - id: column
+        sql: "SELECT c FROM t ORDER BY c;"
+      - id: asc_desc_list
+        sql: "SELECT a, b FROM t ORDER BY a ASC, b DESC;"
+      - id: ordinal
+        sql: "SELECT a, b FROM t ORDER BY 2;"
+      - id: expression
+        sql: "SELECT a FROM t ORDER BY DATEPART(year, d);"
+      - id: collate
+        sql: "SELECT name FROM t ORDER BY name COLLATE Latin1_General_CS_AS;"
+      - id: case_expression
+        sql: "SELECT a FROM t ORDER BY CASE b WHEN 1 THEN a END DESC, CASE WHEN b = 0 THEN a END;"
+      - id: offset_rows
+        sql: "SELECT a FROM t ORDER BY a OFFSET 5 ROWS;"
+      - id: offset_row
+        sql: "SELECT a FROM t ORDER BY a OFFSET 1 ROW;"
+      - id: offset_fetch_next
+        sql: "SELECT a FROM t ORDER BY a OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;"
+      - id: offset_fetch_first_row
+        sql: "SELECT a FROM t ORDER BY a OFFSET 0 ROWS FETCH FIRST 1 ROW ONLY;"
+      - id: offset_fetch_variables
+        sql: "SELECT a FROM t ORDER BY a OFFSET @skip ROWS FETCH NEXT @take ROWS ONLY;"
+      - id: offset_fetch_expressions
+        sql: "SELECT a FROM t ORDER BY a OFFSET @s - 1 ROWS FETCH NEXT @e - @s + 1 ROWS ONLY;"
+      - id: offset_fetch_subquery
+        sql: "SELECT a FROM t ORDER BY a OFFSET 0 ROWS FETCH NEXT (SELECT n FROM s WHERE id = 1) ROWS ONLY;"
+      - id: set_operation
+        sql: "SELECT a FROM t UNION SELECT a FROM u ORDER BY a;"
+    examples:
+      - |-
+        SELECT ProductID,
+               Name
+        FROM Production.Product
+        WHERE Name LIKE 'Lock Washer%'
+        ORDER BY ProductID;
+      - |-
+        SELECT LastName,
+               FirstName
+        FROM Person.Person
+        WHERE LastName LIKE 'R%'
+        ORDER BY FirstName ASC, LastName DESC;
+      - |-
+        -- This query uses the collation specified in the ORDER BY clause for sorting.
+        SELECT name
+        FROM #t1
+        ORDER BY name COLLATE Latin1_General_CS_AS;
+      - |-
+        SELECT BusinessEntityID,
+               SalariedFlag
+        FROM HumanResources.Employee
+        ORDER BY
+            CASE SalariedFlag
+                WHEN 1 THEN BusinessEntityID
+            END DESC,
+            CASE
+                WHEN SalariedFlag = 0 THEN BusinessEntityID
+            END;
+      - |-
+        -- Skip 0 rows and return only the first 10 rows from the sorted result set.
+        SELECT DepartmentID,
+               Name,
+               GroupName
+        FROM HumanResources.Department
+        ORDER BY DepartmentID OFFSET 0 ROWS
+        FETCH NEXT 10 ROWS ONLY;
+
+  - id: window_clause
+    name: "SELECT - WINDOW clause"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/select-window-transact-sql
+    tier: high
+    probes:
+      - id: partition_order
+        sql: "SELECT ROW_NUMBER() OVER win AS rn, c FROM t WINDOW win AS (PARTITION BY c ORDER BY d DESC) ORDER BY c;"
+      - id: partition_only
+        sql: "SELECT SUM(c) OVER win FROM t WINDOW win AS (PARTITION BY d);"
+      - id: frame
+        sql: "SELECT SUM(c) OVER win FROM t WINDOW win AS (ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW);"
+      - id: range_frame
+        sql: "SELECT SUM(c) OVER win FROM t WINDOW win AS (ORDER BY d RANGE UNBOUNDED PRECEDING);"
+      - id: order_collate
+        sql: "SELECT ROW_NUMBER() OVER win FROM t WINDOW win AS (ORDER BY c COLLATE Latin1_General_CS_AS ASC);"
+      - id: reference_in_over
+        sql: "SELECT SUM(c) OVER (win PARTITION BY d) FROM t WINDOW win AS (ORDER BY e);"
+      - id: reference_with_frame
+        sql: "SELECT COUNT(c) OVER (win ROWS BETWEEN UNBOUNDED PRECEDING AND 1 FOLLOWING) FROM t WINDOW win AS (ORDER BY e);"
+      - id: multiple_windows_references
+        sql: "SELECT SUM(c) OVER w2, AVG(c) OVER w1 FROM t WINDOW w1 AS (w3), w2 AS (ORDER BY d), w3 AS (w2 PARTITION BY e);"
+    examples:
+      - |-
+        SELECT ROW_NUMBER() OVER win AS [Row Number],
+               p.LastName,
+               s.SalesYTD,
+               a.PostalCode
+        FROM Sales.SalesPerson AS s
+             INNER JOIN Person.Person AS p
+                 ON s.BusinessEntityID = p.BusinessEntityID
+             INNER JOIN Person.Address AS a
+                 ON a.AddressID = p.BusinessEntityID
+        WHERE TerritoryID IS NOT NULL
+              AND SalesYTD <> 0
+        WINDOW win AS (
+            PARTITION BY PostalCode ORDER BY SalesYTD DESC
+        )
+        ORDER BY PostalCode;
+      - |-
+        SELECT SalesOrderID,
+               ProductID,
+               OrderQty,
+               SUM(OrderQty) OVER win AS [Total],
+               AVG(OrderQty) OVER win AS [Avg],
+               COUNT(OrderQty) OVER win AS [Count],
+               MIN(OrderQty) OVER win AS [Min],
+               MAX(OrderQty) OVER win AS [Max]
+        FROM Sales.SalesOrderDetail
+        WHERE SalesOrderID IN (43659, 43664)
+        WINDOW win AS (PARTITION BY SalesOrderID);
+      - |-
+        SELECT SalesOrderID AS OrderNumber,
+               ProductID,
+               OrderQty AS Qty,
+               SUM(OrderQty) OVER win AS Total,
+               AVG(OrderQty) OVER (
+                   win PARTITION BY SalesOrderID
+               ) AS Avg,
+               COUNT(OrderQty) OVER (
+                   win ROWS BETWEEN UNBOUNDED PRECEDING AND 1 FOLLOWING
+               ) AS Count
+        FROM Sales.SalesOrderDetail
+        WHERE SalesOrderID IN (43659, 43664)
+              AND ProductID LIKE '71%'
+        WINDOW win AS (
+            ORDER BY SalesOrderID, ProductID
+        );
+      - |-
+        SELECT SalesOrderID AS OrderNumber,
+               ProductID,
+               OrderQty AS Qty,
+               SUM(OrderQty) OVER win2 AS Total,
+               AVG(OrderQty) OVER win1 AS Avg
+        FROM Sales.SalesOrderDetail
+        WHERE SalesOrderID IN (43659, 43664)
+              AND ProductID LIKE '71%'
+        WINDOW win1 AS (win3),
+               win2 AS (ORDER BY SalesOrderID, ProductID),
+               win3 AS (win2 PARTITION BY SalesOrderID);
+
+  - id: for_clause
+    name: "SELECT - FOR clause (FOR BROWSE, FOR XML, FOR JSON)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/select-for-clause-transact-sql
+    tier: high
+    probes:
+      - id: browse
+        sql: "SELECT c FROM t FOR BROWSE;"
+      - id: xml_raw
+        sql: "SELECT c FROM t FOR XML RAW;"
+      - id: xml_raw_element_name
+        sql: "SELECT c FROM t FOR XML RAW ('row');"
+      - id: xml_auto
+        sql: "SELECT c FROM t FOR XML AUTO;"
+      - id: xml_explicit
+        sql: "SELECT 1 AS Tag, NULL AS Parent, c AS [r!1!c] FROM t FOR XML EXPLICIT;"
+      - id: xml_path
+        sql: "SELECT c FROM t FOR XML PATH;"
+      - id: xml_path_empty_name
+        sql: "SELECT ',' + c FROM t FOR XML PATH ('');"
+      - id: xml_binary_base64
+        sql: "SELECT c FROM t FOR XML AUTO, BINARY BASE64;"
+      - id: xml_type
+        sql: "SELECT c FROM t FOR XML PATH, TYPE;"
+      - id: xml_root
+        sql: "SELECT c FROM t FOR XML PATH ('r'), ROOT ('rows');"
+      - id: xml_root_no_name
+        sql: "SELECT c FROM t FOR XML RAW, ROOT;"
+      - id: xml_xmldata
+        sql: "SELECT c FROM t FOR XML RAW, XMLDATA;"
+      - id: xml_xmlschema
+        sql: "SELECT c FROM t FOR XML AUTO, XMLSCHEMA ('urn:x');"
+      - id: xml_elements_xsinil
+        sql: "SELECT c FROM t FOR XML AUTO, TYPE, XMLSCHEMA, ELEMENTS XSINIL;"
+      - id: xml_elements_absent
+        sql: "SELECT c FROM t FOR XML PATH, ELEMENTS ABSENT;"
+      - id: xml_explicit_xmldata
+        sql: "SELECT 1 AS Tag, NULL AS Parent, c AS [r!1!c] FROM t FOR XML EXPLICIT, XMLDATA;"
+      - id: json_auto
+        sql: "SELECT c FROM t FOR JSON AUTO;"
+      - id: json_path
+        sql: "SELECT c AS 'a.b' FROM t FOR JSON PATH;"
+      - id: json_root
+        sql: "SELECT c FROM t FOR JSON PATH, ROOT ('info');"
+      - id: json_include_null_values
+        sql: "SELECT c FROM t FOR JSON AUTO, INCLUDE_NULL_VALUES;"
+      - id: json_without_array_wrapper
+        sql: "SELECT c FROM t FOR JSON PATH, WITHOUT_ARRAY_WRAPPER;"
+      - id: json_all_options
+        sql: "SELECT c FROM t FOR JSON PATH, ROOT, INCLUDE_NULL_VALUES;"
+      - id: nested_for_json_subquery
+        sql: "SELECT a, (SELECT b FROM u WHERE u.a = t.a FOR JSON PATH) AS items FROM t FOR JSON PATH;"
+    examples:
+      - |-
+        SELECT tleft.c1
+           FROM tleft
+                RIGHT OUTER JOIN tright
+                    ON tleft.c1 = tright.c1
+           WHERE tright.c1 <> 2;
+      - |-
+        SELECT CAST (
+            (SELECT column1,
+                    column2
+            FROM my_table
+            FOR XML PATH ('')) AS VARCHAR (MAX)
+        ) AS XMLDATA;
+      - |-
+        SELECT p.BusinessEntityID,
+               FirstName,
+               LastName,
+               PhoneNumber AS Phone
+        FROM Person.Person AS p
+             INNER JOIN Person.PersonPhone AS pph
+                 ON p.BusinessEntityID = pph.BusinessEntityID
+        WHERE LastName LIKE 'G%'
+        ORDER BY LastName, FirstName
+        FOR XML AUTO, TYPE, XMLSCHEMA, ELEMENTS XSINIL;
+
+  - id: option_clause
+    name: "OPTION clause"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/option-clause-transact-sql
+    tier: high
+    probes:
+      - id: select
+        sql: "SELECT c FROM t OPTION (HASH GROUP, FAST 10);"
+      - id: update
+        sql: "UPDATE t SET c = 1 WHERE d = 2 OPTION (LOOP JOIN);"
+      - id: delete
+        sql: "DELETE FROM t WHERE c = 1 OPTION (MAXDOP 1);"
+      - id: insert_select
+        sql: "INSERT INTO t (c) SELECT c FROM u OPTION (RECOMPILE);"
+      - id: merge
+        sql: "MERGE t USING u ON t.c = u.c WHEN MATCHED THEN DELETE OPTION (LOOP JOIN);"
+      - id: after_order_by
+        sql: "SELECT c FROM t ORDER BY c OPTION (FORCE ORDER);"
+    examples:
+      - |-
+        SELECT ProductID,
+            OrderQty,
+            SUM(LineTotal) AS Total
+        FROM Sales.SalesOrderDetail
+        WHERE UnitPrice < $5.00
+        GROUP BY ProductID, OrderQty
+        ORDER BY ProductID, OrderQty
+        OPTION (HASH GROUP, FAST 10);
+      - |-
+        -- Uses AdventureWorks
+
+        SELECT COUNT(*) FROM dbo.DimCustomer a
+        INNER JOIN dbo.FactInternetSales b
+            ON (a.CustomerKey = b.CustomerKey)
+        OPTION (HASH JOIN);
+      - |-
+        SELECT COUNT(*)
+        FROM dbo.CustomerView a
+        INNER JOIN dbo.FactInternetSales b
+            ON (a.CustomerKey = b.CustomerKey)
+        OPTION (HASH JOIN);
+
+  - id: query_hints
+    name: "Hints - Query"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/hints-transact-sql-query
+    tier: high
+    probes:
+      - id: hash_group
+        sql: "SELECT c, COUNT(*) FROM t GROUP BY c OPTION (HASH GROUP);"
+      - id: order_group
+        sql: "SELECT c, COUNT(*) FROM t GROUP BY c OPTION (ORDER GROUP);"
+      - id: concat_union
+        sql: "SELECT c FROM t UNION SELECT c FROM u OPTION (CONCAT UNION);"
+      - id: hash_union
+        sql: "SELECT c FROM t UNION SELECT c FROM u OPTION (HASH UNION);"
+      - id: merge_union
+        sql: "SELECT c FROM t UNION SELECT c FROM u OPTION (MERGE UNION);"
+      - id: loop_join
+        sql: "SELECT * FROM t JOIN u ON t.c = u.c OPTION (LOOP JOIN);"
+      - id: merge_join
+        sql: "SELECT * FROM t JOIN u ON t.c = u.c OPTION (MERGE JOIN);"
+      - id: hash_join
+        sql: "SELECT * FROM t JOIN u ON t.c = u.c OPTION (HASH JOIN);"
+      - id: disable_optimized_plan_forcing
+        sql: "SELECT c FROM t OPTION (DISABLE_OPTIMIZED_PLAN_FORCING);"
+      - id: expand_views
+        sql: "SELECT c FROM v OPTION (EXPAND VIEWS);"
+      - id: fast
+        sql: "SELECT c FROM t OPTION (FAST 10);"
+      - id: force_order
+        sql: "SELECT * FROM t JOIN u ON t.c = u.c OPTION (FORCE ORDER);"
+      - id: force_externalpushdown
+        sql: "SELECT c FROM ext OPTION (FORCE EXTERNALPUSHDOWN);"
+      - id: disable_externalpushdown
+        sql: "SELECT c FROM ext OPTION (DISABLE EXTERNALPUSHDOWN);"
+      - id: force_scaleoutexecution
+        sql: "SELECT c FROM ext OPTION (FORCE SCALEOUTEXECUTION);"
+      - id: ignore_nonclustered_columnstore_index
+        sql: "SELECT c FROM t OPTION (IGNORE_NONCLUSTERED_COLUMNSTORE_INDEX);"
+      - id: keep_plan
+        sql: "SELECT c FROM t OPTION (KEEP PLAN);"
+      - id: keepfixed_plan
+        sql: "SELECT c FROM t OPTION (KEEPFIXED PLAN);"
+      - id: max_grant_percent
+        sql: "SELECT c FROM t OPTION (MAX_GRANT_PERCENT = 10);"
+      - id: min_grant_percent
+        sql: "SELECT c FROM t OPTION (MIN_GRANT_PERCENT = 5.5);"
+      - id: maxdop
+        sql: "SELECT c FROM t OPTION (MAXDOP 2);"
+      - id: maxrecursion
+        sql: "WITH r AS (SELECT 1 AS n UNION ALL SELECT n + 1 FROM r WHERE n < 200) SELECT n FROM r OPTION (MAXRECURSION 200);"
+      - id: no_performance_spool
+        sql: "SELECT c FROM t OPTION (NO_PERFORMANCE_SPOOL);"
+      - id: optimize_for_value
+        sql: "SELECT c FROM t WHERE c = @p OPTION (OPTIMIZE FOR (@p = 'Seattle'));"
+      - id: optimize_for_variable_unknown
+        sql: "SELECT c FROM t WHERE c = @p AND d = @q OPTION (OPTIMIZE FOR (@p UNKNOWN, @q = 98104));"
+      - id: optimize_for_unknown
+        sql: "SELECT c FROM t WHERE c = @p OPTION (OPTIMIZE FOR UNKNOWN);"
+      - id: parameterization_simple
+        sql: "SELECT c FROM t WHERE c = 1 OPTION (PARAMETERIZATION SIMPLE);"
+      - id: parameterization_forced
+        sql: "SELECT c FROM t WHERE c = 1 OPTION (PARAMETERIZATION FORCED);"
+      - id: querytraceon
+        sql: "SELECT c FROM t OPTION (QUERYTRACEON 4199);"
+      - id: recompile
+        sql: "SELECT c FROM t OPTION (RECOMPILE);"
+      - id: robust_plan
+        sql: "SELECT c FROM t OPTION (ROBUST PLAN);"
+      - id: use_hint
+        sql: "SELECT c FROM t OPTION (USE HINT ('ASSUME_MIN_SELECTIVITY_FOR_FILTER_ESTIMATES', 'DISABLE_PARAMETER_SNIFFING'));"
+      - id: use_plan
+        sql: "SELECT c FROM t OPTION (USE PLAN N'<ShowPlanXML xmlns=\"http://schemas.microsoft.com/sqlserver/2004/07/showplan\" Version=\"1.0\"></ShowPlanXML>');"
+      - id: table_hint_index
+        sql: "SELECT c FROM t AS a WHERE c = 1 OPTION (TABLE HINT (a, INDEX (ix_c)));"
+      - id: table_hint_index_equals
+        sql: "SELECT c FROM t AS a OPTION (TABLE HINT (a, INDEX = (ix_c)));"
+      - id: table_hint_forceseek_columns
+        sql: "SELECT c FROM t AS a OPTION (TABLE HINT (a, FORCESEEK (ix_c (c))));"
+      - id: table_hint_multiple
+        sql: "SELECT c FROM t AS a OPTION (TABLE HINT (a, NOLOCK, INDEX (ix_c), FORCESCAN));"
+      - id: table_hint_no_hints
+        sql: "SELECT c FROM t AS a WITH (INDEX (ix_c)) OPTION (TABLE HINT (a));"
+        note: "TABLE HINT ( exposed_object_name ) with no table_hint clears the hints on that object."
+      - id: table_hint_noexpand_index
+        sql: "SELECT c FROM v OPTION (TABLE HINT (v, NOEXPAND, INDEX (ix_v)));"
+      - id: table_hint_spatial_window_max_cells
+        sql: "SELECT c FROM t OPTION (TABLE HINT (t, SPATIAL_WINDOW_MAX_CELLS = 512));"
+      - id: multiple_hints
+        sql: "SELECT c FROM t OPTION (RECOMPILE, MAXDOP 1, USE HINT ('QUERY_OPTIMIZER_COMPATIBILITY_LEVEL_110'));"
+    examples:
+      - |-
+        SELECT *
+        FROM Sales.Customer AS c
+        INNER JOIN Sales.CustomerAddress AS ca ON c.CustomerID = ca.CustomerID
+        WHERE TerritoryID = 5
+        OPTION (MERGE JOIN);
+      - |-
+        --Creates an infinite loop
+        WITH cte (CustomerID, PersonID, StoreID) AS
+        (
+            SELECT CustomerID, PersonID, StoreID
+            FROM Sales.Customer
+            WHERE PersonID IS NOT NULL
+          UNION ALL
+            SELECT cte.CustomerID, cte.PersonID, cte.StoreID
+            FROM cte
+            JOIN  Sales.Customer AS e
+                ON cte.PersonID = e.CustomerID
+        )
+        --Uses MAXRECURSION to limit the recursive levels to 2
+        SELECT CustomerID, PersonID, StoreID
+        FROM cte
+        OPTION (MAXRECURSION 2);
+      - |-
+        SELECT *
+        FROM HumanResources.Employee AS e1
+        UNION
+        SELECT *
+        FROM HumanResources.Employee AS e2
+        OPTION (MERGE UNION);
+      - |-
+        SELECT * FROM Person.Address
+        WHERE City = 'SEATTLE' AND PostalCode = 98104
+        OPTION (RECOMPILE, USE HINT ('ASSUME_MIN_SELECTIVITY_FOR_FILTER_ESTIMATES', 'DISABLE_PARAMETER_SNIFFING'));
+      - |-
+        SELECT *
+        FROM Person.Address
+        WHERE City = 'SEATTLE'
+              AND PostalCode = 98104
+        OPTION (QUERYTRACEON 4199);
+
+  - id: table_hints
+    name: "Hints - Table"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/hints-transact-sql-table
+    tier: high
+    probes:
+      - id: noexpand
+        sql: "SELECT c FROM v WITH (NOEXPAND);"
+      - id: forcescan
+        sql: "SELECT c FROM t WITH (FORCESCAN);"
+      - id: holdlock
+        sql: "SELECT c FROM t WITH (HOLDLOCK);"
+      - id: nolock
+        sql: "SELECT c FROM t WITH (NOLOCK);"
+      - id: nowait
+        sql: "SELECT c FROM t WITH (NOWAIT);"
+      - id: paglock
+        sql: "SELECT c FROM t WITH (PAGLOCK);"
+      - id: readcommitted
+        sql: "SELECT c FROM t WITH (READCOMMITTED);"
+      - id: readcommittedlock
+        sql: "SELECT c FROM t WITH (READCOMMITTEDLOCK);"
+      - id: readpast
+        sql: "SELECT c FROM t WITH (READPAST);"
+      - id: readuncommitted
+        sql: "SELECT c FROM t WITH (READUNCOMMITTED);"
+      - id: repeatableread
+        sql: "SELECT c FROM t WITH (REPEATABLEREAD);"
+      - id: rowlock
+        sql: "SELECT c FROM t WITH (ROWLOCK);"
+      - id: serializable
+        sql: "SELECT c FROM t WITH (SERIALIZABLE);"
+      - id: snapshot
+        sql: "SELECT c FROM t WITH (SNAPSHOT);"
+      - id: tablock
+        sql: "SELECT c FROM t WITH (TABLOCK);"
+      - id: tablockx
+        sql: "SELECT c FROM t WITH (TABLOCKX);"
+      - id: updlock
+        sql: "SELECT c FROM t WITH (UPDLOCK);"
+      - id: xlock
+        sql: "SELECT c FROM t WITH (XLOCK);"
+      - id: noexpand_index
+        sql: "SELECT c FROM v WITH (NOEXPAND, INDEX (ix_v));"
+      - id: index_list
+        sql: "SELECT c FROM t WITH (INDEX (ix_a, ix_b));"
+      - id: index_number
+        sql: "SELECT c FROM t WITH (INDEX (0));"
+      - id: index_equals
+        sql: "SELECT c FROM t WITH (INDEX = ix_a);"
+        note: "INDEX = ( index_value ); the Remarks and the SELECT examples also write it unparenthesized (WITH (INDEX = 0))."
+      - id: index_equals_parenthesized
+        sql: "SELECT c FROM t WITH (INDEX = (ix_a));"
+      - id: forceseek
+        sql: "SELECT c FROM t WITH (FORCESEEK);"
+      - id: forceseek_index_columns
+        sql: "SELECT c FROM t WITH (FORCESEEK (ix_a (c, d)));"
+      - id: force_ann_only
+        sql: "SELECT t.id FROM VECTOR_SEARCH(TABLE = dbo.t, COLUMN = v, SIMILAR_TO = @q, METRIC = 'cosine', TOP_N = 10) AS s WITH (FORCE_ANN_ONLY);"
+      - id: spatial_window_max_cells
+        sql: "SELECT c FROM t WITH (SPATIAL_WINDOW_MAX_CELLS = 512);"
+      - id: hint_list_commas
+        sql: "SELECT c FROM t WITH (TABLOCK, INDEX (myindex));"
+      - id: hint_list_spaces
+        sql: "SELECT c FROM t WITH (UPDLOCK HOLDLOCK);"
+        note: "[ [ , ] ...n ]: the comma between table hints is optional."
+      - id: legacy_without_with
+        sql: "SELECT c FROM t (TABLOCK);"
+        note: "Documented form 'FROM t (TABLOCK)'; omitting WITH is deprecated but still accepted for some hints."
+      - id: update_target_hint
+        sql: "UPDATE t WITH (ROWLOCK) SET c = 50 WHERE d = 150;"
+      - id: delete_target_hint
+        sql: "DELETE FROM t WITH (READPAST) WHERE c = 1;"
+      - id: insert_target_hint
+        sql: "INSERT INTO t WITH (TABLOCK) (c) VALUES (1);"
+      - id: limited_keepidentity
+        sql: "INSERT INTO t WITH (KEEPIDENTITY) (id, c) SELECT id, c FROM OPENROWSET(BULK 'C:\\data\\f.dat', FORMATFILE = 'C:\\data\\f.fmt') AS b;"
+      - id: limited_keepdefaults
+        sql: "INSERT INTO t WITH (KEEPDEFAULTS) (c) SELECT c FROM OPENROWSET(BULK 'C:\\data\\f.dat', FORMATFILE = 'C:\\data\\f.fmt') AS b;"
+      - id: limited_ignore_constraints
+        sql: "INSERT INTO t WITH (IGNORE_CONSTRAINTS) (c) SELECT c FROM OPENROWSET(BULK 'C:\\data\\f.dat', FORMATFILE = 'C:\\data\\f.fmt') AS b;"
+      - id: limited_ignore_triggers
+        sql: "INSERT INTO t WITH (IGNORE_TRIGGERS, TABLOCK) (c) SELECT c FROM OPENROWSET(BULK 'C:\\data\\f.dat', FORMATFILE = 'C:\\data\\f.fmt') AS b;"
+    examples:
+      - |-
+        UPDATE [dbo].[FactResellerSalesXL_CCI] WITH (ROWLOCK)
+            SET UnitPrice = 50
+        WHERE ProductKey = 150;
+      - |-
+        SELECT *
+        FROM dbo.Customers AS c WITH (SNAPSHOT)
+             LEFT OUTER JOIN dbo.[Order History] AS oh
+                 ON c.customer_id = oh.customer_id;
+      - |-
+        SELECT StartDate, ComponentID
+        FROM Production.BillOfMaterials
+        WITH (INDEX (FIBillOfMaterialsWithComponentID))
+        WHERE ComponentID IN (533, 324, 753, 855, 924);
+      - |-
+        SELECT *
+        FROM Sales.SalesOrderHeader AS h
+             INNER JOIN Sales.SalesOrderDetail AS d WITH (FORCESEEK)
+                 ON h.SalesOrderID = d.SalesOrderID
+        WHERE h.TotalDue > 100
+              AND (d.OrderQty > 5
+                   OR d.LineTotal < 1000.00);
+      - |-
+        SELECT h.SalesOrderID,
+               h.TotalDue,
+               d.OrderQty
+        FROM Sales.SalesOrderHeader AS h
+             INNER JOIN Sales.SalesOrderDetail AS d
+                 WITH (FORCESEEK (PK_SalesOrderDetail_SalesOrderID_SalesOrderDetailID (SalesOrderID)))
+                 ON h.SalesOrderID = d.SalesOrderID
+        WHERE h.TotalDue > 100
+              AND (d.OrderQty > 5
+                   OR d.LineTotal < 1000.00);
+
+  - id: join_hints
+    name: "Hints - Join"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/hints-transact-sql-join
+    tier: high
+    probes:
+      - id: inner_loop
+        sql: "SELECT * FROM t INNER LOOP JOIN u ON t.c = u.c;"
+      - id: inner_hash
+        sql: "SELECT * FROM t INNER HASH JOIN u ON t.c = u.c;"
+      - id: inner_merge
+        sql: "SELECT * FROM t INNER MERGE JOIN u ON t.c = u.c;"
+      - id: inner_remote
+        sql: "SELECT * FROM t INNER REMOTE JOIN srv.db.dbo.u AS u ON t.c = u.c;"
+      - id: left_outer_hash
+        sql: "SELECT * FROM t LEFT OUTER HASH JOIN u ON t.c = u.c;"
+      - id: left_loop
+        sql: "SELECT * FROM t LEFT LOOP JOIN u ON t.c = u.c;"
+      - id: right_merge
+        sql: "SELECT * FROM t RIGHT OUTER MERGE JOIN u ON t.c = u.c;"
+      - id: full_hash
+        sql: "SELECT * FROM t FULL OUTER HASH JOIN u ON t.c = u.c;"
+      - id: in_delete
+        sql: "DELETE FROM t FROM t AS a INNER LOOP JOIN u AS b ON a.c = b.c WHERE b.d > 2500000.00;"
+    examples:
+      - |-
+        SELECT p.Name,
+            pr.ProductReviewID
+        FROM Production.Product AS p
+        LEFT OUTER HASH JOIN Production.ProductReview AS pr
+            ON p.ProductID = pr.ProductID
+        ORDER BY ProductReviewID DESC;
+      - |-
+        DELETE
+        FROM Sales.SalesPersonQuotaHistory
+        FROM Sales.SalesPersonQuotaHistory AS spqh
+        INNER LOOP JOIN Sales.SalesPerson AS sp
+            ON spqh.SalesPersonID = sp.SalesPersonID
+        WHERE sp.SalesYTD > 2500000.00;
+      - |-
+        SELECT poh.PurchaseOrderID,
+            poh.OrderDate,
+            pod.ProductID,
+            pod.DueDate,
+            poh.VendorID
+        FROM Purchasing.PurchaseOrderHeader AS poh
+        INNER MERGE JOIN Purchasing.PurchaseOrderDetail AS pod
+            ON poh.PurchaseOrderID = pod.PurchaseOrderID;
+
+  - id: with_common_table_expression
+    name: "WITH common_table_expression"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/with-common-table-expression-transact-sql
+    tier: high
+    probes:
+      - id: basic
+        sql: "WITH cte AS (SELECT c FROM t) SELECT c FROM cte;"
+      - id: column_list
+        sql: "WITH cte (a, b) AS (SELECT c, d FROM t) SELECT a, b FROM cte;"
+      - id: multiple
+        sql: "WITH c1 AS (SELECT c FROM t), c2 AS (SELECT c FROM c1) SELECT c FROM c2;"
+      - id: recursive
+        sql: "WITH r (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r WHERE n < 10) SELECT n FROM r;"
+      - id: multiple_anchor_recursive_members
+        sql: "WITH g (id) AS (SELECT a FROM t WHERE id = 1 UNION SELECT b FROM t WHERE id = 1 UNION ALL SELECT t.a FROM g INNER JOIN t ON g.id = t.id UNION ALL SELECT t.b FROM g INNER JOIN t ON g.id = t.id) SELECT id FROM g;"
+      - id: leading_semicolon
+        sql: ";WITH cte AS (SELECT c FROM t) SELECT c FROM cte;"
+        note: "A CTE following another statement needs that statement terminated; scripts commonly write the terminator directly before WITH."
+      - id: insert
+        sql: "WITH cte AS (SELECT c FROM t) INSERT INTO u (c) SELECT c FROM cte;"
+      - id: update
+        sql: "WITH cte AS (SELECT c, d FROM t) UPDATE cte SET c = d;"
+      - id: update_from
+        sql: "WITH cte AS (SELECT c FROM t) UPDATE u SET d = 1 FROM u INNER JOIN cte ON u.c = cte.c;"
+      - id: delete
+        sql: "WITH cte AS (SELECT c, ROW_NUMBER() OVER (PARTITION BY c ORDER BY c) AS rn FROM t) DELETE FROM cte WHERE rn > 1;"
+      - id: merge
+        sql: "WITH src AS (SELECT c FROM u) MERGE t USING src ON t.c = src.c WHEN NOT MATCHED THEN INSERT (c) VALUES (src.c);"
+      - id: create_view
+        sql: "CREATE VIEW v AS WITH cte AS (SELECT c FROM t) SELECT c FROM cte;"
+    examples:
+      - |-
+        -- Define the CTE expression name and column list.
+        WITH Sales_CTE (SalesPersonID, SalesOrderID, SalesYear)
+        AS
+        -- Define the CTE query.
+        (
+            SELECT SalesPersonID, SalesOrderID, YEAR(OrderDate) AS SalesYear
+            FROM Sales.SalesOrderHeader
+            WHERE SalesPersonID IS NOT NULL
+        )
+        -- Define the outer query referencing the CTE name.
+        SELECT SalesPersonID,
+               COUNT(SalesOrderID) AS TotalSales,
+               SalesYear
+        FROM Sales_CTE
+        GROUP BY SalesYear, SalesPersonID
+        ORDER BY SalesPersonID, SalesYear;
+      - |-
+        WITH Sales_CTE (SalesPersonID, NumberOfOrders)
+        AS
+        (
+            SELECT SalesPersonID, COUNT(*)
+            FROM Sales.SalesOrderHeader
+            WHERE SalesPersonID IS NOT NULL
+            GROUP BY SalesPersonID
+        )
+        SELECT AVG(NumberOfOrders) AS "Average Sales Per Person"
+        FROM Sales_CTE;
+      - |-
+        WITH DirectReports (ManagerID, EmployeeID, Title, EmployeeLevel) AS
+        (
+            SELECT ManagerID, EmployeeID, Title, 0 AS EmployeeLevel
+            FROM dbo.MyEmployees
+            WHERE ManagerID IS NULL
+            UNION ALL
+            SELECT e.ManagerID, e.EmployeeID, e.Title, EmployeeLevel + 1
+            FROM dbo.MyEmployees AS e
+                 INNER JOIN DirectReports AS d
+                     ON e.ManagerID = d.EmployeeID
+        )
+        SELECT ManagerID, EmployeeID, Title, EmployeeLevel
+        FROM DirectReports
+        ORDER BY ManagerID;
+      - |-
+        WITH Parts (AssemblyID, ComponentID, PerAssemblyQty, EndDate, ComponentLevel) AS
+        (
+            SELECT b.ProductAssemblyID,
+                   b.ComponentID,
+                   b.PerAssemblyQty,
+                   b.EndDate,
+                   0 AS ComponentLevel
+            FROM Production.BillOfMaterials AS b
+            WHERE b.ProductAssemblyID = 800
+                  AND b.EndDate IS NULL
+            UNION ALL
+            SELECT bom.ProductAssemblyID,
+                   bom.ComponentID,
+                   p.PerAssemblyQty,
+                   bom.EndDate,
+                   ComponentLevel + 1
+            FROM Production.BillOfMaterials AS bom
+                 INNER JOIN Parts AS p
+                     ON bom.ProductAssemblyID = p.ComponentID
+                    AND bom.EndDate IS NULL
+        )
+        UPDATE Production.BillOfMaterials
+            SET PerAssemblyQty = c.PerAssemblyQty * 2
+        FROM Production.BillOfMaterials AS c
+             INNER JOIN Parts AS d
+                 ON c.ProductAssemblyID = d.AssemblyID
+        WHERE d.ComponentLevel = 0;
+
+  - id: recursive_common_table_expression
+    name: "Recursive common table expressions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/recursive-common-table-expression-transact-sql
+    tier: high
+    probes:
+      - id: anchor_recursive
+        sql: "WITH r (a, b, lvl) AS (SELECT a, b, 0 FROM t WHERE b IS NULL UNION ALL SELECT t.a, t.b, lvl + 1 FROM t INNER JOIN r ON t.b = r.a) SELECT * FROM r;"
+      - id: with_maxrecursion
+        sql: "WITH r (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r WHERE n < 1000) SELECT n FROM r OPTION (MAXRECURSION 0);"
+    examples:
+      - |-
+        WITH DirectReports (ManagerID, EmployeeID, Title, DeptID, Level)
+        AS (
+        -- Anchor member definition
+        SELECT e.ManagerID,
+                   e.EmployeeID,
+                   e.Title,
+                   edh.DepartmentID,
+                   0 AS Level
+            FROM dbo.MyEmployees AS e
+                 INNER JOIN HumanResources.EmployeeDepartmentHistory AS edh
+                     ON e.EmployeeID = edh.BusinessEntityID
+                    AND edh.EndDate IS NULL
+            WHERE ManagerID IS NULL
+            UNION ALL
+        -- Recursive member definition
+            SELECT e.ManagerID,
+                   e.EmployeeID,
+                   e.Title,
+                   edh.DepartmentID,
+                   Level + 1
+            FROM dbo.MyEmployees AS e
+                 INNER JOIN HumanResources.EmployeeDepartmentHistory AS edh
+                     ON e.EmployeeID = edh.BusinessEntityID
+                    AND edh.EndDate IS NULL
+                 INNER JOIN DirectReports AS d
+                     ON e.ManagerID = d.EmployeeID)
+        -- Statement that executes the CTE
+        SELECT ManagerID,
+               EmployeeID,
+               Title,
+               DeptID,
+               Level
+        FROM DirectReports
+             INNER JOIN HumanResources.Department AS dp
+                 ON DirectReports.DeptID = dp.DepartmentID
+        WHERE dp.GroupName = N'Sales and Marketing'
+              OR Level = 0;
+
+  - id: nested_common_table_expression
+    name: "Nested common table expression (CTE) in Fabric data warehousing"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/nested-common-table-expression
+    tier: low
+    status: not-applicable
+    reason: "The page applies to Fabric SQL analytics endpoint and Fabric Data Warehouse only ('Nested Common Table Expression (CTE) in Fabric data warehousing'); nested CTE definitions aren't available in SQL Server or Azure SQL Database."
+
+  - id: with_xmlnamespaces
+    name: "WITH XMLNAMESPACES"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/xml/with-xmlnamespaces
+    tier: high
+    probes:
+      - id: prefix
+        sql: "WITH XMLNAMESPACES ('uri' AS ns1) SELECT c AS 'ns1:c' FROM t FOR XML RAW ('ns1:r'), ELEMENTS;"
+      - id: multiple_prefixes
+        sql: "WITH XMLNAMESPACES ('uri1' AS ns1, 'uri2' AS ns2) SELECT c AS 'ns1:c', d AS 'ns2:d' FROM t FOR XML PATH;"
+      - id: default
+        sql: "WITH XMLNAMESPACES (DEFAULT 'uri') SELECT c FROM t FOR XML AUTO;"
+      - id: default_and_prefix
+        sql: "WITH XMLNAMESPACES (DEFAULT 'uri', 'uri2' AS ns2) SELECT c FROM t FOR XML PATH;"
+      - id: with_xml_method
+        sql: "WITH XMLNAMESPACES ('uri' AS ns) SELECT x.value('(/ns:root/@id)[1]', 'int') FROM t;"
+      - id: before_cte
+        sql: "WITH XMLNAMESPACES ('uri' AS ns), cte AS (SELECT c FROM t) SELECT c FROM cte FOR XML RAW;"
+
+  - id: set_operators_union
+    name: "Set Operators - UNION"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/set-operators-union-transact-sql
+    tier: high
+    probes:
+      - id: union
+        sql: "SELECT c FROM t UNION SELECT c FROM u;"
+      - id: union_all
+        sql: "SELECT c FROM t UNION ALL SELECT c FROM u;"
+      - id: chain
+        sql: "SELECT c FROM t UNION ALL SELECT c FROM u UNION SELECT c FROM v;"
+      - id: parenthesized_right
+        sql: "SELECT c FROM t UNION ALL (SELECT c FROM u UNION SELECT c FROM v);"
+      - id: parenthesized_left
+        sql: "(SELECT c FROM t UNION SELECT c FROM u) UNION ALL SELECT c FROM v;"
+      - id: order_by_result
+        sql: "SELECT c FROM t UNION SELECT c FROM u ORDER BY c;"
+      - id: into_first_query
+        sql: "SELECT c INTO r FROM t UNION SELECT c FROM u;"
+    examples:
+      - |-
+        -- Here is the simple union.
+        -- Uses AdventureWorks
+
+        SELECT ProductModelID, Name
+        FROM Production.ProductModel
+        WHERE ProductModelID NOT IN (3, 4)
+        UNION
+        SELECT ProductModelID, Name
+        FROM dbo.Gloves
+        ORDER BY Name;
+      - |-
+        -- Uses AdventureWorks
+
+        SELECT ProductModelID, Name
+        INTO dbo.ProductResults
+        FROM Production.ProductModel
+        WHERE ProductModelID NOT IN (3, 4)
+        UNION
+        SELECT ProductModelID, Name
+        FROM dbo.Gloves;
+      - |-
+        -- Union ALL
+        SELECT LastName, FirstName, JobTitle
+        FROM dbo.EmployeeOne
+        UNION ALL
+        SELECT LastName, FirstName ,JobTitle
+        FROM dbo.EmployeeTwo
+        UNION ALL
+        SELECT LastName, FirstName,JobTitle
+        FROM dbo.EmployeeThree;
+      - |-
+        SELECT LastName, FirstName,JobTitle
+        FROM dbo.EmployeeOne
+        UNION ALL
+        (
+        SELECT LastName, FirstName, JobTitle
+        FROM dbo.EmployeeTwo
+        UNION
+        SELECT LastName, FirstName, JobTitle
+        FROM dbo.EmployeeThree
+        );
+
+  - id: set_operators_except_intersect
+    name: "Set Operators - EXCEPT and INTERSECT"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/set-operators-except-and-intersect-transact-sql
+    tier: high
+    probes:
+      - id: except
+        sql: "SELECT c FROM t EXCEPT SELECT c FROM u;"
+      - id: intersect
+        sql: "SELECT c FROM t INTERSECT SELECT c FROM u;"
+      - id: mixed_precedence
+        sql: "SELECT c FROM t EXCEPT SELECT c FROM u INTERSECT SELECT c FROM v UNION SELECT c FROM w;"
+      - id: parenthesized
+        sql: "(SELECT c FROM t EXCEPT SELECT c FROM u) INTERSECT (SELECT c FROM v);"
+      - id: order_by
+        sql: "SELECT c FROM t INTERSECT SELECT c FROM u WHERE d = 'F' ORDER BY c;"
+    examples:
+      - |-
+        -- Uses AdventureWorks
+
+        SELECT ProductID
+        FROM Production.Product
+        INTERSECT
+        SELECT ProductID
+        FROM Production.WorkOrder ;
+      - |-
+        -- Uses AdventureWorks
+
+        SELECT ProductID
+        FROM Production.Product
+        EXCEPT
+        SELECT ProductID
+        FROM Production.WorkOrder ;
+      - |-
+        -- Uses AdventureWorks
+
+        SELECT ProductID
+        FROM Production.WorkOrder
+        EXCEPT
+        SELECT ProductID
+        FROM Production.Product ;
+      - |-
+        -- Uses AdventureWorks
+
+        SELECT CustomerKey
+        FROM FactInternetSales
+        INTERSECT
+        SELECT CustomerKey
+        FROM DimCustomer
+        WHERE DimCustomer.Gender = 'F'
+        ORDER BY CustomerKey;
+
+  - id: table_value_constructor
+    name: "Table Value Constructor"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/table-value-constructor-transact-sql
+    tier: high
+    probes:
+      - id: insert_multiple_rows
+        sql: "INSERT INTO t VALUES (1, 'a'), (2, 'b');"
+      - id: insert_default_null
+        sql: "INSERT INTO t VALUES ('x', 'y'), ('z', DEFAULT), (NULL, 'w');"
+      - id: scalar_subquery_values
+        sql: "INSERT INTO t (a, b) VALUES ('x', 1), ((SELECT a FROM u WHERE id = 1), (SELECT b FROM u WHERE id = 1));"
+      - id: derived_table
+        sql: "SELECT a, b FROM (VALUES (1, 2), (3, 4)) AS v(a, b);"
+      - id: derived_table_join
+        sql: "SELECT t.c FROM t INNER JOIN (VALUES ('x'), ('y')) AS v(n) ON t.n = v.n;"
+      - id: derived_table_no_as
+        sql: "SELECT n FROM (VALUES (0), (1), (2)) d(n);"
+      - id: merge_source
+        sql: "MERGE INTO t USING (VALUES ('a', 'b')) AS s (x, y) ON t.x = s.x WHEN NOT MATCHED BY TARGET THEN INSERT (x, y) VALUES (x, y);"
+      - id: apply_values
+        sql: "SELECT t.id, v.x FROM t CROSS APPLY (VALUES (t.a), (t.b)) AS v(x);"
+    examples:
+      - |-
+        INSERT INTO dbo.MyProducts (Name, ListPrice)
+        VALUES ('Helmet', 25.50),
+               ('Wheel', 30.00),
+               ((SELECT Name FROM Production.Product WHERE ProductID = 720),
+                (SELECT ListPrice FROM Production.Product WHERE ProductID = 720));
+      - |-
+        INSERT INTO Production.UnitMeasure
+        VALUES (N'FT2', N'Square Feet ', '20080923'), (N'Y', N'Yards', '20080923'),
+               (N'Y3', N'Cubic Yards', '20080923');
+      - "SELECT a, b FROM (VALUES (1, 2), (3, 4), (5, 6), (7, 8), (9, 10) ) AS MyTable(a, b);"
+      - |-
+        -- Used in an inner join to specify values to return.
+        SELECT ProductID, a.Name, Color
+        FROM Production.Product AS a
+        INNER JOIN (VALUES ('Blade'), ('Crown Race'), ('AWC Logo Cap')) AS b(Name)
+        ON a.Name = b.Name;
+      - |-
+        MERGE INTO Sales.SalesReason AS Target
+        USING (VALUES ('Recommendation','Other'), ('Review', 'Marketing'), ('Internet', 'Promotion'))
+               AS Source (NewName, NewReasonType)
+        ON Target.Name = Source.NewName
+        WHEN MATCHED THEN
+        UPDATE SET ReasonType = Source.NewReasonType
+        WHEN NOT MATCHED BY TARGET THEN
+        INSERT (Name, ReasonType) VALUES (NewName, NewReasonType)
+        OUTPUT $action INTO @SummaryOfChanges;
+
+  - id: top
+    name: "TOP"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/top-transact-sql
+    tier: high
+    probes:
+      - id: constant
+        sql: "SELECT TOP (10) c FROM t;"
+      - id: no_parentheses
+        sql: "SELECT TOP 10 c FROM t;"
+        note: "Backward-compatible form; the page's DELETE and UPDATE examples use SELECT TOP 10 without parentheses."
+      - id: variable
+        sql: "SELECT TOP (@p) c FROM t ORDER BY c;"
+      - id: expression
+        sql: "SELECT TOP (@p * 2 + 1) c FROM t;"
+      - id: subquery
+        sql: "SELECT TOP (SELECT COUNT(*) FROM u) c FROM t;"
+      - id: percent
+        sql: "SELECT TOP (5) PERCENT c FROM t ORDER BY c DESC;"
+      - id: with_ties
+        sql: "SELECT TOP (10) WITH TIES c FROM t ORDER BY c;"
+      - id: percent_with_ties
+        sql: "SELECT TOP (10) PERCENT WITH TIES c FROM t ORDER BY c DESC;"
+      - id: distinct_top
+        sql: "SELECT DISTINCT TOP (10) c FROM t;"
+      - id: delete
+        sql: "DELETE TOP (20) FROM t WHERE d < '20020701';"
+      - id: delete_percent
+        sql: "DELETE TOP (10) PERCENT FROM t;"
+      - id: insert
+        sql: "INSERT TOP (5) INTO t (c) SELECT c FROM u;"
+      - id: update
+        sql: "UPDATE TOP (10) t SET c = 276 WHERE c = 275;"
+      - id: merge
+        sql: "MERGE TOP (10) t USING u ON t.c = u.c WHEN MATCHED THEN DELETE;"
+    examples:
+      - |-
+        -- Select the first 10 employees hired most recently.
+        SELECT TOP (10) JobTitle, HireDate
+        FROM HumanResources.Employee
+        ORDER BY HireDate DESC;
+      - |-
+        SELECT TOP (5) PERCENT JobTitle, HireDate
+        FROM HumanResources.Employee
+        ORDER BY HireDate DESC;
+      - |-
+        SELECT TOP (10) PERCENT WITH TIES pp.FirstName,
+                                          pp.LastName,
+                                          e.JobTitle,
+                                          e.Gender,
+                                          r.Rate
+        FROM Person.Person AS pp
+             INNER JOIN HumanResources.Employee AS e
+                 ON pp.BusinessEntityID = e.BusinessEntityID
+             INNER JOIN HumanResources.EmployeePayHistory AS r
+                 ON r.BusinessEntityID = e.BusinessEntityID
+        ORDER BY Rate DESC;
+      - |-
+        DELETE TOP (20)
+        FROM Purchasing.PurchaseOrderDetail
+        WHERE DueDate < '20020701';
+      - |-
+        UPDATE TOP (10)
+        Sales.Store
+        SET SalesPersonID = 276
+        WHERE SalesPersonID = 275;
+
+  - id: output_clause
+    name: "OUTPUT clause"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/output-clause-transact-sql
+    tier: high
+    probes:
+      - id: delete_deleted_star
+        sql: "DELETE t OUTPUT DELETED.*;"
+      - id: delete_output_where
+        sql: "DELETE TOP (1) t WITH (READPAST) OUTPUT DELETED.* WHERE id = 7;"
+      - id: insert_output_inserted
+        sql: "INSERT INTO t (c) OUTPUT INSERTED.id, INSERTED.c VALUES ('x');"
+      - id: insert_output_into_table_variable
+        sql: "INSERT t OUTPUT INSERTED.id, INSERTED.c INTO @tv VALUES (N'x');"
+      - id: insert_output_into_column_list
+        sql: "INSERT INTO t (c) OUTPUT INSERTED.id, INSERTED.c INTO log_t (id, c) SELECT c FROM u;"
+      - id: update_inserted_deleted
+        sql: "UPDATE t SET c = c * 1.25 OUTPUT INSERTED.id, DELETED.c, INSERTED.c;"
+      - id: update_output_into
+        sql: "UPDATE TOP (10) t SET c = c * 1.25 OUTPUT INSERTED.id, DELETED.c, INSERTED.c INTO @tv;"
+      - id: expression_alias
+        sql: "UPDATE t SET c = c + 1 OUTPUT INSERTED.c - DELETED.c AS diff;"
+      - id: from_table_name
+        sql: "UPDATE t SET c = 4 OUTPUT DELETED.c, INSERTED.c, p.name INTO @tv FROM t AS w INNER JOIN p ON w.pid = p.id;"
+      - id: output_into_and_output
+        sql: "DELETE t OUTPUT DELETED.id INTO @tv OUTPUT DELETED.id, GETDATE() AS d FROM t INNER JOIN u ON t.id = u.id;"
+      - id: merge_action
+        sql: "MERGE t USING u ON t.id = u.id WHEN MATCHED THEN DELETE OUTPUT $action, DELETED.id;"
+      - id: merge_action_into
+        sql: "MERGE t USING u ON t.id = u.id WHEN MATCHED THEN UPDATE SET c = u.c OUTPUT $action INTO @changes;"
+      - id: composable_dml
+        sql: "INSERT INTO z (id, d) SELECT id, GETDATE() FROM (MERGE t USING u ON t.id = u.id WHEN MATCHED THEN DELETE OUTPUT $action, DELETED.id) AS changes (action, id) WHERE action = 'DELETE';"
+    examples:
+      - |-
+        DELETE TOP(1) dbo.DatabaseLog WITH (READPAST)
+        OUTPUT DELETED.*
+        WHERE DatabaseLogID = 7;
+      - |-
+        INSERT Production.ScrapReason
+            OUTPUT INSERTED.ScrapReasonID, INSERTED.Name, INSERTED.ModifiedDate
+                INTO @MyTableVar
+        VALUES (N'Operator error', GETDATE());
+      - |-
+        UPDATE TOP (10) HumanResources.Employee
+        SET VacationHours = VacationHours * 1.25,
+            ModifiedDate = GETDATE()
+        OUTPUT INSERTED.BusinessEntityID,
+               DELETED.VacationHours,
+               INSERTED.VacationHours,
+               INSERTED.ModifiedDate
+        INTO @MyTableVar;
+      - |-
+        DELETE Production.ProductProductPhoto
+        OUTPUT DELETED.ProductID,
+               p.Name,
+               p.ProductModelID,
+               DELETED.ProductPhotoID
+            INTO @MyTableVar
+        FROM Production.ProductProductPhoto AS ph
+        JOIN Production.Product as p
+            ON ph.ProductID = p.ProductID
+            WHERE p.ProductModelID BETWEEN 120 and 130;
+      - |-
+        DELETE Production.ProductProductPhoto
+        OUTPUT DELETED.ProductID,
+            p.Name,
+            p.ProductModelID,
+            DELETED.ProductPhotoID
+        INTO @MyTableVar
+        OUTPUT DELETED.ProductID,
+            DELETED.ProductPhotoID,
+            GETDATE() AS DeletedDate
+        FROM Production.ProductProductPhoto AS ph
+        INNER JOIN Production.Product AS p
+            ON ph.ProductID = p.ProductID
+        WHERE p.ProductID BETWEEN 800
+                AND 810;
+
+  - id: match_sql_graph
+    name: "MATCH (SQL Graph)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/match-sql-graph
+    tier: medium
+    probes:
+      - id: simple
+        sql: "SELECT p2.name FROM Person p1, friend, Person p2 WHERE MATCH(p1-(friend)->p2) AND p1.name = 'Alice';"
+      - id: reverse_arrow
+        sql: "SELECT p2.name FROM Person p1, friend, Person p2 WHERE MATCH(p2<-(friend)-p1);"
+      - id: chain
+        sql: "SELECT p3.name FROM Person p1, friend f1, Person p2, friend f2, Person p3 WHERE MATCH(p1-(f1)->p2-(f2)->p3);"
+      - id: and_pattern
+        sql: "SELECT p1.name FROM Person p1, friend f1, Person p2, friend f2, Person p0 WHERE MATCH(p1-(f1)->p0 AND p2-(f2)->p0);"
+      - id: shortest_path_plus
+        sql: "SELECT p1.name, STRING_AGG(p2.name, '->') WITHIN GROUP (GRAPH PATH) AS path FROM Person AS p1, friendOf FOR PATH AS fo, Person FOR PATH AS p2 WHERE MATCH(SHORTEST_PATH(p1(-(fo)->p2)+));"
+      - id: shortest_path_bounded
+        sql: "SELECT p1.name, COUNT(p2.name) WITHIN GROUP (GRAPH PATH) AS hops FROM Person AS p1, friendOf FOR PATH AS fo, Person FOR PATH AS p2 WHERE MATCH(SHORTEST_PATH(p1(-(fo)->p2){1,3})) AND p1.name = 'Jacob';"
+      - id: last_node_predicate
+        sql: "SELECT p1.name FROM Person AS p1, friendOf FOR PATH AS fo, Person FOR PATH AS p2, friendOf FOR PATH AS fo2, Person FOR PATH AS p3 WHERE MATCH(SHORTEST_PATH(p1(-(fo)->p2)+) AND LAST_NODE(p2) = LAST_NODE(p3));"
+        note: "<arbitrary_length_match_last_node_predicate> ::= LAST_NODE( node_alias ) = LAST_NODE( node_alias )."
+      - id: node_id_pseudo_column
+        sql: "SELECT $node_id, $from_id, $to_id FROM Person, friend;"
+    examples:
+      - |-
+        -- use MATCH in SELECT to find friends of Alice
+        SELECT Person2.name AS FriendName
+        FROM Person Person1, friend, Person Person2
+        WHERE MATCH(Person1-(friend)->Person2)
+        AND Person1.name = 'Alice';
+      - |-
+        SELECT Person3.name AS FriendName
+        FROM Person Person1, friend, Person Person2, friend friend2, Person Person3
+        WHERE MATCH(Person1-(friend)->Person2-(friend2)->Person3)
+        AND Person1.name = 'Alice';
+      - |-
+        -- The pattern can also be expressed as below
+
+            SELECT Person2.name AS FriendName
+            FROM Person Person1, friend, Person Person2
+            WHERE MATCH(Person2<-(friend)-Person1);
+      - |-
+        -- Find 2 people who are both friends with same person
+            SELECT Person1.name AS Friend1, Person2.name AS Friend2
+            FROM Person Person1, friend friend1, Person Person2,
+                 friend friend2, Person Person0
+            WHERE MATCH(Person1-(friend1)->Person0<-(friend2)-Person2);
+      - |-
+        -- this pattern can also be expressed as below
+
+            SELECT Person1.name AS Friend1, Person2.name AS Friend2
+            FROM Person Person1, friend friend1, Person Person2,
+                 friend friend2, Person Person0
+            WHERE MATCH(Person1-(friend1)->Person0 AND Person2-(friend2)->Person0);
+
+  - id: predict
+    name: "PREDICT"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/predict-transact-sql
+    tier: low
+    probes:
+      - id: from_clause
+        sql: "SELECT d.*, p.Score FROM PREDICT(MODEL = @model, DATA = dbo.mytable AS d) WITH (Score FLOAT) AS p;"
+      - id: model_literal_result_set
+        sql: "SELECT p.* FROM PREDICT(MODEL = 0x01, DATA = t AS d) WITH (label NVARCHAR(10) COLLATE Latin1_General_CI_AS NOT NULL, score FLOAT NULL) AS p;"
+    examples:
+      - |-
+        SELECT d.*, p.Score
+        FROM PREDICT(MODEL = @model,
+            DATA = dbo.mytable AS d) WITH (Score FLOAT) AS p;
+      - |-
+        INSERT INTO loan_applications (c1, c2, c3, c4, score)
+        SELECT d.c1, d.c2, d.c3, d.c4, p.score
+        FROM PREDICT(MODEL = @model, DATA = dbo.mytable AS d) WITH(score FLOAT) AS p;
+
+  - id: from_select
+    name: "FROM - SELECT (FROM-first query syntax)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/from-select-transact-sql
+    tier: low
+    status: not-applicable
+    reason: "The page applies to Fabric SQL analytics endpoint and Fabric Data Warehouse only (applies-to: Fabric SE, Fabric DW); FROM-first queries aren't available in SQL Server or Azure SQL Database."
+
+  - id: qualify
+    name: "SELECT - QUALIFY clause"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/select-qualify-clause-transact-sql
+    tier: low
+    status: not-applicable
+    reason: "The page applies to Fabric SQL analytics endpoint and Fabric Data Warehouse only; the SELECT page lists QUALIFY only under 'Syntax for Azure Synapse Analytics and Microsoft Fabric', not under 'Syntax for SQL Server and Azure SQL Database'."
+
+  - id: explain
+    name: "EXPLAIN"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/explain-transact-sql
+    tier: medium
+    status: not-applicable
+    reason: "Applies to: Azure Synapse Analytics dedicated SQL pool only (page applies-to banner 'asa dedicated sql pool only'); SQL Server and Azure SQL Database have no EXPLAIN statement (plans come from SET SHOWPLAN_XML / SET STATISTICS XML)."
+
+  - id: insert
+    name: "INSERT"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/insert-transact-sql
+    tier: high
+    probes:
+      - id: values
+        sql: "INSERT INTO t VALUES (1, 'a');"
+      - id: no_into
+        sql: "INSERT t VALUES (1, 'a');"
+      - id: column_list
+        sql: "INSERT INTO t (c, d) VALUES (1, 'a');"
+      - id: multiple_rows
+        sql: "INSERT INTO t (c, d) VALUES (1, 'a'), (2, 'b');"
+      - id: default_null_values
+        sql: "INSERT INTO t (c, d, e) VALUES (DEFAULT, NULL, 1);"
+      - id: default_values
+        sql: "INSERT INTO t DEFAULT VALUES;"
+      - id: select
+        sql: "INSERT INTO t (c) SELECT c FROM u WHERE d > 0;"
+      - id: select_no_column_list
+        sql: "INSERT INTO t SELECT * FROM u;"
+      - id: parenthesized_select
+        sql: "INSERT INTO t (c) (SELECT c FROM u);"
+      - id: execute_procedure
+        sql: "INSERT INTO t EXECUTE dbo.p;"
+      - id: exec_procedure_params
+        sql: "INSERT INTO t (c, d) EXEC dbo.p @a = 1, @b = 'x';"
+      - id: execute_string
+        sql: "INSERT INTO t EXECUTE ('SELECT c FROM u');"
+      - id: execute_at_linked_server
+        sql: "INSERT INTO t EXECUTE ('SELECT c FROM u') AT srv;"
+      - id: dml_table_source
+        sql: "INSERT INTO t (c, d) SELECT c, GETDATE() FROM (DELETE FROM u OUTPUT DELETED.c WHERE c < 0) AS x (c) WHERE c IS NOT NULL;"
+      - id: top
+        sql: "INSERT TOP (5) INTO t SELECT c FROM u;"
+      - id: top_percent
+        sql: "INSERT TOP (10) PERCENT INTO t SELECT c FROM u;"
+      - id: with_cte
+        sql: "WITH cte AS (SELECT c FROM u) INSERT INTO t (c) SELECT c FROM cte;"
+      - id: output
+        sql: "INSERT INTO t (c) OUTPUT INSERTED.id VALUES (1);"
+      - id: output_into
+        sql: "INSERT INTO t (c) OUTPUT INSERTED.id, INSERTED.c INTO @tv VALUES (1);"
+      - id: table_hint_limited
+        sql: "INSERT INTO t WITH (TABLOCK) (c) SELECT c FROM u;"
+      - id: table_variable_target
+        sql: "INSERT INTO @tv (c) SELECT c FROM u;"
+      - id: temp_table_target
+        sql: "INSERT INTO #t (c) VALUES (1);"
+      - id: view_target
+        sql: "INSERT INTO v VALUES ('Row 1', 1);"
+      - id: four_part_target
+        sql: "INSERT INTO srv.db.dbo.t (c) VALUES (1);"
+      - id: openquery_target
+        sql: "INSERT OPENQUERY (srv, 'SELECT c, d FROM db.dbo.t') VALUES ('x', 'y');"
+      - id: opendatasource_target
+        sql: "INSERT INTO OPENDATASOURCE('MSOLEDBSQL', 'Data Source=srv;Integrated Security=SSPI').db.dbo.t (c) VALUES ('x');"
+      - id: openrowset_source
+        sql: "INSERT INTO t WITH (IGNORE_TRIGGERS) (c, d) SELECT b.c, b.d FROM OPENROWSET (BULK 'C:\\data\\f.txt', FORMATFILE = 'C:\\data\\f.xml', ROWS_PER_BATCH = 15000) AS b;"
+      - id: option_clause
+        sql: "INSERT INTO t (c) SELECT c FROM u OPTION (MAXDOP 1);"
+      - id: udt_value
+        sql: "INSERT INTO t (p) VALUES (CONVERT(Point, '12.3:46.2'));"
+      - id: insert_bulk
+        sql: "INSERT BULK dbo.t (c INT NOT NULL, d NVARCHAR(10) COLLATE Latin1_General_CI_AS NULL) WITH (CHECK_CONSTRAINTS, FIRE_TRIGGERS, KEEP_NULLS, ROWS_PER_BATCH = 1000, ORDER (c ASC), TABLOCK);"
+        note: "'External tool only syntax' block: INSERT BULK is sent by bulk-load clients (bcp, SqlBulkCopy) over TDS."
+    examples:
+      - |-
+        INSERT INTO Production.UnitMeasure
+        VALUES (N'FT2', N'Square Feet ', '20080923'), (N'Y', N'Yards', '20080923')
+            , (N'Y3', N'Cubic Yards', '20080923');
+      - "INSERT INTO T1 DEFAULT VALUES;"
+      - |-
+        --INSERT...EXECUTE('string') example
+        INSERT INTO dbo.EmployeeSales
+        EXECUTE
+        ('
+        SELECT ''EXEC STRING'', sp.BusinessEntityID, c.LastName,
+            sp.SalesYTD
+            FROM Sales.SalesPerson AS sp
+            INNER JOIN Person.Person AS c
+                ON sp.BusinessEntityID = c.BusinessEntityID
+            WHERE sp.BusinessEntityID LIKE ''2%''
+            ORDER BY sp.BusinessEntityID, c.LastName
+        ');
+      - |-
+        INSERT OPENQUERY (MyLinkServer,
+            'SELECT Name, GroupName
+             FROM AdventureWorks2022.HumanResources.Department')
+        VALUES ('Environmental Impact', 'Engineering');
+      - |-
+        INSERT INTO Production.Location WITH (XLOCK)
+        (Name, CostRate, Availability)
+        VALUES ( N'Final Inventory', 15.00, 80.00);
+
+  - id: insert_sql_graph
+    name: "INSERT (SQL Graph)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/insert-sql-graph
+    tier: medium
+    probes:
+      - id: node_table
+        sql: "INSERT INTO dbo.Person VALUES (1, 'Alice');"
+      - id: edge_table_node_ids
+        sql: "INSERT INTO dbo.friend VALUES ((SELECT $node_id FROM dbo.Person WHERE name = 'Alice'), (SELECT $node_id FROM dbo.Person WHERE name = 'John'), '9/15/2011');"
+      - id: edge_table_from_to_columns
+        sql: "INSERT INTO dbo.friend ($from_id, $to_id, start_date) SELECT p1.$node_id, p2.$node_id, '2011-09-15' FROM dbo.Person p1, dbo.Person p2 WHERE p1.ID = 1 AND p2.ID = 2;"
+      - id: match_in_where
+        sql: "INSERT INTO dbo.likes ($from_id, $to_id) SELECT p1.$node_id, r.$node_id FROM dbo.Person p1, dbo.friend f, dbo.Person p2, dbo.Restaurant r WHERE MATCH(p1-(f)->p2) AND r.ID = 1;"
+    examples:
+      - "INSERT INTO dbo.Person VALUES (2,'John');"
+      - |-
+        -- Create a friend edge, that connect Alice and John
+        INSERT INTO dbo.friend VALUES ((SELECT $node_id FROM dbo.Person WHERE name = 'Alice'),
+                (SELECT $node_id FROM dbo.Person WHERE name = 'John'), '9/15/2011');
+
+  - id: update
+    name: "UPDATE"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/update-transact-sql
+    tier: high
+    probes:
+      - id: basic
+        sql: "UPDATE t SET c = GETDATE();"
+      - id: multiple_columns
+        sql: "UPDATE t SET a = 6000, b = .10, c = NULL;"
+      - id: where
+        sql: "UPDATE t SET c = N'Red' WHERE d LIKE N'Road%' AND c = N'Blue';"
+      - id: default
+        sql: "UPDATE t SET c = DEFAULT WHERE c > 20.00;"
+      - id: top
+        sql: "UPDATE TOP (10) t SET c = c * 1.25;"
+      - id: top_percent
+        sql: "UPDATE TOP (10) PERCENT t SET c = 0;"
+      - id: with_cte
+        sql: "WITH cte AS (SELECT id FROM u) UPDATE t SET c = 1 FROM t JOIN cte ON t.id = cte.id;"
+      - id: from_join
+        sql: "UPDATE t SET c = t.c + u.d FROM t JOIN u ON t.id = u.id;"
+      - id: alias_target
+        sql: "UPDATE a SET a.c += ' x' FROM t AS a JOIN u AS b ON a.id = b.id AND b.q > 300;"
+      - id: from_comma_list
+        sql: "UPDATE t SET c = u.d FROM t, u WHERE t.id = u.id;"
+      - id: subquery_in_set
+        sql: "UPDATE t SET c = c + (SELECT SUM(d) FROM u WHERE u.id = t.id);"
+      - id: compound_add
+        sql: "UPDATE t SET c += @p WHERE d = N'Red';"
+      - id: compound_operators
+        sql: "UPDATE t SET a -= 1, b *= 2, c /= 3, d %= 4, e &= 5, f ^= 6, g |= 7;"
+      - id: variable_assignment
+        sql: "UPDATE t SET @v = c WHERE id = 1;"
+      - id: variable_column_assignment
+        sql: "UPDATE t SET @v = c = c + 1 WHERE id = 1;"
+      - id: variable_compound
+        sql: "UPDATE t SET @v += c;"
+      - id: variable_column_compound
+        sql: "UPDATE t SET @v = c += 1;"
+      - id: udt_property
+        sql: "UPDATE t SET p.X = 23.5 WHERE name = 'Anchorage';"
+      - id: udt_method
+        sql: "UPDATE t SET p.SetXY(23.5, 23.5) WHERE name = 'Anchorage';"
+      - id: write_method
+        sql: "UPDATE t SET c.WRITE (N'features', 28, 10) WHERE id = 1;"
+      - id: write_method_space
+        sql: "UPDATE t SET c .WRITE (N' x', NULL, 0) WHERE id = 1;"
+      - id: where_current_of
+        sql: "UPDATE t SET c = 2 WHERE CURRENT OF cur;"
+      - id: where_current_of_global
+        sql: "UPDATE t SET c = 2 WHERE CURRENT OF GLOBAL cur;"
+      - id: where_current_of_variable
+        sql: "UPDATE t SET c = 2 WHERE CURRENT OF @cur;"
+      - id: output
+        sql: "UPDATE t SET c = c * 1.25 OUTPUT INSERTED.id, DELETED.c, INSERTED.c INTO @tv;"
+      - id: table_hint
+        sql: "UPDATE t WITH (TABLOCK) SET c = c * 1.10 WHERE d LIKE 'BK-%';"
+      - id: query_hint
+        sql: "UPDATE t SET c = c * 1.10 WHERE d LIKE @p OPTION (OPTIMIZE FOR (@p = 'BK-%'));"
+      - id: table_variable_target
+        sql: "UPDATE @tv SET c = e.c + 20 FROM @tv AS v INNER JOIN e ON v.id = e.id;"
+      - id: four_part_target
+        sql: "UPDATE srv.db.dbo.t SET c = 'x' WHERE id = 4;"
+      - id: openquery_target
+        sql: "UPDATE OPENQUERY (srv, 'SELECT c FROM db.dbo.t WHERE id = 4') SET c = 'x';"
+      - id: opendatasource_target
+        sql: "UPDATE OPENDATASOURCE('MSOLEDBSQL', 'Data Source=srv;Integrated Security=SSPI').db.dbo.t SET c = 'x' WHERE id = 4;"
+      - id: openrowset_value
+        sql: "UPDATE t SET b = (SELECT * FROM OPENROWSET(BULK 'C:\\f.gif', SINGLE_BLOB) AS x) WHERE id = 1;"
+    examples:
+      - |-
+        UPDATE Sales.SalesPerson
+        SET Bonus = 6000, CommissionPct = .10, SalesQuota = NULL;
+      - |-
+        UPDATE HumanResources.EmployeePayHistory
+        SET PayFrequency = 2
+        WHERE CURRENT OF complex_cursor;
+      - |-
+        UPDATE Production.Product
+        SET ListPrice += @NewPrice
+        WHERE Color = N'Red';
+      - |-
+        UPDATE sr
+        SET sr.Name += ' - tool malfunction'
+        FROM Production.ScrapReason AS sr
+        JOIN Production.WorkOrder AS wo
+             ON sr.ScrapReasonID = wo.ScrapReasonID
+             AND wo.ScrappedQty > 300;
+      - |-
+        UPDATE Sales.SalesPerson
+        SET SalesYTD = SalesYTD + SubTotal
+        FROM Sales.SalesPerson AS sp
+        JOIN Sales.SalesOrderHeader AS so
+            ON sp.BusinessEntityID = so.SalesPersonID
+            AND so.OrderDate = (SELECT MAX(OrderDate)
+                                FROM Sales.SalesOrderHeader
+                                WHERE SalesPersonID = sp.BusinessEntityID);
+
+  - id: delete
+    name: "DELETE"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/delete-transact-sql
+    tier: high
+    probes:
+      - id: all_rows
+        sql: "DELETE FROM t;"
+      - id: no_from
+        sql: "DELETE t WHERE c > 1000.00;"
+      - id: where
+        sql: "DELETE FROM t WHERE c BETWEEN 12.00 AND 14.00 AND d IS NOT NULL;"
+      - id: subquery
+        sql: "DELETE FROM t WHERE id IN (SELECT id FROM u WHERE d > 2500000.00);"
+      - id: from_join
+        sql: "DELETE FROM t FROM t AS a INNER JOIN u AS b ON a.id = b.id WHERE b.d > 2500000.00;"
+      - id: alias_target
+        sql: "DELETE a FROM t AS a INNER JOIN u AS b ON a.id = b.id WHERE b.d > 2500000.00;"
+      - id: from_comma_list
+        sql: "DELETE t FROM t, u WHERE t.id = u.id;"
+      - id: top
+        sql: "DELETE TOP (20) FROM t WHERE d < '20020701';"
+      - id: top_percent
+        sql: "DELETE TOP (2.5) PERCENT FROM t;"
+      - id: with_cte
+        sql: "WITH cte AS (SELECT id FROM u) DELETE FROM t WHERE id IN (SELECT id FROM cte);"
+      - id: where_current_of
+        sql: "DELETE FROM t WHERE CURRENT OF cur;"
+      - id: where_current_of_global
+        sql: "DELETE FROM t WHERE CURRENT OF GLOBAL cur;"
+      - id: where_current_of_variable
+        sql: "DELETE FROM t WHERE CURRENT OF @cur;"
+      - id: output
+        sql: "DELETE t OUTPUT DELETED.* WHERE id = 20621;"
+      - id: output_into_from_table
+        sql: "DELETE t OUTPUT DELETED.id, p.name INTO @tv FROM t AS a JOIN p ON a.pid = p.id WHERE p.m BETWEEN 120 AND 130;"
+      - id: table_hint
+        sql: "DELETE FROM t WITH (TABLOCKX) WHERE c = 1;"
+      - id: query_hint
+        sql: "DELETE FROM t WHERE c = 1 OPTION (MAXDOP 1);"
+      - id: table_variable_target
+        sql: "DELETE FROM @tv WHERE c = 1;"
+      - id: four_part_target
+        sql: "DELETE srv.db.dbo.t WHERE id > 16;"
+      - id: openquery_target
+        sql: "DELETE OPENQUERY (srv, 'SELECT c FROM db.dbo.t WHERE c = ''x''');"
+      - id: opendatasource_target
+        sql: "DELETE FROM OPENDATASOURCE('MSOLEDBSQL', 'Data Source=srv;Integrated Security=SSPI').db.dbo.t WHERE id = 17;"
+    examples:
+      - |-
+        DELETE FROM Production.ProductCostHistory
+        WHERE StandardCost > 1000.00;
+      - |-
+        DELETE FROM HumanResources.EmployeePayHistory
+        WHERE CURRENT OF complex_cursor;
+      - |-
+        -- Transact-SQL extension
+
+        DELETE FROM Sales.SalesPersonQuotaHistory
+        FROM Sales.SalesPersonQuotaHistory AS spqh
+        INNER JOIN Sales.SalesPerson AS sp
+        ON spqh.BusinessEntityID = sp.BusinessEntityID
+        WHERE sp.SalesYTD > 2500000.00;
+      - |-
+        -- No need to mention target table more than once.
+
+        DELETE spqh
+          FROM
+                Sales.SalesPersonQuotaHistory AS spqh
+            INNER JOIN Sales.SalesPerson AS sp
+                ON spqh.BusinessEntityID = sp.BusinessEntityID
+          WHERE  sp.SalesYTD > 2500000.00;
+      - |-
+        DELETE TOP (20)
+        FROM Purchasing.PurchaseOrderDetail
+        WHERE DueDate < '20020701';
+
+  - id: merge
+    name: "MERGE"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/merge-transact-sql
+    tier: high
+    probes:
+      - id: matched_update_not_matched_insert
+        sql: "MERGE t AS tgt USING u AS src ON tgt.id = src.id WHEN MATCHED THEN UPDATE SET tgt.c = src.c WHEN NOT MATCHED THEN INSERT (id, c) VALUES (src.id, src.c);"
+      - id: into
+        sql: "MERGE INTO t USING u ON t.id = u.id WHEN MATCHED THEN DELETE;"
+      - id: matched_and_condition
+        sql: "MERGE t USING u ON t.id = u.id WHEN MATCHED AND t.q - u.q <= 0 THEN DELETE WHEN MATCHED THEN UPDATE SET t.q = t.q - u.q;"
+      - id: not_matched_by_target
+        sql: "MERGE t USING u ON t.id = u.id WHEN NOT MATCHED BY TARGET THEN INSERT (id) VALUES (u.id);"
+      - id: not_matched_and_condition
+        sql: "MERGE t USING u ON t.id = u.id WHEN NOT MATCHED AND u.c > 0 THEN INSERT (id, c) VALUES (u.id, u.c);"
+      - id: not_matched_by_source_delete
+        sql: "MERGE t USING u ON t.id = u.id WHEN NOT MATCHED BY SOURCE THEN DELETE;"
+      - id: not_matched_by_source_and_update
+        sql: "MERGE t USING u ON t.id = u.id WHEN NOT MATCHED BY SOURCE AND t.c > 0 THEN UPDATE SET t.c = 0;"
+      - id: insert_default_values
+        sql: "MERGE t USING u ON t.id = u.id WHEN NOT MATCHED THEN INSERT DEFAULT VALUES;"
+      - id: insert_without_column_list
+        sql: "MERGE t USING u ON t.id = u.id WHEN NOT MATCHED THEN INSERT VALUES (u.id, u.c);"
+      - id: all_three_clauses
+        sql: "MERGE t USING u ON t.id = u.id WHEN MATCHED THEN UPDATE SET c = u.c WHEN NOT MATCHED BY TARGET THEN INSERT (id, c) VALUES (u.id, u.c) WHEN NOT MATCHED BY SOURCE THEN DELETE;"
+      - id: top
+        sql: "MERGE TOP (10) t USING u ON t.id = u.id WHEN MATCHED THEN DELETE;"
+      - id: top_percent
+        sql: "MERGE TOP (10) PERCENT INTO t USING u ON t.id = u.id WHEN MATCHED THEN DELETE;"
+      - id: with_cte
+        sql: "WITH src AS (SELECT id, c FROM u) MERGE t USING src ON t.id = src.id WHEN MATCHED THEN UPDATE SET c = src.c;"
+      - id: cte_target
+        sql: "WITH tgt AS (SELECT id, c FROM t WHERE c > 0) MERGE tgt USING u ON tgt.id = u.id WHEN MATCHED THEN UPDATE SET c = u.c;"
+      - id: table_variable_target
+        sql: "MERGE @tv AS tgt USING u ON tgt.id = u.id WHEN MATCHED THEN DELETE;"
+      - id: merge_hint
+        sql: "MERGE t WITH (HOLDLOCK) AS tgt USING u AS src ON tgt.id = src.id WHEN MATCHED THEN DELETE;"
+      - id: merge_hint_index
+        sql: "MERGE t WITH (SERIALIZABLE, INDEX (ix_id)) USING u ON t.id = u.id WHEN MATCHED THEN DELETE;"
+      - id: merge_hint_index_equals
+        sql: "MERGE t WITH (INDEX = ix_id) USING u ON t.id = u.id WHEN MATCHED THEN DELETE;"
+      - id: values_source
+        sql: "MERGE t USING (VALUES ('a', 'b'), ('c', 'd')) AS s (x, y) ON t.x = s.x WHEN NOT MATCHED BY TARGET THEN INSERT (x, y) VALUES (x, y);"
+      - id: derived_table_source
+        sql: "MERGE t USING (SELECT id, SUM(q) FROM u GROUP BY id) AS s (id, q) ON (t.id = s.id) WHEN MATCHED THEN UPDATE SET t.q = t.q - s.q;"
+      - id: join_source
+        sql: "MERGE t USING (u JOIN v ON u.id = v.id) ON t.id = u.id WHEN MATCHED THEN UPDATE SET t.c = v.c;"
+      - id: output_action
+        sql: "MERGE t USING u ON t.id = u.id WHEN MATCHED THEN UPDATE SET c = u.c WHEN NOT MATCHED THEN INSERT (id, c) VALUES (u.id, u.c) OUTPUT $action, INSERTED.*, DELETED.*;"
+      - id: output_into
+        sql: "MERGE t USING u ON t.id = u.id WHEN MATCHED THEN DELETE OUTPUT $action INTO @changes;"
+      - id: option
+        sql: "MERGE t USING u ON t.id = u.id WHEN MATCHED THEN DELETE OPTION (LOOP JOIN);"
+      - id: graph_match_on
+        sql: "MERGE livesIn USING ((SELECT @p, @c, @s) AS T (pid, cid, s) JOIN Person ON T.pid = Person.ID JOIN City ON T.cid = City.ID) ON MATCH (Person-(livesIn)->City) WHEN MATCHED THEN UPDATE SET StreetAddress = @s WHEN NOT MATCHED THEN INSERT ($from_id, $to_id, StreetAddress) VALUES (Person.$node_id, City.$node_id, @s);"
+    examples:
+      - |-
+        MERGE INTO Sales.SalesReason AS tgt
+        USING (
+            VALUES ('Recommendation', 'Other'),
+                ('Review', 'Marketing'),
+                ('Internet', 'Promotion')
+            ) AS src(NewName, NewReasonType)
+            ON tgt.Name = src.NewName
+        WHEN MATCHED
+            THEN
+                UPDATE
+                SET ReasonType = src.NewReasonType
+        WHEN NOT MATCHED BY TARGET
+            THEN
+                INSERT (Name, ReasonType)
+                VALUES (NewName, NewReasonType)
+        OUTPUT $action
+        INTO @SummaryOfChanges;
+      - |-
+        CREATE PROCEDURE Production.usp_UpdateInventory @OrderDate DATETIME
+        AS
+        MERGE Production.ProductInventory AS tgt
+        USING (
+            SELECT ProductID,
+                SUM(OrderQty)
+            FROM Sales.SalesOrderDetail AS sod
+            INNER JOIN Sales.SalesOrderHeader AS soh
+                ON sod.SalesOrderID = soh.SalesOrderID
+                    AND soh.OrderDate = @OrderDate
+            GROUP BY ProductID
+            ) AS src(ProductID, OrderQty)
+            ON (tgt.ProductID = src.ProductID)
+        WHEN MATCHED
+            AND tgt.Quantity - src.OrderQty <= 0
+            THEN
+                DELETE
+        WHEN MATCHED
+            THEN
+                UPDATE
+                SET tgt.Quantity = tgt.Quantity - src.OrderQty,
+                    tgt.ModifiedDate = GETDATE()
+        OUTPUT $action,
+            Inserted.ProductID,
+            Inserted.Quantity,
+            Inserted.ModifiedDate,
+            Deleted.ProductID,
+            Deleted.Quantity,
+            Deleted.ModifiedDate;
+      - |-
+        INSERT INTO Production.UpdatedInventory
+        SELECT ProductID, LocationID, NewQty, PreviousQty
+        FROM (
+            MERGE Production.ProductInventory AS pi
+            USING (
+                SELECT ProductID, SUM(OrderQty)
+                FROM Sales.SalesOrderDetail AS sod
+                INNER JOIN Sales.SalesOrderHeader AS soh
+                    ON sod.SalesOrderID = soh.SalesOrderID
+                        AND soh.OrderDate BETWEEN '20030701'
+                            AND '20030731'
+                GROUP BY ProductID
+                ) AS src(ProductID, OrderQty)
+                ON pi.ProductID = src.ProductID
+            WHEN MATCHED
+                AND pi.Quantity - src.OrderQty >= 0
+                THEN
+                    UPDATE SET pi.Quantity = pi.Quantity - src.OrderQty
+            WHEN MATCHED
+                AND pi.Quantity - src.OrderQty <= 0
+                THEN
+                    DELETE
+            OUTPUT $action,
+                Inserted.ProductID,
+                Inserted.LocationID,
+                Inserted.Quantity AS NewQty,
+                Deleted.Quantity AS PreviousQty
+            ) AS Changes(Action, ProductID, LocationID, NewQty, PreviousQty)
+        WHERE Action = 'UPDATE';
+
+  - id: truncate_table
+    name: "TRUNCATE TABLE"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/truncate-table-transact-sql
+    tier: high
+    probes:
+      - id: basic
+        sql: "TRUNCATE TABLE t;"
+      - id: qualified
+        sql: "TRUNCATE TABLE db.dbo.t;"
+      - id: partitions_list
+        sql: "TRUNCATE TABLE t WITH (PARTITIONS (2, 4));"
+      - id: partitions_range
+        sql: "TRUNCATE TABLE t WITH (PARTITIONS (2, 4, 6 TO 8));"
+      - id: temp_table
+        sql: "TRUNCATE TABLE #t;"
+    examples:
+      - "TRUNCATE TABLE HumanResources.JobCandidate;"
+      - |-
+        TRUNCATE TABLE PartitionTable1
+        WITH (PARTITIONS (2, 4, 6 TO 8));
+
+  - id: create_table
+    name: "CREATE TABLE"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-table-transact-sql
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE TABLE t (c INT);"
+      - id: three_part_name
+        sql: "CREATE TABLE db.dbo.t (c INT, d NVARCHAR(50));"
+      - id: temp_table
+        sql: "CREATE TABLE #t (c INT PRIMARY KEY);"
+      - id: global_temp_table
+        sql: "CREATE TABLE ##t (c INT, d INT);"
+      - id: null_not_null
+        sql: "CREATE TABLE t (c INT NOT NULL, d INT NULL);"
+      - id: constraint_named_not_null
+        sql: "CREATE TABLE t (c INT CONSTRAINT nn_c NOT NULL);"
+      - id: identity
+        sql: "CREATE TABLE t (id INT IDENTITY(1, 1) NOT NULL, c VARCHAR(30));"
+      - id: identity_no_seed
+        sql: "CREATE TABLE t (id INT IDENTITY, c VARCHAR(30));"
+      - id: identity_not_for_replication
+        sql: "CREATE TABLE t (id INT IDENTITY(1, 1) NOT FOR REPLICATION NOT NULL);"
+      - id: default
+        sql: "CREATE TABLE t (c VARCHAR(50) DEFAULT 'New Position', d DATETIME DEFAULT (GETDATE()), e SYSNAME DEFAULT USER);"
+      - id: named_default
+        sql: "CREATE TABLE t (d DATETIME CONSTRAINT df_d DEFAULT (GETDATE()) NOT NULL);"
+      - id: collate
+        sql: "CREATE TABLE t (c NVARCHAR(15) COLLATE Latin1_General_CI_AI);"
+      - id: sparse
+        sql: "CREATE TABLE t (c1 INT PRIMARY KEY, c2 VARCHAR(50) SPARSE NULL);"
+      - id: column_set
+        sql: "CREATE TABLE t (c1 INT PRIMARY KEY, c2 VARCHAR(50) SPARSE NULL, cs XML COLUMN_SET FOR ALL_SPARSE_COLUMNS);"
+      - id: filestream
+        sql: "CREATE TABLE t (id UNIQUEIDENTIFIER ROWGUIDCOL NOT NULL UNIQUE, photo VARBINARY(MAX) FILESTREAM NULL);"
+      - id: rowguidcol
+        sql: "CREATE TABLE t (g UNIQUEIDENTIFIER DEFAULT NEWSEQUENTIALID() ROWGUIDCOL, c INT);"
+      - id: masked
+        sql: "CREATE TABLE t (email VARCHAR(100) MASKED WITH (FUNCTION = 'email()') NULL);"
+      - id: encrypted
+        sql: "CREATE TABLE t (ssn VARCHAR(11) COLLATE Latin1_General_BIN2 ENCRYPTED WITH (COLUMN_ENCRYPTION_KEY = MyCEK, ENCRYPTION_TYPE = DETERMINISTIC, ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256'));"
+      - id: generated_always_row_hidden
+        sql: "CREATE TABLE t (id INT PRIMARY KEY CLUSTERED, vf DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL, vt DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL, PERIOD FOR SYSTEM_TIME (vf, vt));"
+      - id: generated_always_transaction_id
+        sql: "CREATE TABLE t (id INT, ts BIGINT GENERATED ALWAYS AS TRANSACTION_ID START HIDDEN NOT NULL, ss BIGINT GENERATED ALWAYS AS SEQUENCE_NUMBER START HIDDEN NOT NULL) WITH (LEDGER = ON (APPEND_ONLY = ON));"
+      - id: data_type_params
+        sql: "CREATE TABLE t (a DECIMAL(10, 3), b VARCHAR(MAX), c NVARCHAR(100), d VARBINARY(MAX), e DATETIME2(7), f FLOAT(53));"
+      - id: xml_schema_collection_type
+        sql: "CREATE TABLE t (id INT PRIMARY KEY, r XML(DOCUMENT HumanResources.HRResumeSchemaCollection), s XML(CONTENT dbo.sc));"
+      - id: alias_type
+        sql: "CREATE TABLE t (c dbo.Name NOT NULL);"
+      - id: column_primary_key
+        sql: "CREATE TABLE t (id INT CONSTRAINT pk_t PRIMARY KEY CLUSTERED);"
+      - id: column_primary_key_options
+        sql: "CREATE TABLE t (id INT PRIMARY KEY NONCLUSTERED WITH FILLFACTOR = 80 ON [PRIMARY]);"
+      - id: column_unique
+        sql: "CREATE TABLE t (name NVARCHAR(100) NOT NULL UNIQUE NONCLUSTERED);"
+      - id: column_references
+        sql: "CREATE TABLE t (pid INT NULL REFERENCES p(id));"
+      - id: column_foreign_key_actions
+        sql: "CREATE TABLE t (pid INT FOREIGN KEY REFERENCES dbo.p (id) ON DELETE CASCADE ON UPDATE SET NULL NOT FOR REPLICATION);"
+      - id: column_check
+        sql: "CREATE TABLE t (r TINYINT CHECK (r >= 1 AND r <= 5));"
+      - id: column_check_not_for_replication
+        sql: "CREATE TABLE t (r TINYINT CONSTRAINT ck_r CHECK NOT FOR REPLICATION (r >= 1));"
+      - id: column_index
+        sql: "CREATE TABLE t (c INT INDEX ix_c NONCLUSTERED);"
+      - id: computed_column
+        sql: "CREATE TABLE t (low INT, high INT, myavg AS (low + high) / 2);"
+      - id: computed_persisted
+        sql: "CREATE TABLE t (a INT, b INT, c AS a * b PERSISTED NOT NULL);"
+      - id: computed_with_constraint
+        sql: "CREATE TABLE t (a INT, b AS a * 2 PERSISTED CONSTRAINT uq_b UNIQUE NONCLUSTERED);"
+      - id: table_primary_key
+        sql: "CREATE TABLE t (a INT NOT NULL, b SMALLINT NOT NULL, CONSTRAINT pk_t PRIMARY KEY CLUSTERED (a, b DESC) WITH (IGNORE_DUP_KEY = OFF));"
+      - id: table_unique
+        sql: "CREATE TABLE t (a INT, b INT, UNIQUE NONCLUSTERED (a ASC, b));"
+      - id: table_foreign_key
+        sql: "CREATE TABLE t (a INT, b INT, CONSTRAINT fk_t FOREIGN KEY (a, b) REFERENCES p (x, y) ON DELETE NO ACTION ON UPDATE CASCADE);"
+      - id: table_check
+        sql: "CREATE TABLE t (id CHAR(4), CONSTRAINT ck_id CHECK (id IN ('1389', '0736') OR id LIKE '99[0-9][0-9]'));"
+      - id: table_index
+        sql: "CREATE TABLE t (c1 INT, c2 INT, INDEX ix1 UNIQUE CLUSTERED (c1 DESC, c2));"
+      - id: table_index_filtered_include
+        sql: "CREATE TABLE t (c1 INT, c2 INT, INDEX ix1 NONCLUSTERED (c1) INCLUDE (c2) WHERE c1 > 0 WITH (DATA_COMPRESSION = PAGE) ON [PRIMARY]);"
+      - id: table_index_clustered_columnstore
+        sql: "CREATE TABLE t (c1 INT, c2 INT, INDEX cci CLUSTERED COLUMNSTORE);"
+      - id: table_index_clustered_columnstore_order
+        sql: "CREATE TABLE t (c1 INT, c2 INT, INDEX cci CLUSTERED COLUMNSTORE ORDER (c1));"
+      - id: table_index_nonclustered_columnstore
+        sql: "CREATE TABLE t (c1 INT, c2 INT, INDEX ncci NONCLUSTERED COLUMNSTORE (c1, c2));"
+      - id: on_filegroup
+        sql: "CREATE TABLE t (c INT) ON [PRIMARY];"
+      - id: on_default
+        sql: "CREATE TABLE t (c INT) ON \"default\";"
+      - id: on_partition_scheme
+        sql: "CREATE TABLE t (col1 INT, col2 CHAR(10)) ON myRangePS1 (col1);"
+      - id: textimage_on
+        sql: "CREATE TABLE t (c INT, d VARCHAR(MAX)) ON [PRIMARY] TEXTIMAGE_ON fg_lob;"
+      - id: filestream_on
+        sql: "CREATE TABLE t (id UNIQUEIDENTIFIER ROWGUIDCOL NOT NULL UNIQUE, d VARBINARY(MAX) FILESTREAM) FILESTREAM_ON fs_fg;"
+      - id: as_filetable
+        sql: "CREATE TABLE ft AS FileTable WITH (FILETABLE_DIRECTORY = 'docs', FILETABLE_COLLATE_FILENAME = database_default);"
+      - id: with_data_compression
+        sql: "CREATE TABLE t (c1 INT, c2 NVARCHAR(200)) WITH (DATA_COMPRESSION = ROW);"
+      - id: with_data_compression_partitions
+        sql: "CREATE TABLE t (c1 INT, c2 INT) ON ps (c1) WITH (DATA_COMPRESSION = PAGE ON PARTITIONS (1, 3 TO 5), DATA_COMPRESSION = ROW ON PARTITIONS (2));"
+      - id: with_xml_compression
+        sql: "CREATE TABLE t (c1 INT, c2 XML) WITH (XML_COMPRESSION = ON);"
+      - id: system_versioning_history_table
+        sql: "CREATE TABLE t (id INT PRIMARY KEY, vf DATETIME2 GENERATED ALWAYS AS ROW START NOT NULL, vt DATETIME2 GENERATED ALWAYS AS ROW END NOT NULL, PERIOD FOR SYSTEM_TIME (vf, vt)) WITH (SYSTEM_VERSIONING = ON (HISTORY_TABLE = dbo.t_history, HISTORY_RETENTION_PERIOD = 6 MONTHS, DATA_CONSISTENCY_CHECK = ON));"
+      - id: data_deletion
+        sql: "CREATE TABLE t (id INT, d DATETIME2) WITH (DATA_DELETION = ON (FILTER_COLUMN = d, RETENTION_PERIOD = 1 YEAR));"
+      - id: ledger
+        sql: "CREATE TABLE t (id INT, c INT) WITH (SYSTEM_VERSIONING = ON, LEDGER = ON (LEDGER_VIEW = dbo.t_ledger (TRANSACTION_ID_COLUMN_NAME = tid, SEQUENCE_NUMBER_COLUMN_NAME = sn, OPERATION_TYPE_COLUMN_NAME = op, OPERATION_TYPE_DESC_COLUMN_NAME = op_desc)));"
+      - id: remote_data_archive
+        sql: "CREATE TABLE t (c INT) WITH (REMOTE_DATA_ARCHIVE = ON (MIGRATION_STATE = OUTBOUND));"
+        note: "Stretch Database option; the feature is deprecated but the option is still in the CREATE TABLE syntax block."
+      - id: memory_optimized
+        sql: "CREATE TABLE t (id INT NOT NULL PRIMARY KEY NONCLUSTERED HASH WITH (BUCKET_COUNT = 1024), c NVARCHAR(50)) WITH (MEMORY_OPTIMIZED = ON, DURABILITY = SCHEMA_ONLY);"
+      - id: memory_optimized_table_index_hash
+        sql: "CREATE TABLE t (a INT NOT NULL, b INT NOT NULL, INDEX ix_hash HASH (a, b) WITH (BUCKET_COUNT = 64), CONSTRAINT pk PRIMARY KEY NONCLUSTERED (a)) WITH (MEMORY_OPTIMIZED = ON, DURABILITY = SCHEMA_AND_DATA);"
+      - id: memory_optimized_column_index_hash
+        sql: "CREATE TABLE t (a INT NOT NULL INDEX ix_a HASH WITH (BUCKET_COUNT = 64), b INT NOT NULL PRIMARY KEY NONCLUSTERED) WITH (MEMORY_OPTIMIZED = ON);"
+    examples:
+      - |-
+        CREATE TABLE dbo.PurchaseOrderDetail
+        (
+            PurchaseOrderID INT NOT NULL FOREIGN KEY REFERENCES Purchasing.PurchaseOrderHeader (PurchaseOrderID),
+            LineNumber SMALLINT NOT NULL,
+            ProductID INT NULL FOREIGN KEY REFERENCES Production.Product (ProductID),
+            UnitPrice MONEY NULL,
+            OrderQty SMALLINT NULL,
+            ReceivedQty FLOAT NULL,
+            RejectedQty FLOAT NULL,
+            DueDate DATETIME NULL,
+            rowguid UNIQUEIDENTIFIER CONSTRAINT DF_PurchaseOrderDetail_rowguid DEFAULT (NEWID()) ROWGUIDCOL NOT NULL,
+            ModifiedDate DATETIME CONSTRAINT DF_PurchaseOrderDetail_ModifiedDate DEFAULT (GETDATE()) NOT NULL,
+            LineTotal AS ((UnitPrice * OrderQty)),
+            StockedQty AS ((ReceivedQty - RejectedQty)),
+            CONSTRAINT PK_PurchaseOrderDetail_PurchaseOrderID_LineNumber PRIMARY KEY CLUSTERED (PurchaseOrderID, LineNumber) WITH (IGNORE_DUP_KEY = OFF)
+        ) ON [PRIMARY];
+      - |-
+        CREATE TABLE Department
+        (
+            DepartmentNumber CHAR (10) NOT NULL PRIMARY KEY CLUSTERED,
+            DepartmentName VARCHAR (50) NOT NULL,
+            ManagerID INT NULL,
+            ParentDepartmentNumber CHAR (10) NULL,
+            ValidFrom DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
+            ValidTo DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
+            PERIOD FOR SYSTEM_TIME (ValidFrom, ValidTo)
+        )
+        WITH (SYSTEM_VERSIONING = ON);
+      - |-
+        CREATE TABLE dbo.Department
+        (
+            DepartmentNumber CHAR (10) NOT NULL PRIMARY KEY NONCLUSTERED,
+            DepartmentName VARCHAR (50) NOT NULL,
+            ManagerID INT NULL,
+            ParentDepartmentNumber CHAR (10) NULL,
+            ValidFrom DATETIME2 GENERATED ALWAYS AS ROW START HIDDEN NOT NULL,
+            ValidTo DATETIME2 GENERATED ALWAYS AS ROW END HIDDEN NOT NULL,
+            PERIOD FOR SYSTEM_TIME (ValidFrom, ValidTo)
+        )
+        WITH (
+            MEMORY_OPTIMIZED = ON,
+            DURABILITY = SCHEMA_AND_DATA,
+            SYSTEM_VERSIONING = ON (HISTORY_TABLE = History.DepartmentHistory)
+        );
+      - |-
+        CREATE TABLE Customers
+        (
+            CustName NVARCHAR (60) ENCRYPTED WITH (
+                COLUMN_ENCRYPTION_KEY = MyCEK,
+                ENCRYPTION_TYPE = RANDOMIZED,
+                ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256'
+            ),
+            SSN VARCHAR (11) COLLATE Latin1_General_BIN2  ENCRYPTED WITH (
+                COLUMN_ENCRYPTION_KEY = MyCEK,
+                ENCRYPTION_TYPE = DETERMINISTIC,
+                ALGORITHM = 'AEAD_AES_256_CBC_HMAC_SHA_256'
+            ),
+            Age INT NULL
+        );
+      - |-
+        CREATE TABLE t1
+        (
+            c1 INT,
+            INDEX IX1 (c1) WHERE c1 > 0
+        );
+
+  - id: create_table_identity_property
+    name: "CREATE TABLE IDENTITY (Property)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-table-transact-sql-identity-property
+    tier: medium
+    probes:
+      - id: seed_increment
+        sql: "CREATE TABLE t (id INT IDENTITY(1, 1), c VARCHAR(20));"
+      - id: default_seed
+        sql: "CREATE TABLE t (id BIGINT IDENTITY NOT NULL, c VARCHAR(20));"
+      - id: negative_increment
+        sql: "CREATE TABLE t (id DECIMAL(10, 0) IDENTITY(100, -5) PRIMARY KEY);"
+    examples:
+      - |-
+        CREATE TABLE new_employees (
+            id_num INT IDENTITY(1, 1),
+            fname VARCHAR(20),
+            minit CHAR(1),
+            lname VARCHAR(30)
+        );
+
+  - id: create_table_sql_graph
+    name: "CREATE TABLE (SQL Graph)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-table-sql-graph
+    tier: medium
+    probes:
+      - id: node
+        sql: "CREATE TABLE Person (ID INTEGER PRIMARY KEY, name VARCHAR(100)) AS NODE;"
+      - id: edge
+        sql: "CREATE TABLE friends (id INTEGER PRIMARY KEY, start_date DATE) AS EDGE;"
+      - id: edge_no_columns
+        sql: "CREATE TABLE likes AS EDGE;"
+      - id: edge_connection_constraint
+        sql: "CREATE TABLE friendOf (CONSTRAINT ec_friend CONNECTION (Person TO Person, Person TO Robot) ON DELETE CASCADE) AS EDGE;"
+      - id: node_on_filegroup
+        sql: "CREATE TABLE City (ID INT, name VARCHAR(50)) AS NODE ON [PRIMARY];"
+    examples:
+      - |-
+        CREATE TABLE Person (
+                ID INTEGER PRIMARY KEY,
+                name VARCHAR(100),
+                email VARCHAR(100)
+         ) AS NODE;
+      - |-
+        CREATE TABLE friends (
+            id INTEGER PRIMARY KEY,
+            start_date DATe
+         ) AS EDGE;
+      - |-
+        -- Create a likes edge table, this table does not have any user defined attributes
+         CREATE TABLE likes AS EDGE;
+
+  - id: create_table_azure_synapse
+    name: "CREATE TABLE (Azure Synapse Analytics)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-table-azure-sql-data-warehouse
+    tier: low
+    status: not-applicable
+    reason: "Applies to: Azure Synapse Analytics (page banner 'asa'); the DISTRIBUTION/CLUSTERED COLUMNSTORE INDEX table options on this page are Synapse-only. SQL Server and Azure SQL Database use the CREATE TABLE page instead."
+
+  - id: create_table_as_select
+    name: "CREATE TABLE AS SELECT (CTAS)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-table-as-select-azure-sql-data-warehouse
+    tier: low
+    status: not-applicable
+    reason: "Applies to: Azure Synapse Analytics (page banner 'asa'); SQL Server and Azure SQL Database have no CREATE TABLE ... AS SELECT and use SELECT ... INTO instead."
+
+  - id: create_table_as_clone_of
+    name: "CREATE TABLE AS CLONE OF"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-table-as-clone-of-transact-sql
+    tier: low
+    status: not-applicable
+    reason: "Applies to: Warehouse in Microsoft Fabric only (page banner 'fabric-dw'); not available in SQL Server or Azure SQL Database."
+

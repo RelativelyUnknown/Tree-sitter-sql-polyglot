@@ -696,3 +696,1074 @@ statements:
       - { id: truncate_table, sql: "TRUNCATE TABLE t;" }
       - { id: truncate_without_table, sql: "TRUNCATE t;" }
       - { id: qualified_name, sql: "TRUNCATE TABLE db1.t;" }
+
+  - id: create_table
+    name: CREATE TABLE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-table.html
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE TABLE t (a INT, b VARCHAR(10));" }
+      - { id: temporary, sql: "CREATE TEMPORARY TABLE t (a INT);" }
+      - { id: if_not_exists, sql: "CREATE TABLE IF NOT EXISTS t (a INT);" }
+      - { id: qualified_name, sql: "CREATE TABLE db1.t (a INT);" }
+      - { id: not_null_null, sql: "CREATE TABLE t (a INT NOT NULL, b INT NULL);" }
+      - { id: default_literal, sql: "CREATE TABLE t (a INT DEFAULT 0, b VARCHAR(10) DEFAULT 'x');" }
+      - { id: default_expression, sql: "CREATE TABLE t (a DOUBLE DEFAULT (RAND() * RAND()), b JSON DEFAULT (JSON_ARRAY()));" }
+      - { id: default_current_timestamp_on_update, sql: "CREATE TABLE t (ts TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);" }
+      - { id: invisible_column, sql: "CREATE TABLE t (a INT, b INT INVISIBLE, c INT VISIBLE);" }
+      - { id: auto_increment_primary_key, sql: "CREATE TABLE t (id INT NOT NULL AUTO_INCREMENT PRIMARY KEY);" }
+      - { id: column_key, sql: "CREATE TABLE t (id INT KEY, b INT);" }
+      - { id: column_unique_key, sql: "CREATE TABLE t (a INT UNIQUE KEY, b INT UNIQUE);" }
+      - { id: column_comment, sql: "CREATE TABLE t (a INT COMMENT 'the a column');" }
+      - { id: column_collate, sql: "CREATE TABLE t (c CHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);" }
+      - { id: column_format, sql: "CREATE TABLE t (a INT COLUMN_FORMAT FIXED, b INT COLUMN_FORMAT DYNAMIC);" }
+      - { id: column_engine_attribute, sql: "CREATE TABLE t (a INT ENGINE_ATTRIBUTE = '{\"k\":\"v\"}' SECONDARY_ENGINE_ATTRIBUTE '{}');" }
+      - { id: column_storage, sql: "CREATE TABLE t (a INT STORAGE DISK, b INT STORAGE MEMORY) TABLESPACE ts_1 ENGINE NDB;" }
+      - { id: column_references, sql: "CREATE TABLE t (a INT REFERENCES t2 (id) ON DELETE CASCADE);" }
+      - { id: column_check, sql: "CREATE TABLE t (a INT CHECK (a > 0), b INT CONSTRAINT b_pos CHECK (b > 0) NOT ENFORCED);" }
+      - { id: generated_virtual, sql: "CREATE TABLE t (a INT, b INT GENERATED ALWAYS AS (a * 2) VIRTUAL);" }
+      - { id: generated_stored, sql: "CREATE TABLE t (a INT, b INT AS (a + 1) STORED NOT NULL UNIQUE KEY COMMENT 'g');" }
+      - { id: generated_collate, sql: "CREATE TABLE t (a VARCHAR(10), b VARCHAR(10) COLLATE utf8mb4_bin AS (UPPER(a)));" }
+      - { id: index, sql: "CREATE TABLE t (a INT, INDEX idx (a));" }
+      - { id: key_unnamed, sql: "CREATE TABLE t (a INT, KEY (a));" }
+      - { id: index_using_btree, sql: "CREATE TABLE t (id INT, INDEX USING BTREE (id)) ENGINE = MEMORY;" }
+      - { id: index_using_hash_option, sql: "CREATE TABLE t (id INT, KEY idx (id) USING HASH) ENGINE = MEMORY;" }
+      - { id: index_prefix_length, sql: "CREATE TABLE t (b BLOB, INDEX (b(10)));" }
+      - { id: index_functional_key_part, sql: "CREATE TABLE t (a INT, b INT, INDEX idx ((a + b)));" }
+      - { id: index_desc_key_part, sql: "CREATE TABLE t (a INT, b INT, INDEX idx (a ASC, b DESC));" }
+      - { id: index_options, sql: "CREATE TABLE t (a INT, INDEX idx (a) KEY_BLOCK_SIZE = 8 COMMENT 'c' INVISIBLE);" }
+      - { id: index_engine_attribute, sql: "CREATE TABLE t (a INT, INDEX idx (a) ENGINE_ATTRIBUTE '{}' SECONDARY_ENGINE_ATTRIBUTE = '{}');" }
+      - { id: fulltext_index, sql: "CREATE TABLE t (body TEXT, FULLTEXT INDEX ft (body) WITH PARSER ngram);" }
+      - { id: fulltext_key, sql: "CREATE TABLE t (body TEXT, FULLTEXT KEY (body));" }
+      - { id: spatial_index, sql: "CREATE TABLE t (g GEOMETRY NOT NULL, SPATIAL INDEX (g));" }
+      - { id: primary_key_constraint, sql: "CREATE TABLE t (a INT, b INT, CONSTRAINT pk PRIMARY KEY USING BTREE (a, b));" }
+      - { id: primary_key_unnamed_constraint, sql: "CREATE TABLE t (a INT, CONSTRAINT PRIMARY KEY (a));" }
+      - { id: unique_constraint, sql: "CREATE TABLE t (a INT, CONSTRAINT uq UNIQUE KEY idx_a (a));" }
+      - { id: unique_index, sql: "CREATE TABLE t (a INT, UNIQUE INDEX (a));" }
+      - { id: foreign_key, sql: "CREATE TABLE t (a INT, FOREIGN KEY (a) REFERENCES t2 (id));" }
+      - { id: foreign_key_named_actions, sql: "CREATE TABLE t (a INT, CONSTRAINT fk FOREIGN KEY fk_idx (a) REFERENCES t2 (id) ON DELETE SET NULL ON UPDATE CASCADE);" }
+      - { id: foreign_key_match, sql: "CREATE TABLE t (a INT, FOREIGN KEY (a) REFERENCES t2 (id) MATCH FULL ON DELETE NO ACTION ON UPDATE RESTRICT);" }
+      - { id: foreign_key_set_default, sql: "CREATE TABLE t (a INT, FOREIGN KEY (a) REFERENCES t2 (id) MATCH SIMPLE ON DELETE SET DEFAULT);" }
+      - { id: check_constraint, sql: "CREATE TABLE t (a INT, b INT, CONSTRAINT chk CHECK (a < b) ENFORCED);" }
+      - { id: check_constraint_unnamed, sql: "CREATE TABLE t (a INT, CHECK (a <> 0));" }
+      - { id: engine_option, sql: "CREATE TABLE t (a INT) ENGINE = InnoDB;" }
+      - { id: engine_without_equals, sql: "CREATE TABLE t (a INT) ENGINE InnoDB;" }
+      - { id: charset_collate_options, sql: "CREATE TABLE t (a INT) DEFAULT CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci;" }
+      - { id: charset_shorthand, sql: "CREATE TABLE t (a INT) DEFAULT CHARSET=utf8mb4;" }
+      - { id: auto_increment_option, sql: "CREATE TABLE t (id INT AUTO_INCREMENT PRIMARY KEY) AUTO_INCREMENT = 100;" }
+      - { id: comment_option, sql: "CREATE TABLE t (a INT) COMMENT = 'table comment';" }
+      - { id: row_format_option, sql: "CREATE TABLE t (a INT) ROW_FORMAT = COMPRESSED KEY_BLOCK_SIZE = 8;" }
+      - { id: comma_separated_options, sql: "CREATE TABLE t (a INT) ENGINE = InnoDB, AUTO_INCREMENT = 5, COMMENT = 'x';" }
+      - { id: storage_tuning_options, sql: "CREATE TABLE t (a INT) AVG_ROW_LENGTH = 100 MAX_ROWS = 1000 MIN_ROWS = 10 PACK_KEYS = DEFAULT CHECKSUM = 1 DELAY_KEY_WRITE = 0;" }
+      - { id: stats_options, sql: "CREATE TABLE t (a INT) STATS_PERSISTENT = 1 STATS_AUTO_RECALC = DEFAULT STATS_SAMPLE_PAGES = 25;" }
+      - { id: compression_encryption, sql: "CREATE TABLE t (a INT) COMPRESSION = 'ZLIB' ENCRYPTION = 'Y';" }
+      - { id: data_index_directory, sql: "CREATE TABLE t (a INT) ENGINE = MyISAM DATA DIRECTORY = '/var/data' INDEX DIRECTORY = '/var/idx';" }
+      - { id: autoextend_size, sql: "CREATE TABLE t (a INT) AUTOEXTEND_SIZE = 4M;" }
+      - { id: tablespace_option, sql: "CREATE TABLE t (a INT) TABLESPACE = innodb_file_per_table;" }
+      - { id: tablespace_storage_disk, sql: "CREATE TABLE t (a INT) TABLESPACE ts1 STORAGE DISK ENGINE = NDB;" }
+      - { id: merge_union_insert_method, sql: "CREATE TABLE t (a INT) ENGINE = MERGE UNION = (t1, t2) INSERT_METHOD = LAST;" }
+      - { id: connection_option, sql: "CREATE TABLE t (a INT) ENGINE = FEDERATED CONNECTION = 'mysql://u@h:3306/db/t';" }
+      - { id: table_engine_attribute, sql: "CREATE TABLE t (a INT) ENGINE_ATTRIBUTE = '{\"key\":\"value\"}' SECONDARY_ENGINE_ATTRIBUTE = '{}';" }
+      - { id: start_transaction_option, sql: "CREATE TABLE t START TRANSACTION SELECT * FROM t2;", note: "table_option START TRANSACTION, valid only with CREATE TABLE ... SELECT (atomic DDL)" }
+      - { id: partition_by_hash, sql: "CREATE TABLE t (a INT, d DATETIME) PARTITION BY HASH (YEAR(d)) PARTITIONS 4;" }
+      - { id: partition_by_linear_hash, sql: "CREATE TABLE t (a INT) PARTITION BY LINEAR HASH (a) PARTITIONS 3;" }
+      - { id: partition_by_key, sql: "CREATE TABLE t (a INT, d DATE) PARTITION BY KEY (d) PARTITIONS 4;" }
+      - { id: partition_by_linear_key_algorithm, sql: "CREATE TABLE t (a INT) PARTITION BY LINEAR KEY ALGORITHM=2 (a) PARTITIONS 5;" }
+      - { id: partition_by_range, sql: "CREATE TABLE t (y INT) PARTITION BY RANGE (y) (PARTITION p0 VALUES LESS THAN (1991), PARTITION p1 VALUES LESS THAN MAXVALUE);" }
+      - { id: partition_by_range_columns, sql: "CREATE TABLE t (a INT, b INT) PARTITION BY RANGE COLUMNS (a, b) (PARTITION p0 VALUES LESS THAN (10, 5), PARTITION p1 VALUES LESS THAN (MAXVALUE, MAXVALUE));" }
+      - { id: partition_by_list, sql: "CREATE TABLE t (id INT) PARTITION BY LIST (id) (PARTITION r0 VALUES IN (1, 5, 9), PARTITION r1 VALUES IN (2, 6, 10));" }
+      - { id: partition_by_list_columns, sql: "CREATE TABLE t (a INT, b INT) PARTITION BY LIST COLUMNS (a, b) (PARTITION p0 VALUES IN ((0, 0), (NULL, NULL)), PARTITION p1 VALUES IN ((0, 1), (1, 1)));" }
+      - { id: subpartition_by_hash, sql: "CREATE TABLE t (id INT, d DATE) PARTITION BY RANGE (YEAR(d)) SUBPARTITION BY HASH (TO_DAYS(d)) SUBPARTITIONS 2 (PARTITION p0 VALUES LESS THAN (1990), PARTITION p1 VALUES LESS THAN MAXVALUE);" }
+      - { id: subpartition_by_linear_key, sql: "CREATE TABLE t (id INT, d DATE) PARTITION BY RANGE (YEAR(d)) SUBPARTITION BY LINEAR KEY ALGORITHM=1 (id) SUBPARTITIONS 2 (PARTITION p0 VALUES LESS THAN (1990), PARTITION p1 VALUES LESS THAN MAXVALUE);" }
+      - { id: partition_definition_options, sql: "CREATE TABLE t (id INT) PARTITION BY LIST (id) (PARTITION p1 VALUES IN (1, 2) ENGINE = InnoDB COMMENT = 'c' DATA DIRECTORY = '/d1' INDEX DIRECTORY = '/i1' MAX_ROWS = 100 MIN_ROWS = 1);" }
+      - { id: partition_tablespace_storage_engine, sql: "CREATE TABLE t (id INT) PARTITION BY HASH (id) (PARTITION p0 STORAGE ENGINE = InnoDB TABLESPACE = ts1, PARTITION p1);" }
+      - { id: subpartition_definitions, sql: "CREATE TABLE t (id INT, d DATE) PARTITION BY RANGE (YEAR(d)) SUBPARTITION BY HASH (TO_DAYS(d)) (PARTITION p0 VALUES LESS THAN (1990) (SUBPARTITION s0 ENGINE = InnoDB, SUBPARTITION s1 COMMENT = 'x'), PARTITION p1 VALUES LESS THAN MAXVALUE (SUBPARTITION s2, SUBPARTITION s3));" }
+      - { id: create_as_select, sql: "CREATE TABLE t AS SELECT * FROM t2;" }
+      - { id: create_like, sql: "CREATE TABLE t LIKE t2;" }
+    examples:
+      - "CREATE TABLE t (c CHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);"
+      - "CREATE TABLE test (blob_col BLOB, INDEX(blob_col(10)));"
+      - |-
+        CREATE TABLE lookup
+          (id INT, INDEX USING BTREE (id)
+        ) ENGINE = MEMORY;
+      - |-
+        CREATE TABLE rc (
+            a INT NOT NULL,
+            b INT NOT NULL
+        )
+        PARTITION BY RANGE COLUMNS(a,b) (
+            PARTITION p0 VALUES LESS THAN (10,5),
+            PARTITION p1 VALUES LESS THAN (20,10),
+            PARTITION p2 VALUES LESS THAN (50,MAXVALUE),
+            PARTITION p3 VALUES LESS THAN (65,MAXVALUE),
+            PARTITION p4 VALUES LESS THAN (MAXVALUE,MAXVALUE)
+        );
+      - |-
+        CREATE TABLE th (id INT, name VARCHAR(30), adate DATE)
+        PARTITION BY LIST(YEAR(adate))
+        (
+          PARTITION p1999 VALUES IN (1995, 1999, 2003)
+            DATA DIRECTORY = '/var/appdata/95/data'
+            INDEX DIRECTORY = '/var/appdata/95/idx',
+          PARTITION p2000 VALUES IN (1996, 2000, 2004)
+            DATA DIRECTORY = '/var/appdata/96/data'
+            INDEX DIRECTORY = '/var/appdata/96/idx',
+          PARTITION p2001 VALUES IN (1997, 2001, 2005)
+            DATA DIRECTORY = '/var/appdata/97/data'
+            INDEX DIRECTORY = '/var/appdata/97/idx',
+          PARTITION p2002 VALUES IN (1998, 2002, 2006)
+            DATA DIRECTORY = '/var/appdata/98/data'
+            INDEX DIRECTORY = '/var/appdata/98/idx'
+        );
+
+  - id: create_temporary_table
+    name: CREATE TEMPORARY TABLE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-temporary-table.html
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE TEMPORARY TABLE t (a INT) ENGINE = MEMORY;" }
+      - { id: if_not_exists, sql: "CREATE TEMPORARY TABLE IF NOT EXISTS t (a INT);" }
+      - { id: as_select, sql: "CREATE TEMPORARY TABLE t SELECT * FROM t2 LIMIT 0;" }
+      - { id: like, sql: "CREATE TEMPORARY TABLE t LIKE t2;" }
+      - { id: drop_temporary, sql: "DROP TEMPORARY TABLE t;" }
+    examples:
+      - "CREATE TEMPORARY TABLE new_tbl SELECT * FROM orig_tbl LIMIT 0;"
+
+  - id: create_table_like
+    name: CREATE TABLE ... LIKE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-table-like.html
+    tier: high
+    probes:
+      - { id: like, sql: "CREATE TABLE t LIKE t2;" }
+      - { id: like_parenthesized, sql: "CREATE TABLE t (LIKE t2);" }
+      - { id: if_not_exists_like, sql: "CREATE TABLE IF NOT EXISTS t LIKE db1.t2;" }
+    examples:
+      - "CREATE TABLE new_tbl LIKE orig_tbl;"
+
+  - id: create_table_select
+    name: CREATE TABLE ... SELECT
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-table-select.html
+    tier: high
+    probes:
+      - { id: select, sql: "CREATE TABLE t SELECT * FROM t2;" }
+      - { id: as_select, sql: "CREATE TABLE t AS SELECT * FROM t2;" }
+      - { id: columns_and_select, sql: "CREATE TABLE t (m INT) SELECT n FROM t2;" }
+      - { id: keys_options_select, sql: "CREATE TABLE t (a INT NOT NULL AUTO_INCREMENT, PRIMARY KEY (a), KEY (b)) ENGINE = InnoDB SELECT b, c FROM t2;" }
+      - { id: ignore_select, sql: "CREATE TABLE t (UNIQUE (n)) IGNORE SELECT n FROM t2;" }
+      - { id: replace_select, sql: "CREATE TABLE t (UNIQUE (n)) REPLACE SELECT n FROM t2;" }
+      - { id: values_source, sql: "CREATE TABLE t VALUES ROW(1, 3, 5), ROW(2, 4, 6);" }
+      - { id: table_source, sql: "CREATE TABLE t TABLE t2;" }
+      - { id: columns_and_table, sql: "CREATE TABLE t (x INT) TABLE t2;" }
+      - { id: partition_and_select, sql: "CREATE TABLE t (a INT) PARTITION BY HASH (a) PARTITIONS 2 SELECT a FROM t2;" }
+    examples:
+      - "CREATE TABLE new_tbl AS SELECT * FROM orig_tbl;"
+      - |-
+        CREATE TABLE test (a INT NOT NULL AUTO_INCREMENT,
+               PRIMARY KEY (a), KEY(b))
+               ENGINE=InnoDB SELECT b,c FROM test2;
+      - "CREATE TABLE bar (UNIQUE (n)) SELECT n FROM foo;"
+      - |-
+        CREATE TABLE artists_and_works
+          SELECT artist.name, COUNT(work.artist_id) AS number_of_works
+          FROM artist LEFT JOIN work ON artist.id = work.artist_id
+          GROUP BY artist.id;
+      - "CREATE TABLE foo (a TINYINT NOT NULL) SELECT b+1 AS a FROM bar;"
+
+  - id: alter_table
+    name: ALTER TABLE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/alter-table.html
+    tier: high
+    probes:
+      - { id: add_column, sql: "ALTER TABLE t ADD COLUMN c INT;" }
+      - { id: add_without_column_keyword, sql: "ALTER TABLE t ADD c INT NOT NULL DEFAULT 0;" }
+      - { id: add_column_first, sql: "ALTER TABLE t ADD COLUMN c INT FIRST;" }
+      - { id: add_column_after, sql: "ALTER TABLE t ADD COLUMN c INT AFTER b;" }
+      - { id: add_columns_parenthesized, sql: "ALTER TABLE t ADD COLUMN (c INT, d VARCHAR(10));" }
+      - { id: add_generated_column, sql: "ALTER TABLE t ADD COLUMN c INT GENERATED ALWAYS AS (a + b) VIRTUAL;" }
+      - { id: add_index, sql: "ALTER TABLE t ADD INDEX idx (a);" }
+      - { id: add_key_type_options, sql: "ALTER TABLE t ADD KEY idx USING BTREE (a, b DESC) COMMENT 'c' INVISIBLE;" }
+      - { id: add_functional_index, sql: "ALTER TABLE t ADD INDEX idx ((a + b));" }
+      - { id: add_fulltext, sql: "ALTER TABLE t ADD FULLTEXT INDEX ft (body) WITH PARSER ngram;" }
+      - { id: add_spatial, sql: "ALTER TABLE t ADD SPATIAL INDEX sp (g);" }
+      - { id: add_primary_key, sql: "ALTER TABLE t ADD PRIMARY KEY (id);" }
+      - { id: add_constraint_primary_key, sql: "ALTER TABLE t ADD CONSTRAINT pk PRIMARY KEY USING BTREE (id);" }
+      - { id: add_unique, sql: "ALTER TABLE t ADD CONSTRAINT uq UNIQUE INDEX uq_a (a);" }
+      - { id: add_foreign_key, sql: "ALTER TABLE t ADD CONSTRAINT fk FOREIGN KEY (a) REFERENCES t2 (id) ON DELETE CASCADE ON UPDATE SET NULL;" }
+      - { id: add_check, sql: "ALTER TABLE t ADD CONSTRAINT chk CHECK (a > 0) NOT ENFORCED;" }
+      - { id: drop_check, sql: "ALTER TABLE t DROP CHECK chk;" }
+      - { id: drop_constraint, sql: "ALTER TABLE t DROP CONSTRAINT chk;" }
+      - { id: alter_check_enforced, sql: "ALTER TABLE t ALTER CHECK chk NOT ENFORCED;" }
+      - { id: alter_constraint_enforced, sql: "ALTER TABLE t ALTER CONSTRAINT chk ENFORCED;" }
+      - { id: algorithm, sql: "ALTER TABLE t ADD COLUMN c INT, ALGORITHM = INSTANT;" }
+      - { id: lock, sql: "ALTER TABLE t ADD INDEX idx (a), ALGORITHM = INPLACE, LOCK = NONE;" }
+      - { id: alter_column_set_default, sql: "ALTER TABLE t ALTER COLUMN a SET DEFAULT 1;" }
+      - { id: alter_column_set_default_expr, sql: "ALTER TABLE t ALTER a SET DEFAULT (RAND() * 10);" }
+      - { id: alter_column_drop_default, sql: "ALTER TABLE t ALTER COLUMN a DROP DEFAULT;" }
+      - { id: alter_column_set_invisible, sql: "ALTER TABLE t ALTER COLUMN a SET INVISIBLE;" }
+      - { id: alter_index_visibility, sql: "ALTER TABLE t ALTER INDEX idx INVISIBLE;" }
+      - { id: change_column, sql: "ALTER TABLE t CHANGE a b BIGINT NOT NULL;" }
+      - { id: change_column_keyword_first, sql: "ALTER TABLE t CHANGE COLUMN a b INT FIRST;" }
+      - { id: modify_column, sql: "ALTER TABLE t MODIFY b INT NOT NULL;" }
+      - { id: modify_column_after, sql: "ALTER TABLE t MODIFY COLUMN b BIGINT UNSIGNED DEFAULT 1 COMMENT 'my column' AFTER a;" }
+      - { id: table_charset, sql: "ALTER TABLE t CHARACTER SET = utf8mb4;" }
+      - { id: default_charset_collate, sql: "ALTER TABLE t DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;" }
+      - { id: convert_to_charset, sql: "ALTER TABLE t CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;" }
+      - { id: disable_enable_keys, sql: "ALTER TABLE t DISABLE KEYS;" }
+      - { id: discard_tablespace, sql: "ALTER TABLE t DISCARD TABLESPACE;" }
+      - { id: import_tablespace, sql: "ALTER TABLE t IMPORT TABLESPACE;" }
+      - { id: drop_column, sql: "ALTER TABLE t DROP COLUMN c, DROP d;" }
+      - { id: drop_index, sql: "ALTER TABLE t DROP INDEX idx;" }
+      - { id: drop_key, sql: "ALTER TABLE t DROP KEY idx;" }
+      - { id: drop_primary_key, sql: "ALTER TABLE t DROP PRIMARY KEY;" }
+      - { id: drop_foreign_key, sql: "ALTER TABLE t DROP FOREIGN KEY fk;" }
+      - { id: force, sql: "ALTER TABLE t FORCE;" }
+      - { id: order_by, sql: "ALTER TABLE t ORDER BY a, b;" }
+      - { id: rename_column, sql: "ALTER TABLE t RENAME COLUMN a TO b;" }
+      - { id: rename_index, sql: "ALTER TABLE t RENAME INDEX i1 TO i2;" }
+      - { id: rename_key, sql: "ALTER TABLE t RENAME KEY i1 TO i2;" }
+      - { id: rename_table_to, sql: "ALTER TABLE t RENAME TO t2;" }
+      - { id: rename_table_as, sql: "ALTER TABLE t RENAME AS t2;" }
+      - { id: rename_table_bare, sql: "ALTER TABLE t RENAME t2;" }
+      - { id: with_validation, sql: "ALTER TABLE t MODIFY COLUMN c INT AS (a + 1) STORED, WITH VALIDATION;" }
+      - { id: without_validation, sql: "ALTER TABLE t MODIFY COLUMN c INT AS (a + 1) STORED, WITHOUT VALIDATION;" }
+      - { id: table_options, sql: "ALTER TABLE t ENGINE = InnoDB, ROW_FORMAT = COMPRESSED, AUTO_INCREMENT = 13, COMMENT = 'new comment';" }
+      - { id: table_options_misc, sql: "ALTER TABLE t KEY_BLOCK_SIZE = 8 STATS_PERSISTENT = 0 ENCRYPTION = 'N' TABLESPACE ts1 STORAGE DISK;" }
+      - { id: multiple_operations, sql: "ALTER TABLE t ADD COLUMN c INT, DROP COLUMN d, RENAME COLUMN a TO b, ADD INDEX (c);" }
+      - { id: partition_by, sql: "ALTER TABLE t PARTITION BY HASH (id) PARTITIONS 8;" }
+      - { id: remove_partitioning, sql: "ALTER TABLE t REMOVE PARTITIONING;" }
+    examples:
+      - "ALTER TABLE t2 DROP COLUMN c, DROP COLUMN d;"
+      - "ALTER TABLE t1 CHANGE a b BIGINT NOT NULL;"
+      - "ALTER TABLE t1 MODIFY col1 BIGINT UNSIGNED DEFAULT 1 COMMENT 'my column';"
+      - |-
+        ALTER TABLE t1 RENAME COLUMN a TO b,
+                       RENAME COLUMN b TO a;
+      - "ALTER TABLE t1 CHARACTER SET = utf8mb4;"
+
+  - id: alter_table_partition_operations
+    name: ALTER TABLE Partition Operations
+    doc: https://dev.mysql.com/doc/refman/8.4/en/alter-table-partition-operations.html
+    tier: medium
+    probes:
+      - { id: partition_by, sql: "ALTER TABLE t PARTITION BY HASH (id) PARTITIONS 8;" }
+      - { id: add_partition, sql: "ALTER TABLE t ADD PARTITION (PARTITION p3 VALUES LESS THAN (2002));" }
+      - { id: drop_partition, sql: "ALTER TABLE t DROP PARTITION p0, p1;" }
+      - { id: discard_partition_tablespace, sql: "ALTER TABLE t DISCARD PARTITION p2, p3 TABLESPACE;" }
+      - { id: import_partition_all_tablespace, sql: "ALTER TABLE t IMPORT PARTITION ALL TABLESPACE;" }
+      - { id: truncate_partition, sql: "ALTER TABLE t TRUNCATE PARTITION p1, p3;" }
+      - { id: coalesce_partition, sql: "ALTER TABLE t COALESCE PARTITION 2;" }
+      - { id: reorganize_partition, sql: "ALTER TABLE t REORGANIZE PARTITION p0, p1 INTO (PARTITION p0 VALUES LESS THAN (1995), PARTITION p1 VALUES LESS THAN (2000));" }
+      - { id: exchange_partition, sql: "ALTER TABLE t EXCHANGE PARTITION p0 WITH TABLE t2 WITHOUT VALIDATION;" }
+      - { id: analyze_partition, sql: "ALTER TABLE t ANALYZE PARTITION p1, p2;" }
+      - { id: check_partition_all, sql: "ALTER TABLE t CHECK PARTITION ALL;" }
+      - { id: optimize_partition, sql: "ALTER TABLE t OPTIMIZE PARTITION p0;" }
+      - { id: rebuild_partition, sql: "ALTER TABLE t REBUILD PARTITION p0, p1;" }
+      - { id: repair_partition, sql: "ALTER TABLE t REPAIR PARTITION p0;" }
+      - { id: remove_partitioning, sql: "ALTER TABLE t REMOVE PARTITIONING;" }
+    examples:
+      - "ALTER TABLE t1 ADD PARTITION (PARTITION p3 VALUES LESS THAN (2002));"
+      - "ALTER TABLE t1 DROP PARTITION p0, p1;"
+      - "ALTER TABLE t1 DISCARD PARTITION p2, p3 TABLESPACE;"
+      - "ALTER TABLE t1 TRUNCATE PARTITION p1, p3;"
+      - "ALTER TABLE t2 COALESCE PARTITION 2;"
+
+  - id: drop_table
+    name: DROP TABLE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/drop-table.html
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP TABLE t;" }
+      - { id: if_exists, sql: "DROP TABLE IF EXISTS t;" }
+      - { id: multiple, sql: "DROP TABLE t1, db1.t2;" }
+      - { id: temporary, sql: "DROP TEMPORARY TABLE IF EXISTS t;" }
+      - { id: restrict, sql: "DROP TABLE t RESTRICT;" }
+      - { id: cascade, sql: "DROP TABLE IF EXISTS t1, t2 CASCADE;" }
+
+  - id: create_view
+    name: CREATE VIEW
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-view.html
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE VIEW v AS SELECT * FROM t;" }
+      - { id: or_replace, sql: "CREATE OR REPLACE VIEW v AS SELECT a FROM t;" }
+      - { id: column_list, sql: "CREATE VIEW v (x, y) AS SELECT a, b FROM t;" }
+      - { id: qualified_name, sql: "CREATE VIEW db1.v AS SELECT * FROM t;" }
+      - { id: algorithm, sql: "CREATE ALGORITHM = MERGE VIEW v AS SELECT a FROM t;" }
+      - { id: algorithm_temptable, sql: "CREATE ALGORITHM = TEMPTABLE VIEW v AS SELECT a FROM t;" }
+      - { id: definer_user, sql: "CREATE DEFINER = 'admin'@'localhost' VIEW v AS SELECT a FROM t;" }
+      - { id: definer_current_user, sql: "CREATE DEFINER = CURRENT_USER VIEW v AS SELECT a FROM t;" }
+      - { id: sql_security, sql: "CREATE SQL SECURITY INVOKER VIEW v AS SELECT a FROM t;" }
+      - { id: all_characteristics, sql: "CREATE OR REPLACE ALGORITHM = UNDEFINED DEFINER = CURRENT_USER() SQL SECURITY DEFINER VIEW v AS SELECT a FROM t;" }
+      - { id: with_check_option, sql: "CREATE VIEW v AS SELECT a FROM t WHERE a > 0 WITH CHECK OPTION;" }
+      - { id: with_cascaded_check_option, sql: "CREATE VIEW v AS SELECT a FROM t WHERE a > 0 WITH CASCADED CHECK OPTION;" }
+      - { id: with_local_check_option, sql: "CREATE VIEW v AS SELECT a FROM t WHERE a > 0 WITH LOCAL CHECK OPTION;" }
+      - { id: union_body, sql: "CREATE VIEW v AS SELECT a FROM t1 UNION SELECT a FROM t2;" }
+    examples:
+      - "CREATE VIEW test.v AS SELECT * FROM t;"
+      - "CREATE VIEW v_today (today) AS SELECT CURRENT_DATE;"
+      - "CREATE VIEW v AS SELECT qty, price, qty*price AS value FROM t;"
+      - "CREATE VIEW v (mycol) AS SELECT 'abc';"
+      - "CREATE VIEW v AS SELECT * FROM t WHERE t.id = f(t.name);"
+
+  - id: alter_view
+    name: ALTER VIEW
+    doc: https://dev.mysql.com/doc/refman/8.4/en/alter-view.html
+    tier: high
+    probes:
+      - { id: basic, sql: "ALTER VIEW v AS SELECT a FROM t;" }
+      - { id: column_list, sql: "ALTER VIEW v (x) AS SELECT a FROM t;" }
+      - { id: algorithm_definer_security, sql: "ALTER ALGORITHM = MERGE DEFINER = 'admin'@'%' SQL SECURITY INVOKER VIEW v AS SELECT a FROM t;" }
+      - { id: with_check_option, sql: "ALTER VIEW v AS SELECT a FROM t WHERE a > 0 WITH LOCAL CHECK OPTION;" }
+
+  - id: drop_view
+    name: DROP VIEW
+    doc: https://dev.mysql.com/doc/refman/8.4/en/drop-view.html
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP VIEW v;" }
+      - { id: if_exists_multiple, sql: "DROP VIEW IF EXISTS v1, db1.v2;" }
+      - { id: restrict_cascade, sql: "DROP VIEW v1, v2 CASCADE;" }
+
+  - id: create_index
+    name: CREATE INDEX
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-index.html
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE INDEX idx ON t (a);" }
+      - { id: unique, sql: "CREATE UNIQUE INDEX idx ON t (a, b);" }
+      - { id: fulltext, sql: "CREATE FULLTEXT INDEX idx ON t (body);" }
+      - { id: spatial, sql: "CREATE SPATIAL INDEX idx ON t (g);" }
+      - { id: prefix_length, sql: "CREATE INDEX idx ON t (name(10));" }
+      - { id: asc_desc, sql: "CREATE INDEX idx ON t (a ASC, b DESC);" }
+      - { id: functional_key_part, sql: "CREATE INDEX idx ON t ((a + b), (a - b), a);" }
+      - { id: multi_valued_index, sql: "CREATE INDEX idx ON t ((CAST(j->'$.zipcode' AS UNSIGNED ARRAY)));" }
+      - { id: index_type_before_on, sql: "CREATE INDEX idx USING BTREE ON t (a);" }
+      - { id: index_type_option, sql: "CREATE INDEX idx ON t (a) USING HASH;" }
+      - { id: key_block_size, sql: "CREATE INDEX idx ON t (a) KEY_BLOCK_SIZE = 8;" }
+      - { id: with_parser, sql: "CREATE FULLTEXT INDEX idx ON t (body) WITH PARSER ngram;" }
+      - { id: comment, sql: "CREATE INDEX idx ON t (a) COMMENT 'MERGE_THRESHOLD=40';" }
+      - { id: invisible, sql: "CREATE INDEX idx ON t (a) INVISIBLE;" }
+      - { id: engine_attribute, sql: "CREATE INDEX idx ON t (a) ENGINE_ATTRIBUTE = '{}' SECONDARY_ENGINE_ATTRIBUTE '{}';" }
+      - { id: algorithm_option, sql: "CREATE INDEX idx ON t (a) ALGORITHM = INPLACE;" }
+      - { id: lock_option, sql: "CREATE INDEX idx ON t (a) LOCK = NONE;" }
+      - { id: algorithm_and_lock, sql: "CREATE INDEX idx ON t (a) ALGORITHM INPLACE LOCK SHARED;" }
+    examples:
+      - "CREATE INDEX part_of_name ON customer (name(10));"
+      - "CREATE INDEX idx1 ON t1 ((col1 + col2));"
+      - "CREATE INDEX idx2 ON t1 ((col1 + col2), (col1 - col2), col1);"
+      - "ALTER TABLE t1 ADD INDEX ((col1 * 40) DESC);"
+      - "CREATE INDEX zips ON customers ( (CAST(custinfo->'$.zipcode' AS UNSIGNED ARRAY)) );"
+
+  - id: drop_index
+    name: DROP INDEX
+    doc: https://dev.mysql.com/doc/refman/8.4/en/drop-index.html
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP INDEX idx ON t;" }
+      - { id: primary, sql: "DROP INDEX `PRIMARY` ON t;" }
+      - { id: algorithm_lock, sql: "DROP INDEX idx ON t ALGORITHM = INPLACE LOCK = DEFAULT;" }
+    examples:
+      - "DROP INDEX `PRIMARY` ON t;"
+
+  - id: create_procedure
+    name: CREATE PROCEDURE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-procedure.html
+    tier: high
+    probes:
+      - { id: no_params_single_statement, sql: "CREATE PROCEDURE p() SELECT 1;" }
+      - { id: begin_end_body, sql: "CREATE PROCEDURE p() BEGIN SELECT 1; SELECT 2; END;" }
+      - { id: in_out_inout_params, sql: "CREATE PROCEDURE p(IN a INT, OUT b INT, INOUT c VARCHAR(10)) BEGIN SET b = a; SET c = CONCAT(c, 'x'); END;" }
+      - { id: param_without_mode, sql: "CREATE PROCEDURE p(a INT) SELECT a;" }
+      - { id: param_charset_collate, sql: "CREATE PROCEDURE p(a VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin) SELECT a;" }
+      - { id: if_not_exists, sql: "CREATE PROCEDURE IF NOT EXISTS p() SELECT 1;" }
+      - { id: definer, sql: "CREATE DEFINER = 'admin'@'localhost' PROCEDURE p() SELECT 1;" }
+      - { id: definer_current_user, sql: "CREATE DEFINER = CURRENT_USER PROCEDURE p() SELECT 1;" }
+      - { id: comment, sql: "CREATE PROCEDURE p() COMMENT 'does things' SELECT 1;" }
+      - { id: language_sql, sql: "CREATE PROCEDURE p() LANGUAGE SQL SELECT 1;" }
+      - { id: deterministic, sql: "CREATE PROCEDURE p() DETERMINISTIC SELECT 1;" }
+      - { id: not_deterministic, sql: "CREATE PROCEDURE p() NOT DETERMINISTIC SELECT 1;" }
+      - { id: contains_sql, sql: "CREATE PROCEDURE p() CONTAINS SQL SELECT 1;" }
+      - { id: no_sql, sql: "CREATE PROCEDURE p() NO SQL SELECT 1;" }
+      - { id: reads_sql_data, sql: "CREATE PROCEDURE p() READS SQL DATA SELECT a FROM t;" }
+      - { id: modifies_sql_data, sql: "CREATE PROCEDURE p() MODIFIES SQL DATA DELETE FROM t;" }
+      - { id: sql_security, sql: "CREATE PROCEDURE p() SQL SECURITY INVOKER SELECT 1;" }
+      - { id: multiple_characteristics, sql: "CREATE PROCEDURE p() COMMENT 'c' LANGUAGE SQL NOT DETERMINISTIC MODIFIES SQL DATA SQL SECURITY DEFINER BEGIN DELETE FROM t; END;" }
+      - { id: select_into_out_param, sql: "CREATE PROCEDURE p(IN country CHAR(3), OUT cities INT) BEGIN SELECT COUNT(*) INTO cities FROM city WHERE code = country; END;" }
+      - { id: labeled_body, sql: "CREATE PROCEDURE p() lbl: BEGIN LEAVE lbl; END lbl;" }
+    examples:
+      - |-
+        CREATE DEFINER = 'admin'@'localhost' PROCEDURE account_count()
+        BEGIN
+          SELECT 'Number of accounts:', COUNT(*) FROM mysql.user;
+        END;
+      - |-
+        CREATE DEFINER = 'admin'@'localhost' PROCEDURE account_count()
+        SQL SECURITY INVOKER
+        BEGIN
+          SELECT 'Number of accounts:', COUNT(*) FROM mysql.user;
+        END;
+
+  - id: create_function
+    name: CREATE FUNCTION (stored function)
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-procedure.html
+    tier: high
+    probes:
+      - { id: return_body, sql: "CREATE FUNCTION f(s CHAR(20)) RETURNS CHAR(50) DETERMINISTIC RETURN CONCAT('Hello, ', s, '!');" }
+      - { id: no_params, sql: "CREATE FUNCTION f() RETURNS INT NO SQL RETURN 1;" }
+      - { id: begin_end_body, sql: "CREATE FUNCTION f(a INT) RETURNS INT DETERMINISTIC BEGIN DECLARE b INT DEFAULT 0; SET b = a * 2; RETURN b; END;" }
+      - { id: if_not_exists, sql: "CREATE FUNCTION IF NOT EXISTS f(a INT) RETURNS INT DETERMINISTIC RETURN a;" }
+      - { id: definer, sql: "CREATE DEFINER = 'admin'@'localhost' FUNCTION f() RETURNS INT DETERMINISTIC RETURN 1;" }
+      - { id: returns_charset_collate, sql: "CREATE FUNCTION f(a VARCHAR(10)) RETURNS VARCHAR(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DETERMINISTIC RETURN UPPER(a);" }
+      - { id: returns_decimal, sql: "CREATE FUNCTION f(a DECIMAL(10,2)) RETURNS DECIMAL(10,2) DETERMINISTIC RETURN a * 1.1;" }
+      - { id: characteristics, sql: "CREATE FUNCTION f() RETURNS INT COMMENT 'c' LANGUAGE SQL NOT DETERMINISTIC READS SQL DATA SQL SECURITY INVOKER RETURN (SELECT COUNT(*) FROM t);" }
+      - { id: contains_sql, sql: "CREATE FUNCTION f() RETURNS INT CONTAINS SQL DETERMINISTIC RETURN 1;" }
+      - { id: modifies_sql_data, sql: "CREATE FUNCTION f(p INT) RETURNS INT MODIFIES SQL DATA BEGIN INSERT INTO t VALUES (p); RETURN p; END;" }
+    examples:
+      - |-
+        CREATE FUNCTION hello (s CHAR(20))
+          RETURNS CHAR(50) DETERMINISTIC
+          RETURN CONCAT('Hello, ',s,'!');
+
+  - id: alter_procedure
+    name: ALTER PROCEDURE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/alter-procedure.html
+    tier: high
+    probes:
+      - { id: comment, sql: "ALTER PROCEDURE p COMMENT 'new comment';" }
+      - { id: sql_security, sql: "ALTER PROCEDURE p SQL SECURITY INVOKER;" }
+      - { id: data_access, sql: "ALTER PROCEDURE p READS SQL DATA;" }
+      - { id: multiple_characteristics, sql: "ALTER PROCEDURE p LANGUAGE SQL MODIFIES SQL DATA SQL SECURITY DEFINER COMMENT 'x';" }
+
+  - id: alter_function
+    name: ALTER FUNCTION
+    doc: https://dev.mysql.com/doc/refman/8.4/en/alter-function.html
+    tier: high
+    probes:
+      - { id: comment, sql: "ALTER FUNCTION f COMMENT 'new comment';" }
+      - { id: sql_security, sql: "ALTER FUNCTION f SQL SECURITY DEFINER;" }
+      - { id: multiple_characteristics, sql: "ALTER FUNCTION f NO SQL LANGUAGE SQL COMMENT 'x';" }
+
+  - id: drop_procedure
+    name: DROP PROCEDURE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/drop-procedure.html
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP PROCEDURE p;" }
+      - { id: if_exists, sql: "DROP PROCEDURE IF EXISTS db1.p;" }
+
+  - id: drop_function
+    name: DROP FUNCTION
+    doc: https://dev.mysql.com/doc/refman/8.4/en/drop-procedure.html
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP FUNCTION f;" }
+      - { id: if_exists, sql: "DROP FUNCTION IF EXISTS db1.f;" }
+
+  - id: create_function_loadable
+    name: CREATE FUNCTION (loadable function)
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-function-loadable.html
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE FUNCTION metaphon RETURNS STRING SONAME 'udf_example.so';" }
+      - { id: aggregate_if_not_exists, sql: "CREATE AGGREGATE FUNCTION IF NOT EXISTS avgcost RETURNS REAL SONAME 'udf_example.so';" }
+
+  - id: drop_function_loadable
+    name: DROP FUNCTION (loadable function)
+    doc: https://dev.mysql.com/doc/refman/8.4/en/drop-function-loadable.html
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP FUNCTION IF EXISTS metaphon;" }
+
+  - id: create_database
+    name: CREATE DATABASE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-database.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE DATABASE db1;" }
+      - { id: schema_if_not_exists, sql: "CREATE SCHEMA IF NOT EXISTS db1;" }
+      - { id: charset_collate, sql: "CREATE DATABASE db1 DEFAULT CHARACTER SET = utf8mb4 DEFAULT COLLATE = utf8mb4_0900_ai_ci;" }
+      - { id: charset_no_default, sql: "CREATE DATABASE db1 CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;" }
+      - { id: encryption, sql: "CREATE DATABASE db1 DEFAULT ENCRYPTION = 'Y';" }
+
+  - id: alter_database
+    name: ALTER DATABASE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/alter-database.html
+    tier: medium
+    probes:
+      - { id: charset, sql: "ALTER DATABASE db1 CHARACTER SET = utf8mb4;" }
+      - { id: schema_default_collate, sql: "ALTER SCHEMA db1 DEFAULT COLLATE utf8mb4_bin;" }
+      - { id: no_db_name, sql: "ALTER DATABASE DEFAULT CHARACTER SET utf8mb4;" }
+      - { id: encryption, sql: "ALTER DATABASE db1 ENCRYPTION = 'N';" }
+      - { id: read_only, sql: "ALTER DATABASE db1 READ ONLY = 1;" }
+      - { id: read_only_default, sql: "ALTER DATABASE db1 READ ONLY DEFAULT;" }
+    examples:
+      - "ALTER DATABASE mydb READ ONLY = 0 DEFAULT COLLATE utf8mb4_bin;"
+      - "ALTER DATABASE mydb READ ONLY = 1 DEFAULT COLLATE utf8mb4_bin;"
+      - "ALTER DATABASE mydb READ ONLY = 1;"
+
+  - id: drop_database
+    name: DROP DATABASE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/drop-database.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP DATABASE db1;" }
+      - { id: schema_if_exists, sql: "DROP SCHEMA IF EXISTS db1;" }
+
+  - id: start_transaction_commit_rollback
+    name: START TRANSACTION, COMMIT, and ROLLBACK
+    doc: https://dev.mysql.com/doc/refman/8.4/en/commit.html
+    tier: high
+    probes:
+      - { id: start_transaction, sql: "START TRANSACTION;" }
+      - { id: start_transaction_consistent_snapshot, sql: "START TRANSACTION WITH CONSISTENT SNAPSHOT;" }
+      - { id: start_transaction_read_only, sql: "START TRANSACTION READ ONLY;" }
+      - { id: start_transaction_read_write, sql: "START TRANSACTION READ WRITE;" }
+      - { id: start_transaction_multiple, sql: "START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY;" }
+      - { id: begin, sql: "BEGIN;" }
+      - { id: begin_work, sql: "BEGIN WORK;" }
+      - { id: commit, sql: "COMMIT;" }
+      - { id: commit_work, sql: "COMMIT WORK;" }
+      - { id: commit_and_chain, sql: "COMMIT AND CHAIN;" }
+      - { id: commit_and_no_chain_no_release, sql: "COMMIT WORK AND NO CHAIN NO RELEASE;" }
+      - { id: commit_release, sql: "COMMIT RELEASE;" }
+      - { id: rollback, sql: "ROLLBACK;" }
+      - { id: rollback_work, sql: "ROLLBACK WORK;" }
+      - { id: rollback_and_chain, sql: "ROLLBACK AND CHAIN;" }
+      - { id: rollback_release, sql: "ROLLBACK AND NO CHAIN RELEASE;" }
+      - { id: set_autocommit, sql: "SET autocommit = 0;" }
+    examples:
+      - "START TRANSACTION;"
+      - "SELECT @A:=SUM(salary) FROM table1 WHERE type=1;"
+      - "UPDATE table2 SET summary=@A WHERE type=1;"
+      - "COMMIT;"
+      - "SET autocommit=0;"
+
+  - id: savepoint
+    name: SAVEPOINT, ROLLBACK TO SAVEPOINT, and RELEASE SAVEPOINT
+    doc: https://dev.mysql.com/doc/refman/8.4/en/savepoint.html
+    tier: high
+    probes:
+      - { id: savepoint, sql: "SAVEPOINT sp1;" }
+      - { id: rollback_to_savepoint, sql: "ROLLBACK TO SAVEPOINT sp1;" }
+      - { id: rollback_work_to, sql: "ROLLBACK WORK TO sp1;" }
+      - { id: rollback_to, sql: "ROLLBACK TO sp1;" }
+      - { id: release_savepoint, sql: "RELEASE SAVEPOINT sp1;" }
+
+  - id: set_transaction
+    name: SET TRANSACTION
+    doc: https://dev.mysql.com/doc/refman/8.4/en/set-transaction.html
+    tier: high
+    probes:
+      - { id: isolation_serializable, sql: "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;" }
+      - { id: isolation_repeatable_read, sql: "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;" }
+      - { id: isolation_read_committed, sql: "SET TRANSACTION ISOLATION LEVEL READ COMMITTED;" }
+      - { id: isolation_read_uncommitted, sql: "SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;" }
+      - { id: read_only, sql: "SET TRANSACTION READ ONLY;" }
+      - { id: global, sql: "SET GLOBAL TRANSACTION ISOLATION LEVEL READ COMMITTED;" }
+      - { id: session_multiple, sql: "SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ WRITE;" }
+      - { id: variable_form, sql: "SET @@SESSION.transaction_isolation = 'READ-COMMITTED';" }
+      - { id: persist_variable_form, sql: "SET PERSIST transaction_read_only = OFF;" }
+    examples:
+      - "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;"
+      - "SELECT @@GLOBAL.transaction_isolation, @@GLOBAL.transaction_read_only;"
+      - "SELECT @@SESSION.transaction_isolation, @@SESSION.transaction_read_only;"
+
+  - id: grant
+    name: GRANT
+    doc: https://dev.mysql.com/doc/refman/8.4/en/grant.html
+    tier: medium
+    probes:
+      - { id: all_on_db, sql: "GRANT ALL ON db1.* TO 'jeffrey'@'localhost';" }
+      - { id: all_privileges, sql: "GRANT ALL PRIVILEGES ON *.* TO 'u1'@'%';" }
+      - { id: privilege_list_table, sql: "GRANT SELECT, INSERT, UPDATE, DELETE ON db1.t TO u1;" }
+      - { id: column_privileges, sql: "GRANT SELECT (c1), INSERT (c1, c2) ON db1.t TO 'u1'@'h1';" }
+      - { id: global_star, sql: "GRANT SELECT ON * TO u1;" }
+      - { id: object_type_table, sql: "GRANT SELECT ON TABLE db1.t TO u1;" }
+      - { id: object_type_procedure, sql: "GRANT EXECUTE ON PROCEDURE db1.p TO 'u1'@'h1';" }
+      - { id: object_type_function, sql: "GRANT EXECUTE ON FUNCTION db1.f TO u1;" }
+      - { id: multi_word_privilege, sql: "GRANT CREATE ROUTINE, ALTER ROUTINE, CREATE TEMPORARY TABLES, LOCK TABLES, SHOW VIEW ON db1.* TO u1;" }
+      - { id: dynamic_privilege, sql: "GRANT BINLOG_ADMIN, SYSTEM_VARIABLES_ADMIN ON *.* TO u1;" }
+      - { id: with_grant_option, sql: "GRANT USAGE ON *.* TO 'u1'@'h1' WITH GRANT OPTION;" }
+      - { id: as_user, sql: "GRANT SELECT, INSERT ON *.* TO u3 AS u1;" }
+      - { id: as_user_with_role, sql: "GRANT SELECT ON *.* TO u4 AS u1 WITH ROLE r1, r2;" }
+      - { id: as_user_with_role_all_except, sql: "GRANT SELECT ON *.* TO u4 AS u1 WITH ROLE ALL EXCEPT r1;" }
+      - { id: proxy, sql: "GRANT PROXY ON 'localuser'@'localhost' TO 'externaluser'@'somehost';" }
+      - { id: roles, sql: "GRANT 'role1', 'role2' TO 'user1'@'localhost', 'user2'@'localhost';" }
+      - { id: roles_with_admin_option, sql: "GRANT r1 TO u1 WITH ADMIN OPTION;" }
+      - { id: quoted_wildcard_db, sql: "GRANT SELECT ON `d_`.* TO u;" }
+    examples:
+      - "GRANT ALL ON db1.* TO 'jeffrey'@'localhost';"
+      - "GRANT SELECT (col1), INSERT (col1, col2) ON mydb.mytbl TO 'someuser'@'somehost';"
+      - "GRANT EXECUTE ON PROCEDURE mydb.myproc TO 'someuser'@'somehost';"
+      - "GRANT PROXY ON 'localuser'@'localhost' TO 'externaluser'@'somehost';"
+      - "GRANT USAGE ON *.* TO 'someuser'@'somehost' WITH GRANT OPTION;"
+
+  - id: revoke
+    name: REVOKE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/revoke.html
+    tier: medium
+    probes:
+      - { id: privilege, sql: "REVOKE INSERT ON *.* FROM 'jeffrey'@'localhost';" }
+      - { id: privilege_list_columns, sql: "REVOKE SELECT (c1), UPDATE ON db1.t FROM u1, u2;" }
+      - { id: object_type, sql: "REVOKE EXECUTE ON PROCEDURE db1.p FROM u1;" }
+      - { id: if_exists, sql: "REVOKE IF EXISTS SELECT ON test.t1 FROM jerry@localhost;" }
+      - { id: ignore_unknown_user, sql: "REVOKE SELECT ON test.t1 FROM jerry@localhost IGNORE UNKNOWN USER;" }
+      - { id: all_grant_option, sql: "REVOKE ALL PRIVILEGES, GRANT OPTION FROM u1, u2;" }
+      - { id: all_on, sql: "REVOKE ALL ON *.* FROM u1;" }
+      - { id: proxy, sql: "REVOKE PROXY ON 'localuser'@'localhost' FROM 'externaluser'@'somehost';" }
+      - { id: roles, sql: "REVOKE 'role1', 'role2' FROM 'user1'@'localhost', 'user2'@'localhost';" }
+    examples:
+      - "REVOKE INSERT ON *.* FROM 'jeffrey'@'localhost';"
+      - "REVOKE 'role1', 'role2' FROM 'user1'@'localhost', 'user2'@'localhost';"
+      - "REVOKE SELECT ON world.* FROM 'role3';"
+      - "REVOKE IF EXISTS SELECT ON test.t1 FROM jerry@localhost;"
+      - "REVOKE SELECT ON test.t1 FROM jerry@localhost IGNORE UNKNOWN USER;"
+
+  - id: explain
+    name: EXPLAIN
+    doc: https://dev.mysql.com/doc/refman/8.4/en/explain.html
+    tier: medium
+    probes:
+      - { id: table_columns, sql: "EXPLAIN t;" }
+      - { id: describe_table_column, sql: "DESCRIBE t c;" }
+      - { id: desc_table_wild, sql: "DESC t 'c%';" }
+      - { id: explain_select, sql: "EXPLAIN SELECT a FROM t WHERE b LIKE 'A%';" }
+      - { id: describe_select, sql: "DESCRIBE SELECT a FROM t;" }
+      - { id: format_json, sql: "EXPLAIN FORMAT=JSON SELECT a FROM t;" }
+      - { id: format_tree, sql: "EXPLAIN FORMAT = TREE SELECT a FROM t;" }
+      - { id: format_traditional, sql: "EXPLAIN FORMAT=TRADITIONAL SELECT a FROM t;" }
+      - { id: into_variable, sql: "EXPLAIN FORMAT=JSON INTO @v SELECT a FROM t WHERE id = 2;" }
+      - { id: for_schema, sql: "EXPLAIN FORMAT=TREE FOR SCHEMA s1 SELECT * FROM t WHERE c2 > 50;" }
+      - { id: for_database, sql: "EXPLAIN FOR DATABASE s1 SELECT * FROM t;" }
+      - { id: for_connection, sql: "EXPLAIN FOR CONNECTION 4;" }
+      - { id: explain_table_stmt, sql: "EXPLAIN TABLE t;" }
+      - { id: explain_insert, sql: "EXPLAIN INSERT INTO t VALUES (1);" }
+      - { id: explain_replace, sql: "EXPLAIN REPLACE INTO t VALUES (1);" }
+      - { id: explain_update, sql: "EXPLAIN FORMAT=JSON INTO @u UPDATE t SET a = 'x' WHERE id = 3;" }
+      - { id: explain_delete, sql: "EXPLAIN DELETE FROM t WHERE a LIKE '%e%';" }
+      - { id: analyze, sql: "EXPLAIN ANALYZE SELECT * FROM t1 JOIN t2 ON (t1.c1 = t2.c2);" }
+      - { id: analyze_format_tree, sql: "EXPLAIN ANALYZE FORMAT=TREE SELECT * FROM t WHERE pk > 17;" }
+      - { id: analyze_for_schema, sql: "EXPLAIN ANALYZE FOR SCHEMA s1 SELECT * FROM t;" }
+    examples:
+      - "DESCRIBE City;"
+      - |-
+        EXPLAIN FORMAT=JSON INTO @myselect 
+            SELECT name FROM a WHERE id = 2;
+      - |-
+        EXPLAIN FORMAT=JSON INTO @mydelete 
+            DELETE FROM a WHERE name1 LIKE '%e%';
+      - "EXPLAIN SELECT Name FROM country WHERE Code Like 'A%';"
+      - "EXPLAIN FORMAT=JSON SELECT Name FROM country WHERE Code LIKE 'A%';"
+
+  - id: begin_end
+    name: BEGIN ... END compound statement
+    doc: https://dev.mysql.com/doc/refman/8.4/en/begin-end.html
+    tier: high
+    probes:
+      - { id: begin_end, sql: "CREATE PROCEDURE p() BEGIN SELECT 1; SELECT 2; END;" }
+      - { id: empty_block, sql: "CREATE PROCEDURE p() BEGIN END;" }
+      - { id: nested_block, sql: "CREATE PROCEDURE p() BEGIN DECLARE a INT; BEGIN DECLARE b INT; SET b = 1; END; END;" }
+      - { id: labeled_block, sql: "CREATE PROCEDURE p() blk: BEGIN SELECT 1; END blk;" }
+      - { id: labeled_block_no_end_label, sql: "CREATE PROCEDURE p() BEGIN inner_blk: BEGIN SELECT 1; END; END;" }
+      - { id: in_function, sql: "CREATE FUNCTION f() RETURNS INT DETERMINISTIC BEGIN DECLARE x INT DEFAULT 1; RETURN x; END;" }
+
+  - id: statement_labels
+    name: Statement labels
+    doc: https://dev.mysql.com/doc/refman/8.4/en/statement-labels.html
+    tier: medium
+    probes:
+      - { id: labeled_begin, sql: "CREATE PROCEDURE p() lbl: BEGIN LEAVE lbl; END lbl;" }
+      - { id: labeled_loop, sql: "CREATE PROCEDURE p() BEGIN lbl: LOOP LEAVE lbl; END LOOP lbl; END;" }
+      - { id: labeled_repeat, sql: "CREATE PROCEDURE p() BEGIN DECLARE i INT DEFAULT 0; lbl: REPEAT SET i = i + 1; UNTIL i > 3 END REPEAT lbl; END;" }
+      - { id: labeled_while, sql: "CREATE PROCEDURE p() BEGIN DECLARE i INT DEFAULT 0; lbl: WHILE i < 3 DO SET i = i + 1; END WHILE lbl; END;" }
+      - { id: label_without_end_label, sql: "CREATE PROCEDURE p() BEGIN lbl: LOOP LEAVE lbl; END LOOP; END;" }
+    examples:
+      - |-
+        CREATE PROCEDURE doiterate(p1 INT)
+        BEGIN
+          label1: LOOP
+            SET p1 = p1 + 1;
+            IF p1 < 10 THEN ITERATE label1; END IF;
+            LEAVE label1;
+          END LOOP label1;
+        END;
+
+  - id: declare_local_variable
+    name: DECLARE (local variable)
+    doc: https://dev.mysql.com/doc/refman/8.4/en/declare-local-variable.html
+    tier: high
+    probes:
+      - { id: declare, sql: "CREATE PROCEDURE p() BEGIN DECLARE a INT; SET a = 1; END;" }
+      - { id: declare_default, sql: "CREATE PROCEDURE p() BEGIN DECLARE a INT DEFAULT 5; SELECT a; END;" }
+      - { id: declare_multiple_names, sql: "CREATE PROCEDURE p() BEGIN DECLARE a, b, c VARCHAR(20) DEFAULT 'x'; SELECT a, b, c; END;" }
+      - { id: declare_default_expression, sql: "CREATE PROCEDURE p() BEGIN DECLARE d DATETIME DEFAULT NOW(); DECLARE n INT DEFAULT (SELECT COUNT(*) FROM t); SELECT d, n; END;" }
+      - { id: declare_charset_collate, sql: "CREATE PROCEDURE p() BEGIN DECLARE s VARCHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin; SET s = 'a'; END;" }
+
+  - id: case_statement
+    name: CASE statement
+    doc: https://dev.mysql.com/doc/refman/8.4/en/case.html
+    tier: high
+    probes:
+      - { id: simple_case, sql: "CREATE PROCEDURE p(v INT) BEGIN CASE v WHEN 2 THEN SELECT v; WHEN 3 THEN SELECT 0; ELSE BEGIN END; END CASE; END;" }
+      - { id: searched_case, sql: "CREATE PROCEDURE p(v INT) BEGIN CASE WHEN v > 0 THEN SET @s = 'pos'; WHEN v < 0 THEN SET @s = 'neg'; ELSE SET @s = 'zero'; END CASE; END;" }
+      - { id: case_without_else, sql: "CREATE PROCEDURE p(v INT) BEGIN CASE v WHEN 1 THEN SELECT 'one'; END CASE; END;" }
+      - { id: multiple_statements_per_branch, sql: "CREATE PROCEDURE p(v INT) BEGIN CASE WHEN v = 1 THEN SET @a = 1; SET @b = 2; ELSE SET @a = 0; END CASE; END;" }
+
+  - id: if_statement
+    name: IF statement
+    doc: https://dev.mysql.com/doc/refman/8.4/en/if.html
+    tier: high
+    probes:
+      - { id: if_then, sql: "CREATE PROCEDURE p(n INT) BEGIN IF n > 0 THEN SELECT 'pos'; END IF; END;" }
+      - { id: if_else, sql: "CREATE PROCEDURE p(n INT) BEGIN IF n > 0 THEN SELECT 'pos'; ELSE SELECT 'not pos'; END IF; END;" }
+      - { id: if_elseif_else, sql: "CREATE FUNCTION f(n INT, m INT) RETURNS VARCHAR(20) DETERMINISTIC BEGIN DECLARE s VARCHAR(20); IF n > m THEN SET s = '>'; ELSEIF n = m THEN SET s = '='; ELSE SET s = '<'; END IF; RETURN s; END;" }
+      - { id: nested_if, sql: "CREATE PROCEDURE p(n INT, m INT) BEGIN IF n = m THEN SET @s = 'eq'; ELSE IF n > m THEN SET @s = 'gt'; ELSE SET @s = 'lt'; END IF; END IF; END;" }
+
+  - id: iterate
+    name: ITERATE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/iterate.html
+    tier: high
+    probes:
+      - { id: iterate, sql: "CREATE PROCEDURE p(p1 INT) BEGIN lbl: LOOP SET p1 = p1 + 1; IF p1 < 10 THEN ITERATE lbl; END IF; LEAVE lbl; END LOOP lbl; END;" }
+
+  - id: leave
+    name: LEAVE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/leave.html
+    tier: high
+    probes:
+      - { id: leave_loop, sql: "CREATE PROCEDURE p() BEGIN lbl: LOOP LEAVE lbl; END LOOP lbl; END;" }
+      - { id: leave_block, sql: "CREATE PROCEDURE p(n INT) proc: BEGIN IF n IS NULL THEN LEAVE proc; END IF; SELECT n; END proc;" }
+
+  - id: loop
+    name: LOOP
+    doc: https://dev.mysql.com/doc/refman/8.4/en/loop.html
+    tier: high
+    probes:
+      - { id: labeled_loop, sql: "CREATE PROCEDURE p(p1 INT) BEGIN label1: LOOP SET p1 = p1 + 1; IF p1 >= 10 THEN LEAVE label1; END IF; END LOOP label1; END;" }
+    examples:
+      - |-
+        CREATE PROCEDURE doiterate(p1 INT)
+        BEGIN
+          label1: LOOP
+            SET p1 = p1 + 1;
+            IF p1 < 10 THEN
+              ITERATE label1;
+            END IF;
+            LEAVE label1;
+          END LOOP label1;
+          SET @x = p1;
+        END;
+
+  - id: repeat
+    name: REPEAT
+    doc: https://dev.mysql.com/doc/refman/8.4/en/repeat.html
+    tier: high
+    probes:
+      - { id: repeat_until, sql: "CREATE PROCEDURE p(p1 INT) BEGIN SET @x = 0; REPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT; END;" }
+      - { id: labeled_repeat, sql: "CREATE PROCEDURE p(p1 INT) BEGIN SET @x = 0; r: REPEAT SET @x = @x + 1; UNTIL @x > p1 END REPEAT r; END;" }
+
+  - id: return
+    name: RETURN
+    doc: https://dev.mysql.com/doc/refman/8.4/en/return.html
+    tier: high
+    probes:
+      - { id: return_expression, sql: "CREATE FUNCTION f(a INT) RETURNS INT DETERMINISTIC BEGIN RETURN a + 1; END;" }
+      - { id: return_subquery, sql: "CREATE FUNCTION f() RETURNS INT READS SQL DATA RETURN (SELECT MAX(a) FROM t);" }
+
+  - id: while
+    name: WHILE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/while.html
+    tier: high
+    probes:
+      - { id: while_do, sql: "CREATE PROCEDURE p() BEGIN DECLARE v1 INT DEFAULT 5; WHILE v1 > 0 DO SET v1 = v1 - 1; END WHILE; END;" }
+      - { id: labeled_while, sql: "CREATE PROCEDURE p() BEGIN DECLARE v1 INT DEFAULT 5; w: WHILE v1 > 0 DO SET v1 = v1 - 1; END WHILE w; END;" }
+
+  - id: cursors
+    name: Cursors
+    doc: https://dev.mysql.com/doc/refman/8.4/en/cursors.html
+    tier: high
+    probes:
+      - { id: cursor_lifecycle, sql: "CREATE PROCEDURE p() BEGIN DECLARE a INT; DECLARE cur CURSOR FOR SELECT id FROM t; OPEN cur; FETCH cur INTO a; CLOSE cur; END;" }
+    examples:
+      - |-
+        CREATE PROCEDURE curdemo()
+        BEGIN
+          DECLARE done INT DEFAULT FALSE;
+          DECLARE a CHAR(16);
+          DECLARE b, c INT;
+          DECLARE cur1 CURSOR FOR SELECT id,data FROM test.t1;
+          DECLARE cur2 CURSOR FOR SELECT i FROM test.t2;
+          DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+          OPEN cur1;
+          OPEN cur2;
+
+          read_loop: LOOP
+            FETCH cur1 INTO a, b;
+            FETCH cur2 INTO c;
+            IF done THEN
+              LEAVE read_loop;
+            END IF;
+            IF b < c THEN
+              INSERT INTO test.t3 VALUES (a,b);
+            ELSE
+              INSERT INTO test.t3 VALUES (a,c);
+            END IF;
+          END LOOP;
+
+          CLOSE cur1;
+          CLOSE cur2;
+        END;
+
+  - id: declare_cursor
+    name: DECLARE ... CURSOR
+    doc: https://dev.mysql.com/doc/refman/8.4/en/declare-cursor.html
+    tier: high
+    probes:
+      - { id: declare_cursor, sql: "CREATE PROCEDURE p() BEGIN DECLARE cur CURSOR FOR SELECT a, b FROM t WHERE a > 0; OPEN cur; CLOSE cur; END;" }
+      - { id: declare_cursor_with_cte, sql: "CREATE PROCEDURE p() BEGIN DECLARE cur CURSOR FOR WITH c AS (SELECT 1 AS a) SELECT a FROM c; OPEN cur; CLOSE cur; END;" }
+      - { id: declare_cursor_union, sql: "CREATE PROCEDURE p() BEGIN DECLARE cur CURSOR FOR SELECT a FROM t1 UNION SELECT a FROM t2; OPEN cur; CLOSE cur; END;" }
+
+  - id: open
+    name: OPEN (cursor)
+    doc: https://dev.mysql.com/doc/refman/8.4/en/open.html
+    tier: high
+    probes:
+      - { id: open, sql: "CREATE PROCEDURE p() BEGIN DECLARE cur CURSOR FOR SELECT a FROM t; OPEN cur; END;" }
+
+  - id: fetch
+    name: FETCH (cursor)
+    doc: https://dev.mysql.com/doc/refman/8.4/en/fetch.html
+    tier: high
+    probes:
+      - { id: fetch_into, sql: "CREATE PROCEDURE p() BEGIN DECLARE a, b INT; DECLARE cur CURSOR FOR SELECT x, y FROM t; OPEN cur; FETCH cur INTO a, b; CLOSE cur; END;" }
+      - { id: fetch_from, sql: "CREATE PROCEDURE p() BEGIN DECLARE a INT; DECLARE cur CURSOR FOR SELECT x FROM t; OPEN cur; FETCH FROM cur INTO a; CLOSE cur; END;" }
+      - { id: fetch_next_from, sql: "CREATE PROCEDURE p() BEGIN DECLARE a INT; DECLARE cur CURSOR FOR SELECT x FROM t; OPEN cur; FETCH NEXT FROM cur INTO a; CLOSE cur; END;" }
+
+  - id: close
+    name: CLOSE (cursor)
+    doc: https://dev.mysql.com/doc/refman/8.4/en/close.html
+    tier: high
+    probes:
+      - { id: close, sql: "CREATE PROCEDURE p() BEGIN DECLARE cur CURSOR FOR SELECT a FROM t; OPEN cur; CLOSE cur; END;" }
+
+  - id: declare_condition
+    name: DECLARE ... CONDITION
+    doc: https://dev.mysql.com/doc/refman/8.4/en/declare-condition.html
+    tier: medium
+    probes:
+      - { id: error_code, sql: "CREATE PROCEDURE p() BEGIN DECLARE no_such_table CONDITION FOR 1051; DECLARE CONTINUE HANDLER FOR no_such_table SET @e = 1; DROP TABLE missing_t; END;" }
+      - { id: sqlstate, sql: "CREATE PROCEDURE p() BEGIN DECLARE no_such_table CONDITION FOR SQLSTATE '42S02'; DECLARE EXIT HANDLER FOR no_such_table SET @e = 1; DROP TABLE missing_t; END;" }
+      - { id: sqlstate_value, sql: "CREATE PROCEDURE p() BEGIN DECLARE c CONDITION FOR SQLSTATE VALUE '45000'; SIGNAL c; END;" }
+
+  - id: declare_handler
+    name: DECLARE ... HANDLER
+    doc: https://dev.mysql.com/doc/refman/8.4/en/declare-handler.html
+    tier: high
+    probes:
+      - { id: continue_error_code, sql: "CREATE PROCEDURE p() BEGIN DECLARE CONTINUE HANDLER FOR 1051 BEGIN END; DROP TABLE missing_t; END;" }
+      - { id: continue_sqlstate, sql: "CREATE PROCEDURE p() BEGIN DECLARE CONTINUE HANDLER FOR SQLSTATE '23000' SET @x2 = 1; INSERT INTO t VALUES (1); END;" }
+      - { id: sqlstate_value_keyword, sql: "CREATE PROCEDURE p() BEGIN DECLARE CONTINUE HANDLER FOR SQLSTATE VALUE '23000' SET @x2 = 1; INSERT INTO t VALUES (1); END;" }
+      - { id: exit_sqlexception, sql: "CREATE PROCEDURE p() BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN ROLLBACK; RESIGNAL; END; START TRANSACTION; INSERT INTO t VALUES (1); COMMIT; END;" }
+      - { id: sqlwarning, sql: "CREATE PROCEDURE p() BEGIN DECLARE CONTINUE HANDLER FOR SQLWARNING BEGIN END; INSERT INTO t VALUES (1); END;" }
+      - { id: not_found, sql: "CREATE PROCEDURE p() BEGIN DECLARE done INT DEFAULT FALSE; DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE; SELECT a INTO @a FROM t WHERE 1 = 0; END;" }
+      - { id: condition_name, sql: "CREATE PROCEDURE p() BEGIN DECLARE c CONDITION FOR 1051; DECLARE EXIT HANDLER FOR c SET @e = 1; DROP TABLE missing_t; END;" }
+      - { id: multiple_condition_values, sql: "CREATE PROCEDURE p() BEGIN DECLARE EXIT HANDLER FOR SQLWARNING, NOT FOUND, SQLEXCEPTION, 1051 SET @e = 1; DROP TABLE missing_t; END;" }
+    examples:
+      - |-
+        CREATE PROCEDURE p ()
+        BEGIN
+          DECLARE i INT DEFAULT 3;
+          retry:
+            REPEAT
+              BEGIN
+                DECLARE CONTINUE HANDLER FOR SQLWARNING
+                  BEGIN
+                    ITERATE retry;    # illegal
+                  END;
+                IF i < 0 THEN
+                  LEAVE retry;        # legal
+                END IF;
+                SET i = i - 1;
+              END;
+            UNTIL FALSE END REPEAT;
+        END;
+      - |-
+        CREATE PROCEDURE p ()
+        BEGIN
+          DECLARE i INT DEFAULT 3;
+          DECLARE done INT DEFAULT FALSE;
+          retry:
+            REPEAT
+              BEGIN
+                DECLARE CONTINUE HANDLER FOR SQLWARNING
+                  BEGIN
+                    SET done = TRUE;
+                  END;
+                IF done OR i < 0 THEN
+                  LEAVE retry;
+                END IF;
+                SET i = i - 1;
+              END;
+            UNTIL FALSE END REPEAT;
+        END;
+
+  - id: get_diagnostics
+    name: GET DIAGNOSTICS
+    doc: https://dev.mysql.com/doc/refman/8.4/en/get-diagnostics.html
+    tier: medium
+    probes:
+      - { id: statement_items, sql: "GET DIAGNOSTICS @p1 = NUMBER, @p2 = ROW_COUNT;" }
+      - { id: condition_items, sql: "GET DIAGNOSTICS CONDITION 1 @p3 = RETURNED_SQLSTATE, @p4 = MESSAGE_TEXT;" }
+      - { id: condition_variable_number, sql: "GET DIAGNOSTICS CONDITION @cno @errno = MYSQL_ERRNO;" }
+      - { id: current, sql: "GET CURRENT DIAGNOSTICS @n = NUMBER;" }
+      - { id: all_condition_items, sql: "GET DIAGNOSTICS CONDITION 1 @a = CLASS_ORIGIN, @b = SUBCLASS_ORIGIN, @c = CONSTRAINT_CATALOG, @d = CONSTRAINT_SCHEMA, @e = CONSTRAINT_NAME, @f = CATALOG_NAME, @g = SCHEMA_NAME, @h = TABLE_NAME, @i = COLUMN_NAME, @j = CURSOR_NAME;" }
+      - { id: stacked_in_handler, sql: "CREATE PROCEDURE p() BEGIN DECLARE msg TEXT; DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN GET STACKED DIAGNOSTICS CONDITION 1 msg = MESSAGE_TEXT; SELECT msg; END; DROP TABLE missing_t; END;" }
+      - { id: local_variable_targets, sql: "CREATE PROCEDURE p() BEGIN DECLARE nrows INT; INSERT INTO t VALUES (1); GET DIAGNOSTICS nrows = ROW_COUNT; END;" }
+    examples:
+      - "GET DIAGNOSTICS @p1 = NUMBER, @p2 = ROW_COUNT;"
+      - |-
+        GET DIAGNOSTICS CONDITION 1
+          @p3 = RETURNED_SQLSTATE, @p4 = MESSAGE_TEXT;
+      - "GET DIAGNOSTICS CONDITION 1 @errno = MYSQL_ERRNO;"
+      - "GET DIAGNOSTICS CONDITION @cno @errno = MYSQL_ERRNO;"
+      - |-
+        CREATE PROCEDURE do_insert(value INT)
+        BEGIN
+          -- Declare variables to hold diagnostics area information
+          DECLARE code CHAR(5) DEFAULT '00000';
+          DECLARE msg TEXT;
+          DECLARE nrows INT;
+          DECLARE result TEXT;
+          -- Declare exception handler for failed insert
+          DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+            BEGIN
+              GET DIAGNOSTICS CONDITION 1
+                code = RETURNED_SQLSTATE, msg = MESSAGE_TEXT;
+            END;
+
+          -- Perform the insert
+          INSERT INTO t1 (int_col) VALUES(value);
+          -- Check whether the insert was successful
+          IF code = '00000' THEN
+            GET DIAGNOSTICS nrows = ROW_COUNT;
+            SET result = CONCAT('insert succeeded, row count = ',nrows);
+          ELSE
+            SET result = CONCAT('insert failed, error = ',code,', message = ',msg);
+          END IF;
+          -- Say what happened
+          SELECT result;
+        END;
+
+  - id: signal
+    name: SIGNAL
+    doc: https://dev.mysql.com/doc/refman/8.4/en/signal.html
+    tier: medium
+    probes:
+      - { id: sqlstate, sql: "SIGNAL SQLSTATE '77777';" }
+      - { id: sqlstate_value, sql: "SIGNAL SQLSTATE VALUE '45000';" }
+      - { id: set_message_text, sql: "SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'An error occurred';" }
+      - { id: set_multiple_items, sql: "SIGNAL SQLSTATE '01000' SET MESSAGE_TEXT = 'A warning occurred', MYSQL_ERRNO = 1000, TABLE_NAME = 't', CLASS_ORIGIN = 'x';" }
+      - { id: condition_name, sql: "CREATE PROCEDURE p(divisor INT) BEGIN DECLARE divide_by_zero CONDITION FOR SQLSTATE '22012'; IF divisor = 0 THEN SIGNAL divide_by_zero; END IF; END;" }
+      - { id: set_from_variable, sql: "CREATE PROCEDURE p(msg VARCHAR(100)) BEGIN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = msg; END;" }
+    examples:
+      - |-
+        CREATE PROCEDURE p (pval INT)
+        BEGIN
+          DECLARE specialty CONDITION FOR SQLSTATE '45000';
+          IF pval = 0 THEN
+            SIGNAL SQLSTATE '01000';
+          ELSEIF pval = 1 THEN
+            SIGNAL SQLSTATE '45000'
+              SET MESSAGE_TEXT = 'An error occurred';
+          ELSEIF pval = 2 THEN
+            SIGNAL specialty
+              SET MESSAGE_TEXT = 'An error occurred';
+          ELSE
+            SIGNAL SQLSTATE '01000'
+              SET MESSAGE_TEXT = 'A warning occurred', MYSQL_ERRNO = 1000;
+            SIGNAL SQLSTATE '45000'
+              SET MESSAGE_TEXT = 'An error occurred', MYSQL_ERRNO = 1001;
+          END IF;
+        END;
+      - "SIGNAL SQLSTATE '77777';"
+      - |-
+        CREATE PROCEDURE p (divisor INT)
+        BEGIN
+          DECLARE my_error CONDITION FOR SQLSTATE '45000';
+          IF divisor = 0 THEN
+            BEGIN
+              DECLARE my_error CONDITION FOR SQLSTATE '22012';
+              SIGNAL my_error;
+            END;
+          END IF;
+          SIGNAL my_error;
+        END;
+      - |-
+        CREATE PROCEDURE p ()
+        BEGIN
+          DECLARE EXIT HANDLER FOR SQLEXCEPTION
+          BEGIN
+            SIGNAL SQLSTATE VALUE '99999'
+              SET MESSAGE_TEXT = 'An error occurred';
+          END;
+          DROP TABLE no_such_table;
+        END;
+
+  - id: resignal
+    name: RESIGNAL
+    doc: https://dev.mysql.com/doc/refman/8.4/en/resignal.html
+    tier: medium
+    probes:
+      - { id: bare, sql: "CREATE PROCEDURE p() BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN SET @error_count = @error_count + 1; IF @a = 0 THEN RESIGNAL; END IF; END; DROP TABLE xx; END;" }
+      - { id: set_items, sql: "CREATE PROCEDURE p() BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN RESIGNAL SET MYSQL_ERRNO = 5, MESSAGE_TEXT = 'x'; END; DROP TABLE xx; END;" }
+      - { id: sqlstate_set, sql: "CREATE PROCEDURE p() BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN RESIGNAL SQLSTATE '45000' SET MYSQL_ERRNO = 5; END; DROP TABLE xx; END;" }
+      - { id: condition_name, sql: "CREATE PROCEDURE p() BEGIN DECLARE c CONDITION FOR SQLSTATE VALUE '45000'; DECLARE EXIT HANDLER FOR SQLEXCEPTION RESIGNAL c; DROP TABLE xx; END;" }
+      - { id: procedure_body, sql: "CREATE PROCEDURE p() RESIGNAL;" }
+    examples:
+      - "CREATE PROCEDURE p () RESIGNAL;"
+      - "SET @@max_error_count = 2;"
+
+  - id: set_variable
+    name: SET (variable assignment)
+    doc: https://dev.mysql.com/doc/refman/8.4/en/set-variable.html
+    tier: high
+    probes:
+      - { id: user_variable, sql: "SET @name = 43;" }
+      - { id: user_variable_colon_equals, sql: "SET @name := 43;" }
+      - { id: user_variable_subquery, sql: "SET @total = (SELECT SUM(c) FROM t);" }
+      - { id: multiple_assignments, sql: "SET @x = 1, @y = 'a';" }
+      - { id: local_variable, sql: "CREATE PROCEDURE p(increment INT) BEGIN DECLARE counter INT DEFAULT 0; SET counter = counter + increment; END;" }
+      - { id: global, sql: "SET GLOBAL max_connections = 1000;" }
+      - { id: global_at_at, sql: "SET @@GLOBAL.max_connections = 1000;" }
+      - { id: session, sql: "SET SESSION sql_mode = 'TRADITIONAL';" }
+      - { id: local_keyword, sql: "SET LOCAL sql_mode = 'TRADITIONAL';" }
+      - { id: session_at_at, sql: "SET @@SESSION.sql_mode = 'TRADITIONAL';" }
+      - { id: local_at_at, sql: "SET @@LOCAL.sql_mode = 'TRADITIONAL';" }
+      - { id: at_at_bare, sql: "SET @@sql_mode = 'TRADITIONAL';" }
+      - { id: bare_system_variable, sql: "SET sql_mode = 'TRADITIONAL';" }
+      - { id: persist, sql: "SET PERSIST max_connections = 1000;" }
+      - { id: persist_at_at, sql: "SET @@PERSIST.max_connections = 1000;" }
+      - { id: persist_only, sql: "SET PERSIST_ONLY back_log = 100;" }
+      - { id: persist_only_at_at, sql: "SET @@PERSIST_ONLY.back_log = 100;" }
+      - { id: default_value, sql: "SET @@SESSION.max_join_size = DEFAULT;" }
+      - { id: from_global, sql: "SET @@SESSION.max_join_size = @@GLOBAL.max_join_size;" }
+      - { id: mixed_scopes, sql: "SET @x = 1, SESSION sql_mode = '';" }
+      - { id: on_off_values, sql: "SET GLOBAL general_log = ON, SESSION autocommit = OFF;" }
+    examples:
+      - "SET @total_tax = (SELECT SUM(tax) FROM taxable_transactions);"
+      - |-
+        CREATE PROCEDURE p(increment INT)
+        BEGIN
+          DECLARE counter INT DEFAULT 0;
+          WHILE counter < 10 DO
+            -- ... do work ...
+            SET counter = counter + increment;
+          END WHILE;
+        END;
+      - "SET @@GLOBAL.sort_buffer_size = 1000000, @@LOCAL.sort_buffer_size = 1000000;"
+      - "SET @@SESSION.max_join_size = @@GLOBAL.max_join_size;"
+      - "SELECT @@GLOBAL.sql_mode, @@SESSION.sql_mode, @@sql_mode;"
+
+expressions:
