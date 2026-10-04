@@ -1,0 +1,373 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: alter_provider
+    name: ALTER PROVIDER
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-alter-provider
+    tier: low
+    probes:
+      - id: rename_to
+        sql: "ALTER PROVIDER p RENAME TO p2;"
+      - id: set_owner
+        sql: "ALTER PROVIDER p SET OWNER TO `alice@example.com`;"
+      - id: owner_to
+        sql: "ALTER PROVIDER p OWNER TO `alice@example.com`;"
+  - id: drop_provider
+    name: DROP PROVIDER
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-drop-provider
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP PROVIDER p;"
+      - id: if_exists
+        sql: "DROP PROVIDER IF EXISTS p;"
+  - id: create_governed_tag
+    name: CREATE GOVERNED TAG
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-governed-tag
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE GOVERNED TAG k;"
+      - id: description
+        sql: "CREATE GOVERNED TAG k DESCRIPTION 'a tag';"
+      - id: values
+        sql: "CREATE GOVERNED TAG k DESCRIPTION 'a tag' VALUES ('a', 'b');"
+  - id: alter_governed_tag
+    name: ALTER GOVERNED TAG
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-alter-governed-tag
+    tier: low
+    probes:
+      - id: set_description
+        sql: "ALTER GOVERNED TAG k SET DESCRIPTION 'a tag';"
+      - id: set_values
+        sql: "ALTER GOVERNED TAG k SET VALUES ('a', 'b');"
+  - id: drop_governed_tag
+    name: DROP GOVERNED TAG
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-drop-governed-tag
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP GOVERNED TAG k;"
+  - id: ldp_create_temporary_view
+    name: CREATE TEMPORARY VIEW (pipelines)
+    doc: https://docs.databricks.com/aws/en/ldp/developer/ldp-sql-ref-create-temporary-view
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE TEMPORARY VIEW v AS SELECT c FROM t;"
+      - id: columns_comment_props
+        sql: "CREATE TEMPORARY VIEW v (c COMMENT 'col') COMMENT 'view' TBLPROPERTIES ('k' = 'v') AS SELECT c FROM t;"
+  - id: ldp_create_table_flow
+    name: CREATE TABLE ... FLOW (pipelines)
+    doc: https://docs.databricks.com/aws/en/ldp/developer/ldp-sql-ref-create-table-flow
+    tier: low
+    probes:
+      - id: flow_insert_by_name
+        sql: "CREATE TABLE t FLOW INSERT BY NAME SELECT c FROM s;"
+      - id: flow_insert_once
+        sql: "CREATE TABLE t FLOW INSERT ONCE BY NAME SELECT c FROM s;"
+  - id: fsck_repair_table
+    name: FSCK REPAIR TABLE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/delta-fsck
+    tier: low
+    probes:
+      - id: basic
+        sql: "FSCK REPAIR TABLE t;"
+      - id: dry_run
+        sql: "FSCK REPAIR TABLE t DRY RUN;"
+      - id: metadata_only
+        sql: "FSCK REPAIR TABLE t METADATA ONLY;"
+      - id: verify_all_files
+        sql: "FSCK REPAIR TABLE t VERIFY ALL FILES DRY RUN;"
+  - id: generate
+    name: GENERATE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/delta-generate
+    tier: low
+    probes:
+      - id: symlink_format_manifest
+        sql: "GENERATE symlink_format_manifest FOR TABLE t;"
+  - id: cache_select
+    name: CACHE SELECT
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/delta-cache
+    tier: low
+    probes:
+      - id: basic
+        sql: "CACHE SELECT c FROM t;"
+      - id: where
+        sql: "CACHE SELECT c1, c2 FROM t WHERE c1 > 0;"
+  - id: refresh_function
+    name: REFRESH FUNCTION
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-cache-refresh-function
+    tier: low
+    probes:
+      - id: basic
+        sql: "REFRESH FUNCTION f;"
+  - id: describe_catalog
+    name: DESCRIBE CATALOG
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-describe-catalog
+    tier: low
+    probes:
+      - id: basic
+        sql: "DESCRIBE CATALOG c;"
+      - id: extended
+        sql: "DESC CATALOG EXTENDED c;"
+  - id: describe_connection
+    name: DESCRIBE CONNECTION
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-describe-connection
+    tier: low
+    probes:
+      - id: basic
+        sql: "DESCRIBE CONNECTION conn;"
+      - id: desc_server
+        sql: "DESC SERVER conn;"
+  - id: describe_credential
+    name: DESCRIBE CREDENTIAL
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-describe-credential
+    tier: low
+    probes:
+      - id: basic
+        sql: "DESCRIBE CREDENTIAL cred;"
+      - id: storage
+        sql: "DESCRIBE STORAGE CREDENTIAL cred;"
+      - id: service
+        sql: "DESCRIBE SERVICE CREDENTIAL cred;"
+  - id: describe_external_location
+    name: DESCRIBE EXTERNAL LOCATION
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-describe-location
+    tier: low
+    probes:
+      - id: basic
+        sql: "DESCRIBE EXTERNAL LOCATION loc;"
+  - id: describe_policy
+    name: DESCRIBE POLICY
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-describe-policy
+    tier: low
+    probes:
+      - id: on_table
+        sql: "DESCRIBE POLICY p ON TABLE t;"
+      - id: on_catalog
+        sql: "DESC POLICY p ON CATALOG c;"
+      - id: on_schema
+        sql: "DESCRIBE POLICY p ON SCHEMA s;"
+      - id: on_metastore
+        sql: "DESCRIBE POLICY p ON METASTORE;"
+  - id: describe_provider
+    name: DESCRIBE PROVIDER
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-describe-provider
+    tier: low
+    probes:
+      - id: basic
+        sql: "DESCRIBE PROVIDER p;"
+      - id: desc
+        sql: "DESC PROVIDER p;"
+  - id: describe_recipient
+    name: DESCRIBE RECIPIENT
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-describe-recipient
+    tier: low
+    probes:
+      - id: basic
+        sql: "DESCRIBE RECIPIENT r;"
+      - id: desc
+        sql: "DESC RECIPIENT r;"
+  - id: describe_share
+    name: DESCRIBE SHARE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-describe-share
+    tier: low
+    probes:
+      - id: basic
+        sql: "DESCRIBE SHARE s;"
+      - id: desc
+        sql: "DESC SHARE s;"
+  - id: describe_volume
+    name: DESCRIBE VOLUME
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-describe-volume
+    tier: low
+    probes:
+      - id: basic
+        sql: "DESCRIBE VOLUME v;"
+  - id: describe_governed_tag
+    name: DESCRIBE GOVERNED TAG
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-describe-governed-tag
+    tier: low
+    probes:
+      - id: basic
+        sql: "DESCRIBE GOVERNED TAG k;"
+      - id: as_json
+        sql: "DESC GOVERNED TAG k AS JSON;"
+  - id: show_all_in_share
+    name: SHOW ALL IN SHARE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-all-in-share
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW ALL IN SHARE s;"
+  - id: show_connections
+    name: SHOW CONNECTIONS
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-connections
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW CONNECTIONS;"
+      - id: servers
+        sql: "SHOW SERVERS;"
+  - id: show_credentials
+    name: SHOW CREDENTIALS
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-credentials
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW CREDENTIALS;"
+      - id: storage
+        sql: "SHOW STORAGE CREDENTIALS;"
+      - id: service
+        sql: "SHOW SERVICE CREDENTIALS;"
+  - id: show_groups
+    name: SHOW GROUPS
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-groups
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW GROUPS;"
+      - id: with_user
+        sql: "SHOW GROUPS WITH USER `alice@example.com`;"
+      - id: with_group
+        sql: "SHOW GROUPS WITH GROUP g;"
+      - id: like
+        sql: "SHOW GROUPS LIKE 'a*';"
+  - id: show_external_locations
+    name: SHOW EXTERNAL LOCATIONS
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-locations
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW EXTERNAL LOCATIONS;"
+  - id: show_policies
+    name: SHOW POLICIES
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-policies
+    tier: low
+    probes:
+      - id: on_table
+        sql: "SHOW POLICIES ON TABLE t;"
+      - id: effective_on_catalog
+        sql: "SHOW EFFECTIVE POLICIES ON CATALOG c;"
+      - id: on_schema
+        sql: "SHOW POLICIES ON SCHEMA s;"
+      - id: on_metastore
+        sql: "SHOW POLICIES ON METASTORE;"
+  - id: show_providers
+    name: SHOW PROVIDERS
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-providers
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW PROVIDERS;"
+      - id: like
+        sql: "SHOW PROVIDERS LIKE 'a*';"
+  - id: show_recipients
+    name: SHOW RECIPIENTS
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-recipients
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW RECIPIENTS;"
+      - id: like
+        sql: "SHOW RECIPIENTS LIKE 'a*';"
+  - id: show_shares
+    name: SHOW SHARES
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-shares
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW SHARES;"
+      - id: like
+        sql: "SHOW SHARES LIKE 'a*';"
+  - id: show_shares_in_provider
+    name: SHOW SHARES IN PROVIDER
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-shares-in-provider
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW SHARES IN PROVIDER p;"
+      - id: like
+        sql: "SHOW SHARES IN PROVIDER p LIKE 'a*';"
+  - id: show_tables_dropped
+    name: SHOW TABLES DROPPED
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-tables-dropped
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW TABLES DROPPED;"
+      - id: in_schema_limit
+        sql: "SHOW TABLES DROPPED IN s LIMIT 10;"
+      - id: from_schema
+        sql: "SHOW TABLES DROPPED FROM s;"
+  - id: show_users
+    name: SHOW USERS
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-users
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW USERS;"
+      - id: like
+        sql: "SHOW USERS LIKE 'a*';"
+  - id: show_volumes
+    name: SHOW VOLUMES
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-volumes
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW VOLUMES;"
+      - id: in_schema
+        sql: "SHOW VOLUMES IN s;"
+      - id: from_schema_like
+        sql: "SHOW VOLUMES FROM s LIKE 'a*';"
+  - id: show_statistics
+    name: SHOW STATISTICS
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-statistics
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW STATISTICS FOR t AS JSON;"
+      - id: in_table
+        sql: "SHOW STATISTICS IN t AS JSON;"
+      - id: for_columns
+        sql: "SHOW STATISTICS t FOR COLUMNS c1, c2 AS JSON;"
+      - id: for_all_columns
+        sql: "SHOW STATISTICS t FOR ALL COLUMNS AS JSON;"
+  - id: show_governed_tags
+    name: SHOW GOVERNED TAGS
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-governed-tags
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW GOVERNED TAGS;"
+      - id: like
+        sql: "SHOW GOVERNED TAGS LIKE 'a*';"
+  - id: set_collation
+    name: SET COLLATION
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-collation
+    tier: low
+    probes:
+      - id: basic
+        sql: "SET COLLATION UNICODE_CI;"
+  - id: set_query_tags
+    name: SET QUERY_TAGS
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-query-tags
+    tier: low
+    probes:
+      - id: set
+        sql: "SET QUERY_TAGS ['team'] = 'marketing', QUERY_TAGS ['cost_center'] = '701';"
+      - id: unset
+        sql: "SET QUERY_TAGS ['cost_center'] = UNSET;"
+      - id: read
+        sql: "SET QUERY_TAGS;"
+  - id: set_recipient
+    name: SET RECIPIENT
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-set-recipient
+    tier: low
+    probes:
+      - id: basic
+        sql: "SET RECIPIENT r;"
