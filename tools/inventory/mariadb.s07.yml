@@ -1,0 +1,129 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements:
+  - id: update
+    name: UPDATE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-manipulation/changing-deleting-data/update
+    tier: high
+    probes:
+      - id: basic
+        sql: "UPDATE t SET c = 1;"
+      - id: multiple_assignments
+        sql: "UPDATE t SET c1 = 1, c2 = 2;"
+      - id: set_default
+        sql: "UPDATE t SET c = DEFAULT;"
+      - id: where
+        sql: "UPDATE t SET c = 1 WHERE id = 100;"
+      - id: low_priority
+        sql: "UPDATE LOW_PRIORITY t SET c = 1;"
+      - id: ignore
+        sql: "UPDATE IGNORE t SET c = 1;"
+      - id: low_priority_ignore
+        sql: "UPDATE LOW_PRIORITY IGNORE t SET c = 1;"
+      - id: partition
+        sql: "UPDATE t PARTITION (p0, p1) SET c = 1;"
+      - id: for_portion_of
+        sql: "UPDATE t FOR PORTION OF valid_period FROM '2020-01-01' TO '2021-01-01' SET c = 1;"
+        note: Application-time period update, from the FOR PORTION OF clause in the syntax block.
+      - id: order_by
+        sql: "UPDATE t SET c = 1 ORDER BY id DESC;"
+      - id: limit
+        sql: "UPDATE t SET c = 1 LIMIT 10;"
+      - id: order_by_limit
+        sql: "UPDATE t SET c = 1 WHERE d > 0 ORDER BY id LIMIT 10;"
+      - id: multi_table_comma
+        sql: "UPDATE t1, t2 SET t1.c = 1, t2.d = 2 WHERE t1.id = t2.id;"
+      - id: multi_table_join
+        sql: "UPDATE t1 INNER JOIN t2 ON t1.id = t2.id SET t1.c = t2.c WHERE t2.d > 0;"
+      - id: multi_table_low_priority_ignore
+        sql: "UPDATE LOW_PRIORITY IGNORE t1, t2 SET t1.c = t2.c WHERE t1.id = t2.id;"
+      - id: multi_table_order_by_limit
+        sql: "UPDATE t1, t2 SET t1.c = t2.c WHERE t1.id = t2.id ORDER BY t1.id LIMIT 5;"
+    examples:
+      - "UPDATE table_name SET column1 = value1, column2 = value2 WHERE id=100;"
+      - "UPDATE tab1, tab2 SET tab1.column1 = value1, tab1.column2 = value2 WHERE tab1.id = tab2.id;"
+
+  - id: delete
+    name: DELETE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-manipulation/changing-deleting-data/delete
+    tier: high
+    probes:
+      - id: basic
+        sql: "DELETE FROM t;"
+      - id: where
+        sql: "DELETE FROM t WHERE id = 1;"
+      - id: low_priority
+        sql: "DELETE LOW_PRIORITY FROM t WHERE id = 1;"
+      - id: quick
+        sql: "DELETE QUICK FROM t WHERE id = 1;"
+      - id: ignore
+        sql: "DELETE IGNORE FROM t WHERE id = 1;"
+      - id: all_modifiers
+        sql: "DELETE LOW_PRIORITY QUICK IGNORE FROM t WHERE id = 1;"
+      - id: alias
+        sql: "DELETE FROM t AS a WHERE a.id = 1;"
+        note: Table alias is available from MariaDB 11.6.
+      - id: alias_no_as
+        sql: "DELETE FROM t a WHERE a.id = 1;"
+        note: Table alias with optional AS omitted, from MariaDB 11.6.
+      - id: partition
+        sql: "DELETE FROM t PARTITION (p0, p1) WHERE id = 1;"
+      - id: for_portion_of
+        sql: "DELETE FROM t FOR PORTION OF valid_period FROM '2020-01-01' TO '2021-01-01' WHERE id = 1;"
+        note: Application-time period delete, from the FOR PORTION OF clause in the syntax block.
+      - id: use_index
+        sql: "DELETE FROM t USE INDEX (idx) WHERE id = 1;"
+        note: Index hints on single-table DELETE are available from MariaDB 11.8.1.
+      - id: force_index_for_join
+        sql: "DELETE FROM t FORCE INDEX FOR JOIN (idx) WHERE id = 1;"
+        note: Index hints on single-table DELETE are available from MariaDB 11.8.1.
+      - id: ignore_key_for_order_by
+        sql: "DELETE FROM t IGNORE KEY FOR ORDER BY (idx) ORDER BY id LIMIT 10;"
+        note: Index hints on single-table DELETE are available from MariaDB 11.8.1.
+      - id: order_by
+        sql: "DELETE FROM t ORDER BY ts;"
+      - id: limit
+        sql: "DELETE FROM t LIMIT 10;"
+      - id: order_by_limit
+        sql: "DELETE FROM t WHERE id > 0 ORDER BY ts LIMIT 10;"
+      - id: returning
+        sql: "DELETE FROM t WHERE id = 1 RETURNING id, c;"
+      - id: returning_star
+        sql: "DELETE FROM t RETURNING *;"
+      - id: multi_table_from_join
+        sql: "DELETE t1, t2 FROM t1 INNER JOIN t2 ON t1.id = t2.id WHERE t1.c = 0;"
+      - id: multi_table_qualified_star
+        sql: "DELETE t1.*, t2.* FROM t1, t2 WHERE t1.id = t2.id;"
+      - id: multi_table_single_target
+        sql: "DELETE t1 FROM t1 INNER JOIN t2 WHERE t1.id = t2.id;"
+      - id: multi_table_modifiers
+        sql: "DELETE LOW_PRIORITY QUICK IGNORE t1 FROM t1, t2 WHERE t1.id = t2.id;"
+      - id: multi_table_order_by_limit
+        sql: "DELETE t1.*, t2.* FROM t1, t2 ORDER BY t1.id DESC LIMIT 3;"
+        note: ORDER BY and LIMIT with multiple-table syntax are available from MariaDB 11.8.1.
+      - id: multi_table_using
+        sql: "DELETE FROM t1, t2 USING t1 INNER JOIN t2 ON t1.id = t2.id WHERE t1.c = 0;"
+      - id: multi_table_using_qualified_star
+        sql: "DELETE FROM t1.*, t2.* USING t1, t2 WHERE t1.id = t2.id;"
+      - id: multi_table_using_modifiers
+        sql: "DELETE LOW_PRIORITY QUICK IGNORE FROM t1 USING t1, t2 WHERE t1.id = t2.id;"
+      - id: multi_table_using_order_by_limit
+        sql: "DELETE FROM t1 USING t1, t2 WHERE t1.id = t2.id ORDER BY t1.id LIMIT 3;"
+        note: ORDER BY and LIMIT with multiple-table syntax are available from MariaDB 11.8.1.
+      - id: delete_history
+        sql: "DELETE HISTORY FROM t;"
+      - id: delete_history_partition
+        sql: "DELETE HISTORY FROM t PARTITION (p0);"
+      - id: delete_history_before_system_time
+        sql: "DELETE HISTORY FROM t BEFORE SYSTEM_TIME '2020-01-01 00:00:00';"
+      - id: delete_history_before_system_time_timestamp
+        sql: "DELETE HISTORY FROM t BEFORE SYSTEM_TIME TIMESTAMP '2020-01-01 00:00:00';"
+      - id: delete_history_before_system_time_transaction
+        sql: "DELETE HISTORY FROM t BEFORE SYSTEM_TIME TRANSACTION 12345;"
+    examples:
+      - "DELETE FROM page_hit ORDER BY TIMESTAMP LIMIT 1000000;"
+      - "DELETE t1.*, t2.* FROM t1, t2 ORDER BY t1.id DESC LIMIT 3;"
+      - "DELETE post FROM blog INNER JOIN post WHERE blog.id = post.blog_id;"

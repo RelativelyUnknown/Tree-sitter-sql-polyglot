@@ -1,0 +1,58 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements:
+  - id: replace
+    name: REPLACE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-manipulation/changing-deleting-data/replace
+    tier: high
+    probes:
+      - { id: values, sql: "REPLACE INTO t VALUES (1, 'a');" }
+      - { id: into_optional, sql: "REPLACE t VALUES (1, 'a');" }
+      - { id: low_priority, sql: "REPLACE LOW_PRIORITY INTO t VALUES (1, 'a');" }
+      - { id: delayed, sql: "REPLACE DELAYED INTO t VALUES (1, 'a');" }
+      - { id: column_list, sql: "REPLACE INTO t (id, c) VALUES (1, 'a');" }
+      - { id: value_keyword, sql: "REPLACE INTO t (id, c) VALUE (1, 'a');" }
+      - { id: multiple_rows, sql: "REPLACE INTO t (id, c) VALUES (1, 'a'), (2, 'b');" }
+      - { id: default_value, sql: "REPLACE INTO t (id, c) VALUES (1, DEFAULT);" }
+      - { id: partition, sql: "REPLACE INTO t PARTITION (p0, p1) VALUES (1, 'a');" }
+      - { id: qualified_table, sql: "REPLACE INTO db.t VALUES (1, 'a');" }
+      - { id: set_form, sql: "REPLACE INTO t SET id = 1, c = 'a';" }
+      - { id: set_default, sql: "REPLACE INTO t SET id = 1, c = DEFAULT;" }
+      - { id: set_low_priority_partition, sql: "REPLACE LOW_PRIORITY INTO t PARTITION (p0) SET id = 1, c = 'a';" }
+      - { id: select_form, sql: "REPLACE INTO t SELECT * FROM s;" }
+      - { id: select_column_list, sql: "REPLACE INTO t (id, c) SELECT id, c FROM s;" }
+      - { id: select_partition, sql: "REPLACE INTO t PARTITION (p0) (id, c) SELECT id, c FROM s;" }
+      - { id: values_returning, sql: "REPLACE INTO t VALUES (1, 'a') RETURNING id;" }
+      - { id: set_returning, sql: "REPLACE INTO t SET id = 1, c = 'a' RETURNING id, c;" }
+      - { id: select_returning, sql: "REPLACE INTO t SELECT * FROM s RETURNING id;" }
+
+  - id: replace_returning
+    name: REPLACE ... RETURNING
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-manipulation/changing-deleting-data/replacereturning
+    tier: high
+    probes:
+      - { id: values_returning, sql: "REPLACE INTO t VALUES (1, 'a') RETURNING id, c;" }
+      - { id: values_returning_star, sql: "REPLACE INTO t (id, c) VALUES (1, 'a') RETURNING *;" }
+      - { id: value_keyword_returning, sql: "REPLACE INTO t (id, c) VALUE (1, 'a') RETURNING id;" }
+      - { id: low_priority_returning, sql: "REPLACE LOW_PRIORITY INTO t VALUES (1, 'a') RETURNING id;" }
+      - { id: delayed_returning, sql: "REPLACE DELAYED INTO t VALUES (1, 'a') RETURNING id;" }
+      - { id: partition_returning, sql: "REPLACE INTO t PARTITION (p0) VALUES (1, 'a') RETURNING id;" }
+      - { id: multiple_rows_returning, sql: "REPLACE INTO t (id, c) VALUES (1, 'a'), (2, 'b') RETURNING id;" }
+      - { id: default_returning, sql: "REPLACE INTO t (id, c) VALUES (1, DEFAULT) RETURNING id;" }
+      - { id: set_returning, sql: "REPLACE INTO t SET id = 1, c = 'a' RETURNING id, c;" }
+      - { id: set_default_returning, sql: "REPLACE INTO t SET id = 1, c = DEFAULT RETURNING id;" }
+      - { id: select_returning, sql: "REPLACE INTO t SELECT * FROM s RETURNING id;" }
+      - { id: select_column_list_returning, sql: "REPLACE INTO t (id, c) SELECT id, c FROM s RETURNING id;" }
+      - { id: returning_expressions_alias, sql: "REPLACE INTO t VALUES (1, 'a') RETURNING id, id + id AS total, id | id, id && id;" }
+      - { id: returning_function, sql: "REPLACE INTO t SET id = 3, c = 'Fox' RETURNING f(id), UPPER(c);" }
+      - { id: returning_subquery, sql: "REPLACE INTO t SELECT * FROM s RETURNING (SELECT id FROM s WHERE id = 1) AS new_id;" }
+    examples:
+      - |-
+        REPLACE INTO t2 VALUES (1,'Leopard'),(2,'Dog') RETURNING id2, id2+id2 
+        AS Total ,id2|id2, id2&&id2;
+      - |-
+        REPLACE INTO t1 SELECT * FROM t2 RETURNING (SELECT id2 FROM t2 WHERE 
+        id2 IN (SELECT id2 FROM t2 WHERE id2=1)) AS new_id;
