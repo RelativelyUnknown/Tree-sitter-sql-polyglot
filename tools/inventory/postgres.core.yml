@@ -1,0 +1,981 @@
+dialect: postgres
+engine: PostgreSQL
+version: "17"
+source: https://www.postgresql.org/docs/17/sql-commands.html
+
+statements:
+  - id: select
+    name: SELECT
+    doc: https://www.postgresql.org/docs/17/sql-select.html
+    tier: high
+    probes:
+      - { id: star, sql: "SELECT * FROM t;" }
+      - { id: no_from, sql: "SELECT 1 + 1;" }
+      - id: empty_select_list
+        sql: "SELECT FROM t;"
+        note: Compatibility section, "Empty SELECT Lists"; the output list may be empty.
+      - { id: select_all, sql: "SELECT ALL c FROM t;" }
+      - { id: distinct, sql: "SELECT DISTINCT c FROM t;" }
+      - { id: distinct_on, sql: "SELECT DISTINCT ON (a) a, b FROM t ORDER BY a, b DESC;" }
+      - { id: output_alias, sql: "SELECT a AS x, b y FROM t;" }
+      - { id: qualified_star, sql: "SELECT t.*, u.c FROM t, u;" }
+      - { id: from_only, sql: "SELECT * FROM ONLY t;" }
+      - { id: from_table_star, sql: "SELECT * FROM t *;" }
+      - { id: table_alias_columns, sql: "SELECT * FROM t AS x (a, b);" }
+      - { id: tablesample_bernoulli, sql: "SELECT * FROM t TABLESAMPLE BERNOULLI (10);" }
+      - { id: tablesample_system_repeatable, sql: "SELECT * FROM t TABLESAMPLE SYSTEM (10) REPEATABLE (42);" }
+      - { id: subquery_alias, sql: "SELECT * FROM (SELECT 1, 2) AS s (a, b);" }
+      - id: subquery_no_alias
+        sql: "SELECT * FROM (SELECT 1);"
+        note: The alias on a sub-SELECT in FROM is optional (from_item "( select ) [ [ AS ] alias ... ]").
+      - { id: values_in_from, sql: "SELECT * FROM (VALUES (1, 'a'), (2, 'b')) AS v (n, s);" }
+      - { id: lateral_subquery, sql: "SELECT * FROM t, LATERAL (SELECT * FROM u WHERE u.id = t.id) AS s;" }
+      - { id: function_in_from, sql: "SELECT * FROM generate_series(1, 10) AS g (n);" }
+      - { id: with_ordinality, sql: "SELECT * FROM unnest(ARRAY[1, 2]) WITH ORDINALITY AS u (v, n);" }
+      - { id: function_alias_column_definition, sql: "SELECT * FROM f(1) AS x (a integer, b text);" }
+      - { id: function_column_definition_no_alias, sql: "SELECT * FROM f(1) AS (a integer, b text);" }
+      - { id: rows_from, sql: "SELECT * FROM ROWS FROM (generate_series(1, 3), unnest(ARRAY['a', 'b'])) WITH ORDINALITY AS r (a, b, n);" }
+      - { id: rows_from_column_definition, sql: "SELECT * FROM ROWS FROM (f(1) AS (a integer, b text));" }
+      - { id: lateral_function, sql: "SELECT * FROM t, LATERAL f(t.c) AS x;" }
+      - { id: implicit_cross_join, sql: "SELECT * FROM t, u WHERE t.id = u.id;" }
+      - { id: join, sql: "SELECT * FROM t JOIN u ON t.id = u.id;" }
+      - { id: inner_join, sql: "SELECT * FROM t INNER JOIN u ON t.id = u.id;" }
+      - { id: left_join, sql: "SELECT * FROM t LEFT JOIN u ON t.id = u.id;" }
+      - { id: left_outer_join, sql: "SELECT * FROM t LEFT OUTER JOIN u ON t.id = u.id;" }
+      - { id: right_outer_join, sql: "SELECT * FROM t RIGHT OUTER JOIN u ON t.id = u.id;" }
+      - { id: full_outer_join, sql: "SELECT * FROM t FULL OUTER JOIN u ON t.id = u.id;" }
+      - { id: full_join, sql: "SELECT * FROM t FULL JOIN u ON t.id = u.id;" }
+      - { id: cross_join, sql: "SELECT * FROM t CROSS JOIN u;" }
+      - { id: natural_join, sql: "SELECT * FROM t NATURAL JOIN u;" }
+      - { id: natural_left_join, sql: "SELECT * FROM t NATURAL LEFT JOIN u;" }
+      - { id: join_using, sql: "SELECT * FROM t JOIN u USING (id, k);" }
+      - { id: join_using_alias, sql: "SELECT j.id FROM t JOIN u USING (id) AS j;" }
+      - { id: left_join_lateral, sql: "SELECT * FROM t LEFT JOIN LATERAL f(t.c) AS x ON true;" }
+      - { id: parenthesized_join, sql: "SELECT * FROM (t JOIN u ON t.id = u.id) JOIN v ON v.id = u.id;" }
+      - { id: where, sql: "SELECT * FROM t WHERE a > 1 AND b IS NOT NULL;" }
+      - { id: group_by, sql: "SELECT a, count(*) FROM t GROUP BY a;" }
+      - { id: group_by_ordinal, sql: "SELECT a, count(*) FROM t GROUP BY 1;" }
+      - { id: group_by_empty_set, sql: "SELECT count(*) FROM t GROUP BY ();" }
+      - { id: group_by_rollup, sql: "SELECT a, b, sum(c) FROM t GROUP BY ROLLUP (a, b);" }
+      - { id: group_by_cube, sql: "SELECT a, b, sum(c) FROM t GROUP BY CUBE (a, (b, c));" }
+      - { id: group_by_grouping_sets, sql: "SELECT a, b, sum(c) FROM t GROUP BY GROUPING SETS ((a), (b), ());" }
+      - { id: group_by_mixed, sql: "SELECT a, b, c, sum(d) FROM t GROUP BY a, CUBE (b, c), GROUPING SETS ((a), (b));" }
+      - { id: group_by_distinct, sql: "SELECT a, b, c FROM t GROUP BY DISTINCT ROLLUP (a, b), ROLLUP (a, c);" }
+      - { id: group_by_all_quantifier, sql: "SELECT a, b FROM t GROUP BY ALL ROLLUP (a, b);" }
+      - { id: having, sql: "SELECT a, sum(b) FROM t GROUP BY a HAVING sum(b) > 10;" }
+      - { id: having_no_group_by, sql: "SELECT sum(b) FROM t HAVING sum(b) > 10;" }
+      - { id: window_clause, sql: "SELECT sum(c) OVER w FROM t WINDOW w AS (PARTITION BY a ORDER BY b);" }
+      - { id: window_clause_existing_window, sql: "SELECT sum(c) OVER w2 FROM t WINDOW w1 AS (PARTITION BY a), w2 AS (w1 ORDER BY b);" }
+      - { id: frame_rows_between, sql: "SELECT sum(c) OVER (ORDER BY b ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: frame_rows_start_only, sql: "SELECT sum(c) OVER (ORDER BY b ROWS 2 PRECEDING) FROM t;" }
+      - { id: frame_range_offset, sql: "SELECT sum(c) OVER (ORDER BY d RANGE BETWEEN INTERVAL '1 day' PRECEDING AND INTERVAL '1 day' FOLLOWING) FROM t;" }
+      - { id: frame_groups, sql: "SELECT sum(c) OVER (ORDER BY b GROUPS BETWEEN 1 PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: frame_exclude_current_row, sql: "SELECT sum(c) OVER (ORDER BY b ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING EXCLUDE CURRENT ROW) FROM t;" }
+      - { id: frame_exclude_group, sql: "SELECT sum(c) OVER (ORDER BY b RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING EXCLUDE GROUP) FROM t;" }
+      - { id: frame_exclude_ties, sql: "SELECT sum(c) OVER (ORDER BY b GROUPS 1 PRECEDING EXCLUDE TIES) FROM t;" }
+      - { id: frame_exclude_no_others, sql: "SELECT sum(c) OVER (ORDER BY b ROWS UNBOUNDED PRECEDING EXCLUDE NO OTHERS) FROM t;" }
+      - { id: union, sql: "SELECT a FROM t UNION SELECT a FROM u;" }
+      - { id: union_all, sql: "SELECT a FROM t UNION ALL SELECT a FROM u;" }
+      - { id: union_distinct, sql: "SELECT a FROM t UNION DISTINCT SELECT a FROM u;" }
+      - { id: intersect, sql: "SELECT a FROM t INTERSECT SELECT a FROM u;" }
+      - { id: intersect_all, sql: "SELECT a FROM t INTERSECT ALL SELECT a FROM u;" }
+      - { id: except, sql: "SELECT a FROM t EXCEPT SELECT a FROM u;" }
+      - { id: except_all, sql: "SELECT a FROM t EXCEPT ALL SELECT a FROM u;" }
+      - { id: parenthesized_set_operation, sql: "(SELECT a FROM t ORDER BY a LIMIT 1) UNION ALL (SELECT a FROM u) ORDER BY 1;" }
+      - { id: order_by_asc_desc, sql: "SELECT * FROM t ORDER BY a ASC, b DESC;" }
+      - { id: order_by_nulls, sql: "SELECT * FROM t ORDER BY a NULLS FIRST, b DESC NULLS LAST;" }
+      - { id: order_by_using, sql: "SELECT * FROM t ORDER BY a USING >;" }
+      - { id: order_by_ordinal, sql: "SELECT a, b FROM t ORDER BY 2;" }
+      - { id: limit, sql: "SELECT * FROM t LIMIT 10;" }
+      - { id: limit_all, sql: "SELECT * FROM t LIMIT ALL;" }
+      - { id: limit_offset, sql: "SELECT * FROM t ORDER BY a LIMIT 10 OFFSET 20;" }
+      - { id: offset_rows, sql: "SELECT * FROM t ORDER BY a OFFSET 5 ROWS;" }
+      - { id: fetch_first_only, sql: "SELECT * FROM t ORDER BY a FETCH FIRST 10 ROWS ONLY;" }
+      - { id: fetch_next_row_no_count, sql: "SELECT * FROM t ORDER BY a OFFSET 1 ROW FETCH NEXT ROW ONLY;" }
+      - { id: fetch_with_ties, sql: "SELECT * FROM t ORDER BY a FETCH FIRST 3 ROWS WITH TIES;" }
+      - { id: for_update, sql: "SELECT * FROM t FOR UPDATE;" }
+      - { id: for_no_key_update, sql: "SELECT * FROM t FOR NO KEY UPDATE;" }
+      - { id: for_share, sql: "SELECT * FROM t FOR SHARE;" }
+      - { id: for_key_share, sql: "SELECT * FROM t FOR KEY SHARE;" }
+      - { id: for_update_of_nowait, sql: "SELECT * FROM t JOIN u ON t.id = u.id FOR UPDATE OF t, u NOWAIT;" }
+      - { id: for_share_skip_locked, sql: "SELECT * FROM t FOR SHARE SKIP LOCKED;" }
+      - { id: multiple_locking_clauses, sql: "SELECT * FROM t JOIN u ON t.id = u.id FOR UPDATE OF t FOR SHARE OF u;" }
+      - { id: with_cte, sql: "WITH s AS (SELECT a FROM t) SELECT * FROM s;" }
+      - { id: with_column_list, sql: "WITH s (x, y) AS (SELECT a, b FROM t) SELECT x FROM s;" }
+      - { id: with_multiple, sql: "WITH s AS (SELECT 1 AS a), r AS (SELECT a FROM s) SELECT * FROM r;" }
+      - { id: with_materialized, sql: "WITH s AS MATERIALIZED (SELECT a FROM t) SELECT * FROM s;" }
+      - { id: with_not_materialized, sql: "WITH s AS NOT MATERIALIZED (SELECT a FROM t) SELECT * FROM s WHERE a = 1;" }
+      - { id: with_values, sql: "WITH v (a, b) AS (VALUES (1, 2), (3, 4)) SELECT * FROM v;" }
+      - { id: with_recursive, sql: "WITH RECURSIVE r (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r WHERE n < 10) SELECT n FROM r;" }
+      - { id: with_recursive_search_depth, sql: "WITH RECURSIVE r (id, p) AS (SELECT id, p FROM t WHERE p IS NULL UNION ALL SELECT t.id, t.p FROM t JOIN r ON t.p = r.id) SEARCH DEPTH FIRST BY id SET ordercol SELECT * FROM r ORDER BY ordercol;" }
+      - { id: with_recursive_search_breadth, sql: "WITH RECURSIVE r (id, p) AS (SELECT id, p FROM t WHERE p IS NULL UNION ALL SELECT t.id, t.p FROM t JOIN r ON t.p = r.id) SEARCH BREADTH FIRST BY id SET ordercol SELECT * FROM r ORDER BY ordercol;" }
+      - { id: with_recursive_cycle, sql: "WITH RECURSIVE r (id, p) AS (SELECT id, p FROM t UNION ALL SELECT t.id, t.p FROM t JOIN r ON t.p = r.id) CYCLE id SET is_cycle USING path SELECT * FROM r;" }
+      - { id: with_recursive_cycle_to_default, sql: "WITH RECURSIVE r (id, p) AS (SELECT id, p FROM t UNION ALL SELECT t.id, t.p FROM t JOIN r ON t.p = r.id) CYCLE id SET is_cycle TO 'Y' DEFAULT 'N' USING path SELECT * FROM r;" }
+      - { id: with_insert_returning, sql: "WITH ins AS (INSERT INTO t (a) VALUES (1) RETURNING id) SELECT id FROM ins;" }
+      - { id: with_update_returning, sql: "WITH upd AS (UPDATE t SET a = a + 1 RETURNING *) SELECT * FROM upd;" }
+      - { id: with_delete_returning, sql: "WITH moved AS (DELETE FROM t WHERE a < 0 RETURNING *) INSERT INTO u SELECT * FROM moved;" }
+      - { id: with_merge_returning, sql: "WITH m AS (MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN DELETE RETURNING t.*) SELECT * FROM m;" }
+      - { id: table_command, sql: "TABLE t;" }
+      - { id: table_command_only, sql: "TABLE ONLY t;" }
+    examples:
+      - |-
+        SELECT f.title, f.did, d.name, f.date_prod, f.kind
+            FROM distributors d JOIN films f USING (did);
+      - |-
+        SELECT kind, sum(len) AS total
+            FROM films
+            GROUP BY kind
+            HAVING sum(len) < interval '5 hours';
+      - "SELECT * FROM unnest(ARRAY['a','b','c','d','e','f']) WITH ORDINALITY;"
+      - |-
+        WITH RECURSIVE employee_recursive(distance, employee_name, manager_name) AS (
+            SELECT 1, employee_name, manager_name
+            FROM employee
+            WHERE manager_name = 'Mary'
+          UNION ALL
+            SELECT er.distance + 1, e.employee_name, e.manager_name
+            FROM employee_recursive er, employee e
+            WHERE er.employee_name = e.manager_name
+          )
+        SELECT distance, employee_name FROM employee_recursive;
+      - |-
+        SELECT m.name AS mname, pname
+        FROM manufacturers m LEFT JOIN LATERAL get_product_names(m.id) pname ON true;
+
+  - id: select_into
+    name: SELECT INTO
+    doc: https://www.postgresql.org/docs/17/sql-selectinto.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "SELECT * INTO t2 FROM t WHERE a > 0;" }
+      - { id: temporary_table, sql: "SELECT a, b INTO TEMPORARY TABLE t2 FROM t;" }
+      - { id: temp, sql: "SELECT a INTO TEMP t2 FROM t;" }
+      - { id: unlogged, sql: "SELECT a INTO UNLOGGED t2 FROM t;" }
+      - { id: with_cte_order_limit, sql: "WITH s AS (SELECT a FROM t) SELECT a INTO t2 FROM s ORDER BY a LIMIT 10;" }
+    examples:
+      - "SELECT * INTO films_recent FROM films WHERE date_prod >= '2002-01-01';"
+
+  - id: values
+    name: VALUES
+    doc: https://www.postgresql.org/docs/17/sql-values.html
+    tier: high
+    probes:
+      - { id: single_row, sql: "VALUES (1, 'one');" }
+      - { id: multi_row, sql: "VALUES (1, 'one'), (2, 'two'), (3, 'three');" }
+      - { id: order_by, sql: "VALUES (1, 'one'), (2, 'two') ORDER BY 1 DESC;" }
+      - { id: order_by_using, sql: "VALUES (1), (2) ORDER BY column1 USING <;" }
+      - { id: limit_offset, sql: "VALUES (1), (2), (3) LIMIT 2 OFFSET 1;" }
+      - { id: limit_all, sql: "VALUES (1), (2) LIMIT ALL;" }
+      - { id: offset_rows_fetch, sql: "VALUES (1), (2), (3) OFFSET 1 ROWS FETCH FIRST 1 ROW ONLY;" }
+      - { id: fetch_next_no_count, sql: "VALUES (1), (2) FETCH NEXT ROWS ONLY;" }
+      - { id: in_from_with_alias, sql: "SELECT * FROM (VALUES (1, 'a')) AS v (n, s);" }
+      - { id: in_predicate, sql: "SELECT * FROM t WHERE c IN (VALUES (1), (2));" }
+      - { id: union_with_select, sql: "VALUES (1) UNION ALL SELECT 2;" }
+    examples:
+      - "VALUES (1, 'one'), (2, 'two'), (3, 'three');"
+      - |-
+        SELECT 1 AS column1, 'one' AS column2
+        UNION ALL
+        SELECT 2, 'two'
+        UNION ALL
+        SELECT 3, 'three';
+      - |-
+        INSERT INTO films VALUES
+            ('UA502', 'Bananas', 105, DEFAULT, 'Comedy', '82 minutes'),
+            ('T_601', 'Yojimbo', 106, DEFAULT, 'Drama', DEFAULT);
+      - |-
+        UPDATE employees SET salary = salary * v.increase
+          FROM (VALUES(1, 200000, 1.2), (2, 400000, 1.4)) AS v (depno, target, increase)
+          WHERE employees.depno = v.depno AND employees.sales >= v.target;
+      - |-
+        SELECT * FROM machines
+        WHERE ip_address IN (VALUES('192.168.0.1'::inet), ('192.168.0.10'), ('192.168.1.43'));
+
+  - id: insert
+    name: INSERT
+    doc: https://www.postgresql.org/docs/17/sql-insert.html
+    tier: high
+    probes:
+      - { id: values, sql: "INSERT INTO t VALUES (1, 'a');" }
+      - { id: column_list, sql: "INSERT INTO t (a, b) VALUES (1, 'a');" }
+      - { id: multi_row_values, sql: "INSERT INTO t (a, b) VALUES (1, 'a'), (2, 'b');" }
+      - { id: default_in_values, sql: "INSERT INTO t (a, b) VALUES (DEFAULT, 'a');" }
+      - { id: default_values, sql: "INSERT INTO t DEFAULT VALUES;" }
+      - { id: query, sql: "INSERT INTO t SELECT * FROM u WHERE a > 0;" }
+      - { id: query_table_command, sql: "INSERT INTO t TABLE u;" }
+      - { id: table_alias, sql: "INSERT INTO t AS x (a) VALUES (1);" }
+      - { id: subscripted_target_column, sql: "INSERT INTO t (a, arr[1:3]) VALUES (1, '{1,2,3}');" }
+      - { id: field_target_column, sql: "INSERT INTO t (a, comp.f1) VALUES (1, 2);" }
+      - { id: overriding_system_value, sql: "INSERT INTO t (id, a) OVERRIDING SYSTEM VALUE VALUES (1, 'a');" }
+      - { id: overriding_user_value, sql: "INSERT INTO t (id, a) OVERRIDING USER VALUE SELECT id, a FROM u;" }
+      - { id: with_cte, sql: "WITH s AS (SELECT a FROM u) INSERT INTO t (a) SELECT a FROM s;" }
+      - { id: returning_star, sql: "INSERT INTO t (a) VALUES (1) RETURNING *;" }
+      - { id: returning_expressions, sql: "INSERT INTO t (a) VALUES (1) RETURNING id, a * 2 AS doubled, a d;" }
+      - { id: on_conflict_do_nothing, sql: "INSERT INTO t (a) VALUES (1) ON CONFLICT DO NOTHING;" }
+      - { id: on_conflict_target_do_nothing, sql: "INSERT INTO t (a) VALUES (1) ON CONFLICT (a) DO NOTHING;" }
+      - { id: on_conflict_expression_target, sql: "INSERT INTO t (a, b) VALUES (1, 'x') ON CONFLICT ((lower(b))) DO NOTHING;" }
+      - { id: on_conflict_target_collate_opclass, sql: "INSERT INTO t (b) VALUES ('x') ON CONFLICT (b COLLATE \"C\" text_pattern_ops) DO NOTHING;" }
+      - { id: on_conflict_target_where, sql: "INSERT INTO t (a) VALUES (1) ON CONFLICT (a) WHERE is_active DO NOTHING;" }
+      - { id: on_conflict_on_constraint, sql: "INSERT INTO t (a) VALUES (1) ON CONFLICT ON CONSTRAINT t_pkey DO NOTHING;" }
+      - { id: on_conflict_do_update, sql: "INSERT INTO t (a, b) VALUES (1, 'x') ON CONFLICT (a) DO UPDATE SET b = EXCLUDED.b;" }
+      - { id: do_update_set_default, sql: "INSERT INTO t (a, b) VALUES (1, 'x') ON CONFLICT (a) DO UPDATE SET b = DEFAULT;" }
+      - { id: do_update_multi_column_row, sql: "INSERT INTO t (a, b, c) VALUES (1, 'x', 2) ON CONFLICT (a) DO UPDATE SET (b, c) = ROW (EXCLUDED.b, EXCLUDED.c);" }
+      - { id: do_update_multi_column, sql: "INSERT INTO t (a, b, c) VALUES (1, 'x', 2) ON CONFLICT (a) DO UPDATE SET (b, c) = (EXCLUDED.b, DEFAULT);" }
+      - { id: do_update_multi_column_subselect, sql: "INSERT INTO t (a, b, c) VALUES (1, 'x', 2) ON CONFLICT (a) DO UPDATE SET (b, c) = (SELECT b, c FROM u WHERE u.a = t.a);" }
+      - { id: do_update_where, sql: "INSERT INTO t AS x (a, b) VALUES (1, 'x') ON CONFLICT (a) DO UPDATE SET b = EXCLUDED.b WHERE x.b <> EXCLUDED.b;" }
+      - { id: on_conflict_returning, sql: "INSERT INTO t (a, b) VALUES (1, 'x') ON CONFLICT (a) DO UPDATE SET b = EXCLUDED.b RETURNING *;" }
+    examples:
+      - |-
+        INSERT INTO films (code, title, did, date_prod, kind)
+            VALUES ('T_601', 'Yojimbo', 106, '1961-06-16', 'Drama');
+      - "INSERT INTO films DEFAULT VALUES;"
+      - "INSERT INTO films SELECT * FROM tmp_films WHERE date_prod < '2004-05-07';"
+      - |-
+        INSERT INTO distributors (did, dname)
+            VALUES (5, 'Gizmo Transglobal'), (6, 'Associated Computing, Inc')
+            ON CONFLICT (did) DO UPDATE SET dname = EXCLUDED.dname;
+      - |-
+        INSERT INTO distributors AS d (did, dname) VALUES (8, 'Anvil Distribution')
+            ON CONFLICT (did) DO UPDATE
+            SET dname = EXCLUDED.dname || ' (formerly ' || d.dname || ')'
+            WHERE d.zipcode <> '21201';
+
+  - id: update
+    name: UPDATE
+    doc: https://www.postgresql.org/docs/17/sql-update.html
+    tier: high
+    probes:
+      - { id: basic, sql: "UPDATE t SET a = 1 WHERE b = 2;" }
+      - { id: multiple_columns, sql: "UPDATE t SET a = a + 1, b = 'x';" }
+      - { id: set_default, sql: "UPDATE t SET a = DEFAULT;" }
+      - { id: only, sql: "UPDATE ONLY t SET a = 1;" }
+      - { id: table_star, sql: "UPDATE t * SET a = 1;" }
+      - { id: alias_as, sql: "UPDATE t AS x SET a = 1 WHERE x.b = 2;" }
+      - { id: alias_bare, sql: "UPDATE t x SET a = 1 WHERE x.b = 2;" }
+      - { id: multi_column_assignment, sql: "UPDATE t SET (a, b) = (1, DEFAULT);" }
+      - { id: multi_column_row, sql: "UPDATE t SET (a, b) = ROW (1, 2);" }
+      - { id: multi_column_subselect, sql: "UPDATE t SET (a, b) = (SELECT x, y FROM u WHERE u.id = t.id);" }
+      - { id: subscript_target, sql: "UPDATE t SET arr[1] = 5, arr[2:3] = '{6,7}';" }
+      - { id: field_target, sql: "UPDATE t SET comp.f1 = 1;" }
+      - { id: from, sql: "UPDATE t SET a = u.a FROM u WHERE t.id = u.id;" }
+      - { id: from_multiple, sql: "UPDATE t SET a = u.a FROM u JOIN v ON u.id = v.id, w WHERE t.id = u.id;" }
+      - { id: where_current_of, sql: "UPDATE t SET a = 1 WHERE CURRENT OF c;" }
+      - { id: returning_star, sql: "UPDATE t SET a = 1 RETURNING *;" }
+      - { id: returning_expressions, sql: "UPDATE t SET a = 1 RETURNING id, a AS new_a;" }
+      - { id: with_cte, sql: "WITH s AS (SELECT id FROM u) UPDATE t SET a = 1 FROM s WHERE t.id = s.id;" }
+      - { id: with_recursive, sql: "WITH RECURSIVE r (id) AS (SELECT 1 UNION ALL SELECT id + 1 FROM r WHERE id < 5) UPDATE t SET a = 0 WHERE id IN (SELECT id FROM r);" }
+    examples:
+      - "UPDATE films SET kind = 'Dramatic' WHERE kind = 'Drama';"
+      - |-
+        UPDATE weather SET temp_lo = temp_lo+1, temp_hi = temp_lo+15, prcp = DEFAULT
+          WHERE city = 'San Francisco' AND date = '2003-07-03'
+          RETURNING temp_lo, temp_hi, prcp;
+      - |-
+        UPDATE weather SET (temp_lo, temp_hi, prcp) = (temp_lo+1, temp_lo+15, DEFAULT)
+          WHERE city = 'San Francisco' AND date = '2003-07-03';
+      - |-
+        UPDATE accounts SET (contact_first_name, contact_last_name) =
+            (SELECT first_name, last_name FROM employees
+             WHERE employees.id = accounts.sales_person);
+      - |-
+        WITH exceeded_max_retries AS (
+          SELECT w.ctid FROM work_item AS w
+            WHERE w.status = 'active' AND w.num_retries > 10
+            ORDER BY w.retry_timestamp
+            FOR UPDATE
+            LIMIT 5000
+        )
+        UPDATE work_item SET status = 'failed'
+          FROM exceeded_max_retries AS emr
+          WHERE work_item.ctid = emr.ctid;
+
+  - id: delete
+    name: DELETE
+    doc: https://www.postgresql.org/docs/17/sql-delete.html
+    tier: high
+    probes:
+      - { id: all_rows, sql: "DELETE FROM t;" }
+      - { id: where, sql: "DELETE FROM t WHERE a <> 'x';" }
+      - { id: only, sql: "DELETE FROM ONLY t WHERE a = 1;" }
+      - { id: table_star, sql: "DELETE FROM t * WHERE a = 1;" }
+      - { id: alias_as, sql: "DELETE FROM t AS x WHERE x.a = 1;" }
+      - { id: alias_bare, sql: "DELETE FROM t x WHERE x.a = 1;" }
+      - { id: using, sql: "DELETE FROM t USING u WHERE t.id = u.id AND u.flag;" }
+      - { id: using_multiple, sql: "DELETE FROM t USING u JOIN v ON u.id = v.id, w WHERE t.id = u.id;" }
+      - { id: where_current_of, sql: "DELETE FROM t WHERE CURRENT OF c;" }
+      - { id: returning_star, sql: "DELETE FROM t WHERE a = 1 RETURNING *;" }
+      - { id: returning_expressions, sql: "DELETE FROM t WHERE a = 1 RETURNING id, a AS old_a;" }
+      - { id: with_cte, sql: "WITH s AS (SELECT id FROM u) DELETE FROM t WHERE id IN (SELECT id FROM s);" }
+    examples:
+      - "DELETE FROM films WHERE kind <> 'Musical';"
+      - "DELETE FROM films;"
+      - "DELETE FROM tasks WHERE status = 'DONE' RETURNING *;"
+      - "DELETE FROM tasks WHERE CURRENT OF c_tasks;"
+      - |-
+        WITH delete_batch AS (
+          SELECT l.ctid FROM user_logs AS l
+            WHERE l.status = 'archived'
+            ORDER BY l.creation_date
+            FOR UPDATE
+            LIMIT 10000
+        )
+        DELETE FROM user_logs AS dl
+          USING delete_batch AS del
+          WHERE dl.ctid = del.ctid;
+
+  - id: truncate
+    name: TRUNCATE
+    doc: https://www.postgresql.org/docs/17/sql-truncate.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "TRUNCATE t;" }
+      - { id: table_keyword_only, sql: "TRUNCATE TABLE ONLY t;" }
+      - { id: multiple_tables_star, sql: "TRUNCATE t *, u;" }
+      - { id: restart_identity, sql: "TRUNCATE t RESTART IDENTITY;" }
+      - { id: continue_identity_restrict, sql: "TRUNCATE TABLE t CONTINUE IDENTITY RESTRICT;" }
+      - { id: cascade, sql: "TRUNCATE t CASCADE;" }
+    examples:
+      - "TRUNCATE bigtable, fattable;"
+      - "TRUNCATE bigtable, fattable RESTART IDENTITY;"
+      - "TRUNCATE othertable CASCADE;"
+
+  - id: merge
+    name: MERGE
+    doc: https://www.postgresql.org/docs/17/sql-merge.html
+    tier: high
+    probes:
+      - { id: matched_update, sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET a = s.a;" }
+      - { id: target_alias, sql: "MERGE INTO t AS x USING s ON x.id = s.id WHEN MATCHED THEN DELETE;" }
+      - { id: target_alias_bare, sql: "MERGE INTO t x USING s ON x.id = s.id WHEN MATCHED THEN DELETE;" }
+      - { id: target_only_star, sql: "MERGE INTO ONLY t USING s * ON t.id = s.id WHEN MATCHED THEN DELETE;" }
+      - { id: source_only, sql: "MERGE INTO t USING ONLY s AS src ON t.id = src.id WHEN MATCHED THEN DELETE;" }
+      - { id: source_subquery, sql: "MERGE INTO t USING (SELECT id, a FROM u) AS s ON t.id = s.id WHEN MATCHED THEN UPDATE SET a = s.a;" }
+      - { id: matched_and_condition, sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED AND s.a > 0 THEN UPDATE SET a = s.a;" }
+      - { id: matched_update_default, sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET a = DEFAULT, b = s.b;" }
+      - { id: matched_update_multi_column, sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET (a, b) = (s.a, DEFAULT);" }
+      - { id: matched_update_row, sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET (a, b) = ROW (s.a, s.b);" }
+      - { id: matched_update_subselect, sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET (a, b) = (SELECT a, b FROM u WHERE u.id = s.id);" }
+      - { id: matched_delete, sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN DELETE;" }
+      - { id: matched_do_nothing, sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN DO NOTHING;" }
+      - { id: not_matched_insert, sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED THEN INSERT (id, a) VALUES (s.id, s.a);" }
+      - { id: not_matched_insert_no_columns, sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED THEN INSERT VALUES (s.id, DEFAULT);" }
+      - { id: not_matched_insert_default_values, sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED THEN INSERT DEFAULT VALUES;" }
+      - { id: not_matched_insert_overriding, sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED THEN INSERT (id, a) OVERRIDING SYSTEM VALUE VALUES (s.id, s.a);" }
+      - { id: not_matched_insert_overriding_user, sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED THEN INSERT (id, a) OVERRIDING USER VALUE VALUES (s.id, s.a);" }
+      - { id: not_matched_by_target, sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED BY TARGET AND s.a > 0 THEN INSERT VALUES (s.id, s.a);" }
+      - { id: not_matched_do_nothing, sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED THEN DO NOTHING;" }
+      - { id: not_matched_by_source_delete, sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED BY SOURCE THEN DELETE;" }
+      - { id: not_matched_by_source_update, sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED BY SOURCE AND t.a > 0 THEN UPDATE SET a = 0;" }
+      - { id: not_matched_by_source_do_nothing, sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED BY SOURCE THEN DO NOTHING;" }
+      - { id: multiple_when_clauses, sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED AND s.del THEN DELETE WHEN MATCHED THEN UPDATE SET a = s.a WHEN NOT MATCHED THEN INSERT VALUES (s.id, s.a);" }
+      - { id: returning, sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN DELETE RETURNING merge_action(), t.*;" }
+      - { id: returning_star, sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET a = s.a RETURNING *;" }
+      - { id: with_cte, sql: "WITH src AS (SELECT id, a FROM u) MERGE INTO t USING src ON t.id = src.id WHEN MATCHED THEN UPDATE SET a = src.a;" }
+    examples:
+      - |-
+        MERGE INTO customer_account ca
+        USING recent_transactions t
+        ON t.customer_id = ca.customer_id
+        WHEN MATCHED THEN
+          UPDATE SET balance = balance + transaction_value
+        WHEN NOT MATCHED THEN
+          INSERT (customer_id, balance)
+          VALUES (t.customer_id, t.transaction_value);
+      - |-
+        MERGE INTO customer_account ca
+        USING (SELECT customer_id, transaction_value FROM recent_transactions) AS t
+        ON t.customer_id = ca.customer_id
+        WHEN MATCHED THEN
+          UPDATE SET balance = balance + transaction_value
+        WHEN NOT MATCHED THEN
+          INSERT (customer_id, balance)
+          VALUES (t.customer_id, t.transaction_value);
+      - |-
+        MERGE INTO wines w
+        USING wine_stock_changes s
+        ON s.winename = w.winename
+        WHEN NOT MATCHED AND s.stock_delta > 0 THEN
+          INSERT VALUES(s.winename, s.stock_delta)
+        WHEN MATCHED AND w.stock + s.stock_delta > 0 THEN
+          UPDATE SET stock = w.stock + s.stock_delta
+        WHEN MATCHED THEN
+          DELETE
+        RETURNING merge_action(), w.*;
+      - |-
+        MERGE INTO wines w
+        USING new_wine_list s
+        ON s.winename = w.winename
+        WHEN NOT MATCHED BY TARGET THEN
+          INSERT VALUES(s.winename, s.stock)
+        WHEN MATCHED AND w.stock != s.stock THEN
+          UPDATE SET stock = s.stock
+        WHEN NOT MATCHED BY SOURCE THEN
+          DELETE;
+
+  - id: create_table
+    name: CREATE TABLE
+    doc: https://www.postgresql.org/docs/17/sql-createtable.html
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE TABLE t (a integer, b text);" }
+      - { id: no_columns, sql: "CREATE TABLE t ();" }
+      - { id: temporary, sql: "CREATE TEMPORARY TABLE t (a integer);" }
+      - { id: temp, sql: "CREATE TEMP TABLE t (a integer);" }
+      - { id: global_temporary, sql: "CREATE GLOBAL TEMPORARY TABLE t (a integer);" }
+      - { id: local_temp, sql: "CREATE LOCAL TEMP TABLE t (a integer);" }
+      - { id: unlogged, sql: "CREATE UNLOGGED TABLE t (a integer);" }
+      - { id: if_not_exists, sql: "CREATE TABLE IF NOT EXISTS s.t (a integer);" }
+      - { id: column_storage, sql: "CREATE TABLE t (a text STORAGE EXTERNAL);" }
+      - { id: column_compression, sql: "CREATE TABLE t (a text COMPRESSION pglz);" }
+      - { id: column_collate, sql: "CREATE TABLE t (a text COLLATE \"C\");" }
+      - { id: array_column, sql: "CREATE TABLE t (v int[][], w text ARRAY[4]);" }
+      - { id: not_null_null, sql: "CREATE TABLE t (a integer NOT NULL, b text NULL);" }
+      - { id: named_column_constraint, sql: "CREATE TABLE t (a integer CONSTRAINT a_nn NOT NULL);" }
+      - { id: column_check_no_inherit, sql: "CREATE TABLE t (a integer CHECK (a > 0) NO INHERIT);" }
+      - { id: column_default, sql: "CREATE TABLE t (a integer DEFAULT nextval('seq'), b timestamp DEFAULT current_timestamp);" }
+      - { id: generated_stored, sql: "CREATE TABLE t (a integer, b integer GENERATED ALWAYS AS (a * 2) STORED);" }
+      - { id: identity_always_options, sql: "CREATE TABLE t (id bigint GENERATED ALWAYS AS IDENTITY (START WITH 10 INCREMENT BY 5));" }
+      - { id: identity_by_default, sql: "CREATE TABLE t (id integer PRIMARY KEY GENERATED BY DEFAULT AS IDENTITY);" }
+      - { id: column_unique_nulls_not_distinct, sql: "CREATE TABLE t (a integer UNIQUE NULLS NOT DISTINCT);" }
+      - { id: column_primary_key_index_parameters, sql: "CREATE TABLE t (a integer PRIMARY KEY WITH (fillfactor = 70) USING INDEX TABLESPACE ts);" }
+      - { id: column_references, sql: "CREATE TABLE t (a integer REFERENCES u (id) MATCH FULL ON DELETE CASCADE ON UPDATE SET NULL);" }
+      - { id: column_references_deferrable, sql: "CREATE TABLE t (a integer CONSTRAINT fk REFERENCES u DEFERRABLE INITIALLY DEFERRED);" }
+      - { id: column_not_deferrable_initially_immediate, sql: "CREATE TABLE t (a integer UNIQUE NOT DEFERRABLE INITIALLY IMMEDIATE);" }
+      - { id: table_check, sql: "CREATE TABLE t (a integer, b text, CONSTRAINT con1 CHECK (a > 100 AND b <> ''));" }
+      - { id: table_unique_include, sql: "CREATE TABLE t (a integer, b text, c text, UNIQUE NULLS DISTINCT (a, b) INCLUDE (c));" }
+      - { id: table_primary_key, sql: "CREATE TABLE t (a integer, b text, CONSTRAINT t_pk PRIMARY KEY (a, b));" }
+      - { id: table_unique_with_storage, sql: "CREATE TABLE t (a integer, UNIQUE (a) WITH (fillfactor = 70)) WITH (fillfactor = 70);" }
+      - { id: table_exclude, sql: "CREATE TABLE t (c circle, EXCLUDE USING gist (c WITH &&));" }
+      - { id: table_exclude_full, sql: "CREATE TABLE t (r tsrange, k integer, EXCLUDE USING gist (k WITH =, r WITH &&) INCLUDE (k) WHERE (k > 0));" }
+      - { id: table_exclude_expression_opclass, sql: "CREATE TABLE t (b text, EXCLUDE USING btree ((lower(b)) COLLATE \"C\" text_pattern_ops DESC NULLS LAST WITH =));" }
+      - { id: table_foreign_key, sql: "CREATE TABLE t (a integer, b integer, FOREIGN KEY (a, b) REFERENCES u (x, y) MATCH SIMPLE ON DELETE NO ACTION ON UPDATE RESTRICT);" }
+      - { id: foreign_key_set_null_columns, sql: "CREATE TABLE t (a integer, b integer, FOREIGN KEY (a, b) REFERENCES u (x, y) ON DELETE SET NULL (b));" }
+      - { id: foreign_key_set_default_columns, sql: "CREATE TABLE t (a integer, b integer DEFAULT 0, FOREIGN KEY (a, b) REFERENCES u ON DELETE SET DEFAULT (b));" }
+      - { id: like_options, sql: "CREATE TABLE t (LIKE u INCLUDING ALL EXCLUDING COMMENTS, extra integer);" }
+      - { id: like_including_each, sql: "CREATE TABLE t (LIKE u INCLUDING DEFAULTS INCLUDING CONSTRAINTS INCLUDING INDEXES INCLUDING IDENTITY INCLUDING GENERATED INCLUDING STATISTICS INCLUDING STORAGE INCLUDING COMPRESSION);" }
+      - { id: inherits, sql: "CREATE TABLE t (a integer) INHERITS (p1, p2);" }
+      - { id: partition_by_range, sql: "CREATE TABLE t (d date NOT NULL, v integer) PARTITION BY RANGE (d);" }
+      - { id: partition_by_range_expressions, sql: "CREATE TABLE t (d date) PARTITION BY RANGE (EXTRACT(YEAR FROM d), EXTRACT(MONTH FROM d));" }
+      - { id: partition_by_list_expression, sql: "CREATE TABLE t (name text) PARTITION BY LIST (left(lower(name), 1));" }
+      - { id: partition_by_hash_collate_opclass, sql: "CREATE TABLE t (k text) PARTITION BY HASH (k COLLATE \"C\" text_pattern_ops);" }
+      - { id: using_method, sql: "CREATE TABLE t (a integer) USING heap;" }
+      - { id: with_storage_parameters, sql: "CREATE TABLE t (a integer) WITH (fillfactor = 70, autovacuum_enabled = false, toast.autovacuum_enabled);" }
+      - { id: without_oids, sql: "CREATE TABLE t (a integer) WITHOUT OIDS;" }
+      - { id: on_commit_preserve_rows, sql: "CREATE TEMP TABLE t (a integer) ON COMMIT PRESERVE ROWS;" }
+      - { id: on_commit_delete_rows, sql: "CREATE TEMP TABLE t (a integer) ON COMMIT DELETE ROWS;" }
+      - { id: on_commit_drop, sql: "CREATE TEMP TABLE t (a integer) ON COMMIT DROP;" }
+      - { id: tablespace, sql: "CREATE TABLE t (a integer) TABLESPACE ts;" }
+      - { id: of_type, sql: "CREATE TABLE t OF typ (PRIMARY KEY (a), b WITH OPTIONS DEFAULT 1000);" }
+      - { id: of_type_bare, sql: "CREATE TABLE t OF typ;" }
+      - { id: partition_of_range, sql: "CREATE TABLE t_2016 PARTITION OF t (v DEFAULT 0) FOR VALUES FROM ('2016-07-01') TO ('2016-08-01');" }
+      - { id: partition_of_minvalue_maxvalue, sql: "CREATE TABLE t_old PARTITION OF t FOR VALUES FROM (MINVALUE, MINVALUE) TO (2016, MAXVALUE);" }
+      - { id: partition_of_list, sql: "CREATE TABLE t_ab PARTITION OF t (CONSTRAINT nz CHECK (id != 0)) FOR VALUES IN ('a', 'b');" }
+      - { id: partition_of_hash, sql: "CREATE TABLE t_p1 PARTITION OF t FOR VALUES WITH (MODULUS 4, REMAINDER 0);" }
+      - { id: partition_of_default, sql: "CREATE TABLE t_def PARTITION OF t DEFAULT;" }
+      - { id: partition_of_subpartitioned, sql: "CREATE TABLE t_ab PARTITION OF t FOR VALUES IN ('a', 'b') PARTITION BY RANGE (population);" }
+    examples:
+      - |-
+        CREATE TABLE array_int (
+            vector  int[][]
+        );
+      - |-
+        CREATE TABLE distributors (
+            did     integer,
+            name    varchar(40),
+            UNIQUE(name) WITH (fillfactor=70)
+        )
+        WITH (fillfactor=70);
+      - |-
+        CREATE TABLE circles (
+            c circle,
+            EXCLUDE USING gist (c WITH &&)
+        );
+      - |-
+        CREATE TABLE measurement_year_month (
+            logdate         date not null,
+            peaktemp        int,
+            unitsales       int
+        ) PARTITION BY RANGE (EXTRACT(YEAR FROM logdate), EXTRACT(MONTH FROM logdate));
+      - |-
+        CREATE TABLE measurement_y2016m07
+            PARTITION OF measurement (
+            unitsales DEFAULT 0
+        ) FOR VALUES FROM ('2016-07-01') TO ('2016-08-01');
+
+  - id: create_table_as
+    name: CREATE TABLE AS
+    doc: https://www.postgresql.org/docs/17/sql-createtableas.html
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE TABLE t2 AS SELECT * FROM t WHERE a > 0;" }
+      - { id: column_names, sql: "CREATE TABLE t2 (x, y) AS SELECT a, b FROM t;" }
+      - { id: temporary, sql: "CREATE TEMPORARY TABLE t2 AS SELECT * FROM t;" }
+      - { id: global_temp, sql: "CREATE GLOBAL TEMP TABLE t2 AS SELECT * FROM t;" }
+      - { id: unlogged, sql: "CREATE UNLOGGED TABLE t2 AS SELECT * FROM t;" }
+      - { id: if_not_exists, sql: "CREATE TABLE IF NOT EXISTS t2 AS SELECT * FROM t;" }
+      - { id: using_method, sql: "CREATE TABLE t2 USING heap AS SELECT * FROM t;" }
+      - { id: with_storage_parameters, sql: "CREATE TABLE t2 WITH (fillfactor = 70) AS SELECT * FROM t;" }
+      - { id: without_oids, sql: "CREATE TABLE t2 WITHOUT OIDS AS SELECT * FROM t;" }
+      - { id: on_commit_drop, sql: "CREATE TEMP TABLE t2 ON COMMIT DROP AS SELECT * FROM t;" }
+      - { id: on_commit_delete_rows, sql: "CREATE TEMP TABLE t2 ON COMMIT DELETE ROWS AS SELECT * FROM t;" }
+      - { id: tablespace, sql: "CREATE TABLE t2 TABLESPACE ts AS SELECT * FROM t;" }
+      - { id: with_data, sql: "CREATE TABLE t2 AS SELECT * FROM t WITH DATA;" }
+      - { id: with_no_data, sql: "CREATE TABLE t2 AS SELECT * FROM t WITH NO DATA;" }
+      - { id: as_table, sql: "CREATE TABLE t2 AS TABLE t;" }
+      - { id: as_values, sql: "CREATE TABLE t2 AS VALUES (1, 'a'), (2, 'b');" }
+      - { id: as_with_query, sql: "CREATE TABLE t2 AS WITH s AS (SELECT 1 AS a) SELECT * FROM s;" }
+      - { id: as_execute, sql: "CREATE TEMP TABLE t2 ON COMMIT DROP AS EXECUTE p ('2002-01-01');" }
+    examples:
+      - |-
+        CREATE TABLE films_recent AS
+          SELECT * FROM films WHERE date_prod >= '2002-01-01';
+      - |-
+        CREATE TABLE films2 AS
+          TABLE films;
+      - |-
+        CREATE TEMP TABLE films_recent ON COMMIT DROP AS
+          EXECUTE recentfilms('2002-01-01');
+
+  - id: alter_table
+    name: ALTER TABLE
+    doc: https://www.postgresql.org/docs/17/sql-altertable.html
+    tier: high
+    probes:
+      - { id: add_column, sql: "ALTER TABLE t ADD COLUMN c integer;" }
+      - { id: add_column_no_keyword, sql: "ALTER TABLE t ADD c integer;" }
+      - { id: add_column_if_not_exists_constraints, sql: "ALTER TABLE t ADD COLUMN IF NOT EXISTS c text COLLATE \"C\" NOT NULL DEFAULT 'x';" }
+      - { id: if_exists_only_star, sql: "ALTER TABLE IF EXISTS ONLY t ADD COLUMN c integer;" }
+      - { id: table_star, sql: "ALTER TABLE t * ADD COLUMN c integer;" }
+      - { id: multiple_actions, sql: "ALTER TABLE t ADD COLUMN c integer, DROP COLUMN d;" }
+      - { id: drop_column, sql: "ALTER TABLE t DROP COLUMN c;" }
+      - { id: drop_column_if_exists_cascade, sql: "ALTER TABLE t DROP IF EXISTS c CASCADE;" }
+      - { id: drop_column_restrict, sql: "ALTER TABLE t DROP COLUMN c RESTRICT;" }
+      - { id: alter_column_type, sql: "ALTER TABLE t ALTER COLUMN c TYPE varchar(80);" }
+      - { id: alter_column_set_data_type_using, sql: "ALTER TABLE t ALTER c SET DATA TYPE bigint COLLATE \"C\" USING c::bigint;" }
+      - { id: set_default, sql: "ALTER TABLE t ALTER COLUMN c SET DEFAULT now();" }
+      - { id: drop_default, sql: "ALTER TABLE t ALTER COLUMN c DROP DEFAULT;" }
+      - { id: set_not_null, sql: "ALTER TABLE t ALTER COLUMN c SET NOT NULL;" }
+      - { id: drop_not_null, sql: "ALTER TABLE t ALTER COLUMN c DROP NOT NULL;" }
+      - { id: set_expression, sql: "ALTER TABLE t ALTER COLUMN c SET EXPRESSION AS (a * 3);" }
+      - { id: drop_expression, sql: "ALTER TABLE t ALTER COLUMN c DROP EXPRESSION IF EXISTS;" }
+      - { id: add_identity, sql: "ALTER TABLE t ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (START WITH 100);" }
+      - { id: add_identity_by_default, sql: "ALTER TABLE t ALTER COLUMN id ADD GENERATED BY DEFAULT AS IDENTITY;" }
+      - { id: set_generated_and_sequence_options, sql: "ALTER TABLE t ALTER COLUMN id SET GENERATED BY DEFAULT SET INCREMENT BY 2 RESTART WITH 10;" }
+      - { id: restart_identity, sql: "ALTER TABLE t ALTER COLUMN id RESTART;" }
+      - { id: drop_identity, sql: "ALTER TABLE t ALTER COLUMN id DROP IDENTITY IF EXISTS;" }
+      - { id: set_statistics, sql: "ALTER TABLE t ALTER COLUMN c SET STATISTICS 500;" }
+      - { id: set_statistics_default, sql: "ALTER TABLE t ALTER COLUMN c SET STATISTICS DEFAULT;" }
+      - { id: column_set_attribute_options, sql: "ALTER TABLE t ALTER COLUMN c SET (n_distinct = -0.5, n_distinct_inherited = 100);" }
+      - { id: column_reset_attribute_options, sql: "ALTER TABLE t ALTER COLUMN c RESET (n_distinct);" }
+      - { id: set_storage, sql: "ALTER TABLE t ALTER COLUMN c SET STORAGE EXTERNAL;" }
+      - { id: set_storage_default, sql: "ALTER TABLE t ALTER COLUMN c SET STORAGE DEFAULT;" }
+      - { id: set_compression, sql: "ALTER TABLE t ALTER COLUMN c SET COMPRESSION lz4;" }
+      - { id: add_check_constraint, sql: "ALTER TABLE t ADD CONSTRAINT chk CHECK (char_length(z) = 5);" }
+      - { id: add_check_no_inherit, sql: "ALTER TABLE t ADD CONSTRAINT chk CHECK (a > 0) NO INHERIT;" }
+      - { id: add_foreign_key_not_valid, sql: "ALTER TABLE t ADD CONSTRAINT fk FOREIGN KEY (a) REFERENCES u (a) NOT VALID;" }
+      - { id: add_unique, sql: "ALTER TABLE t ADD CONSTRAINT uq UNIQUE (a, b);" }
+      - { id: add_primary_key, sql: "ALTER TABLE t ADD PRIMARY KEY (id);" }
+      - { id: add_exclude, sql: "ALTER TABLE t ADD EXCLUDE USING gist (r WITH &&);" }
+      - { id: add_primary_key_using_index, sql: "ALTER TABLE t ADD CONSTRAINT t_pkey PRIMARY KEY USING INDEX idx;" }
+      - { id: add_unique_using_index_deferrable, sql: "ALTER TABLE t ADD UNIQUE USING INDEX idx DEFERRABLE INITIALLY DEFERRED;" }
+      - { id: alter_constraint, sql: "ALTER TABLE t ALTER CONSTRAINT fk DEFERRABLE INITIALLY IMMEDIATE;" }
+      - { id: alter_constraint_not_deferrable, sql: "ALTER TABLE t ALTER CONSTRAINT fk NOT DEFERRABLE;" }
+      - { id: validate_constraint, sql: "ALTER TABLE t VALIDATE CONSTRAINT fk;" }
+      - { id: drop_constraint, sql: "ALTER TABLE t DROP CONSTRAINT chk;" }
+      - { id: drop_constraint_if_exists_cascade, sql: "ALTER TABLE t DROP CONSTRAINT IF EXISTS chk CASCADE;" }
+      - { id: disable_trigger, sql: "ALTER TABLE t DISABLE TRIGGER trg;" }
+      - { id: disable_trigger_all, sql: "ALTER TABLE t DISABLE TRIGGER ALL;" }
+      - { id: enable_trigger_user, sql: "ALTER TABLE t ENABLE TRIGGER USER;" }
+      - { id: enable_replica_trigger, sql: "ALTER TABLE t ENABLE REPLICA TRIGGER trg;" }
+      - { id: enable_always_trigger, sql: "ALTER TABLE t ENABLE ALWAYS TRIGGER trg;" }
+      - { id: disable_rule, sql: "ALTER TABLE t DISABLE RULE r;" }
+      - { id: enable_rule, sql: "ALTER TABLE t ENABLE RULE r;" }
+      - { id: enable_replica_rule, sql: "ALTER TABLE t ENABLE REPLICA RULE r;" }
+      - { id: enable_always_rule, sql: "ALTER TABLE t ENABLE ALWAYS RULE r;" }
+      - { id: enable_row_level_security, sql: "ALTER TABLE t ENABLE ROW LEVEL SECURITY;" }
+      - { id: disable_row_level_security, sql: "ALTER TABLE t DISABLE ROW LEVEL SECURITY;" }
+      - { id: force_row_level_security, sql: "ALTER TABLE t FORCE ROW LEVEL SECURITY;" }
+      - { id: no_force_row_level_security, sql: "ALTER TABLE t NO FORCE ROW LEVEL SECURITY;" }
+      - { id: cluster_on, sql: "ALTER TABLE t CLUSTER ON idx;" }
+      - { id: set_without_cluster, sql: "ALTER TABLE t SET WITHOUT CLUSTER;" }
+      - { id: set_without_oids, sql: "ALTER TABLE t SET WITHOUT OIDS;" }
+      - { id: set_access_method, sql: "ALTER TABLE t SET ACCESS METHOD heap;" }
+      - { id: set_access_method_default, sql: "ALTER TABLE t SET ACCESS METHOD DEFAULT;" }
+      - { id: set_tablespace, sql: "ALTER TABLE t SET TABLESPACE fast;" }
+      - { id: set_logged, sql: "ALTER TABLE t SET LOGGED;" }
+      - { id: set_unlogged, sql: "ALTER TABLE t SET UNLOGGED;" }
+      - { id: set_storage_parameters, sql: "ALTER TABLE t SET (fillfactor = 70, autovacuum_enabled = false);" }
+      - { id: reset_storage_parameters, sql: "ALTER TABLE t RESET (fillfactor, autovacuum_enabled);" }
+      - { id: inherit, sql: "ALTER TABLE t INHERIT p;" }
+      - { id: no_inherit, sql: "ALTER TABLE t NO INHERIT p;" }
+      - { id: of_type, sql: "ALTER TABLE t OF typ;" }
+      - { id: not_of, sql: "ALTER TABLE t NOT OF;" }
+      - { id: owner_to, sql: "ALTER TABLE t OWNER TO alice;" }
+      - { id: owner_to_current_user, sql: "ALTER TABLE t OWNER TO CURRENT_USER;" }
+      - { id: replica_identity_full, sql: "ALTER TABLE t REPLICA IDENTITY FULL;" }
+      - { id: replica_identity_using_index, sql: "ALTER TABLE t REPLICA IDENTITY USING INDEX idx;" }
+      - { id: replica_identity_nothing, sql: "ALTER TABLE t REPLICA IDENTITY NOTHING;" }
+      - { id: rename_column, sql: "ALTER TABLE t RENAME COLUMN a TO b;" }
+      - { id: rename_column_no_keyword, sql: "ALTER TABLE IF EXISTS ONLY t RENAME a TO b;" }
+      - { id: rename_constraint, sql: "ALTER TABLE t RENAME CONSTRAINT c1 TO c2;" }
+      - { id: rename_to, sql: "ALTER TABLE IF EXISTS t RENAME TO t2;" }
+      - { id: set_schema, sql: "ALTER TABLE s1.t SET SCHEMA s2;" }
+      - { id: all_in_tablespace, sql: "ALTER TABLE ALL IN TABLESPACE ts1 OWNED BY alice, bob SET TABLESPACE ts2 NOWAIT;" }
+      - { id: attach_partition_range, sql: "ALTER TABLE t ATTACH PARTITION t_2016 FOR VALUES FROM ('2016-07-01') TO ('2016-08-01');" }
+      - { id: attach_partition_list, sql: "ALTER TABLE t ATTACH PARTITION t_ab FOR VALUES IN ('a', 'b');" }
+      - { id: attach_partition_hash, sql: "ALTER TABLE t ATTACH PARTITION t_p4 FOR VALUES WITH (MODULUS 4, REMAINDER 3);" }
+      - { id: attach_partition_default, sql: "ALTER TABLE t ATTACH PARTITION t_def DEFAULT;" }
+      - { id: detach_partition, sql: "ALTER TABLE t DETACH PARTITION t_2015;" }
+      - { id: detach_partition_concurrently, sql: "ALTER TABLE t DETACH PARTITION t_2015 CONCURRENTLY;" }
+      - { id: detach_partition_finalize, sql: "ALTER TABLE t DETACH PARTITION t_2015 FINALIZE;" }
+    examples:
+      - |-
+        ALTER TABLE transactions
+          ADD COLUMN status varchar(30) DEFAULT 'old',
+          ALTER COLUMN status SET default 'current';
+      - |-
+        ALTER TABLE foo
+            ALTER COLUMN foo_timestamp DROP DEFAULT,
+            ALTER COLUMN foo_timestamp TYPE timestamp with time zone
+            USING
+                timestamp with time zone 'epoch' + foo_timestamp * interval '1 second',
+            ALTER COLUMN foo_timestamp SET DEFAULT now();
+      - "ALTER TABLE distributors ADD CONSTRAINT zipchk CHECK (char_length(zipcode) = 5) NO INHERIT;"
+      - "ALTER TABLE distributors ADD CONSTRAINT distfk FOREIGN KEY (address) REFERENCES addresses (address);"
+      - |-
+        ALTER TABLE measurement
+            ATTACH PARTITION measurement_y2016m07 FOR VALUES FROM ('2016-07-01') TO ('2016-08-01');
+
+  - id: drop_table
+    name: DROP TABLE
+    doc: https://www.postgresql.org/docs/17/sql-droptable.html
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP TABLE t;" }
+      - { id: if_exists, sql: "DROP TABLE IF EXISTS t;" }
+      - { id: multiple, sql: "DROP TABLE t, s.u;" }
+      - { id: cascade, sql: "DROP TABLE t CASCADE;" }
+      - { id: restrict, sql: "DROP TABLE IF EXISTS t, u RESTRICT;" }
+    examples:
+      - "DROP TABLE films, distributors;"
+
+  - id: create_view
+    name: CREATE VIEW
+    doc: https://www.postgresql.org/docs/17/sql-createview.html
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE VIEW v AS SELECT * FROM t WHERE a = 1;" }
+      - { id: or_replace, sql: "CREATE OR REPLACE VIEW v AS SELECT a FROM t;" }
+      - { id: temporary, sql: "CREATE TEMPORARY VIEW v AS SELECT a FROM t;" }
+      - { id: temp, sql: "CREATE OR REPLACE TEMP VIEW v AS SELECT a FROM t;" }
+      - { id: column_names, sql: "CREATE VIEW v (x, y) AS SELECT a, b FROM t;" }
+      - { id: recursive, sql: "CREATE RECURSIVE VIEW s.v (n) AS VALUES (1) UNION ALL SELECT n + 1 FROM s.v WHERE n < 100;" }
+      - { id: with_options, sql: "CREATE VIEW v WITH (security_barrier, check_option = local) AS SELECT a FROM t;" }
+      - { id: with_security_invoker, sql: "CREATE VIEW v WITH (security_invoker = true) AS SELECT a FROM t;" }
+      - { id: with_check_option, sql: "CREATE VIEW v AS SELECT a FROM t WHERE a > 0 WITH CHECK OPTION;" }
+      - { id: with_local_check_option, sql: "CREATE VIEW v AS SELECT a FROM t WHERE a > 0 WITH LOCAL CHECK OPTION;" }
+      - { id: with_cascaded_check_option, sql: "CREATE VIEW v AS SELECT a FROM t WHERE a > 0 WITH CASCADED CHECK OPTION;" }
+      - { id: as_values, sql: "CREATE VIEW v AS VALUES (1, 'one'), (2, 'two');" }
+      - { id: as_with_recursive, sql: "CREATE VIEW v AS WITH RECURSIVE r (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r WHERE n < 10) SELECT n FROM r;" }
+    examples:
+      - |-
+        CREATE VIEW comedies AS
+            SELECT *
+            FROM films
+            WHERE kind = 'Comedy';
+      - |-
+        CREATE VIEW universal_comedies AS
+            SELECT *
+            FROM comedies
+            WHERE classification = 'U'
+            WITH LOCAL CHECK OPTION;
+      - |-
+        CREATE VIEW pg_comedies AS
+            SELECT *
+            FROM comedies
+            WHERE classification = 'PG'
+            WITH CASCADED CHECK OPTION;
+      - |-
+        CREATE VIEW comedies AS
+            SELECT f.*,
+                   country_code_to_name(f.country_code) AS country,
+                   (SELECT avg(r.rating)
+                    FROM user_ratings r
+                    WHERE r.film_id = f.id) AS avg_rating
+            FROM films f
+            WHERE f.kind = 'Comedy';
+      - |-
+        CREATE RECURSIVE VIEW public.nums_1_100 (n) AS
+            VALUES (1)
+        UNION ALL
+            SELECT n+1 FROM nums_1_100 WHERE n < 100;
+
+  - id: alter_view
+    name: ALTER VIEW
+    doc: https://www.postgresql.org/docs/17/sql-alterview.html
+    tier: high
+    probes:
+      - { id: alter_column_set_default, sql: "ALTER VIEW v ALTER COLUMN c SET DEFAULT now();" }
+      - { id: alter_column_drop_default, sql: "ALTER VIEW IF EXISTS v ALTER c DROP DEFAULT;" }
+      - { id: owner_to, sql: "ALTER VIEW v OWNER TO alice;" }
+      - { id: owner_to_session_user, sql: "ALTER VIEW v OWNER TO SESSION_USER;" }
+      - { id: rename_column, sql: "ALTER VIEW v RENAME COLUMN a TO b;" }
+      - { id: rename_column_no_keyword, sql: "ALTER VIEW v RENAME a TO b;" }
+      - { id: rename_to, sql: "ALTER VIEW IF EXISTS v RENAME TO v2;" }
+      - { id: set_schema, sql: "ALTER VIEW v SET SCHEMA s;" }
+      - { id: set_options, sql: "ALTER VIEW v SET (security_barrier = true, check_option = cascaded);" }
+      - { id: set_option_no_value, sql: "ALTER VIEW v SET (security_invoker);" }
+      - { id: reset_options, sql: "ALTER VIEW v RESET (security_barrier, check_option);" }
+    examples:
+      - "ALTER VIEW foo RENAME TO bar;"
+      - "ALTER VIEW a_view ALTER COLUMN ts SET DEFAULT now();"
+
+  - id: drop_view
+    name: DROP VIEW
+    doc: https://www.postgresql.org/docs/17/sql-dropview.html
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP VIEW v;" }
+      - { id: if_exists_multiple, sql: "DROP VIEW IF EXISTS v1, s.v2;" }
+      - { id: cascade, sql: "DROP VIEW v CASCADE;" }
+      - { id: restrict, sql: "DROP VIEW v RESTRICT;" }
+    examples:
+      - "DROP VIEW kinds;"
+
+  - id: create_materialized_view
+    name: CREATE MATERIALIZED VIEW
+    doc: https://www.postgresql.org/docs/17/sql-creatematerializedview.html
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE MATERIALIZED VIEW mv AS SELECT a, count(*) FROM t GROUP BY a;" }
+      - { id: if_not_exists, sql: "CREATE MATERIALIZED VIEW IF NOT EXISTS mv AS SELECT a FROM t;" }
+      - { id: column_names, sql: "CREATE MATERIALIZED VIEW mv (x, y) AS SELECT a, b FROM t;" }
+      - { id: using_method, sql: "CREATE MATERIALIZED VIEW mv USING heap AS SELECT a FROM t;" }
+      - { id: with_storage_parameters, sql: "CREATE MATERIALIZED VIEW mv WITH (fillfactor = 70) AS SELECT a FROM t;" }
+      - { id: tablespace, sql: "CREATE MATERIALIZED VIEW mv TABLESPACE ts AS SELECT a FROM t;" }
+      - { id: with_data, sql: "CREATE MATERIALIZED VIEW mv AS SELECT a FROM t WITH DATA;" }
+      - { id: with_no_data, sql: "CREATE MATERIALIZED VIEW mv AS SELECT a FROM t WITH NO DATA;" }
+      - { id: as_table, sql: "CREATE MATERIALIZED VIEW mv AS TABLE t;" }
+      - { id: as_values, sql: "CREATE MATERIALIZED VIEW mv AS VALUES (1), (2);" }
+
+  - id: alter_materialized_view
+    name: ALTER MATERIALIZED VIEW
+    doc: https://www.postgresql.org/docs/17/sql-altermaterializedview.html
+    tier: medium
+    probes:
+      - { id: rename_to, sql: "ALTER MATERIALIZED VIEW IF EXISTS mv RENAME TO mv2;" }
+      - { id: rename_column, sql: "ALTER MATERIALIZED VIEW mv RENAME COLUMN a TO b;" }
+      - { id: set_schema, sql: "ALTER MATERIALIZED VIEW mv SET SCHEMA s;" }
+      - { id: owner_to, sql: "ALTER MATERIALIZED VIEW mv OWNER TO CURRENT_ROLE;" }
+      - { id: column_set_statistics, sql: "ALTER MATERIALIZED VIEW mv ALTER COLUMN a SET STATISTICS 100;" }
+      - { id: cluster_on, sql: "ALTER MATERIALIZED VIEW mv CLUSTER ON idx;" }
+      - { id: set_storage_parameters, sql: "ALTER MATERIALIZED VIEW mv SET (fillfactor = 50), SET TABLESPACE ts;" }
+      - { id: set_access_method, sql: "ALTER MATERIALIZED VIEW mv SET ACCESS METHOD heap;" }
+      - { id: depends_on_extension, sql: "ALTER MATERIALIZED VIEW mv DEPENDS ON EXTENSION ext;" }
+      - { id: no_depends_on_extension, sql: "ALTER MATERIALIZED VIEW mv NO DEPENDS ON EXTENSION ext;" }
+      - { id: all_in_tablespace, sql: "ALTER MATERIALIZED VIEW ALL IN TABLESPACE ts1 OWNED BY alice SET TABLESPACE ts2 NOWAIT;" }
+    examples:
+      - "ALTER MATERIALIZED VIEW foo RENAME TO bar;"
+
+  - id: drop_materialized_view
+    name: DROP MATERIALIZED VIEW
+    doc: https://www.postgresql.org/docs/17/sql-dropmaterializedview.html
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP MATERIALIZED VIEW mv;" }
+      - { id: if_exists_multiple, sql: "DROP MATERIALIZED VIEW IF EXISTS mv1, mv2;" }
+      - { id: cascade, sql: "DROP MATERIALIZED VIEW mv CASCADE;" }
+      - { id: restrict, sql: "DROP MATERIALIZED VIEW mv RESTRICT;" }
+    examples:
+      - "DROP MATERIALIZED VIEW order_summary;"
+
+  - id: create_index
+    name: CREATE INDEX
+    doc: https://www.postgresql.org/docs/17/sql-createindex.html
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE INDEX idx ON t (a);" }
+      - { id: unique, sql: "CREATE UNIQUE INDEX idx ON t (a, b);" }
+      - { id: unnamed, sql: "CREATE INDEX ON t (a);" }
+      - { id: concurrently, sql: "CREATE INDEX CONCURRENTLY idx ON t (a);" }
+      - { id: if_not_exists, sql: "CREATE INDEX IF NOT EXISTS idx ON t (a);" }
+      - { id: on_only, sql: "CREATE INDEX idx ON ONLY t (a);" }
+      - { id: using_method, sql: "CREATE INDEX idx ON t USING gin (tags);" }
+      - { id: expression, sql: "CREATE INDEX idx ON t ((lower(title)));" }
+      - { id: function_expression_no_parens, sql: "CREATE INDEX idx ON t USING gist (box(loc, loc));" }
+      - { id: collate, sql: "CREATE INDEX idx ON t (title COLLATE \"de_DE\");" }
+      - { id: opclass, sql: "CREATE INDEX idx ON t (title text_pattern_ops);" }
+      - { id: opclass_parameters, sql: "CREATE INDEX idx ON t USING gist (doc tsvector_ops (siglen = 32));" }
+      - { id: asc_desc_nulls, sql: "CREATE INDEX idx ON t (a DESC NULLS LAST, b ASC NULLS FIRST);" }
+      - { id: include, sql: "CREATE UNIQUE INDEX idx ON t (a) INCLUDE (b, c);" }
+      - { id: nulls_not_distinct, sql: "CREATE UNIQUE INDEX idx ON t (a) NULLS NOT DISTINCT;" }
+      - { id: nulls_distinct, sql: "CREATE UNIQUE INDEX idx ON t (a) NULLS DISTINCT;" }
+      - { id: with_storage_parameters, sql: "CREATE INDEX idx ON t (a) WITH (fillfactor = 70, deduplicate_items = off);" }
+      - { id: tablespace, sql: "CREATE INDEX idx ON t (a) TABLESPACE ts;" }
+      - { id: partial_where, sql: "CREATE INDEX idx ON t (a) WHERE b IS NOT NULL;" }
+      - { id: all_clauses, sql: "CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS idx ON ONLY s.t USING btree (a COLLATE \"C\" text_pattern_ops DESC NULLS LAST) INCLUDE (b) NULLS NOT DISTINCT WITH (fillfactor = 80) TABLESPACE ts WHERE c > 0;" }
+    examples:
+      - "CREATE UNIQUE INDEX title_idx ON films (title) INCLUDE (director, rating);"
+      - "CREATE INDEX ON films ((lower(title)));"
+      - "CREATE INDEX title_idx_german ON films (title COLLATE \"de_DE\");"
+      - "CREATE INDEX gin_idx ON documents_table USING GIN (locations) WITH (fastupdate = off);"
+      - "CREATE INDEX CONCURRENTLY sales_quantity_index ON sales_table (quantity);"
+
+  - id: alter_index
+    name: ALTER INDEX
+    doc: https://www.postgresql.org/docs/17/sql-alterindex.html
+    tier: high
+    probes:
+      - { id: rename_to, sql: "ALTER INDEX IF EXISTS idx RENAME TO idx2;" }
+      - { id: set_tablespace, sql: "ALTER INDEX idx SET TABLESPACE ts;" }
+      - { id: attach_partition, sql: "ALTER INDEX idx ATTACH PARTITION idx_p1;" }
+      - { id: depends_on_extension, sql: "ALTER INDEX idx DEPENDS ON EXTENSION ext;" }
+      - { id: no_depends_on_extension, sql: "ALTER INDEX idx NO DEPENDS ON EXTENSION ext;" }
+      - { id: set_storage_parameters, sql: "ALTER INDEX idx SET (fillfactor = 75);" }
+      - { id: reset_storage_parameters, sql: "ALTER INDEX IF EXISTS idx RESET (fillfactor);" }
+      - { id: alter_column_set_statistics, sql: "ALTER INDEX idx ALTER COLUMN 3 SET STATISTICS 1000;" }
+      - { id: all_in_tablespace, sql: "ALTER INDEX ALL IN TABLESPACE ts1 OWNED BY alice SET TABLESPACE ts2 NOWAIT;" }
+    examples:
+      - "ALTER INDEX distributors RENAME TO suppliers;"
+      - "ALTER INDEX distributors SET TABLESPACE fasttablespace;"
+      - "ALTER INDEX distributors SET (fillfactor = 75);"
+      - "ALTER INDEX coord_idx ALTER COLUMN 3 SET STATISTICS 1000;"
+
+  - id: drop_index
+    name: DROP INDEX
+    doc: https://www.postgresql.org/docs/17/sql-dropindex.html
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP INDEX idx;" }
+      - { id: concurrently, sql: "DROP INDEX CONCURRENTLY idx;" }
+      - { id: if_exists_multiple, sql: "DROP INDEX IF EXISTS idx1, s.idx2;" }
+      - { id: cascade, sql: "DROP INDEX idx CASCADE;" }
+      - { id: restrict, sql: "DROP INDEX CONCURRENTLY IF EXISTS idx RESTRICT;" }
+    examples:
+      - "DROP INDEX title_idx;"
+
+  - id: create_function
+    name: CREATE FUNCTION
+    doc: https://www.postgresql.org/docs/17/sql-createfunction.html
+    tier: high
+    probes:
+      - { id: string_body, sql: "CREATE FUNCTION f(integer, integer) RETURNS integer AS 'select $1 + $2;' LANGUAGE SQL;" }
+      - { id: or_replace_dollar_quoted_plpgsql, sql: "CREATE OR REPLACE FUNCTION f(i integer) RETURNS integer AS $$ BEGIN RETURN i + 1; END; $$ LANGUAGE plpgsql;" }
+      - { id: tagged_dollar_quote, sql: "CREATE FUNCTION f() RETURNS text LANGUAGE plpgsql AS $body$ BEGIN RETURN 'x'; END; $body$;" }
+      - { id: language_before_body, sql: "CREATE FUNCTION f(a integer) RETURNS integer LANGUAGE sql AS $$ SELECT a * 2 $$;" }
+      - { id: argmodes, sql: "CREATE FUNCTION f(IN a integer, OUT b integer, INOUT c text) AS $$ SELECT a, c $$ LANGUAGE sql;" }
+      - { id: out_params_no_returns, sql: "CREATE FUNCTION dup(in int, out f1 int, out f2 text) AS $$ SELECT $1, CAST($1 AS text) $$ LANGUAGE SQL;" }
+      - { id: variadic, sql: "CREATE FUNCTION f(VARIADIC arr integer[]) RETURNS integer AS $$ SELECT array_length(arr, 1) $$ LANGUAGE sql;" }
+      - { id: argument_default, sql: "CREATE FUNCTION f(a integer, b integer DEFAULT 1) RETURNS integer AS $$ SELECT a + b $$ LANGUAGE sql;" }
+      - { id: argument_default_equals, sql: "CREATE FUNCTION f(a integer, b integer = 1) RETURNS integer AS $$ SELECT a + b $$ LANGUAGE sql;" }
+      - { id: argument_type_reference, sql: "CREATE FUNCTION f(a t.c%TYPE) RETURNS t.c%TYPE AS $$ SELECT a $$ LANGUAGE sql;" }
+      - { id: returns_setof, sql: "CREATE FUNCTION f(integer) RETURNS SETOF t AS $$ SELECT * FROM t WHERE id = $1 $$ LANGUAGE sql;" }
+      - { id: returns_setof_record, sql: "CREATE FUNCTION f(integer) RETURNS SETOF record AS $$ SELECT * FROM t WHERE id = $1 $$ LANGUAGE sql;" }
+      - { id: returns_table, sql: "CREATE FUNCTION f(int) RETURNS TABLE (f1 int, f2 text) AS $$ SELECT $1, CAST($1 AS text) $$ LANGUAGE sql;" }
+      - { id: returns_trigger, sql: "CREATE FUNCTION trg() RETURNS trigger AS $$ BEGIN RETURN NEW; END; $$ LANGUAGE plpgsql;" }
+      - { id: returns_void, sql: "CREATE FUNCTION f() RETURNS void AS $$ DELETE FROM t $$ LANGUAGE sql;" }
+      - { id: returns_array_type, sql: "CREATE FUNCTION f() RETURNS integer[] AS $$ SELECT ARRAY[1, 2] $$ LANGUAGE sql;" }
+      - { id: transform_for_type, sql: "CREATE FUNCTION f(h hstore) RETURNS text TRANSFORM FOR TYPE hstore AS $$ return 'x' $$ LANGUAGE plpython3u;" }
+      - { id: window, sql: "CREATE FUNCTION f(integer) RETURNS integer WINDOW AS 'mylib', 'f' LANGUAGE c;" }
+      - { id: immutable, sql: "CREATE FUNCTION f(a integer) RETURNS integer IMMUTABLE AS $$ SELECT a $$ LANGUAGE sql;" }
+      - { id: stable, sql: "CREATE FUNCTION f() RETURNS timestamptz LANGUAGE sql STABLE AS $$ SELECT now() $$;" }
+      - { id: volatile, sql: "CREATE FUNCTION f() RETURNS float8 LANGUAGE sql VOLATILE AS $$ SELECT random() $$;" }
+      - { id: leakproof, sql: "CREATE FUNCTION f(a integer) RETURNS boolean LANGUAGE sql LEAKPROOF AS $$ SELECT a > 0 $$;" }
+      - { id: not_leakproof, sql: "CREATE FUNCTION f(a integer) RETURNS boolean LANGUAGE sql NOT LEAKPROOF AS $$ SELECT a > 0 $$;" }
+      - { id: called_on_null_input, sql: "CREATE FUNCTION f(a integer) RETURNS integer LANGUAGE sql CALLED ON NULL INPUT AS $$ SELECT a $$;" }
+      - { id: returns_null_on_null_input, sql: "CREATE FUNCTION f(a integer) RETURNS integer LANGUAGE sql RETURNS NULL ON NULL INPUT AS $$ SELECT a $$;" }
+      - { id: strict, sql: "CREATE FUNCTION f(a integer) RETURNS integer LANGUAGE sql STRICT AS $$ SELECT a $$;" }
+      - { id: security_definer, sql: "CREATE FUNCTION f() RETURNS integer LANGUAGE sql SECURITY DEFINER AS $$ SELECT 1 $$;" }
+      - { id: external_security_invoker, sql: "CREATE FUNCTION f() RETURNS integer LANGUAGE sql EXTERNAL SECURITY INVOKER AS $$ SELECT 1 $$;" }
+      - { id: parallel_safe, sql: "CREATE FUNCTION f() RETURNS integer LANGUAGE sql PARALLEL SAFE AS $$ SELECT 1 $$;" }
+      - { id: parallel_restricted, sql: "CREATE FUNCTION f() RETURNS integer LANGUAGE sql PARALLEL RESTRICTED AS $$ SELECT 1 $$;" }
+      - { id: parallel_unsafe, sql: "CREATE FUNCTION f() RETURNS integer LANGUAGE sql PARALLEL UNSAFE AS $$ SELECT 1 $$;" }
+      - { id: cost_rows, sql: "CREATE FUNCTION f() RETURNS SETOF integer LANGUAGE sql COST 100 ROWS 10 AS $$ SELECT 1 $$;" }
+      - { id: support, sql: "CREATE FUNCTION f(integer) RETURNS integer LANGUAGE c SUPPORT f_support AS 'mylib', 'f';" }
+      - { id: set_to, sql: "CREATE FUNCTION f() RETURNS integer LANGUAGE sql SET search_path TO admin, pg_temp AS $$ SELECT 1 $$;" }
+      - { id: set_equals, sql: "CREATE FUNCTION f() RETURNS integer LANGUAGE sql SET work_mem = '64MB' AS $$ SELECT 1 $$;" }
+      - { id: set_from_current, sql: "CREATE FUNCTION f() RETURNS integer LANGUAGE sql SET search_path FROM CURRENT AS $$ SELECT 1 $$;" }
+      - { id: obj_file_link_symbol, sql: "CREATE FUNCTION f(integer) RETURNS integer AS 'mylib', 'f_impl' LANGUAGE C STRICT;" }
+      - { id: sql_body_return, sql: "CREATE FUNCTION f(a integer, b integer) RETURNS integer LANGUAGE SQL IMMUTABLE RETURN a + b;" }
+      - { id: sql_body_begin_atomic, sql: "CREATE FUNCTION f(a integer) RETURNS integer LANGUAGE SQL BEGIN ATOMIC INSERT INTO t VALUES (a); SELECT a * 2; END;" }
+      - { id: sql_body_begin_atomic_no_language, sql: "CREATE FUNCTION f() RETURNS SETOF integer BEGIN ATOMIC SELECT 1; END;" }
+    examples:
+      - |-
+        CREATE FUNCTION add(integer, integer) RETURNS integer
+            AS 'select $1 + $2;'
+            LANGUAGE SQL
+            IMMUTABLE
+            RETURNS NULL ON NULL INPUT;
+      - |-
+        CREATE FUNCTION add(a integer, b integer) RETURNS integer
+            LANGUAGE SQL
+            IMMUTABLE
+            RETURNS NULL ON NULL INPUT
+            RETURN a + b;
+      - |-
+        CREATE OR REPLACE FUNCTION increment(i integer) RETURNS integer AS $$
+                BEGIN
+                        RETURN i + 1;
+                END;
+        $$ LANGUAGE plpgsql;
+      - |-
+        CREATE FUNCTION dup(in int, out f1 int, out f2 text)
+            AS $$ SELECT $1, CAST($1 AS text) || ' is text' $$
+            LANGUAGE SQL;
+      - |-
+        CREATE FUNCTION dup(int) RETURNS TABLE(f1 int, f2 text)
+            AS $$ SELECT $1, CAST($1 AS text) || ' is text' $$
+            LANGUAGE SQL;
+
+  - id: alter_function
+    name: ALTER FUNCTION
+    doc: https://www.postgresql.org/docs/17/sql-alterfunction.html
+    tier: high
+    probes:
+      - { id: rename_to, sql: "ALTER FUNCTION f(integer) RENAME TO g;" }
+      - { id: owner_to, sql: "ALTER FUNCTION f(integer) OWNER TO alice;" }
+      - { id: set_schema, sql: "ALTER FUNCTION f(integer) SET SCHEMA s;" }
+      - { id: depends_on_extension, sql: "ALTER FUNCTION f(integer) DEPENDS ON EXTENSION ext;" }
+      - { id: no_depends_on_extension, sql: "ALTER FUNCTION f(integer) NO DEPENDS ON EXTENSION ext;" }
+      - { id: no_argument_list, sql: "ALTER FUNCTION f RENAME TO g;" }
+      - { id: argmode_argname, sql: "ALTER FUNCTION f(IN a integer, VARIADIC b text[]) OWNER TO CURRENT_USER;" }
+      - { id: strict, sql: "ALTER FUNCTION f(integer) STRICT;" }
+      - { id: called_on_null_input, sql: "ALTER FUNCTION f(integer) CALLED ON NULL INPUT;" }
+      - { id: returns_null_on_null_input, sql: "ALTER FUNCTION f(integer) RETURNS NULL ON NULL INPUT;" }
+      - { id: volatility, sql: "ALTER FUNCTION f(integer) IMMUTABLE;" }
+      - { id: leakproof, sql: "ALTER FUNCTION f(integer) NOT LEAKPROOF;" }
+      - { id: security_definer, sql: "ALTER FUNCTION f(integer) EXTERNAL SECURITY DEFINER;" }
+      - { id: parallel, sql: "ALTER FUNCTION f(integer) PARALLEL SAFE;" }
+      - { id: cost_rows, sql: "ALTER FUNCTION f(integer) COST 10 ROWS 100;" }
+      - { id: support, sql: "ALTER FUNCTION f(integer) SUPPORT f_support;" }
+      - { id: set_to_value, sql: "ALTER FUNCTION f(text) SET search_path = admin, pg_temp;" }
+      - { id: set_to_default, sql: "ALTER FUNCTION f(text) SET work_mem TO DEFAULT;" }
+      - { id: set_from_current, sql: "ALTER FUNCTION f(text) SET search_path FROM CURRENT;" }
+      - { id: reset, sql: "ALTER FUNCTION f(text) RESET search_path;" }
+      - { id: reset_all, sql: "ALTER FUNCTION f(text) RESET ALL;" }
+      - { id: multiple_actions_restrict, sql: "ALTER FUNCTION f(integer) STABLE SECURITY INVOKER COST 5 RESTRICT;" }
+    examples:
+      - "ALTER FUNCTION sqrt(integer) RENAME TO square_root;"
+      - "ALTER FUNCTION sqrt(integer) OWNER TO joe;"
+      - "ALTER FUNCTION sqrt(integer) DEPENDS ON EXTENSION mathlib;"
+      - "ALTER FUNCTION check_password(text) SET search_path = admin, pg_temp;"
+      - "ALTER FUNCTION check_password(text) RESET search_path;"
+
+  - id: drop_function
+    name: DROP FUNCTION
+    doc: https://www.postgresql.org/docs/17/sql-dropfunction.html
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP FUNCTION f(integer);" }
+      - { id: no_argument_list, sql: "DROP FUNCTION f;" }
+      - { id: empty_argument_list, sql: "DROP FUNCTION f();" }
+      - { id: if_exists_multiple, sql: "DROP FUNCTION IF EXISTS f(integer), f(bigint);" }
+      - { id: argmode_argname, sql: "DROP FUNCTION f(IN a integer, OUT b text);" }
+      - { id: cascade, sql: "DROP FUNCTION f(integer) CASCADE;" }
+      - { id: restrict, sql: "DROP FUNCTION f(integer) RESTRICT;" }
+    examples:
+      - "DROP FUNCTION sqrt(integer);"
+      - "DROP FUNCTION sqrt(integer), sqrt(bigint);"
+      - "DROP FUNCTION update_employee_salaries;"
+      - "DROP FUNCTION update_employee_salaries();"
+

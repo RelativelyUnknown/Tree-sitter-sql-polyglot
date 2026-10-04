@@ -1,0 +1,513 @@
+dialect: tsql
+engine: SQL Server / Azure SQL Database (Transact-SQL)
+version: "2022"
+source: https://learn.microsoft.com/en-us/sql/t-sql/statements/statements
+
+statements:
+  - id: select
+    name: "SELECT"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/select-transact-sql
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT c FROM t;"
+      - id: no_from
+        sql: "SELECT 1;"
+      - id: star
+        sql: "SELECT * FROM t;"
+      - id: all
+        sql: "SELECT ALL c FROM t;"
+      - id: distinct
+        sql: "SELECT DISTINCT c FROM t;"
+      - id: top
+        sql: "SELECT TOP (10) c FROM t;"
+      - id: top_percent_with_ties
+        sql: "SELECT TOP (10) PERCENT WITH TIES c FROM t ORDER BY c;"
+      - id: into
+        sql: "SELECT c INTO t2 FROM t;"
+      - id: from_list
+        sql: "SELECT a.c, b.d FROM t AS a, u AS b WHERE a.c = b.c;"
+      - id: where
+        sql: "SELECT c FROM t WHERE c > 0;"
+      - id: group_by_having
+        sql: "SELECT c, COUNT(*) FROM t GROUP BY c HAVING COUNT(*) > 1;"
+      - id: order_by
+        sql: "SELECT c FROM t ORDER BY c DESC;"
+      - id: for_clause
+        sql: "SELECT c FROM t FOR XML AUTO;"
+      - id: option_clause
+        sql: "SELECT c FROM t OPTION (MAXDOP 1);"
+      - id: with_cte
+        sql: "WITH cte AS (SELECT c FROM t) SELECT c FROM cte;"
+      - id: with_xmlnamespaces
+        sql: "WITH XMLNAMESPACES ('urn:x' AS ns) SELECT c AS 'ns:c' FROM t FOR XML RAW;"
+      - id: with_xmlnamespaces_and_cte
+        sql: "WITH XMLNAMESPACES ('urn:x' AS ns), cte AS (SELECT c FROM t) SELECT c FROM cte FOR XML PATH;"
+      - id: union
+        sql: "SELECT c FROM t UNION SELECT c FROM u;"
+      - id: except
+        sql: "SELECT c FROM t EXCEPT SELECT c FROM u;"
+      - id: intersect
+        sql: "SELECT c FROM t INTERSECT SELECT c FROM u;"
+      - id: parenthesized_query_expression
+        sql: "(SELECT c FROM t) UNION (SELECT c FROM u) ORDER BY c;"
+      - id: all_clauses
+        sql: "SELECT DISTINCT TOP (5) c, COUNT(*) AS n FROM t WHERE c > 1 GROUP BY c HAVING COUNT(*) > 0 ORDER BY c OPTION (RECOMPILE);"
+      - id: no_semicolon_batch
+        sql: |-
+          SELECT c FROM t
+          SELECT d FROM u;
+        note: "The statement terminator is optional ('[ ; ]' in the syntax block), so two statements can follow each other without one."
+    examples:
+      - |-
+        SELECT p.Name AS ProductName,
+            NonDiscountSales = (OrderQty * UnitPrice),
+            Discounts = ((OrderQty * UnitPrice) * UnitPriceDiscount)
+        FROM Production.Product AS p
+        INNER JOIN Sales.SalesOrderDetail AS sod
+            ON p.ProductID = sod.ProductID
+        ORDER BY ProductName DESC;
+      - |-
+        SELECT *
+        INTO #Bicycles
+        FROM AdventureWorks2025.Production.Product
+        WHERE ProductNumber LIKE 'BK%';
+      - |-
+        SELECT DISTINCT Name
+        FROM Production.Product AS p
+        WHERE EXISTS (
+            SELECT *
+            FROM Production.ProductModel AS pm
+            WHERE p.ProductModelID = pm.ProductModelID
+                AND pm.Name LIKE 'Long-Sleeve Logo Jersey%'
+        );
+      - |-
+        SELECT pp.FirstName,
+            pp.LastName,
+            e.NationalIDNumber
+        FROM HumanResources.Employee AS e WITH (INDEX (AK_Employee_NationalIDNumber))
+        INNER JOIN Person.Person AS pp
+            ON e.BusinessEntityID = pp.BusinessEntityID
+        WHERE LastName = 'Johnson';
+      - |-
+        SELECT ProductID, OrderQty, SUM(LineTotal) AS Total
+        FROM Sales.SalesOrderDetail
+        WHERE UnitPrice < $5.00
+        GROUP BY ProductID, OrderQty
+        ORDER BY ProductID, OrderQty
+        OPTION (HASH GROUP, FAST 10);
+
+  - id: select_clause
+    name: "SELECT clause"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/select-clause-transact-sql
+    tier: high
+    probes:
+      - id: table_star
+        sql: "SELECT t.* FROM t;"
+      - id: qualified_column
+        sql: "SELECT dbo.t.c FROM dbo.t;"
+      - id: identity_column
+        sql: "SELECT $IDENTITY FROM t;"
+      - id: rowguid_column
+        sql: "SELECT $ROWGUID FROM t;"
+      - id: qualified_identity
+        sql: "SELECT t.$IDENTITY, t.$ROWGUID FROM t;"
+      - id: udt_property
+        sql: "SELECT Location.X FROM Cities;"
+      - id: udt_static_property
+        sql: "SELECT Location::Lat FROM Cities;"
+        note: "udt_column_name { . | :: } property_name form from the select_list syntax."
+      - id: udt_method
+        sql: "SELECT Location.Distance(@p) FROM Cities;"
+      - id: expression
+        sql: "SELECT c * 2 + 1 FROM t;"
+      - id: alias_as
+        sql: "SELECT c AS a FROM t;"
+      - id: alias_no_as
+        sql: "SELECT c a FROM t;"
+      - id: alias_bracketed
+        sql: "SELECT AVG(c) AS [Average Price] FROM t;"
+      - id: alias_string
+        sql: "SELECT c AS 'Column Alias' FROM t;"
+      - id: alias_equals
+        sql: "SELECT a = c * 2 FROM t;"
+      - id: alias_bracketed_equals
+        sql: "SELECT [Total Price] = c * 2 FROM t;"
+    examples:
+      - |-
+        SELECT AVG(UnitPrice) AS [Average Price]
+        FROM Sales.SalesOrderDetail;
+
+  - id: select_into
+    name: "SELECT - INTO clause"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/select-into-clause-transact-sql
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT c, d INTO t2 FROM t;"
+      - id: qualified_target
+        sql: "SELECT * INTO db.dbo.t2 FROM t WHERE 1 = 0;"
+      - id: temp_table
+        sql: "SELECT * INTO #t FROM t;"
+      - id: global_temp_table
+        sql: "SELECT * INTO ##t FROM t;"
+      - id: on_filegroup
+        sql: "SELECT * INTO t2 ON FG2 FROM t;"
+      - id: on_bracketed_filegroup
+        sql: "SELECT * INTO t2 ON [PRIMARY] FROM t;"
+      - id: identity_function
+        sql: "SELECT IDENTITY(INT, 100, 5) AS id, c INTO t2 FROM t;"
+      - id: four_part_source
+        sql: "SELECT c INTO t2 FROM srv.db.dbo.t;"
+      - id: union_into
+        sql: "SELECT c INTO t2 FROM t UNION SELECT c FROM u;"
+    examples:
+      - |-
+        SELECT c.FirstName,
+               c.LastName,
+               e.JobTitle,
+               a.AddressLine1,
+               a.City,
+               sp.Name AS [State/Province],
+               a.PostalCode
+        INTO dbo.EmployeeAddresses
+        FROM Person.Person AS c
+             INNER JOIN HumanResources.Employee AS e
+                 ON e.BusinessEntityID = c.BusinessEntityID
+             INNER JOIN Person.BusinessEntityAddress AS bea
+                 ON e.BusinessEntityID = bea.BusinessEntityID
+             INNER JOIN Person.Address AS a
+                 ON bea.AddressID = a.AddressID
+             INNER JOIN Person.StateProvince AS sp
+                 ON sp.StateProvinceID = a.StateProvinceID;
+      - |-
+        SELECT *
+        INTO dbo.NewProducts
+        FROM Production.Product
+        WHERE ListPrice > $25
+              AND ListPrice < $100;
+      - |-
+        -- Create a new table with columns from the existing table Person.Address.
+        -- A new IDENTITY column is created by using the IDENTITY function.
+        SELECT IDENTITY (INT, 100, 5) AS AddressID,
+               a.AddressLine1,
+               a.City,
+               b.Name AS State,
+               a.PostalCode
+        INTO Person.USAddress
+        FROM Person.Address AS a
+             INNER JOIN Person.StateProvince AS b
+                 ON a.StateProvinceID = b.StateProvinceID
+        WHERE b.CountryRegionCode = N'US';
+      - |-
+        -- Use the OPENQUERY function to access the remote data source.
+        SELECT DepartmentID,
+               Name,
+               GroupName,
+               ModifiedDate
+        INTO dbo.DepartmentsUsingOpenQuery
+        FROM OPENQUERY (
+            MyLinkServer,
+            'SELECT * FROM AdventureWorks2025.HumanResources.Department'
+        );
+      - |-
+        SELECT *
+        INTO [dbo].[FactResellerSalesXL] ON FG2
+        FROM [dbo].[FactResellerSales];
+
+  - id: from
+    name: "FROM clause plus JOIN, APPLY, PIVOT"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/from-transact-sql
+    tier: high
+    probes:
+      - id: table_alias
+        sql: "SELECT a.c FROM t AS a;"
+      - id: table_alias_no_as
+        sql: "SELECT a.c FROM t a;"
+      - id: three_part_name
+        sql: "SELECT c FROM db.dbo.t;"
+      - id: four_part_name
+        sql: "SELECT c FROM srv.db.dbo.t;"
+      - id: default_schema_name
+        sql: "SELECT c FROM db..t;"
+        note: "database_name..object_name: the schema part of a multipart name may be omitted."
+      - id: bracketed_names
+        sql: "SELECT [c] FROM [db].[dbo].[my table];"
+      - id: table_hint
+        sql: "SELECT c FROM t WITH (NOLOCK);"
+      - id: table_hints_list
+        sql: "SELECT COUNT(*) FROM t WITH (TABLOCK, HOLDLOCK);"
+      - id: alias_and_hint
+        sql: "SELECT a.c FROM t AS a WITH (INDEX (idx));"
+      - id: tablesample_percent
+        sql: "SELECT * FROM t TABLESAMPLE (10 PERCENT);"
+      - id: tablesample_system_rows
+        sql: "SELECT * FROM t TABLESAMPLE SYSTEM (1000 ROWS);"
+      - id: tablesample_repeatable
+        sql: "SELECT * FROM t TABLESAMPLE (10 PERCENT) REPEATABLE (205);"
+      - id: for_system_time_as_of
+        sql: "SELECT c FROM t FOR SYSTEM_TIME AS OF '2014-01-01';"
+      - id: for_system_time_from_to
+        sql: "SELECT c FROM t FOR SYSTEM_TIME FROM '2013-01-01' TO '2014-01-01';"
+      - id: for_system_time_between
+        sql: "SELECT c FROM t FOR SYSTEM_TIME BETWEEN '2013-01-01' AND '2014-01-01';"
+      - id: for_system_time_contained_in
+        sql: "SELECT c FROM t FOR SYSTEM_TIME CONTAINED IN ('2013-01-01', '2014-01-01');"
+      - id: for_system_time_all
+        sql: "SELECT c FROM t FOR SYSTEM_TIME ALL AS h;"
+      - id: for_system_time_variable
+        sql: "SELECT c FROM t FOR SYSTEM_TIME AS OF @AsOf;"
+      - id: rowset_function_column_aliases
+        sql: "SELECT a.* FROM OPENROWSET(BULK 'C:\\data\\f.txt', SINGLE_CLOB) AS a(doc);"
+      - id: table_valued_function
+        sql: "SELECT * FROM dbo.f(1) AS x;"
+      - id: derived_table
+        sql: "SELECT d.c FROM (SELECT c FROM t) AS d;"
+      - id: derived_table_column_aliases
+        sql: "SELECT d.x FROM (SELECT c FROM t) AS d (x);"
+      - id: values_derived_table
+        sql: "SELECT v.a, v.b FROM (VALUES (1, 2), (3, 4)) AS v (a, b);"
+      - id: table_variable
+        sql: "SELECT c FROM @tv AS x;"
+      - id: variable_function_call
+        sql: "SELECT * FROM @x.nodes('/root/row') AS r(n);"
+        note: "@variable.function_call ( expression ) [ AS ] table_alias ( column_alias ) form, as used with xml nodes()."
+      - id: inner_join
+        sql: "SELECT * FROM t INNER JOIN u ON t.c = u.c;"
+      - id: join
+        sql: "SELECT * FROM t JOIN u ON t.c = u.c;"
+      - id: left_join
+        sql: "SELECT * FROM t LEFT JOIN u ON t.c = u.c;"
+      - id: left_outer_join
+        sql: "SELECT * FROM t LEFT OUTER JOIN u ON t.c = u.c;"
+      - id: right_outer_join
+        sql: "SELECT * FROM t RIGHT OUTER JOIN u ON t.c = u.c;"
+      - id: full_outer_join
+        sql: "SELECT * FROM t FULL OUTER JOIN u ON t.c = u.c;"
+      - id: full_join
+        sql: "SELECT * FROM t FULL JOIN u ON t.c = u.c;"
+      - id: cross_join
+        sql: "SELECT * FROM t CROSS JOIN u;"
+      - id: cross_apply
+        sql: "SELECT * FROM t CROSS APPLY dbo.f(t.c);"
+      - id: outer_apply
+        sql: "SELECT * FROM t OUTER APPLY dbo.f(t.c) AS x;"
+      - id: cross_apply_subquery
+        sql: "SELECT * FROM t CROSS APPLY (SELECT TOP (1) d FROM u WHERE u.c = t.c ORDER BY d) AS x;"
+      - id: inner_hash_join
+        sql: "SELECT * FROM t INNER HASH JOIN u ON t.c = u.c;"
+      - id: left_merge_join
+        sql: "SELECT * FROM t LEFT OUTER MERGE JOIN u ON t.c = u.c;"
+      - id: parenthesized_join
+        sql: "SELECT * FROM t LEFT JOIN (u INNER JOIN v ON u.c = v.c) ON t.c = u.c;"
+      - id: nested_join_on_order
+        sql: "SELECT * FROM t JOIN u JOIN v ON u.c = v.c ON t.c = u.c;"
+        note: "<joined_table> ::= <table_source> <join_type> <table_source> ON ...: the right table_source can itself be a joined_table, so ON clauses may nest."
+      - id: pivot
+        sql: "SELECT * FROM t PIVOT (SUM(v) FOR k IN ([a], [b])) AS p;"
+      - id: unpivot
+        sql: "SELECT * FROM t UNPIVOT (v FOR k IN (a, b)) AS u;"
+    examples:
+      - |-
+        SELECT p.ProductID,
+            v.BusinessEntityID
+        FROM Production.Product AS p
+        INNER JOIN Purchasing.ProductVendor AS v
+            ON (p.ProductID = v.ProductID);
+      - |-
+        SELECT e.BusinessEntityID,
+            d.Name AS Department
+        FROM HumanResources.Employee AS e
+        CROSS JOIN HumanResources.Department AS d
+        ORDER BY e.BusinessEntityID,
+            d.Name;
+      - |-
+        SELECT p.Name AS ProductName,
+            v.Name AS VendorName
+        FROM Production.Product AS p
+        INNER MERGE JOIN Purchasing.ProductVendor AS pv
+            ON p.ProductID = pv.ProductID
+        INNER HASH JOIN Purchasing.Vendor AS v
+            ON pv.BusinessEntityID = v.BusinessEntityID
+        ORDER BY p.Name,
+            v.Name;
+      - |-
+        SELECT *
+        FROM Sales.Customer TABLESAMPLE SYSTEM(10 PERCENT);
+      - |-
+        SELECT DeptID,
+            DeptName,
+            DeptMgrID,
+            EmpID,
+            EmpLastName,
+            EmpSalary
+        FROM Departments d
+        CROSS APPLY dbo.GetReports(d.DeptMgrID);
+
+  - id: pivot_unpivot
+    name: "FROM - Using PIVOT and UNPIVOT"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/from-using-pivot-and-unpivot
+    tier: high
+    probes:
+      - id: pivot_derived_source
+        sql: "SELECT 'c' AS x, [0], [1] FROM (SELECT k, v FROM t) AS s PIVOT (AVG(v) FOR k IN ([0], [1])) AS p;"
+      - id: pivot_count
+        sql: "SELECT id, [250] AS e1, [251] AS e2 FROM (SELECT o, e, id FROM t) p PIVOT (COUNT (o) FOR e IN ([250], [251])) AS pvt ORDER BY pvt.id;"
+      - id: pivot_table_source
+        sql: "SELECT * FROM t PIVOT (MAX(v) FOR k IN ([a], [b], [c])) AS p;"
+      - id: unpivot_derived_source
+        sql: "SELECT id, e, o FROM (SELECT id, e1, e2 FROM t) p UNPIVOT (o FOR e IN (e1, e2)) AS u;"
+      - id: unpivot_no_alias
+        sql: "SELECT id, e, o FROM t UNPIVOT (o FOR e IN (e1, e2)) u;"
+      - id: pivot_then_join
+        sql: "SELECT * FROM t PIVOT (SUM(v) FOR k IN ([a], [b])) AS p INNER JOIN u ON p.id = u.id;"
+    examples:
+      - |-
+        -- Pivot table with one row and five columns
+        SELECT 'AverageCost' AS CostSortedByProductionDays,
+            [0], [1], [2], [3], [4]
+        FROM (
+            SELECT DaysToManufacture,
+                StandardCost
+            FROM Production.Product
+        ) AS SourceTable
+        PIVOT (
+            AVG(StandardCost) FOR DaysToManufacture IN
+            ([0], [1], [2], [3], [4])
+        ) AS PivotTable;
+      - |-
+        SELECT VendorID,
+            [250] AS Emp1,
+            [251] AS Emp2,
+            [256] AS Emp3,
+            [257] AS Emp4,
+            [260] AS Emp5
+        FROM
+        (
+            SELECT PurchaseOrderID,
+            EmployeeID, VendorID
+            FROM Purchasing.PurchaseOrderHeader
+        ) p
+        PIVOT
+        (
+            COUNT (PurchaseOrderID)
+            FOR EmployeeID IN ([250], [251], [256], [257], [260])
+        ) AS pvt
+        ORDER BY pvt.VendorID;
+      - |-
+        -- Unpivot the table.
+        SELECT VendorID, Employee, Orders
+        FROM (
+            SELECT VendorID, Emp1, Emp2, Emp3, Emp4, Emp5
+            FROM pvt
+        ) p
+        UNPIVOT
+        (
+            Orders FOR Employee IN (Emp1, Emp2, Emp3, Emp4, Emp5)
+        ) AS unpvt;
+
+  - id: where
+    name: "WHERE"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/where-transact-sql
+    tier: high
+    probes:
+      - id: equality
+        sql: "SELECT c FROM t WHERE c = 'Smith';"
+      - id: like
+        sql: "SELECT c FROM t WHERE c LIKE '%Smi%';"
+      - id: and_or_not
+        sql: "SELECT c FROM t WHERE c = 1 OR (d <= 500 AND NOT e = 2);"
+      - id: in_list
+        sql: "SELECT c FROM t WHERE c IN ('Smith', 'Godfrey', 'Johnson');"
+      - id: between
+        sql: "SELECT c FROM t WHERE c BETWEEN 100 AND 200;"
+      - id: is_null
+        sql: "SELECT c FROM t WHERE c IS NULL;"
+      - id: exists_subquery
+        sql: "SELECT c FROM t WHERE EXISTS (SELECT * FROM u WHERE u.c = t.c);"
+    examples:
+      - |-
+        -- Uses AdventureWorksDW
+        SELECT EmployeeKey, LastName
+        FROM DimEmployee
+        WHERE LastName LIKE '%Smi%';
+      - |-
+        -- Uses AdventureWorksDW
+        SELECT EmployeeKey, LastName
+        FROM DimEmployee
+        WHERE EmployeeKey = 1
+              OR EmployeeKey = 8
+              OR EmployeeKey = 12;
+      - |-
+        -- Uses AdventureWorksDW
+        SELECT EmployeeKey, LastName
+        FROM DimEmployee
+        WHERE LastName IN ('Smith', 'Godfrey', 'Johnson');
+      - |-
+        -- Uses AdventureWorksDW
+        SELECT EmployeeKey, LastName
+        FROM DimEmployee
+        WHERE EmployeeKey BETWEEN 100 AND 200;
+
+  - id: group_by
+    name: "SELECT - GROUP BY"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/select-group-by-transact-sql
+    tier: high
+    probes:
+      - id: columns
+        sql: "SELECT a, b, SUM(c) FROM t GROUP BY a, b;"
+      - id: expression
+        sql: "SELECT DATEPART(yyyy, d) AS y, SUM(c) FROM t GROUP BY DATEPART(yyyy, d);"
+      - id: rollup
+        sql: "SELECT a, b, SUM(c) FROM t GROUP BY ROLLUP (a, b);"
+      - id: rollup_composite
+        sql: "SELECT a, b, d, SUM(c) FROM t GROUP BY ROLLUP (a, (b, d));"
+      - id: cube
+        sql: "SELECT a, b, SUM(c) FROM t GROUP BY CUBE (a, b);"
+      - id: grouping_sets
+        sql: "SELECT a, b, SUM(c) FROM t GROUP BY GROUPING SETS ((a, b), a, ());"
+      - id: grouping_sets_nested_rollup_cube
+        sql: "SELECT a, b, SUM(c) FROM t GROUP BY GROUPING SETS (ROLLUP (a, b), CUBE (a, b));"
+      - id: grand_total
+        sql: "SELECT SUM(c) FROM t GROUP BY ();"
+      - id: mixed_list
+        sql: "SELECT a, b, SUM(c) FROM t GROUP BY a, ROLLUP (b), ();"
+      - id: group_by_all
+        sql: "SELECT a, SUM(c) FROM t WHERE c > 0 GROUP BY ALL a;"
+        note: "Backward-compatible syntax: GROUP BY ALL column-expression [ ,...n ]."
+      - id: with_rollup
+        sql: "SELECT a, b, SUM(c) FROM t GROUP BY a, b WITH ROLLUP;"
+      - id: with_cube
+        sql: "SELECT a, b, SUM(c) FROM t GROUP BY a, b WITH CUBE;"
+    examples:
+      - |-
+        SELECT Region,
+               Territory,
+               SUM(sales) AS TotalSales
+        FROM Sales
+        GROUP BY Region, Territory;
+      - |-
+        SELECT Region,
+               Territory,
+               SUM(Sales) AS TotalSales
+        FROM Sales
+        GROUP BY ROLLUP(Region, Territory);
+      - |-
+        SELECT Region,
+               Territory,
+               SUM(Sales) AS TotalSales
+        FROM Sales
+        GROUP BY CUBE(Region, Territory);
+      - |-
+        SELECT Region,
+               SUM(Sales) AS TotalSales
+        FROM Sales
+        GROUP BY GROUPING SETS(Region, ());
+      - |-
+        SELECT DATEPART(yyyy, OrderDate) AS N'Year',
+               SUM(TotalDue) AS N'Total Order Amount'
+        FROM Sales.SalesOrderHeader
+        GROUP BY DATEPART(yyyy, OrderDate)
+        HAVING DATEPART(yyyy, OrderDate) >= N'2003'
+        ORDER BY DATEPART(yyyy, OrderDate);
+

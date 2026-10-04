@@ -1,0 +1,698 @@
+dialect: mysql
+engine: MySQL
+version: "8.4"
+source: https://dev.mysql.com/doc/refman/8.4/en/sql-statements.html
+
+statements:
+  - id: select
+    name: SELECT
+    doc: https://dev.mysql.com/doc/refman/8.4/en/select.html
+    tier: high
+    probes:
+      - { id: no_from, sql: "SELECT 1 + 1;" }
+      - { id: from_dual, sql: "SELECT 1 + 1 FROM DUAL;" }
+      - { id: star, sql: "SELECT * FROM t;" }
+      - { id: qualified_star, sql: "SELECT t.*, c FROM t;" }
+      - { id: alias_as, sql: "SELECT c AS a FROM t;" }
+      - { id: alias_no_as, sql: "SELECT c a FROM t;" }
+      - { id: table_alias, sql: "SELECT x.c FROM t AS x, t2 y WHERE x.c = y.c;" }
+      - { id: all, sql: "SELECT ALL c FROM t;" }
+      - { id: distinct, sql: "SELECT DISTINCT c FROM t;" }
+      - { id: distinctrow, sql: "SELECT DISTINCTROW c FROM t;" }
+      - { id: high_priority, sql: "SELECT HIGH_PRIORITY c FROM t;" }
+      - { id: straight_join_modifier, sql: "SELECT STRAIGHT_JOIN c FROM t, t2;" }
+      - { id: sql_small_result, sql: "SELECT SQL_SMALL_RESULT c FROM t GROUP BY c;" }
+      - { id: sql_big_result, sql: "SELECT SQL_BIG_RESULT c FROM t GROUP BY c;" }
+      - { id: sql_buffer_result, sql: "SELECT SQL_BUFFER_RESULT c FROM t;" }
+      - { id: sql_no_cache, sql: "SELECT SQL_NO_CACHE c FROM t;" }
+      - { id: sql_calc_found_rows, sql: "SELECT SQL_CALC_FOUND_ROWS c FROM t LIMIT 10;" }
+      - { id: combined_modifiers, sql: "SELECT DISTINCT HIGH_PRIORITY STRAIGHT_JOIN SQL_SMALL_RESULT SQL_BUFFER_RESULT SQL_CALC_FOUND_ROWS c FROM t;" }
+      - { id: partition, sql: "SELECT * FROM t PARTITION (p0, p1);" }
+      - { id: where, sql: "SELECT c FROM t WHERE c > 0;" }
+      - { id: group_by, sql: "SELECT c, COUNT(*) FROM t GROUP BY c;" }
+      - { id: group_by_position, sql: "SELECT c, COUNT(*) FROM t GROUP BY 1;" }
+      - { id: group_by_with_rollup, sql: "SELECT a, b, SUM(c) FROM t GROUP BY a, b WITH ROLLUP;" }
+      - { id: group_by_rollup_function, sql: "SELECT a, b, SUM(c) FROM t GROUP BY ROLLUP (a, b);" }
+      - { id: having, sql: "SELECT c, COUNT(*) FROM t GROUP BY c HAVING COUNT(*) > 1;" }
+      - { id: having_without_group_by, sql: "SELECT c FROM t HAVING c > 0;" }
+      - { id: window_clause, sql: "SELECT SUM(c) OVER w FROM t WINDOW w AS (PARTITION BY a ORDER BY b);" }
+      - { id: window_clause_multiple, sql: "SELECT SUM(c) OVER w1, AVG(c) OVER w2 FROM t WINDOW w1 AS (PARTITION BY a), w2 AS (w1 ORDER BY b);" }
+      - { id: order_by, sql: "SELECT c FROM t ORDER BY c;" }
+      - { id: order_by_asc_desc, sql: "SELECT a, b FROM t ORDER BY a ASC, b DESC;" }
+      - { id: order_by_position, sql: "SELECT a, b FROM t ORDER BY 2, 1;" }
+      - { id: order_by_with_rollup, sql: "SELECT a, SUM(c) FROM t GROUP BY a ORDER BY a WITH ROLLUP;", note: "From the syntax block: [ORDER BY {col_name | expr | position} [ASC | DESC], ... [WITH ROLLUP]]" }
+      - { id: limit, sql: "SELECT c FROM t LIMIT 5;" }
+      - { id: limit_offset_comma, sql: "SELECT c FROM t LIMIT 5, 10;" }
+      - { id: limit_offset_keyword, sql: "SELECT c FROM t LIMIT 10 OFFSET 5;" }
+      - { id: into_vars_after_select_list, sql: "SELECT c, d INTO @x, @y FROM t LIMIT 1;" }
+      - { id: into_vars_before_locking, sql: "SELECT c FROM t LIMIT 1 INTO @x;" }
+      - { id: into_vars_after_locking, sql: "SELECT c FROM t LIMIT 1 FOR UPDATE INTO @x;" }
+      - { id: into_outfile, sql: "SELECT * FROM t INTO OUTFILE '/tmp/t.txt';" }
+      - id: into_outfile_options
+        sql: |-
+          SELECT * FROM t INTO OUTFILE '/tmp/t.txt' CHARACTER SET utf8mb4 FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"' ESCAPED BY '\\' LINES STARTING BY '>' TERMINATED BY '\n';
+      - { id: into_outfile_columns, sql: "SELECT * FROM t INTO OUTFILE '/tmp/t.txt' COLUMNS TERMINATED BY ',' ENCLOSED BY '\"';" }
+      - { id: into_dumpfile, sql: "SELECT c FROM t LIMIT 1 INTO DUMPFILE '/tmp/c.bin';" }
+      - { id: for_update, sql: "SELECT c FROM t WHERE c = 1 FOR UPDATE;" }
+      - { id: for_share, sql: "SELECT c FROM t WHERE c = 1 FOR SHARE;" }
+      - { id: for_update_of, sql: "SELECT * FROM t, t2 FOR UPDATE OF t;" }
+      - { id: for_share_of_multiple, sql: "SELECT * FROM t, t2, t3 FOR SHARE OF t, t2;" }
+      - { id: for_update_nowait, sql: "SELECT c FROM t FOR UPDATE NOWAIT;" }
+      - { id: for_share_skip_locked, sql: "SELECT c FROM t FOR SHARE SKIP LOCKED;" }
+      - { id: multiple_locking_clauses, sql: "SELECT * FROM t1, t2 FOR SHARE OF t1 FOR UPDATE OF t2 NOWAIT;" }
+      - { id: lock_in_share_mode, sql: "SELECT c FROM t LOCK IN SHARE MODE;" }
+      - { id: full_clause_order, sql: "SELECT DISTINCT a, SUM(b) OVER w AS s FROM t PARTITION (p0) WHERE a > 0 GROUP BY a, b HAVING SUM(b) > 1 WINDOW w AS (ORDER BY a) ORDER BY a DESC LIMIT 1, 10 FOR UPDATE SKIP LOCKED;" }
+    examples:
+      - "SELECT 1 + 1 FROM DUAL;"
+      - |-
+        SELECT CONCAT(last_name,', ',first_name) AS full_name
+          FROM mytable ORDER BY full_name;
+      - |-
+        SELECT college, region AS r, seed AS s FROM tournament
+          ORDER BY r, s;
+      - |-
+        SELECT user, MAX(salary) FROM users
+          GROUP BY user HAVING MAX(salary) > 10;
+      - "SELECT * FROM t1, t2 FOR SHARE OF t1 FOR UPDATE OF t2;"
+
+  - id: select_into
+    name: SELECT ... INTO
+    doc: https://dev.mysql.com/doc/refman/8.4/en/select-into.html
+    tier: high
+    probes:
+      - { id: into_before_from, sql: "SELECT c INTO @x FROM t LIMIT 1;" }
+      - { id: into_before_locking_clause, sql: "SELECT c FROM t LIMIT 1 INTO @x FOR UPDATE;", note: "Documented position, deprecated but still accepted in 8.4" }
+      - { id: into_at_end, sql: "SELECT c FROM t LIMIT 1 FOR UPDATE INTO @x;" }
+      - { id: into_var_list, sql: "SELECT a, b INTO @x, @y FROM t LIMIT 1;" }
+      - { id: table_statement_into, sql: "TABLE t ORDER BY c LIMIT 1 INTO @x, @y;" }
+      - { id: values_derived_into, sql: "SELECT * FROM (VALUES ROW(1,2,3)) AS t(a,b,c) INTO @x, @y, @z;" }
+      - id: into_outfile_before_from
+        sql: |-
+          SELECT a, b INTO OUTFILE '/tmp/result.txt' FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"' LINES TERMINATED BY '\n' FROM t;
+      - { id: table_statement_into_outfile, sql: "TABLE t ORDER BY c LIMIT 1000 INTO OUTFILE '/tmp/t.txt';" }
+      - { id: into_dumpfile, sql: "SELECT c INTO DUMPFILE '/tmp/c.bin' FROM t LIMIT 1;" }
+    examples:
+      - "SELECT * INTO @myvar FROM t1;"
+      - "SELECT * FROM t1 INTO @myvar FOR UPDATE;"
+      - "SELECT * FROM t1 FOR UPDATE INTO @myvar;"
+      - "SELECT id, data INTO @x, @y FROM test.t1 LIMIT 1;"
+      - |-
+        SELECT a,b,a+b INTO OUTFILE '/tmp/result.txt'
+          FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"'
+          LINES TERMINATED BY '\n'
+          FROM test_table;
+
+  - id: join
+    name: JOIN clause
+    doc: https://dev.mysql.com/doc/refman/8.4/en/join.html
+    tier: high
+    probes:
+      - { id: comma_join, sql: "SELECT * FROM t1, t2 WHERE t1.a = t2.a;" }
+      - { id: inner_join_on, sql: "SELECT * FROM t1 INNER JOIN t2 ON t1.a = t2.a;" }
+      - { id: join_on, sql: "SELECT * FROM t1 JOIN t2 ON t1.a = t2.a;" }
+      - { id: join_without_condition, sql: "SELECT * FROM t1 JOIN t2;" }
+      - { id: cross_join, sql: "SELECT * FROM t1 CROSS JOIN t2;" }
+      - { id: cross_join_on, sql: "SELECT * FROM t1 CROSS JOIN t2 ON t1.a = t2.a;", note: "joined_table: table_reference {[INNER | CROSS] JOIN | STRAIGHT_JOIN} table_factor [join_specification]" }
+      - { id: inner_join_using, sql: "SELECT * FROM t1 INNER JOIN t2 USING (a, b);" }
+      - { id: straight_join, sql: "SELECT * FROM t1 STRAIGHT_JOIN t2;" }
+      - { id: straight_join_on, sql: "SELECT * FROM t1 STRAIGHT_JOIN t2 ON t1.a = t2.a;" }
+      - { id: left_join, sql: "SELECT * FROM t1 LEFT JOIN t2 ON t1.a = t2.a;" }
+      - { id: left_outer_join, sql: "SELECT * FROM t1 LEFT OUTER JOIN t2 ON t1.a = t2.a;" }
+      - { id: right_join, sql: "SELECT * FROM t1 RIGHT JOIN t2 ON t1.a = t2.a;" }
+      - { id: right_outer_join_using, sql: "SELECT * FROM t1 RIGHT OUTER JOIN t2 USING (a);" }
+      - { id: natural_join, sql: "SELECT * FROM t1 NATURAL JOIN t2;" }
+      - { id: natural_inner_join, sql: "SELECT * FROM t1 NATURAL INNER JOIN t2;" }
+      - { id: natural_left_join, sql: "SELECT * FROM t1 NATURAL LEFT JOIN t2;" }
+      - { id: natural_left_outer_join, sql: "SELECT * FROM t1 NATURAL LEFT OUTER JOIN t2;" }
+      - { id: natural_right_join, sql: "SELECT * FROM t1 NATURAL RIGHT JOIN t2;" }
+      - { id: chained_joins, sql: "SELECT * FROM t1 LEFT JOIN t2 ON t1.a = t2.a LEFT JOIN t3 ON t2.a = t3.a;" }
+      - { id: nested_join_list, sql: "SELECT * FROM t1 LEFT JOIN (t2, t3, t4) ON (t2.a = t1.a AND t3.b = t1.b AND t4.c = t1.c);" }
+      - { id: nested_join_parenthesized, sql: "SELECT * FROM t1 LEFT JOIN (t2 CROSS JOIN t3) ON (t2.a = t1.a AND t3.b = t1.b);" }
+      - { id: parenthesized_table_references, sql: "SELECT * FROM (t1, t2) JOIN t3 ON (t1.a = t3.a);" }
+      - { id: odbc_oj_escape, sql: "SELECT * FROM { OJ t1 LEFT OUTER JOIN t2 ON t1.a = t2.a };" }
+      - { id: derived_table, sql: "SELECT * FROM (SELECT 1, 2, 3) AS t1;" }
+      - { id: derived_table_no_as, sql: "SELECT * FROM (SELECT 1 AS a) t1;" }
+      - { id: derived_table_column_list, sql: "SELECT * FROM (SELECT 1, 2) AS t1 (a, b);" }
+      - { id: lateral_derived_table, sql: "SELECT * FROM t1, LATERAL (SELECT t2.c FROM t2 WHERE t2.a = t1.a) AS dt;" }
+      - { id: partition_in_join, sql: "SELECT * FROM t1 PARTITION (p0) AS x JOIN t2 PARTITION (p1, p2) AS y ON x.a = y.a;" }
+    examples:
+      - |-
+        SELECT t1.name, t2.salary
+          FROM employee AS t1 INNER JOIN info AS t2 ON t1.name = t2.name;
+      - |-
+        SELECT left_tbl.*
+          FROM left_tbl LEFT JOIN right_tbl ON left_tbl.id = right_tbl.id
+          WHERE right_tbl.id IS NULL;
+      - |-
+        SELECT left_tbl.*
+            FROM { OJ left_tbl LEFT OUTER JOIN right_tbl
+                   ON left_tbl.id = right_tbl.id }
+            WHERE right_tbl.id IS NULL;
+      - |-
+        SELECT * FROM table1 LEFT JOIN table2 ON table1.id = table2.id
+          LEFT JOIN table3 ON table2.id = table3.id;
+      - "SELECT * FROM t1, t2 JOIN t3 ON (t1.i1 = t3.i3);"
+
+  - id: index_hints
+    name: Index hints
+    doc: https://dev.mysql.com/doc/refman/8.4/en/index-hints.html
+    tier: high
+    probes:
+      - { id: use_index, sql: "SELECT * FROM t USE INDEX (i1, i2) WHERE a = 1;" }
+      - { id: use_key, sql: "SELECT * FROM t USE KEY (i1);" }
+      - { id: use_index_empty, sql: "SELECT * FROM t USE INDEX ();" }
+      - { id: ignore_index, sql: "SELECT * FROM t IGNORE INDEX (i1);" }
+      - { id: force_index, sql: "SELECT * FROM t FORCE INDEX (i1);" }
+      - { id: force_key, sql: "SELECT * FROM t FORCE KEY (i1);" }
+      - { id: for_join, sql: "SELECT * FROM t USE INDEX FOR JOIN (i1);" }
+      - { id: for_order_by, sql: "SELECT * FROM t IGNORE INDEX FOR ORDER BY (i1) ORDER BY a;" }
+      - { id: for_group_by, sql: "SELECT a FROM t FORCE INDEX FOR GROUP BY (i1) GROUP BY a;" }
+      - { id: hint_list, sql: "SELECT * FROM t USE INDEX (i1) IGNORE INDEX FOR ORDER BY (i2) ORDER BY a;" }
+      - { id: with_alias, sql: "SELECT * FROM t AS x FORCE INDEX (i1) JOIN t2 y USE INDEX (i2) ON x.a = y.a;" }
+      - { id: in_delete_multi_table, sql: "DELETE t.* FROM t USE INDEX (i1) WHERE a BETWEEN 1 AND 100;" }
+      - { id: in_update, sql: "UPDATE t FORCE INDEX (i1) SET a = 1 WHERE b = 2;" , note: "UPDATE table_references accept index hints (update.html: table_references as in SELECT)" }
+    examples:
+      - |-
+        SELECT * FROM table1 USE INDEX (col1_index,col2_index)
+          WHERE col1=1 AND col2=2 AND col3=3;
+      - "SELECT * FROM t1 USE INDEX (i1) IGNORE INDEX FOR ORDER BY (i2) ORDER BY a;"
+      - "SELECT * FROM t1 USE INDEX FOR JOIN (i1) FORCE INDEX FOR JOIN (i2);"
+      - |-
+        SELECT * FROM t1
+          USE INDEX () IGNORE INDEX (i2) USE INDEX (i1) USE INDEX (i2);
+      - "SELECT * FROM t1 USE INDEX (i1) USE INDEX (i1,i1);"
+
+  - id: optimizer_hints
+    name: Optimizer hints
+    doc: https://dev.mysql.com/doc/refman/8.4/en/optimizer-hints.html
+    tier: medium
+    probes:
+      - { id: select_hint, sql: "SELECT /*+ BKA(t1) NO_BKA(t2) */ * FROM t1 INNER JOIN t2 ON t1.a = t2.a;" }
+      - { id: index_level_hint, sql: "SELECT /*+ NO_RANGE_OPTIMIZATION(t PRIMARY, i1) */ c FROM t WHERE c > 30;" }
+      - { id: query_block_name, sql: "SELECT /*+ QB_NAME(qb1) */ c FROM t;" }
+      - { id: table_at_query_block, sql: "SELECT /*+ JOIN_ORDER(t4@subq1, t3) */ COUNT(*) FROM t3 WHERE t3.a IN (SELECT /*+ QB_NAME(subq1) */ a FROM t4);" }
+      - { id: max_execution_time, sql: "SELECT /*+ MAX_EXECUTION_TIME(1000) */ * FROM t;" }
+      - { id: set_var, sql: "SELECT /*+ SET_VAR(sort_buffer_size = 16M) */ c FROM t ORDER BY c;" }
+      - { id: insert_hint, sql: "INSERT /*+ SET_VAR(foreign_key_checks=OFF) */ INTO t VALUES (2);" }
+      - { id: replace_hint, sql: "REPLACE /*+ NO_ICP(t) */ INTO t VALUES (2);" }
+      - { id: update_hint, sql: "UPDATE /*+ NO_MERGE(t) */ t SET c = 1;" }
+      - { id: delete_hint, sql: "DELETE /*+ MAX_EXECUTION_TIME(1000) */ FROM t WHERE c = 1;" }
+      - { id: subquery_hint, sql: "SELECT * FROM t WHERE a IN (SELECT /*+ SUBQUERY(MATERIALIZATION) */ a FROM t2);" }
+    examples:
+      - |-
+        SELECT /*+ NO_RANGE_OPTIMIZATION(t3 PRIMARY, f2_idx) */ f1
+          FROM t3 WHERE f1 > 30 AND f1 < 33;
+      - "SELECT /*+ MERGE(dt) */ * FROM (SELECT * FROM t1) AS dt;"
+      - "INSERT /*+ SET_VAR(foreign_key_checks=OFF) */ INTO t2 VALUES(2);"
+      - |-
+        SELECT
+        /*+ JOIN_PREFIX(t2, t5@subq2, t4@subq1)
+            JOIN_ORDER(t4@subq1, t3)
+            JOIN_SUFFIX(t1) */
+        COUNT(*) FROM t1 JOIN t2 JOIN t3
+                   WHERE t1.f1 IN (SELECT /*+ QB_NAME(subq1) */ f1 FROM t4)
+                     AND t2.f1 IN (SELECT /*+ QB_NAME(subq2) */ f1 FROM t5);
+      - "SELECT /*+ NO_BNL() BKA(t1) */ t1.* FROM t1 INNER JOIN t2 INNER JOIN t3;"
+
+  - id: set_operations
+    name: Set Operations with UNION, INTERSECT, and EXCEPT
+    doc: https://dev.mysql.com/doc/refman/8.4/en/set-operations.html
+    tier: high
+    probes:
+      - { id: select_union_select, sql: "SELECT a FROM t1 UNION SELECT a FROM t2;" }
+      - { id: table_union_select, sql: "TABLE t1 UNION SELECT * FROM t2;" }
+      - { id: values_union_table, sql: "VALUES ROW(4,-2), ROW(5,9) UNION TABLE t2;" }
+      - { id: select_union_values, sql: "SELECT * FROM t1 UNION VALUES ROW(4,-2), ROW(5,9);" }
+      - { id: parenthesized_blocks_order_limit, sql: "(SELECT a FROM t1 WHERE a = 10 ORDER BY a LIMIT 10) UNION (SELECT a FROM t2 WHERE a = 11 ORDER BY a LIMIT 10);" }
+      - { id: trailing_order_limit, sql: "SELECT a FROM t1 EXCEPT SELECT a FROM t2 ORDER BY a LIMIT 10;" }
+      - { id: parenthesized_with_trailing_order, sql: "(SELECT a FROM t1) EXCEPT (SELECT a FROM t2) ORDER BY a LIMIT 10;" }
+      - { id: nested_parentheses, sql: "TABLE r EXCEPT (TABLE s INTERSECT TABLE t);" }
+      - { id: mixed_precedence, sql: "TABLE r EXCEPT TABLE s INTERSECT TABLE t;" }
+      - { id: with_clause_body, sql: "WITH cte AS (SELECT 1 AS a) SELECT a FROM cte UNION SELECT a FROM t;" }
+      - { id: into_after_union, sql: "SELECT a FROM t1 UNION SELECT a FROM t2 INTO OUTFILE '/tmp/u.txt';" }
+      - { id: derived_table_column_list_union, sql: "SELECT * FROM (TABLE t2) AS t(x, y) UNION TABLE t1;" }
+    examples:
+      - |-
+        (SELECT a FROM t1 WHERE a=10 AND b=1 ORDER BY a LIMIT 10)
+        UNION
+        (SELECT a FROM t2 WHERE a=11 AND b=2 ORDER BY a LIMIT 10);
+      - |-
+        (TABLE t1 ORDER BY x LIMIT 10) 
+        INTERSECT 
+        (TABLE t2 ORDER BY a LIMIT 10);
+      - |-
+        SELECT a FROM t1
+        EXCEPT
+        SELECT a FROM t2 WHERE a=11 AND b=2
+        ORDER BY a LIMIT 10;
+      - "VALUES ROW(4,-2), ROW(5,9) UNION VALUES ROW(4,-2),ROW(5,9);"
+      - |-
+        (TABLE t1 ORDER BY a LIMIT 10) 
+        UNION 
+        TABLE t2 
+        ORDER BY a LIMIT 10;
+
+  - id: union
+    name: UNION clause
+    doc: https://dev.mysql.com/doc/refman/8.4/en/union.html
+    tier: high
+    probes:
+      - { id: union, sql: "SELECT a FROM t1 UNION SELECT a FROM t2;" }
+      - { id: union_all, sql: "SELECT a FROM t1 UNION ALL SELECT a FROM t2;" }
+      - { id: union_distinct, sql: "SELECT a FROM t1 UNION DISTINCT SELECT a FROM t2;" }
+      - { id: union_chain, sql: "SELECT 1 UNION ALL SELECT 2 UNION DISTINCT SELECT 3;" }
+    examples:
+      - "SELECT 1, 2 UNION SELECT 'a', 'b';"
+
+  - id: intersect
+    name: INTERSECT clause
+    doc: https://dev.mysql.com/doc/refman/8.4/en/intersect.html
+    tier: high
+    probes:
+      - { id: intersect, sql: "TABLE a INTERSECT TABLE b;" }
+      - { id: intersect_all, sql: "SELECT m FROM a INTERSECT ALL SELECT m FROM b;" }
+      - { id: intersect_distinct, sql: "SELECT m FROM a INTERSECT DISTINCT SELECT m FROM b;" }
+    examples:
+      - "TABLE a INTERSECT TABLE b;"
+      - "TABLE c INTERSECT DISTINCT TABLE c;"
+      - "TABLE c INTERSECT ALL TABLE c;"
+      - "TABLE r EXCEPT TABLE s INTERSECT TABLE t;"
+      - "TABLE r EXCEPT (TABLE s INTERSECT TABLE t);"
+
+  - id: except
+    name: EXCEPT clause
+    doc: https://dev.mysql.com/doc/refman/8.4/en/except.html
+    tier: high
+    probes:
+      - { id: except, sql: "TABLE a EXCEPT TABLE b;" }
+      - { id: except_all, sql: "SELECT m FROM a EXCEPT ALL SELECT m FROM b;" }
+      - { id: except_distinct, sql: "SELECT m FROM a EXCEPT DISTINCT SELECT m FROM b;" }
+    examples:
+      - "TABLE a EXCEPT TABLE b;"
+      - "TABLE c EXCEPT DISTINCT TABLE a;"
+      - "TABLE c EXCEPT ALL TABLE a;"
+
+  - id: parenthesized_query_expressions
+    name: Parenthesized Query Expressions
+    doc: https://dev.mysql.com/doc/refman/8.4/en/parenthesized-query-expressions.html
+    tier: high
+    probes:
+      - { id: parenthesized_select, sql: "(SELECT 1);" }
+      - { id: parenthesized_union_limit, sql: "(SELECT 1 AS r UNION SELECT 2) LIMIT 1 OFFSET 1;" }
+      - { id: parenthesized_order_limit, sql: "(SELECT 1 AS r UNION SELECT 2) ORDER BY r DESC LIMIT 1;" }
+      - { id: inner_and_outer_limit, sql: "(SELECT 'a' UNION SELECT 'b' LIMIT 2) LIMIT 3;" }
+      - { id: parenthesized_into, sql: "(SELECT 1 AS r UNION SELECT 2) ORDER BY r LIMIT 1 INTO @v;" }
+      - { id: parenthesized_table_order, sql: "(TABLE t1 ORDER BY a) UNION (TABLE t2 ORDER BY b) ORDER BY a;" }
+      - { id: parenthesized_values_limit, sql: "(VALUES ROW(1), ROW(2) LIMIT 2) EXCEPT (SELECT 2 LIMIT 1);" }
+      - { id: nested_parentheses, sql: "((SELECT 1) UNION (SELECT 2));" }
+    examples:
+      - "(SELECT 1);"
+      - "(SELECT * FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = 'mysql');"
+      - "SELECT a FROM t1 EXCEPT (SELECT b FROM t2 INTERSECT SELECT c FROM t3);"
+      - "(SELECT 1 LIMIT 1) UNION (SELECT 2 LIMIT 1) LIMIT 1;"
+      - "VALUES ROW(1), ROW(2) INTERSECT VALUES ROW(2), ROW(1) LIMIT 1;"
+
+  - id: with
+    name: WITH (Common Table Expressions)
+    doc: https://dev.mysql.com/doc/refman/8.4/en/with.html
+    tier: high
+    probes:
+      - { id: single_cte, sql: "WITH cte AS (SELECT a FROM t) SELECT a FROM cte;" }
+      - { id: multiple_ctes, sql: "WITH c1 AS (SELECT a FROM t1), c2 AS (SELECT b FROM t2) SELECT a, b FROM c1 JOIN c2 ON c1.a = c2.b;" }
+      - { id: column_list, sql: "WITH cte (c1, c2) AS (SELECT 1, 2 UNION ALL SELECT 3, 4) SELECT c1, c2 FROM cte;" }
+      - { id: recursive, sql: "WITH RECURSIVE cte (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM cte WHERE n < 5) SELECT * FROM cte;" }
+      - { id: recursive_with_limit, sql: "WITH RECURSIVE cte (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM cte LIMIT 100) SELECT * FROM cte;" }
+      - { id: with_update, sql: "WITH cte AS (SELECT a FROM t2) UPDATE t, cte SET t.b = 1 WHERE t.a = cte.a;" }
+      - { id: with_delete, sql: "WITH cte AS (SELECT a FROM t2) DELETE t FROM t JOIN cte ON t.a = cte.a;" }
+      - { id: in_subquery, sql: "SELECT * FROM t WHERE a IN (WITH cte AS (SELECT a FROM t2) SELECT a FROM cte);" }
+      - { id: in_derived_table, sql: "SELECT * FROM (WITH cte AS (SELECT 1 AS a) SELECT a FROM cte) AS dt;" }
+      - { id: insert_with_select, sql: "INSERT INTO t (a) WITH cte AS (SELECT 1 AS a) SELECT a FROM cte;" }
+      - { id: create_table_with_select, sql: "CREATE TABLE t2 WITH cte AS (SELECT 1 AS a) SELECT a FROM cte;" }
+      - { id: create_view_with_select, sql: "CREATE VIEW v AS WITH cte AS (SELECT 1 AS a) SELECT a FROM cte;" }
+      - { id: explain_with_select, sql: "EXPLAIN WITH cte AS (SELECT 1 AS a) SELECT a FROM cte;" }
+      - { id: with_table_statement, sql: "WITH cte AS (SELECT 1 AS a) TABLE cte;", note: "query_expression: [with_clause] query_expression_body, and query_block includes TABLE (set-operations.html)" }
+    examples:
+      - |-
+        WITH
+          cte1 AS (SELECT a, b FROM table1),
+          cte2 AS (SELECT c, d FROM table2)
+        SELECT b, d FROM cte1 JOIN cte2
+        WHERE cte1.a = cte2.c;
+      - |-
+        WITH cte (col1, col2) AS
+        (
+          SELECT 1, 2
+          UNION ALL
+          SELECT 3, 4
+        )
+        SELECT col1, col2 FROM cte;
+      - |-
+        WITH cte1 AS (SELECT 1)
+        SELECT * FROM (WITH cte2 AS (SELECT 2) SELECT * FROM cte2 JOIN cte1) AS dt;
+      - |-
+        WITH RECURSIVE cte (n) AS
+        (
+          SELECT 1
+          UNION ALL
+          SELECT n + 1 FROM cte
+        )
+        SELECT /*+ SET_VAR(cte_max_recursion_depth = 1M) */ * FROM cte;
+      - |-
+        WITH RECURSIVE dates (date) AS
+        (
+          SELECT MIN(date) FROM sales
+          UNION ALL
+          SELECT date + INTERVAL 1 DAY FROM dates
+          WHERE date + INTERVAL 1 DAY <= (SELECT MAX(date) FROM sales)
+        )
+        SELECT dates.date, COALESCE(SUM(price), 0) AS sum_price
+        FROM dates LEFT JOIN sales ON dates.date = sales.date
+        GROUP BY dates.date
+        ORDER BY dates.date;
+
+  - id: table
+    name: TABLE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/table.html
+    tier: high
+    probes:
+      - { id: basic, sql: "TABLE t;" }
+      - { id: order_by, sql: "TABLE t ORDER BY b;" }
+      - { id: limit, sql: "TABLE t LIMIT 3;" }
+      - { id: order_by_limit_offset, sql: "TABLE t ORDER BY b LIMIT 3 OFFSET 2;" }
+      - { id: qualified_name, sql: "TABLE db1.t;" }
+      - { id: into_vars, sql: "TABLE t LIMIT 1 INTO @a, @b;" }
+      - { id: into_outfile_options, sql: "TABLE t INTO OUTFILE '/tmp/t.txt' FIELDS TERMINATED BY ',' LINES TERMINATED BY ';';" }
+      - { id: into_dumpfile, sql: "TABLE t LIMIT 1 INTO DUMPFILE '/tmp/t.bin';" }
+      - { id: in_subquery, sql: "SELECT * FROM t1 WHERE a IN (TABLE t2);" }
+      - { id: insert_table, sql: "INSERT INTO t1 TABLE t2;" }
+      - { id: create_table_table, sql: "CREATE TABLE t2 TABLE t1;" }
+      - { id: create_view_table, sql: "CREATE VIEW v AS TABLE t;" }
+    examples:
+      - "TABLE t;"
+      - "TABLE t ORDER BY b LIMIT 3 OFFSET 2;"
+      - "TABLE t1 UNION TABLE t2;"
+      - "SELECT * FROM t1 WHERE a IN (TABLE t2);"
+
+  - id: values
+    name: VALUES
+    doc: https://dev.mysql.com/doc/refman/8.4/en/values.html
+    tier: high
+    probes:
+      - { id: basic, sql: "VALUES ROW(1, -2, 3), ROW(5, 7, 9);" }
+      - { id: order_by_column_designator, sql: "VALUES ROW(1, -2, 3), ROW(5, 7, 9) ORDER BY column_1;" }
+      - { id: limit, sql: "VALUES ROW(1), ROW(2), ROW(3) LIMIT 2;" }
+      - { id: mixed_types, sql: "VALUES ROW('q', 42, '2019-12-18'), ROW(23, 'abc', 98.6);" }
+      - { id: derived_table, sql: "SELECT * FROM (VALUES ROW(1, 2), ROW(3, 4)) AS v (a, b);" }
+      - { id: join_values, sql: "SELECT * FROM t JOIN (VALUES ROW(1, 'x')) AS v (a, b) ON t.a = v.a;" }
+      - { id: in_subquery, sql: "SELECT * FROM t WHERE (a, b) IN (VALUES ROW(1, 2), ROW(3, 4));" }
+      - { id: create_table_values, sql: "CREATE TABLE t2 VALUES ROW(1, 2), ROW(3, 4);" }
+      - { id: create_view_values, sql: "CREATE VIEW v AS VALUES ROW(1, 2);" }
+    examples:
+      - "VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8);"
+      - "VALUES ROW(1,-2,3), ROW(5,7,9), ROW(4,6,8) ORDER BY column_1;"
+      - |-
+        VALUES ROW("q", 42, '2019-12-18'),
+            ROW(23, "abc", 98.6),
+            ROW(27.0002, "Mary Smith", '{"a": 10, "b": 25}');
+      - "VALUES ROW(1,2) UNION VALUES ROW(10,15);"
+      - "VALUES ROW(1,2), ROW(3,4), ROW(5,6), ROW(10,15), ROW(20,25);"
+
+  - id: derived_tables
+    name: Derived Tables
+    doc: https://dev.mysql.com/doc/refman/8.4/en/derived-tables.html
+    tier: high
+    probes:
+      - { id: derived_as, sql: "SELECT * FROM (SELECT 1, 2, 3, 4) AS dt;" }
+      - { id: derived_no_as, sql: "SELECT * FROM (SELECT a FROM t) dt WHERE dt.a > 1;" }
+      - { id: derived_column_list, sql: "SELECT * FROM (SELECT 1, 2, 3, 4) AS dt (a, b, c, d);" }
+      - { id: derived_json_table, sql: "SELECT * FROM JSON_TABLE('[1,2]', '$[*]' COLUMNS (x INT PATH '$')) AS jt;" }
+      - { id: derived_union, sql: "SELECT * FROM (SELECT a FROM t1 UNION SELECT a FROM t2) AS dt;" }
+    examples:
+      - |-
+        SELECT sb1,sb2,sb3
+          FROM (SELECT s1 AS sb1, s2 AS sb2, s3*2 AS sb3 FROM t1) AS sb
+          WHERE sb1 > 1;
+      - |-
+        SELECT AVG(sum_column1)
+          FROM (SELECT SUM(column1) AS sum_column1
+                FROM t1 GROUP BY column1) AS t1;
+      - "SELECT * FROM (SELECT 1, 2, 3, 4) AS dt;"
+      - "SELECT * FROM (SELECT 1, 2, 3, 4) AS dt (a, b, c, d);"
+
+  - id: lateral_derived_tables
+    name: Lateral Derived Tables
+    doc: https://dev.mysql.com/doc/refman/8.4/en/lateral-derived-tables.html
+    tier: high
+    probes:
+      - { id: comma_lateral, sql: "SELECT * FROM t1, LATERAL (SELECT MAX(a) AS m FROM t2 WHERE t2.id = t1.id) AS dt;" }
+      - { id: join_lateral_on, sql: "SELECT * FROM t1 JOIN LATERAL (SELECT a FROM t2 WHERE t2.id = t1.id) AS dt ON TRUE;" }
+      - { id: cross_join_lateral, sql: "SELECT * FROM t1 CROSS JOIN LATERAL (SELECT a FROM t2 WHERE t2.id = t1.id) AS dt;" }
+      - { id: left_join_lateral, sql: "SELECT * FROM t1 LEFT JOIN LATERAL (SELECT a FROM t2 WHERE t2.id = t1.id ORDER BY a DESC LIMIT 1) AS dt ON TRUE;" }
+      - { id: lateral_column_list, sql: "SELECT * FROM t1, LATERAL (SELECT t1.a + 1, t1.a + 2) AS dt (x, y);" }
+    examples:
+      - |-
+        SELECT
+          salesperson.name,
+          max_sale.amount,
+          max_sale_customer.customer_name
+        FROM
+          salesperson,
+          -- calculate maximum size, cache it in transient derived table max_sale
+          LATERAL
+          (SELECT MAX(amount) AS amount
+            FROM all_sales
+            WHERE all_sales.salesperson_id = salesperson.id)
+          AS max_sale,
+          -- find customer, reusing cached maximum size
+          LATERAL
+          (SELECT customer_name
+            FROM all_sales
+            WHERE all_sales.salesperson_id = salesperson.id
+            AND all_sales.amount =
+                -- the cached maximum size
+                max_sale.amount)
+          AS max_sale_customer;
+      - |-
+        SELECT
+          salesperson.name,
+          max_sale.amount,
+          max_sale.customer_name
+        FROM
+          salesperson,
+          -- find maximum size and customer at same time
+          LATERAL
+          (SELECT amount, customer_name
+            FROM all_sales
+            WHERE all_sales.salesperson_id = salesperson.id
+            ORDER BY amount DESC LIMIT 1)
+          AS max_sale;
+
+  - id: insert
+    name: INSERT
+    doc: https://dev.mysql.com/doc/refman/8.4/en/insert.html
+    tier: high
+    probes:
+      - { id: values_basic, sql: "INSERT INTO t VALUES (1, 'a');" }
+      - { id: without_into, sql: "INSERT t VALUES (1, 'a');" }
+      - { id: value_keyword, sql: "INSERT INTO t (a, b) VALUE (1, 2);" }
+      - { id: column_list, sql: "INSERT INTO t (a, b) VALUES (1, 2);" }
+      - { id: multi_row, sql: "INSERT INTO t (a, b) VALUES (1, 2), (3, 4), (5, 6);" }
+      - { id: empty_column_list, sql: "INSERT INTO t () VALUES ();" }
+      - { id: default_value, sql: "INSERT INTO t (a, b) VALUES (DEFAULT, 2);" }
+      - { id: expression_value, sql: "INSERT INTO t (a, b) VALUES (15, a * 2);" }
+      - { id: low_priority, sql: "INSERT LOW_PRIORITY INTO t VALUES (1);" }
+      - { id: delayed, sql: "INSERT DELAYED INTO t VALUES (1);", note: "DELAYED is in the syntax block; the server parses and ignores it (insert-delayed.html)" }
+      - { id: high_priority, sql: "INSERT HIGH_PRIORITY INTO t VALUES (1);" }
+      - { id: ignore, sql: "INSERT IGNORE INTO t VALUES (1);" }
+      - { id: low_priority_ignore, sql: "INSERT LOW_PRIORITY IGNORE INTO t (a) VALUES (1);" }
+      - { id: partition, sql: "INSERT INTO t PARTITION (p0, p1) (a, b) VALUES (1, 2);" }
+      - { id: values_row_constructor, sql: "INSERT INTO t (a, b, c) VALUES ROW(1, 2, 3), ROW(4, 5, 6);" }
+      - { id: set_form, sql: "INSERT INTO t SET a = 1, b = DEFAULT;" }
+      - { id: row_alias, sql: "INSERT INTO t (a, b) VALUES (1, 2) AS new ON DUPLICATE KEY UPDATE b = new.b;" }
+      - { id: row_alias_column_aliases, sql: "INSERT INTO t (a, b) VALUES (1, 2) AS new (m, n) ON DUPLICATE KEY UPDATE b = m + n;" }
+      - { id: set_form_row_alias, sql: "INSERT INTO t SET a = 1, b = 2 AS new ON DUPLICATE KEY UPDATE b = new.a + new.b;" }
+      - { id: on_duplicate_key_update, sql: "INSERT INTO t (a, b) VALUES (1, 2) ON DUPLICATE KEY UPDATE b = b + 1, c = 0;" }
+      - { id: insert_select, sql: "INSERT INTO t (a) SELECT a FROM t2 WHERE a > 100;" }
+      - { id: insert_table, sql: "INSERT INTO t TABLE t2;" }
+    examples:
+      - "INSERT INTO tbl_name () VALUES();"
+      - "INSERT INTO tbl_name (col1,col2) VALUES(15,col1*2);"
+      - |-
+        INSERT INTO tbl_name (a,b,c)
+            VALUES(1,2,3), (4,5,6), (7,8,9);
+      - |-
+        INSERT INTO tbl_name (a,b,c)
+            VALUES ROW(1,2,3), ROW(4,5,6), ROW(7,8,9);
+
+  - id: insert_select
+    name: INSERT ... SELECT
+    doc: https://dev.mysql.com/doc/refman/8.4/en/insert-select.html
+    tier: high
+    probes:
+      - { id: select, sql: "INSERT INTO t (a) SELECT b FROM t2 WHERE b > 100;" }
+      - { id: select_no_column_list, sql: "INSERT INTO t SELECT * FROM t2;" }
+      - { id: priority_ignore, sql: "INSERT HIGH_PRIORITY IGNORE INTO t SELECT * FROM t2;" }
+      - { id: partition, sql: "INSERT INTO t PARTITION (p0) (a) SELECT a FROM t2 PARTITION (p1);" }
+      - { id: table_source, sql: "INSERT INTO t TABLE t2;" }
+      - { id: values_source, sql: "INSERT INTO t (a, b) VALUES ROW(1, 2), ROW(3, 4);" }
+      - { id: parenthesized_select, sql: "INSERT INTO t (a) (SELECT b FROM t2);" }
+      - { id: union_source, sql: "INSERT INTO t (a) SELECT b FROM t2 UNION SELECT c FROM t3;" }
+      - { id: on_duplicate_key_update, sql: "INSERT INTO t (a, b) SELECT * FROM (SELECT c, d AS e FROM t2) AS dt ON DUPLICATE KEY UPDATE b = e;" }
+    examples:
+      - |-
+        INSERT INTO tbl_temp2 (fld_id)
+          SELECT tbl_temp1.fld_order_id
+          FROM tbl_temp1 WHERE tbl_temp1.fld_order_id > 100;
+      - "INSERT INTO ta TABLE tb;"
+
+  - id: insert_on_duplicate
+    name: INSERT ... ON DUPLICATE KEY UPDATE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/insert-on-duplicate.html
+    tier: high
+    probes:
+      - { id: basic, sql: "INSERT INTO t (a, b, c) VALUES (1, 2, 3) ON DUPLICATE KEY UPDATE c = c + 1;" }
+      - { id: values_function, sql: "INSERT INTO t (a, b, c) VALUES (1, 2, 3), (4, 5, 6) ON DUPLICATE KEY UPDATE c = VALUES(a) + VALUES(b);", note: "VALUES() in the UPDATE clause is deprecated but still accepted in 8.4" }
+      - { id: row_alias, sql: "INSERT INTO t (a, b, c) VALUES (1, 2, 3), (4, 5, 6) AS new ON DUPLICATE KEY UPDATE c = new.a + new.b;" }
+      - { id: row_and_column_alias, sql: "INSERT INTO t (a, b, c) VALUES (1, 2, 3) AS new (m, n, p) ON DUPLICATE KEY UPDATE c = m + n;" }
+      - { id: set_form_alias, sql: "INSERT INTO t SET a = 1, b = 2, c = 3 AS new (m, n, p) ON DUPLICATE KEY UPDATE c = m + n;" }
+      - { id: ignore_values_row, sql: "INSERT IGNORE INTO t VALUES ROW(2, 3), ROW(3, 3) ON DUPLICATE KEY UPDATE a = a + 1, b = b - 1;" }
+      - { id: select_source, sql: "INSERT INTO t SELECT c, c + d FROM t2 ON DUPLICATE KEY UPDATE b = VALUES(b);" }
+      - { id: table_source, sql: "INSERT INTO t TABLE t2 ON DUPLICATE KEY UPDATE b = 0;" }
+    examples:
+      - |-
+        INSERT INTO t1 (a,b,c) VALUES (1,2,3)
+          ON DUPLICATE KEY UPDATE c=c+1;
+      - |-
+        INSERT INTO t1 (a,b,c) VALUES (1,2,3),(4,5,6)
+          ON DUPLICATE KEY UPDATE c=VALUES(a)+VALUES(b);
+      - |-
+        INSERT INTO t1 (a,b,c) VALUES (1,2,3),(4,5,6) AS new(m,n,p)
+          ON DUPLICATE KEY UPDATE c = m+n;
+      - |-
+        INSERT INTO t1 SET a=1,b=2,c=3 AS new
+          ON DUPLICATE KEY UPDATE c = new.a+new.b;
+      - |-
+        INSERT INTO t1 (a, b)
+        SELECT * FROM
+          (SELECT c, d FROM t2
+           UNION
+           SELECT e, f FROM t3) AS dt
+        ON DUPLICATE KEY UPDATE b = b + c;
+
+  - id: insert_delayed
+    name: INSERT DELAYED
+    doc: https://dev.mysql.com/doc/refman/8.4/en/insert-delayed.html
+    tier: low
+    probes:
+      - { id: insert_delayed, sql: "INSERT DELAYED INTO t (a) VALUES (1);", note: "The server recognizes but ignores the DELAYED keyword (converted to INSERT with a warning)" }
+      - { id: replace_delayed, sql: "REPLACE DELAYED INTO t (a) VALUES (1);" }
+
+  - id: replace
+    name: REPLACE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/replace.html
+    tier: high
+    probes:
+      - { id: values, sql: "REPLACE INTO t VALUES (1, 'a');" }
+      - { id: without_into, sql: "REPLACE t VALUES (1, 'a');" }
+      - { id: value_keyword, sql: "REPLACE INTO t (a, b) VALUE (1, 2);" }
+      - { id: column_list_multi_row, sql: "REPLACE INTO t (a, b) VALUES (1, 2), (3, DEFAULT);" }
+      - { id: low_priority, sql: "REPLACE LOW_PRIORITY INTO t VALUES (1);" }
+      - { id: delayed, sql: "REPLACE DELAYED INTO t VALUES (1);" }
+      - { id: partition, sql: "REPLACE INTO t PARTITION (p0, p1) (a) VALUES (1);" }
+      - { id: values_row_constructor, sql: "REPLACE INTO t (a, b) VALUES ROW(1, 2), ROW(3, 4);" }
+      - { id: set_form, sql: "REPLACE INTO t SET a = 1, b = 'x';" }
+      - { id: select_source, sql: "REPLACE INTO t (a, b) SELECT a, b FROM t2;" }
+      - { id: table_source, sql: "REPLACE INTO t TABLE t2;" }
+    examples:
+      - "REPLACE INTO test VALUES (1, 'Old', '2014-08-20 18:47:00');"
+      - "REPLACE INTO test2 VALUES (1, 'New', '2014-08-20 18:47:42');"
+
+  - id: update
+    name: UPDATE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/update.html
+    tier: high
+    probes:
+      - { id: basic, sql: "UPDATE t SET a = a + 1;" }
+      - { id: multiple_assignments, sql: "UPDATE t SET a = a + 1, b = a;" }
+      - { id: default_value, sql: "UPDATE t SET a = DEFAULT WHERE b = 1;" }
+      - { id: where, sql: "UPDATE t SET a = 1 WHERE b > 2;" }
+      - { id: order_by_limit, sql: "UPDATE t SET a = a + 1 WHERE b > 0 ORDER BY a DESC LIMIT 10;" }
+      - { id: low_priority, sql: "UPDATE LOW_PRIORITY t SET a = 1;" }
+      - { id: ignore, sql: "UPDATE IGNORE t SET a = 1;" }
+      - { id: low_priority_ignore, sql: "UPDATE LOW_PRIORITY IGNORE t SET a = 1;" }
+      - { id: table_alias, sql: "UPDATE t AS x SET x.a = 1 WHERE x.b = 2;" }
+      - { id: partition, sql: "UPDATE t PARTITION (p0) SET a = 1 WHERE b = 2;" }
+      - { id: multi_table_comma, sql: "UPDATE items, month SET items.price = month.price WHERE items.id = month.id;" }
+      - { id: multi_table_join, sql: "UPDATE t1 INNER JOIN t2 ON t1.id = t2.id SET t1.a = t2.a, t2.b = 0;" }
+      - { id: multi_table_left_join, sql: "UPDATE t1 LEFT JOIN t2 ON t1.id = t2.id SET t1.a = 0 WHERE t2.id IS NULL;" }
+      - { id: multi_table_derived, sql: "UPDATE t, (SELECT id FROM t2 WHERE a > 1) AS d SET t.a = t.a * 0.9 WHERE t.id = d.id;" }
+      - { id: subquery_in_set, sql: "UPDATE t SET a = (SELECT MAX(b) FROM t2) WHERE id = 1;" }
+      - { id: with_cte, sql: "WITH cte AS (SELECT id FROM t2) UPDATE t JOIN cte ON t.id = cte.id SET t.a = 1;" }
+    examples:
+      - "UPDATE t1 SET col1 = col1 + 1, col2 = col1;"
+      - "UPDATE t SET id = id + 1 ORDER BY id DESC;"
+      - |-
+        UPDATE items,month SET items.price=month.price
+        WHERE items.id=month.id;
+      - |-
+        UPDATE /*+ NO_MERGE(discounted) */ items,
+               (SELECT id FROM items
+                WHERE retail / wholesale >= 1.3 AND quantity < 100)
+                AS discounted
+            SET items.retail = items.retail * 0.9
+            WHERE items.id = discounted.id;
+      - |-
+        UPDATE items,
+               (SELECT id, retail / wholesale AS markup, quantity FROM items)
+               AS discounted
+            SET items.retail = items.retail * 0.9
+            WHERE discounted.markup >= 1.3
+            AND discounted.quantity < 100
+            AND items.id = discounted.id;
+
+  - id: delete
+    name: DELETE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/delete.html
+    tier: high
+    probes:
+      - { id: basic, sql: "DELETE FROM t;" }
+      - { id: where, sql: "DELETE FROM t WHERE a = 1;" }
+      - { id: order_by_limit, sql: "DELETE FROM t WHERE a = 'x' ORDER BY b LIMIT 1;" }
+      - { id: low_priority, sql: "DELETE LOW_PRIORITY FROM t WHERE a = 1;" }
+      - { id: quick, sql: "DELETE QUICK FROM t WHERE a = 1;" }
+      - { id: ignore, sql: "DELETE IGNORE FROM t WHERE a = 1;" }
+      - { id: all_modifiers, sql: "DELETE LOW_PRIORITY QUICK IGNORE FROM t WHERE a = 1;" }
+      - { id: table_alias_as, sql: "DELETE FROM t AS x WHERE x.a = 1;" }
+      - { id: table_alias_no_as, sql: "DELETE FROM t x WHERE x.a = 1;" }
+      - { id: partition, sql: "DELETE FROM t PARTITION (p0, p1) WHERE a < 5;" }
+      - { id: multi_table_from, sql: "DELETE t1, t2 FROM t1 INNER JOIN t2 INNER JOIN t3 WHERE t1.id = t2.id AND t2.id = t3.id;" }
+      - { id: multi_table_using, sql: "DELETE FROM t1, t2 USING t1 INNER JOIN t2 INNER JOIN t3 WHERE t1.id = t2.id AND t2.id = t3.id;" }
+      - { id: multi_table_star, sql: "DELETE t1.*, t2.* FROM t1 JOIN t2 ON t1.id = t2.id;" }
+      - { id: multi_table_left_join, sql: "DELETE t1 FROM t1 LEFT JOIN t2 ON t1.id = t2.id WHERE t2.id IS NULL;" }
+      - { id: multi_table_aliases, sql: "DELETE a1, a2 FROM t1 AS a1 INNER JOIN t2 AS a2 WHERE a1.id = a2.id;" }
+      - { id: using_star, sql: "DELETE FROM t1.*, t2.* USING t1 JOIN t2 ON t1.id = t2.id;" }
+      - { id: subquery_where, sql: "DELETE FROM t WHERE a IN (SELECT a FROM t2);" }
+      - { id: with_cte, sql: "WITH cte AS (SELECT id FROM t2) DELETE FROM t WHERE id IN (SELECT id FROM cte);" }
+    examples:
+      - |-
+        DELETE FROM somelog WHERE user = 'jcole'
+        ORDER BY timestamp_column LIMIT 1;
+      - |-
+        DELETE t1, t2 FROM t1 INNER JOIN t2 INNER JOIN t3
+        WHERE t1.id=t2.id AND t2.id=t3.id;
+      - |-
+        DELETE FROM t1, t2 USING t1 INNER JOIN t2 INNER JOIN t3
+        WHERE t1.id=t2.id AND t2.id=t3.id;
+      - "DELETE t1 FROM t1 LEFT JOIN t2 ON t1.id=t2.id WHERE t2.id IS NULL;"
+      - |-
+        DELETE FROM a1, a2 USING t1 AS a1 INNER JOIN t2 AS a2
+        WHERE a1.id=a2.id;
+
+  - id: truncate_table
+    name: TRUNCATE TABLE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/truncate-table.html
+    tier: medium
+    probes:
+      - { id: truncate_table, sql: "TRUNCATE TABLE t;" }
+      - { id: truncate_without_table, sql: "TRUNCATE t;" }
+      - { id: qualified_name, sql: "TRUNCATE TABLE db1.t;" }
