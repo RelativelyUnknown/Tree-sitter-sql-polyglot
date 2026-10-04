@@ -1,0 +1,132 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: create_table_clone
+    name: CREATE TABLE CLONE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/delta-clone
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE TABLE t CLONE s;"
+      - id: deep
+        sql: "CREATE TABLE t DEEP CLONE s;"
+      - id: shallow
+        sql: "CREATE TABLE t SHALLOW CLONE s;"
+      - id: if_not_exists
+        sql: "CREATE TABLE IF NOT EXISTS t SHALLOW CLONE s;"
+      - id: qualified_names
+        sql: "CREATE TABLE cat.sch.t DEEP CLONE cat.sch.s;"
+      - id: tblproperties
+        sql: "CREATE TABLE t SHALLOW CLONE s TBLPROPERTIES ('k1' = 'v1', 'k2' = 'v2');"
+      - id: location
+        sql: "CREATE TABLE t DEEP CLONE s LOCATION '/tmp/t';"
+      - id: tblproperties_location
+        sql: "CREATE TABLE t SHALLOW CLONE s TBLPROPERTIES ('k' = 'v') LOCATION '/tmp/t';"
+      - id: source_version_as_of
+        sql: "CREATE TABLE t SHALLOW CLONE s VERSION AS OF 3;"
+        note: source_table_name may include a temporal specification
+      - id: source_timestamp_as_of
+        sql: "CREATE TABLE t DEEP CLONE s TIMESTAMP AS OF '2024-01-01';"
+        note: source_table_name may include a temporal specification
+      - id: source_options
+        sql: "CREATE TABLE t DEEP CLONE s WITH (versionAsOf = 1);"
+        note: source_table_name may include an options specification
+      - id: replace
+        sql: "REPLACE TABLE t CLONE s;"
+      - id: replace_deep
+        sql: "REPLACE TABLE t DEEP CLONE s;"
+      - id: create_or_replace
+        sql: "CREATE OR REPLACE TABLE t CLONE s;"
+      - id: create_or_replace_shallow
+        sql: "CREATE OR REPLACE TABLE t SHALLOW CLONE s TBLPROPERTIES ('k' = 'v') LOCATION '/tmp/t';"
+    examples:
+      - "CREATE TABLE target_catalog.target_schema.target_table DEEP CLONE source_catalog.source_schema.source_table;"
+      - "CREATE TABLE target_catalog.target_schema.target_table SHALLOW CLONE source_catalog.source_schema.source_table;"
+
+  - id: create_view
+    name: CREATE VIEW
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-view
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE VIEW v AS SELECT c1, c2 FROM t;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE VIEW v AS SELECT c1 FROM t;"
+      - id: if_not_exists
+        sql: "CREATE VIEW IF NOT EXISTS v AS SELECT c1 FROM t;"
+      - id: temporary
+        sql: "CREATE TEMPORARY VIEW v AS SELECT c1 FROM t;"
+      - id: global_temporary
+        sql: "CREATE GLOBAL TEMPORARY VIEW v AS SELECT c1 FROM t;"
+      - id: or_replace_temporary
+        sql: "CREATE OR REPLACE TEMPORARY VIEW v AS SELECT c1 FROM t;"
+      - id: or_replace_global_temporary
+        sql: "CREATE OR REPLACE GLOBAL TEMPORARY VIEW v AS SELECT c1 FROM t;"
+      - id: temporary_if_not_exists
+        sql: "CREATE TEMPORARY VIEW IF NOT EXISTS v AS SELECT c1 FROM t;"
+      - id: qualified_name
+        sql: "CREATE VIEW cat.sch.v AS SELECT c1 FROM t;"
+      - id: column_list
+        sql: "CREATE VIEW v (a, b) AS SELECT c1, c2 FROM t;"
+      - id: column_list_comments
+        sql: "CREATE VIEW v (a COMMENT 'first column', b) AS SELECT c1, c2 FROM t;"
+      - id: comment
+        sql: "CREATE VIEW v COMMENT 'view comment' AS SELECT c1 FROM t;"
+      - id: default_collation
+        sql: "CREATE VIEW v DEFAULT COLLATION UTF8_BINARY AS SELECT c1 FROM t;"
+      - id: tblproperties
+        sql: "CREATE VIEW v TBLPROPERTIES ('k1' = 'v1', 'k2' = 'v2') AS SELECT c1 FROM t;"
+      - id: clauses_any_order
+        sql: "CREATE VIEW v (a) TBLPROPERTIES ('k' = 'v') DEFAULT COLLATION UTF8_BINARY COMMENT 'c' AS SELECT c1 FROM t;"
+      - id: with_schema_binding
+        sql: "CREATE VIEW v WITH SCHEMA BINDING AS SELECT * FROM t;"
+      - id: with_schema_compensation
+        sql: "CREATE VIEW v WITH SCHEMA COMPENSATION AS SELECT * FROM t;"
+      - id: with_schema_type_evolution
+        sql: "CREATE VIEW v WITH SCHEMA TYPE EVOLUTION AS SELECT * FROM t;"
+      - id: with_schema_evolution
+        sql: "CREATE VIEW v WITH SCHEMA EVOLUTION AS SELECT * FROM t;"
+      - id: with_schema_binding_parenthesized
+        sql: "CREATE VIEW v WITH (SCHEMA BINDING) AS SELECT * FROM t;"
+        note: with_clause allows a parenthesized list of schema_binding / METRICS items
+      - id: with_cte_query
+        sql: "CREATE VIEW v AS WITH x AS (SELECT c1 FROM t) SELECT c1 FROM x;"
+      - id: temp_using_data_source
+        sql: "CREATE TEMPORARY VIEW v USING CSV;"
+      - id: temp_using_options
+        sql: "CREATE TEMPORARY VIEW v USING CSV OPTIONS (path '/tmp/f.csv', header 'true', mode 'FAILFAST');"
+      - id: temp_using_options_equals
+        sql: "CREATE TEMPORARY VIEW v USING JSON OPTIONS (path = '/tmp/f.json');"
+      - id: global_temp_using
+        sql: "CREATE OR REPLACE GLOBAL TEMPORARY VIEW v (a, b) USING PARQUET OPTIONS (path '/tmp/f');"
+      - id: metric_view
+        sql: |-
+          CREATE VIEW v WITH METRICS LANGUAGE YAML AS $$
+          version: 0.1
+          source: samples.tpch.orders
+          dimensions:
+            - name: status
+              expr: o_orderstatus
+          measures:
+            - name: total_revenue
+              expr: SUM(o_totalprice)
+          $$;
+      - id: metric_view_or_replace_comment
+        sql: |-
+          CREATE OR REPLACE VIEW v (status, total_revenue) WITH METRICS LANGUAGE YAML COMMENT 'metrics' AS $$
+          version: 0.1
+          source: samples.tpch.orders
+          dimensions:
+            - name: status
+              expr: o_orderstatus
+          measures:
+            - name: total_revenue
+              expr: SUM(o_totalprice)
+          $$;
+    examples:
+      - "CREATE OR REPLACE VIEW experienced_employee (id COMMENT 'Unique identification number', Name) COMMENT 'View for experienced employees' AS SELECT id, name FROM all_employee WHERE working_years > 5;"
+      - "CREATE TEMPORARY VIEW subscribed_movies AS SELECT mo.member_id, mb.full_name, mo.movie_title FROM movies AS mo INNER JOIN members AS mb ON mo.member_id = mb.id;"
+      - "CREATE TEMPORARY VIEW diamonds USING CSV OPTIONS (path '/databricks-datasets/Rdatasets/data-001/csv/ggplot2/diamonds.csv', header 'true', mode 'FAILFAST');"
