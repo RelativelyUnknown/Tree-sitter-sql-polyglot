@@ -6,3 +6,489 @@ source: https://docs.snowflake.com/en/sql-reference/sql-all
 statements: []
 
 expressions:
+  - id: c_aggregate_distinct
+    name: Aggregate DISTINCT and COUNT forms
+    doc: https://docs.snowflake.com/en/sql-reference/functions/count
+    tier: high
+    probes:
+      - id: count_star
+        sql: |-
+          SELECT COUNT(*) FROM t;
+      - id: count_expr
+        sql: |-
+          SELECT COUNT(c) FROM t;
+      - id: count_distinct
+        sql: |-
+          SELECT COUNT(DISTINCT c) FROM t;
+      - id: count_distinct_multi
+        sql: |-
+          SELECT COUNT(DISTINCT c1, c2) FROM t;
+      - id: count_alias_star
+        sql: |-
+          SELECT COUNT(n.*) FROM t AS n;
+      - id: count_star_ilike
+        sql: |-
+          SELECT COUNT(* ILIKE 'i_c%') FROM t;
+      - id: count_star_exclude
+        sql: |-
+          SELECT COUNT(* EXCLUDE c) FROM t;
+      - id: sum_distinct
+        sql: |-
+          SELECT SUM(DISTINCT c) FROM t;
+      - id: avg_distinct
+        sql: |-
+          SELECT AVG(DISTINCT c) FROM t;
+      - id: group_by_count
+        sql: |-
+          SELECT g, COUNT(*), COUNT(DISTINCT c) FROM t GROUP BY g;
+      - id: listagg_distinct
+        sql: |-
+          SELECT LISTAGG(DISTINCT c, ' ') FROM t;
+      - id: array_agg_distinct
+        sql: |-
+          SELECT ARRAY_AGG(DISTINCT c) FROM t;
+      - id: minhash_distinct
+        sql: |-
+          SELECT MINHASH(5, DISTINCT c1, c2) FROM t;
+    examples:
+      - |-
+        SELECT COUNT(*) AS "All",
+            COUNT(* ILIKE 'i_c%') AS "ILIKE",
+            COUNT(* EXCLUDE i_col) AS "EXCLUDE",
+            COUNT(i_col) AS "i_col",
+            COUNT(DISTINCT i_col) AS "DISTINCT i_col",
+            COUNT(j_col) AS "j_col",
+            COUNT(DISTINCT j_col) AS "DISTINCT j_col"
+          FROM basic_example;
+      - |-
+        SELECT i_col, COUNT(*), COUNT(j_col)
+          FROM basic_example
+          GROUP BY i_col
+          ORDER BY i_col;
+      - |-
+        SELECT COUNT(n.*) FROM basic_example AS n;
+
+  - id: c_aggregate_within_group
+    name: Ordered aggregates and WITHIN GROUP
+    doc: https://docs.snowflake.com/en/sql-reference/functions/listagg
+    tier: high
+    probes:
+      - id: listagg_within_group
+        sql: |-
+          SELECT LISTAGG(c, ', ') WITHIN GROUP (ORDER BY o) FROM t;
+      - id: listagg_within_group_desc
+        sql: |-
+          SELECT g, LISTAGG(c, ', ') WITHIN GROUP (ORDER BY o DESC) FROM t GROUP BY g;
+      - id: listagg_distinct_within_group
+        sql: |-
+          SELECT LISTAGG(DISTINCT c) WITHIN GROUP (ORDER BY c) FROM t;
+      - id: listagg_no_delimiter
+        sql: |-
+          SELECT LISTAGG(c) FROM t;
+      - id: listagg_collate
+        sql: |-
+          SELECT LISTAGG(c, '|') WITHIN GROUP (ORDER BY COLLATE(c, 'es')) FROM t;
+      - id: listagg_over
+        sql: |-
+          SELECT LISTAGG(c, ',') WITHIN GROUP (ORDER BY o) OVER (PARTITION BY p) FROM t;
+      - id: array_agg_within_group
+        sql: |-
+          SELECT ARRAY_AGG(c) WITHIN GROUP (ORDER BY o ASC) FROM t;
+      - id: array_agg_distinct_within_group
+        sql: |-
+          SELECT ARRAY_AGG(DISTINCT c) WITHIN GROUP (ORDER BY c) FROM t;
+      - id: array_agg_nulls_last
+        sql: |-
+          SELECT ARRAY_AGG(c) WITHIN GROUP (ORDER BY o DESC NULLS LAST) FROM t;
+      - id: array_agg_multi_order
+        sql: |-
+          SELECT ARRAY_AGG(c) WITHIN GROUP (ORDER BY o1 ASC, o2 DESC) FROM t;
+      - id: arrayagg_alias
+        sql: |-
+          SELECT g, ARRAYAGG(c) WITHIN GROUP (ORDER BY o DESC) FROM t GROUP BY g;
+      - id: array_agg_window_frame
+        sql: |-
+          SELECT ARRAY_AGG(c) OVER (PARTITION BY p ORDER BY o ROWS BETWEEN 3 PRECEDING AND CURRENT ROW) FROM t;
+      - id: percentile_cont
+        sql: |-
+          SELECT PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY v) FROM t;
+      - id: percentile_disc
+        sql: |-
+          SELECT PERCENTILE_DISC(0.25) WITHIN GROUP (ORDER BY v) FROM t;
+      - id: percentile_cont_desc
+        sql: |-
+          SELECT k, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY v DESC) FROM t GROUP BY k;
+      - id: percentile_cont_over
+        sql: |-
+          SELECT PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY v) OVER (PARTITION BY k) FROM t;
+      - id: percentile_disc_over
+        sql: |-
+          SELECT PERCENTILE_DISC(0.25) WITHIN GROUP (ORDER BY v) OVER (PARTITION BY k) FROM t;
+    examples:
+      - |-
+        SELECT k, PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY v)
+          FROM aggr
+          GROUP BY k
+          ORDER BY k;
+      - |-
+        SELECT ARRAY_AGG(o_orderkey) WITHIN GROUP (ORDER BY o_orderkey ASC)
+          FROM orders
+          WHERE o_totalprice > 450000;
+      - |-
+        SELECT o_orderstatus,
+           LISTAGG(o_clerk, ', ')
+             WITHIN GROUP (ORDER BY o_totalprice DESC)
+          FROM orders
+          WHERE o_totalprice > 520000
+          GROUP BY o_orderstatus;
+
+  - id: c_aggregate_function_families
+    name: Aggregate function families
+    doc: https://docs.snowflake.com/en/sql-reference/functions-aggregation
+    tier: medium
+    probes:
+      - id: general_any_value
+        sql: |-
+          SELECT g, ANY_VALUE(c) FROM t GROUP BY g;
+      - id: general_stats
+        sql: |-
+          SELECT AVG(c), SUM(c), MIN(c), MAX(c), MEDIAN(c), MODE(c), COUNT_IF(c > 0) FROM t;
+      - id: min_max_by
+        sql: |-
+          SELECT MIN_BY(a, b), MAX_BY(a, b, 3) FROM t;
+      - id: stddev_variance
+        sql: |-
+          SELECT STDDEV(c), STDDEV_SAMP(c), STDDEV_POP(c), VAR_POP(c), VAR_SAMP(c), VARIANCE(c) FROM t;
+      - id: correlation
+        sql: |-
+          SELECT CORR(y, x), COVAR_POP(y, x), COVAR_SAMP(y, x) FROM t;
+      - id: bitwise_agg
+        sql: |-
+          SELECT BITAND_AGG(c), BITOR_AGG(c), BITXOR_AGG(c) FROM t;
+      - id: boolean_agg
+        sql: |-
+          SELECT BOOLAND_AGG(c), BOOLOR_AGG(c), BOOLXOR_AGG(c) FROM t;
+      - id: hash_agg
+        sql: |-
+          SELECT HASH_AGG(c1, c2) FROM t;
+      - id: hash_agg_star
+        sql: |-
+          SELECT HASH_AGG(*) FROM t;
+      - id: semi_structured_agg
+        sql: |-
+          SELECT OBJECT_AGG(k, v), ARRAY_UNION_AGG(a), ARRAY_UNIQUE_AGG(c) FROM t;
+      - id: linear_regression
+        sql: |-
+          SELECT REGR_SLOPE(y, x), REGR_INTERCEPT(y, x), REGR_R2(y, x), REGR_COUNT(y, x) FROM t;
+      - id: kurtosis
+        sql: |-
+          SELECT KURTOSIS(c) FROM t;
+      - id: approx_count_distinct
+        sql: |-
+          SELECT APPROX_COUNT_DISTINCT(c), HLL(c) FROM t;
+      - id: hll_state
+        sql: |-
+          SELECT HLL_ESTIMATE(HLL_ACCUMULATE(c)) FROM t;
+      - id: approx_top_k
+        sql: |-
+          SELECT APPROX_TOP_K(c, 3, 100) FROM t;
+      - id: approx_percentile
+        sql: |-
+          SELECT APPROX_PERCENTILE(c, 0.5) FROM t;
+      - id: minhash
+        sql: |-
+          SELECT MINHASH(5, c1, c2) FROM t;
+      - id: minhash_star
+        sql: |-
+          SELECT MINHASH(5, *) FROM t;
+      - id: aggregate_window_partition
+        sql: |-
+          SELECT k, v, MODE(v) OVER (PARTITION BY k) FROM t;
+      - id: aggregate_having
+        sql: |-
+          SELECT g, SUM(c) FROM t GROUP BY g HAVING COUNT(*) > 1 AND MAX(c) < 10;
+    examples:
+      - |-
+        SELECT MIN_BY(employee_id, salary, 3) FROM employees;
+      - |-
+        SELECT OBJECT_AGG(k, v) FROM objectagg_example GROUP BY g;
+      - |-
+        SELECT customer.id , ANY_VALUE(customer.name) , SUM(orders.value)
+          FROM customer
+          JOIN orders ON customer.id = orders.customer_id
+          GROUP BY customer.id;
+
+  - id: c_window_over
+    name: Window OVER clause
+    doc: https://docs.snowflake.com/en/sql-reference/functions-window-syntax
+    tier: high
+    probes:
+      - id: empty_over
+        sql: |-
+          SELECT SUM(c) OVER () FROM t;
+      - id: partition_by
+        sql: |-
+          SELECT SUM(c) OVER (PARTITION BY p) FROM t;
+      - id: partition_by_multi
+        sql: |-
+          SELECT SUM(c) OVER (PARTITION BY p1, p2) FROM t;
+      - id: order_by
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY o) FROM t;
+      - id: partition_order
+        sql: |-
+          SELECT SUM(c) OVER (PARTITION BY p ORDER BY o) FROM t;
+      - id: order_desc
+        sql: |-
+          SELECT RANK() OVER (ORDER BY o DESC) FROM t;
+      - id: order_asc_nulls_first
+        sql: |-
+          SELECT RANK() OVER (ORDER BY o ASC NULLS FIRST) FROM t;
+      - id: order_desc_nulls_last
+        sql: |-
+          SELECT RANK() OVER (ORDER BY o DESC NULLS LAST) FROM t;
+      - id: order_multi
+        sql: |-
+          SELECT RANK() OVER (PARTITION BY p ORDER BY o1 DESC, o2 ASC NULLS LAST) FROM t;
+      - id: partition_expression
+        sql: |-
+          SELECT SUM(c) OVER (PARTITION BY p + 1 ORDER BY o * 2) FROM t;
+      - id: over_in_arithmetic
+        sql: |-
+          SELECT 100 * RATIO_TO_REPORT(c) OVER () AS pct FROM t;
+      - id: count_star_over
+        sql: |-
+          SELECT COUNT(*) OVER (PARTITION BY p) FROM t;
+      - id: count_distinct_over
+        sql: |-
+          SELECT COUNT(DISTINCT c) OVER (PARTITION BY p) FROM t;
+      - id: multiple_windows
+        sql: |-
+          SELECT COUNT(i) OVER (PARTITION BY p ORDER BY o) AS a, SUM(i) OVER (PARTITION BY p ORDER BY o) AS b FROM t;
+      - id: window_in_qualify
+        sql: |-
+          SELECT c FROM t QUALIFY ROW_NUMBER() OVER (PARTITION BY p ORDER BY o) = 1;
+      - id: window_in_order_by
+        sql: |-
+          SELECT c FROM t ORDER BY ROW_NUMBER() OVER (ORDER BY o);
+    examples:
+      - |-
+        SELECT branch_ID,
+               net_profit,
+               100 * RATIO_TO_REPORT(net_profit) OVER () AS percent_of_chain_profit
+            FROM store_sales AS s1
+            ORDER BY branch_ID;
+      - |-
+        SELECT
+            p, o, i,
+            COUNT(i) OVER (PARTITION BY p ORDER BY o) count_i_Range_Pre,
+            SUM(i)   OVER (PARTITION BY p ORDER BY o) sum_i_Range_Pre,
+            AVG(i)   OVER (PARTITION BY p ORDER BY o) avg_i_Range_Pre,
+            MIN(i)   OVER (PARTITION BY p ORDER BY o) min_i_Range_Pre,
+            MAX(i)   OVER (PARTITION BY p ORDER BY o) max_i_Range_Pre
+          FROM example_cumulative
+          ORDER BY p,o;
+      - |-
+        SELECT
+            salesperson_name,
+            sales_in_dollars,
+            RANK() OVER (ORDER BY sales_in_dollars DESC) AS sales_rank
+          FROM sales_table;
+
+  - id: c_window_frames
+    name: Window frame clauses
+    doc: https://docs.snowflake.com/en/sql-reference/functions-window-syntax
+    tier: high
+    probes:
+      - id: rows_unbounded_preceding
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY o ROWS UNBOUNDED PRECEDING) FROM t;
+      - id: rows_n_preceding
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY o ROWS 2 PRECEDING) FROM t;
+      - id: rows_current_row
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY o ROWS CURRENT ROW) FROM t;
+      - id: rows_between_unbounded_preceding_current_row
+        sql: |-
+          SELECT SUM(c) OVER (PARTITION BY p ORDER BY o ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;
+      - id: rows_between_current_row_unbounded_following
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY o ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM t;
+      - id: rows_between_unbounded_both
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY o ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;
+      - id: rows_between_n_preceding_n_following
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY o ROWS BETWEEN 2 PRECEDING AND 4 FOLLOWING) FROM t;
+      - id: rows_between_n_preceding_n_preceding
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY o ROWS BETWEEN 4 PRECEDING AND 2 PRECEDING) FROM t;
+      - id: rows_between_n_following_n_following
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY o ROWS BETWEEN 2 FOLLOWING AND 4 FOLLOWING) FROM t;
+      - id: rows_between_unbounded_preceding_n_following
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY o ROWS BETWEEN UNBOUNDED PRECEDING AND 2 FOLLOWING) FROM t;
+      - id: rows_between_unbounded_preceding_n_preceding
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY o ROWS BETWEEN UNBOUNDED PRECEDING AND 2 PRECEDING) FROM t;
+      - id: rows_between_n_following_unbounded_following
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY o ROWS BETWEEN 2 FOLLOWING AND UNBOUNDED FOLLOWING) FROM t;
+      - id: rows_between_n_preceding_unbounded_following
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY o ROWS BETWEEN 1 PRECEDING AND UNBOUNDED FOLLOWING) FROM t;
+      - id: range_unbounded_preceding
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY o RANGE UNBOUNDED PRECEDING) FROM t;
+      - id: range_n_preceding
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY o RANGE 2 PRECEDING) FROM t;
+      - id: range_current_row
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY o RANGE CURRENT ROW) FROM t;
+      - id: range_between_unbounded_preceding_current_row
+        sql: |-
+          SELECT SUM(c) OVER (PARTITION BY p ORDER BY o RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;
+      - id: range_between_current_row_unbounded_following
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY o RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM t;
+      - id: range_between_unbounded_both
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY o RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;
+      - id: range_between_n_preceding_n_following
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY o RANGE BETWEEN 2 PRECEDING AND 4 FOLLOWING) FROM t;
+      - id: range_between_n_preceding_n_preceding
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY o RANGE BETWEEN 4 PRECEDING AND 2 PRECEDING) FROM t;
+      - id: range_between_n_following_n_following
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY o RANGE BETWEEN 2 FOLLOWING AND 4 FOLLOWING) FROM t;
+      - id: range_between_unbounded_preceding_n_following
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY o RANGE BETWEEN UNBOUNDED PRECEDING AND 2 FOLLOWING) FROM t;
+      - id: range_between_unbounded_preceding_n_preceding
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY o RANGE BETWEEN UNBOUNDED PRECEDING AND 2 PRECEDING) FROM t;
+      - id: range_between_n_following_unbounded_following
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY o RANGE BETWEEN 2 FOLLOWING AND UNBOUNDED FOLLOWING) FROM t;
+      - id: range_between_n_preceding_unbounded_following
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY o RANGE BETWEEN 1 PRECEDING AND UNBOUNDED FOLLOWING) FROM t;
+      - id: range_between_interval
+        sql: |-
+          SELECT SUM(c) OVER (ORDER BY d RANGE BETWEEN INTERVAL '1 day' PRECEDING AND CURRENT ROW) FROM t;
+        note: |-
+          The window-frame page says that for DATE ORDER BY columns n can be an INTERVAL constant in RANGE BETWEEN frames.
+      - id: frame_with_nulls_last
+        sql: |-
+          SELECT SUM(c2) OVER (ORDER BY c1 NULLS LAST RANGE BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;
+      - id: frame_first_value
+        sql: |-
+          SELECT FIRST_VALUE(c) OVER (PARTITION BY p ORDER BY o ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;
+      - id: frame_count_alias_star
+        sql: |-
+          SELECT COUNT(t1.*) OVER (ORDER BY col1 RANGE BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t1;
+    examples:
+      - |-
+        SELECT p, o, r AS r_col,
+            SUM(r) OVER (PARTITION BY p ORDER BY o ROWS BETWEEN 4 PRECEDING AND 2 PRECEDING) sum_r_4P_2P,
+            sum(r) over (partition by p ORDER BY o ROWS BETWEEN 2 FOLLOWING AND 4 FOLLOWING) sum_r_2F_4F,
+            sum(r) over (partition by p ORDER BY o ROWS BETWEEN 2 PRECEDING AND 4 FOLLOWING) sum_r_2P_4F
+          FROM example_sliding
+          ORDER BY p, o;
+
+  - id: c_window_function_families
+    name: Window function families
+    doc: https://docs.snowflake.com/en/sql-reference/functions-window
+    tier: high
+    probes:
+      - id: row_number
+        sql: |-
+          SELECT ROW_NUMBER() OVER (PARTITION BY p ORDER BY o) FROM t;
+      - id: rank_dense_rank
+        sql: |-
+          SELECT RANK() OVER (ORDER BY o), DENSE_RANK() OVER (ORDER BY o) FROM t;
+      - id: ntile
+        sql: |-
+          SELECT NTILE(4) OVER (PARTITION BY p ORDER BY o) FROM t;
+      - id: percent_rank_cume_dist
+        sql: |-
+          SELECT PERCENT_RANK() OVER (ORDER BY o), CUME_DIST() OVER (ORDER BY o) FROM t;
+      - id: lag_default
+        sql: |-
+          SELECT revenue - LAG(revenue, 1, 0) OVER (PARTITION BY emp_id ORDER BY year) FROM t;
+      - id: lead_offset
+        sql: |-
+          SELECT LEAD(c, 2) OVER (ORDER BY o) FROM t;
+      - id: lag_ignore_nulls
+        sql: |-
+          SELECT LAG(c) IGNORE NULLS OVER (ORDER BY o) FROM t;
+      - id: lead_respect_nulls
+        sql: |-
+          SELECT LEAD(c, 1) RESPECT NULLS OVER (PARTITION BY p ORDER BY o) FROM t;
+      - id: first_value
+        sql: |-
+          SELECT FIRST_VALUE(c) OVER (PARTITION BY p ORDER BY o) FROM t;
+      - id: last_value_ignore_nulls
+        sql: |-
+          SELECT LAST_VALUE(c) IGNORE NULLS OVER (PARTITION BY p ORDER BY o ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;
+      - id: first_value_respect_nulls
+        sql: |-
+          SELECT FIRST_VALUE(c) RESPECT NULLS OVER (ORDER BY o) FROM t;
+      - id: nth_value
+        sql: |-
+          SELECT NTH_VALUE(c, 2) OVER (PARTITION BY p ORDER BY o) FROM t;
+      - id: nth_value_from_last
+        sql: |-
+          SELECT NTH_VALUE(c, 2) FROM LAST OVER (PARTITION BY p ORDER BY o) FROM t;
+      - id: nth_value_from_first_ignore_nulls
+        sql: |-
+          SELECT NTH_VALUE(c, 2) FROM FIRST IGNORE NULLS OVER (PARTITION BY p ORDER BY o) FROM t;
+      - id: ratio_to_report
+        sql: |-
+          SELECT RATIO_TO_REPORT(c) OVER (PARTITION BY p) FROM t;
+      - id: conditional_change_event
+        sql: |-
+          SELECT CONDITIONAL_CHANGE_EVENT(c) OVER (PARTITION BY p ORDER BY o) FROM t;
+      - id: conditional_true_event
+        sql: |-
+          SELECT CONDITIONAL_TRUE_EVENT(c > 0) OVER (PARTITION BY p ORDER BY o DESC NULLS LAST) FROM t;
+      - id: interpolate_linear
+        sql: |-
+          SELECT INTERPOLATE_LINEAR(c) OVER (PARTITION BY p ORDER BY ts) FROM t;
+      - id: interpolate_ffill_bfill
+        sql: |-
+          SELECT INTERPOLATE_FFILL(c) OVER (ORDER BY ts), INTERPOLATE_BFILL(c) OVER (ORDER BY ts) FROM t;
+      - id: aggregate_as_window_with_frame
+        sql: |-
+          SELECT AVG(c) OVER (PARTITION BY p ORDER BY o ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) FROM t;
+      - id: approx_percentile_over
+        sql: |-
+          SELECT APPROX_PERCENTILE(c, 0.5) OVER (PARTITION BY p) FROM t;
+      - id: object_agg_over
+        sql: |-
+          SELECT OBJECT_AGG(k, v) OVER (PARTITION BY g) FROM t;
+    examples:
+      - |-
+        SELECT emp_id, year, revenue,
+               revenue - LAG(revenue, 1, 0) OVER (PARTITION BY emp_id ORDER BY year) AS diff_to_prev
+          FROM sales
+          ORDER BY emp_id, year;
+      - |-
+        SELECT col_1,
+               col_2,
+               LAG(col_2) IGNORE NULLS OVER (ORDER BY col_1)
+          FROM t1
+          ORDER BY col_1;
+      - |-
+        SELECT column1,
+               column2,
+               NTH_VALUE(column2, 2) OVER (PARTITION BY column1 ORDER BY column2) AS column2_2nd
+          FROM VALUES
+            (1, 10), (1, 11), (1, 12),
+            (2, 20), (2, 21), (2, 22);
+
