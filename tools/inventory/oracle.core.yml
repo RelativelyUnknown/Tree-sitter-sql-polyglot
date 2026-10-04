@@ -2275,3 +2275,268 @@ statements:
         sql: "DROP INDEX idx ONLINE DEFERRED INVALIDATION;"
     examples:
       - "DROP INDEX ord_customer_ix_demo;"
+
+  - id: create_function
+    name: CREATE FUNCTION
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/CREATE-FUNCTION-statement.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE FUNCTION f RETURN NUMBER IS BEGIN RETURN 1; END;"
+      - id: or_replace_params
+        sql: "CREATE OR REPLACE FUNCTION s.f (a IN NUMBER, b VARCHAR2 DEFAULT 'x') RETURN VARCHAR2 AS BEGIN RETURN b || a; END f;"
+      - id: if_not_exists
+        sql: "CREATE FUNCTION IF NOT EXISTS f (a NUMBER) RETURN NUMBER IS BEGIN RETURN a; END;"
+      - id: editionable
+        sql: "CREATE OR REPLACE EDITIONABLE FUNCTION f RETURN NUMBER IS BEGIN RETURN 1; END;"
+      - id: noneditionable
+        sql: "CREATE NONEDITIONABLE FUNCTION f RETURN NUMBER IS BEGIN RETURN 1; END;"
+      - id: declare_section
+        sql: "CREATE FUNCTION f (acc_no IN NUMBER) RETURN NUMBER IS acc_bal NUMBER(11,2); BEGIN SELECT c INTO acc_bal FROM t WHERE id = acc_no; RETURN acc_bal; END;"
+      - id: out_in_out_nocopy_params
+        sql: "CREATE FUNCTION f (a IN NUMBER, b OUT NUMBER, c IN OUT NOCOPY VARCHAR2, d NUMBER := 0) RETURN NUMBER IS BEGIN b := a; RETURN a; END;"
+      - id: anchored_types
+        sql: "CREATE FUNCTION f (a t.c%TYPE) RETURN t%ROWTYPE IS r t%ROWTYPE; BEGIN SELECT * INTO r FROM t WHERE c = a; RETURN r; END;"
+      - id: exception_section
+        sql: "CREATE FUNCTION f (a NUMBER) RETURN NUMBER IS BEGIN RETURN 1 / a; EXCEPTION WHEN ZERO_DIVIDE THEN RETURN NULL; END;"
+      - id: deterministic
+        sql: "CREATE OR REPLACE FUNCTION f (a CLOB) RETURN NUMBER DETERMINISTIC IS BEGIN RETURN DBMS_LOB.GETLENGTH(a); END;"
+      - id: authid_current_user
+        sql: "CREATE FUNCTION f RETURN NUMBER AUTHID CURRENT_USER IS BEGIN RETURN 1; END;"
+      - id: authid_definer
+        sql: "CREATE FUNCTION f RETURN NUMBER AUTHID DEFINER AS BEGIN RETURN 1; END;"
+      - id: accessible_by
+        sql: "CREATE FUNCTION f RETURN NUMBER ACCESSIBLE BY (PACKAGE s.pkg, PROCEDURE p) IS BEGIN RETURN 1; END;"
+      - id: default_collation
+        sql: "CREATE FUNCTION f RETURN VARCHAR2 DEFAULT COLLATION USING_NLS_COMP IS BEGIN RETURN 'x'; END;"
+      - id: result_cache
+        sql: "CREATE FUNCTION f (a NUMBER) RETURN NUMBER RESULT_CACHE IS BEGIN RETURN a; END;"
+      - id: result_cache_relies_on
+        sql: "CREATE FUNCTION f (a NUMBER) RETURN NUMBER RESULT_CACHE RELIES_ON (t, u) IS BEGIN RETURN a; END;"
+      - id: parallel_enable
+        sql: "CREATE FUNCTION f (c SYS_REFCURSOR) RETURN num_tab PIPELINED PARALLEL_ENABLE (PARTITION c BY ANY) IS BEGIN RETURN; END;"
+      - id: parallel_enable_hash_streaming
+        sql: "CREATE FUNCTION f (c ref_cur_t) RETURN num_tab PIPELINED PARALLEL_ENABLE (PARTITION c BY HASH (id)) ORDER c BY (id) IS BEGIN RETURN; END;"
+      - id: pipelined
+        sql: "CREATE FUNCTION f RETURN num_tab PIPELINED IS BEGIN FOR i IN 1 .. 3 LOOP PIPE ROW (i); END LOOP; RETURN; END;"
+      - id: pipelined_using
+        sql: "CREATE FUNCTION f (x NUMBER) RETURN num_tab PIPELINED USING s.impl_t;"
+      - id: polymorphic_table_function
+        sql: "CREATE FUNCTION f (tab TABLE, cols COLUMNS) RETURN TABLE PIPELINED ROW POLYMORPHIC USING ptf_pkg;"
+      - id: aggregate_using
+        sql: "CREATE FUNCTION f (input NUMBER) RETURN NUMBER PARALLEL_ENABLE AGGREGATE USING s.impl_t;"
+      - id: sql_macro_table
+        sql: "CREATE FUNCTION f (job VARCHAR2) RETURN VARCHAR2 SQL_MACRO IS BEGIN RETURN q'{SELECT * FROM emp WHERE job = f.job}'; END;"
+      - id: sql_macro_scalar
+        sql: "CREATE FUNCTION f (a NUMBER) RETURN VARCHAR2 SQL_MACRO(SCALAR) IS BEGIN RETURN 'a * 2'; END;"
+      - id: sql_macro_type_named
+        sql: "CREATE FUNCTION f RETURN VARCHAR2 SQL_MACRO(TYPE => TABLE) IS BEGIN RETURN 'SELECT 1 FROM DUAL'; END;"
+      - id: shard_enable
+        sql: "CREATE FUNCTION f (a NUMBER) RETURN NUMBER SHARD_ENABLE IS BEGIN RETURN a; END;"
+      - id: sharing
+        sql: "CREATE FUNCTION f SHARING = METADATA RETURN NUMBER IS BEGIN RETURN 1; END;"
+      - id: call_spec_java
+        sql: "CREATE FUNCTION f (a VARCHAR2) RETURN VARCHAR2 AS LANGUAGE JAVA NAME 'Util.f(java.lang.String) return java.lang.String';"
+      - id: call_spec_c
+        sql: "CREATE FUNCTION f (x BINARY_INTEGER) RETURN BINARY_INTEGER AS LANGUAGE C NAME \"c_f\" LIBRARY c_utils WITH CONTEXT PARAMETERS (CONTEXT, x INT, RETURN INT);"
+      - id: call_spec_external
+        sql: "CREATE FUNCTION f (x BINARY_INTEGER) RETURN BINARY_INTEGER AS EXTERNAL LIBRARY c_utils NAME \"c_f\";"
+      - id: call_spec_mle_module
+        sql: "CREATE OR REPLACE FUNCTION f (\"p_who\" VARCHAR2) RETURN VARCHAR2 AS MLE MODULE hello_mod SIGNATURE 'hello';"
+      - id: call_spec_mle_inline
+        sql: |-
+          CREATE OR REPLACE FUNCTION f ("who" VARCHAR2) RETURN VARCHAR2
+          AS MLE LANGUAGE JAVASCRIPT
+          {{
+            return `Hello, ${who}`;
+          }};
+      - id: nested_subprogram
+        sql: "CREATE FUNCTION f (a NUMBER) RETURN NUMBER IS FUNCTION g (b NUMBER) RETURN NUMBER IS BEGIN RETURN b * 2; END; BEGIN RETURN g(a); END;"
+      - id: slash_terminated
+        sql: |-
+          CREATE OR REPLACE FUNCTION f RETURN NUMBER IS
+          BEGIN
+            RETURN 1;
+          END;
+          /
+        note: "In SQL*Plus and SQLcl scripts a PL/SQL unit ends with a line containing only /."
+    examples:
+      - |-
+        CREATE FUNCTION IF NOT EXISTS get_bal(acc_no IN NUMBER) 
+           RETURN NUMBER 
+           IS acc_bal NUMBER(11,2);
+           BEGIN 
+              SELECT order_total 
+              INTO acc_bal 
+              FROM orders 
+              WHERE customer_id = acc_no; 
+              RETURN(acc_bal); 
+            END;
+        /
+      - |-
+        CREATE FUNCTION SecondMax (input NUMBER) RETURN NUMBER
+            PARALLEL_ENABLE AGGREGATE USING SecondMaxImpl;
+      - |-
+        CREATE OR REPLACE FUNCTION text_length(a CLOB) 
+           RETURN NUMBER DETERMINISTIC IS
+        BEGIN 
+          RETURN DBMS_LOB.GETLENGTH(a);
+        END;
+      - |-
+        CREATE OR REPLACE FUNCTION hello_inline(
+          "who" VARCHAR2
+        ) RETURN VARCHAR2
+        AS MLE LANGUAGE JAVASCRIPT
+        {{
+          return `Hello, ${who}`;
+        }};
+        /
+      - |-
+        CREATE OR REPLACE FUNCTION hello(
+          "p_who" VARCHAR2
+        ) RETURN VARCHAR2
+        AS MLE MODULE hello_mod
+        SIGNATURE 'hello';
+        /
+
+  - id: create_procedure
+    name: CREATE PROCEDURE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/CREATE-PROCEDURE-statement.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE PROCEDURE p IS BEGIN NULL; END;"
+      - id: or_replace_params
+        sql: "CREATE OR REPLACE PROCEDURE s.p (a IN NUMBER, b OUT VARCHAR2, c IN OUT NOCOPY NUMBER, d DATE DEFAULT SYSDATE) AS BEGIN b := TO_CHAR(a); END p;"
+      - id: if_not_exists
+        sql: "CREATE PROCEDURE IF NOT EXISTS p (id NUMBER) AS BEGIN DELETE FROM t WHERE t.id = p.id; END;"
+      - id: editionable
+        sql: "CREATE OR REPLACE EDITIONABLE PROCEDURE p IS BEGIN NULL; END;"
+      - id: noneditionable
+        sql: "CREATE NONEDITIONABLE PROCEDURE p IS BEGIN NULL; END;"
+      - id: declare_section
+        sql: "CREATE PROCEDURE p (id NUMBER) AS n NUMBER; CURSOR c IS SELECT c FROM t; BEGIN DELETE FROM t WHERE t.id = p.id; n := SQL%ROWCOUNT; END;"
+      - id: exception_section
+        sql: "CREATE PROCEDURE p IS BEGIN INSERT INTO t VALUES (1); EXCEPTION WHEN DUP_VAL_ON_INDEX THEN NULL; WHEN OTHERS THEN RAISE; END;"
+      - id: authid_current_user
+        sql: "CREATE PROCEDURE p AUTHID CURRENT_USER IS BEGIN NULL; END;"
+      - id: accessible_by
+        sql: "CREATE PROCEDURE p ACCESSIBLE BY (FUNCTION f, TRIGGER s.trg) IS BEGIN NULL; END;"
+      - id: default_collation
+        sql: "CREATE PROCEDURE p DEFAULT COLLATION USING_NLS_COMP IS BEGIN NULL; END;"
+      - id: sharing
+        sql: "CREATE PROCEDURE p SHARING = NONE IS BEGIN NULL; END;"
+      - id: autonomous_transaction
+        sql: "CREATE PROCEDURE p (m VARCHAR2) IS PRAGMA AUTONOMOUS_TRANSACTION; BEGIN INSERT INTO log_t VALUES (m); COMMIT; END;"
+      - id: call_spec_c
+        sql: "CREATE PROCEDURE p (x IN REAL) IS LANGUAGE C NAME c_find_root LIBRARY c_utils PARAMETERS (x BY REFERENCE);"
+      - id: call_spec_java
+        sql: "CREATE PROCEDURE p (a VARCHAR2) AS LANGUAGE JAVA NAME 'Util.p(java.lang.String)';"
+      - id: call_spec_mle_module
+        sql: "CREATE OR REPLACE PROCEDURE p (\"p_who\" VARCHAR2) AS MLE MODULE hello_mod SIGNATURE 'hello';"
+      - id: call_spec_mle_inline
+        sql: |-
+          CREATE OR REPLACE PROCEDURE p ("who" VARCHAR2)
+          AS MLE LANGUAGE JAVASCRIPT
+          {{
+            console.log(`Hello, ${who}`);
+          }};
+      - id: nested_subprograms
+        sql: "CREATE PROCEDURE p IS PROCEDURE q (a NUMBER); PROCEDURE q (a NUMBER) IS BEGIN NULL; END; BEGIN q(1); END;"
+      - id: slash_terminated
+        sql: |-
+          CREATE OR REPLACE PROCEDURE p IS
+          BEGIN
+            NULL;
+          END;
+          /
+        note: "In SQL*Plus and SQLcl scripts a PL/SQL unit ends with a line containing only /."
+    examples:
+      - |-
+        CREATE PROCEDURE IF NOT EXISTS remove_emp (employee_id NUMBER) AS
+           tot_emps NUMBER;
+           BEGIN
+              DELETE FROM employees
+              WHERE employees.employee_id = remove_emp.employee_id;
+           tot_emps := tot_emps - 1;
+           END;
+        /
+      - |-
+        CREATE PROCEDURE find_root
+           ( x IN REAL ) 
+           IS LANGUAGE C
+              NAME c_find_root
+              LIBRARY c_utils
+              PARAMETERS ( x BY REFERENCE );
+      - |-
+        CREATE OR REPLACE PROCEDURE hello_inline(
+          "who" VARCHAR2
+        )
+        AS MLE LANGUAGE JAVASCRIPT
+        {{
+          console.log(`Hello, ${who}`);
+        }};
+        /
+      - |-
+        CREATE OR REPLACE PROCEDURE hello(
+          "p_who" VARCHAR2
+        )
+        AS MLE MODULE hello_mod
+        SIGNATURE 'hello';
+        /
+
+  - id: alter_function
+    name: ALTER FUNCTION
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/ALTER-FUNCTION-statement.html
+    tier: medium
+    probes:
+      - id: compile
+        sql: "ALTER FUNCTION s.f COMPILE;"
+      - id: if_exists_compile_debug
+        sql: "ALTER FUNCTION IF EXISTS f COMPILE DEBUG;"
+      - id: compiler_parameters_reuse
+        sql: "ALTER FUNCTION f COMPILE PLSQL_OPTIMIZE_LEVEL = 3 PLSQL_CODE_TYPE = NATIVE REUSE SETTINGS;"
+      - id: editionable
+        sql: "ALTER FUNCTION f NONEDITIONABLE;"
+    examples:
+      - "ALTER FUNCTION oe.get_bal COMPILE;"
+
+  - id: alter_procedure
+    name: ALTER PROCEDURE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/ALTER-PROCEDURE-statement.html
+    tier: medium
+    probes:
+      - id: compile
+        sql: "ALTER PROCEDURE s.p COMPILE;"
+      - id: if_exists_compile_reuse
+        sql: "ALTER PROCEDURE IF EXISTS p COMPILE DEBUG REUSE SETTINGS;"
+      - id: compiler_parameters
+        sql: "ALTER PROCEDURE p COMPILE PLSQL_WARNINGS = 'ENABLE:ALL';"
+      - id: editionable
+        sql: "ALTER PROCEDURE p EDITIONABLE;"
+    examples:
+      - "ALTER PROCEDURE IF EXISTS hr.remove_emp COMPILE;"
+
+  - id: drop_function
+    name: DROP FUNCTION
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/DROP-FUNCTION-statement.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "DROP FUNCTION f;"
+      - id: if_exists_schema
+        sql: "DROP FUNCTION IF EXISTS s.f;"
+    examples:
+      - "DROP FUNCTION IF EXISTS oe.SecondMax;"
+
+  - id: drop_procedure
+    name: DROP PROCEDURE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/lnpls/DROP-PROCEDURE-statement.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "DROP PROCEDURE p;"
+      - id: if_exists_schema
+        sql: "DROP PROCEDURE IF EXISTS s.p;"
+    examples:
+      - "DROP PROCEDURE IF EXISTS hr.remove_emp;"
