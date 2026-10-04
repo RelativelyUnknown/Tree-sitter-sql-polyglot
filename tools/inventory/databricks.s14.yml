@@ -1,0 +1,153 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: window_frame
+    name: Window frame clause
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-window-functions-frame
+    tier: high
+    probes:
+      - id: rows_unbounded_preceding
+        sql: "SELECT sum(c) OVER (ORDER BY o ROWS UNBOUNDED PRECEDING) FROM t;"
+      - id: rows_n_preceding
+        sql: "SELECT sum(c) OVER (ORDER BY o ROWS 2 PRECEDING) FROM t;"
+      - id: rows_current_row
+        sql: "SELECT sum(c) OVER (ORDER BY o ROWS CURRENT ROW) FROM t;"
+      - id: rows_n_following
+        sql: "SELECT sum(c) OVER (ORDER BY o ROWS 2 FOLLOWING) FROM t;"
+      - id: range_unbounded_preceding
+        sql: "SELECT sum(c) OVER (ORDER BY o RANGE UNBOUNDED PRECEDING) FROM t;"
+      - id: range_n_preceding
+        sql: "SELECT sum(c) OVER (ORDER BY o RANGE 5 PRECEDING) FROM t;"
+      - id: range_current_row
+        sql: "SELECT sum(c) OVER (ORDER BY o RANGE CURRENT ROW) FROM t;"
+      - id: range_n_following
+        sql: "SELECT sum(c) OVER (ORDER BY o RANGE 5 FOLLOWING) FROM t;"
+      - id: rows_between_unbounded_preceding_and_current_row
+        sql: "SELECT sum(c) OVER (ORDER BY o ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;"
+      - id: rows_between_unbounded_preceding_and_n_preceding
+        sql: "SELECT sum(c) OVER (ORDER BY o ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) FROM t;"
+      - id: rows_between_unbounded_preceding_and_n_following
+        sql: "SELECT sum(c) OVER (ORDER BY o ROWS BETWEEN UNBOUNDED PRECEDING AND 1 FOLLOWING) FROM t;"
+      - id: rows_between_unbounded_preceding_and_unbounded_following
+        sql: "SELECT sum(c) OVER (PARTITION BY p ORDER BY o ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;"
+      - id: rows_between_n_preceding_and_n_preceding
+        sql: "SELECT sum(c) OVER (ORDER BY o ROWS BETWEEN 3 PRECEDING AND 1 PRECEDING) FROM t;"
+      - id: rows_between_n_preceding_and_current_row
+        sql: "SELECT sum(c) OVER (ORDER BY o ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) FROM t;"
+      - id: rows_between_n_preceding_and_n_following
+        sql: "SELECT sum(c) OVER (ORDER BY o ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;"
+      - id: rows_between_n_preceding_and_unbounded_following
+        sql: "SELECT sum(c) OVER (ORDER BY o ROWS BETWEEN 1 PRECEDING AND UNBOUNDED FOLLOWING) FROM t;"
+      - id: rows_between_current_row_and_current_row
+        sql: "SELECT sum(c) OVER (ORDER BY o ROWS BETWEEN CURRENT ROW AND CURRENT ROW) FROM t;"
+      - id: rows_between_current_row_and_n_following
+        sql: "SELECT sum(c) OVER (ORDER BY o ROWS BETWEEN CURRENT ROW AND 2 FOLLOWING) FROM t;"
+      - id: rows_between_current_row_and_unbounded_following
+        sql: "SELECT sum(c) OVER (ORDER BY o ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM t;"
+      - id: rows_between_n_following_and_n_following
+        sql: "SELECT sum(c) OVER (ORDER BY o ROWS BETWEEN 1 FOLLOWING AND 3 FOLLOWING) FROM t;"
+      - id: rows_between_n_following_and_unbounded_following
+        sql: "SELECT sum(c) OVER (ORDER BY o ROWS BETWEEN 1 FOLLOWING AND UNBOUNDED FOLLOWING) FROM t;"
+      - id: range_between_unbounded_preceding_and_current_row
+        sql: "SELECT sum(c) OVER (ORDER BY o RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;"
+      - id: range_between_unbounded_preceding_and_n_preceding
+        sql: "SELECT sum(c) OVER (ORDER BY o RANGE BETWEEN UNBOUNDED PRECEDING AND 5 PRECEDING) FROM t;"
+      - id: range_between_unbounded_preceding_and_n_following
+        sql: "SELECT sum(c) OVER (ORDER BY o RANGE BETWEEN UNBOUNDED PRECEDING AND 5 FOLLOWING) FROM t;"
+      - id: range_between_unbounded_preceding_and_unbounded_following
+        sql: "SELECT sum(c) OVER (ORDER BY o RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;"
+      - id: range_between_n_preceding_and_n_preceding
+        sql: "SELECT sum(c) OVER (ORDER BY o RANGE BETWEEN 10 PRECEDING AND 5 PRECEDING) FROM t;"
+      - id: range_between_n_preceding_and_current_row
+        sql: "SELECT sum(c) OVER (ORDER BY o RANGE BETWEEN 5 PRECEDING AND CURRENT ROW) FROM t;"
+      - id: range_between_n_preceding_and_n_following
+        sql: "SELECT sum(c) OVER (ORDER BY o RANGE BETWEEN 5000 PRECEDING AND 5000 FOLLOWING) FROM t;"
+      - id: range_between_n_preceding_and_unbounded_following
+        sql: "SELECT sum(c) OVER (ORDER BY o RANGE BETWEEN 5 PRECEDING AND UNBOUNDED FOLLOWING) FROM t;"
+      - id: range_between_current_row_and_current_row
+        sql: "SELECT sum(c) OVER (ORDER BY o RANGE BETWEEN CURRENT ROW AND CURRENT ROW) FROM t;"
+      - id: range_between_current_row_and_n_following
+        sql: "SELECT sum(c) OVER (ORDER BY o RANGE BETWEEN CURRENT ROW AND 5 FOLLOWING) FROM t;"
+      - id: range_between_current_row_and_unbounded_following
+        sql: "SELECT sum(c) OVER (ORDER BY o RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM t;"
+      - id: range_between_n_following_and_n_following
+        sql: "SELECT sum(c) OVER (ORDER BY o RANGE BETWEEN 5 FOLLOWING AND 10 FOLLOWING) FROM t;"
+      - id: range_between_n_following_and_unbounded_following
+        sql: "SELECT sum(c) OVER (ORDER BY o RANGE BETWEEN 5 FOLLOWING AND UNBOUNDED FOLLOWING) FROM t;"
+      - id: frame_in_named_window
+        sql: "SELECT sum(c) OVER w FROM t WINDOW w AS (PARTITION BY p ORDER BY o ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING);"
+        note: The frame clause is part of the window specification, which a named window also takes.
+    examples:
+      - "SELECT name, dept, salary, SUM(salary) OVER (PARTITION BY dept ORDER BY salary ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running_total FROM employees;"
+      - "SELECT name, dept, salary, ROUND(AVG(salary) OVER (PARTITION BY dept ORDER BY salary ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING)) AS moving_avg FROM employees;"
+      - "SELECT name, dept, salary, SUM(salary) OVER (PARTITION BY dept ORDER BY salary RANGE BETWEEN 5000 PRECEDING AND 5000 FOLLOWING) AS nearby_total FROM employees;"
+
+  - id: hints
+    name: Hints
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-hints
+    tier: high
+    probes:
+      - id: coalesce
+        sql: "SELECT /*+ COALESCE(3) */ * FROM t;"
+      - id: repartition_num
+        sql: "SELECT /*+ REPARTITION(3) */ * FROM t;"
+      - id: repartition_column
+        sql: "SELECT /*+ REPARTITION(c) */ * FROM t;"
+      - id: repartition_num_column
+        sql: "SELECT /*+ REPARTITION(3, c) */ * FROM t;"
+      - id: repartition_multiple_columns
+        sql: "SELECT /*+ REPARTITION(c1, c2) */ * FROM t;"
+      - id: repartition_by_range_column
+        sql: "SELECT /*+ REPARTITION_BY_RANGE(c) */ * FROM t;"
+      - id: repartition_by_range_num_column
+        sql: "SELECT /*+ REPARTITION_BY_RANGE(3, c) */ * FROM t;"
+      - id: repartition_by_range_num_only
+        sql: "SELECT /*+ REPARTITION_BY_RANGE(3) */ * FROM t;"
+      - id: rebalance
+        sql: "SELECT /*+ REBALANCE */ * FROM t;"
+      - id: rebalance_column
+        sql: "SELECT /*+ REBALANCE(c) */ * FROM t;"
+      - id: rebalance_multiple_columns
+        sql: "SELECT /*+ REBALANCE(c1, c2) */ * FROM t;"
+      - id: rebalance_alias_column
+        sql: "SELECT /*+ REBALANCE(d) */ * FROM t AS s (d);"
+      - id: multiple_partition_hints
+        sql: "SELECT /*+ REPARTITION(100), COALESCE(500), REPARTITION_BY_RANGE(3, c) */ * FROM t;"
+      - id: broadcast
+        sql: "SELECT /*+ BROADCAST(t1) */ * FROM t1 INNER JOIN t2 ON t1.key = t2.key;"
+      - id: broadcastjoin
+        sql: "SELECT /*+ BROADCASTJOIN(t1) */ * FROM t1 LEFT JOIN t2 ON t1.key = t2.key;"
+      - id: mapjoin
+        sql: "SELECT /*+ MAPJOIN(t2) */ * FROM t1 RIGHT JOIN t2 ON t1.key = t2.key;"
+      - id: merge
+        sql: "SELECT /*+ MERGE(t1) */ * FROM t1 INNER JOIN t2 ON t1.key = t2.key;"
+      - id: shuffle_merge
+        sql: "SELECT /*+ SHUFFLE_MERGE(t1) */ * FROM t1 INNER JOIN t2 ON t1.key = t2.key;"
+      - id: mergejoin
+        sql: "SELECT /*+ MERGEJOIN(t2) */ * FROM t1 INNER JOIN t2 ON t1.key = t2.key;"
+      - id: shuffle_hash
+        sql: "SELECT /*+ SHUFFLE_HASH(t1) */ * FROM t1 INNER JOIN t2 ON t1.key = t2.key;"
+      - id: shuffle_replicate_nl
+        sql: "SELECT /*+ SHUFFLE_REPLICATE_NL(t1) */ * FROM t1 INNER JOIN t2 ON t1.key = t2.key;"
+      - id: join_hint_two_tables
+        sql: "SELECT /*+ MERGE(t1, t2) */ * FROM t1 INNER JOIN t2 ON t1.key = t2.key;"
+      - id: multiple_join_hints
+        sql: "SELECT /*+ BROADCAST(t1), MERGE(t1, t2) */ * FROM t1 INNER JOIN t2 ON t1.key = t2.key;"
+      - id: join_hints_alias
+        sql: "SELECT /*+ BROADCAST(t1), MERGE(s1, s2) */ * FROM t1 AS s1 INNER JOIN t2 AS s2 ON s1.key = s2.key;"
+      - id: partition_and_join_hints
+        sql: "SELECT /*+ BROADCAST(t1), REPARTITION(3) */ * FROM t1 INNER JOIN t2 ON t1.key = t2.key;"
+        note: The syntax block allows partition_hint, join_hint and skew_hint to be mixed in one comma-separated list.
+      - id: skew
+        sql: "SELECT /*+ SKEW('t1') */ * FROM t1 INNER JOIN t2 ON t1.key = t2.key;"
+        note: The Hints page defers to the Delta Lake "Skew join optimization using skew hints" page for the SKEW hint; it is not defined on the cited page.
+      - id: hint_in_subquery
+        sql: "SELECT * FROM (SELECT /*+ REPARTITION(3) */ * FROM t) AS s;"
+        note: Hints attach to any SELECT, including a subquery.
+    examples:
+      - "SELECT /*+ REPARTITION(3, c) */ * FROM t;"
+      - "EXPLAIN EXTENDED SELECT /*+ REPARTITION(100), COALESCE(500), REPARTITION_BY_RANGE(3, c) */ * FROM t;"
+      - "SELECT /*+ BROADCAST(t1), MERGE(s1, s2) */ * FROM t1 AS s1 INNER JOIN t2 AS s2 ON s1.key = s2.key;"
