@@ -4,3 +4,919 @@ version: "26ai"
 source: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/Types-of-SQL-Statements.html
 
 statements:
+  - id: select
+    name: SELECT
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/SELECT.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT c FROM t;"
+      - id: star
+        sql: "SELECT * FROM t;"
+      - id: from_dual
+        sql: "SELECT 1 FROM DUAL;"
+      - id: no_from
+        sql: "SELECT CURRENT_DATE;"
+        note: "FROM is optional in 26ai; the page's example is SELECT CURRENT_DATE;"
+      - id: hint
+        sql: "SELECT /*+ FULL(t) PARALLEL(t, 4) */ c FROM t;"
+      - id: distinct
+        sql: "SELECT DISTINCT c FROM t;"
+      - id: unique
+        sql: "SELECT UNIQUE c FROM t;"
+      - id: all
+        sql: "SELECT ALL c FROM t;"
+      - id: table_star
+        sql: "SELECT t.*, c FROM t;"
+      - id: schema_table_star
+        sql: "SELECT s.t.* FROM s.t;"
+      - id: alias_star
+        sql: "SELECT x.* FROM t x;"
+      - id: column_alias
+        sql: "SELECT c AS a, d b FROM t;"
+      - id: quoted_alias
+        sql: "SELECT c \"Col A\" FROM t;"
+      - id: table_alias
+        sql: "SELECT x.c FROM s.t x;"
+      - id: where
+        sql: "SELECT c FROM t WHERE c > 0 AND d IS NOT NULL;"
+      - id: comma_join
+        sql: "SELECT a.c, b.d FROM t a, u b WHERE a.c = b.c;"
+      - id: subquery_in_from
+        sql: "SELECT x.c FROM (SELECT c FROM t) x;"
+      - id: union
+        sql: "SELECT c FROM t UNION SELECT c FROM u;"
+      - id: union_all
+        sql: "SELECT c FROM t UNION ALL SELECT c FROM u;"
+      - id: intersect
+        sql: "SELECT c FROM t INTERSECT SELECT c FROM u;"
+      - id: intersect_all
+        sql: "SELECT c FROM t INTERSECT ALL SELECT c FROM u;"
+      - id: minus
+        sql: "SELECT c FROM t MINUS SELECT c FROM u;"
+      - id: minus_all
+        sql: "SELECT c FROM t MINUS ALL SELECT c FROM u;"
+      - id: except
+        sql: "SELECT c FROM t EXCEPT SELECT c FROM u;"
+      - id: except_all
+        sql: "SELECT c FROM t EXCEPT ALL SELECT c FROM u;"
+      - id: set_op_chain
+        sql: "SELECT c FROM t UNION SELECT c FROM u MINUS SELECT c FROM v;"
+      - id: parenthesized_subquery
+        sql: "(SELECT c FROM t) UNION (SELECT c FROM u) ORDER BY 1;"
+      - id: order_by
+        sql: "SELECT c, d FROM t ORDER BY c DESC NULLS LAST, d ASC NULLS FIRST;"
+      - id: order_by_position
+        sql: "SELECT c, d FROM t ORDER BY 2 ASC, 1;"
+      - id: order_by_alias
+        sql: "SELECT c AS x FROM t ORDER BY x;"
+      - id: all_clauses
+        sql: "WITH q AS (SELECT c, d FROM t) SELECT /*+ NO_MERGE */ DISTINCT c, COUNT(*) n FROM q WHERE d > 0 GROUP BY c HAVING COUNT(*) > 1 ORDER BY c OFFSET 1 ROWS FETCH NEXT 5 ROWS ONLY;"
+    examples:
+      - |-
+        SELECT *
+           FROM employees
+           WHERE department_id = 30
+           ORDER BY last_name;
+      - |-
+        SELECT a.department_id "Department",
+           a.num_emp/b.total_count "%_Employees",
+           a.sal_sum/b.total_sal "%_Salary"
+        FROM
+        (SELECT department_id, COUNT(*) num_emp, SUM(salary) sal_sum
+           FROM employees
+           GROUP BY department_id) a,
+        (SELECT COUNT(*) total_count, SUM(salary) total_sal
+           FROM employees) b
+        ORDER BY a.department_id;
+      - |-
+        SELECT last_name, department_id, salary
+           FROM employees
+           ORDER BY 2 ASC, 3 DESC, 1;
+      - "SELECT CURRENT_DATE;"
+      - |-
+        SELECT last_name, department_id FROM employees
+           WHERE department_id =
+             (SELECT department_id FROM employees
+              WHERE last_name = 'Lorentz')
+           ORDER BY last_name, department_id;
+
+  - id: select_with_clause
+    name: SELECT (with_clause)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/SELECT.html
+    tier: high
+    probes:
+      - id: cte
+        sql: "WITH q AS (SELECT c FROM t) SELECT c FROM q;"
+      - id: column_aliases
+        sql: "WITH q (a, b) AS (SELECT c, d FROM t) SELECT a, b FROM q;"
+      - id: multiple
+        sql: "WITH q1 AS (SELECT c FROM t), q2 AS (SELECT c FROM q1 WHERE c > 0) SELECT c FROM q2;"
+      - id: recursive
+        sql: "WITH q (n) AS (SELECT 1 FROM DUAL UNION ALL SELECT n + 1 FROM q WHERE n < 10) SELECT n FROM q;"
+      - id: search_depth_first
+        sql: "WITH q (id, pid) AS (SELECT id, pid FROM t WHERE pid IS NULL UNION ALL SELECT t.id, t.pid FROM q, t WHERE q.id = t.pid) SEARCH DEPTH FIRST BY id SET ord SELECT id FROM q ORDER BY ord;"
+      - id: search_breadth_first
+        sql: "WITH q (id, pid) AS (SELECT id, pid FROM t WHERE pid IS NULL UNION ALL SELECT t.id, t.pid FROM q, t WHERE q.id = t.pid) SEARCH BREADTH FIRST BY id DESC NULLS LAST SET ord SELECT id FROM q ORDER BY ord;"
+      - id: cycle
+        sql: "WITH q (id, pid) AS (SELECT id, pid FROM t WHERE pid IS NULL UNION ALL SELECT t.id, t.pid FROM q, t WHERE q.id = t.pid) CYCLE id SET is_cycle TO 'Y' DEFAULT 'N' SELECT id, is_cycle FROM q;"
+      - id: values
+        sql: "WITH x (a, b) AS (VALUES (1, 2), (3, 4)) SELECT a, b FROM x;"
+      - id: nested_with
+        sql: "WITH q AS (WITH r AS (SELECT 1 c FROM DUAL) SELECT c FROM r) SELECT c FROM q;"
+      - id: with_in_subquery
+        sql: "SELECT c FROM t WHERE c > (WITH q AS (SELECT AVG(c) a FROM t) SELECT a FROM q);"
+      - id: plsql_function
+        sql: "WITH FUNCTION f(x NUMBER) RETURN NUMBER IS BEGIN RETURN x * 2; END; SELECT f(c) FROM t;"
+      - id: plsql_procedure_and_function
+        sql: "WITH PROCEDURE p(x NUMBER) IS BEGIN NULL; END; FUNCTION f(x NUMBER) RETURN NUMBER IS BEGIN p(x); RETURN x; END; SELECT f(c) FROM t;"
+      - id: plsql_function_with_cte
+        sql: "WITH FUNCTION f(x NUMBER) RETURN NUMBER IS BEGIN RETURN x; END; q AS (SELECT c FROM t) SELECT f(c) FROM q;"
+      - id: subav_factoring
+        sql: "WITH a ANALYTIC VIEW AS (USING av HIERARCHIES (h) ADD MEASURES (m2 AS (LAG(m) OVER (HIERARCHY h OFFSET 1)))) SELECT h.member_name, m, m2 FROM a HIERARCHIES (h);"
+      - id: subav_filter_fact
+        sql: "WITH a ANALYTIC VIEW AS (USING av HIERARCHIES (h) FILTER FACT (h TO level_name = 'YEAR')) SELECT m FROM a HIERARCHIES (h);"
+    examples:
+      - |-
+        WITH
+           dept_costs AS (
+              SELECT department_name, SUM(salary) dept_total
+                 FROM employees e, departments d
+                 WHERE e.department_id = d.department_id
+              GROUP BY department_name),
+           avg_cost AS (
+              SELECT SUM(dept_total)/COUNT(*) avg
+              FROM dept_costs)
+        SELECT * FROM dept_costs
+           WHERE dept_total >
+              (SELECT avg FROM avg_cost)
+              ORDER BY department_name;
+      - |-
+        WITH
+          reports_to_101 (eid, emp_last, mgr_id, reportLevel) AS
+          (
+             SELECT employee_id, last_name, manager_id, 0 reportLevel
+             FROM employees
+             WHERE employee_id = 101
+           UNION ALL
+             SELECT e.employee_id, e.last_name, e.manager_id, reportLevel+1
+             FROM reports_to_101 r, employees e
+             WHERE r.eid = e.manager_id
+          )
+        SELECT eid, emp_last, mgr_id, reportLevel
+        FROM reports_to_101
+        ORDER BY reportLevel, eid;
+      - |-
+        WITH
+          dup_hiredate (eid, emp_last, mgr_id, reportLevel, hire_date, job_id) AS
+          (
+            SELECT employee_id, last_name, manager_id, 0 reportLevel, hire_date, job_id
+            FROM employees
+            WHERE manager_id is null
+          UNION ALL
+            SELECT e.employee_id, e.last_name, e.manager_id,
+                   r.reportLevel+1 reportLevel, e.hire_date, e.job_id
+            FROM dup_hiredate r, employees e
+            WHERE r.eid = e.manager_id
+          )
+          SEARCH DEPTH FIRST BY hire_date SET order1
+          CYCLE hire_date SET is_cycle TO 'Y' DEFAULT 'N'
+        SELECT lpad(' ',2*reportLevel)||emp_last emp_name, eid, mgr_id,
+               hire_date, job_id, is_cycle
+        FROM dup_hiredate
+        ORDER BY order1;
+      - |-
+        WITH X(foo, bar, baz) AS (
+                 VALUES (0, 1, 2), (3, 4, 5), (6, 7, 8) ) SELECT * FROM X;
+      - |-
+        WITH
+         FUNCTION get_domain(url VARCHAR2) RETURN VARCHAR2 IS
+           pos BINARY_INTEGER;
+           len BINARY_INTEGER;
+         BEGIN
+           pos := INSTR(url, 'www.');
+           len := INSTR(SUBSTR(url, pos + 4), '.') - 1;
+           RETURN SUBSTR(url, pos + 4, len);
+         END;
+        SELECT DISTINCT get_domain(catalog_url)
+          FROM product_information;
+        /
+
+  - id: select_table_reference
+    name: SELECT (FROM clause, table_reference)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/SELECT.html
+    tier: high
+    probes:
+      - id: partition
+        sql: "SELECT c FROM t PARTITION (p1);"
+      - id: partition_for
+        sql: "SELECT c FROM t PARTITION FOR (100);"
+      - id: subpartition
+        sql: "SELECT c FROM t SUBPARTITION (sp1);"
+      - id: subpartition_for
+        sql: "SELECT c FROM t SUBPARTITION FOR (100, 'A');"
+      - id: partition_with_alias
+        sql: "SELECT x.c FROM t PARTITION (p1) x;"
+      - id: dblink
+        sql: "SELECT c FROM t@remote;"
+      - id: schema_dblink_qualified
+        sql: "SELECT c FROM s.t@remote.example.com;"
+      - id: only
+        sql: "SELECT c FROM ONLY (s.v);"
+      - id: lateral
+        sql: "SELECT x.c FROM t, LATERAL (SELECT c FROM u WHERE u.id = t.id) x;"
+      - id: subquery_with_read_only
+        sql: "SELECT c FROM (SELECT c FROM t WITH READ ONLY);"
+      - id: subquery_with_check_option
+        sql: "SELECT c FROM (SELECT c FROM t WITH CHECK OPTION CONSTRAINT ck);"
+      - id: table_collection
+        sql: "SELECT x.* FROM t, TABLE(t.arr) x;"
+      - id: table_collection_outer
+        sql: "SELECT x.* FROM t, TABLE(t.arr) (+) x;"
+      - id: table_collection_cast_multiset
+        sql: "SELECT x.* FROM t, TABLE(CAST(MULTISET(SELECT c FROM u WHERE u.id = t.id) AS typ)) x;"
+      - id: table_function
+        sql: "SELECT * FROM TABLE(f(1));"
+      - id: table_function_direct
+        sql: "SELECT * FROM f('x');"
+        note: "Table functions and SQL macros can be called directly in FROM; the page's SQL_MACRO example is SELECT * FROM budget ('MANAGER');"
+      - id: containers
+        sql: "SELECT c FROM CONTAINERS(s.t);"
+      - id: shards
+        sql: "SELECT c FROM SHARDS(t);"
+      - id: values_clause
+        sql: "SELECT * FROM (VALUES (1, 'a'), (2, 'b')) v (id, name);"
+      - id: values_clause_as
+        sql: "SELECT * FROM (VALUES (1, 'a'), (2, 'b')) AS v (id, name);"
+      - id: external_modify
+        sql: "SELECT * FROM t EXTERNAL MODIFY (DEFAULT DIRECTORY d LOCATION ('f.csv') REJECT LIMIT UNLIMITED);"
+      - id: inline_external_table
+        sql: "SELECT * FROM EXTERNAL ((c NUMBER, d VARCHAR2(10)) TYPE ORACLE_LOADER DEFAULT DIRECTORY dir ACCESS PARAMETERS (RECORDS DELIMITED BY NEWLINE FIELDS TERMINATED BY ',') LOCATION ('f.csv') REJECT LIMIT UNLIMITED) x;"
+      - id: analytic_view_hierarchies
+        sql: "SELECT h.member_name, m FROM av HIERARCHIES (h) WHERE h.level_name = 'YEAR';"
+      - id: inline_analytic_view
+        sql: "SELECT h.member_name, m2 FROM ANALYTIC VIEW (USING av HIERARCHIES (h) ADD MEASURES (m2 AS (LAG(m) OVER (HIERARCHY h OFFSET 1)))) x;"
+    examples:
+      - |-
+        SELECT * FROM sales PARTITION (sales_q2_2000) s
+           WHERE s.amount_sold > 1500
+           ORDER BY cust_id, time_id, channel_id;
+      - |-
+        SELECT *
+                    FROM ( VALUES (1,'SCOTT'),
+                                  (2,'SMITH'),
+                                  (3,'JOHN' )
+                         ) t1 (employee_id, first_name);
+      - |-
+        SELECT d.department_name, e2.last_name, e2.first_name, e2.salary, e2.email
+        FROM hr.departments d,
+           LATERAL (SELECT * FROM
+                             (SELECT * FROM hr.employees e
+                              WHERE e.department_id = d.department_id
+                              ORDER BY e.salary DESC, e.employee_id ASC)
+                     WHERE ROWNUM = 1) e2;
+      - |-
+        SELECT t1.department_id, t2.*
+           FROM hr_info t1, TABLE(CAST(MULTISET(
+              SELECT t3.last_name, t3.department_id, t3.salary
+                 FROM people t3
+              WHERE t3.department_id = t1.department_id)
+              AS people_tab_typ)) t2;
+      - |-
+        SELECT * FROM
+        sales_external EXTERNAL MODIFY (LOCATION 'sales_9.csv' REJECT LIMIT UNLIMITED);
+
+  - id: select_joins
+    name: SELECT (join_clause)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/SELECT.html
+    tier: high
+    probes:
+      - id: inner_join_on
+        sql: "SELECT t.c, u.d FROM t INNER JOIN u ON t.id = u.id;"
+      - id: join_on
+        sql: "SELECT t.c, u.d FROM t JOIN u ON t.id = u.id;"
+      - id: join_using
+        sql: "SELECT id, c, d FROM t JOIN u USING (id);"
+      - id: join_using_multiple
+        sql: "SELECT id, k FROM t JOIN u USING (id, k);"
+      - id: cross_join
+        sql: "SELECT t.c, u.d FROM t CROSS JOIN u;"
+      - id: natural_join
+        sql: "SELECT c FROM t NATURAL JOIN u;"
+      - id: natural_inner_join
+        sql: "SELECT c FROM t NATURAL INNER JOIN u;"
+      - id: left_outer_join
+        sql: "SELECT t.c, u.d FROM t LEFT OUTER JOIN u ON t.id = u.id;"
+      - id: left_join
+        sql: "SELECT t.c, u.d FROM t LEFT JOIN u ON t.id = u.id;"
+      - id: right_outer_join
+        sql: "SELECT t.c, u.d FROM t RIGHT OUTER JOIN u ON t.id = u.id;"
+      - id: right_join_using
+        sql: "SELECT id, c FROM t RIGHT JOIN u USING (id);"
+      - id: full_outer_join
+        sql: "SELECT t.c, u.d FROM t FULL OUTER JOIN u ON t.id = u.id;"
+      - id: full_join
+        sql: "SELECT t.c, u.d FROM t FULL JOIN u ON t.id = u.id;"
+      - id: natural_left_outer_join
+        sql: "SELECT c FROM t NATURAL LEFT OUTER JOIN u;"
+      - id: partitioned_outer_join_left_side
+        sql: "SELECT t.c, u.d FROM t PARTITION BY (t.k) RIGHT OUTER JOIN u ON t.id = u.id;"
+      - id: partitioned_outer_join_right_side
+        sql: "SELECT t.c, u.d FROM t LEFT OUTER JOIN u PARTITION BY (u.k) ON t.id = u.id;"
+      - id: partitioned_outer_join_unparenthesized
+        sql: "SELECT t.c, u.d FROM t LEFT OUTER JOIN u PARTITION BY u.k, u.j ON t.id = u.id;"
+      - id: cross_apply
+        sql: "SELECT t.c, v.d FROM t CROSS APPLY (SELECT d FROM u WHERE u.id = t.id) v;"
+      - id: outer_apply
+        sql: "SELECT t.c, v.d FROM t OUTER APPLY (SELECT d FROM u WHERE u.id = t.id) v;"
+      - id: cross_apply_collection
+        sql: "SELECT t.c, x.column_value FROM t CROSS APPLY TABLE(t.arr) x;"
+      - id: oracle_outer_join_operator
+        sql: "SELECT t.c, u.d FROM t, u WHERE t.id = u.id (+);"
+      - id: oracle_outer_join_operator_multi
+        sql: "SELECT t.c, u.d FROM t, u WHERE t.id = u.id(+) AND u.k(+) = 10;"
+      - id: parenthesized_join
+        sql: "SELECT t.c FROM t JOIN (u JOIN v ON u.id = v.id) ON t.id = u.id;"
+      - id: parenthesized_join_in_from
+        sql: "SELECT t.c FROM (t JOIN u ON t.id = u.id);"
+      - id: multiple_joins
+        sql: "SELECT t.c FROM t JOIN u ON t.id = u.id LEFT JOIN v ON u.id = v.id CROSS JOIN w;"
+      - id: join_to_one
+        sql: "SELECT oi.c, o.d FROM s.oi oi JOIN TO ONE (s.o o, s.p p);"
+      - id: join_to_one_outer
+        sql: "SELECT oi.c, o.d FROM oi JOIN TO ONE (LEFT OUTER JOIN o ON oi.oid = o.id LEFT OUTER JOIN p ON oi.pid = p.id);"
+    examples:
+      - |-
+        SELECT d.department_id, e.last_name
+           FROM departments d LEFT OUTER JOIN employees e
+           ON d.department_id = e.department_id
+           ORDER BY d.department_id, e.last_name;
+      - |-
+        SELECT department_id AS d_e_dept_id, e.last_name
+           FROM departments d FULL OUTER JOIN employees e
+           USING (department_id)
+           ORDER BY department_id, e.last_name;
+      - |-
+        SELECT d.department_name, v.employee_id, v.last_name
+          FROM departments d CROSS APPLY (SELECT * FROM employees e
+                                          WHERE e.department_id = d.department_id) v
+          WHERE d.department_name IN ('Marketing', 'Operations', 'Public Relations')
+          ORDER BY d.department_name, v.employee_id;
+      - |-
+        SELECT d.department_name, v.employee_id, v.last_name
+          FROM departments d OUTER APPLY (SELECT * FROM employees e
+                                          WHERE e.department_id = d.department_id) v
+          WHERE d.department_name IN ('Marketing', 'Operations', 'Public Relations')
+          ORDER by d.department_name, v.employee_id;
+      - |-
+        SELECT oi.unit_price*oi.quantity line_val, o.order_id, o.order_status, p.product_name, c.cust_email
+        FROM oe.Order_Items oi JOIN TO ONE
+        (LEFT OUTER JOIN oe.Orders o ON oi.order_id=o.order_id
+        LEFT OUTER JOIN oe.Product_Information p ON oi.product_id=p.product_id
+        LEFT OUTER JOIN oe.Customers c ON o.customer_id=c.customer_id)
+        ORDER BY o.order_id, oi.line_item_id;
+
+  - id: select_flashback_query
+    name: SELECT (flashback_query_clause)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/SELECT.html
+    tier: high
+    probes:
+      - id: as_of_timestamp
+        sql: "SELECT c FROM t AS OF TIMESTAMP (SYSTIMESTAMP - INTERVAL '1' MINUTE);"
+      - id: as_of_timestamp_alias
+        sql: "SELECT x.c FROM t AS OF TIMESTAMP TO_TIMESTAMP('2024-01-01 00:00:00', 'YYYY-MM-DD HH24:MI:SS') x WHERE x.c > 0;"
+      - id: as_of_scn
+        sql: "SELECT c FROM t AS OF SCN 1234567;"
+      - id: as_of_period_for
+        sql: "SELECT c FROM t AS OF PERIOD FOR valid_time DATE '2024-01-01';"
+      - id: versions_between_timestamp
+        sql: "SELECT c FROM t VERSIONS BETWEEN TIMESTAMP SYSTIMESTAMP - INTERVAL '10' MINUTE AND SYSTIMESTAMP - INTERVAL '1' MINUTE;"
+      - id: versions_between_scn_minmax
+        sql: "SELECT c, versions_startscn, versions_operation FROM t VERSIONS BETWEEN SCN MINVALUE AND MAXVALUE;"
+      - id: versions_period_for
+        sql: "SELECT c FROM t VERSIONS PERIOD FOR valid_time BETWEEN DATE '2024-01-01' AND DATE '2024-12-31';"
+      - id: as_of_in_join
+        sql: "SELECT a.c FROM t AS OF SCN 100 a JOIN u ON a.id = u.id;"
+    examples:
+      - |-
+        SELECT salary FROM employees
+           AS OF TIMESTAMP (SYSTIMESTAMP - INTERVAL '1' MINUTE)
+           WHERE last_name = 'Chung';
+      - |-
+        SELECT salary FROM employees
+          VERSIONS BETWEEN TIMESTAMP
+            SYSTIMESTAMP - INTERVAL '10' MINUTE AND
+            SYSTIMESTAMP - INTERVAL '1' MINUTE
+          WHERE last_name = 'Chung';
+      - |-
+        UPDATE employees SET salary =
+           (SELECT salary FROM employees
+           AS OF TIMESTAMP (SYSTIMESTAMP - INTERVAL '2' MINUTE)
+           WHERE last_name = 'Chung')
+           WHERE last_name = 'Chung';
+
+  - id: select_sample
+    name: SELECT (sample_clause)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/SELECT.html
+    tier: high
+    probes:
+      - id: sample
+        sql: "SELECT COUNT(*) FROM t SAMPLE (10);"
+      - id: sample_block
+        sql: "SELECT COUNT(*) FROM t SAMPLE BLOCK (10);"
+      - id: sample_seed
+        sql: "SELECT COUNT(*) FROM t SAMPLE (10) SEED (1);"
+      - id: sample_block_seed_alias
+        sql: "SELECT COUNT(*) FROM t SAMPLE BLOCK (0.5) SEED (42) x;"
+      - id: sample_dblink_partition
+        sql: "SELECT c FROM t PARTITION (p1) SAMPLE (5);"
+    examples:
+      - "SELECT COUNT(*) * 10 FROM orders SAMPLE (10);"
+      - "SELECT COUNT(*) * 10 FROM orders SAMPLE(10) SEED (1);"
+
+  - id: select_hierarchical_query
+    name: SELECT (hierarchical_query_clause)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/SELECT.html
+    tier: high
+    probes:
+      - id: connect_by
+        sql: "SELECT c FROM t CONNECT BY PRIOR id = pid;"
+      - id: start_with_connect_by
+        sql: "SELECT c, LEVEL FROM t START WITH pid IS NULL CONNECT BY PRIOR id = pid;"
+      - id: connect_by_start_with
+        sql: "SELECT c, LEVEL FROM t CONNECT BY PRIOR id = pid START WITH pid IS NULL;"
+      - id: nocycle
+        sql: "SELECT c, CONNECT_BY_ISCYCLE FROM t START WITH id = 1 CONNECT BY NOCYCLE PRIOR id = pid;"
+      - id: prior_right_side
+        sql: "SELECT c FROM t CONNECT BY id = PRIOR pid;"
+      - id: connect_by_level
+        sql: "SELECT LEVEL FROM DUAL CONNECT BY LEVEL <= 10;"
+      - id: order_siblings_by
+        sql: "SELECT c FROM t START WITH pid IS NULL CONNECT BY PRIOR id = pid ORDER SIBLINGS BY c;"
+      - id: pseudocolumns_and_operators
+        sql: "SELECT c, LEVEL, CONNECT_BY_ISLEAF, CONNECT_BY_ROOT c AS root_c, SYS_CONNECT_BY_PATH(c, '/') AS path FROM t START WITH pid IS NULL CONNECT BY PRIOR id = pid;"
+      - id: with_where
+        sql: "SELECT c FROM t WHERE c <> 'x' START WITH pid IS NULL CONNECT BY PRIOR id = pid AND LEVEL <= 2;"
+    examples:
+      - |-
+        SELECT LPAD(' ',2*(LEVEL-1)) || last_name org_chart,
+                employee_id, manager_id, job_id
+            FROM employees
+            START WITH job_id = 'AD_VP'
+            CONNECT BY PRIOR employee_id = manager_id;
+      - |-
+        SELECT LPAD(' ',2*(LEVEL-1)) || last_name org_chart,
+                employee_id, manager_id, job_id
+            FROM employees
+            WHERE job_id != 'FI_MGR'
+            START WITH job_id = 'AD_VP'
+            CONNECT BY PRIOR employee_id = manager_id;
+      - |-
+        SELECT LPAD(' ',2*(LEVEL-1)) || last_name org_chart,
+        employee_id, manager_id, job_id
+            FROM employees
+            START WITH job_id = 'AD_PRES'
+            CONNECT BY PRIOR employee_id = manager_id AND LEVEL <= 2;
+      - |-
+        SELECT last_name, employee_id, manager_id FROM employees
+           CONNECT BY PRIOR employee_id = manager_id
+           AND salary > commission_pct
+           ORDER BY last_name;
+
+  - id: select_group_by
+    name: SELECT (group_by_clause)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/SELECT.html
+    tier: high
+    probes:
+      - id: group_by
+        sql: "SELECT c, COUNT(*) FROM t GROUP BY c;"
+      - id: group_by_having
+        sql: "SELECT c, COUNT(*) FROM t GROUP BY c HAVING COUNT(*) > 1;"
+      - id: having_before_group_by
+        sql: "SELECT c, COUNT(*) FROM t HAVING COUNT(*) > 1 GROUP BY c;"
+      - id: having_without_group_by
+        sql: "SELECT COUNT(*) FROM t HAVING COUNT(*) > 1;"
+      - id: group_by_alias
+        sql: "SELECT TRUNC(d, 'YYYY') yr, COUNT(*) FROM t GROUP BY yr;"
+      - id: group_by_position
+        sql: "SELECT c, d, COUNT(*) FROM t GROUP BY 1, 2;"
+      - id: group_by_all
+        sql: "SELECT c, d, SUM(e) FROM t GROUP BY ALL;"
+      - id: group_by_expression_list_parenthesized
+        sql: "SELECT c, d, COUNT(*) FROM t GROUP BY (c, d);"
+      - id: rollup
+        sql: "SELECT c, d, SUM(e) FROM t GROUP BY ROLLUP (c, d);"
+      - id: cube
+        sql: "SELECT c, d, SUM(e) FROM t GROUP BY CUBE (c, d);"
+      - id: grouping_sets
+        sql: "SELECT c, d, SUM(e) FROM t GROUP BY GROUPING SETS ((c, d), (c), ());"
+      - id: grouping_sets_rollup
+        sql: "SELECT c, d, SUM(e) FROM t GROUP BY GROUPING SETS (ROLLUP (c), CUBE (d));"
+      - id: composite_columns
+        sql: "SELECT c, d, e, SUM(f) FROM t GROUP BY ROLLUP (c, (d, e));"
+      - id: concatenated_groupings
+        sql: "SELECT c, d, SUM(e) FROM t GROUP BY c, ROLLUP (d), CUBE (e);"
+      - id: grouping_functions
+        sql: "SELECT c, GROUPING(c), GROUPING_ID(c, d), GROUP_ID() FROM t GROUP BY ROLLUP (c, d);"
+    examples:
+      - |-
+        SELECT department_id, MIN(salary), MAX (salary)
+             FROM employees
+             GROUP BY department_id
+           ORDER BY department_id;
+      - |-
+        SELECT TRUNC(hire_date, 'YYYY') year_hired, COUNT(*)
+        FROM employees
+        GROUP BY year_hired
+        ORDER BY year_hired;
+      - |-
+        SELECT DECODE(GROUPING(department_name), 1, 'All Departments',
+              department_name) AS department_name,
+           DECODE(GROUPING(job_id), 1, 'All Jobs', job_id) AS job_id,
+           COUNT(*) "Total Empl", AVG(salary) * 12 "Average Sal"
+           FROM employees e, departments d
+           WHERE d.department_id = e.department_id
+           GROUP BY CUBE (department_name, job_id)
+           ORDER BY department_name, job_id;
+      - |-
+        SELECT channel_desc, calendar_month_desc, co.country_id,
+              TO_CHAR(sum(amount_sold) , '9,999,999,999') SALES$
+           FROM sales, customers, times, channels, countries co
+           WHERE sales.time_id=times.time_id
+              AND sales.cust_id=customers.cust_id
+              AND sales.channel_id= channels.channel_id
+              AND customers.country_id = co.country_id
+              AND channels.channel_desc IN ('Direct Sales', 'Internet')
+              AND times.calendar_month_desc IN ('2000-09', '2000-10')
+              AND co.country_iso_code IN ('UK', 'US')
+          GROUP BY GROUPING SETS(
+              (channel_desc, calendar_month_desc, co.country_id),
+              (channel_desc, co.country_id),
+              (calendar_month_desc, co.country_id) );
+      - |-
+        SELECT department_id, manager_id
+           FROM employees
+           GROUP BY department_id, manager_id HAVING (department_id, manager_id) IN
+           (SELECT department_id, manager_id FROM employees x
+              WHERE x.department_id = employees.department_id)
+           ORDER BY department_id;
+
+  - id: select_model
+    name: SELECT (model_clause)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/SELECT.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT y, s FROM t MODEL DIMENSION BY (y) MEASURES (s) RULES (s[2024] = s[2023] * 1.1);"
+      - id: without_rules_keyword
+        sql: "SELECT y, s FROM t MODEL DIMENSION BY (y) MEASURES (s) (s[2024] = s[2023]);"
+      - id: partition_by
+        sql: "SELECT c, y, s FROM t MODEL PARTITION BY (c) DIMENSION BY (y) MEASURES (s) RULES (s[2024] = s[2023]);"
+      - id: column_aliases
+        sql: "SELECT c, y, s FROM t MODEL PARTITION BY (c x) DIMENSION BY (y yr) MEASURES (amt s, 0 csum) RULES (csum[2024] = s[2024]);"
+      - id: ignore_nav_unique_dimension
+        sql: "SELECT y, s FROM t MODEL IGNORE NAV UNIQUE DIMENSION DIMENSION BY (y) MEASURES (s) RULES (s[2024] = s[2023]);"
+      - id: keep_nav_unique_single_reference
+        sql: "SELECT y, s FROM t MODEL KEEP NAV UNIQUE SINGLE REFERENCE DIMENSION BY (y) MEASURES (s) RULES (s[2024] = s[2023]);"
+      - id: return_updated_rows
+        sql: "SELECT y, s FROM t MODEL RETURN UPDATED ROWS DIMENSION BY (y) MEASURES (s) RULES (s[2024] = s[2023]);"
+      - id: return_all_rows
+        sql: "SELECT y, s FROM t MODEL RETURN ALL ROWS DIMENSION BY (y) MEASURES (s) RULES (s[2024] = s[2023]);"
+      - id: reference_model
+        sql: "SELECT y, s FROM t MODEL REFERENCE r ON (SELECT k, v FROM u) DIMENSION BY (k) MEASURES (v) MAIN m DIMENSION BY (y) MEASURES (s) RULES (s[2024] = s[2023] * r.v[1]);"
+      - id: rules_upsert_sequential_order
+        sql: "SELECT y, s FROM t MODEL DIMENSION BY (y) MEASURES (s) RULES UPSERT SEQUENTIAL ORDER (s[2024] = s[2023]);"
+      - id: rules_update_automatic_order
+        sql: "SELECT y, s FROM t MODEL DIMENSION BY (y) MEASURES (s) RULES UPDATE AUTOMATIC ORDER (s[2024] = s[2023]);"
+      - id: rules_upsert_all
+        sql: "SELECT c, y, s FROM t MODEL DIMENSION BY (c, y) MEASURES (s) RULES UPSERT ALL (s[ANY, 2024] = s[CV(c), 2023]);"
+      - id: per_rule_upsert_update
+        sql: "SELECT y, s FROM t MODEL DIMENSION BY (y) MEASURES (s) RULES (UPSERT s[2024] = 1, UPDATE s[2023] = 2);"
+      - id: iterate_until
+        sql: "SELECT y, s FROM t MODEL DIMENSION BY (y) MEASURES (s) RULES ITERATE (10) UNTIL (PREVIOUS(s[1]) - s[1] < 1) (s[1] = s[1] / 2);"
+      - id: symbolic_reference
+        sql: "SELECT c, y, s FROM t MODEL DIMENSION BY (c, y) MEASURES (s) RULES (s[c = 'a', y = 2024] = s['a', 2023] + s['a', 2022]);"
+      - id: any_and_cv
+        sql: "SELECT y, s, csum FROM t MODEL DIMENSION BY (y) MEASURES (s, 0 csum) RULES (csum[ANY] = s[CV(y)] + 1);"
+      - id: rule_order_by
+        sql: "SELECT y, s FROM t MODEL DIMENSION BY (y) MEASURES (s) RULES (s[ANY] ORDER BY y DESC = s[CV(y) - 1]);"
+      - id: for_in_literals
+        sql: "SELECT y, s FROM t MODEL DIMENSION BY (y) MEASURES (s) RULES (s[FOR y IN (2024, 2025)] = s[CV(y) - 1]);"
+      - id: for_in_subquery
+        sql: "SELECT y, s FROM t MODEL DIMENSION BY (y) MEASURES (s) RULES (s[FOR y IN (SELECT y FROM u)] = 0);"
+      - id: for_from_to_increment
+        sql: "SELECT y, s FROM t MODEL DIMENSION BY (y) MEASURES (s) RULES (s[FOR y FROM 2024 TO 2030 INCREMENT 1] = 0);"
+      - id: for_like_from_to_decrement
+        sql: "SELECT p, s FROM t MODEL DIMENSION BY (p) MEASURES (s) RULES (s[FOR p LIKE 'p%' FROM 9 TO 1 DECREMENT 1] = 0);"
+      - id: multi_column_for_loop
+        sql: "SELECT c, y, s FROM t MODEL DIMENSION BY (c, y) MEASURES (s) RULES (s[FOR (c, y) IN (('a', 2024), ('b', 2025))] = 0);"
+      - id: analytic_in_rule
+        sql: "SELECT c, y, s, csum FROM t MODEL DIMENSION BY (c, y) MEASURES (s, 0 csum) RULES (csum[ANY, ANY] = SUM(s) OVER (PARTITION BY c ORDER BY y ROWS UNBOUNDED PRECEDING));"
+      - id: is_present_presentv
+        sql: "SELECT y, s FROM t MODEL DIMENSION BY (y) MEASURES (s) RULES (s[2024] = CASE WHEN s[2023] IS PRESENT THEN PRESENTV(s[2023], s[2023], 0) ELSE PRESENTNNV(s[2022], s[2022], 0) END);"
+    examples:
+      - |-
+        SELECT country,prod,year,s
+          FROM sales_view_ref
+          MODEL
+            PARTITION BY (country)
+            DIMENSION BY (prod, year)
+            MEASURES (sale s)
+            IGNORE NAV
+            UNIQUE DIMENSION
+            RULES UPSERT SEQUENTIAL ORDER
+            (
+              s[prod='Mouse Pad', year=2001] =
+                s['Mouse Pad', 1999] + s['Mouse Pad', 2000],
+              s['Standard Mouse', 2002] = s['Standard Mouse', 2001]
+            )
+          ORDER BY country, prod, year;
+      - |-
+        SELECT country, year, sale, csum
+           FROM
+           (SELECT country, year, SUM(sale) sale
+            FROM sales_view_ref
+            GROUP BY country, year
+           )
+           MODEL DIMENSION BY (country, year)
+                 MEASURES (sale, 0 csum)
+                 RULES (csum[any, any]=
+                          SUM(sale) OVER (PARTITION BY country
+                                          ORDER BY year
+                                          ROWS UNBOUNDED PRECEDING)
+                        )
+           ORDER BY country, year;
+
+  - id: select_pivot_unpivot
+    name: SELECT (pivot_clause, unpivot_clause)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/SELECT.html
+    tier: high
+    probes:
+      - id: pivot
+        sql: "SELECT * FROM t PIVOT (SUM(amt) FOR mode IN ('direct', 'online'));"
+      - id: pivot_in_aliases
+        sql: "SELECT * FROM t PIVOT (SUM(amt) FOR mode IN ('direct' AS store, 'online' internet));"
+      - id: pivot_multiple_aggregates
+        sql: "SELECT * FROM t PIVOT (SUM(amt) AS total, COUNT(*) cnt FOR mode IN ('direct' AS d, 'online' AS o));"
+      - id: pivot_multiple_columns
+        sql: "SELECT * FROM t PIVOT (SUM(amt) FOR (mode, ch) IN (('direct', 1) AS d1, ('online', 2) AS o2));"
+      - id: pivot_with_alias
+        sql: "SELECT p.* FROM t PIVOT (SUM(amt) FOR mode IN ('direct', 'online')) p;"
+      - id: pivot_from_subquery
+        sql: "SELECT * FROM (SELECT y, mode, amt FROM t) PIVOT (SUM(amt) FOR mode IN ('direct' AS store, 'online' AS internet));"
+      - id: pivot_xml_any
+        sql: "SELECT * FROM t PIVOT XML (SUM(amt) FOR mode IN (ANY));"
+      - id: pivot_xml_subquery
+        sql: "SELECT * FROM t PIVOT XML (SUM(amt) FOR mode IN (SELECT DISTINCT mode FROM u));"
+      - id: unpivot
+        sql: "SELECT * FROM t UNPIVOT (amt FOR mode IN (store AS 'direct', internet AS 'online'));"
+      - id: unpivot_no_aliases
+        sql: "SELECT * FROM t UNPIVOT (amt FOR mode IN (q1, q2, q3, q4));"
+      - id: unpivot_include_nulls
+        sql: "SELECT * FROM t UNPIVOT INCLUDE NULLS (amt FOR mode IN (store, internet));"
+      - id: unpivot_exclude_nulls
+        sql: "SELECT * FROM t UNPIVOT EXCLUDE NULLS (amt FOR mode IN (store, internet));"
+      - id: unpivot_multiple_columns
+        sql: "SELECT * FROM t UNPIVOT ((amt, qty) FOR (mode, ch) IN ((a1, q1) AS ('direct', 1), (a2, q2) AS ('online', 2)));"
+    examples:
+      - |-
+        CREATE TABLE pivot_table AS
+        SELECT * FROM
+        (SELECT EXTRACT(YEAR FROM order_date) year, order_mode, order_total FROM orders)
+        PIVOT
+        (SUM(order_total) FOR order_mode IN ('direct' AS Store, 'online' AS Internet));
+      - "SELECT * FROM pivot_table ORDER BY year;"
+      - |-
+        SELECT * FROM pivot_table
+          UNPIVOT (yearly_total FOR order_mode IN (store AS 'direct',
+                   internet AS 'online'))
+          ORDER BY year, order_mode;
+      - |-
+        SELECT * FROM pivot_table
+          UNPIVOT INCLUDE NULLS
+            (yearly_total FOR order_mode IN (store AS 'direct', internet AS 'online'))
+          ORDER BY year, order_mode;
+
+  - id: select_match_recognize
+    name: SELECT (row_pattern_clause, MATCH_RECOGNIZE)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/SELECT.html
+    tier: high
+    probes:
+      - id: minimal
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts PATTERN (a b+) DEFINE b AS b.price > PREV(b.price));"
+      - id: partition_order_measures
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (PARTITION BY sym ORDER BY ts MEASURES FIRST(a.ts) AS start_ts, LAST(b.ts) AS end_ts PATTERN (a b+) DEFINE b AS b.price > PREV(b.price)) mr;"
+      - id: one_row_per_match
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts MEASURES MATCH_NUMBER() AS mn ONE ROW PER MATCH PATTERN (a b*) DEFINE b AS b.v > a.v);"
+      - id: all_rows_per_match
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts MEASURES CLASSIFIER() AS cls ALL ROWS PER MATCH PATTERN (a b*) DEFINE b AS b.v > a.v);"
+      - id: skip_to_next_row
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts AFTER MATCH SKIP TO NEXT ROW PATTERN (a b+) DEFINE b AS b.v > a.v);"
+      - id: skip_past_last_row
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts AFTER MATCH SKIP PAST LAST ROW PATTERN (a b+) DEFINE b AS b.v > a.v);"
+      - id: skip_to_first
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts AFTER MATCH SKIP TO FIRST b PATTERN (a b+) DEFINE b AS b.v > a.v);"
+      - id: skip_to_last
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts AFTER MATCH SKIP TO LAST b PATTERN (a b+) DEFINE b AS b.v > a.v);"
+      - id: skip_to_variable
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts AFTER MATCH SKIP TO b PATTERN (a b+) DEFINE b AS b.v > a.v);"
+      - id: quantifiers
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts PATTERN (a b* c+ d? e{2} f{1,3} g{2,} h{,4}) DEFINE b AS b.v > 0);"
+      - id: reluctant_quantifiers
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts PATTERN (a b*? c+? d?? e{1,3}?) DEFINE b AS b.v > 0);"
+      - id: alternation_grouping
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts PATTERN ((a | b) (c d)+) DEFINE a AS a.v > 0);"
+      - id: anchors
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts PATTERN (^ a b+ $) DEFINE b AS b.v > a.v);"
+      - id: exclusion
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts ALL ROWS PER MATCH PATTERN (a {- b+ -} c) DEFINE b AS b.v > a.v);"
+      - id: permute
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts PATTERN (PERMUTE (a, b, c)) DEFINE a AS a.v = 1, b AS b.v = 2, c AS c.v = 3);"
+      - id: subset
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts MEASURES AVG(ab.v) AS av PATTERN (a b) SUBSET ab = (a, b) DEFINE a AS a.v > 0);"
+      - id: navigation_functions
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts MEASURES RUNNING FIRST(b.v) AS fv, FINAL LAST(b.v, 1) AS lv, NEXT(b.v, 2) AS nv, PREV(FINAL LAST(b.v), 1) AS pv PATTERN (a b+) DEFINE b AS b.v > PREV(b.v));"
+      - id: aggregate_functions
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts MEASURES FINAL COUNT(b.*) AS cnt, RUNNING AVG(b.v) AS av PATTERN (a b+) DEFINE b AS b.v > AVG(b.v));"
+    examples:
+      - |-
+        SELECT *
+        FROM Ticker MATCH_RECOGNIZE (
+             PARTITION BY symbol
+             ORDER BY tstamp
+             MEASURES STRT.tstamp AS start_tstamp,
+                      LAST(DOWN.tstamp) AS bottom_tstamp,
+                      LAST(UP.tstamp) AS end_tstamp
+             ONE ROW PER MATCH
+             AFTER MATCH SKIP TO LAST UP
+             PATTERN (STRT DOWN+ UP+)
+             DEFINE
+                DOWN AS DOWN.price < PREV(DOWN.price),
+                UP AS UP.price > PREV(UP.price)
+             ) MR
+        ORDER BY MR.symbol, MR.start_tstamp;
+
+  - id: select_window_qualify
+    name: SELECT (window_clause, qualify_clause)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/SELECT.html
+    tier: high
+    probes:
+      - id: window_clause
+        sql: "SELECT c, AVG(s) OVER w FROM t WINDOW w AS (PARTITION BY c ORDER BY d);"
+      - id: window_clause_multiple
+        sql: "SELECT c, AVG(s) OVER w1, SUM(s) OVER w2 FROM t WINDOW w1 AS (PARTITION BY c), w2 AS (PARTITION BY d);"
+      - id: window_existing_name
+        sql: "SELECT c, SUM(s) OVER (w ORDER BY d ROWS UNBOUNDED PRECEDING) FROM t WINDOW w AS (PARTITION BY c);"
+      - id: window_clause_frame
+        sql: "SELECT c, FIRST_VALUE(s) OVER w FROM t WINDOW w AS (PARTITION BY c ORDER BY s ROWS UNBOUNDED PRECEDING);"
+      - id: qualify
+        sql: "SELECT c, s FROM t QUALIFY ROW_NUMBER() OVER (PARTITION BY c ORDER BY s DESC) = 1;"
+      - id: qualify_alias
+        sql: "SELECT c, AVG(s) OVER w AS a FROM t WINDOW w AS (PARTITION BY c) QUALIFY a > 10 ORDER BY c;"
+      - id: qualify_after_group_by
+        sql: "SELECT c, AVG(s) FROM t GROUP BY c HAVING c IS NOT NULL QUALIFY AVG(s) < 2000;"
+      - id: qualify_without_analytic
+        sql: "SELECT s FROM t WHERE c IS NOT NULL QUALIFY s < 2000;"
+    examples:
+      - |-
+        SELECT
+              ename, mgr,
+              FIRST_VALUE(sal) OVER w AS "first",
+              LAST_VALUE(sal) OVER w AS "last",
+              NTH_VALUE(sal, 2) OVER w AS "second",
+              NTH_VALUE(sal, 4) OVER w AS "fourth"
+           FROM emp
+           WINDOW w AS (PARTITION BY deptno ORDER BY sal ROWS UNBOUNDED PRECEDING);
+      - |-
+        SELECT ENAME, SAL, DNAME, LOC
+          FROM EMP, DEPT
+          WHERE EMP.DEPTNO = DEPT.DEPTNO
+          QUALIFY AVG(SAL) OVER (PARTITION BY LOC) > 2000
+          ORDER BY ENAME;
+      - |-
+        SELECT ENAME, SAL, DNAME, LOC,
+                 AVG(SAL) OVER W AS AVG_SAL
+          FROM EMP, DEPT
+          WHERE EMP.DEPTNO = DEPT.DEPTNO
+          WINDOW W AS (PARTITION BY LOC)
+          QUALIFY AVG_SAL > 2000
+          ORDER BY ENAME;
+      - |-
+        SELECT DNAME, MGR, AVG(SAL), AVG(AVG(SAL)) OVER W AS AVG_SAL_WF
+          FROM EMP, DEPT WHERE EMP.DEPTNO = DEPT.DEPTNO
+          GROUP BY DNAME, MGR
+          HAVING DNAME NOT LIKE 'SALES'
+          WINDOW W AS (PARTITION BY DNAME)
+          QUALIFY AVG_SAL_WF > 2000
+          ORDER BY DNAME;
+      - |-
+        SELECT ENAME, SAL,
+               AVG(SAL) OVER WJ AS A1,
+               AVG(SAL) OVER WD AS A2
+        FROM SCOTT.EMP
+        WINDOW WJ AS (PARTITION BY JOB), WD AS (PARTITION BY DEPTNO)
+        QUALIFY A1 > 2073.21429 AND A2 > 2073.21429
+        ORDER BY ENAME;
+
+  - id: select_row_limiting
+    name: SELECT (row_limiting_clause)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/SELECT.html
+    tier: high
+    probes:
+      - id: fetch_first_rows_only
+        sql: "SELECT c FROM t ORDER BY c FETCH FIRST 5 ROWS ONLY;"
+      - id: fetch_next_row_only
+        sql: "SELECT c FROM t ORDER BY c FETCH NEXT 1 ROW ONLY;"
+      - id: fetch_first_row_no_count
+        sql: "SELECT c FROM t ORDER BY c FETCH FIRST ROW ONLY;"
+      - id: offset_fetch
+        sql: "SELECT c FROM t ORDER BY c OFFSET 5 ROWS FETCH NEXT 5 ROWS ONLY;"
+      - id: offset_only
+        sql: "SELECT c FROM t ORDER BY c OFFSET 10 ROWS;"
+      - id: offset_row
+        sql: "SELECT c FROM t ORDER BY c OFFSET 1 ROW;"
+      - id: percent
+        sql: "SELECT c FROM t ORDER BY c FETCH FIRST 5 PERCENT ROWS ONLY;"
+      - id: with_ties
+        sql: "SELECT c FROM t ORDER BY c FETCH FIRST 5 ROWS WITH TIES;"
+      - id: percent_with_ties
+        sql: "SELECT c FROM t ORDER BY c FETCH FIRST 5 PERCENT ROWS WITH TIES;"
+      - id: fetch_bind_expression
+        sql: "SELECT c FROM t ORDER BY c OFFSET :o ROWS FETCH NEXT :n + 1 ROWS ONLY;"
+      - id: fetch_approx
+        sql: "SELECT id FROM t ORDER BY VECTOR_DISTANCE(v, :q) FETCH APPROX FIRST 20 ROWS ONLY;"
+      - id: fetch_approximate_accuracy
+        sql: "SELECT id FROM t ORDER BY VECTOR_DISTANCE(v, :q) FETCH APPROXIMATE FIRST 10 ROWS ONLY WITH TARGET ACCURACY 90;"
+      - id: fetch_exact
+        sql: "SELECT id FROM t ORDER BY VECTOR_DISTANCE(v, :q) FETCH EXACT FIRST 10 ROWS ONLY;"
+      - id: accuracy_parameters
+        sql: "SELECT id FROM t ORDER BY VECTOR_DISTANCE(v, :q) FETCH APPROX FIRST 10 ROWS ONLY WITH TARGET ACCURACY PARAMETERS (EFSEARCH 500);"
+      - id: partitioned_row_limiting
+        sql: "SELECT deptno, ename FROM emp ORDER BY sal DESC FETCH FIRST 2 PARTITIONS BY deptno, 3 ROWS ONLY;"
+    examples:
+      - |-
+        SELECT employee_id, last_name
+          FROM employees
+          ORDER BY employee_id
+          FETCH FIRST 5 ROWS ONLY;
+      - |-
+        SELECT employee_id, last_name
+          FROM employees
+          ORDER BY employee_id
+          OFFSET 5 ROWS FETCH NEXT 5 ROWS ONLY;
+      - |-
+        SELECT employee_id, last_name, salary
+          FROM employees
+          ORDER BY salary
+          FETCH FIRST 5 PERCENT ROWS WITH TIES;
+      - |-
+        SELECT docID FROM vec_table
+        ORDER BY VECTOR_DISTANCE(data, :query_vec)
+        FETCH APPROX FIRST 20 ROWS ONLY;
+      - |-
+        SELECT deptno, ename FROM emp
+        ORDER BY sal DESC
+        FETCH FIRST 2 PARTITIONS BY deptno, 3 ROWS ONLY;
+
+  - id: select_for_update
+    name: SELECT (for_update_clause)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/SELECT.html
+    tier: high
+    probes:
+      - id: for_update
+        sql: "SELECT c FROM t WHERE id = 1 FOR UPDATE;"
+      - id: of_column
+        sql: "SELECT c FROM t WHERE id = 1 FOR UPDATE OF c;"
+      - id: of_qualified_columns
+        sql: "SELECT t.c, u.d FROM t, u WHERE t.id = u.id FOR UPDATE OF t.c, s.u.d;"
+      - id: nowait
+        sql: "SELECT c FROM t FOR UPDATE NOWAIT;"
+      - id: wait_integer
+        sql: "SELECT c FROM t FOR UPDATE WAIT 5;"
+      - id: wait_unit
+        sql: "SELECT c FROM t FOR UPDATE WAIT 500 MILLISECONDS;"
+      - id: wait_forever
+        sql: "SELECT c FROM t FOR UPDATE WAIT FOREVER;"
+      - id: skip_locked
+        sql: "SELECT c FROM t FOR UPDATE SKIP LOCKED;"
+      - id: of_column_skip_locked
+        sql: "SELECT c FROM t FOR UPDATE OF c SKIP LOCKED;"
+      - id: after_order_by
+        sql: "SELECT c FROM t ORDER BY c FOR UPDATE;"
+    examples:
+      - |-
+        SELECT e.employee_id, e.salary, e.commission_pct
+           FROM employees e, departments d
+           WHERE job_id = 'SA_REP'
+           AND e.department_id = d.department_id
+           AND location_id = 2500
+           ORDER BY e.employee_id
+           FOR UPDATE;
+      - |-
+        SELECT e.employee_id, e.salary, e.commission_pct
+           FROM employees e JOIN departments d
+           USING (department_id)
+           WHERE job_id = 'SA_REP'
+           AND location_id = 2500
+           ORDER BY e.employee_id
+           FOR UPDATE OF e.salary;

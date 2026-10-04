@@ -764,7 +764,7 @@ statements:
       - { id: merge_union_insert_method, sql: "CREATE TABLE t (a INT) ENGINE = MERGE UNION = (t1, t2) INSERT_METHOD = LAST;" }
       - { id: connection_option, sql: "CREATE TABLE t (a INT) ENGINE = FEDERATED CONNECTION = 'mysql://u@h:3306/db/t';" }
       - { id: table_engine_attribute, sql: "CREATE TABLE t (a INT) ENGINE_ATTRIBUTE = '{\"key\":\"value\"}' SECONDARY_ENGINE_ATTRIBUTE = '{}';" }
-      - { id: start_transaction_option, sql: "CREATE TABLE t START TRANSACTION SELECT * FROM t2;", note: "table_option START TRANSACTION, valid only with CREATE TABLE ... SELECT (atomic DDL)" }
+      - { id: start_transaction_option, sql: "CREATE TABLE t (a INT) START TRANSACTION;", note: "table_option START TRANSACTION; documented as internal-use, written to the binary log for atomic CREATE TABLE ... SELECT" }
       - { id: partition_by_hash, sql: "CREATE TABLE t (a INT, d DATETIME) PARTITION BY HASH (YEAR(d)) PARTITIONS 4;" }
       - { id: partition_by_linear_hash, sql: "CREATE TABLE t (a INT) PARTITION BY LINEAR HASH (a) PARTITIONS 3;" }
       - { id: partition_by_key, sql: "CREATE TABLE t (a INT, d DATE) PARTITION BY KEY (d) PARTITIONS 4;" }
@@ -2017,8 +2017,8 @@ expressions:
     examples:
       - "SELECT 1 <=> 1, NULL <=> NULL, 1 <=> NULL;"
       - "SELECT '.01' <> '0.01';"
-      - "SELECT 10 IS TRUE;"
-      - "SELECT ! (1+1);"
+      - "SELECT '0.01' = 0;"
+      - "SELECT 0.1 <= 2;"
 
   - id: flow_control_functions
     name: Flow control functions (CASE, IF, IFNULL, NULLIF)
@@ -2383,3 +2383,380 @@ expressions:
                 NESTED PATH '$.b[*]' COLUMNS (b2 INT PATH '$')
             )
         ) AS jt;
+
+  - id: fulltext_search
+    name: Full-text search (MATCH ... AGAINST)
+    doc: https://dev.mysql.com/doc/refman/8.4/en/fulltext-search.html
+    tier: medium
+    probes:
+      - { id: match_against, sql: "SELECT * FROM articles WHERE MATCH (title, body) AGAINST ('database');" }
+      - { id: natural_language_mode, sql: "SELECT * FROM articles WHERE MATCH (title, body) AGAINST ('database' IN NATURAL LANGUAGE MODE);" }
+      - { id: natural_language_query_expansion, sql: "SELECT * FROM articles WHERE MATCH (title, body) AGAINST ('database' IN NATURAL LANGUAGE MODE WITH QUERY EXPANSION);" }
+      - { id: boolean_mode, sql: "SELECT * FROM articles WHERE MATCH (title, body) AGAINST ('+MySQL -YourSQL' IN BOOLEAN MODE);" }
+      - { id: with_query_expansion, sql: "SELECT * FROM articles WHERE MATCH (title, body) AGAINST ('database' WITH QUERY EXPANSION);" }
+      - { id: match_as_score, sql: "SELECT id, MATCH (title, body) AGAINST ('mysql tutorial' IN BOOLEAN MODE) AS score FROM articles ORDER BY score DESC;" }
+    examples:
+      - |-
+        SELECT * FROM articles WHERE MATCH (title,body)
+            AGAINST ('+MySQL -YourSQL' IN BOOLEAN MODE);
+
+  - id: subqueries
+    name: Subqueries
+    doc: https://dev.mysql.com/doc/refman/8.4/en/subqueries.html
+    tier: high
+    probes:
+      - { id: scalar_comparison, sql: "SELECT * FROM t1 WHERE c1 = (SELECT c1 FROM t2);" }
+      - { id: any_values, sql: "SELECT * FROM tt WHERE b > ANY (VALUES ROW(2), ROW(4), ROW(6));" }
+      - { id: any_table, sql: "SELECT * FROM tt WHERE b > ANY (TABLE ts);" }
+      - { id: nested_subqueries, sql: "DELETE FROM t1 WHERE s11 > ANY (SELECT COUNT(*) FROM t2 WHERE NOT EXISTS (SELECT * FROM t3 WHERE ROW(5*t2.s1, 77) = (SELECT 50, 11*s1 FROM t4)));" }
+    examples:
+      - "SELECT * FROM t1 WHERE column1 = (SELECT column1 FROM t2);"
+      - |-
+        DELETE FROM t1
+        WHERE s11 > ANY
+         (SELECT COUNT(*) /* no hint */ FROM t2
+          WHERE NOT EXISTS
+           (SELECT * FROM t3
+            WHERE ROW(5*t2.s1,77)=
+             (SELECT 50,11*s1 FROM t4 UNION SELECT 50,77 FROM
+              (SELECT * FROM t5) AS t5)));
+      - |-
+        SELECT * FROM tt
+            WHERE b > ANY (VALUES ROW(2), ROW(4), ROW(6));
+
+  - id: scalar_subqueries
+    name: The subquery as scalar operand
+    doc: https://dev.mysql.com/doc/refman/8.4/en/scalar-subqueries.html
+    tier: high
+    probes:
+      - { id: select_list, sql: "SELECT (SELECT s1 FROM t2) FROM t1;" }
+      - { id: table_subquery, sql: "SELECT (TABLE t2) FROM t1;" }
+      - { id: function_argument, sql: "SELECT UPPER((SELECT s1 FROM t1)) FROM t2;" }
+    examples:
+      - "SELECT (SELECT s2 FROM t1);"
+      - "SELECT (SELECT s1 FROM t2) FROM t1;"
+      - "SELECT (TABLE t2) FROM t1;"
+      - "SELECT UPPER((SELECT s1 FROM t1)) FROM t2;"
+
+  - id: comparisons_using_subqueries
+    name: Comparisons using subqueries
+    doc: https://dev.mysql.com/doc/refman/8.4/en/comparisons-using-subqueries.html
+    tier: high
+    probes:
+      - { id: operators, sql: "SELECT * FROM t1 WHERE a = (SELECT MAX(b) FROM t2) OR a <=> (SELECT MIN(b) FROM t2) OR a != (SELECT 1);" }
+      - { id: like_subquery, sql: "SELECT * FROM t1 WHERE a LIKE (SELECT p FROM t2 LIMIT 1);" }
+      - { id: correlated_count, sql: "SELECT * FROM t1 AS t WHERE 2 = (SELECT COUNT(*) FROM t1 WHERE t1.id = t.id);" }
+    examples:
+      - |-
+        SELECT * FROM t1
+          WHERE column1 = (SELECT MAX(column2) FROM t2);
+      - |-
+        SELECT * FROM t1 AS t
+          WHERE 2 = (SELECT COUNT(*) FROM t1 WHERE t1.id = t.id);
+
+  - id: any_in_some_subqueries
+    name: Subqueries with ANY, IN, or SOME
+    doc: https://dev.mysql.com/doc/refman/8.4/en/any-in-some-subqueries.html
+    tier: high
+    probes:
+      - { id: any, sql: "SELECT s1 FROM t1 WHERE s1 > ANY (SELECT s1 FROM t2);" }
+      - { id: in, sql: "SELECT s1 FROM t1 WHERE s1 IN (SELECT s1 FROM t2);" }
+      - { id: some, sql: "SELECT s1 FROM t1 WHERE s1 <> SOME (SELECT s1 FROM t2);" }
+      - { id: in_table, sql: "SELECT s1 FROM t1 WHERE s1 IN (TABLE t2);" }
+    examples:
+      - "SELECT s1 FROM t1 WHERE s1 > ANY (SELECT s1 FROM t2);"
+      - "SELECT s1 FROM t1 WHERE s1 IN    (SELECT s1 FROM t2);"
+      - "SELECT s1 FROM t1 WHERE s1 <> SOME (SELECT s1 FROM t2);"
+      - "SELECT s1 FROM t1 WHERE s1 = ANY (TABLE t2);"
+
+  - id: all_subqueries
+    name: Subqueries with ALL
+    doc: https://dev.mysql.com/doc/refman/8.4/en/all-subqueries.html
+    tier: high
+    probes:
+      - { id: all, sql: "SELECT s1 FROM t1 WHERE s1 > ALL (SELECT s1 FROM t2);" }
+      - { id: not_equal_all, sql: "SELECT s1 FROM t1 WHERE s1 <> ALL (SELECT s1 FROM t2);" }
+      - { id: all_table, sql: "SELECT s1 FROM t1 WHERE s1 <> ALL (TABLE t2);" }
+    examples:
+      - "SELECT s1 FROM t1 WHERE s1 > ALL (SELECT s1 FROM t2);"
+      - "SELECT * FROM t1 WHERE 1 > ALL (SELECT MAX(s1) FROM t2);"
+      - "SELECT s1 FROM t1 WHERE s1 NOT IN (TABLE t2);"
+
+  - id: row_subqueries
+    name: Row subqueries
+    doc: https://dev.mysql.com/doc/refman/8.4/en/row-subqueries.html
+    tier: high
+    probes:
+      - { id: row_equals_subquery, sql: "SELECT * FROM t1 WHERE (col1, col2) = (SELECT col3, col4 FROM t2 WHERE id = 10);" }
+      - { id: row_keyword, sql: "SELECT * FROM t1 WHERE ROW(col1, col2) = (SELECT col3, col4 FROM t2 WHERE id = 10);" }
+      - { id: row_in_subquery, sql: "SELECT c1, c2, c3 FROM t1 WHERE (c1, c2, c3) IN (SELECT c1, c2, c3 FROM t2);" }
+    examples:
+      - |-
+        SELECT * FROM t1
+          WHERE ROW(col1,col2) = (SELECT col3, col4 FROM t2 WHERE id = 10);
+      - "SELECT * FROM t1 WHERE (column1,column2) = (1,1);"
+      - |-
+        SELECT column1,column2,column3
+          FROM t1
+          WHERE (column1,column2,column3) IN
+                 (SELECT column1,column2,column3 FROM t2);
+
+  - id: exists_subqueries
+    name: Subqueries with EXISTS or NOT EXISTS
+    doc: https://dev.mysql.com/doc/refman/8.4/en/exists-and-not-exists-subqueries.html
+    tier: high
+    probes:
+      - { id: exists, sql: "SELECT c1 FROM t1 WHERE EXISTS (SELECT * FROM t2);" }
+      - { id: not_exists_correlated, sql: "SELECT DISTINCT a FROM t1 WHERE NOT EXISTS (SELECT * FROM t2 WHERE t2.a = t1.a);" }
+      - { id: exists_table, sql: "SELECT c1 FROM t1 WHERE EXISTS (TABLE t2);" }
+    examples:
+      - |-
+        SELECT DISTINCT store_type FROM stores
+          WHERE EXISTS (SELECT * FROM cities_stores
+                        WHERE cities_stores.store_type = stores.store_type);
+      - |-
+        SELECT DISTINCT store_type FROM stores
+          WHERE NOT EXISTS (
+            SELECT * FROM cities WHERE NOT EXISTS (
+              SELECT * FROM cities_stores
+               WHERE cities_stores.city = cities.city
+               AND cities_stores.store_type = stores.store_type));
+      - "SELECT column1 FROM t1 WHERE EXISTS (TABLE t2);"
+
+  - id: correlated_subqueries
+    name: Correlated subqueries
+    doc: https://dev.mysql.com/doc/refman/8.4/en/correlated-subqueries.html
+    tier: high
+    probes:
+      - { id: correlated_any, sql: "SELECT * FROM t1 WHERE c1 = ANY (SELECT c1 FROM t2 WHERE t2.c2 = t1.c2);" }
+      - { id: correlated_scalar_comparison, sql: "SELECT * FROM t1 WHERE (SELECT a FROM t2 WHERE t2.a = t1.a) > 0;" }
+    examples:
+      - |-
+        SELECT * FROM t1
+          WHERE column1 = ANY (SELECT column1 FROM t2
+                               WHERE t2.column2 = t1.column2);
+      - |-
+        SELECT column1 FROM t1 AS x
+          WHERE x.column1 = (SELECT column1 FROM t2 AS x
+            WHERE x.column1 = (SELECT column1 FROM t3
+              WHERE x.column2 = t3.column1));
+      - |-
+        SELECT * FROM t1 
+            WHERE ( SELECT a FROM t2 
+                      WHERE t2.a=t1.a ) > 0;
+
+  - id: numeric_types
+    name: Numeric data types
+    doc: https://dev.mysql.com/doc/refman/8.4/en/numeric-type-syntax.html
+    tier: high
+    probes:
+      - { id: integer_types, sql: "CREATE TABLE t (a TINYINT, b SMALLINT, c MEDIUMINT, d INT, e INTEGER, f BIGINT);" }
+      - { id: display_width_unsigned_zerofill, sql: "CREATE TABLE t (a TINYINT(1) UNSIGNED ZEROFILL, b INT(11) UNSIGNED, c BIGINT SIGNED);" }
+      - { id: bool_boolean, sql: "CREATE TABLE t (a BOOL, b BOOLEAN);" }
+      - { id: serial, sql: "CREATE TABLE t (id SERIAL, b INT);" }
+      - { id: serial_default_value, sql: "CREATE TABLE t (n INT SERIAL DEFAULT VALUE);" }
+      - { id: bit, sql: "CREATE TABLE t (a BIT, b BIT(8));" }
+      - { id: decimal_synonyms, sql: "CREATE TABLE t (a DECIMAL(10,2), b DECIMAL(5), c DEC(6,2), d NUMERIC(8,3), e FIXED(4,1), f DECIMAL UNSIGNED);" }
+      - { id: float_double, sql: "CREATE TABLE t (a FLOAT, b FLOAT(24), c FLOAT(7,4), d DOUBLE, e DOUBLE(10,3) UNSIGNED, f DOUBLE PRECISION, g REAL);" }
+      - { id: int_synonyms, sql: "CREATE TABLE t (a INT1, b INT2, c INT3, d INT4, e INT8, f MIDDLEINT, g FLOAT4, h FLOAT8);", note: "Synonyms listed in other-vendor-data-types.html" }
+
+  - id: datetime_types
+    name: Date and time data types
+    doc: https://dev.mysql.com/doc/refman/8.4/en/date-and-time-type-syntax.html
+    tier: high
+    probes:
+      - { id: date_time_types, sql: "CREATE TABLE t (a DATE, b DATETIME, c TIMESTAMP, d TIME, e YEAR);" }
+      - { id: fractional_seconds, sql: "CREATE TABLE t (b DATETIME(6), c TIMESTAMP(3), d TIME(2));" }
+      - { id: year_4, sql: "CREATE TABLE t (y YEAR(4));" }
+      - { id: auto_init_update, sql: "CREATE TABLE t (ts TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6), dt DATETIME DEFAULT NOW() ON UPDATE NOW());" }
+
+  - id: string_types
+    name: String data types
+    doc: https://dev.mysql.com/doc/refman/8.4/en/string-type-syntax.html
+    tier: high
+    probes:
+      - { id: char_varchar, sql: "CREATE TABLE t (a CHAR, b CHAR(10), c VARCHAR(255), d CHARACTER(5), e CHARACTER VARYING(20));" }
+      - { id: charset_collate, sql: "CREATE TABLE t (c1 VARCHAR(20) CHARACTER SET utf8mb4, c2 TEXT CHARACTER SET latin1 COLLATE latin1_general_cs, c3 CHAR(3) CHARSET ascii);" }
+      - { id: national, sql: "CREATE TABLE t (a NATIONAL CHAR(10), b NCHAR(10), c NATIONAL VARCHAR(10), d NVARCHAR(10));" }
+      - { id: binary_types, sql: "CREATE TABLE t (a BINARY(16), b VARBINARY(255), c CHAR BYTE);" }
+      - { id: blob_types, sql: "CREATE TABLE t (a TINYBLOB, b BLOB, c BLOB(1000), d MEDIUMBLOB, e LONGBLOB);" }
+      - { id: text_types, sql: "CREATE TABLE t (a TINYTEXT, b TEXT, c TEXT(1000), d MEDIUMTEXT, e LONGTEXT, f LONG VARCHAR);" }
+      - { id: enum_set, sql: "CREATE TABLE t (a ENUM('x', 'y', 'z'), b SET('a', 'b', 'c') CHARACTER SET binary);" }
+      - { id: binary_attribute, sql: "CREATE TABLE t (c1 VARCHAR(10) CHARACTER SET latin1 BINARY, c2 TEXT BINARY);" }
+      - { id: ascii_unicode_attributes, sql: "CREATE TABLE t (c1 CHAR(10) ASCII, c2 VARCHAR(10) UNICODE);" }
+    examples:
+      - |-
+        CREATE TABLE t
+        (
+            c1 VARCHAR(20) CHARACTER SET utf8mb4,
+            c2 TEXT CHARACTER SET latin1 COLLATE latin1_general_cs
+        );
+      - |-
+        CREATE TABLE t
+        (
+          c1 VARCHAR(10) CHARACTER SET binary,
+          c2 TEXT CHARACTER SET binary,
+          c3 ENUM('a','b','c') CHARACTER SET binary
+        );
+      - |-
+        CREATE TABLE t
+        (
+          c1 VARCHAR(10) CHARACTER SET latin1 BINARY,
+          c2 TEXT BINARY
+        ) CHARACTER SET utf8mb4;
+      - |-
+        CREATE TABLE t (
+          c1 VARCHAR(10) CHARACTER SET latin1 COLLATE latin1_bin,
+          c2 TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin
+        ) CHARACTER SET utf8mb4;
+
+  - id: spatial_types
+    name: Spatial data types
+    doc: https://dev.mysql.com/doc/refman/8.4/en/spatial-type-overview.html
+    tier: medium
+    probes:
+      - { id: single_value_types, sql: "CREATE TABLE t (g GEOMETRY, p POINT, l LINESTRING, y POLYGON);" }
+      - { id: collection_types, sql: "CREATE TABLE t (a MULTIPOINT, b MULTILINESTRING, c MULTIPOLYGON, d GEOMETRYCOLLECTION, e GEOMCOLLECTION);" }
+      - { id: srid_attribute, sql: "CREATE TABLE t (g GEOMETRY NOT NULL SRID 4326, SPATIAL INDEX (g));" }
+      - { id: spatial_functions, sql: "SELECT ST_AsText(ST_GeomFromText('POINT(1 1)', 4326)), ST_Distance(p1, p2) FROM t;" }
+    examples:
+      - "CREATE TABLE geom (g GEOMETRY);"
+      - |-
+        CREATE TABLE geom (
+          p POINT SRID 0,
+          g GEOMETRY NOT NULL SRID 4326
+        );
+
+  - id: json_type
+    name: JSON data type
+    doc: https://dev.mysql.com/doc/refman/8.4/en/json.html
+    tier: high
+    probes:
+      - { id: json_column, sql: "CREATE TABLE t1 (jdoc JSON);" }
+      - { id: json_string_value, sql: "INSERT INTO t1 VALUES ('{\"key1\": \"value1\", \"key2\": \"value2\"}');" }
+      - { id: json_default_expression, sql: "CREATE TABLE t (j JSON DEFAULT (JSON_OBJECT()));" }
+    examples:
+      - "CREATE TABLE t1 (jdoc JSON);"
+      - "INSERT INTO t1 VALUES('{\"key1\": \"value1\", \"key2\": \"value2\"}');"
+      - "SELECT JSON_TYPE('[\"a\", \"b\", 1]');"
+
+  - id: collate_clause
+    name: COLLATE in SQL statements
+    doc: https://dev.mysql.com/doc/refman/8.4/en/charset-collate.html
+    tier: medium
+    probes:
+      - { id: order_by_collate, sql: "SELECT k FROM t1 ORDER BY k COLLATE latin1_german2_ci;" }
+      - { id: alias_collate, sql: "SELECT k COLLATE latin1_german2_ci AS k1 FROM t1 ORDER BY k1;" }
+      - { id: group_by_collate, sql: "SELECT k FROM t1 GROUP BY k COLLATE latin1_german2_ci;" }
+      - { id: aggregate_collate, sql: "SELECT MAX(k COLLATE latin1_german2_ci) FROM t1;" }
+      - { id: distinct_collate, sql: "SELECT DISTINCT k COLLATE latin1_german2_ci FROM t1;" }
+      - { id: where_introducer_collate, sql: "SELECT * FROM t1 WHERE _latin1 'Müller' COLLATE latin1_german2_ci = k;" }
+      - { id: having_collate, sql: "SELECT k FROM t1 GROUP BY k HAVING k = _latin1 'Müller' COLLATE latin1_german2_ci;" }
+    examples:
+      - |-
+        SELECT k
+        FROM t1
+        ORDER BY k COLLATE latin1_german2_ci;
+      - |-
+        SELECT MAX(k COLLATE latin1_german2_ci)
+        FROM t1;
+      - |-
+        SELECT *
+        FROM t1
+        WHERE k LIKE _latin1 'Müller' COLLATE latin1_german2_ci;
+
+  - id: charset_introducers
+    name: Character set introducers
+    doc: https://dev.mysql.com/doc/refman/8.4/en/charset-introducer.html
+    tier: medium
+    probes:
+      - { id: string_introducer, sql: "SELECT _latin1'abc', _binary'abc', _utf8mb4'abc' COLLATE utf8mb4_danish_ci;" }
+      - { id: hex_bit_introducer, sql: "SELECT _latin1 X'0A0D' COLLATE latin1_german1_ci, _utf8mb4 b'0110';" }
+      - { id: binary_introducer_operator, sql: "SET @v2 = _binary X'000D' | X'0BC0';" }
+    examples:
+      - "SELECT _utf8mb4'abc' COLLATE utf8mb4_danish_ci;"
+      - "SELECT _latin1'Müller' COLLATE latin1_german1_ci;"
+      - "SELECT _utf8mb4 X'0A0D';"
+      - "SELECT 'Müller' COLLATE utf8mb4_0900_ai_ci;"
+
+  - id: keywords_as_identifiers
+    name: Keywords and reserved words as identifiers
+    doc: https://dev.mysql.com/doc/refman/8.4/en/keywords.html
+    tier: high
+    probes:
+      - { id: nonreserved_column_names, sql: "CREATE TABLE t (begin INT, end INT, status INT, comment TEXT, date DATE, timestamp INT, name VARCHAR(10), value INT, level INT, type INT);" }
+      - { id: nonreserved_in_select, sql: "SELECT status, comment, date, value, type, level, name, action, data FROM t;" }
+      - { id: quoted_reserved_word, sql: "CREATE TABLE `interval` (begin INT, end INT);" }
+      - { id: qualified_reserved_word, sql: "CREATE TABLE mydb.interval (begin INT, end INT);" }
+    examples:
+      - "CREATE TABLE `interval` (begin INT, end INT);"
+      - "CREATE TABLE mydb.interval (begin INT, end INT);"
+
+  - id: information_functions
+    name: Information functions with special syntax
+    doc: https://dev.mysql.com/doc/refman/8.4/en/information-functions.html
+    tier: medium
+    probes:
+      - { id: current_user_niladic, sql: "SELECT CURRENT_USER, CURRENT_USER(), USER(), SESSION_USER(), SYSTEM_USER();" }
+      - { id: database_schema_functions, sql: "SELECT DATABASE(), SCHEMA();" }
+      - { id: misc_information, sql: "SELECT LAST_INSERT_ID(), ROW_COUNT(), FOUND_ROWS(), CONNECTION_ID(), VERSION(), CHARSET('a'), COLLATION('a');" }
+
+  - id: miscellaneous_functions
+    name: Miscellaneous functions with special syntax
+    doc: https://dev.mysql.com/doc/refman/8.4/en/miscellaneous-functions.html
+    tier: medium
+    probes:
+      - { id: default_function, sql: "UPDATE t SET i = DEFAULT(i) + 1 WHERE id < 100;" }
+      - { id: values_function, sql: "INSERT INTO t (a, b) VALUES (1, 2) ON DUPLICATE KEY UPDATE b = VALUES(a) + VALUES(b);" }
+      - { id: grouping_any_value, sql: "SELECT ANY_VALUE(a), GROUPING(b) FROM t GROUP BY b WITH ROLLUP;" }
+      - { id: uuid_inet, sql: "SELECT UUID(), UUID_TO_BIN(UUID(), 1), INET_ATON('10.0.5.9'), SLEEP(1), NAME_CONST('x', 14);" }
+
+  - id: bit_functions
+    name: Bit functions and operators
+    doc: https://dev.mysql.com/doc/refman/8.4/en/bit-functions.html
+    tier: medium
+    probes:
+      - { id: integer_bit_ops, sql: "SELECT 29 | 15, 29 & 15, 11 ^ 3, 1 << 2, 4 >> 2, ~0, BIT_COUNT(29);" }
+      - { id: binary_string_bit_ops, sql: "SELECT HEX(_binary X'FEDC' ^ X'1111'), HEX(_binary X'00FF00FF00FF' << 8);" }
+    examples:
+      - "SELECT _binary X'40404040' | X'01020304';"
+      - "SELECT HEX(_binary X'FF' & b'11110000');"
+      - "SELECT 11 ^ 3;"
+      - "SELECT 1 << 2;"
+
+  - id: arithmetic_operators
+    name: Arithmetic operators
+    doc: https://dev.mysql.com/doc/refman/8.4/en/arithmetic-functions.html
+    tier: high
+    probes:
+      - { id: binary_arithmetic, sql: "SELECT 3+5, 3-5, 3*5, 3/5, 102 DIV 4, 253 % 7, 29 MOD 9, MOD(34.5, 3);" }
+      - { id: unary_minus, sql: "SELECT - 2, -(a + b), - -1 FROM t;" }
+    examples:
+      - "SELECT 3+5;"
+      - "SELECT - 2;"
+      - "SELECT 3/5;"
+      - "SELECT 5 DIV 2, -5 DIV 2, 5 DIV -2, -5 DIV -2;"
+
+  - id: logical_operators
+    name: Logical operators
+    doc: https://dev.mysql.com/doc/refman/8.4/en/logical-operators.html
+    tier: high
+    probes:
+      - { id: not_bang, sql: "SELECT NOT 10, ! (1+1), ! 1+1;" }
+      - { id: and_double_ampersand, sql: "SELECT 1 AND 0, 1 && NULL;" }
+      - { id: or_pipes, sql: "SELECT 1 OR 0, 0 || NULL;" }
+      - { id: xor_chain, sql: "SELECT 1 XOR 1 XOR 1;" }
+      - { id: is_boolean, sql: "SELECT 10 IS TRUE, -10 IS NOT FALSE, NULL IS UNKNOWN;" }
+    examples:
+      - "SELECT 10 IS TRUE;"
+      - "SELECT 'string' IS NOT NULL;"
+      - "SELECT ! (1+1);"
+      - "SELECT 1 AND NULL;"
+      - "SELECT 1 XOR 1 XOR 1;"
+
+  - id: mathematical_functions
+    name: Mathematical functions
+    doc: https://dev.mysql.com/doc/refman/8.4/en/mathematical-functions.html
+    tier: medium
+    probes:
+      - { id: ordinary_calls, sql: "SELECT ABS(-1), ROUND(1.298, 1), TRUNCATE(1.999, 1), CEIL(1.2), FLOOR(1.8), POW(2, 3), PI(), RAND(3), MOD(29, 9);" }

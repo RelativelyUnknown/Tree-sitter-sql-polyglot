@@ -3428,3 +3428,1815 @@ statements:
     examples:
       - "DROP FUNCTION Sales.fn_SalesByStore;"
 
+  - id: create_procedure
+    name: "CREATE PROCEDURE"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-procedure-transact-sql
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE PROCEDURE dbo.p AS SELECT c FROM t;"
+      - id: proc_abbreviation
+        sql: "CREATE PROC p AS SELECT DB_NAME() AS ThisDB;"
+      - id: or_alter
+        sql: "CREATE OR ALTER PROCEDURE dbo.p AS SELECT 1;"
+      - id: begin_end_body
+        sql: "CREATE PROCEDURE dbo.p AS BEGIN SET NOCOUNT ON; SELECT c FROM t; END;"
+      - id: multiple_statements
+        sql: "CREATE PROCEDURE dbo.p AS SET NOCOUNT ON; SELECT c FROM t; SELECT d FROM u;"
+      - id: parameters
+        sql: "CREATE PROCEDURE dbo.p @a NVARCHAR(50), @b INT AS SELECT c FROM t WHERE x = @a AND y = @b;"
+      - id: parameters_parenthesized
+        sql: "CREATE PROCEDURE dbo.p (@a INT, @b NVARCHAR(1024)) AS SELECT @a, @b;"
+      - id: parameter_defaults
+        sql: "CREATE PROCEDURE dbo.p @a NVARCHAR(50) = N'D%', @b INT = NULL AS SELECT @a, @b;"
+      - id: output_parameters
+        sql: "CREATE PROCEDURE dbo.p @a INT, @b MONEY OUTPUT, @c MONEY OUT AS SET @b = @a; SET @c = @a;"
+      - id: nullable_parameter
+        sql: "CREATE PROCEDURE dbo.p @a INT NULL = 5 AS SELECT @a;"
+      - id: readonly_tvp
+        sql: "CREATE PROCEDURE dbo.p @tvp LocationTableType READONLY AS INSERT INTO t (c) SELECT c FROM @tvp;"
+      - id: cursor_varying_output
+        sql: "CREATE PROCEDURE dbo.p @cur CURSOR VARYING OUTPUT AS SET @cur = CURSOR FORWARD_ONLY STATIC FOR SELECT c FROM t; OPEN @cur;"
+      - id: type_schema_parameter
+        sql: "CREATE PROCEDURE dbo.p @x dbo.MyType AS SELECT @x;"
+      - id: numbered
+        sql: "CREATE PROCEDURE dbo.p;2 AS SELECT 2;"
+        note: "[ ; number ] groups procedures of the same name (deprecated but in the syntax block)."
+      - id: with_recompile
+        sql: "CREATE PROCEDURE dbo.p @n VARCHAR(30) = '%' WITH RECOMPILE AS SELECT c FROM t WHERE n LIKE @n;"
+      - id: with_encryption
+        sql: "CREATE PROCEDURE dbo.p WITH ENCRYPTION AS SELECT c FROM t;"
+      - id: execute_as_caller
+        sql: "CREATE PROCEDURE dbo.p WITH EXECUTE AS CALLER AS SELECT c FROM t;"
+      - id: execute_as_self
+        sql: "CREATE PROCEDURE dbo.p WITH EXECUTE AS SELF AS TRUNCATE TABLE db..t;"
+      - id: execute_as_owner
+        sql: "CREATE PROCEDURE dbo.p WITH EXECUTE AS OWNER AS SELECT 1;"
+      - id: execute_as_user
+        sql: "CREATE PROCEDURE dbo.p WITH EXECUTE AS 'user1' AS SELECT 1;"
+      - id: multiple_options
+        sql: "CREATE PROCEDURE dbo.p WITH ENCRYPTION, RECOMPILE, EXECUTE AS OWNER AS SELECT 1;"
+      - id: for_replication
+        sql: "CREATE PROCEDURE dbo.p FOR REPLICATION AS SELECT 1;"
+      - id: clr_external_name
+        sql: "CREATE PROCEDURE dbo.p (@id INT, @dir NVARCHAR(1024)) AS EXTERNAL NAME asm.cls.GetPhotoFromDB;"
+      - id: clr_with_execute_as
+        sql: "CREATE PROCEDURE dbo.p @id INT OUTPUT WITH EXECUTE AS CALLER AS EXTERNAL NAME asm.[Ns.Cls].M;"
+      - id: natively_compiled
+        sql: "CREATE PROCEDURE dbo.p @a INT, @b INT NOT NULL WITH EXECUTE AS OWNER, SCHEMABINDING, NATIVE_COMPILATION AS BEGIN ATOMIC WITH (TRANSACTION ISOLATION LEVEL = SNAPSHOT, LANGUAGE = N'us_english') UPDATE dbo.t SET c = ISNULL(c, 0) + @b WHERE id = @a; END;"
+      - id: natively_compiled_set_options
+        sql: "CREATE PROCEDURE dbo.p WITH NATIVE_COMPILATION, SCHEMABINDING AS BEGIN ATOMIC WITH (TRANSACTION ISOLATION LEVEL = REPEATABLE READ, LANGUAGE = 'English', DATEFIRST = 1, DATEFORMAT = dmy, DELAYED_DURABILITY = ON) SELECT c FROM dbo.t; END;"
+      - id: try_catch_body
+        sql: "CREATE PROCEDURE dbo.p (@id INT) AS SET NOCOUNT ON; BEGIN TRY BEGIN TRANSACTION; DELETE FROM t WHERE id = @id; COMMIT TRANSACTION; END TRY BEGIN CATCH IF @@TRANCOUNT > 0 ROLLBACK TRANSACTION; THROW; END CATCH;"
+    examples:
+      - |-
+        CREATE PROCEDURE dbo.usp_add_kitchen @dept_id INT, @kitchen_count INT NOT NULL
+        WITH EXECUTE AS OWNER, SCHEMABINDING, NATIVE_COMPILATION
+        AS
+        BEGIN ATOMIC WITH (TRANSACTION ISOLATION LEVEL = SNAPSHOT, LANGUAGE = N'us_english')
+
+        UPDATE dbo.Departments
+        SET kitchen_count = ISNULL(kitchen_count, 0) + @kitchen_count
+        WHERE ID = @dept_id
+        END;
+      - |-
+        CREATE PROCEDURE dbo.GetPhotoFromDB
+        (
+            @ProductPhotoID INT
+            , @CurrentDirectory NVARCHAR(1024)
+            , @FileName NVARCHAR(1024)
+        )
+        AS EXTERNAL NAME HandlingLOBUsingCLR.LargeObjectBinary.GetPhotoFromDB;
+      - |-
+        CREATE PROCEDURE Production.uspGetList @Product VARCHAR(40)
+            , @MaxPrice MONEY
+            , @ComparePrice MONEY OUTPUT
+            , @ListPrice MONEY OUT
+        AS
+            SET NOCOUNT ON;
+            SELECT p.[Name] AS Product, p.ListPrice AS 'List Price'
+            FROM Production.Product AS p
+            JOIN Production.ProductSubcategory AS s
+              ON p.ProductSubcategoryID = s.ProductSubcategoryID
+            WHERE s.[Name] LIKE @Product AND p.ListPrice < @MaxPrice;
+        -- Populate the output variable @ListPprice.
+        SET @ListPrice = (SELECT MAX(p.ListPrice)
+            FROM Production.Product AS p
+            JOIN Production.ProductSubcategory AS s
+              ON p.ProductSubcategoryID = s.ProductSubcategoryID
+            WHERE s.[Name] LIKE @Product AND p.ListPrice < @MaxPrice);
+        -- Populate the output variable @compareprice.
+        SET @ComparePrice = @MaxPrice;
+      - |-
+        CREATE PROCEDURE dbo.uspCurrencyCursor
+            @CurrencyCursor CURSOR VARYING OUTPUT
+        AS
+            SET NOCOUNT ON;
+            SET @CurrencyCursor = CURSOR
+            FORWARD_ONLY STATIC FOR
+              SELECT CurrencyCode, Name
+              FROM Sales.Currency;
+            OPEN @CurrencyCursor;
+      - |-
+        CREATE PROCEDURE Production.uspDeleteWorkOrder ( @WorkOrderID INT )
+        AS
+        SET NOCOUNT ON;
+        BEGIN TRY
+          BEGIN TRANSACTION
+          -- Delete rows from the child table, WorkOrderRouting, for the specified work order.
+            DELETE FROM Production.WorkOrderRouting
+            WHERE WorkOrderID = @WorkOrderID;
+          -- Delete the rows from the parent table, WorkOrder, for the specified work order.
+            DELETE FROM Production.WorkOrder
+            WHERE WorkOrderID = @WorkOrderID;
+          COMMIT
+        END TRY
+
+        BEGIN CATCH
+          -- Determine if an error occurred.
+          IF @@TRANCOUNT > 0
+            ROLLBACK
+
+          -- Return the error information.
+          DECLARE @ErrorMessage NVARCHAR(4000), @ErrorSeverity INT;
+          SELECT @ErrorMessage = ERROR_MESSAGE(),@ErrorSeverity = ERROR_SEVERITY();
+          RAISERROR(@ErrorMessage, @ErrorSeverity, 1);
+        END CATCH;
+
+  - id: alter_procedure
+    name: "ALTER PROCEDURE"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-procedure-transact-sql
+    tier: high
+    probes:
+      - id: basic
+        sql: "ALTER PROCEDURE dbo.p @a VARCHAR(25) AS SET NOCOUNT ON; SELECT c FROM t WHERE x LIKE @a;"
+      - id: proc_abbreviation
+        sql: "ALTER PROC dbo.p AS BEGIN SELECT 1; END;"
+      - id: options
+        sql: "ALTER PROCEDURE dbo.p @c CURSOR VARYING OUTPUT, @d INT = 1 OUT WITH RECOMPILE, ENCRYPTION, EXECUTE AS CALLER FOR REPLICATION AS SELECT @d;"
+      - id: numbered
+        sql: "ALTER PROCEDURE dbo.p;2 AS SELECT 2;"
+      - id: readonly_parameter
+        sql: "ALTER PROCEDURE dbo.p @tvp dbo.IdList READONLY AS SELECT id FROM @tvp;"
+      - id: clr
+        sql: "ALTER PROCEDURE dbo.p @id INT WITH EXECUTE AS OWNER AS EXTERNAL NAME asm.cls.method;"
+    examples:
+      - |-
+        ALTER PROCEDURE Purchasing.uspVendorAllInfo
+            @Product VARCHAR(25)
+        AS
+            SET NOCOUNT ON;
+            SELECT LEFT(v.Name, 25) AS Vendor, LEFT(p.Name, 25) AS 'Product name',
+            'Rating' = CASE v.CreditRating
+                WHEN 1 THEN 'Superior'
+                WHEN 2 THEN 'Excellent'
+                WHEN 3 THEN 'Above average'
+                WHEN 4 THEN 'Average'
+                WHEN 5 THEN 'Below average'
+                ELSE 'No rating'
+                END
+            , Availability = CASE v.ActiveFlag
+                WHEN 1 THEN 'Yes'
+                ELSE 'No'
+                END
+            FROM Purchasing.Vendor AS v
+            INNER JOIN Purchasing.ProductVendor AS pv
+              ON v.BusinessEntityID = pv.BusinessEntityID
+            INNER JOIN Production.Product AS p
+              ON pv.ProductID = p.ProductID
+            WHERE p.Name LIKE @Product
+            ORDER BY v.Name ASC;
+
+  - id: drop_procedure
+    name: "DROP PROCEDURE"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-procedure-transact-sql
+    tier: high
+    probes:
+      - id: basic
+        sql: "DROP PROCEDURE dbo.p;"
+      - id: proc_abbreviation
+        sql: "DROP PROC p;"
+      - id: if_exists
+        sql: "DROP PROCEDURE IF EXISTS dbo.p;"
+      - id: multiple
+        sql: "DROP PROCEDURE dbo.p1, dbo.p2, p3;"
+    examples:
+      - "DROP PROCEDURE dbo.uspMyProc;"
+      - |-
+        DROP PROCEDURE
+            dbo.uspGetSalesbyMonth,
+            dbo.uspUpdateSalesQuotes,
+            dbo.uspGetSalesByYear;
+      - "DROP PROCEDURE IF EXISTS dbo.uspMyProc;"
+
+  - id: create_schema
+    name: "CREATE SCHEMA"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-schema-transact-sql
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE SCHEMA s;"
+      - id: authorization
+        sql: "CREATE SCHEMA s AUTHORIZATION dbo;"
+      - id: authorization_only
+        sql: "CREATE SCHEMA AUTHORIZATION u1;"
+      - id: bracketed_owner
+        sql: "CREATE SCHEMA s AUTHORIZATION [Contoso\\Mary];"
+      - id: elements_table_grant_deny
+        sql: "CREATE SCHEMA s AUTHORIZATION u1 CREATE TABLE t (a INT, b INT) GRANT SELECT ON SCHEMA::s TO u2 DENY SELECT ON SCHEMA::s TO u3;"
+      - id: elements_view_revoke
+        sql: "CREATE SCHEMA s CREATE VIEW v AS SELECT 1 AS c REVOKE SELECT ON SCHEMA::s FROM u2;"
+    examples:
+      - |-
+        CREATE SCHEMA Sprockets AUTHORIZATION Annik
+            CREATE TABLE NineProngs
+            (
+                source INT,
+                cost INT,
+                partnumber INT
+            )
+
+            GRANT SELECT ON SCHEMA::Sprockets TO Mandar
+            DENY SELECT ON SCHEMA::Sprockets TO Prasanna;
+      - "CREATE SCHEMA Sales;"
+      - "CREATE SCHEMA Production AUTHORIZATION [Contoso\\Mary];"
+
+  - id: alter_schema
+    name: "ALTER SCHEMA"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-schema-transact-sql
+    tier: medium
+    probes:
+      - id: transfer_object
+        sql: "ALTER SCHEMA s TRANSFER dbo.t;"
+      - id: transfer_object_class
+        sql: "ALTER SCHEMA s TRANSFER OBJECT::dbo.t;"
+      - id: transfer_type
+        sql: "ALTER SCHEMA s TRANSFER TYPE::dbo.MyType;"
+      - id: transfer_xml_schema_collection
+        sql: "ALTER SCHEMA s TRANSFER XML SCHEMA COLLECTION::dbo.sc;"
+    examples:
+      - "ALTER SCHEMA HumanResources TRANSFER Person.Address;"
+      - "ALTER SCHEMA Person TRANSFER type::Production.TestType ;"
+
+  - id: drop_schema
+    name: "DROP SCHEMA"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-schema-transact-sql
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP SCHEMA s;"
+      - id: if_exists
+        sql: "DROP SCHEMA IF EXISTS s;"
+    examples:
+      - "DROP SCHEMA Sprockets;"
+
+  - id: create_database
+    name: "CREATE DATABASE"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-database-transact-sql
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE DATABASE db;"
+      - id: data_and_log_files
+        sql: "CREATE DATABASE db ON (NAME = db_dat, FILENAME = 'C:\\data\\db.mdf', SIZE = 10, MAXSIZE = 50, FILEGROWTH = 5) LOG ON (NAME = db_log, FILENAME = 'C:\\data\\db.ldf', SIZE = 5 MB, MAXSIZE = 25 MB, FILEGROWTH = 5 MB);"
+      - id: primary_filegroups
+        sql: "CREATE DATABASE db ON PRIMARY (NAME = p1, FILENAME = 'D:\\p1.mdf', SIZE = 10, MAXSIZE = UNLIMITED, FILEGROWTH = 15 %), FILEGROUP g1 (NAME = g1f1, FILENAME = 'D:\\g1f1.ndf', SIZE = 10 GB) LOG ON (NAME = l1, FILENAME = 'D:\\l1.ldf', SIZE = 5 MB);"
+      - id: filestream_filegroup
+        sql: "CREATE DATABASE [BlobStore1] CONTAINMENT = NONE ON PRIMARY (NAME = N'b1', FILENAME = N'C:\\b\\b1.mdf') , FILEGROUP [FS] CONTAINS FILESTREAM DEFAULT (NAME = N'FS1', FILENAME = N'C:\\b\\FS1', MAXSIZE = UNLIMITED) LOG ON (NAME = N'b1_log', FILENAME = N'C:\\b\\b1_log.ldf');"
+      - id: memory_optimized_filegroup
+        sql: "CREATE DATABASE db ON PRIMARY (NAME = d1, FILENAME = 'C:\\d1.mdf'), FILEGROUP imoltp CONTAINS MEMORY_OPTIMIZED_DATA (NAME = imoltp_dir, FILENAME = 'C:\\imoltp_dir');"
+      - id: containment_partial
+        sql: "CREATE DATABASE db CONTAINMENT = PARTIAL;"
+      - id: collate_with_options
+        sql: "CREATE DATABASE db COLLATE French_CI_AI WITH TRUSTWORTHY ON, DB_CHAINING ON;"
+      - id: with_language_options
+        sql: "CREATE DATABASE db CONTAINMENT = PARTIAL WITH DEFAULT_FULLTEXT_LANGUAGE = 1033, DEFAULT_LANGUAGE = us_english, NESTED_TRIGGERS = ON, TRANSFORM_NOISE_WORDS = OFF, TWO_DIGIT_YEAR_CUTOFF = 2049;"
+      - id: with_filestream_option
+        sql: "CREATE DATABASE db WITH FILESTREAM (NON_TRANSACTED_ACCESS = FULL, DIRECTORY_NAME = 'dbfs');"
+      - id: with_ledger
+        sql: "CREATE DATABASE db WITH LEDGER = ON;"
+      - id: for_attach
+        sql: "CREATE DATABASE db ON (FILENAME = 'D:\\db.mdf') FOR ATTACH;"
+      - id: for_attach_with_broker
+        sql: "CREATE DATABASE db ON (FILENAME = 'D:\\db.mdf') FOR ATTACH WITH ENABLE_BROKER, RESTRICTED_USER;"
+      - id: for_attach_rebuild_log
+        sql: "CREATE DATABASE db ON (FILENAME = 'D:\\db.mdf') FOR ATTACH_REBUILD_LOG;"
+      - id: snapshot
+        sql: "CREATE DATABASE db_ss ON (NAME = d1, FILENAME = 'D:\\d1.ss') AS SNAPSHOT OF db;"
+      - id: azure_edition
+        sql: "CREATE DATABASE db (EDITION = 'GeneralPurpose');"
+      - id: azure_edition_options
+        sql: "CREATE DATABASE db COLLATE Japanese_XJIS_140 (MAXSIZE = 500 MB, EDITION = 'GeneralPurpose', SERVICE_OBJECTIVE = 'GP_Gen5_8') WITH CATALOG_COLLATION = DATABASE_DEFAULT;"
+      - id: azure_elastic_pool
+        sql: "CREATE DATABASE db (SERVICE_OBJECTIVE = ELASTIC_POOL (NAME = S3M100));"
+      - id: azure_backup_storage_redundancy
+        sql: "CREATE DATABASE db WITH BACKUP_STORAGE_REDUNDANCY = 'ZONE';"
+      - id: azure_copy_of
+        sql: "CREATE DATABASE db_copy AS COPY OF srv.db_original (SERVICE_OBJECTIVE = 'GP_Gen5_8') WITH (BACKUP_STORAGE_REDUNDANCY = 'LOCAL');"
+    examples:
+      - |-
+        CREATE DATABASE Sales
+        ON (
+            NAME = Sales_dat,
+            FILENAME = 'C:\Program Files\Microsoft SQL Server\MSSQL13.MSSQLSERVER\MSSQL\DATA\saledat.mdf',
+            SIZE = 10,
+            MAXSIZE = 50,
+            FILEGROWTH = 5
+        )
+        LOG ON (
+            NAME = Sales_log,
+            FILENAME = 'C:\Program Files\Microsoft SQL Server\MSSQL13.MSSQLSERVER\MSSQL\DATA\salelog.ldf',
+            SIZE = 5 MB,
+            MAXSIZE = 25 MB,
+            FILEGROWTH = 5 MB
+        );
+      - |-
+        CREATE DATABASE sales_snapshot0600
+        ON
+            (NAME = SPri1_dat, FILENAME = 'D:\SalesData\SPri1dat_0600.ss'),
+            (NAME = SPri2_dat, FILENAME = 'D:\SalesData\SPri2dt_0600.ss'),
+            (NAME = SGrp1Fi1_dat, FILENAME = 'D:\SalesData\SG1Fi1dt_0600.ss'),
+            (NAME = SGrp1Fi2_dat, FILENAME = 'D:\SalesData\SG1Fi2dt_0600.ss'),
+            (NAME = SGrp2Fi1_dat, FILENAME = 'D:\SalesData\SG2Fi1dt_0600.ss'),
+            (NAME = SGrp2Fi2_dat, FILENAME = 'D:\SalesData\SG2Fi2dt_0600.ss')
+        AS SNAPSHOT OF Sales;
+      - |-
+        CREATE DATABASE MyOptionsTest COLLATE French_CI_AI
+            WITH TRUSTWORTHY ON, DB_CHAINING ON;
+      - |-
+        CREATE DATABASE hito
+        COLLATE Japanese_Bushu_Kakusu_100_CS_AS_KS_WS
+        ( MAXSIZE = 500 MB, EDITION = 'GeneralPurpose', SERVICE_OBJECTIVE = 'GP_Gen5_8' ) ;
+      - |-
+        CREATE DATABASE escuela
+            AS COPY OF school;
+
+  - id: alter_database
+    name: "ALTER DATABASE"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-database-transact-sql
+    tier: medium
+    probes:
+      - id: modify_name
+        sql: "ALTER DATABASE db MODIFY NAME = db2;"
+      - id: current_collate
+        sql: "ALTER DATABASE CURRENT COLLATE French_CI_AI;"
+      - id: set_option
+        sql: "ALTER DATABASE db SET RECOVERY SIMPLE;"
+      - id: set_options_termination
+        sql: "ALTER DATABASE db SET SINGLE_USER WITH ROLLBACK IMMEDIATE;"
+      - id: set_compatibility_level
+        sql: "ALTER DATABASE db SET COMPATIBILITY_LEVEL = 160;"
+      - id: add_file
+        sql: "ALTER DATABASE db ADD FILE (NAME = f2, FILENAME = 'C:\\f2.ndf', SIZE = 5 MB) TO FILEGROUP fg1;"
+      - id: azure_modify_edition
+        sql: "ALTER DATABASE db MODIFY (EDITION = 'Premium', MAXSIZE = 1024 GB, SERVICE_OBJECTIVE = 'P15');"
+      - id: azure_modify_elastic_pool
+        sql: "ALTER DATABASE db MODIFY (SERVICE_OBJECTIVE = ELASTIC_POOL (name = pool1));"
+      - id: azure_manual_cutover
+        sql: "ALTER DATABASE db MODIFY (EDITION = 'Hyperscale', SERVICE_OBJECTIVE = 'HS_Gen5_2') WITH MANUAL_CUTOVER;"
+      - id: azure_perform_cutover
+        sql: "ALTER DATABASE db PERFORM_CUTOVER;"
+      - id: azure_backup_storage_redundancy
+        sql: "ALTER DATABASE db MODIFY BACKUP_STORAGE_REDUNDANCY = 'ZONE';"
+      - id: azure_add_secondary
+        sql: "ALTER DATABASE db ADD SECONDARY ON SERVER srv2 WITH (ALLOW_CONNECTIONS = ALL, SERVICE_OBJECTIVE = 'S2');"
+      - id: azure_remove_secondary
+        sql: "ALTER DATABASE db REMOVE SECONDARY ON SERVER srv2;"
+      - id: azure_failover
+        sql: "ALTER DATABASE db FAILOVER;"
+      - id: azure_force_failover
+        sql: "ALTER DATABASE db FORCE_FAILOVER_ALLOW_DATA_LOSS;"
+    examples:
+      - |-
+        ALTER DATABASE AdventureWorks2022
+        Modify Name = Northwind ;
+      - |-
+        ALTER DATABASE testDB
+        COLLATE French_CI_AI ;
+      - "ALTER DATABASE [db1] MODIFY (EDITION = 'Premium', MAXSIZE = 1024 GB, SERVICE_OBJECTIVE = 'P15');"
+      - |-
+        ALTER DATABASE db1
+        ADD SECONDARY ON SERVER secondaryserver
+        WITH ( ALLOW_CONNECTIONS = ALL );
+      - |-
+        ALTER DATABASE [mySampleDatabase]
+           MODIFY (EDITION = 'Hyperscale', SERVICE_OBJECTIVE = 'HS_Gen5_2')
+           WITH MANUAL_CUTOVER;
+
+  - id: alter_database_set_options
+    name: "ALTER DATABASE SET Options"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-database-transact-sql-set-options
+    tier: medium
+    probes:
+      - id: recovery
+        sql: "ALTER DATABASE db SET RECOVERY FULL;"
+      - id: multiple_options
+        sql: "ALTER DATABASE db SET RECOVERY SIMPLE, PAGE_VERIFY CHECKSUM;"
+      - id: user_access_termination
+        sql: "ALTER DATABASE db SET SINGLE_USER WITH ROLLBACK AFTER 30 SECONDS;"
+      - id: read_only_no_wait
+        sql: "ALTER DATABASE db SET READ_ONLY WITH NO_WAIT;"
+      - id: state_offline
+        sql: "ALTER DATABASE db SET OFFLINE;"
+      - id: auto_options
+        sql: "ALTER DATABASE db SET AUTO_CREATE_STATISTICS ON (INCREMENTAL = ON), AUTO_UPDATE_STATISTICS_ASYNC ON, AUTO_SHRINK OFF;"
+      - id: snapshot_isolation
+        sql: "ALTER DATABASE db SET ALLOW_SNAPSHOT_ISOLATION ON;"
+      - id: read_committed_snapshot
+        sql: "ALTER DATABASE CURRENT SET READ_COMMITTED_SNAPSHOT ON WITH ROLLBACK IMMEDIATE;"
+      - id: change_tracking
+        sql: "ALTER DATABASE db SET CHANGE_TRACKING = ON (AUTO_CLEANUP = ON, CHANGE_RETENTION = 2 DAYS);"
+      - id: query_store
+        sql: "ALTER DATABASE db SET QUERY_STORE = ON (OPERATION_MODE = READ_WRITE, CLEANUP_POLICY = (STALE_QUERY_THRESHOLD_DAYS = 90), QUERY_CAPTURE_MODE = CUSTOM, QUERY_CAPTURE_POLICY = (STALE_CAPTURE_POLICY_THRESHOLD = 24 HOURS, EXECUTION_COUNT = 30));"
+      - id: query_store_clear
+        sql: "ALTER DATABASE db SET QUERY_STORE CLEAR ALL;"
+      - id: compatibility_level
+        sql: "ALTER DATABASE db SET COMPATIBILITY_LEVEL = 160;"
+      - id: sql_options
+        sql: "ALTER DATABASE db SET ANSI_NULLS ON, QUOTED_IDENTIFIER ON, ARITHABORT OFF;"
+      - id: delayed_durability
+        sql: "ALTER DATABASE db SET DELAYED_DURABILITY = FORCED;"
+      - id: accelerated_database_recovery
+        sql: "ALTER DATABASE db SET ACCELERATED_DATABASE_RECOVERY = ON (PERSISTENT_VERSION_STORE_FILEGROUP = [VersionStoreFG]);"
+      - id: automatic_tuning
+        sql: "ALTER DATABASE CURRENT SET AUTOMATIC_TUNING (FORCE_LAST_GOOD_PLAN = ON);"
+      - id: target_recovery_time
+        sql: "ALTER DATABASE db SET TARGET_RECOVERY_TIME = 60 SECONDS;"
+      - id: encryption
+        sql: "ALTER DATABASE db SET ENCRYPTION ON;"
+      - id: broker_and_trustworthy
+        sql: "ALTER DATABASE db SET ENABLE_BROKER, TRUSTWORTHY ON;"
+      - id: filestream
+        sql: "ALTER DATABASE db SET FILESTREAM (NON_TRANSACTED_ACCESS = FULL, DIRECTORY_NAME = N'dbfs');"
+      - id: optimized_locking
+        sql: "ALTER DATABASE db SET OPTIMIZED_LOCKING = ON;"
+      - id: suspend_for_snapshot_backup
+        sql: "ALTER DATABASE db SET SUSPEND_FOR_SNAPSHOT_BACKUP = ON (MODE = COPY_ONLY);"
+    examples:
+      - |-
+        ALTER DATABASE [database_name]
+        SET RECOVERY FULL PAGE_VERIFY CHECKSUM;
+      - |-
+        ALTER DATABASE [database_name]
+        SET SINGLE_USER
+        WITH ROLLBACK IMMEDIATE;
+      - |-
+        ALTER DATABASE [database_name]
+        SET CHANGE_TRACKING = ON
+        (AUTO_CLEANUP = ON, CHANGE_RETENTION = 2 DAYS);
+      - |-
+        ALTER DATABASE [database_name]
+        SET CHANGE_TRACKING (CHANGE_RETENTION = 3 DAYS);
+      - |-
+        ALTER DATABASE [database_name]
+        SET QUERY_STORE = ON
+            (
+              OPERATION_MODE = READ_WRITE,
+              CLEANUP_POLICY = ( STALE_QUERY_THRESHOLD_DAYS = 90 ),
+              DATA_FLUSH_INTERVAL_SECONDS = 900,
+              QUERY_CAPTURE_MODE = AUTO,
+              MAX_STORAGE_SIZE_MB = 1024,
+              INTERVAL_LENGTH_MINUTES = 60
+            );
+
+  - id: alter_database_file_and_filegroup_options
+    name: "ALTER DATABASE File and Filegroup Options"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-database-transact-sql-file-and-filegroup-options
+    tier: medium
+    probes:
+      - id: add_file_to_filegroup
+        sql: "ALTER DATABASE db ADD FILE (NAME = f1, FILENAME = 'C:\\f1.ndf', SIZE = 5MB, MAXSIZE = 100MB, FILEGROWTH = 5MB), (NAME = f2, FILENAME = 'C:\\f2.ndf') TO FILEGROUP fg1;"
+      - id: add_log_file
+        sql: "ALTER DATABASE db ADD LOG FILE (NAME = l2, FILENAME = 'C:\\l2.ldf', SIZE = 5MB, MAXSIZE = UNLIMITED, FILEGROWTH = 10 %);"
+      - id: remove_file
+        sql: "ALTER DATABASE db REMOVE FILE f2;"
+      - id: modify_file
+        sql: "ALTER DATABASE db MODIFY FILE (NAME = f1, NEWNAME = f1b, SIZE = 200MB);"
+      - id: modify_file_offline
+        sql: "ALTER DATABASE db MODIFY FILE (NAME = f1, OFFLINE);"
+      - id: add_filegroup
+        sql: "ALTER DATABASE db ADD FILEGROUP fg1;"
+      - id: add_filegroup_contains
+        sql: "ALTER DATABASE db ADD FILEGROUP fs CONTAINS FILESTREAM;"
+      - id: remove_filegroup
+        sql: "ALTER DATABASE db REMOVE FILEGROUP fg1;"
+      - id: modify_filegroup_default
+        sql: "ALTER DATABASE db MODIFY FILEGROUP fg1 DEFAULT;"
+      - id: modify_filegroup_read_only
+        sql: "ALTER DATABASE db MODIFY FILEGROUP fg1 READ_ONLY;"
+      - id: modify_filegroup_name
+        sql: "ALTER DATABASE db MODIFY FILEGROUP fg1 NAME = fg2;"
+      - id: modify_filegroup_autogrow
+        sql: "ALTER DATABASE db MODIFY FILEGROUP fg1 AUTOGROW_ALL_FILES;"
+    examples:
+      - |-
+        ALTER DATABASE AdventureWorks2022
+        ADD FILEGROUP Test1FG1;
+      - |-
+        ALTER DATABASE AdventureWorks2022
+        REMOVE FILE test1dat4;
+      - |-
+        ALTER DATABASE AdventureWorks2022
+        MODIFY FILE
+        (NAME = test1dat3,
+        SIZE = 200MB);
+      - |-
+        ALTER DATABASE AdventureWorks2022
+        MODIFY FILE
+        (
+            NAME = Test1dat2,
+            FILENAME = N'c:\t1dat2.ndf'
+        );
+      - |-
+        ALTER DATABASE tempdb
+            MODIFY FILE (NAME = tempdev, FILENAME = 'E:\SQLData\tempdb.mdf');
+
+  - id: alter_database_compatibility_level
+    name: "ALTER DATABASE compatibility level"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-database-transact-sql-compatibility-level
+    tier: medium
+    probes:
+      - id: set_level
+        sql: "ALTER DATABASE db SET COMPATIBILITY_LEVEL = 150;"
+      - id: current_level
+        sql: "ALTER DATABASE CURRENT SET COMPATIBILITY_LEVEL = 170;"
+    examples:
+      - |-
+        ALTER DATABASE AdventureWorks2022
+            SET COMPATIBILITY_LEVEL = 150;
+
+  - id: alter_database_mirroring
+    name: "ALTER DATABASE Database Mirroring"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-database-transact-sql-database-mirroring
+    tier: low
+    probes:
+      - id: partner_server
+        sql: "ALTER DATABASE db SET PARTNER = 'TCP://srv2.contoso.com:5022';"
+      - id: partner_failover
+        sql: "ALTER DATABASE db SET PARTNER FAILOVER;"
+      - id: partner_safety_timeout
+        sql: "ALTER DATABASE db SET PARTNER SAFETY OFF;"
+      - id: witness_off
+        sql: "ALTER DATABASE db SET WITNESS OFF;"
+    examples:
+      - "ALTER DATABASE AdventureWorks2022 SET PARTNER FAILOVER;"
+
+  - id: alter_database_set_hadr
+    name: "ALTER DATABASE SET HADR"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-database-transact-sql-set-hadr
+    tier: low
+    probes:
+      - id: join_availability_group
+        sql: "ALTER DATABASE db SET HADR AVAILABILITY GROUP = ag1;"
+      - id: off
+        sql: "ALTER DATABASE db SET HADR OFF;"
+      - id: suspend_resume
+        sql: "ALTER DATABASE db SET HADR SUSPEND;"
+    examples:
+      - "ALTER DATABASE AccountsDb1 SET HADR AVAILABILITY GROUP = AccountsAG;"
+
+  - id: drop_database
+    name: "DROP DATABASE"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-database-transact-sql
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP DATABASE db;"
+      - id: if_exists
+        sql: "DROP DATABASE IF EXISTS db;"
+      - id: multiple
+        sql: "DROP DATABASE db1, db2;"
+    examples:
+      - "DROP DATABASE Sales;"
+      - "DROP DATABASE Sales, NewSales;"
+      - "DROP DATABASE sales_snapshot0600;"
+
+  - id: begin_transaction
+    name: "BEGIN TRANSACTION"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/begin-transaction-transact-sql
+    tier: high
+    probes:
+      - id: begin_tran
+        sql: "BEGIN TRAN;"
+      - id: begin_transaction
+        sql: "BEGIN TRANSACTION;"
+      - id: named
+        sql: "BEGIN TRANSACTION t1;"
+      - id: variable_name
+        sql: "BEGIN TRANSACTION @TranName;"
+      - id: with_mark
+        sql: "BEGIN TRAN m2 WITH MARK;"
+      - id: with_mark_description
+        sql: "BEGIN TRANSACTION CandidateDelete WITH MARK N'Deleting a Job Candidate';"
+      - id: no_semicolon_followed
+        sql: |-
+          BEGIN TRANSACTION
+          DELETE FROM t WHERE id = 13;
+        note: "Statement terminators are optional in T-SQL; the doc's FROM-clause example writes BEGIN TRANSACTION on its own line before the next statement."
+    examples:
+      - "BEGIN TRAN T1;"
+      - "BEGIN TRAN M2 WITH MARK;"
+      - "BEGIN TRANSACTION;"
+      - "BEGIN TRANSACTION @TranName;"
+      - |-
+        BEGIN TRANSACTION CandidateDelete
+            WITH MARK N'Deleting a Job Candidate';
+
+  - id: begin_distributed_transaction
+    name: "BEGIN DISTRIBUTED TRANSACTION"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/begin-distributed-transaction-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "BEGIN DISTRIBUTED TRANSACTION;"
+      - id: named
+        sql: "BEGIN DISTRIBUTED TRAN t1;"
+      - id: variable
+        sql: "BEGIN DISTRIBUTED TRANSACTION @tn;"
+    examples:
+      - "BEGIN DISTRIBUTED TRANSACTION;"
+
+  - id: commit_transaction
+    name: "COMMIT TRANSACTION"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/commit-transaction-transact-sql
+    tier: high
+    probes:
+      - id: commit
+        sql: "COMMIT;"
+      - id: commit_tran
+        sql: "COMMIT TRAN;"
+      - id: commit_transaction_named
+        sql: "COMMIT TRANSACTION Inner2;"
+      - id: variable
+        sql: "COMMIT TRANSACTION @TranName;"
+      - id: delayed_durability
+        sql: "COMMIT TRANSACTION WITH (DELAYED_DURABILITY = ON);"
+      - id: named_delayed_durability
+        sql: "COMMIT TRAN t1 WITH (DELAYED_DURABILITY = OFF);"
+    examples:
+      - "COMMIT TRANSACTION;"
+      - "COMMIT TRANSACTION Inner2;"
+      - "COMMIT TRANSACTION Inner1;"
+
+  - id: commit_work
+    name: "COMMIT WORK"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/commit-work-transact-sql
+    tier: high
+    probes:
+      - id: commit_work
+        sql: "COMMIT WORK;"
+
+  - id: rollback_transaction
+    name: "ROLLBACK TRANSACTION"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/rollback-transaction-transact-sql
+    tier: high
+    probes:
+      - id: rollback
+        sql: "ROLLBACK;"
+      - id: rollback_tran
+        sql: "ROLLBACK TRAN;"
+      - id: rollback_transaction_named
+        sql: "ROLLBACK TRANSACTION t1;"
+      - id: variable
+        sql: "ROLLBACK TRANSACTION @TransactionName;"
+      - id: savepoint
+        sql: "ROLLBACK TRANSACTION ProcedureSave;"
+    examples:
+      - "ROLLBACK TRANSACTION @TransactionName;"
+
+  - id: rollback_work
+    name: "ROLLBACK WORK"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/rollback-work-transact-sql
+    tier: high
+    probes:
+      - id: rollback_work
+        sql: "ROLLBACK WORK;"
+
+  - id: save_transaction
+    name: "SAVE TRANSACTION"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/save-transaction-transact-sql
+    tier: high
+    probes:
+      - id: save_tran
+        sql: "SAVE TRAN sp1;"
+      - id: save_transaction
+        sql: "SAVE TRANSACTION ProcedureSave;"
+      - id: variable
+        sql: "SAVE TRANSACTION @sp;"
+    examples:
+      - |-
+        CREATE PROCEDURE SaveTranExample
+            @InputCandidateID INT
+        AS
+        -- Detect whether the procedure was called
+        -- from an active transaction and save
+        -- that for later use.
+        -- In the procedure, @TranCounter = 0
+        -- means there was no active transaction
+        -- and the procedure started one.
+        -- @TranCounter > 0 means an active
+        -- transaction was started before the
+        -- procedure was called.
+        DECLARE @TranCounter INT;
+        SET @TranCounter = @@TRANCOUNT;
+
+        IF @TranCounter > 0
+            -- Procedure called when there is
+            -- an active transaction.
+            -- Create a savepoint to be able
+            -- to roll back only the work done
+            -- in the procedure if there is an
+            -- error.
+            SAVE TRANSACTION ProcedureSave;
+        ELSE
+            -- Procedure must start its own
+            -- transaction.
+            BEGIN TRANSACTION;
+        -- Modify database.
+        BEGIN TRY
+            DELETE HumanResources.JobCandidate
+                WHERE JobCandidateID = @InputCandidateID;
+            -- Get here if no errors; must commit
+            -- any transaction started in the
+            -- procedure, but not commit a transaction
+            -- started before the transaction was called.
+            IF @TranCounter = 0
+                -- @TranCounter = 0 means no transaction was
+                -- started before the procedure was called.
+                -- The procedure must commit the transaction
+                -- it started.
+                COMMIT TRANSACTION;
+        END TRY
+        BEGIN CATCH
+            -- An error occurred; must determine
+            -- which type of rollback will roll
+            -- back only the work done in the
+            -- procedure.
+            IF @TranCounter = 0
+                -- Transaction started in procedure.
+                -- Roll back complete transaction.
+                ROLLBACK TRANSACTION;
+            ELSE
+                -- Transaction started before procedure
+                -- called, do not roll back modifications
+                -- made before the procedure was called.
+                IF XACT_STATE() <> -1
+                    -- If the transaction is still valid, just
+                    -- roll back to the savepoint set at the
+                    -- start of the stored procedure.
+                    ROLLBACK TRANSACTION ProcedureSave;
+                    -- If the transaction is uncommitable, a
+                    -- rollback to the savepoint is not allowed
+                    -- because the savepoint rollback writes to
+                    -- the log. Just return to the caller, which
+                    -- should roll back the outer transaction.
+
+            -- After the appropriate rollback, return error
+            -- information to the caller.
+            DECLARE @ErrorMessage NVARCHAR(4000);
+            DECLARE @ErrorSeverity INT;
+            DECLARE @ErrorState INT;
+
+            SELECT @ErrorMessage = ERROR_MESSAGE();
+            SELECT @ErrorSeverity = ERROR_SEVERITY();
+            SELECT @ErrorState = ERROR_STATE();
+
+            RAISERROR (
+                      @ErrorMessage, -- Message text.
+                      @ErrorSeverity, -- Severity.
+                      @ErrorState -- State.
+                      );
+        END CATCH
+
+  - id: set_transaction_isolation_level
+    name: "SET TRANSACTION ISOLATION LEVEL"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/set-transaction-isolation-level-transact-sql
+    tier: high
+    probes:
+      - id: read_uncommitted
+        sql: "SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;"
+      - id: read_committed
+        sql: "SET TRANSACTION ISOLATION LEVEL READ COMMITTED;"
+      - id: repeatable_read
+        sql: "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;"
+      - id: snapshot
+        sql: "SET TRANSACTION ISOLATION LEVEL SNAPSHOT;"
+      - id: serializable
+        sql: "SET TRANSACTION ISOLATION LEVEL SERIALIZABLE;"
+    examples:
+      - "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;"
+
+  - id: grant
+    name: "GRANT"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/grant-transact-sql
+    tier: medium
+    probes:
+      - id: object_permission
+        sql: "GRANT SELECT ON t TO u1;"
+      - id: multiple_permissions_principals
+        sql: "GRANT SELECT, INSERT, UPDATE ON dbo.t TO u1, r1;"
+      - id: column_list
+        sql: "GRANT SELECT (c1, c2) ON t TO u1;"
+      - id: all_privileges
+        sql: "GRANT ALL PRIVILEGES ON t TO u1;"
+      - id: all
+        sql: "GRANT ALL ON t TO u1;"
+        note: "GRANT ALL is deprecated but remains in the syntax ({ ALL [ PRIVILEGES ] })."
+      - id: class_qualified
+        sql: "GRANT EXECUTE ON OBJECT::dbo.p TO r1;"
+      - id: no_securable
+        sql: "GRANT CREATE TABLE TO u1;"
+      - id: with_grant_option
+        sql: "GRANT EXECUTE ON TestProc TO TesterRole WITH GRANT OPTION;"
+      - id: as_principal
+        sql: "GRANT EXECUTE ON TestProc TO User2 AS TesterRole;"
+      - id: bracketed_windows_principal
+        sql: "GRANT CONNECT TO [Domain\\User];"
+    examples:
+      - |-
+        -- Execute the following as a database owner
+        GRANT EXECUTE ON TestProc TO TesterRole WITH GRANT OPTION;
+      - |-
+        -- Execute the following as User1
+        -- The following fails because User1 does not have the permission as the User1
+        GRANT EXECUTE ON TestProc TO User2;
+      - |-
+        -- The following succeeds because User1 invokes the TesterRole membership
+        GRANT EXECUTE ON TestProc TO User2 AS TesterRole;
+
+  - id: grant_assembly_permissions
+    name: "GRANT Assembly Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/grant-assembly-permissions-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "GRANT EXECUTE ON ASSEMBLY::asm TO u1;"
+      - id: options
+        sql: "GRANT REFERENCES, VIEW DEFINITION ON ASSEMBLY :: asm TO u1, u2 WITH GRANT OPTION AS dbo;"
+
+  - id: grant_asymmetric_key_permissions
+    name: "GRANT Asymmetric Key Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/grant-asymmetric-key-permissions-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "GRANT CONTROL ON ASYMMETRIC KEY::k1 TO u1;"
+      - id: options
+        sql: "GRANT VIEW DEFINITION ON ASYMMETRIC KEY :: k1 TO u1 WITH GRANT OPTION AS dbo;"
+
+  - id: grant_availability_group_permissions
+    name: "GRANT Availability Group Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/grant-availability-group-permissions-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "GRANT VIEW DEFINITION ON AVAILABILITY GROUP::MyAg TO ZArifin;"
+      - id: with_grant_option
+        sql: "GRANT TAKE OWNERSHIP ON AVAILABILITY GROUP::MyAg TO PKomosinski WITH GRANT OPTION AS sa;"
+    examples:
+      - "GRANT VIEW DEFINITION ON AVAILABILITY GROUP::MyAg TO ZArifin;"
+      - |-
+        GRANT TAKE OWNERSHIP ON AVAILABILITY GROUP::MyAg TO PKomosinski
+            WITH GRANT OPTION;
+
+  - id: grant_certificate_permissions
+    name: "GRANT Certificate Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/grant-certificate-permissions-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "GRANT CONTROL ON CERTIFICATE::c1 TO u1;"
+      - id: options
+        sql: "GRANT ALTER, VIEW DEFINITION ON CERTIFICATE :: c1 TO u1 WITH GRANT OPTION AS dbo;"
+
+  - id: grant_database_permissions
+    name: "GRANT Database Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/grant-database-permissions-transact-sql
+    tier: medium
+    probes:
+      - id: basic
+        sql: "GRANT CREATE TABLE TO MelanieK;"
+      - id: multiple
+        sql: "GRANT CREATE VIEW, CREATE PROCEDURE, SHOWPLAN TO u1, r1;"
+      - id: with_grant_option
+        sql: "GRANT CREATE VIEW TO CarmineEs WITH GRANT OPTION;"
+      - id: all_as
+        sql: "GRANT ALL PRIVILEGES TO u1 AS dbo;"
+      - id: on_database
+        sql: "GRANT CONTROL ON DATABASE::db TO u1;"
+    examples:
+      - "GRANT CREATE TABLE TO MelanieK;"
+      - "GRANT SHOWPLAN TO AuditMonitor;"
+      - "GRANT CREATE VIEW TO CarmineEs WITH GRANT OPTION;"
+
+  - id: grant_database_principal_permissions
+    name: "GRANT Database Principal Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/grant-database-principal-permissions-transact-sql
+    tier: low
+    probes:
+      - id: user
+        sql: "GRANT CONTROL ON USER::Wanida TO RolandX;"
+      - id: role_with_grant_option
+        sql: "GRANT VIEW DEFINITION ON ROLE::SammamishParking TO JinghaoLiu WITH GRANT OPTION;"
+      - id: application_role
+        sql: "GRANT ALTER ON APPLICATION ROLE::app1 TO u1 AS dbo;"
+    examples:
+      - "GRANT CONTROL ON USER::Wanida TO RolandX;"
+      - |-
+        GRANT VIEW DEFINITION ON ROLE::SammamishParking
+            TO JinghaoLiu WITH GRANT OPTION;
+
+  - id: grant_database_scoped_credential_permissions
+    name: "GRANT Database Scoped Credential Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/grant-database-scoped-credential-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "GRANT CONTROL ON DATABASE SCOPED CREDENTIAL::cred1 TO u1;"
+      - id: options
+        sql: "GRANT REFERENCES ON DATABASE SCOPED CREDENTIAL :: cred1 TO u1 WITH GRANT OPTION AS dbo;"
+
+  - id: grant_endpoint_permissions
+    name: "GRANT Endpoint Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/grant-endpoint-permissions-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "GRANT VIEW DEFINITION ON ENDPOINT::Mirror7 TO ZArifin;"
+      - id: with_grant_option
+        sql: "GRANT TAKE OWNERSHIP ON ENDPOINT::Shipping83 TO PKomosinski WITH GRANT OPTION;"
+    examples:
+      - "GRANT VIEW DEFINITION ON ENDPOINT::Mirror7 TO ZArifin;"
+      - |-
+        GRANT TAKE OWNERSHIP ON ENDPOINT::Shipping83 TO PKomosinski
+            WITH GRANT OPTION;
+
+  - id: grant_full_text_permissions
+    name: "GRANT Full-Text Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/grant-full-text-permissions-transact-sql
+    tier: low
+    probes:
+      - id: catalog
+        sql: "GRANT CONTROL ON FULLTEXT CATALOG :: ProductCatalog TO Ted;"
+      - id: stoplist
+        sql: "GRANT VIEW DEFINITION ON FULLTEXT STOPLIST :: ProductStoplist TO Mary WITH GRANT OPTION;"
+    examples:
+      - |-
+        GRANT CONTROL
+            ON FULLTEXT CATALOG :: ProductCatalog
+            TO Ted ;
+      - |-
+        GRANT VIEW DEFINITION
+            ON FULLTEXT STOPLIST :: ProductStoplist
+            TO Mary ;
+
+  - id: grant_object_permissions
+    name: "GRANT Object Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/grant-object-permissions-transact-sql
+    tier: medium
+    probes:
+      - id: object_class
+        sql: "GRANT SELECT ON OBJECT::Person.Address TO RosaQdM;"
+      - id: no_class
+        sql: "GRANT EXECUTE ON dbo.p TO r1;"
+      - id: column_permission
+        sql: "GRANT REFERENCES (BusinessEntityID) ON OBJECT::HumanResources.vEmployee TO Wanida WITH GRANT OPTION;"
+      - id: object_columns
+        sql: "GRANT SELECT ON dbo.t (c1, c2) TO u1;"
+      - id: all_privileges_as
+        sql: "GRANT ALL PRIVILEGES ON OBJECT::dbo.t TO u1 AS dbo;"
+      - id: multiple_permissions
+        sql: "GRANT SELECT, INSERT, UPDATE, DELETE ON dbo.t TO r1, r2;"
+    examples:
+      - "GRANT SELECT ON OBJECT::Person.Address TO RosaQdM;"
+      - |-
+        GRANT EXECUTE ON OBJECT::HumanResources.uspUpdateEmployeeHireInfo
+            TO Recruiting11;
+      - |-
+        GRANT REFERENCES (BusinessEntityID) ON OBJECT::HumanResources.vEmployee
+            TO Wanida WITH GRANT OPTION;
+
+  - id: grant_schema_permissions
+    name: "GRANT Schema Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/grant-schema-permissions-transact-sql
+    tier: medium
+    probes:
+      - id: basic
+        sql: "GRANT INSERT ON SCHEMA :: HumanResources TO guest;"
+      - id: with_grant_option
+        sql: "GRANT SELECT ON SCHEMA :: Person TO WilJo WITH GRANT OPTION;"
+      - id: multiple_as
+        sql: "GRANT SELECT, EXECUTE ON SCHEMA::s TO r1, r2 AS dbo;"
+    examples:
+      - "GRANT INSERT ON SCHEMA :: HumanResources TO guest;"
+      - "GRANT SELECT ON SCHEMA :: Person TO WilJo WITH GRANT OPTION;"
+
+  - id: grant_search_property_list_permissions
+    name: "GRANT Search Property List Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/grant-search-property-list-permissions-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "GRANT VIEW DEFINITION ON SEARCH PROPERTY LIST :: DocumentTablePropertyList TO Mary;"
+    examples:
+      - |-
+        GRANT VIEW DEFINITION
+            ON SEARCH PROPERTY LIST :: DocumentTablePropertyList
+            TO Mary ;
+
+  - id: grant_server_permissions
+    name: "GRANT Server Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/grant-server-permissions-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "GRANT CONTROL SERVER TO TerryEminhizer;"
+      - id: with_grant_option
+        sql: "GRANT ALTER ANY EVENT NOTIFICATION TO JanethEsteves WITH GRANT OPTION;"
+      - id: as
+        sql: "GRANT VIEW SERVER STATE TO [Domain\\Group] AS sa;"
+    examples:
+      - "GRANT CONTROL SERVER TO TerryEminhizer;"
+      - "GRANT ALTER ANY EVENT NOTIFICATION TO JanethEsteves WITH GRANT OPTION;"
+
+  - id: grant_server_principal_permissions
+    name: "GRANT Server Principal Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/grant-server-principal-permissions-transact-sql
+    tier: low
+    probes:
+      - id: login
+        sql: "GRANT IMPERSONATE ON LOGIN::WanidaBenshoof TO [AdvWorks\\YoonM];"
+      - id: server_role
+        sql: "GRANT VIEW DEFINITION ON SERVER ROLE::Sales TO Auditors WITH GRANT OPTION;"
+    examples:
+      - "GRANT IMPERSONATE ON LOGIN::WanidaBenshoof to [AdvWorks\\YoonM];"
+      - |-
+        GRANT VIEW DEFINITION ON LOGIN::EricKurjan TO RMeyyappan
+            WITH GRANT OPTION;
+
+  - id: grant_service_broker_permissions
+    name: "GRANT Service Broker Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/grant-service-broker-permissions-transact-sql
+    tier: low
+    probes:
+      - id: service
+        sql: "GRANT SEND ON SERVICE::[//Adventure-Works.com/Expenses] TO u1;"
+      - id: contract
+        sql: "GRANT REFERENCES ON CONTRACT::c1 TO u1 WITH GRANT OPTION;"
+      - id: message_type
+        sql: "GRANT REFERENCES ON MESSAGE TYPE::m1 TO u1;"
+      - id: route_binding
+        sql: "GRANT CONTROL ON REMOTE SERVICE BINDING::b1 TO u1 AS dbo;"
+
+  - id: grant_symmetric_key_permissions
+    name: "GRANT Symmetric Key Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/grant-symmetric-key-permissions-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "GRANT ALTER ON SYMMETRIC KEY::SamInventory42 TO HamidS;"
+      - id: options
+        sql: "GRANT VIEW DEFINITION ON SYMMETRIC KEY :: k1 TO u1 WITH GRANT OPTION AS dbo;"
+    examples:
+      - "GRANT ALTER ON SYMMETRIC KEY::SamInventory42 TO HamidS;"
+
+  - id: grant_system_object_permissions
+    name: "GRANT System Object Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/grant-system-object-permissions-transact-sql
+    tier: low
+    probes:
+      - id: select
+        sql: "GRANT SELECT ON sys.sql_logins TO Sylvester1;"
+      - id: execute
+        sql: "GRANT EXECUTE ON xp_readmail TO Sylvester1;"
+    examples:
+      - "GRANT SELECT ON sys.sql_logins TO Sylvester1;"
+      - "GRANT VIEW SERVER STATE to Sylvester1;"
+
+  - id: grant_type_permissions
+    name: "GRANT Type Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/grant-type-permissions-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "GRANT VIEW DEFINITION ON TYPE::Telemarketing.PhoneNumber TO KhalidR WITH GRANT OPTION;"
+      - id: as
+        sql: "GRANT EXECUTE ON TYPE::dbo.MyType TO u1 AS dbo;"
+    examples:
+      - |-
+        GRANT VIEW DEFINITION ON TYPE::Telemarketing.PhoneNumber
+            TO KhalidR WITH GRANT OPTION;
+
+  - id: grant_xml_schema_collection_permissions
+    name: "GRANT XML Schema Collection Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/grant-xml-schema-collection-permissions-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "GRANT EXECUTE ON XML SCHEMA COLLECTION::dbo.sc TO u1;"
+      - id: options
+        sql: "GRANT ALTER, REFERENCES ON XML SCHEMA COLLECTION :: sc TO u1 WITH GRANT OPTION AS dbo;"
+
+  - id: revoke
+    name: "REVOKE"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/revoke-transact-sql
+    tier: medium
+    probes:
+      - id: from
+        sql: "REVOKE SELECT ON t FROM u1;"
+      - id: to
+        sql: "REVOKE SELECT ON SCHEMA :: Sales TO Vendors;"
+      - id: grant_option_for
+        sql: "REVOKE GRANT OPTION FOR EXECUTE ON dbo.p FROM u1 CASCADE;"
+      - id: all_privileges
+        sql: "REVOKE ALL PRIVILEGES ON t FROM u1;"
+      - id: column_list
+        sql: "REVOKE SELECT (c1, c2) ON t FROM u1;"
+      - id: no_securable
+        sql: "REVOKE CREATE TABLE FROM u1, u2;"
+      - id: cascade_as
+        sql: "REVOKE UPDATE ON OBJECT::dbo.t FROM u1 CASCADE AS dbo;"
+    examples:
+      - "REVOKE SELECT ON SCHEMA :: Sales TO Vendors;"
+
+  - id: revoke_assembly_permissions
+    name: "REVOKE Assembly Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/revoke-assembly-permissions-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "REVOKE EXECUTE ON ASSEMBLY::asm FROM u1;"
+      - id: grant_option_cascade
+        sql: "REVOKE GRANT OPTION FOR REFERENCES ON ASSEMBLY :: asm TO u1 CASCADE AS dbo;"
+
+  - id: revoke_asymmetric_key_permissions
+    name: "REVOKE Asymmetric Key Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/revoke-asymmetric-key-permissions-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "REVOKE CONTROL ON ASYMMETRIC KEY::k1 FROM u1;"
+      - id: cascade
+        sql: "REVOKE VIEW DEFINITION ON ASYMMETRIC KEY :: k1 TO u1 CASCADE;"
+
+  - id: revoke_availability_group_permissions
+    name: "REVOKE Availability Group Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/revoke-availability-group-permissions-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "REVOKE VIEW DEFINITION ON AVAILABILITY GROUP::MyAg TO ZArifin;"
+      - id: cascade
+        sql: "REVOKE TAKE OWNERSHIP ON AVAILABILITY GROUP::MyAg FROM PKomosinski CASCADE;"
+    examples:
+      - "REVOKE VIEW DEFINITION ON AVAILABILITY GROUP::MyAg TO ZArifin;"
+      - |-
+        REVOKE TAKE OWNERSHIP ON AVAILABILITY GROUP::MyAg TO PKomosinski
+            CASCADE;
+
+  - id: revoke_certificate_permissions
+    name: "REVOKE Certificate Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/revoke-certificate-permissions-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "REVOKE CONTROL ON CERTIFICATE::c1 FROM u1;"
+      - id: grant_option
+        sql: "REVOKE GRANT OPTION FOR ALTER ON CERTIFICATE :: c1 FROM u1 CASCADE AS dbo;"
+
+  - id: revoke_database_permissions
+    name: "REVOKE Database Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/revoke-database-permissions-transact-sql
+    tier: medium
+    probes:
+      - id: basic
+        sql: "REVOKE CREATE CERTIFICATE FROM MelanieK;"
+      - id: cascade
+        sql: "REVOKE VIEW DEFINITION FROM CarmineEs CASCADE;"
+      - id: grant_option_for
+        sql: "REVOKE GRANT OPTION FOR CREATE VIEW FROM u1 CASCADE AS dbo;"
+      - id: to
+        sql: "REVOKE SHOWPLAN TO u1;"
+    examples:
+      - "REVOKE CREATE CERTIFICATE FROM MelanieK;"
+      - "REVOKE REFERENCES FROM AuditMonitor;"
+      - "REVOKE VIEW DEFINITION FROM CarmineEs CASCADE;"
+
+  - id: revoke_database_principal_permissions
+    name: "REVOKE Database Principal Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/revoke-database-principal-permissions-transact-sql
+    tier: low
+    probes:
+      - id: user
+        sql: "REVOKE CONTROL ON USER::Wanida FROM RolandX;"
+      - id: role_cascade
+        sql: "REVOKE VIEW DEFINITION ON ROLE::SammamishParking FROM JinghaoLiu CASCADE;"
+      - id: application_role
+        sql: "REVOKE ALTER ON APPLICATION ROLE::app1 FROM u1;"
+    examples:
+      - "REVOKE CONTROL ON USER::Wanida FROM RolandX;"
+      - |-
+        REVOKE VIEW DEFINITION ON ROLE::SammamishParking
+            FROM JinghaoLiu CASCADE;
+
+  - id: revoke_database_scoped_credential_permissions
+    name: "REVOKE Database Scoped Credential Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/revoke-database-scoped-credential-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "REVOKE CONTROL ON DATABASE SCOPED CREDENTIAL::cred1 FROM u1;"
+      - id: cascade
+        sql: "REVOKE GRANT OPTION FOR REFERENCES ON DATABASE SCOPED CREDENTIAL :: cred1 TO u1 CASCADE AS dbo;"
+
+  - id: revoke_endpoint_permissions
+    name: "REVOKE Endpoint Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/revoke-endpoint-permissions-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "REVOKE VIEW DEFINITION ON ENDPOINT::Mirror7 FROM ZArifin;"
+      - id: cascade
+        sql: "REVOKE TAKE OWNERSHIP ON ENDPOINT::Shipping83 FROM PKomosinski CASCADE;"
+    examples:
+      - "REVOKE VIEW DEFINITION ON ENDPOINT::Mirror7 FROM ZArifin;"
+      - |-
+        REVOKE TAKE OWNERSHIP ON ENDPOINT::Shipping83 FROM PKomosinski
+            CASCADE;
+
+  - id: revoke_full_text_permissions
+    name: "REVOKE Full-Text Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/revoke-full-text-permissions-transact-sql
+    tier: low
+    probes:
+      - id: catalog
+        sql: "REVOKE CONTROL ON FULLTEXT CATALOG :: ProductCatalog FROM Ted;"
+      - id: stoplist
+        sql: "REVOKE VIEW DEFINITION ON FULLTEXT STOPLIST :: ProductStoplist FROM Mary CASCADE;"
+
+  - id: revoke_object_permissions
+    name: "REVOKE Object Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/revoke-object-permissions-transact-sql
+    tier: medium
+    probes:
+      - id: object_class
+        sql: "REVOKE SELECT ON OBJECT::Person.Address FROM RosaQdM;"
+      - id: column_cascade
+        sql: "REVOKE REFERENCES (BusinessEntityID) ON OBJECT::HumanResources.vEmployee FROM Wanida CASCADE;"
+      - id: grant_option_for
+        sql: "REVOKE GRANT OPTION FOR SELECT ON dbo.t FROM u1 CASCADE;"
+      - id: object_columns_to
+        sql: "REVOKE SELECT ON dbo.t (c1) TO u1 AS dbo;"
+      - id: all
+        sql: "REVOKE ALL ON OBJECT::dbo.t FROM u1;"
+    examples:
+      - "REVOKE SELECT ON OBJECT::Person.Address FROM RosaQdM;"
+      - |-
+        REVOKE EXECUTE ON OBJECT::HumanResources.uspUpdateEmployeeHireInfo
+            FROM Recruiting11;
+      - |-
+        REVOKE REFERENCES (BusinessEntityID) ON OBJECT::HumanResources.vEmployee
+            FROM Wanida CASCADE;
+
+  - id: revoke_schema_permissions
+    name: "REVOKE Schema Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/revoke-schema-permissions-transact-sql
+    tier: medium
+    probes:
+      - id: basic
+        sql: "REVOKE INSERT ON SCHEMA :: HumanResources FROM guest;"
+      - id: cascade
+        sql: "REVOKE SELECT ON SCHEMA :: Person FROM WilJo CASCADE;"
+      - id: grant_option_for
+        sql: "REVOKE GRANT OPTION FOR SELECT ON SCHEMA::s TO r1 CASCADE AS dbo;"
+
+  - id: revoke_search_property_list_permissions
+    name: "REVOKE Search Property List Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/revoke-search-property-list-permissions-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "REVOKE VIEW DEFINITION ON SEARCH PROPERTY LIST :: DocumentTablePropertyList FROM Mary;"
+
+  - id: revoke_server_permissions
+    name: "REVOKE Server Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/revoke-server-permissions-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "REVOKE VIEW SERVER STATE FROM WanidaBenshoof;"
+      - id: grant_option_for
+        sql: "REVOKE GRANT OPTION FOR CONNECT SQL FROM JanethEsteves;"
+    examples:
+      - "REVOKE VIEW SERVER STATE FROM WanidaBenshoof;"
+      - "REVOKE GRANT OPTION FOR CONNECT SQL FROM JanethEsteves;"
+
+  - id: revoke_server_principal_permissions
+    name: "REVOKE Server Principal Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/revoke-server-principal-permissions-transact-sql
+    tier: low
+    probes:
+      - id: login
+        sql: "REVOKE IMPERSONATE ON LOGIN::WanidaBenshoof FROM [AdvWorks\\YoonM];"
+      - id: server_role
+        sql: "REVOKE VIEW DEFINITION ON SERVER ROLE::Sales TO Auditors CASCADE;"
+    examples:
+      - "REVOKE IMPERSONATE ON LOGIN::WanidaBenshoof FROM [AdvWorks\\YoonM];"
+      - |-
+        REVOKE VIEW DEFINITION ON LOGIN::EricKurjan FROM RMeyyappan
+            CASCADE;
+
+  - id: revoke_service_broker_permissions
+    name: "REVOKE Service Broker Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/revoke-service-broker-permissions-transact-sql
+    tier: low
+    probes:
+      - id: service
+        sql: "REVOKE SEND ON SERVICE::[//Adventure-Works.com/Expenses] FROM u1;"
+      - id: route_cascade
+        sql: "REVOKE CONTROL ON ROUTE::r1 FROM u1 CASCADE;"
+
+  - id: revoke_symmetric_key_permissions
+    name: "REVOKE Symmetric Key Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/revoke-symmetric-key-permissions-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "REVOKE ALTER ON SYMMETRIC KEY::SamInventory42 TO HamidS CASCADE;"
+    examples:
+      - "REVOKE ALTER ON SYMMETRIC KEY::SamInventory42 TO HamidS CASCADE;"
+
+  - id: revoke_system_object_permissions
+    name: "REVOKE System Object Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/revoke-system-object-permissions-transact-sql
+    tier: low
+    probes:
+      - id: execute
+        sql: "REVOKE EXECUTE ON sys.sp_addlinkedserver FROM public;"
+      - id: select
+        sql: "REVOKE SELECT ON sys.sql_logins FROM u1;"
+    examples:
+      - "REVOKE EXECUTE ON sys.sp_addlinkedserver FROM public;"
+
+  - id: revoke_type_permissions
+    name: "REVOKE Type Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/revoke-type-permissions-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "REVOKE VIEW DEFINITION ON TYPE::Telemarketing.PhoneNumber FROM KhalidR CASCADE;"
+    examples:
+      - |-
+        REVOKE VIEW DEFINITION ON TYPE::Telemarketing.PhoneNumber
+            FROM KhalidR CASCADE;
+
+  - id: revoke_xml_schema_collection_permissions
+    name: "REVOKE XML Schema Collection Permissions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/revoke-xml-schema-collection-permissions-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "REVOKE EXECUTE ON XML SCHEMA COLLECTION::dbo.sc FROM u1;"
+      - id: grant_option
+        sql: "REVOKE GRANT OPTION FOR REFERENCES ON XML SCHEMA COLLECTION :: sc TO u1 CASCADE AS dbo;"
+
+  - id: permissions_grant_deny_revoke_synapse
+    name: "Permissions: GRANT, DENY, REVOKE (Azure Synapse Analytics, Parallel Data Warehouse)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/permissions-grant-deny-revoke-azure-sql-data-warehouse-parallel-data-warehouse
+    tier: low
+    status: not-applicable
+    reason: "The page applies to Azure Synapse Analytics and Analytics Platform System (PDW) only (page banner 'ssazuresynapse-md'); SQL Server and Azure SQL Database use the GRANT/REVOKE/DENY pages."
+
+  - id: begin_end
+    name: "BEGIN...END"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/begin-end-transact-sql
+    tier: high
+    probes:
+      - id: block
+        sql: "BEGIN SELECT c FROM t; SELECT d FROM u; END;"
+      - id: block_semicolon_after_begin
+        sql: "BEGIN; SELECT c FROM t; END;"
+        note: "BEGIN [ ; ] in the syntax block."
+      - id: nested
+        sql: "BEGIN BEGIN PRINT 'inner'; END PRINT 'outer'; END;"
+      - id: no_terminators
+        sql: |-
+          BEGIN
+            SELECT c FROM t
+            SELECT d FROM u
+          END;
+      - id: if_block
+        sql: "IF @@TRANCOUNT = 0 BEGIN SELECT c FROM t; ROLLBACK TRANSACTION; PRINT N'x'; END;"
+      - id: label_only_block
+        sql: "BEGIN unusedLabel: END;"
+        note: "Doc example 'BEGIN unusedLabel: END' (a block containing only a label)."
+    examples:
+      - |-
+        BEGIN
+            unusedLabel:
+        END
+
+  - id: end_begin_end
+    name: "END (BEGIN...END)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/end-begin-end-transact-sql
+    tier: high
+    probes:
+      - id: while_block
+        sql: "WHILE @i < 10 BEGIN SELECT c FROM t WHERE d = 'Adams'; SET @i += 1 END;"
+
+  - id: if_else
+    name: "IF...ELSE"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/if-else-transact-sql
+    tier: high
+    probes:
+      - id: if_only
+        sql: "IF @a > 0 PRINT 'positive';"
+      - id: if_else
+        sql: "IF DATENAME(weekday, GETDATE()) IN (N'Saturday', N'Sunday') SELECT 'Weekend'; ELSE SELECT 'Weekday';"
+      - id: if_else_no_semicolon
+        sql: "IF 1 = 1 PRINT 'true' ELSE PRINT 'false';"
+      - id: if_subquery_condition
+        sql: "IF (SELECT COUNT(*) FROM t WHERE c LIKE 'x%') > 5 PRINT 'many';"
+      - id: if_exists
+        sql: "IF EXISTS (SELECT 1 FROM sys.tables WHERE name = N't') DROP TABLE t;"
+      - id: if_not_exists
+        sql: "IF NOT EXISTS (SELECT 1 FROM t WHERE id = 1) INSERT INTO t (id) VALUES (1);"
+      - id: if_object_id
+        sql: "IF OBJECT_ID(N'dbo.t', N'U') IS NOT NULL DROP TABLE dbo.t;"
+      - id: blocks
+        sql: "IF @a > 100 BEGIN PRINT 'large'; END ELSE BEGIN PRINT 'small'; END;"
+      - id: else_if_chain
+        sql: "IF @n > 100 PRINT 'large'; ELSE IF @n < 10 PRINT 'small'; ELSE PRINT 'medium';"
+      - id: nested_in_else_block
+        sql: "IF @n > 100 PRINT 'large'; ELSE BEGIN IF @n < 10 PRINT 'small'; ELSE PRINT 'medium'; END;"
+    examples:
+      - |-
+        IF DATENAME(weekday, GETDATE()) IN (N'Saturday', N'Sunday')
+            SELECT 'Weekend';
+        ELSE
+            SELECT 'Weekday';
+
+  - id: else_if_else
+    name: "ELSE (IF...ELSE)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/else-if-else-transact-sql
+    tier: high
+    probes:
+      - id: else
+        sql: "IF 1 = 2 PRINT 'true' ELSE PRINT 'false';"
+      - id: else_block
+        sql: "IF (SELECT COUNT(*) FROM t) > 5 BEGIN SET @n = 1; PRINT 'x'; END ELSE BEGIN SET @n = 0; END;"
+    examples:
+      - |-
+        IF 1 = 1 PRINT 'Boolean expression is true.'
+        ELSE PRINT 'Boolean expression is false.';
+      - |-
+        IF (SELECT COUNT(*)
+            FROM Production.Product
+            WHERE Name LIKE 'Touring-3000%'
+        ) > 5
+            PRINT 'There are more than 5 Touring-3000 bicycles.'
+        ELSE
+            PRINT 'There are 5 or less Touring-3000 bicycles.';
+
+  - id: while
+    name: "WHILE"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/while-transact-sql
+    tier: high
+    probes:
+      - id: single_statement
+        sql: "WHILE @i < 10 SET @i = @i + 1;"
+      - id: block
+        sql: "WHILE (SELECT AVG(c) FROM t) < $300 BEGIN UPDATE t SET c = c * 2; SELECT MAX(c) FROM t; END;"
+      - id: break_continue
+        sql: "WHILE 1 = 1 BEGIN IF (SELECT MAX(c) FROM t) > $500 BREAK ELSE CONTINUE END;"
+      - id: fetch_status_loop
+        sql: "WHILE @@FETCH_STATUS = 0 BEGIN FETCH NEXT FROM cur INTO @a, @b; END;"
+      - id: continue_statement
+        sql: "WHILE @i < 10 BEGIN SET @i += 1; IF @i % 2 = 0 CONTINUE; PRINT @i; END;"
+
+  - id: break
+    name: "BREAK"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/break-transact-sql
+    tier: high
+    probes:
+      - id: in_if_block
+        sql: "WHILE (1 = 1) BEGIN IF EXISTS (SELECT * FROM ##t WHERE c = 'Done') BEGIN BREAK; END WAITFOR DELAY '00:01:30'; END;"
+      - id: bare
+        sql: "WHILE @i < 10 BEGIN SET @i += 1; IF @i = 5 BREAK; END;"
+    examples:
+      - |-
+        WHILE (1=1)
+        BEGIN
+           IF EXISTS (SELECT * FROM ##MyTempTable WHERE EventCode = 'Done')
+           BEGIN
+              BREAK;  -- 'Done' row has finally been inserted and detected, so end this loop.
+           END
+
+           PRINT N'The other process is not yet done.';  -- Re-confirm the non-done status to the console.
+           WAITFOR DELAY '00:01:30';  -- Sleep for 90 seconds.
+        END
+
+  - id: goto
+    name: "GOTO"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/goto-transact-sql
+    tier: medium
+    probes:
+      - id: goto_label
+        sql: "GOTO Branch_One;"
+      - id: label_definition
+        sql: |-
+          Branch_One:
+          SELECT 'Jumping To Branch One.';
+      - id: conditional_goto
+        sql: "IF @Counter = 4 GOTO Branch_One;"
+      - id: loop_with_labels
+        sql: "WHILE @c < 10 BEGIN SET @c = @c + 1 IF @c = 4 GOTO b1 END b1: SELECT 'one' GOTO b3; b2: SELECT 'two' b3: SELECT 'three';"
+
+  - id: return
+    name: "RETURN"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/return-transact-sql
+    tier: high
+    probes:
+      - id: bare
+        sql: "RETURN;"
+      - id: integer
+        sql: "RETURN 1;"
+      - id: expression
+        sql: "RETURN @status + 1;"
+      - id: in_if
+        sql: "IF @nm IS NULL BEGIN PRINT 'You must give a user name' RETURN END;"
+      - id: in_procedure
+        sql: "CREATE PROCEDURE checkstate @param VARCHAR(11) AS IF (SELECT s FROM t WHERE id = @param) = 'WA' RETURN 1 ELSE RETURN 2;"
+      - id: exec_return_status
+        sql: "EXEC @return_status = checkstate '2';"
+    examples:
+      - |-
+        CREATE PROCEDURE findjobs @nm sysname = NULL
+        AS
+        IF @nm IS NULL
+            BEGIN
+                PRINT 'You must give a user name'
+                RETURN
+            END
+        ELSE
+            BEGIN
+                SELECT o.name, o.id, o.uid
+                FROM sysobjects o INNER JOIN master..syslogins l
+                    ON o.uid = l.sid
+                WHERE l.name = @nm
+            END;
+      - |-
+        CREATE PROCEDURE checkstate @param VARCHAR(11)
+        AS
+        IF (SELECT StateProvince FROM Person.vAdditionalContactInfo WHERE ContactID = @param) = 'WA'
+            RETURN 1
+        ELSE
+            RETURN 2;
+
+  - id: try_catch
+    name: "TRY...CATCH"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/try-catch-transact-sql
+    tier: high
+    probes:
+      - id: basic
+        sql: "BEGIN TRY SELECT 1 / 0; END TRY BEGIN CATCH SELECT ERROR_NUMBER() AS n, ERROR_MESSAGE() AS m; END CATCH;"
+      - id: no_terminators
+        sql: |-
+          BEGIN TRY
+            SELECT 1 / 0
+          END TRY
+          BEGIN CATCH
+            EXECUTE usp_GetErrorInfo
+          END CATCH;
+      - id: empty_catch
+        sql: "BEGIN TRY DELETE FROM t WHERE id = 1; END TRY BEGIN CATCH END CATCH;"
+        note: "BEGIN CATCH [ { sql_statement | statement_block } ] END CATCH: the CATCH block may be empty."
+      - id: transaction_handling
+        sql: "BEGIN TRY BEGIN TRANSACTION; DELETE FROM t WHERE id = 980; COMMIT TRANSACTION; END TRY BEGIN CATCH IF XACT_STATE() <> 0 ROLLBACK TRANSACTION; THROW; END CATCH;"
+      - id: nested
+        sql: "BEGIN TRY BEGIN TRY SELECT 1 / 0; END TRY BEGIN CATCH THROW; END CATCH END TRY BEGIN CATCH PRINT ERROR_MESSAGE(); END CATCH;"
+    examples:
+      - |-
+        BEGIN TRY
+            -- Generate divide-by-zero error.
+            SELECT 1 / 0;
+        END TRY
+
+        BEGIN CATCH
+            -- Execute error retrieval routine.
+            EXECUTE usp_GetErrorInfo;
+        END CATCH;
+      - |-
+        BEGIN TRY
+            -- Table does not exist; object name resolution
+            -- error not caught.
+            SELECT *
+            FROM NonexistentTable;
+        END TRY
+
+        BEGIN CATCH
+            SELECT ERROR_NUMBER() AS ErrorNumber,
+                ERROR_MESSAGE() AS ErrorMessage;
+        END CATCH
+      - |-
+        BEGIN TRY
+            EXECUTE usp_ExampleProc;
+        END TRY
+
+        BEGIN CATCH
+            SELECT ERROR_NUMBER() AS ErrorNumber,
+                ERROR_MESSAGE() AS ErrorMessage;
+        END CATCH;
+      - |-
+        BEGIN TRY
+            -- Generate a divide-by-zero error.
+            SELECT 1 / 0;
+        END TRY
+
+        BEGIN CATCH
+            SELECT ERROR_NUMBER() AS ErrorNumber,
+                ERROR_SEVERITY() AS ErrorSeverity,
+                ERROR_STATE() AS ErrorState,
+                ERROR_PROCEDURE() AS ErrorProcedure,
+                ERROR_LINE() AS ErrorLine,
+                ERROR_MESSAGE() AS ErrorMessage;
+        END CATCH;
+
+  - id: throw
+    name: "THROW"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/throw-transact-sql
+    tier: high
+    probes:
+      - id: with_arguments
+        sql: "THROW 51000, 'The record does not exist.', 1;"
+      - id: variables
+        sql: "THROW @num, @msg, @state;"
+      - id: rethrow_in_catch
+        sql: "BEGIN TRY INSERT t (id) VALUES (1); END TRY BEGIN CATCH PRINT 'In catch block.'; THROW; END CATCH;"
+      - id: after_statement_terminated
+        sql: |-
+          DECLARE @msg NVARCHAR(2048) = FORMATMESSAGE(60000, 500, N'First string', N'second string');
+          THROW 60000, @msg, 1;
+        note: "The statement before THROW must end with a semicolon; this mirrors the doc's FORMATMESSAGE example."
+    examples:
+      - "THROW 51000, 'The record does not exist.', 1;"
+
+  - id: raiserror
+    name: "RAISERROR"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/raiserror-transact-sql
+    tier: high
+    probes:
+      - id: msg_id
+        sql: "RAISERROR (15600, -1, -1, 'mysp_CreateCustomer');"
+      - id: msg_str_arguments
+        sql: "RAISERROR (N'This is message %s %d.', 10, 1, N'number', 5);"
+      - id: variable_message
+        sql: "RAISERROR (@StringVariable, 10, 1, N'abcde');"
+      - id: with_log
+        sql: "RAISERROR ('Error raised.', 16, 1) WITH LOG;"
+      - id: with_options
+        sql: "RAISERROR (N'Progress %d', 0, 1, @i) WITH NOWAIT, SETERROR;"
+      - id: in_catch
+        sql: "BEGIN TRY RAISERROR ('Error raised in TRY block.', 16, 1); END TRY BEGIN CATCH RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState); END CATCH;"
+    examples:
+      - "RAISERROR (15600, -1, -1, 'mysp_CreateCustomer');"
+      - |-
+        RAISERROR (N'This is message %s %d.', -- Message text.
+            10, -- Severity,
+            1, -- State,
+            N'number', -- First argument.
+            5); -- Second argument.
+        -- The message text returned is: This is message number 5.
+      - |-
+        BEGIN TRY
+            -- RAISERROR with severity 11-19 will cause execution to
+            -- jump to the CATCH block.
+            RAISERROR ('Error raised in TRY block.', -- Message text.
+                16, -- Severity.
+                1 -- State.
+            );
+        END TRY
+        BEGIN CATCH
+            DECLARE @ErrorMessage NVARCHAR(4000);
+            DECLARE @ErrorSeverity INT;
+            DECLARE @ErrorState INT;
+
+            SELECT
+                @ErrorMessage = ERROR_MESSAGE(),
+                @ErrorSeverity = ERROR_SEVERITY(),
+                @ErrorState = ERROR_STATE();
+
+            -- Use RAISERROR inside the CATCH block to return error
+            -- information about the original error that caused
+            -- execution to jump to the CATCH block.
+            RAISERROR (@ErrorMessage, -- Message text.
+                @ErrorSeverity, -- Severity.
+                @ErrorState -- State.
+            );
+        END CATCH;
+
+  - id: waitfor
+    name: "WAITFOR"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/waitfor-transact-sql
+    tier: medium
+    probes:
+      - id: delay
+        sql: "WAITFOR DELAY '02:00';"
+      - id: delay_variable
+        sql: "WAITFOR DELAY @DelayLength;"
+      - id: time
+        sql: "WAITFOR TIME '22:20';"
+      - id: receive
+        sql: "WAITFOR (RECEIVE TOP (1) * FROM ExpenseQueue);"
+      - id: receive_timeout
+        sql: "WAITFOR (RECEIVE message_body FROM q1), TIMEOUT 60000;"
+      - id: get_conversation_group
+        sql: "WAITFOR (GET CONVERSATION GROUP @cg FROM ExpenseQueue), TIMEOUT 1000;"
+    examples:
+      - |-
+        BEGIN
+            WAITFOR DELAY '02:00';
+            EXECUTE sp_helpdb;
+        END;
+
+  - id: print
+    name: "PRINT"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/print-transact-sql
+    tier: high
+    probes:
+      - id: string
+        sql: "PRINT 'Hello';"
+      - id: unicode_expression
+        sql: "PRINT N'Printed on ' + RTRIM(CAST(GETDATE() AS NVARCHAR(30))) + N'.';"
+      - id: variable
+        sql: "PRINT @PrintMessage;"
+      - id: in_if_else
+        sql: "IF DB_ID() = 1 PRINT N'master'; ELSE PRINT N'not master';"
+      - id: parenthesized
+        sql: "PRINT ('x');"
+    examples:
+      - |-
+        IF @@OPTIONS & 512 <> 0
+            PRINT N'This user has SET NOCOUNT turned ON.';
+        ELSE
+            PRINT N'This user has SET NOCOUNT turned OFF.';
+      - "PRINT N'This message was printed on ' + RTRIM(CAST(GETDATE() AS NVARCHAR(30))) + N'.';"
+      - |-
+        IF DB_ID() = 1
+            PRINT N'The current database is ''master''.';
+        ELSE
+            PRINT N'The current database is not ''master''.';
+
+  - id: declare_local_variable
+    name: "DECLARE @local_variable"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/declare-local-variable-transact-sql
+    tier: high
+    probes:
+      - id: scalar
+        sql: "DECLARE @find VARCHAR(30);"
+      - id: scalar_as
+        sql: "DECLARE @find AS VARCHAR(30);"
+      - id: initial_value
+        sql: "DECLARE @find VARCHAR(30) = 'Man%';"
+      - id: multiple
+        sql: "DECLARE @Group AS NVARCHAR(50), @Sales AS MONEY = 2000000;"
+      - id: subquery_initializer
+        sql: "DECLARE @id INT = (SELECT MAX(id) FROM t);"
+      - id: function_initializer
+        sql: "DECLARE @d DATETIME2 = DATEADD(month, -12, SYSUTCDATETIME());"
+      - id: cursor_variable
+        sql: "DECLARE @cur CURSOR;"
+      - id: table_variable
+        sql: "DECLARE @t TABLE (EmpID INT NOT NULL, OldHours INT, Modified DATETIME);"
+      - id: table_variable_as
+        sql: "DECLARE @t AS TABLE (id INT);"
+      - id: table_variable_constraints
+        sql: "DECLARE @t TABLE (id INT IDENTITY(1, 1) PRIMARY KEY CLUSTERED, c NVARCHAR(10) COLLATE Latin1_General_CI_AS DEFAULT 'x' NOT NULL UNIQUE, g UNIQUEIDENTIFIER ROWGUIDCOL, total AS id * 2, CHECK (id > 0));"
+      - id: table_variable_inline_indexes
+        sql: "DECLARE @t TABLE (EmpID INT NOT NULL, PRIMARY KEY CLUSTERED (EmpID), UNIQUE NONCLUSTERED (EmpID), INDEX ix NONCLUSTERED (EmpID));"
+      - id: table_variable_column_index
+        sql: "DECLARE @t TABLE (a INT INDEX ix_a NONCLUSTERED, b INT, INDEX cci CLUSTERED COLUMNSTORE);"
+      - id: user_defined_table_type
+        sql: "DECLARE @LocationTVP AS LocationTableType;"
+      - id: xml_typed
+        sql: "DECLARE @x XML(dbo.sc) = N'<a/>';"
+      - id: vector_and_json_types
+        sql: "DECLARE @v VECTOR(3) = '[0.1, 2, 30]', @j JSON = N'{\"a\": 1}';"
+        note: "vector and json data types are documented for Azure SQL Database."
+    examples:
+      - "DECLARE @find AS VARCHAR (30);"
+      - "DECLARE @Group AS NVARCHAR (50), @Sales AS MONEY;"
+      - |-
+        DECLARE @MyTableVar TABLE (
+            EmpID INT NOT NULL,
+            OldVacationHours INT,
+            NewVacationHours INT,
+            ModifiedDate DATETIME);
+      - |-
+        DECLARE @MyTableVar TABLE (
+            EmpID INT NOT NULL,
+            PRIMARY KEY CLUSTERED (EmpID),
+            UNIQUE NONCLUSTERED (EmpID),
+            INDEX CustomNonClusteredIndex NONCLUSTERED (EmpID));
+      - "DECLARE @LocationTVP AS LocationTableType;"
+
