@@ -1,0 +1,217 @@
+dialect: snowflake
+engine: Snowflake
+version: "current (docs read 2026-10-04)"
+source: https://docs.snowflake.com/en/sql-reference/sql-all
+
+statements:
+  - id: call
+    name: CALL
+    doc: https://docs.snowflake.com/en/sql-reference/sql/call
+    tier: high
+    probes:
+      - id: no_args
+        sql: "CALL proc1();"
+      - id: positional_args
+        sql: "CALL sv_proc1('Manitoba', 127.4);"
+      - id: named_args
+        sql: "CALL sv_proc1(province => 'Manitoba', amount => 127.4);"
+      - id: qualified_name
+        sql: "CALL db1.sch1.proc1(1, 2);"
+      - id: expression_arg
+        sql: "CALL stproc1(2 * 5.14::FLOAT);"
+      - id: subquery_arg
+        sql: "CALL stproc1(SELECT COUNT(*) FROM t);"
+      - id: session_variable_arg
+        sql: "CALL sv_proc2($Variable1);"
+      - id: into_scripting_variable
+        sql: |-
+          DECLARE
+            ret1 NUMBER;
+          BEGIN
+            CALL sv_proc1('Manitoba', 127.4) INTO :ret1;
+            RETURN ret1;
+          END;
+        note: INTO :variable is only valid inside a Snowflake Scripting block.
+    examples:
+      - "CALL stproc1(5.14::FLOAT);"
+      - "CALL stproc1(2 * 5.14::FLOAT);"
+      - "CALL sv_proc1(province => 'Manitoba', amount => 127.4);"
+
+  - id: call_with_anonymous_procedure
+    name: CALL (with anonymous procedure)
+    doc: https://docs.snowflake.com/en/sql-reference/sql/call-with
+    tier: high
+    probes:
+      - id: java_inline
+        sql: |-
+          WITH p AS PROCEDURE (a INT)
+            RETURNS INT
+            LANGUAGE JAVA
+            RUNTIME_VERSION = '11'
+            PACKAGES = ('com.snowflake:snowpark:latest')
+            HANDLER = 'MyClass.run'
+            AS $$ class MyClass { public int run(Session session, int a) { return a; } } $$
+          CALL p(1);
+      - id: java_staged_imports
+        sql: |-
+          WITH p AS PROCEDURE (a INT)
+            RETURNS INT NOT NULL
+            LANGUAGE JAVA
+            RUNTIME_VERSION = '11'
+            PACKAGES = ('com.snowflake:snowpark:latest')
+            IMPORTS = ('@stage1/MyClass.jar')
+            HANDLER = 'MyClass.run'
+          CALL p(1);
+      - id: java_returns_table
+        sql: |-
+          WITH p AS PROCEDURE (a INT)
+            RETURNS TABLE (c1 INT, c2 VARCHAR)
+            LANGUAGE JAVA
+            RUNTIME_VERSION = '11'
+            PACKAGES = ('com.snowflake:snowpark:latest')
+            HANDLER = 'MyClass.run'
+            AS $$ class MyClass { } $$
+          CALL p(1);
+      - id: javascript
+        sql: |-
+          WITH p AS PROCEDURE (a FLOAT)
+            RETURNS FLOAT
+            LANGUAGE JAVASCRIPT
+            AS $$ return A; $$
+          CALL p(1);
+      - id: javascript_null_handling
+        sql: |-
+          WITH p AS PROCEDURE (a FLOAT)
+            RETURNS FLOAT NOT NULL
+            LANGUAGE JAVASCRIPT
+            RETURNS NULL ON NULL INPUT
+            AS $$ return A; $$
+          CALL p(1);
+      - id: python_inline
+        sql: |-
+          WITH p AS PROCEDURE (a INT)
+            RETURNS INT
+            LANGUAGE PYTHON
+            RUNTIME_VERSION = '3.10'
+            PACKAGES = ('snowflake-snowpark-python==1.9.0', 'numpy')
+            HANDLER = 'run'
+            AS $$
+          def run(session, a):
+              return a
+          $$
+          CALL p(1);
+      - id: python_staged
+        sql: |-
+          WITH p AS PROCEDURE (a INT)
+            RETURNS TABLE (c1 INT)
+            LANGUAGE PYTHON
+            RUNTIME_VERSION = '3.10'
+            PACKAGES = ('snowflake-snowpark-python')
+            IMPORTS = ('@stage1/my_module.py')
+            HANDLER = 'my_module.run'
+            CALLED ON NULL INPUT
+          CALL p(1);
+      - id: scala
+        sql: |-
+          WITH p AS PROCEDURE (a INT)
+            RETURNS INT
+            LANGUAGE SCALA
+            RUNTIME_VERSION = '2.12'
+            PACKAGES = ('com.snowflake:snowpark_2.12:latest')
+            HANDLER = 'MyObj.run'
+            AS $$ object MyObj { def run(session: com.snowflake.snowpark.Session, a: Int): Int = a } $$
+          CALL p(1);
+      - id: scala_staged_strict
+        sql: |-
+          WITH p AS PROCEDURE (a INT)
+            RETURNS INT
+            LANGUAGE SCALA
+            RUNTIME_VERSION = '2.12'
+            PACKAGES = ('com.snowflake:snowpark_2.12:latest')
+            IMPORTS = ('@stage1/MyObj.jar')
+            HANDLER = 'MyObj.run'
+            STRICT
+          CALL p(1);
+      - id: scripting
+        sql: |-
+          WITH p AS PROCEDURE (a INT)
+            RETURNS INT
+            LANGUAGE SQL
+            AS $$
+            BEGIN
+              RETURN a;
+            END;
+            $$
+          CALL p(1);
+      - id: scripting_returns_table
+        sql: |-
+          WITH p AS PROCEDURE ()
+            RETURNS TABLE (c1 INT)
+            LANGUAGE SQL
+            CALLED ON NULL INPUT
+            AS 'DECLARE r RESULTSET DEFAULT (SELECT 1); BEGIN RETURN TABLE(r); END;'
+          CALL p();
+      - id: named_args
+        sql: |-
+          WITH p AS PROCEDURE (a INT, b INT)
+            RETURNS INT
+            LANGUAGE SQL
+            AS 'BEGIN RETURN a + b; END;'
+          CALL p(b => 2, a => 1);
+      - id: additional_ctes
+        sql: |-
+          WITH p AS PROCEDURE (a INT)
+            RETURNS INT
+            LANGUAGE SQL
+            AS 'BEGIN RETURN a; END;',
+          cte1 (x) AS (SELECT 1),
+          cte2 AS (SELECT 2)
+          CALL p(1);
+      - id: into_scripting_variable
+        sql: |-
+          DECLARE
+            ret1 INT;
+          BEGIN
+            WITH p AS PROCEDURE (a INT)
+              RETURNS INT
+              LANGUAGE SQL
+              AS 'BEGIN RETURN a; END;'
+            CALL p(1) INTO :ret1;
+            RETURN ret1;
+          END;
+        note: INTO :variable is only valid inside a Snowflake Scripting block.
+    examples:
+      - |-
+        WITH copy_to_table AS PROCEDURE (fromTable STRING, toTable STRING, count INT)
+          RETURNS STRING
+          LANGUAGE SCALA
+          RUNTIME_VERSION = 2.12
+          PACKAGES = ('com.snowflake:snowpark_2.12:latest')
+          HANDLER = 'DataCopy.copyBetweenTables'
+          AS
+          $$
+          object DataCopy {
+            def copyBetweenTables(session: com.snowflake.snowpark.Session, fromTable: String, toTable: String, count: Int): String = {
+              session.table(fromTable).limit(count).write.saveAsTable(toTable)
+              return "Success"
+            }
+          }
+          $$
+        CALL copy_to_table('table_a', 'table_b', 5);
+      - |-
+        WITH copy_to_table AS PROCEDURE (fromTable STRING, toTable STRING, count INT)
+          RETURNS STRING
+          LANGUAGE SCALA
+          RUNTIME_VERSION = '2.12'
+          PACKAGES = ('com.snowflake:snowpark_2.12:latest')
+          HANDLER = 'DataCopy.copyBetweenTables'
+          AS
+          $$
+          object DataCopy {
+            def copyBetweenTables(session: com.snowflake.snowpark.Session, fromTable: String, toTable: String, count: Int): String = {
+              session.table(fromTable).limit(count).write.saveAsTable(toTable)
+              return "Success"
+            }
+          }
+          $$
+        CALL copy_to_table(toTable => 'table_b', count => 5, fromTable => 'table_a');

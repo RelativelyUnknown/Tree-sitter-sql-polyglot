@@ -214,3 +214,55 @@ statements:
         sql: "CREATE DIMENSION d LEVEL city IS t.city LEVEL state IS t.state HIERARCHY geo (city CHILD OF state JOIN KEY t.state_id REFERENCES state);"
       - id: attribute
         sql: "CREATE DIMENSION d LEVEL city IS t.city ATTRIBUTE city DETERMINES (t.zip, t.area);"
+
+  - id: create_directive_validate
+    name: CREATE DIRECTIVE (VALIDATE)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-directive-validate.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE DIRECTIVE d FOR dv VALIDATE ON INSERT UPDATE BEFORE OBJECT ENABLE USING (c > 0);"
+      - id: or_replace_on_commit
+        sql: "CREATE OR REPLACE DIRECTIVE s.d FOR s.dv VALIDATE ON SELECT ON COMMIT NOVALIDATE DISABLE USING (c > 0);"
+
+  - id: create_diskgroup
+    name: CREATE DISKGROUP
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-DISKGROUP.html
+    tier: low
+    probes:
+      - id: normal_redundancy
+        sql: "CREATE DISKGROUP dg NORMAL REDUNDANCY FAILGROUP fg1 DISK '/devices/d1' NAME d1 SIZE 100M FAILGROUP fg2 DISK '/devices/d2' NAME d2;"
+      - id: external_attribute
+        sql: "CREATE DISKGROUP dg EXTERNAL REDUNDANCY DISK '/devices/d1' ATTRIBUTE 'compatible.asm' = '19.0';"
+
+  - id: create_edition
+    name: CREATE EDITION
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-EDITION.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE EDITION e;"
+      - id: as_child_of
+        sql: "CREATE EDITION IF NOT EXISTS e2 AS CHILD OF e;"
+
+  - id: create_end_user
+    name: CREATE END USER
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-end-user.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE END USER eu IDENTIFIED BY pw ADD FACTOR f AS 'ext';"
+      - id: with_options
+        sql: "CREATE END USER IF NOT EXISTS eu ADD FACTOR f AS 'ext' PROFILE p PASSWORD EXPIRE ACCOUNT LOCK SCHEMA s START TIME TIMESTAMP '2026-01-01 00:00:00' END TIME TIMESTAMP '2027-01-01 00:00:00';"
+
+  - id: create_end_user_context
+    name: CREATE END USER CONTEXT
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-end-user-context.html
+    tier: low
+    probes:
+      - id: basic
+        sql: |-
+          CREATE END USER CONTEXT hr.hcm USING JSON SCHEMA '{ "type": "object", "properties": { "emp_id": { "type": "integer" } } }';
+      - id: or_replace_if_not_exists
+        sql: |-
+          CREATE OR REPLACE END USER CONTEXT IF NOT EXISTS ctx USING JSON SCHEMA '{ "type": "object", "properties": { "a": { "type": "string" } } }';
