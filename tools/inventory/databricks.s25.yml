@@ -1,0 +1,129 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: loop_statement
+    name: LOOP statement
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/control-flow/loop-stmt
+    tier: high
+    probes:
+      - id: unlabeled
+        sql: |-
+          BEGIN
+            LOOP
+              SELECT 1;
+            END LOOP;
+          END;
+        note: "Syntax: [ label : ] LOOP { stmt ; } [...] END LOOP [ label ]; label is optional."
+      - id: labeled
+        sql: |-
+          BEGIN
+            lbl: LOOP
+              SELECT 1;
+              LEAVE lbl;
+            END LOOP;
+          END;
+      - id: labeled_end_label
+        sql: |-
+          BEGIN
+            lbl: LOOP
+              SELECT 1;
+              LEAVE lbl;
+            END LOOP lbl;
+          END;
+      - id: multiple_statements
+        sql: |-
+          BEGIN
+            DECLARE n INT DEFAULT 0;
+            lbl: LOOP
+              SET n = n + 1;
+              IF n > 3 THEN
+                LEAVE lbl;
+              END IF;
+              IF n = 2 THEN
+                ITERATE lbl;
+              END IF;
+              SELECT n;
+            END LOOP lbl;
+          END;
+    examples:
+      - |-
+        BEGIN
+          DECLARE sum INT DEFAULT 0;
+          DECLARE num INT DEFAULT 0;
+          sumNumbers: LOOP
+            SET num = num + 1;
+            IF num > 10 THEN
+              LEAVE sumNumbers;
+            END IF;
+            IF num % 2 = 0 THEN
+              ITERATE sumNumbers;
+            END IF;
+            SET sum = sum + num;
+          END LOOP sumNumbers;
+          VALUES (sum);
+        END;
+
+  - id: repeat_statement
+    name: REPEAT statement
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/control-flow/repeat-stmt
+    tier: high
+    probes:
+      - id: unlabeled
+        sql: |-
+          BEGIN
+            DECLARE n INT DEFAULT 0;
+            REPEAT
+              SET n = n + 1;
+            UNTIL n = 10
+            END REPEAT;
+          END;
+        note: "Syntax: [ label : ] REPEAT { stmt ; } [...] UNTIL cond END REPEAT [ label ]"
+      - id: labeled
+        sql: |-
+          BEGIN
+            DECLARE n INT DEFAULT 0;
+            lbl: REPEAT
+              SET n = n + 1;
+            UNTIL n = 10
+            END REPEAT;
+          END;
+      - id: labeled_end_label
+        sql: |-
+          BEGIN
+            DECLARE n INT DEFAULT 0;
+            lbl: REPEAT
+              SET n = n + 1;
+            UNTIL n = 10
+            END REPEAT lbl;
+          END;
+      - id: multiple_statements_leave_iterate
+        sql: |-
+          BEGIN
+            DECLARE n INT DEFAULT 0;
+            lbl: REPEAT
+              SET n = n + 1;
+              IF n = 2 THEN
+                ITERATE lbl;
+              END IF;
+              SELECT n;
+            UNTIL n >= 5
+            END REPEAT lbl;
+          END;
+    examples:
+      - |-
+        BEGIN
+          DECLARE sum INT DEFAULT 0;
+          DECLARE num INT DEFAULT 0;
+          sumNumbers: REPEAT
+            SET num = num + 1;
+            IF num % 2 = 0 THEN
+              ITERATE sumNumbers;
+            END IF;
+            SET sum = sum + num;
+          UNTIL num = 10
+          END REPEAT sumNumbers;
+          VALUES (sum);
+        END;

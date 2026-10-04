@@ -1,0 +1,72 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: resignal
+    name: RESIGNAL
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/control-flow/resignal-stmt
+    tier: high
+    probes:
+      - id: basic
+        sql: "BEGIN DECLARE EXIT HANDLER FOR DIVIDE_BY_ZERO BEGIN RESIGNAL; END; SELECT 10 / 0; END;"
+        note: RESIGNAL takes no parameters and may only be used within a compound statement.
+    examples:
+      - |-
+        BEGIN
+          DECLARE EXIT HANDLER FOR DIVIDE_BY_ZERO
+          BEGIN
+            DECLARE cond STRING;
+            DECLARE message STRING;
+            DECLARE state STRING;
+            DECLARE args MAP<STRING, STRING>;
+            DECLARE line BIGINT;
+            DECLARE argstr STRING;
+            DECLARE log STRING;
+            GET DIAGNOSTICS CONDITION 1
+              cond = CONDITION_IDENTIFIER,
+              message = MESSAGE_TEXT,
+              state = RETURNED_SQLSTATE,
+              args = MESSAGE_ARGUMENTS,
+              line = LINE_NUMBER;
+            SET argstr = (SELECT aggregate(array_agg('Parm:' || key || ' Val: value '), '', (acc, x) -> (acc || ' ' || x))
+                           FROM explode(args) AS args(key, val));
+            SET log = 'Condition: ' || cond || ' Message: ' || message || ' SQLSTATE: ' || state || ' Args: ' || argstr || ' Line: ' || line;
+            INSERT INTO log VALUES (current_timestamp(), log);
+            RESIGNAL;
+          END;
+          SELECT 10 / 0;
+        END;
+
+  - id: signal
+    name: SIGNAL
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/control-flow/signal-stmt
+    tier: high
+    probes:
+      - id: condition_name
+        sql: "BEGIN SIGNAL USER_RAISED_EXCEPTION; END;"
+        note: SIGNAL may only be used within a compound statement.
+      - id: condition_message_arguments
+        sql: "BEGIN SIGNAL USER_RAISED_EXCEPTION SET MESSAGE_ARGUMENTS = map('errorMessage', 'Input must be <= 4.'); END;"
+      - id: condition_message_text
+        sql: "BEGIN SIGNAL USER_RAISED_EXCEPTION SET MESSAGE_TEXT = 'custom message'; END;"
+      - id: sqlstate
+        sql: "BEGIN SIGNAL SQLSTATE '45000'; END;"
+      - id: sqlstate_value
+        sql: "BEGIN SIGNAL SQLSTATE VALUE '45000'; END;"
+      - id: sqlstate_message_text
+        sql: "BEGIN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'custom message'; END;"
+      - id: sqlstate_value_message_text
+        sql: "BEGIN SIGNAL SQLSTATE VALUE '45000' SET MESSAGE_TEXT = 'custom message'; END;"
+    examples:
+      - |-
+        BEGIN
+          DECLARE arg_map MAP<STRING, STRING>;
+          IF input > 4 THEN
+            SET arg_map = map('errorMessage',
+                              'Input must be <= 4.');
+            SIGNAL USER_RAISED_EXCEPTION
+              SET MESSAGE_ARGUMENTS = arg_map;
+          END IF;
+        END;
