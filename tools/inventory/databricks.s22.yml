@@ -1,0 +1,141 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: case_statement
+    name: CASE statement
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/control-flow/case-stmt
+    tier: high
+    probes:
+      - id: simple_case
+        sql: |-
+          BEGIN
+            CASE 1 WHEN 1 THEN VALUES ('one'); END CASE;
+          END;
+      - id: simple_case_multiple_when
+        sql: |-
+          BEGIN
+            CASE 2 WHEN 1 THEN VALUES ('one'); WHEN 2 THEN VALUES ('two'); END CASE;
+          END;
+      - id: simple_case_else
+        sql: |-
+          BEGIN
+            CASE 3 WHEN 1 THEN VALUES ('one'); ELSE VALUES ('other'); END CASE;
+          END;
+      - id: searched_case
+        sql: |-
+          BEGIN
+            CASE WHEN 1 < 2 THEN VALUES ('one'); END CASE;
+          END;
+      - id: searched_case_multiple_when
+        sql: |-
+          BEGIN
+            CASE WHEN 1 < 2 THEN VALUES ('a'); WHEN 2 < 3 THEN VALUES ('b'); END CASE;
+          END;
+      - id: searched_case_else
+        sql: |-
+          BEGIN
+            CASE WHEN 1 < 2 THEN VALUES ('a'); ELSE VALUES ('b'); END CASE;
+          END;
+      - id: multiple_statements_per_branch
+        sql: |-
+          BEGIN
+            DECLARE x INT DEFAULT 0;
+            CASE WHEN x = 0 THEN SET x = 1; VALUES (x); ELSE SET x = 2; END CASE;
+          END;
+    examples:
+      - |-
+        BEGIN
+          DECLARE choice INT DEFAULT 3;
+          DECLARE result STRING;
+          CASE choice
+            WHEN 1 THEN
+              VALUES ('one fish');
+            WHEN 2 THEN
+              VALUES ('two fish');
+            WHEN 3 THEN
+              VALUES ('red fish');
+            WHEN 4 THEN
+              VALUES ('blue fish');
+            ELSE
+              VALUES ('no fish');
+          END CASE;
+        END;
+      - |-
+        BEGIN
+          DECLARE choice DOUBLE DEFAULT 3.9;
+          DECLARE result STRING;
+          CASE
+            WHEN choice < 2 THEN
+              VALUES ('one fish');
+            WHEN choice < 3 THEN
+              VALUES ('two fish');
+            WHEN choice < 4 THEN
+              VALUES ('red fish');
+            WHEN choice < 5 OR choice IS NULL THEN
+              VALUES ('blue fish');
+            ELSE
+              VALUES ('no fish');
+          END CASE;
+        END;
+
+  - id: for_statement
+    name: FOR statement
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/control-flow/for-stmt
+    tier: high
+    probes:
+      - id: for_query
+        sql: |-
+          BEGIN
+            FOR SELECT 1 AS c DO VALUES (1); END FOR;
+          END;
+      - id: for_variable_name
+        sql: |-
+          BEGIN
+            FOR r AS SELECT c FROM t DO VALUES (r.c); END FOR;
+          END;
+      - id: for_label
+        sql: |-
+          BEGIN
+            lbl: FOR SELECT c FROM t DO VALUES (1); END FOR;
+          END;
+      - id: for_label_end_label
+        sql: |-
+          BEGIN
+            lbl: FOR SELECT c FROM t DO VALUES (1); END FOR lbl;
+          END;
+      - id: for_label_variable_name_end_label
+        sql: |-
+          BEGIN
+            lbl: FOR r AS SELECT c FROM t DO VALUES (r.c); END FOR lbl;
+          END;
+      - id: for_multiple_statements
+        sql: |-
+          BEGIN
+            DECLARE s INT DEFAULT 0;
+            FOR r AS SELECT c FROM t DO SET s = s + r.c; VALUES (s); END FOR;
+          END;
+      - id: for_leave_iterate
+        sql: |-
+          BEGIN
+            lbl: FOR r AS SELECT c FROM t DO
+              IF r.c > 10 THEN LEAVE lbl; ELSEIF r.c = 0 THEN ITERATE lbl; END IF;
+              VALUES (r.c);
+            END FOR lbl;
+          END;
+    examples:
+      - |-
+        BEGIN
+          DECLARE sum INT DEFAULT 0;
+          sumNumbers: FOR row AS SELECT num FROM range(1, 20) AS t(num) DO
+            IF num > 10 THEN
+              LEAVE sumNumbers;
+            ELSEIF num % 2 = 0 THEN
+              ITERATE sumNumbers;
+            END IF;
+            SET sum = sum + row.num;
+          END FOR sumNumbers;
+          VALUES (sum);
+        END;
