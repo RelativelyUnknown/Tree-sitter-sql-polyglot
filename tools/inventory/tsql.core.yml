@@ -3988,7 +3988,7 @@ statements:
     probes:
       - id: join_availability_group
         sql: "ALTER DATABASE db SET HADR AVAILABILITY GROUP = ag1;"
-      - id: off
+      - id: hadr_off
         sql: "ALTER DATABASE db SET HADR OFF;"
       - id: suspend_resume
         sql: "ALTER DATABASE db SET HADR SUSPEND;"
@@ -4123,90 +4123,6 @@ statements:
         sql: "SAVE TRANSACTION ProcedureSave;"
       - id: variable
         sql: "SAVE TRANSACTION @sp;"
-    examples:
-      - |-
-        CREATE PROCEDURE SaveTranExample
-            @InputCandidateID INT
-        AS
-        -- Detect whether the procedure was called
-        -- from an active transaction and save
-        -- that for later use.
-        -- In the procedure, @TranCounter = 0
-        -- means there was no active transaction
-        -- and the procedure started one.
-        -- @TranCounter > 0 means an active
-        -- transaction was started before the
-        -- procedure was called.
-        DECLARE @TranCounter INT;
-        SET @TranCounter = @@TRANCOUNT;
-
-        IF @TranCounter > 0
-            -- Procedure called when there is
-            -- an active transaction.
-            -- Create a savepoint to be able
-            -- to roll back only the work done
-            -- in the procedure if there is an
-            -- error.
-            SAVE TRANSACTION ProcedureSave;
-        ELSE
-            -- Procedure must start its own
-            -- transaction.
-            BEGIN TRANSACTION;
-        -- Modify database.
-        BEGIN TRY
-            DELETE HumanResources.JobCandidate
-                WHERE JobCandidateID = @InputCandidateID;
-            -- Get here if no errors; must commit
-            -- any transaction started in the
-            -- procedure, but not commit a transaction
-            -- started before the transaction was called.
-            IF @TranCounter = 0
-                -- @TranCounter = 0 means no transaction was
-                -- started before the procedure was called.
-                -- The procedure must commit the transaction
-                -- it started.
-                COMMIT TRANSACTION;
-        END TRY
-        BEGIN CATCH
-            -- An error occurred; must determine
-            -- which type of rollback will roll
-            -- back only the work done in the
-            -- procedure.
-            IF @TranCounter = 0
-                -- Transaction started in procedure.
-                -- Roll back complete transaction.
-                ROLLBACK TRANSACTION;
-            ELSE
-                -- Transaction started before procedure
-                -- called, do not roll back modifications
-                -- made before the procedure was called.
-                IF XACT_STATE() <> -1
-                    -- If the transaction is still valid, just
-                    -- roll back to the savepoint set at the
-                    -- start of the stored procedure.
-                    ROLLBACK TRANSACTION ProcedureSave;
-                    -- If the transaction is uncommitable, a
-                    -- rollback to the savepoint is not allowed
-                    -- because the savepoint rollback writes to
-                    -- the log. Just return to the caller, which
-                    -- should roll back the outer transaction.
-
-            -- After the appropriate rollback, return error
-            -- information to the caller.
-            DECLARE @ErrorMessage NVARCHAR(4000);
-            DECLARE @ErrorSeverity INT;
-            DECLARE @ErrorState INT;
-
-            SELECT @ErrorMessage = ERROR_MESSAGE();
-            SELECT @ErrorSeverity = ERROR_SEVERITY();
-            SELECT @ErrorState = ERROR_STATE();
-
-            RAISERROR (
-                      @ErrorMessage, -- Message text.
-                      @ErrorSeverity, -- Severity.
-                      @ErrorState -- State.
-                      );
-        END CATCH
 
   - id: set_transaction_isolation_level
     name: "SET TRANSACTION ISOLATION LEVEL"
@@ -4830,11 +4746,6 @@ statements:
       - id: label_only_block
         sql: "BEGIN unusedLabel: END;"
         note: "Doc example 'BEGIN unusedLabel: END' (a block containing only a label)."
-    examples:
-      - |-
-        BEGIN
-            unusedLabel:
-        END
 
   - id: end_begin_end
     name: "END (BEGIN...END)"
@@ -4923,18 +4834,6 @@ statements:
         sql: "WHILE (1 = 1) BEGIN IF EXISTS (SELECT * FROM ##t WHERE c = 'Done') BEGIN BREAK; END WAITFOR DELAY '00:01:30'; END;"
       - id: bare
         sql: "WHILE @i < 10 BEGIN SET @i += 1; IF @i = 5 BREAK; END;"
-    examples:
-      - |-
-        WHILE (1=1)
-        BEGIN
-           IF EXISTS (SELECT * FROM ##MyTempTable WHERE EventCode = 'Done')
-           BEGIN
-              BREAK;  -- 'Done' row has finally been inserted and detected, so end this loop.
-           END
-
-           PRINT N'The other process is not yet done.';  -- Re-confirm the non-done status to the console.
-           WAITFOR DELAY '00:01:30';  -- Sleep for 90 seconds.
-        END
 
   - id: goto
     name: "GOTO"
@@ -5028,18 +4927,6 @@ statements:
         END CATCH;
       - |-
         BEGIN TRY
-            -- Table does not exist; object name resolution
-            -- error not caught.
-            SELECT *
-            FROM NonexistentTable;
-        END TRY
-
-        BEGIN CATCH
-            SELECT ERROR_NUMBER() AS ErrorNumber,
-                ERROR_MESSAGE() AS ErrorMessage;
-        END CATCH
-      - |-
-        BEGIN TRY
             EXECUTE usp_ExampleProc;
         END TRY
 
@@ -5100,13 +4987,6 @@ statements:
         sql: "BEGIN TRY RAISERROR ('Error raised in TRY block.', 16, 1); END TRY BEGIN CATCH RAISERROR (@ErrorMessage, @ErrorSeverity, @ErrorState); END CATCH;"
     examples:
       - "RAISERROR (15600, -1, -1, 'mysp_CreateCustomer');"
-      - |-
-        RAISERROR (N'This is message %s %d.', -- Message text.
-            10, -- Severity,
-            1, -- State,
-            N'number', -- First argument.
-            5); -- Second argument.
-        -- The message text returned is: This is message number 5.
       - |-
         BEGIN TRY
             -- RAISERROR with severity 11-19 will cause execution to
@@ -5239,4 +5119,1350 @@ statements:
             UNIQUE NONCLUSTERED (EmpID),
             INDEX CustomNonClusteredIndex NONCLUSTERED (EmpID));
       - "DECLARE @LocationTVP AS LocationTableType;"
+
+  - id: set_local_variable
+    name: "SET @local_variable"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/set-local-variable-transact-sql
+    tier: high
+    probes:
+      - id: literal
+        sql: "SET @myVar = 'This is a test';"
+      - id: expression
+        sql: "SET @NewBalance = @NewBalance * 10;"
+      - id: subquery
+        sql: "SET @rows = (SELECT COUNT(*) FROM Sales.Customer);"
+      - id: compound_operators
+        sql: "SET @n *= 10;"
+      - id: compound_all
+        sql: "SET @a += 1; SET @b -= 1; SET @c /= 2; SET @d %= 3; SET @e &= 4; SET @f ^= 5; SET @g |= 6;"
+      - id: udt_property
+        sql: "SET @p.X = @p.X + 1.1;"
+      - id: udt_static_method
+        sql: "SET @p = point::Parse('1,2');"
+      - id: udt_method
+        sql: "SET @p = point.SetXY(23.5, 23.5);"
+      - id: clr_mutator
+        sql: "SET @p.SetXY (22, 23);"
+      - id: cursor_variable_to_cursor
+        sql: "SET @my_variable = my_cursor;"
+      - id: cursor_definition
+        sql: "SET @CursorVar = CURSOR SCROLL DYNAMIC FOR SELECT LastName, FirstName FROM t WHERE LastName LIKE 'B%';"
+      - id: cursor_definition_options
+        sql: "SET @c = CURSOR LOCAL FORWARD_ONLY STATIC READ_ONLY TYPE_WARNING FOR SELECT a FROM t FOR READ ONLY;"
+      - id: cursor_for_update_of
+        sql: "SET @c = CURSOR GLOBAL KEYSET SCROLL_LOCKS FOR SELECT a, b FROM t FOR UPDATE OF a;"
+    examples:
+      - "SET @NewBalance *= 10;"
+      - |-
+        SET @rows = (SELECT COUNT(*)
+                     FROM Sales.Customer);
+      - |-
+        SET @CursorVar = CURSOR SCROLL DYNAMIC
+            FOR SELECT LastName,
+                       FirstName
+                FROM AdventureWorks2022.HumanResources.vEmployee
+                WHERE LastName LIKE 'B%';
+      - "SET @p.X = @p.X + 1.1;"
+
+  - id: select_local_variable
+    name: "SELECT @local_variable"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/select-local-variable-transact-sql
+    tier: high
+    probes:
+      - id: literal
+        sql: "SELECT @var1 = 'Generic Name';"
+      - id: from_table
+        sql: "SELECT @var1 = [Name] FROM SalesLT.Product WHERE ProductID = 1000000;"
+      - id: multiple
+        sql: "SELECT @a = MIN(c), @b = MAX(c) FROM t;"
+      - id: subquery
+        sql: "SELECT @var1 = (SELECT [Name] FROM SalesLT.Product WHERE ProductID = 1000000);"
+      - id: compound
+        sql: "SELECT @total += c FROM t;"
+      - id: compound_operators
+        sql: "SELECT @a -= 1, @b *= 2, @c /= 3, @d %= 4, @e &= 5, @f ^= 6, @g |= 7;"
+      - id: string_agg
+        sql: "SELECT @List = STRING_AGG(p.LastName, ', ') WITHIN GROUP (ORDER BY p.BusinessEntityID) FROM Person.Person AS p WHERE p.FirstName = 'William';"
+    examples:
+      - "SELECT @var1 = 'Generic Name';"
+      - |-
+        SELECT @var1 = [Name]
+        FROM SalesLT.Product
+        WHERE ProductID = 1000000;
+      - |-
+        SELECT @List = CONCAT(COALESCE (@List + ', ', ''), p.LastName)
+        FROM Person.Person AS p
+        WHERE p.FirstName = 'William'
+        ORDER BY p.BusinessEntityID;
+
+  - id: declare_cursor
+    name: "DECLARE CURSOR"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/declare-cursor-transact-sql
+    tier: high
+    probes:
+      - id: basic
+        sql: "DECLARE c CURSOR FOR SELECT a FROM t;"
+      - id: iso_insensitive_scroll
+        sql: "DECLARE c INSENSITIVE SCROLL CURSOR FOR SELECT a FROM t FOR READ_ONLY;"
+        note: "ISO syntax: DECLARE cursor_name [ INSENSITIVE ] [ SCROLL ] CURSOR FOR select_statement [ FOR { READ_ONLY | UPDATE ... } ]."
+      - id: iso_scroll
+        sql: "DECLARE c SCROLL CURSOR FOR SELECT a, b FROM t ORDER BY a, b;"
+      - id: iso_for_update_of
+        sql: "DECLARE c CURSOR FOR SELECT a, b FROM t FOR UPDATE OF a, b;"
+      - id: local_forward_only_static
+        sql: "DECLARE c CURSOR LOCAL FORWARD_ONLY STATIC READ_ONLY FOR SELECT a FROM t;"
+      - id: global_scroll_keyset
+        sql: "DECLARE c CURSOR GLOBAL SCROLL KEYSET SCROLL_LOCKS FOR SELECT a FROM t;"
+      - id: dynamic_optimistic
+        sql: "DECLARE c CURSOR DYNAMIC OPTIMISTIC TYPE_WARNING FOR SELECT a FROM t FOR UPDATE;"
+      - id: fast_forward
+        sql: "DECLARE c CURSOR FAST_FORWARD FOR SELECT a FROM t WHERE b = 1 ORDER BY a;"
+      - id: extended_for_update_of
+        sql: "DECLARE c CURSOR LOCAL FOR SELECT a FROM t FOR UPDATE OF a;"
+    examples:
+      - |-
+        DECLARE vendor_cursor CURSOR FOR
+        SELECT VendorID, Name
+        FROM Purchasing.Vendor
+        WHERE PreferredVendorStatus = 1
+        ORDER BY VendorID;
+      - |-
+        DECLARE contact_cursor SCROLL CURSOR FOR
+        SELECT LastName, FirstName FROM Person.Person
+        ORDER BY LastName, FirstName;
+      - |-
+        DECLARE abc CURSOR GLOBAL SCROLL FOR
+            SELECT * FROM Sales.SalesPerson;
+
+  - id: open
+    name: "OPEN"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/open-transact-sql
+    tier: high
+    probes:
+      - id: cursor
+        sql: "OPEN c;"
+      - id: global
+        sql: "OPEN GLOBAL c;"
+      - id: variable
+        sql: "OPEN @CursorVar;"
+    examples:
+      - "OPEN Employee_Cursor;"
+
+  - id: fetch
+    name: "FETCH"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/fetch-transact-sql
+    tier: high
+    probes:
+      - id: bare
+        sql: "FETCH c;"
+      - id: next_from
+        sql: "FETCH NEXT FROM c;"
+      - id: into
+        sql: "FETCH NEXT FROM c INTO @a, @b;"
+      - id: prior
+        sql: "FETCH PRIOR FROM c;"
+      - id: first
+        sql: "FETCH FIRST FROM c;"
+      - id: last
+        sql: "FETCH LAST FROM c;"
+      - id: absolute
+        sql: "FETCH ABSOLUTE 2 FROM c;"
+      - id: relative_negative
+        sql: "FETCH RELATIVE -2 FROM c;"
+      - id: absolute_variable
+        sql: "FETCH ABSOLUTE @n FROM c INTO @a;"
+      - id: global_cursor
+        sql: "FETCH NEXT FROM GLOBAL c;"
+      - id: cursor_variable
+        sql: "FETCH NEXT FROM @cur INTO @a;"
+      - id: from_without_direction
+        sql: "FETCH FROM c;"
+    examples:
+      - "FETCH NEXT FROM contact_cursor;"
+      - |-
+        FETCH NEXT FROM contact_cursor
+        INTO @LastName, @FirstName;
+      - "FETCH LAST FROM contact_cursor;"
+      - "FETCH ABSOLUTE 2 FROM contact_cursor;"
+      - "FETCH RELATIVE -2 FROM contact_cursor;"
+
+  - id: close
+    name: "CLOSE"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/close-transact-sql
+    tier: high
+    probes:
+      - id: cursor
+        sql: "CLOSE c;"
+      - id: global
+        sql: "CLOSE GLOBAL c;"
+      - id: variable
+        sql: "CLOSE @cur;"
+    examples:
+      - "CLOSE Employee_Cursor;"
+
+  - id: deallocate
+    name: "DEALLOCATE"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/deallocate-transact-sql
+    tier: high
+    probes:
+      - id: cursor
+        sql: "DEALLOCATE c;"
+      - id: global
+        sql: "DEALLOCATE GLOBAL c;"
+      - id: variable
+        sql: "DEALLOCATE @MyCursor;"
+    examples:
+      - "DEALLOCATE @MyCursor;"
+      - "DEALLOCATE abc;"
+
+  - id: go
+    name: "GO"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/sql-server-utilities-statements-go
+    tier: high
+    probes:
+      - id: after_statement
+        sql: |-
+          SELECT 1;
+          GO
+        note: "GO is a batch separator recognized by sqlcmd, osql and SSMS rather than a server statement, and the page says not to put a semicolon after it, so these probes end with GO instead of ';'."
+      - id: between_batches
+        sql: |-
+          USE AdventureWorks2022;
+          GO
+          SELECT COUNT(*) FROM Person.Person;
+          GO
+        note: "GO is a batch separator recognized by sqlcmd, osql and SSMS rather than a server statement, and the page says not to put a semicolon after it, so these probes end with GO instead of ';'."
+      - id: count
+        sql: |-
+          SELECT DB_NAME();
+          SELECT USER_NAME();
+          GO 2
+        note: "GO is a batch separator recognized by sqlcmd, osql and SSMS rather than a server statement, and the page says not to put a semicolon after it, so these probes end with GO instead of ';'."
+      - id: trailing_comment
+        sql: |-
+          SELECT @@VERSION;
+          GO -- end of batch
+        note: "'A Transact-SQL statement cannot occupy the same line as a GO command. However, the line can contain comments.'"
+      - id: separating_create_procedure
+        sql: |-
+          DROP PROCEDURE IF EXISTS dbo.p;
+          GO
+          CREATE PROCEDURE dbo.p AS SELECT 1;
+          GO
+        note: "GO is a batch separator recognized by sqlcmd, osql and SSMS rather than a server statement, and the page says not to put a semicolon after it, so these probes end with GO instead of ';'."
+      - id: lowercase
+        sql: |-
+          select 1
+          go
+        note: "GO is a batch separator recognized by sqlcmd, osql and SSMS rather than a server statement, and the page says not to put a semicolon after it, so these probes end with GO instead of ';'."
+
+expressions:
+  - id: constants
+    name: "Constants (literals)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/data-types/constants-transact-sql
+    tier: high
+    probes:
+      - id: character_string
+        sql: "SELECT 'Cincinnati';"
+      - id: escaped_quote
+        sql: "SELECT 'O''Brien';"
+      - id: double_quoted_string
+        sql: |-
+          SET QUOTED_IDENTIFIER OFF;
+          SELECT "O'Brien";
+        note: "The page lists \"O'Brien\" as a character string constant when QUOTED_IDENTIFIER is OFF."
+      - id: unicode_string
+        sql: "SELECT N'Michél';"
+      - id: empty_string
+        sql: "SELECT '';"
+      - id: binary
+        sql: "SELECT 0xAE, 0x12Ef, 0x69048AEFDD010E;"
+      - id: empty_binary
+        sql: "SELECT 0x;"
+      - id: bit
+        sql: "SELECT CAST(1 AS BIT), CAST(0 AS BIT);"
+      - id: datetime_strings
+        sql: "SELECT CAST('December 5, 1985' AS DATETIME), CAST('851205' AS DATE), CAST('14:30:24' AS TIME);"
+      - id: integer
+        sql: "SELECT 1894, 2;"
+      - id: decimal
+        sql: "SELECT 1894.1204, 2.0, .5;"
+      - id: float_exponent
+        sql: "SELECT 101.5E5, 0.5E-2, 1e10;"
+      - id: money
+        sql: "SELECT $12, $542023.14, $-23;"
+      - id: money_signed
+        sql: "SELECT -$45.56, +$423456.99;"
+      - id: guid
+        sql: "SELECT CAST('6F9619FF-8B86-D011-B42D-00C04FC964FF' AS UNIQUEIDENTIFIER), CAST(0xff19966f868b11d0b42d00c04fc964ff AS UNIQUEIDENTIFIER);"
+      - id: signed_numbers
+        sql: "SELECT +145345234, -2147483648, +145345234.2234, -2147483648.10, +123E-3, -12E5;"
+      - id: null_literal
+        sql: "SELECT NULL;"
+      - id: string_with_collate
+        sql: "SELECT N'abc' COLLATE Latin1_General_CS_AS;"
+
+  - id: backslash_line_continuation
+    name: "Backslash (Line Continuation)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/sql-server-utilities-statements-backslash
+    tier: low
+    probes:
+      - id: character_string
+        sql: |-
+          SELECT 'abc\
+          def' AS [ColumnResult];
+      - id: binary_string
+        sql: |-
+          SELECT 0xabc\
+          def AS [ColumnResult];
+    examples:
+      - |-
+        SELECT 0xabc\
+        def AS [ColumnResult];
+
+  - id: identifiers
+    name: "Database identifiers (regular and delimited)"
+    doc: https://learn.microsoft.com/en-us/sql/relational-databases/databases/database-identifiers
+    tier: high
+    probes:
+      - id: regular
+        sql: "SELECT KeyCol, Description FROM TableX;"
+      - id: special_characters
+        sql: "SELECT _col, col$1, col#2, c@3 FROM t_1;"
+      - id: bracketed
+        sql: "SELECT * FROM [HumanResources].[Employee] WHERE [NationalIDNumber] = 153479919;"
+      - id: bracketed_space_reserved
+        sql: "CREATE TABLE [SalesOrderDetail Table] ([Order] INT NOT NULL);"
+      - id: bracket_escape
+        sql: "SELECT * FROM [My]]Table];"
+      - id: double_quoted
+        sql: "SELECT \"Order\", \"Description\" FROM \"My Table\";"
+      - id: double_quote_escape
+        sql: "SELECT \"a\"\"b\" FROM t;"
+      - id: unicode_identifier
+        sql: "SELECT Größe FROM Tabelle;"
+      - id: local_temp_object
+        sql: "SELECT * FROM #temp;"
+      - id: global_temp_object
+        sql: "SELECT * FROM ##temp;"
+      - id: multipart_names
+        sql: "SELECT srv.db.dbo.t.c FROM srv.db.dbo.t;"
+      - id: omitted_parts
+        sql: "SELECT c FROM db..t;"
+      - id: reserved_keyword_quoted
+        sql: "SELECT [select], [from] FROM [table];"
+      - id: lowercase_keywords
+        sql: "select c from t where d = 1;"
+    examples:
+      - |-
+        CREATE TABLE TableX
+        (
+            KeyCol INT PRIMARY KEY,
+            Description NVARCHAR (80)
+        );
+      - |-
+        SELECT *
+        FROM [My]]Table];
+      - "SELECT QUOTENAME('abc[]def');"
+
+  - id: comments
+    name: "Comments (-- and /* */)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/comment-transact-sql
+    tier: high
+    probes:
+      - id: line_comment
+        sql: |-
+          -- Choose all columns.
+          SELECT * FROM t;
+      - id: trailing_line_comment
+        sql: "SELECT * FROM t ORDER BY c ASC; -- ASC is the default."
+        note: "Ends with a trailing -- comment after the terminator, as in the doc example."
+      - id: block_comment
+        sql: |-
+          /* multi-line
+             comment */
+          SELECT c FROM t;
+      - id: inline_block_comment
+        sql: "SELECT c /* inline */ FROM t;"
+      - id: nested_block_comment
+        sql: |-
+          /* outer /* inner */ still a comment */
+          SELECT 1;
+        note: "Slash Star (Block Comment) page: nested comments are supported; a /* inside a comment must be matched by its own */."
+      - id: comment_marker_in_string
+        sql: "SELECT '-- not a comment', '/* not a comment */';"
+
+  - id: arithmetic_operators
+    name: "Arithmetic operators"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/arithmetic-operators-transact-sql
+    tier: high
+    probes:
+      - id: add_subtract
+        sql: "SELECT a + b, a - b FROM t;"
+      - id: multiply_divide_modulo
+        sql: "SELECT 38 / 5 AS [Integer], 38 % 5 AS [Remainder], a * b FROM t;"
+      - id: date_arithmetic
+        sql: "SELECT GETDATE() + 1, d - 7 FROM t;"
+      - id: precedence_parentheses
+        sql: "SELECT (a + b) * c - d / (e % 3) FROM t;"
+    examples:
+      - |-
+        SELECT
+            38 / 5 AS [Integer],
+            38 % 5 AS [Remainder];
+
+  - id: unary_operators
+    name: "Unary operators (+, -)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/unary-operators-negative
+    tier: high
+    probes:
+      - id: negative
+        sql: "SELECT -a, -(b + 1), - -c FROM t;"
+      - id: positive
+        sql: "SELECT +a, +$12.5 FROM t;"
+
+  - id: bitwise_operators
+    name: "Bitwise operators (&, |, ^, ~, <<, >>)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/bitwise-operators-transact-sql
+    tier: medium
+    probes:
+      - id: and_or_xor
+        sql: "SELECT a & b, a | b, a ^ b FROM bitwise;"
+      - id: not
+        sql: "SELECT ~a AS NotA FROM bitwise;"
+      - id: left_shift_operator
+        sql: "SELECT 12345 << 5;"
+        note: "expression_value << shift_amount (LEFT_SHIFT page, SQL Server 2022+ and Azure SQL Database)."
+      - id: right_shift_operator
+        sql: "SELECT 12345 >> 5;"
+      - id: shift_functions
+        sql: "SELECT LEFT_SHIFT(12345, 5), RIGHT_SHIFT(12345, 5);"
+
+  - id: comparison_operators
+    name: "Comparison operators"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/comparison-operators-transact-sql
+    tier: high
+    probes:
+      - id: equals_not_equals
+        sql: "SELECT c FROM t WHERE a = 1 AND b <> 2 AND d != 3;"
+      - id: relational
+        sql: "SELECT c FROM t WHERE a > 1 AND b < 2 AND d >= 3 AND e <= 4;"
+      - id: not_less_not_greater
+        sql: "SELECT c FROM t WHERE a !< 1 AND b !> 2;"
+      - id: boolean_in_if
+        sql: "IF (@MyProduct <> 0) SELECT c FROM t WHERE id = @MyProduct;"
+
+  - id: compound_operators
+    name: "Compound operators (+=, -=, *=, /=, %=, &=, ^=, |=)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/compound-operators-transact-sql
+    tier: high
+    probes:
+      - id: set
+        sql: "SET @x1 += 2; SET @x2 -= 2; SET @x3 *= 2; SET @x4 /= 2; SET @x5 %= 2; SET @x6 &= 2; SET @x7 ^= 2; SET @x8 |= 2;"
+      - id: declare_then_compound
+        sql: |-
+          DECLARE @x1 INT = 27;
+          SET @x1 += 2;
+      - id: update_set
+        sql: "UPDATE t SET c += 1, d *= 2;"
+
+  - id: string_concatenation
+    name: "String concatenation (+, ||, +=, ||=)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/string-concatenation-transact-sql
+    tier: high
+    probes:
+      - id: plus
+        sql: "SELECT (LastName + ', ' + FirstName) AS Name FROM t;"
+      - id: plus_equals_expression
+        sql: "SELECT 'Adventure' += 'Works';"
+        note: "From the += (String Concatenation Assignment) page example."
+      - id: plus_equals_variable
+        sql: "SET @v1 += ' More text.';"
+      - id: pipes
+        sql: "SELECT FirstName || ' ' || LastName FROM t;"
+        note: "|| operator: SQL Server 2025 and Azure SQL Database."
+      - id: pipes_binary
+        sql: "SELECT @mybin1 || @mybin2;"
+      - id: pipes_equals
+        sql: "SET @v1 ||= 'b';"
+
+  - id: logical_operators
+    name: "Logical operators (ALL, AND, ANY, BETWEEN, EXISTS, IN, LIKE, NOT, OR, SOME)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/logical-operators-transact-sql
+    tier: high
+    probes:
+      - id: and_or_not
+        sql: "SELECT c FROM t WHERE NOT (a = 1 OR b = 2) AND d = 3;"
+      - id: between
+        sql: "SELECT c FROM t WHERE a BETWEEN 1 AND 10 AND b NOT BETWEEN 'a' AND 'm';"
+      - id: in_list
+        sql: "SELECT c FROM t WHERE a IN (1, 2, 3) AND b NOT IN ('x', 'y');"
+      - id: in_subquery
+        sql: "SELECT c FROM t WHERE a IN (SELECT a FROM u WHERE u.b = t.b);"
+      - id: exists
+        sql: "SELECT c FROM t WHERE EXISTS (SELECT NULL) AND NOT EXISTS (SELECT 1 FROM u WHERE u.a = t.a);"
+      - id: all
+        sql: "SELECT c FROM t WHERE a >= ALL (SELECT a FROM u);"
+      - id: any_some
+        sql: "SELECT c FROM t WHERE a > ANY (SELECT a FROM u) OR a = SOME (SELECT b FROM u);"
+      - id: like_not_like
+        sql: "SELECT c FROM t WHERE a LIKE 'abc%' AND b NOT LIKE '%x_';"
+      - id: boolean_value_check
+        sql: "IF 1 = 1 AND NOT 2 = 3 PRINT 'ok';"
+
+  - id: like_wildcards
+    name: "LIKE and wildcard characters (%, _, [ ], [^])"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/like-transact-sql
+    tier: high
+    probes:
+      - id: percent
+        sql: "SELECT c FROM t WHERE c LIKE '%Smi%';"
+      - id: underscore
+        sql: "SELECT c FROM t WHERE c LIKE '_heryl';"
+      - id: char_list
+        sql: "SELECT c FROM t WHERE c LIKE '[CK]ars[eo]n';"
+      - id: char_range
+        sql: "SELECT c FROM t WHERE c LIKE '[A-Z][0-9]%';"
+      - id: negated_set
+        sql: "SELECT c FROM t WHERE c LIKE 'de[^l]%';"
+      - id: escape
+        sql: "SELECT c FROM t WHERE c LIKE '%30!%%' ESCAPE '!';"
+      - id: bracket_escape
+        sql: "SELECT c FROM t WHERE c LIKE '%[_]%';"
+      - id: unicode_pattern
+        sql: "SELECT c FROM t WHERE c LIKE N'%é%';"
+
+  - id: scope_resolution_operator
+    name: ":: (Scope Resolution)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/scope-resolution-operator-transact-sql
+    tier: medium
+    probes:
+      - id: static_method
+        sql: "SELECT @hid = hierarchyid::GetRoot();"
+      - id: geography_static
+        sql: "SELECT geography::Point(47.65, -122.34, 4326);"
+      - id: geometry_parse
+        sql: "SELECT geometry::STGeomFromText('POINT (3 4)', 0).ToString();"
+      - id: instance_method_chain
+        sql: "SELECT @hid.ToString(), c.STAsText() FROM t AS c;"
+
+  - id: is_null
+    name: "IS NULL / IS NOT NULL"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/is-null-transact-sql
+    tier: high
+    probes:
+      - id: is_null
+        sql: "SELECT c FROM t WHERE c IS NULL;"
+      - id: is_not_null
+        sql: "SELECT c FROM t WHERE c IS NOT NULL;"
+      - id: in_case
+        sql: "SELECT CASE WHEN c IS NULL THEN 0 ELSE 1 END FROM t;"
+
+  - id: is_distinct_from
+    name: "IS [NOT] DISTINCT FROM"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/is-distinct-from-transact-sql
+    tier: high
+    probes:
+      - id: is_distinct_from
+        sql: "SELECT * FROM t WHERE id IS DISTINCT FROM 17;"
+      - id: is_not_distinct_from
+        sql: "SELECT * FROM t WHERE id IS NOT DISTINCT FROM 17;"
+      - id: in_join
+        sql: "SELECT * FROM t JOIN u ON t.a IS NOT DISTINCT FROM u.a;"
+      - id: in_select_list_case
+        sql: "SELECT CASE WHEN a IS DISTINCT FROM b THEN 1 ELSE 0 END FROM t;"
+    examples:
+      - "SELECT * FROM #SampleTempTable WHERE id IS DISTINCT FROM 17;"
+      - "SELECT * FROM #SampleTempTable WHERE id IS NOT DISTINCT FROM 17;"
+
+  - id: at_time_zone
+    name: "AT TIME ZONE"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/at-time-zone-transact-sql
+    tier: medium
+    probes:
+      - id: literal_zone
+        sql: "SELECT OrderDate AT TIME ZONE 'Pacific Standard Time' FROM t;"
+      - id: chained
+        sql: "SELECT OrderDate AT TIME ZONE 'Pacific Standard Time' AT TIME ZONE 'Central European Standard Time' FROM t;"
+      - id: variable_zone
+        sql: "SELECT d AT TIME ZONE @tz FROM t;"
+      - id: in_set_assignment
+        sql: "SET @ASOF = DATEADD(month, -1, GETDATE()) AT TIME ZONE 'UTC';"
+    examples:
+      - |-
+        SELECT SalesOrderID,
+               OrderDate,
+               OrderDate AT TIME ZONE 'Pacific Standard Time' AS OrderDate_TimeZonePST
+        FROM Sales.SalesOrderHeader;
+
+  - id: case
+    name: "CASE"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/case-transact-sql
+    tier: high
+    probes:
+      - id: simple
+        sql: "SELECT CASE c WHEN 'R' THEN 'Road' WHEN 'M' THEN 'Mountain' ELSE 'Other' END FROM t;"
+      - id: simple_no_else
+        sql: "SELECT CASE c WHEN 1 THEN 'one' END FROM t;"
+      - id: searched
+        sql: "SELECT CASE WHEN p = 0 THEN 'zero' WHEN p < 50 THEN 'small' ELSE 'large' END AS r FROM t;"
+      - id: alias_equals
+        sql: "SELECT Category = CASE c WHEN 'R' THEN 'Road' END FROM t;"
+      - id: in_order_by
+        sql: "SELECT a FROM t ORDER BY CASE b WHEN 1 THEN a END DESC;"
+      - id: in_update
+        sql: "UPDATE t SET c = CASE WHEN c > 10 THEN c - 1 ELSE c + 1 END;"
+      - id: in_where
+        sql: "SELECT a FROM t WHERE CASE WHEN b > 0 THEN 1 ELSE 0 END = 1;"
+      - id: in_having
+        sql: "SELECT a, MAX(b) FROM t GROUP BY a HAVING MAX(CASE WHEN c = 'F' THEN d ELSE NULL END) > 40;"
+      - id: nested
+        sql: "SELECT CASE WHEN a > 0 THEN CASE WHEN b > 0 THEN 1 ELSE 2 END ELSE 3 END FROM t;"
+    examples:
+      - |-
+        SELECT ProductNumber,
+            Category = CASE ProductLine
+                WHEN 'R' THEN 'Road'
+                WHEN 'M' THEN 'Mountain'
+                WHEN 'T' THEN 'Touring'
+                WHEN 'S' THEN 'Other sale items'
+                ELSE 'Not for sale'
+                END,
+            Name
+        FROM Production.Product
+        ORDER BY ProductNumber;
+      - |-
+        SELECT ProductNumber,
+            Name,
+            "Price Range" = CASE
+                WHEN ListPrice = 0 THEN 'Mfg item - not for resale'
+                WHEN ListPrice < 50 THEN 'Under $50'
+                WHEN ListPrice >= 50 AND ListPrice < 250 THEN 'Under $250'
+                WHEN ListPrice >= 250 AND ListPrice < 1000 THEN 'Under $1000'
+                ELSE 'Over $1000'
+                END
+        FROM Production.Product
+        ORDER BY ProductNumber;
+      - |-
+        SELECT BusinessEntityID,
+            SalariedFlag
+        FROM HumanResources.Employee
+        ORDER BY CASE SalariedFlag
+                WHEN 1 THEN BusinessEntityID
+                END DESC,
+            CASE
+                WHEN SalariedFlag = 0 THEN BusinessEntityID
+                END;
+
+  - id: coalesce
+    name: "COALESCE"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/coalesce-transact-sql
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT COALESCE(NULL, NULL, 'third_value', 'fourth_value');"
+      - id: columns
+        sql: "SELECT COALESCE(Color, ProductNumber) AS FirstNotNull FROM t;"
+      - id: in_computed_column
+        sql: "CREATE TABLE #Demo (col1 INT NULL, col2 AS COALESCE(col1, 0) PERSISTED PRIMARY KEY);"
+    examples:
+      - "SELECT COALESCE(NULL, NULL, 'third_value', 'fourth_value');"
+      - |-
+        SELECT Name,
+               Color,
+               ProductNumber,
+               COALESCE (Color, ProductNumber) AS FirstNotNull
+        FROM Products;
+
+  - id: nullif
+    name: "NULLIF"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/nullif-transact-sql
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT NULLIF(a, b) FROM t;"
+      - id: nested
+        sql: "SELECT AVG(NULLIF(COALESCE(a, b), 0.00)) AS [Average] FROM t;"
+    examples:
+      - |-
+        SELECT ProductID, MakeFlag, FinishedGoodsFlag,
+           NULLIF(MakeFlag,FinishedGoodsFlag) AS [Null if Equal]
+        FROM Production.Product
+        WHERE ProductID < 10;
+      - |-
+        SELECT ProductID, MakeFlag, FinishedGoodsFlag, [Null if Equal] =
+           CASE
+               WHEN MakeFlag = FinishedGoodsFlag THEN NULL
+               ELSE MakeFlag
+           END
+        FROM Production.Product
+        WHERE ProductID < 10;
+
+  - id: search_condition
+    name: "Search condition"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/search-condition-transact-sql
+    tier: high
+    probes:
+      - id: not_and_or
+        sql: "SELECT c FROM t WHERE NOT a = 1 AND (b = 2 OR NOT c = 3);"
+      - id: comparisons
+        sql: "SELECT c FROM t WHERE a = b AND a <> b AND a != b AND a > b AND a >= b AND a !> b AND a < b AND a <= b AND a !< b;"
+      - id: like_escape
+        sql: "SELECT c FROM t WHERE c LIKE '%5!%%' ESCAPE '!';"
+      - id: in_subquery_and_list
+        sql: "SELECT c FROM t WHERE a NOT IN (SELECT a FROM u) AND b IN (1, 2);"
+      - id: quantified_comparison
+        sql: "SELECT c FROM t WHERE a > ALL (SELECT a FROM u) AND b = SOME (SELECT b FROM u) AND d <> ANY (SELECT d FROM u);"
+      - id: exists
+        sql: "SELECT c FROM t WHERE EXISTS (SELECT * FROM u WHERE u.a = t.a);"
+      - id: match_and_predicate
+        sql: "SELECT p2.name FROM Person p1, friend, Person p2 WHERE MATCH(p1-(friend)->p2) AND p1.name = 'Alice';"
+
+  - id: contains
+    name: "CONTAINS"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/contains-transact-sql
+    tier: medium
+    probes:
+      - id: simple_term
+        sql: "SELECT Name FROM t WHERE CONTAINS(Name, 'Mountain');"
+      - id: column_list
+        sql: "SELECT Name FROM t WHERE CONTAINS((Name, Color), 'Red');"
+      - id: all_columns
+        sql: "SELECT Name FROM t WHERE CONTAINS(*, 'Red');"
+      - id: prefix_or
+        sql: "SELECT Name FROM t WHERE CONTAINS(Name, '\"chain*\" OR \"full*\"');"
+      - id: near
+        sql: "SELECT c FROM t WHERE CONTAINS(c, 'NEAR((bike,control), 10, TRUE)');"
+      - id: formsof
+        sql: "SELECT c FROM t WHERE CONTAINS(c, ' FORMSOF (INFLECTIONAL, ride) ');"
+      - id: isabout_weight
+        sql: "SELECT c FROM t WHERE CONTAINS(c, 'ISABOUT (performance weight (.8), comfortable weight (.4))');"
+      - id: variable
+        sql: "SELECT c FROM t WHERE CONTAINS(c, @SearchWord);"
+      - id: property_language
+        sql: "SELECT c FROM t WHERE CONTAINS(PROPERTY(Document, 'Title'), 'Maintenance', LANGUAGE 1033);"
+    examples:
+      - |-
+        SELECT Name, ListPrice
+        FROM Production.Product
+        WHERE ListPrice = 80.99
+           AND CONTAINS(Name, 'Mountain');
+      - |-
+        SELECT Name
+        FROM Production.Product
+        WHERE CONTAINS(Name, ' "Chain*" ');
+      - |-
+        SELECT Comments
+        FROM Production.ProductReview
+        WHERE CONTAINS(Comments , 'NEAR((bike,control), 10, TRUE)');
+      - |-
+        SELECT Description
+        FROM Production.ProductDescription
+        WHERE CONTAINS(Description, ' FORMSOF (INFLECTIONAL, ride) ');
+      - |-
+        SELECT Description
+        FROM Production.ProductDescription
+        WHERE ProductDescriptionID <> 5 AND
+           CONTAINS(Description, 'Aluminum AND spindle');
+
+  - id: freetext
+    name: "FREETEXT"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/freetext-transact-sql
+    tier: medium
+    probes:
+      - id: column
+        sql: "SELECT c FROM t WHERE FREETEXT(Description, 'vital safety components');"
+      - id: all_columns_language
+        sql: "SELECT c FROM t WHERE FREETEXT(*, @SearchWord, LANGUAGE N'English');"
+      - id: column_list
+        sql: "SELECT c FROM t WHERE FREETEXT((Name, Description), 'bike');"
+    examples:
+      - |-
+        DECLARE @SearchWord VARCHAR(30)
+        SET @SearchWord ='performance'
+        SELECT Description
+        FROM Production.ProductDescription
+        WHERE FREETEXT(Description, @SearchWord);
+      - |-
+        DECLARE @SearchWord NVARCHAR(30)
+        SET @SearchWord = N'performance'
+        SELECT Description
+        FROM Production.ProductDescription
+        WHERE FREETEXT(Description, @SearchWord);
+
+  - id: over_clause
+    name: "SELECT - OVER clause (window functions)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/queries/select-over-clause-transact-sql
+    tier: high
+    probes:
+      - id: empty_over
+        sql: "SELECT MIN(c) OVER () FROM t;"
+      - id: partition_by
+        sql: "SELECT MIN(c) OVER (PARTITION BY type) FROM t;"
+      - id: partition_order_by
+        sql: "SELECT SUM(d) OVER (PARTITION BY a ORDER BY b) AS RunningTotal FROM t;"
+      - id: order_by_collate_desc
+        sql: "SELECT ROW_NUMBER() OVER (ORDER BY name COLLATE Latin1_General_CS_AS DESC) FROM t;"
+      - id: rows_between_unbounded_current
+        sql: "SELECT COUNT(*) OVER (ORDER BY c ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;"
+      - id: rows_between_current_unbounded_following
+        sql: "SELECT COUNT(*) OVER (ORDER BY c ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM t;"
+      - id: rows_n_preceding_following
+        sql: "SELECT AVG(c) OVER (ORDER BY d ROWS BETWEEN 2 PRECEDING AND 1 FOLLOWING) FROM t;"
+      - id: rows_preceding_short
+        sql: "SELECT SUM(c) OVER (ORDER BY d ROWS 2 PRECEDING) FROM t;"
+      - id: rows_unbounded_preceding_short
+        sql: "SELECT SUM(c) OVER (ORDER BY d ROWS UNBOUNDED PRECEDING) FROM t;"
+      - id: range_between
+        sql: "SELECT SUM(c) OVER (PARTITION BY a ORDER BY d RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;"
+      - id: range_current_row
+        sql: "SELECT SUM(c) OVER (ORDER BY d RANGE CURRENT ROW) FROM t;"
+      - id: named_window
+        sql: "SELECT SUM(c) OVER w FROM t WINDOW w AS (PARTITION BY a);"
+      - id: ranking_functions
+        sql: "SELECT ROW_NUMBER() OVER (ORDER BY c), RANK() OVER (ORDER BY c), DENSE_RANK() OVER (ORDER BY c), NTILE(4) OVER (ORDER BY c) FROM t;"
+      - id: analytic_functions
+        sql: "SELECT LAG(c, 1, 0) OVER (ORDER BY d), LEAD(c) OVER (PARTITION BY a ORDER BY d), PERCENT_RANK() OVER (ORDER BY c), CUME_DIST() OVER (ORDER BY c) FROM t;"
+      - id: first_value_ignore_nulls
+        sql: "SELECT FIRST_VALUE(c) IGNORE NULLS OVER (PARTITION BY a ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;"
+        note: "FIRST_VALUE ( [ scalar_expression ] ) [ IGNORE NULLS | RESPECT NULLS ] OVER (...): SQL Server 2022+."
+      - id: lag_respect_nulls
+        sql: "SELECT LAG(c, 1) RESPECT NULLS OVER (ORDER BY d), LAST_VALUE(c) IGNORE NULLS OVER (ORDER BY d) FROM t;"
+      - id: aggregate_distinct_over
+        sql: "SELECT COUNT(c) OVER (PARTITION BY a), CAST(1. * c / SUM(c) OVER (PARTITION BY a) * 100 AS DECIMAL(5, 2)) FROM t;"
+      - id: percentile_within_group_over
+        sql: "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY c) OVER (PARTITION BY a) FROM t;"
+    examples:
+      - |-
+        SELECT object_id,
+               MIN(object_id) OVER () AS [min],
+               MAX(object_id) OVER () AS [max]
+        FROM sys.objects;
+      - |-
+        SELECT object_id,
+               type,
+               MIN(object_id) OVER (PARTITION BY type) AS [min],
+               MAX(object_id) OVER (PARTITION BY type) AS [max]
+        FROM sys.objects;
+      - |-
+        SELECT object_id,
+               COUNT(*) OVER (ORDER BY object_id ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS [preceding],
+               COUNT(*) OVER (ORDER BY object_id ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING) AS [central],
+               COUNT(*) OVER (ORDER BY object_id ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) AS [following]
+        FROM sys.objects
+        ORDER BY object_id ASC;
+      - |-
+        SELECT ROW_NUMBER() OVER (PARTITION BY PostalCode ORDER BY SalesYTD DESC) AS "Row Number",
+               p.LastName,
+               s.SalesYTD,
+               a.PostalCode
+        FROM Sales.SalesPerson AS s
+             INNER JOIN Person.Person AS p
+                 ON s.BusinessEntityID = p.BusinessEntityID
+             INNER JOIN Person.Address AS a
+                 ON a.AddressID = p.BusinessEntityID
+        WHERE TerritoryID IS NOT NULL
+              AND SalesYTD <> 0
+        ORDER BY PostalCode;
+      - |-
+        SELECT BusinessEntityID,
+               TerritoryID,
+               DATEPART(yy, ModifiedDate) AS SalesYear,
+               CONVERT (VARCHAR (20), SalesYTD, 1) AS SalesYTD,
+               CONVERT (VARCHAR (20), AVG(SalesYTD) OVER (PARTITION BY TerritoryID ORDER BY DATEPART(yy, ModifiedDate)), 1) AS MovingAvg,
+               CONVERT (VARCHAR (20), SUM(SalesYTD) OVER (PARTITION BY TerritoryID ORDER BY DATEPART(yy, ModifiedDate)), 1) AS CumulativeTotal
+        FROM Sales.SalesPerson
+        WHERE TerritoryID IS NULL
+              OR TerritoryID < 5
+        ORDER BY TerritoryID, SalesYear;
+
+  - id: aggregate_functions
+    name: "Aggregate function syntax (DISTINCT, *, WITHIN GROUP, GROUPING)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/functions/string-agg-transact-sql
+    tier: high
+    probes:
+      - id: count_star_distinct_all
+        sql: "SELECT COUNT(*), COUNT(DISTINCT c), COUNT(ALL c), COUNT_BIG(*) FROM t;"
+      - id: sum_avg_distinct
+        sql: "SELECT SUM(DISTINCT c), AVG(ALL c), MIN(c), MAX(c), STDEV(c), VAR(c) FROM t;"
+      - id: string_agg
+        sql: "SELECT STRING_AGG(name, ', ') FROM t;"
+      - id: string_agg_within_group
+        sql: "SELECT a, STRING_AGG(CONVERT(NVARCHAR(MAX), name), CHAR(13)) WITHIN GROUP (ORDER BY name ASC) FROM t GROUP BY a;"
+      - id: percentile_cont_disc
+        sql: "SELECT DISTINCT a, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY c) OVER (PARTITION BY a), PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY c DESC) OVER (PARTITION BY a) FROM t;"
+      - id: approx_percentile
+        sql: "SELECT a, APPROX_PERCENTILE_CONT(0.10) WITHIN GROUP (ORDER BY c), APPROX_PERCENTILE_DISC(0.90) WITHIN GROUP (ORDER BY c) FROM t GROUP BY a;"
+      - id: approx_count_distinct
+        sql: "SELECT APPROX_COUNT_DISTINCT(c) FROM t;"
+      - id: grouping_functions
+        sql: "SELECT a, b, GROUPING(a) AS ga, GROUPING_ID(a, b) AS gid, SUM(c) FROM t GROUP BY ROLLUP (a, b);"
+      - id: checksum_agg
+        sql: "SELECT CHECKSUM_AGG(CAST(c AS INT)) FROM t;"
+    examples:
+      - |-
+        SELECT STRING_AGG(CONVERT (NVARCHAR (MAX), FirstName), CHAR(13)) AS csv
+        FROM Person.Person;
+      - |-
+        SELECT STRING_AGG(CONVERT (NVARCHAR (MAX), ISNULL(MiddleName, 'N/A')), ',') AS csv
+        FROM Person.Person;
+      - |-
+        SELECT STRING_AGG(CONVERT (NVARCHAR (MAX), CONCAT(FirstName, ' ', LastName, '(', ModifiedDate, ')')), CHAR(13)) AS names
+        FROM Person.Person;
+
+  - id: cast_and_convert
+    name: "CAST and CONVERT (and TRY_CAST, TRY_CONVERT, PARSE, TRY_PARSE)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/functions/cast-and-convert-transact-sql
+    tier: high
+    probes:
+      - id: cast
+        sql: "SELECT CAST(c AS INT), CAST(d AS VARCHAR(10)), CAST(e AS DECIMAL(10, 5)) FROM t;"
+      - id: cast_max_length
+        sql: "SELECT CAST(c AS NVARCHAR(MAX)), CAST(d AS VARBINARY(MAX)) FROM t;"
+      - id: convert
+        sql: "SELECT CONVERT(VARCHAR(20), c), CONVERT(DECIMAL(10, 5), d) FROM t;"
+      - id: convert_style
+        sql: "SELECT CONVERT(VARCHAR(30), GETDATE(), 126), CONVERT(CHAR(8), d, 112) FROM t;"
+      - id: cast_collate
+        sql: "SELECT CAST('abc' AS VARCHAR(5)) COLLATE French_CS_AS;"
+      - id: try_cast
+        sql: "SELECT TRY_CAST('12.3' AS DECIMAL(5, 1)), TRY_CAST(c AS DATE) FROM t;"
+      - id: try_convert
+        sql: "SELECT TRY_CONVERT(DATETIME2, c, 103) FROM t;"
+      - id: parse_using
+        sql: "SELECT PARSE('Monday, 13 December 2010' AS DATETIME2 USING 'en-US');"
+      - id: try_parse
+        sql: "SELECT TRY_PARSE('€345,98' AS MONEY USING 'de-DE'), PARSE('345' AS INT);"
+      - id: cast_udt_and_xml
+        sql: "SELECT CAST(x AS XML), CAST(N'<a/>' AS XML(dbo.sc)) FROM t;"
+    examples:
+      - "SELECT CAST(CAST(0x41 AS nvarchar) AS varbinary);"
+      - "SELECT CAST('abc' AS varchar(5)) COLLATE French_CS_AS;"
+      - |-
+        SELECT CAST(10.6496 AS INT) AS trunc1,
+               CAST(-10.6496 AS INT) AS trunc2,
+               CAST(10.6496 AS NUMERIC) AS round1,
+               CAST(-10.6496 AS NUMERIC) AS round2;
+      - "SELECT CAST(10.3496847 AS money);"
+
+  - id: trim_special_form
+    name: "TRIM ([LEADING | TRAILING | BOTH] characters FROM string)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/functions/trim-transact-sql
+    tier: high
+    probes:
+      - id: trim
+        sql: "SELECT TRIM('     test    ');"
+      - id: trim_characters_from
+        sql: "SELECT TRIM('.,! ' FROM '     #     test    .');"
+      - id: trim_leading
+        sql: "SELECT TRIM(LEADING '.,! ' FROM '     .#     test    .');"
+      - id: trim_trailing_both
+        sql: "SELECT TRIM(TRAILING '.' FROM c), TRIM(BOTH '123' FROM '123abc123') FROM t;"
+      - id: ltrim_rtrim_characters
+        sql: "SELECT LTRIM('123abc', '123'), RTRIM('abc123', '123');"
+        note: "LTRIM/RTRIM ( character_expression , [ characters ] ) form from the LTRIM and RTRIM pages (SQL Server 2022+)."
+
+  - id: date_functions_dateparts
+    name: "Date functions with datepart keywords (DATEADD, DATEDIFF, DATEPART, DATENAME, DATETRUNC, DATE_BUCKET)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/functions/dateadd-transact-sql
+    tier: high
+    probes:
+      - id: dateadd
+        sql: "SELECT DATEADD(month, 1, '20060830'), DATEADD(day, -7, d), DATEADD(yy, 1, d) FROM t;"
+      - id: datediff
+        sql: "SELECT DATEDIFF(day, a, b), DATEDIFF_BIG(millisecond, a, b) FROM t;"
+      - id: datepart_datename
+        sql: "SELECT DATEPART(year, d), DATEPART(wk, d), DATENAME(weekday, d), DATEPART(TZoffset, dto) FROM t;"
+      - id: datetrunc
+        sql: "SELECT DATETRUNC(month, d), DATETRUNC(iso_week, d) FROM t;"
+      - id: date_bucket
+        sql: "SELECT DATE_BUCKET(WEEK, 2, d), DATE_BUCKET(DAY, 1, d, CAST('2020-01-01' AS DATETIME2)) FROM t;"
+      - id: datefromparts_eomonth
+        sql: "SELECT DATEFROMPARTS(2024, 1, 31), EOMONTH(GETDATE(), 1), SYSDATETIMEOFFSET();"
+
+  - id: json_constructors
+    name: "JSON_OBJECT, JSON_ARRAY, JSON_OBJECTAGG, JSON_ARRAYAGG"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/functions/json-object-transact-sql
+    tier: medium
+    probes:
+      - id: json_object_empty
+        sql: "SELECT JSON_OBJECT();"
+      - id: json_object_key_value
+        sql: "SELECT JSON_OBJECT('name':'value', 'type':1);"
+      - id: json_object_absent_on_null
+        sql: "SELECT JSON_OBJECT('name':'value', 'type':NULL ABSENT ON NULL);"
+      - id: json_object_variable_key
+        sql: "SELECT JSON_OBJECT('user_name':USER_NAME(), @id_key:@id_value, 'sid':(SELECT @@SPID));"
+      - id: json_object_returning
+        sql: "SELECT JSON_OBJECT('a':1 RETURNING json);"
+      - id: json_array
+        sql: "SELECT JSON_ARRAY('a', 1, NULL, 2 NULL ON NULL);"
+      - id: json_objectagg
+        sql: "SELECT JSON_OBJECTAGG(c1:c2) FROM t;"
+      - id: json_arrayagg_order_by
+        sql: "SELECT JSON_ARRAYAGG(c ORDER BY c ABSENT ON NULL) FROM t;"
+      - id: json_value_query
+        sql: "SELECT JSON_VALUE(j, '$.info.address.town'), JSON_QUERY(j, '$.info'), ISJSON(j), JSON_MODIFY(j, '$.name', 'x') FROM t;"
+      - id: json_path_exists
+        sql: "SELECT c FROM t WHERE JSON_PATH_EXISTS(j, '$.Order.IsProcessed') = 1;"
+    examples:
+      - "SELECT JSON_OBJECT('name':'value', 'type':1);"
+      - "SELECT JSON_OBJECT('name':'value', 'type':NULL ABSENT ON NULL);"
+      - "SELECT JSON_OBJECT('name':'value', 'type':JSON_ARRAY(1, 2));"
+      - "SELECT JSON_OBJECT('name':'value', 'type':JSON_OBJECT('type_id':1, 'name':'a'));"
+
+  - id: logical_and_null_functions
+    name: "IIF, CHOOSE, GREATEST, LEAST, ISNULL"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/functions/logical-functions-iif-transact-sql
+    tier: high
+    probes:
+      - id: iif
+        sql: "SELECT IIF(a > b, 'TRUE', 'FALSE') FROM t;"
+      - id: choose
+        sql: "SELECT CHOOSE(3, 'Manager', 'Director', 'Developer', 'Tester');"
+      - id: greatest_least
+        sql: "SELECT GREATEST(a, b, c), LEAST('6.62', 3.1415, N'7') FROM t;"
+      - id: isnull
+        sql: "SELECT ISNULL(c, 0) FROM t;"
+
+  - id: next_value_for
+    name: "NEXT VALUE FOR"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/functions/next-value-for-transact-sql
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SELECT NEXT VALUE FOR dbo.seq;"
+      - id: qualified_over
+        sql: "SELECT NEXT VALUE FOR db.dbo.seq OVER (ORDER BY c) AS n, c FROM t;"
+      - id: in_insert
+        sql: "INSERT INTO t (id, c) VALUES (NEXT VALUE FOR dbo.seq, 'x');"
+      - id: in_default
+        sql: "CREATE TABLE t (id INT DEFAULT (NEXT VALUE FOR dbo.seq), c INT);"
+
+  - id: partition_function
+    name: "$PARTITION"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/functions/partition-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "SELECT $PARTITION.RangePF1(10);"
+      - id: with_database
+        sql: "SELECT $PARTITION.pf(c) AS p, COUNT(*) FROM t GROUP BY $PARTITION.pf(c);"
+      - id: database_qualified
+        sql: "SELECT db.$PARTITION.pf(c) FROM t;"
+
+  - id: odbc_escape_functions
+    name: "ODBC scalar functions ({fn ...})"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/functions/odbc-scalar-functions-transact-sql
+    tier: low
+    probes:
+      - id: fn_escape
+        sql: "SELECT {fn OCTET_LENGTH(c)}, {fn CURRENT_DATE()} FROM t;"
+      - id: fn_in_where
+        sql: "SELECT c FROM t WHERE {fn DAYNAME(d)} = 'Monday';"
+
+  - id: niladic_functions
+    name: "Niladic functions (CURRENT_TIMESTAMP, CURRENT_DATE, CURRENT_USER, ...)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/functions/current-timestamp-transact-sql
+    tier: medium
+    probes:
+      - id: current_timestamp
+        sql: "SELECT CURRENT_TIMESTAMP;"
+      - id: current_date
+        sql: "SELECT CURRENT_DATE;"
+        note: "CURRENT_DATE applies to SQL Server 2025 and Azure SQL Database."
+      - id: user_functions
+        sql: "SELECT CURRENT_USER, SESSION_USER, SYSTEM_USER, USER;"
+      - id: in_default
+        sql: "CREATE TABLE t (d DATETIME DEFAULT CURRENT_TIMESTAMP, u SYSNAME DEFAULT CURRENT_USER);"
+
+  - id: variables
+    name: "Variables (@local_variable) and @@ system functions"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/variables-transact-sql
+    tier: high
+    probes:
+      - id: local_variable_in_query
+        sql: "SELECT c FROM t WHERE a = @MyCounter AND b LIKE @find;"
+      - id: system_functions
+        sql: "SELECT @@ROWCOUNT, @@ERROR, @@TRANCOUNT, @@IDENTITY, @@SPID, @@VERSION, @@FETCH_STATUS;"
+      - id: variable_method_call
+        sql: "SELECT @x.value('(/a/@id)[1]', 'INT'), @g.STDistance(@h);"
+      - id: declare_set_select
+        sql: |-
+          DECLARE @MyCounter INT;
+          SET @MyCounter = 0;
+          SELECT @MyCounter;
+
+  - id: openjson
+    name: "OPENJSON"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/functions/openjson-transact-sql
+    tier: high
+    probes:
+      - id: default_schema
+        sql: "SELECT [key], value, type FROM OPENJSON(@json);"
+      - id: path
+        sql: "SELECT * FROM OPENJSON(@json, '$.path.to.\"sub-object\"');"
+      - id: with_clause
+        sql: "SELECT * FROM OPENJSON(@json) WITH (id INT 'strict $.id', name NVARCHAR(50) '$.info.name', tags NVARCHAR(MAX) '$.tags' AS JSON, dob DATETIME2);"
+      - id: cross_apply
+        sql: "SELECT o.id, j.value FROM t AS o CROSS APPLY OPENJSON(o.reasons) WITH (value NVARCHAR(100) '$') AS j;"
+      - id: lax_path_alias
+        sql: "SELECT s.title, l.street FROM store AS s CROSS APPLY OPENJSON(s.j, 'lax $.location') WITH (street VARCHAR(500), lat INT '$.geo.latitude') AS l;"
+
+  - id: openrowset
+    name: "OPENROWSET (BULK and OLE DB provider forms)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/functions/openrowset-bulk-transact-sql
+    tier: medium
+    probes:
+      - id: bulk_single_blob
+        sql: "SELECT * FROM OPENROWSET(BULK N'C:\\Text1.txt', SINGLE_NCLOB) AS Document;"
+      - id: bulk_format_file
+        sql: "SELECT TOP 10 * FROM OPENROWSET(BULK 'D:\\XChange\\test-csv.csv', FORMATFILE = 'D:\\XChange\\test-format-file.xml', FIRSTROW = 2) AS t;"
+      - id: bulk_csv_options
+        sql: "SELECT * FROM OPENROWSET(BULK 'data/f.csv', DATA_SOURCE = 'MyAzureBlobStorage', FORMAT = 'CSV', FIELDQUOTE = '\"', FIELDTERMINATOR = ',', ROWTERMINATOR = '0x0a', CODEPAGE = '65001', MAXERRORS = 10) AS cars;"
+      - id: bulk_with_columns
+        sql: "SELECT * FROM OPENROWSET(BULK 'f.parquet', DATA_SOURCE = 'ds', FORMAT = 'PARQUET') WITH (id INT, name VARCHAR(50) '$.name', c3 INT 3) AS r;"
+      - id: bulk_order_unique
+        sql: "SELECT * FROM OPENROWSET(BULK 'C:\\f.dat', FORMATFILE = 'C:\\f.fmt', ORDER (id ASC) UNIQUE, ROWS_PER_BATCH = 1000) AS b;"
+      - id: provider_query
+        sql: "SELECT a.* FROM OPENROWSET('MSOLEDBSQL', 'Server=Seattle1;Trusted_Connection=yes;', 'SELECT GroupName, Name FROM AdventureWorks2022.HumanResources.Department') AS a;"
+      - id: provider_object
+        sql: "SELECT a.* FROM OPENROWSET('Microsoft.Jet.OLEDB.4.0', 'C:\\Northwind.mdb'; 'admin'; '', Customers) AS a;"
+
+  - id: openquery_opendatasource
+    name: "OPENQUERY and OPENDATASOURCE"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/functions/openquery-transact-sql
+    tier: medium
+    probes:
+      - id: openquery_select
+        sql: "SELECT * FROM OPENQUERY(OracleSvr, 'SELECT name FROM joe.titles');"
+      - id: openquery_update_target
+        sql: "UPDATE OPENQUERY(OracleSvr, 'SELECT name FROM joe.titles WHERE id = 101') SET name = 'ADifferentName';"
+      - id: opendatasource_four_part
+        sql: "SELECT GroupName, Name FROM OPENDATASOURCE('MSOLEDBSQL', 'Server=Seattle1;Trusted_Connection=yes;').AdventureWorks2022.HumanResources.Department;"
+
+  - id: openxml
+    name: "OPENXML"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/functions/openxml-transact-sql
+    tier: low
+    probes:
+      - id: with_schema
+        sql: "SELECT * FROM OPENXML(@idoc, '/ROOT/Customer', 1) WITH (CustomerID VARCHAR(10), ContactName VARCHAR(20));"
+      - id: with_column_patterns
+        sql: "SELECT * FROM OPENXML(@idoc, '/ROOT/Customer/Order/OrderDetail', 2) WITH (OrderID INT '../@OrderID', CustomerID VARCHAR(10) '../@CustomerID', ProdID INT '@ProductID', Qty INT '@Quantity');"
+      - id: edge_table
+        sql: "SELECT * FROM OPENXML(@idoc, '/ROOT/Customer');"
+      - id: with_table_name
+        sql: "SELECT * FROM OPENXML(@idoc, '/ROOT/Customer', 1) WITH dbo.Customers;"
+
+  - id: string_split
+    name: "STRING_SPLIT"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/functions/string-split-transact-sql
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT value FROM STRING_SPLIT('Lorem ipsum dolor sit amet.', ' ');"
+      - id: enable_ordinal
+        sql: "SELECT value, ordinal FROM STRING_SPLIT('a,b,c', ',', 1);"
+      - id: cross_apply
+        sql: "SELECT ProductId, Name, value FROM Product CROSS APPLY STRING_SPLIT(Tags, ',');"
+    examples:
+      - "SELECT value FROM STRING_SPLIT('Lorem ipsum dolor sit amet.', ' ');"
+      - "SELECT * FROM STRING_SPLIT('Lorem ipsum dolor sit amet.', ' ', 1);"
+      - |-
+        SELECT ProductId, Name, value
+        FROM Product
+            CROSS APPLY STRING_SPLIT(Tags, ',');
+      - |-
+        SELECT value as tag, COUNT(*) AS [number_of_articles]
+        FROM Product
+            CROSS APPLY STRING_SPLIT(Tags, ',')
+        GROUP BY value
+        HAVING COUNT(*) > 2
+        ORDER BY COUNT(*) DESC;
+
+  - id: generate_series
+    name: "GENERATE_SERIES"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/functions/generate-series-transact-sql
+    tier: medium
+    probes:
+      - id: start_stop
+        sql: "SELECT value FROM GENERATE_SERIES(1, 10);"
+      - id: step
+        sql: "SELECT value FROM GENERATE_SERIES(1, 50, 5);"
+      - id: decimal_step
+        sql: "SELECT value FROM GENERATE_SERIES(0.0, 1.0, 0.1);"
+    examples:
+      - |-
+        SELECT value
+        FROM GENERATE_SERIES(1, 10);
+      - |-
+        SELECT value
+        FROM GENERATE_SERIES(1, 50, 5);
+
+  - id: containstable_freetexttable
+    name: "CONTAINSTABLE and FREETEXTTABLE"
+    doc: https://learn.microsoft.com/en-us/sql/relational-databases/system-functions/containstable-transact-sql
+    tier: medium
+    probes:
+      - id: containstable_join
+        sql: "SELECT f.Name, k.RANK FROM Production.Product AS f INNER JOIN CONTAINSTABLE(Production.Product, Name, 'ISABOUT (frame WEIGHT (.8), wheel WEIGHT (.4))') AS k ON f.ProductID = k.[KEY] ORDER BY k.RANK DESC;"
+      - id: containstable_top_n_language
+        sql: "SELECT * FROM CONTAINSTABLE(Flags, *, 'Green OR Black', LANGUAGE 1033, 10) ORDER BY RANK DESC;"
+      - id: freetexttable
+        sql: "SELECT f.Description, k.RANK FROM t AS f INNER JOIN FREETEXTTABLE(t, Description, 'high level of performance', LANGUAGE N'English', 2) AS k ON f.id = k.[KEY];"
+    examples:
+      - |-
+        SELECT FT_TBL.Name,
+               KEY_TBL.RANK
+        FROM Production.Product AS FT_TBL
+             INNER JOIN CONTAINSTABLE (
+                Production.Product,
+                Name,
+                'ISABOUT (frame WEIGHT (.8), wheel WEIGHT (.4), tire WEIGHT (.2) )'
+             ) AS KEY_TBL
+             ON FT_TBL.ProductID = KEY_TBL.[KEY]
+        ORDER BY KEY_TBL.RANK DESC;
+      - |-
+        SELECT DocumentNode,
+               Title,
+               DocumentSummary
+        FROM Production.Document AS DocTable
+             INNER JOIN CONTAINSTABLE (Production.Document, Document, 'NEAR(bracket, reflector)') AS KEY_TBL
+                 ON DocTable.DocumentNode = KEY_TBL.[KEY]
+        WHERE KEY_TBL.RANK > 50
+        ORDER BY KEY_TBL.RANK DESC;
+      - |-
+        SELECT FT_TBL.ProductDescriptionID,
+               FT_TBL.Description,
+               KEY_TBL.RANK
+        FROM Production.ProductDescription AS FT_TBL
+             INNER JOIN CONTAINSTABLE (Production.ProductDescription, Description,
+                '(light NEAR aluminum) OR (lightweight NEAR aluminum)', 5) AS KEY_TBL
+             ON FT_TBL.ProductDescriptionID = KEY_TBL.[KEY];
+
+  - id: vector_search
+    name: "VECTOR_SEARCH and SELECT TOP (N) WITH APPROXIMATE"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/functions/vector-search-transact-sql
+    tier: low
+    probes:
+      - id: approximate_top
+        sql: "SELECT TOP (10) WITH APPROXIMATE t.id, r.distance FROM VECTOR_SEARCH(TABLE = dbo.articles AS t, COLUMN = content_vector, SIMILAR_TO = @qv, METRIC = 'cosine') AS r ORDER BY r.distance;"
+      - id: top_n_argument
+        sql: "SELECT TOP (10) s.id, r.distance FROM VECTOR_SEARCH(TABLE = dbo.sessions AS s, COLUMN = embedding, SIMILAR_TO = @qv, METRIC = 'cosine', TOP_N = 10) AS r WHERE accepted = 1 ORDER BY r.distance;"
+
+  - id: data_types
+    name: "Data types"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/data-types/data-types-transact-sql
+    tier: high
+    probes:
+      - id: exact_numerics
+        sql: "CREATE TABLE t (a TINYINT, b SMALLINT, c INT, d BIGINT, e BIT, f DECIMAL(10, 2), g NUMERIC(18), h MONEY, i SMALLMONEY);"
+      - id: approximate_numerics
+        sql: "CREATE TABLE t (a FLOAT, b FLOAT(24), c REAL);"
+      - id: date_time
+        sql: "CREATE TABLE t (a DATE, b TIME(7), c DATETIME2(3), d DATETIMEOFFSET(7), e DATETIME, f SMALLDATETIME);"
+      - id: character_strings
+        sql: "CREATE TABLE t (a CHAR(10), b VARCHAR(50), c VARCHAR(MAX), d TEXT);"
+      - id: unicode_strings
+        sql: "CREATE TABLE t (a NCHAR(10), b NVARCHAR(4000), c NVARCHAR(MAX), d NTEXT);"
+      - id: binary_strings
+        sql: "CREATE TABLE t (a BINARY(16), b VARBINARY(8000), c VARBINARY(MAX), d IMAGE);"
+      - id: other_types
+        sql: "CREATE TABLE t (a UNIQUEIDENTIFIER, b ROWVERSION, c SQL_VARIANT, d HIERARCHYID, e GEOGRAPHY, f GEOMETRY, g XML);"
+      - id: timestamp_synonym
+        sql: "CREATE TABLE t (id INT, ts TIMESTAMP);"
+      - id: cursor_and_table_variables
+        sql: "DECLARE @c CURSOR, @t TABLE (id INT);"
+      - id: json_type
+        sql: "CREATE TABLE t (id INT, j JSON NOT NULL);"
+        note: "json data type: Azure SQL Database and SQL Server 2025."
+      - id: vector_type
+        sql: "CREATE TABLE t (id INT, v VECTOR(3) NOT NULL, h VECTOR(1536, float16) NULL);"
+        note: "vector data type: Azure SQL Database and SQL Server 2025; the base_type argument is a preview option."
+      - id: xml_typed
+        sql: "CREATE TABLE t (a XML(CONTENT dbo.sc), b XML(DOCUMENT dbo.sc));"
+      - id: alias_type
+        sql: "CREATE TABLE t (a dbo.Name, b Phone);"
+      - id: synonyms
+        sql: "CREATE TABLE t (a CHARACTER VARYING(10), b NATIONAL CHARACTER VARYING(20), c NATIONAL CHAR(5), d DOUBLE PRECISION, e INTEGER, f DEC(5, 2), g BINARY VARYING(10), h CHAR VARYING(5), i CHARACTER(3), j NATIONAL TEXT);"
+        note: "Data type synonyms page (character varying, national character varying, double precision, dec, integer, binary varying, national text)."
+      - id: bracketed_type_names
+        sql: "CREATE TABLE t (a [int], b [varchar](10), c [nvarchar](max));"
+      - id: sysname
+        sql: "DECLARE @n SYSNAME = N'x';"
+
+  - id: collate_clause
+    name: "COLLATE clause"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/collations
+    tier: high
+    probes:
+      - id: in_order_by
+        sql: "SELECT Place FROM Locations ORDER BY Place COLLATE Latin1_General_CS_AS_KS_WS ASC;"
+      - id: in_comparison
+        sql: "SELECT c FROM t WHERE c COLLATE Latin1_General_CI_AS LIKE 'C%';"
+      - id: database_default
+        sql: "SELECT c FROM t WHERE c = #tmp.c COLLATE database_default;"
+      - id: column_definition
+        sql: "CREATE TABLE t (c VARCHAR(15) COLLATE Latin1_General_CS_AS);"
+      - id: sql_collation_utf8
+        sql: "SELECT CAST(c AS VARCHAR(50)) COLLATE Latin1_General_100_CI_AS_SC_UTF8 FROM t;"
+      - id: in_create_database
+        sql: "CREATE DATABASE db COLLATE French_CI_AI;"
+    examples:
+      - |-
+        --Apply a typical collation
+        SELECT Place
+        FROM Locations
+        ORDER BY Place COLLATE Latin1_General_CS_AS_KS_WS ASC;
+      - |-
+        -- Apply a Spanish collation
+        SELECT Place
+        FROM Locations
+        ORDER BY Place COLLATE Traditional_Spanish_ci_ai ASC;
+
+  - id: xml_data_type_methods
+    name: "xml data type methods (query, value, exist, nodes, modify) and XML DML"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/xml/xml-data-type-methods
+    tier: medium
+    probes:
+      - id: query_method
+        sql: "SELECT x.query('/Root/ProductDescription/Features') FROM t;"
+      - id: value_method
+        sql: "SELECT x.value('(/Root/ProductDescription/@ProductID)[1]', 'INT') AS id FROM t;"
+      - id: exist_method
+        sql: "SELECT c FROM t WHERE x.exist('/Root/Location[@LocationID=10]') = 1;"
+      - id: nodes_method
+        sql: "SELECT T.c.value('@id', 'INT') FROM t CROSS APPLY t.x.nodes('/Root/row') AS T(c);"
+      - id: variable_nodes
+        sql: "SELECT T.c.query('.') FROM @x.nodes('/Root/row') T(c);"
+      - id: modify_insert
+        sql: "SET @myDoc.modify('insert <Maintenance>Note</Maintenance> as first into (/Root/ProductDescription/Features)[1]');"
+      - id: modify_delete
+        sql: "UPDATE t SET x.modify('delete /Root/Location[1]/step') WHERE id = 1;"
+      - id: modify_replace_value_of
+        sql: "SET @myDoc.modify('replace value of (/Root/Location/@LaborHours)[1] with 3.0');"
+      - id: modify_insert_sql_variable
+        sql: "SET @myDoc.modify('insert sql:variable(\"@newFeatures\") into (/Root/ProductDescription/Features)[1]');"
+
+  - id: expressions_general
+    name: "Expressions (scalar subqueries, nesting, precedence)"
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/expressions-transact-sql
+    tier: high
+    probes:
+      - id: scalar_subquery
+        sql: "SELECT a, (SELECT MAX(b) FROM u WHERE u.a = t.a) AS mb FROM t;"
+      - id: nested_parentheses
+        sql: "SELECT ((a + b) * (c - d)) / NULLIF(e, 0) FROM t;"
+      - id: operator_precedence
+        sql: "SELECT 2 + 3 * 4, (2 + 3) * 4, -2 * ~3 & 7 | 8 ^ 1;"
+      - id: udt_and_column_qualification
+        sql: "SELECT dbo.t.c, t.p.X FROM dbo.t;"
+      - id: function_call_schema
+        sql: "SELECT dbo.ufnGetStock(c), db.dbo.f(1, 'x') FROM t;"
+      - id: expression_with_collate
+        sql: "SELECT a + b COLLATE Latin1_General_CI_AS FROM t;"
+      - id: null_comparisons
+        sql: "SELECT c FROM t WHERE c = NULL OR c <> NULL;"
+        note: "NULL and UNKNOWN page: comparisons with NULL yield UNKNOWN (and behave differently under SET ANSI_NULLS OFF)."
 

@@ -920,3 +920,1358 @@ statements:
            AND location_id = 2500
            ORDER BY e.employee_id
            FOR UPDATE OF e.salary;
+
+  - id: insert
+    name: INSERT
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/INSERT.html
+    tier: high
+    probes:
+      - id: values
+        sql: "INSERT INTO t VALUES (1, 'a');"
+      - id: column_list
+        sql: "INSERT INTO t (c, d) VALUES (1, 'a');"
+      - id: default_value
+        sql: "INSERT INTO t (c, d) VALUES (1, DEFAULT);"
+      - id: multi_row_values
+        sql: "INSERT INTO t (c, d) VALUES (1, 'a'), (2, 'b'), (3, DEFAULT);"
+      - id: hint
+        sql: "INSERT /*+ APPEND */ INTO t SELECT c, d FROM u;"
+      - id: schema_alias
+        sql: "INSERT INTO s.t x (x.c, x.d) VALUES (1, 'a');"
+      - id: select
+        sql: "INSERT INTO t (c, d) SELECT c, d FROM u WHERE c > 0;"
+      - id: with_select
+        sql: "INSERT INTO t (c) WITH q AS (SELECT c FROM u) SELECT c FROM q;"
+      - id: by_name
+        sql: "INSERT INTO t BY NAME SELECT a AS c, b AS d FROM u;"
+      - id: by_position
+        sql: "INSERT INTO t BY POSITION SELECT a, b FROM u;"
+      - id: set_clause
+        sql: "INSERT INTO t SET c = 1, d = 'a';"
+      - id: set_clause_parenthesized
+        sql: "INSERT INTO t SET (c = 1, d = 'a');"
+      - id: set_clause_multi_row
+        sql: "INSERT INTO t SET (c = 1, d = 'a'), (c = 2, d = 'b');"
+      - id: partition
+        sql: "INSERT INTO t PARTITION (p1) VALUES (1, 'a');"
+      - id: partition_for
+        sql: "INSERT INTO t PARTITION FOR (100) (c, d) VALUES (100, 'a');"
+      - id: subpartition
+        sql: "INSERT INTO t SUBPARTITION (sp1) VALUES (1, 'a');"
+      - id: dblink
+        sql: "INSERT INTO t@remote VALUES (1, 'a');"
+      - id: into_subquery
+        sql: "INSERT INTO (SELECT c, d FROM t) VALUES (1, 'a');"
+      - id: into_subquery_check_option
+        sql: "INSERT INTO (SELECT c, d FROM t WHERE c < 10 WITH CHECK OPTION) VALUES (1, 'a');"
+      - id: into_table_collection
+        sql: "INSERT INTO TABLE(SELECT h.people FROM h WHERE h.id = 1) VALUES ('Smith', 10);"
+      - id: values_subquery
+        sql: "INSERT INTO t (c) VALUES ((SELECT MAX(c) FROM u));"
+      - id: sequence_nextval
+        sql: "INSERT INTO t (c, d) VALUES (seq.NEXTVAL, 'a');"
+      - id: returning_into
+        sql: "INSERT INTO t (c, d) VALUES (1, 'a') RETURNING c * 2, d INTO :b1, :b2;"
+      - id: return_into
+        sql: "INSERT INTO t (c, d) VALUES (1, 'a') RETURN c INTO :b1;"
+      - id: returning_new
+        sql: "INSERT INTO t (c, d) VALUES (1, 'a') RETURNING NEW c, NEW d INTO :b1, :b2;"
+      - id: nowait
+        sql: "INSERT INTO t VALUES (1, 'a') NOWAIT;"
+      - id: wait
+        sql: "INSERT INTO t VALUES (1, 'a') WAIT 10;"
+      - id: log_errors
+        sql: "INSERT INTO t SELECT c, d FROM u LOG ERRORS;"
+      - id: log_errors_full
+        sql: "INSERT INTO t SELECT c, d FROM u LOG ERRORS INTO s.errlog ('tag') REJECT LIMIT 10;"
+      - id: log_errors_unlimited
+        sql: "INSERT INTO t VALUES (1, 'a') LOG ERRORS INTO errlog REJECT LIMIT UNLIMITED;"
+    examples:
+      - |-
+        INSERT INTO employees (employee_id, last_name, email,
+              hire_date, job_id, salary, commission_pct)
+           VALUES (207, 'Gregory', 'pgregory@example.com',
+              sysdate, 'PU_CLERK', 1.2E3, NULL);
+      - |-
+        INSERT INTO
+           (SELECT employee_id, last_name, email, hire_date, job_id,
+              salary, commission_pct FROM employees)
+           VALUES (207, 'Gregory', 'pgregory@example.com',
+              sysdate, 'PU_CLERK', 1.2E3, NULL);
+      - |-
+        INSERT INTO raises
+           SELECT employee_id, salary*1.1 FROM employees
+           WHERE commission_pct > .2
+           LOG ERRORS INTO errlog ('my_bad') REJECT LIMIT 10;
+      - |-
+        INSERT INTO employees
+              (employee_id, last_name, email, hire_date, job_id, salary)
+           VALUES
+           (employees_seq.nextval, 'Doe', 'john.doe@example.com',
+               SYSDATE, 'SH_CLERK', 2400)
+           RETURNING salary*12, job_id INTO :bnd1, :bnd2;
+      - |-
+        INSERT INTO employees SET
+         (employee_id = 210, last_name = 'Smith', email = 'ASMITH', hire_date = SYSDATE, job_id = 'AD_ASST'),
+         (employee_id = 211, last_name = 'Roddick', email = 'ARODDICK', hire_date = SYSDATE, job_id = 'IT_PROG');
+
+  - id: insert_multitable
+    name: INSERT (multi_table_insert)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/INSERT.html
+    tier: high
+    probes:
+      - id: insert_all_unconditional
+        sql: "INSERT ALL INTO t (c, d) VALUES (a, b) INTO u (c) VALUES (a) SELECT a, b FROM v;"
+      - id: insert_all_no_values
+        sql: "INSERT ALL INTO t INTO u SELECT a, b FROM v;"
+      - id: insert_all_when
+        sql: "INSERT ALL WHEN a <= 100 THEN INTO t WHEN a > 100 THEN INTO u SELECT a, b FROM v;"
+      - id: insert_all_when_else
+        sql: "INSERT ALL WHEN a <= 100 THEN INTO t VALUES (a, b) ELSE INTO u VALUES (a, b) SELECT a, b FROM v;"
+      - id: insert_first
+        sql: "INSERT FIRST WHEN a <= 100 THEN INTO t VALUES (a, b) WHEN a <= 200 THEN INTO u VALUES (a, b) ELSE INTO w VALUES (a, b) SELECT a, b FROM v;"
+      - id: when_multiple_into
+        sql: "INSERT ALL WHEN a > 0 THEN INTO t (c) VALUES (a) INTO u (c) VALUES (b) SELECT a, b FROM v;"
+      - id: conditional_without_all
+        sql: "INSERT WHEN a > 0 THEN INTO t VALUES (a, b) SELECT a, b FROM v;"
+      - id: log_errors
+        sql: "INSERT ALL INTO t VALUES (a, b) LOG ERRORS INTO errlog REJECT LIMIT UNLIMITED INTO u VALUES (a, b) SELECT a, b FROM v;"
+      - id: set_clause
+        sql: "INSERT ALL INTO t SET c = a, d = b INTO u SET c = a SELECT a, b FROM v;"
+      - id: hint
+        sql: "INSERT /*+ APPEND */ ALL INTO t VALUES (a, b) SELECT a, b FROM v;"
+      - id: insert_all_dual
+        sql: "INSERT ALL INTO t (c, d) VALUES (1, 'a') INTO t (c, d) VALUES (2, 'b') SELECT * FROM DUAL;"
+    examples:
+      - |-
+        INSERT ALL
+              INTO sales (prod_id, cust_id, time_id, amount)
+              VALUES (product_id, customer_id, weekly_start_date, sales_sun)
+              INTO sales (prod_id, cust_id, time_id, amount)
+              VALUES (product_id, customer_id, weekly_start_date+1, sales_mon)
+              INTO sales (prod_id, cust_id, time_id, amount)
+              VALUES (product_id, customer_id, weekly_start_date+2, sales_tue)
+              INTO sales (prod_id, cust_id, time_id, amount)
+              VALUES (product_id, customer_id, weekly_start_date+3, sales_wed)
+              INTO sales (prod_id, cust_id, time_id, amount)
+              VALUES (product_id, customer_id, weekly_start_date+4, sales_thu)
+              INTO sales (prod_id, cust_id, time_id, amount)
+              VALUES (product_id, customer_id, weekly_start_date+5, sales_fri)
+              INTO sales (prod_id, cust_id, time_id, amount)
+              VALUES (product_id, customer_id, weekly_start_date+6, sales_sat)
+           SELECT product_id, customer_id, weekly_start_date, sales_sun,
+              sales_mon, sales_tue, sales_wed, sales_thu, sales_fri, sales_sat
+              FROM sales_input_table;
+      - |-
+        INSERT ALL
+           WHEN order_total <= 100000 THEN
+              INTO small_orders
+           WHEN order_total > 1000000 AND order_total <= 200000 THEN
+              INTO medium_orders
+           WHEN order_total > 200000 THEN
+              INTO large_orders
+           SELECT order_id, order_total, sales_rep_id, customer_id
+              FROM orders;
+      - |-
+        INSERT FIRST
+           WHEN ottl <= 100000 THEN
+              INTO small_orders
+                 VALUES(oid, ottl, sid, cid)
+           WHEN ottl > 100000 and ottl <= 200000 THEN
+              INTO medium_orders
+                 VALUES(oid, ottl, sid, cid)
+           WHEN ottl > 290000 THEN
+              INTO special_orders
+           WHEN ottl > 200000 THEN
+              INTO large_orders
+                 VALUES(oid, ottl, sid, cid)
+           SELECT o.order_id oid, o.customer_id cid, o.order_total ottl,
+              o.sales_rep_id sid, c.credit_limit cl, c.cust_email cem
+              FROM orders o, customers c
+              WHERE o.customer_id = c.customer_id;
+
+  - id: update
+    name: UPDATE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/UPDATE.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "UPDATE t SET c = 1 WHERE id = 2;"
+      - id: no_where
+        sql: "UPDATE t SET c = NULL;"
+      - id: multiple_columns
+        sql: "UPDATE t SET c = c + 1, d = 'x', e = DEFAULT WHERE id = 2;"
+      - id: alias
+        sql: "UPDATE s.t x SET x.c = 1 WHERE x.id = 2;"
+      - id: hint
+        sql: "UPDATE /*+ INDEX(t idx) */ t SET c = 1 WHERE id = 2;"
+      - id: scalar_subquery
+        sql: "UPDATE t SET c = (SELECT MAX(c) FROM u WHERE u.id = t.id);"
+      - id: column_list_subquery
+        sql: "UPDATE t a SET (c, d) = (SELECT AVG(c), AVG(d) FROM u b WHERE a.id = b.id) WHERE a.k = 1;"
+      - id: column_list_expressions
+        sql: "UPDATE t SET (c, d) = (1, DEFAULT) WHERE id = 2;"
+      - id: mixed_set
+        sql: "UPDATE t SET c = 1, (d, e) = (SELECT d, e FROM u WHERE u.id = 1) WHERE id = 2;"
+      - id: set_value
+        sql: "UPDATE t p SET VALUE(p) = (SELECT VALUE(q) FROM u q WHERE p.id = q.id) WHERE p.id = 10;"
+      - id: only
+        sql: "UPDATE ONLY (v) SET c = 1;"
+      - id: partition
+        sql: "UPDATE t PARTITION (p1) x SET x.c = 1 WHERE d > 10;"
+      - id: partition_for
+        sql: "UPDATE t PARTITION FOR (100) SET c = 1;"
+      - id: dblink
+        sql: "UPDATE t@remote SET c = c * 1.1 WHERE d = 'x';"
+      - id: subquery_target
+        sql: "UPDATE (SELECT c FROM t WHERE d > 0) SET c = 1;"
+      - id: subquery_target_check_option
+        sql: "UPDATE (SELECT c, d FROM t WHERE d > 0 WITH CHECK OPTION) SET c = 1;"
+      - id: table_collection
+        sql: "UPDATE TABLE(SELECT h.people FROM h WHERE h.id = 1) p SET p.salary = p.salary + 100;"
+      - id: from_clause
+        sql: "UPDATE t SET t.c = u.c FROM u WHERE u.id = t.id;"
+      - id: from_join
+        sql: "UPDATE t SET t.c = u.c FROM u JOIN v ON u.id = v.id WHERE u.id = t.id;"
+      - id: using_clause
+        sql: "UPDATE t SET t.c = u.c USING u WHERE u.id = t.id;"
+      - id: nowait
+        sql: "UPDATE t SET c = 1 WHERE id = 2 NOWAIT;"
+      - id: wait_seconds
+        sql: "UPDATE t SET c = 1 WHERE id = 2 WAIT 10 SECONDS;"
+      - id: order_by
+        sql: "UPDATE t SET c = c + 1 WHERE d > 0 ORDER BY id;"
+      - id: returning_into
+        sql: "UPDATE t SET c = c + 1 WHERE id = 2 RETURNING c * 2, d INTO :b1, :b2;"
+      - id: returning_aggregate
+        sql: "UPDATE t SET c = c * 1.1 WHERE d = 100 RETURNING SUM(c) INTO :b1;"
+      - id: returning_old_new
+        sql: "UPDATE t SET c = c + 1 WHERE id = 2 RETURNING OLD c, NEW c INTO :b1, :b2;"
+      - id: return_into
+        sql: "UPDATE t SET c = 1 WHERE id = 2 RETURN c INTO :b1;"
+      - id: log_errors
+        sql: "UPDATE t SET c = c + 1 LOG ERRORS INTO errlog ('upd') REJECT LIMIT UNLIMITED;"
+    examples:
+      - |-
+        UPDATE employees e
+        SET    e.salary = j.max_salary
+        FROM   jobs j
+        WHERE  j.job_id = e.job_id;
+      - |-
+        UPDATE employees a
+            SET department_id =
+                (SELECT department_id
+                    FROM departments
+                    WHERE location_id = '2100'),
+                (salary, commission_pct) =
+                (SELECT 1.1*AVG(salary), 1.5*AVG(commission_pct)
+                  FROM employees b
+                  WHERE a.department_id = b.department_id)
+            WHERE department_id IN
+                (SELECT department_id
+                  FROM departments
+                  WHERE location_id = 2900
+                      OR location_id = 2700);
+      - |-
+        UPDATE sales PARTITION (sales_q1_1999) s
+           SET s.promo_id = 494
+           WHERE amount_sold > 1000;
+      - |-
+        UPDATE employees
+          SET job_id ='SA_MAN', salary = salary + 1000, department_id = 140
+          WHERE last_name = 'Jones'
+          RETURNING salary*0.25, last_name, department_id
+            INTO :bnd1, :bnd2, :bnd3;
+      - |-
+        UPDATE hr.employees SET commission_pct = commission_pct + 1
+          WHERE employee_id = 100 WAIT 10 seconds;
+
+  - id: delete
+    name: DELETE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/DELETE.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "DELETE FROM t WHERE c = 1;"
+      - id: without_from
+        sql: "DELETE t WHERE c = 1;"
+      - id: all_rows
+        sql: "DELETE FROM t;"
+      - id: alias
+        sql: "DELETE FROM s.t x WHERE x.c = 1;"
+      - id: hint
+        sql: "DELETE /*+ PARALLEL(t, 4) */ FROM t WHERE c = 1;"
+      - id: only
+        sql: "DELETE FROM ONLY (v) WHERE c = 1;"
+      - id: partition
+        sql: "DELETE FROM t PARTITION (p1) WHERE c > 1000;"
+      - id: subpartition_for
+        sql: "DELETE FROM t SUBPARTITION FOR (100, 'A');"
+      - id: dblink
+        sql: "DELETE FROM s.t@remote WHERE c > 3000;"
+      - id: subquery_target
+        sql: "DELETE FROM (SELECT * FROM t) WHERE c = 1;"
+      - id: subquery_target_no_from
+        sql: "DELETE (SELECT * FROM t WHERE d > 0) WHERE c = 1;"
+      - id: table_collection
+        sql: "DELETE TABLE(SELECT h.people FROM h WHERE h.id = 1) p WHERE p.salary > 1000;"
+      - id: from_clause
+        sql: "DELETE FROM t FROM u WHERE t.id = u.id;"
+      - id: from_join
+        sql: "DELETE FROM t x FROM u JOIN v ON u.id = v.id WHERE x.id = u.id;"
+      - id: using_clause
+        sql: "DELETE FROM t USING u WHERE t.id = u.id;"
+      - id: tuple_in_subquery
+        sql: "DELETE t x WHERE (x.c, x.d) IN (SELECT c, MAX(d) FROM t GROUP BY c);"
+      - id: nowait
+        sql: "DELETE FROM t WHERE c = 1 NOWAIT;"
+      - id: wait
+        sql: "DELETE FROM t WHERE c = 1 WAIT 10;"
+      - id: returning_into
+        sql: "DELETE FROM t WHERE c = 1 RETURNING d INTO :b1;"
+      - id: returning_old
+        sql: "DELETE FROM t WHERE c = 1 RETURNING OLD d INTO :b1;"
+      - id: log_errors
+        sql: "DELETE FROM t WHERE c = 1 LOG ERRORS INTO errlog REJECT LIMIT 10;"
+    examples:
+      - |-
+        DELETE FROM t
+        FROM s
+        WHERE t.t1 = s.s1;
+      - |-
+        DELETE FROM employees
+           WHERE job_id = 'SA_REP'
+           AND commission_pct < .2;
+      - |-
+        DELETE FROM (SELECT * FROM employees)
+           WHERE job_id = 'SA_REP'
+           AND commission_pct < .2;
+      - |-
+        DELETE FROM employees
+           WHERE job_id = 'SA_REP'
+           AND hire_date + TO_YMINTERVAL('01-00') < SYSDATE
+           RETURNING salary INTO :bnd1;
+      - |-
+        DELETE product_price_history pp
+        WHERE  (product_id, currency_code, effective_from_date)
+           IN (SELECT product_id, currency_code, Max(effective_from_date)
+               FROM   product_price_history
+               GROUP BY product_id, currency_code);
+
+  - id: merge
+    name: MERGE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/MERGE.html
+    tier: high
+    probes:
+      - id: update_and_insert
+        sql: "MERGE INTO t USING u ON (t.id = u.id) WHEN MATCHED THEN UPDATE SET t.c = u.c WHEN NOT MATCHED THEN INSERT (t.id, t.c) VALUES (u.id, u.c);"
+      - id: update_only
+        sql: "MERGE INTO t USING u ON (t.id = u.id) WHEN MATCHED THEN UPDATE SET t.c = u.c, t.d = DEFAULT;"
+      - id: insert_only
+        sql: "MERGE INTO t USING u ON (t.id = u.id) WHEN NOT MATCHED THEN INSERT VALUES (u.id, u.c);"
+      - id: aliases_schema
+        sql: "MERGE INTO s.t d USING s.u x ON (d.id = x.id) WHEN MATCHED THEN UPDATE SET d.c = x.c;"
+      - id: hint
+        sql: "MERGE /*+ APPEND */ INTO t USING u ON (t.id = u.id) WHEN NOT MATCHED THEN INSERT (id) VALUES (u.id);"
+      - id: using_subquery
+        sql: "MERGE INTO t USING (SELECT id, c FROM u WHERE k = 80) x ON (t.id = x.id) WHEN MATCHED THEN UPDATE SET t.c = t.c + x.c * .01;"
+      - id: using_values
+        sql: "MERGE INTO t USING (VALUES (1, 'a'), (2, 'b')) v (id, c) ON (t.id = v.id) WHEN MATCHED THEN UPDATE SET t.c = v.c WHEN NOT MATCHED THEN INSERT (id, c) VALUES (v.id, v.c);"
+      - id: without_using
+        sql: "MERGE INTO t ON (id = :id) WHEN MATCHED THEN UPDATE SET c = :c WHEN NOT MATCHED THEN INSERT (id, c) VALUES (:id, :c);"
+      - id: update_where
+        sql: "MERGE INTO t USING u ON (t.id = u.id) WHEN MATCHED THEN UPDATE SET t.c = u.c WHERE u.k > 0;"
+      - id: update_delete_where
+        sql: "MERGE INTO t USING u ON (t.id = u.id) WHEN MATCHED THEN UPDATE SET t.c = u.c DELETE WHERE (u.c > 8000);"
+      - id: update_column_list_subquery
+        sql: "MERGE INTO t USING u ON (t.id = u.id) WHEN MATCHED THEN UPDATE SET (t.c, t.d) = (SELECT c, d FROM v WHERE v.id = u.id);"
+      - id: insert_where
+        sql: "MERGE INTO t USING u ON (t.id = u.id) WHEN NOT MATCHED THEN INSERT (t.id, t.c) VALUES (u.id, u.c) WHERE (u.c <= 8000);"
+      - id: insert_default
+        sql: "MERGE INTO t USING u ON (t.id = u.id) WHEN NOT MATCHED THEN INSERT (id, c) VALUES (u.id, DEFAULT);"
+      - id: insert_set
+        sql: "MERGE INTO t USING u ON (t.id = u.id) WHEN NOT MATCHED THEN INSERT SET id = u.id, c = u.c;"
+      - id: insert_before_update
+        sql: "MERGE INTO t USING u ON (t.id = u.id) WHEN NOT MATCHED THEN INSERT (id, c) VALUES (u.id, u.c) WHEN MATCHED THEN UPDATE SET t.c = u.c;"
+        note: "The syntax lists merge_update_clause before merge_insert_clause; the semantics say the clauses can be specified in either order."
+      - id: wait
+        sql: "MERGE INTO t USING u ON (t.id = u.id) WHEN MATCHED THEN UPDATE SET t.c = u.c WAIT 10;"
+      - id: nowait
+        sql: "MERGE INTO t USING u ON (t.id = u.id) WHEN MATCHED THEN UPDATE SET t.c = u.c NOWAIT;"
+      - id: log_errors
+        sql: "MERGE INTO t USING u ON (t.id = u.id) WHEN MATCHED THEN UPDATE SET t.c = u.c LOG ERRORS INTO errlog ('m') REJECT LIMIT UNLIMITED;"
+      - id: returning_into
+        sql: "MERGE INTO t USING u ON (t.id = u.id) WHEN MATCHED THEN UPDATE SET t.c = u.c RETURNING NEW t.c INTO :b1;"
+    examples:
+      - |-
+        MERGE INTO bonuses D
+           USING (SELECT employee_id, salary, department_id FROM hr.employees
+           WHERE department_id = 80) S
+           ON (D.employee_id = S.employee_id)
+           WHEN MATCHED THEN UPDATE SET D.bonus = D.bonus + S.salary*.01
+             DELETE WHERE (S.salary > 8000)
+           WHEN NOT MATCHED THEN INSERT (D.employee_id, D.bonus)
+             VALUES (S.employee_id, S.salary*.01)
+             WHERE (S.salary <= 8000);
+      - |-
+        MERGE INTO people_target pt
+        USING people_source ps
+        ON    (pt.person_id = ps.person_id)
+        WHEN MATCHED THEN UPDATE
+          SET pt.first_name = ps.first_name,
+              pt.last_name = ps.last_name,
+              pt.title = ps.title
+          DELETE where pt.title  = 'Mrs.'
+        WHEN NOT MATCHED THEN INSERT
+          (pt.person_id, pt.first_name, pt.last_name, pt.title)
+          VALUES (ps.person_id, ps.first_name, ps.last_name, ps.title)
+          WHERE ps.title = 'Mr';
+      - |-
+        MERGE INTO people_target
+          ON (person_id = :person_id)
+        WHEN MATCHED THEN UPDATE
+        SET first_name = :first_name,
+            last_name = :last_name,
+            title = :title
+        WHEN NOT MATCHED THEN INSERT
+            (person_id, first_name, last_name, title)
+            VALUES (:person_id, :first_name, :last_name, :title);
+      - |-
+        MERGE INTO employees target USING employees_updates source
+         ON(target.employee_id = source.employee_id )
+         WHEN MATCHED THEN
+           UPDATE SET
+             target.first_name=source.first_name,
+             target.last_name=source.last_name,
+             target.salary=source.salary
+        WHEN NOT MATCHED THEN
+          INSERT (employee_id, first_name, last_name, salary)
+          VALUES ( source.employee_id, source.first_name, source.last_name, source_salary)
+          WAIT 10;
+
+  - id: truncate_table
+    name: TRUNCATE TABLE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/TRUNCATE-TABLE.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "TRUNCATE TABLE t;"
+      - id: schema
+        sql: "TRUNCATE TABLE s.t;"
+      - id: preserve_mview_log
+        sql: "TRUNCATE TABLE t PRESERVE MATERIALIZED VIEW LOG;"
+      - id: purge_mview_log
+        sql: "TRUNCATE TABLE t PURGE MATERIALIZED VIEW LOG;"
+      - id: drop_storage
+        sql: "TRUNCATE TABLE t DROP STORAGE;"
+      - id: drop_all_storage
+        sql: "TRUNCATE TABLE t DROP ALL STORAGE;"
+      - id: reuse_storage
+        sql: "TRUNCATE TABLE t REUSE STORAGE;"
+      - id: cascade
+        sql: "TRUNCATE TABLE t CASCADE;"
+      - id: all_options
+        sql: "TRUNCATE TABLE s.t PURGE MATERIALIZED VIEW LOG REUSE STORAGE CASCADE;"
+    examples:
+      - "TRUNCATE TABLE employees_demo;"
+      - "TRUNCATE TABLE sales_demo PRESERVE MATERIALIZED VIEW LOG;"
+      - "TRUNCATE TABLE orders_demo;"
+
+  - id: truncate_cluster
+    name: TRUNCATE CLUSTER
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/TRUNCATE-CLUSTER.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "TRUNCATE CLUSTER s.cl;"
+      - id: reuse_storage
+        sql: "TRUNCATE CLUSTER cl REUSE STORAGE;"
+
+  - id: create_table
+    name: CREATE TABLE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-TABLE.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE TABLE t (c NUMBER, d VARCHAR2(20));"
+      - id: schema_qualified
+        sql: "CREATE TABLE s.t (c NUMBER(6), d NUMBER(8,2), e DATE);"
+      - id: if_not_exists
+        sql: "CREATE TABLE IF NOT EXISTS t (c NUMBER);"
+      - id: global_temporary_on_commit_preserve
+        sql: "CREATE GLOBAL TEMPORARY TABLE t (c NUMBER) ON COMMIT PRESERVE ROWS;"
+      - id: global_temporary_on_commit_delete
+        sql: "CREATE GLOBAL TEMPORARY TABLE t (c NUMBER) ON COMMIT DELETE ROWS;"
+      - id: private_temporary
+        sql: "CREATE PRIVATE TEMPORARY TABLE ora$ptt_t (c NUMBER) ON COMMIT DROP DEFINITION;"
+      - id: private_temporary_preserve_definition
+        sql: "CREATE PRIVATE TEMPORARY TABLE ora$ptt_t (c NUMBER) ON COMMIT PRESERVE DEFINITION;"
+      - id: sharded
+        sql: "CREATE SHARDED TABLE t (id NUMBER NOT NULL, c VARCHAR2(20), CONSTRAINT t_pk PRIMARY KEY (id)) PARTITION BY CONSISTENT HASH (id) PARTITIONS AUTO TABLESPACE SET ts1;"
+      - id: duplicated
+        sql: "CREATE DUPLICATED TABLE t (id NUMBER PRIMARY KEY, c VARCHAR2(20));"
+      - id: blockchain
+        sql: "CREATE BLOCKCHAIN TABLE t (c NUMBER, d DATE) NO DROP UNTIL 31 DAYS IDLE NO DELETE LOCKED HASHING USING SHA2_512 VERSION V2;"
+      - id: immutable
+        sql: "CREATE IMMUTABLE TABLE t (c NUMBER, d VARCHAR2(40)) NO DROP UNTIL 40 DAYS IDLE NO DELETE UNTIL 100 DAYS AFTER INSERT;"
+      - id: json_collection_table
+        sql: "CREATE JSON COLLECTION TABLE t;"
+      - id: sharing
+        sql: "CREATE TABLE t SHARING = METADATA (c NUMBER);"
+      - id: default
+        sql: "CREATE TABLE t (c NUMBER DEFAULT 0, d DATE DEFAULT SYSDATE);"
+      - id: default_on_null
+        sql: "CREATE TABLE t (c NUMBER DEFAULT ON NULL 0);"
+      - id: default_on_null_for_insert_and_update
+        sql: "CREATE TABLE t (c NUMBER DEFAULT ON NULL FOR INSERT AND UPDATE 0);"
+      - id: identity_always
+        sql: "CREATE TABLE t (id NUMBER GENERATED ALWAYS AS IDENTITY);"
+      - id: identity_by_default_options
+        sql: "CREATE TABLE t (id NUMBER GENERATED BY DEFAULT ON NULL AS IDENTITY (START WITH 100 INCREMENT BY 10 MAXVALUE 1000 NOCYCLE CACHE 20 ORDER));"
+      - id: invisible_column
+        sql: "CREATE TABLE t (c NUMBER, d NUMBER INVISIBLE);"
+      - id: collate_column
+        sql: "CREATE TABLE t (c VARCHAR2(20) COLLATE BINARY_CI);"
+      - id: virtual_column
+        sql: "CREATE TABLE t (a NUMBER, b NUMBER, c NUMBER GENERATED ALWAYS AS (a + b) VIRTUAL);"
+      - id: virtual_column_short
+        sql: "CREATE TABLE t (a NUMBER, b AS (a * 2));"
+      - id: encrypt_column
+        sql: "CREATE TABLE t (c VARCHAR2(11) ENCRYPT USING 'AES256' NO SALT);"
+      - id: domain_column
+        sql: "CREATE TABLE t (c VARCHAR2(100) DOMAIN email_d, d DOMAIN s.dn1);"
+      - id: annotations
+        sql: "CREATE TABLE t (c NUMBER ANNOTATIONS (Operations 'Sort', Hidden)) ANNOTATIONS (Display 'Table T');"
+      - id: inline_constraints
+        sql: "CREATE TABLE t (id NUMBER CONSTRAINT t_pk PRIMARY KEY, c VARCHAR2(20) NOT NULL, d VARCHAR2(20) UNIQUE, e NUMBER CHECK (e > 0), f NUMBER NULL);"
+      - id: inline_references
+        sql: "CREATE TABLE t (id NUMBER, pid NUMBER REFERENCES p (id) ON DELETE CASCADE);"
+      - id: out_of_line_constraints
+        sql: "CREATE TABLE t (a NUMBER, b NUMBER, c NUMBER, CONSTRAINT t_pk PRIMARY KEY (a, b), CONSTRAINT t_uk UNIQUE (c), CONSTRAINT t_ck CHECK (a < b), CONSTRAINT t_fk FOREIGN KEY (c) REFERENCES s.p (id) ON DELETE SET NULL);"
+      - id: constraint_state
+        sql: "CREATE TABLE t (a NUMBER, CONSTRAINT t_pk PRIMARY KEY (a) DEFERRABLE INITIALLY DEFERRED RELY ENABLE NOVALIDATE);"
+      - id: constraint_using_index
+        sql: "CREATE TABLE t (a NUMBER, CONSTRAINT t_pk PRIMARY KEY (a) USING INDEX (CREATE UNIQUE INDEX t_pk_ix ON t (a)));"
+      - id: constraint_disable
+        sql: "CREATE TABLE t (a NUMBER CONSTRAINT a_ck CHECK (a > 0) DISABLE);"
+      - id: period_for
+        sql: "CREATE TABLE t (c NUMBER, s DATE, e DATE, PERIOD FOR valid_time (s, e));"
+      - id: physical_attributes
+        sql: "CREATE TABLE t (c NUMBER) PCTFREE 10 PCTUSED 40 INITRANS 2 STORAGE (INITIAL 64K NEXT 1M MAXEXTENTS UNLIMITED) TABLESPACE users LOGGING;"
+      - id: segment_creation_deferred
+        sql: "CREATE TABLE t (c NUMBER, d VARCHAR2(20)) SEGMENT CREATION DEFERRED;"
+      - id: compression
+        sql: "CREATE TABLE t (c NUMBER) ROW STORE COMPRESS ADVANCED;"
+      - id: column_store_compression
+        sql: "CREATE TABLE t (c NUMBER) COLUMN STORE COMPRESS FOR QUERY HIGH;"
+      - id: nologging_nocompress
+        sql: "CREATE TABLE t (c NUMBER) NOLOGGING NOCOMPRESS;"
+      - id: inmemory
+        sql: "CREATE TABLE t (c NUMBER, d CLOB) INMEMORY MEMCOMPRESS FOR QUERY LOW PRIORITY HIGH;"
+      - id: organization_index
+        sql: "CREATE TABLE t (id NUMBER PRIMARY KEY, c VARCHAR2(20)) ORGANIZATION INDEX PCTTHRESHOLD 20 OVERFLOW TABLESPACE users;"
+      - id: organization_external
+        sql: "CREATE TABLE t (c NUMBER, d VARCHAR2(20)) ORGANIZATION EXTERNAL (TYPE ORACLE_LOADER DEFAULT DIRECTORY dir ACCESS PARAMETERS (RECORDS DELIMITED BY NEWLINE FIELDS TERMINATED BY ',') LOCATION ('f.csv')) REJECT LIMIT UNLIMITED;"
+      - id: cluster
+        sql: "CREATE TABLE t (id NUMBER, c VARCHAR2(20)) CLUSTER cl (id);"
+      - id: lob_storage
+        sql: "CREATE TABLE t (id NUMBER, doc CLOB) LOB (doc) STORE AS SECUREFILE (TABLESPACE users ENABLE STORAGE IN ROW CACHE);"
+      - id: nested_table_storage
+        sql: "CREATE TABLE t (id NUMBER, phones phone_list_t) NESTED TABLE phones STORE AS t_phones;"
+      - id: partition_by_range
+        sql: "CREATE TABLE t (id NUMBER, d DATE) PARTITION BY RANGE (d) (PARTITION p1 VALUES LESS THAN (DATE '2024-01-01'), PARTITION p2 VALUES LESS THAN (MAXVALUE));"
+      - id: partition_by_range_interval
+        sql: "CREATE TABLE t (id NUMBER, d DATE) PARTITION BY RANGE (d) INTERVAL (NUMTOYMINTERVAL(1, 'MONTH')) (PARTITION p0 VALUES LESS THAN (DATE '2024-01-01'));"
+      - id: partition_by_list
+        sql: "CREATE TABLE t (id NUMBER, r VARCHAR2(10)) PARTITION BY LIST (r) (PARTITION pa VALUES ('A', 'B'), PARTITION pd VALUES (DEFAULT));"
+      - id: partition_by_list_automatic
+        sql: "CREATE TABLE t (id NUMBER, r VARCHAR2(10)) PARTITION BY LIST (r) AUTOMATIC (PARTITION pa VALUES ('A'));"
+      - id: partition_by_hash_quantity
+        sql: "CREATE TABLE t (id NUMBER) PARTITION BY HASH (id) PARTITIONS 4 STORE IN (ts1, ts2);"
+      - id: partition_by_hash_individual
+        sql: "CREATE TABLE t (id NUMBER) PARTITION BY HASH (id) (PARTITION p1 TABLESPACE ts1, PARTITION p2 TABLESPACE ts2);"
+      - id: composite_range_hash
+        sql: "CREATE TABLE t (id NUMBER, d DATE) PARTITION BY RANGE (d) SUBPARTITION BY HASH (id) SUBPARTITIONS 4 (PARTITION p1 VALUES LESS THAN (DATE '2024-01-01'), PARTITION p2 VALUES LESS THAN (MAXVALUE));"
+      - id: composite_range_list_template
+        sql: "CREATE TABLE t (id NUMBER, d DATE, r VARCHAR2(2)) PARTITION BY RANGE (d) SUBPARTITION BY LIST (r) SUBPARTITION TEMPLATE (SUBPARTITION se VALUES ('SE'), SUBPARTITION other VALUES (DEFAULT)) (PARTITION p1 VALUES LESS THAN (DATE '2024-01-01'));"
+      - id: partition_by_reference
+        sql: "CREATE TABLE c (id NUMBER, pid NUMBER NOT NULL, CONSTRAINT c_fk FOREIGN KEY (pid) REFERENCES p (id)) PARTITION BY REFERENCE (c_fk);"
+      - id: partition_by_system
+        sql: "CREATE TABLE t (id NUMBER) PARTITION BY SYSTEM (PARTITION p1, PARTITION p2);"
+      - id: table_properties
+        sql: "CREATE TABLE t (c NUMBER) CACHE PARALLEL 4 ROWDEPENDENCIES ENABLE ROW MOVEMENT;"
+      - id: read_only
+        sql: "CREATE TABLE t (c NUMBER) READ ONLY;"
+      - id: result_cache
+        sql: "CREATE TABLE t (c NUMBER) RESULT_CACHE (MODE FORCE);"
+      - id: flashback_archive
+        sql: "CREATE TABLE t (c NUMBER) FLASHBACK ARCHIVE fla1;"
+      - id: row_archival
+        sql: "CREATE TABLE t (c NUMBER) ROW ARCHIVAL;"
+      - id: default_collation
+        sql: "CREATE TABLE t (c VARCHAR2(20)) DEFAULT COLLATION BINARY_CI;"
+      - id: object_table
+        sql: "CREATE TABLE t OF person_t;"
+      - id: object_table_oid
+        sql: "CREATE TABLE t OF person_t (CONSTRAINT t_pk PRIMARY KEY (ssn)) OBJECT IDENTIFIER IS PRIMARY KEY;"
+      - id: xmltype_table
+        sql: "CREATE TABLE t OF XMLTYPE XMLTYPE STORE AS BINARY XML;"
+      - id: for_staging
+        sql: "CREATE TABLE t (c NUMBER, d VARCHAR2(100)) FOR STAGING;"
+      - id: for_exchange_with_table
+        sql: "CREATE TABLE t FOR EXCHANGE WITH TABLE s.u;"
+      - id: as_select
+        sql: "CREATE TABLE t AS SELECT * FROM u WHERE c = 80;"
+      - id: as_select_column_names
+        sql: "CREATE TABLE t (a, b) AS SELECT c, d FROM u;"
+      - id: as_select_with_properties
+        sql: "CREATE TABLE t PARALLEL NOLOGGING AS SELECT * FROM u;"
+      - id: as_select_global_temporary
+        sql: "CREATE GLOBAL TEMPORARY TABLE t ON COMMIT PRESERVE ROWS AS SELECT * FROM u WHERE d = SYSDATE;"
+    examples:
+      - |-
+        CREATE TABLE employees_demo
+            ( employee_id    NUMBER(6)
+            , first_name     VARCHAR2(20)
+            , last_name      VARCHAR2(25)
+                 CONSTRAINT emp_last_name_nn_demo NOT NULL
+            , email          VARCHAR2(25)
+                 CONSTRAINT emp_email_nn_demo     NOT NULL
+            , phone_number   VARCHAR2(20)
+            , hire_date      DATE  DEFAULT SYSDATE
+                 CONSTRAINT emp_hire_date_nn_demo  NOT NULL
+            , job_id         VARCHAR2(10)
+               CONSTRAINT     emp_job_nn_demo  NOT NULL
+            , salary         NUMBER(8,2)
+               CONSTRAINT     emp_salary_nn_demo  NOT NULL
+            , commission_pct NUMBER(2,2)
+            , manager_id     NUMBER(6)
+            , department_id  NUMBER(4)
+            , dn             VARCHAR2(300)
+            , CONSTRAINT     emp_salary_min_demo
+                             CHECK (salary > 0)
+            , CONSTRAINT     emp_email_uk_demo
+                             UNIQUE (email)
+            ) ;
+      - "CREATE TABLE t2 (id NUMBER GENERATED BY DEFAULT AS IDENTITY (START WITH 100 INCREMENT BY 10));"
+      - |-
+        CREATE GLOBAL TEMPORARY TABLE today_sales
+           ON COMMIT PRESERVE ROWS
+           AS SELECT * FROM orders WHERE order_date = SYSDATE;
+      - |-
+        CREATE TABLE list_customers
+           ( customer_id             NUMBER(6)
+           , cust_first_name         VARCHAR2(20)
+           , cust_last_name          VARCHAR2(20)
+           , cust_address            CUST_ADDRESS_TYP
+           , nls_territory           VARCHAR2(30)
+           , cust_email              VARCHAR2(40))
+           PARTITION BY LIST (nls_territory) (
+           PARTITION asia VALUES ('CHINA', 'THAILAND'),
+           PARTITION europe VALUES ('GERMANY', 'ITALY', 'SWITZERLAND'),
+           PARTITION west VALUES ('AMERICA'),
+           PARTITION east VALUES ('INDIA'),
+           PARTITION rest VALUES (DEFAULT));
+      - |-
+        CREATE TABLE hash_products
+            ( product_id          NUMBER(6)   PRIMARY KEY
+            , product_name        VARCHAR2(50)
+            , product_description VARCHAR2(2000)
+            , category_id         NUMBER(2)
+            , weight_class        NUMBER(1)
+            , warranty_period     INTERVAL YEAR TO MONTH
+            , supplier_id         NUMBER(6)
+            , product_status      VARCHAR2(20)
+            , list_price          NUMBER(8,2)
+            , min_price           NUMBER(8,2)
+            , catalog_url         VARCHAR2(50)
+            , CONSTRAINT          product_status_lov_demo
+                                  CHECK (product_status in ('orderable'
+                                                          ,'planned'
+                                                          ,'under development'
+                                                          ,'obsolete')
+         ) )
+         PARTITION BY HASH (product_id)
+         PARTITIONS 4
+         STORE IN (tbs_01, tbs_02, tbs_03, tbs_04);
+
+  - id: alter_table
+    name: ALTER TABLE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-TABLE.html
+    tier: high
+    probes:
+      - id: add_column
+        sql: "ALTER TABLE t ADD c NUMBER;"
+      - id: add_columns_parenthesized
+        sql: "ALTER TABLE t ADD (c NUMBER(7,2), d VARCHAR2(20) DEFAULT 'x' NOT NULL);"
+      - id: if_exists
+        sql: "ALTER TABLE IF EXISTS t ADD (c NUMBER);"
+      - id: add_virtual_column
+        sql: "ALTER TABLE t ADD (c NUMBER GENERATED ALWAYS AS (a + b) VIRTUAL);"
+      - id: add_column_domain
+        sql: "ALTER TABLE t ADD (c VARCHAR2(12) DOMAIN phone_number);"
+      - id: add_column_default_on_null_sequence
+        sql: "ALTER TABLE t ADD (id NUMBER DEFAULT ON NULL s1.NEXTVAL NOT NULL);"
+      - id: add_column_encrypt
+        sql: "ALTER TABLE t ADD (pw VARCHAR2(8) ENCRYPT 'NOMAC' NO SALT);"
+      - id: modify_column_type
+        sql: "ALTER TABLE t MODIFY (c NUMBER(3,2));"
+      - id: modify_column_unparenthesized
+        sql: "ALTER TABLE t MODIFY c VARCHAR2(100);"
+      - id: modify_column_default_not_null
+        sql: "ALTER TABLE t MODIFY (c DEFAULT 0 NOT NULL);"
+      - id: modify_column_null
+        sql: "ALTER TABLE t MODIFY (c NULL);"
+      - id: modify_column_identity
+        sql: "ALTER TABLE t MODIFY (id GENERATED BY DEFAULT AS IDENTITY (START WITH LIMIT VALUE));"
+      - id: modify_column_drop_identity
+        sql: "ALTER TABLE t MODIFY (id DROP IDENTITY);"
+      - id: modify_column_encrypt
+        sql: "ALTER TABLE t MODIFY (c ENCRYPT USING 'AES256' 'NOMAC');"
+      - id: modify_column_decrypt
+        sql: "ALTER TABLE t MODIFY (c DECRYPT);"
+      - id: modify_column_visibility
+        sql: "ALTER TABLE t MODIFY (c INVISIBLE, d VISIBLE);"
+      - id: modify_column_annotations
+        sql: "ALTER TABLE t MODIFY c ANNOTATIONS (ADD Hidden, DROP Identity);"
+      - id: modify_add_domain
+        sql: "ALTER TABLE t MODIFY c ADD DOMAIN s.dn1;"
+      - id: modify_drop_domain
+        sql: "ALTER TABLE t MODIFY c DROP DOMAIN PRESERVE CONSTRAINTS;"
+      - id: modify_lob
+        sql: "ALTER TABLE t MODIFY LOB (doc) (CACHE);"
+      - id: modify_nested_table_retrieval
+        sql: "ALTER TABLE t MODIFY NESTED TABLE nt RETURN AS VALUE;"
+      - id: drop_column
+        sql: "ALTER TABLE t DROP COLUMN c;"
+      - id: drop_columns
+        sql: "ALTER TABLE t DROP (c, d) CASCADE CONSTRAINTS;"
+      - id: drop_column_checkpoint
+        sql: "ALTER TABLE t DROP COLUMN c CHECKPOINT 250;"
+      - id: set_unused
+        sql: "ALTER TABLE t SET UNUSED (c, d) ONLINE;"
+      - id: set_unused_column
+        sql: "ALTER TABLE t SET UNUSED COLUMN c CASCADE CONSTRAINTS;"
+      - id: drop_unused_columns
+        sql: "ALTER TABLE t DROP UNUSED COLUMNS;"
+      - id: drop_columns_continue
+        sql: "ALTER TABLE t DROP COLUMNS CONTINUE;"
+      - id: rename_column
+        sql: "ALTER TABLE t RENAME COLUMN c TO d;"
+      - id: add_period
+        sql: "ALTER TABLE t ADD (PERIOD FOR valid_time (s, e));"
+      - id: drop_period
+        sql: "ALTER TABLE t DROP (PERIOD FOR valid_time);"
+      - id: add_constraint_primary_key
+        sql: "ALTER TABLE t ADD CONSTRAINT t_pk PRIMARY KEY (id);"
+      - id: add_constraint_foreign_key
+        sql: "ALTER TABLE t ADD CONSTRAINT t_fk FOREIGN KEY (pid) REFERENCES p (id) ON DELETE CASCADE ENABLE NOVALIDATE;"
+      - id: add_constraint_check
+        sql: "ALTER TABLE t ADD CONSTRAINT t_ck CHECK (c >= 0) DISABLE;"
+      - id: add_constraint_unique_unnamed
+        sql: "ALTER TABLE t ADD UNIQUE (c, d);"
+      - id: add_constraint_inline_not_null
+        sql: "ALTER TABLE t MODIFY (c CONSTRAINT c_nn NOT NULL);"
+      - id: modify_constraint
+        sql: "ALTER TABLE t MODIFY CONSTRAINT t_ck NOPRECHECK ENABLE NOVALIDATE;"
+      - id: modify_primary_key
+        sql: "ALTER TABLE t MODIFY PRIMARY KEY DISABLE CASCADE;"
+      - id: rename_constraint
+        sql: "ALTER TABLE t RENAME CONSTRAINT c1 TO c2;"
+      - id: drop_constraint
+        sql: "ALTER TABLE t DROP CONSTRAINT t_pk CASCADE KEEP INDEX;"
+      - id: drop_primary_key
+        sql: "ALTER TABLE t DROP PRIMARY KEY CASCADE;"
+      - id: drop_unique
+        sql: "ALTER TABLE t DROP UNIQUE (c, d) ONLINE;"
+      - id: enable_validate_constraint_exceptions
+        sql: "ALTER TABLE t ENABLE VALIDATE CONSTRAINT t_fk EXCEPTIONS INTO exceptions;"
+      - id: disable_primary_key
+        sql: "ALTER TABLE t DISABLE PRIMARY KEY KEEP INDEX;"
+      - id: enable_all_triggers
+        sql: "ALTER TABLE t ENABLE ALL TRIGGERS;"
+      - id: disable_table_lock
+        sql: "ALTER TABLE t DISABLE TABLE LOCK;"
+      - id: rename_to
+        sql: "ALTER TABLE t RENAME TO u;"
+      - id: read_only
+        sql: "ALTER TABLE t READ ONLY;"
+      - id: read_write
+        sql: "ALTER TABLE t READ WRITE;"
+      - id: physical_attributes
+        sql: "ALTER TABLE t PCTFREE 30 PCTUSED 60;"
+      - id: parallel
+        sql: "ALTER TABLE t PARALLEL 4;"
+      - id: noparallel_nologging
+        sql: "ALTER TABLE t NOPARALLEL NOLOGGING;"
+      - id: cache
+        sql: "ALTER TABLE t CACHE;"
+      - id: compress
+        sql: "ALTER TABLE t ROW STORE COMPRESS ADVANCED;"
+      - id: inmemory
+        sql: "ALTER TABLE t INMEMORY PRIORITY HIGH;"
+      - id: row_movement
+        sql: "ALTER TABLE t ENABLE ROW MOVEMENT;"
+      - id: shrink_space
+        sql: "ALTER TABLE t SHRINK SPACE CASCADE;"
+      - id: deallocate_unused
+        sql: "ALTER TABLE t DEALLOCATE UNUSED KEEP 100K;"
+      - id: allocate_extent
+        sql: "ALTER TABLE t ALLOCATE EXTENT (SIZE 1M);"
+      - id: result_cache
+        sql: "ALTER TABLE t RESULT_CACHE (MODE DEFAULT);"
+      - id: flashback_archive
+        sql: "ALTER TABLE t FLASHBACK ARCHIVE fla1;"
+      - id: no_flashback_archive
+        sql: "ALTER TABLE t NO FLASHBACK ARCHIVE;"
+      - id: annotations
+        sql: "ALTER TABLE t ANNOTATIONS (DROP Operations, ADD Hidden);"
+      - id: default_collation
+        sql: "ALTER TABLE t DEFAULT COLLATION BINARY_CI;"
+      - id: move
+        sql: "ALTER TABLE t MOVE TABLESPACE users;"
+      - id: move_online_update_indexes
+        sql: "ALTER TABLE t MOVE ONLINE TABLESPACE users COMPRESS UPDATE INDEXES;"
+      - id: modify_to_partitioned
+        sql: "ALTER TABLE t MODIFY PARTITION BY RANGE (d) (PARTITION p1 VALUES LESS THAN (DATE '2024-01-01'), PARTITION p2 VALUES LESS THAN (MAXVALUE)) ONLINE UPDATE INDEXES (idx1 LOCAL);"
+      - id: add_partition_range
+        sql: "ALTER TABLE t ADD PARTITION p3 VALUES LESS THAN (400) TABLESPACE users;"
+      - id: add_partition_list
+        sql: "ALTER TABLE t ADD PARTITION pe VALUES ('E', 'F');"
+      - id: add_partition_hash
+        sql: "ALTER TABLE t ADD PARTITION;"
+      - id: drop_partition
+        sql: "ALTER TABLE t DROP PARTITION p3 UPDATE GLOBAL INDEXES;"
+      - id: drop_partition_for
+        sql: "ALTER TABLE t DROP PARTITION FOR (DATE '2024-01-15');"
+      - id: truncate_partition
+        sql: "ALTER TABLE t TRUNCATE PARTITION p1 DROP STORAGE;"
+      - id: truncate_subpartition
+        sql: "ALTER TABLE t TRUNCATE SUBPARTITION sp1 REUSE STORAGE UPDATE INDEXES;"
+      - id: rename_partition
+        sql: "ALTER TABLE t RENAME PARTITION p1 TO p_old;"
+      - id: move_partition
+        sql: "ALTER TABLE t MOVE PARTITION p2 TABLESPACE ts1 ONLINE;"
+      - id: split_partition_at
+        sql: "ALTER TABLE t SPLIT PARTITION p4 AT (DATE '2024-11-15') INTO (PARTITION p4a, PARTITION p4b);"
+      - id: split_partition_values
+        sql: "ALTER TABLE t SPLIT PARTITION rest VALUES ('MEXICO', 'COLOMBIA') INTO (PARTITION south, PARTITION rest);"
+      - id: merge_partitions
+        sql: "ALTER TABLE t MERGE PARTITIONS p1, p2 INTO PARTITION p12;"
+      - id: merge_partitions_range
+        sql: "ALTER TABLE t MERGE PARTITIONS p1 TO p4 INTO PARTITION p_all;"
+      - id: coalesce_partition
+        sql: "ALTER TABLE t COALESCE PARTITION;"
+      - id: exchange_partition
+        sql: "ALTER TABLE t EXCHANGE PARTITION p1 WITH TABLE s.u INCLUDING INDEXES WITHOUT VALIDATION;"
+      - id: modify_partition
+        sql: "ALTER TABLE t MODIFY PARTITION p1 UNUSABLE LOCAL INDEXES;"
+      - id: modify_partition_add_values
+        sql: "ALTER TABLE t MODIFY PARTITION pa ADD VALUES ('X');"
+      - id: set_interval
+        sql: "ALTER TABLE t SET INTERVAL (NUMTOYMINTERVAL(1, 'MONTH'));"
+      - id: set_subpartition_template
+        sql: "ALTER TABLE t SET SUBPARTITION TEMPLATE (SUBPARTITION a VALUES ('A'), SUBPARTITION z VALUES (DEFAULT));"
+      - id: modify_default_attributes
+        sql: "ALTER TABLE t MODIFY DEFAULT ATTRIBUTES TABLESPACE ts1;"
+      - id: add_overflow
+        sql: "ALTER TABLE t ADD OVERFLOW;"
+      - id: immutable_no_drop
+        sql: "ALTER TABLE t NO DROP UNTIL 50 DAYS IDLE;"
+      - id: memoptimize
+        sql: "ALTER TABLE t MEMOPTIMIZE FOR READ;"
+      - id: modify_opaque_type
+        sql: "ALTER TABLE t MODIFY OPAQUE TYPE x STORE (XMLType, clob_typ) UNPACKED;"
+      - id: add_ref_with_rowid
+        sql: "ALTER TABLE t ADD (REF(column_value) WITH ROWID);"
+      - id: add_scope
+        sql: "ALTER TABLE t ADD (SCOPE FOR (dept) IS offices);"
+      - id: multiple_column_clauses
+        sql: "ALTER TABLE t ADD (e NUMBER) MODIFY (c VARCHAR2(50)) DROP COLUMN d;"
+    examples:
+      - |-
+        ALTER TABLE sales SPLIT PARTITION SALES_Q4_2000
+           AT (TO_DATE('15-NOV-2000','DD-MON-YYYY'))
+           INTO (PARTITION SALES_Q4_2000, PARTITION SALES_Q4_2000b);
+      - |-
+        ALTER TABLE employees
+           ENABLE VALIDATE CONSTRAINT emp_manager_fk
+           EXCEPTIONS INTO exceptions;
+      - "ALTER TABLE JOBS_Temp ADD (BONUS NUMBER (7,2), COMM NUMBER (5,2), DUMMY NUMBER(2));"
+      - "ALTER TABLE JOBS_Temp RENAME COLUMN COMM TO COMMISSION;"
+      - |-
+        ALTER TABLE customers RENAME CONSTRAINT cust_fname_nn
+           TO cust_firstname_nn;
+
+  - id: drop_table
+    name: DROP TABLE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/DROP-TABLE.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "DROP TABLE t;"
+      - id: if_exists
+        sql: "DROP TABLE IF EXISTS s.t;"
+      - id: cascade_constraints
+        sql: "DROP TABLE t CASCADE CONSTRAINTS;"
+      - id: purge
+        sql: "DROP TABLE t PURGE;"
+      - id: cascade_constraints_purge
+        sql: "DROP TABLE IF EXISTS t CASCADE CONSTRAINTS PURGE;"
+    examples:
+      - "DROP TABLE list_customers PURGE;"
+
+  - id: create_view
+    name: CREATE VIEW
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-VIEW.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE VIEW v AS SELECT c FROM t;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE VIEW s.v AS SELECT c FROM t WHERE d = 20;"
+      - id: if_not_exists
+        sql: "CREATE VIEW IF NOT EXISTS v AS SELECT c FROM t;"
+      - id: force
+        sql: "CREATE OR REPLACE FORCE VIEW v AS SELECT c FROM missing_t;"
+      - id: no_force
+        sql: "CREATE NO FORCE VIEW v AS SELECT c FROM t;"
+      - id: column_aliases
+        sql: "CREATE VIEW v (a, b) AS SELECT c, d FROM t;"
+      - id: alias_visibility
+        sql: "CREATE VIEW v (a VISIBLE, b INVISIBLE) AS SELECT c, d FROM t;"
+      - id: view_constraints
+        sql: "CREATE VIEW v (id, email UNIQUE RELY DISABLE NOVALIDATE, CONSTRAINT v_pk PRIMARY KEY (id) RELY DISABLE NOVALIDATE) AS SELECT id, email FROM t;"
+      - id: with_read_only
+        sql: "CREATE VIEW v AS SELECT c FROM t WITH READ ONLY;"
+      - id: with_check_option_constraint
+        sql: "CREATE VIEW v AS SELECT c FROM t WHERE c > 0 WITH CHECK OPTION CONSTRAINT v_ck;"
+      - id: editioning
+        sql: "CREATE EDITIONING VIEW v (a, b) AS SELECT c, d FROM t;"
+      - id: editionable
+        sql: "CREATE OR REPLACE EDITIONABLE VIEW v AS SELECT c FROM t;"
+      - id: noneditionable
+        sql: "CREATE NONEDITIONABLE VIEW v AS SELECT c FROM t;"
+      - id: json_collection_view
+        sql: "CREATE OR REPLACE JSON COLLECTION VIEW v AS SELECT JSON { '_id' : id, 'name' : c } DATA FROM t;"
+      - id: sharing
+        sql: "CREATE VIEW v SHARING = METADATA AS SELECT c FROM t;"
+      - id: default_collation
+        sql: "CREATE VIEW v DEFAULT COLLATION BINARY_CI AS SELECT c FROM t;"
+      - id: bequeath
+        sql: "CREATE VIEW v BEQUEATH CURRENT_USER AS SELECT c FROM t;"
+      - id: annotations
+        sql: "CREATE VIEW v (a ANNOTATIONS (display 'A')) ANNOTATIONS (Title 'V') AS SELECT c FROM t;"
+      - id: object_view
+        sql: "CREATE VIEW v OF person_t WITH OBJECT IDENTIFIER (id) AS SELECT id, name FROM t;"
+      - id: object_view_default_oid
+        sql: "CREATE VIEW v OF person_t WITH OBJECT ID DEFAULT AS SELECT VALUE(p) FROM pt p;"
+      - id: object_subview
+        sql: "CREATE VIEW v OF emp_t UNDER s.person_v AS SELECT id, name, salary FROM t;"
+      - id: xmltype_view
+        sql: "CREATE VIEW v OF XMLTYPE WITH OBJECT ID (EXTRACT(OBJECT_VALUE, '/Warehouse/@id').getNumberVal()) AS SELECT x FROM t;"
+      - id: container_map
+        sql: "CREATE VIEW v AS SELECT c FROM t CONTAINER_MAP;"
+      - id: with_cte
+        sql: "CREATE VIEW v AS WITH q AS (SELECT c FROM t) SELECT c FROM q;"
+    examples:
+      - |-
+        CREATE VIEW emp_view AS
+           SELECT last_name, salary*12 annual_salary
+           FROM employees
+           WHERE department_id = 20;
+      - |-
+        CREATE EDITIONING VIEW ed_orders_view (o_id, o_date, o_status)
+          AS SELECT order_id, order_date, order_status FROM orders
+          WITH READ ONLY;
+      - |-
+        CREATE VIEW emp_sal (emp_id, last_name,
+              email UNIQUE RELY DISABLE NOVALIDATE,
+           CONSTRAINT id_pk PRIMARY KEY (emp_id) RELY DISABLE NOVALIDATE)
+           AS SELECT employee_id, last_name, email FROM employees;
+      - |-
+        CREATE OR REPLACE JSON COLLECTION VIEW
+        AS
+        SELECT JSON { '_id': deptno, 'deptName': dname } DATA
+        FROM dept ;
+      - |-
+        CREATE OR REPLACE VIEW high_wage_employees (
+        employee_id ANNOTATIONS (identity, display 'Employee ID'),
+        first_name ANNOTATIONS (display 'Employee Name'),
+        salary ANNOTATIONS (display 'Emp Salary') )
+        ANNOTATIONS (Title 'High Wage Employee View') AS
+        SELECT employee_id, first_name, salary
+        FROM employees
+        WHERE salary > 100000;
+
+  - id: alter_view
+    name: ALTER VIEW
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-VIEW.html
+    tier: high
+    probes:
+      - id: compile
+        sql: "ALTER VIEW v COMPILE;"
+      - id: recompile_if_exists
+        sql: "ALTER VIEW IF EXISTS s.v RECOMPILE;"
+      - id: add_constraint
+        sql: "ALTER VIEW v ADD CONSTRAINT v_pk PRIMARY KEY (id) RELY DISABLE NOVALIDATE;"
+      - id: modify_constraint
+        sql: "ALTER VIEW v MODIFY CONSTRAINT v_pk NORELY;"
+      - id: modify_column_annotations
+        sql: "ALTER VIEW v MODIFY (c ANNOTATIONS (ADD Hidden));"
+      - id: drop_constraint
+        sql: "ALTER VIEW v DROP CONSTRAINT v_pk;"
+      - id: drop_primary_key
+        sql: "ALTER VIEW v DROP PRIMARY KEY;"
+      - id: drop_unique
+        sql: "ALTER VIEW v DROP UNIQUE (c, d);"
+      - id: read_only
+        sql: "ALTER VIEW v READ ONLY;"
+      - id: read_write
+        sql: "ALTER VIEW v READ WRITE;"
+      - id: editionable
+        sql: "ALTER VIEW v EDITIONABLE;"
+      - id: annotations
+        sql: "ALTER VIEW v ANNOTATIONS (DROP Title, ADD Identity);"
+    examples:
+      - |-
+        ALTER VIEW customer_ro
+            COMPILE;
+      - "ALTER VIEW HighWageEmp ANNOTATIONS(DROP Title, ADD Identity);"
+
+  - id: drop_view
+    name: DROP VIEW
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/DROP-VIEW.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "DROP VIEW v;"
+      - id: if_exists_schema
+        sql: "DROP VIEW IF EXISTS s.v;"
+      - id: cascade_constraints
+        sql: "DROP VIEW v CASCADE CONSTRAINTS;"
+    examples:
+      - "DROP VIEW emp_view;"
+
+  - id: create_materialized_view
+    name: CREATE MATERIALIZED VIEW
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-MATERIALIZED-VIEW.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE MATERIALIZED VIEW mv AS SELECT * FROM t;"
+      - id: if_not_exists
+        sql: "CREATE MATERIALIZED VIEW IF NOT EXISTS s.mv AS SELECT c FROM t;"
+      - id: column_aliases
+        sql: "CREATE MATERIALIZED VIEW mv (a, b) AS SELECT c, d FROM t;"
+      - id: column_alias_encrypt
+        sql: "CREATE MATERIALIZED VIEW mv (a ENCRYPT, b) AS SELECT c, d FROM t;"
+      - id: of_object_type
+        sql: "CREATE MATERIALIZED VIEW mv OF s.person_t AS SELECT * FROM persons;"
+      - id: on_prebuilt_table
+        sql: "CREATE MATERIALIZED VIEW mv ON PREBUILT TABLE WITH REDUCED PRECISION ENABLE QUERY REWRITE AS SELECT c, SUM(d) AS s FROM t GROUP BY c;"
+      - id: physical_properties
+        sql: "CREATE MATERIALIZED VIEW mv PCTFREE 5 PCTUSED 60 TABLESPACE users STORAGE (INITIAL 50K) AS SELECT * FROM t;"
+      - id: build_immediate_refresh_complete
+        sql: "CREATE MATERIALIZED VIEW mv TABLESPACE users PARALLEL 4 BUILD IMMEDIATE REFRESH COMPLETE ENABLE QUERY REWRITE AS SELECT c, SUM(d) s FROM t GROUP BY c;"
+      - id: build_deferred
+        sql: "CREATE MATERIALIZED VIEW mv BUILD DEFERRED REFRESH FORCE ON DEMAND AS SELECT * FROM t;"
+      - id: refresh_fast_on_commit
+        sql: "CREATE MATERIALIZED VIEW mv REFRESH FAST ON COMMIT AS SELECT c, COUNT(*) n FROM t GROUP BY c;"
+      - id: refresh_on_statement
+        sql: "CREATE MATERIALIZED VIEW mv REFRESH FAST ON STATEMENT AS SELECT t.c, u.d FROM t, u WHERE t.id = u.id;"
+      - id: refresh_start_with_next
+        sql: "CREATE MATERIALIZED VIEW mv REFRESH FAST START WITH SYSDATE NEXT SYSDATE + 1/4096 WITH PRIMARY KEY AS SELECT * FROM t;"
+      - id: refresh_with_rowid
+        sql: "CREATE MATERIALIZED VIEW mv REFRESH WITH ROWID AS SELECT * FROM t;"
+      - id: refresh_using_trusted_constraints
+        sql: "CREATE MATERIALIZED VIEW mv REFRESH COMPLETE USING TRUSTED CONSTRAINTS AS SELECT * FROM t;"
+      - id: never_refresh
+        sql: "CREATE MATERIALIZED VIEW mv NEVER REFRESH AS SELECT * FROM t;"
+      - id: using_index
+        sql: "CREATE MATERIALIZED VIEW mv USING INDEX TABLESPACE idx_ts STORAGE (INITIAL 25K) AS SELECT * FROM t;"
+      - id: using_no_index
+        sql: "CREATE MATERIALIZED VIEW mv USING NO INDEX AS SELECT * FROM t;"
+      - id: partitioned
+        sql: "CREATE MATERIALIZED VIEW mv PARTITION BY RANGE (d) (PARTITION p1 VALUES LESS THAN (DATE '2024-01-01'), PARTITION p2 VALUES LESS THAN (MAXVALUE)) AS SELECT d, SUM(c) s FROM t GROUP BY d;"
+      - id: cache_nologging_compress
+        sql: "CREATE MATERIALIZED VIEW mv NOLOGGING COMPRESS CACHE AS SELECT * FROM t;"
+      - id: on_query_computation
+        sql: "CREATE MATERIALIZED VIEW mv REFRESH FAST ON DEMAND ENABLE ON QUERY COMPUTATION ENABLE QUERY REWRITE AS SELECT c, COUNT(*) n FROM t GROUP BY c;"
+      - id: concurrent_refresh
+        sql: "CREATE MATERIALIZED VIEW mv REFRESH FAST ON COMMIT ENABLE CONCURRENT REFRESH AS SELECT c, COUNT(*) n FROM t GROUP BY c;"
+      - id: disable_query_rewrite
+        sql: "CREATE MATERIALIZED VIEW mv DISABLE QUERY REWRITE AS SELECT * FROM t;"
+      - id: evaluate_using
+        sql: "CREATE MATERIALIZED VIEW mv EVALUATE USING CURRENT EDITION AS SELECT * FROM t;"
+      - id: default_collation
+        sql: "CREATE MATERIALIZED VIEW mv DEFAULT COLLATION BINARY_CI AS SELECT * FROM t;"
+      - id: annotations
+        sql: "CREATE MATERIALIZED VIEW mv (c ANNOTATIONS (Hidden)) ANNOTATIONS (Title 'MV', ADD Snapshot) AS SELECT c FROM t;"
+      - id: remote_source
+        sql: "CREATE MATERIALIZED VIEW mv AS SELECT * FROM s.t@remote x WHERE EXISTS (SELECT * FROM s.u@remote y WHERE y.id = x.id);"
+    examples:
+      - "CREATE MATERIALIZED VIEW mv1 AS SELECT * FROM hr.employees;"
+      - |-
+        CREATE MATERIALIZED VIEW sales_by_month_by_state
+             TABLESPACE example
+             PARALLEL 4
+             BUILD IMMEDIATE
+             REFRESH COMPLETE
+             ENABLE QUERY REWRITE
+             AS SELECT t.calendar_month_desc, c.cust_state_province,
+                SUM(s.amount_sold) AS sum_sales
+                FROM times t, sales s, customers c
+                WHERE s.time_id = t.time_id AND s.cust_id = c.cust_id
+                GROUP BY t.calendar_month_desc, c.cust_state_province;
+      - |-
+        CREATE MATERIALIZED VIEW catalog
+           REFRESH FAST START WITH SYSDATE NEXT SYSDATE + 1/4096
+           WITH PRIMARY KEY
+           AS SELECT * FROM product_information;
+      - |-
+        CREATE MATERIALIZED VIEW all_customers
+           PCTFREE 5 PCTUSED 60
+           TABLESPACE example
+           STORAGE (INITIAL 50K)
+           USING INDEX STORAGE (INITIAL 25K)
+           REFRESH START WITH ROUND(SYSDATE + 1) + 11/24
+           NEXT NEXT_DAY(TRUNC(SYSDATE), 'MONDAY') + 15/24
+           AS SELECT * FROM sh.customers@remote
+                 UNION
+              SELECT * FROM sh.customers@local;
+      - |-
+        CREATE MATERIALIZED VIEW sales_sum_table
+           ON PREBUILT TABLE WITH REDUCED PRECISION
+           ENABLE QUERY REWRITE
+           AS SELECT t.calendar_month_desc AS month,
+                     c.cust_state_province AS state,
+                     SUM(s.amount_sold) AS sales
+              FROM times t, customers c, sales s
+              WHERE s.time_id = t.time_id AND s.cust_id = c.cust_id
+              GROUP BY t.calendar_month_desc, c.cust_state_province;
+
+  - id: alter_materialized_view
+    name: ALTER MATERIALIZED VIEW
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-MATERIALIZED-VIEW.html
+    tier: medium
+    probes:
+      - id: refresh_fast
+        sql: "ALTER MATERIALIZED VIEW mv REFRESH FAST;"
+      - id: refresh_schedule
+        sql: "ALTER MATERIALIZED VIEW IF EXISTS s.mv REFRESH COMPLETE START WITH TRUNC(SYSDATE + 1) + 9/24 NEXT SYSDATE + 7;"
+      - id: refresh_on_commit
+        sql: "ALTER MATERIALIZED VIEW mv REFRESH ON COMMIT;"
+      - id: enable_query_rewrite
+        sql: "ALTER MATERIALIZED VIEW mv ENABLE QUERY REWRITE;"
+      - id: compile
+        sql: "ALTER MATERIALIZED VIEW mv COMPILE;"
+      - id: consider_fresh
+        sql: "ALTER MATERIALIZED VIEW mv CONSIDER FRESH;"
+      - id: physical_and_parallel
+        sql: "ALTER MATERIALIZED VIEW mv PCTFREE 10 PARALLEL 4;"
+      - id: shrink_space
+        sql: "ALTER MATERIALIZED VIEW mv SHRINK SPACE CASCADE;"
+      - id: annotations
+        sql: "ALTER MATERIALIZED VIEW mv ANNOTATIONS (DROP Snapshot);"
+    examples:
+      - |-
+        ALTER MATERIALIZED VIEW sales_by_month_by_state
+           REFRESH FAST;
+      - |-
+        ALTER MATERIALIZED VIEW emp_data
+           REFRESH COMPLETE
+           START WITH TRUNC(SYSDATE+1) + 9/24
+           NEXT SYSDATE+7;
+      - |-
+        ALTER MATERIALIZED VIEW emp_data
+           ENABLE QUERY REWRITE;
+      - "ALTER MATERIALIZED VIEW sales_by_month_by_state CONSIDER FRESH;"
+      - "ALTER MATERIALIZED VIEW order_data COMPILE;"
+
+  - id: drop_materialized_view
+    name: DROP MATERIALIZED VIEW
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/DROP-MATERIALIZED-VIEW.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "DROP MATERIALIZED VIEW mv;"
+      - id: if_exists_schema
+        sql: "DROP MATERIALIZED VIEW IF EXISTS s.mv;"
+      - id: preserve_table
+        sql: "DROP MATERIALIZED VIEW mv PRESERVE TABLE;"
+    examples:
+      - "DROP MATERIALIZED VIEW emp_data;"
+      - "DROP MATERIALIZED VIEW sales_by_month_by_state;"
+
+  - id: create_index
+    name: CREATE INDEX
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-INDEX.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE INDEX idx ON t (c);"
+      - id: unique
+        sql: "CREATE UNIQUE INDEX s.idx ON s.t (c, d);"
+      - id: if_not_exists
+        sql: "CREATE INDEX IF NOT EXISTS idx ON t (c);"
+      - id: bitmap
+        sql: "CREATE BITMAP INDEX idx ON t (c);"
+      - id: asc_desc
+        sql: "CREATE INDEX idx ON t (c ASC, d DESC);"
+      - id: function_based
+        sql: "CREATE INDEX idx ON t (UPPER(c));"
+      - id: expression
+        sql: "CREATE INDEX idx ON t (c + (c * d));"
+      - id: table_alias_expression
+        sql: "CREATE INDEX idx ON t x (EXTRACTVALUE(VALUE(x), '/W/Area'));"
+      - id: multivalue
+        sql: "CREATE MULTIVALUE INDEX idx ON t x (x.jcol.credit_score.numberOnly());"
+      - id: json_index
+        sql: "CREATE JSON INDEX idx ON t (doc);"
+        note: "26ai create_index syntax: CREATE [ JSON ] [ UNIQUE | BITMAP | MULTIVALUE | SPARSE | DENSE ] INDEX."
+      - id: cluster_index
+        sql: "CREATE INDEX idx ON CLUSTER cl;"
+      - id: bitmap_join_index
+        sql: "CREATE BITMAP INDEX idx ON t (u.c) FROM t, u WHERE t.id = u.id;"
+      - id: compress
+        sql: "CREATE INDEX idx ON t (c, d) COMPRESS 1;"
+      - id: compress_advanced
+        sql: "CREATE INDEX idx ON t (c) COMPRESS ADVANCED LOW;"
+      - id: index_attributes
+        sql: "CREATE INDEX idx ON t (c) TABLESPACE users PCTFREE 10 INITRANS 2 STORAGE (INITIAL 64K) NOLOGGING ONLINE PARALLEL 4;"
+      - id: reverse_nosort
+        sql: "CREATE INDEX idx ON t (c) REVERSE NOSORT;"
+      - id: invisible
+        sql: "CREATE INDEX idx ON t (c) INVISIBLE;"
+      - id: unusable
+        sql: "CREATE INDEX idx ON t (c) UNUSABLE;"
+      - id: deferred_invalidation
+        sql: "CREATE INDEX idx ON t (c) DEFERRED INVALIDATION;"
+      - id: indexing_partial
+        sql: "CREATE INDEX idx ON t (c) LOCAL INDEXING PARTIAL;"
+      - id: local
+        sql: "CREATE INDEX idx ON t (c) LOCAL;"
+      - id: local_partitions
+        sql: "CREATE BITMAP INDEX idx ON t (c) LOCAL (PARTITION p1 TABLESPACE ts1, PARTITION p2, PARTITION p3 TABLESPACE ts2) TABLESPACE ts3;"
+      - id: local_store_in
+        sql: "CREATE INDEX idx ON t (c) LOCAL STORE IN (ts1, ts2);"
+      - id: global_partition_by_range
+        sql: "CREATE INDEX idx ON t (c) GLOBAL PARTITION BY RANGE (c) (PARTITION p1 VALUES LESS THAN (1000), PARTITION p2 VALUES LESS THAN (MAXVALUE));"
+      - id: global_partition_by_hash
+        sql: "CREATE INDEX idx ON t (c) GLOBAL PARTITION BY HASH (c) PARTITIONS 4;"
+      - id: domain_index
+        sql: "CREATE INDEX idx ON t (doc) INDEXTYPE IS ctxsys.context PARAMETERS ('SYNC (ON COMMIT)');"
+      - id: xmlindex
+        sql: "CREATE INDEX idx ON t (x) INDEXTYPE IS XDB.XMLINDEX;"
+      - id: annotations
+        sql: "CREATE INDEX idx ON t (c) ANNOTATIONS (Display 'C index');"
+      - id: ilm
+        sql: "CREATE INDEX idx ILM (ADD POLICY SEGMENT TIER TO LOW_COST_TBS) ON t (c);"
+    examples:
+      - |-
+        CREATE INDEX ord_customer_ix_demo
+           ON orders (customer_id, sales_rep_id)
+           COMPRESS 1;
+      - "CREATE INDEX upper_ix ON employees (UPPER(last_name));"
+      - |-
+        CREATE INDEX cost_ix ON sales (amount_sold)
+           GLOBAL PARTITION BY RANGE (amount_sold)
+              (PARTITION p1 VALUES LESS THAN (1000),
+               PARTITION p2 VALUES LESS THAN (2500),
+               PARTITION p3 VALUES LESS THAN (MAXVALUE));
+      - |-
+        CREATE BITMAP INDEX product_bm_ix
+           ON hash_products(list_price)
+           LOCAL(PARTITION ix_p1 TABLESPACE tbs_01,
+                 PARTITION ix_p2,
+                 PARTITION ix_p3 TABLESPACE tbs_02,
+                 PARTITION ix_p4 TABLESPACE tbs_03)
+           TABLESPACE tbs_04;
+      - |-
+        CREATE MULTIVALUE INDEX mvi_1 ON mytable t
+              (t.jcol.credit_score.numberOnly());
+
+  - id: alter_index
+    name: ALTER INDEX
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-INDEX.html
+    tier: high
+    probes:
+      - id: rebuild
+        sql: "ALTER INDEX idx REBUILD;"
+      - id: rebuild_options
+        sql: "ALTER INDEX s.idx REBUILD ONLINE TABLESPACE users PARALLEL 4 NOLOGGING COMPRESS;"
+      - id: rebuild_reverse
+        sql: "ALTER INDEX idx REBUILD REVERSE;"
+      - id: rebuild_partition
+        sql: "ALTER INDEX idx REBUILD PARTITION p3 NOLOGGING;"
+      - id: rename
+        sql: "ALTER INDEX idx RENAME TO idx2;"
+      - id: unusable
+        sql: "ALTER INDEX idx UNUSABLE ONLINE;"
+      - id: visible
+        sql: "ALTER INDEX idx VISIBLE;"
+      - id: invisible
+        sql: "ALTER INDEX idx INVISIBLE;"
+      - id: physical_attributes
+        sql: "ALTER INDEX idx INITRANS 5;"
+      - id: parallel
+        sql: "ALTER INDEX idx PARALLEL;"
+      - id: coalesce
+        sql: "ALTER INDEX idx COALESCE CLEANUP;"
+      - id: shrink
+        sql: "ALTER INDEX idx SHRINK SPACE COMPACT;"
+      - id: monitoring_usage
+        sql: "ALTER INDEX idx MONITORING USAGE;"
+      - id: compile
+        sql: "ALTER INDEX idx COMPILE;"
+      - id: disable
+        sql: "ALTER INDEX idx DISABLE;"
+      - id: modify_partition
+        sql: "ALTER INDEX idx MODIFY PARTITION p2 UNUSABLE;"
+      - id: modify_default_attributes
+        sql: "ALTER INDEX idx MODIFY DEFAULT ATTRIBUTES INITRANS 5;"
+      - id: rename_partition
+        sql: "ALTER INDEX idx RENAME PARTITION p3 TO p3_q3;"
+      - id: split_partition
+        sql: "ALTER INDEX idx SPLIT PARTITION p2 AT (1500) INTO (PARTITION p2a TABLESPACE ts1 LOGGING, PARTITION p2b TABLESPACE ts2);"
+      - id: drop_partition
+        sql: "ALTER INDEX idx DROP PARTITION p1;"
+      - id: add_hash_partition
+        sql: "ALTER INDEX idx ADD PARTITION p5 TABLESPACE ts1;"
+      - id: parameters
+        sql: "ALTER INDEX idx PARAMETERS ('sync');"
+      - id: annotations
+        sql: "ALTER INDEX idx ANNOTATIONS (ADD Hidden);"
+    examples:
+      - "ALTER INDEX ord_customer_ix REBUILD REVERSE;"
+      - |-
+        ALTER INDEX oe.cust_lname_ix
+            INITRANS 5;
+      - "ALTER INDEX upper_ix RENAME TO upper_name_ix;"
+      - |-
+        ALTER INDEX cost_ix
+           SPLIT PARTITION p2 AT (1500)
+           INTO ( PARTITION p2a TABLESPACE tbs_01 LOGGING,
+                  PARTITION p2b TABLESPACE tbs_02);
+      - |-
+        ALTER INDEX prod_idx
+              MODIFY DEFAULT ATTRIBUTES INITRANS 5;
+
+  - id: drop_index
+    name: DROP INDEX
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/DROP-INDEX.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "DROP INDEX idx;"
+      - id: if_exists_schema
+        sql: "DROP INDEX IF EXISTS s.idx;"
+      - id: online
+        sql: "DROP INDEX idx ONLINE;"
+      - id: force
+        sql: "DROP INDEX idx FORCE;"
+      - id: deferred_invalidation
+        sql: "DROP INDEX idx ONLINE DEFERRED INVALIDATION;"
+    examples:
+      - "DROP INDEX ord_customer_ix_demo;"
