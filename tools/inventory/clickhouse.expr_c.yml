@@ -1,0 +1,372 @@
+dialect: clickhouse
+engine: ClickHouse
+version: "current docs (2026)"
+source: https://clickhouse.com/docs/sql-reference/statements/
+
+statements: []
+
+expressions:
+  - id: c_aggregate_syntax
+    name: Aggregate function syntax
+    doc: https://clickhouse.com/docs/sql-reference/aggregate-functions/reference/quantile
+    tier: high
+    probes:
+      - { id: count_star, sql: "SELECT count(*) FROM t;" }
+      - { id: count_distinct, sql: "SELECT count(DISTINCT c) FROM t;" }
+      - { id: parametric_quantile, sql: "SELECT quantile(0.9)(c) FROM t;", note: "Parametric aggregate syntax: quantile(level)(expr)" }
+      - { id: parametric_group_array, sql: "SELECT groupArray(10)(c) FROM t;", note: "groupArray(max_size)(x)" }
+      - { id: parametric_top_k, sql: "SELECT topK(3)(c) FROM t;" }
+      - { id: arg_max, sql: "SELECT argMax(a, b) FROM t GROUP BY c;" }
+      - { id: any_respect_nulls, sql: "SELECT any(c) RESPECT NULLS FROM t;", note: "any(column)[ RESPECT NULLS] on the any page" }
+      - { id: any_ignore_nulls, sql: "SELECT any(c) IGNORE NULLS FROM t;" }
+      - { id: group_by_with_rollup, sql: "SELECT a, sum(b) FROM t GROUP BY a WITH ROLLUP;" }
+
+  - id: c_aggregate_combinators
+    name: Aggregate function combinators
+    doc: https://clickhouse.com/docs/sql-reference/aggregate-functions/combinators
+    tier: high
+    probes:
+      - { id: if_combinator, sql: "SELECT sumIf(a, b > 0) FROM t;" }
+      - { id: array_combinator, sql: "SELECT sumArray(arr) FROM t;" }
+      - { id: map_combinator, sql: "SELECT sumMap(m) FROM t;" }
+      - { id: state_merge, sql: "SELECT sumMerge(s) FROM (SELECT sumState(a) AS s FROM t);" }
+      - { id: foreach_combinator, sql: "SELECT sumForEach(arr) FROM t;" }
+      - { id: distinct_combinator, sql: "SELECT sumDistinct(a) FROM t;" }
+      - { id: or_default_combinator, sql: "SELECT avgOrDefault(a) FROM t;" }
+      - { id: or_null_combinator, sql: "SELECT avgOrNull(a) FROM t;" }
+      - { id: resample_combinator, sql: "SELECT countResample(0, 10, 2)(a) FROM t;" }
+      - { id: argmax_combinator, sql: "SELECT sumArgMax(a, b) FROM t;" }
+      - { id: combined_if_parametric, sql: "SELECT quantileIf(0.5)(a, b > 0) FROM t;" }
+
+  - id: c_window_syntax
+    name: Window function syntax
+    doc: https://clickhouse.com/docs/sql-reference/window-functions
+    tier: high
+    probes:
+      - { id: over_empty, sql: "SELECT sum(a) OVER () FROM t;" }
+      - { id: over_partition_by, sql: "SELECT sum(a) OVER (PARTITION BY b) FROM t;" }
+      - { id: over_order_by, sql: "SELECT row_number() OVER (ORDER BY a) FROM t;" }
+      - { id: over_partition_order, sql: "SELECT rank() OVER (PARTITION BY b ORDER BY a DESC) FROM t;" }
+      - { id: rows_between, sql: "SELECT sum(a) OVER (ORDER BY b ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;" }
+      - { id: rows_unbounded, sql: "SELECT sum(a) OVER (ORDER BY b ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: rows_following_unbounded, sql: "SELECT sum(a) OVER (ORDER BY b ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: rows_single_bound, sql: "SELECT sum(a) OVER (ORDER BY b ROWS 2 PRECEDING) FROM t;" }
+      - { id: range_between, sql: "SELECT sum(a) OVER (ORDER BY b RANGE BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;" }
+      - { id: range_unbounded, sql: "SELECT sum(a) OVER (ORDER BY b RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: groups_between, sql: "SELECT groupArray(a) OVER (ORDER BY b GROUPS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;" }
+      - { id: named_window, sql: "SELECT sum(a) OVER w FROM t WINDOW w AS (PARTITION BY b ORDER BY c);" }
+      - { id: over_named_window_ref, sql: "SELECT sum(a) OVER (w ORDER BY c) FROM t WINDOW w AS (PARTITION BY b);" }
+      - { id: multiple_named_windows, sql: "SELECT sum(a) OVER w1, avg(a) OVER w2 FROM t WINDOW w1 AS (PARTITION BY b), w2 AS (ORDER BY c);" }
+      - { id: lag_in_frame, sql: "SELECT lagInFrame(a, 1, 0) OVER (ORDER BY b ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: lead_in_frame, sql: "SELECT leadInFrame(a) OVER (ORDER BY b ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: non_negative_derivative, sql: "SELECT nonNegativeDerivative(a, ts, INTERVAL 1 SECOND) OVER (ORDER BY ts) FROM t;" }
+      - { id: ntile, sql: "SELECT ntile(4) OVER (ORDER BY a) FROM t;" }
+      - { id: first_value_over, sql: "SELECT first_value(a) OVER (PARTITION BY b ORDER BY c) FROM t;" }
+      - { id: nth_value_over, sql: "SELECT nth_value(a, 2) OVER (ORDER BY c) FROM t;" }
+      - { id: percent_cume, sql: "SELECT percent_rank() OVER (ORDER BY a), cume_dist() OVER (ORDER BY a), dense_rank() OVER (ORDER BY a) FROM t;" }
+      - { id: window_expression_over, sql: "SELECT (count(*) OVER ()) / 2 FROM t;" }
+
+  - id: c_lambdas
+    name: Lambda expressions
+    doc: https://clickhouse.com/docs/sql-reference/operators
+    tier: high
+    probes:
+      - { id: single_arg, sql: "SELECT arrayMap(x -> x + 1, arr) FROM t;" }
+      - { id: multi_arg, sql: "SELECT arrayMap((x, y) -> x + y, a1, a2) FROM t;" }
+      - { id: array_filter, sql: "SELECT arrayFilter(x -> x > 0, arr) FROM t;" }
+      - { id: array_exists_all, sql: "SELECT arrayExists(x -> x = 1, arr), arrayAll(x -> x > 0, arr) FROM t;" }
+      - { id: array_fold, sql: "SELECT arrayFold((acc, x) -> acc + x, arr, toInt64(0)) FROM t;" }
+      - { id: array_sort_lambda, sql: "SELECT arraySort(x -> -x, arr) FROM t;" }
+      - { id: nested_lambda, sql: "SELECT arrayMap(x -> arrayMap(y -> y * 2, x), nested) FROM t;" }
+      - { id: lambda_function_form, sql: "SELECT arrayMap(lambda(x, x + 1), arr) FROM t;", note: "x -> expr is the lambda(x, expr) function" }
+      - { id: lambda_tuple_args, sql: "SELECT arrayMap((k, v) -> concat(k, v), mapKeys(m), mapValues(m)) FROM t;" }
+
+  - id: c_array_access_constructors
+    name: Array operators and constructors
+    doc: https://clickhouse.com/docs/sql-reference/operators
+    tier: high
+    probes:
+      - { id: array_literal, sql: "SELECT [1, 2, 3];" }
+      - { id: empty_array_literal, sql: "SELECT [];" }
+      - { id: nested_array_literal, sql: "SELECT [[1, 2], [3]];" }
+      - { id: array_function, sql: "SELECT array(1, 2, 3);" }
+      - { id: array_subscript, sql: "SELECT arr[1] FROM t;" }
+      - { id: array_negative_subscript, sql: "SELECT arr[-1] FROM t;" }
+      - { id: array_multi_subscript, sql: "SELECT arr[[1, 2]] FROM t;", note: "a[N] where N is an array of integers" }
+      - { id: array_chained_subscript, sql: "SELECT arr[1][2] FROM t;" }
+      - { id: array_join_function, sql: "SELECT arrayJoin([1, 2, 3]);" }
+      - { id: array_slice_functions, sql: "SELECT arraySlice(arr, 2, 3), arrayConcat(a1, a2), has(arr, 1), length(arr) FROM t;" }
+
+  - id: c_tuple_access_constructors
+    name: Tuple operators and constructors
+    doc: https://clickhouse.com/docs/sql-reference/data-types/tuple
+    tier: high
+    probes:
+      - { id: tuple_literal, sql: "SELECT (1, 'a', 3.5);" }
+      - { id: tuple_function, sql: "SELECT tuple(1, 'a');" }
+      - { id: tuple_element_index, sql: "SELECT tup.1 FROM t;", note: "a.N access to a tuple element, operators page" }
+      - { id: tuple_element_name, sql: "SELECT tup.name FROM t;" }
+      - { id: tuple_element_function, sql: "SELECT tupleElement(tup, 1), tupleElement(tup, 'name') FROM t;" }
+      - { id: named_tuple_cast, sql: "SELECT CAST((1, 'a') AS Tuple(id UInt32, name String));" }
+      - { id: tuple_comparison, sql: "SELECT (a, b) = (1, 2) FROM t;" }
+      - { id: tuple_in, sql: "SELECT * FROM t WHERE (a, b) IN ((1, 2), (3, 4));" }
+      - { id: tuple_arith, sql: "SELECT (1, 2) + (3, 4), (1, 2) * 3;", note: "tuplePlus, tupleMultiplyByNumber via operators" }
+      - { id: tuple_negation, sql: "SELECT -(1, 2);" }
+
+  - id: c_map_access_constructors
+    name: Map access and constructors
+    doc: https://clickhouse.com/docs/sql-reference/data-types/map
+    tier: high
+    probes:
+      - { id: map_function, sql: "SELECT map('a', 1, 'b', 2);" }
+      - { id: map_brace_literal, sql: "SELECT {'a': 1, 'b': 2};", note: "Map literal syntax" }
+      - { id: map_empty_literal, sql: "SELECT map();" }
+      - { id: map_subscript, sql: "SELECT m['key'] FROM t;" }
+      - { id: map_subcolumns, sql: "SELECT m.keys, m.values FROM t;" }
+      - { id: map_functions, sql: "SELECT mapKeys(m), mapValues(m), mapContains(m, 'a'), mapUpdate(m, map('a', 1)) FROM t;" }
+      - { id: map_cast, sql: "SELECT CAST([('a', 1)] AS Map(String, UInt8));" }
+
+  - id: c_json_access
+    name: JSON subcolumn access
+    doc: https://clickhouse.com/docs/sql-reference/data-types/newjson
+    tier: high
+    probes:
+      - { id: json_path, sql: "SELECT json.a.b FROM t;" }
+      - { id: json_typed_subcolumn, sql: "SELECT json.a.b.:Int64 FROM t;", note: "json.path.:TypeName reads a Dynamic subcolumn as a type" }
+      - { id: json_cast_subcolumn, sql: "SELECT json.a.b::String FROM t;" }
+      - { id: json_subobject, sql: "SELECT json.^a FROM t;", note: "json.^path reads a sub-object" }
+      - { id: json_dynamic_path, sql: "SELECT json.@a FROM t;" }
+      - { id: json_backtick_path, sql: "SELECT json.`a.b` FROM t;" }
+      - { id: json_array_path, sql: "SELECT json.a.b[].c.:Int64 FROM t;" }
+      - { id: json_array_json_type, sql: "SELECT json.a.b.:`Array(JSON)` FROM t;" }
+      - { id: json_literal_cast, sql: "SELECT '{\"a\": 1}'::JSON;" }
+      - { id: json_type_params, sql: "SELECT CAST('{}' AS JSON(max_dynamic_paths = 10, a UInt32, SKIP b));" }
+      - { id: dynamic_type_subcolumn, sql: "SELECT d.:Int64, dynamicType(d) FROM t;" }
+
+  - id: c_json_functions
+    name: JSON functions family
+    doc: https://clickhouse.com/docs/sql-reference/functions/json-functions
+    tier: high
+    probes:
+      - { id: json_extract_typed, sql: "SELECT JSONExtract(s, 'a', 'UInt32') FROM t;" }
+      - { id: json_extract_tuple_type, sql: "SELECT JSONExtract(s, 'Tuple(a UInt8, b String)') FROM t;" }
+      - { id: json_extract_string, sql: "SELECT JSONExtractString(s, 'a', 'b'), JSONExtractInt(s, 'n'), JSONExtractFloat(s, 'f'), JSONExtractBool(s, 'b') FROM t;" }
+      - { id: json_has_length, sql: "SELECT JSONHas(s, 'a'), JSONLength(s), JSONType(s, 'a'), isValidJSON(s) FROM t;" }
+      - { id: simple_json, sql: "SELECT simpleJSONExtractString(s, 'a'), visitParamExtractInt(s, 'n') FROM t;" }
+      - { id: to_json_string, sql: "SELECT toJSONString(map('a', 1));" }
+
+  - id: c_query_parameters
+    name: Query parameters and variables
+    doc: https://clickhouse.com/docs/sql-reference/syntax
+    tier: high
+    probes:
+      - { id: param_simple, sql: "SELECT * FROM t WHERE a = {id:UInt32};" }
+      - { id: param_string, sql: "SELECT {name:String};" }
+      - { id: param_array, sql: "SELECT * FROM t WHERE a IN {ids:Array(UInt32)};" }
+      - { id: param_identifier, sql: "SELECT * FROM {tbl:Identifier};" }
+      - { id: param_parameterized_type, sql: "SELECT {d:DateTime64(3)}, {n:Nullable(String)};" }
+      - { id: param_in_limit, sql: "SELECT * FROM t LIMIT {n:UInt32};" }
+
+  - id: c_literals
+    name: Literals
+    doc: https://clickhouse.com/docs/sql-reference/syntax
+    tier: high
+    probes:
+      - { id: integer_hex_binary, sql: "SELECT 123, 0xFF, 0b101, 0o17;" }
+      - { id: float_forms, sql: "SELECT 1.5, .5, 1e10, 1.5E-3, inf, nan, -inf;" }
+      - { id: digit_separators, sql: "SELECT 1_000_000, 0xFF_FF;", note: "Underscore separators in numeric literals" }
+      - { id: string_single_quote, sql: "SELECT 'it''s', 'back\\\\slash', 'tab\\t';" }
+      - { id: string_hex_escape, sql: "SELECT 'a\\x41', 'x\\0y';" }
+      - { id: heredoc_string, sql: "SELECT $$some text$$, $tag$text$tag$;", note: "Heredoc string literals" }
+      - { id: null_true_false, sql: "SELECT NULL, true, false;" }
+      - { id: typed_date_literals, sql: "SELECT DATE '2024-01-01', TIMESTAMP '2024-01-01 00:00:00';" }
+      - { id: interval_literal, sql: "SELECT INTERVAL 1 DAY, INTERVAL '2 hour', INTERVAL '3' minute;" }
+      - { id: interval_arithmetic, sql: "SELECT now() + INTERVAL 4 DAY + INTERVAL 3 HOUR;" }
+      - { id: string_prefix_binary, sql: "SELECT x'414243', X'41';", note: "Hex/binary string literals" }
+
+  - id: c_identifiers_comments
+    name: Identifier quoting and comments
+    doc: https://clickhouse.com/docs/sql-reference/syntax
+    tier: high
+    probes:
+      - { id: double_quoted_identifier, sql: "SELECT \"a b\" FROM \"my table\";" }
+      - { id: backtick_identifier, sql: "SELECT `a b` FROM `my table`;" }
+      - { id: qualified_identifier, sql: "SELECT t.a, db.t.b FROM db.t;" }
+      - { id: line_comment_dashes, sql: "SELECT 1 -- comment\n;" }
+      - { id: line_comment_hash, sql: "SELECT 1 # comment\n;", note: "ClickHouse supports # and #! line comments" }
+      - { id: block_comment, sql: "SELECT /* c */ 1;" }
+      - { id: alias_without_as, sql: "SELECT a b FROM t;" }
+      - { id: alias_reuse, sql: "SELECT a + 1 AS x, x * 2 AS y FROM t;" }
+
+  - id: c_arithmetic_comparison_operators
+    name: Arithmetic and comparison operators
+    doc: https://clickhouse.com/docs/sql-reference/operators
+    tier: high
+    probes:
+      - { id: arithmetic, sql: "SELECT a + b, a - b, a * b, a / b, a % b, -a FROM t;" }
+      - { id: comparison_symbols, sql: "SELECT a = b, a == b, a != b, a <> b, a < b, a <= b, a > b, a >= b FROM t;" }
+      - { id: null_safe_equal, sql: "SELECT a <=> b FROM t;" }
+      - { id: is_distinct_from, sql: "SELECT a IS DISTINCT FROM b, a IS NOT DISTINCT FROM b FROM t;" }
+      - { id: like_family, sql: "SELECT a LIKE 'x%', a NOT LIKE 'x%', a ILIKE 'x%', a NOT ILIKE 'x%' FROM t;" }
+      - { id: like_escape, sql: "SELECT a LIKE 'x#%' ESCAPE '#' FROM t;" }
+      - { id: regexp_operator, sql: "SELECT a REGEXP 'x.*', a ~ 'x', a !~ 'x', a ~* 'x', a !~* 'x' FROM t;" }
+      - { id: similar_to, sql: "SELECT a SIMILAR TO 'Cl_ck[hH]ouse', a NOT SIMILAR TO 'x%' FROM t;" }
+      - { id: similar_to_escape, sql: "SELECT 'a%b' SIMILAR TO 'a#%b' ESCAPE '#';" }
+      - { id: between, sql: "SELECT a BETWEEN 1 AND 10, a NOT BETWEEN 1 AND 10 FROM t;" }
+      - { id: concat_operator, sql: "SELECT a || b || 'x' FROM t;" }
+      - { id: logical_operators, sql: "SELECT a AND b, a OR b, NOT a FROM t;" }
+      - { id: is_null, sql: "SELECT a IS NULL, a IS NOT NULL FROM t;" }
+      - { id: is_boolean, sql: "SELECT x IS TRUE, x IS FALSE, x IS UNKNOWN, x IS NOT TRUE, x IS NOT FALSE, x IS NOT UNKNOWN FROM t;" }
+      - { id: ternary_operator, sql: "SELECT a ? b : c FROM t;" }
+      - { id: quantified_any_all_subquery, sql: "SELECT number AS a FROM numbers(10) WHERE a > ALL (SELECT number FROM numbers(3, 3));" }
+      - { id: quantified_any_subquery, sql: "SELECT number AS a FROM numbers(10) WHERE a > ANY (SELECT number FROM numbers(3, 3));" }
+      - { id: quantified_some_array, sql: "SELECT a = SOME([1, 2]), a <> ALL([3, 4]) FROM t;", note: "SOME/ALL on arrays, operators page" }
+      - { id: quantified_like_some_array, sql: "SELECT 'abc' LIKE SOME(['a%', 'z%']);" }
+
+  - id: c_in_operators
+    name: IN and subquery predicates
+    doc: https://clickhouse.com/docs/sql-reference/operators/in
+    tier: high
+    probes:
+      - { id: in_list, sql: "SELECT * FROM t WHERE a IN (1, 2, 3);" }
+      - { id: not_in_list, sql: "SELECT * FROM t WHERE a NOT IN (1, 2, 3);" }
+      - { id: in_subquery, sql: "SELECT * FROM t WHERE a IN (SELECT b FROM s);" }
+      - { id: in_table_name, sql: "SELECT * FROM t WHERE a IN s;" }
+      - { id: global_in, sql: "SELECT * FROM t WHERE a GLOBAL IN (SELECT b FROM s);" }
+      - { id: global_not_in, sql: "SELECT * FROM t WHERE a GLOBAL NOT IN (SELECT b FROM s);" }
+      - { id: exists_subquery, sql: "SELECT * FROM t WHERE EXISTS (SELECT 1 FROM s WHERE s.a = t.a);" }
+      - { id: scalar_subquery, sql: "SELECT (SELECT max(a) FROM s) FROM t;" }
+      - { id: in_function_form, sql: "SELECT in(a, (1, 2)), notIn(a, (1, 2)), globalIn(a, (1, 2)) FROM t;" }
+
+  - id: c_case_conditional
+    name: CASE and conditional functions
+    doc: https://clickhouse.com/docs/sql-reference/operators
+    tier: high
+    probes:
+      - { id: searched_case, sql: "SELECT CASE WHEN a > 1 THEN 'x' WHEN a > 0 THEN 'y' ELSE 'z' END FROM t;" }
+      - { id: simple_case, sql: "SELECT CASE a WHEN 1 THEN 'x' WHEN 2 THEN 'y' END FROM t;" }
+      - { id: if_function, sql: "SELECT if(a > 1, 'x', 'y') FROM t;" }
+      - { id: multi_if, sql: "SELECT multiIf(a > 2, 'x', a > 1, 'y', 'z') FROM t;" }
+      - { id: coalesce_ifnull, sql: "SELECT coalesce(a, b, 0), ifNull(a, 0), nullIf(a, 0), assumeNotNull(a) FROM t;" }
+
+  - id: c_cast_type_syntax
+    name: Casts and type names
+    doc: https://clickhouse.com/docs/sql-reference/data-types
+    tier: high
+    probes:
+      - { id: cast_function, sql: "SELECT CAST(a AS UInt64) FROM t;" }
+      - { id: cast_comma_form, sql: "SELECT CAST(a, 'UInt64') FROM t;" }
+      - { id: cast_operator, sql: "SELECT a::UInt64 FROM t;" }
+      - { id: cast_nullable, sql: "SELECT CAST(a AS Nullable(Int32)) FROM t;" }
+      - { id: cast_low_cardinality, sql: "SELECT CAST(a AS LowCardinality(String)) FROM t;" }
+      - { id: cast_decimal, sql: "SELECT CAST(a AS Decimal(10, 2)), CAST(b AS Decimal64(4)) FROM t;" }
+      - { id: cast_fixed_string, sql: "SELECT CAST(a AS FixedString(8)) FROM t;" }
+      - { id: cast_datetime64_tz, sql: "SELECT CAST(a AS DateTime64(3, 'UTC')), CAST(b AS DateTime('Europe/Berlin')) FROM t;" }
+      - { id: cast_array_type, sql: "SELECT CAST([1, 2] AS Array(UInt8));" }
+      - { id: cast_enum, sql: "SELECT CAST('a' AS Enum8('a' = 1, 'b' = 2));" }
+      - { id: cast_variant, sql: "SELECT CAST(1 AS Variant(UInt64, String));" }
+      - { id: cast_nested_complex, sql: "SELECT CAST(x AS Map(String, Array(Tuple(UInt8, String))));" }
+      - { id: cast_aggregate_function_type, sql: "SELECT CAST(x AS AggregateFunction(sum, UInt64));" }
+      - { id: cast_ip_uuid, sql: "SELECT CAST(a AS IPv4), CAST(b AS IPv6), CAST(c AS UUID) FROM t;" }
+      - { id: accurate_cast, sql: "SELECT accurateCast(a, 'UInt8'), accurateCastOrNull(a, 'UInt8') FROM t;" }
+      - { id: to_type_functions, sql: "SELECT toUInt32(a), toString(a), toDate(a), toDateTime(a), toFloat64OrZero(a), toInt32OrNull(a), toDecimal64(a, 2) FROM t;" }
+
+  - id: c_special_form_functions
+    name: Special-form functions
+    doc: https://clickhouse.com/docs/sql-reference/operators
+    tier: high
+    probes:
+      - { id: extract_from, sql: "SELECT EXTRACT(DAY FROM toDate('2017-06-15'));" }
+      - { id: extract_epoch, sql: "SELECT EXTRACT(EPOCH FROM toDateTime('2024-01-15 12:30:45', 'UTC'));" }
+      - { id: extract_from_interval, sql: "SELECT EXTRACT(DAY FROM INTERVAL 40 DAY);" }
+      - { id: overlay_placing, sql: "SELECT OVERLAY('Hello' PLACING 'XY' FROM 2);" }
+      - { id: overlay_placing_for, sql: "SELECT OVERLAY('Hello' PLACING 'XY' FROM 2 FOR 3);" }
+      - { id: overlay_utf8, sql: "SELECT OVERLAYUTF8('Hello' PLACING 'XY' FROM 2 FOR 3);" }
+      - { id: substring_from_for, sql: "SELECT SUBSTRING('Hello' FROM 2 FOR 3);" }
+      - { id: trim_forms, sql: "SELECT trim(BOTH ' ' FROM s), trim(LEADING 'x' FROM s), trim(TRAILING 'x' FROM s) FROM t;" }
+      - { id: position_in, sql: "SELECT position('lo' IN 'Hello');" }
+      - { id: at_time_zone, sql: "SELECT TIMESTAMP '2001-02-16 20:38:40' AT TIME ZONE 'America/Denver';" }
+      - { id: at_local, sql: "SELECT TIMESTAMP '2001-02-16 20:38:40' AT LOCAL;" }
+      - { id: date_diff_unit, sql: "SELECT dateDiff('day', a, b), DATE_DIFF(DAY, a, b), date_trunc('month', a), dateAdd(DAY, 1, a) FROM t;" }
+
+  - id: c_column_matchers_modifiers
+    name: Column matchers and modifiers
+    doc: https://clickhouse.com/docs/sql-reference/statements/select
+    tier: high
+    probes:
+      - { id: asterisk, sql: "SELECT * FROM t;" }
+      - { id: qualified_asterisk, sql: "SELECT t.* FROM t;" }
+      - { id: columns_regexp, sql: "SELECT COLUMNS('^a') FROM t;" }
+      - { id: columns_list, sql: "SELECT COLUMNS(a, b) FROM t;" }
+      - { id: columns_apply, sql: "SELECT COLUMNS('^a') APPLY(sum) FROM t;" }
+      - { id: columns_apply_lambda, sql: "SELECT * APPLY(x -> max(x)) FROM t;" }
+      - { id: asterisk_except, sql: "SELECT * EXCEPT (a) FROM t;" }
+      - { id: asterisk_except_columns, sql: "SELECT COLUMNS('^a') EXCEPT (a1) FROM t;" }
+      - { id: asterisk_replace, sql: "SELECT * REPLACE (a + 1 AS a) FROM t;" }
+      - { id: asterisk_modifier_chain, sql: "SELECT * EXCEPT (a) REPLACE (b * 2 AS b) APPLY(toString) FROM t;" }
+
+  - id: c_string_function_family
+    name: String and regexp functions
+    doc: https://clickhouse.com/docs/sql-reference/functions/string-functions
+    tier: medium
+    probes:
+      - { id: string_functions, sql: "SELECT concat(a, b), lower(a), upper(a), length(a), substring(a, 2, 3), replaceAll(a, 'x', 'y'), splitByChar(',', a), format('{} {}', a, b) FROM t;" }
+      - { id: regexp_functions, sql: "SELECT match(a, 'x.*'), extract(a, '(\\\\d+)'), replaceRegexpAll(a, 'x', 'y'), extractAll(a, '\\\\w+') FROM t;" }
+      - { id: search_functions, sql: "SELECT position(a, 'x'), positionCaseInsensitive(a, 'x'), startsWith(a, 'x'), endsWith(a, 'x'), hasToken(a, 'x') FROM t;" }
+
+  - id: c_numeric_function_family
+    name: Math and arithmetic functions
+    doc: https://clickhouse.com/docs/sql-reference/functions/math-functions
+    tier: medium
+    probes:
+      - { id: math_functions, sql: "SELECT abs(a), round(a, 2), floor(a), ceil(a), sqrt(a), pow(a, 2), exp(a), log(a), sin(a), greatest(a, b), least(a, b) FROM t;" }
+      - { id: arithmetic_functions, sql: "SELECT plus(a, b), intDiv(a, b), modulo(a, b), divide(a, b), negate(a), gcd(a, b) FROM t;" }
+      - { id: bit_functions, sql: "SELECT bitAnd(a, b), bitOr(a, b), bitXor(a, b), bitShiftLeft(a, 2), bitCount(a) FROM t;" }
+      - { id: random_functions, sql: "SELECT rand(), rand64(), randCanonical(), generateUUIDv4() FROM t;" }
+
+  - id: c_date_function_family
+    name: Date and time functions
+    doc: https://clickhouse.com/docs/sql-reference/functions/date-time-functions
+    tier: medium
+    probes:
+      - { id: current_time_functions, sql: "SELECT now(), today(), yesterday(), now64(3), CURRENT_TIMESTAMP, CURRENT_DATE;" }
+      - { id: to_date_parts, sql: "SELECT toYear(a), toMonth(a), toDayOfMonth(a), toHour(a), toStartOfMonth(a), toStartOfInterval(a, INTERVAL 5 MINUTE), toMonday(a) FROM t;" }
+      - { id: date_arith_functions, sql: "SELECT addDays(a, 1), subtractMonths(a, 2), dateAdd(DAY, 1, a), age('day', a, b), timestamp_add(a, INTERVAL 1 DAY) FROM t;" }
+      - { id: format_date, sql: "SELECT formatDateTime(a, '%Y-%m-%d'), parseDateTimeBestEffort(s), toUnixTimestamp(a), fromUnixTimestamp(n) FROM t;" }
+      - { id: time_zone_functions, sql: "SELECT toTimeZone(a, 'UTC'), timeZone(), toDateTime(a, 'Asia/Tokyo') FROM t;" }
+
+  - id: c_array_function_family
+    name: Array functions
+    doc: https://clickhouse.com/docs/sql-reference/functions/array-functions
+    tier: medium
+    probes:
+      - { id: array_basic_functions, sql: "SELECT arrayConcat(a, b), arrayElement(a, 1), arrayPushBack(a, 1), arrayReverse(a), arrayDistinct(a), arrayUniq(a), arrayZip(a, b), range(10), arrayEnumerate(a) FROM t;" }
+      - { id: array_aggregates, sql: "SELECT arraySum(a), arrayMax(a), arrayAvg(a), arrayCumSum(a), arrayStringConcat(a, ',') FROM t;" }
+      - { id: array_search, sql: "SELECT has(a, 1), hasAll(a, b), hasAny(a, b), indexOf(a, 1), arrayFirst(x -> x > 1, a), empty(a), notEmpty(a) FROM t;" }
+      - { id: array_join_clause, sql: "SELECT a, x FROM t ARRAY JOIN arr AS x;" }
+      - { id: left_array_join_clause, sql: "SELECT a, x FROM t LEFT ARRAY JOIN arr AS x;" }
+      - { id: array_join_multiple, sql: "SELECT a, x, y FROM t ARRAY JOIN arr1 AS x, arr2 AS y;" }
+
+  - id: c_conversion_hash_encoding_family
+    name: Hash, encoding and type-conversion functions
+    doc: https://clickhouse.com/docs/sql-reference/functions/hash-functions
+    tier: medium
+    probes:
+      - { id: hash_functions, sql: "SELECT cityHash64(a), sipHash64(a), xxHash64(a), MD5(a), SHA256(a), murmurHash3_64(a), halfMD5(a) FROM t;" }
+      - { id: encoding_functions, sql: "SELECT hex(a), unhex(a), base64Encode(a), base64Decode(a), bin(a), encodeURLComponent(a) FROM t;" }
+      - { id: ip_functions, sql: "SELECT IPv4NumToString(a), IPv4StringToNum(a), toIPv6(a), isIPAddressInRange(a, '10.0.0.0/8'), IPv4CIDRToRange(toIPv4(a), 16) FROM t;" }
+      - { id: uuid_functions, sql: "SELECT generateUUIDv4(), toUUID(a), UUIDStringToNum(a), generateUUIDv7() FROM t;" }
+
+  - id: c_url_geo_misc_function_family
+    name: URL, geo and miscellaneous functions
+    doc: https://clickhouse.com/docs/sql-reference/functions/url-functions
+    tier: low
+    probes:
+      - { id: url_functions, sql: "SELECT domain(a), protocol(a), path(a), extractURLParameter(a, 'x'), cutQueryString(a) FROM t;" }
+      - { id: geo_functions, sql: "SELECT greatCircleDistance(a, b, c, d), geoDistance(a, b, c, d), pointInPolygon((a, b), [(0, 0), (1, 0), (1, 1)]), geoToH3(a, b, 5) FROM t;" }
+      - { id: introspection_functions, sql: "SELECT version(), hostName(), currentDatabase(), toTypeName(a), dumpColumnStructure(a), isNull(a), isNaN(a), ignore(a) FROM t;" }
+      - { id: dictionary_functions, sql: "SELECT dictGet('d', 'attr', toUInt64(a)), dictGetOrDefault('d', 'attr', toUInt64(a), 0), dictHas('d', toUInt64(a)) FROM t;" }
+      - { id: table_functions_in_from, sql: "SELECT * FROM numbers(10);" }
+      - { id: nullable_and_misc_functions, sql: "SELECT isNotNull(a), toNullable(a), isFinite(a), transform(a, [1, 2], ['x', 'y'], 'z'), arrayJoin(a), runningDifference(a), rowNumberInAllBlocks() FROM t;" }
+      - { id: with_expression_alias, sql: "WITH 1 AS x SELECT x + 1;" }
+      - { id: with_subquery_alias, sql: "WITH (SELECT max(a) FROM t) AS m SELECT m;" }
