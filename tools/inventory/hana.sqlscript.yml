@@ -97,13 +97,118 @@ statements:
         sql: "DO BEGIN DECLARE a INTEGER DEFAULT 0; a = SUDF_EXPR(1).x; END;"
       - id: quoted_variable_reference
         sql: "DO BEGIN DECLARE myvar INT = 0; DECLARE \"MyVar\" INT = 1; SELECT :myvar, :\"MyVar\" FROM dummy; END;"
+
+  - id: sqlscript_select_into
+    name: SELECT INTO (with DEFAULT values)
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/8c738274a3e44694b0d5f709e7db531f.html?version=2.0.08
+    tier: high
+    probes:
+      - id: select_into_scalars
+        sql: "DO BEGIN DECLARE a INT; DECLARE b VARCHAR(10); SELECT A, B INTO a, b FROM t; END;"
+      - id: select_into_default
+        sql: "DO BEGIN DECLARE a INT; DECLARE b VARCHAR(10); SELECT A, B INTO a, b DEFAULT -2+1, NULL FROM t; END;"
+      - id: select_into_where
+        sql: "DO BEGIN DECLARE a INT; SELECT COUNT(*) INTO a FROM t WHERE c = 1; END;"
+      - id: select_into_group_having_order_limit
+        sql: "DO BEGIN DECLARE a INT; SELECT A INTO a FROM t GROUP BY A HAVING COUNT(*) > 0 ORDER BY A LIMIT 1; END;"
+      - id: select_into_set_operator
+        sql: "DO BEGIN DECLARE a INT; SELECT A INTO a FROM t1 UNION ALL SELECT A FROM t2; END;"
+      - id: select_into_array_element
+        sql: "DO BEGIN DECLARE A_COPY INT ARRAY; DECLARE B_COPY VARCHAR(10) ARRAY; SELECT A, B INTO A_COPY[1], B_COPY[1] DEFAULT -2+1, NULL FROM T1; END;"
+      - id: select_into_row_variable
+        sql: "DO BEGIN DECLARE x ROW (a INT, b VARCHAR(10)); SELECT 2, 'b' INTO x FROM dummy; END;"
+      - id: select_into_after_from
+        sql: "DO BEGIN DECLARE a INT; SELECT A FROM t INTO a; END;"
+        note: "the parallel-execution page shows the INTO-after-FROM form (SELECT ... FROM :tab s where ... INTO table)"
     examples:
       - |-
         DO BEGIN
-        DECLARE myvar INT = 0;
-        DECLARE “MyVar” INT = 1;
-        SELECT
-        :myvar /* the first variable */,
-        :”MyVar” /* the second variable */
-        from dummy;
+         DECLARE A_COPY INT;
+         DECLARE B_COPY VARCHAR(10);
+         CREATE ROW TABLE T1 (A INT NOT NULL, B VARCHAR(10));
+         SELECT A, B INTO A_COPY, B_COPY DEFAULT -2+1, NULL FROM T1;
+         --(A_COPY,B_COPY) = (-1,?), use default value
+         EXEC 'SELECT A FROM T1' INTO A_COPY DEFAULT 2;
+         --(A_COPY) = (2), exec into statement with default value
+         INSERT INTO T1 VALUES (0, 'sample0');
+         SELECT A, B INTO A_COPY, B_COPY DEFAULT 5, NULL FROM T1;
+         --(A_COPY,B_COPY) = (0,'sample0'), executed as-is
+        END;
+
+  - id: sqlscript_scalar_subquery_expression
+    name: SQL in scalar expressions
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/958a7607ec5a4605a4246a658abc6879.html?version=2.0.08
+    tier: high
+    probes:
+      - id: subquery_in_assignment
+        sql: "DO BEGIN DECLARE x INT; x = (SELECT TOP 1 val FROM mytab) * 10; END;"
+      - id: subquery_in_condition
+        sql: "DO BEGIN IF (SELECT MAX(val) FROM mytab) > 100 THEN SELECT 1 FROM dummy; END IF; END;"
+      - id: subquery_in_declare_default
+        sql: "DO BEGIN DECLARE n INT = (SELECT * FROM empty_tab) + 1; END;"
+    examples:
+      - |-
+        do begin
+         declare n int = (select * from empty_tab) + 1; -- n has null value
+        end;
+
+  - id: sqlscript_declare_table_variable
+    name: DECLARE (table variables) and table variable assignment
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/ea5065d06d14426799d879234d8e3e7b.html?version=2.0.08
+    tier: high
+    probes:
+      - id: declare_table_columns
+        sql: "DO BEGIN DECLARE temp TABLE (n INT); END;"
+      - id: declare_table_type
+        sql: "DO BEGIN DECLARE temp MY_TABLE_TYPE; END;"
+      - id: declare_table_multiple
+        sql: "DO BEGIN DECLARE t1, t2 TABLE (n INT, m VARCHAR(10)); END;"
+      - id: declare_table_default_select
+        sql: "DO BEGIN DECLARE temp MY_TABLE_TYPE DEFAULT SELECT * FROM t; END;"
+      - id: declare_table_equals_select
+        sql: "DO BEGIN DECLARE temp TABLE (n INT) = SELECT 1 AS n FROM dummy; END;"
+      - id: declare_table_default_unnest
+        sql: "DO BEGIN DECLARE arr INT ARRAY = ARRAY(1, 2); DECLARE temp MY_TABLE_TYPE = UNNEST(:arr) AS (i); END;"
+      - id: declare_table_default_apply_filter
+        sql: "DO BEGIN DECLARE temp TABLE (n INT) = APPLY_FILTER(tab, 'n > 1'); END;"
+      - id: declare_table_constant
+        sql: "DO BEGIN DECLARE temp CONSTANT TABLE (I INT) DEFAULT SELECT * FROM t; END;"
+      - id: declare_table_not_null_pk
+        sql: "DO BEGIN DECLARE lt2 TABLE (a INT, b INT, c INT NOT NULL, PRIMARY KEY(a, b)); END;"
+      - id: declare_table_like_variable
+        sql: "DO BEGIN DECLARE lt1 TABLE (a INT); DECLARE lt2 TABLE LIKE :lt1; END;"
+      - id: declare_table_like_table
+        sql: "DO BEGIN DECLARE lt TABLE LIKE t; END;"
+      - id: declare_table_like_default
+        sql: "DO BEGIN DECLARE lt TABLE LIKE t DEFAULT SELECT * FROM t; END;"
+      - id: declare_like_column
+        sql: "DO BEGIN DECLARE v LIKE t.c NOT NULL DEFAULT 1; END;"
+        note: "second DECLARE ... LIKE form on the page: DECLARE <names> [CONSTANT] LIKE {table | :var}.<column> [NOT NULL] [default]"
+      - id: declare_table_auto_select
+        sql: "DO BEGIN DECLARE tab1 AUTO = SELECT 1 AS x FROM dummy; END;"
+      - id: assign_select
+        sql: "DO BEGIN t1 = SELECT * FROM t; END;"
+      - id: assign_from_table_variable
+        sql: "DO BEGIN lt_expensive_books = SELECT title, price, crcy FROM :it_books WHERE price > :minPrice AND crcy = :currency; END;"
+      - id: assign_parenthesized_select
+        sql: "DO BEGIN t1 = (SELECT * FROM t); END;"
+      - id: assign_with_hint_no_inline
+        sql: "DO BEGIN tab = SELECT A, B, C FROM T WHERE A = 1 WITH HINT(NO_INLINE); tab2 = SELECT C FROM :tab WHERE C = 0; END;"
+      - id: assign_with_hint_inline
+        sql: "DO BEGIN CALL procInner(outTable) WITH HINT(INLINE); END;"
+        note: "WITH HINT (INLINE) is placed on the call statement; see the NO_INLINE and INLINE Hints page"
+      - id: assign_table_variable
+        sql: "DO BEGIN DECLARE a TABLE (i INT); DECLARE b TABLE (i INT); a = SELECT 1 AS i FROM dummy; b = :a; END;"
+      - id: assign_union_of_variables
+        sql: "DO BEGIN ret_tab = SELECT * FROM :out_tab UNION SELECT * FROM :ret_tab; END;"
+      - id: from_table_variable_alias
+        sql: "DO BEGIN T3 = SELECT J, K FROM :T1 AS a, :T2 AS b WHERE a.I = b.I; END;"
+    examples:
+      - |-
+        DO BEGIN
+         DECLARE a TABLE (i DECIMAL(2,1), j INTEGER);
+         IF :num = 4
+         THEN
+         a = SELECT i, j FROM tab;
+         END IF;
         END;

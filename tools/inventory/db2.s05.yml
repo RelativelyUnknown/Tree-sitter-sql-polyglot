@@ -1,0 +1,43 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "11.5"
+source: https://www.ibm.com/docs/en/db2/11.5.x?topic=reference-statements
+
+statements:
+  - id: case
+    name: CASE
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-case
+    tier: high
+    probes:
+      - id: simple_when
+        sql: "CASE v WHEN 1 THEN SET x = 1; END CASE;"
+      - id: simple_multiple_when
+        sql: "CASE v WHEN 1 THEN SET x = 1; WHEN 2 THEN SET x = 2; END CASE;"
+      - id: simple_else
+        sql: "CASE v WHEN 1 THEN SET x = 1; ELSE SET x = 3; END CASE;"
+      - id: searched_when
+        sql: "CASE WHEN v = 1 THEN SET x = 1; END CASE;"
+      - id: searched_multiple_when
+        sql: "CASE WHEN v = 1 THEN SET x = 1; WHEN v = 2 THEN SET x = 2; END CASE;"
+      - id: searched_else
+        sql: "CASE WHEN v = 1 THEN SET x = 1; ELSE SET x = 3; END CASE;"
+      - id: multiple_statements_in_branch
+        sql: "CASE WHEN v = 1 THEN SET x = 1; SET y = 2; ELSE SET x = 3; SET y = 4; END CASE;"
+    examples:
+      - "CASE v_workdept WHEN 'A00' THEN UPDATE department SET deptname = 'DATA ACCESS 1'; WHEN 'B01' THEN UPDATE department SET deptname = 'DATA ACCESS 2'; ELSE UPDATE department SET deptname = 'DATA ACCESS 3'; END CASE;"
+      - "CASE WHEN v_workdept = 'A00' THEN UPDATE department SET deptname = 'DATA ACCESS 1'; WHEN v_workdept = 'B01' THEN UPDATE department SET deptname = 'DATA ACCESS 2'; ELSE UPDATE department SET deptname = 'DATA ACCESS 3'; END CASE;"
+
+  - id: close
+    name: CLOSE
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-close
+    tier: high
+    probes:
+      - id: cursor_name
+        sql: "CLOSE c1;"
+      - id: cursor_name_with_release
+        sql: "CLOSE c1 WITH RELEASE;"
+      - id: cursor_variable
+        note: cursor-variable-name form, only valid inside a compound SQL (compiled) statement
+        sql: "CLOSE cv;"
+      - id: cursor_variable_with_release
+        sql: "CLOSE cv WITH RELEASE;"
