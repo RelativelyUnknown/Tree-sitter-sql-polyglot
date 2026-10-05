@@ -1,0 +1,47 @@
+dialect: trino
+engine: Trino
+version: "483"
+source: https://trino.io/docs/current/sql.html
+
+statements:
+  - id: delete
+    name: DELETE
+    doc: https://trino.io/docs/current/sql/delete.html
+    tier: high
+    probes:
+      - id: delete_all
+        sql: "DELETE FROM t;"
+      - id: where
+        sql: "DELETE FROM t WHERE c = 1;"
+      - id: qualified_table
+        sql: "DELETE FROM cat.sch.t WHERE c = 1;"
+      - id: branch
+        sql: "DELETE FROM t @ b;"
+      - id: branch_where
+        sql: "DELETE FROM t @ b WHERE c = 1;"
+      - id: where_subquery
+        sql: "DELETE FROM t WHERE c IN (SELECT c FROM s WHERE d = 'x');"
+    examples:
+      - "DELETE FROM lineitem WHERE shipmode = 'AIR';"
+      - "DELETE FROM lineitem WHERE orderkey IN (SELECT orderkey FROM orders WHERE priority = 'LOW');"
+      - "DELETE FROM orders @ audit;"
+
+  - id: drop_function
+    name: DROP FUNCTION
+    doc: https://trino.io/docs/current/sql/drop-function.html
+    tier: high
+    probes:
+      - id: no_params
+        sql: "DROP FUNCTION f();"
+      - id: if_exists
+        sql: "DROP FUNCTION IF EXISTS f();"
+      - id: type_param
+        sql: "DROP FUNCTION f(bigint);"
+      - id: named_param
+        sql: "DROP FUNCTION f(x bigint, y varchar);"
+      - id: qualified
+        sql: "DROP FUNCTION cat.sch.f();"
+    examples:
+      - "DROP FUNCTION example.default.meaning_of_life();"
+      - "DROP FUNCTION multiply_by_two(bigint);"
+      - "DROP FUNCTION meaning_of_life();"
