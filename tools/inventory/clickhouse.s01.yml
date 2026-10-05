@@ -1,0 +1,127 @@
+dialect: clickhouse
+engine: ClickHouse
+version: "current docs (2026)"
+source: https://clickhouse.com/docs/sql-reference/statements/
+
+statements:
+  - id: select
+    name: SELECT
+    doc: https://clickhouse.com/docs/sql-reference/statements/select/
+    tier: high
+    probes:
+      - { id: basic, sql: "SELECT a, b FROM t;" }
+      - { id: no_from, sql: "SELECT 1;" }
+      - { id: star, sql: "SELECT * FROM t;" }
+      - { id: qualified_db_table, sql: "SELECT a FROM db.t;" }
+      - { id: with_cte, sql: "WITH x AS (SELECT 1 AS a) SELECT a FROM x;" }
+      - { id: with_expr_alias, sql: "WITH 1 + 2 AS x SELECT x FROM t;" }
+      - { id: distinct, sql: "SELECT DISTINCT a, b FROM t;" }
+      - { id: distinct_on, sql: "SELECT DISTINCT ON (a, b) a, b, c FROM t;" }
+      - { id: from_subquery, sql: "SELECT a FROM (SELECT a FROM t) AS s;" }
+      - { id: from_table_function, sql: "SELECT number FROM numbers(10);" }
+      - { id: final, sql: "SELECT a FROM t FINAL;" }
+      - { id: sample_ratio, sql: "SELECT a FROM t SAMPLE 0.1;" }
+      - { id: sample_rows, sql: "SELECT a FROM t SAMPLE 10000000;" }
+      - { id: sample_offset, sql: "SELECT a FROM t SAMPLE 1/10 OFFSET 1/2;" }
+      - { id: array_join, sql: "SELECT a, x FROM t ARRAY JOIN arr AS x;" }
+      - { id: left_array_join, sql: "SELECT a, x FROM t LEFT ARRAY JOIN arr AS x;" }
+      - { id: inner_join_on, sql: "SELECT t.a FROM t INNER JOIN u ON t.id = u.id;" }
+      - { id: join_using, sql: "SELECT a FROM t JOIN u USING (id);" }
+      - { id: left_join, sql: "SELECT a FROM t LEFT JOIN u ON t.id = u.id;" }
+      - { id: left_outer_join, sql: "SELECT a FROM t LEFT OUTER JOIN u ON t.id = u.id;" }
+      - { id: right_join, sql: "SELECT a FROM t RIGHT JOIN u ON t.id = u.id;" }
+      - { id: full_outer_join, sql: "SELECT a FROM t FULL OUTER JOIN u ON t.id = u.id;" }
+      - { id: cross_join, sql: "SELECT a FROM t CROSS JOIN u;" }
+      - { id: any_left_join, sql: "SELECT a FROM t ANY LEFT JOIN u ON t.id = u.id;" }
+      - { id: all_inner_join, sql: "SELECT a FROM t ALL INNER JOIN u ON t.id = u.id;" }
+      - { id: asof_join, sql: "SELECT a FROM t ASOF JOIN u ON t.id = u.id AND t.ts >= u.ts;" }
+      - { id: left_semi_join, sql: "SELECT a FROM t LEFT SEMI JOIN u ON t.id = u.id;" }
+      - { id: left_anti_join, sql: "SELECT a FROM t LEFT ANTI JOIN u ON t.id = u.id;" }
+      - { id: global_join, sql: "SELECT a FROM t GLOBAL ANY LEFT JOIN u ON t.id = u.id;" }
+      - { id: join_subquery, sql: "SELECT a FROM t JOIN (SELECT id FROM u) AS s ON t.id = s.id;" }
+      - { id: prewhere, sql: "SELECT a FROM t PREWHERE b > 1;" }
+      - { id: where, sql: "SELECT a FROM t WHERE b > 1;" }
+      - { id: prewhere_where, sql: "SELECT a FROM t PREWHERE b > 1 WHERE c = 2;" }
+      - { id: group_by, sql: "SELECT a, count() FROM t GROUP BY a;" }
+      - { id: group_by_rollup, sql: "SELECT a, b, count() FROM t GROUP BY a, b WITH ROLLUP;" }
+      - { id: group_by_cube, sql: "SELECT a, b, count() FROM t GROUP BY a, b WITH CUBE;" }
+      - { id: group_by_totals, sql: "SELECT a, count() FROM t GROUP BY a WITH TOTALS;" }
+      - { id: having, sql: "SELECT a, count() FROM t GROUP BY a HAVING count() > 1;" }
+      - { id: window_clause, sql: "SELECT sum(a) OVER w FROM t WINDOW w AS (PARTITION BY b ORDER BY c);" }
+      - { id: qualify, sql: "SELECT a, row_number() OVER (PARTITION BY b ORDER BY c) AS rn FROM t QUALIFY rn = 1;" }
+      - { id: order_by, sql: "SELECT a FROM t ORDER BY a DESC, b ASC;" }
+      - { id: order_by_nulls, sql: "SELECT a FROM t ORDER BY a NULLS FIRST;" }
+      - { id: order_by_collate, sql: "SELECT a FROM t ORDER BY a COLLATE 'en';" }
+      - { id: order_by_with_fill, sql: "SELECT n FROM t ORDER BY n WITH FILL;" }
+      - { id: order_by_fill_from_to_step, sql: "SELECT n FROM t ORDER BY n WITH FILL FROM 1 TO 10 STEP 2;" }
+      - { id: order_by_interpolate, sql: "SELECT n, v FROM t ORDER BY n WITH FILL INTERPOLATE (v AS v + 1);" }
+      - { id: order_by_interpolate_bare, sql: "SELECT n, v FROM t ORDER BY n WITH FILL INTERPOLATE;" }
+      - { id: limit, sql: "SELECT a FROM t LIMIT 10;" }
+      - { id: limit_offset_comma, sql: "SELECT a FROM t LIMIT 5, 10;" }
+      - { id: limit_offset_keyword, sql: "SELECT a FROM t LIMIT 10 OFFSET 5;" }
+      - { id: limit_with_ties, sql: "SELECT a FROM t ORDER BY a LIMIT 10 WITH TIES;" }
+      - { id: limit_by, sql: "SELECT a, b FROM t ORDER BY a LIMIT 2 BY a;" }
+      - { id: limit_offset_by, sql: "SELECT a, b FROM t ORDER BY a LIMIT 1, 2 BY a;" }
+      - { id: limit_by_offset_keyword, sql: "SELECT a, b FROM t ORDER BY a LIMIT 2 OFFSET 1 BY a;" }
+      - { id: limit_after_until, sql: "SELECT a FROM t LIMIT 10 AFTER a > 1 UNTIL a < 5;" }
+      - { id: limit_after_all_until, sql: "SELECT a FROM t LIMIT AFTER a > 1 ALL UNTIL a < 5;" }
+      - { id: limit_until, sql: "SELECT a FROM t LIMIT UNTIL a > 5;" }
+      - { id: offset_fetch, sql: "SELECT a FROM t ORDER BY a OFFSET 5 ROWS FETCH FIRST 10 ROWS ONLY;" }
+      - { id: settings, sql: "SELECT a FROM t SETTINGS max_threads = 1;" }
+      - { id: settings_multiple, sql: "SELECT a FROM t SETTINGS max_threads = 1, max_block_size = 100;" }
+      - { id: union_all, sql: "SELECT a FROM t UNION ALL SELECT a FROM u;" }
+      - { id: union_distinct, sql: "SELECT a FROM t UNION DISTINCT SELECT a FROM u;" }
+      - { id: intersect, sql: "SELECT a FROM t INTERSECT SELECT a FROM u;" }
+      - { id: except, sql: "SELECT a FROM t EXCEPT SELECT a FROM u;" }
+      - { id: into_outfile, sql: "SELECT a FROM t INTO OUTFILE 'out.csv';" }
+      - { id: into_outfile_truncate, sql: "SELECT a FROM t INTO OUTFILE 'out.csv' TRUNCATE;" }
+      - { id: into_outfile_compression, sql: "SELECT a FROM t INTO OUTFILE 'out.csv.gz' COMPRESSION 'gzip' LEVEL 5;" }
+      - { id: format, sql: "SELECT a FROM t FORMAT JSON;" }
+      - { id: into_outfile_format, sql: "SELECT a FROM t INTO OUTFILE 'out.csv' FORMAT CSV;" }
+      - { id: columns_regexp, sql: "SELECT COLUMNS('a') FROM t;" }
+      - { id: columns_regexp_function, sql: "SELECT COLUMNS('a'), COLUMNS('c'), toTypeName(COLUMNS('c')) FROM t;" }
+      - { id: star_like, sql: "SELECT * LIKE 'a%' FROM t;" }
+      - { id: star_ilike, sql: "SELECT * ILIKE 'a%' FROM t;" }
+      - { id: qualified_star_ilike_except, sql: "SELECT t.* ILIKE 'a%' EXCEPT (ab) FROM t;" }
+      - { id: star_except, sql: "SELECT * EXCEPT (a) FROM t;" }
+      - { id: star_apply, sql: "SELECT * APPLY (sum) FROM t;" }
+      - { id: star_replace, sql: "SELECT * REPLACE (a + 1 AS a) FROM t;" }
+      - { id: pipe_operators, sql: "FROM t |> WHERE x > 1 |> AGGREGATE count() AS c GROUP BY y |> ORDER BY c DESC;" }
+    examples:
+      - "SELECT COLUMNS('a') FROM col_names;"
+      - "SELECT COLUMNS('a'), COLUMNS('c'), toTypeName(COLUMNS('c')) FROM col_names;"
+      - "SELECT * ILIKE 'a%' FROM col_names;"
+
+  - id: insert
+    name: INSERT INTO
+    doc: https://clickhouse.com/docs/sql-reference/statements/insert-into
+    tier: high
+    probes:
+      - { id: values, sql: "INSERT INTO t VALUES (1, 'a'), (2, 'b');" }
+      - { id: table_keyword, sql: "INSERT INTO TABLE t VALUES (1, 'a');" }
+      - { id: db_qualified, sql: "INSERT INTO db.t VALUES (1, 'a');" }
+      - { id: column_list, sql: "INSERT INTO t (c1, c2) VALUES (1, 'a');" }
+      - { id: column_matcher_star, sql: "INSERT INTO t (*) VALUES (1, 'a', 1);" }
+      - { id: column_matcher_except, sql: "INSERT INTO t (* EXCEPT (b)) VALUES (2, 2);" }
+      - { id: column_matcher_apply, sql: "INSERT INTO t (* APPLY (toString)) VALUES ('1');" }
+      - { id: column_matcher_replace, sql: "INSERT INTO t (* REPLACE (c1 AS c2)) VALUES (1);" }
+      - { id: default_value, sql: "INSERT INTO t VALUES (1, DEFAULT, 1);" }
+      - { id: settings_values, sql: "INSERT INTO t SETTINGS async_insert = 1 VALUES (1, 'a');" }
+      - { id: format_values, sql: "INSERT INTO t (c1, c2) FORMAT Values (1, 'a'), (2, 'b');" }
+      - { id: format_tabseparated, sql: "INSERT INTO t FORMAT TabSeparated\n11\tHello, world!\n22\tQwerty\n;" , note: "Data follows FORMAT inline; the doc example has no terminating semicolon in the statement itself" }
+      - { id: settings_format, sql: "INSERT INTO t SETTINGS async_insert = 1 FORMAT CSV\n1,a\n;" }
+      - { id: insert_select, sql: "INSERT INTO t SELECT a, b FROM u;" }
+      - { id: insert_select_columns, sql: "INSERT INTO t (c1, c2) SELECT a, b FROM u;" }
+      - { id: insert_cte_inner, sql: "INSERT INTO x WITH y AS (SELECT * FROM numbers(10)) SELECT * FROM y;" }
+      - { id: insert_cte_outer, sql: "WITH y AS (SELECT * FROM numbers(10)) INSERT INTO x SELECT * FROM y;" }
+      - { id: insert_select_input, sql: "INSERT INTO t SELECT a, b FROM input('a UInt32, b String') FORMAT CSV\n1,a\n;" }
+      - { id: from_infile, sql: "INSERT INTO t FROM INFILE 'input.csv' FORMAT CSV;" }
+      - { id: from_infile_compression, sql: "INSERT INTO t FROM INFILE 'input.csv.gz' COMPRESSION 'gzip' FORMAT CSV;" }
+      - { id: from_infile_columns_settings, sql: "INSERT INTO t (c1, c2) FROM INFILE 'input.csv' SETTINGS format_csv_delimiter = ';' FORMAT CSV;" }
+      - { id: from_infile_glob, sql: "INSERT INTO t FROM INFILE 'input_{1,2}.csv' FORMAT CSV;" }
+      - { id: table_function, sql: "INSERT INTO FUNCTION remote('localhost', default.t) VALUES (100, 'x');" }
+      - { id: table_keyword_function, sql: "INSERT INTO TABLE FUNCTION remote('localhost', default.t) VALUES (100, 'inserted via remote()');" }
+    examples:
+      - "INSERT INTO insert_select_testtable (*) VALUES (1, 'a', 1);"
+      - "INSERT INTO insert_select_testtable (* EXCEPT (b)) Values (2, 2);"
+      - "INSERT INTO x WITH y AS (SELECT * FROM numbers(10)) SELECT * FROM y;"

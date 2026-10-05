@@ -1,0 +1,238 @@
+dialect: redshift
+engine: Amazon Redshift
+version: "current"
+source: https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_commands.html
+
+statements: []
+
+expressions:
+  - id: c_count_aggregate
+    name: COUNT aggregate (DISTINCT, ALL, APPROXIMATE)
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_COUNT.html
+    tier: high
+    probes:
+      - { id: star, sql: "SELECT COUNT(*) FROM t;" }
+      - { id: expr, sql: "SELECT COUNT(c) FROM t;" }
+      - { id: distinct, sql: "SELECT COUNT(DISTINCT c) FROM t;" }
+      - { id: all, sql: "SELECT COUNT(ALL c) FROM t;" }
+      - { id: approximate, sql: "SELECT APPROXIMATE COUNT(DISTINCT c) FROM t;" }
+
+  - id: c_listagg_aggregate
+    name: LISTAGG aggregate
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_LISTAGG.html
+    tier: high
+    probes:
+      - { id: basic, sql: "SELECT LISTAGG(c) FROM t;" }
+      - { id: delimiter, sql: "SELECT LISTAGG(c, ', ') FROM t;" }
+      - { id: distinct, sql: "SELECT LISTAGG(DISTINCT c, ', ') FROM t;" }
+      - { id: within_group, sql: "SELECT LISTAGG(c, ', ') WITHIN GROUP (ORDER BY d) FROM t;" }
+      - { id: group_by, sql: "SELECT g, LISTAGG(c, ',') WITHIN GROUP (ORDER BY c DESC) FROM t GROUP BY g;" }
+
+  - id: c_percentile_cont_aggregate
+    name: PERCENTILE_CONT aggregate (WITHIN GROUP)
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_PERCENTILE_CONT.html
+    tier: high
+    probes:
+      - { id: within_group, sql: "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY c) FROM t;" }
+      - { id: group_by, sql: "SELECT g, PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY c) FROM t GROUP BY g;" }
+
+  - id: c_approximate_percentile_disc
+    name: APPROXIMATE PERCENTILE_DISC
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_APPROXIMATE_PERCENTILE_DISC.html
+    tier: medium
+    probes:
+      - { id: within_group, sql: "SELECT APPROXIMATE PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY c) FROM t;" }
+      - { id: group_by, sql: "SELECT g, APPROXIMATE PERCENTILE_DISC(0.9) WITHIN GROUP (ORDER BY c) FROM t GROUP BY g;" }
+
+  - id: c_median_aggregate
+    name: MEDIAN aggregate
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_MEDIAN.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "SELECT MEDIAN(c) FROM t;" }
+
+  - id: c_window_aggregates
+    name: Window aggregate functions with frame clause
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_WF_SUM.html
+    tier: high
+    probes:
+      - { id: over_empty, sql: "SELECT SUM(c) OVER () FROM t;" }
+      - { id: partition_by, sql: "SELECT SUM(c) OVER (PARTITION BY p) FROM t;" }
+      - { id: order_by_rows_unbounded_preceding, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS UNBOUNDED PRECEDING) FROM t;" }
+      - { id: rows_n_preceding, sql: "SELECT AVG(c) OVER (ORDER BY d ROWS 2 PRECEDING) FROM t;" }
+      - { id: rows_current_row, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS CURRENT ROW) FROM t;" }
+      - { id: rows_between_unbounded, sql: "SELECT SUM(c) OVER (PARTITION BY p ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: rows_between_n, sql: "SELECT MAX(c) OVER (ORDER BY d ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;" }
+      - { id: rows_between_following_unbounded, sql: "SELECT MIN(c) OVER (ORDER BY d ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: count_star_over, sql: "SELECT COUNT(*) OVER (PARTITION BY p ORDER BY d ROWS BETWEEN 3 PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: sum_all, sql: "SELECT SUM(ALL c) OVER (PARTITION BY p) FROM t;" }
+      - { id: stddev_over, sql: "SELECT STDDEV_POP(c) OVER (PARTITION BY p ORDER BY d ROWS UNBOUNDED PRECEDING) FROM t;" }
+
+  - id: c_named_window
+    name: Named windows (WINDOW clause)
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_WF_SUM.html
+    tier: medium
+    probes:
+      - { id: window_clause, sql: "SELECT SUM(c) OVER w FROM t WINDOW w AS (PARTITION BY p ORDER BY d);" }
+      - { id: over_named_in_parens, sql: "SELECT SUM(c) OVER (w ROWS UNBOUNDED PRECEDING) FROM t WINDOW w AS (PARTITION BY p ORDER BY d);" }
+
+  - id: c_ranking_window_functions
+    name: Ranking and distribution window functions
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_WF_ROW_NUMBER.html
+    tier: high
+    probes:
+      - { id: row_number, sql: "SELECT ROW_NUMBER() OVER (PARTITION BY p ORDER BY d) FROM t;" }
+      - { id: rank, sql: "SELECT RANK() OVER (PARTITION BY p ORDER BY d DESC) FROM t;" }
+      - { id: dense_rank, sql: "SELECT DENSE_RANK() OVER (ORDER BY d) FROM t;" }
+      - { id: ntile, sql: "SELECT NTILE(4) OVER (PARTITION BY p ORDER BY d) FROM t;" }
+      - { id: cume_dist, sql: "SELECT CUME_DIST() OVER (PARTITION BY p ORDER BY d) FROM t;" }
+      - { id: percent_rank, sql: "SELECT PERCENT_RANK() OVER (ORDER BY d) FROM t;" }
+      - { id: ratio_to_report, sql: "SELECT RATIO_TO_REPORT(c) OVER (PARTITION BY p) FROM t;" }
+
+  - id: c_value_window_functions
+    name: LAG, LEAD, FIRST_VALUE, LAST_VALUE, NTH_VALUE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_WF_NTH.html
+    tier: high
+    probes:
+      - { id: lag, sql: "SELECT LAG(c, 1) OVER (PARTITION BY p ORDER BY d) FROM t;" }
+      - { id: lead_ignore_nulls, sql: "SELECT LEAD(c) IGNORE NULLS OVER (PARTITION BY p ORDER BY d) FROM t;" }
+      - { id: lag_respect_nulls, sql: "SELECT LAG(c, 2) RESPECT NULLS OVER (ORDER BY d) FROM t;" }
+      - { id: first_value, sql: "SELECT FIRST_VALUE(c) OVER (PARTITION BY p ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: last_value_ignore_nulls, sql: "SELECT LAST_VALUE(c) IGNORE NULLS OVER (PARTITION BY p ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: nth_value, sql: "SELECT NTH_VALUE(c, 2) OVER (PARTITION BY p ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: nth_value_ignore_nulls, sql: "SELECT NTH_VALUE(c, 2) IGNORE NULLS OVER (ORDER BY d) FROM t;" }
+
+  - id: c_window_listagg_median_percentile
+    name: LISTAGG, MEDIAN and PERCENTILE_CONT window functions
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_WF_LISTAGG.html
+    tier: medium
+    probes:
+      - { id: listagg_over, sql: "SELECT LISTAGG(c, ',') WITHIN GROUP (ORDER BY d) OVER (PARTITION BY p) FROM t;" }
+      - { id: listagg_distinct_over, sql: "SELECT LISTAGG(DISTINCT c, ',') OVER (PARTITION BY p) FROM t;" }
+      - { id: median_over, sql: "SELECT MEDIAN(c) OVER (PARTITION BY p) FROM t;" }
+      - { id: percentile_cont_over, sql: "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY c) OVER (PARTITION BY p) FROM t;" }
+
+  - id: c_super_navigation
+    name: SUPER (PartiQL) dot and bracket navigation
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/query-super.html
+    tier: high
+    probes:
+      - { id: array_index, sql: "SELECT super_object.array[2];" }
+      - { id: dot_path_in_where, sql: "SELECT COUNT(*) FROM test_json WHERE all_data.data.pnr.events[0].\"eventType\" = 'UPDATED';" }
+      - { id: column_dot, sql: "SELECT t.c.a.b FROM t;" }
+      - { id: bracket_string_key, sql: "SELECT c['key'] FROM t;" }
+      - { id: nested_index, sql: "SELECT c.items[0].name FROM t;" }
+      - { id: partiql_unnest, sql: "SELECT orders.*, o FROM customer_orders orders, orders.c_orders o;" }
+      - { id: partiql_unnest_at, sql: "SELECT c_name, orders.o_orderkey AS orderkey, index AS orderkey_index FROM customer_orders_lineitem c, c.c_orders AS orders AT index ORDER BY orderkey_index;" }
+      - { id: partiql_unnest_multi, sql: "SELECT c.*, o, l FROM customer_orders_lineitem c, c.c_orders o, o.o_lineitems l;" }
+      - { id: partiql_scalar_array, sql: "SELECT element, index FROM bar AS b, b.data.scalar_array AS element AT index;" }
+    examples:
+      - "SELECT orders.*, o FROM customer_orders orders, orders.c_orders o;"
+      - "SELECT c.*, o, l FROM customer_orders_lineitem c, c.c_orders o, o.o_lineitems l;"
+      - "SELECT element, index FROM bar AS b, b.data.scalar_array AS element AT index;"
+
+  - id: c_super_constructors
+    name: SUPER constructors (ARRAY, OBJECT, JSON_PARSE)
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_array.html
+    tier: high
+    probes:
+      - { id: array_fn, sql: "SELECT ARRAY(1, 2, 3);" }
+      - { id: array_empty, sql: "SELECT ARRAY();" }
+      - { id: object_fn, sql: "SELECT OBJECT('a', 1, 'b', 2);" }
+      - { id: object_empty, sql: "SELECT OBJECT();" }
+      - { id: json_parse, sql: "SELECT JSON_PARSE('{\"a\": [1, 2, 3]}');" }
+      - { id: json_serialize, sql: "SELECT JSON_SERIALIZE(c) FROM t;" }
+      - { id: can_json_parse, sql: "SELECT CAN_JSON_PARSE(c) FROM t;" }
+      - { id: json_serialize_to_varbyte, sql: "SELECT JSON_SERIALIZE_TO_VARBYTE(c) FROM t;" }
+      - { id: super_literal_cast, sql: "SELECT c::SUPER FROM t;" }
+
+  - id: c_json_text_functions
+    name: Text-based JSON functions
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/json-functions.html
+    tier: medium
+    probes:
+      - { id: json_extract_path_text, sql: "SELECT JSON_EXTRACT_PATH_TEXT(c, 'a', 'b') FROM t;" }
+      - { id: json_extract_array_element_text, sql: "SELECT JSON_EXTRACT_ARRAY_ELEMENT_TEXT(c, 2) FROM t;" }
+      - { id: json_array_length, sql: "SELECT JSON_ARRAY_LENGTH(c) FROM t;" }
+      - { id: is_valid_json, sql: "SELECT IS_VALID_JSON(c) FROM t;" }
+
+  - id: c_super_type_predicates
+    name: SUPER type-check and conversion functions
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_array.html
+    tier: medium
+    probes:
+      - { id: is_array, sql: "SELECT IS_ARRAY(c) FROM t;" }
+      - { id: is_object, sql: "SELECT IS_OBJECT(c) FROM t;" }
+      - { id: get_array_length, sql: "SELECT GET_ARRAY_LENGTH(c) FROM t;" }
+      - { id: array_concat, sql: "SELECT ARRAY_CONCAT(a, b) FROM t;" }
+      - { id: subarray, sql: "SELECT SUBARRAY(a, 1, 2) FROM t;" }
+      - { id: array_flatten, sql: "SELECT ARRAY_FLATTEN(a) FROM t;" }
+      - { id: object_transform, sql: "SELECT OBJECT_TRANSFORM(c KEEP 'a', 'b') FROM t;" }
+
+  - id: c_cast
+    name: CAST and conversion syntax
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_CAST_function.html
+    tier: high
+    probes:
+      - { id: cast, sql: "SELECT CAST(c AS INTEGER) FROM t;" }
+      - { id: double_colon, sql: "SELECT c::VARCHAR(10) FROM t;" }
+      - { id: convert, sql: "SELECT CONVERT(INTEGER, c) FROM t;" }
+      - { id: try_cast, sql: "SELECT TRY_CAST(c AS INTEGER) FROM t;" }
+      - { id: cast_decimal, sql: "SELECT CAST(c AS DECIMAL(10, 2)) FROM t;" }
+      - { id: cast_timestamptz, sql: "SELECT CAST(c AS TIMESTAMP WITH TIME ZONE) FROM t;" }
+
+  - id: c_case_expression
+    name: CASE and conditional functions
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_CASE_function.html
+    tier: high
+    probes:
+      - { id: simple_case, sql: "SELECT CASE c WHEN 1 THEN 'a' WHEN 2 THEN 'b' ELSE 'c' END FROM t;" }
+      - { id: searched_case, sql: "SELECT CASE WHEN c > 1 THEN 'a' ELSE 'b' END FROM t;" }
+      - { id: coalesce, sql: "SELECT COALESCE(a, b, 0) FROM t;" }
+      - { id: nvl, sql: "SELECT NVL(a, 0) FROM t;" }
+      - { id: nvl2, sql: "SELECT NVL2(a, b, c) FROM t;" }
+      - { id: nullif, sql: "SELECT NULLIF(a, b) FROM t;" }
+      - { id: greatest_least, sql: "SELECT GREATEST(a, b), LEAST(a, b) FROM t;" }
+      - { id: decode, sql: "SELECT DECODE(c, 1, 'one', 2, 'two', 'other') FROM t;" }
+
+  - id: c_extract_and_datetime
+    name: EXTRACT, DATEADD, DATEDIFF, DATE_TRUNC
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_EXTRACT_function.html
+    tier: high
+    probes:
+      - { id: extract, sql: "SELECT EXTRACT(year FROM ts) FROM t;" }
+      - { id: dateadd, sql: "SELECT DATEADD(day, 1, ts) FROM t;" }
+      - { id: datediff, sql: "SELECT DATEDIFF(day, a, b) FROM t;" }
+      - { id: date_trunc, sql: "SELECT DATE_TRUNC('month', ts) FROM t;" }
+      - { id: date_part, sql: "SELECT DATE_PART(dow, ts) FROM t;" }
+      - { id: interval_literal, sql: "SELECT ts + INTERVAL '1 day' FROM t;" }
+      - { id: at_time_zone, sql: "SELECT ts AT TIME ZONE 'UTC' FROM t;" }
+      - { id: current_functions, sql: "SELECT GETDATE(), SYSDATE, CURRENT_DATE, CURRENT_TIMESTAMP;" }
+      - { id: to_char, sql: "SELECT TO_CHAR(ts, 'YYYY-MM-DD HH24:MI:SS') FROM t;" }
+
+  - id: c_string_functions
+    name: String function families
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_SUBSTRING.html
+    tier: high
+    probes:
+      - { id: substring_from_for, sql: "SELECT SUBSTRING(c FROM 2 FOR 3) FROM t;" }
+      - { id: substring_commas, sql: "SELECT SUBSTRING(c, 2, 3) FROM t;" }
+      - { id: trim_both, sql: "SELECT TRIM(BOTH 'x' FROM c) FROM t;" }
+      - { id: trim_leading, sql: "SELECT TRIM(LEADING FROM c) FROM t;" }
+      - { id: trim_plain, sql: "SELECT TRIM(c) FROM t;" }
+      - { id: concat_operator, sql: "SELECT a || b FROM t;" }
+      - { id: position, sql: "SELECT POSITION('a' IN c) FROM t;" }
+      - { id: strtol, sql: "SELECT STRTOL('ff', 16);" }
+      - { id: regexp_substr, sql: "SELECT REGEXP_SUBSTR(c, '[a-z]+') FROM t;" }
+      - { id: split_part, sql: "SELECT SPLIT_PART(c, ',', 2) FROM t;" }
+
+  - id: c_pattern_matching_conditions
+    name: Pattern matching conditions
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_patternmatching_condition_like.html
+    tier: medium
+    probes:
+      - { id: like, sql: "SELECT * FROM t WHERE c LIKE 'a%';" }
+      - { id: ilike, sql: "SELECT * FROM t WHERE c ILIKE 'a%';" }
+      - { id: like_escape, sql: "SELECT * FROM t WHERE c LIKE 'a\\_%' ESCAPE '\\';" }
+      - { id: similar_to, sql: "SELECT * FROM t WHERE c SIMILAR TO '(a|b)%';" }
+      - { id: posix_match, sql: "SELECT * FROM t WHERE c ~ '^a' AND c !~ 'b';" }
