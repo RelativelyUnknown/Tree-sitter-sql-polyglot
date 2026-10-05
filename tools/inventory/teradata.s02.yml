@@ -1,0 +1,74 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: drop_table
+    name: DROP TABLE
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/CUCYTOuQgw4IyjiC8lYxPg
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP TABLE t;" }
+      - { id: qualified, sql: "DROP TABLE db.t;" }
+      - { id: temporary, sql: "DROP TEMPORARY TABLE t;" }
+      - { id: foreign, sql: "DROP FOREIGN TABLE db.t;" }
+      - { id: all, sql: "DROP TABLE t ALL;" }
+    examples:
+      - "DROP TABLE order_ids;"
+      - "DROP FOREIGN TABLE MyDB.table1;"
+
+  - id: create_view
+    name: CREATE VIEW / REPLACE VIEW
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/8j6zc9nbVSvAG23eGc1KCQ
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE VIEW v AS SELECT a, b FROM t;" }
+      - { id: cv_abbreviation, sql: "CV v AS SELECT a FROM t;" }
+      - { id: replace_view, sql: "REPLACE VIEW v AS SELECT a FROM t;" }
+      - { id: qualified_name, sql: "CREATE VIEW db.v AS SELECT a FROM t;" }
+      - { id: column_list, sql: "CREATE VIEW v (x, y) AS SELECT a, b FROM t;" }
+      - { id: parenthesized_spec, sql: "CREATE VIEW v AS (SELECT a FROM t);" }
+      - { id: sel_abbreviation, sql: "CREATE VIEW v AS SEL a FROM t;" }
+      - { id: where, sql: "CREATE VIEW v AS SELECT a FROM t WHERE a > 1;" }
+      - { id: group_by_having, sql: "CREATE VIEW v AS SELECT a, COUNT(*) AS n FROM t GROUP BY a HAVING COUNT(*) > 1;" }
+      - { id: group_by_rollup, sql: "CREATE VIEW v AS SELECT a, b, COUNT(*) AS n FROM t GROUP BY ROLLUP (a, b);" }
+      - { id: qualify, sql: "CREATE VIEW v AS SELECT a, b FROM t QUALIFY ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) = 1;" }
+      - { id: with_check_option, sql: "CREATE VIEW v AS SELECT a FROM t WHERE a > 1 WITH CHECK OPTION;" }
+      - { id: order_by, sql: "CREATE VIEW v AS SELECT a FROM t ORDER BY a DESC;" }
+      - { id: distinct, sql: "CREATE VIEW v AS SELECT DISTINCT a FROM t;" }
+      - { id: top_n, sql: "CREATE VIEW v AS SELECT TOP 10 a FROM t ORDER BY a;" }
+      - { id: top_percent_ties, sql: "CREATE VIEW v AS SELECT TOP 10 PERCENT WITH TIES a FROM t ORDER BY a;" }
+      - { id: table_star, sql: "CREATE VIEW v AS SELECT t.* FROM t;" }
+      - { id: column_alias, sql: "CREATE VIEW v AS SELECT a AS x, b y FROM t AS c;" }
+      - { id: inner_join, sql: "CREATE VIEW v AS SELECT t.a, u.b FROM t INNER JOIN u ON t.id = u.id;" }
+      - { id: left_outer_join, sql: "CREATE VIEW v AS SELECT t.a, u.b FROM t LEFT OUTER JOIN u ON t.id = u.id;" }
+      - { id: cross_join, sql: "CREATE VIEW v AS SELECT t.a, u.b FROM t CROSS JOIN u;" }
+      - { id: derived_table, sql: "CREATE VIEW v AS SELECT d.a FROM (SELECT a FROM t) AS d (a);" }
+      - { id: locking_access, sql: "CREATE VIEW v AS LOCKING TABLE t FOR ACCESS SELECT a FROM t;" }
+      - { id: locking_row, sql: "CREATE VIEW v AS LOCKING ROW FOR ACCESS SELECT a FROM t;" }
+      - { id: locking_database_share, sql: "CREATE VIEW v AS LOCKING DATABASE db IN SHARE MODE NOWAIT SELECT a FROM t;" }
+      - { id: locking_view_read_override, sql: "CREATE VIEW v AS LOCKING VIEW w FOR READ OVERRIDE SELECT a FROM w;" }
+      - { id: locking_excl_write_load, sql: "CREATE VIEW v AS LOCKING t FOR EXCL LOCKING u FOR WRITE LOCKING w FOR LOAD COMMITTED SELECT a FROM t;" }
+      - { id: as_of, sql: "CREATE VIEW v AS AS OF TIMESTAMP '2020-01-01 00:00:00' SELECT a FROM t;" }
+      - { id: with_nonrecursive, sql: "CREATE VIEW v AS WITH c (a) AS (SELECT a FROM t) SELECT a FROM c;" }
+      - { id: with_recursive, sql: "CREATE VIEW v AS WITH RECURSIVE r (n) AS (SELECT 1 FROM t WHERE a = 1 UNION ALL SELECT n + 1 FROM r WHERE n < 10) SELECT n FROM r;" }
+    examples:
+      - |-
+        CREATE VIEW dept AS
+         SELECT   deptno(TITLE 'Department Number'),
+                  deptname(TITLE 'Department Name'),
+                  loc (TITLE 'Department Location'),
+                  mgrno(TITLE 'Manager Number')
+         FROM department;
+      - |-
+        CREATE VIEW staff_info (number, name, position, department, gender, dob) AS
+         SELECT employee.empno, name, jobtitle, deptno, gender, dob
+         FROM employee
+         WHERE jobtitle NOT IN ('Vice Pres', 'Manager')
+        WITH CHECK OPTION;
+      - |-
+        REPLACE VIEW employee_info (number, name, position, department)
+         AS SELECT employee.empno, name, jobtitle, deptno
+            FROM emp_info
+            WHERE jobtitle NOT IN ('vice pres', 'manager');

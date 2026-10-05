@@ -1,0 +1,57 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: create_recursive_view
+    name: CREATE RECURSIVE VIEW / REPLACE RECURSIVE VIEW
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/kDNdze~H3I_oAG_4E26FSQ
+    tier: high
+    probes:
+      - id: create_basic
+        sql: "CREATE RECURSIVE VIEW v (a, b) AS (SELECT x, 0 FROM t UNION ALL SELECT v.a, v.b + 1 FROM t, v WHERE v.a = t.x);"
+      - id: replace
+        sql: "REPLACE RECURSIVE VIEW v (a, b) AS (SELECT x, 0 FROM t UNION ALL SELECT v.a, v.b + 1 FROM t, v WHERE v.a = t.x);"
+      - id: qualified_name
+        sql: "CREATE RECURSIVE VIEW db.v (a, b) AS (SELECT x, 0 FROM t UNION ALL SELECT v.a, v.b + 1 FROM t, v WHERE v.a = t.x);"
+      - id: without_parentheses
+        sql: "CREATE RECURSIVE VIEW v (a, b) AS SELECT x, 0 FROM t UNION ALL SELECT v.a, v.b + 1 FROM t, v WHERE v.a = t.x;"
+      - id: locking_specification
+        sql: "CREATE RECURSIVE VIEW v (a, b) AS (LOCKING TABLE t FOR ACCESS SELECT x, 0 FROM t UNION ALL SELECT v.a, v.b + 1 FROM t, v WHERE v.a = t.x);"
+      - id: as_of_date
+        sql: "CREATE RECURSIVE VIEW v (a, b) AS (AS OF PERIOD(DATE '2020-01-01') SELECT x, 0 FROM t UNION ALL SELECT v.a, v.b + 1 FROM t, v WHERE v.a = t.x);"
+        note: "date_specification: AS OF calendar_function ( DATE date_expression [, calendar_name] ); the page names no calendar function so the common temporal form is used"
+      - id: sel_abbreviation
+        sql: "CREATE RECURSIVE VIEW v (a, b) AS (SEL x, 0 FROM t UNION ALL SEL v.a, v.b + 1 FROM t, v WHERE v.a = t.x);"
+      - id: seed_distinct_group_having_qualify
+        sql: "CREATE RECURSIVE VIEW v (a, b) AS (SELECT DISTINCT x, 0 FROM t WHERE x > 0 GROUP BY x HAVING COUNT(*) > 0 QUALIFY ROW_NUMBER() OVER (ORDER BY x) = 1 UNION ALL SELECT v.a, v.b + 1 FROM t, v WHERE v.a = t.x);"
+      - id: seed_join_on
+        sql: "CREATE RECURSIVE VIEW v (a, b) AS (SELECT t1.x, 0 FROM t1 INNER JOIN t2 ON t1.x = t2.x UNION ALL SELECT v.a, v.b + 1 FROM t, v WHERE v.a = t.x);"
+      - id: seed_derived_table
+        sql: "CREATE RECURSIVE VIEW v (a, b) AS (SELECT d.x, 0 FROM (SELECT x FROM t) AS d UNION ALL SELECT v.a, v.b + 1 FROM t, v WHERE v.a = t.x);"
+      - id: recursive_join_on
+        sql: "CREATE RECURSIVE VIEW v (a, b) AS (SELECT x, 0 FROM t UNION ALL SELECT v.a, v.b + 1 FROM v LEFT OUTER JOIN t ON v.a = t.x);"
+      - id: recursive_cross_join
+        sql: "CREATE RECURSIVE VIEW v (a, b) AS (SELECT x, 0 FROM t UNION ALL SELECT v.a, v.b + 1 FROM v CROSS JOIN t);"
+    examples:
+      - |-
+        CREATE RECURSIVE VIEW rpl (part, subpart, quantity, depth) AS (
+          SELECT root.part, root.subpart, root.quantity, 0 AS depth
+          FROM partlist AS root
+          WHERE root.part = '01'
+        UNION ALL
+          SELECT child.part, child.subpart, child.quantity, parent.depth + 1
+          FROM rpl AS parent, partlist AS child
+          WHERE parent.subpart = child.part
+          AND   parent.depth <= 100);
+
+  - id: drop_view
+    name: DROP VIEW
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/CDNCumE7K7tHKQ~AADGvMA
+    tier: high
+    probes:
+      - id: basic
+        sql: "DROP VIEW v;"
+      - id: qualified
+        sql: "DROP VIEW db.v;"
