@@ -1,0 +1,123 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "11.5"
+source: https://www.ibm.com/docs/en/db2/11.5.x?topic=reference-statements
+
+statements:
+  - id: values_into
+    name: VALUES INTO
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-values-into
+    tier: high
+    probes:
+      - id: single_expression
+        sql: "VALUES (CURRENT PATH) INTO v;"
+      - id: expression_without_parens
+        sql: "VALUES CURRENT PATH INTO v;"
+      - id: multiple_expressions
+        sql: "VALUES (1, 'a', 3) INTO v1, v2, v3;"
+      - id: host_variable_target
+        sql: "VALUES (1) INTO :hv;"
+        note: host-variable-name assignment-target; embedded SQL only
+      - id: row_expression
+        sql: "VALUES ROW(1, 2) INTO v1, v2;"
+      - id: array_element_target
+        sql: "VALUES (5) INTO arr[2];"
+        note: array-variable-name [ array-index ] assignment-target
+      - id: field_reference_target
+        sql: "VALUES (5) INTO r.fld;"
+        note: field-reference assignment-target
+      - id: schema_qualified_global_variable
+        sql: "VALUES (SESSION_USER) INTO myschema.gv_sess_user;"
+      - id: transition_variable_target
+        sql: "VALUES (1) INTO n.c;"
+        note: transition-variable-name, valid inside a trigger body
+    examples: []
+
+  - id: while
+    name: WHILE
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-while
+    tier: high
+    probes:
+      - id: basic
+        sql: |-
+          CREATE PROCEDURE p()
+          LANGUAGE SQL
+          BEGIN
+            DECLARE i INTEGER DEFAULT 0;
+            WHILE i < 10 DO
+              SET i = i + 1;
+            END WHILE;
+          END;
+      - id: with_labels
+        sql: |-
+          CREATE PROCEDURE p()
+          LANGUAGE SQL
+          BEGIN
+            DECLARE i INTEGER DEFAULT 0;
+            lbl: WHILE i < 10 DO
+              SET i = i + 1;
+            END WHILE lbl;
+          END;
+      - id: begin_label_only
+        sql: |-
+          CREATE PROCEDURE p()
+          LANGUAGE SQL
+          BEGIN
+            DECLARE i INTEGER DEFAULT 0;
+            lbl: WHILE i < 10 DO
+              SET i = i + 1;
+            END WHILE;
+          END;
+      - id: multiple_statements
+        sql: |-
+          CREATE PROCEDURE p()
+          LANGUAGE SQL
+          BEGIN
+            DECLARE i INTEGER DEFAULT 0;
+            DECLARE j INTEGER DEFAULT 0;
+            WHILE i < 10 AND j < 5 DO
+              SET i = i + 1;
+              SET j = j + 2;
+            END WHILE;
+          END;
+      - id: leave_iterate
+        sql: |-
+          CREATE PROCEDURE p()
+          LANGUAGE SQL
+          BEGIN
+            DECLARE i INTEGER DEFAULT 0;
+            lbl: WHILE i < 10 DO
+              SET i = i + 1;
+              IF i = 3 THEN ITERATE lbl; END IF;
+              IF i = 7 THEN LEAVE lbl; END IF;
+            END WHILE lbl;
+          END;
+      - id: inlined_function
+        sql: |-
+          CREATE FUNCTION f(n INTEGER) RETURNS INTEGER
+          LANGUAGE SQL
+          BEGIN ATOMIC
+            DECLARE i INTEGER DEFAULT 0;
+            WHILE i < n DO
+              SET i = i + 1;
+            END WHILE;
+            RETURN i;
+          END;
+    examples:
+      - |-
+        CREATE PROCEDURE DEPT_MEDIAN (IN deptNumber SMALLINT, OUT medianSalary DOUBLE)
+        LANGUAGE SQL
+        BEGIN
+          DECLARE v_numRecords INTEGER DEFAULT 1;
+          DECLARE v_counter INTEGER DEFAULT 0;
+          DECLARE c1 CURSOR FOR SELECT CAST( salary AS DOUBLE) FROM staff WHERE DEPT = deptNumber ORDER BY salary;
+          DECLARE EXIT HANDLER FOR NOT FOUND SET medianSalary = 6666;
+          SET medianSalary = 0;
+          SELECT COUNT(*) INTO v_numRecords FROM staff WHERE DEPT = deptNumber;
+          OPEN c1;
+          WHILE v_counter < (v_numRecords / 2 + 1) DO
+            FETCH c1 INTO medianSalary;
+            SET v_counter = v_counter + 1;
+          END WHILE;
+          CLOSE c1;
+        END;
