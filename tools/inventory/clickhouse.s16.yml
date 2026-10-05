@@ -1,0 +1,108 @@
+dialect: clickhouse
+engine: ClickHouse
+version: "current docs (2026)"
+source: https://clickhouse.com/docs/sql-reference/statements/
+
+statements:
+  - id: drop_index
+    name: DROP INDEX
+    doc: https://clickhouse.com/docs/sql-reference/statements/alter/skipping-index
+    tier: high
+    probes:
+      - id: basic
+        sql: "ALTER TABLE t DROP INDEX idx;"
+      - id: if_exists
+        sql: "ALTER TABLE db.t DROP INDEX IF EXISTS idx;"
+      - id: on_cluster
+        sql: "ALTER TABLE t ON CLUSTER c DROP INDEX idx;"
+
+  - id: pipe_syntax_query
+    name: FROM ... |> (pipe operators)
+    doc: https://clickhouse.com/docs/sql-reference/statements/select/pipe-operators
+    tier: medium
+    status: not-applicable
+    reason: The cited page returns 404 and the SELECT docs and docs index contain no mention of a |> pipe operator; ClickHouse documents no pipe syntax.
+
+  - id: create_database
+    name: CREATE DATABASE
+    doc: https://clickhouse.com/docs/sql-reference/statements/create/database
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE DATABASE db_name;"
+      - id: if_not_exists_on_cluster
+        sql: "CREATE DATABASE IF NOT EXISTS db_name ON CLUSTER c;"
+      - id: engine
+        sql: "CREATE DATABASE db_name ENGINE = Atomic;"
+      - id: settings
+        sql: "CREATE DATABASE db_name SETTINGS disk = 'db_disk';"
+      - id: comment
+        sql: "CREATE DATABASE db_name ENGINE = Memory COMMENT 'Comment';"
+    examples:
+      - "CREATE DATABASE db_comment ENGINE = Memory COMMENT 'The temporary database';"
+      - "CREATE DATABASE db_name SETTINGS disk = 'db_disk';"
+      - "CREATE DATABASE db_name ENGINE = Atomic SETTINGS lazy_load_tables = 1;"
+
+  - id: create_dictionary
+    name: CREATE DICTIONARY
+    doc: https://clickhouse.com/docs/sql-reference/statements/create/dictionary
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE DICTIONARY d (id UInt64, v String DEFAULT '') PRIMARY KEY id SOURCE(CLICKHOUSE(TABLE 't')) LAYOUT(FLAT()) LIFETIME(MIN 0 MAX 1000);"
+      - id: or_replace_if_not_exists_on_cluster
+        sql: "CREATE OR REPLACE DICTIONARY IF NOT EXISTS db.d ON CLUSTER c (id UInt64, v String) PRIMARY KEY id SOURCE(CLICKHOUSE(TABLE 't')) LAYOUT(HASHED()) LIFETIME(300);"
+      - id: attribute_options
+        sql: "CREATE DICTIONARY d (id UInt64, parent UInt64 DEFAULT 0 HIERARCHICAL, name String EXPRESSION lower(id) INJECTIVE) PRIMARY KEY id SOURCE(CLICKHOUSE(TABLE 't')) LAYOUT(FLAT()) LIFETIME(0);"
+      - id: composite_key
+        sql: "CREATE DICTIONARY d (k1 UInt64, k2 String, v String) PRIMARY KEY k1, k2 SOURCE(CLICKHOUSE(TABLE 't')) LAYOUT(COMPLEX_KEY_HASHED()) LIFETIME(MIN 1 MAX 10);"
+      - id: settings_comment
+        sql: "CREATE DICTIONARY d (id UInt64, v String) PRIMARY KEY id SOURCE(CLICKHOUSE(TABLE 't')) LAYOUT(FLAT()) LIFETIME(10) SETTINGS(max_threads = 4) COMMENT 'Comment';"
+
+  - id: create_user
+    name: CREATE USER
+    doc: https://clickhouse.com/docs/sql-reference/statements/create/user
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE USER u;"
+      - id: if_not_exists_on_cluster
+        sql: "CREATE USER IF NOT EXISTS u1, u2 ON CLUSTER c;"
+      - id: or_replace
+        sql: "CREATE USER OR REPLACE u NOT IDENTIFIED;"
+      - id: identified_by
+        sql: "CREATE USER u IDENTIFIED WITH sha256_password BY 'qwerty';"
+      - id: no_password
+        sql: "CREATE USER u IDENTIFIED WITH no_password;"
+      - id: valid_until
+        sql: "CREATE USER u IDENTIFIED BY 'pw' VALID UNTIL '2030-01-01';"
+      - id: host
+        sql: "CREATE USER u HOST IP '127.0.0.1', NAME 'example.com';"
+      - id: roles
+        sql: "CREATE USER u IN local_directory ROLE role1, role2 DEFAULT ROLE role1;"
+      - id: default_database
+        sql: "CREATE USER u DEFAULT DATABASE db1;"
+      - id: grantees
+        sql: "CREATE USER u GRANTEES ANY EXCEPT jack;"
+      - id: settings
+        sql: "CREATE USER u SETTINGS max_memory_usage = 10000000 MIN 1 MAX 20000000 READONLY, PROFILE 'p';"
+    examples:
+      - "CREATE USER mira HOST IP '127.0.0.1' IDENTIFIED WITH sha256_password BY 'qwerty';"
+      - "CREATE USER john ROLE role1, role2;"
+      - "CREATE USER john ROLE role1, role2 DEFAULT ROLE role1;"
+
+  - id: create_role
+    name: CREATE ROLE
+    doc: https://clickhouse.com/docs/sql-reference/statements/create/role
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE ROLE r;"
+      - id: multiple_if_not_exists_on_cluster
+        sql: "CREATE ROLE IF NOT EXISTS r1, r2 ON CLUSTER c;"
+      - id: or_replace_in_storage
+        sql: "CREATE ROLE OR REPLACE r IN local_directory;"
+      - id: settings
+        sql: "CREATE ROLE r SETTINGS max_memory_usage = 100 MIN 1 MAX 200 CONST, PROFILE 'p';"
+    examples:
+      - "CREATE ROLE accountant;"

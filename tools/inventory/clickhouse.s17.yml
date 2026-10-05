@@ -1,0 +1,259 @@
+dialect: clickhouse
+engine: ClickHouse
+version: "current docs (2026)"
+source: https://clickhouse.com/docs/sql-reference/statements/
+
+statements:
+  - id: create_row_policy
+    name: CREATE ROW POLICY
+    doc: https://clickhouse.com/docs/sql-reference/statements/create/row-policy
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE ROW POLICY p ON db.t USING a < 1000 TO r;"
+      - id: policy_keyword_only
+        sql: "CREATE POLICY p ON db.t USING a < 1000 TO r;"
+      - id: if_not_exists
+        sql: "CREATE ROW POLICY IF NOT EXISTS p ON db.t USING a < 1000;"
+      - id: or_replace
+        sql: "CREATE ROW POLICY OR REPLACE p ON db.t USING a < 1000;"
+      - id: on_database_wildcard
+        sql: "CREATE ROW POLICY p ON db.* USING 1 TO r;"
+      - id: multiple_names
+        sql: "CREATE ROW POLICY p1, p2 ON db.t USING a < 1000 TO r;"
+      - id: multiple_tables
+        sql: "CREATE ROW POLICY p ON db.t1, db.t2 USING a < 1000 TO r;"
+      - id: mixed_packing
+        sql: "CREATE ROW POLICY p1 ON db.t1, p2 ON db.t2 USING a < 1000 TO r;"
+      - id: on_cluster_in_storage
+        sql: "CREATE ROW POLICY p ON CLUSTER c ON db.t IN local_directory USING a < 1000;"
+      - id: for_select_using_none
+        sql: "CREATE ROW POLICY p ON db.t FOR SELECT USING NONE TO r;"
+      - id: as_restrictive
+        sql: "CREATE ROW POLICY p ON db.t USING a < 1000 AS RESTRICTIVE TO r;"
+      - id: to_all_except
+        sql: "CREATE ROW POLICY p ON db.t USING a < 1000 AS PERMISSIVE TO ALL EXCEPT r1, r2;"
+    examples:
+      - "CREATE ROW POLICY filter1 ON mydb.mytable USING a<1000 TO accountant, john@localhost;"
+      - "CREATE ROW POLICY filter2 ON mydb.mytable USING a<1000 AND b=5 TO ALL EXCEPT mira;"
+      - "CREATE ROW POLICY filter3 ON mydb.mytable USING 1 TO admin;"
+
+  - id: alter_table_statistics
+    name: ALTER TABLE ... STATISTICS
+    doc: https://clickhouse.com/docs/sql-reference/statements/alter/statistics
+    tier: medium
+    probes:
+      - id: add
+        sql: "ALTER TABLE db.t ADD STATISTICS c, d TYPE tdigest, uniq;"
+      - id: add_if_not_exists
+        sql: "ALTER TABLE t ADD STATISTICS IF NOT EXISTS c TYPE tdigest;"
+      - id: modify
+        sql: "ALTER TABLE t MODIFY STATISTICS c, d TYPE tdigest, uniq;"
+      - id: drop
+        sql: "ALTER TABLE t DROP STATISTICS c, d;"
+      - id: drop_if_exists
+        sql: "ALTER TABLE t DROP STATISTICS IF EXISTS c;"
+      - id: clear
+        sql: "ALTER TABLE t CLEAR STATISTICS IF EXISTS c;"
+      - id: materialize_columns
+        sql: "ALTER TABLE t MATERIALIZE STATISTICS c, d;"
+      - id: materialize_all
+        sql: "ALTER TABLE t MATERIALIZE STATISTICS ALL;"
+    examples:
+      - "ALTER TABLE t1 MODIFY STATISTICS c, d TYPE tdigest, uniq_v2;"
+
+  - id: alter_database_comment
+    name: ALTER DATABASE ... MODIFY COMMENT
+    doc: https://clickhouse.com/docs/sql-reference/statements/alter/database-comment
+    tier: medium
+    probes:
+      - id: basic
+        sql: "ALTER DATABASE db MODIFY COMMENT 'comment';"
+      - id: on_cluster
+        sql: "ALTER DATABASE db ON CLUSTER c MODIFY COMMENT 'comment';"
+      - id: remove
+        sql: "ALTER DATABASE db MODIFY COMMENT '';"
+    examples:
+      - "ALTER DATABASE database_with_comment MODIFY COMMENT 'new comment on a database';"
+
+  - id: alter_user
+    name: ALTER USER
+    doc: https://clickhouse.com/docs/sql-reference/statements/alter/user
+    tier: medium
+    probes:
+      - id: if_exists_on_cluster
+        sql: "ALTER USER IF EXISTS u ON CLUSTER c DEFAULT ROLE ALL;"
+      - id: rename_to
+        sql: "ALTER USER u RENAME TO u2;"
+      - id: valid_until
+        sql: "ALTER USER u VALID UNTIL '2030-01-01';"
+      - id: not_identified
+        sql: "ALTER USER u NOT IDENTIFIED;"
+      - id: identified_by
+        sql: "ALTER USER u IDENTIFIED BY 'password';"
+      - id: identified_with_sha256
+        sql: "ALTER USER u IDENTIFIED WITH sha256_password BY 'password';"
+      - id: add_identified
+        sql: "ALTER USER u ADD IDENTIFIED WITH plaintext_password BY '1', bcrypt_password BY '2';"
+      - id: reset_authentication_methods
+        sql: "ALTER USER u RESET AUTHENTICATION METHODS TO NEW;"
+      - id: identified_ldap
+        sql: "ALTER USER u IDENTIFIED WITH ldap SERVER 'server_name';"
+      - id: identified_kerberos
+        sql: "ALTER USER u IDENTIFIED WITH kerberos REALM 'realm';"
+      - id: identified_ssl_certificate
+        sql: "ALTER USER u IDENTIFIED WITH ssl_certificate CN 'common_name';"
+      - id: identified_ssh_key
+        sql: "ALTER USER u IDENTIFIED WITH ssh_key BY KEY 'public_key' TYPE 'ssh-rsa';"
+      - id: identified_http
+        sql: "ALTER USER u IDENTIFIED WITH http SERVER 'server_name' SCHEME 'Basic';"
+      - id: with_no_password
+        sql: "ALTER USER u IDENTIFIED WITH no_password;"
+      - id: host_name
+        sql: "ALTER USER u HOST NAME 'example.com', REGEXP 'ex.*', IP '192.168.0.1', LIKE '%.com';"
+      - id: add_host_local
+        sql: "ALTER USER u ADD HOST LOCAL;"
+      - id: drop_host_any
+        sql: "ALTER USER u DROP HOST ANY;"
+      - id: in_access_storage
+        sql: "ALTER USER u IN local_directory DEFAULT ROLE r1, r2;"
+      - id: default_role_except
+        sql: "ALTER USER u DEFAULT ROLE ALL EXCEPT r1, r2;"
+      - id: default_database
+        sql: "ALTER USER u DEFAULT DATABASE db;"
+      - id: default_database_none
+        sql: "ALTER USER u DEFAULT DATABASE NONE;"
+      - id: grantees
+        sql: "ALTER USER u GRANTEES r, v EXCEPT w;"
+      - id: drop_all_profiles
+        sql: "ALTER USER u DROP ALL PROFILES;"
+      - id: drop_all_settings
+        sql: "ALTER USER u DROP ALL SETTINGS;"
+      - id: drop_settings_profiles
+        sql: "ALTER USER u DROP SETTINGS max_memory_usage, DROP PROFILES 'p';"
+      - id: modify_settings
+        sql: "ALTER USER u MODIFY SETTINGS max_memory_usage = 10000000 MIN = 1000 MAX = 20000000 READONLY;"
+      - id: add_settings_profile
+        sql: "ALTER USER u ADD SETTINGS PROFILE 'p';"
+      - id: set_variable
+        sql: "ALTER USER u SET max_memory_usage = 10000000 CONST;"
+      - id: add_profiles
+        sql: "ALTER USER u ADD PROFILES 'p1', 'p2';"
+    examples:
+      - "ALTER USER user DEFAULT ROLE role1, role2;"
+      - "ALTER USER user DEFAULT ROLE ALL EXCEPT role1, role2;"
+      - "ALTER USER john GRANTEES jack;"
+
+  - id: alter_role
+    name: ALTER ROLE
+    doc: https://clickhouse.com/docs/sql-reference/statements/alter/role
+    tier: medium
+    probes:
+      - id: if_exists_on_cluster
+        sql: "ALTER ROLE IF EXISTS r ON CLUSTER c DROP ALL PROFILES;"
+      - id: rename_to
+        sql: "ALTER ROLE r RENAME TO r2;"
+      - id: drop_all_profiles
+        sql: "ALTER ROLE r DROP ALL PROFILES;"
+      - id: drop_all_settings
+        sql: "ALTER ROLE r DROP ALL SETTINGS;"
+      - id: drop_settings
+        sql: "ALTER ROLE r DROP SETTINGS max_memory_usage;"
+      - id: drop_profiles
+        sql: "ALTER ROLE r DROP PROFILES 'p';"
+      - id: modify_settings
+        sql: "ALTER ROLE r MODIFY SETTINGS max_memory_usage = 10000000 MIN = 1000 MAX = 20000000 CONST;"
+      - id: add_settings_profile
+        sql: "ALTER ROLE r ADD SETTINGS PROFILE 'p';"
+      - id: set_variable
+        sql: "ALTER ROLE r SET max_memory_usage = 10000000 WRITABLE;"
+      - id: add_profiles
+        sql: "ALTER ROLE r ADD PROFILES 'p1', 'p2';"
+
+  - id: alter_row_policy
+    name: ALTER ROW POLICY
+    doc: https://clickhouse.com/docs/sql-reference/statements/alter/row-policy
+    tier: medium
+    probes:
+      - id: using
+        sql: "ALTER ROW POLICY p ON db.t USING a > 10;"
+      - id: policy_keyword_only
+        sql: "ALTER POLICY p ON db.t USING a > 10;"
+      - id: if_exists
+        sql: "ALTER ROW POLICY IF EXISTS p ON db.t USING a > 10;"
+      - id: rename
+        sql: "ALTER ROW POLICY p1 ON db.t RENAME TO p1_new;"
+      - id: rename_with_using
+        sql: "ALTER POLICY old_name ON db.t RENAME TO new_name USING id > 10;"
+      - id: on_database_wildcard
+        sql: "ALTER ROW POLICY p ON db.* USING 1;"
+      - id: multiple_names
+        sql: "ALTER POLICY p1, p2 ON db.t TO ALL;"
+      - id: multiple_tables
+        sql: "ALTER POLICY p ON db.t, db.t2 USING NONE;"
+      - id: mixed_packing
+        sql: "ALTER POLICY p1 ON db.t, p2 ON db2.t2 TO ALL;"
+      - id: on_cluster
+        sql: "ALTER ROW POLICY p ON CLUSTER c ON db.t USING a > 10;"
+      - id: as_for_select_to
+        sql: "ALTER ROW POLICY p ON db.t AS RESTRICTIVE FOR SELECT USING a > 10 TO ALL EXCEPT r;"
+    examples:
+      - "ALTER ROW POLICY p1 ON db.table RENAME TO p1_new;"
+      - "ALTER POLICY old_name ON db.table RENAME TO new_name USING id > 10;"
+      - "ALTER POLICY p1, p2 ON db.table TO ALL;"
+
+  - id: drop_database
+    name: DROP DATABASE
+    doc: https://clickhouse.com/docs/sql-reference/statements/drop
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP DATABASE db;"
+      - id: if_exists
+        sql: "DROP DATABASE IF EXISTS db;"
+      - id: on_cluster
+        sql: "DROP DATABASE db ON CLUSTER c;"
+      - id: sync
+        sql: "DROP DATABASE db SYNC;"
+      - id: all_clauses
+        sql: "DROP DATABASE IF EXISTS db ON CLUSTER c SYNC;"
+
+  - id: drop_dictionary
+    name: DROP DICTIONARY
+    doc: https://clickhouse.com/docs/sql-reference/statements/drop
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP DICTIONARY d;"
+      - id: if_exists
+        sql: "DROP DICTIONARY IF EXISTS db.d;"
+      - id: sync
+        sql: "DROP DICTIONARY d SYNC;"
+
+  - id: drop_user
+    name: DROP USER
+    doc: https://clickhouse.com/docs/sql-reference/statements/drop
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP USER u;"
+      - id: if_exists_multiple
+        sql: "DROP USER IF EXISTS u1, u2;"
+      - id: on_cluster
+        sql: "DROP USER u ON CLUSTER c;"
+      - id: from_access_storage
+        sql: "DROP USER u FROM local_directory;"
+
+  - id: drop_role
+    name: DROP ROLE
+    doc: https://clickhouse.com/docs/sql-reference/statements/drop
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP ROLE r;"
+      - id: if_exists_multiple
+        sql: "DROP ROLE IF EXISTS r1, r2;"
+      - id: on_cluster
+        sql: "DROP ROLE r ON CLUSTER c;"
+      - id: from_access_storage
+        sql: "DROP ROLE r FROM local_directory;"
