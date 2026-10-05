@@ -1,0 +1,384 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements: []
+
+expressions:
+  - id: a_numeric_literals
+    name: Numeric literals
+    doc: https://mariadb.com/docs/server/reference/sql-structure/sql-language-structure/numeric-iterals
+    tier: high
+    probes:
+      - { id: integer_signed, sql: "SELECT 10, +10, -10;" }
+      - { id: decimal_point, sql: "SELECT 0.1, .1, +0.1, +.1;" }
+      - { id: exponent, sql: "SELECT 0.2E3, .2e3, .2e+2, 1.1e-10, -1.1e10;" }
+
+  - id: a_string_literals
+    name: String literals (quotes, escapes, concatenation, introducers)
+    doc: https://mariadb.com/docs/server/reference/sql-structure/sql-language-structure/string-literals
+    tier: high
+    probes:
+      - { id: single_quoted, sql: "SELECT 'The MariaDB Foundation';" }
+      - { id: double_quoted, sql: 'SELECT "The MariaDB Foundation";' }
+      - { id: adjacent_concatenation, sql: "SELECT 'The ' 'MariaDB ' 'Foundation';" }
+      - { id: backslash_escape, sql: "SELECT 'MariaDB\\'s new features';" }
+      - { id: doubled_quote_escape, sql: 'SELECT ''I''''m here'', """Double""";' }
+      - { id: escape_sequences, sql: "SELECT 'a\\0b\\bc\\nd\\re\\tf\\Zg\\\\h\\%i\\_j';" }
+      - { id: charset_introducer, sql: "SELECT _utf8 'Foundation';" }
+      - { id: charset_introducer_collate, sql: "SELECT _utf8 'Foundation' COLLATE utf8_unicode_ci;" }
+      - { id: charset_introducer_adjacent, sql: "SELECT _utf8mb4'text';" }
+    examples:
+      - "SELECT 'MariaDB\\'s new features';"
+      - "SELECT 'I''m here', \"\"\"Double\"\"\";"
+
+  - id: a_hex_binary_literals
+    name: Hexadecimal and binary literals
+    doc: https://mariadb.com/docs/server/reference/sql-structure/sql-language-structure/hexadecimal-literals
+    tier: high
+    probes:
+      - { id: hex_x_lower, sql: "SELECT x'61';" }
+      - { id: hex_x_upper, sql: "SELECT X'61';" }
+      - { id: hex_0x, sql: "SELECT 0x61;" }
+      - { id: hex_numeric_context, sql: "SELECT 0 + 0xF, -0xF;" }
+      - { id: binary_b_lower, sql: "SELECT b'1000001';" }
+      - { id: binary_b_upper, sql: "SELECT B'1000001';" }
+      - { id: binary_0b, sql: "SELECT 0b1000001;" }
+      - { id: binary_numeric_context, sql: "SELECT 0b1000001+0;" }
+    examples:
+      - "SELECT x'61', X'61', 0x61;"
+      - "SELECT 0 + 0xF, -0xF;"
+      - "SELECT 0b1000001;"
+      - "SELECT 0b1000001+0;"
+
+  - id: a_boolean_null_literals
+    name: Boolean literals and NULL
+    doc: https://mariadb.com/docs/server/reference/sql-structure/sql-language-structure/sql-language-structure-boolean-literals
+    tier: high
+    probes:
+      - { id: true_false, sql: "SELECT TRUE, FALSE, true, False;" }
+      - { id: null_literal, sql: "SELECT NULL;" }
+      - { id: is_true, sql: "SELECT 10 IS TRUE;" }
+      - { id: is_not_false, sql: "SELECT 10 IS NOT FALSE;" }
+      - { id: is_unknown, sql: "SELECT NULL IS UNKNOWN, 1 IS NOT UNKNOWN;" }
+
+  - id: a_date_time_literals
+    name: DATE, TIME and TIMESTAMP literals (standard and ODBC)
+    doc: https://mariadb.com/docs/server/reference/sql-structure/sql-language-structure/date-and-time-literals
+    tier: high
+    probes:
+      - { id: date_keyword, sql: "SELECT DATE '1994-01-01';" }
+      - { id: time_keyword, sql: "SELECT TIME '09:05:00';" }
+      - { id: timestamp_keyword, sql: "SELECT TIMESTAMP '1994-01-01 12:30:03';" }
+      - { id: timestamp_t_delimiter, sql: "SELECT TIMESTAMP '1994-01-01T12:30:03';" }
+      - { id: odbc_d, sql: "SELECT {d '1994-01-01'};" }
+      - { id: odbc_t, sql: "SELECT {t '09:05:00'};" }
+      - { id: odbc_ts, sql: "SELECT {ts '1994-01-01 12:30:03'};" }
+      - { id: date_string_forms, sql: "SELECT DATE '19940101', DATE '94/01/01', DATE '94:01!01';" }
+      - { id: time_string_forms, sql: "SELECT TIME '9:5:0', TIME '090500', TIME '1 10:20';" }
+      - { id: fractional_seconds, sql: "SELECT TIMESTAMP '1994-01-01 12:30:03.123456';" }
+
+  - id: a_interval_expressions
+    name: INTERVAL expressions and date arithmetic units
+    doc: https://mariadb.com/docs/server/reference/sql-functions/date-time-functions/date-and-time-units
+    tier: high
+    probes:
+      - { id: plus_interval, sql: "SELECT '2008-12-31 23:59:59' + INTERVAL 1 SECOND;" }
+      - { id: interval_plus, sql: "SELECT INTERVAL 1 DAY + '2008-12-31';" }
+      - { id: minus_interval, sql: "SELECT '2008-12-31' - INTERVAL 1 DAY;" }
+      - { id: date_add_interval, sql: "SELECT DATE_ADD('2008-12-31', INTERVAL 1 DAY);" }
+      - { id: date_sub_interval, sql: "SELECT DATE_SUB('2008-12-31', INTERVAL 1 MONTH);" }
+      - { id: interval_expression_quantity, sql: "SELECT NOW() + INTERVAL (1 + 2) HOUR;" }
+      - { id: units_base, sql: "SELECT d + INTERVAL 1 MICROSECOND + INTERVAL 1 MINUTE + INTERVAL 1 WEEK + INTERVAL 1 QUARTER + INTERVAL 1 YEAR FROM t;" }
+      - { id: unit_composite_day_hour, sql: "SELECT '2008-12-31' + INTERVAL '1 10' DAY_HOUR;" }
+      - { id: unit_composite_minute_second, sql: "SELECT '2008-12-31 10:00:00' + INTERVAL '1:1' MINUTE_SECOND;" }
+      - { id: unit_composite_second_microsecond, sql: "SELECT '2008-12-31 10:00:00' + INTERVAL '1.999999' SECOND_MICROSECOND;" }
+      - { id: unit_composite_year_month, sql: "SELECT '2008-12-31' + INTERVAL '1-2' YEAR_MONTH;" }
+      - { id: unit_composite_day_second, sql: "SELECT d + INTERVAL '1 1:1:1' DAY_SECOND FROM t;" }
+      - { id: unit_composite_hour_minute, sql: "SELECT d + INTERVAL '1:1' HOUR_MINUTE FROM t;" }
+      - { id: unit_composite_day_microsecond, sql: "SELECT d + INTERVAL '1 1:1:1.5' DAY_MICROSECOND FROM t;" }
+      - { id: negative_interval_string, sql: "SELECT DATE_ADD('2008-12-31', INTERVAL '-1' DAY);" }
+    examples:
+      - "SELECT '2008-12-31 23:59:59' + INTERVAL 1 SECOND;"
+      - "SELECT INTERVAL 1 DAY + '2008-12-31';"
+
+  - id: a_interval_function
+    name: INTERVAL(N0, N1, ...) comparison function
+    doc: https://mariadb.com/docs/server/reference/sql-structure/operators/comparison-operators/interval
+    tier: low
+    probes:
+      - { id: interval_fn, sql: "SELECT INTERVAL(22, 24, 26, 28);" }
+      - { id: interval_fn_null, sql: "SELECT INTERVAL(10, 2, NULL);" }
+    examples: []
+
+  - id: a_json_construction
+    name: JSON construction and path expressions (JSON_OBJECT, JSON_ARRAY, JSON_EXTRACT, JSON_VALUE)
+    doc: https://mariadb.com/docs/server/reference/sql-functions/special-functions/json-functions/jsonpath-expressions
+    tier: high
+    probes:
+      - { id: json_object, sql: "SELECT JSON_OBJECT('id', 87, 'name', 'carrot');" }
+      - { id: json_object_empty, sql: "SELECT JSON_OBJECT();" }
+      - { id: json_array, sql: "SELECT JSON_ARRAY(56, 3.1416, 'My name is \"Foo\"', NULL);" }
+      - { id: json_array_nested, sql: "SELECT JSON_ARRAY(1, JSON_OBJECT('a', 2), JSON_ARRAY(3, 4));" }
+      - { id: json_extract_member, sql: "SELECT JSON_EXTRACT('{\"a\": {\"b\": 1}}', '$.a.b');" }
+      - { id: json_extract_quoted_member, sql: "SELECT JSON_EXTRACT('{\"a b\": 1}', '$.\"a b\"');" }
+      - { id: json_extract_array_index, sql: "SELECT JSON_EXTRACT('[1, 2, 3]', '$[1]');" }
+      - { id: json_extract_wildcard, sql: "SELECT JSON_EXTRACT('{\"a\": [1, 2]}', '$.a[*]', '$.*');" }
+      - { id: json_extract_negative_index, sql: "SELECT JSON_EXTRACT('[1, 2, 3]', '$[-1]', '$[last]', '$[last-1]', '$[0 to 1]');" }
+      - { id: json_extract_lax_mode, sql: "SELECT JSON_EXTRACT('[1, 2, 3]', 'lax $[1]');" }
+      - { id: json_value, sql: "SELECT JSON_VALUE('{\"key1\": 123}', '$.key1');" }
+      - { id: json_column_function, sql: "SELECT JSON_QUOTE(c), JSON_QUERY(j, '$.a'), JSON_SET(j, '$.a', 1) FROM t;" }
+      - { id: json_aggregates, sql: "SELECT JSON_ARRAYAGG(c), JSON_OBJECTAGG(k, v) FROM t;" }
+
+  - id: a_numeric_types
+    name: Numeric data types
+    doc: https://mariadb.com/docs/server/reference/data-types/numeric-data-types
+    tier: high
+    probes:
+      - { id: tinyint, sql: "CREATE TABLE t (c TINYINT);" }
+      - { id: smallint, sql: "CREATE TABLE t (c SMALLINT);" }
+      - { id: mediumint, sql: "CREATE TABLE t (c MEDIUMINT);" }
+      - { id: int_display_width, sql: "CREATE TABLE t (c INT(11));" }
+      - { id: integer, sql: "CREATE TABLE t (c INTEGER);" }
+      - { id: bigint, sql: "CREATE TABLE t (c BIGINT);" }
+      - { id: int_unsigned, sql: "CREATE TABLE t (c INT UNSIGNED);" }
+      - { id: int_signed, sql: "CREATE TABLE t (c INT SIGNED);" }
+      - { id: int_zerofill, sql: "CREATE TABLE t (c INT(5) ZEROFILL);" }
+      - { id: int_synonyms, sql: "CREATE TABLE t (a INT1, b INT2, c INT3, d INT4, e INT8, f MIDDLEINT);" }
+      - { id: decimal_precision_scale, sql: "CREATE TABLE t (c DECIMAL(10,2));" }
+      - { id: decimal_precision, sql: "CREATE TABLE t (c DECIMAL(10));" }
+      - { id: decimal_bare, sql: "CREATE TABLE t (c DECIMAL);" }
+      - { id: decimal_unsigned_zerofill, sql: "CREATE TABLE t (a DECIMAL(10,2) UNSIGNED, b DECIMAL(10,2) ZEROFILL);" }
+      - { id: decimal_synonyms, sql: "CREATE TABLE t (a DEC(10,2), b NUMERIC(10,2), c FIXED(10,2));" }
+      - { id: float_bare, sql: "CREATE TABLE t (c FLOAT);" }
+      - { id: float_m_d, sql: "CREATE TABLE t (c FLOAT(7,4));" }
+      - { id: float_unsigned_zerofill, sql: "CREATE TABLE t (a FLOAT UNSIGNED, b FLOAT ZEROFILL);" }
+      - { id: float_synonyms, sql: "CREATE TABLE t (a FLOAT4, b FLOAT8);" }
+      - { id: double_bare, sql: "CREATE TABLE t (c DOUBLE);" }
+      - { id: double_m_d, sql: "CREATE TABLE t (c DOUBLE(16,4) UNSIGNED);" }
+      - { id: double_precision, sql: "CREATE TABLE t (a DOUBLE PRECISION, b DOUBLE PRECISION(16,4), c REAL, d REAL(16,4));" }
+      - { id: bit_bare, sql: "CREATE TABLE t (c BIT);" }
+      - { id: bit_m, sql: "CREATE TABLE t (c BIT(8));" }
+      - { id: bool_boolean, sql: "CREATE TABLE t (a BOOL, b BOOLEAN);" }
+      - { id: serial, sql: "CREATE TABLE t (id SERIAL);" }
+
+  - id: a_string_types
+    name: Character, binary, text, blob and other string data types
+    doc: https://mariadb.com/docs/server/reference/data-types/string-data-types
+    tier: high
+    probes:
+      - { id: char_bare, sql: "CREATE TABLE t (c CHAR);" }
+      - { id: char_length, sql: "CREATE TABLE t (c CHAR(10));" }
+      - { id: char_charset_collate, sql: "CREATE TABLE t (c CHAR(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);" }
+      - { id: char_byte, sql: "CREATE TABLE t (c CHAR BYTE);", note: "CHAR BYTE is an alias for BINARY, documented on the char-byte page" }
+      - { id: national_char, sql: "CREATE TABLE t (a NATIONAL CHAR(10), b NCHAR(10));" }
+      - { id: varchar, sql: "CREATE TABLE t (c VARCHAR(255));" }
+      - { id: varchar_charset_collate, sql: "CREATE TABLE t (c VARCHAR(255) CHARACTER SET latin1 COLLATE latin1_swedish_ci);" }
+      - { id: national_varchar, sql: "CREATE TABLE t (a NATIONAL VARCHAR(10), b NCHAR VARCHAR(10));" }
+      - { id: char_varying, sql: "CREATE TABLE t (a CHAR VARYING(10), b CHARACTER VARYING(10));" }
+      - { id: national_char_varying, sql: "CREATE TABLE t (a NATIONAL CHAR VARYING(10), b NATIONAL CHARACTER VARYING(10), c NCHAR VARYING(10));" }
+      - { id: binary_bare, sql: "CREATE TABLE t (a BINARY, b BINARY(16));" }
+      - { id: varbinary, sql: "CREATE TABLE t (c VARBINARY(255));" }
+      - { id: tinytext_mediumtext_longtext, sql: "CREATE TABLE t (a TINYTEXT, b MEDIUMTEXT, c LONGTEXT);" }
+      - { id: text, sql: "CREATE TABLE t (a TEXT, b TEXT(1000));" }
+      - { id: text_charset_collate, sql: "CREATE TABLE t (c TEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci);" }
+      - { id: tinyblob_mediumblob_longblob, sql: "CREATE TABLE t (a TINYBLOB, b MEDIUMBLOB, c LONGBLOB);" }
+      - { id: blob, sql: "CREATE TABLE t (a BLOB, b BLOB(1000));" }
+      - { id: long_synonyms, sql: "CREATE TABLE t (a LONG, b LONG VARCHAR, c LONG VARBINARY, d LONG CHAR VARYING, e LONG CHARACTER VARYING);", note: "LONG, LONG VARCHAR, LONG VARBINARY and LONG [CHAR|CHARACTER] VARYING are documented synonyms of MEDIUMTEXT/MEDIUMBLOB" }
+      - { id: enum, sql: "CREATE TABLE t (c ENUM('a', 'b', 'c'));" }
+      - { id: enum_charset_collate, sql: "CREATE TABLE t (c ENUM('a', 'b') CHARACTER SET utf8mb4 COLLATE utf8mb4_bin);" }
+      - { id: set, sql: "CREATE TABLE t (c SET('a', 'b', 'c'));" }
+      - { id: json, sql: "CREATE TABLE t (c JSON);" }
+      - { id: inet4, sql: "CREATE TABLE t (c INET4);" }
+      - { id: inet6, sql: "CREATE TABLE t (c INET6);" }
+      - { id: uuid, sql: "CREATE TABLE t (c UUID);" }
+      - { id: vector, sql: "CREATE TABLE t (c VECTOR(3));" }
+
+  - id: a_temporal_types
+    name: Date and time data types
+    doc: https://mariadb.com/docs/server/reference/data-types/date-and-time-data-types
+    tier: high
+    probes:
+      - { id: date, sql: "CREATE TABLE t (c DATE);" }
+      - { id: time, sql: "CREATE TABLE t (c TIME);" }
+      - { id: time_precision, sql: "CREATE TABLE t (c TIME(6));" }
+      - { id: datetime, sql: "CREATE TABLE t (c DATETIME);" }
+      - { id: datetime_precision, sql: "CREATE TABLE t (c DATETIME(6));" }
+      - { id: timestamp, sql: "CREATE TABLE t (c TIMESTAMP);" }
+      - { id: timestamp_precision, sql: "CREATE TABLE t (c TIMESTAMP(3));" }
+      - { id: year, sql: "CREATE TABLE t (a YEAR, b YEAR(4));" }
+
+  - id: a_row_type
+    name: ROW data type
+    doc: https://mariadb.com/docs/server/reference/data-types/string-data-types/row
+    tier: medium
+    probes:
+      - { id: row_variable, sql: "BEGIN NOT ATOMIC DECLARE r ROW (a INT, b VARCHAR(10)); END;" }
+
+  - id: a_type_of
+    name: TYPE OF anchored declaration
+    doc: https://mariadb.com/docs/server/reference/data-types/type-of
+    tier: medium
+    probes:
+      - { id: type_of_column, sql: "BEGIN NOT ATOMIC DECLARE v TYPE OF t.c; END;" }
+
+  - id: a_row_type_of
+    name: ROW TYPE OF anchored declaration
+    doc: https://mariadb.com/docs/server/reference/data-types/row-type-of
+    tier: medium
+    probes:
+      - { id: row_type_of_table, sql: "BEGIN NOT ATOMIC DECLARE r ROW TYPE OF t; END;" }
+
+  - id: a_cast
+    name: CAST and CONVERT
+    doc: https://mariadb.com/docs/server/reference/sql-functions/string-functions/cast
+    tier: high
+    probes:
+      - { id: cast_binary, sql: "SELECT CAST('abc' AS BINARY);" }
+      - { id: cast_binary_length, sql: "SELECT CAST('abc' AS BINARY(10));" }
+      - { id: cast_char, sql: "SELECT CAST(123 AS CHAR);" }
+      - { id: cast_char_length, sql: "SELECT CAST(123 AS CHAR(5));" }
+      - { id: cast_char_charset, sql: "SELECT CAST(123 AS CHAR CHARACTER SET utf8);" }
+      - { id: cast_char_charset_collate, sql: "SELECT CAST(123 AS CHAR CHARACTER SET utf8) COLLATE utf8_unicode_ci;" }
+      - { id: cast_date, sql: "SELECT CAST('2020-01-01' AS DATE);" }
+      - { id: cast_datetime, sql: "SELECT CAST('2020-01-01 10:00:00' AS DATETIME);" }
+      - { id: cast_datetime_precision, sql: "SELECT CAST('2020-01-01 10:00:00.123456' AS DATETIME(6));" }
+      - { id: cast_time, sql: "SELECT CAST('10:00:00' AS TIME);" }
+      - { id: cast_time_precision, sql: "SELECT CAST('10:00:00.123' AS TIME(3));" }
+      - { id: cast_decimal, sql: "SELECT CAST(1.5 AS DECIMAL);" }
+      - { id: cast_decimal_precision_scale, sql: "SELECT CAST(1.5 AS DECIMAL(10,2));" }
+      - { id: cast_double, sql: "SELECT CAST(1 AS DOUBLE);" }
+      - { id: cast_float, sql: "SELECT CAST(1 AS FLOAT);" }
+      - { id: cast_integer, sql: "SELECT CAST('1' AS INTEGER);" }
+      - { id: cast_signed, sql: "SELECT CAST('1' AS SIGNED);" }
+      - { id: cast_signed_integer, sql: "SELECT CAST('1' AS SIGNED INTEGER);" }
+      - { id: cast_unsigned, sql: "SELECT CAST('1' AS UNSIGNED);" }
+      - { id: cast_unsigned_integer, sql: "SELECT CAST('1' AS UNSIGNED INTEGER);" }
+      - { id: cast_varchar, sql: "SELECT CAST(123 AS VARCHAR(10));" }
+      - { id: cast_interval, sql: "SELECT CAST(2019-01-04 AS INTERVAL DAY_SECOND(2));" }
+      - { id: cast_introducer_charset, sql: "SELECT CAST(_latin1'text' AS CHAR CHARACTER SET utf8mb4);" }
+      - { id: convert_type, sql: "SELECT CONVERT('abc', CHAR);" }
+      - { id: convert_type_length, sql: "SELECT CONVERT('123', DECIMAL(10,2));" }
+      - { id: convert_using, sql: "SELECT CONVERT('abc' USING utf8);" }
+      - { id: binary_operator, sql: "SELECT BINARY 'AardVark';" }
+    examples:
+      - 'SELECT CAST("abc" AS BINARY);'
+      - 'SELECT CAST("1" AS UNSIGNED INTEGER);'
+      - "SELECT CAST(0xAA AS UNSIGNED), CAST(x'aa' AS UNSIGNED), CAST(X'aa' AS UNSIGNED);"
+
+  - id: a_identifier_quoting
+    name: Identifier quoting and qualifiers
+    doc: https://mariadb.com/docs/server/reference/sql-structure/sql-language-structure/identifier-names
+    tier: high
+    probes:
+      - { id: unquoted, sql: "SELECT c1, c$2, _c3, 9c FROM t;" }
+      - { id: backtick_quoted, sql: "SELECT `c` FROM `t`;" }
+      - { id: backtick_reserved_word, sql: "SELECT `select` FROM `from`;" }
+      - { id: backtick_special_chars, sql: "SELECT `my column`, `a-b` FROM `my table`;" }
+      - { id: backtick_doubled, sql: "SELECT `a``b` FROM t;" }
+      - { id: column_alias_backtick, sql: "SELECT c AS `my alias` FROM t;" }
+      - { id: qualified_column, sql: "SELECT t.c FROM t;" }
+      - { id: fully_qualified_column, sql: "SELECT db_name.tbl_name.col_name FROM db_name.tbl_name;" }
+      - { id: qualified_quoted_parts, sql: "SELECT `db_name`.`tbl_name`.`col_name` FROM `db_name`.`tbl_name`;" }
+      - { id: qualifier_spaces, sql: "SELECT `db_name` . `tbl_name` FROM `db_name` . `tbl_name`;" }
+      - { id: qualifier_reserved_word_unquoted, sql: "SELECT test.select FROM t;" }
+      - { id: leading_dot_table, sql: "SELECT c FROM .t;" }
+      - { id: leading_dot_quoted_table, sql: "SELECT c FROM . `t`;" }
+      - { id: reserved_word_after_dot, sql: "SELECT c FROM test.select;" }
+    examples:
+      - "SELECT `db_name`.`tbl_name`.`col_name` FROM `db_name`.`tbl_name`;"
+
+  - id: a_ansi_quotes_identifiers
+    name: Double-quoted identifiers under ANSI_QUOTES
+    doc: https://mariadb.com/docs/server/reference/sql-structure/sql-language-structure/identifier-names
+    tier: low
+    probes:
+      - { id: double_quoted_identifier, sql: 'SELECT "c" FROM "t";', note: "Valid only when the ANSI_QUOTES sql_mode flag is set; otherwise double quotes delimit strings" }
+
+  - id: a_comments
+    name: Comments
+    doc: https://mariadb.com/docs/server/reference/sql-statements/comment-syntax
+    tier: high
+    probes:
+      - id: hash_comment
+        sql: |-
+          SELECT * FROM users;
+          # This is a comment
+      - { id: hash_comment_inline, sql: "SELECT 1; # This is a comment" }
+      - { id: dash_dash_comment, sql: "SELECT * FROM users; -- This is a comment" }
+      - { id: dash_dash_leading, sql: "-- This is a comment\nSELECT 1;" }
+      - id: block_comment
+        sql: |-
+          SELECT * FROM users; /* This is a
+          multi-line
+          comment */
+      - { id: block_comment_inline, sql: "SELECT 2 /* +1 */;" }
+      - { id: executable_comment, sql: "SELECT 1 /*! +1 */;" }
+      - { id: executable_comment_versioned, sql: "SELECT 1 /*!50101 +1 */;" }
+      - { id: mariadb_executable_comment, sql: "SELECT 2 /*M! +1 */;" }
+      - { id: mariadb_executable_comment_versioned, sql: "SELECT 2 /*M!50301 +1 */;" }
+      - { id: executable_comment_statement, sql: "/*M!100100 select 1 */;" }
+    examples:
+      - "SELECT 2 /* +1 */;"
+      - "SELECT 1 /*! +1 */;"
+      - "SELECT 1 /*!50101 +1 */;"
+      - "SELECT 2 /*M! +1 */;"
+      - "SELECT 2 /*M!50301 +1 */;"
+
+  - id: a_user_variables
+    name: User-defined variables
+    doc: https://mariadb.com/docs/server/reference/sql-structure/sql-language-structure/user-defined-variables
+    tier: high
+    probes:
+      - { id: read_variable, sql: "SELECT @x;" }
+      - { id: variable_is_null, sql: "SELECT @x IS NULL;" }
+      - { id: set_variable, sql: "SET @v1 = 0;" }
+      - { id: set_variable_string, sql: "SET @v2 = 'abc';" }
+      - { id: set_variable_cast, sql: "SET @str = CAST(123 AS CHAR(5));" }
+      - { id: variable_name_chars, sql: "SELECT @var_1, @var$1, @a.b;" }
+      - { id: variable_backtick_quoted, sql: "SELECT @`var name`;" }
+      - { id: variable_single_quoted, sql: "SELECT @'var name';" }
+      - { id: variable_double_quoted, sql: 'SELECT @"var name";' }
+      - { id: assignment_operator, sql: "SELECT @var := 1;" }
+      - { id: assignment_in_expression, sql: "SELECT a, b, c, (@var:=@var+1) AS counter FROM t;" }
+      - { id: select_into_variable, sql: "SELECT c INTO @v FROM t;" }
+      - { id: variable_in_where, sql: "SELECT c FROM t WHERE a = @v1 AND b > @v2;" }
+    examples:
+      - "SET @str = CAST(123 AS CHAR(5));"
+      - "SELECT @x IS NULL;"
+      - "SET @var = 0;"
+      - "SELECT a, b, c, (@var:=@var+1) AS counter FROM my_table;"
+      - "SET @v1 = 0;"
+      - "SET @v2 = 'abc';"
+      - "SET @v3 = CAST(123 AS CHAR(5));"
+
+  - id: a_system_variables
+    name: System variable references (@@var, @@global., @@session.)
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/set-commands/set
+    tier: high
+    probes:
+      - { id: at_at_var, sql: "SELECT @@sql_mode;" }
+      - { id: at_at_global, sql: "SELECT @@global.max_connections;" }
+      - { id: at_at_session, sql: "SELECT @@session.sql_mode;" }
+      - { id: at_at_in_expression, sql: "SELECT REPLACE(@@sql_mode, 'STRICT_TRANS_TABLES', '');" }
+      - { id: set_at_at_session, sql: "SET @@session.sql_mode = 'ANSI';" }
+      - { id: set_at_at_global, sql: "SET @@global.max_error_count = 256;" }
+      - { id: set_at_at_bare, sql: "SET @@time_zone = '+00:00';" }
+      - { id: set_sql_mode_subselect, sql: "SET sql_mode=(SELECT REPLACE(@@sql_mode, 'STRICT_TRANS_TABLES', ''));" }
+    examples:
+      - "SET @@time_zone = '+00:00';"
+      - "SET @@time_zone = '-07:00';"
+
+  - id: a_placeholders
+    name: Prepared-statement parameter markers (?)
+    doc: https://mariadb.com/docs/server/reference/sql-statements/prepared-statements/prepare-statement
+    tier: high
+    probes:
+      - { id: question_mark_where, sql: "PREPARE stmt FROM 'SELECT * FROM t WHERE a = ?';" }
+      - { id: question_mark_multiple, sql: "PREPARE stmt FROM 'SELECT * FROM t WHERE a = ? AND b > ?';" }
+      - { id: question_mark_bare, sql: "SELECT * FROM t WHERE a = ? AND b > ?;", note: "Parameter markers as sent through the binary protocol or inside the prepared statement text" }
+      - { id: question_mark_insert, sql: "INSERT INTO t (a, b) VALUES (?, ?);" }
+      - { id: question_mark_limit, sql: "SELECT * FROM t LIMIT ?;" }
+    examples:
+      - 'PREPARE test FROM "select * from t1 where a=?";'
