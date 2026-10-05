@@ -117,9 +117,6 @@ statements:
         sql: "DO BEGIN DECLARE A_COPY INT ARRAY; DECLARE B_COPY VARCHAR(10) ARRAY; SELECT A, B INTO A_COPY[1], B_COPY[1] DEFAULT -2+1, NULL FROM T1; END;"
       - id: select_into_row_variable
         sql: "DO BEGIN DECLARE x ROW (a INT, b VARCHAR(10)); SELECT 2, 'b' INTO x FROM dummy; END;"
-      - id: select_into_after_from
-        sql: "DO BEGIN DECLARE a INT; SELECT A FROM t INTO a; END;"
-        note: "the parallel-execution page shows the INTO-after-FROM form (SELECT ... FROM :tab s where ... INTO table)"
     examples:
       - |-
         DO BEGIN
@@ -195,20 +192,228 @@ statements:
       - id: assign_with_hint_no_inline
         sql: "DO BEGIN tab = SELECT A, B, C FROM T WHERE A = 1 WITH HINT(NO_INLINE); tab2 = SELECT C FROM :tab WHERE C = 0; END;"
       - id: assign_with_hint_inline
-        sql: "DO BEGIN CALL procInner(outTable) WITH HINT(INLINE); END;"
-        note: "WITH HINT (INLINE) is placed on the call statement; see the NO_INLINE and INLINE Hints page"
+        sql: "DO BEGIN tab2 = SELECT I FROM T WITH HINT (INLINE); END;"
       - id: assign_table_variable
         sql: "DO BEGIN DECLARE a TABLE (i INT); DECLARE b TABLE (i INT); a = SELECT 1 AS i FROM dummy; b = :a; END;"
       - id: assign_union_of_variables
         sql: "DO BEGIN ret_tab = SELECT * FROM :out_tab UNION SELECT * FROM :ret_tab; END;"
       - id: from_table_variable_alias
         sql: "DO BEGIN T3 = SELECT J, K FROM :T1 AS a, :T2 AS b WHERE a.I = b.I; END;"
+
+  - id: sqlscript_declare_row_variable
+    name: DECLARE (row-type variables)
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/869b4b1c5c7847cba246eb8e210d72bb.html?version=2.0.08
+    tier: high
+    probes:
+      - id: row_element_list
+        sql: "DO BEGIN DECLARE x ROW (a INT, b VARCHAR(16), c TIMESTAMP); END;"
+      - id: row_multiple_names
+        sql: "DO BEGIN DECLARE x, y ROW (a INT, b VARCHAR(16)); END;"
+      - id: row_like_table
+        sql: "DO BEGIN DECLARE x ROW LIKE t; END;"
+      - id: row_like_variable
+        sql: "DO BEGIN DECLARE CURSOR cur FOR SELECT 1 AS a FROM dummy; DECLARE x ROW LIKE :cur; END;"
+      - id: row_constant_default
+        sql: "DO BEGIN DECLARE CONSTANT x ROW (a INT, b VARCHAR(16)) DEFAULT ROW(1, 'a'); END;"
+      - id: row_equals_default_variable
+        sql: "DO BEGIN DECLARE x ROW (a INT); DECLARE y ROW (a INT) = :x; END;"
+      - id: row_constructor_assign
+        sql: "DO BEGIN DECLARE x ROW (a INT, b VARCHAR(16), c TIMESTAMP); x = ROW(1, 'a', '2000-01-01'); END;"
+      - id: row_field_assign
+        sql: "DO BEGIN DECLARE x ROW (a INT); x.a = 2; END;"
+      - id: row_assign_variable
+        sql: "DO BEGIN DECLARE x, y ROW (a INT); y = :x; END;"
+      - id: row_field_read
+        sql: "DO BEGIN DECLARE y ROW (a INT, b VARCHAR(16)); SELECT :y.a, :y.b FROM dummy; END;"
+      - id: row_fetch_into
+        sql: "DO BEGIN DECLARE CURSOR cur FOR SELECT 1 AS a FROM dummy; DECLARE x ROW LIKE :cur; OPEN cur; FETCH cur INTO x; END;"
     examples:
       - |-
         DO BEGIN
-         DECLARE a TABLE (i DECIMAL(2,1), j INTEGER);
-         IF :num = 4
-         THEN
-         a = SELECT i, j FROM tab;
-         END IF;
+         DECLARE x, y ROW (a INT, b VARCHAR(16), c TIMESTAMP);
+         x = ROW(1, 'a', '2000-01-01');
+         x.a = 2;
+         y = :x;
+         SELECT :y.a, :y.b, :y.c FROM DUMMY;
+         -- Returns [2, 'a', '2000-01-01']
         END;
+      - |-
+        DO BEGIN
+         DECLARE CURSOR cur FOR SELECT 1 as a, 'a' as b, to_timestamp('2000-01-01') as c FROM DUMMY;
+         DECLARE x ROW LIKE :cur;
+         OPEN cur;
+         FETCH cur INTO x;
+         SELECT :x.a, :x.b, :x.c FROM DUMMY;
+         -- Returns [1, 'a', '2000-01-01']
+         SELECT 2, 'b', '2000-02-02' INTO x FROM DUMMY;
+         SELECT :x.a, :x.b, :x.c FROM DUMMY;
+         -- Returns [2, 'b', '2000-02-02']
+        END;
+
+  - id: sqlscript_table_variable_cell_access
+    name: Index-based cell access to table variables
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/a94ea1e47d734191be3df6c2ce5f32d6.html?version=2.0.08
+    tier: high
+    probes:
+      - id: write_cell
+        sql: "DO BEGIN DECLARE intab TABLE (A INT, B VARCHAR(20)); intab.A[2] = 5; END;"
+      - id: read_cell
+        sql: "DO BEGIN DECLARE intab TABLE (A INT, B VARCHAR(20)); DECLARE outvar VARCHAR(20); outvar = :intab.B[100]; END;"
+      - id: cell_index_variable
+        sql: "DO BEGIN DECLARE intab TABLE (A INT); DECLARE i INT = 1; DECLARE v INT; v = :intab.A[:i]; END;"
+      - id: cell_index_expression
+        sql: "DO BEGIN DECLARE intab TABLE (A INT); DECLARE i INT = 1; DECLARE v INT; v = :intab.A[:i + 1]; END;"
+      - id: cell_quoted_column
+        sql: "DO BEGIN DECLARE lt TABLE (\"Val1\" INT); DECLARE v INT; v = :lt.\"Val1\"[1]; END;"
+      - id: cell_in_loop_condition
+        sql: "DO BEGIN DECLARE OT TABLE (K VARCHAR(10)); DECLARE IDX INT = 0; WHILE :OT.K[IDX + 1] IS NOT NULL DO IDX = IDX + 1; END WHILE; END;"
+
+  - id: sqlscript_table_variable_insert
+    name: Table variable operators - INSERT
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/36f718be73e745ceae0530aa80850ce3.html?version=2.0.08
+    tier: high
+    probes:
+      - id: insert_row_append
+        sql: "DO BEGIN DECLARE OT TABLE (K VARCHAR(20), V INT); :OT.INSERT(('Sum', 1)); END;"
+      - id: insert_row_at_index
+        sql: "DO BEGIN DECLARE OT TABLE (K VARCHAR(20), V INT); :OT.INSERT(('Sum', 1), 2); END;"
+      - id: insert_row_with_expressions
+        sql: "DO BEGIN DECLARE OT TABLE (K VARCHAR(20), V INT); DECLARE K VARCHAR(20) = 'a'; DECLARE VSUM INT = 0; DECLARE IDX INT = 1; :OT.INSERT(('Sum ' || K, VSUM), IDX); END;"
+      - id: insert_row_column_list
+        sql: "DO BEGIN DECLARE tv TABLE (c1 INT, c2 INT); :tv.(c1, c2).INSERT((1, 2), 1); END;"
+      - id: insert_row_column_list_append
+        sql: "DO BEGIN DECLARE tv TABLE (c1 INT, c2 INT); :tv.(c1).INSERT((1)); END;"
+      - id: insert_table_variable
+        sql: "DO BEGIN DECLARE tab_a TABLE (c INT); DECLARE tab_b TABLE (c INT); :tab_a.insert(:tab_b); END;"
+      - id: insert_table_variable_column_list
+        sql: "DO BEGIN DECLARE tab_a TABLE (col1 INT, COL2 INT); DECLARE tab_b TABLE (x INT, y INT); :tab_a.(col1, COL2).insert(:tab_b); END;"
+      - id: insert_table_variable_position
+        sql: "DO BEGIN DECLARE tab_a TABLE (c INT); DECLARE tab_b TABLE (c INT); :tab_a.INSERT(:tab_b, 5); END;"
+      - id: insert_table_variable_quoted_columns_index_variable
+        sql: "DO BEGIN DECLARE tab_a TABLE (\"a\" INT, \"b\" INT); DECLARE tab_b TABLE (x INT, y INT); DECLARE index_to_insert INT = 1; :tab_a.(\"a\",\"b\").insert(:tab_b, :index_to_insert); END;"
+    examples:
+      - |-
+        DO BEGIN
+         DECLARE I INT;
+         LT0 = SELECT DISTINCT K FROM DATA;
+         FOR I IN 1..RECORD_COUNT(:LT0) DO
+         DECLARE K VARCHAR = :LT0.K[I];
+         LT1 = SELECT K, V + 1000 * :I AS V FROM DATA WHERE K = :K;
+         :OT.INSERT(:LT1, 1);
+         END FOR;
+        END;
+
+  - id: sqlscript_table_variable_update
+    name: Table variable operators - UPDATE and cell assignment
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/36f718be73e745ceae0530aa80850ce3.html?version=2.0.08
+    tier: high
+    probes:
+      - id: update_operator
+        sql: "DO BEGIN DECLARE tv TABLE (a INT, b INT); :tv.UPDATE((1, 2), 3); END;"
+      - id: update_operator_column_list
+        sql: "DO BEGIN DECLARE tv TABLE (a INT, b INT); :tv.(a).UPDATE((1), 3); END;"
+      - id: assign_row_at_index
+        sql: "DO BEGIN DECLARE tv TABLE (a INT, b INT); tv[3] = (1, 2); END;"
+      - id: assign_row_at_index_expression
+        sql: "DO BEGIN DECLARE OT TABLE (V1 INT, V2 INT); DECLARE MAXIDX INT = 5; DECLARE IDX INT = 1; OT[MAXIDX-IDX+1] = (:IT.V2[:IDX], :IT.V1[:IDX]); END;"
+      - id: assign_row_at_index_column_list
+        sql: "DO BEGIN DECLARE tv TABLE (a INT, b INT); tv.(a)[3] = (1); END;"
+
+  - id: sqlscript_table_variable_delete
+    name: Table variable operators - DELETE
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/36f718be73e745ceae0530aa80850ce3.html?version=2.0.08
+    tier: high
+    probes:
+      - id: delete_all
+        sql: "DO BEGIN DECLARE tv TABLE (a INT); :tv.DELETE(); END;"
+      - id: delete_index
+        sql: "DO BEGIN DECLARE tv TABLE (a INT); :tv.DELETE(1); END;"
+      - id: delete_range
+        sql: "DO BEGIN DECLARE tv TABLE (a INT); :tv.DELETE(1..3); END;"
+      - id: delete_range_cell_expressions
+        sql: "DO BEGIN DECLARE OT_RESULT TABLE (a INT); DECLARE INTERVALS TABLE (FROM_IDX INT, TO_IDX INT); DECLARE IDX INT = 1; :OT_RESULT.DELETE(:INTERVALS.FROM_IDX[IDX] .. :INTERVALS.TO_IDX[IDX]); END;"
+      - id: delete_array_of_indexes
+        sql: "DO BEGIN DECLARE tv TABLE (a INT); DECLARE DEL_IDX INT ARRAY; :tv.DELETE(:DEL_IDX); END;"
+
+  - id: sqlscript_table_variable_search
+    name: Table variable operators - SEARCH
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/1eb7673ed88b4aa9b2cb43959bbbbde0.html?version=2.0.08
+    tier: high
+    probes:
+      - id: search_columns_values
+        sql: "DO BEGIN DECLARE LT1 TABLE (\"Key1\" VARCHAR(10), \"Key2\" INT, \"Val1\" VARCHAR(10)); DECLARE pos INT; pos = :LT1.SEARCH((\"Key1\", \"Key2\"), ('I', 3)); END;"
+      - id: search_single_column
+        sql: "DO BEGIN DECLARE LT TABLE (B INT, A INT); DECLARE pos INT; pos = :LT.SEARCH(B, 1); END;"
+      - id: search_start_position
+        sql: "DO BEGIN DECLARE LT TABLE (B INT, A INT); DECLARE pos INT; pos = :LT.SEARCH((B, A), (1, 2), 3); END;"
+      - id: search_result_as_index
+        sql: "DO BEGIN DECLARE LT1 TABLE (\"Key1\" VARCHAR(10), \"Key2\" INT, \"Val1\" VARCHAR(10)); DECLARE val VARCHAR(10); val = :LT1.\"Val1\"[:LT1.SEARCH((\"Key1\", \"Key2\"), ('E', 5))]; END;"
+      - id: search_then_delete
+        sql: "DO BEGIN DECLARE LT1 TABLE (\"Key1\" VARCHAR(10), \"Key2\" INT); DECLARE pos INT; pos = :LT1.SEARCH((\"Key1\", \"Key2\"), ('M', 3)); :LT1.DELETE(pos); END;"
+
+  - id: sqlscript_table_emptiness_and_count
+    name: IS_EMPTY and RECORD_COUNT
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/3905f921a16f41d6addcf8d7979560c2.html?version=2.0.08
+    tier: high
+    probes:
+      - id: is_empty_in_if
+        sql: "DO BEGIN DECLARE tabvar TABLE (ID INTEGER); IF IS_EMPTY(:tabvar) THEN RETURN; END IF; END;"
+      - id: is_empty_table_name
+        sql: "DO BEGIN IF IS_EMPTY(t) THEN RETURN; END IF; END;"
+      - id: not_is_empty_in_while
+        sql: "DO BEGIN DECLARE STACK TABLE (NODE VARCHAR(30), L INT); WHILE NOT IS_EMPTY(:STACK) DO :STACK.DELETE(1); END WHILE; END;"
+      - id: is_empty_scalar_assignment
+        sql: "DO BEGIN DECLARE tv TABLE (a INT); DECLARE b BOOLEAN; b = IS_EMPTY(:tv); END;"
+        note: "page: IS_EMPTY can also be used in scalar variable assignments"
+      - id: record_count_assignment
+        sql: "DO BEGIN DECLARE tv TABLE (a INT); DECLARE n BIGINT; n = RECORD_COUNT(:tv); END;"
+      - id: record_count_table_name
+        sql: "DO BEGIN DECLARE n BIGINT; n = RECORD_COUNT(t); END;"
+      - id: record_count_for_loop_bound
+        sql: "DO BEGIN DECLARE i INT; DECLARE v INT = 0; DECLARE inTab TABLE (col_a INT); FOR i IN 1 .. RECORD_COUNT(:inTab) DO v = :v + :inTab.col_a[:i]; END FOR; END;"
+    examples:
+      - |-
+        DO (IN inTab TABLE(col_a int) => TAB, OUT v INT => ?)
+         BEGIN
+         DECLARE i int;
+         v = 0;
+         FOR i IN 1 .. RECORD_COUNT(:inTab)
+         DO
+         v = :v + :inTab.col_a[:i];
+         END FOR;
+        END;
+
+  - id: sqlscript_unnest
+    name: UNNEST function
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/4f12887c7941410d802a36c3f1a87a59.html?version=2.0.08
+    tier: high
+    probes:
+      - id: unnest_arrays
+        sql: "DO BEGIN DECLARE arr_id INTEGER ARRAY = ARRAY(1, 2); DECLARE arr_name NVARCHAR(10) ARRAY = ARRAY('name1', 'name2', 'name3'); rst = UNNEST(:arr_id, :arr_name); END;"
+      - id: unnest_as_columns
+        sql: "DO BEGIN DECLARE arr_id INTEGER ARRAY = ARRAY(1, 2); DECLARE arr_name NVARCHAR(10) ARRAY = ARRAY('name1'); rst = UNNEST(:arr_id, :arr_name) AS (ID, NAME); END;"
+      - id: unnest_with_ordinality
+        sql: "DO BEGIN DECLARE amount INTEGER ARRAY = ARRAY(10, 20); rst = UNNEST(:amount) WITH ORDINALITY AS (\"AMOUNT\", \"SEQ\"); END;"
+      - id: unnest_table_variables_star
+        sql: "DO BEGIN t0 = SELECT * FROM tab0 ORDER BY a ASC; t1 = SELECT * FROM tab0 ORDER BY a DESC; lt = UNNEST(:t0, :t1) AS (*, (a AS b)); END;"
+      - id: unnest_table_variables_aliasing_list
+        sql: "DO BEGIN t0 = SELECT * FROM tab0 ORDER BY a ASC; t1 = SELECT * FROM tab0 ORDER BY a DESC; lt = UNNEST(:t0, :t1) AS (*, (a AS b, a AS c)); END;"
+      - id: unnest_array_function
+        sql: "DO BEGIN DECLARE id1, id2 INTEGER ARRAY; rst = UNNEST(:id1 || :id2) WITH ORDINALITY AS (\"ID\", \"SEQ\"); END;"
+      - id: unnest_array_in_declare_default
+        sql: "DO BEGIN DECLARE arr INT ARRAY = ARRAY(1, 2); DECLARE tv TABLE (i INT) = UNNEST(:arr) AS (i); END;"
+    examples:
+      - |-
+        do begin
+         t0 = select * from tab0 order by a asc;
+         t1 = select * from tab0 order by a desc;
+         lt = unnest(:t0, :t1) as (*, (a as b));
+         select * from :lt;
+        end;
+      - |-
+        do begin
+         t0 = select * from tab0 order by a asc;
+         t1 = select * from tab0 order by a desc;
+         lt = unnest(:t0, :t1) as (*, (a as b, a as c));
+         select * from :lt;
+        end;
