@@ -1,0 +1,33 @@
+dialect: athena
+engine: Amazon Athena
+version: "engine version 3 (Trino-based DML, Hive-style DDL)"
+source: https://docs.aws.amazon.com/athena/latest/ug/ddl-reference.html ; https://docs.aws.amazon.com/athena/latest/ug/dml-queries-functions-operators.html
+
+statements:
+  - id: alter_table_set_location
+    name: ALTER TABLE SET LOCATION
+    doc: https://docs.aws.amazon.com/athena/latest/ug/alter-table-set-location.html
+    tier: high
+    probes:
+      - id: set_location
+        sql: "ALTER TABLE t SET LOCATION 's3://bucket/path/';"
+      - id: partition_set_location
+        sql: "ALTER TABLE t PARTITION (c = 'v') SET LOCATION 's3://bucket/path/';"
+      - id: partition_multi_set_location
+        sql: "ALTER TABLE t PARTITION (c1 = 'v1', c2 = 'v2') SET LOCATION 's3://bucket/path/';"
+    examples:
+      - "ALTER TABLE customers PARTITION (zip='98040', state='WA') SET LOCATION 's3://amzn-s3-demo-bucket/custdata/';"
+
+  - id: alter_table_set_tblproperties
+    name: ALTER TABLE SET TBLPROPERTIES
+    doc: https://docs.aws.amazon.com/athena/latest/ug/alter-table-set-tblproperties.html
+    tier: high
+    probes:
+      - id: single_property
+        sql: "ALTER TABLE t SET TBLPROPERTIES ('property_name' = 'property_value');"
+      - id: multiple_properties
+        sql: "ALTER TABLE t SET TBLPROPERTIES ('p1' = 'v1', 'p2' = 'v2');"
+    examples:
+      - |-
+        ALTER TABLE orders SET TBLPROPERTIES ('notes'="Please don't drop this table.");
+      - "ALTER TABLE existing_table SET TBLPROPERTIES ('parquet.compression' = 'ZSTD', 'compression_level' = 4);"
