@@ -1,0 +1,110 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: select
+    name: SELECT (SEL)
+    doc: https://docs.teradata.com/reader/4_jiz05LXsLWBbfvKTLneg/UlM59_2gJt4WhicS5d7XNQ
+    tier: high
+    probes:
+      - { id: basic, sql: "SELECT c1, c2 FROM t;" }
+      - { id: sel_abbreviation, sql: "SEL c1 FROM t;" }
+      - { id: no_from, sql: "SELECT DATE, TIME;" }
+      - { id: star, sql: "SELECT * FROM t;" }
+      - { id: table_star, sql: "SELECT t.* FROM t;" }
+      - { id: distinct, sql: "SELECT DISTINCT c1 FROM t;" }
+      - { id: all, sql: "SELECT ALL c1 FROM t;" }
+      - { id: top_n, sql: "SELECT TOP 10 c1 FROM t;" }
+      - { id: top_n_ties, sql: "SELECT TOP 10 WITH TIES c1 FROM t ORDER BY c1;" }
+      - { id: top_percent, sql: "SELECT TOP 10 PERCENT c1 FROM t;" }
+      - { id: normalize, sql: "SELECT NORMALIZE c1, pd FROM t;" }
+      - { id: expression_alias, sql: "SELECT c1 + 1 AS x, c2 y FROM t;" }
+      - { id: with_deleted_rows, sql: "SELECT WITH DELETED ROWS * FROM t;" }
+      - { id: as_json, sql: "SELECT AS JSON c1, c2 FROM t;" }
+      - { id: explain_modifier, sql: "EXPLAIN SELECT c1 FROM t;" }
+      - { id: locking_modifier, sql: "LOCKING TABLE t FOR ACCESS SELECT c1 FROM t;" }
+      - { id: using_modifier, sql: "USING (p INTEGER) SELECT c1 FROM t WHERE c1 = :p;" }
+      - { id: with_modifier_cte, sql: "WITH cte (a) AS (SELECT c1 FROM t) SELECT a FROM cte;" }
+      - { id: with_recursive, sql: "WITH RECURSIVE r (n) AS (SELECT 1 FROM t WHERE c1 = 1 UNION ALL SELECT n + 1 FROM r WHERE n < 10) SELECT n FROM r;" }
+      - { id: from_alias, sql: "SELECT a.c1 FROM t AS a;" }
+      - { id: from_alias_no_as, sql: "SELECT a.c1 FROM t a;" }
+      - { id: from_multiple_tables, sql: "SELECT t1.x1 FROM t1, t2 WHERE t1.x1 = t2.x2;" }
+      - { id: inner_join, sql: "SELECT t1.c FROM t1 INNER JOIN t2 ON t1.c = t2.c;" }
+      - { id: left_outer_join, sql: "SELECT t1.c FROM t1 LEFT OUTER JOIN t2 ON t1.c = t2.c;" }
+      - { id: right_join, sql: "SELECT t1.c FROM t1 RIGHT JOIN t2 ON t1.c = t2.c;" }
+      - { id: full_outer_join, sql: "SELECT t1.c FROM t1 FULL OUTER JOIN t2 ON t1.c = t2.c;" }
+      - { id: cross_join, sql: "SELECT t1.c FROM t1 CROSS JOIN t2;" }
+      - { id: derived_table, sql: "SELECT d.a FROM (SELECT c1 FROM t) AS d (a);" }
+      - { id: table_function, sql: "SELECT * FROM TABLE (f(1)) AS tf;" }
+      - { id: table_operator, sql: "SELECT * FROM tblop (ON t) AS o;" }
+      - { id: where, sql: "SELECT c1 FROM t WHERE c1 > 5 AND c2 IS NOT NULL;" }
+      - { id: where_subquery, sql: "SELECT x1 FROM t1 WHERE x1 IN (SELECT x2 FROM t2);" }
+      - { id: group_by_column, sql: "SELECT c1, COUNT(*) FROM t GROUP BY c1;" }
+      - { id: group_by_position, sql: "SELECT c1, COUNT(*) FROM t GROUP BY 1;" }
+      - { id: group_by_rollup, sql: "SELECT c1, c2, SUM(c3) FROM t GROUP BY ROLLUP (c1, c2);" }
+      - { id: group_by_cube, sql: "SELECT c1, c2, SUM(c3) FROM t GROUP BY CUBE (c1, c2);" }
+      - { id: group_by_grouping_sets, sql: "SELECT c1, c2, SUM(c3) FROM t GROUP BY GROUPING SETS ((c1), (c2), ());" }
+      - { id: group_by_empty_set, sql: "SELECT SUM(c3) FROM t GROUP BY ();" }
+      - { id: having, sql: "SELECT c1, COUNT(*) FROM t GROUP BY c1 HAVING COUNT(*) > 1;" }
+      - { id: qualify, sql: "SELECT c1 FROM t QUALIFY ROW_NUMBER() OVER (PARTITION BY c1 ORDER BY c2) = 1;" }
+      - { id: sample_fraction, sql: "SELECT c1 FROM t SAMPLE 0.25;" }
+      - { id: sample_count, sql: "SELECT c1 FROM t SAMPLE 100;" }
+      - { id: sample_multiple, sql: "SELECT c1 FROM t SAMPLE 0.25, 0.25, 0.5;" }
+      - { id: sample_with_replacement, sql: "SELECT c1 FROM t SAMPLE WITH REPLACEMENT 100;" }
+      - { id: sample_randomized_allocation, sql: "SELECT c1 FROM t SAMPLE RANDOMIZED ALLOCATION 0.5;" }
+      - { id: sample_when, sql: "SELECT c1 FROM t SAMPLE WHEN c2 > 5 THEN 0.2 ELSE 0.5 END;" }
+      - { id: expand_on, sql: "SELECT c1, bg FROM t EXPAND ON pd AS bg;" }
+      - { id: expand_on_by_interval, sql: "SELECT c1, bg FROM t EXPAND ON pd AS bg BY INTERVAL '1' DAY;" }
+      - { id: expand_on_by_anchor, sql: "SELECT c1, bg FROM t EXPAND ON pd AS bg BY ANCHOR MONTH_BEGIN;" }
+      - { id: expand_on_for_period, sql: "SELECT c1, bg FROM t EXPAND ON pd AS bg FOR PERIOD(DATE '2020-01-01', DATE '2020-12-31');" }
+      - { id: order_by, sql: "SELECT c1 FROM t ORDER BY c1 DESC;" }
+      - { id: order_by_position, sql: "SELECT c1, c2 FROM t ORDER BY 2 ASC, 1;" }
+      - { id: order_by_nulls, sql: "SELECT c1 FROM t ORDER BY c1 NULLS FIRST;" }
+      - { id: with_summary, sql: "SELECT c1, c2 FROM t WITH SUM(c2);" }
+      - { id: with_by_summary, sql: "SELECT c1, c2 FROM t WITH SUM(c2) BY c1 ORDER BY c1;" }
+      - { id: with_by_desc, sql: "SELECT c1, c2 FROM t WITH SUM(c2) BY c1 DESC;" }
+      - { id: set_union, sql: "SELECT c1 FROM t1 UNION SELECT c1 FROM t2;" }
+      - { id: set_union_all, sql: "SELECT c1 FROM t1 UNION ALL SELECT c1 FROM t2;" }
+      - { id: set_intersect, sql: "SELECT c1 FROM t1 INTERSECT SELECT c1 FROM t2;" }
+      - { id: set_except, sql: "SELECT c1 FROM t1 EXCEPT SELECT c1 FROM t2;" }
+      - { id: set_minus, sql: "SELECT c1 FROM t1 MINUS SELECT c1 FROM t2;" }
+      - { id: partition_column, sql: "SELECT PARTITION, c1 FROM t;" }
+      - { id: partition_level_column, sql: "SELECT PARTITION#L1 FROM t;" }
+    examples:
+      - "SELECT DATE, TIME;"
+      - |-
+        SELECT x1,x2
+        FROM t1,t2
+        WHERE t1.x1=t2.x2;
+      - |-
+        SELECT x1
+        FROM t1
+        WHERE x1 IN (SELECT x2
+                     FROM t2);
+
+  - id: abort
+    name: ABORT
+    doc: https://docs.teradata.com/reader/4_jiz05LXsLWBbfvKTLneg/87YP1o0K2s2x~zztx1Ng1A
+    tier: high
+    probes:
+      - { id: unconditional, sql: "ABORT;" }
+      - { id: with_message, sql: "ABORT 'Transaction aborted';" }
+      - { id: where_condition, sql: "ABORT WHERE c1 = 1;" }
+      - { id: message_where, sql: "ABORT 'Department number 300 not valid' WHERE d = 300;" }
+      - { id: from_where, sql: "ABORT FROM t WHERE t.x1 = 1;" }
+      - { id: from_multiple_tables, sql: "ABORT FROM t1, t2 WHERE t1.x1 = t2.x2;" }
+      - { id: where_subquery, sql: "ABORT 'No such row' WHERE 5 NOT IN (SELECT c1 FROM t);" }
+    examples:
+      - |-
+        ABORT
+        WHERE user= 'DBC';
+      - |-
+        ABORT
+        FROM table_1
+        WHERE table_1.x1 = 1;
+      - |-
+        ABORT
+        FROM table_1,table_2
+        WHERE table_1.x1 = table_2.x2;
