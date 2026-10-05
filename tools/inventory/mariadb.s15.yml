@@ -1,0 +1,108 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements:
+  - id: create_procedure
+    name: CREATE PROCEDURE
+    doc: https://mariadb.com/docs/server/server-usage/stored-routines/stored-procedures/create-procedure
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE PROCEDURE p() SELECT 1;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE PROCEDURE p() SELECT 1;"
+      - id: if_not_exists
+        sql: "CREATE PROCEDURE IF NOT EXISTS p() SELECT 1;"
+      - id: or_replace_if_not_exists_definer
+        sql: "CREATE OR REPLACE DEFINER = CURRENT_USER PROCEDURE IF NOT EXISTS p() SELECT 1;"
+      - id: definer_user
+        sql: "CREATE DEFINER = 'admin'@'localhost' PROCEDURE p() SELECT 1;"
+      - id: definer_current_user
+        sql: "CREATE DEFINER = CURRENT_USER PROCEDURE p() SELECT 1;"
+      - id: definer_current_user_parens
+        sql: "CREATE DEFINER = CURRENT_USER() PROCEDURE p() SELECT 1;"
+      - id: definer_role
+        sql: "CREATE DEFINER = r PROCEDURE p() SELECT 1;"
+      - id: definer_current_role
+        sql: "CREATE DEFINER = CURRENT_ROLE PROCEDURE p() SELECT 1;"
+      - id: qualified_name
+        sql: "CREATE PROCEDURE db.p() SELECT 1;"
+      - id: param_in
+        sql: "CREATE PROCEDURE p(IN a INT) SELECT a;"
+      - id: param_out
+        sql: "CREATE PROCEDURE p(OUT a INT) SET a = 1;"
+      - id: param_inout
+        sql: "CREATE PROCEDURE p(INOUT a INT) SET a = a + 1;"
+      - id: param_default_no_mode
+        sql: "CREATE PROCEDURE p(a INT) SELECT a;"
+      - id: param_default_value
+        sql: "CREATE PROCEDURE p(IN a INT DEFAULT 10) SELECT a;"
+      - id: param_default_expression
+        sql: "CREATE PROCEDURE p(IN a INT DEFAULT 1 + 2) SELECT a;"
+      - id: multiple_params
+        sql: "CREATE PROCEDURE p(IN a INT, OUT b VARCHAR(10), INOUT c DECIMAL(10,2)) SET b = 'x';"
+      - id: param_charset_collate
+        sql: "CREATE PROCEDURE p(OUT param1 CHAR(10) CHARACTER SET 'utf8' COLLATE 'utf8_bin') SET param1 = 'a';"
+      - id: char_language_sql
+        sql: "CREATE PROCEDURE p() LANGUAGE SQL SELECT 1;"
+      - id: char_deterministic
+        sql: "CREATE PROCEDURE p() DETERMINISTIC SELECT 1;"
+      - id: char_not_deterministic
+        sql: "CREATE PROCEDURE p() NOT DETERMINISTIC SELECT 1;"
+      - id: char_contains_sql
+        sql: "CREATE PROCEDURE p() CONTAINS SQL SELECT 1;"
+      - id: char_no_sql
+        sql: "CREATE PROCEDURE p() NO SQL SELECT 1;"
+      - id: char_reads_sql_data
+        sql: "CREATE PROCEDURE p() READS SQL DATA SELECT 1;"
+      - id: char_modifies_sql_data
+        sql: "CREATE PROCEDURE p() MODIFIES SQL DATA SELECT 1;"
+      - id: char_sql_security_definer
+        sql: "CREATE PROCEDURE p() SQL SECURITY DEFINER SELECT 1;"
+      - id: char_sql_security_invoker
+        sql: "CREATE PROCEDURE p() SQL SECURITY INVOKER SELECT 1;"
+      - id: char_comment
+        sql: "CREATE PROCEDURE p() COMMENT 'does a thing' SELECT 1;"
+      - id: multiple_characteristics
+        sql: "CREATE PROCEDURE p() LANGUAGE SQL NOT DETERMINISTIC READS SQL DATA SQL SECURITY INVOKER COMMENT 'c' SELECT 1;"
+      - id: body_begin_end
+        sql: "CREATE PROCEDURE p() BEGIN SELECT 1; END;"
+      - id: body_begin_end_select_into
+        sql: "CREATE PROCEDURE p(OUT param1 INT) BEGIN SELECT COUNT(*) INTO param1 FROM t; END;"
+      - id: body_declare_and_control_flow
+        sql: "CREATE PROCEDURE p(IN a INT) BEGIN DECLARE x INT DEFAULT 0; IF a > 0 THEN SET x = a; ELSE SET x = 0; END IF; SELECT x; END;"
+      - id: body_single_statement_insert
+        sql: "CREATE PROCEDURE p() INSERT INTO t VALUES (1);"
+      - id: body_labeled_begin_end
+        sql: "CREATE PROCEDURE p() lbl: BEGIN SELECT 1; END lbl;"
+    examples:
+      - "CREATE PROCEDURE simpleproc (OUT param1 INT) BEGIN SELECT COUNT(*) INTO param1 FROM t; END;"
+      - "CREATE PROCEDURE simpleproc2 ( OUT param1 CHAR(10) CHARACTER SET 'utf8' COLLATE 'utf8_bin' ) BEGIN SELECT CONCAT('a'),f1 INTO param1 FROM t; END;"
+
+  - id: alter_procedure
+    name: ALTER PROCEDURE
+    doc: https://mariadb.com/docs/server/server-usage/stored-routines/stored-procedures/alter-procedure
+    tier: high
+    probes:
+      - id: contains_sql
+        sql: "ALTER PROCEDURE p CONTAINS SQL;"
+      - id: no_sql
+        sql: "ALTER PROCEDURE p NO SQL;"
+      - id: reads_sql_data
+        sql: "ALTER PROCEDURE p READS SQL DATA;"
+      - id: modifies_sql_data
+        sql: "ALTER PROCEDURE p MODIFIES SQL DATA;"
+      - id: sql_security_definer
+        sql: "ALTER PROCEDURE p SQL SECURITY DEFINER;"
+      - id: sql_security_invoker
+        sql: "ALTER PROCEDURE p SQL SECURITY INVOKER;"
+      - id: comment
+        sql: "ALTER PROCEDURE p COMMENT 'new comment';"
+      - id: qualified_name
+        sql: "ALTER PROCEDURE db.p NO SQL;"
+      - id: multiple_characteristics
+        sql: "ALTER PROCEDURE p MODIFIES SQL DATA SQL SECURITY INVOKER COMMENT 'c';"
+    examples:
+      - "ALTER PROCEDURE simpleproc SQL SECURITY INVOKER;"
