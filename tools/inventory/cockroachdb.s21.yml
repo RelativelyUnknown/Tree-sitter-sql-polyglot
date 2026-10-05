@@ -1,0 +1,168 @@
+dialect: cockroachdb
+engine: CockroachDB
+version: "v26.3 (stable)"
+source: https://www.cockroachlabs.com/docs/stable/sql-statements
+
+statements:
+  - id: show_schemas
+    name: SHOW SCHEMAS
+    doc: https://www.cockroachlabs.com/docs/stable/show-schemas
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW SCHEMAS;"
+      - id: from_database
+        sql: "SHOW SCHEMAS FROM d;"
+      - id: with_comment
+        sql: "SHOW SCHEMAS WITH COMMENT;"
+    examples:
+      - "SHOW SCHEMAS;"
+
+  - id: show_sequences
+    name: SHOW SEQUENCES
+    doc: https://www.cockroachlabs.com/docs/stable/show-sequences
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW SEQUENCES;"
+      - id: from_database
+        sql: "SHOW SEQUENCES FROM d;"
+    examples:
+      - "SHOW SEQUENCES;"
+
+  - id: show_tables
+    name: SHOW TABLES
+    doc: https://www.cockroachlabs.com/docs/stable/show-tables
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW TABLES;"
+      - id: from_schema
+        sql: "SHOW TABLES FROM s;"
+      - id: from_database_schema
+        sql: "SHOW TABLES FROM d.s;"
+      - id: with_comment
+        sql: "SHOW TABLES WITH COMMENT;"
+      - id: from_with_comment
+        sql: "SHOW TABLES FROM d WITH COMMENT;"
+    examples:
+      - "SHOW TABLES;"
+      - "SHOW TABLES FROM movr.information_schema;"
+      - "SHOW TABLES FROM movr WITH COMMENT;"
+
+  - id: show_triggers
+    name: SHOW TRIGGERS
+    doc: https://www.cockroachlabs.com/docs/stable/show-triggers
+    tier: medium
+    probes:
+      - id: from_table
+        sql: "SHOW TRIGGERS FROM t;"
+    examples:
+      - "SHOW TRIGGERS FROM users;"
+
+  - id: show_types
+    name: SHOW TYPES
+    doc: https://www.cockroachlabs.com/docs/stable/show-types
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW TYPES;"
+
+  - id: copy_from
+    name: COPY FROM
+    doc: https://www.cockroachlabs.com/docs/stable/copy
+    tier: medium
+    probes:
+      - id: from_stdin
+        sql: "COPY t FROM STDIN;"
+      - id: column_list
+        sql: "COPY t (a, b) FROM STDIN;"
+      - id: with_csv
+        sql: "COPY t FROM STDIN WITH CSV;"
+      - id: with_options
+        sql: "COPY t FROM STDIN WITH CSV DELIMITER ',' NULL 'null' HEADER ESCAPE '\\';"
+      - id: with_binary
+        sql: "COPY t FROM STDIN WITH BINARY;"
+      - id: copy_to_stdout
+        sql: "COPY t TO STDOUT;"
+      - id: copy_query_to_stdout
+        sql: "COPY (SELECT a FROM t) TO STDOUT WITH CSV;"
+    examples:
+      - "COPY users FROM STDIN;"
+      - "COPY setecastronomy FROM STDIN WITH CSV;"
+
+  - id: import_into
+    name: IMPORT INTO
+    doc: https://www.cockroachlabs.com/docs/stable/import-into
+    tier: medium
+    probes:
+      - id: csv_data
+        sql: "IMPORT INTO t (a, b) CSV DATA ('nodelocal://1/data.csv');"
+      - id: multiple_files
+        sql: "IMPORT INTO t CSV DATA ('nodelocal://1/a.csv', 'nodelocal://1/b.csv');"
+      - id: avro_data
+        sql: "IMPORT INTO t AVRO DATA ('nodelocal://1/data.avro');"
+      - id: delimited_data
+        sql: "IMPORT INTO t DELIMITED DATA ('nodelocal://1/data.txt');"
+      - id: with_options
+        sql: "IMPORT INTO t CSV DATA ('nodelocal://1/data.csv') WITH skip = '1', nullif = '', DETACHED;"
+      - id: delimited_with_options
+        sql: |-
+          IMPORT INTO t DELIMITED DATA ('nodelocal://1/data.txt') WITH fields_terminated_by = '|', fields_enclosed_by = '"', row_limit = '10';
+
+  - id: export
+    name: EXPORT
+    doc: https://www.cockroachlabs.com/docs/stable/export
+    tier: medium
+    probes:
+      - id: csv_from_table
+        sql: "EXPORT INTO CSV 'nodelocal://1/export' FROM TABLE t;"
+      - id: csv_from_select
+        sql: "EXPORT INTO CSV 'nodelocal://1/export' FROM SELECT a, b FROM t WHERE a > 1;"
+      - id: parquet
+        sql: "EXPORT INTO PARQUET 'nodelocal://1/export' FROM TABLE t;"
+      - id: with_options
+        sql: "EXPORT INTO CSV 'nodelocal://1/export' WITH delimiter = '|', nullas = 'null' FROM TABLE t;"
+
+  - id: alter_policy
+    name: ALTER POLICY
+    doc: https://www.cockroachlabs.com/docs/stable/alter-policy
+    tier: medium
+    probes:
+      - id: rename
+        sql: "ALTER POLICY p ON t RENAME TO p2;"
+      - id: to_roles
+        sql: "ALTER POLICY p ON t TO r1, PUBLIC, CURRENT_USER, SESSION_USER;"
+      - id: using
+        sql: "ALTER POLICY p ON t USING (a = 1);"
+      - id: with_check
+        sql: "ALTER POLICY p ON t WITH CHECK (a = 1);"
+      - id: all_clauses
+        sql: "ALTER POLICY p ON t TO r USING (a = 1) WITH CHECK (a = 1);"
+
+  - id: create_policy
+    name: CREATE POLICY
+    doc: https://www.cockroachlabs.com/docs/stable/create-policy
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE POLICY p ON t;"
+      - id: if_not_exists
+        sql: "CREATE POLICY IF NOT EXISTS p ON t;"
+      - id: as_permissive
+        sql: "CREATE POLICY p ON t AS PERMISSIVE;"
+      - id: as_restrictive
+        sql: "CREATE POLICY p ON t AS RESTRICTIVE;"
+      - id: for_command
+        sql: "CREATE POLICY p ON t FOR SELECT;"
+      - id: to_roles
+        sql: "CREATE POLICY p ON t TO r1, PUBLIC, CURRENT_USER, SESSION_USER;"
+      - id: using_with_check
+        sql: "CREATE POLICY p ON t USING (a = 1) WITH CHECK (a = 1);"
+    examples:
+      - |-
+        CREATE POLICY user_orders_policy ON orders
+            FOR ALL
+            TO PUBLIC -- Applies to all roles
+            USING ( user_id = CURRENT_USER )
+            WITH CHECK ( user_id = CURRENT_USER );
