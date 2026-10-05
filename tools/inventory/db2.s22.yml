@@ -1,0 +1,65 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "11.5"
+source: https://www.ibm.com/docs/en/db2/11.5.x?topic=reference-statements
+
+statements:
+  - id: repeat
+    name: REPEAT
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-repeat
+    tier: high
+    probes:
+      - id: basic
+        sql: "REPEAT SET i = i + 1; UNTIL i > 10 END REPEAT;"
+      - id: labeled
+        sql: "lbl: REPEAT SET i = i + 1; UNTIL i > 10 END REPEAT lbl;"
+      - id: multiple_statements
+        sql: "REPEAT SET i = i + 1; SET j = j + i; UNTIL i > 10 END REPEAT;"
+    examples:
+      - |-
+        CREATE PROCEDURE REPEAT_STMT(OUT counter INTEGER)
+          LANGUAGE SQL
+          BEGIN
+            DECLARE v_counter INTEGER DEFAULT 0;
+            DECLARE v_firstnme VARCHAR(12);
+            DECLARE v_midinit CHAR(1);
+            DECLARE v_lastname VARCHAR(15);
+            DECLARE at_end SMALLINT DEFAULT 0;
+            DECLARE not_found CONDITION FOR SQLSTATE '02000';
+            DECLARE c1 CURSOR FOR
+              SELECT firstnme, midinit, lastname
+                FROM employee;
+            DECLARE CONTINUE HANDLER FOR not_found
+              SET at_end = 1;
+            OPEN c1;
+            fetch_loop:
+            REPEAT
+              FETCH c1 INTO v_firstnme, v_midinit, v_lastname;
+              SET v_counter = v_counter + 1;
+            UNTIL at_end > 0
+            END REPEAT fetch_loop;
+            SET counter = v_counter;
+            CLOSE c1;
+          END;
+
+  - id: resignal
+    name: RESIGNAL
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-resignal
+    tier: high
+    probes:
+      - id: bare
+        sql: "RESIGNAL;"
+      - id: sqlstate_value
+        sql: "RESIGNAL SQLSTATE VALUE '72822';"
+      - id: sqlstate_variable
+        sql: "RESIGNAL SQLSTATE VALUE v_state;"
+      - id: condition_name
+        sql: "RESIGNAL not_found;"
+      - id: message_text_constant
+        sql: "RESIGNAL SQLSTATE VALUE '72822' SET MESSAGE_TEXT = 'custom error';"
+      - id: message_text_variable
+        sql: "RESIGNAL SQLSTATE VALUE '72822' SET MESSAGE_TEXT = v_msg;"
+      - id: condition_message_text
+        sql: "RESIGNAL not_found SET MESSAGE_TEXT = 'row not found';"
+      - id: message_text_only
+        sql: "RESIGNAL SET MESSAGE_TEXT = 'rethrown';"
