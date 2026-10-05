@@ -1,0 +1,67 @@
+dialect: cockroachdb
+engine: CockroachDB
+version: "v26.3 (stable)"
+source: https://www.cockroachlabs.com/docs/stable/sql-statements
+
+statements:
+  - id: create_view
+    name: CREATE VIEW
+    doc: https://www.cockroachlabs.com/docs/stable/create-view
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE VIEW v AS SELECT a, b FROM t;"
+      - id: if_not_exists
+        sql: "CREATE VIEW IF NOT EXISTS v AS SELECT a, b FROM t;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE VIEW v AS SELECT a, b FROM t;"
+      - id: column_list
+        sql: "CREATE VIEW v (x, y) AS SELECT a, b FROM t;"
+      - id: qualified_name
+        sql: "CREATE VIEW db.v AS SELECT a, b FROM t;"
+      - id: temp
+        sql: "CREATE TEMP VIEW v AS SELECT a, b FROM t;"
+      - id: temporary
+        sql: "CREATE TEMPORARY VIEW v AS SELECT a, b FROM t;"
+      - id: security_invoker
+        sql: "CREATE VIEW v WITH (security_invoker) AS SELECT a, b FROM t;"
+      - id: security_invoker_true
+        sql: "CREATE VIEW v WITH (security_invoker = true) AS SELECT a, b FROM t;"
+      - id: materialized
+        sql: "CREATE MATERIALIZED VIEW v AS SELECT a, b FROM t;"
+      - id: materialized_if_not_exists
+        sql: "CREATE MATERIALIZED VIEW IF NOT EXISTS v AS SELECT a, b FROM t;"
+      - id: materialized_as_of_system_time
+        sql: "CREATE MATERIALIZED VIEW v AS SELECT a, b FROM t AS OF SYSTEM TIME '-10s';"
+      - id: materialized_column_list
+        sql: "CREATE MATERIALIZED VIEW v (x, y) AS SELECT a, b FROM t;"
+      - id: or_replace_column_list
+        sql: "CREATE OR REPLACE VIEW v (x, y) AS SELECT a, b FROM t;"
+    examples:
+      - "CREATE VIEW startrek.quotes_per_season (season, quotes) AS SELECT startrek.episodes.season, count(*) FROM startrek.quotes JOIN startrek.episodes ON startrek.quotes.episode = startrek.episodes.id GROUP BY startrek.episodes.season;"
+      - "CREATE VIEW user_accounts WITH (security_invoker) AS SELECT type, email FROM accounts;"
+      - "CREATE MATERIALIZED VIEW overdrawn_accounts AS SELECT id, balance FROM bank WHERE balance < 0 AS OF SYSTEM TIME follower_read_timestamp();"
+
+  - id: drop_function
+    name: DROP FUNCTION
+    doc: https://www.cockroachlabs.com/docs/stable/drop-function
+    tier: high
+    probes:
+      - id: basic
+        sql: "DROP FUNCTION f;"
+      - id: if_exists
+        sql: "DROP FUNCTION IF EXISTS f;"
+      - id: with_params
+        sql: "DROP FUNCTION f(INT, TEXT);"
+      - id: named_params
+        sql: "DROP FUNCTION f(a INT, b TEXT);"
+      - id: multiple
+        sql: "DROP FUNCTION f, g;"
+      - id: multiple_params
+        sql: "DROP FUNCTION f(INT), g(TEXT);"
+      - id: qualified
+        sql: "DROP FUNCTION s.f;"
+      - id: cascade
+        sql: "DROP FUNCTION f CASCADE;"
+      - id: restrict
+        sql: "DROP FUNCTION f RESTRICT;"
