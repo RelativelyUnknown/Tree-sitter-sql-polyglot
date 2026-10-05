@@ -1,0 +1,32 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements:
+  - id: repeat
+    name: REPEAT
+    doc: https://mariadb.com/docs/server/reference/sql-statements/programmatic-compound-statements/repeat-loop
+    tier: high
+    probes:
+      - { id: repeat_until, sql: "CREATE PROCEDURE p() BEGIN DECLARE v1 INT DEFAULT 0; REPEAT SET v1 = v1 + 1; UNTIL v1 > 5 END REPEAT; END;" }
+      - { id: labeled_repeat, sql: "CREATE PROCEDURE p() BEGIN DECLARE v1 INT DEFAULT 0; r: REPEAT SET v1 = v1 + 1; UNTIL v1 > 5 END REPEAT r; END;" }
+      - { id: repeat_multiple_statements, sql: "CREATE PROCEDURE p() BEGIN DECLARE v1 INT DEFAULT 0; REPEAT SET v1 = v1 + 1; INSERT INTO t VALUES (v1); UNTIL v1 > 5 END REPEAT; END;" }
+    examples:
+      - |-
+        CREATE PROCEDURE dorepeat(p1 INT)
+        BEGIN
+          SET @x = 0;
+          REPEAT
+            SET @x = @x + 1;
+          UNTIL @x > p1 END REPEAT;
+        END;
+
+  - id: while
+    name: WHILE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/programmatic-compound-statements/while
+    tier: high
+    probes:
+      - { id: while_do, sql: "CREATE PROCEDURE p() BEGIN DECLARE v1 INT DEFAULT 5; WHILE v1 > 0 DO SET v1 = v1 - 1; END WHILE; END;" }
+      - { id: labeled_while, sql: "CREATE PROCEDURE p() BEGIN DECLARE v1 INT DEFAULT 5; w: WHILE v1 > 0 DO SET v1 = v1 - 1; END WHILE w; END;" }
+      - { id: while_multiple_statements, sql: "CREATE PROCEDURE p() BEGIN DECLARE v1 INT DEFAULT 5; WHILE v1 > 0 DO INSERT INTO t VALUES (v1); SET v1 = v1 - 1; END WHILE; END;" }
