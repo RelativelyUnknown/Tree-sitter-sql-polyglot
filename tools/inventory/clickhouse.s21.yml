@@ -1,0 +1,461 @@
+dialect: clickhouse
+engine: ClickHouse
+version: "current docs (2026)"
+source: https://clickhouse.com/docs/sql-reference/statements/
+
+statements:
+  - id: drop_named_collection
+    name: "DROP NAMED COLLECTION"
+    doc: https://clickhouse.com/docs/sql-reference/statements/drop
+    tier: low
+    probes:
+      - id: p1
+        sql: "DROP NAMED COLLECTION nc;"
+      - id: p2
+        sql: "DROP NAMED COLLECTION IF EXISTS nc ON CLUSTER cl;"
+  - id: undrop_table
+    name: "UNDROP TABLE"
+    doc: https://clickhouse.com/docs/sql-reference/statements/undrop
+    tier: low
+    probes:
+      - id: p1
+        sql: "UNDROP TABLE t;"
+      - id: p2
+        sql: "UNDROP TABLE db.t UUID '8c8f1a2e-7a2b-4c4a-9d1a-0c8a1f1e2b3c' ON CLUSTER cl;"
+  - id: check_database
+    name: "CHECK DATABASE"
+    doc: https://clickhouse.com/docs/sql-reference/statements/check-database
+    tier: low
+    probes:
+      - id: p1
+        sql: "CHECK DATABASE db;"
+  - id: move_access_entity
+    name: "MOVE USER/ROLE/... TO storage"
+    doc: https://clickhouse.com/docs/sql-reference/statements/move
+    tier: low
+    probes:
+      - id: p1
+        sql: "MOVE USER u TO local_directory;"
+      - id: p2
+        sql: "MOVE ROLE r1, r2 TO memory;"
+      - id: p3
+        sql: "MOVE QUOTA q TO local_directory;"
+      - id: p4
+        sql: "MOVE SETTINGS PROFILE p TO local_directory;"
+      - id: p5
+        sql: "MOVE ROW POLICY p ON db.t TO local_directory;"
+  - id: backup
+    name: "BACKUP"
+    doc: https://clickhouse.com/docs/operations/backup/overview
+    tier: low
+    probes:
+      - id: p1
+        sql: "BACKUP TABLE db.t TO Disk('backups', 'b.zip');"
+      - id: p2
+        sql: "BACKUP DATABASE db TO File('/backups/b') SETTINGS compression_method = 'lzma', compression_level = 3;"
+      - id: p3
+        sql: "BACKUP ALL EXCEPT DATABASES d1 TO Disk('backups', 'all.zip') ASYNC;"
+  - id: restore
+    name: "RESTORE"
+    doc: https://clickhouse.com/docs/operations/backup/overview
+    tier: low
+    probes:
+      - id: p1
+        sql: "RESTORE TABLE db.t FROM Disk('backups', 'b.zip');"
+      - id: p2
+        sql: "RESTORE TABLE db.t AS t2 FROM Disk('backups', 'b.zip') SETTINGS allow_non_empty_tables = true;"
+      - id: p3
+        sql: "RESTORE DATABASE db FROM File('/backups/b') ON CLUSTER cl;"
+  - id: watch
+    name: "WATCH (live view)"
+    doc: https://clickhouse.com/docs/sql-reference/statements/create/view
+    tier: low
+    probes:
+      - id: p1
+        sql: "WATCH lv;"
+        note: "Live views are deprecated; the cited page only links to the old documentation, so the WATCH forms come from the retired LIVE VIEW docs: WATCH [db.]live_view [EVENTS] [LIMIT n] [FORMAT format]."
+      - id: p2
+        sql: "WATCH db.lv EVENTS LIMIT 10 FORMAT JSONEachRow;"
+  - id: check_grant
+    name: "CHECK GRANT"
+    doc: https://clickhouse.com/docs/sql-reference/statements/check-grant
+    tier: low
+    probes:
+      - id: p1
+        sql: "CHECK GRANT SELECT ON db.t;"
+      - id: p2
+        sql: "CHECK GRANT SELECT(c1, c2), INSERT ON db.*;"
+      - id: p3
+        sql: "CHECK GRANT SELECT ON *.*;"
+  - id: execute_as
+    name: "EXECUTE AS"
+    doc: https://clickhouse.com/docs/sql-reference/statements/execute_as
+    tier: low
+    probes:
+      - id: p1
+        sql: "EXECUTE AS u;"
+      - id: p2
+        sql: "EXECUTE AS u SELECT 1;"
+  - id: show_create_access_entity
+    name: "SHOW CREATE USER | ROLE | ROW POLICY | QUOTA | SETTINGS PROFILE | MASKING POLICY"
+    doc: https://clickhouse.com/docs/sql-reference/statements/show
+    tier: low
+    probes:
+      - id: p1
+        sql: "SHOW CREATE USER u;"
+      - id: p2
+        sql: "SHOW CREATE USER CURRENT_USER;"
+      - id: p3
+        sql: "SHOW CREATE ROLE r;"
+      - id: p4
+        sql: "SHOW CREATE ROW POLICY p ON db.t;"
+      - id: p5
+        sql: "SHOW CREATE POLICY p ON db.t;"
+      - id: p6
+        sql: "SHOW CREATE QUOTA q;"
+      - id: p7
+        sql: "SHOW CREATE QUOTA CURRENT;"
+      - id: p8
+        sql: "SHOW CREATE SETTINGS PROFILE p;"
+      - id: p9
+        sql: "SHOW CREATE PROFILE p;"
+      - id: p10
+        sql: "SHOW CREATE MASKING POLICY p ON db.t;"
+  - id: show_access_entities
+    name: "SHOW USERS | ROLES | PROFILES | POLICIES | QUOTAS | QUOTA | ACCESS"
+    doc: https://clickhouse.com/docs/sql-reference/statements/show
+    tier: low
+    probes:
+      - id: p1
+        sql: "SHOW USERS;"
+      - id: p2
+        sql: "SHOW ROLES;"
+      - id: p3
+        sql: "SHOW PROFILES;"
+      - id: p4
+        sql: "SHOW POLICIES;"
+      - id: p5
+        sql: "SHOW POLICIES ON db.t;"
+      - id: p6
+        sql: "SHOW QUOTAS;"
+      - id: p7
+        sql: "SHOW QUOTA;"
+      - id: p8
+        sql: "SHOW CURRENT QUOTA;"
+      - id: p9
+        sql: "SHOW ACCESS;"
+  - id: show_clusters
+    name: "SHOW CLUSTER(S)"
+    doc: https://clickhouse.com/docs/sql-reference/statements/show
+    tier: low
+    probes:
+      - id: p1
+        sql: "SHOW CLUSTER 'c';"
+      - id: p2
+        sql: "SHOW CLUSTERS;"
+      - id: p3
+        sql: "SHOW CLUSTERS NOT LIKE 'test%' LIMIT 1;"
+  - id: show_filesystem_caches
+    name: "SHOW FILESYSTEM CACHES"
+    doc: https://clickhouse.com/docs/sql-reference/statements/show
+    tier: low
+    probes:
+      - id: p1
+        sql: "SHOW FILESYSTEM CACHES;"
+  - id: show_engines
+    name: "SHOW ENGINES"
+    doc: https://clickhouse.com/docs/sql-reference/statements/show
+    tier: low
+    probes:
+      - id: p1
+        sql: "SHOW ENGINES;"
+      - id: p2
+        sql: "SHOW ENGINES INTO OUTFILE 'f' FORMAT CSV;"
+  - id: show_functions
+    name: "SHOW FUNCTIONS"
+    doc: https://clickhouse.com/docs/sql-reference/statements/show
+    tier: low
+    probes:
+      - id: p1
+        sql: "SHOW FUNCTIONS;"
+      - id: p2
+        sql: "SHOW FUNCTIONS ILIKE '%lower%';"
+  - id: show_merges
+    name: "SHOW MERGES"
+    doc: https://clickhouse.com/docs/sql-reference/statements/show
+    tier: low
+    probes:
+      - id: p1
+        sql: "SHOW MERGES;"
+      - id: p2
+        sql: "SHOW MERGES NOT LIKE '%t%' LIMIT 5;"
+  - id: kill_query
+    name: "KILL QUERY"
+    doc: https://clickhouse.com/docs/sql-reference/statements/kill
+    tier: low
+    probes:
+      - id: p1
+        sql: "KILL QUERY WHERE query_id = 'x';"
+      - id: p2
+        sql: "KILL QUERY ON CLUSTER cl WHERE user = 'u' SYNC FORMAT TabSeparated;"
+      - id: p3
+        sql: "KILL QUERY WHERE user = 'u' ASYNC;"
+      - id: p4
+        sql: "KILL QUERY WHERE user = 'u' TEST;"
+  - id: kill_mutation
+    name: "KILL MUTATION"
+    doc: https://clickhouse.com/docs/sql-reference/statements/kill
+    tier: low
+    probes:
+      - id: p1
+        sql: "KILL MUTATION WHERE database = 'd' AND table = 't';"
+      - id: p2
+        sql: "KILL MUTATION ON CLUSTER cl WHERE mutation_id = 'm' SYNC;"
+  - id: system_reload
+    name: "SYSTEM RELOAD (DICTIONARIES / DICTIONARY / FUNCTIONS / CONFIG / USERS / ASYNCHRONOUS METRICS)"
+    doc: https://clickhouse.com/docs/sql-reference/statements/system
+    tier: low
+    probes:
+      - id: p1
+        sql: "SYSTEM RELOAD DICTIONARIES;"
+      - id: p2
+        sql: "SYSTEM RELOAD DICTIONARY db.d;"
+      - id: p3
+        sql: "SYSTEM RELOAD DICTIONARY ON CLUSTER cl d;"
+      - id: p4
+        sql: "SYSTEM RELOAD FUNCTIONS;"
+      - id: p5
+        sql: "SYSTEM RELOAD FUNCTION f;"
+      - id: p6
+        sql: "SYSTEM RELOAD CONFIG;"
+      - id: p7
+        sql: "SYSTEM RELOAD USERS;"
+      - id: p8
+        sql: "SYSTEM RELOAD ASYNCHRONOUS METRICS;"
+      - id: p9
+        sql: "SYSTEM RELOAD EMBEDDED DICTIONARIES;"
+  - id: system_unload_dictionary
+    name: "SYSTEM UNLOAD DICTIONARY / DICTIONARIES"
+    doc: https://clickhouse.com/docs/sql-reference/statements/system
+    tier: low
+    probes:
+      - id: p1
+        sql: "SYSTEM UNLOAD DICTIONARY d;"
+      - id: p2
+        sql: "SYSTEM UNLOAD DICTIONARIES;"
+  - id: system_drop_cache
+    name: "SYSTEM CLEAR|DROP ... CACHE(S)"
+    doc: https://clickhouse.com/docs/sql-reference/statements/system
+    tier: low
+    probes:
+      - id: p1
+        sql: "SYSTEM DROP DNS CACHE;"
+      - id: p2
+        sql: "SYSTEM CLEAR MARK CACHE;"
+      - id: p3
+        sql: "SYSTEM DROP UNCOMPRESSED CACHE;"
+      - id: p4
+        sql: "SYSTEM CLEAR FILESYSTEM CACHE ON CLUSTER cl;"
+      - id: p5
+        sql: "SYSTEM CLEAR QUERY CACHE;"
+      - id: p6
+        sql: "SYSTEM CLEAR QUERY CACHE TAG 'tag';"
+      - id: p7
+        sql: "SYSTEM DROP COMPILED EXPRESSION CACHE;"
+      - id: p8
+        sql: "SYSTEM DROP PARQUET METADATA CACHE;"
+      - id: p9
+        sql: "SYSTEM DROP DISTRIBUTED CACHE;"
+      - id: p10
+        sql: "SYSTEM DROP TIME SERIES CACHES;"
+  - id: system_prewarm_cache
+    name: "SYSTEM PREWARM MARK / PRIMARY INDEX CACHE"
+    doc: https://clickhouse.com/docs/sql-reference/statements/system
+    tier: low
+    probes:
+      - id: p1
+        sql: "SYSTEM PREWARM MARK CACHE db.t;"
+      - id: p2
+        sql: "SYSTEM PREWARM PRIMARY INDEX CACHE db.t;"
+  - id: system_sync_filesystem_cache
+    name: "SYSTEM SYNC FILESYSTEM CACHE"
+    doc: https://clickhouse.com/docs/sql-reference/statements/system
+    tier: low
+    probes:
+      - id: p1
+        sql: "SYSTEM SYNC FILESYSTEM CACHE;"
+      - id: p2
+        sql: "SYSTEM SYNC FILESYSTEM CACHE 'cache_name';"
+  - id: system_drop_replica
+    name: "SYSTEM DROP [DATABASE] REPLICA"
+    doc: https://clickhouse.com/docs/sql-reference/statements/system
+    tier: low
+    probes:
+      - id: p1
+        sql: "SYSTEM DROP REPLICA 'r1' FROM TABLE db.t;"
+      - id: p2
+        sql: "SYSTEM DROP REPLICA 'r1' FROM DATABASE db;"
+      - id: p3
+        sql: "SYSTEM DROP REPLICA 'r1';"
+      - id: p4
+        sql: "SYSTEM DROP DATABASE REPLICA 'r1' FROM SHARD 's1';"
+  - id: system_flush_logs
+    name: "SYSTEM FLUSH LOGS"
+    doc: https://clickhouse.com/docs/sql-reference/statements/system
+    tier: low
+    probes:
+      - id: p1
+        sql: "SYSTEM FLUSH LOGS;"
+      - id: p2
+        sql: "SYSTEM FLUSH LOGS query_log, system.query_views_log;"
+  - id: system_shutdown
+    name: "SYSTEM SHUTDOWN / KILL"
+    doc: https://clickhouse.com/docs/sql-reference/statements/system
+    tier: low
+    probes:
+      - id: p1
+        sql: "SYSTEM SHUTDOWN;"
+      - id: p2
+        sql: "SYSTEM KILL;"
+  - id: system_instrument
+    name: "SYSTEM INSTRUMENT"
+    doc: https://clickhouse.com/docs/sql-reference/statements/system
+    tier: low
+    probes:
+      - id: p1
+        sql: "SYSTEM INSTRUMENT ADD 'QueryMetricLog::startQuery' LOG ENTRY 'hello';"
+        note: "ADD form follows the doc's example; the full grammar is SYSTEM INSTRUMENT ADD function handler [arguments] / REMOVE ..."
+      - id: p2
+        sql: "SYSTEM INSTRUMENT REMOVE ALL;"
+  - id: system_distributed
+    name: "SYSTEM STOP|START DISTRIBUTED SENDS / FLUSH DISTRIBUTED"
+    doc: https://clickhouse.com/docs/sql-reference/statements/system
+    tier: low
+    probes:
+      - id: p1
+        sql: "SYSTEM STOP DISTRIBUTED SENDS db.t;"
+      - id: p2
+        sql: "SYSTEM START DISTRIBUTED SENDS db.t ON CLUSTER cl;"
+      - id: p3
+        sql: "SYSTEM FLUSH DISTRIBUTED db.t;"
+  - id: system_merge_tree
+    name: "SYSTEM STOP|START MERGES / TTL MERGES / MOVES, UNFREEZE, WAIT LOADING PARTS"
+    doc: https://clickhouse.com/docs/sql-reference/statements/system
+    tier: low
+    probes:
+      - id: p1
+        sql: "SYSTEM STOP MERGES;"
+      - id: p2
+        sql: "SYSTEM START MERGES ON CLUSTER cl db.t;"
+      - id: p3
+        sql: "SYSTEM STOP TTL MERGES db.t;"
+      - id: p4
+        sql: "SYSTEM START TTL MERGES;"
+      - id: p5
+        sql: "SYSTEM STOP MOVES db.t;"
+      - id: p6
+        sql: "SYSTEM START MOVES;"
+      - id: p7
+        sql: "SYSTEM UNFREEZE WITH NAME 'backup1';"
+      - id: p8
+        sql: "SYSTEM WAIT LOADING PARTS db.t;"
+  - id: system_replicated
+    name: "SYSTEM STOP|START FETCHES / REPLICATED SENDS / REPLICATION QUEUES, SYNC|RESTART|RESTORE REPLICA"
+    doc: https://clickhouse.com/docs/sql-reference/statements/system
+    tier: low
+    probes:
+      - id: p1
+        sql: "SYSTEM STOP FETCHES db.t;"
+      - id: p2
+        sql: "SYSTEM START FETCHES;"
+      - id: p3
+        sql: "SYSTEM STOP REPLICATED SENDS db.t;"
+      - id: p4
+        sql: "SYSTEM START REPLICATED SENDS;"
+      - id: p5
+        sql: "SYSTEM STOP REPLICATION QUEUES db.t;"
+      - id: p6
+        sql: "SYSTEM START REPLICATION QUEUES;"
+      - id: p7
+        sql: "SYSTEM START PULLING REPLICATION LOG db.t;"
+      - id: p8
+        sql: "SYSTEM SYNC REPLICA db.t;"
+      - id: p9
+        sql: "SYSTEM SYNC REPLICA db.t IF EXISTS STRICT;"
+      - id: p10
+        sql: "SYSTEM SYNC REPLICA db.t LIGHTWEIGHT FROM 'r1', 'r2';"
+      - id: p11
+        sql: "SYSTEM SYNC DATABASE REPLICA db;"
+      - id: p12
+        sql: "SYSTEM RESTART REPLICA db.t;"
+      - id: p13
+        sql: "SYSTEM RESTART REPLICAS;"
+      - id: p14
+        sql: "SYSTEM RESTORE REPLICA db.t;"
+      - id: p15
+        sql: "SYSTEM RESTORE DATABASE REPLICA db;"
+  - id: system_refresh_view
+    name: "SYSTEM REFRESH|STOP|START|CANCEL|WAIT VIEW(S)"
+    doc: https://clickhouse.com/docs/sql-reference/statements/system
+    tier: low
+    probes:
+      - id: p1
+        sql: "SYSTEM REFRESH VIEW db.v;"
+      - id: p2
+        sql: "SYSTEM WAIT VIEW db.v;"
+      - id: p3
+        sql: "SYSTEM STOP VIEW db.v;"
+      - id: p4
+        sql: "SYSTEM STOP VIEWS;"
+      - id: p5
+        sql: "SYSTEM START VIEW db.v;"
+      - id: p6
+        sql: "SYSTEM START VIEWS;"
+      - id: p7
+        sql: "SYSTEM CANCEL VIEW db.v;"
+      - id: p8
+        sql: "SYSTEM STOP REPLICATED VIEW db.v;"
+  - id: system_background_activity
+    name: "SYSTEM STOP|START LISTEN / background activity"
+    doc: https://clickhouse.com/docs/sql-reference/statements/system
+    tier: low
+    probes:
+      - id: p1
+        sql: "SYSTEM STOP LISTEN HTTP;"
+        note: "Background-activity forms taken from the Managing Background Activity section headings."
+      - id: p2
+        sql: "SYSTEM START LISTEN TCP SECURE;"
+      - id: p3
+        sql: "SYSTEM START LISTEN ON CLUSTER cl QUERIES ALL;"
+      - id: p4
+        sql: "SYSTEM STOP ALL BACKGROUND;"
+      - id: p5
+        sql: "SYSTEM START ALL BACKGROUND;"
+      - id: p6
+        sql: "SYSTEM PAUSE ALL BACKGROUND;"
+      - id: p7
+        sql: "SYSTEM CANCEL ALL BACKGROUND;"
+      - id: p8
+        sql: "SYSTEM REFRESH ALL BACKGROUND;"
+  - id: system_flush_object_storage_queue
+    name: "SYSTEM FLUSH OBJECT STORAGE QUEUE"
+    doc: https://clickhouse.com/docs/sql-reference/statements/system
+    tier: low
+    probes:
+      - id: p1
+        sql: "SYSTEM FLUSH OBJECT STORAGE QUEUE db.t;"
+  - id: system_failpoint
+    name: "SYSTEM ENABLE|DISABLE FAILPOINT"
+    doc: https://clickhouse.com/docs/sql-reference/statements/system
+    tier: low
+    probes:
+      - id: p1
+        sql: "SYSTEM ENABLE FAILPOINT fp;"
+      - id: p2
+        sql: "SYSTEM DISABLE FAILPOINT fp;"
+      - id: p3
+        sql: "SYSTEM DISABLE ALL FAILPOINTS;"
+      - id: p4
+        sql: "SYSTEM WAIT FAILPOINT fp PAUSE;"
+      - id: p5
+        sql: "SYSTEM NOTIFY FAILPOINT fp;"
