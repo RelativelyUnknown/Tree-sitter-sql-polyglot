@@ -1,0 +1,183 @@
+dialect: hana
+engine: SAP HANA Platform
+version: "2.0 SPS 08 (2.0.08)"
+source: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/3bc1a0d4611d40c4a6e3fc7c8e80395d.html?version=2.0.08
+
+statements:
+  - id: create_type
+    name: CREATE TYPE
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d5c1ed75191014a80d897035629def.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: table_type
+        sql: "CREATE TYPE tt AS TABLE (a INTEGER, b VARCHAR(50));"
+      - id: schema_qualified
+        sql: "CREATE TYPE s.tt AS TABLE (a INTEGER, b NVARCHAR(10), c DECIMAL(10, 2));"
+      - id: search_key
+        sql: "CREATE TYPE tt AS TABLE (a INTEGER, b INTEGER) SQLSCRIPT SEARCH KEY(a, b);"
+    examples:
+      - |-
+        CREATE TYPE tt_publishers AS TABLE (
+        publisher INTEGER,
+        name VARCHAR(50),
+        price DECIMAL,
+        cnt INTEGER);
+
+  - id: create_user
+    name: CREATE USER
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d5ddb075191014b594f7b11ff08ee2.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE USER u;"
+      - id: restricted
+        sql: "CREATE RESTRICTED USER u PASSWORD Password123;"
+      - id: password
+        sql: "CREATE USER u PASSWORD Password123 NO FORCE_FIRST_PASSWORD_CHANGE;"
+      - id: identified_externally
+        sql: "CREATE USER u IDENTIFIED EXTERNALLY AS 'krb_user@REALM';"
+      - id: with_identity_saml
+        sql: "CREATE USER u WITH IDENTITY ANY FOR SAML PROVIDER p;"
+      - id: with_identity_x509
+        sql: "CREATE USER u WITH IDENTITY 'CN=u' ISSUER 'CN=ca' FOR X509;"
+      - id: with_identity_kerberos
+        sql: "CREATE USER u WITH IDENTITY 'u@REALM' FOR KERBEROS;"
+      - id: with_identity_ldap
+        sql: "CREATE USER u WITH IDENTITY FOR LDAP PROVIDER;"
+      - id: with_identity_sap_logon_ticket
+        sql: "CREATE USER u WITH IDENTITY FOR SAP LOGON TICKET;"
+      - id: with_remote_identity
+        sql: "CREATE USER u WITH REMOTE IDENTITY u2 AT DATABASE db2;"
+      - id: valid_from_until
+        sql: "CREATE USER u PASSWORD Password123 VALID FROM NOW UNTIL FOREVER;"
+      - id: set_parameter
+        sql: "CREATE USER u PASSWORD Password123 SET PARAMETER CLIENT = '100', LOCALE = 'en-US';"
+      - id: authorization_ldap
+        sql: "CREATE USER u AUTHORIZATION LDAP;"
+      - id: set_usergroup
+        sql: "CREATE USER u PASSWORD Password123 SET USERGROUP g;"
+    examples:
+      - "CREATE USER T12345 PASSWORD Password123;"
+      - "CREATE USER new_user PASSWORD Password1 WITH IDENTITY ANY FOR SAML PROVIDER ac_saml_provider;"
+      - "CREATE USER testuser WITH IDENTITY 'C=US, ST=VA, L=Fairfax, O=example.com, CN=testuser' ISSUER 'C=US, ST=VA, L=Fairfax, O=example.com, CN=Root CA' FOR X509 VALID UNTIL '2028-01-01';"
+
+  - id: create_usergroup
+    name: CREATE USERGROUP
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/9869125ea93548009820702f5bd897d8.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE USERGROUP g;"
+      - id: disable_user_admin
+        sql: "CREATE USERGROUP g DISABLE USER ADMIN;"
+      - id: no_grant_to_creator
+        sql: "CREATE USERGROUP g NO GRANT TO CREATOR;"
+      - id: set_parameter_enable_set
+        sql: "CREATE USERGROUP g SET PARAMETER 'password_layout' = 'A1a!', 'minimal_password_length' = '16' ENABLE PARAMETER SET 'password policy';"
+      - id: disable_client_connect
+        sql: "CREATE USERGROUP g DISABLE CLIENT CONNECT;"
+      - id: connect_restriction
+        sql: "CREATE USERGROUP g CONNECT RESTRICTION (\"r1\" AUTHENTICATION 'password' IP '10.0.0.0/24' APPLICATION ALLOW 'hdbsql');"
+    examples:
+      - "CREATE USERGROUP MyUserGroup3 DISABLE CLIENT CONNECT;"
+      - "CREATE USERGROUP MyUserGroup2 SET PARAMETER 'password_layout' = 'A1a!', 'minimal_password_length' = '16' ENABLE PARAMETER SET 'password policy';"
+
+  - id: create_virtual_function
+    name: CREATE VIRTUAL FUNCTION
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/55d2f440e375408194be7e58266733fa.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: configuration_at_source
+        sql: "CREATE VIRTUAL FUNCTION f() RETURNS TABLE (a INTEGER, b DOUBLE) CONFIGURATION 'k=v' AT src;"
+      - id: parameters_sql_security_package
+        sql: "CREATE VIRTUAL FUNCTION f(IN p1 INTEGER, p2 TIMESTAMP) RETURNS TABLE (a INTEGER) SQL SECURITY INVOKER PACKAGE s.pkg CONFIGURATION 'k=v' AT src;"
+      - id: returns_table_type
+        sql: "CREATE VIRTUAL FUNCTION f() RETURNS tt CONFIGURATION 'k=v' AT src;"
+      - id: remote_location
+        sql: "CREATE VIRTUAL FUNCTION f AT \"src\".\"db\".\"sch\".\"fn\";"
+        note: "Syntax 2, remote table UDF in another SAP HANA system"
+
+  - id: create_virtual_procedure
+    name: CREATE VIRTUAL PROCEDURE
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/2d496e74b736439b925fd32e6f81adfa.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: language_at_source
+        sql: "CREATE VIRTUAL PROCEDURE p() LANGUAGE SCALASPARK AT src;"
+      - id: parameters_sql_security
+        sql: "CREATE VIRTUAL PROCEDURE s.p(IN n INT, OUT r TABLE (str TEXT)) SQL SECURITY INVOKER LANGUAGE SCALASPARK AT src;"
+      - id: package_clause
+        sql: "CREATE VIRTUAL PROCEDURE p() PACKAGE s.pkg LANGUAGE SCALASPARK AT src;"
+      - id: with_body
+        sql: |-
+          CREATE VIRTUAL PROCEDURE p(IN n INT)
+          LANGUAGE SCALASPARK
+          AT src
+          AS
+          BEGIN
+          val x = n
+          END;
+
+  - id: create_virtual_table
+    name: CREATE VIRTUAL TABLE
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/d2a0406155f24a49aa6c549e0c428bd7.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: at_remote_location
+        sql: "CREATE VIRTUAL TABLE vt AT \"S\".\"HA1\".\"SYSTEM\".\"tableA\";"
+      - id: remote_property
+        sql: "CREATE VIRTUAL TABLE vt AT \"S\".\"db\".\"sch\".\"t\" REMOTE PROPERTY 'dataprovisioning_parameters'='<Parameter name=\"objects\">1</Parameter>';"
+      - id: with_remote
+        sql: "CREATE VIRTUAL TABLE vt (a INT, b INT) AT \"Remote1\".\"HA1\".\"SYSTEM\".\"A1\" WITH REMOTE;"
+      - id: with_remote_constraints_defaults
+        sql: "CREATE VIRTUAL TABLE vt (a INT PRIMARY KEY, b VARCHAR(10) DEFAULT 'x' NOT NULL, c TIMESTAMP DEFAULT CURRENT_TIMESTAMP) AT \"R\".\"db\".\"sch\".\"t\" WITH REMOTE;"
+    examples:
+      - "CREATE VIRTUAL TABLE VT AT \"S\".\"HA1\".\"SYSTEM\".\"tableA\";"
+      - "CREATE VIRTUAL TABLE virtual_A1 (a int, b int) at \"Remote1\".\"HA1\".\"SYSTEM\".\"A1\" WITH REMOTE;"
+
+  - id: drop_database
+    name: DROP DATABASE
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/9a94cd11182345d6bf13d224905dd597.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP DATABASE d;"
+      - id: drop_backups
+        sql: "DROP DATABASE d DROP BACKUPS;"
+    examples:
+      - "DROP DATABASE my_database;"
+
+  - id: drop_fulltext_index
+    name: DROP FULLTEXT INDEX
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d66989751910148a64a797565ad4dc.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP FULLTEXT INDEX idx;"
+      - id: schema_qualified
+        sql: "DROP FULLTEXT INDEX s.idx;"
+    examples: []
+
+  - id: drop_role
+    name: DROP ROLE
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d74f7f75191014a71ee6a2ae78547f.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP ROLE r;"
+      - id: schema_qualified
+        sql: "DROP ROLE s.r;"
+    examples:
+      - "DROP ROLE role_for_work_on_my_schema;"
+
+  - id: drop_scheduler_job
+    name: DROP SCHEDULER JOB
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/8416e21e50724690b3e44f147333dee6.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP SCHEDULER JOB j;"
+      - id: schema_qualified
+        sql: "DROP SCHEDULER JOB s.j;"
+    examples:
+      - "DROP SCHEDULER JOB schedule1;"
