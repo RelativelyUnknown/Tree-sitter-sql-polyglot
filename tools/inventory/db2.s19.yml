@@ -1,0 +1,83 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "11.5"
+source: https://www.ibm.com/docs/en/db2/11.5.x?topic=reference-statements
+
+statements:
+  - id: leave
+    name: LEAVE
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-leave
+    tier: high
+    probes:
+      - id: leave_loop
+        sql: |-
+          CREATE PROCEDURE p()
+          LANGUAGE SQL
+          BEGIN
+            lp: LOOP
+              LEAVE lp;
+            END LOOP lp;
+          END;
+      - id: leave_compound
+        sql: |-
+          CREATE PROCEDURE p()
+          LANGUAGE SQL
+          blk: BEGIN
+            LEAVE blk;
+          END;
+      - id: leave_while
+        sql: |-
+          CREATE PROCEDURE p()
+          LANGUAGE SQL
+          BEGIN
+            DECLARE i INTEGER DEFAULT 0;
+            w: WHILE i < 10 DO
+              LEAVE w;
+            END WHILE w;
+          END;
+    examples:
+      - |-
+        CREATE PROCEDURE LEAVE_LOOP(OUT counter INTEGER)
+        LANGUAGE SQL
+        BEGIN
+          DECLARE v_counter INTEGER;
+          DECLARE v_firstnme VARCHAR(12);
+          DECLARE v_midinit CHAR(1);
+          DECLARE v_lastname VARCHAR(15);
+          DECLARE at_end SMALLINT DEFAULT 0;
+          DECLARE not_found CONDITION FOR SQLSTATE '02000';
+          DECLARE c1 CURSOR FOR
+            SELECT firstnme, midinit, lastname
+            FROM employee;
+          DECLARE CONTINUE HANDLER FOR not_found
+            SET at_end = 1;
+          SET v_counter = 0;
+          OPEN c1;
+          fetch_loop:
+          LOOP
+            FETCH c1 INTO v_firstnme, v_midinit, v_lastname;
+            IF at_end <> 0 THEN
+              LEAVE fetch_loop;
+            END IF;
+            SET v_counter = v_counter + 1;
+          END LOOP fetch_loop;
+          SET counter = v_counter;
+          CLOSE c1;
+        END;
+
+  - id: lock_table
+    name: LOCK TABLE
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-lock-table
+    tier: high
+    probes:
+      - id: share_mode
+        sql: "LOCK TABLE t IN SHARE MODE;"
+      - id: exclusive_mode
+        sql: "LOCK TABLE t IN EXCLUSIVE MODE;"
+      - id: qualified_table
+        sql: "LOCK TABLE s.t IN EXCLUSIVE MODE;"
+      - id: nickname
+        sql: "LOCK TABLE nick IN SHARE MODE;"
+        note: table-name or nickname share the same syntax position
+    examples:
+      - "LOCK TABLE EMP IN EXCLUSIVE MODE;"
