@@ -1,0 +1,167 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "11.5"
+source: https://www.ibm.com/docs/en/db2/11.5.x?topic=reference-statements
+
+statements:
+  - id: create_function_external_table
+    name: CREATE FUNCTION (external table)
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-function-external-table
+    tier: high
+    probes:
+      - id: basic_c
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL NO SQL DETERMINISTIC NO EXTERNAL ACTION NOT FENCED SCRATCHPAD FINAL CALL DISALLOW PARALLEL;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL;"
+      - id: qualified_name_no_params
+        sql: "CREATE FUNCTION s.f () RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL;"
+      - id: named_parameters_default
+        sql: "CREATE FUNCTION f (p1 INTEGER DEFAULT 5, p2 VARCHAR(10) DEFAULT NULL) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL;"
+      - id: parameter_as_locator
+        sql: "CREATE FUNCTION f (p1 CLOB(1M) AS LOCATOR) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL;"
+      - id: returns_column_as_locator
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c BLOB(1M) AS LOCATOR) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL;"
+      - id: returns_multiple_columns
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (a INTEGER, b VARCHAR(20), c DECIMAL(9,2), d TIMESTAMP) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL;"
+      - id: returns_generic_table
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS GENERIC TABLE EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL;"
+      - id: language_java
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'myPacks.UserFuncs!method' LANGUAGE JAVA PARAMETER STYLE DB2GENERAL;"
+      - id: language_clr
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'asm.dll:Cls!method' LANGUAGE CLR PARAMETER STYLE SQL;"
+      - id: language_ole
+        sql: "CREATE FUNCTION f () RETURNS TABLE (c INTEGER) EXTERNAL NAME 'tfmail.header!list' LANGUAGE OLE PARAMETER STYLE SQL;"
+      - id: language_cpp
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE CPP PARAMETER STYLE SQL;"
+      - id: specific_name
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) SPECIFIC f_spec EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL;"
+      - id: external_name_identifier
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME fn LANGUAGE C PARAMETER STYLE SQL;"
+      - id: parameter_style_npsgeneral
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE NPSGENERAL;"
+      - id: parameter_ccsid_ascii
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL PARAMETER CCSID ASCII;"
+      - id: parameter_ccsid_unicode
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL PARAMETER CCSID UNICODE;"
+      - id: not_deterministic
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL NOT DETERMINISTIC;"
+      - id: fenced_threadsafe
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL FENCED THREADSAFE;"
+      - id: fenced_not_threadsafe
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL FENCED NOT THREADSAFE;"
+      - id: not_fenced_threadsafe
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL NOT FENCED THREADSAFE;"
+      - id: returns_null_on_null_input
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL RETURNS NULL ON NULL INPUT;"
+      - id: called_on_null_input
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL CALLED ON NULL INPUT;"
+      - id: reads_sql_data
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL READS SQL DATA;"
+      - id: contains_sql
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL CONTAINS SQL;"
+      - id: static_dispatch
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL STATIC DISPATCH;"
+      - id: external_action
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL EXTERNAL ACTION;"
+      - id: scratchpad_length
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL SCRATCHPAD 200;"
+      - id: no_scratchpad
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL NO SCRATCHPAD;"
+      - id: no_final_call
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL NO FINAL CALL;"
+      - id: allow_parallel
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL ALLOW PARALLEL;"
+      - id: execute_on_all_database_partitions
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL ALLOW PARALLEL EXECUTE ON ALL DATABASE PARTITIONS RESULT TABLE DISTRIBUTED;"
+      - id: dbinfo
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL DBINFO;"
+      - id: cardinality
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL CARDINALITY 20;"
+      - id: transform_group
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL TRANSFORM GROUP g;"
+      - id: inherit_special_registers
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL INHERIT SPECIAL REGISTERS;"
+      - id: secured
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL SECURED;"
+      - id: not_secured
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL NOT SECURED;"
+      - id: stay_resident
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL STAY RESIDENT YES;"
+      - id: stay_resident_no
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL STAY RESIDENT NO;"
+      - id: parameter_default_expression
+        sql: "CREATE FUNCTION f (p1 INTEGER DEFAULT (1 + 2), p2 DATE DEFAULT CURRENT DATE) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL;"
+      - id: parameter_ref_type
+        sql: "CREATE FUNCTION f (REF(s.typ)) RETURNS TABLE (c INTEGER) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL;"
+      - id: column_char_for_bit_data
+        sql: "CREATE FUNCTION f (VARCHAR(10) FOR BIT DATA) RETURNS TABLE (c CHAR(4) FOR BIT DATA) EXTERNAL NAME 'lib!fn' LANGUAGE C PARAMETER STYLE SQL;"
+    examples:
+      - "CREATE FUNCTION DOCMATCH (VARCHAR(30), VARCHAR(255)) RETURNS TABLE ( DOC_ID CHAR(16)) EXTERNAL NAME '/common/docfuncs/rajiv/udfmatch' LANGUAGE C PARAMETER STYLE SQL NO SQL DETERMINISTIC NO EXTERNAL ACTION NOT FENCED SCRATCHPAD FINAL CALL DISALLOW PARALLEL CARDINALITY 20;"
+      - "CREATE FUNCTION MAIL () RETURNS TABLE ( TIMERECEIVED DATE, SUBJECT VARCHAR(15), SIZE INTEGER, TEXT VARCHAR(30)) EXTERNAL NAME 'tfmail.header!list' LANGUAGE OLE PARAMETER STYLE SQL NOT DETERMINISTIC FENCED CALLED ON NULL INPUT SCRATCHPAD FINAL CALL NO SQL EXTERNAL ACTION DISALLOW PARALLEL;"
+
+  - id: create_function_ole_db_external_table
+    name: CREATE FUNCTION (OLE DB external table)
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-function-ole-db-external-table
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE FUNCTION f () RETURNS TABLE (c INTEGER) LANGUAGE OLEDB EXTERNAL NAME 'srv!tbl';"
+      - id: qualified_name
+        sql: "CREATE FUNCTION s.f () RETURNS TABLE (c INTEGER) LANGUAGE OLEDB EXTERNAL NAME 'srv!tbl';"
+      - id: unnamed_parameter
+        sql: "CREATE FUNCTION f (VARCHAR(600)) RETURNS TABLE (c INTEGER) LANGUAGE OLEDB EXTERNAL NAME '!!Provider=SQLOLEDB.1;';"
+      - id: named_parameter_default
+        sql: "CREATE FUNCTION f (p1 VARCHAR(600) DEFAULT NULL) RETURNS TABLE (c INTEGER) LANGUAGE OLEDB EXTERNAL NAME 'srv!tbl';"
+      - id: returns_multiple_columns
+        sql: "CREATE FUNCTION f () RETURNS TABLE (a INTEGER, b CHAR(5), c DECIMAL(19,4), d TIMESTAMP) LANGUAGE OLEDB EXTERNAL NAME 'srv!tbl';"
+      - id: specific_name
+        sql: "CREATE FUNCTION f () RETURNS TABLE (c INTEGER) SPECIFIC f_spec LANGUAGE OLEDB EXTERNAL NAME 'srv!tbl';"
+      - id: external_name_before_language
+        sql: "CREATE FUNCTION f () RETURNS TABLE (c INTEGER) EXTERNAL NAME 'srv!tbl' LANGUAGE OLEDB;"
+      - id: not_deterministic
+        sql: "CREATE FUNCTION f () RETURNS TABLE (c INTEGER) LANGUAGE OLEDB EXTERNAL NAME 'srv!tbl' NOT DETERMINISTIC;"
+      - id: deterministic
+        sql: "CREATE FUNCTION f () RETURNS TABLE (c INTEGER) LANGUAGE OLEDB EXTERNAL NAME 'srv!tbl' DETERMINISTIC;"
+      - id: static_dispatch
+        sql: "CREATE FUNCTION f () RETURNS TABLE (c INTEGER) LANGUAGE OLEDB EXTERNAL NAME 'srv!tbl' STATIC DISPATCH;"
+      - id: returns_null_on_null_input
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) LANGUAGE OLEDB EXTERNAL NAME 'srv!tbl' RETURNS NULL ON NULL INPUT;"
+      - id: called_on_null_input
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) LANGUAGE OLEDB EXTERNAL NAME 'srv!tbl' CALLED ON NULL INPUT;"
+      - id: no_external_action
+        sql: "CREATE FUNCTION f () RETURNS TABLE (c INTEGER) LANGUAGE OLEDB EXTERNAL NAME 'srv!tbl' NO EXTERNAL ACTION;"
+      - id: external_action
+        sql: "CREATE FUNCTION f () RETURNS TABLE (c INTEGER) LANGUAGE OLEDB EXTERNAL NAME 'srv!tbl' EXTERNAL ACTION;"
+      - id: cardinality
+        sql: "CREATE FUNCTION f () RETURNS TABLE (c INTEGER) LANGUAGE OLEDB EXTERNAL NAME 'srv!tbl' CARDINALITY 100;"
+      - id: secured
+        sql: "CREATE FUNCTION f () RETURNS TABLE (c INTEGER) LANGUAGE OLEDB EXTERNAL NAME 'srv!tbl' SECURED;"
+      - id: not_secured
+        sql: "CREATE FUNCTION f () RETURNS TABLE (c INTEGER) LANGUAGE OLEDB EXTERNAL NAME 'srv!tbl' NOT SECURED;"
+      - id: all_options
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS TABLE (c INTEGER) LANGUAGE OLEDB SPECIFIC f_spec EXTERNAL NAME 'srv!tbl' NOT DETERMINISTIC STATIC DISPATCH CALLED ON NULL INPUT NO EXTERNAL ACTION CARDINALITY 10 NOT SECURED;"
+    examples:
+      - |-
+        CREATE FUNCTION orders ()
+          RETURNS TABLE (orderid INTEGER
+                       , customerid CHAR(5)
+                       , employeeid INTEGER
+                       , orderdate TIMESTAMP
+                       , requireddate TIMESTAMP
+                       , shippeddate TIMESTAMP
+                       , shipvia INTEGER
+                       , freight dec(19,4) )
+          LANGUAGE OLEDB
+          EXTERNAL NAME '!orders!Provider=Microsoft.Jet.OLEDB.3.51;
+            Data Source=c:\sqllib\samples\oledb\nwind.mdb
+            !COLLATING_SEQUENCE =Y';
+      - |-
+        CREATE FUNCTION customers ()
+          RETURNS TABLE (customer_id INTEGER
+                       , name VARCHAR(20)
+                       , address VARCHAR(20)
+                       , city VARCHAR(20)
+                       , state VARCHAR(5)
+                       , zip_code INTEGER )
+          LANGUAGE OLEDB
+          EXTERNAL NAME 'spirit!demo.customer';

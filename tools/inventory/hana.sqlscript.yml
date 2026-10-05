@@ -585,3 +585,165 @@ statements:
       - id: break_continue_in_loop
         sql: "DO BEGIN DECLARE x INT = 0; LOOP x = :x + 1; IF :x < 3 THEN CONTINUE; END IF; BREAK; END LOOP; END;"
 
+
+  - id: sqlscript_for_cursor
+    name: FOR loop over a cursor (FOR ... AS)
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/bf373fd6110e4b86a1057eb9b38e9ff8.html?version=2.0.08
+    tier: high
+    probes:
+      - id: for_as_cursor
+        sql: "DO BEGIN DECLARE CURSOR c1 FOR SELECT a FROM t; FOR r AS c1 DO SELECT :r.a FROM dummy; END FOR; END;"
+      - id: for_as_cursor_with_arguments
+        sql: "DO BEGIN DECLARE v_isbn VARCHAR(20) = ''; DECLARE CURSOR c_cursor1 (v_isbn VARCHAR(20)) FOR SELECT isbn, title, price, crcy FROM books ORDER BY isbn; FOR cur_row AS c_cursor1(v_isbn) DO CALL ins_msg_proc('book title is: ' || :cur_row.title); END FOR; END;"
+      - id: for_as_cursor_row_attribute
+        sql: "DO BEGIN DECLARE CURSOR c1 FOR SELECT a FROM t; FOR r AS c1 DO SELECT r.a FROM dummy; END FOR; END;"
+      - id: for_as_cursor_sequential_execution
+        sql: "DO BEGIN DECLARE CURSOR c1 FOR SELECT a FROM t; FOR r AS c1 DO SEQUENTIAL EXECUTION SELECT 1 FROM dummy; END FOR; END;"
+      - id: for_as_cursor_declarations
+        sql: "DO BEGIN DECLARE CURSOR c1 FOR SELECT a FROM t; FOR r AS c1 DO DECLARE j INT = :r.a; SELECT :j FROM dummy; END FOR; END;"
+      - id: for_as_cursor_multiple_arguments
+        sql: "DO BEGIN DECLARE CURSOR c2 (x INT, y INT) FOR SELECT a FROM t WHERE a > :x AND a < :y; FOR r AS c2(1, 10) DO SELECT :r.a FROM dummy; END FOR; END;"
+      - id: for_as_cursor_update_where_current_of
+        sql: "DO BEGIN DECLARE CURSOR cur FOR SELECT * FROM employees FOR UPDATE; FOR r AS cur DO IF r.employee_id < 10000 THEN UPDATE employees SET employee_id = employee_id + 10000 WHERE CURRENT OF cur; ELSE DELETE FROM employees WHERE CURRENT OF cur; END IF; END FOR; END;"
+
+  - id: sqlscript_declare_cursor
+    name: DECLARE CURSOR
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/c5c60c7fadc548b097dbf9321ea6414c.html?version=2.0.08
+    tier: high
+    probes:
+      - id: declare_cursor
+        sql: "DO BEGIN DECLARE CURSOR c1 FOR SELECT a FROM t; END;"
+      - id: declare_cursor_parameter
+        sql: "DO BEGIN DECLARE CURSOR c_cursor1 (v_isbn VARCHAR(20)) FOR SELECT isbn, title, price, crcy FROM books WHERE isbn = :v_isbn ORDER BY isbn; END;"
+      - id: declare_cursor_multiple_parameters
+        sql: "DO BEGIN DECLARE CURSOR c2 (x INTEGER, d DATE, n NVARCHAR(10)) FOR SELECT a FROM t WHERE a = :x AND b = :d AND c = :n; END;"
+      - id: declare_cursor_with_hold
+        sql: "DO BEGIN DECLARE CURSOR mycur WITH HOLD FOR SELECT * FROM mytab; END;"
+      - id: declare_cursor_without_hold
+        sql: "DO BEGIN DECLARE CURSOR mycur WITHOUT HOLD FOR SELECT * FROM mytab; END;"
+      - id: declare_cursor_parameter_with_hold
+        sql: "DO BEGIN DECLARE CURSOR mycur (p INT) WITH HOLD FOR SELECT * FROM mytab WHERE a = :p; END;"
+      - id: declare_cursor_for_update
+        sql: "DO BEGIN DECLARE CURSOR cur FOR SELECT * FROM employees FOR UPDATE; END;"
+      - id: declare_cursor_for_update_of
+        sql: "DO BEGIN DECLARE CURSOR cur FOR SELECT employees.employee_name, departments.department_name FROM employees, departments WHERE employees.department_id = departments.department_id FOR UPDATE OF employees.employee_id, departments.department_id; END;"
+      - id: declare_cursor_in_procedure_before_body
+        sql: "CREATE PROCEDURE p AS DECLARE CURSOR c1 FOR SELECT a FROM t; BEGIN OPEN c1; CLOSE c1; END;"
+        note: "page: cursors can be defined after the procedure signature and before the body, or at the start of a block"
+    examples:
+      - |-
+        DO BEGIN
+         DECLARE CURSOR c_cursor1 (v_isbn VARCHAR(20)) FOR
+         SELECT isbn, title, price, crcy FROM books
+         WHERE isbn = :v_isbn ORDER BY isbn;
+        END;
+
+  - id: sqlscript_open_fetch_close_cursor
+    name: OPEN, FETCH and CLOSE cursor
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/19f3c2bd8e0b451a9c53fb8c7be6c28d.html?version=2.0.08
+    tier: high
+    probes:
+      - id: open_cursor
+        sql: "DO BEGIN DECLARE CURSOR c1 FOR SELECT a FROM t; OPEN c1; END;"
+      - id: open_cursor_arguments
+        sql: "DO BEGIN DECLARE CURSOR c_cursor1 (v_isbn VARCHAR(20)) FOR SELECT isbn FROM books WHERE isbn = :v_isbn; OPEN c_cursor1('978-3-86894-012-1'); END;"
+      - id: open_cursor_multiple_arguments
+        sql: "DO BEGIN DECLARE CURSOR c2 (x INT, y INT) FOR SELECT a FROM t WHERE a > :x AND a < :y; OPEN c2(1, 10); END;"
+      - id: fetch_into_variables
+        sql: "DO BEGIN DECLARE v_isbn VARCHAR(20); DECLARE v_title VARCHAR(100); DECLARE v_price DECIMAL; DECLARE v_crcy VARCHAR(3); DECLARE CURSOR c_cursor1 FOR SELECT isbn, title, price, crcy FROM books; OPEN c_cursor1; FETCH c_cursor1 INTO v_isbn, v_title, v_price, v_crcy; END;"
+      - id: fetch_into_single_variable
+        sql: "DO BEGIN DECLARE i INT; DECLARE CURSOR mycur FOR SELECT * FROM mytab; OPEN mycur; FETCH mycur INTO i; END;"
+      - id: close_cursor
+        sql: "DO BEGIN DECLARE CURSOR c1 FOR SELECT a FROM t; OPEN c1; CLOSE c1; END;"
+      - id: fetch_loop_with_cursor_attributes
+        sql: "DO BEGIN DECLARE i INT; DECLARE CURSOR c1 FOR SELECT a FROM t; OPEN c1; FETCH c1 INTO i; WHILE NOT c1::NOTFOUND DO FETCH c1 INTO i; END WHILE; CLOSE c1; END;"
+      - id: cursor_attribute_isclosed
+        sql: "DO BEGIN DECLARE CURSOR c1 FOR SELECT a FROM t; IF c1::ISCLOSED THEN OPEN c1; END IF; END;"
+      - id: cursor_attribute_rowcount
+        sql: "DO BEGIN DECLARE n INT; DECLARE CURSOR c1 FOR SELECT a FROM t; OPEN c1; n = c1::ROWCOUNT; END;"
+      - id: open_close_holdable_example
+        sql: "DO BEGIN DECLARE i INT; DECLARE CURSOR mycur WITH HOLD FOR SELECT * FROM mytab; OPEN mycur; ROLLBACK; FETCH mycur INTO i; CLOSE mycur; SELECT :i AS i FROM DUMMY; END;"
+    examples:
+      - "OPEN c_cursor1('978-3-86894-012-1');"
+      - "CLOSE c_cursor1;"
+      - "FETCH c_cursor1 INTO v_isbn, v_title, v_price, v_crcy;"
+
+  - id: sqlscript_updatable_cursor
+    name: UPDATE / DELETE ... WHERE CURRENT OF
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/b09a95041873452b9bd1283c43f7f43b.html?version=2.0.08
+    tier: high
+    probes:
+      - id: update_where_current_of
+        sql: "DO BEGIN DECLARE CURSOR cur FOR SELECT * FROM employees FOR UPDATE; FOR r AS cur DO UPDATE employees SET employee_id = employee_id + 10000 WHERE CURRENT OF cur; END FOR; END;"
+      - id: update_alias_where_current_of
+        sql: "DO BEGIN DECLARE CURSOR cur FOR SELECT * FROM employees FOR UPDATE; FOR r AS cur DO UPDATE employees AS e SET employee_id = employee_id + 1 WHERE CURRENT OF cur; END FOR; END;"
+      - id: update_alias_without_as_where_current_of
+        sql: "DO BEGIN DECLARE CURSOR cur FOR SELECT * FROM employees FOR UPDATE; FOR r AS cur DO UPDATE employees e SET employee_id = employee_id + 1 WHERE CURRENT OF cur; END FOR; END;"
+      - id: delete_where_current_of
+        sql: "DO BEGIN DECLARE CURSOR cur FOR SELECT * FROM employees FOR UPDATE; FOR r AS cur DO DELETE FROM employees WHERE CURRENT OF cur; END FOR; END;"
+      - id: delete_alias_where_current_of
+        sql: "DO BEGIN DECLARE CURSOR cur FOR SELECT * FROM employees FOR UPDATE; FOR r AS cur DO DELETE FROM employees AS e WHERE CURRENT OF cur; END FOR; END;"
+      - id: update_multi_table_for_update_of
+        sql: "DO BEGIN DECLARE CURSOR cur FOR SELECT employees.employee_name, departments.department_name FROM employees, departments WHERE employees.department_id = departments.department_id FOR UPDATE OF employees.employee_id, departments.department_id; FOR r AS cur DO IF r.department_name = 'Development' THEN UPDATE employees SET employee_id = employee_id + 10000, department_id = department_id + 100 WHERE CURRENT OF cur; UPDATE departments SET department_id = department_id + 100 WHERE CURRENT OF cur; ELSEIF r.department_name = 'HR' THEN DELETE FROM employees WHERE CURRENT OF cur; DELETE FROM departments WHERE CURRENT OF cur; END IF; END FOR; END;"
+    examples:
+      - |-
+        DO BEGIN
+         DECLARE CURSOR cur FOR SELECT * FROM employees FOR UPDATE;
+         FOR r AS cur DO
+         IF r.employee_id < 10000 THEN
+         UPDATE employees SET employee_id = employee_id + 10000
+         WHERE CURRENT OF cur;
+         ELSE
+         DELETE FROM employees WHERE CURRENT OF cur;
+         END IF;
+         END FOR;
+        END;
+
+  - id: sqlscript_autonomous_transaction
+    name: BEGIN AUTONOMOUS TRANSACTION
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/4ad70daee8b64b90ab162565ed6f73ef.html?version=2.0.08
+    tier: high
+    probes:
+      - id: autonomous_transaction_block
+        sql: "DO BEGIN BEGIN AUTONOMOUS TRANSACTION INSERT INTO log_table VALUES ('MESSAGE'); END; END;"
+      - id: autonomous_transaction_commit_rollback
+        sql: "DO BEGIN BEGIN AUTONOMOUS TRANSACTION UPDATE t SET a = 1; COMMIT; UPDATE t SET a = 2; ROLLBACK; UPDATE t SET a = 3; END; END;"
+      - id: autonomous_transaction_declarations
+        sql: "DO BEGIN BEGIN AUTONOMOUS TRANSACTION DECLARE x INT = 1; INSERT INTO log_table VALUES (:x); END; END;"
+      - id: autonomous_transaction_handler_list
+        sql: "DO BEGIN BEGIN AUTONOMOUS TRANSACTION DECLARE EXIT HANDLER FOR SQLEXCEPTION RESIGNAL; INSERT INTO log_table VALUES (1); END; END;"
+      - id: autonomous_transaction_nested
+        sql: "DO BEGIN BEGIN AUTONOMOUS TRANSACTION INSERT INTO LOG_TABLE VALUES ('MESSAGE'); BEGIN AUTONOMOUS TRANSACTION ROLLBACK; END; END; END;"
+      - id: autonomous_transaction_in_exit_handler
+        sql: "DO BEGIN DECLARE errCode INT; DECLARE errMsg VARCHAR(5000); DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN AUTONOMOUS TRANSACTION errCode = ::SQL_ERROR_CODE; errMsg = ::SQL_ERROR_MESSAGE; INSERT INTO ERR_TABLE (PARAMETER, SQL_ERROR_CODE, SQL_ERROR_MESSAGE) VALUES (1, :errCode, :errMsg); END; SELECT 1 / 0 FROM DUMMY; END;"
+      - id: autonomous_transaction_control_flow
+        sql: "DO BEGIN BEGIN AUTONOMOUS TRANSACTION DECLARE i INT; FOR i IN 1..3 DO INSERT INTO t VALUES (:i); END FOR; IF :i > 0 THEN SIGNAL SQL_ERROR_CODE 10001; END IF; END; END;"
+
+  - id: sqlscript_commit_rollback
+    name: COMMIT and ROLLBACK in SQLScript
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/e4e1b570e4f04b93ae1538246894b496.html?version=2.0.08
+    tier: high
+    probes:
+      - id: commit_in_block
+        sql: "DO BEGIN UPDATE B_TAB SET V = 3 WHERE ID = 1; COMMIT; END;"
+      - id: rollback_in_block
+        sql: "DO BEGIN UPDATE B_TAB SET V = 4 WHERE ID = 1; ROLLBACK; END;"
+      - id: commit_then_rollback
+        sql: "DO BEGIN UPDATE B_TAB SET V = 3 WHERE ID = 1; COMMIT; UPDATE B_TAB SET V = 4 WHERE ID = 1; ROLLBACK; END;"
+      - id: commit_in_exit_handler
+        sql: "DO BEGIN DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 146 BEGIN ROLLBACK; END; SELECT * FROM t FOR UPDATE NOWAIT; END;"
+        note: "page on DECLARE EXIT HANDLER: for transactional errors the transaction lives inside the handler and COMMIT or ROLLBACK may be used"
+
+  - id: sqlscript_savepoint
+    name: SAVEPOINT, ROLLBACK TO SAVEPOINT, RELEASE SAVEPOINT
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/e933397e9ec84f439f25962f4e193063.html?version=2.0.08
+    tier: high
+    probes:
+      - id: savepoint
+        sql: "DO BEGIN SAVEPOINT save1; END;"
+      - id: rollback_to_savepoint
+        sql: "DO BEGIN SAVEPOINT save1; ROLLBACK TO SAVEPOINT save1; END;"
+      - id: release_savepoint
+        sql: "DO BEGIN SAVEPOINT save1; RELEASE SAVEPOINT save1; END;"
+      - id: savepoint_full_example
+        sql: "DO BEGIN INSERT INTO t1 VALUES (1); SAVEPOINT save1; INSERT INTO t1 VALUES (2); ROLLBACK TO SAVEPOINT save1; SELECT * FROM t1; RELEASE SAVEPOINT save1; END;"
