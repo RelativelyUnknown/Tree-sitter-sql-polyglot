@@ -1,0 +1,63 @@
+dialect: redshift
+engine: Amazon Redshift
+version: "current"
+source: https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_commands.html
+
+statements:
+  - id: create_view
+    name: CREATE VIEW
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_VIEW.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE VIEW v AS SELECT c FROM t;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE VIEW v AS SELECT c FROM t;"
+      - id: column_list
+        sql: "CREATE VIEW v (a, b) AS SELECT c, d FROM t;"
+      - id: schema_qualified
+        sql: "CREATE VIEW s.v AS SELECT c FROM t;"
+      - id: temporary_hash_name
+        sql: "CREATE VIEW #v AS SELECT c FROM t;"
+        note: View name beginning with '#' creates a temporary view visible only in the current session.
+      - id: no_schema_binding
+        sql: "CREATE VIEW v AS SELECT c FROM public.t WITH NO SCHEMA BINDING;"
+      - id: or_replace_column_list_no_schema_binding
+        sql: "CREATE OR REPLACE VIEW s.v (a, b) AS SELECT c, d FROM public.t WITH NO SCHEMA BINDING;"
+      - id: union_all_late_binding
+        sql: "CREATE VIEW v AS SELECT * FROM public.t UNION ALL SELECT * FROM spectrum.t WITH NO SCHEMA BINDING;"
+    examples:
+      - "create view myevent as select eventname from event where eventname = 'LeAnn Rimes';"
+      - "create view myuser as select lastname from users;"
+      - "create or replace view myuser as select lastname from users;"
+
+  - id: delete
+    name: DELETE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_DELETE.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "DELETE FROM t;"
+      - id: without_from
+        sql: "DELETE t;"
+      - id: where
+        sql: "DELETE FROM t WHERE c = 1;"
+      - id: using
+        sql: "DELETE FROM t USING u WHERE t.id = u.id;"
+      - id: using_multiple
+        sql: "DELETE FROM t USING u, w WHERE t.id = u.id AND u.id = w.id;"
+      - id: where_subquery
+        sql: "DELETE FROM t WHERE c IN (SELECT d FROM u);"
+      - id: with_cte
+        sql: "WITH x AS (SELECT id FROM u) DELETE FROM t WHERE id IN (SELECT id FROM x);"
+      - id: with_multiple_ctes
+        sql: "WITH x AS (SELECT id FROM u), y AS (SELECT id FROM w) DELETE FROM t USING x, y WHERE t.id = x.id AND t.id = y.id;"
+      - id: with_recursive
+        sql: "WITH RECURSIVE x (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM x WHERE n < 5) DELETE FROM t WHERE c IN (SELECT n FROM x);"
+      - id: materialized_view
+        sql: "DELETE FROM mv;"
+        note: DELETE on a streaming-ingestion materialized view.
+    examples:
+      - "delete from category;"
+      - "delete from category where catid between 0 and 9;"
+      - "delete from listing where listing.sellerid not in(select sales.sellerid from sales);"
