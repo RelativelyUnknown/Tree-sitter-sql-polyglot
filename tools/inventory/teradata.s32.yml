@@ -1,0 +1,209 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: set_time_zone
+    name: SET TIME ZONE
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/FrhYDG~4uVVk38H5XbeUeA
+    tier: medium
+    probes:
+      - { id: local, sql: "SET TIME ZONE LOCAL;" }
+      - { id: user, sql: "SET TIME ZONE USER;" }
+      - { id: interval, sql: "SET TIME ZONE INTERVAL '08:00' HOUR TO MINUTE;" }
+      - { id: signed_expression, sql: "SET TIME ZONE +1;" }
+      - { id: time_zone_string, sql: "SET TIME ZONE 'America Pacific';" }
+    examples:
+      - "SET TIME ZONE LOCAL;"
+      - "SET TIME ZONE USER;"
+      - "SET TIME ZONE INTERVAL '08:00' HOUR TO MINUTE;"
+
+  - id: help_session
+    name: HELP SESSION
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/X~nNhXTMRzv~qxvQfgGpdw
+    tier: medium
+    probes:
+      - { id: basic, sql: "HELP SESSION;" }
+      - { id: constraint, sql: "HELP SESSION CONSTRAINT;" }
+
+  - id: collect_statistics
+    name: COLLECT STATISTICS (Optimizer Form)
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/mqxn5NLKhKR~FJuqpSzx_g
+    tier: medium
+    probes:
+      - { id: column, sql: "COLLECT STATISTICS COLUMN c ON t;" }
+      - { id: stat_abbrev, sql: "COLLECT STAT COLUMN c ON t;" }
+      - { id: index, sql: "COLLECT STATISTICS INDEX idx ON t;" }
+      - { id: unique_index_columns, sql: "COLLECT STATISTICS UNIQUE INDEX (c1, c2) ON t;" }
+      - { id: index_order_by, sql: "COLLECT STATISTICS INDEX idx (c1) ORDER BY VALUES (c2) ON t;" }
+      - { id: multi_column_list, sql: "COLLECT STATISTICS COLUMN c1, COLUMN (c1, c2) ON t;" }
+      - { id: partition, sql: "COLLECT STATISTICS COLUMN PARTITION ON t;" }
+      - { id: expression_named, sql: "COLLECT STATISTICS COLUMN CAST(c AS DATE) AS stat_name ON t;" }
+      - { id: summary, sql: "COLLECT SUMMARY STATISTICS ON t;" }
+      - { id: using_sample, sql: "COLLECT STATISTICS USING SAMPLE COLUMN c ON t;" }
+      - { id: using_sample_percent, sql: "COLLECT STATISTICS USING SAMPLE 10 PERCENT COLUMN c ON t;" }
+      - { id: using_system_sample, sql: "COLLECT STATISTICS USING SYSTEM SAMPLE COLUMN c ON t;" }
+      - { id: using_no_sample, sql: "COLLECT STATISTICS USING NO SAMPLE COLUMN c ON t;" }
+      - { id: using_threshold, sql: "COLLECT STATISTICS USING THRESHOLD 10 PERCENT AND THRESHOLD 7 DAYS COLUMN c ON t;" }
+      - { id: using_system_threshold, sql: "COLLECT STATISTICS USING SYSTEM THRESHOLD COLUMN c ON t;" }
+      - { id: using_no_threshold, sql: "COLLECT STATISTICS USING NO THRESHOLD COLUMN c ON t;" }
+      - { id: using_maxintervals, sql: "COLLECT STATISTICS USING MAXINTERVALS 250 AND MAXVALUELENGTH 15 COLUMN c ON t;" }
+      - { id: using_system_maxintervals, sql: "COLLECT STATISTICS USING SYSTEM MAXINTERVALS AND SYSTEM MAXVALUELENGTH COLUMN c ON t;" }
+      - { id: using_for_current, sql: "COLLECT STATISTICS USING SAMPLE FOR CURRENT COLUMN c ON t;" }
+      - { id: on_temporary, sql: "COLLECT STATISTICS COLUMN c ON TEMPORARY t;" }
+      - { id: on_qualified, sql: "COLLECT STATISTICS COLUMN c ON db.t;" }
+      - { id: copy_from, sql: "COLLECT STATISTICS ON t2 FROM t1;" }
+      - { id: copy_from_column, sql: "COLLECT STATISTICS ON t2 FROM t1 COLUMN c;" }
+      - { id: recollect, sql: "COLLECT STATISTICS ON t;" }
+    examples:
+      - "COLLECT STATISTICS USING THRESHOLD 10 PERCENT AND THRESHOLD 7 DAYS COLUMN o_orderkey ON orders;"
+      - "COLLECT STATISTICS COLUMN o_orderdatetime ON orders;"
+      - "COLLECT STATISTICS USING SAMPLE 10 PERCENT COLUMN o_custkey ON orders;"
+
+  - id: show_statistics
+    name: SHOW STATISTICS
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/OZh1MVEOAkiaNOSHXznlMQ
+    tier: medium
+    probes:
+      - { id: table_only, sql: "SHOW STATISTICS ON t;" }
+      - { id: stats_abbrev, sql: "SHOW STATS ON t;" }
+      - { id: column, sql: "SHOW STATISTICS COLUMN c ON t;" }
+      - { id: values, sql: "SHOW STATISTICS VALUES COLUMN c ON t;" }
+      - { id: values_sequenced, sql: "SHOW STATISTICS VALUES SEQUENCED COLUMN c1, COLUMN c2 ON t;" }
+      - { id: index, sql: "SHOW STATISTICS INDEX idx ON t;" }
+      - { id: unique_index_columns, sql: "SHOW STATISTICS UNIQUE INDEX (c1, c2) ON t;" }
+      - { id: index_order_by, sql: "SHOW STATISTICS INDEX idx (c1) ORDER BY HASH (c2) ON t;" }
+      - { id: in_xml, sql: "SHOW IN XML STATISTICS COLUMN c ON t;" }
+      - { id: summary_current, sql: "SHOW SUMMARY CURRENT STATISTICS ON t;" }
+      - { id: partition, sql: "SHOW STATISTICS COLUMN PARTITION ON t;" }
+      - { id: expression_named, sql: "SHOW STATISTICS COLUMN CAST(c AS DATE) AS stat_name ON t;" }
+      - { id: temporary, sql: "SHOW STATISTICS ON TEMPORARY t;" }
+    examples:
+      - "SHOW STATISTICS ON orders;"
+      - "SHOW STATISTICS VALUES SEQUENCED COLUMN x1, COLUMN y1 ON table_1;"
+
+  - id: drop_statistics
+    name: DROP STATISTICS (Optimizer Form)
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/MBor06dP2ArIjnAMibvt6Q
+    tier: medium
+    probes:
+      - { id: all_on_table, sql: "DROP STATISTICS ON t;" }
+      - { id: stats_abbrev, sql: "DROP STATS ON t;" }
+      - { id: column, sql: "DROP STATISTICS COLUMN c ON t;" }
+      - { id: column_list, sql: "DROP STATISTICS COLUMN (c1, c2) ON t;" }
+      - { id: column_named, sql: "DROP STATISTICS COLUMN c AS stat_name ON t;" }
+      - { id: partition, sql: "DROP STATISTICS COLUMN PARTITION ON t;" }
+      - { id: column_and_partition, sql: "DROP STATISTICS COLUMN (c, PARTITION) ON t;" }
+      - { id: named_index, sql: "DROP STATISTICS INDEX idx ON t;" }
+      - { id: composite_index, sql: "DROP STATISTICS INDEX (c1, c2) ON t;" }
+      - { id: unique_index_order_by, sql: "DROP STATISTICS UNIQUE INDEX idx (c1) ORDER BY VALUES (c2) ON t;" }
+      - { id: multiple_items, sql: "DROP STATISTICS COLUMN c1, INDEX (c2, c3) ON t;" }
+      - { id: temporary, sql: "DROP STATISTICS ON TEMPORARY t;" }
+    examples:
+      - "DROP STATISTICS INDEX(emp_no, name) ON employee;"
+      - "DROP STATISTICS INDEX unique_1 ON table_1;"
+      - "DROP STATISTICS ON employee;"
+
+  - id: help_statistics
+    name: HELP STATISTICS (Optimizer Form)
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/oDy~F_ubuJyDPMHI~9Wx3g
+    tier: medium
+    probes:
+      - { id: table, sql: "HELP STATISTICS t;" }
+      - { id: on_keyword, sql: "HELP STATISTICS ON t;" }
+      - { id: current, sql: "HELP CURRENT STATISTICS t;" }
+      - { id: qualified, sql: "HELP STATISTICS db.t;" }
+      - { id: temporary, sql: "HELP STATISTICS TEMPORARY t;" }
+    examples:
+      - "HELP STATISTICS orders;"
+
+  - id: alter_trigger
+    name: ALTER TRIGGER
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/qUOcgOU4kDtiFpT3ng7PUQ
+    tier: medium
+    probes:
+      - { id: trigger_enabled, sql: "ALTER TRIGGER trg ENABLED;" }
+      - { id: trigger_disabled, sql: "ALTER TRIGGER db.trg DISABLED;" }
+      - { id: trigger_timestamp, sql: "ALTER TRIGGER trg TIMESTAMP;" }
+      - { id: table_enabled, sql: "ALTER TRIGGER t ENABLED;" }
+      - { id: table_disabled, sql: "ALTER TRIGGER db.t DISABLED;" }
+
+  - id: create_trigger
+    name: CREATE TRIGGER / REPLACE TRIGGER
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/ADI9b1XhOy69Mt1bC0E71Q
+    tier: medium
+    probes:
+      - id: after_insert_row
+        sql: |-
+          CREATE TRIGGER trg AFTER INSERT ON t REFERENCING NEW AS n FOR EACH ROW (INSERT INTO t2 VALUES (n.a, n.b););
+      - id: replace_trigger
+        sql: |-
+          REPLACE TRIGGER trg AFTER INSERT ON t REFERENCING NEW AS n FOR EACH ROW (INSERT INTO t2 VALUES (n.a, n.b););
+      - id: enabled_disabled
+        sql: |-
+          CREATE TRIGGER trg DISABLED AFTER DELETE ON t REFERENCING OLD AS o FOR EACH ROW (INSERT INTO t2 VALUES (o.a, o.b););
+      - id: before_update_of
+        sql: |-
+          CREATE TRIGGER trg BEFORE UPDATE OF (a, b) ON t REFERENCING OLD ROW AS o NEW ROW AS n FOR EACH ROW (INSERT INTO t2 VALUES (o.a, n.a););
+      - id: order_when
+        sql: |-
+          CREATE TRIGGER db.trg ENABLED AFTER INSERT ON db.t ORDER 10 REFERENCING NEW AS n FOR EACH ROW WHEN (n.a > 0) (INSERT INTO t2 VALUES (n.a, n.b););
+      - id: begin_atomic
+        sql: |-
+          CREATE TRIGGER trg AFTER INSERT ON t REFERENCING NEW AS n FOR EACH ROW BEGIN ATOMIC (INSERT INTO t2 VALUES (n.a, n.b);) END;
+      - id: for_each_statement_new_table
+        sql: |-
+          CREATE TRIGGER trg AFTER INSERT ON t REFERENCING NEW_TABLE AS nt FOR EACH STATEMENT (INSERT INTO t2 SELECT a, b FROM nt;);
+      - id: old_table_new_table
+        sql: |-
+          CREATE TRIGGER trg AFTER UPDATE ON t REFERENCING OLD_TABLE AS ot NEW_TABLE AS nt (INSERT INTO t2 SELECT ot.a, nt.a FROM ot, nt WHERE ot.k = nt.k;);
+      - id: old_new_table
+        sql: |-
+          CREATE TRIGGER trg AFTER UPDATE ON t REFERENCING OLD_NEW_TABLE AS onr (ov, nv) (INSERT INTO t2 SELECT ov.a, nv.a FROM onr;);
+      - id: temporal_option
+        sql: |-
+          CREATE TRIGGER trg AFTER CURRENT VALIDTIME INSERT ON t REFERENCING NEW ROW AS n FOR EACH ROW BEGIN ATOMIC (ABORT 'aborted' WHERE n.c2 > 100;) END;
+    examples:
+      - |-
+        CREATE TRIGGER trig1
+          AFTER INSERT ON tab1
+          REFERENCING NEW AS NewRow
+        FOR EACH ROW (
+          INSERT INTO tab2
+          VALUES (NewRow.a + 10, NewRow.b + 10, NewRow.c););
+      - |-
+        CREATE TRIGGER inventory_trigger
+          AFTER UPDATE ON inventory
+          REFERENCING OLD_NEW_TABLE AS OldNewTab (OldValue, NewValue)
+            (INSERT INTO InventoryLogTbl
+               SELECT OldValue.ProductKey, OldValue.AvailQty, NewValue.AvailQty
+               FROM OldNewTab;);
+      - |-
+        CREATE TRIGGER log_inserts_to_doc AFTER INSERT ON document_table
+         REFERENCING new AS new_row
+         FOR EACH ROW
+         BEGIN ATOMIC
+           CALL insert_doc_journal( new_row.docnum );
+         END;
+
+  - id: drop_trigger
+    name: DROP TRIGGER
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/qUCQMDIs9dkrptoq9YahPw
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP TRIGGER trg;" }
+      - { id: qualified, sql: "DROP TRIGGER db.trg;" }
+    examples:
+      - "DROP TRIGGER parent_tab;"
+
+  - id: help_trigger
+    name: HELP TRIGGER
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/eXo1wnOImcEb6E0dpcdAFQ
+    tier: medium
+    probes:
+      - { id: trigger, sql: "HELP TRIGGER trg;" }
+      - { id: qualified, sql: "HELP TRIGGER db.trg;" }
+      - { id: table, sql: "HELP TRIGGER db.t;" }
+    examples:
+      - "HELP TRIGGER UpdateForKey;"
