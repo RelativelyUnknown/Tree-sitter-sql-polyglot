@@ -1,0 +1,211 @@
+dialect: hana
+engine: SAP HANA Platform
+version: "2.0 SPS 08 (2.0.08)"
+source: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/3bc1a0d4611d40c4a6e3fc7c8e80395d.html?version=2.0.08
+
+statements: []
+
+expressions:
+  - id: c_aggregate_syntax
+    name: Aggregate expressions
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/a924ee1e98ab435a874efa32e6f0ae14.html?version=2.0.08
+    tier: high
+    probes:
+      - { id: count_star, sql: "SELECT COUNT(*) FROM t;" }
+      - { id: count_expr, sql: "SELECT COUNT(a) FROM t;" }
+      - { id: count_distinct_list, sql: "SELECT COUNT(DISTINCT a, b) FROM t;" }
+      - { id: sum_distinct, sql: "SELECT SUM(DISTINCT a) FROM t;" }
+      - { id: avg_all, sql: "SELECT AVG(ALL a) FROM t;" }
+      - { id: min_max, sql: "SELECT MIN(a), MAX(a) FROM t GROUP BY b;" }
+      - { id: stddev_var, sql: "SELECT STDDEV(a), STDDEV_POP(a), STDDEV_SAMP(a), VAR(a), VAR_POP(a), VAR_SAMP(a) FROM t;" }
+      - { id: median, sql: "SELECT MEDIAN(a) FROM t;" }
+      - { id: corr, sql: "SELECT CORR(a, b), CORR_SPEARMAN(a, b) FROM t;" }
+      - { id: string_agg, sql: "SELECT STRING_AGG(a) FROM t;" }
+      - { id: string_agg_delimiter, sql: "SELECT STRING_AGG(a, ',') FROM t;" }
+      - { id: string_agg_order_by, sql: "SELECT STRING_AGG(a, ',' ORDER BY b DESC NULLS LAST) FROM t;" }
+      - { id: first_value_order_by, sql: "SELECT FIRST_VALUE(a ORDER BY b) FROM t;", note: "Aggregate form: FIRST_VALUE( <expression> <order_by_clause> )" }
+      - { id: last_value_order_by, sql: "SELECT LAST_VALUE(a ORDER BY b DESC) FROM t;" }
+      - { id: nth_value_order_by, sql: "SELECT NTH_VALUE(a, 2 ORDER BY b) FROM t;" }
+      - { id: grouping_function, sql: "SELECT a, GROUPING(a), SUM(b) FROM t GROUP BY ROLLUP(a);" }
+      - { id: grouping_id_function, sql: "SELECT a, b, GROUPING_ID(a, b) FROM t GROUP BY CUBE(a, b);" }
+
+  - id: c_window_syntax
+    name: Window functions and the window specification
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767
+    tier: high
+    probes:
+      - { id: over_empty, sql: "SELECT COUNT(*) OVER () FROM t;" }
+      - { id: over_partition_by, sql: "SELECT SUM(a) OVER (PARTITION BY b) FROM t;" }
+      - { id: over_partition_by_list, sql: "SELECT SUM(a) OVER (PARTITION BY b, c) FROM t;" }
+      - { id: over_order_by, sql: "SELECT ROW_NUMBER() OVER (ORDER BY a) FROM t;" }
+      - { id: over_partition_order, sql: "SELECT RANK() OVER (PARTITION BY b ORDER BY a DESC) FROM t;" }
+      - { id: order_by_nulls, sql: "SELECT DENSE_RANK() OVER (ORDER BY a ASC NULLS LAST) FROM t;" }
+      - { id: order_by_collate, sql: "SELECT RANK() OVER (ORDER BY a COLLATE BINARY) FROM t;" }
+      - { id: order_by_position, sql: "SELECT RANK() OVER (ORDER BY 1) FROM t;", note: "<position> in window ORDER BY" }
+      - { id: rows_unbounded_current, sql: "SELECT SUM(a) OVER (ORDER BY b ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: rows_preceding_following, sql: "SELECT SUM(a) OVER (ORDER BY b ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;" }
+      - { id: rows_current_unbounded_following, sql: "SELECT SUM(a) OVER (ORDER BY b ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: rows_start_only_unbounded, sql: "SELECT SUM(a) OVER (ORDER BY b ROWS UNBOUNDED PRECEDING) FROM t;" }
+      - { id: rows_start_only_preceding, sql: "SELECT SUM(a) OVER (ORDER BY b ROWS 2 PRECEDING) FROM t;" }
+      - { id: rows_start_only_current, sql: "SELECT SUM(a) OVER (ORDER BY b ROWS CURRENT ROW) FROM t;" }
+      - { id: lag_basic, sql: "SELECT LAG(a) OVER (ORDER BY b) FROM t;" }
+      - { id: lag_offset_default, sql: "SELECT LAG(a, 2, 0) OVER (PARTITION BY c ORDER BY b) FROM t;" }
+      - { id: lead_offset_default, sql: "SELECT LEAD(a, 1, 0) OVER (ORDER BY b) FROM t;" }
+      - { id: ntile, sql: "SELECT NTILE(4) OVER (ORDER BY a) FROM t;" }
+      - { id: cume_dist_percent_rank, sql: "SELECT CUME_DIST() OVER (ORDER BY a), PERCENT_RANK() OVER (ORDER BY a) FROM t;" }
+      - { id: percentile_cont, sql: "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY a) OVER (PARTITION BY b) FROM t;" }
+      - { id: percentile_disc, sql: "SELECT PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY a DESC NULLS FIRST) OVER (PARTITION BY b) FROM t;" }
+      - { id: first_value_window, sql: "SELECT FIRST_VALUE(a ORDER BY b) OVER (PARTITION BY c) FROM t;" }
+      - { id: last_value_window, sql: "SELECT LAST_VALUE(a ORDER BY b) OVER (PARTITION BY c) FROM t;" }
+      - { id: nth_value_window, sql: "SELECT NTH_VALUE(a, 2 ORDER BY b) OVER (PARTITION BY c) FROM t;" }
+      - { id: weighted_avg, sql: "SELECT WEIGHTED_AVG(a) OVER (ORDER BY b) FROM t;" }
+      - { id: random_partition, sql: "SELECT RANDOM_PARTITION(0.3, 0.3, 0.4) OVER (PARTITION BY a) FROM t;" }
+      - { id: window_aggregates, sql: "SELECT AVG(a) OVER (PARTITION BY b), MEDIAN(a) OVER (PARTITION BY b), STDDEV(a) OVER (PARTITION BY b), VAR(a) OVER (PARTITION BY b), CORR(a, c) OVER (PARTITION BY b) FROM t;" }
+    note: "No WINDOW (named window) clause appears in the SQL Reference's window specification, so none is probed."
+
+  - id: c_json_functions
+    name: JSON functions
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/9355cb9e45a149c1a6ddb2bd2392d864.html?version=2.0.08
+    tier: medium
+    probes:
+      - { id: json_value_basic, sql: "SELECT JSON_VALUE(j, '$.a') FROM t;" }
+      - { id: json_value_mode, sql: "SELECT JSON_VALUE(j, 'strict $.a') FROM t;" }
+      - { id: json_value_returning, sql: "SELECT JSON_VALUE(j, '$.a' RETURNING INTEGER) FROM t;" }
+      - { id: json_value_behaviors, sql: "SELECT JSON_VALUE(j, '$.a' RETURNING VARCHAR(10) DEFAULT 'x' ON EMPTY ERROR ON ERROR) FROM t;" }
+      - { id: json_value_null_on, sql: "SELECT JSON_VALUE(j, '$.a' NULL ON EMPTY NULL ON ERROR) FROM t;" }
+      - { id: json_query_basic, sql: "SELECT JSON_QUERY(j, '$.a') FROM t;" }
+      - { id: json_query_returning, sql: "SELECT JSON_QUERY(j, '$.a' RETURNING NVARCHAR(200)) FROM t;" }
+      - { id: json_query_wrapper, sql: "SELECT JSON_QUERY(j, '$.a' WITH CONDITIONAL ARRAY WRAPPER) FROM t;" }
+      - { id: json_query_without_wrapper, sql: "SELECT JSON_QUERY(j, '$.a' WITHOUT ARRAY WRAPPER) FROM t;" }
+      - { id: json_query_empty_error, sql: "SELECT JSON_QUERY(j, '$.a' EMPTY ARRAY ON EMPTY EMPTY OBJECT ON ERROR) FROM t;" }
+      - { id: json_table_regular, sql: "SELECT * FROM JSON_TABLE(j, '$' COLUMNS (a INT PATH '$.a', b VARCHAR(10) PATH '$.b')) AS jt;" }
+      - { id: json_table_literal, sql: "SELECT * FROM JSON_TABLE('{\"a\": 1}', '$' COLUMNS (a INT PATH '$.a')) AS jt;" }
+      - { id: json_table_ordinality, sql: "SELECT * FROM JSON_TABLE('[1,2]', '$[*]' COLUMNS (n FOR ORDINALITY, v INT PATH '$')) AS jt;" }
+      - { id: json_table_column_behaviors, sql: "SELECT * FROM JSON_TABLE('{\"a\": 1}', '$' COLUMNS (a INT PATH '$.a' DEFAULT 0 ON EMPTY ERROR ON ERROR)) AS jt;" }
+      - { id: json_table_formatted, sql: "SELECT * FROM JSON_TABLE('{\"a\": [1]}', '$' COLUMNS (a NVARCHAR(50) FORMAT JSON PATH '$.a' WITH ARRAY WRAPPER)) AS jt;" }
+      - { id: json_table_nested, sql: "SELECT * FROM JSON_TABLE('{\"a\": [{\"b\": 1}]}', '$' COLUMNS (NESTED PATH '$.a[*]' COLUMNS (b INT PATH '$.b'))) AS jt;" }
+      - { id: json_table_error_behavior, sql: "SELECT * FROM JSON_TABLE('{\"a\": 1}', '$' COLUMNS (a INT PATH '$.a') ERROR ON ERROR) AS jt;" }
+      - { id: json_table_lateral_column, sql: "SELECT jt.a FROM t, JSON_TABLE(t.j, '$' COLUMNS (a INT PATH '$.a')) AS jt;" }
+
+  - id: c_array_functions
+    name: Array functions and expressions
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767
+    tier: medium
+    probes:
+      - { id: array_constructor, sql: "SELECT ARRAY(1, 2, 3) FROM DUMMY;" }
+      - { id: cardinality, sql: "SELECT CARDINALITY(ARRAY(1, 2, 3)) FROM DUMMY;" }
+      - { id: member_at, sql: "SELECT MEMBER_AT(ARRAY(1, 2, 3), 2) FROM DUMMY;" }
+      - { id: subarray, sql: "SELECT SUBARRAY(ARRAY(1, 2, 3), 1, 2) FROM DUMMY;" }
+      - { id: trim_array, sql: "SELECT TRIM_ARRAY(ARRAY(1, 2, 3), 1) FROM DUMMY;" }
+      - { id: member_of, sql: "SELECT 1 FROM DUMMY WHERE 2 MEMBER OF ARRAY(1, 2, 3);" }
+      - { id: not_member_of, sql: "SELECT 1 FROM DUMMY WHERE 10 NOT MEMBER OF ARRAY(1, 2, 3);" }
+      - { id: array_column_member_of, sql: "SELECT idx FROM t WHERE 10 MEMBER OF val;" }
+      - { id: array_element_access, sql: "DO BEGIN DECLARE arr INTEGER ARRAY = ARRAY(1, 2, 3); SELECT :arr[1] FROM DUMMY; END;" }
+      - { id: array_concat, sql: "DO BEGIN DECLARE a INTEGER ARRAY = ARRAY(1); DECLARE b INTEGER ARRAY = ARRAY(2); SELECT CARDINALITY(:a || :b) FROM DUMMY; END;" }
+      - { id: unnest_array, sql: "SELECT * FROM UNNEST(ARRAY(1, 2, 3)) AS u(v);" }
+      - { id: unnest_with_ordinality, sql: "SELECT * FROM UNNEST(ARRAY(1, 2, 3)) WITH ORDINALITY AS u(v, n);" }
+    note: Array functions are listed in the Array Functions chapter; ARRAY(...) constructor and UNNEST are SQLScript constructs. HANA 2.0 has no struct/map constructors and no lambda expressions.
+
+  - id: c_aggregate_array_agg
+    name: ARRAY_AGG in SQLScript
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767
+    tier: low
+    probes:
+      - { id: array_agg_basic, sql: "DO BEGIN DECLARE arr INTEGER ARRAY; arr = ARRAY_AGG(:tv.a); END;" }
+      - { id: array_agg_order, sql: "DO BEGIN DECLARE arr INTEGER ARRAY; arr = ARRAY_AGG(:tv.a ORDER BY b DESC); END;" }
+    note: syntax page unreachable; ARRAY_AGG is a SQLScript table-variable operator not in the SQL Reference function lists.
+
+  - id: c_fn_numeric
+    name: Numeric functions
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767
+    tier: medium
+    probes:
+      - { id: abs_round_floor_ceil, sql: "SELECT ABS(a), ROUND(a, 2), FLOOR(a), CEIL(a) FROM t;" }
+      - { id: round_mode, sql: "SELECT ROUND(a, 2, ROUND_HALF_EVEN) FROM t;" }
+      - { id: math, sql: "SELECT POWER(a, 2), SQRT(a), EXP(a), LN(a), LOG(2, a), MOD(a, 3), SIGN(a) FROM t;" }
+      - { id: trig, sql: "SELECT SIN(a), COS(a), TAN(a), ASIN(a), ACOS(a), ATAN(a), ATAN2(a, b), SINH(a), COSH(a), TANH(a), COT(a) FROM t;" }
+      - { id: bit_functions, sql: "SELECT BITAND(a, b), BITOR(a, b), BITXOR(a, b), BITNOT(a), BITCOUNT(a), BITSET(a, 1), BITUNSET(a, 1) FROM t;" }
+      - { id: rand_ndiv0, sql: "SELECT RAND(), NDIV0(a, b), UMINUS(a) FROM t;" }
+
+  - id: c_fn_string
+    name: String functions
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767
+    tier: high
+    probes:
+      - { id: basic_string, sql: "SELECT CONCAT(a, b), LENGTH(a), UPPER(a), LOWER(a), UCASE(a), LCASE(a), INITCAP(a) FROM t;" }
+      - { id: left_right_pad, sql: "SELECT LEFT(a, 2), RIGHT(a, 2), LPAD(a, 10, '*'), RPAD(a, 10, '*'), LTRIM(a), RTRIM(a, 'x') FROM t;" }
+      - { id: substring, sql: "SELECT SUBSTRING(a, 2, 3), SUBSTR_BEFORE(a, ','), SUBSTR_AFTER(a, ',') FROM t;" }
+      - { id: locate_replace, sql: "SELECT LOCATE(a, 'x'), REPLACE(a, 'x', 'y'), ASCII(a), CHAR(65), UNICODE(a), NCHAR(65) FROM t;" }
+      - { id: concat_operator, sql: "SELECT a || b FROM t;" }
+      - { id: trim_plain, sql: "SELECT TRIM(a) FROM t;" }
+      - { id: trim_both, sql: "SELECT TRIM(BOTH 'x' FROM a) FROM t;" }
+      - { id: trim_leading, sql: "SELECT TRIM(LEADING 'x' FROM a) FROM t;" }
+      - { id: trim_trailing, sql: "SELECT TRIM(TRAILING 'x' FROM a) FROM t;" }
+      - { id: trim_from_only, sql: "SELECT TRIM('x' FROM a) FROM t;" }
+      - { id: hex_conversion, sql: "SELECT BINTOHEX(a), HEXTOBIN(a), BINTOSTR(a), STRTOBIN(a), HEXTONUM(a), NUMTOHEX(a) FROM t;" }
+      - { id: misc_string, sql: "SELECT SOUNDEX(a), HAMMING_DISTANCE(a, b), NORMALIZE(a, 'NFC'), CONCAT_NAZ(a, b) FROM t;" }
+      - { id: abap_functions, sql: "SELECT ABAP_ALPHANUM(a, 10), ABAP_LOWER(a), ABAP_UPPER(a), ABAP_NUMC(a, 10) FROM t;" }
+      - { id: locate_regexpr, sql: "SELECT LOCATE_REGEXPR('a+' IN b) FROM t;" }
+      - { id: locate_regexpr_options, sql: "SELECT LOCATE_REGEXPR(START 'a+' FLAG 'i' IN b FROM 2 OCCURRENCE 1 GROUP 1) FROM t;" }
+      - { id: occurrences_regexpr, sql: "SELECT OCCURRENCES_REGEXPR('a' FLAG 'i' IN b FROM 1) FROM t;" }
+      - { id: replace_regexpr, sql: "SELECT REPLACE_REGEXPR('a+' FLAG 'i' IN b WITH 'x' FROM 1 OCCURRENCE ALL) FROM t;" }
+      - { id: substring_regexpr, sql: "SELECT SUBSTRING_REGEXPR('(a+)' FLAG 'i' IN b FROM 1 OCCURRENCE 1 GROUP 1) FROM t;" }
+      - { id: xmltable, sql: "SELECT * FROM XMLTABLE('/a/b' PASSING x COLUMNS c INT PATH 'c') AS xt;", note: "syntax page unreachable in detail; form from the XMLTABLE function topic title only" }
+
+  - id: c_fn_datetime
+    name: Datetime functions
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767
+    tier: high
+    probes:
+      - { id: current_values, sql: "SELECT CURRENT_DATE, CURRENT_TIME, CURRENT_TIMESTAMP, CURRENT_UTCDATE, CURRENT_UTCTIME, CURRENT_UTCTIMESTAMP FROM DUMMY;" }
+      - { id: add_functions, sql: "SELECT ADD_DAYS(d, 1), ADD_MONTHS(d, 1), ADD_YEARS(d, 1), ADD_SECONDS(d, 10), ADD_WORKDAYS('FI', d, 5, 'CLNT') FROM t;" }
+      - { id: diff_functions, sql: "SELECT DAYS_BETWEEN(d1, d2), MONTHS_BETWEEN(d1, d2), SECONDS_BETWEEN(d1, d2), NANO100_BETWEEN(d1, d2), YEARS_BETWEEN(d1, d2) FROM t;" }
+      - { id: part_functions, sql: "SELECT YEAR(d), MONTH(d), DAYOFMONTH(d), DAYOFYEAR(d), HOUR(d), MINUTE(d), SECOND(d), WEEK(d), ISOWEEK(d), QUARTER(d), WEEKDAY(d), DAYNAME(d), MONTHNAME(d) FROM t;" }
+      - { id: extract_year, sql: "SELECT EXTRACT(YEAR FROM d) FROM t;" }
+      - { id: extract_month, sql: "SELECT EXTRACT(MONTH FROM d) FROM t;" }
+      - { id: last_day_next_day, sql: "SELECT LAST_DAY(d), NEXT_DAY(d), UTCTOLOCAL(d, 'CET'), LOCALTOUTC(d, 'CET') FROM t;" }
+      - { id: now_and_workdays, sql: "SELECT NOW(), WORKDAYS_BETWEEN('FI', d1, d2, 'CLNT') FROM t;" }
+      - { id: generate_series_fn, sql: "SELECT * FROM SERIES_GENERATE_DATE('INTERVAL 1 DAY', '2024-01-01', '2024-01-10');", note: "SERIES_GENERATE_<type> family; see Series Data Functions" }
+
+  - id: c_fn_conversion
+    name: Data type conversion functions
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767
+    tier: high
+    probes:
+      - { id: to_char_family, sql: "SELECT TO_VARCHAR(a), TO_NVARCHAR(a), TO_ALPHANUM(a), TO_CLOB(a), TO_NCLOB(a), TO_BLOB(a), TO_BINARY(a) FROM t;" }
+      - { id: to_varchar_format, sql: "SELECT TO_VARCHAR(d, 'YYYY-MM-DD'), TO_NVARCHAR(n, '999.99') FROM t;" }
+      - { id: to_number_family, sql: "SELECT TO_INT(a), TO_INTEGER(a), TO_BIGINT(a), TO_SMALLINT(a), TO_TINYINT(a), TO_DECIMAL(a, 10, 2), TO_DOUBLE(a), TO_REAL(a), TO_SMALLDECIMAL(a) FROM t;" }
+      - { id: to_datetime_family, sql: "SELECT TO_DATE(a), TO_TIME(a), TO_TIMESTAMP(a), TO_SECONDDATE(a), TO_DATS(a), TO_DATE(a, 'YYYY-MM-DD') FROM t;" }
+      - { id: to_json_misc, sql: "SELECT TO_BOOLEAN(a), TO_JSON_BOOLEAN(a), TO_FIXEDCHAR(a, 10), TO_VARBINARY(a) FROM t;" }
+      - { id: cast_function, sql: "SELECT CAST(a AS NVARCHAR(10)) FROM t;" }
+      - { id: cast_to_timestamp, sql: "SELECT CAST('2024-01-01' AS TIMESTAMP) FROM DUMMY;" }
+
+  - id: c_fn_misc
+    name: Miscellaneous functions
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767
+    tier: high
+    probes:
+      - { id: null_handling, sql: "SELECT COALESCE(a, b, 0), IFNULL(a, 0), NULLIF(a, 0) FROM t;" }
+      - { id: greatest_least, sql: "SELECT GREATEST(a, b, c), LEAST(a, b, c) FROM t;" }
+      - { id: map_function, sql: "SELECT MAP(a, 1, 'one', 2, 'two', 'other') FROM t;" }
+      - { id: width_bucket, sql: "SELECT WIDTH_BUCKET(a, 0, 100, 10) FROM t;" }
+      - { id: session_functions, sql: "SELECT CURRENT_USER, SESSION_USER, CURRENT_SCHEMA, CURRENT_CONNECTION, SESSION_CONTEXT('APPLICATIONUSER') FROM DUMMY;" }
+      - { id: uuid_hash, sql: "SELECT SYSUUID, NEWUID(), HASH_MD5(TO_BINARY(a)), HASH_SHA256(TO_BINARY(a)) FROM t;" }
+      - { id: convert_currency, sql: "SELECT CONVERT_CURRENCY(AMOUNT => a, SOURCE_UNIT => 'EUR', SCHEMA => 'S', TARGET_UNIT => 'USD', REFERENCE_DATE => d, CLIENT => '000', ERROR_HANDLING => 'set to null') FROM t;", note: "Named-argument call syntax with =>" }
+      - { id: convert_unit, sql: "SELECT CONVERT_UNIT(QUANTITY => a, SOURCE_UNIT => 'KG', SCHEMA => 'S', TARGET_UNIT => 'G', CLIENT => '000') FROM t;" }
+      - { id: allow_precision_loss, sql: "SELECT ALLOW_PRECISION_LOSS(SUM(a)) FROM t;" }
+      - { id: xmlextract, sql: "SELECT XMLEXTRACT(x, '/a/b'), XMLEXTRACTVALUE(x, '/a/b') FROM t;" }
+      - { id: record_functions, sql: "SELECT RECORD_ID(), RECORD_COMMIT_TIMESTAMP() FROM t;" }
+
+  - id: c_fn_fulltext_series_hierarchy
+    name: Fulltext, series and hierarchy functions
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767
+    tier: low
+    probes:
+      - { id: contains_score, sql: "SELECT SCORE() FROM t WHERE CONTAINS(a, 'word', FUZZY(0.8));" }
+      - { id: series_generate_integer, sql: "SELECT * FROM SERIES_GENERATE_INTEGER(1, 0, 10);" }
+      - { id: series_round, sql: "SELECT SERIES_ROUND(d, 'INTERVAL 1 DAY') FROM t;" }
+      - { id: hierarchy_generator, sql: "SELECT * FROM HIERARCHY(SOURCE (SELECT id AS node_id, pid AS parent_id FROM t));" }
+      - { id: hierarchy_descendants, sql: "SELECT * FROM HIERARCHY_DESCENDANTS(SOURCE h START WHERE node_id = 1);" }
+      - { id: hierarchy_composite_id, sql: "SELECT HIERARCHY_COMPOSITE_ID(a, b) FROM t;" }
+    note: syntax page unreachable for these low-tier functions; probes written from the function list and descriptions.
