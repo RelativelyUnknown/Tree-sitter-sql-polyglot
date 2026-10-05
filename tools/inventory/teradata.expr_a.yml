@@ -1,0 +1,200 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements: []
+
+expressions:
+  - id: a_integer_literals
+    name: Integer literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/_AEtGvWw9taKjoSE9IEjmg
+    tier: high
+    probes:
+      - { id: unsigned, sql: "SELECT 127, 32767, 2147483647;" }
+      - { id: signed, sql: "SELECT -128, +36, -2147483648;" }
+    examples:
+      - |-
+        SELECT ProdID
+        FROM PartsTbl
+        WHERE CustID = CAST(9876543210 AS NUMBER);
+
+  - id: a_hex_integer_literals
+    name: Hexadecimal integer literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/tjgBpU1Z~vZvl7qVhrc9bg
+    tier: medium
+    probes:
+      - { id: default_x, sql: "SELECT '1F'X;" }
+      - { id: xi, sql: "SELECT '1F'XI;" }
+      - { id: x1, sql: "SELECT '7F'X1;" }
+      - { id: x2, sql: "SELECT 'FFFF'X2;" }
+      - { id: x4, sql: "SELECT '7FFFFFFF'X4;" }
+      - { id: x8, sql: "SELECT '7FFFFFFFFFFFFFFF'X8;" }
+    # Syntax block lists the suffix as X [ | [1|2|4|8] ]; XI, XI1, XI2, XI4, XI8 appear in the table on the same page.
+  - id: a_decimal_literals
+    name: Decimal literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/NirVysg~lrdbt4kmK6ddYQ
+    tier: high
+    probes:
+      - { id: n_dot_n, sql: "SELECT 3.14159, -88.234, +0.5;" }
+      - { id: trailing_point, sql: "SELECT 253.;" }
+      - { id: leading_point, sql: "SELECT .29;" }
+      - { id: large_integer, sql: "SELECT 2147483650;" }
+
+  - id: a_float_literals
+    name: Floating point literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/KqSqSmNLjf4HTX4kt9WDmA
+    tier: high
+    probes:
+      - { id: ne, sql: "SELECT 1E1, 18E-3;" }
+      - { id: n_dot_ne, sql: "SELECT 1.4E6, -2.5E+3;" }
+      - { id: n_dot_e, sql: "SELECT 5.E2;" }
+      - { id: dot_ne, sql: "SELECT .5E2;" }
+
+  - id: a_hex_byte_literals
+    name: Hexadecimal byte literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/NBniLybWQuLx8U~C7k37YQ
+    tier: medium
+    probes:
+      - { id: xb, sql: "SELECT '7879'XB;" }
+      - { id: xbf, sql: "SELECT '7879'XBF;" }
+      - { id: xbv, sql: "SELECT '7879'XBV;" }
+      - { id: in_where, sql: "SELECT IDVal FROM bvalues WHERE CodeVal = '7879'XB;" }
+    examples:
+      - "INSERT bvalues (112193, '7879'XB) ;"
+      - "SELECT IDVal FROM bvalues WHERE CodeVal = '7879'XB ;"
+
+  - id: a_character_literals
+    name: Character string literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/mYj2tdKe05hEag~9xfvLxA
+    tier: high
+    probes:
+      - { id: plain, sql: "SELECT 'abc';" }
+      - { id: empty, sql: "SELECT '';" }
+      - { id: embedded_apostrophe, sql: "SELECT 'it''s';" }
+      - { id: multiline, sql: "SELECT 'line one\nline two';" }
+      - { id: adjacent_concatenated, sql: "SELECT 'abc' 'def';" }
+      - { id: latin, sql: "SELECT _Latin 'abc';" }
+      - { id: unicode, sql: "SELECT _Unicode 'abc';" }
+      - { id: kanjisjis, sql: "SELECT _KanjiSJIS 'abc';" }
+      - { id: graphic, sql: "SELECT _Graphic 'abc';" }
+
+  - id: a_unicode_delimited_literals
+    name: Unicode delimited character literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/rnCpkbcA9hINCo0NolDsfQ
+    tier: medium
+    probes:
+      - { id: u_amp, sql: "SELECT U&'abc \\0041' UESCAPE '\\';" }
+      - { id: u_amp_plus, sql: "SELECT U&'abc \\+000041' UESCAPE '\\';" }
+      - { id: with_charset_prefix, sql: "SELECT _Unicode U&'abc \\0041' UESCAPE '\\';" }
+      - { id: custom_escape, sql: "SELECT U&'abc !0041' UESCAPE '!';" }
+      - { id: multiple_bodies, sql: "SELECT U&'abc' 'def' UESCAPE '\\';" }
+
+  - id: a_hex_character_literals
+    name: Hexadecimal character literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/sl8hHPiTz0mKIsynRbgzKg
+    tier: medium
+    probes:
+      - { id: xc, sql: "SELECT '41424344'XC;" }
+      - { id: xcv, sql: "SELECT '41424344'XCV;" }
+      - { id: xcf, sql: "SELECT '41424344'XCF;" }
+      - { id: latin_prefix, sql: "SELECT _Latin '41424344'XC;" }
+      - { id: unicode_prefix, sql: "SELECT _Unicode '00410042'XCV;" }
+
+  - id: a_date_literals
+    name: DATE literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/s5ccvSDFqSYM44fk6g3w2g
+    tier: high
+    probes:
+      - { id: date, sql: "SELECT DATE '1998-01-06';" }
+      - { id: in_where, sql: "SELECT * FROM t WHERE startdate = DATE '1998-01-06';" }
+    examples:
+      - "SELECT * FROM CLASSES WHERE startdate = DATE '1998-01-06';"
+
+  - id: a_time_literals
+    name: TIME literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/ykr_whqxUklmDAuF5cOkeg
+    tier: high
+    probes:
+      - { id: hh_mi_ss, sql: "SELECT TIME '15:00:00';" }
+      - { id: with_zone, sql: "SELECT TIME '15:00:00-08:00';" }
+      - { id: fractional, sql: "SELECT TIME '15:00:00.123456';" }
+      - { id: fractional_zone, sql: "SELECT TIME '15:00:00.123456+05:30';" }
+
+  - id: a_timestamp_literals
+    name: TIMESTAMP literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/KnqgEoLjGBBMAj~7Qfll9w
+    tier: high
+    probes:
+      - { id: plain, sql: "SELECT TIMESTAMP '1999-07-01 15:00:00';" }
+      - { id: with_zone, sql: "SELECT TIMESTAMP '1999-07-01 15:00:00-08:00';" }
+      - { id: fractional, sql: "SELECT TIMESTAMP '1999-07-01 15:00:00.123456';" }
+      - { id: fractional_zone, sql: "SELECT TIMESTAMP '1999-07-01 15:00:00.123456+01:00';" }
+    examples:
+      - "SELECT TIMESTAMP '1999-07-01 15:00:00-08:00';"
+
+  - id: a_interval_literals
+    name: INTERVAL literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/jvYWH7wa0op34PmORYY4~A
+    tier: high
+    probes:
+      - { id: year, sql: "SELECT INTERVAL '2' YEAR;" }
+      - { id: year_negative, sql: "SELECT INTERVAL -'2' YEAR;" }
+      - { id: year_to_month, sql: "SELECT INTERVAL '2-06' YEAR TO MONTH;" }
+      - { id: month, sql: "SELECT INTERVAL '18' MONTH;" }
+      - { id: day, sql: "SELECT INTERVAL '30' DAY;" }
+      - { id: day_to_hour, sql: "SELECT INTERVAL '30 12' DAY TO HOUR;" }
+      - { id: day_to_minute, sql: "SELECT INTERVAL '30 12:30' DAY TO MINUTE;" }
+      - { id: day_to_second, sql: "SELECT INTERVAL '30 12:30:30.5' DAY TO SECOND;" }
+      - { id: hour, sql: "SELECT INTERVAL '12' HOUR;" }
+      - { id: hour_to_minute, sql: "SELECT INTERVAL '12:30' HOUR TO MINUTE;" }
+      - { id: hour_to_second, sql: "SELECT INTERVAL '12:30:30' HOUR TO SECOND;" }
+      - { id: minute, sql: "SELECT INTERVAL '30' MINUTE;" }
+      - { id: minute_to_second, sql: "SELECT INTERVAL '30:30.5' MINUTE TO SECOND;" }
+      - { id: second, sql: "SELECT INTERVAL '30.5' SECOND;" }
+      - { id: arithmetic, sql: "SELECT CURRENT_DATE + INTERVAL '1' DAY;" }
+    examples:
+      - "SELECT INTERVAL -'2' YEAR + CURRENT_DATE;"
+      - "SELECT INTERVAL '30 12:30:30.5' DAY TO SECOND + CURRENT_TIMESTAMP;"
+
+  - id: a_period_literals
+    name: PERIOD literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/_aPoANwkAW6La0yYkXMiAw
+    tier: medium
+    probes:
+      - { id: date_comma, sql: "SELECT PERIOD '(2005-02-03, 2006-02-04)';" }
+      - { id: date_hyphen, sql: "SELECT PERIOD '(2005-02-03 - 2006-02-04)';" }
+      - { id: date_until_changed, sql: "SELECT PERIOD '(2009-10-01, UNTIL_CHANGED)';" }
+      - { id: date_until_closed, sql: "SELECT PERIOD '(2009-10-01, UNTIL_CLOSED)';" }
+      - { id: time, sql: "SELECT PERIOD '(08:00:00, 15:40:00)';" }
+      - { id: time_zone, sql: "SELECT PERIOD '(08:00:00-08:00 - 15:40:00-05:00)';" }
+      - { id: timestamp, sql: "SELECT PERIOD '(2005-02-03 08:00:00, 2006-02-04 15:40:00)';" }
+    examples:
+      - |-
+        INSERT INTO Policy
+           (Policy_ID, Customer_ID, Policy_Type, Policy_Details, Validity)
+           VALUES (497201, 304779902, 'AU', 'STD-CH-524-WXY-00',
+                   PERIOD '(2005-02-03, 2006-02-04)');
+      - |-
+        INSERT INTO Policy
+           (Policy_ID, Customer_ID, Policy_Type, Policy_Details, Validity)
+           VALUES (541008, 246824626, 'AU', 'STD-CH-345-NXY-00',
+                   PERIOD '(2009-10-01, UNTIL_CHANGED)');
+      - |-
+        UPDATE schedule
+           SET flight_period = PERIOD '(08:00:00-08:00 - 15:40:00-05:00)'
+           WHERE flight_no = 243;
+
+  - id: a_null_literal
+    name: NULL keyword as a literal
+    doc: https://docs.teradata.com/reader/nBhFLNd2S0RbP2RWE_eByw/qZwPrXdbvNS9IdqfU7DIxA
+    tier: high
+    probes:
+      - { id: select_item, sql: "SELECT NULL;" }
+      - { id: cast_operand, sql: "SELECT CAST (NULL AS DATE);" }
+      - { id: case_result, sql: "SELECT CASE WHEN orders = 10 THEN NULL END FROM sales_tbl;" }
+      - { id: function_operand, sql: "SELECT TYPE(NULL);" }
+    examples:
+      - "SELECT CAST (NULL AS DATE);"
+      - "SELECT CASE WHEN orders = 10 THEN NULL END FROM sales_tbl;"
+      - "SELECT TYPE(NULL);"
