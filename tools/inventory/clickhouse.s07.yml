@@ -1,0 +1,35 @@
+dialect: clickhouse
+engine: ClickHouse
+version: "current docs (2026)"
+source: https://clickhouse.com/docs/sql-reference/statements/
+
+statements:
+  - id: create_index
+    name: CREATE INDEX
+    doc: https://clickhouse.com/docs/sql-reference/statements/create/index
+    tier: high
+    status: not-applicable
+    reason: 'The cited page is only the CREATE overview ("CREATE queries create (for example) new databases, tables and views") and its syntax list has no CREATE INDEX form. Data skipping indices are documented only as ALTER TABLE ... ADD INDEX, which belongs to the ALTER statement inventory.'
+
+  - id: create_function
+    name: CREATE FUNCTION
+    doc: https://clickhouse.com/docs/sql-reference/statements/create/function
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE FUNCTION f AS (x, k, b) -> k*x + b;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE FUNCTION f AS (x) -> x + 1;"
+      - id: on_cluster
+        sql: "CREATE FUNCTION f ON CLUSTER c AS (x) -> x + 1;"
+      - id: or_replace_on_cluster
+        sql: "CREATE OR REPLACE FUNCTION f ON CLUSTER c AS (x, y) -> x + y;"
+      - id: single_param_no_parens
+        sql: "CREATE FUNCTION f AS x -> x;"
+        note: the doc example "AS frame -> frame" uses a bare parameter without parentheses
+      - id: conditional_body
+        sql: "CREATE FUNCTION f AS (n) -> if(n % 2, 'odd', 'even');"
+    examples:
+      - "CREATE FUNCTION linear_equation AS (x, k, b) -> k*x + b;"
+      - "CREATE FUNCTION parity_str AS (n) -> if(n % 2, 'odd', 'even');"
+      - "CREATE FUNCTION exampleReplaceFunction AS frame -> frame;"
