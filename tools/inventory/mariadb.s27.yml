@@ -1,0 +1,62 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements:
+  - id: close
+    name: CLOSE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/programmatic-compound-statements/programmatic-compound-statements-cursors/close
+    tier: high
+    probes:
+      - id: close_cursor
+        sql: "CLOSE cur;"
+
+  - id: signal
+    name: SIGNAL
+    doc: https://mariadb.com/docs/server/reference/sql-statements/programmatic-compound-statements/signal
+    tier: high
+    probes:
+      - id: sqlstate
+        sql: "SIGNAL SQLSTATE '45000';"
+      - id: sqlstate_value
+        sql: "SIGNAL SQLSTATE VALUE '45000';"
+      - id: condition_name
+        sql: "SIGNAL cond_name;"
+      - id: set_message_text
+        sql: "SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'error';"
+      - id: set_multiple_properties
+        sql: "SIGNAL SQLSTATE '45000' SET MYSQL_ERRNO = 30001, MESSAGE_TEXT = 'error';"
+      - id: set_class_subclass_origin
+        sql: "SIGNAL SQLSTATE '45000' SET CLASS_ORIGIN = 'a', SUBCLASS_ORIGIN = 'b';"
+      - id: set_constraint_properties
+        sql: "SIGNAL SQLSTATE '45000' SET CONSTRAINT_CATALOG = 'a', CONSTRAINT_SCHEMA = 'b', CONSTRAINT_NAME = 'c';"
+      - id: set_object_name_properties
+        sql: "SIGNAL SQLSTATE '45000' SET CATALOG_NAME = 'a', SCHEMA_NAME = 'b', TABLE_NAME = 't', COLUMN_NAME = 'c', CURSOR_NAME = 'cur';"
+      - id: set_user_variable_value
+        sql: "SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = @errmsg;"
+      - id: set_charset_conversion
+        sql: "SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = _utf8'Hello, world!';"
+      - id: condition_name_set
+        sql: "SIGNAL cond_name SET MESSAGE_TEXT = 'error';"
+    examples:
+      - "SIGNAL SQLSTATE '01000';"
+      - |-
+        CREATE PROCEDURE test_error(x INT)
+        BEGIN
+          DECLARE errno SMALLINT UNSIGNED DEFAULT 31001;
+          SET @errmsg = 'Hello, world!';
+          IF x = 1 THEN
+            SIGNAL SQLSTATE '45000' SET MYSQL_ERRNO = errno, MESSAGE_TEXT = @errmsg;
+          ELSE
+            SIGNAL SQLSTATE '45000' SET MYSQL_ERRNO = errno, MESSAGE_TEXT = _utf8'Hello, world!';
+          END IF;
+        END;
+      - |-
+        CREATE PROCEDURE test_error(n INT)
+        BEGIN
+          DECLARE `too_big` CONDITION FOR SQLSTATE '45000';
+          IF n > 10 THEN
+            SIGNAL `too_big`;
+          END IF;
+        END;
