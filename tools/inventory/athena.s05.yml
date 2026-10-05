@@ -1,0 +1,143 @@
+dialect: athena
+engine: Amazon Athena
+version: "engine version 3 (Trino-based DML, Hive-style DDL)"
+source: https://docs.aws.amazon.com/athena/latest/ug/ddl-reference.html ; https://docs.aws.amazon.com/athena/latest/ug/dml-queries-functions-operators.html
+
+statements:
+  - id: alter_view_dialect
+    name: ALTER VIEW DIALECT
+    doc: https://docs.aws.amazon.com/athena/latest/ug/alter-view-dialect.html
+    tier: high
+    probes:
+      - id: add_dialect
+        sql: "ALTER VIEW v ADD DIALECT AS SELECT c FROM t;"
+      - id: update_dialect
+        sql: "ALTER VIEW v UPDATE DIALECT AS SELECT c FROM t;"
+      - id: force_add_dialect
+        sql: "ALTER VIEW v FORCE ADD DIALECT AS SELECT c FROM t;"
+      - id: force_update_dialect
+        sql: "ALTER VIEW v FORCE UPDATE DIALECT AS SELECT c FROM t;"
+      - id: dialect_as_no_modifier
+        sql: "ALTER VIEW v DIALECT AS SELECT c FROM t;"
+      - id: drop_dialect
+        sql: "ALTER VIEW v DROP DIALECT;"
+      - id: drop_dialect_no_keyword
+        sql: "ALTER VIEW v DIALECT;"
+        note: Syntax block lists [ DROP ] as optional in the second form (ALTER VIEW name [ DROP ] DIALECT).
+    examples:
+      - "ALTER VIEW orders_by_date FORCE ADD DIALECT AS SELECT orderdate, sum(totalprice) AS price FROM orders GROUP BY orderdate;"
+      - "ALTER VIEW orders_by_date FORCE UPDATE DIALECT AS SELECT orderdate, sum(totalprice) AS price FROM orders GROUP BY orderdate;"
+      - "ALTER VIEW orders_by_date DROP DIALECT;"
+
+  - id: create_table
+    name: CREATE TABLE
+    doc: https://docs.aws.amazon.com/athena/latest/ug/create-table.html
+    tier: high
+    probes:
+      - id: external_basic
+        sql: "CREATE EXTERNAL TABLE t (c string) LOCATION 's3://bucket/path/';"
+      - id: if_not_exists
+        sql: "CREATE EXTERNAL TABLE IF NOT EXISTS t (c string) LOCATION 's3://bucket/path/';"
+      - id: qualified_name
+        sql: "CREATE EXTERNAL TABLE db.t (c string) LOCATION 's3://bucket/path/';"
+      - id: quoted_name
+        sql: 'CREATE EXTERNAL TABLE "table123" (c string) LOCATION ''s3://bucket/path/'';'
+      - id: backtick_names
+        sql: "CREATE EXTERNAL TABLE `_t` (`_c` string) LOCATION 's3://bucket/path/';"
+      - id: no_column_list
+        sql: "CREATE EXTERNAL TABLE t LOCATION 's3://bucket/path/';"
+      - id: column_comment
+        sql: "CREATE EXTERNAL TABLE t (c string COMMENT 'col comment', d int) LOCATION 's3://bucket/path/';"
+      - id: table_comment
+        sql: "CREATE EXTERNAL TABLE t (c string) COMMENT 'table comment' LOCATION 's3://bucket/path/';"
+      - id: scalar_types
+        sql: "CREATE EXTERNAL TABLE t (a boolean, b tinyint, c smallint, d int, e bigint, f double, g float, h binary, i date, j timestamp, k string) LOCATION 's3://bucket/path/';"
+      - id: decimal_types
+        sql: "CREATE EXTERNAL TABLE t (a decimal, b decimal(15), c decimal(11,5)) LOCATION 's3://bucket/path/';"
+      - id: char_varchar_types
+        sql: "CREATE EXTERNAL TABLE t (a char(10), b varchar(10)) LOCATION 's3://bucket/path/';"
+      - id: array_type
+        sql: "CREATE EXTERNAL TABLE t (a array<string>) LOCATION 's3://bucket/path/';"
+      - id: map_type
+        sql: "CREATE EXTERNAL TABLE t (a map<string, int>) LOCATION 's3://bucket/path/';"
+      - id: struct_type
+        sql: "CREATE EXTERNAL TABLE t (a struct<x:int, y:string>) LOCATION 's3://bucket/path/';"
+      - id: struct_field_comment
+        sql: "CREATE EXTERNAL TABLE t (a struct<x:int COMMENT 'x field', y:string>) LOCATION 's3://bucket/path/';"
+      - id: nested_complex_types
+        sql: "CREATE EXTERNAL TABLE t (a array<struct<x:int, y:map<string, array<int>>>>) LOCATION 's3://bucket/path/';"
+      - id: partitioned_by
+        sql: "CREATE EXTERNAL TABLE t (c string) PARTITIONED BY (p string) LOCATION 's3://bucket/path/';"
+      - id: partitioned_by_multi_comment
+        sql: "CREATE EXTERNAL TABLE t (c string) PARTITIONED BY (p1 string COMMENT 'year', p2 int) LOCATION 's3://bucket/path/';"
+      - id: clustered_by
+        sql: "CREATE EXTERNAL TABLE t (c string, d int) CLUSTERED BY (c, d) INTO 4 BUCKETS LOCATION 's3://bucket/path/';"
+      - id: partitioned_clustered
+        sql: "CREATE EXTERNAL TABLE t (c string) PARTITIONED BY (p string) CLUSTERED BY (c) INTO 4 BUCKETS LOCATION 's3://bucket/path/';"
+      - id: row_format_delimited
+        sql: "CREATE EXTERNAL TABLE t (c string) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE LOCATION 's3://bucket/path/';"
+      - id: row_format_fields_escaped
+        sql: "CREATE EXTERNAL TABLE t (c string) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' ESCAPED BY '\\\\' STORED AS TEXTFILE LOCATION 's3://bucket/path/';"
+      - id: row_format_collection_items
+        sql: "CREATE EXTERNAL TABLE t (c array<string>) ROW FORMAT DELIMITED COLLECTION ITEMS TERMINATED BY '|' STORED AS TEXTFILE LOCATION 's3://bucket/path/';"
+      - id: row_format_map_keys
+        sql: "CREATE EXTERNAL TABLE t (c map<string, int>) ROW FORMAT DELIMITED MAP KEYS TERMINATED BY ':' STORED AS TEXTFILE LOCATION 's3://bucket/path/';"
+      - id: row_format_lines
+        sql: "CREATE EXTERNAL TABLE t (c string) ROW FORMAT DELIMITED LINES TERMINATED BY '\\n' STORED AS TEXTFILE LOCATION 's3://bucket/path/';"
+      - id: row_format_null_defined
+        sql: "CREATE EXTERNAL TABLE t (c string) ROW FORMAT DELIMITED NULL DEFINED AS '\\\\N' STORED AS TEXTFILE LOCATION 's3://bucket/path/';"
+      - id: row_format_all_delimited
+        sql: "CREATE EXTERNAL TABLE t (c string) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' ESCAPED BY '\\\\' COLLECTION ITEMS TERMINATED BY '|' MAP KEYS TERMINATED BY ':' LINES TERMINATED BY '\\n' NULL DEFINED AS '\\\\N' STORED AS TEXTFILE LOCATION 's3://bucket/path/';"
+      - id: row_format_serde
+        sql: "CREATE EXTERNAL TABLE t (c string) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde' LOCATION 's3://bucket/path/';"
+      - id: serde_with_serdeproperties
+        sql: "CREATE EXTERNAL TABLE t (c string) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde' WITH SERDEPROPERTIES ('separatorChar' = ',', 'quoteChar' = '\"') LOCATION 's3://bucket/path/';"
+      - id: with_serdeproperties_only
+        sql: "CREATE EXTERNAL TABLE t (c string) WITH SERDEPROPERTIES ('field.delim' = ',') LOCATION 's3://bucket/path/';"
+      - id: stored_as_sequencefile
+        sql: "CREATE EXTERNAL TABLE t (c string) STORED AS SEQUENCEFILE LOCATION 's3://bucket/path/';"
+      - id: stored_as_rcfile
+        sql: "CREATE EXTERNAL TABLE t (c string) STORED AS RCFILE LOCATION 's3://bucket/path/';"
+      - id: stored_as_orc
+        sql: "CREATE EXTERNAL TABLE t (c string) STORED AS ORC LOCATION 's3://bucket/path/';"
+      - id: stored_as_parquet
+        sql: "CREATE EXTERNAL TABLE t (c string) STORED AS PARQUET LOCATION 's3://bucket/path/';"
+      - id: stored_as_avro
+        sql: "CREATE EXTERNAL TABLE t (c string) STORED AS AVRO LOCATION 's3://bucket/path/';"
+      - id: stored_as_ion
+        sql: "CREATE EXTERNAL TABLE t (c string) STORED AS ION LOCATION 's3://bucket/path/';"
+      - id: stored_as_inputformat_outputformat
+        sql: "CREATE EXTERNAL TABLE t (c string) STORED AS INPUTFORMAT 'org.apache.hadoop.mapred.TextInputFormat' OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat' LOCATION 's3://bucket/path/';"
+      - id: serde_stored_as
+        sql: "CREATE EXTERNAL TABLE t (c string) ROW FORMAT SERDE 'org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe' STORED AS PARQUET LOCATION 's3://bucket/path/';"
+      - id: location_folder
+        sql: "CREATE EXTERNAL TABLE t (c string) STORED AS PARQUET LOCATION 's3://bucket/folder/sub/';"
+      - id: tblproperties_basic
+        sql: "CREATE EXTERNAL TABLE t (c string) LOCATION 's3://bucket/path/' TBLPROPERTIES ('classification' = 'csv');"
+      - id: tblproperties_encryption
+        sql: "CREATE EXTERNAL TABLE t (c string) LOCATION 's3://bucket/path/' TBLPROPERTIES ('has_encrypted_data' = 'true', 'encryption_option' = 'SSE_KMS', 'kms_key' = 'arn:aws:kms:us-east-1:111122223333:key/abc');"
+      - id: tblproperties_custom
+        sql: "CREATE EXTERNAL TABLE t (c string) LOCATION 's3://bucket/path/' TBLPROPERTIES ('compression_level' = '5', 'skip.header.line.count' = '1');"
+      - id: tblproperties_unquoted_key
+        sql: "CREATE EXTERNAL TABLE t (c string) LOCATION 's3://bucket/path/' TBLPROPERTIES (prop = 'value');"
+        note: Synopsis shows property_name=property_value without quotes.
+      - id: all_clauses
+        sql: "CREATE EXTERNAL TABLE IF NOT EXISTS db.t (c string COMMENT 'cc', d int) COMMENT 'tc' PARTITIONED BY (p string COMMENT 'pc') CLUSTERED BY (c) INTO 4 BUCKETS ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE LOCATION 's3://bucket/path/' TBLPROPERTIES ('classification' = 'csv');"
+      - id: iceberg_table
+        sql: "CREATE TABLE t (c string, d int) LOCATION 's3://bucket/path/' TBLPROPERTIES ('table_type' = 'ICEBERG');"
+        note: Page says EXTERNAL is omitted when creating Iceberg tables.
+    examples:
+      - |-
+        CREATE EXTERNAL TABLE planet_data (
+          planet_name string,
+          order_from_sun int,
+          au_to_sun float,
+          mass float,
+          gravity_earth float,
+          orbit_years float,
+          day_length float
+          )
+        ROW FORMAT DELIMITED
+        FIELDS TERMINATED BY '\t'
+        STORED AS TEXTFILE
+        LOCATION 's3://amzn-s3-demo-bucket/tsv/';
