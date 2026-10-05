@@ -1,0 +1,59 @@
+dialect: trino
+engine: Trino
+version: "483"
+source: https://trino.io/docs/current/sql.html
+
+statements:
+  - id: commit
+    name: COMMIT
+    doc: https://trino.io/docs/current/sql/commit.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "COMMIT;"
+      - id: work
+        sql: "COMMIT WORK;"
+    examples:
+      - "COMMIT;"
+      - "COMMIT WORK;"
+
+  - id: create_function
+    name: CREATE FUNCTION
+    doc: https://trino.io/docs/current/sql/create-function.html
+    tier: high
+    probes:
+      - id: begin_end_body
+        sql: "CREATE FUNCTION example.default.f() RETURNS bigint BEGIN RETURN 42; END;"
+      - id: return_body
+        sql: "CREATE FUNCTION f() RETURNS bigint RETURN 42;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE FUNCTION f() RETURNS bigint RETURN 42;"
+      - id: parameters
+        sql: "CREATE FUNCTION f(a bigint, b varchar) RETURNS bigint RETURN a + 1;"
+      - id: language_sql
+        sql: "CREATE FUNCTION f() RETURNS bigint LANGUAGE SQL RETURN 42;"
+      - id: deterministic
+        sql: "CREATE FUNCTION f() RETURNS bigint DETERMINISTIC RETURN 42;"
+      - id: not_deterministic
+        sql: "CREATE FUNCTION f() RETURNS double NOT DETERMINISTIC RETURN random();"
+      - id: returns_null_on_null_input
+        sql: "CREATE FUNCTION f(a bigint) RETURNS bigint RETURNS NULL ON NULL INPUT RETURN a;"
+      - id: called_on_null_input
+        sql: "CREATE FUNCTION f(a bigint) RETURNS bigint CALLED ON NULL INPUT RETURN coalesce(a, 0);"
+      - id: security_definer
+        sql: "CREATE FUNCTION f() RETURNS bigint SECURITY DEFINER RETURN 42;"
+      - id: security_invoker
+        sql: "CREATE FUNCTION f() RETURNS bigint SECURITY INVOKER RETURN 42;"
+      - id: comment
+        sql: "CREATE FUNCTION f() RETURNS bigint COMMENT 'answer' RETURN 42;"
+      - id: with_properties
+        sql: "CREATE FUNCTION f() RETURNS bigint WITH (handler = 'h') RETURN 42;"
+      - id: python_as_definition
+        sql: |-
+          CREATE FUNCTION f(a bigint) RETURNS bigint LANGUAGE PYTHON WITH (handler = 'h') AS $$
+          def h(a):
+              return a
+          $$;
+    examples:
+      - "CREATE FUNCTION example.default.meaning_of_life() RETURNS bigint BEGIN RETURN 42; END;"
+      - "CREATE FUNCTION meaning_of_life() RETURNS bigint RETURN 42;"
