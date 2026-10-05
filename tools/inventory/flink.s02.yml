@@ -1,0 +1,44 @@
+dialect: flink
+engine: Apache Flink SQL
+version: "2.3"
+source: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/
+
+statements:
+  - id: execute_statement_set
+    name: EXECUTE STATEMENT SET
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/dml/insert/#insert-into-multiple-tables
+    tier: high
+    probes:
+      - id: insert_values
+        sql: "EXECUTE STATEMENT SET BEGIN INSERT INTO t VALUES (1, 'a'); END;"
+      - id: insert_select
+        sql: "EXECUTE STATEMENT SET BEGIN INSERT INTO t1 SELECT * FROM s; INSERT INTO t2 SELECT a, b FROM s; END;"
+      - id: multiple_inserts
+        sql: "EXECUTE STATEMENT SET BEGIN INSERT INTO t1 VALUES (1); INSERT INTO t2 VALUES (2); END;"
+    examples:
+      - |-
+        EXECUTE STATEMENT SET
+        BEGIN
+        INSERT INTO students VALUES ('fred flintstone', 35, 1.28), ('barney rubble', 32, 2.32);
+        INSERT INTO students VALUES ('fred flintstone', 35, 1.28), ('barney rubble', 32, 2.32);
+        END;
+
+  - id: update
+    name: UPDATE
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/dml/update/#update-rows
+    tier: high
+    probes:
+      - id: basic
+        sql: "UPDATE t SET c = 1;"
+      - id: where
+        sql: "UPDATE t SET c = 1 WHERE d = 2;"
+      - id: multiple_columns
+        sql: "UPDATE t SET c1 = 1, c2 = c2 + 1 WHERE d = 2;"
+      - id: db_qualified
+        sql: "UPDATE db.t SET c = 1;"
+      - id: catalog_qualified
+        sql: "UPDATE cat.db.t SET c = 1 WHERE d = 2;"
+    examples:
+      - "UPDATE Orders SET `amount` = `amount` * 2;"
+      - "UPDATE Orders SET `product` = 'Orange' WHERE `user` = 'Lili';"
+      - "UPDATE Orders SET amount = 2;"
