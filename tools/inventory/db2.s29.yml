@@ -1,0 +1,227 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "11.5"
+source: https://www.ibm.com/docs/en/db2/11.5.x?topic=reference-statements
+
+statements:
+  - id: allocate_cursor
+    name: ALLOCATE CURSOR
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-allocate-cursor
+    tier: medium
+    probes:
+      - id: basic
+        sql: "ALLOCATE c1 CURSOR FOR RESULT SET loc1;"
+
+  - id: alter_database
+    name: ALTER DATABASE
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-alter-database
+    tier: medium
+    probes:
+      - id: add_storage
+        sql: "ALTER DATABASE db ADD STORAGE ON '/data1', '/data2';"
+      - id: drop_storage
+        sql: "ALTER DATABASE db DROP STORAGE ON '/data1';"
+      - id: add_and_drop
+        sql: "ALTER DATABASE ADD STORAGE ON '/data3' DROP STORAGE ON '/data1';"
+
+  - id: alter_module
+    name: ALTER MODULE
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-alter-module
+    tier: medium
+    probes:
+      - id: add_condition
+        sql: "ALTER MODULE m ADD CONDITION cnd FOR SQLSTATE VALUE '70001';"
+      - id: add_function
+        sql: "ALTER MODULE m ADD FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE SQL RETURN a + 1;"
+      - id: add_procedure
+        sql: "ALTER MODULE m ADD PROCEDURE p (IN a INTEGER) LANGUAGE SQL BEGIN END;"
+      - id: add_type
+        sql: "ALTER MODULE m ADD TYPE ty AS INTEGER;"
+      - id: add_variable
+        sql: "ALTER MODULE m ADD VARIABLE v INTEGER DEFAULT 0;"
+      - id: publish_function
+        sql: "ALTER MODULE m PUBLISH FUNCTION f (a INTEGER) RETURNS INTEGER;"
+      - id: drop_body
+        sql: "ALTER MODULE m DROP BODY;"
+      - id: drop_function
+        sql: "ALTER MODULE m DROP FUNCTION f (INTEGER);"
+      - id: drop_specific_procedure
+        sql: "ALTER MODULE m DROP SPECIFIC PROCEDURE sp;"
+      - id: drop_condition
+        sql: "ALTER MODULE m DROP CONDITION cnd;"
+      - id: drop_type
+        sql: "ALTER MODULE m DROP TYPE ty;"
+      - id: drop_variable
+        sql: "ALTER MODULE m DROP VARIABLE v;"
+
+  - id: alter_schema
+    name: ALTER SCHEMA
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-alter-schema
+    tier: medium
+    probes:
+      - id: data_capture_none
+        sql: "ALTER SCHEMA s DATA CAPTURE NONE;"
+      - id: data_capture_changes
+        sql: "ALTER SCHEMA s DATA CAPTURE CHANGES;"
+      - id: enable_row_modification_tracking
+        sql: "ALTER SCHEMA s ENABLE ROW MODIFICATION TRACKING;"
+
+  - id: alter_sequence
+    name: ALTER SEQUENCE
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-alter-sequence
+    tier: medium
+    probes:
+      - id: restart
+        sql: "ALTER SEQUENCE s RESTART;"
+      - id: restart_with
+        sql: "ALTER SEQUENCE s RESTART WITH 10;"
+      - id: increment_by
+        sql: "ALTER SEQUENCE s INCREMENT BY 5;"
+      - id: minvalue_maxvalue
+        sql: "ALTER SEQUENCE s MINVALUE 1 MAXVALUE 1000;"
+      - id: no_minvalue_no_maxvalue
+        sql: "ALTER SEQUENCE s NO MINVALUE NO MAXVALUE;"
+      - id: cycle_cache_order
+        sql: "ALTER SEQUENCE s CYCLE CACHE 20 ORDER;"
+      - id: no_cycle_no_cache_no_order
+        sql: "ALTER SEQUENCE s NO CYCLE NO CACHE NO ORDER;"
+
+  - id: alter_tablespace
+    name: ALTER TABLESPACE
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-alter-tablespace
+    tier: medium
+    probes:
+      - id: add_container
+        sql: "ALTER TABLESPACE ts ADD (FILE '/c/cont2' 2000);"
+      - id: add_to_stripe_set
+        sql: "ALTER TABLESPACE ts ADD TO STRIPE SET 1 (FILE '/c/cont3' 2000);"
+      - id: begin_new_stripe_set
+        sql: "ALTER TABLESPACE ts BEGIN NEW STRIPE SET (FILE '/c/cont4' 2000);"
+      - id: drop_container
+        sql: "ALTER TABLESPACE ts DROP (FILE '/c/cont2');"
+      - id: extend_all
+        sql: "ALTER TABLESPACE ts EXTEND (ALL 1000);"
+      - id: resize_all_mb
+        sql: "ALTER TABLESPACE ts RESIZE (ALL 100 M);"
+      - id: reduce
+        sql: "ALTER TABLESPACE ts REDUCE (ALL 10 PERCENT);"
+      - id: reduce_max
+        sql: "ALTER TABLESPACE ts REDUCE MAX;"
+      - id: on_dbpartitionnum
+        sql: "ALTER TABLESPACE ts ADD (FILE 'A' 200) ON DBPARTITIONNUM (0) EXTEND (ALL 200) ON DBPARTITIONNUM (1);"
+      - id: prefetchsize_overhead
+        sql: "ALTER TABLESPACE ts PREFETCHSIZE 64 OVERHEAD 19.3;"
+      - id: prefetchsize_automatic
+        sql: "ALTER TABLESPACE ts PREFETCHSIZE AUTOMATIC;"
+      - id: bufferpool_transferrate
+        sql: "ALTER TABLESPACE ts BUFFERPOOL bp TRANSFERRATE 0.06;"
+      - id: file_system_caching
+        sql: "ALTER TABLESPACE ts NO FILE SYSTEM CACHING;"
+      - id: dropped_table_recovery
+        sql: "ALTER TABLESPACE ts DROPPED TABLE RECOVERY OFF;"
+      - id: rebalance_suspend_resume
+        sql: "ALTER TABLESPACE ts REBALANCE SUSPEND;"
+      - id: switch_online
+        sql: "ALTER TABLESPACE ts SWITCH ONLINE;"
+      - id: autoresize
+        sql: "ALTER TABLESPACE ts AUTORESIZE YES INCREASESIZE 10 PERCENT MAXSIZE NONE;"
+      - id: convert_to_large
+        sql: "ALTER TABLESPACE ts CONVERT TO LARGE;"
+      - id: lower_high_water_mark
+        sql: "ALTER TABLESPACE ts LOWER HIGH WATER MARK;"
+      - id: using_stogroup
+        sql: "ALTER TABLESPACE ts USING STOGROUP sg DATA TAG 5;"
+      - id: managed_by_automatic_storage
+        sql: "ALTER TABLESPACE ts MANAGED BY AUTOMATIC STORAGE;"
+    examples:
+      - "ALTER TABLESPACE PAYROLL ADD ( DEVICE '/dev/rhdisk9' 10000);"
+      - "ALTER TABLESPACE ACCOUNTING PREFETCHSIZE 64 OVERHEAD 19.3;"
+      - "ALTER TABLESPACE DATA_TS EXTEND (ALL 1000);"
+
+  - id: alter_trigger
+    name: ALTER TRIGGER
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-alter-trigger
+    tier: medium
+    probes:
+      - id: secured
+        sql: "ALTER TRIGGER trg SECURED;"
+      - id: not_secured
+        sql: "ALTER TRIGGER trg NOT SECURED;"
+    examples:
+      - "ALTER TRIGGER TRIGGER1 SECURED;"
+
+  - id: alter_type_structured
+    name: ALTER TYPE (structured)
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-alter-type-structured
+    tier: medium
+    probes:
+      - id: add_attribute
+        sql: "ALTER TYPE ty ADD ATTRIBUTE a CHAR(1);"
+      - id: drop_attribute
+        sql: "ALTER TYPE ty DROP ATTRIBUTE a;"
+      - id: add_method
+        sql: "ALTER TYPE ty ADD METHOD bonus (rate DOUBLE) RETURNS INTEGER LANGUAGE SQL CONTAINS SQL NO EXTERNAL ACTION DETERMINISTIC;"
+      - id: alter_method
+        sql: "ALTER TYPE ty ALTER METHOD bonus (DOUBLE) NOT FENCED THREADSAFE;"
+      - id: alter_specific_method
+        sql: "ALTER TYPE ty ALTER SPECIFIC METHOD sm FENCED;"
+      - id: drop_method
+        sql: "ALTER TYPE ty DROP METHOD bonus (DOUBLE);"
+      - id: drop_specific_method_restrict
+        sql: "ALTER TYPE ty DROP SPECIFIC METHOD sm RESTRICT;"
+    examples:
+      - "ALTER TYPE DEPT ADD ATTRIBUTE MANAGER REF(EMP);"
+      - "ALTER TYPE DEPT DROP ATTRIBUTE MANAGER;"
+
+  - id: associate_locators
+    name: ASSOCIATE LOCATORS
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-associate-locators
+    tier: medium
+    probes:
+      - id: result_set_locators
+        sql: "ASSOCIATE RESULT SET LOCATORS (loc1, loc2) WITH PROCEDURE p1;"
+      - id: locator_singular
+        sql: "ASSOCIATE RESULT SET LOCATOR (loc1) WITH PROCEDURE s.p1;"
+    examples:
+      - "ASSOCIATE RESULT SET LOCATORS (LOC1, LOC2) WITH PROCEDURE P1;"
+      - "ASSOCIATE RESULT SET LOCATORS (LOC1, LOC2) WITH PROCEDURE MYSCHEMA.P1;"
+
+  - id: comment
+    name: COMMENT
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-comment
+    tier: medium
+    probes:
+      - id: on_table
+        sql: "COMMENT ON TABLE t IS 'text';"
+      - id: on_column
+        sql: "COMMENT ON COLUMN t.c IS 'text';"
+      - id: column_list
+        sql: "COMMENT ON t (c1 IS 'one', c2 IS 'two');"
+      - id: on_function_signature
+        sql: "COMMENT ON FUNCTION f (INT, FLOAT) IS 'text';"
+      - id: on_specific_function
+        sql: "COMMENT ON SPECIFIC FUNCTION s.sf IS 'text';"
+      - id: on_procedure
+        sql: "COMMENT ON PROCEDURE p (INT) IS 'text';"
+      - id: on_public_alias
+        sql: "COMMENT ON PUBLIC ALIAS a IS 'text';"
+      - id: on_index
+        sql: "COMMENT ON INDEX idx IS 'text';"
+      - id: on_schema
+        sql: "COMMENT ON SCHEMA s IS 'text';"
+      - id: on_sequence
+        sql: "COMMENT ON SEQUENCE sq IS 'text';"
+      - id: on_tablespace
+        sql: "COMMENT ON TABLESPACE ts IS 'text';"
+      - id: on_package_version
+        sql: "COMMENT ON PACKAGE pk VERSION v1 IS 'text';"
+      - id: on_server_option
+        sql: "COMMENT ON SERVER OPTION opt FOR SERVER srv IS 'text';"
+      - id: on_work_class_set
+        sql: "COMMENT ON WORK CLASS SET wcs IS 'text';"
+      - id: on_service_class_under
+        sql: "COMMENT ON SERVICE CLASS sc UNDER sup IS 'text';"
+    examples:
+      - "COMMENT ON TABLE EMPLOYEE IS 'Reflects first quarter reorganization';"
+      - "COMMENT ON COLUMN EMPLOYEE.EDLEVEL IS 'highest grade level passed in school';"
+      - "COMMENT ON EMPLOYEE (WORKDEPT IS 'see DEPARTMENT table for names', EDLEVEL IS 'highest grade level passed in school' );"

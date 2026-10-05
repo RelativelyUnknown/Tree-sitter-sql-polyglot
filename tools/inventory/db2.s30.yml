@@ -1,0 +1,138 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "11.5"
+source: https://www.ibm.com/docs/en/db2/11.5.x?topic=reference-statements
+
+statements:
+  - id: connect_type1
+    name: CONNECT (type 1)
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-connect-type-1
+    tier: medium
+    probes:
+      - { id: to_server, sql: "CONNECT TO sample;" }
+      - { id: reset, sql: "CONNECT RESET;" }
+      - { id: bare_connect, sql: "CONNECT;" }
+      - { id: user_using, sql: "CONNECT TO sample USER u USING pw;" }
+      - { id: new_confirm, sql: "CONNECT TO sample USER u USING pw NEW pw2 CONFIRM pw2;" }
+      - { id: lock_block, sql: "CONNECT TO sample IN SHARE MODE ON SINGLE MEMBER;" }
+      - { id: apikey, sql: "CONNECT TO sample APIKEY 'key';" }
+      - { id: accesstoken, sql: "CONNECT TO sample ACCESSTOKEN 'tok' ACCESSTOKENTYPE jwt;" }
+    examples:
+      - "CONNECT TO TOROLAB USER FERMAT USING THEOREM;"
+
+  - id: connect_type2
+    name: CONNECT (type 2)
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-connect-type-2
+    tier: medium
+    probes:
+      - { id: to_server, sql: "CONNECT TO sample;" }
+      - { id: reset, sql: "CONNECT RESET;" }
+      - { id: user_using, sql: "CONNECT TO sample USER u USING pw;" }
+      - { id: change_password, sql: "CONNECT TO sample USER u USING pw NEW pw2 CONFIRM pw2 CHANGE PASSWORD;" }
+      - { id: lock_exclusive, sql: "CONNECT TO sample IN EXCLUSIVE MODE;" }
+      - { id: apikey, sql: "CONNECT TO sample APIKEY 'key';" }
+
+  - id: create_alias
+    name: CREATE ALIAS
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-alias
+    tier: medium
+    probes:
+      - { id: table_alias, sql: "CREATE ALIAS a1 FOR t1;" }
+      - { id: for_table, sql: "CREATE ALIAS a1 FOR TABLE s.t1;" }
+      - { id: or_replace, sql: "CREATE OR REPLACE ALIAS a1 FOR t1;" }
+      - { id: public_alias, sql: "CREATE PUBLIC ALIAS tabs FOR SYSCAT.TABLES;" }
+      - { id: module_alias, sql: "CREATE ALIAS a1 FOR MODULE m1;" }
+      - { id: sequence_alias, sql: "CREATE ALIAS a1 FOR SEQUENCE seq1;" }
+    examples:
+      - "CREATE ALIAS A1 FOR T1;"
+      - "CREATE ALIAS MCKNIGHT.A1 FOR MCKNIGHT.T1;"
+      - "CREATE PUBLIC ALIAS TABS FOR SYSCAT.TABLES;"
+
+  - id: create_global_temporary_table
+    name: CREATE GLOBAL TEMPORARY TABLE
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-global-temporary-table
+    tier: medium
+    probes:
+      - { id: columns, sql: "CREATE GLOBAL TEMPORARY TABLE t (c1 INTEGER NOT NULL, c2 VARCHAR(10));" }
+      - { id: on_commit_preserve, sql: "CREATE GLOBAL TEMPORARY TABLE t (c1 INTEGER) ON COMMIT PRESERVE ROWS;" }
+      - { id: not_logged, sql: "CREATE GLOBAL TEMPORARY TABLE t (c1 INTEGER) ON COMMIT DELETE ROWS NOT LOGGED ON ROLLBACK PRESERVE ROWS;" }
+      - { id: in_tablespace, sql: "CREATE GLOBAL TEMPORARY TABLE t (c1 INTEGER) IN tbsp1;" }
+      - { id: like_table, sql: "CREATE GLOBAL TEMPORARY TABLE t LIKE s EXCLUDING COLUMN DEFAULTS;" }
+      - { id: as_fullselect, sql: "CREATE GLOBAL TEMPORARY TABLE t AS (SELECT c1 FROM s) WITH NO DATA;" }
+      - { id: distribute_hash, sql: "CREATE GLOBAL TEMPORARY TABLE t (c1 INTEGER) DISTRIBUTE BY HASH (c1);" }
+      - { id: identity_column, sql: "CREATE GLOBAL TEMPORARY TABLE t (id INTEGER GENERATED ALWAYS AS IDENTITY, c2 INTEGER WITH DEFAULT 0);" }
+    examples:
+      - "CREATE GLOBAL TEMPORARY TABLE TMPDEPT (TMPDEPTNO CHAR(3) NOT NULL, TMPDEPTNAME VARCHAR(36) NOT NULL, TMPMGRNO CHAR(6), TMPLOCATION CHAR(16));"
+
+  - id: create_module
+    name: CREATE MODULE
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-module
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE MODULE m;" }
+      - { id: or_replace, sql: "CREATE OR REPLACE MODULE s.m;" }
+    examples:
+      - "CREATE MODULE salesModule;"
+
+  - id: create_role
+    name: CREATE ROLE
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-role
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE ROLE r;" }
+
+  - id: create_schema
+    name: CREATE SCHEMA
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-schema
+    tier: medium
+    probes:
+      - { id: name_only, sql: "CREATE SCHEMA s;" }
+      - { id: authorization_only, sql: "CREATE SCHEMA AUTHORIZATION u;" }
+      - { id: name_authorization, sql: "CREATE SCHEMA s AUTHORIZATION u;" }
+      - { id: data_capture_none, sql: "CREATE SCHEMA s DATA CAPTURE NONE;" }
+      - { id: data_capture_changes, sql: "CREATE SCHEMA s DATA CAPTURE CHANGES;" }
+      - { id: enable_row_tracking, sql: "CREATE SCHEMA s ENABLE ROW MODIFICATION TRACKING;" }
+      - { id: schema_statements, sql: "CREATE SCHEMA s CREATE TABLE t (c INTEGER) CREATE VIEW v AS SELECT c FROM t;" }
+    examples:
+      - "CREATE SCHEMA PERS CREATE TABLE ORG (DEPTNUMB SMALLINT NOT NULL, DEPTNAME VARCHAR(14), MANAGER SMALLINT, DIVISION VARCHAR(10), LOCATION VARCHAR(13), CONSTRAINT PKEYDNO PRIMARY KEY (DEPTNUMB), CONSTRAINT FKEYMGR FOREIGN KEY (MANAGER) REFERENCES STAFF (ID)) CREATE TABLE STAFF (ID SMALLINT NOT NULL, NAME VARCHAR(9), DEPT SMALLINT, JOB VARCHAR(5), YEARS SMALLINT, SALARY DECIMAL(7,2), COMM DECIMAL(7,2), CONSTRAINT PKEYID PRIMARY KEY (ID), CONSTRAINT FKEYDNO FOREIGN KEY (DEPT) REFERENCES ORG (DEPTNUMB));"
+
+  - id: create_sequence
+    name: CREATE SEQUENCE
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-sequence
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE SEQUENCE s;" }
+      - { id: or_replace, sql: "CREATE OR REPLACE SEQUENCE s;" }
+      - { id: as_type, sql: "CREATE SEQUENCE s AS BIGINT;" }
+      - { id: start_increment, sql: "CREATE SEQUENCE s START WITH 1 INCREMENT BY 1;" }
+      - { id: min_max, sql: "CREATE SEQUENCE s MINVALUE 1 MAXVALUE 100;" }
+      - { id: no_min_max, sql: "CREATE SEQUENCE s NO MINVALUE NO MAXVALUE;" }
+      - { id: cycle, sql: "CREATE SEQUENCE s CYCLE;" }
+      - { id: cache, sql: "CREATE SEQUENCE s CACHE 24;" }
+      - { id: no_cache_order, sql: "CREATE SEQUENCE s NO CACHE ORDER;" }
+      - { id: no_order, sql: "CREATE SEQUENCE s NO CYCLE NO ORDER;" }
+    examples:
+      - "CREATE SEQUENCE ORG_SEQ START WITH 1 INCREMENT BY 1 NO MAXVALUE NO CYCLE CACHE 24;"
+
+  - id: create_synonym
+    name: CREATE SYNONYM
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-synonym
+    tier: medium
+    probes:
+      - { id: table_synonym, sql: "CREATE SYNONYM a1 FOR t1;" }
+      - { id: public_synonym, sql: "CREATE PUBLIC SYNONYM a1 FOR s.t1;" }
+    note: Page says SYNONYM is a synonym for ALIAS.
+
+  - id: create_table_external
+    name: CREATE TABLE (EXTERNAL)
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-table-external
+    tier: medium
+    probes:
+      - { id: columns_using, sql: "CREATE EXTERNAL TABLE t (c1 INTEGER, c2 VARCHAR(10)) USING (DATAOBJECT '/tmp/t.txt');" }
+      - { id: not_null_column, sql: "CREATE EXTERNAL TABLE t (c1 INTEGER NOT NULL) USING (FILE_NAME '/tmp/t.txt', DELIMITER ',');" }
+      - { id: like_table, sql: "CREATE EXTERNAL TABLE t LIKE s USING (DATAOBJECT '/tmp/t.txt');" }
+      - { id: as_select, sql: "CREATE EXTERNAL TABLE t '/tmp/t.txt' USING (DELIMITER '|') AS SELECT * FROM s;" }
+      - { id: as_select_no_name, sql: "CREATE EXTERNAL TABLE '/tmp/t.txt' USING (DELIMITER '|') AS SELECT * FROM s;" }
+    examples:
+      - "CREATE EXTERNAL TABLE 'order.tbl' USING (DELIMITER '|') AS SELECT * from orders;"
+      - "CREATE EXTERNAL TABLE 'export.csv' USING (DELIMITER ',') AS SELECT foo.x, bar.y, bar.dt FROM foo, bar WHERE foo.x = bar.x;"
