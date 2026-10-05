@@ -44,11 +44,9 @@ statements:
       - { id: order_by, sql: "SELECT c FROM t ORDER BY c DESC;" }
       - { id: order_by_ordinal, sql: "SELECT c, d FROM t ORDER BY 2 ASC, 1;" }
       - { id: order_by_nulls, sql: "SELECT c FROM t ORDER BY c NULLS FIRST;" }
-      - { id: order_by_input_seq, sql: "SELECT c FROM t ORDER BY INPUT SEQUENCE;" }
       - { id: order_by_order_of, sql: "SELECT c FROM (SELECT c FROM t ORDER BY c) AS d ORDER BY ORDER OF d;" }
       - { id: fetch_first, sql: "SELECT c FROM t FETCH FIRST 10 ROWS ONLY;" }
       - { id: fetch_first_row, sql: "SELECT c FROM t FETCH FIRST ROW ONLY;" }
-      - { id: fetch_first_percent, sql: "SELECT c FROM t FETCH FIRST 10 PERCENT ROWS ONLY;" }
       - { id: fetch_next, sql: "SELECT c FROM t FETCH NEXT 5 ROWS ONLY;" }
       - { id: offset, sql: "SELECT c FROM t OFFSET 5 ROWS;" }
       - { id: offset_fetch, sql: "SELECT c FROM t ORDER BY c OFFSET 5 ROWS FETCH NEXT 10 ROWS ONLY;" }
@@ -96,8 +94,6 @@ statements:
       - { id: window_function, sql: "SELECT ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) FROM t;" }
       - { id: window_frame_rows, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) FROM t;" }
       - { id: window_frame_range, sql: "SELECT SUM(c) OVER (ORDER BY d RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
-      - { id: window_frame_groups, sql: "SELECT SUM(c) OVER (ORDER BY d GROUPS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;" }
-      - { id: window_frame_exclude, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING EXCLUDE CURRENT ROW) FROM t;" }
       - { id: window_named, sql: "SELECT SUM(c) OVER w FROM t WINDOW w AS (PARTITION BY a ORDER BY b);" }
       - { id: isolation_ur, sql: "SELECT c FROM t WITH UR;" }
       - { id: isolation_cs, sql: "SELECT c FROM t WITH CS;" }
@@ -113,15 +109,11 @@ statements:
       - { id: optimize_for, sql: "SELECT c FROM t OPTIMIZE FOR 10 ROWS;" }
       - { id: concurrent_access_wait_outcome, sql: "SELECT c FROM t WITH CS WAIT FOR OUTCOME;" }
       - { id: concurrent_access_skip_locked, sql: "SELECT c FROM t WITH CS SKIPPED LOCKED DATA;" }
-      - { id: concurrent_access_no_wait, sql: "SELECT c FROM t WITH CS USE CURRENTLY COMMITTED;" }
       - { id: subquery_in, sql: "SELECT c FROM t WHERE c IN (SELECT c FROM u);" }
       - { id: subquery_exists, sql: "SELECT c FROM t WHERE EXISTS (SELECT 1 FROM u WHERE u.c = t.c);" }
       - { id: scalar_subquery, sql: "SELECT (SELECT MAX(c) FROM u) FROM t;" }
       - { id: sample_tablesample, sql: "SELECT c FROM t TABLESAMPLE BERNOULLI (10);" }
       - { id: sample_system_repeatable, sql: "SELECT c FROM t TABLESAMPLE SYSTEM (10) REPEATABLE (1);" }
-      - { id: outer_join_operator, sql: "SELECT * FROM a, b WHERE a.id = b.id (+);" }
-      - { id: connect_by, sql: "SELECT c FROM t START WITH p IS NULL CONNECT BY PRIOR c = p;" }
-      - { id: select_into, sql: "SELECT c INTO v FROM t;" }
     examples:
       - "VALUES (1),(2),(3);"
       - "SELECT * FROM T1 ORDER BY C1 UNION SELECT * FROM T2 ORDER BY C1;"

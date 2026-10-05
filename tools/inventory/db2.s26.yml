@@ -1,0 +1,70 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "11.5"
+source: https://www.ibm.com/docs/en/db2/11.5.x?topic=reference-statements
+
+statements:
+  - id: signal
+    name: SIGNAL
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-signal
+    tier: high
+    probes:
+      - id: sqlstate_value_constant
+        sql: "SIGNAL SQLSTATE VALUE '75002';"
+      - id: sqlstate_constant_no_value
+        sql: "SIGNAL SQLSTATE '75002';"
+      - id: sqlstate_variable
+        sql: "SIGNAL SQLSTATE VALUE v_state;"
+      - id: condition_name
+        sql: "SIGNAL cond1;"
+      - id: set_message_text
+        sql: "SIGNAL SQLSTATE '75002' SET MESSAGE_TEXT = 'Customer number is not known';"
+      - id: set_message_text_variable
+        sql: "SIGNAL SQLSTATE VALUE '75002' SET MESSAGE_TEXT = v_msg;"
+      - id: set_message_text_parenthesized
+        sql: "SIGNAL SQLSTATE '75002' (v_msg);"
+      - id: condition_with_message_text
+        sql: "SIGNAL cond1 SET MESSAGE_TEXT = 'bad';"
+      - id: set_message_text_expression
+        sql: "SIGNAL SQLSTATE '75002' SET MESSAGE_TEXT = 'Error: ' || v_msg;"
+    examples:
+      - |-
+        CREATE PROCEDURE SUBMIT_ORDER
+          (IN ONUM INTEGER, IN CNUM INTEGER,
+           IN PNUM INTEGER, IN QNUM INTEGER)
+          SPECIFIC SUBMIT_ORDER
+          MODIFIES SQL DATA
+          LANGUAGE SQL
+          BEGIN
+            DECLARE EXIT HANDLER FOR SQLSTATE VALUE '23503'
+              SIGNAL SQLSTATE '75002'
+                SET MESSAGE_TEXT = 'Customer number is not known';
+            INSERT INTO ORDERS (ORDERNO, CUSTNO, PARTNO, QUANTITY)
+              VALUES (ONUM, CNUM, PNUM, QNUM);
+          END;
+
+  - id: truncate
+    name: TRUNCATE
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-truncate
+    tier: high
+    probes:
+      - id: basic
+        sql: "TRUNCATE TABLE t;"
+        note: IMMEDIATE is optional only for column-organized tables (doc footnote)
+      - id: schema_qualified
+        sql: "TRUNCATE TABLE s.t IMMEDIATE;"
+      - id: drop_storage
+        sql: "TRUNCATE TABLE t DROP STORAGE IMMEDIATE;"
+      - id: reuse_storage
+        sql: "TRUNCATE TABLE t REUSE STORAGE IMMEDIATE;"
+      - id: ignore_delete_triggers
+        sql: "TRUNCATE TABLE t IGNORE DELETE TRIGGERS IMMEDIATE;"
+      - id: restrict_when_delete_triggers
+        sql: "TRUNCATE TABLE t RESTRICT WHEN DELETE TRIGGERS IMMEDIATE;"
+      - id: continue_identity
+        sql: "TRUNCATE TABLE t CONTINUE IDENTITY IMMEDIATE;"
+      - id: all_options
+        sql: "TRUNCATE TABLE t REUSE STORAGE IGNORE DELETE TRIGGERS CONTINUE IDENTITY IMMEDIATE;"
+    examples:
+      - "TRUNCATE TABLE INVENTORY IGNORE DELETE TRIGGERS DROP STORAGE IMMEDIATE;"
+      - "TRUNCATE TABLE INVENTORY REUSE STORAGE IGNORE DELETE TRIGGERS IMMEDIATE;"
