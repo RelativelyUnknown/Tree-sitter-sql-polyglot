@@ -1,0 +1,169 @@
+dialect: athena
+engine: Amazon Athena
+version: "engine version 3 (Trino-based DML, Hive-style DDL)"
+source: https://docs.aws.amazon.com/athena/latest/ug/ddl-reference.html ; https://docs.aws.amazon.com/athena/latest/ug/dml-queries-functions-operators.html
+
+statements:
+  - id: alter_database_set_dbproperties
+    name: ALTER DATABASE SET DBPROPERTIES
+    doc: https://docs.aws.amazon.com/athena/latest/ug/alter-database-set-dbproperties.html
+    tier: medium
+    probes:
+      - id: alter_database
+        sql: "ALTER DATABASE d SET DBPROPERTIES ('k'='v');"
+      - id: alter_schema
+        sql: "ALTER SCHEMA d SET DBPROPERTIES ('k'='v');"
+      - id: multiple_properties
+        sql: "ALTER DATABASE d SET DBPROPERTIES ('k1'='v1', 'k2'='v2');"
+    examples:
+      - "ALTER DATABASE jd_datasets SET DBPROPERTIES ('creator'='John Doe', 'department'='applied mathematics');"
+      - "ALTER SCHEMA jd_datasets SET DBPROPERTIES ('creator'='Jane Doe');"
+
+  - id: create_database
+    name: CREATE DATABASE
+    doc: https://docs.aws.amazon.com/athena/latest/ug/create-database.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE DATABASE d;"
+      - id: schema_keyword
+        sql: "CREATE SCHEMA d;"
+      - id: if_not_exists
+        sql: "CREATE DATABASE IF NOT EXISTS d;"
+      - id: comment
+        sql: "CREATE DATABASE d COMMENT 'c';"
+      - id: location
+        sql: "CREATE DATABASE d LOCATION 's3://bucket/path/';"
+      - id: with_dbproperties
+        sql: "CREATE DATABASE d WITH DBPROPERTIES ('k'='v', 'k2'='v2');"
+      - id: all_clauses
+        sql: "CREATE DATABASE IF NOT EXISTS d COMMENT 'c' LOCATION 's3://bucket/path/' WITH DBPROPERTIES ('k'='v');"
+    examples:
+      - "CREATE DATABASE clickstreams;"
+      - "CREATE DATABASE IF NOT EXISTS clickstreams COMMENT 'Site Foo clickstream data aggregates' LOCATION 's3://amzn-s3-demo-bucket/clickstreams/' WITH DBPROPERTIES ('creator'='Jane D.', 'Dept.'='Marketing analytics');"
+
+  - id: describe
+    name: DESCRIBE
+    doc: https://docs.aws.amazon.com/athena/latest/ug/describe-table.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DESCRIBE t;"
+      - id: qualified
+        sql: "DESCRIBE db.t;"
+      - id: extended
+        sql: "DESCRIBE EXTENDED t;"
+      - id: formatted
+        sql: "DESCRIBE FORMATTED db.t;"
+      - id: partition
+        sql: "DESCRIBE FORMATTED db.t PARTITION (p = 100);"
+      - id: column
+        sql: "DESCRIBE t c;"
+      - id: column_field
+        sql: "DESCRIBE t c.f;"
+    examples:
+      - "DESCRIBE orders;"
+      - "DESCRIBE FORMATTED mydatabase.mytable PARTITION (part_col = 100) columnA;"
+
+  - id: describe_view
+    name: DESCRIBE VIEW
+    doc: https://docs.aws.amazon.com/athena/latest/ug/describe-view.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DESCRIBE v;"
+      - id: qualified
+        sql: "DESCRIBE db.v;"
+    examples:
+      - "DESCRIBE orders;"
+
+  - id: drop_database
+    name: DROP DATABASE
+    doc: https://docs.aws.amazon.com/athena/latest/ug/drop-database.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP DATABASE d;"
+      - id: schema_keyword
+        sql: "DROP SCHEMA d;"
+      - id: if_exists
+        sql: "DROP DATABASE IF EXISTS d;"
+      - id: restrict
+        sql: "DROP DATABASE d RESTRICT;"
+      - id: cascade
+        sql: "DROP DATABASE d CASCADE;"
+    examples:
+      - "DROP DATABASE clickstreams;"
+      - "DROP SCHEMA IF EXISTS clickstreams CASCADE;"
+
+  - id: msck_repair_table
+    name: MSCK REPAIR TABLE
+    doc: https://docs.aws.amazon.com/athena/latest/ug/msck-repair-table.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "MSCK REPAIR TABLE t;"
+      - id: qualified
+        sql: "MSCK REPAIR TABLE db.t;"
+    examples:
+      - "MSCK REPAIR TABLE orders;"
+
+  - id: show_columns
+    name: SHOW COLUMNS
+    doc: https://docs.aws.amazon.com/athena/latest/ug/show-columns.html
+    tier: medium
+    probes:
+      - id: from_table
+        sql: "SHOW COLUMNS FROM t;"
+      - id: in_table
+        sql: "SHOW COLUMNS IN t;"
+      - id: from_qualified
+        sql: "SHOW COLUMNS FROM db.t;"
+      - id: in_qualified
+        sql: "SHOW COLUMNS IN db.t;"
+      - id: from_table_from_database
+        sql: "SHOW COLUMNS FROM t FROM db;"
+      - id: in_table_in_database
+        sql: "SHOW COLUMNS IN t IN db;"
+    examples:
+      - "SHOW COLUMNS FROM orders;"
+      - "SHOW COLUMNS IN customers.orders;"
+      - "SHOW COLUMNS FROM orders FROM customers;"
+
+  - id: show_create_table
+    name: SHOW CREATE TABLE
+    doc: https://docs.aws.amazon.com/athena/latest/ug/show-create-table.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW CREATE TABLE t;"
+      - id: qualified
+        sql: "SHOW CREATE TABLE db.t;"
+    examples:
+      - "SHOW CREATE TABLE orderclickstoday;"
+      - "SHOW CREATE TABLE `salesdata.orderclickstoday`;"
+
+  - id: show_create_view
+    name: SHOW CREATE VIEW
+    doc: https://docs.aws.amazon.com/athena/latest/ug/show-create-view.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW CREATE VIEW v;"
+    examples:
+      - "SHOW CREATE VIEW orders_by_date;"
+
+  - id: show_databases
+    name: SHOW DATABASES
+    doc: https://docs.aws.amazon.com/athena/latest/ug/show-databases.html
+    tier: medium
+    probes:
+      - id: databases
+        sql: "SHOW DATABASES;"
+      - id: schemas
+        sql: "SHOW SCHEMAS;"
+      - id: like
+        sql: "SHOW DATABASES LIKE '.*analytics';"
+    examples:
+      - "SHOW SCHEMAS;"
+      - "SHOW DATABASES LIKE '.*analytics';"
