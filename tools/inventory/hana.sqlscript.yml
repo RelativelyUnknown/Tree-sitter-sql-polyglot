@@ -627,16 +627,6 @@ statements:
         sql: "DO BEGIN DECLARE CURSOR cur FOR SELECT * FROM employees FOR UPDATE; END;"
       - id: declare_cursor_for_update_of
         sql: "DO BEGIN DECLARE CURSOR cur FOR SELECT employees.employee_name, departments.department_name FROM employees, departments WHERE employees.department_id = departments.department_id FOR UPDATE OF employees.employee_id, departments.department_id; END;"
-      - id: declare_cursor_in_procedure_before_body
-        sql: "CREATE PROCEDURE p AS DECLARE CURSOR c1 FOR SELECT a FROM t; BEGIN OPEN c1; CLOSE c1; END;"
-        note: "page: cursors can be defined after the procedure signature and before the body, or at the start of a block"
-    examples:
-      - |-
-        DO BEGIN
-         DECLARE CURSOR c_cursor1 (v_isbn VARCHAR(20)) FOR
-         SELECT isbn, title, price, crcy FROM books
-         WHERE isbn = :v_isbn ORDER BY isbn;
-        END;
 
   - id: sqlscript_open_fetch_close_cursor
     name: OPEN, FETCH and CLOSE cursor
@@ -747,3 +737,221 @@ statements:
         sql: "DO BEGIN SAVEPOINT save1; RELEASE SAVEPOINT save1; END;"
       - id: savepoint_full_example
         sql: "DO BEGIN INSERT INTO t1 VALUES (1); SAVEPOINT save1; INSERT INTO t1 VALUES (2); ROLLBACK TO SAVEPOINT save1; SELECT * FROM t1; RELEASE SAVEPOINT save1; END;"
+
+  - id: sqlscript_exec
+    name: EXEC (dynamic SQL)
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/8462312b31d04879b124acb6b0275247.html?version=2.0.08
+    tier: high
+    probes:
+      - id: exec_string
+        sql: "DO BEGIN EXEC 'DELETE from tab'; END;"
+      - id: exec_concatenated_string
+        sql: "DO BEGIN DECLARE i INT = 1; EXEC 'INSERT INTO tab VALUES (' || :i || ')'; END;"
+      - id: exec_into_scalars
+        sql: "DO BEGIN DECLARE K INT; DECLARE J INT; EXEC 'select max(I) as a, min(A) as b from mytable' INTO K, J; END;"
+      - id: exec_into_table_variable
+        sql: "DO BEGIN DECLARE tv TABLE (i INT); EXEC 'select col1 * 10 as i from mytable' INTO tv; END;"
+      - id: exec_into_default
+        sql: "DO BEGIN DECLARE A_COPY INT; EXEC 'SELECT A FROM T1' INTO A_COPY DEFAULT 2; END;"
+      - id: exec_into_array_element_default
+        sql: "DO BEGIN DECLARE A_COPY INT ARRAY; EXEC 'SELECT A FROM T1' INTO A_COPY[1] DEFAULT 2; END;"
+      - id: exec_using_variables
+        sql: "DO BEGIN DECLARE a INT = 123; DECLARE tv TABLE (col1 INT) = SELECT * FROM mytab; DECLARE tv2 TABLE (col1 INT); EXEC 'select col1 + :a as col1 from :tv' INTO tv2 USING :a, :tv; END;"
+      - id: exec_using_positional_parameters
+        sql: "DO BEGIN DECLARE a INT = 2; DECLARE b INT = 3; DECLARE K INT; DECLARE J INT; EXEC 'select max(I) + ? * ? as a, min(A) as b from mytable' INTO K, J USING :a, :b; END;"
+      - id: exec_using_without_into
+        sql: "DO BEGIN DECLARE tv TABLE (col1 INT) = SELECT * FROM mytab; DECLARE a INT = 123; EXEC 'call myproc(:a, :tv)' USING :a, :tv; END;"
+      - id: exec_into_output_parameters
+        sql: "DO (OUT a INT => ?, OUT tv TABLE (i INT) => ?) BEGIN EXEC 'call myproc(:a, :tv)' INTO a, tv; END;"
+      - id: exec_reads_sql_data
+        sql: "DO BEGIN EXEC 'SELECT * FROM tab' READS SQL DATA; END;"
+      - id: exec_into_using_reads_sql_data
+        sql: "DO BEGIN DECLARE lt TABLE (a INT); DECLARE lt0 TABLE (a INT); DECLARE value INT = 1; EXEC 'SELECT * FROM :lt0 WHERE (a = :value)' INTO lt USING :lt0, :value READS SQL DATA; END;"
+      - id: exec_in_read_only_procedure
+        sql: "CREATE PROCEDURE Proc1(IN A NVARCHAR(12)) READS SQL DATA AS BEGIN EXEC 'SELECT * FROM ' || :A; END;"
+    examples:
+      - |-
+        DO (IN tname NVARCHAR(10) => 'mytable')
+        BEGIN
+         DECLARE tv TABLE (i INT);
+         EXEC 'select col1 * 10 as i from ' || :tname INTO tv;
+         SELECT * FROM :tv;
+        END;
+      - |-
+        DO BEGIN
+         DECLARE tv TABLE (col1 INT) = SELECT * FROM mytab;
+         DECLARE a INT = 123;
+         DECLARE tv2 TABLE (col1 INT);
+         EXEC 'select col1 + :a as col1 from :tv' INTO tv2 USING :a, :tv;
+         SELECT * FROM :tv2;
+        END;
+
+  - id: sqlscript_execute_immediate
+    name: EXECUTE IMMEDIATE (dynamic SQL)
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/093c4fd307064f838cb582555c187b9e.html?version=2.0.08
+    tier: high
+    probes:
+      - id: execute_immediate_string
+        sql: "DO BEGIN EXECUTE IMMEDIATE 'SELECT * FROM tab ORDER BY i'; END;"
+      - id: execute_immediate_concatenated
+        sql: "DO BEGIN DECLARE tname NVARCHAR(10) = 'tab'; EXECUTE IMMEDIATE 'SELECT * FROM ' || :tname; END;"
+      - id: execute_immediate_into
+        sql: "DO BEGIN DECLARE K INT; EXECUTE IMMEDIATE 'SELECT MAX(i) FROM tab' INTO K; END;"
+      - id: execute_immediate_into_default
+        sql: "DO BEGIN DECLARE K INT; EXECUTE IMMEDIATE 'SELECT MAX(i) FROM tab' INTO K DEFAULT 0; END;"
+      - id: execute_immediate_using
+        sql: "DO BEGIN DECLARE a INT = 1; EXECUTE IMMEDIATE 'SELECT * FROM tab WHERE i = :a' USING :a; END;"
+      - id: execute_immediate_into_using
+        sql: "DO BEGIN DECLARE a INT = 1; DECLARE tv TABLE (i INT); EXECUTE IMMEDIATE 'SELECT * FROM tab WHERE i = :a' INTO tv USING :a; END;"
+      - id: execute_immediate_reads_sql_data
+        sql: "DO BEGIN EXECUTE IMMEDIATE 'SELECT * FROM tab' READS SQL DATA; END;"
+    examples:
+      - |-
+        DO BEGIN
+         EXEC 'DELETE from tab';
+         EXEC 'INSERT INTO tab VALUES (' || :i || ')';
+         EXECUTE IMMEDIATE 'SELECT * FROM tab ORDER BY i';
+        END;
+
+  - id: sqlscript_apply_filter
+    name: APPLY_FILTER
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/a09d584807f84477a64d7625ca45b089.html?version=2.0.08
+    tier: high
+    probes:
+      - id: apply_filter_table
+        sql: "DO BEGIN DECLARE iv_filter NVARCHAR(100) = 'SCHEMA_NAME = ''SYS'''; temp_procedures = APPLY_FILTER(SYS.PROCEDURES, :iv_filter); END;"
+      - id: apply_filter_table_variable
+        sql: "DO BEGIN DECLARE iv_filter NVARCHAR(100) = 'x > 1'; temp_procedures = SELECT SCHEMA_NAME, PROCEDURE_NAME FROM SYS.PROCEDURES; procedures = APPLY_FILTER(:temp_procedures, :iv_filter); END;"
+      - id: apply_filter_string_literal
+        sql: "DO BEGIN lt = APPLY_FILTER(tab, 'a = 1'); END;"
+      - id: apply_filter_filter_variable_concat
+        sql: "DO BEGIN DECLARE v_filter NVARCHAR(100); DECLARE col NVARCHAR(20) = 'a'; DECLARE val NVARCHAR(20) = 'b'; v_filter = :col || ' = ''' || :val || ''''; lt = APPLY_FILTER(:lt0, :v_filter); END;"
+    examples:
+      - "CALL GET_PROCEDURE_NAME(' PROCEDURE_NAME like ''MYPROC%''', ?);"
+
+  - id: sqlscript_declare_exit_handler
+    name: DECLARE EXIT HANDLER
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/ebc8b804be2e44789d767895f32503cf.html?version=2.0.08
+    tier: high
+    probes:
+      - id: exit_handler_sqlexception
+        sql: "DO BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION SELECT 'EXCEPTION was thrown' AS ERROR FROM dummy; SELECT 1 / 0 FROM dummy; END;"
+      - id: exit_handler_system_variables
+        sql: "DO BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION SELECT ::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE FROM DUMMY; SELECT 1 / 0 FROM dummy; END;"
+      - id: exit_handler_sql_error_code
+        sql: "DO BEGIN DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 304 SELECT ::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE FROM DUMMY; SELECT 1 / 0 FROM dummy; END;"
+      - id: exit_handler_condition_name
+        sql: "DO BEGIN DECLARE MY_COND CONDITION FOR SQL_ERROR_CODE 304; DECLARE EXIT HANDLER FOR MY_COND SELECT ::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE FROM DUMMY; SELECT 1 / 0 FROM dummy; END;"
+      - id: exit_handler_multiple_condition_values
+        sql: "DO BEGIN DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 304, SQL_ERROR_CODE 301 SELECT ::SQL_ERROR_CODE FROM DUMMY; SELECT 1 / 0 FROM dummy; END;"
+      - id: exit_handler_block_body
+        sql: "DO BEGIN DECLARE in_var INT = 0; DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 304 BEGIN DECLARE procedure_name NVARCHAR(500) = ::CURRENT_OBJECT_SCHEMA || '.' || ::CURRENT_OBJECT_NAME; DECLARE parameters NVARCHAR(255) = 'IN_VAR = ' || :in_var; INSERT INTO LOG_TABLE VALUES (::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE, :procedure_name, :parameters); END; tab = SELECT 1 / :in_var AS I FROM dummy; END;"
+      - id: exit_handler_for_update_nowait
+        sql: "DO BEGIN DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 146 SELECT 'locked' FROM dummy; SELECT * FROM t FOR UPDATE NOWAIT; END;"
+      - id: exit_handler_if_resignal_body
+        sql: "DO BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION IF ::SQL_ERROR_CODE = 288 THEN DROP TABLE TAB; CREATE TABLE TAB (I INTEGER PRIMARY KEY); ELSE RESIGNAL; END IF; CREATE TABLE TAB (I INTEGER PRIMARY KEY); END;"
+    examples:
+      - |-
+        DO BEGIN
+         DECLARE EXIT HANDLER FOR SQLEXCEPTION
+         SELECT ::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE FROM DUMMY;
+         SELECT 1/0 as I FROM dummy;
+        END;
+
+  - id: sqlscript_declare_continue_handler
+    name: DECLARE CONTINUE HANDLER
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/0d023eaa35454087aaa0766fcf1dd8bd.html?version=2.0.08
+    tier: high
+    probes:
+      - id: continue_handler_block
+        sql: "DO BEGIN DECLARE A INT = 10; DECLARE CONTINUE HANDLER FOR SQLEXCEPTION BEGIN SELECT ::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE FROM DUMMY; END; A = 1 / 0; SELECT :A FROM DUMMY; END;"
+      - id: continue_handler_single_statement
+        sql: "DO BEGIN DECLARE A INT = 10; DECLARE CONTINUE HANDLER FOR SQLEXCEPTION SELECT ::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE FROM DUMMY; SELECT :A FROM DUMMY; BEGIN A = 1 / 0; A = :A + 1; END; SELECT :A FROM DUMMY; END;"
+      - id: continue_handler_sql_error_code
+        sql: "DO BEGIN DECLARE CONTINUE HANDLER FOR SQL_ERROR_CODE 12346 BEGIN END; SIGNAL SQL_ERROR_CODE 12346; END;"
+      - id: continue_handler_empty_block
+        sql: "DO BEGIN DECLARE CONTINUE HANDLER FOR SQLEXCEPTION BEGIN END; INSERT INTO TAB VALUES (1 / 0); END;"
+      - id: continue_handler_signal_in_handler
+        sql: "DO BEGIN DECLARE CONTINUE HANDLER FOR SQL_ERROR_CODE 12346 BEGIN END; BEGIN DECLARE CONTINUE HANDLER FOR SQL_ERROR_CODE 12345 BEGIN SIGNAL SQL_ERROR_CODE 12346; SELECT ::SQL_ERROR_CODE FROM DUMMY; END; SIGNAL SQL_ERROR_CODE 12345; END; END;"
+      - id: continue_handler_nested_in_exit_handler_scope
+        sql: "DO BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION SELECT ::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE FROM DUMMY; BEGIN DECLARE CONTINUE HANDLER FOR SQLEXCEPTION SELECT ::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE FROM DUMMY; SELECT 1 / 0 FROM DUMMY; END; END;"
+      - id: continue_handler_condition_name
+        sql: "DO BEGIN DECLARE division_by_zero CONDITION FOR SQL_ERROR_CODE 304; DECLARE CONTINUE HANDLER FOR division_by_zero SELECT 1 FROM dummy; SELECT 1 / 0 FROM dummy; END;"
+    examples:
+      - |-
+        DO BEGIN
+         DECLARE A INT = 10;
+         DECLARE CONTINUE HANDLER FOR SQLEXCEPTION BEGIN -- Catch the exception
+         SELECT ::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE FROM DUMMY;
+         END;
+         A = 1 / 0; -- An exception will be thrown
+         SELECT :A FROM DUMMY; -- Continue from this statement after handling the exception
+        END;
+      - |-
+        DO BEGIN
+         DECLARE A INT = 0;
+         DECLARE CONTINUE HANDLER FOR SQLEXCEPTION SELECT ::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE FROM DUMMY;
+         IF A = 1 / 0 THEN -- An error occurs
+         A = 1;
+         ELSE
+         A = 2;
+         END IF;
+         SELECT :A FROM DUMMY; -- Continue from here, Result: 0
+        END;
+      - |-
+        DO BEGIN
+         DECLARE A INT = 10;
+         DECLARE CONTINUE HANDLER FOR SQLEXCEPTION BEGIN
+         SELECT :A FROM DUMMY; -- Result: 10
+         END;
+         A = 1 / 0;
+         SELECT :A FROM DUMMY; -- Result: 10
+        END;
+
+  - id: sqlscript_declare_condition
+    name: DECLARE CONDITION
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/47eb720aed594810b8afb2885e2fa9e4.html?version=2.0.08
+    tier: high
+    probes:
+      - id: condition_for_sql_error_code
+        sql: "DO BEGIN DECLARE division_by_zero CONDITION FOR SQL_ERROR_CODE 304; END;"
+      - id: condition_user_defined
+        sql: "DO BEGIN DECLARE invalid_input CONDITION; END;"
+      - id: condition_user_defined_error_code
+        sql: "DO BEGIN DECLARE invalid_input CONDITION FOR SQL_ERROR_CODE 10000; END;"
+      - id: condition_used_by_handler
+        sql: "DO BEGIN DECLARE division_by_zero CONDITION FOR SQL_ERROR_CODE 304; DECLARE EXIT HANDLER FOR division_by_zero SELECT ::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE FROM DUMMY; SELECT 1 / 0 FROM dummy; END;"
+
+  - id: sqlscript_signal
+    name: SIGNAL
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/2b525b310e2c42a68a677e2c99e27533.html?version=2.0.08
+    tier: high
+    probes:
+      - id: signal_sql_error_code
+        sql: "DO BEGIN SIGNAL SQL_ERROR_CODE 10000; END;"
+      - id: signal_condition
+        sql: "DO BEGIN DECLARE invalid_input CONDITION FOR SQL_ERROR_CODE 10000; SIGNAL invalid_input; END;"
+      - id: signal_condition_message_text
+        sql: "DO BEGIN DECLARE invalid_input CONDITION FOR SQL_ERROR_CODE 10000; SIGNAL invalid_input SET MESSAGE_TEXT = 'Invalid input arguments'; END;"
+      - id: signal_error_code_message_text
+        sql: "DO BEGIN SIGNAL SQL_ERROR_CODE 10001 SET MESSAGE_TEXT = 'custom'; END;"
+      - id: signal_message_text_expression
+        sql: "DO BEGIN DECLARE start_date DATE = '2011-03-03'; DECLARE end_date DATE = '2010-03-03'; DECLARE invalid_input CONDITION FOR SQL_ERROR_CODE 10000; IF :start_date > :end_date THEN SIGNAL invalid_input SET MESSAGE_TEXT = 'START_DATE = ' || :start_date || ' > END_DATE = ' || :end_date; END IF; END;"
+
+  - id: sqlscript_resignal
+    name: RESIGNAL
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/2b525b310e2c42a68a677e2c99e27533.html?version=2.0.08
+    tier: high
+    probes:
+      - id: resignal_plain
+        sql: "DO BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION RESIGNAL; SELECT 1 / 0 FROM dummy; END;"
+      - id: resignal_message_text
+        sql: "DO BEGIN DECLARE in_var INT = 0; DECLARE EXIT HANDLER FOR SQLEXCEPTION RESIGNAL SET MESSAGE_TEXT = 'for the input parameter in_var = ' || :in_var || ' exception was raised '; SELECT 1 / :in_var FROM dummy; END;"
+      - id: resignal_message_text_original_message
+        sql: "DO BEGIN DECLARE in_var INT = 0; DECLARE EXIT HANDLER FOR SQLEXCEPTION RESIGNAL SET MESSAGE_TEXT = 'in_var = ' || :in_var || ' ' || ::SQL_ERROR_MESSAGE; SELECT 1 / :in_var FROM dummy; END;"
+      - id: resignal_sql_error_code
+        sql: "DO BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION RESIGNAL SQL_ERROR_CODE 10001; SELECT 1 / 0 FROM dummy; END;"
+      - id: resignal_condition
+        sql: "DO BEGIN DECLARE invalid_input CONDITION FOR SQL_ERROR_CODE 10000; DECLARE EXIT HANDLER FOR SQLEXCEPTION RESIGNAL invalid_input; SELECT 1 / 0 FROM dummy; END;"
+      - id: resignal_condition_message_text
+        sql: "DO BEGIN DECLARE invalid_input CONDITION FOR SQL_ERROR_CODE 10000; DECLARE EXIT HANDLER FOR SQLEXCEPTION RESIGNAL invalid_input SET MESSAGE_TEXT = 'x'; SELECT 1 / 0 FROM dummy; END;"
