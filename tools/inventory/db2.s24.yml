@@ -1,0 +1,128 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "11.5"
+source: https://www.ibm.com/docs/en/db2/11.5.x?topic=reference-statements
+
+statements:
+  - id: savepoint
+    name: SAVEPOINT
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-savepoint
+    tier: high
+    probes:
+      - { id: basic, sql: "SAVEPOINT sp1 ON ROLLBACK RETAIN CURSORS;" }
+      - { id: unique, sql: "SAVEPOINT sp1 UNIQUE ON ROLLBACK RETAIN CURSORS;" }
+      - { id: retain_locks, sql: "SAVEPOINT sp1 ON ROLLBACK RETAIN CURSORS ON ROLLBACK RETAIN LOCKS;" }
+      - { id: unique_retain_locks, sql: "SAVEPOINT sp1 UNIQUE ON ROLLBACK RETAIN CURSORS ON ROLLBACK RETAIN LOCKS;" }
+      - { id: retain_locks_first, sql: "SAVEPOINT sp1 ON ROLLBACK RETAIN LOCKS ON ROLLBACK RETAIN CURSORS;" }
+    examples:
+      - "SAVEPOINT SAVEPOINT1 ON ROLLBACK RETAIN CURSORS;"
+      - "SAVEPOINT SAVEPOINT2 ON ROLLBACK RETAIN CURSORS;"
+      - "SAVEPOINT SAVEPOINT3 ON ROLLBACK RETAIN CURSORS;"
+
+  - id: select
+    name: SELECT
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-select
+    tier: high
+    probes:
+      - { id: basic, sql: "SELECT c FROM t;" }
+      - { id: star, sql: "SELECT * FROM t;" }
+      - { id: qualified_star, sql: "SELECT t.* FROM t;" }
+      - { id: alias_as, sql: "SELECT c AS x FROM t;" }
+      - { id: alias_bare, sql: "SELECT c x FROM t;" }
+      - { id: distinct, sql: "SELECT DISTINCT c FROM t;" }
+      - { id: all_quantifier, sql: "SELECT ALL c FROM t;" }
+      - { id: no_from, sql: "SELECT 1 FROM SYSIBM.SYSDUMMY1;" }
+      - { id: table_alias, sql: "SELECT a.c FROM t AS a;" }
+      - { id: table_alias_columns, sql: "SELECT a.x FROM t AS a (x, y);" }
+      - { id: where, sql: "SELECT c FROM t WHERE c > 1;" }
+      - { id: group_by, sql: "SELECT c, COUNT(*) FROM t GROUP BY c;" }
+      - { id: group_by_grouping_sets, sql: "SELECT a, b, COUNT(*) FROM t GROUP BY GROUPING SETS ((a), (b), ());" }
+      - { id: group_by_rollup, sql: "SELECT a, b, SUM(c) FROM t GROUP BY ROLLUP (a, b);" }
+      - { id: group_by_cube, sql: "SELECT a, b, SUM(c) FROM t GROUP BY CUBE (a, b);" }
+      - { id: group_by_mixed, sql: "SELECT a, b, SUM(c) FROM t GROUP BY a, ROLLUP (b);" }
+      - { id: having, sql: "SELECT c, COUNT(*) FROM t GROUP BY c HAVING COUNT(*) > 1;" }
+      - { id: order_by, sql: "SELECT c FROM t ORDER BY c DESC;" }
+      - { id: order_by_ordinal, sql: "SELECT c, d FROM t ORDER BY 2 ASC, 1;" }
+      - { id: order_by_nulls, sql: "SELECT c FROM t ORDER BY c NULLS FIRST;" }
+      - { id: order_by_input_seq, sql: "SELECT c FROM t ORDER BY INPUT SEQUENCE;" }
+      - { id: order_by_order_of, sql: "SELECT c FROM (SELECT c FROM t ORDER BY c) AS d ORDER BY ORDER OF d;" }
+      - { id: fetch_first, sql: "SELECT c FROM t FETCH FIRST 10 ROWS ONLY;" }
+      - { id: fetch_first_row, sql: "SELECT c FROM t FETCH FIRST ROW ONLY;" }
+      - { id: fetch_first_percent, sql: "SELECT c FROM t FETCH FIRST 10 PERCENT ROWS ONLY;" }
+      - { id: fetch_next, sql: "SELECT c FROM t FETCH NEXT 5 ROWS ONLY;" }
+      - { id: offset, sql: "SELECT c FROM t OFFSET 5 ROWS;" }
+      - { id: offset_fetch, sql: "SELECT c FROM t ORDER BY c OFFSET 5 ROWS FETCH NEXT 10 ROWS ONLY;" }
+      - { id: limit, sql: "SELECT c FROM t LIMIT 10;" }
+      - { id: limit_offset, sql: "SELECT c FROM t LIMIT 10 OFFSET 5;" }
+      - { id: limit_comma, sql: "SELECT c FROM t LIMIT 5, 10;" }
+      - { id: inner_join, sql: "SELECT * FROM a INNER JOIN b ON a.id = b.id;" }
+      - { id: join, sql: "SELECT * FROM a JOIN b ON a.id = b.id;" }
+      - { id: left_join, sql: "SELECT * FROM a LEFT OUTER JOIN b ON a.id = b.id;" }
+      - { id: right_join, sql: "SELECT * FROM a RIGHT JOIN b ON a.id = b.id;" }
+      - { id: full_join, sql: "SELECT * FROM a FULL OUTER JOIN b ON a.id = b.id;" }
+      - { id: cross_join, sql: "SELECT * FROM a CROSS JOIN b;" }
+      - { id: comma_join, sql: "SELECT * FROM a, b WHERE a.id = b.id;" }
+      - { id: nested_join, sql: "SELECT * FROM (a JOIN b ON a.id = b.id) JOIN c ON b.id = c.id;" }
+      - { id: derived_table, sql: "SELECT d.c FROM (SELECT c FROM t) AS d;" }
+      - { id: lateral, sql: "SELECT * FROM a, LATERAL (SELECT * FROM b WHERE b.id = a.id) AS d;" }
+      - { id: table_function, sql: "SELECT * FROM TABLE(f(1)) AS x;" }
+      - { id: table_values, sql: "SELECT * FROM (VALUES (1, 2), (3, 4)) AS v (a, b);" }
+      - { id: collection_derived_table, sql: "SELECT * FROM UNNEST(ARRAY[1, 2, 3]) AS u (x);" }
+      - { id: xmltable, sql: "SELECT * FROM XMLTABLE('$d/r' PASSING XMLPARSE(DOCUMENT '<r/>') AS \"d\" COLUMNS c INTEGER PATH 'c') AS x;" }
+      - { id: final_table, sql: "SELECT * FROM FINAL TABLE (INSERT INTO t VALUES (1));" }
+      - { id: new_table, sql: "SELECT * FROM NEW TABLE (UPDATE t SET c = 1);" }
+      - { id: old_table, sql: "SELECT * FROM OLD TABLE (DELETE FROM t WHERE c = 1);" }
+      - { id: system_time_as_of, sql: "SELECT * FROM t FOR SYSTEM_TIME AS OF '2020-01-01-00.00.00';" }
+      - { id: system_time_from_to, sql: "SELECT * FROM t FOR SYSTEM_TIME FROM '2020-01-01-00.00.00' TO '2021-01-01-00.00.00';" }
+      - { id: system_time_between, sql: "SELECT * FROM t FOR SYSTEM_TIME BETWEEN '2020-01-01-00.00.00' AND '2021-01-01-00.00.00';" }
+      - { id: business_time_as_of, sql: "SELECT * FROM t FOR BUSINESS_TIME AS OF '2020-01-01';" }
+      - { id: with_cte, sql: "WITH q AS (SELECT c FROM t) SELECT c FROM q;" }
+      - { id: with_cte_columns, sql: "WITH q (x) AS (SELECT c FROM t) SELECT x FROM q;" }
+      - { id: with_multiple_cte, sql: "WITH a AS (SELECT 1 AS x FROM SYSIBM.SYSDUMMY1), b AS (SELECT x FROM a) SELECT x FROM b;" }
+      - { id: with_recursive_cte, sql: "WITH r (n) AS (SELECT 1 FROM SYSIBM.SYSDUMMY1 UNION ALL SELECT n + 1 FROM r WHERE n < 10) SELECT n FROM r;" }
+      - { id: union, sql: "SELECT c FROM a UNION SELECT c FROM b;" }
+      - { id: union_all, sql: "SELECT c FROM a UNION ALL SELECT c FROM b;" }
+      - { id: except, sql: "SELECT c FROM a EXCEPT SELECT c FROM b;" }
+      - { id: except_all, sql: "SELECT c FROM a EXCEPT ALL SELECT c FROM b;" }
+      - { id: minus, sql: "SELECT c FROM a MINUS SELECT c FROM b;" }
+      - { id: intersect, sql: "SELECT c FROM a INTERSECT SELECT c FROM b;" }
+      - { id: intersect_all, sql: "SELECT c FROM a INTERSECT ALL SELECT c FROM b;" }
+      - { id: set_op_parenthesized, sql: "(SELECT c FROM a ORDER BY c) UNION (SELECT c FROM b ORDER BY c);" }
+      - { id: set_op_order_by, sql: "SELECT c FROM a UNION SELECT c FROM b ORDER BY c FETCH FIRST 5 ROWS ONLY;" }
+      - { id: values_clause, sql: "VALUES (1), (2), (3);" }
+      - { id: values_row, sql: "VALUES (1, 2, 3);" }
+      - { id: values_bare, sql: "VALUES 1, 2, 3;" }
+      - { id: values_union, sql: "VALUES (1) UNION ALL VALUES (2);" }
+      - { id: window_function, sql: "SELECT ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) FROM t;" }
+      - { id: window_frame_rows, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: window_frame_range, sql: "SELECT SUM(c) OVER (ORDER BY d RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: window_frame_groups, sql: "SELECT SUM(c) OVER (ORDER BY d GROUPS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;" }
+      - { id: window_frame_exclude, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING EXCLUDE CURRENT ROW) FROM t;" }
+      - { id: window_named, sql: "SELECT SUM(c) OVER w FROM t WINDOW w AS (PARTITION BY a ORDER BY b);" }
+      - { id: isolation_ur, sql: "SELECT c FROM t WITH UR;" }
+      - { id: isolation_cs, sql: "SELECT c FROM t WITH CS;" }
+      - { id: isolation_rs, sql: "SELECT c FROM t WITH RS;" }
+      - { id: isolation_rr, sql: "SELECT c FROM t WITH RR;" }
+      - { id: isolation_lock_request, sql: "SELECT c FROM t WITH RS USE AND KEEP EXCLUSIVE LOCKS;" }
+      - { id: isolation_lock_update, sql: "SELECT c FROM t WITH RR USE AND KEEP UPDATE LOCKS;" }
+      - { id: isolation_lock_share, sql: "SELECT c FROM t WITH RR USE AND KEEP SHARE LOCKS;" }
+      - { id: for_read_only, sql: "SELECT c FROM t FOR READ ONLY;" }
+      - { id: for_fetch_only, sql: "SELECT c FROM t FOR FETCH ONLY;" }
+      - { id: for_update, sql: "SELECT c FROM t FOR UPDATE;" }
+      - { id: for_update_of, sql: "SELECT c, d FROM t FOR UPDATE OF c, d;" }
+      - { id: optimize_for, sql: "SELECT c FROM t OPTIMIZE FOR 10 ROWS;" }
+      - { id: concurrent_access_wait_outcome, sql: "SELECT c FROM t WITH CS WAIT FOR OUTCOME;" }
+      - { id: concurrent_access_skip_locked, sql: "SELECT c FROM t WITH CS SKIPPED LOCKED DATA;" }
+      - { id: concurrent_access_no_wait, sql: "SELECT c FROM t WITH CS USE CURRENTLY COMMITTED;" }
+      - { id: subquery_in, sql: "SELECT c FROM t WHERE c IN (SELECT c FROM u);" }
+      - { id: subquery_exists, sql: "SELECT c FROM t WHERE EXISTS (SELECT 1 FROM u WHERE u.c = t.c);" }
+      - { id: scalar_subquery, sql: "SELECT (SELECT MAX(c) FROM u) FROM t;" }
+      - { id: sample_tablesample, sql: "SELECT c FROM t TABLESAMPLE BERNOULLI (10);" }
+      - { id: sample_system_repeatable, sql: "SELECT c FROM t TABLESAMPLE SYSTEM (10) REPEATABLE (1);" }
+      - { id: outer_join_operator, sql: "SELECT * FROM a, b WHERE a.id = b.id (+);" }
+      - { id: connect_by, sql: "SELECT c FROM t START WITH p IS NULL CONNECT BY PRIOR c = p;" }
+      - { id: select_into, sql: "SELECT c INTO v FROM t;" }
+    examples:
+      - "VALUES (1),(2),(3);"
+      - "SELECT * FROM T1 ORDER BY C1 UNION SELECT * FROM T2 ORDER BY C1;"
+      - "(SELECT * FROM T1 ORDER BY C1) UNION (SELECT * FROM T2 ORDER BY C1);"
