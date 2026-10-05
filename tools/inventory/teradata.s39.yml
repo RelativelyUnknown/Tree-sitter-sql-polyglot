@@ -1,0 +1,239 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: set_connection
+    name: SET CONNECTION
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/np3F6fCuzrhX3qblOYcTPg
+    tier: low
+    status: not-sql
+    reason: "Embedded SQL (precompiler) statement; the page documents it only for host-language applications, a SQL parser never sees it (host variable form :connection_name_variable)"
+  - id: set_crash
+    name: SET CRASH
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/qUc3RhWp~Oj74L2evpNqWQ
+    tier: low
+    status: not-sql
+    reason: "Page states \"Embedded SQL only\"; sets crash-handling options for a host-language application"
+  - id: set_encryption
+    name: SET ENCRYPTION
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/M3bs7k5fnlM6Mu48SVrcYg
+    tier: low
+    status: not-sql
+    reason: "Precompiler directive: the page says it is supported in the C and COBOL preprocessors"
+  - id: async
+    name: ASYNC Statement Modifier
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/6b9kYXVA8OnHlBSfiZXJYw
+    tier: low
+    status: not-sql
+    reason: "Embedded SQL (precompiler) statement; the page documents it only for host-language applications, a SQL parser never sees it"
+  - id: test
+    name: TEST
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/gDidKejpssO134Uum0cwSQ
+    tier: low
+    status: not-sql
+    reason: "Embedded SQL (precompiler) statement; the page documents it only for host-language applications, a SQL parser never sees it (tests an ASYNC statement completion)"
+  - id: wait
+    name: WAIT
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/VvQMsV~1mzxxpBYMqWr2eQ
+    tier: low
+    status: not-sql
+    reason: "Embedded SQL (precompiler) statement; the page documents it only for host-language applications, a SQL parser never sees it (waits on ASYNC statements)"
+  - id: create_table_alias
+    name: CREATE TABLE (Alias Table Form)
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/u5SiHnkkyTn8U2QWjOXkJA
+    tier: low
+    probes:
+      - { id: alias, sql: "CREATE TABLE t DATALAKE dl, DATALAKE_TABLE db.tt;" }
+      - { id: multiset, sql: "CREATE MULTISET TABLE db.t DATALAKE dl;" }
+  - id: create_error_table_ofs
+    name: CREATE ERROR TABLE (OFS)
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/9DiIWh3T_qzB9TepG1i_0Q
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE ERROR TABLE et, STORAGE = TD_OFSSTORAGE FOR t;" }
+      - { id: no_name, sql: "CREATE ERROR TABLE FOR t;" }
+  - id: alter_table_storage_conversion
+    name: ALTER TABLE (Storage Conversion Form)
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/nkabg7enYtZbSIoNGCqNAg
+    tier: low
+    probes:
+      - { id: basic, sql: "ALTER TABLE t, STORAGE = TD_OFSSTORAGE;" }
+      - { id: order_partition, sql: "ALTER TABLE db.t, STORAGE = TD_OFSSTORAGE ORDER BY c1, c2 PARTITION BY COLUMN;" }
+      - { id: not_partitioned, sql: "ALTER TABLE t, STORAGE = TD_OFSSTORAGE NOT PARTITIONED;" }
+  - id: alter_table_reorganize
+    name: ALTER TABLE REORGANIZE
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/y~uYIKy9agBwbSN9NDOoZQ
+    tier: low
+    probes:
+      - { id: basic, sql: "ALTER TABLE t REORGANIZE;" }
+      - { id: size, sql: "ALTER TABLE db.t REORGANIZE SIZE 100;" }
+  - id: alter_table_save
+    name: ALTER TABLE SAVE | UNSAVE
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/B4c27giXYttMSP2iH0BrUw
+    tier: low
+    probes:
+      - { id: save_timestamp, sql: "ALTER TABLE t SAVE TIMESTAMP '2024-01-01 00:00:00';" }
+      - { id: save_version, sql: "ALTER TABLE t SAVE 3;" }
+      - { id: unsave, sql: "ALTER TABLE db.t UNSAVE 3;" }
+  - id: comment_on_datalake
+    name: COMMENT ON DATALAKE
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/5fPozPyZq0Xjq4C_hrZNWQ
+    tier: low
+    probes:
+      - { id: basic, sql: "COMMENT ON DATALAKE dl AS 'my lake';" }
+      - { id: td_server_db, sql: "COMMENT ON DATALAKE TD_SERVER_DB.dl 'my lake';" }
+      - { id: show, sql: "COMMENT ON DATALAKE dl;" }
+  - id: help_datalake
+    name: HELP DATALAKE
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/rrMEsgzm2ZgQeDjnS13iWA
+    tier: low
+    probes:
+      - { id: basic, sql: "HELP DATALAKE dl;" }
+      - { id: qualified, sql: "HELP DATALAKE TD_SERVER_DB.dl;" }
+  - id: show_datalake
+    name: SHOW DATALAKE
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/y4InWTStSbOeS26_x6s5GQ
+    tier: low
+    probes:
+      - { id: basic, sql: "SHOW DATALAKE dl;" }
+      - { id: qualified, sql: "SHOW DATALAKE TD_SERVER_DB.dl;" }
+  - id: create_compute_group
+    name: CREATE COMPUTE GROUP
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/4zCeT8wYexO~4bYmOA48Cw
+    tier: low
+    probes:
+      - { id: standard, sql: "CREATE COMPUTE GROUP cg USING QUERY_STRATEGY ('STANDARD');" }
+      - { id: analytic, sql: "CREATE COMPUTE GROUP cg USING QUERY_STRATEGY ('ANALYTIC_L1');" }
+  - id: modify_compute_group
+    name: MODIFY COMPUTE GROUP
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/47SlKjztnvXVvcdkvNsOqw
+    tier: low
+    probes:
+      - { id: basic, sql: "MODIFY COMPUTE GROUP cg USING QUERY_STRATEGY ('ANALYTIC');" }
+  - id: drop_compute_group
+    name: DROP COMPUTE GROUP
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/QFSsephxhGtoUKm1i1P4zQ
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP COMPUTE GROUP cg;" }
+  - id: show_compute_group
+    name: SHOW COMPUTE GROUP
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/sOnacTy30qTVzghIkL_dRA
+    tier: low
+    probes:
+      - { id: basic, sql: "SHOW COMPUTE GROUP cg;" }
+      - { id: in_xml, sql: "SHOW IN XML COMPUTE GROUP cg;" }
+  - id: comment_on_compute_group
+    name: COMMENT ON COMPUTE GROUP
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/E7PgKYNw83bmoq4NM3nGYA
+    tier: low
+    probes:
+      - { id: basic, sql: "COMMENT ON COMPUTE GROUP cg 'my group';" }
+      - { id: show, sql: "COMMENT ON COMPUTE GROUP cg;" }
+  - id: create_compute_profile
+    name: CREATE COMPUTE PROFILE
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/xZ6N8~SK0nKV5rzX2aVGHg
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE COMPUTE PROFILE cp IN COMPUTE GROUP cg, INSTANCE = small;" }
+      - { id: attributes, sql: "CREATE COMPUTE PROFILE cp IN cg, INSTANCE = small, 'INSTANCE_TYPE' = STANDARD USING MIN_COMPUTE_COUNT (1) MAX_COMPUTE_COUNT (3) SCALING_POLICY (STANDARD) INITIALLY_SUSPENDED ('FALSE') COOLDOWN_PERIOD (10);" }
+  - id: modify_compute_profile
+    name: MODIFY COMPUTE PROFILE
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/D7WyMZFXly~mzS7fyTK9eg
+    tier: low
+    probes:
+      - { id: basic, sql: "MODIFY COMPUTE PROFILE cp IN COMPUTE GROUP cg, USING MIN_COMPUTE_COUNT (2) MAX_COMPUTE_COUNT (4);" }
+      - { id: times, sql: "MODIFY COMPUTE PROFILE cp USING START_TIME ('08:00') END_TIME (NULL);" }
+  - id: drop_compute_profile
+    name: DROP COMPUTE PROFILE
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/hzHMvISPVR0BDEQK1AV_KQ
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP COMPUTE PROFILE cp IN COMPUTE GROUP cg;" }
+  - id: show_compute_profile
+    name: SHOW COMPUTE PROFILE
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/SS0apB0naXX_dw7Jsh9drw
+    tier: low
+    probes:
+      - { id: basic, sql: "SHOW COMPUTE PROFILE cp IN COMPUTE GROUP cg;" }
+      - { id: in_xml, sql: "SHOW IN XML COMPUTE PROFILE cp;" }
+  - id: comment_on_compute_profile
+    name: COMMENT ON COMPUTE PROFILE
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/x9lTENaTNhwTS1~m341JAw
+    tier: low
+    probes:
+      - { id: basic, sql: "COMMENT ON COMPUTE PROFILE cp IN COMPUTE GROUP cg 'my profile';" }
+      - { id: show, sql: "COMMENT ON COMPUTE PROFILE cp;" }
+  - id: set_session_compute_group
+    name: SET SESSION COMPUTE GROUP
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/Q4QZGDxwMagAtdyDZtp97g
+    tier: low
+    probes:
+      - { id: named, sql: "SET SESSION COMPUTE GROUP cg;" }
+      - { id: null_group, sql: "SET SESSION COMPUTE GROUP NULL;" }
+      - { id: default_group, sql: "SET SESSION COMPUTE GROUP DEFAULT;" }
+  - id: grant_compute_group
+    name: GRANT COMPUTE GROUP
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/xNIbN2I6dYHpCzqXJW1psg
+    tier: low
+    probes:
+      - { id: basic, sql: "GRANT COMPUTE cg TO u;" }
+      - { id: grant_option, sql: "GRANT COMPUTE cg TO r WITH GRANT OPTION;" }
+  - id: grant_create_compute_group
+    name: GRANT CREATE COMPUTE GROUP
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/32VfHu9moo~WGU9hYhb8LQ
+    tier: low
+    probes:
+      - { id: basic, sql: "GRANT CREATE COMPUTE GROUP TO u;" }
+      - { id: grant_option, sql: "GRANT CREATE COMPUTE GROUP TO u WITH GRANT OPTION, r;" }
+  - id: grant_drop_compute_group
+    name: GRANT DROP COMPUTE GROUP
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/iUr4oiHXsKvwlTQrTslgeQ
+    tier: low
+    probes:
+      - { id: basic, sql: "GRANT DROP COMPUTE GROUP TO u;" }
+      - { id: grant_option, sql: "GRANT DROP COMPUTE GROUP TO u WITH GRANT OPTION;" }
+  - id: grant_create_compute_profile
+    name: GRANT CREATE COMPUTE PROFILE
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/y~3k28gWkeWc_0Scqoz74w
+    tier: low
+    probes:
+      - { id: basic, sql: "GRANT CREATE COMPUTE PROFILE TO u;" }
+      - { id: on_group, sql: "GRANT CREATE COMPUTE PROFILE ON cg TO u WITH GRANT OPTION;" }
+  - id: grant_drop_compute_profile
+    name: GRANT DROP COMPUTE PROFILE
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/Nfg7a~xjM9H1RPCm6qPy6g
+    tier: low
+    probes:
+      - { id: basic, sql: "GRANT DROP COMPUTE PROFILE TO u;" }
+      - { id: on_group, sql: "GRANT DROP COMPUTE PROFILE ON cg TO u WITH GRANT OPTION;" }
+  - id: revoke_create_compute_group
+    name: REVOKE CREATE COMPUTE GROUP
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/CE5RBAh7UyOJkT58Y2Kzxg
+    tier: low
+    probes:
+      - { id: basic, sql: "REVOKE CREATE COMPUTE GROUP FROM u;" }
+      - { id: grant_option, sql: "REVOKE GRANT OPTION FOR CREATE COMPUTE GROUP FROM u, r;" }
+  - id: revoke_drop_compute_group
+    name: REVOKE DROP COMPUTE GROUP
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/o0_Qm6Cy0N9oAywP~n3ypw
+    tier: low
+    probes:
+      - { id: basic, sql: "REVOKE DROP COMPUTE GROUP FROM u;" }
+      - { id: grant_option, sql: "REVOKE GRANT OPTION FOR DROP COMPUTE GROUP FROM r;" }
+  - id: revoke_create_compute_profile
+    name: REVOKE CREATE COMPUTE PROFILE
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/5n_lThf8NgZkXbKIuAOt2A
+    tier: low
+    probes:
+      - { id: basic, sql: "REVOKE CREATE COMPUTE PROFILE FROM u;" }
+      - { id: on_group, sql: "REVOKE GRANT OPTION FOR CREATE COMPUTE PROFILE ON cg FROM u;" }
+  - id: revoke_drop_compute_profile
+    name: REVOKE DROP COMPUTE PROFILE
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/LRyjfJxmdGEdQ_~l9JThmg
+    tier: low
+    probes:
+      - { id: basic, sql: "REVOKE DROP COMPUTE PROFILE FROM u;" }
+      - { id: on_group, sql: "REVOKE GRANT OPTION FOR DROP COMPUTE PROFILE ON cg FROM u;" }
