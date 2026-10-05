@@ -1,0 +1,42 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: loop
+    name: LOOP
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/_jyREFFVtCNe43ENPo1f3Q
+    tier: high
+    probes:
+      - id: basic
+        sql: "LOOP SET c = c - 1; END LOOP;"
+      - id: labeled
+        sql: "L1: LOOP SET c = c - 1; END LOOP L1;"
+      - id: leave
+        sql: "L1: LOOP SET c = c - 1; IF c = 0 THEN LEAVE L1; END IF; END LOOP L1;"
+      - id: dml_body
+        sql: "L1: LOOP INSERT INTO t (a, b) VALUES (1, 2); SET c = c - 1; IF c = 0 THEN LEAVE L1; END IF; END LOOP L1;"
+    examples:
+      - |-
+        L1:
+        LOOP
+          INSERT INTO transaction (trans_num, account_num)     VALUES (hCounter, hAccountNum);
+          SET hCounter = hCounter - 1;
+          IF hCounter = 0 THEN
+             LEAVE L1;
+          END IF;
+        END LOOP L1;
+  - id: repeat
+    name: REPEAT
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/sFrCJQ2l4C397wdFXZHkLg
+    tier: high
+    probes:
+      - id: basic
+        sql: "REPEAT SET c = c + 1; UNTIL c > 10 END REPEAT;"
+      - id: labeled
+        sql: "L1: REPEAT SET c = c + 1; UNTIL c > 10 END REPEAT L1;"
+      - id: multiple_statements
+        sql: "REPEAT INSERT INTO t (a, b) VALUES (c, 1); SET c = c + 1; UNTIL c > 10 END REPEAT;"
+      - id: iterate_leave
+        sql: "L1: REPEAT SET c = c + 1; IF c = 5 THEN ITERATE L1; END IF; IF c = 8 THEN LEAVE L1; END IF; UNTIL c > 10 END REPEAT L1;"
