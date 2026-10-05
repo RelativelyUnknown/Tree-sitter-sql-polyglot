@@ -1,0 +1,166 @@
+dialect: cockroachdb
+engine: CockroachDB
+version: "v26.3 (stable)"
+source: https://www.cockroachlabs.com/docs/stable/sql-statements
+
+statements:
+  - id: show_roles
+    name: SHOW ROLES
+    doc: https://www.cockroachlabs.com/docs/stable/show-roles
+    tier: medium
+    probes:
+      - { id: basic, sql: "SHOW ROLES;" }
+      - { id: with_source, sql: "SHOW ROLES WITH SOURCE = 'ldap:ldap.example.com';" }
+      - { id: with_last_login_before, sql: "SHOW ROLES WITH LAST LOGIN BEFORE '2026-01-01';" }
+      - { id: with_limit, sql: "SHOW ROLES WITH LIMIT 10;" }
+      - { id: combined_filters, sql: "SHOW ROLES WITH SOURCE = 'ldap:ldap.example.com' LAST LOGIN BEFORE '2026-01-01' LIMIT 10;" }
+    examples:
+      - "SHOW ROLES;"
+      - "SHOW ROLES WITH SOURCE = 'ldap:ldap.example.com';"
+      - "SHOW ROLES WITH LAST LOGIN BEFORE '2026-01-01';"
+
+  - id: show_users
+    name: SHOW USERS
+    doc: https://www.cockroachlabs.com/docs/stable/show-users
+    tier: medium
+    probes:
+      - { id: basic, sql: "SHOW USERS;" }
+      - { id: with_source, sql: "SHOW USERS WITH SOURCE = 'ldap:ldap.example.com';" }
+      - { id: with_last_login_before, sql: "SHOW USERS WITH LAST LOGIN BEFORE '2026-01-01';" }
+      - { id: with_limit, sql: "SHOW USERS WITH LIMIT 10;" }
+      - { id: combined_filters, sql: "SHOW USERS WITH SOURCE = 'ldap:ldap.example.com' LAST LOGIN BEFORE '2026-01-01' LIMIT 10;" }
+    examples:
+      - "SHOW USERS;"
+      - "SHOW USERS WITH SOURCE = 'ldap:ldap.example.com';"
+      - "SHOW USERS WITH LAST LOGIN BEFORE '2026-01-01';"
+
+  - id: show_default_privileges
+    name: SHOW DEFAULT PRIVILEGES
+    doc: https://www.cockroachlabs.com/docs/stable/show-default-privileges
+    tier: medium
+    probes:
+      - { id: basic, sql: "SHOW DEFAULT PRIVILEGES;" }
+      - { id: for_role, sql: "SHOW DEFAULT PRIVILEGES FOR ROLE max;" }
+      - { id: for_user_list, sql: "SHOW DEFAULT PRIVILEGES FOR USER max, moe;" }
+      - { id: for_all_roles, sql: "SHOW DEFAULT PRIVILEGES FOR ALL ROLES;" }
+      - { id: in_schema, sql: "SHOW DEFAULT PRIVILEGES IN SCHEMA s;" }
+      - { id: for_grantee, sql: "SHOW DEFAULT PRIVILEGES FOR GRANTEE max;" }
+    examples:
+      - "SHOW DEFAULT PRIVILEGES;"
+      - "SHOW DEFAULT PRIVILEGES FOR ALL ROLES;"
+      - "SHOW DEFAULT PRIVILEGES FOR ROLE max;"
+
+  - id: show_session_variable
+    name: SHOW (session variable)
+    doc: https://www.cockroachlabs.com/docs/stable/show-vars
+    tier: medium
+    probes:
+      - { id: variable, sql: "SHOW application_name;" }
+      - { id: session_prefix, sql: "SHOW SESSION application_name;" }
+      - { id: all, sql: "SHOW ALL;" }
+      - { id: time_zone, sql: "SHOW TIME ZONE;" }
+      - { id: database, sql: "SHOW DATABASE;" }
+      - { id: quoted_name, sql: "SHOW \"search_path\";" }
+    examples:
+      - "SHOW ALL;"
+      - "SHOW DATABASE;"
+
+  - id: reset_session_variable
+    name: RESET session variable
+    doc: https://www.cockroachlabs.com/docs/stable/reset-vars
+    tier: medium
+    probes:
+      - { id: variable, sql: "RESET extra_float_digits;" }
+      - { id: session_prefix, sql: "RESET SESSION extra_float_digits;" }
+      - { id: time_zone, sql: "RESET TIME ZONE;" }
+    examples:
+      - "RESET extra_float_digits;"
+      - "RESET TIME ZONE;"
+
+  - id: set_session_variable
+    name: SET session variable
+    doc: https://www.cockroachlabs.com/docs/stable/set-vars
+    tier: medium
+    probes:
+      - { id: assign_equals, sql: "SET application_name = movr_app;" }
+      - { id: assign_to, sql: "SET application_name TO movr_app;" }
+      - { id: string_value, sql: "SET default_int_size = 'int4';" }
+      - { id: value_list, sql: "SET search_path = s1, s2;" }
+      - { id: default_value, sql: "SET search_path = DEFAULT;" }
+      - { id: session, sql: "SET SESSION application_name = movr_app;" }
+      - { id: local, sql: "SET LOCAL application_name = demo;" }
+      - { id: time_zone, sql: "SET TIME ZONE 'EST';" }
+      - { id: time_zone_default, sql: "SET TIME ZONE DEFAULT;" }
+      - { id: local_role, sql: "SET LOCAL ROLE new_role;" }
+    examples:
+      - "SET application_name = movr_app;"
+      - "SET default_int_size='int4';"
+      - "SET LOCAL application_name = demo;"
+
+  - id: create_statistics
+    name: CREATE STATISTICS
+    doc: https://www.cockroachlabs.com/docs/stable/create-statistics
+    tier: medium
+    probes:
+      - { id: from_table, sql: "CREATE STATISTICS s FROM t;" }
+      - { id: on_column, sql: "CREATE STATISTICS s ON c FROM t;" }
+      - { id: on_columns, sql: "CREATE STATISTICS s ON a, b FROM t;" }
+      - { id: using_extremes, sql: "CREATE STATISTICS s ON c FROM t USING EXTREMES;" }
+      - { id: where_partial, sql: "CREATE STATISTICS s ON c FROM t WHERE c > 90;" }
+      - { id: as_of_system_time, sql: "CREATE STATISTICS s FROM t AS OF SYSTEM TIME '-1m';" }
+      - { id: with_options_as_of, sql: "CREATE STATISTICS s FROM t WITH OPTIONS AS OF SYSTEM TIME '-1m';" }
+    examples:
+      - "CREATE STATISTICS revenue_stats ON revenue FROM rides;"
+      - "CREATE STATISTICS city_revenue_stats ON city, revenue FROM rides;"
+      - "CREATE STATISTICS users_stats FROM users;"
+
+  - id: explain
+    name: EXPLAIN
+    doc: https://www.cockroachlabs.com/docs/stable/explain
+    tier: medium
+    probes:
+      - { id: basic, sql: "EXPLAIN SELECT * FROM t;" }
+      - { id: verbose, sql: "EXPLAIN (VERBOSE) SELECT * FROM t;" }
+      - { id: types, sql: "EXPLAIN (TYPES) SELECT * FROM t;" }
+      - { id: opt, sql: "EXPLAIN (OPT) SELECT * FROM t;" }
+      - { id: opt_verbose, sql: "EXPLAIN (OPT, VERBOSE) SELECT * FROM t;" }
+      - { id: opt_env, sql: "EXPLAIN (OPT, ENV) SELECT * FROM t;" }
+      - { id: opt_memo, sql: "EXPLAIN (OPT, MEMO) SELECT * FROM t;" }
+      - { id: redact, sql: "EXPLAIN (REDACT) SELECT * FROM t;" }
+      - { id: vec, sql: "EXPLAIN (VEC) SELECT * FROM t;" }
+      - { id: distsql, sql: "EXPLAIN (DISTSQL) SELECT * FROM t;" }
+      - { id: fingerprint, sql: "EXPLAIN (FINGERPRINT) SELECT * FROM t;" }
+      - { id: insert, sql: "EXPLAIN INSERT INTO t (a) VALUES (1);" }
+      - { id: update, sql: "EXPLAIN UPDATE t SET v = 100 WHERE k = 1;" }
+    examples:
+      - "EXPLAIN SELECT * FROM rides AS r JOIN users AS u ON r.rider_id = u.id;"
+      - "EXPLAIN (OPT, ENV) SELECT * FROM rides WHERE revenue > 90 ORDER BY revenue ASC;"
+
+  - id: explain_analyze
+    name: EXPLAIN ANALYZE
+    doc: https://www.cockroachlabs.com/docs/stable/explain-analyze
+    tier: medium
+    probes:
+      - { id: basic, sql: "EXPLAIN ANALYZE SELECT * FROM t;" }
+      - { id: analyse_alias, sql: "EXPLAIN ANALYSE SELECT * FROM t;" }
+      - { id: plan, sql: "EXPLAIN ANALYZE (PLAN) SELECT * FROM t;" }
+      - { id: verbose, sql: "EXPLAIN ANALYZE (VERBOSE) SELECT * FROM t;" }
+      - { id: types, sql: "EXPLAIN ANALYZE (TYPES) SELECT * FROM t;" }
+      - { id: debug, sql: "EXPLAIN ANALYZE (DEBUG) SELECT * FROM t;" }
+      - { id: redact, sql: "EXPLAIN ANALYZE (REDACT) SELECT * FROM t;" }
+      - { id: distsql, sql: "EXPLAIN ANALYZE (DISTSQL) SELECT * FROM t;" }
+      - { id: delete, sql: "EXPLAIN ANALYZE DELETE FROM t WHERE id = 1;" }
+    examples:
+      - "EXPLAIN ANALYZE DELETE FROM t WHERE id = 1;"
+
+  - id: show_statistics
+    name: SHOW STATISTICS
+    doc: https://www.cockroachlabs.com/docs/stable/show-statistics
+    tier: medium
+    probes:
+      - { id: for_table, sql: "SHOW STATISTICS FOR TABLE t;" }
+      - { id: qualified_table, sql: "SHOW STATISTICS FOR TABLE s.t;" }
+      - { id: with_forecast, sql: "SHOW STATISTICS FOR TABLE t WITH FORECAST;" }
+    examples:
+      - "SHOW STATISTICS FOR TABLE rides;"
+      - "SHOW STATISTICS FOR TABLE rides WITH FORECAST;"
