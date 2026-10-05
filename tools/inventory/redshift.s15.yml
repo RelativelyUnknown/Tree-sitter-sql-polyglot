@@ -1,0 +1,70 @@
+dialect: redshift
+engine: Amazon Redshift
+version: "current"
+source: https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_commands.html
+
+statements:
+  - id: truncate
+    name: TRUNCATE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_TRUNCATE.html
+    tier: high
+    probes:
+      - { id: table_keyword, sql: "TRUNCATE TABLE t;" }
+      - { id: no_table_keyword, sql: "TRUNCATE t;" }
+      - { id: qualified_name, sql: "TRUNCATE TABLE s.t;" }
+      - { id: materialized_view, sql: "TRUNCATE my_materialized_view;" }
+    examples:
+      - "truncate category;"
+      - "truncate my_materialized_view;"
+
+  - id: unload
+    name: UNLOAD
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_UNLOAD.html
+    tier: high
+    probes:
+      - { id: basic_iam_role, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE 'arn:aws:iam::0123456789012:role/MyRole';" }
+      - { id: iam_role_default, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default;" }
+      - { id: iam_role_session, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE 'SESSION';" }
+      - { id: iam_role_chain, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE 'arn:aws:iam::0123456789012:role/R1,arn:aws:iam::0123456789013:role/R2';" }
+      - { id: format_csv, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default FORMAT AS CSV;" }
+      - { id: csv, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default CSV;" }
+      - { id: format_parquet, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default FORMAT PARQUET;" }
+      - { id: parquet, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default PARQUET;" }
+      - { id: json, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default JSON;" }
+      - { id: partition_by, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default PARQUET PARTITION BY (c1, c2);" }
+      - { id: partition_by_include, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default PARQUET PARTITION BY (c1) INCLUDE;" }
+      - { id: manifest, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default MANIFEST;" }
+      - { id: manifest_verbose, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default MANIFEST VERBOSE;" }
+      - { id: header, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default CSV HEADER;" }
+      - { id: delimiter, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default DELIMITER '|';" }
+      - { id: delimiter_as, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default DELIMITER AS ',';" }
+      - { id: fixedwidth, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default FIXEDWIDTH '0:3,1:100,2:30';" }
+      - { id: fixedwidth_as, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default FIXEDWIDTH AS '0:3,1:100';" }
+      - { id: encrypted, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default ENCRYPTED;" }
+      - { id: encrypted_auto, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default ENCRYPTED AUTO;" }
+      - { id: bzip2, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default BZIP2;" }
+      - { id: gzip, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default GZIP;" }
+      - { id: zstd, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default ZSTD;" }
+      - { id: addquotes, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default ADDQUOTES;" }
+      - { id: null_as, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default NULL AS 'null';" }
+      - { id: null_string, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default NULL 'null';" }
+      - { id: escape, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default ESCAPE;" }
+      - { id: allowoverwrite, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default ALLOWOVERWRITE;" }
+      - { id: cleanpath, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default CLEANPATH;" }
+      - { id: parallel, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default PARALLEL;" }
+      - { id: parallel_on, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default PARALLEL ON;" }
+      - { id: parallel_true, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default PARALLEL TRUE;" }
+      - { id: parallel_off, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default PARALLEL OFF;" }
+      - { id: parallel_false, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default PARALLEL FALSE;" }
+      - { id: maxfilesize, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default MAXFILESIZE 100 MB;" }
+      - { id: maxfilesize_as_gb, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default MAXFILESIZE AS 1 GB;" }
+      - { id: rowgroupsize, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default PARQUET ROWGROUPSIZE 32 MB;" }
+      - { id: region, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default REGION 'us-west-2';" }
+      - { id: region_as, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default REGION AS 'us-west-2';" }
+      - { id: extension, sql: "UNLOAD ('select * from t') TO 's3://bucket/prefix' IAM_ROLE default EXTENSION 'txt';" }
+      - { id: escaped_quotes_in_query, sql: "UNLOAD ('select * from t where c=''NV''') TO 's3://bucket/prefix' IAM_ROLE default;" }
+      - { id: multiple_options, sql: "UNLOAD ('select * from t order by c') TO 's3://bucket/prefix' IAM_ROLE default DELIMITER ',' GZIP ALLOWOVERWRITE PARALLEL OFF;" }
+    examples:
+      - "unload ('select * from venue') to 's3://amzn-s3-demo-bucket/unload/' iam_role 'arn:aws:iam::0123456789012:role/MyRedshiftRole';"
+      - "unload ('select * from lineitem') to 's3://amzn-s3-demo-bucket/lineitem/' iam_role 'arn:aws:iam::0123456789012:role/MyRedshiftRole' PARQUET PARTITION BY (l_shipdate);"
+      - "unload ('select * from venue') to 's3://amzn-s3-demo-bucket/unload/' iam_role 'arn:aws:iam::0123456789012:role/MyRedshiftRole' JSON;"
