@@ -805,13 +805,6 @@ statements:
         sql: "DO BEGIN DECLARE a INT = 1; DECLARE tv TABLE (i INT); EXECUTE IMMEDIATE 'SELECT * FROM tab WHERE i = :a' INTO tv USING :a; END;"
       - id: execute_immediate_reads_sql_data
         sql: "DO BEGIN EXECUTE IMMEDIATE 'SELECT * FROM tab' READS SQL DATA; END;"
-    examples:
-      - |-
-        DO BEGIN
-         EXEC 'DELETE from tab';
-         EXEC 'INSERT INTO tab VALUES (' || :i || ')';
-         EXECUTE IMMEDIATE 'SELECT * FROM tab ORDER BY i';
-        END;
 
   - id: sqlscript_apply_filter
     name: APPLY_FILTER
@@ -850,13 +843,6 @@ statements:
         sql: "DO BEGIN DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 146 SELECT 'locked' FROM dummy; SELECT * FROM t FOR UPDATE NOWAIT; END;"
       - id: exit_handler_if_resignal_body
         sql: "DO BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION IF ::SQL_ERROR_CODE = 288 THEN DROP TABLE TAB; CREATE TABLE TAB (I INTEGER PRIMARY KEY); ELSE RESIGNAL; END IF; CREATE TABLE TAB (I INTEGER PRIMARY KEY); END;"
-    examples:
-      - |-
-        DO BEGIN
-         DECLARE EXIT HANDLER FOR SQLEXCEPTION
-         SELECT ::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE FROM DUMMY;
-         SELECT 1/0 as I FROM dummy;
-        END;
 
   - id: sqlscript_declare_continue_handler
     name: DECLARE CONTINUE HANDLER
@@ -955,3 +941,174 @@ statements:
         sql: "DO BEGIN DECLARE invalid_input CONDITION FOR SQL_ERROR_CODE 10000; DECLARE EXIT HANDLER FOR SQLEXCEPTION RESIGNAL invalid_input; SELECT 1 / 0 FROM dummy; END;"
       - id: resignal_condition_message_text
         sql: "DO BEGIN DECLARE invalid_input CONDITION FOR SQL_ERROR_CODE 10000; DECLARE EXIT HANDLER FOR SQLEXCEPTION RESIGNAL invalid_input SET MESSAGE_TEXT = 'x'; SELECT 1 / 0 FROM dummy; END;"
+
+  - id: sqlscript_array_declare
+    name: DECLARE array variable and ARRAY constructor
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/8d4be75f708c4492ab22b6b64784cd63.html?version=2.0.08
+    tier: high
+    probes:
+      - id: declare_array
+        sql: "DO BEGIN DECLARE arr INTEGER ARRAY; END;"
+      - id: declare_array_constructor
+        sql: "DO BEGIN DECLARE array_int INTEGER ARRAY = ARRAY(1, 2, 3); END;"
+      - id: declare_array_multiple_names
+        sql: "DO BEGIN DECLARE id1, id2, id3 INTEGER ARRAY; END;"
+      - id: declare_array_varchar
+        sql: "DO BEGIN DECLARE arrayNvarchar NVARCHAR(20) ARRAY; END;"
+      - id: declare_array_walrus_constructor
+        sql: "DO BEGIN DECLARE array_id Integer ARRAY := ARRAY(1, 2, 3, 4); END;"
+      - id: assign_array_constructor_variables
+        sql: "DO BEGIN DECLARE a NVARCHAR(20) = 'x'; DECLARE b NVARCHAR(20) = 'y'; DECLARE arrayNvarchar NVARCHAR(20) ARRAY; arrayNvarchar = ARRAY(:a, :b); END;"
+      - id: declare_array_auto
+        sql: "DO BEGIN DECLARE arr1 AUTO = ARRAY(1, 2); END;"
+    examples:
+      - |-
+        DO
+        BEGIN
+         DECLARE arr TINYINT ARRAY = ARRAY(1,2,3);
+         DECLARE index_array INTEGER ARRAY = ARRAY(1,2);
+         DECLARE value TINYINT;
+         arr[:index_array[1]] = :arr[:index_array[2]];
+         value = :arr[:index_array[1]];
+         select :value from dummy;
+        END;
+
+  - id: sqlscript_array_element
+    name: Array element access and assignment
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/1083ea3019c54b9b9f5037581d95e1d7.html?version=2.0.08
+    tier: high
+    probes:
+      - id: set_element
+        sql: "DO BEGIN DECLARE id INT ARRAY; id[2] = 10; END;"
+      - id: set_element_variable_index
+        sql: "DO BEGIN DECLARE i INT; DECLARE arr NVARCHAR(15) ARRAY; FOR i IN 1 ..10 DO arr[:i] = 'ARRAY_INDEX ' || :i; END FOR; END;"
+      - id: set_element_spaced_bracket
+        sql: "DO BEGIN DECLARE i INT = 1; DECLARE arr NVARCHAR(15) ARRAY; arr [:i] = 'x'; END;"
+      - id: set_element_udf_index
+        sql: "DO BEGIN DECLARE VARCHAR_ARRAY VARCHAR ARRAY; VARCHAR_ARRAY[func_add(1,0)] = 'i'; END;"
+      - id: set_element_null
+        sql: "DO BEGIN DECLARE array_id Integer ARRAY; array_id[20] = NULL; END;"
+      - id: read_element
+        sql: "DO BEGIN DECLARE arr NVARCHAR(15) ARRAY; DECLARE var NVARCHAR(15); var = :arr[2]; END;"
+      - id: read_element_nested_index
+        sql: "DO BEGIN DECLARE arr TINYINT ARRAY = ARRAY(1,2,3); DECLARE index_array INTEGER ARRAY = ARRAY(1,2); DECLARE value TINYINT; value = :arr[:index_array[1]]; END;"
+
+  - id: sqlscript_array_functions
+    name: ARRAY_AGG, TRIM_ARRAY, CARDINALITY, CONCAT on arrays
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/6649b3fcc87c4a1db20648aeaed5de13.html?version=2.0.08
+    tier: high
+    probes:
+      - id: array_agg
+        sql: "DO BEGIN DECLARE id NVARCHAR(10) ARRAY; DECLARE tab TABLE (A NVARCHAR(10), B INTEGER); tab = SELECT A, B FROM tab1; id = ARRAY_AGG(:tab.A); END;"
+      - id: array_agg_order_by_desc
+        sql: "DO BEGIN DECLARE id NVARCHAR(10) ARRAY; DECLARE tab TABLE (A NVARCHAR(10), B INTEGER); id = ARRAY_AGG(:tab.A ORDER BY B DESC); END;"
+      - id: array_agg_order_by_nulls_first
+        sql: "DO BEGIN DECLARE id NVARCHAR(10) ARRAY; tab = SELECT A FROM ctab; id = ARRAY_AGG(:tab.A ORDER BY A DESC NULLS FIRST); END;"
+      - id: array_agg_order_by_nulls_last
+        sql: "DO BEGIN DECLARE id NVARCHAR(10) ARRAY; tab = SELECT A FROM ctab; id = ARRAY_AGG(:tab.A ORDER BY A ASC NULLS LAST); END;"
+      - id: array_agg_order_by_multiple
+        sql: "DO BEGIN DECLARE id NVARCHAR(10) ARRAY; tab = SELECT A, B FROM tab1; id = ARRAY_AGG(:tab.A ORDER BY B, A DESC); END;"
+      - id: trim_array
+        sql: "DO BEGIN DECLARE array_id Integer ARRAY = ARRAY(1, 2, 3, 4); array_id = TRIM_ARRAY(:array_id, 2); END;"
+      - id: cardinality_assignment
+        sql: "DO BEGIN DECLARE array_id Integer ARRAY; DECLARE n INTEGER; n = CARDINALITY(:array_id); END;"
+      - id: cardinality_in_condition
+        sql: "DO BEGIN DECLARE array_id Integer ARRAY = ARRAY(1, 2, 3); DECLARE n INTEGER; IF CARDINALITY(:array_id) > 0 THEN n = 1; ELSE n = 0; END IF; END;"
+      - id: cardinality_for_bound
+        sql: "DO BEGIN DECLARE i INT; DECLARE arr INT ARRAY = ARRAY(1, 2); FOR i IN 1 .. CARDINALITY(:arr) DO SELECT :arr[:i] FROM dummy; END FOR; END;"
+      - id: concat_function
+        sql: "DO BEGIN DECLARE id1, id2, id3 INTEGER ARRAY; id3 = CONCAT(:id1, :id2); END;"
+      - id: concat_operator
+        sql: "DO BEGIN DECLARE id1, id2, id4 INTEGER ARRAY; id4 = :id1 || :id2; END;"
+      - id: concat_nested
+        sql: "DO BEGIN DECLARE id1, id2, id5 INTEGER ARRAY; id5 = CONCAT(CONCAT(:id1, :id2), CONCAT(:id1, :id2)); END;"
+      - id: concat_array_agg
+        sql: "DO BEGIN DECLARE id4, id5 INTEGER ARRAY; id5 = :id4 || ARRAY_AGG(:rst.\"ID\" ORDER BY \"SEQ\"); END;"
+
+  - id: sqlscript_explicit_parallel_execution
+    name: BEGIN PARALLEL EXECUTION
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/8db200a4f585490c81c4930689ec1a5c.html?version=2.0.08
+    tier: high
+    probes:
+      - id: parallel_execution_updates
+        sql: "DO BEGIN BEGIN PARALLEL EXECUTION UPDATE CTAB1 SET A = A + 1; UPDATE CTAB2 SET A = A + 1; END; END;"
+      - id: parallel_execution_select_into_table
+        sql: "DO BEGIN DECLARE tab TABLE (A INT); BEGIN PARALLEL EXECUTION SELECT * FROM :tab s WHERE s.A = 1 INTO CTAB1; SELECT * FROM :tab s WHERE s.A = 2 INTO CTAB2; END; END;"
+      - id: parallel_execution_calls
+        sql: "DO BEGIN BEGIN PARALLEL EXECUTION CALL cproc1(); CALL cproc2(); CALL cproc3(); END; END;"
+      - id: begin_sequential_execution
+        sql: "DO BEGIN SEQUENTIAL EXECUTION DECLARE i INT; i = 1; END;"
+      - id: procedure_begin_parallel_execution
+        sql: "CREATE PROCEDURE p AS BEGIN PARALLEL EXECUTION CALL cproc1(); CALL cproc2(); END;"
+      - id: procedure_begin_sequential_execution
+        sql: "CREATE PROCEDURE p AS BEGIN SEQUENTIAL EXECUTION CALL cproc1(); CALL cproc2(); END;"
+
+  - id: sqlscript_map_merge
+    name: MAP_MERGE operator
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/84b8fa84d68d49d3a916fd02ac0d2855.html?version=2.0.08
+    tier: high
+    probes:
+      - id: map_merge
+        sql: "DO (OUT ret_tab TABLE(col_a nvarchar(200)) => ?) BEGIN t = SELECT * FROM tab; ret_tab = MAP_MERGE(:t, mapper(:t.col_a)); END;"
+      - id: map_merge_multiple_columns_and_params
+        sql: "DO BEGIN t = SELECT * FROM tab; ret_tab = MAP_MERGE(:t, mapper(:t.col_a, :t.col_b, 'x', 5)); END;"
+      - id: map_merge_table_name
+        sql: "DO BEGIN ret_tab = MAP_MERGE(tab, mapper(tab.col_a)); END;"
+    examples:
+      - |-
+        DO (OUT ret_tab TABLE(col_a nvarchar(200))=>?)
+        BEGIN
+         t = SELECT * FROM tab;
+         ret_tab = MAP_MERGE(:t, mapper(:t.col_a));
+        END;
+
+  - id: sqlscript_map_reduce
+    name: MAP_REDUCE operator
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/17bee883c6e64d0798c2379f0b656569.html?version=2.0.08
+    tier: high
+    probes:
+      - id: map_reduce_function
+        sql: "DO BEGIN result = MAP_REDUCE(tab, mapper(tab.id, tab.sentence) GROUP BY c AS X, reducer(X.c, X)); END;"
+      - id: map_reduce_key_column
+        sql: "DO BEGIN result = MAP_REDUCE(tab, mapper(tab.id, tab.sentence) GROUP BY c AS X, reducer(X.c, X)); END;"
+      - id: map_reduce_procedure_output
+        sql: "DO BEGIN MAP_REDUCE(tab, mapper(tab.id, tab.sentence) GROUP BY c AS X, reducer_proc(X.c, X, result)); END;"
+        note: "reducer procedure form: <reduce procedure>(<params>) with an output table parameter"
+      - id: map_reduce_scalar_parameter
+        sql: "DO BEGIN result = MAP_REDUCE(tab, mapper(tab.id, 1) GROUP BY c AS X, reducer(X.c, X, 'p')); END;"
+
+  - id: sqlscript_system_variables
+    name: System variables (::ROWCOUNT, ::CURRENT_OBJECT_NAME, ::SQL_ERROR_CODE, ...)
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/c849dc1c6b4945289c77a2f194d65aa5.html?version=2.0.08
+    tier: high
+    probes:
+      - id: rowcount_assignment
+        sql: "DO BEGIN DECLARE updated_rows INT; UPDATE T SET VAL = VAL + 1 WHERE VAL = 2; updated_rows = ::ROWCOUNT; END;"
+      - id: rowcount_accumulate
+        sql: "DO BEGIN DECLARE updated_rows INT; UPDATE T SET VAL = VAL + 1 WHERE VAL = 4; updated_rows = ::ROWCOUNT; UPDATE T SET VAL = VAL + 1 WHERE VAL = 2; updated_rows = :updated_rows + ::ROWCOUNT; END;"
+      - id: rowcount_in_select
+        sql: "DO BEGIN INSERT INTO mytab SELECT * FROM mytab2; SELECT ::rowcount FROM dummy; END;"
+      - id: current_object_name_schema
+        sql: "DO BEGIN DECLARE name NVARCHAR(256); DECLARE schema_name NVARCHAR(256); name = ::CURRENT_OBJECT_NAME; schema_name = ::CURRENT_OBJECT_SCHEMA; END;"
+      - id: current_object_as_arguments
+        sql: "DO BEGIN DECLARE full_qualified_name NVARCHAR(256); full_qualified_name = get_full_qualified_name(::CURRENT_OBJECT_SCHEMA, ::CURRENT_OBJECT_NAME); END;"
+      - id: current_line_number
+        sql: "DO BEGIN DECLARE n INT; n = ::CURRENT_LINE_NUMBER; END;"
+      - id: sql_error_variables
+        sql: "DO BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN DECLARE c INT = ::SQL_ERROR_CODE; DECLARE m NVARCHAR(500) = ::SQL_ERROR_MESSAGE; END; SELECT 1 / 0 FROM dummy; END;"
+
+  - id: sqlscript_return
+    name: RETURN
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/36f718be73e745ceae0530aa80850ce3.html?version=2.0.08
+    tier: high
+    probes:
+      - id: return_bare_in_block
+        sql: "DO BEGIN DECLARE tabvar TABLE (ID INTEGER); IF IS_EMPTY(:tabvar) THEN RETURN; END IF; END;"
+      - id: return_in_loop
+        sql: "DO BEGIN LOOP RETURN; END LOOP; END;"
+      - id: function_return_select
+        sql: "CREATE FUNCTION mapper (IN a nvarchar(200)) RETURNS TABLE (col_a nvarchar(200)) AS BEGIN ot = SELECT :a AS COL_A FROM dummy; RETURN :ot; END;"
+        note: "RETURN <table variable> in a table UDF body, as shown on the MAP_MERGE page"
+      - id: function_return_select_statement
+        sql: "CREATE FUNCTION f (IN c VARCHAR, IN vals TABLE (id INT, freq INT)) RETURNS TABLE (c VARCHAR, stmt_freq INT) AS BEGIN RETURN SELECT :c AS c, COUNT(DISTINCT(id)) AS stmt_freq FROM :vals; END;"
+        note: "RETURN <select>, as shown on the MAP_REDUCE page"

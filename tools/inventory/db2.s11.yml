@@ -1,0 +1,119 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "11.5"
+source: https://www.ibm.com/docs/en/db2/11.5.x?topic=reference-statements
+
+statements:
+  - id: create_index
+    name: CREATE INDEX
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-index
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE INDEX idx ON t (c);" }
+      - { id: unique, sql: "CREATE UNIQUE INDEX idx ON t (c);" }
+      - { id: multi_column_asc_desc, sql: "CREATE INDEX idx ON t (c1 ASC, c2 DESC);" }
+      - { id: random_column, sql: "CREATE INDEX idx ON t (c1 RANDOM);" }
+      - { id: key_expression, sql: "CREATE INDEX idx ON t (UPPER(c1), c2 + 1);" }
+      - { id: business_time_without_overlaps, sql: "CREATE UNIQUE INDEX idx ON t (c1, BUSINESS_TIME WITHOUT OVERLAPS);" }
+      - { id: qualified_names, sql: "CREATE INDEX s.idx ON s.t (c);" }
+      - { id: on_nickname_specification_only, sql: "CREATE UNIQUE INDEX idx ON nick (c1, c2) SPECIFICATION ONLY;" }
+      - { id: partitioned, sql: "CREATE INDEX idx ON t (c) PARTITIONED;" }
+      - { id: not_partitioned, sql: "CREATE INDEX idx ON t (c) NOT PARTITIONED;" }
+      - { id: not_partitioned_in_tablespace, sql: "CREATE INDEX idx ON t (c) NOT PARTITIONED IN ts;" }
+      - { id: in_tablespace, sql: "CREATE UNIQUE INDEX idx ON t (c) IN ts;" }
+      - { id: include_columns, sql: "CREATE UNIQUE INDEX idx ON t (c1) INCLUDE (c2, c3);" }
+      - { id: cluster, sql: "CREATE INDEX idx ON t (c) CLUSTER;" }
+      - { id: extend_using, sql: "CREATE INDEX idx ON t (c) EXTEND USING grid_ext (x'000100100010001000400010');" }
+      - { id: extend_using_multiple_args, sql: "CREATE INDEX idx ON t (c) EXTEND USING grid_ext (1, 2);" }
+      - { id: pctfree, sql: "CREATE INDEX idx ON t (c) PCTFREE 20;" }
+      - { id: level2_pctfree, sql: "CREATE INDEX idx ON t (c) LEVEL2 PCTFREE 20;" }
+      - { id: minpctused, sql: "CREATE INDEX idx ON t (c) MINPCTUSED 10;" }
+      - { id: allow_reverse_scans, sql: "CREATE INDEX idx ON t (c) ALLOW REVERSE SCANS;" }
+      - { id: disallow_reverse_scans, sql: "CREATE INDEX idx ON t (c) DISALLOW REVERSE SCANS;" }
+      - { id: page_split_symmetric, sql: "CREATE INDEX idx ON t (c) PAGE SPLIT SYMMETRIC;" }
+      - { id: page_split_high, sql: "CREATE INDEX idx ON t (c) PAGE SPLIT HIGH;" }
+      - { id: page_split_low, sql: "CREATE INDEX idx ON t (c) PAGE SPLIT LOW;" }
+      - { id: collect_statistics, sql: "CREATE INDEX idx ON t (c) COLLECT STATISTICS;" }
+      - { id: collect_detailed_statistics, sql: "CREATE INDEX idx ON t (c) COLLECT DETAILED STATISTICS;" }
+      - { id: collect_sampled_detailed_statistics, sql: "CREATE INDEX idx ON t (c) COLLECT SAMPLED DETAILED STATISTICS;" }
+      - { id: collect_unsampled_detailed_statistics, sql: "CREATE INDEX idx ON t (c) COLLECT UNSAMPLED DETAILED STATISTICS;" }
+      - { id: compress_yes, sql: "CREATE INDEX idx ON t (c) COMPRESS YES;" }
+      - { id: compress_no, sql: "CREATE INDEX idx ON t (c) COMPRESS NO;" }
+      - { id: include_null_keys, sql: "CREATE INDEX idx ON t (c) INCLUDE NULL KEYS;" }
+      - { id: exclude_null_keys, sql: "CREATE INDEX idx ON t (c) EXCLUDE NULL KEYS;" }
+      - { id: xml_pattern, sql: "CREATE INDEX idx ON t (doc) GENERATE KEY USING XMLPATTERN '/company/emp/@id' AS SQL DOUBLE;" }
+      - { id: xml_pattern_generate_keys, sql: "CREATE INDEX idx ON t (doc) GENERATE KEYS USING XMLPATTERN '/book/title' AS SQL VARCHAR(100);" }
+      - { id: xml_pattern_varchar_hashed, sql: "CREATE INDEX idx ON t (doc) GENERATE KEY USING XMLPATTERN '/book/title' AS SQL VARCHAR(100) HASHED;" }
+      - { id: xml_pattern_sql_date, sql: "CREATE INDEX idx ON t (doc) GENERATE KEY USING XMLPATTERN '/book/@date' AS SQL DATE;" }
+      - { id: xml_pattern_namespace, sql: "CREATE INDEX idx ON t (doc) GENERATE KEY USING XMLPATTERN 'declare namespace b=\"http://www.example.com/book/\"; /b:book/b:chapter/@number' AS SQL DOUBLE;" }
+      - { id: xml_pattern_ignore_invalid, sql: "CREATE INDEX idx ON t (doc) GENERATE KEY USING XMLPATTERN '/a/b' AS SQL DOUBLE IGNORE INVALID VALUES;" }
+      - { id: xml_pattern_reject_invalid, sql: "CREATE INDEX idx ON t (doc) GENERATE KEY USING XMLPATTERN '/a/b' AS SQL TIMESTAMP REJECT INVALID VALUES;" }
+      - { id: options_combined, sql: "CREATE UNIQUE INDEX idx ON t (c1, c2 DESC) INCLUDE (c3) CLUSTER PCTFREE 10 MINPCTUSED 5 DISALLOW REVERSE SCANS PAGE SPLIT HIGH COLLECT STATISTICS COMPRESS YES EXCLUDE NULL KEYS;" }
+    examples:
+      - "CREATE INDEX JOB_BY_DPT ON EMPLOYEE ( WORKDEPT, JOB );"
+      - "CREATE UNIQUE INDEX A_IDX ON MYNUMBERDATA (A) IN IDX_TBSP;"
+      - "CREATE UNIQUE INDEX MYDOCSIDX ON MYDOCS(DOC) GENERATE KEY USING XMLPATTERN '/book/title' AS SQL VARCHAR(100);"
+
+  - id: create_procedure_external
+    name: CREATE PROCEDURE (external)
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-procedure-external
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE PROCEDURE p () LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: or_replace, sql: "CREATE OR REPLACE PROCEDURE p () LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: qualified_name, sql: "CREATE PROCEDURE s.p () LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: param_modes, sql: "CREATE PROCEDURE p (IN a INTEGER, OUT b INTEGER, INOUT c INTEGER) LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: param_no_mode, sql: "CREATE PROCEDURE p (a INTEGER, b VARCHAR(10)) LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: param_default, sql: "CREATE PROCEDURE p (IN a INTEGER DEFAULT 5, IN b VARCHAR(10) DEFAULT NULL) LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: param_default_expression, sql: "CREATE PROCEDURE p (IN a INTEGER DEFAULT (1 + 2)) LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: param_default_special_register, sql: "CREATE PROCEDURE p (IN d DATE DEFAULT CURRENT DATE) LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: param_types_numeric, sql: "CREATE PROCEDURE p (IN a SMALLINT, IN b BIGINT, IN c DECIMAL(7,2), IN d FLOAT(53), IN e REAL, IN f DOUBLE PRECISION) LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: param_types_character, sql: "CREATE PROCEDURE p (IN a CHAR(10), IN b VARCHAR(20 OCTETS), IN c CHARACTER VARYING(5 CODEUNITS32), IN d CLOB(1M), IN e VARCHAR(10) FOR BIT DATA) LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: param_types_graphic_binary, sql: "CREATE PROCEDURE p (IN a GRAPHIC(5), IN b VARGRAPHIC(10), IN c DBCLOB(1M), IN d BINARY(4), IN e VARBINARY(8), IN f BLOB(2G)) LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: param_types_datetime_xml, sql: "CREATE PROCEDURE p (IN a DATE, IN b TIME, IN c TIMESTAMP, IN d XML) LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: param_type_security_label, sql: "CREATE PROCEDURE p (IN a SYSPROC.DB2SECURITYLABEL) LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: param_type_array, sql: "CREATE PROCEDURE p (IN a intarr) LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: language_java, sql: "CREATE PROCEDURE p () LANGUAGE JAVA PARAMETER STYLE JAVA EXTERNAL NAME 'parts.onhand';" }
+      - { id: language_cobol, sql: "CREATE PROCEDURE p () LANGUAGE COBOL EXTERNAL NAME 'lib!proc';" }
+      - { id: language_clr, sql: "CREATE PROCEDURE p () LANGUAGE CLR EXTERNAL NAME 'asm.dll:Cls!meth';" }
+      - { id: language_ole, sql: "CREATE PROCEDURE p () LANGUAGE OLE EXTERNAL NAME 'progid!meth';" }
+      - { id: specific, sql: "CREATE PROCEDURE p () SPECIFIC sp LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: dynamic_result_sets, sql: "CREATE PROCEDURE p () DYNAMIC RESULT SETS 2 LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: sql_data_access_no_sql, sql: "CREATE PROCEDURE p () NO SQL LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: sql_data_access_contains_sql, sql: "CREATE PROCEDURE p () CONTAINS SQL LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: sql_data_access_reads, sql: "CREATE PROCEDURE p () READS SQL DATA LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: sql_data_access_modifies, sql: "CREATE PROCEDURE p () MODIFIES SQL DATA LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: deterministic, sql: "CREATE PROCEDURE p () DETERMINISTIC LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: not_deterministic, sql: "CREATE PROCEDURE p () NOT DETERMINISTIC LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: called_on_null_input, sql: "CREATE PROCEDURE p () CALLED ON NULL INPUT LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: old_savepoint_level, sql: "CREATE PROCEDURE p () OLD SAVEPOINT LEVEL LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: new_savepoint_level, sql: "CREATE PROCEDURE p () NEW SAVEPOINT LEVEL LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: external_name_identifier, sql: "CREATE PROCEDURE p () LANGUAGE C EXTERNAL NAME proc_id;" }
+      - { id: fenced, sql: "CREATE PROCEDURE p () FENCED LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: fenced_threadsafe, sql: "CREATE PROCEDURE p () FENCED THREADSAFE LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: fenced_not_threadsafe, sql: "CREATE PROCEDURE p () FENCED NOT THREADSAFE LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: not_fenced, sql: "CREATE PROCEDURE p () NOT FENCED LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: not_fenced_threadsafe, sql: "CREATE PROCEDURE p () NOT FENCED THREADSAFE LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: commit_on_return_yes, sql: "CREATE PROCEDURE p () COMMIT ON RETURN YES LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: commit_on_return_no, sql: "CREATE PROCEDURE p () COMMIT ON RETURN NO LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: no_commit_on_return, sql: "CREATE PROCEDURE p () NO COMMIT ON RETURN LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: autonomous, sql: "CREATE PROCEDURE p () AUTONOMOUS LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: external_action, sql: "CREATE PROCEDURE p () EXTERNAL ACTION LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: no_external_action, sql: "CREATE PROCEDURE p () NO EXTERNAL ACTION LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: inherit_special_registers, sql: "CREATE PROCEDURE p () INHERIT SPECIAL REGISTERS LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: parameter_style_db2general, sql: "CREATE PROCEDURE p () LANGUAGE JAVA PARAMETER STYLE DB2GENERAL EXTERNAL NAME 'c.m';" }
+      - { id: parameter_style_db2sql, sql: "CREATE PROCEDURE p () LANGUAGE C PARAMETER STYLE DB2SQL EXTERNAL NAME 'lib!proc';" }
+      - { id: parameter_style_general, sql: "CREATE PROCEDURE p () LANGUAGE C PARAMETER STYLE GENERAL EXTERNAL NAME 'lib!proc';" }
+      - { id: parameter_style_general_with_nulls, sql: "CREATE PROCEDURE p () LANGUAGE C PARAMETER STYLE GENERAL WITH NULLS EXTERNAL NAME 'lib!proc';" }
+      - { id: parameter_style_sql, sql: "CREATE PROCEDURE p () LANGUAGE C PARAMETER STYLE SQL EXTERNAL NAME 'lib!proc';" }
+      - { id: parameter_ccsid_ascii, sql: "CREATE PROCEDURE p () PARAMETER CCSID ASCII LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: parameter_ccsid_unicode, sql: "CREATE PROCEDURE p () PARAMETER CCSID UNICODE LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: program_type_sub, sql: "CREATE PROCEDURE p () PROGRAM TYPE SUB LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: program_type_main, sql: "CREATE PROCEDURE p () PROGRAM TYPE MAIN LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: dbinfo, sql: "CREATE PROCEDURE p () DBINFO LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: no_dbinfo, sql: "CREATE PROCEDURE p () NO DBINFO LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: stay_resident, sql: "CREATE PROCEDURE p () STAY RESIDENT YES LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+      - { id: stay_resident_no, sql: "CREATE PROCEDURE p () STAY RESIDENT NO LANGUAGE C EXTERNAL NAME 'lib!proc';" }
+    examples:
+      - "CREATE PROCEDURE PARTS_ON_HAND ( IN PARTNUM INTEGER, OUT COST DECIMAL(7,2), OUT QUANTITY INTEGER ) EXTERNAL NAME 'parts.onhand' LANGUAGE JAVA PARAMETER STYLE JAVA;"
+      - "CREATE PROCEDURE ASSEMBLY_PARTS ( IN ASSEMBLY_NUM INTEGER, OUT NUM_PARTS INTEGER, OUT COST DOUBLE ) EXTERNAL NAME 'parts!assembly' DYNAMIC RESULT SETS 1 NOT FENCED LANGUAGE C PARAMETER STYLE GENERAL;"
