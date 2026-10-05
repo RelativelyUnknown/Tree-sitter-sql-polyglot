@@ -1,0 +1,134 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: open
+    name: OPEN
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/K9NvXwuoJib6kmDAhhc1XQ
+    tier: high
+    probes:
+      - id: basic
+        sql: |-
+          CREATE PROCEDURE p()
+          BEGIN
+            DECLARE c CURSOR FOR SELECT a FROM t;
+            OPEN c;
+          END;
+      - id: using_one
+        sql: |-
+          CREATE PROCEDURE p(IN v1 VARCHAR(10))
+          BEGIN
+            DECLARE s VARCHAR(100);
+            DECLARE c CURSOR WITH RETURN ONLY FOR st;
+            SET s = 'SELECT a FROM t WHERE ? = b;';
+            PREPARE st FROM s;
+            OPEN c USING v1;
+          END;
+      - id: using_list
+        sql: |-
+          CREATE PROCEDURE p(IN v1 VARCHAR(10), IN v2 VARCHAR(10))
+          BEGIN
+            DECLARE s VARCHAR(100);
+            DECLARE c CURSOR WITH RETURN ONLY FOR st;
+            SET s = 'SELECT a FROM t WHERE ? = b AND ? = d;';
+            PREPARE st FROM s;
+            OPEN c USING v1, v2;
+          END;
+    examples:
+      - |-
+        CREATE PROCEDURE abc (IN data1v VARCHAR(10), IN data2v VARCHAR(10) )
+           DYNAMIC RESULT SETS 1
+          BEGIN
+             DECLARE sql_stmt1 VARCHAR(100);
+             DECLARE sales DECIMAL(8,2);
+             DECLARE item INTEGER;
+             DECLARE cstmt CURSOR WITH RETURN ONLY FOR stmt1;
+             SET sql_stmt1 = 'SELECT  T1.item, T1.sales FROM T1 WHERE ?'
+                             '= store_name AND ? = region;';
+             PREPARE stmt1 FROM sql_stmt1;
+             OPEN cstmt USING data1v, data2v;
+          END;
+
+  - id: fetch
+    name: FETCH
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/oZ7EOBsuJ~b8lPaUmQPP2Q
+    tier: high
+    probes:
+      - id: basic
+        sql: |-
+          CREATE PROCEDURE p()
+          BEGIN
+            DECLARE v1 INTEGER;
+            DECLARE c CURSOR FOR SELECT a FROM t;
+            OPEN c;
+            FETCH c INTO v1;
+            CLOSE c;
+          END;
+      - id: from
+        sql: |-
+          CREATE PROCEDURE p()
+          BEGIN
+            DECLARE v1 INTEGER;
+            DECLARE c CURSOR FOR SELECT a FROM t;
+            OPEN c;
+            FETCH FROM c INTO v1;
+            CLOSE c;
+          END;
+      - id: next_from
+        sql: |-
+          CREATE PROCEDURE p()
+          BEGIN
+            DECLARE v1 INTEGER;
+            DECLARE c CURSOR FOR SELECT a FROM t;
+            OPEN c;
+            FETCH NEXT FROM c INTO v1;
+            CLOSE c;
+          END;
+      - id: first_from
+        sql: |-
+          CREATE PROCEDURE p()
+          BEGIN
+            DECLARE v1 INTEGER;
+            DECLARE c SCROLL CURSOR FOR SELECT a FROM t;
+            OPEN c;
+            FETCH FIRST FROM c INTO v1;
+            CLOSE c;
+          END;
+      - id: first_no_from
+        sql: |-
+          CREATE PROCEDURE p()
+          BEGIN
+            DECLARE v1 INTEGER;
+            DECLARE c SCROLL CURSOR FOR SELECT a FROM t;
+            OPEN c;
+            FETCH FIRST c INTO v1;
+            CLOSE c;
+          END;
+      - id: into_list
+        sql: |-
+          CREATE PROCEDURE p(OUT o1 INTEGER)
+          BEGIN
+            DECLARE v1 INTEGER;
+            DECLARE c CURSOR FOR SELECT a, b FROM t;
+            OPEN c;
+            FETCH c INTO v1, o1;
+            CLOSE c;
+          END;
+    examples:
+      - |-
+        CREATE PROCEDURE sp1 (OUT par1 CHARACTER(50))
+        BEGIN
+          DECLARE var1 INTEGER;
+          DECLARE projcursor CURSOR FOR
+            SELECT projid, projectdesc
+            FROM project;
+          OPEN projcursor;
+           WHILE (SQLCODE = 0)
+           DO
+            FETCH projcursor INTO var1, par1;
+           END WHILE;
+          FETCH projcursor INTO var1, par1;
+          CLOSE projcursor;
+        END;

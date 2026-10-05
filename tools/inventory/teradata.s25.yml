@@ -1,0 +1,93 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: close
+    name: CLOSE
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/ZgDGqztNETBlRmITfzzfYA
+    tier: high
+    probes:
+      - id: basic
+        sql: "CLOSE c;"
+      - id: in_procedure
+        sql: |-
+          CREATE PROCEDURE sp1 ()
+          BEGIN
+            DECLARE c CURSOR FOR SELECT * FROM t;
+            OPEN c;
+            CLOSE c;
+          END;
+    examples:
+      - |-
+        CREATE PROCEDURE sp1 (OUT par1 INTEGER, OUT Par2 CHAR(30))
+        BEGIN
+          DECLARE projcursor CURSOR FOR
+            SELECT *
+            FROM project
+            ORDER BY projid;
+          OPEN projcursor;
+          Label1:
+          LOOP:
+            FETCH projcursor INTO par1, par2;
+            IF (SQLSTATE = '02000') THEN
+              LEAVE label1;
+            END IF;
+          END LOOP label1;
+          CLOSE projcursor;
+        END;
+      - |-
+        CREATE PROCEDURE sp1 (IN par1 CHAR(5))
+        BEGIN
+          DECLARE projcursor CURSOR FOR
+            SELECT *
+            FROM project
+            ORDER BY projid;
+          DECLARE empcursor CURSOR FOR
+            SELECT *
+            FROM employee
+            WHERE dept_code = par1;
+          OPEN projcursor;
+          OPEN empcursor;
+          CLOSE projcursor;
+        END;
+
+  - id: select_into
+    name: SELECT ... INTO
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/mcCuYequOhPnr~SwmwwtjQ
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT a INTO v FROM t;"
+      - id: multiple_targets
+        sql: "SELECT a, b INTO v1, v2 FROM t;"
+      - id: where_clause
+        sql: "SELECT a INTO v FROM t WHERE b = 1;"
+      - id: all
+        sql: "SELECT ALL a INTO v FROM t;"
+      - id: distinct
+        sql: "SELECT DISTINCT a INTO v FROM t;"
+      - id: star
+        sql: "SELECT * INTO v1, v2 FROM t;"
+      - id: no_from
+        sql: "SELECT 1 INTO v;"
+      - id: set_keyword
+        sql: "SET a INTO v FROM t;"
+        note: "Syntax block allows { SELECT | SET } before the select list."
+      - id: with_modifier
+        sql: "WITH w AS (SELECT a FROM t) SELECT a INTO v FROM w;"
+      - id: with_recursive
+        sql: "WITH RECURSIVE r (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r WHERE n < 10) SELECT n INTO v FROM r;"
+      - id: embedded_host_variable
+        sql: "SELECT a INTO :v FROM t;"
+      - id: embedded_indicator
+        sql: "SELECT a INTO :v INDICATOR :iv FROM t;"
+      - id: in_procedure
+        sql: |-
+          CREATE PROCEDURE sp1 (OUT p INTEGER)
+          BEGIN
+            DECLARE v INTEGER;
+            SELECT a INTO v FROM t WHERE b = 1;
+            SELECT a INTO p FROM t;
+          END;
