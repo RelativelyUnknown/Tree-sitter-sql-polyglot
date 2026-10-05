@@ -1,0 +1,215 @@
+dialect: redshift
+engine: Amazon Redshift
+version: "current"
+source: https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_commands.html
+
+statements: []
+
+expressions:
+  - id: a_integer_literals
+    name: Integer literals
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_numeric_literals201.html
+    tier: high
+    probes:
+      - { id: plain, sql: "SELECT 23;" }
+      - { id: negative, sql: "SELECT -555;" }
+      - { id: positive_sign, sql: "SELECT +17;" }
+
+  - id: a_float_literals
+    name: Floating-point literals
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_numeric_literals201.html
+    tier: high
+    probes:
+      - { id: decimal, sql: "SELECT 3.14159;" }
+      - { id: trailing_point, sql: "SELECT -37.;" }
+      - { id: exponent, sql: "SELECT 2.0e19;" }
+      - { id: negative_exponent, sql: "SELECT -2E-19;" }
+
+  - id: a_string_literals
+    name: Character string literals
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_Literals.html
+    tier: high
+    probes:
+      - { id: simple, sql: "SELECT 'abc';" }
+      - { id: escaped_quote, sql: "SELECT 'it''s';" }
+      - { id: empty, sql: "SELECT '';" }
+
+  - id: a_boolean_literals
+    name: Boolean literals
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_Boolean_type.html
+    tier: high
+    probes:
+      - { id: keywords, sql: "SELECT TRUE, FALSE, NULL;" }
+      - { id: string_forms, sql: "SELECT 't'::boolean, 'yes'::boolean, 'n'::boolean, '0'::boolean;" }
+      - { id: is_true, sql: "SELECT c FROM t WHERE c IS TRUE AND d IS NOT FALSE;" }
+      - { id: is_unknown, sql: "SELECT c FROM t WHERE c IS NOT UNKNOWN;" }
+
+  - id: a_date_time_literals
+    name: Date, time, and timestamp literals
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_Date_and_time_literals.html
+    tier: high
+    probes:
+      - { id: date_typed, sql: "SELECT date '2023-02-15';" }
+      - { id: date_string_cast, sql: "SELECT '2008-02-18'::date;" }
+      - { id: time_typed, sql: "SELECT time '04:05:06.789';" }
+      - { id: timestamp_typed, sql: "SELECT timestamp '2008-02-15 04:05:06';" }
+      - { id: timestamptz_typed, sql: "SELECT timestamptz '2008-02-15 04:05:06+00';" }
+      - { id: timetz_typed, sql: "SELECT timetz '04:05:06+00';" }
+      - { id: special_value, sql: "SELECT dateadd(day,1,'today'), dateadd(day,1,'now');" }
+
+  - id: a_interval_literals
+    name: Interval literals
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_interval_data_types.html
+    tier: high
+    probes:
+      - { id: unqualified, sql: "SELECT caldate + interval '1 second' FROM t;" }
+      - { id: composite, sql: "SELECT caldate + interval '3 hours, 35 minutes' FROM t;" }
+      - { id: abbreviated, sql: "SELECT caldate + interval '1w, 1h, 1m, 1s' FROM t;" }
+      - { id: fractional, sql: "SELECT caldate + interval '0.5 days' FROM t;" }
+      - { id: subtract, sql: "SELECT date '2023-02-15' - interval '4 months';" }
+      - { id: year_qualifier, sql: "SELECT INTERVAL '1' YEAR;" }
+      - { id: month_qualifier, sql: "SELECT INTERVAL '23' MONTH;" }
+      - { id: year_to_month, sql: "SELECT INTERVAL '1-2' YEAR TO MONTH;" }
+      - { id: day_qualifier, sql: "SELECT INTERVAL '-2' DAY;" }
+      - { id: hour_qualifier, sql: "SELECT INTERVAL '5' HOUR;" }
+      - { id: minute_qualifier, sql: "SELECT INTERVAL '1 day 1 hour 1 minute 1.123 seconds' MINUTE;" }
+      - { id: second_qualifier, sql: "SELECT INTERVAL '13 day 1 hour 1 minute 1.123 seconds' SECOND;" }
+      - { id: second_precision, sql: "SELECT INTERVAL '1.234567' SECOND(3);" }
+      - { id: day_to_hour, sql: "SELECT INTERVAL '1 5' DAY TO HOUR;" }
+      - { id: day_to_minute, sql: "SELECT INTERVAL '1 5:30' DAY TO MINUTE;" }
+      - { id: day_to_second, sql: "SELECT INTERVAL '1 5:30:15.5' DAY TO SECOND;" }
+      - { id: day_to_second_precision, sql: "SELECT INTERVAL '1 5:30:15.5' DAY TO SECOND(2);" }
+      - { id: hour_to_minute, sql: "SELECT INTERVAL '5:30' HOUR TO MINUTE;" }
+      - { id: hour_to_second, sql: "SELECT INTERVAL '5:30:15' HOUR TO SECOND;" }
+      - { id: minute_to_second, sql: "SELECT INTERVAL '30:15' MINUTE TO SECOND;" }
+      - { id: interval_type_cast, sql: "SELECT '1-2'::INTERVAL YEAR TO MONTH;" }
+
+  - id: a_super_literals
+    name: SUPER values and JSON literals
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_SUPER_type.html
+    tier: high
+    probes:
+      - { id: json_parse_object, sql: "SELECT json_parse('{\"status\": \"Active\", \"name\": \"Event1\"}');" }
+      - { id: json_parse_array, sql: "SELECT json_parse('[[1.1, 1.2], [2.1, 2.2], [3.1, 3.2]]');" }
+      - { id: array_constructor, sql: "SELECT ARRAY(1, 2, 3);" }
+      - { id: array_constructor_nested, sql: "SELECT ARRAY(ARRAY(1, 2), ARRAY(3, 4));" }
+      - { id: object_constructor, sql: "SELECT OBJECT('a', 1, 'b', 'x');" }
+      - { id: super_cast, sql: "SELECT '[1,2]'::super;" }
+      - { id: json_parse_insert, sql: "INSERT INTO t VALUES (json_parse('{\"a\": 1}'));" }
+
+  - id: a_numeric_types
+    name: Numeric data types
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_Numeric_types201.html
+    tier: high
+    probes:
+      - { id: smallint_int2, sql: "CREATE TABLE t (a SMALLINT, b INT2);" }
+      - { id: integer_int_int4, sql: "CREATE TABLE t (a INTEGER, b INT, c INT4);" }
+      - { id: bigint_int8, sql: "CREATE TABLE t (a BIGINT, b INT8);" }
+      - { id: decimal_plain, sql: "CREATE TABLE t (a DECIMAL, b NUMERIC);" }
+      - { id: decimal_precision, sql: "CREATE TABLE t (a DECIMAL(8), b NUMERIC(10));" }
+      - { id: decimal_precision_scale, sql: "CREATE TABLE t (a DECIMAL(8,2), b NUMERIC(38,37));" }
+      - { id: real_float4, sql: "CREATE TABLE t (a REAL, b FLOAT4);" }
+      - { id: double_precision, sql: "CREATE TABLE t (a DOUBLE PRECISION, b FLOAT8, c FLOAT);" }
+
+  - id: a_character_types
+    name: Character data types
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_Character_types.html
+    tier: high
+    probes:
+      - { id: char_plain, sql: "CREATE TABLE t (a CHAR, b CHARACTER);" }
+      - { id: char_length, sql: "CREATE TABLE t (a CHAR(10), b CHARACTER(10));" }
+      - { id: nchar_bpchar, sql: "CREATE TABLE t (a NCHAR(10), b BPCHAR);" }
+      - { id: varchar_length, sql: "CREATE TABLE t (a VARCHAR(12), b CHARACTER VARYING(12));" }
+      - { id: varchar_max, sql: "CREATE TABLE t (a VARCHAR(MAX), b CHAR(MAX));" }
+      - { id: nvarchar, sql: "CREATE TABLE t (a NVARCHAR(100));" }
+      - { id: text, sql: "CREATE TABLE t (a TEXT);" }
+      - { id: varchar_no_length, sql: "CREATE TABLE t (a VARCHAR);" }
+
+  - id: a_datetime_types
+    name: Datetime data types
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_Datetime_types.html
+    tier: high
+    probes:
+      - { id: date, sql: "CREATE TABLE t (a DATE);" }
+      - { id: time, sql: "CREATE TABLE t (a TIME, b TIME WITHOUT TIME ZONE);" }
+      - { id: timetz, sql: "CREATE TABLE t (a TIMETZ, b TIME WITH TIME ZONE);" }
+      - { id: timestamp, sql: "CREATE TABLE t (a TIMESTAMP, b TIMESTAMP WITHOUT TIME ZONE);" }
+      - { id: timestamptz, sql: "CREATE TABLE t (a TIMESTAMPTZ, b TIMESTAMP WITH TIME ZONE);" }
+      - { id: interval_year_to_month, sql: "CREATE TABLE t (a INTERVAL YEAR TO MONTH);" }
+      - { id: interval_day_to_second, sql: "CREATE TABLE t (a INTERVAL DAY TO SECOND);" }
+      - { id: interval_second_precision, sql: "CREATE TABLE t (a INTERVAL DAY TO SECOND(3));" }
+
+  - id: a_other_types
+    name: Boolean, SUPER, VARBYTE, HLLSKETCH and spatial types
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/c_Supported_data_types.html
+    tier: medium
+    probes:
+      - { id: boolean, sql: "CREATE TABLE t (a BOOLEAN, b BOOL);" }
+      - { id: super, sql: "CREATE TABLE t (a SUPER);" }
+      - { id: varbyte_plain, sql: "CREATE TABLE t (a VARBYTE);" }
+      - { id: varbyte_length, sql: "CREATE TABLE t (a VARBYTE(100), b VARBINARY(100), c BINARY VARYING(100));" }
+      - { id: hllsketch, sql: "CREATE TABLE t (a HLLSKETCH);" }
+      - { id: geometry, sql: "CREATE TABLE t (a GEOMETRY);" }
+      - { id: geography, sql: "CREATE TABLE t (a GEOGRAPHY);" }
+
+  - id: a_cast
+    name: CAST and type conversion
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_CAST_function.html
+    tier: high
+    probes:
+      - { id: cast_function, sql: "SELECT CAST(pricepaid AS INTEGER) FROM sales WHERE salesid = 100;" }
+      - { id: double_colon, sql: "SELECT pricepaid::integer FROM sales WHERE salesid = 100;" }
+      - { id: cast_literal, sql: "SELECT CAST(162.00 AS INTEGER) AS pricepaid;" }
+      - { id: cast_string_to_date, sql: "SELECT CAST('2008-02-18 02:36:48' AS DATE) AS mysaletime;" }
+      - { id: cast_parameterized, sql: "SELECT CAST(123.456 AS DECIMAL(8,2)), 123.456::decimal(8,2);" }
+      - { id: cast_varchar_length, sql: "SELECT CAST(c AS VARCHAR(10)), c::char(5);" }
+      - { id: cast_double_precision, sql: "SELECT CAST(c AS DOUBLE PRECISION), c::double precision;" }
+      - { id: cast_timestamp_tz, sql: "SELECT CAST(c AS TIMESTAMP WITH TIME ZONE), c::time with time zone;" }
+      - { id: cast_chained, sql: "SELECT c::varchar::integer FROM t;" }
+      - { id: cast_super, sql: "SELECT c::super, CAST(c AS SUPER) FROM t;" }
+    examples:
+      - "select cast(pricepaid as integer) from sales where salesid=100;"
+      - "select pricepaid::integer from sales where salesid=100;"
+      - "select cast(162.00 as integer) as pricepaid;"
+
+  - id: a_convert
+    name: CONVERT function
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_CONVERT_function.html
+    tier: medium
+    probes:
+      - { id: convert_basic, sql: "SELECT CONVERT(integer, pricepaid) FROM sales;" }
+      - { id: convert_parameterized, sql: "SELECT CONVERT(decimal(8,2), c) FROM t;" }
+
+  - id: a_identifier_quoting
+    name: Names and identifiers
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_names.html
+    tier: high
+    probes:
+      - { id: standard, sql: "SELECT col_1, _col, col$2 FROM tbl;" }
+      - { id: delimited, sql: "SELECT \"my column\" FROM \"my table\";" }
+      - { id: delimited_special_chars, sql: "SELECT \"a%b\" FROM t;" }
+      - { id: escaped_double_quote, sql: "SELECT \"a\"\"b\" FROM t;" }
+      - { id: qualified_delimited, sql: "SELECT \"Sch\".\"Tbl\".\"Col\" FROM \"Sch\".\"Tbl\";" }
+      - { id: three_part_name, sql: "SELECT c FROM db.s.t;" }
+      - { id: alias_delimited, sql: "SELECT c AS \"Mixed Case\" FROM t;" }
+      - { id: unicode_identifier, sql: "SELECT größe FROM tabelle;" }
+
+  - id: a_comments
+    name: Comments
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_reference.html
+    tier: medium
+    probes:
+      - { id: line_comment, sql: "SELECT 1; -- trailing comment" }
+      - { id: block_comment, sql: "SELECT /* inline */ 1;" }
+      - { id: multiline_block, sql: "/* first line\n   second line */\nSELECT 1;" }
+      - { id: leading_line_comment, sql: "-- leading\nSELECT 1;" }
+
+  - id: a_parameters
+    name: Parameters and variables
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_PREPARE.html
+    tier: medium
+    probes:
+      - { id: prepare_positional, sql: "PREPARE prep_select_plan (int) AS SELECT * FROM t WHERE c = $1;" }
+      - { id: prepare_multiple, sql: "PREPARE p (int, varchar) AS SELECT * FROM t WHERE a = $1 AND b = $2;" }
+      - { id: execute_args, sql: "EXECUTE prep_select_plan (100);" }
+      - { id: procedure_variable, sql: "CREATE PROCEDURE p() AS $$ DECLARE v int; BEGIN v := 1; INSERT INTO t VALUES (v); END; $$ LANGUAGE plpgsql;" }
