@@ -1,0 +1,421 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements: []
+
+expressions:
+  - id: c_aggregate_syntax
+    name: Aggregate functions with DISTINCT/ALL
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/lCc71nDIqu5Lc0xNN4~Mjg
+    tier: high
+    probes:
+      - { id: count_star, sql: "SELECT COUNT(*) FROM t;" }
+      - { id: count_distinct, sql: "SELECT COUNT(DISTINCT c) FROM t;" }
+      - { id: count_all, sql: "SELECT COUNT(ALL c) FROM t;" }
+      - { id: sum_distinct, sql: "SELECT SUM(DISTINCT x), AVG(DISTINCT x) FROM t;" }
+      - { id: avg_all, sql: "SELECT AVG(ALL x) FROM t;" }
+      - { id: avg_synonyms, sql: "SELECT AVERAGE(x), AVE(x) FROM t;", note: "AVG syntax: { AVERAGE | AVG | AVE }" }
+      - { id: maximum_minimum, sql: "SELECT MAXIMUM(x), MINIMUM(x) FROM t;", note: "{ MAXIMUM | MAX } and { MINIMUM | MIN }" }
+      - { id: max_min_distinct, sql: "SELECT MAX(DISTINCT x), MIN(ALL x) FROM t;" }
+      - { id: stddev_var, sql: "SELECT STDDEV_POP(x), STDDEV_SAMP(x), VAR_POP(x), VAR_SAMP(x) FROM t;" }
+      - { id: kurtosis_skew, sql: "SELECT KURTOSIS(DISTINCT x), SKEW(x) FROM t;" }
+      - { id: corr_covar, sql: "SELECT CORR(x, y), COVAR_POP(x, y), COVAR_SAMP(x, y) FROM t;" }
+      - { id: regr_family, sql: "SELECT REGR_AVGX(y, x), REGR_AVGY(y, x), REGR_COUNT(y, x), REGR_INTERCEPT(y, x), REGR_R2(y, x), REGR_SLOPE(y, x), REGR_SXX(y, x), REGR_SXY(y, x), REGR_SYY(y, x) FROM t;" }
+      - { id: grouping_function, sql: "SELECT a, GROUPING(a), SUM(b) FROM t GROUP BY ROLLUP (a);" }
+      - { id: aggregate_group_by, sql: "SELECT a, SUM(b) FROM t GROUP BY a HAVING SUM(b) > 10;" }
+    examples:
+      - "SELECT COUNT(DISTINCT JobTitle) FROM Employee;"
+      - "SELECT SUM(DISTINCT x), AVG(DISTINCT x) FROM XTable;"
+      - "SELECT SUM(DISTINCT x), SUM(DISTINCT y) FROM XYTable;"
+
+  - id: c_within_group_aggregates
+    name: PERCENTILE_CONT and PERCENTILE_DISC (WITHIN GROUP)
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/8atbSgaX7n515H7sDUpClw
+    tier: medium
+    probes:
+      - { id: percentile_cont, sql: "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x) FROM t;" }
+      - { id: percentile_disc, sql: "SELECT PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY x DESC) FROM t;" }
+      - { id: percentile_nulls_first, sql: "SELECT PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY x ASC NULLS FIRST) FROM t;" }
+      - { id: percentile_nulls_last, sql: "SELECT PERCENTILE_DISC(0.75) WITHIN GROUP (ORDER BY x NULLS LAST) FROM t;" }
+      - { id: percentile_over, sql: "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x) OVER (PARTITION BY a) FROM t;" }
+      - { id: percentile_group_by, sql: "SELECT a, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY x) FROM t GROUP BY a;" }
+
+  - id: c_window_aggregate_syntax
+    name: Window aggregate functions (OVER, ROWS frames)
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/Q~yKPQsIV5nABGnSChPZ6g
+    tier: high
+    note: Teradata 20.00 documents only a ROWS frame; there is no RANGE or GROUPS frame, no named WINDOW clause and no FILTER clause.
+    probes:
+      - { id: over_empty, sql: "SELECT SUM(x) OVER () FROM t;" }
+      - { id: over_partition_by, sql: "SELECT SUM(x) OVER (PARTITION BY a) FROM t;" }
+      - { id: over_partition_multi, sql: "SELECT SUM(x) OVER (PARTITION BY a, b) FROM t;" }
+      - { id: over_order_by, sql: "SELECT SUM(x) OVER (ORDER BY d) FROM t;" }
+      - { id: over_order_desc, sql: "SELECT SUM(x) OVER (ORDER BY d DESC, e ASC) FROM t;" }
+      - { id: over_order_nulls_first, sql: "SELECT SUM(x) OVER (ORDER BY d NULLS FIRST) FROM t;", note: "value_specification: value_expression [ ASC | DESC ] [ NULLS { FIRST | LAST } ]" }
+      - { id: over_order_nulls_last, sql: "SELECT SUM(x) OVER (ORDER BY d DESC NULLS LAST) FROM t;" }
+      - { id: over_partition_order, sql: "SELECT AVG(x) OVER (PARTITION BY a ORDER BY d) FROM t;" }
+      - { id: reset_when, sql: "SELECT SUM(x) OVER (PARTITION BY a ORDER BY d RESET WHEN x < 0) FROM t;", note: "ORDER BY ... [ RESET WHEN condition ]" }
+      - { id: rows_unbounded_preceding, sql: "SELECT SUM(x) OVER (ORDER BY d ROWS UNBOUNDED PRECEDING) FROM t;" }
+      - { id: rows_n_preceding, sql: "SELECT AVG(x) OVER (ORDER BY d ROWS 2 PRECEDING) FROM t;" }
+      - { id: rows_current_row, sql: "SELECT SUM(x) OVER (ORDER BY d ROWS CURRENT ROW) FROM t;" }
+      - { id: rows_between_unbounded_current, sql: "SELECT SUM(x) OVER (ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: rows_between_unbounded_following, sql: "SELECT SUM(x) OVER (ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: rows_between_n_preceding_current, sql: "SELECT AVG(x) OVER (PARTITION BY a ORDER BY d ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: rows_between_n_preceding_following, sql: "SELECT AVG(x) OVER (ORDER BY d ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;" }
+      - { id: rows_between_n_preceding_m_preceding, sql: "SELECT AVG(x) OVER (ORDER BY d ROWS BETWEEN 3 PRECEDING AND 1 PRECEDING) FROM t;" }
+      - { id: rows_between_current_following, sql: "SELECT SUM(x) OVER (ORDER BY d ROWS BETWEEN CURRENT ROW AND 2 FOLLOWING) FROM t;" }
+      - { id: rows_between_current_unbounded_following, sql: "SELECT SUM(x) OVER (ORDER BY d ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: rows_between_following_following, sql: "SELECT SUM(x) OVER (ORDER BY d ROWS BETWEEN 1 FOLLOWING AND 3 FOLLOWING) FROM t;" }
+      - { id: rows_between_following_unbounded, sql: "SELECT SUM(x) OVER (ORDER BY d ROWS BETWEEN 1 FOLLOWING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: count_star_over, sql: "SELECT COUNT(*) OVER (PARTITION BY a) FROM t;" }
+      - { id: min_max_over, sql: "SELECT MIN(x) OVER (PARTITION BY a), MAX(x) OVER (PARTITION BY a) FROM t;" }
+      - { id: stat_aggregates_over, sql: "SELECT STDDEV_POP(x) OVER (ORDER BY d ROWS 4 PRECEDING), VAR_SAMP(x) OVER (ORDER BY d ROWS 4 PRECEDING) FROM t;" }
+      - { id: corr_over, sql: "SELECT CORR(x, y) OVER (PARTITION BY a ORDER BY d ROWS UNBOUNDED PRECEDING) FROM t;" }
+      - { id: regr_over, sql: "SELECT REGR_SLOPE(y, x) OVER (ORDER BY d ROWS BETWEEN 5 PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: multiple_windows, sql: "SELECT AVG(x) OVER (PARTITION BY a ORDER BY d ROWS BETWEEN 2 PRECEDING AND CURRENT ROW), RANK() OVER (PARTITION BY a ORDER BY x DESC) FROM t;", note: "Multiple Window Specifications topic" }
+      - { id: window_with_group_by, sql: "SELECT a, SUM(b), RANK() OVER (ORDER BY SUM(b) DESC) FROM t GROUP BY a;" }
+    examples:
+      - |-
+        SELECT territory, smonth, sales,
+        AVG(sales) OVER (PARTITION BY territory
+                         ORDER BY smonth ROWS 2 PRECEDING)
+        FROM sales_history;
+      - |-
+        SELECT StoreID, SMonth, ProdID, Sales,
+        AVG(Sales) OVER (PARTITION BY StoreID
+                         ORDER BY SMonth
+                         ROWS BETWEEN 2 PRECEDING AND CURRENT ROW)
+        FROM sales_tbl;
+      - |-
+        SELECT StoreID, SMonth, ProdID, Sales,
+        AVG(Sales) OVER (PARTITION BY StoreID
+                         ORDER BY SMonth
+                         ROWS BETWEEN 2 PRECEDING AND CURRENT ROW),
+        RANK() OVER (PARTITION BY StoreID ORDER BY Sales DESC)
+        FROM sales_tbl;
+
+  - id: c_window_ranking_functions
+    name: Ranking and distribution window functions
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/Q~yKPQsIV5nABGnSChPZ6g
+    tier: high
+    probes:
+      - { id: row_number, sql: "SELECT ROW_NUMBER() OVER (ORDER BY d) FROM t;" }
+      - { id: row_number_partition, sql: "SELECT ROW_NUMBER() OVER (PARTITION BY a ORDER BY d DESC) FROM t;" }
+      - { id: row_number_reset_when, sql: "SELECT ROW_NUMBER() OVER (PARTITION BY a ORDER BY d RESET WHEN x < 0) FROM t;" }
+      - { id: rank_ansi, sql: "SELECT RANK() OVER (PARTITION BY a ORDER BY x DESC) FROM t;" }
+      - { id: rank_nulls_first, sql: "SELECT RANK() OVER (ORDER BY x DESC NULLS FIRST) FROM t;" }
+      - { id: rank_with_ties_low, sql: "SELECT RANK() OVER (ORDER BY x WITH TIES LOW) FROM t;", note: "RANK() OVER ( ... [ WITH TIES { LOW | HIGH | AVG | DENSE } ] )" }
+      - { id: rank_with_ties_high, sql: "SELECT RANK() OVER (ORDER BY x WITH TIES HIGH) FROM t;" }
+      - { id: rank_with_ties_avg, sql: "SELECT RANK() OVER (ORDER BY x WITH TIES AVG) FROM t;" }
+      - { id: rank_with_ties_dense, sql: "SELECT RANK() OVER (ORDER BY x WITH TIES DENSE) FROM t;" }
+      - { id: dense_rank, sql: "SELECT DENSE_RANK() OVER (PARTITION BY a ORDER BY x) FROM t;" }
+      - { id: percent_rank, sql: "SELECT PERCENT_RANK() OVER (PARTITION BY a ORDER BY x) FROM t;" }
+      - { id: cume_dist, sql: "SELECT CUME_DIST() OVER (PARTITION BY a ORDER BY x) FROM t;" }
+      - { id: rank_teradata, sql: "SELECT RANK(x DESC) FROM t;", note: "Teradata RANK ( sort_spec [,...] ) form" }
+      - { id: rank_teradata_multi, sql: "SELECT RANK(x ASC, y DESC) FROM t;" }
+      - { id: quantile, sql: "SELECT QUANTILE(100, x) FROM t;", note: "QUANTILE ( quantile_literal, sort_spec [,...] )" }
+      - { id: quantile_desc, sql: "SELECT QUANTILE(4, x DESC, y ASC) FROM t;" }
+      - { id: median, sql: "SELECT MEDIAN(x) FROM t;" }
+      - { id: median_over, sql: "SELECT MEDIAN(x) OVER (PARTITION BY a) FROM t;" }
+
+  - id: c_window_value_functions
+    name: Value window functions (FIRST_VALUE, LAST_VALUE, LAG, LEAD)
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/vSN0RZoGUdlw914fOUqfSQ
+    tier: high
+    probes:
+      - { id: first_value, sql: "SELECT FIRST_VALUE(x) OVER (PARTITION BY a ORDER BY d) FROM t;" }
+      - { id: last_value, sql: "SELECT LAST_VALUE(x) OVER (PARTITION BY a ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: first_value_ignore_nulls, sql: "SELECT FIRST_VALUE(x IGNORE NULLS) OVER (ORDER BY d) FROM t;" }
+      - { id: last_value_respect_nulls, sql: "SELECT LAST_VALUE(x RESPECT NULLS) OVER (ORDER BY d) FROM t;" }
+      - { id: lag_default, sql: "SELECT LAG(x) OVER (ORDER BY d) FROM t;" }
+      - { id: lag_offset, sql: "SELECT LAG(x, 2) OVER (PARTITION BY a ORDER BY d) FROM t;" }
+      - { id: lag_offset_default, sql: "SELECT LAG(x, 1, 0) OVER (ORDER BY d) FROM t;" }
+      - { id: lag_default_only, sql: "SELECT LAG(x, , 0) OVER (ORDER BY d) FROM t;", note: "offset_spec: [ offset_value ] [, [ default_value_expression ] ] allows omitting offset_value" }
+      - { id: lead_default, sql: "SELECT LEAD(x) OVER (ORDER BY d) FROM t;" }
+      - { id: lead_offset_default, sql: "SELECT LEAD(x, 2, -1) OVER (PARTITION BY a ORDER BY d) FROM t;" }
+      - { id: lag_ignore_nulls_inside, sql: "SELECT LAG(x IGNORE NULLS, 1) OVER (ORDER BY d) FROM t;", note: "Teradata form: value_expression [ { IGNORE | RESPECT } NULLS ] inside the parentheses" }
+      - { id: lead_respect_nulls_outside, sql: "SELECT LEAD(x, 1) RESPECT NULLS OVER (ORDER BY d) FROM t;", note: "ANSI form: [ { RESPECT | IGNORE } NULLS ] after the argument list" }
+      - { id: lag_order_nulls, sql: "SELECT LAG(x) OVER (PARTITION BY a ORDER BY d DESC NULLS LAST) FROM t;" }
+      - { id: lag_reset_when, sql: "SELECT LAG(x) OVER (ORDER BY d RESET WHEN x < 0) FROM t;" }
+
+  - id: c_teradata_ordered_analytic_functions
+    name: Teradata ordered analytical functions (CSUM, MAVG, MSUM, MDIFF, MLINREG)
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/tZHk6OI93~32ahcFNM3K9Q
+    tier: medium
+    probes:
+      - { id: csum, sql: "SELECT CSUM(x, d) FROM t;" }
+      - { id: csum_desc, sql: "SELECT CSUM(x, d DESC, e ASC) FROM t;" }
+      - { id: mavg, sql: "SELECT MAVG(x, 6, d) FROM t;" }
+      - { id: mavg_multi_sort, sql: "SELECT MAVG(Sale, 6, Region ASC, Store DESC) FROM t;" }
+      - { id: msum, sql: "SELECT MSUM(x, 3, d DESC) FROM t;" }
+      - { id: mdiff, sql: "SELECT MDIFF(x, 2, d) FROM t;" }
+      - { id: mlinreg, sql: "SELECT MLINREG(x, 5, d ASC) FROM t;" }
+      - { id: ordered_with_group_by, sql: "SELECT a, CSUM(SUM(x), a) FROM t GROUP BY a;" }
+      - { id: ordered_with_qualify, sql: "SELECT a, x FROM t QUALIFY RANK(x DESC) <= 3;" }
+
+  - id: c_arithmetic_functions
+    name: Arithmetic, trigonometric and hyperbolic functions
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/5dXKsJR3oxWnBSMuUNhgng
+    tier: high
+    probes:
+      - { id: abs_sign, sql: "SELECT ABS(x), SIGN(x) FROM t;" }
+      - { id: ceiling_floor, sql: "SELECT CEILING(x), CEIL(x), FLOOR(x) FROM t;" }
+      - { id: round_trunc, sql: "SELECT ROUND(x, 2), ROUND(x), TRUNC(x, 1), TRUNC(x) FROM t;" }
+      - { id: exp_ln_log, sql: "SELECT EXP(x), LN(x), LOG(x) FROM t;" }
+      - { id: power_sqrt, sql: "SELECT POWER(x, 2), SQRT(x) FROM t;" }
+      - { id: mod_function, sql: "SELECT MOD(x, 3) FROM t;" }
+      - { id: mod_operator, sql: "SELECT x MOD 3 FROM t;", note: "MOD is also a Teradata binary operator in the arithmetic operators topic" }
+      - { id: random, sql: "SELECT RANDOM(1, 100) FROM t;" }
+      - { id: trigonometric, sql: "SELECT COS(x), SIN(x), TAN(x), ACOS(x), ASIN(x), ATAN(x), ATAN2(x, y) FROM t;" }
+      - { id: hyperbolic, sql: "SELECT COSH(x), SINH(x), TANH(x), ACOSH(x), ASINH(x), ATANH(x) FROM t;" }
+      - { id: degrees_radians, sql: "SELECT DEGREES(x), RADIANS(x) FROM t;" }
+      - { id: width_bucket, sql: "SELECT WIDTH_BUCKET(x, 0, 100, 10) FROM t;", note: "Syntax block spells it WIDTH BUCKET; the function name is WIDTH_BUCKET" }
+      - { id: nullifzero_zeroifnull, sql: "SELECT NULLIFZERO(x), ZEROIFNULL(x) FROM t;" }
+      - { id: case_n, sql: "SELECT CASE_N(x < 10, x < 20, x < 30) FROM t;" }
+      - { id: case_n_no_case_or_unknown, sql: "SELECT CASE_N(x < 10, x < 20, NO CASE) FROM t;", note: "case_spec: NO CASE / UNKNOWN forms" }
+      - { id: case_n_no_case_or_unknown_both, sql: "SELECT CASE_N(x < 10, x < 20, NO CASE OR UNKNOWN) FROM t;" }
+      - { id: case_n_unknown, sql: "SELECT CASE_N(x < 10, x < 20, UNKNOWN) FROM t;" }
+      - { id: range_n_between, sql: "SELECT RANGE_N(x BETWEEN 1 AND 100 EACH 10) FROM t;" }
+      - { id: range_n_ranges, sql: "SELECT RANGE_N(x BETWEEN *, 10, 20 AND 30, 40 AND * , NO RANGE OR UNKNOWN) FROM t;" }
+      - { id: range_n_dates, sql: "SELECT RANGE_N(d BETWEEN DATE '2020-01-01' AND DATE '2020-12-31' EACH INTERVAL '1' MONTH) FROM t;" }
+
+  - id: c_string_functions
+    name: String functions
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/9P5I9RR2JslBzJJMTQ6kZg
+    tier: high
+    probes:
+      - { id: upper_lower, sql: "SELECT UPPER(s), UCASE(s), LOWER(s) FROM t;" }
+      - { id: length_functions, sql: "SELECT LENGTH(s), CHARACTER_LENGTH(s), CHAR_LENGTH(s), OCTET_LENGTH(s), BIT_LENGTH(s) FROM t;" }
+      - { id: byte_attribute_functions, sql: "SELECT BYTE(s), BYTES(s) FROM t;", note: "Teradata attribute function BYTE/BYTES" }
+      - { id: concat_function, sql: "SELECT CONCAT(s1, s2, s3) FROM t;" }
+      - { id: index_function, sql: "SELECT INDEX(s, 'x') FROM t;" }
+      - { id: instr, sql: "SELECT INSTR(s, 'x'), INSTR(s, 'x', 2, 3) FROM t;" }
+      - { id: locate, sql: "SELECT LOCATE('x', s), LOCATE('x', s, 3) FROM t;" }
+      - { id: left_right, sql: "SELECT LEFT(s, 3), RIGHT(s, 3) FROM t;" }
+      - { id: lpad_rpad, sql: "SELECT LPAD(s, 10), LPAD(s, 10, '0'), RPAD(s, 10), RPAD(s, 10, '*') FROM t;" }
+      - { id: ltrim_rtrim, sql: "SELECT LTRIM(s), LTRIM(s, 'x'), RTRIM(s), RTRIM(s, 'x') FROM t;" }
+      - { id: oreplace, sql: "SELECT OREPLACE(s, 'a', 'b'), OREPLACE(s, 'a') FROM t;" }
+      - { id: otranslate, sql: "SELECT OTRANSLATE(s, 'abc', 'xyz') FROM t;" }
+      - { id: reverse_initcap, sql: "SELECT REVERSE(s), INITCAP(s) FROM t;" }
+      - { id: strtok, sql: "SELECT STRTOK(s, ',', 2) FROM t;" }
+      - { id: ascii_chr, sql: "SELECT ASCII(s), CHR(65) FROM t;" }
+      - { id: char2hexint, sql: "SELECT CHAR2HEXINT(s) FROM t;" }
+      - { id: soundex, sql: "SELECT SOUNDEX(s) FROM t;" }
+      - { id: editdistance, sql: "SELECT EDITDISTANCE(s1, s2), EDITDISTANCE(s1, s2, 1, 1, 1, 1) FROM t;" }
+      - { id: ngram, sql: "SELECT NGRAM(s1, s2, 2), NGRAM(s1, s2, 2, 1) FROM t;" }
+      - { id: nvp, sql: "SELECT NVP(s, 'name'), NVP(s, 'name', '&', '=', 1) FROM t;" }
+      - { id: string_cs, sql: "SELECT STRING_CS(s) FROM t;" }
+      - { id: vargraphic, sql: "SELECT VARGRAPHIC(s) FROM t;" }
+      - { id: translate_using, sql: "SELECT TRANSLATE(s USING LATIN_TO_UNICODE) FROM t;" }
+      - { id: translate_using_with_error, sql: "SELECT TRANSLATE(s USING UNICODE_TO_LATIN WITH ERROR) FROM t;" }
+      - { id: translate_chk, sql: "SELECT TRANSLATE_CHK(s USING LATIN_TO_UNICODE) FROM t;" }
+      - { id: csv_function, sql: "SELECT CSV(NEW VARIANT_TYPE(a, b, c), ',', '\"') FROM t;" }
+      - { id: csvld_function, sql: "SELECT CSVLD(s, ',', '\"') FROM t;" }
+      - { id: concat_operator_pipes, sql: "SELECT s1 || s2 || 'x' FROM t;" }
+      - { id: strtok_split_to_table, sql: "SELECT * FROM TABLE (STRTOK_SPLIT_TO_TABLE(t.id, t.s, ',') RETURNS (outkey INTEGER, tokennum INTEGER, token VARCHAR(20))) AS d;" }
+
+  - id: c_regexp_functions
+    name: Regular expression functions
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/YJ~xk70R4U3OxenN~PEiqA
+    tier: medium
+    probes:
+      - { id: regexp_substr, sql: "SELECT REGEXP_SUBSTR(s, '[0-9]+') FROM t;" }
+      - { id: regexp_substr_args, sql: "SELECT REGEXP_SUBSTR(s, '[0-9]+', 1, 2, 'i') FROM t;" }
+      - { id: regexp_replace, sql: "SELECT REGEXP_REPLACE(s, '[0-9]+', 'N') FROM t;" }
+      - { id: regexp_replace_args, sql: "SELECT REGEXP_REPLACE(s, '[0-9]+', 'N', 1, 0, 'c') FROM t;" }
+      - { id: regexp_instr, sql: "SELECT REGEXP_INSTR(s, '[0-9]+') FROM t;" }
+      - { id: regexp_instr_args, sql: "SELECT REGEXP_INSTR(s, '[0-9]+', 1, 1, 0, 'i') FROM t;" }
+      - { id: regexp_similar, sql: "SELECT REGEXP_SIMILAR(s, '[a-z]+', 'i') FROM t;" }
+      - { id: regexp_split_to_table, sql: "SELECT * FROM TABLE (REGEXP_SPLIT_TO_TABLE(t.id, t.s, ',', 'c')) AS d;" }
+
+  - id: c_bit_byte_functions
+    name: Bit and byte manipulation functions
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/KW2FyeWDjh5_UQpBa3_qFw
+    tier: low
+    probes:
+      - { id: bitand_bitor, sql: "SELECT BITAND(x, 15), BITOR(x, 15), BITXOR(x, 15), BITNOT(x) FROM t;" }
+      - { id: countset, sql: "SELECT COUNTSET(x), COUNTSET(x, 0) FROM t;" }
+      - { id: getbit_setbit, sql: "SELECT GETBIT(x, 3), SETBIT(x, 3), SETBIT(x, 3, 0) FROM t;" }
+      - { id: shift_rotate, sql: "SELECT SHIFTLEFT(x, 2), SHIFTRIGHT(x, 2), ROTATELEFT(x, 2), ROTATERIGHT(x, 2) FROM t;" }
+      - { id: subbitstr_to_byte, sql: "SELECT SUBBITSTR(x, 2, 4), TO_BYTE(x) FROM t;" }
+
+  - id: c_hash_functions
+    name: Hash-related functions
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/FiF4YQjLNTefSHsxu5jMrg
+    tier: low
+    probes:
+      - { id: hashrow, sql: "SELECT HASHROW(a, b) FROM t;" }
+      - { id: hashbucket_hashamp, sql: "SELECT HASHAMP(HASHBUCKET(HASHROW(a))) FROM t;" }
+      - { id: hashamp_no_args, sql: "SELECT HASHAMP(), HASHBAKAMP() FROM t;" }
+
+  - id: c_null_and_comparison_functions
+    name: Null-handling and comparison functions
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/YbWih8d7a_KQlmG3KZ~PiA
+    tier: high
+    probes:
+      - { id: coalesce, sql: "SELECT COALESCE(a, b, 0) FROM t;" }
+      - { id: nullif, sql: "SELECT NULLIF(a, 0) FROM t;" }
+      - { id: nvl, sql: "SELECT NVL(a, 0) FROM t;" }
+      - { id: nvl2, sql: "SELECT NVL2(a, 'set', 'unset') FROM t;" }
+      - { id: decode, sql: "SELECT DECODE(a, 1, 'one', 2, 'two', 'other') FROM t;" }
+      - { id: greatest, sql: "SELECT GREATEST(a, b, 10) FROM t;" }
+      - { id: least, sql: "SELECT LEAST(a, b, 10) FROM t;" }
+      - { id: default_function, sql: "SELECT DEFAULT(c) FROM t;" }
+      - { id: default_in_update, sql: "UPDATE t SET c = DEFAULT;" }
+      - { id: format_title_type, sql: "SELECT FORMAT(c), TITLE(c), TYPE(c) FROM t;", note: "Attribute functions" }
+
+  - id: c_builtin_functions
+    name: Built-in (niladic) functions
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/O8MBPVgbZwrrkN25E_vZwA
+    tier: high
+    probes:
+      - { id: current_date_time, sql: "SELECT CURRENT_DATE, CURRENT_TIME, CURRENT_TIMESTAMP;" }
+      - { id: current_with_precision, sql: "SELECT CURRENT_TIME(3), CURRENT_TIMESTAMP(6);" }
+      - { id: current_date_curdate, sql: "SELECT CURDATE(), CURTIME(), NOW();" }
+      - { id: date_time_keywords, sql: "SELECT DATE, TIME;" }
+      - { id: user_session, sql: "SELECT USER, SESSION, DATABASE, ACCOUNT;" }
+      - { id: current_user_role, sql: "SELECT CURRENT_USER, CURRENT_ROLE, PROFILE, ROLE;" }
+      - { id: temporal_builtins, sql: "SELECT TEMPORAL_DATE, TEMPORAL_TIMESTAMP;" }
+      - { id: zone_functions, sql: "SELECT CURRENT_TIMESTAMP AT TIME ZONE 'GMT', CURRENT_TIMESTAMP AT LOCAL;" }
+
+  - id: c_type_conversion_functions
+    name: Data type conversion functions
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/15ZLj7eisz63xVYRPHW1qA
+    tier: high
+    probes:
+      - { id: to_char_numeric, sql: "SELECT TO_CHAR(x, '999.99') FROM t;" }
+      - { id: to_char_numeric_nls, sql: "SELECT TO_CHAR(x, 'L999.99', 'NLS_CURRENCY = ''$''') FROM t;" }
+      - { id: to_char_datetime, sql: "SELECT TO_CHAR(d, 'YYYY-MM-DD') FROM t;" }
+      - { id: to_char_no_format, sql: "SELECT TO_CHAR(x) FROM t;" }
+      - { id: to_number, sql: "SELECT TO_NUMBER(s), TO_NUMBER(s, '999.99') FROM t;" }
+      - { id: to_number_nls, sql: "SELECT TO_NUMBER(s, 'L999.99', 'NLS_CURRENCY = ''$''') FROM t;" }
+      - { id: to_date, sql: "SELECT TO_DATE(s, 'YYYY-MM-DD') FROM t;" }
+      - { id: to_timestamp, sql: "SELECT TO_TIMESTAMP(s, 'YYYY-MM-DD HH24:MI:SS') FROM t;" }
+      - { id: to_timestamp_epoch, sql: "SELECT TO_TIMESTAMP(1700000000);" }
+      - { id: to_timestamp_tz, sql: "SELECT TO_TIMESTAMP_TZ(s), TO_TIMESTAMP_TZ(s, 'YYYY-MM-DD HH24:MI:SS TZH:TZM') FROM t;" }
+      - { id: to_intervals, sql: "SELECT TO_YMINTERVAL('01-02'), TO_DSINTERVAL('003 12:30:00') FROM t;" }
+      - { id: numto_intervals, sql: "SELECT NUMTODSINTERVAL(x, 'DAY'), NUMTOYMINTERVAL(x, 'YEAR') FROM t;" }
+      - { id: to_bytes_from_bytes, sql: "SELECT TO_BYTES(s, 'base16'), FROM_BYTES(b, 'base16') FROM t;" }
+
+  - id: c_json_methods
+    name: JSON methods
+    doc: https://docs.teradata.com/reader/4BqY_HUMYnuRAUaL6SMEAA/d5UkdaqSexFWvEf2qVM_Pw
+    tier: high
+    probes:
+      - { id: json_extract, sql: "SELECT j.JSONExtract('$.name') FROM t;" }
+      - { id: json_extract_filter, sql: "SELECT j.JSONExtract('$.employees[?(@.age > 30)]') FROM t;" }
+      - { id: json_extract_value, sql: "SELECT j.JSONExtractValue('$.name') FROM t;" }
+      - { id: json_extract_large_value, sql: "SELECT j.JSONExtractLargeValue('$.name') FROM t;" }
+      - { id: json_exist_value, sql: "SELECT j.ExistValue('$.name') FROM t;" }
+      - { id: json_keycount, sql: "SELECT j.KEYCOUNT(), j.KEYCOUNT(2) FROM t;" }
+      - { id: json_metadata, sql: "SELECT j.METADATA() FROM t;" }
+      - { id: json_storage_size, sql: "SELECT j.StorageSize('UTF8') FROM t;" }
+      - { id: json_as_json_text, sql: "SELECT j.AsJSONText() FROM t;" }
+      - { id: json_as_bson, sql: "SELECT j.AsBSON(), j.AsBSON('STRICT') FROM t;" }
+      - { id: json_as_bson_text, sql: "SELECT j.AsBSONText() FROM t;" }
+      - { id: json_combine, sql: "SELECT j.Combine(j2), j.Combine(j2, 'ARRAY'), j.Combine(j2, 'OBJECT') FROM t;" }
+      - { id: json_method_chain, sql: "SELECT j.JSONExtract('$.a').AsJSONText() FROM t;" }
+      - { id: json_method_in_where, sql: "SELECT id FROM t WHERE j.JSONExtractValue('$.age') > 30;" }
+
+  - id: c_json_dot_notation_access
+    name: JSON dot notation and JSONPath access
+    doc: https://docs.teradata.com/reader/4BqY_HUMYnuRAUaL6SMEAA/nLFlKQmkvL8caz3nDiAwzg
+    tier: high
+    probes:
+      - { id: object_member, sql: "SELECT t.j.name FROM t;" }
+      - { id: nested_member, sql: "SELECT t.j.address.city FROM t;" }
+      - { id: quoted_member, sql: "SELECT t.j.\"first name\" FROM t;" }
+      - { id: array_element, sql: "SELECT t.j.phones[0] FROM t;" }
+      - { id: array_element_member, sql: "SELECT t.j.employees[1].name FROM t;" }
+      - { id: array_wildcard, sql: "SELECT t.j.phones[*] FROM t;" }
+      - { id: member_wildcard, sql: "SELECT t.j.* FROM t;" }
+      - { id: recursive_descent, sql: "SELECT t.j..name FROM t;" }
+      - { id: index_list, sql: "SELECT t.j.phones[0,2] FROM t;" }
+      - { id: slice, sql: "SELECT t.j.phones[0:2] FROM t;" }
+      - { id: slice_step, sql: "SELECT t.j.phones[0:6:2] FROM t;" }
+      - { id: dot_notation_where, sql: "SELECT id FROM t WHERE t.j.age > 30;" }
+      - { id: dot_notation_cast, sql: "SELECT CAST(t.j.age AS INTEGER) FROM t;" }
+
+  - id: c_json_functions
+    name: JSON functions and table operators
+    doc: https://docs.teradata.com/reader/4BqY_HUMYnuRAUaL6SMEAA/VfhqJ1R7OgxY1DDtpNsPfw
+    tier: medium
+    probes:
+      - { id: json_check, sql: "SELECT JSON_CHECK('{\"a\":1}');" }
+      - { id: json_get_value, sql: "SELECT JSONGETVALUE(j, '$.age' AS INTEGER) FROM t;", note: "JSONGETVALUE ( jsonObject, jsonPath AS data_type )" }
+      - { id: json_get_value_varchar, sql: "SELECT JSONGETVALUE(j, '$.name' AS VARCHAR(50)) FROM t;" }
+      - { id: array_to_json, sql: "SELECT ARRAY_TO_JSON(arr) FROM t;" }
+      - { id: array_to_json_returns, sql: "SELECT ARRAY_TO_JSON(arr) RETURNS JSON(1000) FROM t;", note: "( ARRAY_TO_JSON (ARRAY_expr) RETURNS returns_clause ); the parenthesised form is the call with RETURNS" }
+      - { id: nvp2json, sql: "SELECT NVP2JSON(s) FROM t;" }
+      - { id: nvp2json_delims, sql: "SELECT NVP2JSON(s, '&', '=') FROM t;" }
+      - { id: json_keys, sql: "SELECT * FROM JSON_KEYS(ON (SELECT j FROM t)) AS k;" }
+      - { id: json_keys_using, sql: "SELECT * FROM JSON_KEYS(ON (SELECT j FROM t) USING DEPTH(1) QUOTES('Y')) AS k;" }
+      - { id: json_table, sql: "SELECT * FROM JSON_TABLE(ON (SELECT id, j FROM t) USING ROWEXPR('$.schools[*]') COLEXPR('[{\"jsonpath\":\"$.name\",\"type\":\"CHAR(20)\"}]')) AS jt(id, name);" }
+      - { id: json_agg, sql: "SELECT JSON_AGG(a, b) FROM t;" }
+      - { id: json_agg_named, sql: "SELECT JSON_AGG(a AS id, b AS name) FROM t;" }
+      - { id: json_agg_format_returns, sql: "SELECT (JSON_AGG(a (FORMAT '999') AS id, b) RETURNS JSON(5000)) FROM t;" }
+      - { id: json_compose, sql: "SELECT JSON_COMPOSE(a, b) FROM t;" }
+      - { id: json_compose_named, sql: "SELECT JSON_COMPOSE(a AS id, b AS name) FROM t;" }
+      - { id: json_compose_nested, sql: "SELECT JSON_COMPOSE(a, JSON_AGG(b)) FROM t GROUP BY a;" }
+      - { id: json_publish, sql: "SELECT * FROM JSON_PUBLISH(ON (SELECT * FROM t)) AS jsondata;" }
+      - { id: json_publish_do_aggregate, sql: "SELECT * FROM JSON_PUBLISH(ON (SELECT * FROM t) USING DO_AGGREGATE('N')) AS jsondata;" }
+      - { id: select_as_json, sql: "SELECT AS JSON a, b FROM t;" }
+      - { id: select_as_json_top, sql: "SELECT AS JSON TOP 2 a, b FROM t ORDER BY a DESC;" }
+    examples:
+      - |-
+        SELECT * FROM JSON_Table
+        (ON (SELECT id, jsonCol FROM my_table WHERE id=1)
+        USING rowexpr('$.schools[*]')
+                       colexpr('[ {"jsonpath" : "$.name",
+                                   "type" : "CHAR(20)"},
+                                  {"jsonpath" : "$.type",
+                                   "type" : "VARCHAR(20)"}]')
+        ) AS JT(id, schoolName, "type");
+      - |-
+        SELECT * FROM JSON_PUBLISH
+        (
+           ON (SELECT * FROM employeeTable)
+        ) AS jsonData;
+      - |-
+        SELECT * FROM JSON_PUBLISH
+        (
+           ON (SELECT * FROM employeeTable)
+           USING DO_AGGREGATE('N')
+        ) AS jsonData ORDER BY data..empID;
+      - "SELECT AS JSON a, b, j FROM MyTable;"
+      - "SELECT AS JSON TOP 2 a, b FROM MyTable ORDER BY a DESC;"
+
+  - id: c_array_functions
+    name: ARRAY functions, methods and operators
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/qys~wge132k7c~~fV4fKLQ
+    tier: medium
+    probes:
+      - { id: array_agg, sql: "SELECT ARRAY_AGG(c ORDER BY d, NEW myarray()) FROM t;", note: "ARRAY_AGG ( element_value_expr [ ORDER BY value_expression [ ASC | DESC ] ] , array_expression )" }
+      - { id: array_agg_desc, sql: "SELECT TD_SYSFNLIB.ARRAY_AGG(c ORDER BY d DESC, NEW myarray()) FROM t;" }
+      - { id: unnest, sql: "SELECT tf.val FROM t, TABLE (UNNEST(t.arr)) AS tf(val);" }
+      - { id: unnest_key, sql: "SELECT tf.k, tf.val FROM t, TABLE (UNNEST(t.id, t.arr)) AS tf(k, val);" }
+      - { id: unnest_ordinality, sql: "SELECT tf.k, tf.pos, tf.val FROM t, TABLE (UNNEST(t.id, t.arr) WITH ORDINALITY) AS tf(k, pos, val);" }
+      - { id: cardinality_function, sql: "SELECT CARDINALITY(arr), CARDINALITY(arr, 1) FROM t;" }
+      - { id: cardinality_method, sql: "SELECT arr.CARDINALITY() FROM t;", note: "Method-style: array_expr.CARDINALITY ( [ scope_reference ] )" }
+      - { id: array_concat_operator, sql: "SELECT arr1 || arr2 FROM t;" }
+      - { id: array_concat_function, sql: "SELECT ARRAY_CONCAT(arr1, arr2) FROM t;" }
+      - { id: array_concat_method, sql: "SELECT arr1.ARRAY_CONCAT(arr2) FROM t;" }
+      - { id: array_comparison, sql: "SELECT ARRAY_GT(arr1, arr2), ARRAY_GE(arr1, arr2), ARRAY_LT(arr1, arr2), ARRAY_LE(arr1, arr2), ARRAY_EQ(arr1, arr2), ARRAY_NE(arr1, arr2) FROM t;" }
+      - { id: array_comparison_method, sql: "SELECT arr1.ARRAY_EQ(arr2) FROM t;" }
+      - { id: array_compare, sql: "SELECT ARRAY_COMPARE(arr1, arr2), ARRAY_COMPARE(arr1, arr2, 1, 1) FROM t;" }
+      - { id: array_arithmetic, sql: "SELECT ARRAY_ADD(arr1, arr2), ARRAY_SUB(arr1, arr2), ARRAY_MUL(arr1, arr2), ARRAY_DIV(arr1, arr2), ARRAY_MOD(arr1, arr2) FROM t;" }
+      - { id: array_aggregates, sql: "SELECT ARRAY_SUM(arr), ARRAY_AVG(arr), ARRAY_MAX(arr), ARRAY_MIN(arr) FROM t;" }
+      - { id: array_aggregate_method, sql: "SELECT arr.ARRAY_SUM() FROM t;" }
+      - { id: array_count_distinct, sql: "SELECT ARRAY_COUNT_DISTINCT(arr), ARRAY_COUNT_DISTINCT(arr, 1, 5) FROM t;" }
+      - { id: array_get, sql: "SELECT ARRAY_GET(arr, 3) FROM t;" }
+      - { id: array_get_method, sql: "SELECT arr.ARRAY_GET(3) FROM t;" }
+      - { id: array_update, sql: "SELECT ARRAY_UPDATE(arr, 99), ARRAY_UPDATE(arr, 99, 3) FROM t;" }
+      - { id: array_update_stride, sql: "SELECT ARRAY_UPDATE_STRIDE(arr, 99, 2), ARRAY_UPDATE_STRIDE(arr, 99, 2, 1) FROM t;" }
+      - { id: oexists_ocount, sql: "SELECT OEXISTS(arr, 3), OCOUNT(arr) FROM t;" }
+      - { id: olimit_ofirst_olast, sql: "SELECT OLIMIT(arr), OFIRST(arr), OLAST(arr) FROM t;" }
+      - { id: oprior_onext, sql: "SELECT OPRIOR(arr, 3), ONEXT(arr, 3) FROM t;" }
+      - { id: oextend_otrim, sql: "SELECT OEXTEND(arr), OEXTEND(arr, 2), OEXTEND(arr, 2, 5), OTRIM(arr), OTRIM(arr, 2) FROM t;" }
+      - { id: array_method_style, sql: "SELECT arr.OCOUNT(), arr.OFIRST(), arr.OEXTEND(2) FROM t;" }
+      - { id: array_scope_reference, sql: "SELECT ARRAY_SUM(arr, 2, 5) FROM t;", note: "scope_reference: array_lower_bounds, array_upper_bounds" }
