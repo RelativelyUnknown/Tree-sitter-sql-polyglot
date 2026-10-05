@@ -1,0 +1,76 @@
+dialect: clickhouse
+engine: ClickHouse
+version: "current docs (2026)"
+source: https://clickhouse.com/docs/sql-reference/statements/
+
+statements:
+  - id: create_view
+    name: CREATE VIEW (normal / parameterized)
+    doc: https://clickhouse.com/docs/sql-reference/statements/create/view
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE VIEW v AS SELECT a, b FROM t;" }
+      - { id: db_qualified, sql: "CREATE VIEW db.v AS SELECT a FROM t;" }
+      - { id: or_replace, sql: "CREATE OR REPLACE VIEW v AS SELECT a FROM t;" }
+      - { id: if_not_exists, sql: "CREATE VIEW IF NOT EXISTS v AS SELECT a FROM t;" }
+      - { id: column_aliases, sql: "CREATE VIEW v (x, y) AS SELECT a, b FROM t;" }
+      - { id: on_cluster, sql: "CREATE VIEW v ON CLUSTER c AS SELECT a FROM t;" }
+      - { id: definer_user, sql: "CREATE VIEW v DEFINER = alice AS SELECT a FROM t;" }
+      - { id: definer_current_user, sql: "CREATE VIEW v DEFINER = CURRENT_USER AS SELECT a FROM t;" }
+      - { id: sql_security_definer, sql: "CREATE VIEW v SQL SECURITY DEFINER AS SELECT a FROM t;" }
+      - { id: sql_security_invoker, sql: "CREATE VIEW v SQL SECURITY INVOKER AS SELECT a FROM t;" }
+      - { id: sql_security_none, sql: "CREATE VIEW v SQL SECURITY NONE AS SELECT a FROM t;" }
+      - { id: definer_and_sql_security, sql: "CREATE VIEW v DEFINER = alice SQL SECURITY DEFINER AS SELECT a FROM t;" }
+      - { id: comment, sql: "CREATE VIEW v AS SELECT a FROM t COMMENT 'my view';" }
+      - { id: all_clauses, sql: "CREATE OR REPLACE VIEW db.v (x) ON CLUSTER c DEFINER = CURRENT_USER SQL SECURITY DEFINER AS SELECT a FROM t COMMENT 'c';" }
+      - id: parameterized
+        sql: "CREATE VIEW v AS SELECT * FROM t WHERE c1 = {column1:UInt32} AND c2 = {column2:String};"
+      - id: parameterized_use
+        sql: "SELECT * FROM v(column1 = 1, column2 = 'x');"
+        note: reading a parameterized view with table-function call syntax
+      - id: parameterized_describe
+        sql: "DESCRIBE v(column1 = 1, column2 = 'x');"
+        note: DESCRIBE works only when parameters are supplied
+
+  - id: create_materialized_view
+    name: CREATE MATERIALIZED VIEW (incl. REFRESH)
+    doc: https://clickhouse.com/docs/sql-reference/statements/create/view
+    tier: high
+    probes:
+      - { id: with_engine, sql: "CREATE MATERIALIZED VIEW mv ENGINE = MergeTree ORDER BY x AS SELECT x, sum(y) AS total FROM src GROUP BY x;" }
+      - { id: if_not_exists, sql: "CREATE MATERIALIZED VIEW IF NOT EXISTS mv ENGINE = MergeTree ORDER BY x AS SELECT x FROM src;" }
+      - { id: db_qualified, sql: "CREATE MATERIALIZED VIEW db.mv ENGINE = MergeTree ORDER BY x AS SELECT x FROM src;" }
+      - { id: on_cluster, sql: "CREATE MATERIALIZED VIEW mv ON CLUSTER c ENGINE = MergeTree ORDER BY x AS SELECT x FROM src;" }
+      - { id: to_table, sql: "CREATE MATERIALIZED VIEW mv TO target AS SELECT x FROM src;" }
+      - { id: to_db_table, sql: "CREATE MATERIALIZED VIEW mv TO db.target AS SELECT x FROM src;" }
+      - { id: to_table_columns, sql: "CREATE MATERIALIZED VIEW mv TO target (x UInt64) AS SELECT x FROM src;" }
+      - { id: populate, sql: "CREATE MATERIALIZED VIEW mv ENGINE = MergeTree ORDER BY x POPULATE AS SELECT x FROM src;" }
+      - { id: to_table_populate, sql: "CREATE MATERIALIZED VIEW mv TO target POPULATE AS SELECT x FROM src;" }
+      - { id: definer, sql: "CREATE MATERIALIZED VIEW mv TO target DEFINER = alice AS SELECT x FROM src;" }
+      - { id: definer_current_user, sql: "CREATE MATERIALIZED VIEW mv TO target DEFINER = CURRENT_USER AS SELECT x FROM src;" }
+      - { id: sql_security_definer, sql: "CREATE MATERIALIZED VIEW mv TO target SQL SECURITY DEFINER AS SELECT x FROM src;" }
+      - { id: sql_security_none, sql: "CREATE MATERIALIZED VIEW mv TO target SQL SECURITY NONE AS SELECT x FROM src;" }
+      - { id: comment, sql: "CREATE MATERIALIZED VIEW mv TO target AS SELECT x FROM src COMMENT 'my mv';" }
+      - { id: or_replace, sql: "CREATE OR REPLACE MATERIALIZED VIEW mv ENGINE = MergeTree ORDER BY x AS SELECT x FROM src;" }
+      - { id: or_replace_to, sql: "CREATE OR REPLACE MATERIALIZED VIEW mv TO target AS SELECT x FROM src;" }
+      - { id: or_replace_populate, sql: "CREATE OR REPLACE MATERIALIZED VIEW mv ENGINE = MergeTree ORDER BY x POPULATE AS SELECT x FROM src;" }
+      - { id: refresh_every, sql: "CREATE MATERIALIZED VIEW mv REFRESH EVERY 1 DAY ENGINE = MergeTree ORDER BY x AS SELECT x FROM src;" }
+      - { id: refresh_after, sql: "CREATE MATERIALIZED VIEW mv REFRESH AFTER 30 MINUTE ENGINE = MergeTree ORDER BY x AS SELECT x FROM src;" }
+      - { id: refresh_every_offset, sql: "CREATE MATERIALIZED VIEW mv REFRESH EVERY 1 MONTH OFFSET 5 DAY 2 HOUR ENGINE = MergeTree ORDER BY x AS SELECT x FROM src;" }
+      - { id: refresh_compound_interval, sql: "CREATE MATERIALIZED VIEW mv REFRESH EVERY 1 WEEK 2 DAYS ENGINE = MergeTree ORDER BY x AS SELECT x FROM src;" }
+      - { id: refresh_randomize_for, sql: "CREATE MATERIALIZED VIEW mv REFRESH EVERY 1 DAY OFFSET 2 HOUR RANDOMIZE FOR 1 HOUR ENGINE = MergeTree ORDER BY x AS SELECT x FROM src;" }
+      - { id: refresh_depends_on, sql: "CREATE MATERIALIZED VIEW mv REFRESH EVERY 1 HOUR DEPENDS ON dep1, db.dep2 ENGINE = MergeTree ORDER BY x AS SELECT x FROM src;" }
+      - { id: refresh_depends_on_only, sql: "CREATE MATERIALIZED VIEW mv REFRESH DEPENDS ON dep TO target AS SELECT x FROM src;" }
+      - { id: refresh_settings, sql: "CREATE MATERIALIZED VIEW mv REFRESH EVERY 1 HOUR SETTINGS refresh_retries = 3 ENGINE = MergeTree ORDER BY x AS SELECT x FROM src;" }
+      - { id: refresh_append, sql: "CREATE MATERIALIZED VIEW mv REFRESH EVERY 10 SECOND APPEND TO target AS SELECT x FROM src;" }
+      - { id: refresh_append_incremental, sql: "CREATE MATERIALIZED VIEW mv REFRESH EVERY 1 HOUR APPEND INCREMENTAL TO target AS SELECT x FROM src;" }
+      - { id: refresh_empty, sql: "CREATE MATERIALIZED VIEW mv REFRESH EVERY 1 HOUR ENGINE = MergeTree ORDER BY x EMPTY AS SELECT x FROM src;" }
+      - { id: refresh_on_cluster, sql: "CREATE MATERIALIZED VIEW mv ON CLUSTER c REFRESH EVERY 1 HOUR ENGINE = MergeTree ORDER BY x AS SELECT x FROM src;" }
+      - { id: refresh_to_columns, sql: "CREATE MATERIALIZED VIEW mv REFRESH EVERY 1 HOUR TO target (x UInt64) AS SELECT x FROM src;" }
+      - { id: refresh_definer_security, sql: "CREATE MATERIALIZED VIEW mv REFRESH EVERY 1 HOUR TO target DEFINER = alice SQL SECURITY DEFINER AS SELECT x FROM src;" }
+      - { id: refresh_comment, sql: "CREATE MATERIALIZED VIEW mv REFRESH EVERY 1 HOUR TO target AS SELECT x FROM src COMMENT 'c';" }
+      - { id: or_replace_refresh, sql: "CREATE OR REPLACE MATERIALIZED VIEW mv REFRESH EVERY 1 HOUR ENGINE = MergeTree ORDER BY x AS SELECT x FROM src;" }
+    examples:
+      - "CREATE OR REPLACE MATERIALIZED VIEW mv ENGINE = MergeTree ORDER BY x AS SELECT x, sum(y) AS total FROM src GROUP BY x;"
+      - "CREATE OR REPLACE MATERIALIZED VIEW mv ENGINE = MergeTree ORDER BY x POPULATE AS SELECT x FROM src;"
+      - "CREATE OR REPLACE MATERIALIZED VIEW mv TO target AS SELECT x FROM src;"
