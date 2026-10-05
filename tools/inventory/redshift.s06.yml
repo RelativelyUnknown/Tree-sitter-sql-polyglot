@@ -1,0 +1,117 @@
+dialect: redshift
+engine: Amazon Redshift
+version: "current"
+source: https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_commands.html
+
+statements:
+  - id: create_materialized_view
+    name: CREATE MATERIALIZED VIEW
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/materialized-view-create-sql-command.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE MATERIALIZED VIEW mv AS SELECT a, SUM(b) AS s FROM t GROUP BY a;"
+      - id: backup_yes
+        sql: "CREATE MATERIALIZED VIEW mv BACKUP YES AS SELECT a FROM t;"
+      - id: backup_no
+        sql: "CREATE MATERIALIZED VIEW mv BACKUP NO AS SELECT a FROM t;"
+      - id: diststyle_even
+        sql: "CREATE MATERIALIZED VIEW mv DISTSTYLE EVEN AS SELECT a FROM t;"
+      - id: diststyle_all
+        sql: "CREATE MATERIALIZED VIEW mv DISTSTYLE ALL AS SELECT a FROM t;"
+      - id: diststyle_key_distkey
+        sql: "CREATE MATERIALIZED VIEW mv DISTSTYLE KEY DISTKEY (a) AS SELECT a FROM t;"
+      - id: distkey
+        sql: "CREATE MATERIALIZED VIEW mv DISTKEY (a) AS SELECT a FROM t;"
+      - id: sortkey
+        sql: "CREATE MATERIALIZED VIEW mv SORTKEY (a, b) AS SELECT a, b FROM t;"
+      - id: table_attributes_combined
+        sql: "CREATE MATERIALIZED VIEW mv DISTSTYLE KEY DISTKEY (a) SORTKEY (a, b) AS SELECT a, b FROM t;"
+      - id: auto_refresh_yes
+        sql: "CREATE MATERIALIZED VIEW mv AUTO REFRESH YES AS SELECT a FROM t;"
+      - id: auto_refresh_no
+        sql: "CREATE MATERIALIZED VIEW mv AUTO REFRESH NO AS SELECT a FROM t;"
+      - id: backup_attributes_auto_refresh
+        sql: "CREATE MATERIALIZED VIEW mv BACKUP NO DISTSTYLE ALL SORTKEY (a) AUTO REFRESH YES AS SELECT a FROM t;"
+      - id: schema_qualified
+        sql: "CREATE MATERIALIZED VIEW s.mv AS SELECT a FROM s.t;"
+      - id: iceberg
+        sql: "CREATE MATERIALIZED VIEW mv USING ICEBERG AS SELECT a FROM t;"
+      - id: iceberg_location
+        sql: "CREATE MATERIALIZED VIEW mv USING ICEBERG LOCATION 's3://bucket/path/' AS SELECT a FROM t;"
+      - id: iceberg_partitioned_by
+        sql: "CREATE MATERIALIZED VIEW mv USING ICEBERG PARTITIONED BY (a) AS SELECT a FROM t;"
+      - id: iceberg_partition_transforms
+        sql: "CREATE MATERIALIZED VIEW mv USING ICEBERG PARTITIONED BY (YEAR(d), MONTH(d), DAY(d), HOUR(d), BUCKET(4, a), TRUNCATE(10, b)) AS SELECT a, b, d FROM t;"
+      - id: iceberg_table_properties
+        sql: "CREATE MATERIALIZED VIEW mv USING ICEBERG TABLE PROPERTIES ('write.target-file-size-bytes' = '134217728') AS SELECT a FROM t;"
+      - id: iceberg_all_clauses
+        sql: "CREATE MATERIALIZED VIEW mv USING ICEBERG LOCATION 's3://bucket/path/' PARTITIONED BY (DAY(d)) TABLE PROPERTIES ('k' = 'v') AS SELECT a, d FROM t;"
+    examples:
+      - "CREATE MATERIALIZED VIEW tickets_mv AS select catgroup, sum(qtysold) as sold from category c, event e, sales s where c.catid = e.catid and e.eventid = s.eventid group by catgroup;"
+      - "CREATE MATERIALIZED VIEW mv_fq as select firstname, lastname from apg.mv_fq_example;"
+      - "CREATE MATERIALIZED VIEW mv_baseball DISTSTYLE ALL AUTO REFRESH YES AS SELECT ball AS baseball FROM baseball_table;"
+
+  - id: create_procedure
+    name: CREATE PROCEDURE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_PROCEDURE.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE PROCEDURE sp() AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE PROCEDURE sp() AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql;"
+      - id: args_unnamed
+        sql: "CREATE PROCEDURE sp(int, varchar) AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql;"
+      - id: args_named
+        sql: "CREATE PROCEDURE sp(a int, b varchar(20)) AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql;"
+      - id: argmode_in
+        sql: "CREATE PROCEDURE sp(a IN int) AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql;"
+      - id: argmode_inout_out
+        sql: "CREATE PROCEDURE sp(a INOUT int, b OUT varchar(256)) AS $$ BEGIN b := 'x'; END; $$ LANGUAGE plpgsql;"
+      - id: nonatomic
+        sql: "CREATE PROCEDURE sp() NONATOMIC AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql;"
+      - id: security_invoker
+        sql: "CREATE PROCEDURE sp() AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql SECURITY INVOKER;"
+      - id: security_definer
+        sql: "CREATE PROCEDURE sp() AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql SECURITY DEFINER;"
+      - id: set_to
+        sql: "CREATE PROCEDURE sp() AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql SET search_path TO public;"
+      - id: set_equals
+        sql: "CREATE PROCEDURE sp() AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql SET search_path = public;"
+      - id: security_definer_set
+        sql: "CREATE PROCEDURE sp() AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;"
+      - id: schema_qualified
+        sql: "CREATE PROCEDURE s.sp() AS $$ BEGIN NULL; END; $$ LANGUAGE plpgsql;"
+    examples:
+      - |-
+        CREATE OR REPLACE PROCEDURE test_sp1(f1 int, f2 varchar(20))
+        AS $$
+        DECLARE
+          min_val int;
+        BEGIN
+          DROP TABLE IF EXISTS tmp_tbl;
+          CREATE TEMP TABLE tmp_tbl(id int);
+          INSERT INTO tmp_tbl values (f1),(10001),(10002);
+          SELECT min_val MIN(id) FROM tmp_tbl;
+          RAISE INFO 'min_val = %, f2 = %', min_val, f2;
+        END;
+        $$ LANGUAGE plpgsql;
+      - |-
+        CREATE OR REPLACE PROCEDURE test_sp2(f1 IN int, f2 INOUT varchar(256), out_var OUT varchar(256))
+        AS $$
+        DECLARE
+          loop_var int;
+        BEGIN
+          IF f1 is null OR f2 is null THEN
+            RAISE EXCEPTION 'input cannot be null';
+          END IF;
+          DROP TABLE if exists my_etl;
+          CREATE TEMP TABLE my_etl(a int, b varchar);
+            FOR loop_var IN 1..f1 LOOP
+                insert into my_etl values (loop_var, f2);
+                f2 := f2 || '+' || f2;
+            END LOOP;
+          SELECT INTO out_var count(*) from my_etl;
+        END;
+        $$ LANGUAGE plpgsql;
