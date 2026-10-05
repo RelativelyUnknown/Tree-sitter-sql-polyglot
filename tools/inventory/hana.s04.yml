@@ -1,0 +1,84 @@
+dialect: hana
+engine: SAP HANA Platform
+version: "2.0 SPS 08 (2.0.08)"
+source: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/3bc1a0d4611d40c4a6e3fc7c8e80395d.html?version=2.0.08
+
+statements:
+  - id: commit
+    name: COMMIT
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d39db97519101480e7f9b76f48c2c4.html?version=2.0.08
+    tier: high
+    probes:
+      - id: commit
+        sql: "COMMIT;"
+    examples:
+      - "COMMIT;"
+
+  - id: create_function
+    name: CREATE FUNCTION
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d42e77751910149f0ff6b879b1290f.html?version=2.0.08
+    tier: high
+    probes:
+      - id: table_function
+        sql: "CREATE FUNCTION f (val INT) RETURNS TABLE (a INT, b INT) LANGUAGE SQLSCRIPT AS BEGIN RETURN SELECT a, :val * b AS b FROM t; END;"
+      - id: scalar_function
+        sql: "CREATE FUNCTION f (x DOUBLE, y DOUBLE) RETURNS r DOUBLE LANGUAGE SQLSCRIPT AS BEGIN r := :x + :y; END;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE FUNCTION f (x INT) RETURNS r INT AS BEGIN r := :x; END;"
+      - id: schema_qualified_name
+        sql: "CREATE FUNCTION s.f (x INT) RETURNS r INT AS BEGIN r := :x; END;"
+      - id: no_parameter_clause
+        sql: "CREATE FUNCTION f RETURNS TABLE (i INT) AS BEGIN RETURN SELECT i FROM t; END;"
+      - id: in_parameter
+        sql: "CREATE FUNCTION f (IN x INT, IN y NVARCHAR(10)) RETURNS r INT AS BEGIN r := :x; END;"
+      - id: array_parameter
+        sql: "CREATE FUNCTION f (x INT ARRAY) RETURNS r INT AS BEGIN r := :x[1]; END;"
+      - id: table_type_parameter
+        sql: "CREATE FUNCTION f (IN tt s.tab_type) RETURNS TABLE (a INT) AS BEGIN RETURN SELECT a FROM :tt; END;"
+      - id: table_definition_parameter
+        sql: "CREATE FUNCTION f (IN tt TABLE (a INT, b VARCHAR(10))) RETURNS TABLE (a INT) AS BEGIN RETURN SELECT a FROM :tt; END;"
+      - id: any_table_parameter
+        sql: "CREATE FUNCTION f (IN itab TABLE(...)) RETURNS TABLE (a INT) AS BEGIN RETURN SELECT a FROM :itab; END;"
+      - id: returns_array
+        sql: "CREATE FUNCTION f (x INT) RETURNS r INT ARRAY AS BEGIN r[1] := :x; END;"
+      - id: returns_multiple_scalars
+        sql: "CREATE FUNCTION f (x INT) RETURNS r1 INT, r2 INT AS BEGIN r1 := :x; r2 := :x; END;"
+      - id: language_sqlscript
+        sql: "CREATE FUNCTION f (x INT) RETURNS r INT LANGUAGE SQLSCRIPT AS BEGIN r := :x; END;"
+      - id: sql_security_definer
+        sql: "CREATE FUNCTION f (x INT) RETURNS r INT SQL SECURITY DEFINER AS BEGIN r := :x; END;"
+      - id: sql_security_invoker
+        sql: "CREATE FUNCTION f (x INT) RETURNS r INT SQL SECURITY INVOKER AS BEGIN r := :x; END;"
+      - id: default_schema
+        sql: "CREATE FUNCTION f (x INT) RETURNS r INT DEFAULT SCHEMA s AS BEGIN r := :x; END;"
+      - id: variable_cache_on
+        sql: "CREATE FUNCTION f (x INT) RETURNS r INT VARIABLE CACHE ON v1, v2 AS BEGIN r := :x; END;"
+      - id: variable_cache_with_mode
+        sql: "CREATE FUNCTION f (x INT) RETURNS r INT VARIABLE CACHE ON v1 ENABLE, (v2, v3) DISABLE AS BEGIN r := :x; END;"
+      - id: deterministic
+        sql: "CREATE FUNCTION f (x INT) RETURNS r INT DETERMINISTIC AS BEGIN r := :x; END;"
+      - id: with_encryption
+        sql: "CREATE FUNCTION f (x INT) RETURNS r INT WITH ENCRYPTION AS BEGIN r := :x; END;"
+      - id: all_attributes
+        sql: "CREATE FUNCTION f (x INT) RETURNS r INT LANGUAGE SQLSCRIPT SQL SECURITY INVOKER DEFAULT SCHEMA s DETERMINISTIC WITH ENCRYPTION AS BEGIN r := :x; END;"
+      - id: header_only
+        sql: "CREATE FUNCTION f (x INT) RETURNS r INT AS HEADER ONLY;"
+      - id: header_only_on_invalid
+        sql: "CREATE FUNCTION f RETURNS TABLE (i INT) AS HEADER ONLY ON INVALID BEGIN RETURN SELECT i FROM t; END;"
+      - id: with_cache
+        sql: "CREATE FUNCTION f RETURNS TABLE (a INT, b INT) AS BEGIN RETURN SELECT * FROM t; END WITH CACHE;"
+      - id: with_static_cache_retention
+        sql: "CREATE FUNCTION f RETURNS TABLE (a INT, b INT) AS BEGIN RETURN SELECT * FROM t; END WITH STATIC CACHE RETENTION 10;"
+      - id: cache_projection_list
+        sql: "CREATE FUNCTION f RETURNS TABLE (a INT, b INT) AS BEGIN RETURN SELECT * FROM t; END WITH CACHE OF a, SUM(b);"
+      - id: cache_filter
+        sql: "CREATE FUNCTION f RETURNS TABLE (a INT, b INT) AS BEGIN RETURN SELECT * FROM t; END WITH CACHE FILTER a > 5 AND b IS NOT NULL;"
+      - id: cache_location
+        sql: "CREATE FUNCTION f RETURNS TABLE (a INT, b INT) AS BEGIN RETURN SELECT * FROM t; END WITH STATIC CACHE RETENTION 10 AT LOCATION 'host1:30003';"
+      - id: body_using_declare_handler
+        sql: "CREATE FUNCTION f (x INT) RETURNS TABLE (a INT) AS BEGIN USING SQLSCRIPT_PRINT AS p; DECLARE v INT; DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN v := 0; END; v := :x; RETURN SELECT :v AS a FROM DUMMY; END;"
+        note: body is <func_using_list> <func_decl_list> <func_handler_list> <func_stmt_list>, which the page defers to the CREATE PROCEDURE clauses
+    examples:
+      - "CREATE FUNCTION Scale (val INT) RETURNS TABLE (a INT, b INT) LANGUAGE SQLSCRIPT AS BEGIN RETURN SELECT a, :val * b AS b FROM mytab; END;"
+      - "CREATE FUNCTION func_add_mul(x Double, y Double) RETURNS result_add Double, result_mul Double LANGUAGE SQLSCRIPT READS SQL DATA AS BEGIN result_add := :x + :y; result_mul := :x * :y; END;"
+      - "CREATE FUNCTION FuncHeader (input1 integer) RETURNS output1 integer AS HEADER ONLY;"
