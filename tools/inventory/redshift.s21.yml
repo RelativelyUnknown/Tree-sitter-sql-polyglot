@@ -1,0 +1,152 @@
+dialect: redshift
+engine: Amazon Redshift
+version: "current"
+source: https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_commands.html
+
+statements:
+  - id: lock
+    name: LOCK
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_LOCK.html
+    tier: medium
+    probes:
+      - { id: lock_table, sql: "LOCK TABLE t;" }
+      - { id: lock_no_table_keyword, sql: "LOCK t;" }
+      - { id: lock_multiple, sql: "LOCK event, sales;" }
+
+  - id: prepare
+    name: PREPARE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_PREPARE.html
+    tier: medium
+    probes:
+      - { id: prepare_select, sql: "PREPARE p AS SELECT * FROM t;" }
+      - { id: prepare_with_types, sql: "PREPARE p (int, varchar) AS SELECT * FROM t WHERE a = $1 AND b = $2;" }
+      - { id: prepare_insert, sql: "PREPARE p (int) AS INSERT INTO t VALUES ($1);" }
+      - { id: prepare_update, sql: "PREPARE p (int) AS UPDATE t SET c = 1 WHERE a = $1;" }
+      - { id: prepare_delete, sql: "PREPARE p (int) AS DELETE FROM t WHERE a = $1;" }
+
+  - id: refresh_materialized_view
+    name: REFRESH MATERIALIZED VIEW
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/materialized-view-refresh-sql-command.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "REFRESH MATERIALIZED VIEW mv;" }
+      - { id: restrict, sql: "REFRESH MATERIALIZED VIEW mv RESTRICT;" }
+      - { id: cascade, sql: "REFRESH MATERIALIZED VIEW mv CASCADE;" }
+    examples:
+      - "REFRESH MATERIALIZED VIEW tickets_mv;"
+      - "REFRESH MATERIALIZED VIEW products_mv CASCADE;"
+
+  - id: reset
+    name: RESET
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_RESET.html
+    tier: medium
+    probes:
+      - { id: reset_parameter, sql: "RESET query_group;" }
+      - { id: reset_all, sql: "RESET ALL;" }
+      - { id: reset_context_variable, sql: "RESET app_context.user_id;" }
+    examples:
+      - "reset query_group;"
+      - "reset all;"
+      - "RESET app_context.user_id;"
+
+  - id: revoke
+    name: REVOKE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_REVOKE.html
+    tier: medium
+    probes:
+      - { id: table_privileges, sql: "REVOKE SELECT, INSERT ON TABLE t FROM u;" }
+      - { id: table_all_privileges, sql: "REVOKE ALL PRIVILEGES ON t FROM u;" }
+      - { id: grant_option_for, sql: "REVOKE GRANT OPTION FOR SELECT ON t FROM u;" }
+      - { id: all_tables_in_schema, sql: "REVOKE SELECT ON ALL TABLES IN SCHEMA s FROM u;" }
+      - { id: from_role, sql: "REVOKE SELECT ON t FROM ROLE r;" }
+      - { id: from_group, sql: "REVOKE SELECT ON t FROM GROUP g;" }
+      - { id: from_public, sql: "REVOKE SELECT ON t FROM PUBLIC;" }
+      - { id: restrict, sql: "REVOKE SELECT ON t FROM u RESTRICT;" }
+      - { id: database, sql: "REVOKE CREATE, TEMPORARY ON DATABASE db FROM u;" }
+      - { id: schema, sql: "REVOKE USAGE ON SCHEMA s FROM u;" }
+      - { id: function, sql: "REVOKE EXECUTE ON FUNCTION f(int) FROM u;" }
+      - { id: procedure, sql: "REVOKE EXECUTE ON PROCEDURE p(int) FROM u;" }
+      - { id: language, sql: "REVOKE USAGE ON LANGUAGE plpgsql FROM u;" }
+      - { id: copy_job, sql: "REVOKE ALTER ON COPY JOB j FROM u;" }
+      - { id: template, sql: "REVOKE USAGE ON TEMPLATE tpl FROM u;" }
+      - { id: column_level, sql: "REVOKE SELECT (c1, c2) ON TABLE t FROM u;" }
+      - { id: assumerole, sql: "REVOKE ASSUMEROLE ON 'arn:aws:iam::123456789012:role/r' FROM u FOR ALL;" }
+      - { id: assumerole_copy_unload, sql: "REVOKE ASSUMEROLE ON ALL FROM GROUP g FOR COPY;" }
+      - { id: external_table_columns, sql: "REVOKE SELECT (c1) ON EXTERNAL TABLE s.t FROM IAM_ROLE 'arn:aws:iam::123456789012:role/r';" }
+      - { id: external_table, sql: "REVOKE SELECT ON EXTERNAL TABLE s.t FROM PUBLIC;" }
+      - { id: external_schema, sql: "REVOKE CREATE ON EXTERNAL SCHEMA s FROM IAM_ROLE 'arn:aws:iam::123456789012:role/r';" }
+      - { id: datashare_alter_share, sql: "REVOKE ALTER ON DATASHARE ds FROM u;" }
+      - { id: datashare_usage_namespace, sql: "REVOKE USAGE ON DATASHARE ds FROM NAMESPACE 'abc123';" }
+      - { id: datashare_usage_account_via, sql: "REVOKE USAGE ON DATASHARE salesshare FROM ACCOUNT '123456789012' VIA DATA CATALOG;" }
+      - { id: shared_database_usage, sql: "REVOKE USAGE ON DATABASE shared_db FROM u;" }
+    examples:
+      - "REVOKE USAGE ON DATASHARE salesshare FROM ACCOUNT '123456789012' VIA DATA CATALOG;"
+
+  - id: set
+    name: SET
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_SET.html
+    tier: medium
+    probes:
+      - { id: set_to, sql: "SET datestyle TO 'SQL,DMY';" }
+      - { id: set_equals, sql: "SET statement_timeout = 0;" }
+      - { id: set_session, sql: "SET SESSION search_path TO public;" }
+      - { id: set_local, sql: "SET LOCAL query_group TO 'priority';" }
+      - { id: set_default, sql: "SET query_group TO DEFAULT;" }
+      - { id: set_seed, sql: "SET SEED TO 0.5;" }
+      - { id: set_session_context_variable, sql: "SET SESSION app_context.user_id = 'u1';" }
+      - { id: set_context_variable_local, sql: "SET LOCAL app_context.user_id TO 'u1';" }
+    examples:
+      - "set datestyle to 'SQL,DMY';"
+      - "set query_group to 'priority';"
+      - "SET SESSION default_identity_namespace = 'MYCO';"
+
+  - id: set_session_authorization
+    name: SET SESSION AUTHORIZATION
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_SET_SESSION_AUTHORIZATION.html
+    tier: medium
+    probes:
+      - { id: user_string, sql: "SET SESSION AUTHORIZATION 'dwuser';" }
+      - { id: user_identifier, sql: "SET SESSION AUTHORIZATION dwuser;" }
+      - { id: local, sql: "SET LOCAL SESSION AUTHORIZATION 'dwuser';" }
+      - { id: default, sql: "SET SESSION AUTHORIZATION DEFAULT;" }
+    examples:
+      - "SET SESSION AUTHORIZATION 'dwuser';"
+      - "SET LOCAL SESSION AUTHORIZATION 'dwuser';"
+      - "SET SESSION AUTHORIZATION DEFAULT;"
+
+  - id: show
+    name: SHOW
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_SHOW.html
+    tier: medium
+    probes:
+      - { id: show_parameter, sql: "SHOW query_group;" }
+      - { id: show_all, sql: "SHOW ALL;" }
+      - { id: show_context_variable, sql: "SHOW app_context.user_id;" }
+    examples:
+      - "show query_group;"
+      - "show all;"
+      - "SHOW app_context.user_id;"
+
+  - id: show_column_grants
+    name: SHOW COLUMN GRANTS
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_SHOW_COLUMN_GRANTS.html
+    tier: medium
+    probes:
+      - { id: three_part_name, sql: "SHOW COLUMN GRANTS ON TABLE db.s.t;" }
+      - { id: two_part_name, sql: "SHOW COLUMN GRANTS ON TABLE s.t;" }
+      - { id: for_user, sql: "SHOW COLUMN GRANTS ON TABLE s.t FOR u;" }
+      - { id: for_role, sql: "SHOW COLUMN GRANTS ON TABLE s.t FOR ROLE r;" }
+      - { id: for_public, sql: "SHOW COLUMN GRANTS ON TABLE s.t FOR PUBLIC;" }
+      - { id: limit, sql: "SHOW COLUMN GRANTS ON TABLE s.t LIMIT 10;" }
+    examples:
+      - "SHOW COLUMN GRANTS ON TABLE demo_db.demo_schema.t100;"
+
+  - id: show_columns
+    name: SHOW COLUMNS
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_SHOW_COLUMNS.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "SHOW COLUMNS FROM TABLE db.s.t;" }
+      - { id: like, sql: "SHOW COLUMNS FROM TABLE db.s.t LIKE 'c%';" }
+      - { id: limit, sql: "SHOW COLUMNS FROM TABLE db.s.t LIMIT 10;" }
+      - { id: like_limit, sql: "SHOW COLUMNS FROM TABLE db.s.t LIKE 'c%' LIMIT 10;" }

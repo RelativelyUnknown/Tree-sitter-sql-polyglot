@@ -1,0 +1,136 @@
+dialect: redshift
+engine: Amazon Redshift
+version: "current"
+source: https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_commands.html
+
+statements:
+  - id: show_constraints
+    name: SHOW CONSTRAINTS
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_SHOW_CONSTRAINTS.html
+    tier: medium
+    probes:
+      - { id: primary_keys, sql: "SHOW CONSTRAINTS PRIMARY KEYS FROM TABLE s.t;" }
+      - { id: primary_keys_three_part, sql: "SHOW CONSTRAINTS PRIMARY KEYS FROM TABLE db.s.t;" }
+      - { id: foreign_keys, sql: "SHOW CONSTRAINTS FOREIGN KEYS FROM TABLE s.t;" }
+      - { id: foreign_keys_exported, sql: "SHOW CONSTRAINTS FOREIGN KEYS EXPORTED FROM TABLE s.t;" }
+      - { id: limit, sql: "SHOW CONSTRAINTS PRIMARY KEYS FROM TABLE s.t LIMIT 10;" }
+    examples:
+      - "SHOW CONSTRAINTS PRIMARY KEYS FROM TABLE demo_db.demo_schema.pk1;"
+      - "SHOW CONSTRAINTS FOREIGN KEYS FROM TABLE demo_schema.fk2;"
+
+  - id: show_external_table
+    name: SHOW EXTERNAL TABLE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_SHOW_EXTERNAL_TABLE.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "SHOW EXTERNAL TABLE s.t;" }
+      - { id: with_database, sql: "SHOW EXTERNAL TABLE db.s.t;" }
+      - { id: partition, sql: "SHOW EXTERNAL TABLE s.t PARTITION;" }
+
+  - id: show_databases
+    name: SHOW DATABASES
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_SHOW_DATABASES.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "SHOW DATABASES;" }
+      - { id: like_limit, sql: "SHOW DATABASES LIKE 'dev%' LIMIT 10;" }
+      - { id: from_data_catalog, sql: "SHOW DATABASES FROM DATA CATALOG;" }
+      - { id: data_catalog_account, sql: "SHOW DATABASES FROM DATA CATALOG ACCOUNT '123456789012', '210987654321';" }
+      - { id: data_catalog_like_iam_default, sql: "SHOW DATABASES FROM DATA CATALOG LIKE 'a%' IAM_ROLE default LIMIT 5;" }
+      - { id: data_catalog_iam_arn, sql: "SHOW DATABASES FROM DATA CATALOG IAM_ROLE 'arn:aws:iam::123456789012:role/r';" }
+      - { id: data_catalog_iam_session, sql: "SHOW DATABASES FROM DATA CATALOG IAM_ROLE 'SESSION';" }
+
+  - id: show_functions
+    name: SHOW FUNCTIONS
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_SHOW_FUNCTIONS.html
+    tier: medium
+    probes:
+      - { id: from_schema, sql: "SHOW FUNCTIONS FROM SCHEMA s;" }
+      - { id: from_schema_database, sql: "SHOW FUNCTIONS FROM SCHEMA db.s;" }
+      - { id: like, sql: "SHOW FUNCTIONS FROM SCHEMA s LIKE 'f_%';" }
+      - { id: limit, sql: "SHOW FUNCTIONS FROM SCHEMA s LIMIT 10;" }
+    examples:
+      - "SHOW FUNCTIONS FROM SCHEMA demo_db.demo_schema;"
+
+  - id: show_grants
+    name: SHOW GRANTS
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_SHOW_GRANTS.html
+    tier: medium
+    probes:
+      - { id: on_database, sql: "SHOW GRANTS ON DATABASE db;" }
+      - { id: on_schema, sql: "SHOW GRANTS ON SCHEMA s;" }
+      - { id: on_table, sql: "SHOW GRANTS ON TABLE s.t;" }
+      - { id: on_function_args, sql: "SHOW GRANTS ON FUNCTION s.f(integer, varchar);" }
+      - { id: on_function, sql: "SHOW GRANTS ON FUNCTION db.s.f;" }
+      - { id: on_table_for_user, sql: "SHOW GRANTS ON TABLE s.t FOR u LIMIT 10;" }
+      - { id: on_table_for_role, sql: "SHOW GRANTS ON TABLE s.t FOR ROLE r;" }
+      - { id: on_table_for_public, sql: "SHOW GRANTS ON TABLE s.t FOR PUBLIC;" }
+      - { id: for_user, sql: "SHOW GRANTS FOR u;" }
+      - { id: for_role_from_database, sql: "SHOW GRANTS FOR ROLE r FROM DATABASE db LIMIT 10;" }
+    examples:
+      - "SHOW GRANTS on database demo_db;"
+
+  - id: show_datashares
+    name: SHOW DATASHARES
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_SHOW_DATASHARES.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "SHOW DATASHARES;" }
+      - { id: like, sql: "SHOW DATASHARES LIKE 'sales%';" }
+    examples:
+      - "SHOW DATASHARES;"
+      - "SHOW DATASHARES LIKE 'sales%';"
+
+  - id: show_parameters
+    name: SHOW PARAMETERS
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_SHOW_PARAMETERS.html
+    tier: medium
+    probes:
+      - { id: of_function, sql: "SHOW PARAMETERS OF FUNCTION s.f(integer, varchar);" }
+      - { id: of_procedure, sql: "SHOW PARAMETERS OF PROCEDURE s.p(integer);" }
+      - { id: three_part_name, sql: "SHOW PARAMETERS OF PROCEDURE db.s.p(integer, varchar);" }
+      - { id: like, sql: "SHOW PARAMETERS OF FUNCTION s.f(integer) LIKE 'a%';" }
+    examples:
+      - "SHOW PARAMETERS OF PROCEDURE demo_db.demo_schema.f1(VARCHAR, DECIMAL, DECIMAL, DECIMAL);"
+
+  - id: show_policies
+    name: SHOW POLICIES
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_SHOW_POLICIES.html
+    tier: medium
+    probes:
+      - { id: rls, sql: "SHOW RLS POLICIES;" }
+      - { id: masking, sql: "SHOW MASKING POLICIES;" }
+      - { id: on_relation, sql: "SHOW RLS POLICIES ON s.t;" }
+      - { id: on_relation_three_part, sql: "SHOW MASKING POLICIES ON db.s.t;" }
+      - { id: on_relation_for_user, sql: "SHOW RLS POLICIES ON s.t FOR u;" }
+      - { id: on_relation_for_role, sql: "SHOW MASKING POLICIES ON s.t FOR ROLE r;" }
+      - { id: on_relation_for_public, sql: "SHOW RLS POLICIES ON s.t FOR PUBLIC;" }
+      - { id: from_database, sql: "SHOW RLS POLICIES FROM DATABASE db;" }
+      - { id: limit, sql: "SHOW MASKING POLICIES LIMIT 10;" }
+    examples:
+      - "SHOW RLS POLICIES;"
+
+  - id: show_procedure
+    name: SHOW PROCEDURE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_SHOW_PROCEDURE.html
+    tier: medium
+    probes:
+      - { id: name_only, sql: "SHOW PROCEDURE p;" }
+      - { id: schema_qualified, sql: "SHOW PROCEDURE s.p;" }
+      - { id: arg_types, sql: "SHOW PROCEDURE p(int, varchar);" }
+      - { id: arg_names_modes, sql: "SHOW PROCEDURE p(f1 int, INOUT f2 varchar, OUT varchar);" }
+      - { id: empty_args, sql: "SHOW PROCEDURE p();" }
+    examples:
+      - "show procedure test_sp2(int, varchar);"
+
+  - id: show_procedures
+    name: SHOW PROCEDURES
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_SHOW_PROCEDURES.html
+    tier: medium
+    probes:
+      - { id: from_schema, sql: "SHOW PROCEDURES FROM SCHEMA s;" }
+      - { id: from_schema_database, sql: "SHOW PROCEDURES FROM SCHEMA db.s;" }
+      - { id: like, sql: "SHOW PROCEDURES FROM SCHEMA s LIKE 'sp_%';" }
+      - { id: limit, sql: "SHOW PROCEDURES FROM SCHEMA s LIMIT 10;" }
+    examples:
+      - "SHOW PROCEDURES FROM SCHEMA demo_db.demo_schema;"
