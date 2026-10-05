@@ -1,0 +1,90 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements:
+  - id: resignal
+    name: RESIGNAL
+    doc: https://mariadb.com/docs/server/reference/sql-statements/programmatic-compound-statements/resignal
+    tier: high
+    probes:
+      - id: bare
+        sql: "RESIGNAL;"
+      - id: sqlstate
+        sql: "RESIGNAL SQLSTATE '45000';"
+      - id: sqlstate_value
+        sql: "RESIGNAL SQLSTATE VALUE '45000';"
+      - id: condition_name
+        sql: "RESIGNAL cond;"
+      - id: set_message_text
+        sql: "RESIGNAL SET MESSAGE_TEXT = 'error';"
+      - id: sqlstate_set_properties
+        sql: "RESIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'error', MYSQL_ERRNO = 1001;"
+      - id: condition_name_set
+        sql: "RESIGNAL cond SET CLASS_ORIGIN = 'x', SUBCLASS_ORIGIN = 'y', CONSTRAINT_CATALOG = 'c', CONSTRAINT_SCHEMA = 's', CONSTRAINT_NAME = 'n';"
+      - id: set_object_properties
+        sql: "RESIGNAL SET CATALOG_NAME = 'c', SCHEMA_NAME = 's', TABLE_NAME = 't', COLUMN_NAME = 'col', CURSOR_NAME = 'cur';"
+      - id: set_variable_value
+        sql: "RESIGNAL SET MESSAGE_TEXT = @msg;"
+    examples:
+      - |-
+        CREATE PROCEDURE test_error( )
+        BEGIN
+          DECLARE CONTINUE HANDLER FOR 1146
+          BEGIN
+            IF @hide_errors IS FALSE THEN
+              RESIGNAL;
+            END IF;
+          END;
+          SET @hide_errors = TRUE;
+          SELECT 'Next error will be ignored' AS msg;
+          SELECT `c` FROM `temptab_one`;
+          SELECT 'Next error won''t be ignored' AS msg;
+          SET @hide_errors = FALSE;
+          SELECT `c` FROM `temptab_two`;
+        END;
+      - |-
+        CREATE PROCEDURE test_error()
+        BEGIN
+          DECLARE CONTINUE HANDLER FOR 1146
+          BEGIN
+            RESIGNAL SET MESSAGE_TEXT = '`temptab` does not exist';
+          END;
+          SELECT `c` FROM `temptab`;
+        END;
+
+  - id: get_diagnostics
+    name: GET DIAGNOSTICS
+    doc: https://mariadb.com/docs/server/reference/sql-statements/programmatic-compound-statements/programmatic-compound-statements-diagnostics/get-diagnostics
+    tier: high
+    probes:
+      - id: statement_number
+        sql: "GET DIAGNOSTICS @n = NUMBER;"
+      - id: statement_row_count
+        sql: "GET DIAGNOSTICS @n = ROW_COUNT;"
+      - id: statement_multiple
+        sql: "GET DIAGNOSTICS @n = NUMBER, @r = ROW_COUNT;"
+      - id: current
+        sql: "GET CURRENT DIAGNOSTICS @n = NUMBER;"
+      - id: condition_constant
+        sql: "GET DIAGNOSTICS CONDITION 1 @s = RETURNED_SQLSTATE;"
+      - id: condition_variable
+        sql: "GET DIAGNOSTICS CONDITION @i @s = RETURNED_SQLSTATE;"
+      - id: condition_multiple
+        sql: "GET DIAGNOSTICS CONDITION 1 @s = RETURNED_SQLSTATE, @e = MYSQL_ERRNO, @t = MESSAGE_TEXT;"
+      - id: condition_origin_properties
+        sql: "GET DIAGNOSTICS CONDITION 1 @a = CLASS_ORIGIN, @b = SUBCLASS_ORIGIN;"
+      - id: condition_constraint_properties
+        sql: "GET DIAGNOSTICS CONDITION 1 @a = CONSTRAINT_CATALOG, @b = CONSTRAINT_SCHEMA, @c = CONSTRAINT_NAME;"
+      - id: condition_object_properties
+        sql: "GET DIAGNOSTICS CONDITION 1 @a = CATALOG_NAME, @b = SCHEMA_NAME, @c = TABLE_NAME, @d = COLUMN_NAME, @e = CURSOR_NAME;"
+      - id: condition_row_number
+        sql: "GET DIAGNOSTICS CONDITION 1 @r = ROW_NUMBER;"
+        note: "condition_property_name ROW_NUMBER in the syntax block; documented from MariaDB 10.7"
+      - id: current_condition
+        sql: "GET CURRENT DIAGNOSTICS CONDITION 1 @t = MESSAGE_TEXT;"
+    examples:
+      - "GET DIAGNOSTICS @num_conditions = NUMBER;"
+      - "GET DIAGNOSTICS CONDITION 1 @sqlstate = RETURNED_SQLSTATE, @errno = MYSQL_ERRNO, @text = MESSAGE_TEXT;"
+      - "GET DIAGNOSTICS CONDITION 1 @row_num= ROW_NUMBER;"
