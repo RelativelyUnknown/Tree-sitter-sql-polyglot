@@ -1,0 +1,197 @@
+dialect: cockroachdb
+engine: CockroachDB
+version: "v26.3 (stable)"
+source: https://www.cockroachlabs.com/docs/stable/sql-statements
+
+statements:
+  - id: alter_database
+    name: ALTER DATABASE
+    doc: https://www.cockroachlabs.com/docs/stable/alter-database
+    tier: medium
+    probes:
+      - { id: rename_to, sql: "ALTER DATABASE d RENAME TO d2;" }
+      - { id: owner_to, sql: "ALTER DATABASE d OWNER TO u;" }
+      - { id: add_region, sql: "ALTER DATABASE d ADD REGION IF NOT EXISTS \"us-east1\";" }
+      - { id: drop_region, sql: "ALTER DATABASE d DROP REGION IF EXISTS \"us-east1\";" }
+      - { id: set_primary_region, sql: "ALTER DATABASE d SET PRIMARY REGION \"us-east1\";" }
+      - { id: set_secondary_region, sql: "ALTER DATABASE d SET SECONDARY REGION \"us-west1\";" }
+      - { id: drop_secondary_region, sql: "ALTER DATABASE d DROP SECONDARY REGION;" }
+      - { id: survive_failure, sql: "ALTER DATABASE d SURVIVE REGION FAILURE;" }
+      - { id: placement, sql: "ALTER DATABASE d PLACEMENT RESTRICTED;" }
+      - { id: add_super_region, sql: "ALTER DATABASE d ADD SUPER REGION \"usa\" VALUES \"us-east1\", \"us-west1\";" }
+      - { id: drop_super_region, sql: "ALTER DATABASE d DROP SUPER REGION \"usa\";" }
+      - { id: alter_super_region, sql: "ALTER DATABASE d ALTER SUPER REGION \"usa\" VALUES \"us-east1\";" }
+      - { id: configure_zone_using, sql: "ALTER DATABASE d CONFIGURE ZONE USING num_replicas = 5, gc.ttlseconds = 100000;" }
+      - { id: configure_zone_discard, sql: "ALTER DATABASE d CONFIGURE ZONE DISCARD;" }
+      - { id: alter_locality_regional, sql: "ALTER DATABASE d ALTER LOCALITY REGIONAL CONFIGURE ZONE USING num_replicas = 3;" }
+      - { id: alter_locality_regional_in, sql: "ALTER DATABASE d ALTER LOCALITY REGIONAL IN \"us-east1\" CONFIGURE ZONE USING num_replicas = 3;" }
+      - { id: alter_locality_global, sql: "ALTER DATABASE d ALTER LOCALITY GLOBAL CONFIGURE ZONE USING num_replicas = 3;" }
+      - { id: set_session_variable, sql: "ALTER DATABASE d SET timezone = 'America/New_York';" }
+      - { id: reset_session_variable, sql: "ALTER DATABASE d RESET timezone;" }
+    examples:
+      - "ALTER DATABASE db1 RENAME TO db2;"
+      - "ALTER DATABASE movr OWNER TO max;"
+      - "ALTER DATABASE movr ADD SUPER REGION \"usa\" VALUES \"us-east1\", \"us-west1\";"
+
+  - id: alter_default_privileges
+    name: ALTER DEFAULT PRIVILEGES
+    doc: https://www.cockroachlabs.com/docs/stable/alter-default-privileges
+    tier: medium
+    probes:
+      - { id: grant, sql: "ALTER DEFAULT PRIVILEGES GRANT SELECT ON TABLES TO u;" }
+      - { id: for_role_grant, sql: "ALTER DEFAULT PRIVILEGES FOR ROLE r GRANT SELECT ON TABLES TO u;" }
+      - { id: for_user_revoke, sql: "ALTER DEFAULT PRIVILEGES FOR USER r REVOKE SELECT ON TABLES FROM u;" }
+      - { id: for_all_roles, sql: "ALTER DEFAULT PRIVILEGES FOR ALL ROLES GRANT SELECT ON TABLES TO public;" }
+      - { id: in_schema, sql: "ALTER DEFAULT PRIVILEGES IN SCHEMA s GRANT INSERT, UPDATE ON TABLES TO u;" }
+      - { id: grant_option, sql: "ALTER DEFAULT PRIVILEGES REVOKE GRANT OPTION FOR ALL ON SEQUENCES FROM u;" }
+      - { id: on_types, sql: "ALTER DEFAULT PRIVILEGES GRANT USAGE ON TYPES TO u;" }
+      - { id: on_schemas, sql: "ALTER DEFAULT PRIVILEGES GRANT CREATE ON SCHEMAS TO u;" }
+      - { id: on_functions, sql: "ALTER DEFAULT PRIVILEGES GRANT EXECUTE ON FUNCTIONS TO u;" }
+    examples:
+      - "ALTER DEFAULT PRIVILEGES FOR ROLE cockroachlabs GRANT SELECT ON TABLES TO max;"
+      - "ALTER DEFAULT PRIVILEGES FOR ROLE cockroachlabs REVOKE SELECT ON TABLES FROM max;"
+      - "ALTER DEFAULT PRIVILEGES FOR ALL ROLES GRANT SELECT ON TABLES TO public;"
+
+  - id: alter_domain
+    name: ALTER DOMAIN
+    doc: https://www.cockroachlabs.com/docs/stable/alter-domain
+    tier: medium
+    probes:
+      - { id: set_default, sql: "ALTER DOMAIN d SET DEFAULT 1;" }
+      - { id: drop_default, sql: "ALTER DOMAIN d DROP DEFAULT;" }
+      - { id: set_not_null, sql: "ALTER DOMAIN d SET NOT NULL;" }
+      - { id: drop_not_null, sql: "ALTER DOMAIN d DROP NOT NULL;" }
+      - { id: add_check, sql: "ALTER DOMAIN d ADD CONSTRAINT c CHECK (VALUE <= 50);" }
+      - { id: add_check_not_valid, sql: "ALTER DOMAIN d ADD CONSTRAINT c CHECK (VALUE <= 50) NOT VALID;" }
+      - { id: add_not_null, sql: "ALTER DOMAIN d ADD CONSTRAINT c NOT NULL;" }
+      - { id: drop_constraint, sql: "ALTER DOMAIN d DROP CONSTRAINT c;" }
+      - { id: rename_constraint, sql: "ALTER DOMAIN d RENAME CONSTRAINT c TO c2;" }
+      - { id: owner_to, sql: "ALTER DOMAIN d OWNER TO u;" }
+      - { id: set_schema, sql: "ALTER DOMAIN d SET SCHEMA s;" }
+      - { id: rename_to, sql: "ALTER DOMAIN s.d RENAME TO d2;" }
+    examples:
+      - "ALTER DOMAIN order_qty SET DEFAULT 1;"
+      - "ALTER DOMAIN order_qty ADD CONSTRAINT qty_cap CHECK (VALUE <= 50) NOT VALID;"
+      - "ALTER DOMAIN order_qty RENAME CONSTRAINT qty_cap TO qty_max;"
+
+  - id: alter_schema
+    name: ALTER SCHEMA
+    doc: https://www.cockroachlabs.com/docs/stable/alter-schema
+    tier: medium
+    probes:
+      - { id: rename_to, sql: "ALTER SCHEMA s RENAME TO s2;" }
+      - { id: rename_qualified, sql: "ALTER SCHEMA d.s RENAME TO s2;" }
+      - { id: owner_to, sql: "ALTER SCHEMA s OWNER TO u;" }
+    examples:
+      - "ALTER SCHEMA org_one RENAME TO org_two;"
+      - "ALTER SCHEMA org_one OWNER TO max;"
+
+  - id: alter_sequence
+    name: ALTER SEQUENCE
+    doc: https://www.cockroachlabs.com/docs/stable/alter-sequence
+    tier: medium
+    probes:
+      - { id: increment, sql: "ALTER SEQUENCE s INCREMENT 2;" }
+      - { id: if_exists_increment_by, sql: "ALTER SEQUENCE IF EXISTS s INCREMENT BY 2;" }
+      - { id: minvalue_maxvalue, sql: "ALTER SEQUENCE s MINVALUE 1 MAXVALUE 100;" }
+      - { id: no_minvalue_no_maxvalue, sql: "ALTER SEQUENCE s NO MINVALUE NO MAXVALUE;" }
+      - { id: start, sql: "ALTER SEQUENCE s START 10;" }
+      - { id: cycle, sql: "ALTER SEQUENCE s NO CYCLE;" }
+      - { id: cache, sql: "ALTER SEQUENCE s CACHE 10;" }
+      - { id: owned_by_column, sql: "ALTER SEQUENCE s OWNED BY t.c;" }
+      - { id: owned_by_none, sql: "ALTER SEQUENCE s OWNED BY NONE;" }
+      - { id: rename_to, sql: "ALTER SEQUENCE s RENAME TO s2;" }
+      - { id: set_schema, sql: "ALTER SEQUENCE s SET SCHEMA s1;" }
+    examples:
+      - "ALTER SEQUENCE customer_seq INCREMENT 2;"
+      - "ALTER SEQUENCE even_numbers RENAME TO even_sequence;"
+      - "ALTER SEQUENCE even_numbers SET SCHEMA cockroach_labs;"
+
+  - id: alter_trigger
+    name: ALTER TRIGGER
+    doc: https://www.cockroachlabs.com/docs/stable/alter-trigger
+    tier: medium
+    probes:
+      - { id: rename, sql: "ALTER TRIGGER trg ON t RENAME TO trg2;" }
+      - { id: rename_if_exists, sql: "ALTER TRIGGER IF EXISTS trg ON t RENAME TO trg2;" }
+    examples:
+      - "ALTER TRIGGER log_update_timestamp ON users RENAME TO log_updates;"
+
+  - id: alter_type
+    name: ALTER TYPE
+    doc: https://www.cockroachlabs.com/docs/stable/alter-type
+    tier: medium
+    probes:
+      - { id: add_value, sql: "ALTER TYPE ty ADD VALUE 'pending';" }
+      - { id: add_value_if_not_exists, sql: "ALTER TYPE ty ADD VALUE IF NOT EXISTS 'pending';" }
+      - { id: add_value_before, sql: "ALTER TYPE ty ADD VALUE 'pending' BEFORE 'closed';" }
+      - { id: add_value_after, sql: "ALTER TYPE ty ADD VALUE 'pending' AFTER 'open';" }
+      - { id: drop_value, sql: "ALTER TYPE ty DROP VALUE 'inactive';" }
+      - { id: rename_to, sql: "ALTER TYPE ty RENAME TO ty2;" }
+      - { id: rename_value, sql: "ALTER TYPE ty RENAME VALUE 'open' TO 'active';" }
+      - { id: set_schema, sql: "ALTER TYPE ty SET SCHEMA s;" }
+      - { id: owner_to, sql: "ALTER TYPE ty OWNER TO u;" }
+    examples:
+      - "ALTER TYPE status ADD VALUE 'pending';"
+      - "ALTER TYPE status RENAME VALUE 'open' TO 'active';"
+      - "ALTER TYPE account_status DROP VALUE 'inactive';"
+
+  - id: alter_user
+    name: ALTER USER
+    doc: https://www.cockroachlabs.com/docs/stable/alter-user
+    tier: medium
+    probes:
+      - { id: password, sql: "ALTER USER u WITH PASSWORD 'secret';" }
+      - { id: password_null, sql: "ALTER USER u WITH PASSWORD NULL;" }
+      - { id: password_valid_until, sql: "ALTER USER u WITH PASSWORD 'secret' VALID UNTIL '2021-10-10';" }
+      - { id: if_exists, sql: "ALTER USER IF EXISTS u WITH CREATEDB;" }
+      - { id: role_options, sql: "ALTER USER u WITH CREATEROLE CREATELOGIN;" }
+      - { id: negated_option, sql: "ALTER USER u WITH NOCREATEDB;" }
+      - { id: subject, sql: "ALTER USER u WITH SUBJECT 'CN=myName,O=myOrg' LOGIN;" }
+      - { id: set_session_variable, sql: "ALTER USER u SET timezone = 'America/New_York';" }
+      - { id: reset_session_variable, sql: "ALTER USER u RESET timezone;" }
+    examples:
+      - "ALTER USER carl WITH PASSWORD 'An0ther$tr0nGpassW0rD' VALID UNTIL '2021-10-10';"
+      - "ALTER USER carl WITH CREATEROLE CREATELOGIN;"
+      - "ALTER USER carl WITH MODIFYCLUSTERSETTING;"
+
+  - id: alter_role
+    name: ALTER ROLE
+    doc: https://www.cockroachlabs.com/docs/stable/alter-role
+    tier: medium
+    probes:
+      - { id: login_password, sql: "ALTER ROLE r WITH LOGIN PASSWORD 'secret' VALID UNTIL '2021-10-10';" }
+      - { id: password_null, sql: "ALTER ROLE r WITH PASSWORD NULL;" }
+      - { id: if_exists, sql: "ALTER ROLE IF EXISTS r WITH CREATEDB;" }
+      - { id: role_options, sql: "ALTER ROLE r WITH CREATEROLE CREATELOGIN;" }
+      - { id: bypassrls, sql: "ALTER ROLE r WITH BYPASSRLS;" }
+      - { id: nobypassrls, sql: "ALTER ROLE r WITH NOBYPASSRLS;" }
+      - { id: subject, sql: "ALTER ROLE r WITH SUBJECT 'CN=myName,O=myOrg' LOGIN;" }
+      - { id: set_session_variable, sql: "ALTER ROLE r SET timezone = 'America/New_York';" }
+      - { id: set_in_database, sql: "ALTER ROLE r IN DATABASE d SET statement_timeout = '10s';" }
+      - { id: all_in_database, sql: "ALTER ROLE ALL IN DATABASE d SET timezone = 'America/New_York';" }
+      - { id: all_set, sql: "ALTER ROLE ALL SET timezone = 'America/New_York';" }
+      - { id: reset, sql: "ALTER ROLE r RESET timezone;" }
+      - { id: reset_all, sql: "ALTER ROLE r RESET ALL;" }
+    examples:
+      - "ALTER ROLE carl WITH LOGIN PASSWORD 'An0ther$tr0nGpassW0rD' VALID UNTIL '2021-10-10';"
+      - "ALTER ROLE max IN DATABASE movr SET statement_timeout = '10s';"
+      - "ALTER ROLE ALL IN DATABASE movr SET timezone = 'America/New_York';"
+
+  - id: comment_on
+    name: COMMENT ON
+    doc: https://www.cockroachlabs.com/docs/stable/comment-on
+    tier: medium
+    probes:
+      - { id: database, sql: "COMMENT ON DATABASE d IS 'text';" }
+      - { id: schema, sql: "COMMENT ON SCHEMA s IS 'text';" }
+      - { id: table, sql: "COMMENT ON TABLE t IS 'text';" }
+      - { id: column, sql: "COMMENT ON COLUMN t.c IS 'text';" }
+      - { id: index, sql: "COMMENT ON INDEX idx IS 'text';" }
+      - { id: type, sql: "COMMENT ON TYPE ty IS 'text';" }
+      - { id: constraint, sql: "COMMENT ON CONSTRAINT con ON t IS 'text';" }
+      - { id: remove_comment, sql: "COMMENT ON DATABASE d IS NULL;" }
+    examples:
+      - "COMMENT ON DATABASE movr IS 'This database contains information about users, vehicles, and rides.';"
+      - "COMMENT ON COLUMN users.credit_card IS 'This column contains user payment information.';"
+      - "COMMENT ON INDEX users_name_idx IS 'This index improves performance on queries that filter by name.';"
