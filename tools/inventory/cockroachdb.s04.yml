@@ -1,0 +1,79 @@
+dialect: cockroachdb
+engine: CockroachDB
+version: "v26.3 (stable)"
+source: https://www.cockroachlabs.com/docs/stable/sql-statements
+
+statements:
+  - id: create_index
+    name: CREATE INDEX
+    doc: https://www.cockroachlabs.com/docs/stable/create-index
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE INDEX idx ON t (c);" }
+      - { id: unnamed, sql: "CREATE INDEX ON t (c);" }
+      - { id: unique, sql: "CREATE UNIQUE INDEX idx ON t (c);" }
+      - { id: if_not_exists, sql: "CREATE INDEX IF NOT EXISTS idx ON t (c);" }
+      - { id: concurrently, sql: "CREATE INDEX CONCURRENTLY idx ON t (c);" }
+      - { id: multi_column, sql: "CREATE INDEX idx ON t (c, d);" }
+      - { id: asc_desc, sql: "CREATE INDEX idx ON t (c ASC, d DESC);" }
+      - { id: using_btree, sql: "CREATE INDEX idx ON t USING btree (c);" }
+      - { id: storing, sql: "CREATE INDEX idx ON t (c) STORING (d);" }
+      - { id: covering, sql: "CREATE INDEX idx ON t (c) COVERING (d);" }
+      - { id: include, sql: "CREATE INDEX idx ON t (c) INCLUDE (d);" }
+      - { id: partial, sql: "CREATE INDEX idx ON t (c) WHERE c > 10;" }
+      - { id: not_visible, sql: "CREATE INDEX idx ON t (c) NOT VISIBLE;" }
+      - { id: visible, sql: "CREATE INDEX idx ON t (c) VISIBLE;" }
+      - { id: visibility, sql: "CREATE INDEX idx ON t (c) VISIBILITY 0.5;" }
+      - { id: hash_sharded, sql: "CREATE INDEX idx ON t (c) USING HASH;" }
+      - { id: hash_sharded_buckets, sql: "CREATE INDEX idx ON t (c) USING HASH WITH (bucket_count = 8);" }
+      - { id: with_storage_parameter, sql: "CREATE INDEX idx ON t (c) WITH (fillfactor = 70);" }
+      - id: partition_by_list
+        sql: "CREATE INDEX idx ON t (c, d) PARTITION BY LIST (c) (PARTITION p1 VALUES IN (1, 2), PARTITION p2 VALUES IN (DEFAULT));"
+      - id: partition_by_range
+        sql: "CREATE INDEX idx ON t (c) PARTITION BY RANGE (c) (PARTITION p1 VALUES FROM (MINVALUE) TO (10), PARTITION p2 VALUES FROM (10) TO (MAXVALUE));"
+      - { id: inverted, sql: "CREATE INVERTED INDEX idx ON t (c);" }
+      - { id: inverted_unnamed, sql: "CREATE INVERTED INDEX ON t (c);" }
+      - { id: inverted_if_not_exists, sql: "CREATE INVERTED INDEX IF NOT EXISTS idx ON t (c);" }
+      - { id: using_gin, sql: "CREATE INDEX idx ON t USING GIN (c);" }
+      - { id: using_gin_storing, sql: "CREATE INDEX idx ON t USING GIN (c) STORING (d);" }
+      - { id: inverted_multi_column, sql: "CREATE INVERTED INDEX idx ON t (a, c);" }
+      - { id: trigram_gin, sql: "CREATE INDEX ON t USING GIN (c gin_trgm_ops);" }
+      - { id: trigram_gist, sql: "CREATE INDEX ON t USING GIST (c gist_trgm_ops);" }
+      - { id: trigram_inverted, sql: "CREATE INVERTED INDEX ON t (c gin_trgm_ops);" }
+      - { id: spatial_gist, sql: "CREATE INDEX idx ON t USING GIST (geom);" }
+      - { id: spatial_with_params, sql: "CREATE INDEX idx ON t USING GIST (geom) WITH (s2_max_cells = 20, s2_max_level = 12, s2_level_mod = 3);" }
+      - { id: vector, sql: "CREATE VECTOR INDEX ON t (embedding);" }
+      - { id: vector_named, sql: "CREATE VECTOR INDEX idx ON t (embedding);" }
+      - { id: vector_using_cspann, sql: "CREATE INDEX idx ON t USING cspann (embedding);" }
+      - { id: vector_using_hnsw, sql: "CREATE INDEX idx ON t USING hnsw (embedding);" }
+      - { id: expression_index, sql: "CREATE INDEX idx ON t (lower(c));" }
+    examples:
+      - "CREATE INDEX ON users ( name );"
+      - "CREATE INDEX ON users ( name , city);"
+      - "CREATE UNIQUE INDEX ON users ( name , id);"
+
+  - id: create_procedure
+    name: CREATE PROCEDURE
+    doc: https://www.cockroachlabs.com/docs/stable/create-procedure
+    tier: high
+    probes:
+      - { id: sql_body, sql: "CREATE PROCEDURE p() LANGUAGE SQL AS $$ SELECT 1; $$;" }
+      - { id: plpgsql_body, sql: "CREATE PROCEDURE p() LANGUAGE PLpgSQL AS $$ BEGIN NULL; END $$;" }
+      - { id: language_after_body, sql: "CREATE PROCEDURE p() AS $$ BEGIN NULL; END $$ LANGUAGE PLpgSQL;" }
+      - { id: or_replace, sql: "CREATE OR REPLACE PROCEDURE p() LANGUAGE SQL AS $$ SELECT 1; $$;" }
+      - { id: params, sql: "CREATE PROCEDURE p(a INT, b STRING) LANGUAGE SQL AS $$ SELECT 1; $$;" }
+      - { id: in_param, sql: "CREATE PROCEDURE p(IN a INT) LANGUAGE SQL AS $$ SELECT 1; $$;" }
+      - { id: out_param, sql: "CREATE PROCEDURE p(OUT a INT) AS $$ BEGIN a := 1; END $$ LANGUAGE PLpgSQL;" }
+      - { id: inout_param, sql: "CREATE PROCEDURE p(INOUT a INT) AS $$ BEGIN a := a * 2; END $$ LANGUAGE PLpgSQL;" }
+      - { id: param_default, sql: "CREATE PROCEDURE p(a INT DEFAULT 1) LANGUAGE SQL AS $$ SELECT 1; $$;" }
+      - { id: schema_qualified, sql: "CREATE PROCEDURE s.p() LANGUAGE SQL AS $$ SELECT 1; $$;" }
+      - { id: security_definer, sql: "CREATE PROCEDURE p() SECURITY DEFINER LANGUAGE SQL AS $$ SELECT 1; $$;" }
+      - { id: security_invoker, sql: "CREATE PROCEDURE p() SECURITY INVOKER LANGUAGE SQL AS $$ SELECT 1; $$;" }
+      - { id: set_config, sql: "CREATE PROCEDURE p() SET search_path = s LANGUAGE SQL AS $$ SELECT 1; $$;" }
+    examples:
+      - |-
+        CREATE OR REPLACE PROCEDURE proc () LANGUAGE PLpgSQL AS $$ DECLARE v comp := ROW(1, 'foo'); BEGIN RAISE NOTICE '%', v; END $$;
+      - |-
+        CREATE OR REPLACE PROCEDURE double_triple(INOUT double INT, OUT triple INT) AS $$ BEGIN double := double * 2; triple := double * 3; END; $$ LANGUAGE PLpgSQL;
+      - |-
+        CREATE OR REPLACE PROCEDURE create_bank () LANGUAGE SQL AS $$ CREATE TABLE IF NOT EXISTS bank (id INT PRIMARY KEY, balance DECIMAL) $$;
