@@ -1,0 +1,45 @@
+dialect: athena
+engine: Amazon Athena
+version: "engine version 3 (Trino-based DML, Hive-style DDL)"
+source: https://docs.aws.amazon.com/athena/latest/ug/ddl-reference.html ; https://docs.aws.amazon.com/athena/latest/ug/dml-queries-functions-operators.html
+
+statements:
+  - id: alter_table_add_columns
+    name: ALTER TABLE ADD COLUMNS
+    doc: https://docs.aws.amazon.com/athena/latest/ug/alter-table-add-columns.html
+    tier: high
+    probes:
+      - id: add_columns
+        sql: "ALTER TABLE t ADD COLUMNS (c string);"
+      - id: add_multiple_columns
+        sql: "ALTER TABLE t ADD COLUMNS (c1 string, c2 int);"
+      - id: add_columns_partition
+        sql: "ALTER TABLE t PARTITION (p = 'v') ADD COLUMNS (c string);"
+      - id: add_columns_multi_partition_cols
+        sql: "ALTER TABLE t PARTITION (p1 = 'v', p2 = 1) ADD COLUMNS (c string);"
+    examples:
+      - "ALTER TABLE events ADD COLUMNS (eventowner string);"
+      - "ALTER TABLE events PARTITION (awsregion='us-west-2') ADD COLUMNS (event string);"
+      - "ALTER TABLE events PARTITION (awsregion='us-west-2') ADD COLUMNS (eventdescription string);"
+
+  - id: alter_table_add_partition
+    name: ALTER TABLE ADD PARTITION
+    doc: https://docs.aws.amazon.com/athena/latest/ug/alter-table-add-partition.html
+    tier: high
+    probes:
+      - id: add_partition
+        sql: "ALTER TABLE t ADD PARTITION (p = 'v');"
+      - id: add_partition_if_not_exists
+        sql: "ALTER TABLE t ADD IF NOT EXISTS PARTITION (p = 'v');"
+      - id: add_partition_multi_cols
+        sql: "ALTER TABLE t ADD PARTITION (p1 = 'v', p2 = 'w');"
+      - id: add_partition_location
+        sql: "ALTER TABLE t ADD PARTITION (p = 'v') LOCATION 's3://bucket/path/';"
+      - id: add_multiple_partitions
+        sql: "ALTER TABLE t ADD PARTITION (p = 'v') PARTITION (p = 'w');"
+      - id: add_multiple_partitions_location
+        sql: "ALTER TABLE t ADD PARTITION (p = 'v') LOCATION 's3://bucket/a/' PARTITION (p = 'w') LOCATION 's3://bucket/b/';"
+    examples:
+      - "ALTER TABLE orders ADD PARTITION (dt = '2016-05-14', country = 'IN');"
+      - "ALTER TABLE orders ADD PARTITION (dt = '2016-05-31', country = 'IN') PARTITION (dt = '2016-06-01', country = 'IN');"
+      - "ALTER TABLE orders ADD IF NOT EXISTS PARTITION (dt = '2016-05-14', country = 'IN');"
