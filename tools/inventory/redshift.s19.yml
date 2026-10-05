@@ -1,0 +1,157 @@
+dialect: redshift
+engine: Amazon Redshift
+version: "current"
+source: https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_commands.html
+
+statements:
+  - id: create_schema
+    name: CREATE SCHEMA
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_SCHEMA.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE SCHEMA s;"
+      - id: if_not_exists
+        sql: "CREATE SCHEMA IF NOT EXISTS s;"
+      - id: authorization
+        sql: "CREATE SCHEMA s AUTHORIZATION u;"
+      - id: quota_gb
+        sql: "CREATE SCHEMA s QUOTA 50 GB;"
+      - id: quota_unlimited
+        sql: "CREATE SCHEMA s QUOTA UNLIMITED;"
+      - id: authorization_only
+        sql: "CREATE SCHEMA AUTHORIZATION u QUOTA 10 MB;"
+      - id: schema_element
+        sql: "CREATE SCHEMA s CREATE TABLE t (c integer);"
+    examples:
+      - "create schema us_sales authorization dwuser;"
+      - "create schema us_sales authorization dwuser QUOTA 50 GB;"
+      - "create schema if not exists us_sales;"
+
+  - id: create_user
+    name: CREATE USER
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_USER.html
+    tier: medium
+    probes:
+      - id: password
+        sql: "CREATE USER u PASSWORD 'abcD1234';"
+      - id: with_password
+        sql: "CREATE USER u WITH PASSWORD 'abcD1234';"
+      - id: password_disable
+        sql: "CREATE USER u PASSWORD DISABLE;"
+      - id: createdb
+        sql: "CREATE USER u PASSWORD 'abcD1234' CREATEDB;"
+      - id: createuser
+        sql: "CREATE USER u PASSWORD 'abcD1234' CREATEUSER;"
+      - id: syslog_access
+        sql: "CREATE USER u PASSWORD 'abcD1234' SYSLOG ACCESS UNRESTRICTED;"
+      - id: in_group
+        sql: "CREATE USER u PASSWORD 'abcD1234' IN GROUP g1, g2;"
+      - id: valid_until
+        sql: "CREATE USER u PASSWORD 'abcD1234' VALID UNTIL '2017-06-10';"
+      - id: connection_limit
+        sql: "CREATE USER u PASSWORD 'abcD1234' CONNECTION LIMIT 30;"
+      - id: session_timeout
+        sql: "CREATE USER u PASSWORD 'abcD1234' SESSION TIMEOUT 120;"
+      - id: externalid
+        sql: "CREATE USER u PASSWORD DISABLE EXTERNALID 'ext1';"
+    examples:
+      - "create user dbuser with password 'abcD1234' createdb connection limit 30;"
+      - "create user dbuser with password 'abcD1234' valid until '2017-06-10';"
+      - "create user newman with password '@AbC4321!';"
+
+  - id: deallocate
+    name: DEALLOCATE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_DEALLOCATE.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DEALLOCATE plan1;"
+      - id: prepare
+        sql: "DEALLOCATE PREPARE plan1;"
+
+  - id: declare
+    name: DECLARE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/declare.html
+    tier: medium
+    probes:
+      - id: cursor_for
+        sql: "DECLARE c CURSOR FOR SELECT a FROM t;"
+    examples:
+      - "declare lollapalooza cursor for select eventname, starttime, pricepaid/qtysold as costperticket, qtysold from sales, event where sales.eventid = event.eventid and eventname='Lollapalooza';"
+
+  - id: desc_datashare
+    name: DESC DATASHARE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_DESC_DATASHARE.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DESC DATASHARE salesshare;"
+      - id: of_namespace
+        sql: "DESC DATASHARE salesshare OF NAMESPACE '13b8833d-17c6-4f16-8e00-abd1c2d0a2f0';"
+      - id: of_account_namespace
+        sql: "DESC DATASHARE salesshare OF ACCOUNT '123456789012' NAMESPACE '13b8833d-17c6-4f16-8e00-abd1c2d0a2f0';"
+    examples:
+      - "DESC DATASHARE salesshare;"
+
+  - id: detach_masking_policy
+    name: DETACH MASKING POLICY
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_DETACH_MASKING_POLICY.html
+    tier: medium
+    probes:
+      - id: from_user
+        sql: "DETACH MASKING POLICY p ON t (c) FROM u;"
+      - id: from_role
+        sql: "DETACH MASKING POLICY p ON t (c) FROM ROLE r;"
+      - id: from_public
+        sql: "DETACH MASKING POLICY p ON t (c) FROM PUBLIC;"
+      - id: qualified
+        sql: "DETACH MASKING POLICY db.p ON db.s.t (c1, c2) FROM u;"
+
+  - id: detach_rls_policy
+    name: DETACH RLS POLICY
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_DETACH_RLS_POLICY.html
+    tier: medium
+    probes:
+      - id: from_user
+        sql: "DETACH RLS POLICY p ON t FROM u;"
+      - id: on_table_keyword
+        sql: "DETACH RLS POLICY p ON TABLE t FROM PUBLIC;"
+      - id: multiple_tables_roles
+        sql: "DETACH RLS POLICY p ON t1, t2 FROM ROLE r1, ROLE r2;"
+      - id: qualified
+        sql: "DETACH RLS POLICY db.p ON TABLE db.s.t FROM u;"
+    examples:
+      - "DETACH RLS POLICY policy_concerts ON tickit_category_redshift FROM ROLE analyst, ROLE dbadmin;"
+
+  - id: drop_database
+    name: DROP DATABASE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_DROP_DATABASE.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP DATABASE db;"
+      - id: force
+        sql: "DROP DATABASE db FORCE;"
+    examples:
+      - "DROP DATABASE test_db;"
+
+  - id: drop_datashare
+    name: DROP DATASHARE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_DROP_DATASHARE.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP DATASHARE salesshare;"
+    examples:
+      - "DROP DATASHARE salesshare;"
+
+  - id: drop_group
+    name: DROP GROUP
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_DROP_GROUP.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP GROUP guests;"
+    examples:
+      - "DROP GROUP guests;"
