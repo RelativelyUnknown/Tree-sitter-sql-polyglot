@@ -1,0 +1,137 @@
+dialect: redshift
+engine: Amazon Redshift
+version: "current"
+source: https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_commands.html
+
+statements:
+  - id: rollback
+    name: ROLLBACK
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_ROLLBACK.html
+    tier: high
+    probes:
+      - { id: basic, sql: "ROLLBACK;" }
+      - { id: work, sql: "ROLLBACK WORK;" }
+      - { id: transaction, sql: "ROLLBACK TRANSACTION;" }
+    examples:
+      - "rollback;"
+
+  - id: select
+    name: SELECT
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_SELECT_synopsis.html
+    tier: high
+    probes:
+      - { id: basic, sql: "SELECT c FROM t;" }
+      - { id: star, sql: "SELECT * FROM t;" }
+      - { id: no_from, sql: "SELECT 1;" }
+      - { id: alias_as, sql: "SELECT c AS x, d AS y FROM t;" }
+      - { id: all, sql: "SELECT ALL c FROM t;" }
+      - { id: distinct, sql: "SELECT DISTINCT c FROM t;" }
+      - { id: top, sql: "SELECT TOP 10 c FROM t;" }
+      - { id: top_distinct, sql: "SELECT TOP 10 DISTINCT c FROM t;" }
+      - { id: exclude, sql: "SELECT * EXCLUDE (c) FROM t;" }
+      - { id: with_cte, sql: "WITH w AS (SELECT c FROM t) SELECT c FROM w;" }
+      - { id: with_cte_columns, sql: "WITH w (a, b) AS (SELECT c, d FROM t) SELECT a FROM w;" }
+      - { id: with_multiple, sql: "WITH w1 AS (SELECT c FROM t), w2 AS (SELECT c FROM w1) SELECT c FROM w2;" }
+      - { id: with_recursive, sql: "WITH RECURSIVE r (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r WHERE n < 10) SELECT n FROM r;" }
+      - { id: from_multiple, sql: "SELECT t.c FROM t, s WHERE t.c = s.c;" }
+      - { id: from_alias, sql: "SELECT a.c FROM t AS a;" }
+      - { id: from_alias_columns, sql: "SELECT x FROM t AS a (x, y);" }
+      - { id: from_star_table, sql: "SELECT c FROM t *;" }
+      - { id: from_subquery, sql: "SELECT c FROM (SELECT c FROM t) AS q;" }
+      - { id: from_schema_qualified, sql: "SELECT c FROM s.t;" }
+      - { id: join_inner, sql: "SELECT t.c FROM t INNER JOIN s ON t.c = s.c;" }
+      - { id: join_plain, sql: "SELECT t.c FROM t JOIN s ON t.c = s.c;" }
+      - { id: join_left, sql: "SELECT t.c FROM t LEFT OUTER JOIN s ON t.c = s.c;" }
+      - { id: join_right, sql: "SELECT t.c FROM t RIGHT OUTER JOIN s ON t.c = s.c;" }
+      - { id: join_full, sql: "SELECT t.c FROM t FULL OUTER JOIN s ON t.c = s.c;" }
+      - { id: join_cross, sql: "SELECT t.c FROM t CROSS JOIN s;" }
+      - { id: join_natural, sql: "SELECT c FROM t NATURAL JOIN s;" }
+      - { id: join_natural_left, sql: "SELECT c FROM t NATURAL LEFT JOIN s;" }
+      - { id: join_using, sql: "SELECT c FROM t JOIN s USING (c, d);" }
+      - { id: join_super_expression, sql: "SELECT t.c, a FROM t LEFT JOIN t.arr AS a ON TRUE;" }
+      - { id: join_super_expression_inner, sql: "SELECT t.c, a FROM t, t.arr AS a;" }
+      - id: pivot
+        sql: "SELECT * FROM (SELECT c, k, v FROM t) PIVOT (SUM(v) FOR k IN ('a' AS x, 'b' AS y)) AS p;"
+      - id: pivot_aggregate_alias
+        sql: "SELECT * FROM t PIVOT (SUM(v) AS total FOR k IN ('a', 'b'));"
+      - id: unpivot
+        sql: "SELECT * FROM t UNPIVOT (v FOR k IN (a, b, c)) AS u;"
+      - id: unpivot_include_nulls
+        sql: "SELECT * FROM t UNPIVOT INCLUDE NULLS (v FOR k IN (a AS x, b AS y)) AS u;"
+      - id: unpivot_exclude_nulls
+        sql: "SELECT * FROM t UNPIVOT EXCLUDE NULLS (v FOR k IN (a, b));"
+      - id: unpivot_super_object
+        sql: "SELECT attr, val FROM t, UNPIVOT t.obj AS val AT attr;"
+      - id: unnest_super_array
+        sql: "SELECT e FROM t AS a, a.arr AS e;"
+      - id: unnest_super_array_index
+        sql: "SELECT e, i FROM t AS a, a.arr AS e AT i;"
+      - id: unnest_function
+        sql: "SELECT x FROM UNNEST(arr) AS a (x);"
+      - id: unnest_with_offset
+        sql: "SELECT x, o FROM UNNEST(arr) WITH OFFSET AS a (x, o);"
+      - id: where
+        sql: "SELECT c FROM t WHERE c > 1 AND d = 'x';"
+      - id: connect_by
+        sql: "SELECT id, name FROM emp CONNECT BY PRIOR id = mgr_id;"
+      - id: start_with_connect_by
+        sql: "SELECT id, name FROM emp START WITH id = 1 CONNECT BY PRIOR id = mgr_id;"
+      - id: group_by
+        sql: "SELECT c, COUNT(*) FROM t GROUP BY c;"
+      - id: group_by_ordinal
+        sql: "SELECT c, d, SUM(e) FROM t GROUP BY 1, 2;"
+      - id: group_by_all
+        sql: "SELECT c, SUM(d) FROM t GROUP BY ALL;"
+      - id: group_by_rollup
+        sql: "SELECT c, d, SUM(e) FROM t GROUP BY ROLLUP (c, d);"
+      - id: group_by_cube
+        sql: "SELECT c, d, SUM(e) FROM t GROUP BY CUBE (c, d);"
+      - id: group_by_grouping_sets
+        sql: "SELECT c, d, SUM(e) FROM t GROUP BY GROUPING SETS ((c), (d), ());"
+      - id: having
+        sql: "SELECT c, SUM(d) FROM t GROUP BY c HAVING SUM(d) > 10;"
+      - id: qualify
+        sql: "SELECT * FROM t a QUALIFY ROW_NUMBER() OVER (PARTITION BY c ORDER BY d) = 1;"
+      - id: qualify_with_where
+        sql: "SELECT * FROM t a WHERE d > 0 QUALIFY ROW_NUMBER() OVER (PARTITION BY c ORDER BY d DESC) <= 2;"
+      - id: union
+        sql: "SELECT c FROM t UNION SELECT c FROM s;"
+      - id: union_all
+        sql: "SELECT c FROM t UNION ALL SELECT c FROM s;"
+      - id: intersect
+        sql: "SELECT c FROM t INTERSECT SELECT c FROM s;"
+      - id: except
+        sql: "SELECT c FROM t EXCEPT SELECT c FROM s;"
+      - id: minus
+        sql: "SELECT c FROM t MINUS SELECT c FROM s;"
+      - id: order_by
+        sql: "SELECT c FROM t ORDER BY c;"
+      - id: order_by_desc
+        sql: "SELECT c FROM t ORDER BY c DESC, d ASC;"
+      - id: order_by_ordinal
+        sql: "SELECT c, d FROM t ORDER BY 2, 1;"
+      - id: order_by_nulls_first
+        sql: "SELECT c FROM t ORDER BY c NULLS FIRST;"
+      - id: order_by_nulls_last
+        sql: "SELECT c FROM t ORDER BY c DESC NULLS LAST;"
+      - id: limit
+        sql: "SELECT c FROM t ORDER BY c LIMIT 10;"
+      - id: limit_all
+        sql: "SELECT c FROM t LIMIT ALL;"
+      - id: offset
+        sql: "SELECT c FROM t ORDER BY c LIMIT 10 OFFSET 5;"
+      - id: offset_only
+        sql: "SELECT c FROM t ORDER BY c OFFSET 5;"
+      - id: subquery_in
+        sql: "SELECT c FROM t WHERE c IN (SELECT c FROM s);"
+      - id: correlated_subquery
+        sql: "SELECT c FROM t WHERE EXISTS (SELECT 1 FROM s WHERE s.c = t.c);"
+      - id: window_function
+        sql: "SELECT c, ROW_NUMBER() OVER (PARTITION BY d ORDER BY e) FROM t;"
+      - id: window_clause_named
+        sql: "SELECT SUM(c) OVER w FROM t WINDOW w AS (PARTITION BY d ORDER BY e);"
+        note: "WINDOW clause is not in the SELECT synopsis block; Redshift documents named windows on the window functions page, so this probe is least certain."
+    examples:
+      - "SELECT * FROM store_sales ss WHERE ss_sold_time > time '12:00:00' QUALIFY row_number() OVER (PARTITION BY ss_sold_date ORDER BY ss_sales_price DESC) <= 2;"
+      - "select listid, eventid, sum(pricepaid) as revenue, count(qtysold) as numtix from sales group by listid, eventid order by 3, 4, 2, 1 limit 5;"
+      - "select listing.listid, sum(pricepaid) as price, sum(commission) as comm from listing left outer join sales on sales.listid = listing.listid where listing.listid between 1 and 5 group by 1 order by 1;"
