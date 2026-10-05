@@ -1,0 +1,263 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: help_function
+    name: HELP FUNCTION
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/A17UJkEhRh7BMzl2KmZqOw
+    tier: medium
+    probes:
+      - id: function
+        sql: "HELP FUNCTION f;"
+      - id: function_qualified_with_types
+        sql: "HELP FUNCTION db.f (INTEGER, VARCHAR(10));"
+      - id: specific_function
+        sql: "HELP SPECIFIC FUNCTION db.sf;"
+    examples:
+      - "HELP FUNCTION first1;"
+      - "HELP FUNCTION tdgenfnc;"
+
+  - id: rename_function
+    name: RENAME FUNCTION (SQL Form)
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/9Chh_nSzV0~dKGHIPitxZw
+    tier: medium
+    probes:
+      - id: function_to
+        sql: "RENAME FUNCTION f TO g;"
+      - id: function_as_with_types
+        sql: "RENAME FUNCTION db.f (INTEGER, INTEGER) AS g;"
+      - id: specific_function_to
+        sql: "RENAME SPECIFIC FUNCTION db.sf TO sg;"
+    examples:
+      - "RENAME SPECIFIC FUNCTION SpecificUDF1 TO SpecificUDF2;"
+      - "RENAME FUNCTION UDF1(INTEGER, INTEGER) TO UDF2;"
+
+  - id: create_type_structured
+    name: CREATE TYPE (Structured Form)
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/JQ_5d5qr6jJtf4zETWToZA
+    tier: medium
+    probes:
+      - id: attributes_not_final
+        sql: "CREATE TYPE SYSUDTLIB.person AS (ssn CHARACTER(11), name VARCHAR(20) CHARACTER SET UNICODE, home address) INSTANTIABLE NOT FINAL;"
+      - id: instance_method
+        sql: "CREATE TYPE t AS (a INTEGER) NOT FINAL INSTANCE METHOD m(INTEGER) RETURNS VARCHAR(20) AS LOCATOR SPECIFIC t_m LANGUAGE C PARAMETER STYLE SQL DETERMINISTIC NO SQL;"
+      - id: constructor_method
+        sql: "CREATE TYPE t AS (a INTEGER) NOT FINAL CONSTRUCTOR METHOD t(INTEGER) RETURNS t SELF AS RESULT LANGUAGE CPP PARAMETER STYLE SQL DETERMINISTIC NO SQL RETURNS NULL ON NULL INPUT;"
+      - id: method_cast_from
+        sql: "CREATE TYPE t AS (a INTEGER) NOT FINAL METHOD m() RETURNS DECIMAL(8,2) CAST FROM INTEGER LANGUAGE C PARAMETER STYLE SQL DETERMINISTIC NO SQL;"
+    examples:
+      - |-
+        CREATE TYPE address AS (
+           street VARCHAR(20), 
+           zip    CHARACTER(5) ) 
+          NOT FINAL
+         CONSTRUCTOR METHOD address( VARCHAR(20), CHARACTER(5) ) 
+          RETURNS address
+          SPECIFIC address_constructor_1
+          SELF AS RESULT
+          LANGUAGE C
+          PARAMETER STYLE SQL
+          DETERMINISTIC
+          NO SQL,
+         INSTANCE METHOD city() 
+          RETURNS VARCHAR(20)
+          LANGUAGE C
+          PARAMETER STYLE SQL
+          DETERMINISTIC
+          NO SQL,
+         METHOD state() 
+          RETURNS CHARACTER(2) 
+          SPECIFIC address_state
+          RETURNS NULL ON NULL INPUT
+          LANGUAGE C
+          PARAMETER STYLE SQL
+          DETERMINISTIC
+          NO SQL,
+         METHOD in_state(CHARACTER(2)) 
+          RETURNS CHARACTER(1)
+          LANGUAGE C
+          PARAMETER STYLE SQL
+          DETERMINISTIC
+          NO SQL;
+      - |-
+        CREATE TYPE SYSUDTLIB.person AS (
+           ssn         CHARACTER(11), 
+           first_name  VARCHAR(20),
+           middle_name VARCHAR(20),
+           last_name   VARCHAR(20),
+           domicile    address ) 
+        NOT FINAL;
+
+  - id: create_type_distinct
+    name: CREATE TYPE (Distinct Form)
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/5ssR1uBqB4p37OGvbjuJog
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE TYPE euro AS DECIMAL(8,2) FINAL;"
+      - id: character_set
+        sql: "CREATE TYPE SYSUDTLIB.name_t AS VARCHAR(30) CHARACTER SET LATIN FINAL;"
+      - id: with_method
+        sql: "CREATE TYPE euro AS DECIMAL(8,2) FINAL INSTANCE METHOD toUS() RETURNS us_dollar CAST FROM DECIMAL(8,2) LANGUAGE C PARAMETER STYLE SQL DETERMINISTIC NO SQL;"
+    examples:
+      - |-
+        CREATE TYPE SYSUDTLIB.us_dollar 
+            AS DECIMAL(8, 2) 
+            FINAL
+            METHOD toEuro()
+            RETURNS euro CAST FROM DECIMAL(8,2)
+            LANGUAGE C
+            DETERMINISTIC
+            NO SQL
+            RETURNS NULL ON NULL INPUT;
+
+  - id: create_type_array
+    name: CREATE TYPE (ARRAY/VARRAY Form)
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/zQVI9pPDODhAwu6fdht5Mw
+    tier: medium
+    probes:
+      - id: array_teradata
+        sql: "CREATE TYPE SYSUDTLIB.ary AS INTEGER ARRAY[5] DEFAULT NULL;"
+      - id: varray_oracle
+        sql: "CREATE TYPE ary AS VARRAY(5) OF CHARACTER(10) DEFAULT NULL;"
+      - id: varying_array_oracle
+        sql: "CREATE TYPE ary AS VARYING ARRAY(5) OF INTEGER;"
+      - id: multidim_teradata
+        sql: "CREATE TYPE cube AS INTEGER ARRAY [1:5][1:7][1:20] DEFAULT NULL;"
+      - id: multidim_max_size
+        sql: "CREATE TYPE cube AS INTEGER ARRAY [5][7][20];"
+      - id: multidim_oracle
+        sql: "CREATE TYPE cube AS VARRAY(1:5) OF INTEGER;"
+    examples:
+      - |-
+        CREATE TYPE phonenumbers_ary AS 
+        CHARACTER(10) ARRAY[5] 
+        DEFAULT NULL;
+      - |-
+        CREATE TYPE phonenumbers_ary AS
+        VARRAY(5) OF CHARACTER(10) 
+        DEFAULT NULL;
+      - |-
+        CREATE TYPE seismic_cube AS 
+          measures_udt ARRAY [1:5][1:7][1:20] 
+        DEFAULT NULL;
+
+  - id: alter_type
+    name: ALTER TYPE
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/BsZguzg38R3cRFJLzqqd6Q
+    tier: medium
+    probes:
+      - id: add_attribute
+        sql: "ALTER TYPE SYSUDTLIB.address ADD ATTRIBUTE country VARCHAR(15), zone INTEGER;"
+      - id: drop_attribute
+        sql: "ALTER TYPE address DROP ATTRIBUTE country;"
+      - id: add_method
+        sql: "ALTER TYPE address ADD INSTANCE METHOD m(INTEGER) RETURNS VARCHAR(20) CAST FROM INTEGER;"
+      - id: add_method_language
+        sql: "ALTER TYPE address ADD METHOD m LANGUAGE CPP;"
+      - id: add_specific_method
+        sql: "ALTER TYPE address ADD SPECIFIC METHOD SYSUDTLIB.address_m (INTEGER) FOR SYSUDTLIB.address;"
+      - id: drop_method
+        sql: "ALTER TYPE address DROP CONSTRUCTOR METHOD address (VARCHAR(20), CHARACTER(5));"
+      - id: drop_specific_method
+        sql: "ALTER TYPE polygon DROP SPECIFIC METHOD SYSUDTLIB.polygon_mbr;"
+      - id: compile
+        sql: "ALTER TYPE address COMPILE;"
+      - id: compile_only
+        sql: "ALTER TYPE address COMPILE ONLY;"
+    examples:
+      - "ALTER TYPE address COMPILE;"
+      - |-
+        ALTER TYPE address      /* Add attribute to structured type */
+         ADD ATTRIBUTE country VARCHAR(15);
+      - |-
+        ALTER TYPE polygon     /* Drop method */
+         DROP SPECIFIC METHOD SYSUDTLIB.polygon_mbr;
+
+  - id: drop_type
+    name: DROP TYPE
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/weH3ublwuuDCTFqtZHV1bw
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP TYPE t;"
+      - id: qualified
+        sql: "DROP TYPE SYSUDTLIB.employee;"
+    examples:
+      - "DROP TYPE SYSUDTLIB.employee;"
+      - "DROP TYPE SYSUDTLIB.circle;"
+
+  - id: create_database
+    name: CREATE DATABASE
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/G~FP0rPM3GrX1RS0jt8TFQ
+    tier: medium
+    probes:
+      - id: permanent
+        sql: "CREATE DATABASE d AS PERMANENT = 1000000;"
+      - id: cd_perm_bytes_from
+        sql: "CD d FROM sysadmin AS PERM = 1000000 BYTES;"
+      - id: perm_skew
+        sql: "CREATE DATABASE d AS PERM = 1000000 SKEW = 10 PERCENT;"
+      - id: constant_expression_space
+        sql: "CREATE DATABASE d AS PERM = 2000000*(HASHAMP()+1), SPOOL = 2000000*(HASHAMP()+1), TEMPORARY = 2000000*(HASHAMP()+1);"
+      - id: account_fallback_journal
+        sql: "CREATE DATABASE d AS PERM = 1000000, ACCOUNT = 'ACCTG', NO FALLBACK PROTECTION, DUAL BEFORE JOURNAL, NOT LOCAL AFTER JOURNAL, DEFAULT JOURNAL TABLE = d.jt;"
+      - id: default_map
+        sql: "CREATE DATABASE d AS PERM = 1000000, DEFAULT MAP = m1 OVERRIDE NOT ON ERROR;"
+    examples:
+      - |-
+        CREATE DATABASE finance FROM sysadmin 
+            AS PERMANENT = 60000000, 
+               SPOOL = 120000000, 
+               FALLBACK PROTECTION, 
+               AFTER JOURNAL, 
+               BEFORE JOURNAL, 
+               DEFAULT JOURNAL TABLE = finance.journals, 
+               ACCOUNT = 'ACCTG';
+      - |-
+        CREATE DATABASE personnel FROM administration
+            AS PERMANENT = 5000000 BYTES, FALLBACK, BEFORE JOURNAL, 
+            DUAL AFTER JOURNAL, DEFAULT JOURNAL TABLE = personnel.fin_copy;
+
+  - id: delete_database
+    name: DELETE DATABASE
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/kup1uDOAb1Ff50Hh3T3Cjw
+    tier: medium
+    probes:
+      - id: delete
+        sql: "DELETE DATABASE d;"
+      - id: del_all
+        sql: "DEL DATABASE d ALL;"
+    examples:
+      - "DELETE DATABASE used_cars;"
+
+  - id: modify_database
+    name: MODIFY DATABASE
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/UsItFnSP285gsOL8ILMVzw
+    tier: medium
+    probes:
+      - id: permanent
+        sql: "MODIFY DATABASE d AS PERMANENT = 6000000 BYTES;"
+      - id: spool_skew
+        sql: "MODIFY DATABASE d AS SPOOL = 1000000 SKEW = DEFAULT;"
+      - id: constant_expression_space
+        sql: "MODIFY DATABASE d AS PERM = 3000000*(HASHAMP()+1), SPOOL = 3000000*(HASHAMP()+1), TEMPORARY = 3000000*(HASHAMP()+1);"
+      - id: account_fallback
+        sql: "MODIFY DATABASE d AS ACCOUNT = 'ACCTG', FALLBACK PROTECTION;"
+      - id: journal
+        sql: "MODIFY DATABASE d AS NO BEFORE JOURNAL, DUAL AFTER JOURNAL;"
+      - id: default_journal_table
+        sql: "MODIFY DATABASE d AS DEFAULT JOURNAL TABLE = Jrnl1;"
+      - id: drop_default_journal_table
+        sql: "MODIFY DATABASE d AS DROP DEFAULT JOURNAL TABLE = db.jt;"
+      - id: default_map
+        sql: "MODIFY DATABASE d AS DEFAULT MAP = NULL;"
+    examples:
+      - |-
+        MODIFY DATABASE personnel AS
+             PERMANENT = 6000000 BYTES;
+      - |-
+        MODIFY DATABASE Personnel AS
+             DEFAULT JOURNAL TABLE = Jrnl1;
