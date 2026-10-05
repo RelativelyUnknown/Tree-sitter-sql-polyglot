@@ -1,0 +1,51 @@
+dialect: athena
+engine: Amazon Athena
+version: "engine version 3 (Trino-based DML, Hive-style DDL)"
+source: https://docs.aws.amazon.com/athena/latest/ug/ddl-reference.html ; https://docs.aws.amazon.com/athena/latest/ug/dml-queries-functions-operators.html
+
+statements:
+  - id: update
+    name: UPDATE
+    doc: https://docs.aws.amazon.com/athena/latest/ug/update-statement.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "UPDATE t SET c = 1;"
+      - id: multiple_assignments
+        sql: "UPDATE t SET c = 1, d = 'x';"
+      - id: qualified_table
+        sql: "UPDATE db.t SET c = 1;"
+      - id: where
+        sql: "UPDATE t SET c = 1 WHERE id = 2;"
+      - id: qualified_where
+        sql: "UPDATE db.t SET c = 1, d = 'x' WHERE id = 2;"
+
+  - id: merge_into
+    name: MERGE INTO
+    doc: https://docs.aws.amazon.com/athena/latest/ug/merge-into-statement.html
+    tier: high
+    probes:
+      - id: not_matched_insert
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED THEN INSERT (id) VALUES (s.id);"
+      - id: target_alias
+        sql: "MERGE INTO t AS tt USING s ON tt.id = s.id WHEN NOT MATCHED THEN INSERT (id) VALUES (s.id);"
+      - id: target_alias_no_as
+        sql: "MERGE INTO t tt USING s ON tt.id = s.id WHEN NOT MATCHED THEN INSERT (id) VALUES (s.id);"
+      - id: source_alias
+        sql: "MERGE INTO t USING s AS ss ON t.id = ss.id WHEN NOT MATCHED THEN INSERT (id) VALUES (ss.id);"
+      - id: source_query
+        sql: "MERGE INTO t USING (SELECT id FROM s) AS ss ON t.id = ss.id WHEN NOT MATCHED THEN INSERT (id) VALUES (ss.id);"
+      - id: matched_delete
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN DELETE;"
+      - id: matched_delete_and_condition
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED AND s.c = 0 THEN DELETE;"
+      - id: matched_update
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET (c = s.c, d = s.d);"
+      - id: matched_update_and_condition
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED AND s.c > 0 THEN UPDATE SET (c = s.c);"
+      - id: not_matched_and_condition
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED AND s.c > 0 THEN INSERT (id, c) VALUES (s.id, s.c);"
+      - id: multiple_when_clauses
+        sql: "MERGE INTO t AS tt USING s AS ss ON tt.id = ss.id WHEN MATCHED AND ss.c = 0 THEN DELETE WHEN MATCHED THEN UPDATE SET (c = ss.c) WHEN NOT MATCHED THEN INSERT (id, c) VALUES (ss.id, ss.c);"
+    examples:
+      - "MERGE INTO iceberg_table_sample as ice1 USING iceberg2_table_sample as ice2 ON ice1.col1 = ice2.col1 WHEN NOT MATCHED THEN INSERT (col1) VALUES (ice2.col1);"
