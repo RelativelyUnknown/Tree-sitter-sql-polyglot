@@ -1,0 +1,109 @@
+dialect: hana
+engine: SAP HANA Platform
+version: "2.0 SPS 08 (2.0.08)"
+source: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/3bc1a0d4611d40c4a6e3fc7c8e80395d.html?version=2.0.08
+
+statements:
+  - id: sqlscript_anonymous_block
+    name: Anonymous Block (DO BEGIN ... END)
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/dec9d68044bd49bcbb45c990ba49c81d.html?version=2.0.08
+    tier: high
+    probes:
+      - id: do_begin_end
+        sql: "DO BEGIN SELECT * FROM dummy; END;"
+      - id: sequential_execution
+        sql: "DO BEGIN SEQUENTIAL EXECUTION SELECT * FROM dummy; END;"
+      - id: parameter_clause_in_out
+        sql: "DO (IN in_var NVARCHAR(24) => 'A', OUT outtab TABLE (J INT, K INT) => ?) BEGIN T1 = SELECT I, 10 AS J FROM tab WHERE z = :in_var; T2 = SELECT I, 20 AS K FROM tab WHERE z = :in_var; T3 = SELECT J, K FROM :T1 AS a, :T2 AS b WHERE a.I = b.I; outtab = SELECT * FROM :T3; END;"
+      - id: parameter_clause_bound_by_placeholder
+        sql: "DO (IN in_var NVARCHAR(24) => ?, OUT outtab TABLE (J INT, K INT) => ?) BEGIN outtab = SELECT I AS J, I AS K FROM tab WHERE z = :in_var; END;"
+      - id: with_hint
+        sql: "DO BEGIN SELECT * FROM dummy; END WITH HINT(ignore_plan_cache);"
+      - id: nested_block
+        sql: "DO BEGIN DECLARE i INT; BEGIN DECLARE j INT; j = 1; END; END;"
+    examples:
+      - |-
+        DO BEGIN
+         DECLARE i INT;
+         FOR i in 1..5 DO
+         SELECT * FROM dummy;
+         END FOR;
+        END WITH HINT(ignore_plan_cache);
+      - |-
+        DO
+        BEGIN
+         DECLARE I INTEGER;
+         CREATE TABLE TAB1 (I INTEGER);
+         FOR I IN 1..10 DO
+         INSERT INTO TAB1 VALUES (:I);
+         END FOR;
+        END;
+      - |-
+        DO (IN J INTEGER => ?)
+        BEGIN
+         DECLARE I, J INTEGER;
+         BEGIN
+         DECLARE EXIT HANDLER FOR SQLEXCEPTION
+         IF ::SQL_ERROR_CODE = 288 THEN
+         DROP TABLE TAB;
+         CREATE TABLE TAB (I INTEGER PRIMARY KEY);
+         ELSE
+         RESIGNAL;
+         END IF;
+         CREATE TABLE TAB (I INTEGER PRIMARY KEY);
+         END;
+         FOR I in 1..3 DO
+         INSERT INTO TAB VALUES (:I);
+         END FOR;
+         IF :J <> 3 THEN
+         SIGNAL SQL_ERROR_CODE 10001;
+         END IF;
+        END;
+
+  - id: sqlscript_declare_scalar
+    name: DECLARE (scalar variables)
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/66b38a60ab3b475f925c224038511c51.html?version=2.0.08
+    tier: high
+    probes:
+      - id: declare_type
+        sql: "DO BEGIN DECLARE a INT; END;"
+      - id: declare_multiple
+        sql: "DO BEGIN DECLARE a, b, c INT; END;"
+      - id: declare_default
+        sql: "DO BEGIN DECLARE c INT DEFAULT 0; END;"
+      - id: declare_equals_default
+        sql: "DO BEGIN DECLARE b INT = 0; END;"
+      - id: declare_constant
+        sql: "DO BEGIN DECLARE CONSTANT k INT = 1; END;"
+      - id: declare_not_null
+        sql: "DO BEGIN DECLARE n INT NOT NULL DEFAULT 1; END;"
+      - id: declare_expression_default
+        sql: "DO BEGIN DECLARE n INT = (SELECT COUNT(*) FROM t) + 1; END;"
+      - id: declare_auto
+        sql: "DO BEGIN DECLARE n AUTO = 1; END;"
+      - id: declare_varchar_type
+        sql: "DO BEGIN DECLARE s NVARCHAR(100) DEFAULT 'abc'; END;"
+      - id: assign_equals
+        sql: "DO BEGIN DECLARE b INT; b = 1; END;"
+      - id: assign_walrus
+        sql: "DO BEGIN DECLARE b INT; b := 1; END;"
+      - id: assign_variable_reference
+        sql: "DO BEGIN DECLARE a INT = 1; DECLARE b INT; b = :a + 1; END;"
+      - id: assign_udf_result
+        sql: "DO BEGIN DECLARE i INTEGER DEFAULT 0; i = SUDF_ADD(1, 2); END;"
+      - id: assign_udf_multiple_outputs
+        sql: "DO BEGIN DECLARE i INTEGER DEFAULT 0; DECLARE j NVARCHAR(5); (i, j) = SUDF_EXPR(1); END;"
+      - id: assign_udf_output_member
+        sql: "DO BEGIN DECLARE a INTEGER DEFAULT 0; a = SUDF_EXPR(1).x; END;"
+      - id: quoted_variable_reference
+        sql: "DO BEGIN DECLARE myvar INT = 0; DECLARE \"MyVar\" INT = 1; SELECT :myvar, :\"MyVar\" FROM dummy; END;"
+    examples:
+      - |-
+        DO BEGIN
+        DECLARE myvar INT = 0;
+        DECLARE “MyVar” INT = 1;
+        SELECT
+        :myvar /* the first variable */,
+        :”MyVar” /* the second variable */
+        from dummy;
+        END;

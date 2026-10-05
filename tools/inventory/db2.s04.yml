@@ -1,0 +1,51 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "11.5"
+source: https://www.ibm.com/docs/en/db2/11.5.x?topic=reference-statements
+
+statements:
+  - id: alter_view
+    name: ALTER VIEW
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-alter-view
+    tier: high
+    probes:
+      - id: alter_column_add_scope_table
+        sql: "ALTER VIEW v ALTER COLUMN c ADD SCOPE tt;"
+      - id: alter_column_add_scope_view
+        sql: "ALTER VIEW v ALTER COLUMN c ADD SCOPE tv;"
+      - id: enable_query_optimization
+        sql: "ALTER VIEW v ENABLE QUERY OPTIMIZATION;"
+      - id: disable_query_optimization
+        sql: "ALTER VIEW v DISABLE QUERY OPTIMIZATION;"
+      - id: qualified_view_name
+        sql: "ALTER VIEW s.v ENABLE QUERY OPTIMIZATION;"
+
+  - id: call
+    name: CALL
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-call
+    tier: high
+    probes:
+      - id: no_arguments
+        sql: "CALL p();"
+      - id: positional_arguments
+        sql: "CALL p(1, 'a', 2);"
+      - id: qualified_name
+        sql: "CALL s.p(1, 2);"
+      - id: null_argument
+        sql: "CALL p(NULL, 1);"
+      - id: default_argument
+        sql: "CALL p(1, DEFAULT);"
+      - id: named_argument
+        sql: "CALL p(a => 1);"
+      - id: positional_then_named
+        sql: "CALL p(1, b => 2, c => DEFAULT);"
+      - id: named_null
+        sql: "CALL p(a => NULL);"
+      - id: expression_argument
+        sql: "CALL p(1 + 2, UPPER('x'));"
+      - id: parameter_marker
+        sql: "CALL p(?, ?);"
+    examples:
+      - "CALL update_order (5000, NEW_STATUS => 'Shipped');"
+      - "CALL update_order (5002, IN_CUSTID => 1001, NEW_STATUS => 'Received', NEW_COMMENTS => 'Customer satisfied with the order.');"
+      - "CALL p1(i2=>1);"
