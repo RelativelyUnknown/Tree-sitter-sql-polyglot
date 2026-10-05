@@ -15,6 +15,32 @@ Agreed scope:
 
 The full plan is in "Phases" below.
 
+### Background and decisions so far
+
+- **PR #9 holds more than the audit.** It was opened for packaging and release fixes (npm
+  install/provenance, per-dialect highlights, bindings, docs, release 0.1.2). Those commits came
+  first; you chose to land the audit in the same PR.
+- **The first attempt ran out of usage.** It launched about 20 big research agents at once and
+  burned the whole usage window in an hour. You then asked for agents throttled to 3, then "make
+  the agents use less tokens by making the scope of their work smaller", then "run rest of agents
+  on Sonnet". The current chunk system is the answer to that, and you approved it. **Cost
+  matters: don't widen agent scope or switch to bigger models without asking.**
+- **No Workflow tool.** It was offered once and you didn't opt in. Use plain background Agent
+  calls.
+- **No grammar fixes in this task.** You pick from the ranked gap list afterwards.
+- **No new PR.**
+
+### What exists in the repo besides this file
+
+| Path | What it is |
+|---|---|
+| `tools/inventory.py` | Inventory runner. Schema and rules in `tools/inventory/README.md` |
+| `tools/inventory/*.yml` | The inventories: every part file written so far |
+| `tools/inventory-results/<d>.json` | Recorded results for the 10 finished dialects |
+| `tools/corpus_audit.py`, `tools/corpus-sources.yml`, `tools/corpus.json` | Phase 2: real-world SQL (sqlfluff fixtures, sqlglot tests, Postgres regress, DuckDB/ClickHouse/CockroachDB tests). It parses that SQL with our dialect parsers; per-dialect parse rates and failure clusters are in `tools/corpus.json`. Corpora clone into gitignored `tools/corpus-cache/` |
+| `tools/grammar_outline.py` | Compact EBNF view of a dialect's resolved grammar, for agents |
+| `tools/inventory-work/` | Queue tool, task list, briefs, statement indexes, helpers, HANA PDFs (see below) |
+
 ## Where it stands
 
 | Phase | State |
@@ -167,7 +193,11 @@ These rules come from your cost feedback.
 4. **On a rate-limit 429:** an agent dies with "You've hit your session limit · resets HH:MM". Wait
    for the reset, then resume the same agent with SendMessage so it keeps its context. A new chat
    can't resume the old session's agents. It should check whether the part file exists, then
-   requeue or keep the task.
+   requeue or keep the task. Agent IDs stored in `queue2.json` belong to the old session and can
+   be ignored.
+
+The briefs hard-code the repo path `/home/user/Tree-sitter-sql-polyglot`. That matches the cloud
+container; adjust it if you run somewhere else.
 
 ## Setup in a fresh container
 
@@ -191,7 +221,10 @@ Before launching agents, smoke test with
 1. **Phase 3, verification (cheap).** For each finished dialect, an agent re-reads the cited doc for
    the gap, unconfirmed and suspect probes. It confirms each probe as real syntax, or fixes or drops
    it, and spot-checks about 10% of the `not-applicable` entries. Start with Oracle, Snowflake
-   (unconfirmed) and T-SQL (`SET` suspects).
+   (unconfirmed) and T-SQL (`SET` suspects). **There's no verifier brief yet.** Write one in
+   `tools/inventory-work/` with the same cost rules: Sonnet, 3 at a time, small fixed scope. A
+   good chunk is about 40 probes, taken from the `gap`, `unconfirmed` and `suspect` lists in
+   `tools/inventory-results/<d>.json`.
 2. **Phase 4, report and wiring.**
    - Run `inventory.py --report` to write `docs/inventory.md`, and generate it in
      `.github/workflows/pages.yml` the same way `coverage.md` is.
