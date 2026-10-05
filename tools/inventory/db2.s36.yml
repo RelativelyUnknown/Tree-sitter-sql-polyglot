@@ -1,0 +1,324 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "11.5"
+source: https://www.ibm.com/docs/en/db2/11.5.x?topic=reference-statements
+
+statements:
+  - id: alter_work_action_set
+    name: ALTER WORK ACTION SET
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-alter-work-action-set
+    tier: low
+    probes:
+      - id: disable
+        sql: "ALTER WORK ACTION SET s DISABLE;"
+      - id: add_action
+        sql: "ALTER WORK ACTION SET s ADD WORK ACTION wa ON WORK CLASS wc PREVENT EXECUTION;"
+      - id: drop_action
+        sql: "ALTER WORK ACTION SET s DROP WORK ACTION wa;"
+  - id: alter_work_class_set
+    name: ALTER WORK CLASS SET
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-alter-work-class-set
+    tier: low
+    probes:
+      - id: add_class
+        sql: "ALTER WORK CLASS SET wcs ADD WORK CLASS wc WORK TYPE DML FOR TIMERONCOST FROM 1 TO 1000 POSITION LAST;"
+      - id: drop_class
+        sql: "ALTER WORK CLASS SET wcs DROP WORK CLASS wc;"
+  - id: alter_workload
+    name: ALTER WORKLOAD
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-alter-workload
+    tier: low
+    probes:
+      - id: add_connection
+        sql: "ALTER WORKLOAD w ADD APPLNAME ('app1');"
+      - id: disable
+        sql: "ALTER WORKLOAD w DISABLE;"
+      - id: service_class
+        sql: "ALTER WORKLOAD w SERVICE CLASS sc POSITION LAST;"
+  - id: alter_wrapper
+    name: ALTER WRAPPER
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-alter-wrapper
+    tier: low
+    probes:
+      - id: add_option
+        sql: "ALTER WRAPPER w OPTIONS (ADD DB2_FENCED 'Y');"
+  - id: alter_xsrobject
+    name: ALTER XSROBJECT
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-alter-xsrobject
+    tier: low
+    probes:
+      - id: enable
+        sql: "ALTER XSROBJECT x ENABLE DECOMPOSITION;"
+      - id: disable
+        sql: "ALTER XSROBJECT x DISABLE DECOMPOSITION;"
+  - id: audit
+    name: AUDIT
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-audit
+    tier: low
+    probes:
+      - id: database
+        sql: "AUDIT DATABASE USING POLICY p;"
+      - id: table_remove
+        sql: "AUDIT TABLE t REMOVE POLICY;"
+      - id: user_replace
+        sql: "AUDIT USER u USING REPLACE POLICY p;"
+  - id: create_audit_policy
+    name: CREATE AUDIT POLICY
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-audit-policy
+    tier: low
+    probes:
+      - id: categories
+        sql: "CREATE AUDIT POLICY p CATEGORIES EXECUTE STATUS BOTH, CONTEXT STATUS NONE ERROR TYPE AUDIT;"
+  - id: create_bufferpool
+    name: CREATE BUFFERPOOL
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-bufferpool
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE BUFFERPOOL bp IMMEDIATE SIZE 1000 PAGESIZE 8 K;"
+      - id: automatic
+        sql: "CREATE BUFFERPOOL bp SIZE AUTOMATIC NUMBLOCKPAGES 0;"
+  - id: create_database_partition_group
+    name: CREATE DATABASE PARTITION GROUP
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-database-partition-group
+    tier: low
+    probes:
+      - id: on_all
+        sql: "CREATE DATABASE PARTITION GROUP g ON ALL DBPARTITIONNUMS;"
+      - id: on_list
+        sql: "CREATE DATABASE PARTITION GROUP g ON DBPARTITIONNUMS (0, 1 TO 3);"
+  - id: create_event_monitor
+    name: CREATE EVENT MONITOR
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-event-monitor
+    tier: low
+    probes:
+      - id: write_table
+        sql: "CREATE EVENT MONITOR em FOR DEADLOCKS WRITE TO TABLE MANUALSTART;"
+      - id: write_file
+        sql: "CREATE EVENT MONITOR em FOR CONNECTIONS, STATEMENTS WRITE TO FILE '/tmp/em' MAXFILES 5 MAXFILESIZE 1000 APPEND;"
+  - id: create_event_monitor_activities
+    name: CREATE EVENT MONITOR (activities)
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-event-monitor-activities
+    tier: low
+    probes:
+      - id: write_table
+        sql: "CREATE EVENT MONITOR em FOR ACTIVITIES WRITE TO TABLE ACTIVITY (TABLE act_t IN ts PCTDEACTIVATE 90) AUTOSTART;"
+  - id: create_event_monitor_change_history
+    name: CREATE EVENT MONITOR (change history)
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-event-monitor-change-history
+    tier: low
+    probes:
+      - id: events
+        sql: "CREATE EVENT MONITOR em FOR CHANGE HISTORY WHERE EVENT IN (BACKUP, DBCFG) WRITE TO TABLE AUTOSTART;"
+  - id: create_event_monitor_locking
+    name: CREATE EVENT MONITOR (locking)
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-event-monitor-locking
+    tier: low
+    probes:
+      - id: write_table
+        sql: "CREATE EVENT MONITOR em FOR LOCKING WRITE TO UNFORMATTED EVENT TABLE (TABLE lock_t) AUTOSTART;"
+  - id: create_event_monitor_package_cache
+    name: CREATE EVENT MONITOR (package cache)
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-event-monitor-package-cache
+    tier: low
+    probes:
+      - id: collect
+        sql: "CREATE EVENT MONITOR em FOR PACKAGE CACHE WHERE NUM_EXECUTIONS >= 10 COLLECT DETAILED DATA WRITE TO UNFORMATTED EVENT TABLE (TABLE pc_t);"
+  - id: create_event_monitor_statistics
+    name: CREATE EVENT MONITOR (statistics)
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-event-monitor-statistics
+    tier: low
+    probes:
+      - id: write_table
+        sql: "CREATE EVENT MONITOR em FOR STATISTICS WRITE TO TABLE SCSTATS (TABLE s_t) AUTOSTART;"
+  - id: create_event_monitor_threshold_violations
+    name: CREATE EVENT MONITOR (threshold violations)
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-event-monitor-threshold-violations
+    tier: low
+    probes:
+      - id: write_table
+        sql: "CREATE EVENT MONITOR em FOR THRESHOLD VIOLATIONS WRITE TO TABLE AUTOSTART;"
+  - id: create_event_monitor_unit_of_work
+    name: CREATE EVENT MONITOR (unit of work)
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-event-monitor-unit-work
+    tier: low
+    probes:
+      - id: write_table
+        sql: "CREATE EVENT MONITOR em FOR UNIT OF WORK WRITE TO UNFORMATTED EVENT TABLE (TABLE uow_t) AUTOSTART;"
+  - id: create_function_mapping
+    name: CREATE FUNCTION MAPPING
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-function-mapping
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE FUNCTION MAPPING fm FOR f (INTEGER) SERVER TYPE oracle OPTIONS (REMOTE_NAME 'rf');"
+  - id: create_histogram_template
+    name: CREATE HISTOGRAM TEMPLATE
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-histogram-template
+    tier: low
+    probes:
+      - id: high_bin
+        sql: "CREATE HISTOGRAM TEMPLATE ht HIGH BIN VALUE 1000;"
+  - id: create_index_extension
+    name: CREATE INDEX EXTENSION
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-index-extension
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE INDEX EXTENSION ie (p1 INTEGER) FROM SOURCE KEY (k INTEGER) GENERATE KEY USING gen_fn(k) WITH TARGET KEY (tk INTEGER) SEARCH METHODS WHEN m (x INTEGER) RANGE THROUGH rng_fn(x) FILTER USING flt_fn(x);"
+  - id: create_mask
+    name: CREATE MASK
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-mask
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE MASK m ON t FOR COLUMN c RETURN CASE WHEN 1 = 1 THEN c ELSE 'XXX' END ENABLE;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE MASK m ON t AS tt FOR COLUMN c RETURN 'XXX' DISABLE;"
+  - id: create_method
+    name: CREATE METHOD
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-method
+    tier: low
+    probes:
+      - id: sql_body
+        sql: "CREATE METHOD m (a INTEGER) FOR typ RETURN a + 1;"
+      - id: external
+        sql: "CREATE METHOD m (a INTEGER) FOR typ EXTERNAL NAME 'lib!fn';"
+  - id: create_nickname
+    name: CREATE NICKNAME
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-nickname
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE NICKNAME n FOR srv.sch.rt;"
+      - id: column_list
+        sql: "CREATE NICKNAME n (c1 INTEGER, c2 VARCHAR(10)) FOR SERVER srv OPTIONS (FILE_PATH '/tmp/f.csv');"
+  - id: create_permission
+    name: CREATE PERMISSION
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-permission
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE PERMISSION p ON t FOR ROWS WHERE c = 1 ENFORCED FOR ALL ACCESS ENABLE;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE PERMISSION p ON t AS tt FOR ROWS WHERE tt.c = 1 ENFORCED FOR ALL ACCESS DISABLE;"
+  - id: create_security_label_component
+    name: CREATE SECURITY LABEL COMPONENT
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-security-label-component
+    tier: low
+    probes:
+      - id: array
+        sql: "CREATE SECURITY LABEL COMPONENT lvl ARRAY ['SECRET', 'PUBLIC'];"
+      - id: set
+        sql: "CREATE SECURITY LABEL COMPONENT grp SET {'A', 'B'};"
+      - id: tree
+        sql: "CREATE SECURITY LABEL COMPONENT dept TREE ('Corp' ROOT, 'Sales' UNDER 'Corp');"
+  - id: create_security_label
+    name: CREATE SECURITY LABEL
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-security-label
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE SECURITY LABEL sp.lbl COMPONENT lvl 'SECRET', COMPONENT grp 'A', 'B';"
+  - id: create_security_policy
+    name: CREATE SECURITY POLICY
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-security-policy
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE SECURITY POLICY sp COMPONENTS lvl, grp WITH DB2LBACRULES RESTRICT NOT AUTHORIZED WRITE SECURITY LABEL;"
+  - id: create_service_class
+    name: CREATE SERVICE CLASS
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-service-class
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE SERVICE CLASS sc;"
+      - id: subclass
+        sql: "CREATE SERVICE CLASS sub UNDER sc CPU SHARES 2000 SOFT MAXIMUM DEGREE 4 PREFETCH PRIORITY HIGH;"
+  - id: create_server
+    name: CREATE SERVER
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-server
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE SERVER srv TYPE db2/udb VERSION 11.5 WRAPPER drda AUTHORIZATION \"u\" PASSWORD \"p\" OPTIONS (DBNAME 'sample');"
+  - id: create_stogroup
+    name: CREATE STOGROUP
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-stogroup
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE STOGROUP sg ON '/data1', '/data2' OVERHEAD 6.725 DEVICE READ RATE 100 DATA TAG 1 SET AS DEFAULT;"
+  - id: create_threshold
+    name: CREATE THRESHOLD
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-threshold
+    tier: low
+    probes:
+      - id: database
+        sql: "CREATE THRESHOLD th FOR DATABASE ACTIVITIES ENFORCEMENT DATABASE WHEN ACTIVITYTOTALTIME > 1 HOUR STOP EXECUTION;"
+      - id: service_class
+        sql: "CREATE THRESHOLD th FOR SERVICE CLASS sc ACTIVITIES ENFORCEMENT DATABASE ENABLE WHEN SQLROWSRETURNED > 1000 COLLECT ACTIVITY DATA;"
+  - id: create_transform
+    name: CREATE TRANSFORM
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-transform
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE TRANSFORM FOR typ grp (TO SQL WITH FUNCTION to_fn(VARCHAR(10)), FROM SQL WITH FUNCTION from_fn(typ));"
+  - id: create_trusted_context
+    name: CREATE TRUSTED CONTEXT
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-trusted-context
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE TRUSTED CONTEXT tc BASED UPON CONNECTION USING SYSTEM AUTHID u ATTRIBUTES (ADDRESS '9.26.113.204') DEFAULT ROLE r ENABLE;"
+      - id: with_use
+        sql: "CREATE TRUSTED CONTEXT tc BASED UPON CONNECTION USING SYSTEM AUTHID u ATTRIBUTES (ADDRESS '1.2.3.4' WITH ENCRYPTION 'HIGH') WITH USE FOR PUBLIC WITHOUT AUTHENTICATION;"
+  - id: create_type_mapping
+    name: CREATE TYPE MAPPING
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-type-mapping
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE TYPE MAPPING tm FROM LOCAL TYPE DECIMAL(10, 2) TO SERVER TYPE oracle REMOTE TYPE NUMBER(10, 2);"
+  - id: create_usage_list
+    name: CREATE USAGE LIST
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-usage-list
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE USAGE LIST ul FOR TABLE t LIST SIZE 100 WHEN FULL WRAP ACTIVE ON START DATABASE;"
+  - id: create_user_mapping
+    name: CREATE USER MAPPING
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-user-mapping
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE USER MAPPING FOR u SERVER srv OPTIONS (REMOTE_AUTHID 'ru', REMOTE_PASSWORD 'rp');"
+      - id: public
+        sql: "CREATE USER MAPPING FOR PUBLIC SERVER srv;"
+  - id: create_work_action_set
+    name: CREATE WORK ACTION SET
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-work-action-set
+    tier: low
+    probes:
+      - id: database
+        sql: "CREATE WORK ACTION SET s FOR DATABASE USING WORK CLASS SET wcs (WORK ACTION wa ON WORK CLASS wc PREVENT EXECUTION) ENABLE;"
+      - id: service_class
+        sql: "CREATE WORK ACTION SET s FOR SERVICE CLASS sc USING WORK CLASS SET wcs (WORK ACTION wa ON WORK CLASS wc MAP ACTIVITY TO sub);"
+  - id: create_work_class_set
+    name: CREATE WORK CLASS SET
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-create-work-class-set
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE WORK CLASS SET wcs (WORK CLASS wc WORK TYPE DML FOR TIMERONCOST FROM 1 TO 1000 POSITION AT 1);"
+      - id: read_write
+        sql: "CREATE WORK CLASS SET wcs (WORK CLASS r WORK TYPE READ, WORK CLASS w WORK TYPE WRITE);"
+  - id: begin_declare_section
+    name: BEGIN DECLARE SECTION
+    doc: https://www.ibm.com/docs/en/db2/11.5.x?topic=statements-begin-declare-section
+    tier: low
+    status: not-sql
+    reason: Embedded-SQL host-language precompiler construct that marks where host variables are declared; not seen by a SQL parser.
