@@ -1,0 +1,40 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: begin_transaction
+    name: BEGIN TRANSACTION (BT)
+    doc: https://docs.teradata.com/reader/4_jiz05LXsLWBbfvKTLneg/_8_zzeI2tf4N4UzS2bVgJQ
+    tier: high
+    probes:
+      - id: begin_transaction
+        sql: "BEGIN TRANSACTION;"
+      - id: bt
+        sql: "BT;"
+  - id: call
+    name: CALL
+    doc: https://docs.teradata.com/reader/4_jiz05LXsLWBbfvKTLneg/jgGdl1lVAOzGcU_4dEl3Ng
+    tier: high
+    probes:
+      - id: no_args
+        sql: "CALL p();"
+      - id: in_args
+        sql: "CALL p(1, 'a', c + 1);"
+      - id: qualified
+        sql: "CALL db.p(1);"
+      - id: question_mark
+        sql: "CALL p(?, ?);"
+      - id: out_variable
+        sql: "CALL p(1, :v);"
+      - id: out_parameter_name
+        sql: "CALL p(1, out_param);"
+      - id: out_cast
+        sql: "CALL p(1, CAST(out_param AS INTEGER));"
+    examples:
+      - "CALL SYSLIB.TD_GETCSTINFO ('cst', 't1', v1, v2, v3, v4);"
+      - |-
+        CALL myXSP1(10, RESULT_B RETURNS INTEGER, RESULT_C,
+                    RESULT_D RETURNS STYLE t1.int_col,
+                    RESULT_E, RESULT_F RETURNS INTEGER);
