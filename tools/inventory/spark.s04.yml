@@ -1,0 +1,64 @@
+dialect: spark
+engine: Apache Spark SQL
+version: "4.x (docs/latest)"
+source: https://spark.apache.org/docs/latest/sql-ref-syntax.html
+
+statements:
+  - id: create_view
+    name: CREATE VIEW
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-create-view.html
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE VIEW v AS SELECT c FROM t;" }
+      - { id: or_replace, sql: "CREATE OR REPLACE VIEW v AS SELECT c FROM t;" }
+      - { id: temporary, sql: "CREATE TEMPORARY VIEW v AS SELECT c FROM t;" }
+      - { id: global_temporary, sql: "CREATE GLOBAL TEMPORARY VIEW v AS SELECT c FROM t;" }
+      - { id: or_replace_temporary, sql: "CREATE OR REPLACE TEMPORARY VIEW v AS SELECT c FROM t;" }
+      - { id: or_replace_global_temporary, sql: "CREATE OR REPLACE GLOBAL TEMPORARY VIEW v AS SELECT c FROM t;" }
+      - { id: if_not_exists, sql: "CREATE VIEW IF NOT EXISTS v AS SELECT c FROM t;" }
+      - { id: qualified_name, sql: "CREATE VIEW cat.db.v AS SELECT c FROM t;" }
+      - { id: database_qualified_name, sql: "CREATE VIEW db.v AS SELECT c FROM t;" }
+      - { id: temporary_session_qualified, sql: "CREATE TEMPORARY VIEW session.v AS SELECT c FROM t;" }
+      - { id: temporary_system_session_qualified, sql: "CREATE TEMPORARY VIEW system.session.v AS SELECT c FROM t;" }
+      - { id: column_list, sql: "CREATE VIEW v (a, b) AS SELECT c, d FROM t;" }
+      - { id: column_comment, sql: "CREATE VIEW v (a COMMENT 'first', b) AS SELECT c, d FROM t;" }
+      - { id: view_comment, sql: "CREATE VIEW v COMMENT 'a view' AS SELECT c FROM t;" }
+      - { id: tblproperties, sql: "CREATE VIEW v TBLPROPERTIES ('k' = 'v', 'k2' = 'v2') AS SELECT c FROM t;" }
+      - { id: with_schema_binding, sql: "CREATE VIEW v WITH SCHEMA BINDING AS SELECT c FROM t;" }
+      - { id: with_schema_compensation, sql: "CREATE VIEW v WITH SCHEMA COMPENSATION AS SELECT c FROM t;" }
+      - { id: with_schema_type_evolution, sql: "CREATE VIEW v WITH SCHEMA TYPE EVOLUTION AS SELECT c FROM t;" }
+      - { id: with_schema_evolution, sql: "CREATE VIEW v WITH SCHEMA EVOLUTION AS SELECT c FROM t;" }
+      - id: clauses_reordered
+        sql: "CREATE VIEW v (a, b) TBLPROPERTIES ('k' = 'v') COMMENT 'a view' AS SELECT c, d FROM t;"
+        note: "Doc: the optional create_view_clauses are order insensitive."
+      - { id: query_with_cte, sql: "CREATE VIEW v AS WITH x AS (SELECT c FROM t) SELECT c FROM x;" }
+      - { id: query_union, sql: "CREATE VIEW v AS SELECT c FROM t UNION ALL SELECT c FROM u;" }
+    examples:
+      - "CREATE OR REPLACE VIEW experienced_employee (ID COMMENT 'Unique identification number', Name) COMMENT 'View for experienced employees' AS SELECT id, name FROM all_employee WHERE working_years > 5;"
+      - "CREATE GLOBAL TEMPORARY VIEW subscribed_movies AS SELECT mo.member_id, mb.full_name, mo.movie_title FROM movies AS mo INNER JOIN members AS mb ON mo.member_id = mb.id;"
+      - "CREATE OR REPLACE VIEW open_orders WITH SCHEMA EVOLUTION AS SELECT * FROM orders WHERE status = 'open';"
+
+  - id: declare_variable
+    name: DECLARE VARIABLE
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-declare-variable.html
+    tier: high
+    probes:
+      - { id: declare_var_type, sql: "DECLARE VARIABLE v INT;" }
+      - { id: declare_var_keyword, sql: "DECLARE VAR v INT;" }
+      - { id: declare_no_keyword, sql: "DECLARE v INT;" }
+      - { id: or_replace, sql: "DECLARE OR REPLACE VARIABLE v INT;" }
+      - { id: or_replace_no_keyword, sql: "DECLARE OR REPLACE v = 1;" }
+      - { id: default_keyword, sql: "DECLARE VARIABLE v INT DEFAULT 1;" }
+      - { id: default_equals, sql: "DECLARE VARIABLE v INT = 1;" }
+      - { id: type_inferred_default, sql: "DECLARE VARIABLE v DEFAULT 6;" }
+      - { id: type_inferred_equals, sql: "DECLARE v = 5;" }
+      - { id: session_qualified, sql: "DECLARE VARIABLE session.v INT;" }
+      - { id: system_session_qualified, sql: "DECLARE VARIABLE system.session.v INT;" }
+      - { id: system_qualified, sql: "DECLARE VARIABLE system.v INT;" }
+      - { id: string_type, sql: "DECLARE v STRING;" }
+      - { id: default_expression, sql: "DECLARE VARIABLE v DOUBLE DEFAULT 1 + 2 * 3;" }
+    examples:
+      - "DECLARE five = 5;"
+      - "DECLARE OR REPLACE five = 55;"
+      - "DECLARE VARIABLE size DEFAULT 6;"
+      - "DECLARE some_var STRING;"
