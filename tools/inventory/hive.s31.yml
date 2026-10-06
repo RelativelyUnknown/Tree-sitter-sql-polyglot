@@ -1,0 +1,134 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: drop_connector
+    name: DROP CONNECTOR
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP CONNECTOR c;" }
+      - { id: if_exists, sql: "DROP CONNECTOR IF EXISTS c;" }
+
+  - id: alter_connector
+    name: ALTER CONNECTOR
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: medium
+    probes:
+      - { id: set_dcproperties, sql: "ALTER CONNECTOR c SET DCPROPERTIES ('p1'='v1', 'p2'='v2');" }
+      - { id: set_url, sql: "ALTER CONNECTOR c SET URL 'jdbc:mysql://localhost:3306/db';" }
+      - { id: set_owner_user, sql: "ALTER CONNECTOR c SET OWNER USER u;" }
+      - { id: set_owner_role, sql: "ALTER CONNECTOR c SET OWNER ROLE r;" }
+
+  - id: msck_repair_table
+    name: MSCK [REPAIR] TABLE
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: medium
+    probes:
+      - { id: msck_table, sql: "MSCK TABLE t;" }
+      - { id: repair, sql: "MSCK REPAIR TABLE t;" }
+      - { id: add_partitions, sql: "MSCK REPAIR TABLE t ADD PARTITIONS;" }
+      - { id: drop_partitions, sql: "MSCK REPAIR TABLE t DROP PARTITIONS;" }
+      - { id: sync_partitions, sql: "MSCK REPAIR TABLE t SYNC PARTITIONS;" }
+
+  - id: export_table
+    name: EXPORT TABLE
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-importexport/
+    tier: medium
+    probes:
+      - { id: basic, sql: "EXPORT TABLE t TO 'path';" }
+      - { id: partition, sql: "EXPORT TABLE t PARTITION (c1='a', c2='b') TO 'path';" }
+      - { id: for_replication, sql: "EXPORT TABLE t TO 'path' FOR replication('1');" }
+    examples:
+      - "export table department to 'hdfs_exports_location/department';"
+      - "export table employee partition (emp_country=\"in\", emp_state=\"ka\") to 'hdfs_exports_location/employee';"
+
+  - id: import_table
+    name: IMPORT TABLE
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-importexport/
+    tier: medium
+    probes:
+      - { id: from_only, sql: "IMPORT FROM 'path';" }
+      - { id: table, sql: "IMPORT TABLE t FROM 'path';" }
+      - { id: external_table, sql: "IMPORT EXTERNAL TABLE t FROM 'path';" }
+      - { id: partition, sql: "IMPORT TABLE t PARTITION (c1='a', c2='b') FROM 'path';" }
+      - { id: location, sql: "IMPORT TABLE t FROM 'path' LOCATION 'target';" }
+    examples:
+      - "import from 'hdfs_exports_location/department';"
+      - "import table imported_dept from 'hdfs_exports_location/department';"
+      - "import table department from 'hdfs_exports_location/department' location 'import_target_location/department';"
+
+  - id: analyze_table
+    name: ANALYZE TABLE ... COMPUTE STATISTICS
+    doc: https://cwiki.apache.org/confluence/display/Hive/StatsDev
+    tier: medium
+    probes:
+      - { id: basic, sql: "ANALYZE TABLE t COMPUTE STATISTICS;" }
+      - { id: qualified, sql: "ANALYZE TABLE db.t COMPUTE STATISTICS;" }
+      - { id: partition, sql: "ANALYZE TABLE t PARTITION (ds='2008-04-09', hr=11) COMPUTE STATISTICS;" }
+      - { id: partition_dynamic, sql: "ANALYZE TABLE t PARTITION (ds='2008-04-09', hr) COMPUTE STATISTICS;" }
+      - { id: noscan, sql: "ANALYZE TABLE t COMPUTE STATISTICS NOSCAN;" }
+      - { id: for_columns, sql: "ANALYZE TABLE t COMPUTE STATISTICS FOR COLUMNS;" }
+      - { id: cache_metadata, sql: "ANALYZE TABLE t COMPUTE STATISTICS CACHE METADATA;" }
+    examples:
+      - "ANALYZE TABLE Table1 PARTITION(ds='2008-04-09', hr=11) COMPUTE STATISTICS;"
+      - "ANALYZE TABLE Table1 PARTITION(ds='2008-04-09', hr=11) COMPUTE STATISTICS FOR COLUMNS;"
+      - "ANALYZE TABLE Table1 PARTITION(ds='2008-04-09', hr) COMPUTE STATISTICS;"
+
+  - id: explain
+    name: EXPLAIN
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-explain/
+    tier: medium
+    probes:
+      - { id: basic, sql: "EXPLAIN SELECT a FROM t;" }
+      - { id: extended, sql: "EXPLAIN EXTENDED SELECT a FROM t;" }
+      - { id: cbo, sql: "EXPLAIN CBO SELECT a FROM t;" }
+      - { id: cbo_cost, sql: "EXPLAIN CBO COST SELECT a FROM t;" }
+      - { id: cbo_joincost, sql: "EXPLAIN CBO JOINCOST SELECT a FROM t;" }
+      - { id: formatted_cbo, sql: "EXPLAIN FORMATTED CBO SELECT a FROM t;" }
+      - { id: ast, sql: "EXPLAIN AST SELECT a FROM t;" }
+      - { id: dependency, sql: "EXPLAIN DEPENDENCY SELECT a FROM t;" }
+      - { id: authorization, sql: "EXPLAIN AUTHORIZATION SELECT a FROM t;" }
+      - { id: locks, sql: "EXPLAIN LOCKS UPDATE t SET b = 1 WHERE a = 5;" }
+      - { id: vectorization, sql: "EXPLAIN VECTORIZATION SELECT a FROM t;" }
+      - { id: vectorization_only_detail, sql: "EXPLAIN VECTORIZATION ONLY DETAIL SELECT a FROM t;" }
+      - { id: analyze, sql: "EXPLAIN ANALYZE SELECT a FROM t;" }
+      - { id: from_first_insert, sql: "EXPLAIN FROM src INSERT OVERWRITE TABLE dest_g1 SELECT src.key, sum(substr(src.value,4)) GROUP BY src.key;" }
+    examples:
+      - "EXPLAIN FROM src INSERT OVERWRITE TABLE dest_g1 SELECT src.key, sum(substr(src.value,4)) GROUP BY src.key;"
+      - "EXPLAIN AST FROM src INSERT OVERWRITE TABLE dest_g1 SELECT src.key, sum(substr(src.value,4)) GROUP BY src.key;"
+      - "EXPLAIN DEPENDENCY SELECT * FROM V1;"
+
+  - id: describe_database
+    name: DESCRIBE DATABASE
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: medium
+    probes:
+      - { id: database, sql: "DESCRIBE DATABASE db;" }
+      - { id: database_extended, sql: "DESCRIBE DATABASE EXTENDED db;" }
+      - { id: schema, sql: "DESCRIBE SCHEMA db;" }
+      - { id: schema_extended, sql: "DESCRIBE SCHEMA EXTENDED db;" }
+
+  - id: describe_connector
+    name: DESCRIBE CONNECTOR
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: medium
+    probes:
+      - { id: basic, sql: "DESCRIBE CONNECTOR c;" }
+      - { id: extended, sql: "DESCRIBE CONNECTOR EXTENDED c;" }
+
+  - id: describe_table
+    name: DESCRIBE [EXTENDED|FORMATTED] table / column
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: medium
+    probes:
+      - { id: basic, sql: "DESCRIBE t;" }
+      - { id: qualified, sql: "DESCRIBE db.t;" }
+      - { id: extended, sql: "DESCRIBE EXTENDED t;" }
+      - { id: formatted, sql: "DESCRIBE FORMATTED t;" }
+      - { id: column, sql: "DESCRIBE db.t c;" }
+      - { id: column_field, sql: "DESCRIBE FORMATTED db.t c.f;" }
+      - { id: partition, sql: "DESCRIBE FORMATTED db.t PARTITION (ds='2008-04-09');" }
+      - { id: partition_column, sql: "DESCRIBE FORMATTED db.t PARTITION (ds='2008-04-09') c;" }
