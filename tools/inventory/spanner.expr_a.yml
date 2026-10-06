@@ -1,0 +1,226 @@
+dialect: spanner
+engine: Google Cloud Spanner (GoogleSQL dialect)
+version: "current managed service (docs as of 2026-10)"
+source: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language
+
+statements: []
+
+expressions:
+  - id: a_integer_literals
+    name: Integer literals
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/lexical
+    tier: high
+    probes:
+      - { id: decimal, sql: "SELECT 123;" }
+      - { id: hex, sql: "SELECT 0xABC, 0X1f;" }
+      - { id: signed, sql: "SELECT - 123, +123;" }
+    examples:
+      - "SELECT 123;"
+
+  - id: a_float_literals
+    name: Floating point literals
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/lexical
+    tier: high
+    probes:
+      - { id: trailing_exp, sql: "SELECT 123.456e-67;" }
+      - { id: leading_dot, sql: "SELECT .1E4;" }
+      - { id: trailing_dot, sql: "SELECT 58.;" }
+      - { id: digits_exp, sql: "SELECT 4e2;" }
+
+  - id: a_numeric_literals
+    name: NUMERIC literals
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/lexical
+    tier: high
+    probes:
+      - { id: numeric_int, sql: "SELECT NUMERIC '123456';" }
+      - { id: numeric_negative, sql: "SELECT NUMERIC '-3.14';" }
+      - { id: numeric_exp, sql: "SELECT NUMERIC '1.23456e05';" }
+    examples:
+      - "SELECT NUMERIC '0';"
+      - "SELECT NUMERIC '-9.876e-3';"
+
+  - id: a_string_literals
+    name: String literals
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/lexical
+    tier: high
+    probes:
+      - { id: double_quoted, sql: 'SELECT "abc", "it''s";' }
+      - { id: single_quoted, sql: "SELECT 'Title: \"Boy\"';" }
+      - { id: escaped_quote, sql: "SELECT 'it\\'s';" }
+      - { id: triple_double, sql: 'SELECT """abc""";' }
+      - { id: triple_single, sql: "SELECT '''it's''', '''Title:\"Boy\"''';" }
+      - { id: triple_multiline, sql: "SELECT '''two\nlines''';" }
+      - { id: raw_string, sql: "SELECT r\"abc+\", R'f\\(abc,(.*),def\\)', r'''abc+''', r\"\"\"abc+\"\"\";" }
+
+  - id: a_string_escapes
+    name: Escape sequences in string literals
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/lexical
+    tier: medium
+    probes:
+      - { id: simple_escapes, sql: "SELECT 'a\\nb\\tc\\\\d\\?e\\\"f\\`g';" }
+      - { id: octal, sql: "SELECT '\\101';" }
+      - { id: hex, sql: "SELECT '\\x41', '\\X41';" }
+      - { id: unicode_u, sql: "SELECT '\\u00e9';" }
+      - { id: unicode_big_u, sql: "SELECT '\\U0001F600';" }
+
+  - id: a_bytes_literals
+    name: Bytes literals
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/lexical
+    tier: high
+    probes:
+      - { id: bytes_double, sql: 'SELECT B"abc";' }
+      - { id: bytes_triple_single, sql: "SELECT B'''abc''';" }
+      - { id: bytes_triple_double, sql: 'SELECT b"""abc""";' }
+      - { id: raw_bytes, sql: "SELECT br'abc+', RB\"abc+\", rB'''abc''';" }
+      - { id: bytes_escape, sql: "SELECT b'\\x41\\101';" }
+
+  - id: a_date_literals
+    name: DATE literals
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/lexical
+    tier: high
+    probes:
+      - { id: date, sql: "SELECT DATE '2014-09-27';" }
+    examples:
+      - "SELECT DATE '2014-09-27';"
+
+  - id: a_timestamp_literals
+    name: TIMESTAMP literals
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/lexical
+    tier: high
+    probes:
+      - { id: timestamp, sql: "SELECT TIMESTAMP '2014-09-27 12:30:00.45';" }
+      - { id: timestamp_offset, sql: "SELECT TIMESTAMP '2014-09-27 12:30:00.45-08';" }
+      - { id: timestamp_t_z, sql: "SELECT TIMESTAMP '2014-09-27T12:30:00.45Z';" }
+      - { id: timestamp_zone_name, sql: "SELECT TIMESTAMP '2014-09-27 12:30:00.45 America/Los_Angeles';" }
+
+  - id: a_interval_literals
+    name: INTERVAL literals
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/lexical
+    tier: medium
+    probes:
+      - { id: single_part, sql: "SELECT INTERVAL 5 DAY;" }
+      - { id: negative_single_part, sql: "SELECT INTERVAL - 5 DAY;" }
+      - { id: expr_step, sql: "SELECT INTERVAL 1 SECOND;" }
+      - { id: range_hour_to_second, sql: "SELECT INTERVAL '10:20:30.52' HOUR TO SECOND;" }
+      - { id: range_year_to_month, sql: "SELECT INTERVAL '1-2' YEAR TO MONTH;" }
+      - { id: range_day_to_minute, sql: "SELECT INTERVAL '1 5:30' DAY TO MINUTE;" }
+      - { id: range_negative, sql: "SELECT INTERVAL '-23-2 10 -12:30' YEAR TO MINUTE;" }
+
+  - id: a_array_literals
+    name: ARRAY literals
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/lexical
+    tier: high
+    probes:
+      - { id: bracket_ints, sql: "SELECT [1, 2, 3];" }
+      - { id: bracket_strings, sql: "SELECT ['x', 'y', 'xy'];" }
+      - { id: array_keyword, sql: "SELECT ARRAY[1, 2, 3];" }
+      - { id: typed_array, sql: "SELECT ARRAY<STRING>['x', 'y', 'xy'];" }
+      - { id: typed_empty, sql: "SELECT ARRAY<INT64>[];" }
+      - { id: empty, sql: "SELECT [];" }
+      - { id: subquery_array, sql: "SELECT ARRAY(SELECT 1 UNION ALL SELECT 2);" }
+
+  - id: a_struct_literals
+    name: STRUCT literals
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/lexical
+    tier: high
+    probes:
+      - { id: tuple, sql: "SELECT (1, 2, 3);" }
+      - { id: tuple_mixed, sql: "SELECT (1, 'abc');" }
+      - { id: typeless, sql: "SELECT STRUCT(1 AS foo, 'abc' AS bar);" }
+      - { id: typed, sql: "SELECT STRUCT<INT64, STRING>(1, 'abc');" }
+      - { id: typeless_single, sql: "SELECT STRUCT(1);" }
+      - { id: typed_single, sql: "SELECT STRUCT<INT64>(1);" }
+      - { id: typed_named_fields, sql: "SELECT STRUCT<a INT64, b STRING>(1, 'x');" }
+
+  - id: a_json_literals
+    name: JSON literals
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/lexical
+    tier: high
+    probes:
+      - { id: json_object, sql: "SELECT JSON '{\"id\": 10, \"type\": \"fruit\", \"on_menu\": true}';" }
+      - { id: json_nested, sql: "SELECT JSON '{\"recipes\": {\"salads\": [{\"id\": 2001, \"type\": \"Walnut Apple Salad\"}]}}';" }
+
+  - id: a_type_names
+    name: Data type names
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-types
+    tier: high
+    probes:
+      - { id: scalar_types, sql: "SELECT CAST(c AS INT64), CAST(c AS BOOL), CAST(c AS FLOAT64), CAST(c AS FLOAT32), CAST(c AS NUMERIC) FROM t;" }
+      - { id: text_types, sql: "SELECT CAST(c AS STRING), CAST(c AS BYTES), CAST(c AS DATE), CAST(c AS TIMESTAMP), CAST(c AS JSON) FROM t;" }
+      - { id: interval_type, sql: "SELECT CAST(c AS INTERVAL) FROM t;" }
+      - { id: boolean_alias, sql: "SELECT CAST(c AS BOOLEAN) FROM t;" }
+      - { id: array_type, sql: "SELECT CAST(c AS ARRAY<INT64>) FROM t;" }
+      - { id: nested_array_struct, sql: "SELECT CAST(c AS ARRAY<STRUCT<a INT64, b STRING>>) FROM t;" }
+      - { id: struct_unnamed, sql: "SELECT CAST(c AS STRUCT<INT64, STRING>) FROM t;" }
+      - { id: struct_named, sql: "SELECT CAST(c AS STRUCT<a INT64, b STRING>) FROM t;" }
+      - { id: struct_with_array_field, sql: "SELECT CAST(c AS STRUCT<inner_array ARRAY<INT64>>) FROM t;" }
+      - { id: uuid_type, sql: "SELECT CAST(c AS UUID) FROM t;" }
+
+  - id: a_parameterized_types
+    name: Parameterized types (STRING and BYTES length)
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language
+    tier: high
+    probes:
+      - { id: string_max, sql: "CREATE TABLE t (c STRING(MAX)) PRIMARY KEY (c);" }
+      - { id: string_length, sql: "CREATE TABLE t (c STRING(100) NOT NULL) PRIMARY KEY (c);" }
+      - { id: bytes_max, sql: "CREATE TABLE t (id INT64, c BYTES(MAX)) PRIMARY KEY (id);" }
+      - { id: bytes_length, sql: "CREATE TABLE t (id INT64, c BYTES(1024)) PRIMARY KEY (id);" }
+      - { id: array_of_string_length, sql: "CREATE TABLE t (id INT64, c ARRAY<STRING(20)>) PRIMARY KEY (id);" }
+      - { id: vector_length, sql: "CREATE TABLE t (id INT64, v ARRAY<FLOAT32>(vector_length=>128)) PRIMARY KEY (id);" }
+
+  - id: a_cast
+    name: CAST and SAFE_CAST
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/conversion_functions
+    tier: high
+    probes:
+      - { id: cast, sql: "SELECT CAST(c AS STRING) FROM t;" }
+      - { id: safe_cast, sql: "SELECT SAFE_CAST(c AS INT64) FROM t;" }
+      - { id: cast_literal, sql: "SELECT CAST('123' AS INT64), CAST(\"NaN\" AS FLOAT64);" }
+      - { id: cast_expression, sql: "SELECT CAST(a + b AS NUMERIC) FROM t;" }
+      - { id: cast_array_literal, sql: "SELECT CAST([1, 2, 3] AS ARRAY<STRING>);" }
+
+  - id: a_identifier_quoting
+    name: Identifiers and quoting
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/lexical
+    tier: high
+    probes:
+      - { id: backtick_column, sql: "SELECT `5abc` FROM t;" }
+      - { id: backtick_reserved, sql: "SELECT `FROM` FROM t;" }
+      - { id: backtick_table, sql: "SELECT * FROM `my table`;" }
+      - { id: backtick_with_spaces, sql: "SELECT `col with spaces and !symbols` FROM t;" }
+      - { id: backtick_escape, sql: "SELECT `a\\`b` FROM t;" }
+      - { id: underscore_leading, sql: "SELECT _5abc.dataField FROM t;" }
+      - { id: quoted_path, sql: "SELECT `5abc`.dataField FROM t;" }
+      - { id: function_field_access, sql: "SELECT foo().dataField;" }
+      - { id: array_offset_field, sql: "SELECT items[OFFSET(3)].dataField FROM t;" }
+      - { id: parameter_field, sql: "SELECT @param.dataField;" }
+      - { id: case_insensitive_keywords, sql: "select c from t where c = 1;" }
+
+  - id: a_comments
+    name: Comments
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/lexical
+    tier: high
+    probes:
+      - { id: hash_comment, sql: "# this is a single-line comment\nSELECT book FROM library;" }
+      - { id: dash_comment, sql: "-- this is a single-line comment\nSELECT book FROM library;" }
+      - { id: block_comment, sql: "/* this is a single-line comment */\nSELECT book FROM library;" }
+      - { id: block_inline, sql: "SELECT book FROM library /* this is a single-line comment */ WHERE book = \"Ulysses\";" }
+      - { id: trailing_hash, sql: "SELECT book FROM library; # this is an inline comment" }
+      - { id: trailing_dash, sql: "SELECT book FROM library; -- this is an inline comment" }
+      - { id: trailing_block, sql: "SELECT book FROM library; /* this is an inline comment */" }
+      - { id: multiline, sql: "SELECT book FROM library /* This is a\nmultiline comment\non multiple lines */ WHERE book = \"Ulysses\";" }
+    examples:
+      - "SELECT book FROM library /* this is a multiline comment on two lines */ WHERE book = \"Ulysses\";"
+
+  - id: a_query_parameters
+    name: Query parameters
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/lexical
+    tier: high
+    probes:
+      - { id: named_param, sql: "SELECT * FROM Roster WHERE LastName = @myparam;" }
+      - { id: named_param_keyword, sql: "SELECT @select;" }
+      - { id: named_param_quoted, sql: "SELECT @`my param`;" }
+      - { id: param_in_function, sql: "SELECT AlbumId FROM Albums WHERE SEARCH(AlbumTitle_Tokens, @p);" }
+      - { id: param_in_limit, sql: "SELECT c FROM t LIMIT @n;" }
+    examples:
+      - "SELECT * FROM Roster WHERE LastName = @myparam;"

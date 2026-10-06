@@ -1,0 +1,57 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: select
+    name: SELECT
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-select/
+    tier: high
+    probes:
+      - { id: basic, sql: "SELECT c FROM t;" }
+      - { id: star, sql: "SELECT * FROM t;" }
+      - { id: no_from, sql: "SELECT 1+1;", note: "FROM is optional as of Hive 0.13.0" }
+      - { id: select_all, sql: "SELECT ALL c1, c2 FROM t;" }
+      - { id: distinct, sql: "SELECT DISTINCT c1, c2 FROM t;" }
+      - { id: distinct_star, sql: "SELECT DISTINCT * FROM t;", note: "Supported starting in Hive 1.1.0" }
+      - { id: alias, sql: "SELECT c1 AS a, c2 b FROM t x;" }
+      - { id: db_qualified_table, sql: "SELECT c FROM db_name.t;" }
+      - { id: where, sql: "SELECT * FROM t WHERE amount > 10 AND region = 'US';" }
+      - { id: where_subquery, sql: "SELECT * FROM t WHERE c IN (SELECT c FROM s);" }
+      - { id: where_exists, sql: "SELECT * FROM t WHERE EXISTS (SELECT 1 FROM s WHERE s.c = t.c);" }
+      - { id: partition_pruning_join_on, sql: "SELECT t.* FROM t JOIN s ON (t.id = s.id AND t.ds >= '2008-03-01' AND t.ds <= '2008-03-31');" }
+      - { id: group_by, sql: "SELECT c, COUNT(*) FROM t GROUP BY c;" }
+      - { id: having, sql: "SELECT c FROM t GROUP BY c HAVING SUM(d) > 10;" }
+      - { id: order_by, sql: "SELECT c FROM t ORDER BY c;" }
+      - { id: order_by_desc, sql: "SELECT c FROM t ORDER BY c1 ASC, c2 DESC;" }
+      - { id: cluster_by, sql: "SELECT c FROM t CLUSTER BY c;" }
+      - { id: distribute_by, sql: "SELECT c FROM t DISTRIBUTE BY c;" }
+      - { id: sort_by, sql: "SELECT c FROM t SORT BY c;" }
+      - { id: distribute_by_sort_by, sql: "SELECT c1, c2 FROM t DISTRIBUTE BY c1 SORT BY c1, c2;" }
+      - { id: limit, sql: "SELECT * FROM t LIMIT 5;" }
+      - { id: order_by_limit, sql: "SELECT * FROM t ORDER BY c LIMIT 5;" }
+      - { id: limit_offset_comma, sql: "SELECT * FROM t ORDER BY c LIMIT 2,5;", note: "LIMIT [offset,] rows, offset as of Hive 2.0.0" }
+      - { id: subquery_from, sql: "SELECT c1 FROM (SELECT c1, SUM(c2) AS s FROM t GROUP BY c1) t2 WHERE t2.s > 10;" }
+      - { id: union_all, sql: "SELECT c FROM t UNION ALL SELECT c FROM s;" }
+      - { id: regex_column, sql: "SELECT `(ds|hr)?+.+` FROM sales;", note: "REGEX Column Specification; requires hive.support.quoted.identifiers=none on 0.13+" }
+      - { id: backtick_identifier, sql: "SELECT `my col` FROM t;" }
+      - { id: with_cte_prefix, sql: "WITH q AS (SELECT c FROM t) SELECT c FROM q;" }
+    examples:
+      - "SELECT * FROM t1;"
+      - "SELECT * FROM sales WHERE amount > 10 AND region = \"US\";"
+      - "SELECT * FROM customers ORDER BY create_date LIMIT 2,5;"
+
+  - id: with_cte
+    name: WITH (CTE)
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-select/
+    tier: high
+    probes:
+      - { id: single_cte, sql: "WITH q1 AS (SELECT c FROM t) SELECT c FROM q1;" }
+      - { id: multiple_ctes, sql: "WITH q1 AS (SELECT c FROM t), q2 AS (SELECT c FROM s) SELECT q1.c FROM q1 JOIN q2 ON q1.c = q2.c;" }
+      - { id: cte_referencing_earlier, sql: "WITH q1 AS (SELECT c FROM t), q2 AS (SELECT c FROM q1) SELECT c FROM q2;" }
+      - { id: cte_in_subquery, sql: "SELECT c FROM (WITH q AS (SELECT c FROM t) SELECT c FROM q) x;" }
+      - { id: cte_union, sql: "WITH q AS (SELECT c FROM t) SELECT c FROM q UNION ALL SELECT c FROM q;" }
+      - { id: cte_insert, sql: "WITH q AS (SELECT c FROM t) INSERT INTO s SELECT c FROM q;" }
+      - { id: cte_ctas, sql: "CREATE TABLE s AS WITH q AS (SELECT c FROM t) SELECT c FROM q;" }
+      - { id: cte_create_view, sql: "CREATE VIEW v AS WITH q AS (SELECT c FROM t) SELECT c FROM q;" }
