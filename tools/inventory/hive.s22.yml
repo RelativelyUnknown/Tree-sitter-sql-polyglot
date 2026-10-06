@@ -1,0 +1,49 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: create_view
+    name: CREATE VIEW
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE VIEW v AS SELECT c FROM t;"
+      - id: if_not_exists
+        sql: "CREATE VIEW IF NOT EXISTS v AS SELECT c FROM t;"
+      - id: qualified_name
+        sql: "CREATE VIEW db.v AS SELECT c FROM t;"
+      - id: column_list
+        sql: "CREATE VIEW v (a, b) AS SELECT c, d FROM t;"
+      - id: column_comments
+        sql: "CREATE VIEW v (a COMMENT 'first', b COMMENT 'second') AS SELECT c, d FROM t;"
+      - id: view_comment
+        sql: "CREATE VIEW v COMMENT 'a view' AS SELECT c FROM t;"
+      - id: tblproperties
+        sql: "CREATE VIEW v TBLPROPERTIES ('k' = 'v', 'k2' = 'v2') AS SELECT c FROM t;"
+      - id: all_clauses
+        sql: "CREATE VIEW IF NOT EXISTS db.v (a COMMENT 'first') COMMENT 'a view' TBLPROPERTIES ('k' = 'v') AS SELECT c FROM t;"
+      - id: order_by_limit
+        sql: "CREATE VIEW v AS SELECT c FROM t ORDER BY c LIMIT 5;"
+      - id: with_cte
+        sql: "CREATE VIEW v AS WITH q AS (SELECT c FROM t) SELECT c FROM q;"
+    examples:
+      - "CREATE VIEW onion_referrers(url COMMENT 'URL of Referring page') COMMENT 'Referrers to The Onion website' AS SELECT DISTINCT referrer_url FROM page_view WHERE page_url='http://www.theonion.com';"
+
+  - id: drop_view
+    name: DROP VIEW
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: basic
+        sql: "DROP VIEW v;"
+      - id: if_exists
+        sql: "DROP VIEW IF EXISTS v;"
+      - id: qualified_name
+        sql: "DROP VIEW db.v;"
+      - id: if_exists_qualified
+        sql: "DROP VIEW IF EXISTS db.v;"
+    examples:
+      - "DROP VIEW onion_referrers;"
