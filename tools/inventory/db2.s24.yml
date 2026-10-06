@@ -1,0 +1,183 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "12.1"
+source: https://www.ibm.com/docs/en/db2/12.1.x?topic=reference-statements
+
+statements:
+  - id: savepoint
+    name: SAVEPOINT
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-savepoint
+    tier: high
+    probes:
+      - id: basic
+        sql: "SAVEPOINT sp1;"
+      - id: unique
+        sql: "SAVEPOINT sp1 UNIQUE;"
+      - id: on_rollback_retain_cursors
+        sql: "SAVEPOINT sp1 ON ROLLBACK RETAIN CURSORS;"
+      - id: on_rollback_retain_locks
+        sql: "SAVEPOINT sp1 ON ROLLBACK RETAIN LOCKS;"
+      - id: unique_retain_cursors_locks
+        sql: "SAVEPOINT sp1 UNIQUE ON ROLLBACK RETAIN CURSORS ON ROLLBACK RETAIN LOCKS;"
+    examples:
+      - "SAVEPOINT SAVEPOINT1 ON ROLLBACK RETAIN CURSORS;"
+      - "ROLLBACK TO SAVEPOINT SAVEPOINT3;"
+      - "ROLLBACK TO SAVEPOINT SAVEPOINT1;"
+
+  - id: select
+    name: SELECT
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-select
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT c FROM t;"
+      - id: star
+        sql: "SELECT * FROM t;"
+      - id: qualified_star
+        sql: "SELECT t.* FROM t;"
+      - id: all
+        sql: "SELECT ALL c FROM t;"
+      - id: distinct
+        sql: "SELECT DISTINCT c FROM t;"
+      - id: column_alias_as
+        sql: "SELECT c AS x FROM t;"
+      - id: column_alias_no_as
+        sql: "SELECT c x FROM t;"
+      - id: expression_item
+        sql: "SELECT c + 1 AS x, 'a' FROM t;"
+      - id: multiple_tables
+        sql: "SELECT a.c, b.c FROM a, b;"
+      - id: table_correlation
+        sql: "SELECT x.c FROM t AS x;"
+      - id: inner_join
+        sql: "SELECT a.c FROM a INNER JOIN b ON a.id = b.id;"
+      - id: left_outer_join
+        sql: "SELECT a.c FROM a LEFT OUTER JOIN b ON a.id = b.id;"
+      - id: right_join
+        sql: "SELECT a.c FROM a RIGHT JOIN b ON a.id = b.id;"
+      - id: full_outer_join
+        sql: "SELECT a.c FROM a FULL OUTER JOIN b ON a.id = b.id;"
+      - id: cross_join
+        sql: "SELECT a.c FROM a CROSS JOIN b;"
+      - id: nested_table_expression
+        sql: "SELECT x.c FROM (SELECT c FROM t) AS x;"
+      - id: table_function
+        sql: "SELECT x.c FROM TABLE(f(1)) AS x;"
+      - id: data_change_final_table
+        sql: "SELECT c FROM FINAL TABLE (INSERT INTO t (c) VALUES (1));"
+      - id: data_change_new_table
+        sql: "SELECT c FROM NEW TABLE (UPDATE t SET c = 1 WHERE id = 2);"
+      - id: data_change_old_table
+        sql: "SELECT c FROM OLD TABLE (DELETE FROM t WHERE id = 2);"
+      - id: system_time_as_of
+        sql: "SELECT c FROM t FOR SYSTEM_TIME AS OF '2020-01-01-00.00.00';"
+      - id: system_time_from_to
+        sql: "SELECT c FROM t FOR SYSTEM_TIME FROM '2020-01-01-00.00.00' TO '2021-01-01-00.00.00';"
+      - id: system_time_between
+        sql: "SELECT c FROM t FOR SYSTEM_TIME BETWEEN '2020-01-01-00.00.00' AND '2021-01-01-00.00.00';"
+      - id: business_time_as_of
+        sql: "SELECT c FROM t FOR BUSINESS_TIME AS OF '2020-01-01';"
+      - id: where
+        sql: "SELECT c FROM t WHERE c > 1;"
+      - id: group_by
+        sql: "SELECT c, COUNT(*) FROM t GROUP BY c;"
+      - id: group_by_grouping_sets
+        sql: "SELECT a, b, COUNT(*) FROM t GROUP BY GROUPING SETS (a, (a, b), ());"
+      - id: group_by_rollup
+        sql: "SELECT a, b, COUNT(*) FROM t GROUP BY ROLLUP (a, b);"
+      - id: group_by_cube
+        sql: "SELECT a, b, COUNT(*) FROM t GROUP BY CUBE (a, b);"
+      - id: having
+        sql: "SELECT c, COUNT(*) FROM t GROUP BY c HAVING COUNT(*) > 1;"
+      - id: order_by_column
+        sql: "SELECT c FROM t ORDER BY c;"
+      - id: order_by_asc_desc
+        sql: "SELECT a, b FROM t ORDER BY a ASC, b DESC;"
+      - id: order_by_position
+        sql: "SELECT a, b FROM t ORDER BY 2;"
+      - id: order_by_nulls
+        sql: "SELECT c FROM t ORDER BY c ASC NULLS LAST, c DESC NULLS FIRST;"
+      - id: order_by_order_of
+        sql: "SELECT c FROM (SELECT c FROM t ORDER BY c) AS x ORDER BY ORDER OF x;"
+      - id: order_by_input_sequence
+        sql: "SELECT c FROM FINAL TABLE (INSERT INTO t (c) VALUES (1), (2)) ORDER BY INPUT SEQUENCE;"
+      - id: offset
+        sql: "SELECT c FROM t ORDER BY c OFFSET 5 ROWS;"
+      - id: fetch_first
+        sql: "SELECT c FROM t FETCH FIRST 10 ROWS ONLY;"
+      - id: fetch_first_one
+        sql: "SELECT c FROM t FETCH FIRST ROW ONLY;"
+      - id: fetch_next
+        sql: "SELECT c FROM t FETCH NEXT 10 ROWS ONLY;"
+      - id: offset_fetch
+        sql: "SELECT c FROM t ORDER BY c OFFSET 5 ROWS FETCH NEXT 10 ROWS ONLY;"
+      - id: fetch_approx
+        sql: "SELECT c FROM t ORDER BY c FETCH APPROX FIRST 10 ROWS ONLY;"
+      - id: fetch_exact
+        sql: "SELECT c FROM t ORDER BY c FETCH EXACT FIRST 10 ROWS ONLY;"
+      - id: union
+        sql: "SELECT c FROM a UNION SELECT c FROM b;"
+      - id: union_all
+        sql: "SELECT c FROM a UNION ALL SELECT c FROM b;"
+      - id: except
+        sql: "SELECT c FROM a EXCEPT SELECT c FROM b;"
+      - id: except_all
+        sql: "SELECT c FROM a EXCEPT ALL SELECT c FROM b;"
+      - id: minus
+        sql: "SELECT c FROM a MINUS SELECT c FROM b;"
+      - id: intersect
+        sql: "SELECT c FROM a INTERSECT SELECT c FROM b;"
+      - id: intersect_all
+        sql: "SELECT c FROM a INTERSECT ALL SELECT c FROM b;"
+      - id: parenthesized_fullselect
+        sql: "(SELECT c FROM a ORDER BY c) UNION (SELECT c FROM b ORDER BY c);"
+      - id: values_clause
+        sql: "VALUES (1, 2), (3, 4);"
+      - id: with_cte
+        sql: "WITH x AS (SELECT c FROM t) SELECT c FROM x;"
+      - id: with_cte_columns
+        sql: "WITH x (a) AS (SELECT c FROM t) SELECT a FROM x;"
+      - id: with_multiple_ctes
+        sql: "WITH x AS (SELECT c FROM t), y AS (SELECT c FROM x) SELECT c FROM y;"
+      - id: with_recursive_cte
+        sql: "WITH r (n) AS (VALUES 1 UNION ALL SELECT n + 1 FROM r WHERE n < 5) SELECT n FROM r;"
+      - id: for_read_only
+        sql: "SELECT c FROM t FOR READ ONLY;"
+      - id: for_fetch_only
+        sql: "SELECT c FROM t FOR FETCH ONLY;"
+      - id: for_update
+        sql: "SELECT c FROM t FOR UPDATE;"
+      - id: for_update_of
+        sql: "SELECT c, d FROM t FOR UPDATE OF c, d;"
+      - id: optimize_for
+        sql: "SELECT c FROM t OPTIMIZE FOR 10 ROWS;"
+      - id: optimize_for_all
+        sql: "SELECT c FROM t OPTIMIZE FOR ALL ROWS;"
+      - id: with_ur
+        sql: "SELECT c FROM t WITH UR;"
+      - id: with_cs
+        sql: "SELECT c FROM t WITH CS;"
+      - id: with_rs
+        sql: "SELECT c FROM t WITH RS;"
+      - id: with_rr
+        sql: "SELECT c FROM t WITH RR;"
+      - id: with_rs_lock_request
+        sql: "SELECT c FROM t WITH RS USE AND KEEP EXCLUSIVE LOCKS;"
+      - id: with_rr_lock_request_share
+        sql: "SELECT c FROM t WITH RR USE AND KEEP SHARE LOCKS;"
+      - id: with_rr_lock_request_update
+        sql: "SELECT c FROM t WITH RR USE AND KEEP UPDATE LOCKS;"
+      - id: concurrent_access_wait_for_outcome
+        sql: "SELECT c FROM t WAIT FOR OUTCOME;"
+      - id: concurrent_access_skip_locked
+        sql: "SELECT c FROM t SKIP LOCKED DATA;"
+      - id: concurrent_access_use_currently_committed
+        sql: "SELECT c FROM t USE CURRENTLY COMMITTED;"
+      - id: concurrent_access_with_isolation
+        sql: "SELECT c FROM t WITH CS SKIP LOCKED DATA;"
+      - id: window_function
+        sql: "SELECT ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) FROM t;"
+      - id: subquery_in_where
+        sql: "SELECT c FROM t WHERE c IN (SELECT c FROM u);"
+    examples:
+      - "(SELECT * FROM T1 ORDER BY C1) UNION (SELECT * FROM T2 ORDER BY C1);"
