@@ -1,0 +1,238 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements: []
+
+expressions:
+  - id: c_aggregate_basic
+    name: Built-in aggregate functions
+    doc: https://cwiki.apache.org/confluence/display/Hive/LanguageManual+UDF
+    tier: high
+    probes:
+      - { id: count_star, sql: "SELECT count(*) FROM t;" }
+      - { id: count_col, sql: "SELECT count(c) FROM t;" }
+      - { id: count_multi_distinct, sql: "SELECT count(DISTINCT c, d) FROM t;" }
+      - { id: sum_avg_min_max, sql: "SELECT sum(c), avg(c), min(c), max(c) FROM t;" }
+      - { id: stats_family, sql: "SELECT variance(c), var_samp(c), stddev_pop(c), stddev_samp(c), covar_pop(c, d), corr(c, d) FROM t;" }
+      - { id: collect_set_list, sql: "SELECT collect_set(c), collect_list(c) FROM t;" }
+      - { id: percentile_exact, sql: "SELECT percentile(c, 0.5), percentile(c, array(0.25, 0.75)) FROM t;" }
+      - { id: percentile_approx_b, sql: "SELECT percentile_approx(c, 0.5, 100) FROM t;" }
+      - { id: histogram_numeric, sql: "SELECT histogram_numeric(c, 5) FROM t;" }
+      - { id: ngrams_family, sql: "SELECT ngrams(sentences(lower(s)), 2, 100) FROM t;" }
+      - { id: context_ngrams, sql: "SELECT context_ngrams(sentences(lower(s)), array('i', 'love', null), 100) FROM t;" }
+      - { id: group_by_aggregate, sql: "SELECT a, count(DISTINCT b), sum(c) FROM t GROUP BY a;" }
+
+  - id: c_aggregate_distinct
+    name: Aggregate DISTINCT
+    doc: https://cwiki.apache.org/confluence/display/Hive/LanguageManual+UDF
+    tier: high
+    probes:
+      - { id: count_distinct, sql: "SELECT count(DISTINCT c) FROM t;" }
+      - { id: sum_distinct, sql: "SELECT sum(DISTINCT c) FROM t;" }
+      - { id: avg_distinct, sql: "SELECT avg(DISTINCT c) FROM t;" }
+
+  - id: c_window_over
+    name: Window functions with OVER
+    doc: https://cwiki.apache.org/confluence/display/Hive/LanguageManual+WindowingAndAnalytics
+    tier: high
+    probes:
+      - { id: over_empty, sql: "SELECT sum(c) OVER () FROM t;" }
+      - { id: over_partition, sql: "SELECT sum(c) OVER (PARTITION BY a) FROM t;" }
+      - { id: over_order, sql: "SELECT sum(c) OVER (ORDER BY d) FROM t;" }
+      - { id: over_partition_order, sql: "SELECT sum(c) OVER (PARTITION BY a ORDER BY d DESC) FROM t;" }
+      - { id: over_distribute_sort, sql: "SELECT sum(c) OVER (DISTRIBUTE BY a SORT BY d) FROM t;" }
+      - { id: over_cluster_by, sql: "SELECT sum(c) OVER (CLUSTER BY a) FROM t;" }
+      - { id: over_nulls_ordering, sql: "SELECT rank() OVER (ORDER BY d DESC NULLS LAST) FROM t;" }
+      - { id: over_count_distinct, sql: "SELECT count(DISTINCT a) OVER (PARTITION BY c) FROM t;" }
+      - { id: over_count_distinct_frame, sql: "SELECT count(DISTINCT a) OVER (PARTITION BY c ORDER BY d ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;" }
+      - { id: over_aggregate_inside, sql: "SELECT rank() OVER (ORDER BY sum(b)) FROM t GROUP BY a;" }
+
+  - id: c_window_frames
+    name: Window frame specifications
+    doc: https://cwiki.apache.org/confluence/display/Hive/LanguageManual+WindowingAndAnalytics
+    tier: high
+    probes:
+      - { id: rows_unbounded_preceding_current, sql: "SELECT sum(c) OVER (PARTITION BY a ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: rows_n_preceding_following, sql: "SELECT sum(c) OVER (ORDER BY d ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING) FROM t;" }
+      - { id: rows_unbounded_following, sql: "SELECT sum(c) OVER (ORDER BY d ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: rows_n_following_following, sql: "SELECT sum(c) OVER (ORDER BY d ROWS BETWEEN 1 FOLLOWING AND 3 FOLLOWING) FROM t;" }
+      - { id: rows_current_current, sql: "SELECT sum(c) OVER (ORDER BY d ROWS BETWEEN CURRENT ROW AND CURRENT ROW) FROM t;" }
+      - { id: range_unbounded_current, sql: "SELECT sum(c) OVER (ORDER BY d RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: range_n_preceding_current, sql: "SELECT sum(c) OVER (ORDER BY d RANGE BETWEEN 5 PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: range_full, sql: "SELECT sum(c) OVER (ORDER BY d RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+
+  - id: c_window_named
+    name: Named windows (WINDOW clause)
+    doc: https://cwiki.apache.org/confluence/display/Hive/LanguageManual+WindowingAndAnalytics
+    tier: high
+    probes:
+      - { id: over_named, sql: "SELECT sum(c) OVER w FROM t WINDOW w AS (PARTITION BY a ORDER BY d);" }
+      - { id: over_named_two, sql: "SELECT sum(c) OVER w1, avg(c) OVER w2 FROM t WINDOW w1 AS (PARTITION BY a), w2 AS (PARTITION BY b ORDER BY d);" }
+      - { id: window_with_frame, sql: "SELECT sum(c) OVER w FROM t WINDOW w AS (PARTITION BY a ORDER BY d ROWS BETWEEN 1 PRECEDING AND CURRENT ROW);" }
+      - { id: window_refine, sql: "SELECT sum(c) OVER (w ORDER BY d) FROM t WINDOW w AS (PARTITION BY a);" }
+
+  - id: c_window_functions
+    name: Windowing and analytic functions
+    doc: https://cwiki.apache.org/confluence/display/Hive/LanguageManual+WindowingAndAnalytics
+    tier: high
+    probes:
+      - { id: lead_lag, sql: "SELECT lead(c) OVER (ORDER BY d), lag(c, 2) OVER (ORDER BY d), lag(c, 1, 0) OVER (PARTITION BY a ORDER BY d) FROM t;" }
+      - { id: first_last_value, sql: "SELECT first_value(c) OVER (PARTITION BY a ORDER BY d), last_value(c, true) OVER (PARTITION BY a ORDER BY d) FROM t;" }
+      - { id: ranking, sql: "SELECT rank() OVER (ORDER BY c), dense_rank() OVER (ORDER BY c), row_number() OVER (ORDER BY c) FROM t;" }
+      - { id: ntile, sql: "SELECT ntile(4) OVER (ORDER BY c) FROM t;" }
+      - { id: percent_cume, sql: "SELECT percent_rank() OVER (ORDER BY c), cume_dist() OVER (ORDER BY c) FROM t;" }
+
+  - id: c_complex_constructors
+    name: Complex type constructors
+    doc: https://cwiki.apache.org/confluence/display/Hive/LanguageManual+UDF
+    tier: high
+    probes:
+      - { id: array_ctor, sql: "SELECT array(1, 2, 3) FROM t;" }
+      - { id: array_empty, sql: "SELECT array() FROM t;" }
+      - { id: map_ctor, sql: "SELECT map('k1', 1, 'k2', 2) FROM t;" }
+      - { id: struct_ctor, sql: "SELECT struct(1, 'a', 2.5) FROM t;" }
+      - { id: named_struct_ctor, sql: "SELECT named_struct('x', 1, 'y', 'b') FROM t;" }
+      - { id: create_union, sql: "SELECT create_union(0, 1, 'a') FROM t;" }
+      - { id: nested_ctor, sql: "SELECT map('a', array(1, 2), 'b', array(3)) FROM t;" }
+      - { id: array_of_structs, sql: "SELECT array(named_struct('a', 1), named_struct('a', 2)) FROM t;" }
+
+  - id: c_complex_access
+    name: Complex type element access
+    doc: https://cwiki.apache.org/confluence/display/Hive/LanguageManual+UDF
+    tier: high
+    probes:
+      - { id: array_index, sql: "SELECT a[0] FROM t;" }
+      - { id: map_key, sql: "SELECT m['key'] FROM t;" }
+      - { id: struct_field, sql: "SELECT s.x FROM t;" }
+      - { id: nested_access, sql: "SELECT t.s.items[1].name, m['k'][0] FROM t;" }
+      - { id: index_expression, sql: "SELECT a[size(a) - 1] FROM t;" }
+      - { id: constructor_index, sql: "SELECT array(1, 2, 3)[1] FROM t;" }
+      - { id: in_where, sql: "SELECT c FROM t WHERE m['k'] = 'v' AND a[0] > 1;" }
+
+  - id: c_collection_functions
+    name: Collection functions
+    doc: https://cwiki.apache.org/confluence/display/Hive/LanguageManual+UDF
+    tier: high
+    probes:
+      - { id: size_fn, sql: "SELECT size(a), size(m) FROM t;" }
+      - { id: map_keys_values, sql: "SELECT map_keys(m), map_values(m) FROM t;" }
+      - { id: array_contains, sql: "SELECT array_contains(a, 'x') FROM t;" }
+      - { id: sort_array, sql: "SELECT sort_array(a) FROM t;" }
+      - { id: map_from_entries, sql: "SELECT map_from_entries(array(struct(1, 'a'), struct(2, 'b'))) FROM t;" }
+      - { id: array_funcs, sql: "SELECT array_distinct(a), array_max(a), array_min(a), array_join(a, ',') FROM t;" }
+
+  - id: c_table_generating_functions
+    name: Table-generating functions (UDTF)
+    doc: https://cwiki.apache.org/confluence/display/Hive/LanguageManual+UDF
+    tier: high
+    probes:
+      - { id: explode_array, sql: "SELECT explode(array('A', 'B', 'C'));" }
+      - { id: explode_alias, sql: "SELECT explode(array('A', 'B', 'C')) AS col;" }
+      - { id: explode_map_alias, sql: "SELECT explode(m) AS (k, v) FROM t;" }
+      - { id: posexplode, sql: "SELECT posexplode(a) AS (pos, val) FROM t;" }
+      - { id: inline_fn, sql: "SELECT inline(array(struct('A', 10, date '2015-01-01'), struct('B', 20, date '2016-02-02'))) AS (col1, col2, col3);" }
+      - { id: stack_fn, sql: "SELECT stack(2, 'A', 10, date '2015-01-01', 'B', 20, date '2016-01-01');" }
+      - { id: json_tuple_fn, sql: "SELECT json_tuple(j, 'a', 'b') AS (x, y) FROM t;" }
+      - { id: parse_url_tuple_fn, sql: "SELECT parse_url_tuple(u, 'HOST', 'PATH') AS (h, p) FROM t;" }
+      - { id: lateral_view_explode, sql: "SELECT c, v FROM t LATERAL VIEW explode(a) tf AS v;" }
+      - { id: lateral_view_outer_pos, sql: "SELECT c, p, v FROM t LATERAL VIEW OUTER posexplode(a) tf AS p, v;" }
+
+  - id: c_json_functions
+    name: JSON functions
+    doc: https://cwiki.apache.org/confluence/display/Hive/LanguageManual+UDF
+    tier: medium
+    probes:
+      - { id: get_json_object, sql: "SELECT get_json_object(j, '$.owner') FROM t;" }
+      - { id: get_json_object_path, sql: "SELECT get_json_object(j, '$.store.fruit[0].weight') FROM t;" }
+      - { id: json_tuple_lateral, sql: "SELECT a.c, b.x, b.y FROM t a LATERAL VIEW json_tuple(a.j, 'x', 'y') b AS x, y;" }
+
+  - id: c_math_functions
+    name: Mathematical functions
+    doc: https://cwiki.apache.org/confluence/display/Hive/LanguageManual+UDF
+    tier: medium
+    probes:
+      - { id: rounding, sql: "SELECT round(c), round(c, 2), bround(c), floor(c), ceil(c), ceiling(c) FROM t;" }
+      - { id: rand_fn, sql: "SELECT rand(), rand(42) FROM t;" }
+      - { id: exp_log, sql: "SELECT exp(c), ln(c), log10(c), log2(c), log(2, c), pow(c, 2), power(c, 3), sqrt(c), cbrt(c) FROM t;" }
+      - { id: base_conv, sql: "SELECT conv(c, 10, 16), bin(c), hex(c), unhex(s) FROM t;" }
+      - { id: trig, sql: "SELECT sin(c), cos(c), tan(c), asin(c), acos(c), atan(c), degrees(c), radians(c) FROM t;" }
+      - { id: sign_abs_misc, sql: "SELECT abs(c), sign(c), pmod(c, 3), factorial(c), negative(c), positive(c), e(), pi() FROM t;" }
+      - { id: greatest_least, sql: "SELECT greatest(a, b, c), least(a, b, c) FROM t;" }
+      - { id: width_bucket, sql: "SELECT width_bucket(c, 0, 100, 10) FROM t;" }
+      - { id: shift_fns, sql: "SELECT shiftleft(c, 2), shiftright(c, 2), shiftrightunsigned(c, 2) FROM t;" }
+
+  - id: c_string_functions
+    name: String functions
+    doc: https://cwiki.apache.org/confluence/display/Hive/LanguageManual+UDF
+    tier: medium
+    probes:
+      - { id: concat_fns, sql: "SELECT concat(a, b), concat_ws(',', a, b), concat_ws(',', array('x', 'y')) FROM t;" }
+      - { id: substr_fns, sql: "SELECT substr(s, 2), substr(s, 2, 3), substring(s, -3), substring_index(s, '.', 2) FROM t;" }
+      - { id: substr_from_for, sql: "SELECT substring(s FROM 2 FOR 3) FROM t;" }
+      - { id: case_trim, sql: "SELECT upper(s), lower(s), ucase(s), lcase(s), initcap(s), trim(s), ltrim(s), rtrim(s) FROM t;" }
+      - { id: pad_repeat, sql: "SELECT lpad(s, 10, '0'), rpad(s, 10, '*'), repeat(s, 3), space(4), reverse(s) FROM t;" }
+      - { id: length_instr, sql: "SELECT length(s), char_length(s), character_length(s), octet_length(s), instr(s, 'a'), locate('a', s, 2) FROM t;" }
+      - { id: regexp_fns, sql: "SELECT regexp_replace(s, 'a+', 'b'), regexp_extract(s, '(\\\\d+)', 1), regexp_count(s, 'a'), regexp_extract_all(s, 'a', 0) FROM t;" }
+      - { id: split_fns, sql: "SELECT split(s, ','), str_to_map(s, ',', ':'), sentences(s), ngrams(sentences(s), 2, 5) FROM t;" }
+      - { id: format_fns, sql: "SELECT format_number(c, 2), printf('%d-%s', c, s), levenshtein(a, b), soundex(s), translate(s, 'ab', 'xy'), replace(s, 'a', 'b') FROM t;" }
+      - { id: encode_fns, sql: "SELECT encode(s, 'UTF-8'), decode(b, 'UTF-8'), base64(b), unbase64(s), ascii(s), chr(65) FROM t;" }
+      - { id: url_fns, sql: "SELECT parse_url(u, 'HOST'), parse_url(u, 'QUERY', 'k'), url_encode(s), url_decode(s) FROM t;" }
+      - { id: hash_fns, sql: "SELECT md5(s), sha(s), sha1(s), sha2(s, 256), crc32(s), hash(a, b), find_in_set(s, 'a,b,c') FROM t;" }
+      - { id: trim_extra, sql: "SELECT trim(BOTH 'x' FROM s), trim(LEADING 'x' FROM s), trim(TRAILING 'x' FROM s) FROM t;" }
+
+  - id: c_date_functions
+    name: Date and timestamp functions
+    doc: https://cwiki.apache.org/confluence/display/Hive/LanguageManual+UDF
+    tier: medium
+    probes:
+      - { id: current_fns, sql: "SELECT current_date, current_timestamp, current_date(), current_timestamp(), unix_timestamp() FROM t;" }
+      - { id: unix_fns, sql: "SELECT from_unixtime(c), from_unixtime(c, 'yyyy-MM-dd'), unix_timestamp(s), unix_timestamp(s, 'yyyyMMdd') FROM t;" }
+      - { id: date_parts, sql: "SELECT year(d), quarter(d), month(d), day(d), dayofmonth(d), hour(ts), minute(ts), second(ts), weekofyear(d), dayofweek(d) FROM t;" }
+      - { id: date_arith, sql: "SELECT date_add(d, 7), date_sub(d, 7), datediff(d1, d2), add_months(d, 1), months_between(d1, d2), last_day(d), next_day(d, 'TU') FROM t;" }
+      - { id: date_format_trunc, sql: "SELECT date_format(ts, 'yyyy-MM'), trunc(d, 'MM'), to_date(ts), floor(ts TO MONTH) FROM t;" }
+      - { id: extract_fn, sql: "SELECT extract(month FROM d), extract(hour FROM ts), extract(dayofweek FROM d) FROM t;" }
+      - { id: tz_fns, sql: "SELECT from_utc_timestamp(ts, 'America/Los_Angeles'), to_utc_timestamp(ts, 'PST') FROM t;" }
+      - { id: interval_arith, sql: "SELECT ts + interval '1' day, d - interval '2' month, ts + interval '1 02:03:04' day to second FROM t;" }
+
+  - id: c_conditional_functions
+    name: Conditional functions
+    doc: https://cwiki.apache.org/confluence/display/Hive/LanguageManual+UDF
+    tier: high
+    probes:
+      - { id: if_fn, sql: "SELECT if(c > 0, 'pos', 'neg') FROM t;" }
+      - { id: nvl_coalesce, sql: "SELECT nvl(c, 0), coalesce(a, b, c) FROM t;" }
+      - { id: nullif_isnull, sql: "SELECT nullif(a, b), isnull(c), isnotnull(c), assert_true(c > 0) FROM t;" }
+      - { id: case_when, sql: "SELECT CASE WHEN c < 0 THEN 'neg' WHEN c = 0 THEN 'zero' ELSE 'pos' END FROM t;" }
+      - { id: case_value, sql: "SELECT CASE c WHEN 1 THEN 'one' WHEN 2 THEN 'two' END FROM t;" }
+      - { id: nvl2_fn, sql: "SELECT nvl2(c, 'a', 'b') FROM t;" }
+
+  - id: c_type_conversion
+    name: Type conversion functions and CAST
+    doc: https://cwiki.apache.org/confluence/display/Hive/LanguageManual+UDF
+    tier: high
+    probes:
+      - { id: cast_basic, sql: "SELECT cast(c AS int), cast(c AS string), cast(c AS decimal(10, 2)), cast(s AS date) FROM t;" }
+      - { id: cast_complex, sql: "SELECT cast(c AS array<int>), cast(c AS map<string, int>), cast(c AS struct<a:int,b:string>) FROM t;" }
+      - { id: cast_format, sql: "SELECT cast(ts AS string FORMAT 'yyyy-MM-dd'), cast(s AS date FORMAT 'yyyy-MM-dd') FROM t;" }
+      - { id: binary_fn, sql: "SELECT binary(s) FROM t;" }
+
+  - id: c_masking_functions
+    name: Data masking functions
+    doc: https://cwiki.apache.org/confluence/display/Hive/LanguageManual+UDF
+    tier: low
+    probes:
+      - { id: mask_basic, sql: "SELECT mask(s), mask('abcd-EFGH-8765-4321', 'U', 'l', '#') FROM t;" }
+      - { id: mask_variants, sql: "SELECT mask_first_n(s, 4), mask_last_n(s, 4), mask_show_first_n(s, 4), mask_show_last_n(s, 4), mask_hash(s) FROM t;" }
+
+  - id: c_misc_functions
+    name: Misc. functions
+    doc: https://cwiki.apache.org/confluence/display/Hive/LanguageManual+UDF
+    tier: low
+    probes:
+      - { id: reflect_fn, sql: "SELECT reflect('java.lang.Math', 'max', 2, 3), java_method('java.lang.Math', 'min', 2, 3) FROM t;" }
+      - { id: session_fns, sql: "SELECT current_user(), logged_in_user(), current_database(), version(), surrogate_key() FROM t;" }
+      - { id: row_and_file, sql: "SELECT input_file_name(), BLOCK__OFFSET__INSIDE__FILE, INPUT__FILE__NAME FROM t;" }
+      - { id: xpath_fn, sql: "SELECT xpath(x, 'a/b/text()'), xpath_string(x, 'a/b'), xpath_int(x, 'a/b') FROM t;" }
+      - { id: grouping_fn, sql: "SELECT a, b, grouping(a), GROUPING__ID FROM t GROUP BY a, b WITH ROLLUP;" }
