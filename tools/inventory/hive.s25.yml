@@ -1,0 +1,52 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: alter_materialized_view
+    name: ALTER MATERIALIZED VIEW
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: enable_rewrite
+        sql: "ALTER MATERIALIZED VIEW mv ENABLE REWRITE;"
+      - id: disable_rewrite
+        sql: "ALTER MATERIALIZED VIEW mv DISABLE REWRITE;"
+      - id: qualified_name
+        sql: "ALTER MATERIALIZED VIEW db.mv ENABLE REWRITE;"
+      - id: rebuild
+        sql: "ALTER MATERIALIZED VIEW mv REBUILD;"
+        note: REBUILD is accepted by Hive 3.x/4.x (materialized view rebuild); the DDL page's syntax block lists only ENABLE|DISABLE REWRITE.
+
+  - id: create_index
+    name: CREATE INDEX (legacy, removed in 3.0)
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE INDEX idx ON TABLE t (c) AS 'COMPACT';"
+      - id: multi_column
+        sql: "CREATE INDEX idx ON TABLE t (c1, c2) AS 'COMPACT';"
+      - id: deferred_rebuild
+        sql: "CREATE INDEX idx ON TABLE t (c) AS 'BITMAP' WITH DEFERRED REBUILD;"
+      - id: idxproperties
+        sql: "CREATE INDEX idx ON TABLE t (c) AS 'COMPACT' IDXPROPERTIES ('prop1'='value1', 'prop2'='value2');"
+      - id: in_table
+        sql: "CREATE INDEX idx ON TABLE t (c) AS 'COMPACT' IN TABLE idx_table;"
+      - id: row_format_stored_as
+        sql: "CREATE INDEX idx ON TABLE t (c) AS 'COMPACT' ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE;"
+      - id: stored_as
+        sql: "CREATE INDEX idx ON TABLE t (c) AS 'COMPACT' STORED AS RCFILE;"
+      - id: stored_by
+        sql: "CREATE INDEX idx ON TABLE t (c) AS 'COMPACT' STORED BY 'org.example.Handler';"
+      - id: location
+        sql: "CREATE INDEX idx ON TABLE t (c) AS 'COMPACT' LOCATION '/user/hive/idx';"
+      - id: tblproperties
+        sql: "CREATE INDEX idx ON TABLE t (c) AS 'COMPACT' TBLPROPERTIES ('prop3'='value3', 'prop4'='value4');"
+      - id: comment
+        sql: "CREATE INDEX idx ON TABLE t (c) AS 'COMPACT' COMMENT 'index comment';"
+    examples:
+      - "CREATE INDEX table01_index ON TABLE table01 (column2) AS 'COMPACT';"
+      - "CREATE INDEX table02_index ON TABLE table02 (column3) AS 'COMPACT' WITH DEFERRED REBUILD;"
+      - "CREATE INDEX table04_index ON TABLE table04 (column5) AS 'COMPACT' WITH DEFERRED REBUILD IN TABLE table04_index_table;"

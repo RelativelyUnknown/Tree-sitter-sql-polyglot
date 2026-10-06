@@ -1,1 +1,2 @@
 - spanner.expr_c: c_window_syntax recorded not-applicable ('Spanner has no window functions') — doubtful, Spanner GoogleSQL has analytic functions; recheck in Phase 3.
+- hive.s26: both statements recorded not-applicable with 0 probes; spot-check against Hive docs in Phase 3.
