@@ -1,0 +1,267 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "12.1"
+source: https://www.ibm.com/docs/en/db2/12.1.x?topic=reference-statements
+
+statements: []
+
+expressions:
+  - id: b_arithmetic_operators
+    name: Arithmetic operators
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=elements-expressions
+    tier: high
+    probes:
+      - { id: add_sub, sql: "SELECT a + b, a - b FROM t;" }
+      - { id: mul_div, sql: "SELECT a * b, a / b FROM t;" }
+      - { id: modulo, sql: "SELECT a % b FROM t;" }
+      - { id: exponent, sql: "SELECT a ** 2 FROM t;" }
+      - { id: unary_sign, sql: "SELECT -a, +a FROM t;" }
+      - { id: parenthesized, sql: "SELECT (a + b) * c FROM t;" }
+  - id: b_bitwise_operators
+    name: Bitwise operators
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=elements-expressions
+    tier: medium
+    probes:
+      - { id: and_or, sql: "SELECT a & b, a | b FROM t;" }
+      - { id: xor, sql: "SELECT a ^ b FROM t;" }
+      - { id: not, sql: "SELECT ~a FROM t;" }
+  - id: b_concat_operator
+    name: String concatenation (CONCAT and ||)
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=elements-expressions
+    tier: high
+    probes:
+      - { id: pipes, sql: "SELECT a || b FROM t;" }
+      - { id: concat_keyword, sql: "SELECT a CONCAT b CONCAT c FROM t;" }
+  - id: b_labeled_duration
+    name: Labeled durations
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=elements-expressions
+    tier: medium
+    probes:
+      - { id: date_plus_days, sql: "SELECT d + 1 DAY FROM t;" }
+      - { id: date_minus_months, sql: "SELECT d - 3 MONTHS FROM t;" }
+      - { id: timestamp_plus_expr, sql: "SELECT ts + (a + 1) HOURS FROM t;" }
+      - { id: current_date_plus_years, sql: "SELECT CURRENT DATE + 1 YEAR FROM t;" }
+  - id: b_basic_predicate
+    name: Basic predicate
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=predicates-basic
+    tier: high
+    probes:
+      - { id: equal, sql: "SELECT c FROM t WHERE a = b;" }
+      - { id: not_equal, sql: "SELECT c FROM t WHERE a <> b;" }
+      - { id: less_greater, sql: "SELECT c FROM t WHERE a < b AND a > 1;" }
+      - { id: less_equal_greater_equal, sql: "SELECT c FROM t WHERE a <= b AND a >= 1;" }
+      - { id: caret_not_equal, sql: "SELECT c FROM t WHERE a ^= b;" }
+      - { id: bang_not_equal, sql: "SELECT c FROM t WHERE a != b;" }
+      - { id: row_value, sql: "SELECT c FROM t WHERE (a, b) = (1, 2);" }
+      - { id: scalar_subquery, sql: "SELECT c FROM t WHERE a = (SELECT MAX(x) FROM s);" }
+  - id: b_quantified_predicate
+    name: Quantified predicate
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=predicates-quantified
+    tier: high
+    probes:
+      - { id: any, sql: "SELECT c FROM t WHERE a = ANY (SELECT x FROM s);" }
+      - { id: some, sql: "SELECT c FROM t WHERE a > SOME (SELECT x FROM s);" }
+      - { id: all, sql: "SELECT c FROM t WHERE a > ALL (SELECT x FROM s);" }
+      - { id: not_equal_all, sql: "SELECT c FROM t WHERE a <> ALL (SELECT x FROM s);" }
+      - { id: row_value_any, sql: "SELECT c FROM t WHERE (a, b) = ANY (SELECT x, y FROM s);" }
+    examples:
+      - "SELECT COLA FROM TBLAB WHERE COLA = ANY(SELECT COLX FROM TBLXY );"
+      - "SELECT COLA FROM TBLAB WHERE COLA > ANY(SELECT COLX FROM TBLXY );"
+      - "SELECT COLA FROM TBLAB WHERE COLA > ALL(SELECT COLX FROM TBLXY WHERE COLX<0 );"
+  - id: b_between_predicate
+    name: BETWEEN predicate
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=predicates-between
+    tier: high
+    probes:
+      - { id: between, sql: "SELECT c FROM t WHERE a BETWEEN 1 AND 10;" }
+      - { id: not_between, sql: "SELECT c FROM t WHERE a NOT BETWEEN 1 AND 10;" }
+      - { id: between_expressions, sql: "SELECT c FROM t WHERE salary NOT BETWEEN 20000 + 5000 AND 40000;" }
+  - id: b_exists_predicate
+    name: EXISTS predicate
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=predicates-exists
+    tier: high
+    probes:
+      - { id: exists, sql: "SELECT c FROM t WHERE EXISTS (SELECT * FROM s WHERE s.a = t.a);" }
+      - { id: not_exists, sql: "SELECT c FROM t WHERE NOT EXISTS (SELECT 1 FROM s WHERE s.a = t.a);" }
+  - id: b_in_predicate
+    name: IN predicate
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=predicates-in
+    tier: high
+    probes:
+      - { id: in_list, sql: "SELECT c FROM t WHERE a IN ('D01', 'B01', 'C01');" }
+      - { id: not_in_list, sql: "SELECT c FROM t WHERE a NOT IN (1, 2, 3);" }
+      - { id: in_single_expression, sql: "SELECT c FROM t WHERE a IN b;" }
+      - { id: in_subquery, sql: "SELECT c FROM t WHERE a IN (SELECT x FROM s);" }
+      - { id: not_in_subquery, sql: "SELECT c FROM t WHERE a NOT IN (SELECT x FROM s);" }
+      - { id: row_in_subquery, sql: "SELECT c FROM t WHERE (a, b) IN (SELECT x, y FROM s);" }
+  - id: b_like_predicate
+    name: LIKE predicate
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=predicates-like
+    tier: high
+    probes:
+      - { id: like, sql: "SELECT c FROM t WHERE a LIKE 'J%';" }
+      - { id: not_like, sql: "SELECT c FROM t WHERE a NOT LIKE '%x%';" }
+      - { id: like_escape, sql: "SELECT c FROM t WHERE a LIKE 'ab\\%%' ESCAPE '\\';" }
+      - { id: like_expression_pattern, sql: "SELECT c FROM t WHERE a LIKE b || '%';" }
+    examples:
+      - "SELECT PROJNAME FROM PROJECT WHERE PROJECT.PROJNAME LIKE '%SYSTEMS%';"
+      - "SELECT FIRSTNME FROM EMPLOYEE WHERE EMPLOYEE.FIRSTNME LIKE 'J_';"
+      - "SELECT FIRSTNME FROM EMPLOYEE WHERE EMPLOYEE.FIRSTNME LIKE 'J%';"
+  - id: b_null_predicate
+    name: NULL predicate
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=predicates-null
+    tier: high
+    probes:
+      - { id: is_null, sql: "SELECT c FROM t WHERE a IS NULL;" }
+      - { id: is_not_null, sql: "SELECT c FROM t WHERE a IS NOT NULL;" }
+      - { id: isnull_synonym, sql: "SELECT c FROM t WHERE a ISNULL;" }
+      - { id: notnull_synonym, sql: "SELECT c FROM t WHERE a NOTNULL;" }
+  - id: b_distinct_predicate
+    name: DISTINCT predicate
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=predicates-distinct
+    tier: medium
+    probes:
+      - { id: is_distinct_from, sql: "SELECT c FROM t WHERE a IS DISTINCT FROM b;" }
+      - { id: is_not_distinct_from, sql: "SELECT c FROM t WHERE a IS NOT DISTINCT FROM b;" }
+    examples:
+      - "SELECT * FROM T1 WHERE C1 IS DISTINCT FROM 2;"
+  - id: b_boolean_predicate
+    name: Boolean predicate
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=predicates-boolean
+    tier: medium
+    probes:
+      - { id: is_true, sql: "SELECT c FROM t WHERE a IS TRUE;" }
+      - { id: is_not_true, sql: "SELECT c FROM t WHERE a IS NOT TRUE;" }
+      - { id: is_false, sql: "SELECT c FROM t WHERE a IS FALSE;" }
+      - { id: is_not_false, sql: "SELECT c FROM t WHERE a IS NOT FALSE;" }
+  - id: b_overlaps_predicate
+    name: OVERLAPS predicate
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=predicates-overlaps
+    tier: low
+    probes:
+      - { id: overlaps, sql: "SELECT c FROM t WHERE (s1, e1) OVERLAPS (s2, e2);" }
+  - id: b_regexp_like_predicate
+    name: REGEXP_LIKE predicate
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=predicates-regexp-like
+    tier: low
+    probes:
+      - { id: regexp_like, sql: "SELECT c FROM t WHERE REGEXP_LIKE(a, '^ab+');" }
+      - { id: regexp_like_flags, sql: "SELECT c FROM t WHERE REGEXP_LIKE(a, '^ab+', 'i');" }
+  - id: b_type_predicate
+    name: TYPE predicate
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=predicates-type
+    tier: low
+    probes:
+      - { id: is_of, sql: "SELECT c FROM t WHERE a IS OF (emp_type);" }
+      - { id: is_not_of_only, sql: "SELECT c FROM t WHERE a IS NOT OF (ONLY emp_type, mgr_type);" }
+      - { id: is_of_dynamic_type, sql: "SELECT c FROM t WHERE a IS OF DYNAMIC TYPE (emp_type);" }
+  - id: b_array_exists_predicate
+    name: ARRAY_EXISTS predicate
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=predicates-array-exists
+    tier: low
+    probes:
+      - { id: array_exists, sql: "SET v = ARRAY_EXISTS(arr, 2);", note: "Predicate; PL context." }
+  - id: b_json_exists_predicate
+    name: JSON_EXISTS predicate
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=predicates-json-exists
+    tier: low
+    probes:
+      - { id: json_exists, sql: "SELECT c FROM t WHERE JSON_EXISTS(j, '$.a');" }
+      - { id: json_exists_format_on_error, sql: "SELECT c FROM t WHERE JSON_EXISTS(j FORMAT JSON, '$.a' TRUE ON ERROR);" }
+  - id: b_xmlexists_predicate
+    name: XMLEXISTS predicate
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=predicates-xmlexists
+    tier: low
+    probes:
+      - { id: xmlexists, sql: "SELECT c FROM t WHERE XMLEXISTS('$d/a' PASSING x AS \"d\");" }
+  - id: b_validated_predicate
+    name: VALIDATED predicate
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=predicates-validated
+    tier: low
+    probes:
+      - { id: is_validated, sql: "SELECT c FROM t WHERE x IS VALIDATED;" }
+      - { id: is_not_validated_according_to, sql: "SELECT c FROM t WHERE x IS NOT VALIDATED ACCORDING TO XMLSCHEMA ID s;" }
+  - id: b_cursor_predicates
+    name: Cursor predicates
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=predicates-cursor
+    tier: low
+    probes:
+      - { id: is_found, sql: "VALUES CASE WHEN cur IS FOUND THEN 1 ELSE 0 END;" }
+      - { id: is_not_open, sql: "VALUES CASE WHEN cur IS NOT OPEN THEN 1 ELSE 0 END;" }
+  - id: b_case_expression
+    name: CASE expression
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=expressions-case-expression
+    tier: high
+    probes:
+      - { id: searched, sql: "SELECT CASE WHEN a > 1 THEN 'x' WHEN a < 0 THEN 'y' ELSE 'z' END FROM t;" }
+      - { id: searched_no_else, sql: "SELECT CASE WHEN a > 1 THEN 'x' END FROM t;" }
+      - { id: simple, sql: "SELECT CASE a WHEN 1 THEN 'x' WHEN 2 THEN 'y' ELSE 'z' END FROM t;" }
+      - { id: result_null, sql: "SELECT CASE WHEN a > 1 THEN NULL ELSE 0 END FROM t;" }
+      - { id: in_where, sql: "SELECT c FROM t WHERE CASE WHEN a > 1 THEN b ELSE 0 END = 1;" }
+  - id: b_cast_specification
+    name: CAST specification
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=expressions-cast-specification
+    tier: high
+    probes:
+      - { id: cast_integer, sql: "SELECT CAST(a AS INTEGER) FROM t;" }
+      - { id: cast_varchar, sql: "SELECT CAST(a AS VARCHAR(10)) FROM t;" }
+      - { id: cast_decimal, sql: "SELECT CAST(a AS DECIMAL(10, 2)) FROM t;" }
+      - { id: cast_null, sql: "SELECT CAST(NULL AS INTEGER) FROM t;" }
+      - { id: cast_parameter_marker, sql: "SELECT CAST(? AS VARCHAR(20)) FROM t;" }
+      - { id: cast_timestamp, sql: "SELECT CAST(a AS TIMESTAMP) FROM t;" }
+      - { id: cast_char_codeunits, sql: "SELECT CAST(a AS CHAR(5 CODEUNITS32)) FROM t;" }
+      - { id: cast_varchar_for_bit_data, sql: "SELECT CAST(a AS VARCHAR(10) FOR BIT DATA) FROM t;" }
+      - { id: cast_double_precision, sql: "SELECT CAST(a AS DOUBLE PRECISION) FROM t;" }
+      - { id: cast_interval, sql: "SELECT CAST('1' AS INTERVAL DAY) FROM t;", note: "interval-cast-specification, string-constant AS INTERVAL data-type" }
+  - id: b_substring_function
+    name: SUBSTRING function
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=functions-substring
+    tier: high
+    probes:
+      - { id: from, sql: "SELECT SUBSTRING(a FROM 2) FROM t;" }
+      - { id: from_for, sql: "SELECT SUBSTRING(a FROM 2 FOR 3) FROM t;" }
+      - { id: from_for_using, sql: "SELECT SUBSTRING(a FROM 2 FOR 3 USING CODEUNITS32) FROM t;" }
+      - { id: from_using_octets, sql: "SELECT SUBSTRING(a FROM 2 USING OCTETS) FROM t;" }
+      - { id: comma_args, sql: "SELECT SUBSTRING(a, 2, 3) FROM t;" }
+      - { id: comma_args_using, sql: "SELECT SUBSTRING(a, 2, 3, CODEUNITS16) FROM t;" }
+  - id: b_trim_function
+    name: TRIM function
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=functions-trim
+    tier: high
+    probes:
+      - { id: plain, sql: "SELECT TRIM(a) FROM t;" }
+      - { id: both_from, sql: "SELECT TRIM(BOTH FROM a) FROM t;" }
+      - { id: leading_char_from, sql: "SELECT TRIM(LEADING '0' FROM a) FROM t;" }
+      - { id: trailing_char_from, sql: "SELECT TRIM(TRAILING 'x' FROM a) FROM t;" }
+      - { id: char_from, sql: "SELECT TRIM('x' FROM a) FROM t;" }
+      - { id: b_leading_from, sql: "SELECT TRIM(L FROM a) FROM t;", note: "Doc syntax lists the abbreviations B, L, T alongside BOTH, LEADING, TRAILING." }
+  - id: b_position_function
+    name: POSITION function
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=functions-position
+    tier: high
+    probes:
+      - { id: in, sql: "SELECT POSITION('a' IN b) FROM t;" }
+      - { id: in_using, sql: "SELECT POSITION('a' IN b USING CODEUNITS32) FROM t;" }
+      - { id: comma_args, sql: "SELECT POSITION('a', b, OCTETS) FROM t;" }
+  - id: b_overlay_function
+    name: OVERLAY function
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=functions-overlay
+    tier: medium
+    probes:
+      - { id: placing_from, sql: "SELECT OVERLAY(a PLACING 'xy' FROM 2) FROM t;" }
+      - { id: placing_from_for, sql: "SELECT OVERLAY(a PLACING 'xy' FROM 2 FOR 3) FROM t;" }
+      - { id: placing_from_for_using, sql: "SELECT OVERLAY(a PLACING 'xy' FROM 2 FOR 3 USING CODEUNITS32) FROM t;" }
+      - { id: comma_args, sql: "SELECT OVERLAY(a, 'xy', 2, 3, OCTETS) FROM t;" }
+  - id: b_extract_function
+    name: EXTRACT function
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=functions-extract
+    tier: high
+    probes:
+      - { id: year, sql: "SELECT EXTRACT(YEAR FROM d) FROM t;" }
+      - { id: month_day, sql: "SELECT EXTRACT(MONTH FROM d), EXTRACT(DAY FROM d) FROM t;" }
+      - { id: epoch, sql: "SELECT EXTRACT(EPOCH FROM ts) FROM t;" }
+      - { id: quarter_week, sql: "SELECT EXTRACT(QUARTER FROM d), EXTRACT(WEEK FROM d) FROM t;" }
+      - { id: dow_doy, sql: "SELECT EXTRACT(DOW FROM d), EXTRACT(DOY FROM d) FROM t;" }
+      - { id: hour_minute_second, sql: "SELECT EXTRACT(HOUR FROM ts), EXTRACT(MINUTE FROM ts), EXTRACT(SECOND FROM ts) FROM t;" }
+      - { id: plural_unit, sql: "SELECT EXTRACT(YEARS FROM d) FROM t;" }
+      - { id: millisecond_microsecond, sql: "SELECT EXTRACT(MILLISECOND FROM ts), EXTRACT(MICROSECOND FROM ts) FROM t;" }
