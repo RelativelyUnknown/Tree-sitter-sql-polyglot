@@ -1,0 +1,136 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "12.1"
+source: https://www.ibm.com/docs/en/db2/12.1.x?topic=reference-statements
+
+statements:
+  - id: insert
+    name: INSERT
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-insert
+    tier: high
+    probes:
+      - id: values_basic
+        sql: "INSERT INTO t VALUES (1, 'a');"
+      - id: values_column_list
+        sql: "INSERT INTO t (c1, c2) VALUES (1, 'a');"
+      - id: values_multi_row
+        sql: "INSERT INTO t (c1, c2) VALUES (1, 'a'), (2, 'b');"
+      - id: values_null_default
+        sql: "INSERT INTO t (c1, c2, c3) VALUES (NULL, DEFAULT, 3);"
+      - id: values_single_no_parens
+        sql: "INSERT INTO t (c1) VALUES 1;"
+      - id: values_row_expression
+        sql: "INSERT INTO t (c1, c2) VALUES ROW(1, 2);"
+      - id: values_single_row_parens_null
+        sql: "INSERT INTO t (c1) VALUES (NULL);"
+      - id: fullselect
+        sql: "INSERT INTO t SELECT * FROM s;"
+      - id: fullselect_column_list
+        sql: "INSERT INTO t (c1, c2) SELECT a, b FROM s WHERE a > 0;"
+      - id: fullselect_parenthesized
+        sql: "INSERT INTO t (SELECT * FROM s);"
+      - id: with_cte_prefix
+        sql: "WITH x AS (SELECT a FROM s) INSERT INTO t (c1) SELECT a FROM x;"
+        note: "Syntax block: optional WITH common-table-expression before INSERT"
+      - id: with_cte_in_fullselect
+        sql: "INSERT INTO t (c1) WITH x AS (SELECT a FROM s) SELECT a FROM x;"
+        note: "Syntax block: WITH common-table-expression fullselect after the column list"
+      - id: into_view
+        sql: "INSERT INTO v (c1) VALUES (1);"
+      - id: into_fullselect_target
+        sql: "INSERT INTO (SELECT c1, c2 FROM t) VALUES (1, 2);"
+        note: "Syntax block: INTO ( fullselect ) as the object of the insert"
+      - id: include_columns
+        sql: "INSERT INTO t (c1) INCLUDE (inscol INTEGER) VALUES (1, 1), (2, 2);"
+      - id: isolation_ur
+        sql: "INSERT INTO t SELECT * FROM s WITH UR;"
+      - id: isolation_cs
+        sql: "INSERT INTO t SELECT * FROM s WITH CS;"
+      - id: isolation_rs
+        sql: "INSERT INTO t SELECT * FROM s WITH RS;"
+      - id: isolation_rr
+        sql: "INSERT INTO t SELECT * FROM s WITH RR;"
+      - id: schema_qualified
+        sql: "INSERT INTO myschema.t (c1) VALUES (1);"
+      - id: data_change_table_reference
+        sql: "SELECT c1 FROM NEW TABLE (INSERT INTO t (c1) INCLUDE (n INTEGER) VALUES (1, 1), (2, 2)) AS ins ORDER BY n;"
+    examples:
+      - "INSERT INTO DEPARTMENT VALUES ('E31', 'ARCHITECTURE', '00390', 'E01');"
+      - "INSERT INTO DEPARTMENT (DEPTNO, DEPTNAME, ADMRDEPT) VALUES ('B11', 'PURCHASING', 'B01'), ('E41', 'DATABASE ADMINISTRATION', 'E01');"
+      - "INSERT INTO MA_EMP_ACT SELECT * FROM EMP_ACT WHERE SUBSTR(PROJNO, 1, 2) = 'MA';"
+
+  - id: iterate
+    name: ITERATE
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-iterate
+    tier: high
+    probes:
+      - id: iterate_in_loop
+        sql: |-
+          CREATE PROCEDURE p()
+          LANGUAGE SQL
+          BEGIN
+            lp: LOOP
+              ITERATE lp;
+            END LOOP;
+          END;
+      - id: iterate_in_while
+        sql: |-
+          CREATE PROCEDURE p()
+          LANGUAGE SQL
+          BEGIN
+            DECLARE i INTEGER DEFAULT 0;
+            lp: WHILE i < 10 DO
+              SET i = i + 1;
+              ITERATE lp;
+            END WHILE lp;
+          END;
+      - id: iterate_in_repeat
+        sql: |-
+          CREATE PROCEDURE p()
+          LANGUAGE SQL
+          BEGIN
+            DECLARE i INTEGER DEFAULT 0;
+            lp: REPEAT
+              SET i = i + 1;
+              ITERATE lp;
+            UNTIL i >= 10 END REPEAT lp;
+          END;
+      - id: iterate_in_for
+        sql: |-
+          CREATE PROCEDURE p()
+          LANGUAGE SQL
+          BEGIN
+            lp: FOR r AS SELECT c FROM t DO
+              ITERATE lp;
+            END FOR lp;
+          END;
+    examples:
+      - |-
+        CREATE PROCEDURE ITERATOR()
+        LANGUAGE SQL
+        BEGIN
+          DECLARE v_dept CHAR(3);
+          DECLARE v_deptname VARCHAR(29);
+          DECLARE v_admdept CHAR(3);
+          DECLARE at_end INTEGER DEFAULT 0;
+          DECLARE not_found CONDITION FOR SQLSTATE '02000';
+          DECLARE c1 CURSOR FOR
+            SELECT deptno, deptname, admrdept
+            FROM department
+            ORDER BY deptno;
+          DECLARE CONTINUE HANDLER FOR not_found
+            SET at_end = 1;
+          OPEN c1;
+          ins_loop:
+          LOOP
+            FETCH c1 INTO v_dept, v_deptname, v_admdept;
+            IF at_end = 1 THEN
+              LEAVE ins_loop;
+            ELSEIF v_dept = 'D11' THEN
+              ITERATE ins_loop;
+            END IF;
+            INSERT INTO department (deptno, deptname, admrdept)
+              VALUES ('NEW', v_deptname, v_admdept);
+          END LOOP;
+          CLOSE c1;
+        END;
