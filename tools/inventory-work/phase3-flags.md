@@ -2,3 +2,4 @@
 - hive.s26: both statements recorded not-applicable with 0 probes; spot-check against Hive docs in Phase 3.
 - hive.s35: 31 unconfirmed probes; Workload Management, ABORT COMPACTIONS and LOCK TABLE/DATABASE probes were written from memory (doc pages 404/missing), so verify them in Phase 3.
 - db2.s16 (12.1): FOR statement probes written from the legacy SQL PL page (12.1 topic id unresolvable); WITH HOLD probe unsupported by text read; verify in Phase 3.
+- db2.s27 (12.1): VALUES probes written from the Db2 VALUES grammar knowledge (page diagram is an image); verify in Phase 3.
