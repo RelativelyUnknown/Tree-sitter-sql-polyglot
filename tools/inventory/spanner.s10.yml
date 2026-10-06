@@ -1,0 +1,199 @@
+dialect: spanner
+engine: Google Cloud Spanner (GoogleSQL dialect)
+version: "current managed service (docs as of 2026-10)"
+source: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language
+
+statements:
+  - id: analyze
+    name: ANALYZE
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#analyze-statistics
+    tier: medium
+    probes:
+      - id: basic
+        sql: "ANALYZE;"
+
+  - id: create_property_graph
+    name: CREATE [OR REPLACE] PROPERTY GRAPH
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/graph-schema-statements#gql_create_graph
+    tier: medium
+    probes:
+      - id: node_tables
+        sql: "CREATE PROPERTY GRAPH g NODE TABLES (Account);"
+      - id: or_replace
+        sql: "CREATE OR REPLACE PROPERTY GRAPH g NODE TABLES (Account);"
+      - id: if_not_exists
+        sql: "CREATE PROPERTY GRAPH IF NOT EXISTS g NODE TABLES (Account);"
+      - id: node_label_properties
+        sql: "CREATE PROPERTY GRAPH g NODE TABLES (Customer KEY (cid) LABEL Client PROPERTIES (cid, name));"
+      - id: node_alias_default_label_all_columns
+        sql: "CREATE PROPERTY GRAPH g NODE TABLES (Location AS GeoLocation KEY (id) DEFAULT LABEL PROPERTIES ALL COLUMNS);"
+      - id: edge_tables
+        sql: "CREATE PROPERTY GRAPH g NODE TABLES (Account, Customer) EDGE TABLES (Own SOURCE KEY (cid) REFERENCES Customer (cid) DESTINATION KEY (aid) REFERENCES Account NO PROPERTIES);"
+      - id: edge_label
+        sql: "CREATE PROPERTY GRAPH g NODE TABLES (Account) EDGE TABLES (Transfer SOURCE KEY (from_id) REFERENCES Account (aid) DESTINATION KEY (to_id) REFERENCES Account (aid) LABEL Transfer NO PROPERTIES);"
+      - id: options
+        sql: "CREATE PROPERTY GRAPH g NODE TABLES (Account) OPTIONS (validate_element_key_uniqueness = false);"
+
+  - id: drop_property_graph
+    name: DROP PROPERTY GRAPH
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/graph-schema-statements#gql_drop_graph
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP PROPERTY GRAPH g;"
+      - id: if_exists
+        sql: "DROP PROPERTY GRAPH IF EXISTS g;"
+
+  - id: gql_query
+    name: GQL graph query (GRAPH ... MATCH ... RETURN)
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/graph-query-statements#gql_syntax
+    tier: medium
+    probes:
+      - id: match_return
+        sql: "GRAPH g MATCH (a:Account) RETURN a.id;"
+      - id: edge_pattern
+        sql: "GRAPH g MATCH (s:Account)-[e:Transfers]->(d:Account) RETURN s.id, d.id;"
+      - id: next_chain
+        sql: "GRAPH g MATCH (a:Account) RETURN a NEXT MATCH (a)<-[:Owns]-(p:Person) RETURN p.name;"
+      - id: filter_order_limit
+        sql: "GRAPH g MATCH (a:Account) FILTER a.id > 1 ORDER BY a.id LIMIT 3 RETURN a.id;"
+      - id: let_with_offset
+        sql: "GRAPH g MATCH (a:Account) LET x = a.id WITH x OFFSET 1 RETURN x;"
+      - id: call_tvf
+        sql: "GRAPH g MATCH (a:Account) OPTIONAL CALL f(a.id) YIELD c RETURN c;"
+    examples:
+      - "GRAPH FinGraph MATCH (: Account)-[: Transfers]->(account : Account) RETURN account, COUNT(*) AS num_incoming_transfers GROUP BY account NEXT MATCH (account : Account)<-[: Owns]-(owner : Person) RETURN account.id AS account_id, owner.name AS owner_name, num_incoming_transfers;"
+
+  - id: call
+    name: CALL (stored system procedures)
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/procedural-language#call
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CALL cancel_query('12345');"
+      - id: no_args
+        sql: "CALL p();"
+    examples:
+      - "CALL cancel_query(\"12345\");"
+
+  - id: create_locality_group
+    name: CREATE LOCALITY GROUP
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#create-locality-group
+    tier: low
+    probes:
+      - id: options
+        sql: "CREATE LOCALITY GROUP lg OPTIONS (storage = 'ssd', ssd_to_hdd_spill_timespan = '10d');"
+
+  - id: alter_locality_group
+    name: ALTER LOCALITY GROUP
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#alter-locality-group
+    tier: low
+    probes:
+      - id: set_options
+        sql: "ALTER LOCALITY GROUP lg SET OPTIONS (storage = 'hdd');"
+
+  - id: drop_locality_group
+    name: DROP LOCALITY GROUP
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#drop-locality-group
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP LOCALITY GROUP lg;"
+
+  - id: create_placement
+    name: CREATE PLACEMENT
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#create-placement
+    tier: low
+    probes:
+      - id: options
+        sql: "CREATE PLACEMENT pl OPTIONS (instance_partition = 'p1', default_leader = 'us-east1');"
+
+  - id: drop_placement
+    name: DROP PLACEMENT
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#drop-placement
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP PLACEMENT pl;"
+
+  - id: create_proto_bundle
+    name: CREATE PROTO BUNDLE
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#create-proto-bundle
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE PROTO BUNDLE (examples.shipping.Order, examples.shipping.Item);"
+
+  - id: alter_proto_bundle
+    name: ALTER PROTO BUNDLE
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#alter-proto-bundle
+    tier: low
+    probes:
+      - id: insert_update_delete
+        sql: "ALTER PROTO BUNDLE INSERT (examples.shipping.Order) UPDATE (examples.shipping.Item) DELETE (examples.shipping.Old);"
+
+  - id: drop_proto_bundle
+    name: DROP PROTO BUNDLE
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#drop-proto-bundle
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP PROTO BUNDLE;"
+
+  - id: create_queue
+    name: CREATE QUEUE
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#create-queue
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE QUEUE IF NOT EXISTS q (id INT64 NOT NULL, Payload JSON NOT NULL) PRIMARY KEY (id), OPTIONS (receive_mode = 'PULL');"
+
+  - id: alter_queue
+    name: ALTER QUEUE
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#alter-queue
+    tier: low
+    probes:
+      - id: set_options
+        sql: "ALTER QUEUE q SET OPTIONS (disable_send = true);"
+
+  - id: drop_queue
+    name: DROP QUEUE
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#drop-queue
+    tier: low
+    probes:
+      - id: if_exists
+        sql: "DROP QUEUE IF EXISTS q;"
+
+  - id: alter_statistics
+    name: ALTER STATISTICS
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#alter-statistics
+    tier: low
+    probes:
+      - id: set_options
+        sql: "ALTER STATISTICS auto_20240101 SET OPTIONS (allow_gc = false);"
+
+  - id: create_model
+    name: CREATE [OR REPLACE] MODEL
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#create-model
+    tier: low
+    probes:
+      - id: remote
+        sql: "CREATE MODEL m INPUT (a STRING(MAX)) OUTPUT (b FLOAT64) REMOTE OPTIONS (endpoint = '//aiplatform.googleapis.com/projects/p/locations/l/endpoints/e');"
+      - id: or_replace
+        sql: "CREATE OR REPLACE MODEL m REMOTE OPTIONS (endpoint = '//aiplatform.googleapis.com/projects/p/locations/l/endpoints/e');"
+
+  - id: alter_model
+    name: ALTER MODEL
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#alter-model
+    tier: low
+    probes:
+      - id: set_options
+        sql: "ALTER MODEL IF EXISTS m SET OPTIONS (default_batch_size = 1);"
+
+  - id: drop_model
+    name: DROP MODEL
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#drop-model
+    tier: low
+    probes:
+      - id: if_exists
+        sql: "DROP MODEL IF EXISTS m;"
