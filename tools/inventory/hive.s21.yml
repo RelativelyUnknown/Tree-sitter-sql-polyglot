@@ -1,0 +1,43 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: alter_table_compact
+    name: ALTER TABLE/PARTITION COMPACT
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: table_major
+        sql: "ALTER TABLE t COMPACT 'major';"
+      - id: table_minor
+        sql: "ALTER TABLE t COMPACT 'minor';"
+      - id: partition
+        sql: "ALTER TABLE t PARTITION (ds = '2024-01-01') COMPACT 'major';"
+      - id: multi_partition_key
+        sql: "ALTER TABLE t PARTITION (ds = '2024-01-01', hr = '01') COMPACT 'minor';"
+      - id: and_wait
+        sql: "ALTER TABLE t COMPACT 'major' AND WAIT;"
+      - id: rebalance_clustered_into
+        sql: "ALTER TABLE t COMPACT 'rebalance' CLUSTERED INTO 4 BUCKETS;"
+      - id: rebalance_order_by
+        sql: "ALTER TABLE t COMPACT 'rebalance' ORDER BY c1, c2;"
+      - id: pool
+        sql: "ALTER TABLE t COMPACT 'major' POOL 'pool_name';"
+      - id: with_overwrite_tblproperties
+        sql: "ALTER TABLE t COMPACT 'major' WITH OVERWRITE TBLPROPERTIES ('compactor.mapreduce.map.memory.mb'='2048');"
+      - id: all_clauses
+        sql: "ALTER TABLE t PARTITION (ds = '2024-01-01') COMPACT 'rebalance' AND WAIT CLUSTERED INTO 4 BUCKETS ORDER BY c1 POOL 'pool_name' WITH OVERWRITE TBLPROPERTIES ('k'='v');"
+
+  - id: alter_table_concatenate
+    name: ALTER TABLE/PARTITION CONCATENATE
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: table
+        sql: "ALTER TABLE t CONCATENATE;"
+      - id: partition
+        sql: "ALTER TABLE t PARTITION (ds = '2024-01-01') CONCATENATE;"
+      - id: multi_partition_key
+        sql: "ALTER TABLE t PARTITION (ds = '2024-01-01', hr = '01') CONCATENATE;"
