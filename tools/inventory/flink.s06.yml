@@ -1,0 +1,91 @@
+dialect: flink
+engine: Apache Flink SQL
+version: "2.3"
+source: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/
+
+statements:
+  - id: alter_table
+    name: ALTER TABLE
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/ddl/alter/#alter-table
+    tier: high
+    probes:
+      - { id: if_exists, sql: "ALTER TABLE IF EXISTS t ADD c INT;" }
+      - { id: add_column, sql: "ALTER TABLE t ADD c STRING COMMENT 'identifier';" }
+      - { id: add_column_first, sql: "ALTER TABLE t ADD c INT COMMENT 'order identifier' FIRST;" }
+      - { id: add_column_after, sql: "ALTER TABLE t ADD c INT AFTER d;" }
+      - { id: add_metadata_column, sql: "ALTER TABLE t ADD c STRING METADATA FROM 'k' VIRTUAL;" }
+      - { id: add_computed_column, sql: "ALTER TABLE t ADD c AS TO_TIMESTAMP(d) AFTER d;" }
+      - { id: add_columns_list, sql: "ALTER TABLE t ADD (c INT, d STRING);" }
+      - { id: add_primary_key, sql: "ALTER TABLE t ADD PRIMARY KEY (id) NOT ENFORCED;" }
+      - { id: add_named_constraint, sql: "ALTER TABLE t ADD CONSTRAINT pk PRIMARY KEY (id) NOT ENFORCED;" }
+      - { id: add_watermark, sql: "ALTER TABLE t ADD WATERMARK FOR ts AS ts - INTERVAL '3' SECOND;" }
+      - { id: add_mixed_list, sql: "ALTER TABLE t ADD (log_ts STRING COMMENT 'log timestamp string' FIRST, ts AS TO_TIMESTAMP(log_ts) AFTER log_ts, PRIMARY KEY (id) NOT ENFORCED, WATERMARK FOR ts AS ts - INTERVAL '3' SECOND);" }
+      - { id: add_partition, sql: "ALTER TABLE t ADD PARTITION (p1 = 1, p2 = 'a') WITH ('k1' = 'v1');" }
+      - { id: add_partition_no_with, sql: "ALTER TABLE t ADD PARTITION (p1 = 1, p2 = 'a');" }
+      - { id: add_partition_if_not_exists, sql: "ALTER TABLE t ADD IF NOT EXISTS PARTITION (p1 = 1);" }
+      - { id: add_partitions, sql: "ALTER TABLE t ADD PARTITION (p1 = 1, p2 = 'a') WITH ('k1' = 'v1') PARTITION (p1 = 1, p2 = 'b') WITH ('k2' = 'v2');" }
+      - { id: add_distribution_hash, sql: "ALTER TABLE t ADD DISTRIBUTION BY HASH (uid) INTO 4 BUCKETS;" }
+      - { id: add_distribution_range, sql: "ALTER TABLE t ADD DISTRIBUTION BY RANGE (uid) INTO 4 BUCKETS;" }
+      - { id: add_distribution_columns_buckets, sql: "ALTER TABLE t ADD DISTRIBUTION BY (uid) INTO 4 BUCKETS;" }
+      - { id: add_distribution_columns, sql: "ALTER TABLE t ADD DISTRIBUTION BY (uid);" }
+      - { id: add_distribution_buckets, sql: "ALTER TABLE t ADD DISTRIBUTION INTO 4 BUCKETS;" }
+      - { id: modify_column, sql: "ALTER TABLE t MODIFY c DOUBLE COMMENT 'unit is bytes per second' AFTER `id`;" }
+      - { id: modify_column_first, sql: "ALTER TABLE t MODIFY c DOUBLE NOT NULL FIRST;" }
+      - { id: modify_columns_list, sql: "ALTER TABLE t MODIFY (log_ts STRING COMMENT 'log timestamp string' AFTER `id`, ts AS TO_TIMESTAMP(log_ts) AFTER log_ts, PRIMARY KEY (id) NOT ENFORCED, WATERMARK FOR ts AS ts);" }
+      - { id: modify_primary_key, sql: "ALTER TABLE t MODIFY PRIMARY KEY (id) NOT ENFORCED;" }
+      - { id: modify_watermark, sql: "ALTER TABLE t MODIFY WATERMARK FOR ts AS ts;" }
+      - { id: modify_distribution, sql: "ALTER TABLE t MODIFY DISTRIBUTION BY HASH (uid) INTO 8 BUCKETS;" }
+      - { id: drop_column, sql: "ALTER TABLE t DROP c;" }
+      - { id: drop_columns, sql: "ALTER TABLE t DROP (col1, col2, col3);" }
+      - { id: drop_primary_key, sql: "ALTER TABLE t DROP PRIMARY KEY;" }
+      - { id: drop_constraint, sql: "ALTER TABLE t DROP CONSTRAINT pk;" }
+      - { id: drop_watermark, sql: "ALTER TABLE t DROP WATERMARK;" }
+      - { id: drop_partition, sql: "ALTER TABLE t DROP PARTITION (`id` = 1);" }
+      - { id: drop_partition_if_exists, sql: "ALTER TABLE t DROP IF EXISTS PARTITION (`id` = 1);" }
+      - { id: drop_partitions, sql: "ALTER TABLE t DROP PARTITION (`id` = 1), PARTITION (`id` = 2);" }
+      - { id: drop_distribution, sql: "ALTER TABLE t DROP DISTRIBUTION;" }
+      - { id: rename_column, sql: "ALTER TABLE t RENAME request_body TO payload;" }
+      - { id: rename_table, sql: "ALTER TABLE t RENAME TO t2;" }
+      - { id: set_options, sql: "ALTER TABLE t SET ('rows-per-second' = '10');" }
+      - { id: reset_options, sql: "ALTER TABLE t RESET ('rows-per-second');" }
+    examples:
+      - "ALTER TABLE Orders ADD `order` INT COMMENT 'order identifier' FIRST;"
+      - "ALTER TABLE Orders ADD (ts TIMESTAMP(3), category STRING AFTER product, PRIMARY KEY(`order`) NOT ENFORCED, WATERMARK FOR ts AS ts - INTERVAL '1' HOUR);"
+      - "ALTER TABLE Orders MODIFY (amount DOUBLE NOT NULL, category STRING COMMENT 'category identifier' AFTER `order`, WATERMARK FOR ts AS ts);"
+
+  - id: alter_materialized_table
+    name: ALTER MATERIALIZED TABLE
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/materialized-table/statements/#alter-materialized-table
+    tier: high
+    probes:
+      - { id: add_column, sql: "ALTER MATERIALIZED TABLE mt ADD c STRING METADATA VIRTUAL;" }
+      - { id: add_column_first, sql: "ALTER MATERIALIZED TABLE mt ADD c STRING METADATA VIRTUAL FIRST;" }
+      - { id: add_computed_column, sql: "ALTER MATERIALIZED TABLE mt ADD c AS TO_TIMESTAMP(d) AFTER d;" }
+      - { id: add_qualified_name, sql: "ALTER MATERIALIZED TABLE cat.db.mt ADD c STRING METADATA VIRTUAL;" }
+      - { id: add_columns_list, sql: "ALTER MATERIALIZED TABLE mt ADD (log_ts STRING METADATA VIRTUAL FIRST, ts AS TO_TIMESTAMP(log_ts) AFTER log_ts, PRIMARY KEY (id) NOT ENFORCED, WATERMARK FOR ts AS ts - INTERVAL '3' SECOND);" }
+      - { id: add_constraint, sql: "ALTER MATERIALIZED TABLE mt ADD CONSTRAINT pk PRIMARY KEY (id) NOT ENFORCED;" }
+      - { id: add_watermark, sql: "ALTER MATERIALIZED TABLE mt ADD WATERMARK FOR ts AS ts - INTERVAL '3' SECOND;" }
+      - { id: add_distribution_hash, sql: "ALTER MATERIALIZED TABLE mt ADD DISTRIBUTED BY HASH (uid) INTO 4 BUCKETS;" }
+      - { id: add_distribution_range, sql: "ALTER MATERIALIZED TABLE mt ADD DISTRIBUTED BY RANGE (uid) INTO 4 BUCKETS;" }
+      - { id: add_distribution_columns_buckets, sql: "ALTER MATERIALIZED TABLE mt ADD DISTRIBUTED BY (uid) INTO 4 BUCKETS;" }
+      - { id: add_distribution_columns, sql: "ALTER MATERIALIZED TABLE mt ADD DISTRIBUTED BY (uid);" }
+      - { id: add_distribution_buckets, sql: "ALTER MATERIALIZED TABLE mt ADD DISTRIBUTED INTO 4 BUCKETS;" }
+      - { id: modify_column, sql: "ALTER MATERIALIZED TABLE mt MODIFY measurement double METADATA COMMENT 'unit is bytes per second' AFTER `id`;" }
+      - { id: modify_columns_list, sql: "ALTER MATERIALIZED TABLE mt MODIFY (log_ts STRING METADATA COMMENT 'log timestamp string' AFTER `id`, ts AS TO_TIMESTAMP(log_ts) AFTER log_ts, PRIMARY KEY (id) NOT ENFORCED, WATERMARK FOR ts AS ts);" }
+      - { id: modify_distribution, sql: "ALTER MATERIALIZED TABLE mt MODIFY DISTRIBUTED BY HASH (uid) INTO 8 BUCKETS;" }
+      - { id: drop_column, sql: "ALTER MATERIALIZED TABLE mt DROP measurement;" }
+      - { id: drop_columns, sql: "ALTER MATERIALIZED TABLE mt DROP (col1, col2, col3);" }
+      - { id: drop_primary_key, sql: "ALTER MATERIALIZED TABLE mt DROP PRIMARY KEY;" }
+      - { id: drop_constraint, sql: "ALTER MATERIALIZED TABLE mt DROP CONSTRAINT pk;" }
+      - { id: drop_watermark, sql: "ALTER MATERIALIZED TABLE mt DROP WATERMARK;" }
+      - { id: drop_distribution, sql: "ALTER MATERIALIZED TABLE mt DROP DISTRIBUTION;" , note: "The syntax block spells the clause DISTRIBUTION in DROP while ADD/MODIFY use DISTRIBUTED; the page's DROP example uses DISTRIBUTION." }
+      - { id: suspend, sql: "ALTER MATERIALIZED TABLE mt SUSPEND;" }
+      - { id: resume, sql: "ALTER MATERIALIZED TABLE mt RESUME;" }
+      - { id: resume_with, sql: "ALTER MATERIALIZED TABLE mt RESUME WITH ('sink.parallelism' = '10');" }
+      - { id: refresh, sql: "ALTER MATERIALIZED TABLE mt REFRESH;" }
+      - { id: refresh_partition, sql: "ALTER MATERIALIZED TABLE mt REFRESH PARTITION (ds = '2024-06-28');" }
+      - { id: as_select, sql: "ALTER MATERIALIZED TABLE mt AS SELECT user_id, COUNT(*) AS event_count FROM events GROUP BY user_id;" }
+    examples:
+      - "ALTER MATERIALIZED TABLE my_materialized_table SUSPEND;"
+      - "ALTER MATERIALIZED TABLE my_materialized_table RESUME WITH ('sink.parallelism' = '10');"
+      - "ALTER MATERIALIZED TABLE my_materialized_table REFRESH PARTITION (ds = '2024-06-28');"
