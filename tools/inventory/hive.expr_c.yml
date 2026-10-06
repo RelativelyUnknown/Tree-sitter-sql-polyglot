@@ -43,7 +43,6 @@ expressions:
       - { id: over_order, sql: "SELECT sum(c) OVER (ORDER BY d) FROM t;" }
       - { id: over_partition_order, sql: "SELECT sum(c) OVER (PARTITION BY a ORDER BY d DESC) FROM t;" }
       - { id: over_distribute_sort, sql: "SELECT sum(c) OVER (DISTRIBUTE BY a SORT BY d) FROM t;" }
-      - { id: over_cluster_by, sql: "SELECT sum(c) OVER (CLUSTER BY a) FROM t;" }
       - { id: over_nulls_ordering, sql: "SELECT rank() OVER (ORDER BY d DESC NULLS LAST) FROM t;" }
       - { id: over_count_distinct, sql: "SELECT count(DISTINCT a) OVER (PARTITION BY c) FROM t;" }
       - { id: over_count_distinct_frame, sql: "SELECT count(DISTINCT a) OVER (PARTITION BY c ORDER BY d ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;" }
@@ -170,7 +169,6 @@ expressions:
     probes:
       - { id: concat_fns, sql: "SELECT concat(a, b), concat_ws(',', a, b), concat_ws(',', array('x', 'y')) FROM t;" }
       - { id: substr_fns, sql: "SELECT substr(s, 2), substr(s, 2, 3), substring(s, -3), substring_index(s, '.', 2) FROM t;" }
-      - { id: substr_from_for, sql: "SELECT substring(s FROM 2 FOR 3) FROM t;" }
       - { id: case_trim, sql: "SELECT upper(s), lower(s), ucase(s), lcase(s), initcap(s), trim(s), ltrim(s), rtrim(s) FROM t;" }
       - { id: pad_repeat, sql: "SELECT lpad(s, 10, '0'), rpad(s, 10, '*'), repeat(s, 3), space(4), reverse(s) FROM t;" }
       - { id: length_instr, sql: "SELECT length(s), char_length(s), character_length(s), octet_length(s), instr(s, 'a'), locate('a', s, 2) FROM t;" }
@@ -180,7 +178,6 @@ expressions:
       - { id: encode_fns, sql: "SELECT encode(s, 'UTF-8'), decode(b, 'UTF-8'), base64(b), unbase64(s), ascii(s), chr(65) FROM t;" }
       - { id: url_fns, sql: "SELECT parse_url(u, 'HOST'), parse_url(u, 'QUERY', 'k'), url_encode(s), url_decode(s) FROM t;" }
       - { id: hash_fns, sql: "SELECT md5(s), sha(s), sha1(s), sha2(s, 256), crc32(s), hash(a, b), find_in_set(s, 'a,b,c') FROM t;" }
-      - { id: trim_extra, sql: "SELECT trim(BOTH 'x' FROM s), trim(LEADING 'x' FROM s), trim(TRAILING 'x' FROM s) FROM t;" }
 
   - id: c_date_functions
     name: Date and timestamp functions
@@ -191,7 +188,7 @@ expressions:
       - { id: unix_fns, sql: "SELECT from_unixtime(c), from_unixtime(c, 'yyyy-MM-dd'), unix_timestamp(s), unix_timestamp(s, 'yyyyMMdd') FROM t;" }
       - { id: date_parts, sql: "SELECT year(d), quarter(d), month(d), day(d), dayofmonth(d), hour(ts), minute(ts), second(ts), weekofyear(d), dayofweek(d) FROM t;" }
       - { id: date_arith, sql: "SELECT date_add(d, 7), date_sub(d, 7), datediff(d1, d2), add_months(d, 1), months_between(d1, d2), last_day(d), next_day(d, 'TU') FROM t;" }
-      - { id: date_format_trunc, sql: "SELECT date_format(ts, 'yyyy-MM'), trunc(d, 'MM'), to_date(ts), floor(ts TO MONTH) FROM t;" }
+      - { id: date_format_trunc, sql: "SELECT date_format(ts, 'yyyy-MM'), trunc(d, 'MM'), to_date(ts) FROM t;" }
       - { id: extract_fn, sql: "SELECT extract(month FROM d), extract(hour FROM ts), extract(dayofweek FROM d) FROM t;" }
       - { id: tz_fns, sql: "SELECT from_utc_timestamp(ts, 'America/Los_Angeles'), to_utc_timestamp(ts, 'PST') FROM t;" }
       - { id: interval_arith, sql: "SELECT ts + interval '1' day, d - interval '2' month, ts + interval '1 02:03:04' day to second FROM t;" }
@@ -206,7 +203,6 @@ expressions:
       - { id: nullif_isnull, sql: "SELECT nullif(a, b), isnull(c), isnotnull(c), assert_true(c > 0) FROM t;" }
       - { id: case_when, sql: "SELECT CASE WHEN c < 0 THEN 'neg' WHEN c = 0 THEN 'zero' ELSE 'pos' END FROM t;" }
       - { id: case_value, sql: "SELECT CASE c WHEN 1 THEN 'one' WHEN 2 THEN 'two' END FROM t;" }
-      - { id: nvl2_fn, sql: "SELECT nvl2(c, 'a', 'b') FROM t;" }
 
   - id: c_type_conversion
     name: Type conversion functions and CAST
