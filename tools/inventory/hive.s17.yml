@@ -1,0 +1,63 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: alter_table_add_columns
+    name: ALTER TABLE ADD/REPLACE COLUMNS
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: add_columns
+        sql: "ALTER TABLE t ADD COLUMNS (c1 INT);"
+      - id: add_columns_multiple_comment
+        sql: "ALTER TABLE t ADD COLUMNS (c1 INT COMMENT 'first', c2 STRING);"
+      - id: replace_columns
+        sql: "ALTER TABLE t REPLACE COLUMNS (a INT, b INT);"
+      - id: replace_columns_comment
+        sql: "ALTER TABLE t REPLACE COLUMNS (a INT COMMENT 'x', b STRING COMMENT 'y');"
+      - id: add_columns_partition
+        sql: "ALTER TABLE t PARTITION (ds='2020-01-01') ADD COLUMNS (c1 INT);"
+      - id: replace_columns_partition
+        sql: "ALTER TABLE t PARTITION (ds='2020-01-01') REPLACE COLUMNS (a INT);"
+      - id: add_columns_cascade
+        sql: "ALTER TABLE t ADD COLUMNS (c1 INT) CASCADE;"
+      - id: add_columns_restrict
+        sql: "ALTER TABLE t ADD COLUMNS (c1 INT) RESTRICT;"
+      - id: replace_columns_cascade
+        sql: "ALTER TABLE t REPLACE COLUMNS (a INT, b INT) CASCADE;"
+      - id: replace_columns_restrict
+        sql: "ALTER TABLE t REPLACE COLUMNS (a INT, b INT) RESTRICT;"
+    examples:
+      - "ALTER TABLE test_change REPLACE COLUMNS (a int, b int);"
+
+  - id: alter_table_change_column
+    name: ALTER TABLE CHANGE COLUMN
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: change
+        sql: "ALTER TABLE t CHANGE a a1 INT;"
+      - id: change_column_keyword
+        sql: "ALTER TABLE t CHANGE COLUMN a a1 INT;"
+      - id: change_comment
+        sql: "ALTER TABLE t CHANGE a a1 INT COMMENT 'c';"
+      - id: change_first
+        sql: "ALTER TABLE t CHANGE c c1 INT FIRST;"
+      - id: change_after
+        sql: "ALTER TABLE t CHANGE a1 a2 STRING AFTER b;"
+      - id: change_comment_after
+        sql: "ALTER TABLE t CHANGE a a1 INT COMMENT 'c' AFTER b;"
+      - id: change_partition
+        sql: "ALTER TABLE t PARTITION (ds='2020-01-01') CHANGE a a1 INT;"
+      - id: change_cascade
+        sql: "ALTER TABLE t CHANGE a a1 INT CASCADE;"
+      - id: change_restrict
+        sql: "ALTER TABLE t CHANGE a a1 INT RESTRICT;"
+      - id: change_all_options
+        sql: "ALTER TABLE t PARTITION (ds='2020-01-01') CHANGE COLUMN a a1 INT COMMENT 'c' FIRST CASCADE;"
+    examples:
+      - "ALTER TABLE test_change CHANGE a a1 INT;"
+      - "ALTER TABLE test_change CHANGE a1 a2 STRING AFTER b;"
+      - "ALTER TABLE test_change CHANGE c c1 INT FIRST;"
