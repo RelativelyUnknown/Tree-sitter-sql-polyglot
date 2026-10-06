@@ -1,0 +1,39 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: alter_table_set_fileformat
+    name: ALTER TABLE/PARTITION SET FILEFORMAT
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: table
+        sql: "ALTER TABLE t SET FILEFORMAT ORC;"
+      - id: table_parquet
+        sql: "ALTER TABLE t SET FILEFORMAT PARQUET;"
+      - id: table_textfile
+        sql: "ALTER TABLE t SET FILEFORMAT TEXTFILE;"
+      - id: partition
+        sql: "ALTER TABLE t PARTITION (dt='2008-08-08') SET FILEFORMAT SEQUENCEFILE;"
+      - id: partition_multi_column
+        sql: "ALTER TABLE t PARTITION (dt='2008-08-08', country='us') SET FILEFORMAT RCFILE;"
+      - id: schema_qualified
+        sql: "ALTER TABLE db.t SET FILEFORMAT AVRO;"
+
+  - id: alter_table_set_location
+    name: ALTER TABLE/PARTITION SET LOCATION
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: table
+        sql: "ALTER TABLE t SET LOCATION 'hdfs://nn/new/location';"
+      - id: table_double_quoted
+        sql: 'ALTER TABLE t SET LOCATION "/new/location";'
+      - id: partition
+        sql: "ALTER TABLE t PARTITION (dt='2008-08-08') SET LOCATION '/path/to/part';"
+      - id: partition_multi_column
+        sql: "ALTER TABLE t PARTITION (dt='2008-08-08', country='us') SET LOCATION '/path/to/us/part';"
+      - id: schema_qualified
+        sql: "ALTER TABLE db.t SET LOCATION '/new/location';"

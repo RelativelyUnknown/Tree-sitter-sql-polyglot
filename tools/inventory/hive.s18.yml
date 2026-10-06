@@ -1,0 +1,50 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: alter_table_add_partition
+    name: ALTER TABLE ADD PARTITION
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: basic
+        sql: "ALTER TABLE t ADD PARTITION (dt = '2008-08-08');"
+      - id: if_not_exists
+        sql: "ALTER TABLE t ADD IF NOT EXISTS PARTITION (dt = '2008-08-08');"
+      - id: location
+        sql: "ALTER TABLE t ADD PARTITION (dt = '2008-08-08') LOCATION '/path/to/part';"
+      - id: multi_column_spec
+        sql: "ALTER TABLE t ADD PARTITION (dt = '2008-08-08', country = 'us');"
+      - id: numeric_value
+        sql: "ALTER TABLE t ADD PARTITION (yr = 2008);"
+      - id: multiple_partitions
+        sql: "ALTER TABLE t ADD PARTITION (dt = '2008-08-08') LOCATION '/p1' PARTITION (dt = '2008-08-09') LOCATION '/p2';"
+      - id: multiple_partitions_if_not_exists
+        sql: "ALTER TABLE t ADD IF NOT EXISTS PARTITION (dt = '2008-08-08') PARTITION (dt = '2008-08-09');"
+    examples:
+      - "ALTER TABLE page_view ADD PARTITION (dt='2008-08-08', country='us') location '/path/to/us/part080808' PARTITION (dt='2008-08-09', country='us') location '/path/to/us/part080809';"
+
+  - id: alter_table_drop_partition
+    name: ALTER TABLE DROP PARTITION
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: basic
+        sql: "ALTER TABLE t DROP PARTITION (dt = '2008-08-08');"
+      - id: if_exists
+        sql: "ALTER TABLE t DROP IF EXISTS PARTITION (dt = '2008-08-08');"
+      - id: multi_column_spec
+        sql: "ALTER TABLE t DROP PARTITION (dt = '2008-08-08', country = 'us');"
+      - id: multiple_partitions
+        sql: "ALTER TABLE t DROP PARTITION (dt = '2008-08-08'), PARTITION (dt = '2008-08-09');"
+      - id: purge
+        sql: "ALTER TABLE t DROP PARTITION (dt = '2008-08-08') PURGE;"
+      - id: if_exists_purge
+        sql: "ALTER TABLE t DROP IF EXISTS PARTITION (dt = '2008-08-08') PURGE;"
+      - id: comparison_operator
+        sql: "ALTER TABLE t DROP PARTITION (dt < '2008-08-08');"
+        note: Hive permits comparison operators in the partition spec of DROP PARTITION (partial and range specs); the syntax block shows only partition_spec.
+    examples:
+      - "ALTER TABLE page_view DROP PARTITION (dt='2008-08-08', country='us');"
