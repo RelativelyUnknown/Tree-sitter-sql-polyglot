@@ -1,0 +1,144 @@
+dialect: flink
+engine: Apache Flink SQL
+version: "2.3"
+source: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/
+
+statements: []
+
+expressions:
+  - id: a_numeric_literals
+    name: Numeric literals
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/data-types/
+    tier: high
+    probes:
+      - { id: integer, sql: "SELECT 1, 42, -7;" }
+      - { id: decimal, sql: "SELECT 1.5, .5, 10.25;" }
+      - { id: scientific, sql: "SELECT 1e3, 1.5E-2, 2.5e+10;" }
+  - id: a_boolean_null_literals
+    name: Boolean and NULL literals
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/data-types/
+    tier: high
+    probes:
+      - { id: boolean, sql: "SELECT TRUE, FALSE;" }
+      - { id: unknown, sql: "SELECT UNKNOWN;" }
+      - { id: "null", sql: "SELECT NULL;" }
+  - id: a_string_literals
+    name: String and binary literals
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/queries/overview/
+    tier: high
+    probes:
+      - { id: single_quoted, sql: "SELECT 'Hello World';" }
+      - { id: escaped_quote, sql: "SELECT 'It''s me';" }
+      - { id: empty, sql: "SELECT '';" }
+      - { id: unicode_escape_default, sql: "SELECT U&'\\263A';" }
+      - { id: unicode_escape_custom, sql: "SELECT U&'#263A' UESCAPE '#';" }
+      - { id: binary_hex, sql: "SELECT X'1F2E';" }
+  - id: a_date_time_literals
+    name: Date, time and timestamp literals
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: date, sql: "SELECT DATE '2024-01-15';" }
+      - { id: time, sql: "SELECT TIME '12:34:56';" }
+      - { id: time_fraction, sql: "SELECT TIME '12:34:56.123';" }
+      - { id: timestamp, sql: "SELECT TIMESTAMP '2024-01-15 12:34:56';" }
+      - { id: timestamp_fraction, sql: "SELECT TIMESTAMP '2024-01-15 12:34:56.123';" }
+  - id: a_interval_literals
+    name: Interval literals
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: day, sql: "SELECT INTERVAL '1' DAY;" }
+      - { id: hour, sql: "SELECT INTERVAL '3' HOUR;" }
+      - { id: minute_second, sql: "SELECT INTERVAL '5' MINUTE, INTERVAL '10' SECOND;" }
+      - { id: month_year, sql: "SELECT INTERVAL '2' MONTH, INTERVAL '1' YEAR;" }
+      - { id: signed, sql: "SELECT INTERVAL '-1' DAY;" }
+      - { id: year_to_month, sql: "SELECT INTERVAL '1-2' YEAR TO MONTH;" }
+      - { id: day_to_second, sql: "SELECT INTERVAL '1 2:03:04.123' DAY TO SECOND;" }
+      - { id: day_to_hour, sql: "SELECT INTERVAL '1 2' DAY TO HOUR;" }
+      - { id: hour_to_minute, sql: "SELECT INTERVAL '2:30' HOUR TO MINUTE;" }
+      - { id: precision, sql: "SELECT INTERVAL '10' DAY(3), INTERVAL '5.123' SECOND(3);" }
+      - { id: arithmetic, sql: "SELECT ts + INTERVAL '1' HOUR, ts - INTERVAL '5' MINUTE FROM t;" }
+  - id: a_array_map_row_constructors
+    name: ARRAY, MAP, ROW and MULTISET constructors
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: array, sql: "SELECT ARRAY[1, 2, 3];" }
+      - { id: array_empty_typed, sql: "SELECT CAST(ARRAY[] AS ARRAY<INT>);" }
+      - { id: array_element, sql: "SELECT a[1] FROM t;" }
+      - { id: map, sql: "SELECT MAP['k1', 'v1', 'k2', 'v2'];" }
+      - { id: map_element, sql: "SELECT m['k1'] FROM t;" }
+      - { id: row_explicit, sql: "SELECT ROW(1, 'a', TRUE);" }
+      - { id: row_implicit, sql: "SELECT (1, 'a');" }
+      - { id: row_field_access, sql: "SELECT r.f1, t.r.f2 FROM t;" }
+      - { id: multiset, sql: "SELECT MULTISET[1, 2, 2];" }
+      - { id: descriptor, sql: "SELECT DESCRIPTOR(`col1`, `col2`);" }
+  - id: a_json_literals
+    name: JSON and VARIANT values
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: medium
+    probes:
+      - { id: json_string, sql: "SELECT JSON('{\"value\": 42}');" }
+      - { id: json_object, sql: "SELECT JSON_OBJECT(KEY 'k1' VALUE 'v1', KEY 'k2' VALUE 2);" }
+      - { id: json_object_null_clause, sql: "SELECT JSON_OBJECT(KEY 'k' VALUE CAST(NULL AS STRING) ABSENT ON NULL);" }
+      - { id: json_array, sql: "SELECT JSON_ARRAY(1, 'a', TRUE NULL ON NULL);" }
+      - { id: is_json, sql: "SELECT '{}' IS JSON, '1' IS JSON SCALAR, '[]' IS JSON ARRAY, '{}' IS NOT JSON OBJECT;" }
+      - { id: parse_json, sql: "SELECT PARSE_JSON('{\"k\":[1,2]}');" }
+      - { id: variant_access, sql: "SELECT v['k'], v['arr'][1] FROM t;" }
+  - id: a_type_names
+    name: Data type names
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/data-types/
+    tier: high
+    probes:
+      - { id: character, sql: "SELECT CAST(c AS CHAR), CAST(c AS CHAR(5)), CAST(c AS VARCHAR), CAST(c AS VARCHAR(20)), CAST(c AS STRING) FROM t;" }
+      - { id: character_varying, sql: "SELECT CAST(c AS CHARACTER(3)), CAST(c AS CHAR VARYING(3)), CAST(c AS CHARACTER VARYING(3)) FROM t;" }
+      - { id: binary, sql: "SELECT CAST(c AS BINARY), CAST(c AS BINARY(4)), CAST(c AS VARBINARY), CAST(c AS VARBINARY(4)), CAST(c AS BYTES) FROM t;" }
+      - { id: integers, sql: "SELECT CAST(c AS TINYINT), CAST(c AS SMALLINT), CAST(c AS INT), CAST(c AS INTEGER), CAST(c AS BIGINT) FROM t;" }
+      - { id: floats, sql: "SELECT CAST(c AS FLOAT), CAST(c AS DOUBLE), CAST(c AS DOUBLE PRECISION) FROM t;" }
+      - { id: decimal, sql: "SELECT CAST(c AS DECIMAL), CAST(c AS DECIMAL(10)), CAST(c AS DECIMAL(10, 2)), CAST(c AS DEC(10, 2)), CAST(c AS NUMERIC(10, 2)) FROM t;" }
+      - { id: boolean, sql: "SELECT CAST(c AS BOOLEAN) FROM t;" }
+      - { id: date_time, sql: "SELECT CAST(c AS DATE), CAST(c AS TIME), CAST(c AS TIME(3)) FROM t;" }
+      - { id: timestamp, sql: "SELECT CAST(c AS TIMESTAMP), CAST(c AS TIMESTAMP(3)), CAST(c AS TIMESTAMP(3) WITHOUT TIME ZONE) FROM t;" }
+      - { id: timestamp_ltz, sql: "SELECT CAST(c AS TIMESTAMP_LTZ), CAST(c AS TIMESTAMP_LTZ(3)), CAST(c AS TIMESTAMP(3) WITH LOCAL TIME ZONE) FROM t;" }
+      - { id: timestamp_with_time_zone, sql: "SELECT CAST(c AS TIMESTAMP(3) WITH TIME ZONE) FROM t;" }
+      - { id: interval_types, sql: "SELECT CAST(c AS INTERVAL YEAR TO MONTH), CAST(c AS INTERVAL DAY TO SECOND(3)), CAST(c AS INTERVAL DAY(2) TO SECOND(6)) FROM t;" }
+      - { id: interval_single_field, sql: "SELECT CAST(c AS INTERVAL YEAR), CAST(c AS INTERVAL MONTH), CAST(c AS INTERVAL DAY), CAST(c AS INTERVAL SECOND) FROM t;" }
+      - { id: array_type, sql: "SELECT CAST(c AS ARRAY<INT>), CAST(c AS INT ARRAY) FROM t;" }
+      - { id: multiset_type, sql: "SELECT CAST(c AS MULTISET<INT>), CAST(c AS INT MULTISET) FROM t;" }
+      - { id: map_type, sql: "SELECT CAST(c AS MAP<STRING, INT>) FROM t;" }
+      - { id: row_type_angle, sql: "SELECT CAST(c AS ROW<a INT, b STRING>) FROM t;" }
+      - { id: row_type_paren, sql: "SELECT CAST(c AS ROW(a INT, b STRING)) FROM t;" }
+      - { id: nested_type, sql: "SELECT CAST(c AS ARRAY<ROW<a INT, b MAP<STRING, ARRAY<DOUBLE>>>>) FROM t;" }
+      - { id: variant_type, sql: "SELECT CAST(c AS VARIANT) FROM t;" }
+      - { id: not_null_type, sql: "SELECT CAST(c AS INT NOT NULL), CAST(c AS ARRAY<INT NOT NULL>) FROM t;" }
+  - id: a_cast
+    name: CAST and TRY_CAST
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: cast, sql: "SELECT CAST('42' AS INT);" }
+      - { id: cast_null, sql: "SELECT CAST(NULL AS STRING);" }
+      - { id: cast_expression, sql: "SELECT CAST(a + b AS DECIMAL(10, 2)) FROM t;" }
+      - { id: try_cast, sql: "SELECT TRY_CAST('non-number' AS INT);" }
+      - { id: try_cast_coalesce, sql: "SELECT COALESCE(TRY_CAST('non-number' AS INT), 0);" }
+      - { id: cast_timestamp, sql: "SELECT CAST('2024-01-15 12:34:56' AS TIMESTAMP(3));" }
+  - id: a_identifier_quoting
+    name: Identifier quoting
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/queries/overview/
+    tier: high
+    probes:
+      - { id: backtick, sql: "SELECT a AS `my field` FROM t;" }
+      - { id: backtick_qualified, sql: "SELECT `c1`.`t1`.`col` FROM `c1`.`db1`.`t1`;" }
+      - { id: backtick_reserved_word, sql: "SELECT `select`, `from`, `timestamp` FROM `table`;" }
+      - { id: backtick_escaped, sql: "SELECT `a``b` FROM t;" }
+  - id: a_comments
+    name: Comments
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/queries/overview/
+    tier: high
+    probes:
+      - { id: line_comment, sql: "SELECT 1 -- trailing comment\n;" }
+      - { id: block_comment, sql: "SELECT /* inline */ 1;" }
+      - { id: multiline_block_comment, sql: "/* first line\n   second line */\nSELECT 1;" }
+      - { id: leading_line_comment, sql: "-- leading comment\nSELECT 1;" }
+      - { id: hint_comment, sql: "SELECT * FROM t /*+ OPTIONS('key'='val') */;" }
