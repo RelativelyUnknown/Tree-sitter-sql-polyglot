@@ -1,0 +1,181 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "12.1"
+source: https://www.ibm.com/docs/en/db2/12.1.x?topic=reference-statements
+
+statements:
+  - id: repeat
+    name: REPEAT
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-repeat
+    tier: high
+    probes:
+      - id: basic
+        sql: |-
+          CREATE PROCEDURE p()
+          LANGUAGE SQL
+          BEGIN
+            DECLARE i INTEGER DEFAULT 0;
+            REPEAT
+              SET i = i + 1;
+            UNTIL i > 5
+            END REPEAT;
+          END;
+      - id: with_label
+        sql: |-
+          CREATE PROCEDURE p()
+          LANGUAGE SQL
+          BEGIN
+            DECLARE i INTEGER DEFAULT 0;
+            lbl: REPEAT
+              SET i = i + 1;
+            UNTIL i > 5
+            END REPEAT lbl;
+          END;
+      - id: multiple_statements
+        sql: |-
+          CREATE PROCEDURE p()
+          LANGUAGE SQL
+          BEGIN
+            DECLARE i INTEGER DEFAULT 0;
+            DECLARE j INTEGER DEFAULT 0;
+            REPEAT
+              SET i = i + 1;
+              SET j = j + i;
+            UNTIL i > 5 AND j > 10
+            END REPEAT;
+          END;
+      - id: in_function
+        sql: |-
+          CREATE FUNCTION f(n INTEGER) RETURNS INTEGER
+          LANGUAGE SQL
+          BEGIN ATOMIC
+            DECLARE i INTEGER DEFAULT 0;
+            REPEAT
+              SET i = i + 1;
+            UNTIL i >= n
+            END REPEAT;
+            RETURN i;
+          END;
+    examples:
+      - |-
+        CREATE PROCEDURE REPEAT_STMT(OUT counter INTEGER)
+        LANGUAGE SQL
+        BEGIN
+          DECLARE v_counter INTEGER DEFAULT 0;
+          DECLARE v_firstnme VARCHAR(12);
+          DECLARE v_midinit CHAR(1);
+          DECLARE v_lastname VARCHAR(15);
+          DECLARE at_end SMALLINT DEFAULT 0;
+          DECLARE not_found CONDITION FOR SQLSTATE '02000';
+          DECLARE c1 CURSOR FOR
+            SELECT firstnme, midinit, lastname
+              FROM employee;
+          DECLARE CONTINUE HANDLER FOR not_found
+            SET at_end = 1;
+          OPEN c1;
+          fetch_loop:
+          REPEAT
+            FETCH c1 INTO v_firstnme, v_midinit, v_lastname;
+            SET v_counter = v_counter + 1;
+          UNTIL at_end > 0
+          END REPEAT fetch_loop;
+          SET counter = v_counter;
+          CLOSE c1;
+        END;
+
+  - id: resignal
+    name: RESIGNAL
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-resignal
+    tier: high
+    probes:
+      - id: bare
+        sql: |-
+          CREATE PROCEDURE p()
+          LANGUAGE SQL
+          BEGIN
+            DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+              RESIGNAL;
+            SELECT 1 FROM sysibm.sysdummy1;
+          END;
+      - id: sqlstate_value
+        sql: |-
+          CREATE PROCEDURE p()
+          LANGUAGE SQL
+          BEGIN
+            DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+              RESIGNAL SQLSTATE '22375';
+            SELECT 1 FROM sysibm.sysdummy1;
+          END;
+      - id: sqlstate_value_keyword
+        sql: |-
+          CREATE PROCEDURE p()
+          LANGUAGE SQL
+          BEGIN
+            DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+              RESIGNAL SQLSTATE VALUE '22375';
+            SELECT 1 FROM sysibm.sysdummy1;
+          END;
+      - id: sqlstate_variable
+        sql: |-
+          CREATE PROCEDURE p()
+          LANGUAGE SQL
+          BEGIN
+            DECLARE st CHAR(5) DEFAULT '22375';
+            DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+              RESIGNAL SQLSTATE st;
+            SELECT 1 FROM sysibm.sysdummy1;
+          END;
+      - id: condition_name
+        sql: |-
+          CREATE PROCEDURE p()
+          LANGUAGE SQL
+          BEGIN
+            DECLARE overflow CONDITION FOR SQLSTATE '22003';
+            DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+              RESIGNAL overflow;
+            SELECT 1 FROM sysibm.sysdummy1;
+          END;
+      - id: message_text_constant
+        sql: |-
+          CREATE PROCEDURE p()
+          LANGUAGE SQL
+          BEGIN
+            DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+              RESIGNAL SQLSTATE '75001' SET MESSAGE_TEXT = 'custom error';
+            SELECT 1 FROM sysibm.sysdummy1;
+          END;
+      - id: message_text_variable
+        sql: |-
+          CREATE PROCEDURE p()
+          LANGUAGE SQL
+          BEGIN
+            DECLARE msg VARCHAR(70) DEFAULT 'custom error';
+            DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+              RESIGNAL SQLSTATE '75001' SET MESSAGE_TEXT = msg;
+            SELECT 1 FROM sysibm.sysdummy1;
+          END;
+      - id: message_text_only
+        sql: |-
+          CREATE PROCEDURE p()
+          LANGUAGE SQL
+          BEGIN
+            DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+              RESIGNAL SET MESSAGE_TEXT = 'custom error';
+            SELECT 1 FROM sysibm.sysdummy1;
+          END;
+    examples:
+      - |-
+        CREATE PROCEDURE divide ( IN numerator INTEGER,
+                                  IN denominator INTEGER,
+                                  OUT result INTEGER )
+        LANGUAGE SQL
+        BEGIN
+          DECLARE overflow CONDITION FOR SQLSTATE '22003';
+          DECLARE CONTINUE HANDLER FOR overflow
+            RESIGNAL SQLSTATE '22375';
+          IF denominator = 0 THEN
+            SIGNAL overflow;
+          ELSE
+            SET result = numerator / denominator;
+          END IF;
+        END;
