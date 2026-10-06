@@ -1,0 +1,70 @@
+dialect: spark
+engine: Apache Spark SQL
+version: "4.x (docs/latest)"
+source: https://spark.apache.org/docs/latest/sql-ref-syntax.html
+
+statements:
+  - id: group_by_clause
+    name: GROUP BY Clause
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-groupby.html
+    tier: high
+    probes:
+      - id: group_by_column
+        sql: "SELECT a, sum(b) FROM t GROUP BY a;"
+      - id: group_by_multiple
+        sql: "SELECT a, b, sum(c) FROM t GROUP BY a, b;"
+      - id: group_by_position
+        sql: "SELECT a, sum(b) FROM t GROUP BY 1;"
+      - id: group_by_expression
+        sql: "SELECT a + b, count(*) FROM t GROUP BY a + b;"
+      - id: group_by_with_rollup
+        sql: "SELECT a, b, sum(c) FROM t GROUP BY a, b WITH ROLLUP;"
+      - id: group_by_with_cube
+        sql: "SELECT a, b, sum(c) FROM t GROUP BY a, b WITH CUBE;"
+      - id: group_by_rollup
+        sql: "SELECT a, b, sum(c) FROM t GROUP BY ROLLUP (a, b);"
+      - id: group_by_cube
+        sql: "SELECT a, b, sum(c) FROM t GROUP BY CUBE (a, b);"
+      - id: group_by_grouping_sets
+        sql: "SELECT a, b, sum(c) FROM t GROUP BY GROUPING SETS ((a), (b), ());"
+      - id: group_by_grouping_sets_unparenthesized
+        sql: "SELECT a, b, sum(c) FROM t GROUP BY GROUPING SETS (a, b);"
+      - id: group_by_expr_then_grouping_sets
+        sql: "SELECT a, b, sum(c) FROM t GROUP BY a GROUPING SETS (a, b);"
+        note: Hive-compatible form, GROUP BY ... GROUPING SETS (...)
+      - id: group_by_mixed
+        sql: "SELECT a, b, c, sum(d) FROM t GROUP BY a, ROLLUP (b), CUBE (c);"
+      - id: group_by_nested_grouping_sets
+        sql: "SELECT a, b, sum(c) FROM t GROUP BY GROUPING SETS (ROLLUP (a, b), CUBE (a, b));"
+      - id: group_by_rollup_composite_element
+        sql: "SELECT a, b, c, sum(d) FROM t GROUP BY ROLLUP (a, b, (a, c));"
+      - id: aggregate_distinct
+        sql: "SELECT a, count(DISTINCT b) AS cnt FROM t GROUP BY a;"
+      - id: aggregate_filter
+        sql: "SELECT a, sum(b) FILTER (WHERE c IN ('x', 'y')) AS s FROM t GROUP BY a;"
+    examples:
+      - "SELECT id, sum(quantity) FROM dealer GROUP BY id ORDER BY id;"
+      - "SELECT id, sum(quantity) FROM dealer GROUP BY 1 ORDER BY 1;"
+      - "SELECT id, sum(quantity) AS sum, max(quantity) AS max FROM dealer GROUP BY id ORDER BY id;"
+
+  - id: having_clause
+    name: HAVING Clause
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-having.html
+    tier: high
+    probes:
+      - id: having_group_column
+        sql: "SELECT a, sum(b) AS s FROM t GROUP BY a HAVING a = 'x';"
+      - id: having_aggregate
+        sql: "SELECT a, sum(b) AS s FROM t GROUP BY a HAVING sum(b) > 15;"
+      - id: having_alias
+        sql: "SELECT a, sum(b) AS s FROM t GROUP BY a HAVING s > 15;"
+      - id: having_and_or
+        sql: "SELECT a, sum(b) AS s FROM t GROUP BY a HAVING sum(b) > 15 AND (max(b) < 100 OR a = 'x');"
+      - id: having_constant
+        sql: "SELECT a, sum(b) AS s FROM t GROUP BY a HAVING 1 > 0 ORDER BY a;"
+      - id: having_without_group_by
+        sql: "SELECT sum(b) AS s FROM t HAVING sum(b) > 10;"
+    examples:
+      - "SELECT city, sum(quantity) AS sum FROM dealer GROUP BY city HAVING city = 'Fremont';"
+      - "SELECT city, sum(quantity) AS sum FROM dealer GROUP BY city HAVING sum(quantity) > 15;"
+      - "SELECT sum(quantity) AS sum FROM dealer HAVING sum(quantity) > 10;"
