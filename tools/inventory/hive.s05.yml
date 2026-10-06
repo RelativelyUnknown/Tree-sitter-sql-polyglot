@@ -1,0 +1,111 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: select_tablesample
+    name: TABLESAMPLE
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-sampling/
+    tier: high
+    probes:
+      - id: bucket_out_of
+        sql: "SELECT * FROM t TABLESAMPLE(BUCKET 3 OUT OF 32) s;"
+      - id: bucket_on_column
+        sql: "SELECT * FROM t TABLESAMPLE(BUCKET 3 OUT OF 16 ON id) s;"
+      - id: bucket_on_rand
+        sql: "SELECT * FROM t TABLESAMPLE(BUCKET 3 OUT OF 32 ON rand()) s;"
+      - id: bucket_no_alias
+        sql: "SELECT * FROM t TABLESAMPLE(BUCKET 1 OUT OF 4 ON id);"
+      - id: block_percent
+        sql: "SELECT * FROM t TABLESAMPLE(0.1 PERCENT) s;"
+      - id: block_byte_length
+        sql: "SELECT * FROM t TABLESAMPLE(100M) s;"
+      - id: block_rows
+        sql: "SELECT * FROM t TABLESAMPLE(10 ROWS);"
+      - id: sample_in_join
+        sql: "SELECT * FROM t1 TABLESAMPLE(BUCKET 1 OUT OF 2 ON id) a JOIN t2 b ON a.id = b.id;"
+    examples:
+      - "SELECT * FROM source TABLESAMPLE(BUCKET 3 OUT OF 32 ON rand()) s;"
+      - "SELECT * FROM source TABLESAMPLE(0.1 PERCENT) s;"
+      - "SELECT * FROM source TABLESAMPLE(10 ROWS);"
+
+  - id: select_window
+    name: Windowing and analytics (OVER / WINDOW)
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-windowingandanalytics/
+    tier: high
+    probes:
+      - id: over_partition_by
+        sql: "SELECT a, COUNT(b) OVER (PARTITION BY c) FROM t;"
+      - id: over_partition_by_multi
+        sql: "SELECT a, COUNT(b) OVER (PARTITION BY c, d) FROM t;"
+      - id: over_partition_order
+        sql: "SELECT a, SUM(b) OVER (PARTITION BY c ORDER BY d) FROM t;"
+      - id: over_order_only
+        sql: "SELECT a, SUM(b) OVER (ORDER BY d) FROM t;"
+      - id: over_empty
+        sql: "SELECT a, SUM(b) OVER () FROM t;"
+      - id: over_order_desc
+        sql: "SELECT a, SUM(b) OVER (PARTITION BY c ORDER BY d DESC) FROM t;"
+      - id: rows_unbounded_preceding_current
+        sql: "SELECT a, SUM(b) OVER (PARTITION BY c ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;"
+      - id: rows_n_preceding_current
+        sql: "SELECT a, AVG(b) OVER (PARTITION BY c ORDER BY d ROWS BETWEEN 3 PRECEDING AND CURRENT ROW) FROM t;"
+      - id: rows_n_preceding_n_following
+        sql: "SELECT a, AVG(b) OVER (PARTITION BY c ORDER BY d ROWS BETWEEN 3 PRECEDING AND 3 FOLLOWING) FROM t;"
+      - id: rows_n_preceding_unbounded_following
+        sql: "SELECT a, AVG(b) OVER (PARTITION BY c ORDER BY d ROWS BETWEEN 3 PRECEDING AND UNBOUNDED FOLLOWING) FROM t;"
+      - id: rows_unbounded_preceding_n_preceding
+        sql: "SELECT a, AVG(b) OVER (PARTITION BY c ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING) FROM t;"
+      - id: rows_current_unbounded_following
+        sql: "SELECT a, AVG(b) OVER (PARTITION BY c ORDER BY d ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM t;"
+      - id: rows_current_current
+        sql: "SELECT a, AVG(b) OVER (PARTITION BY c ORDER BY d ROWS BETWEEN CURRENT ROW AND CURRENT ROW) FROM t;"
+      - id: rows_current_n_following
+        sql: "SELECT a, AVG(b) OVER (PARTITION BY c ORDER BY d ROWS BETWEEN CURRENT ROW AND 2 FOLLOWING) FROM t;"
+      - id: rows_n_following_n_following
+        sql: "SELECT a, AVG(b) OVER (PARTITION BY c ORDER BY d ROWS BETWEEN 1 FOLLOWING AND 3 FOLLOWING) FROM t;"
+      - id: rows_n_following_unbounded
+        sql: "SELECT a, AVG(b) OVER (PARTITION BY c ORDER BY d ROWS BETWEEN 1 FOLLOWING AND UNBOUNDED FOLLOWING) FROM t;"
+      - id: rows_unbounded_preceding_shorthand
+        sql: "SELECT a, SUM(b) OVER (PARTITION BY c ORDER BY d ROWS UNBOUNDED PRECEDING) FROM t;"
+      - id: range_unbounded_preceding_current
+        sql: "SELECT a, SUM(b) OVER (PARTITION BY c ORDER BY d RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;"
+      - id: range_n_preceding_n_following
+        sql: "SELECT a, SUM(b) OVER (PARTITION BY c ORDER BY d RANGE BETWEEN 3 PRECEDING AND 3 FOLLOWING) FROM t;"
+      - id: range_current_unbounded_following
+        sql: "SELECT a, SUM(b) OVER (PARTITION BY c ORDER BY d RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM t;"
+      - id: multiple_over_clauses
+        sql: "SELECT a, COUNT(b) OVER (PARTITION BY c), SUM(b) OVER (PARTITION BY c) FROM t;"
+      - id: over_with_aliases
+        sql: "SELECT a, COUNT(b) OVER (PARTITION BY c) AS b_count, SUM(b) OVER (PARTITION BY c) b_sum FROM t;"
+      - id: window_clause
+        sql: "SELECT a, SUM(b) OVER w FROM t WINDOW w AS (PARTITION BY c ORDER BY d ROWS UNBOUNDED PRECEDING);"
+      - id: window_clause_multiple
+        sql: "SELECT a, SUM(b) OVER w1, AVG(b) OVER w2 FROM t WINDOW w1 AS (PARTITION BY c), w2 AS (PARTITION BY c ORDER BY d);"
+      - id: window_reference_in_over
+        sql: "SELECT a, SUM(b) OVER (w ORDER BY d) FROM t WINDOW w AS (PARTITION BY c);"
+      - id: lead_default
+        sql: "SELECT a, LEAD(a) OVER (PARTITION BY b ORDER BY c) FROM t;"
+      - id: lead_offset
+        sql: "SELECT a, LEAD(a, 2) OVER (PARTITION BY b ORDER BY c) FROM t;"
+      - id: lag_offset_default
+        sql: "SELECT a, LAG(a, 3, 0) OVER (PARTITION BY b ORDER BY c) FROM t;"
+      - id: first_value_skip_nulls
+        sql: "SELECT a, FIRST_VALUE(a, true) OVER (PARTITION BY b ORDER BY c) FROM t;"
+      - id: last_value
+        sql: "SELECT a, LAST_VALUE(a) OVER (PARTITION BY b ORDER BY c ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;"
+      - id: ranking_functions
+        sql: "SELECT RANK() OVER (ORDER BY a), DENSE_RANK() OVER (ORDER BY a), ROW_NUMBER() OVER (PARTITION BY b ORDER BY a) FROM t;"
+      - id: distribution_functions
+        sql: "SELECT CUME_DIST() OVER (ORDER BY a), PERCENT_RANK() OVER (ORDER BY a), NTILE(4) OVER (ORDER BY a) FROM t;"
+      - id: count_distinct_over_partition
+        sql: "SELECT a, COUNT(DISTINCT a) OVER (PARTITION BY b) FROM t;"
+      - id: count_distinct_over_frame
+        sql: "SELECT COUNT(DISTINCT a) OVER (PARTITION BY c ORDER BY d ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;"
+      - id: aggregate_in_over
+        sql: "SELECT rank() OVER (ORDER BY sum(b)) FROM t GROUP BY a;"
+    examples:
+      - "SELECT a, SUM(b) OVER (PARTITION BY c ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM T;"
+      - "SELECT a, SUM(b) OVER w FROM T WINDOW w AS (PARTITION BY c ORDER BY d ROWS UNBOUNDED PRECEDING);"
+      - "SELECT a, LAG(a, 3, 0) OVER (PARTITION BY b ORDER BY C) FROM T;"
