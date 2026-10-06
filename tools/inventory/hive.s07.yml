@@ -1,0 +1,83 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: insert_multi
+    name: Multi-insert (FROM ... INSERT ...)
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-dml/
+    tier: high
+    probes:
+      - id: overwrite_two_tables
+        sql: "FROM s INSERT OVERWRITE TABLE t1 SELECT a, b INSERT OVERWRITE TABLE t2 SELECT c, d;"
+      - id: into_two_tables
+        sql: "FROM s INSERT INTO TABLE t1 SELECT a, b INSERT INTO TABLE t2 SELECT c, d;"
+      - id: overwrite_then_into
+        sql: "FROM s INSERT OVERWRITE TABLE t1 SELECT a INSERT INTO TABLE t2 SELECT b;"
+      - id: into_then_overwrite
+        sql: "FROM s INSERT INTO TABLE t1 SELECT a INSERT OVERWRITE TABLE t2 SELECT b;"
+      - id: partition_static
+        sql: "FROM s INSERT OVERWRITE TABLE t1 PARTITION (p1 = 'x', p2 = 'y') SELECT a INSERT INTO TABLE t2 PARTITION (p1 = 'x') SELECT b;"
+      - id: partition_if_not_exists
+        sql: "FROM s INSERT OVERWRITE TABLE t1 PARTITION (p1 = 'x') IF NOT EXISTS SELECT a INSERT OVERWRITE TABLE t2 PARTITION (p1 = 'y') IF NOT EXISTS SELECT b;"
+      - id: partition_dynamic
+        sql: "FROM s INSERT OVERWRITE TABLE t1 PARTITION (p1, p2) SELECT a, p1, p2 INSERT INTO TABLE t2 PARTITION (p1 = 'x', p2) SELECT b, p2;"
+      - id: with_where
+        sql: "FROM s INSERT OVERWRITE TABLE t1 SELECT a WHERE a > 1 INSERT OVERWRITE TABLE t2 SELECT b WHERE b < 1;"
+      - id: with_group_by
+        sql: "FROM s INSERT OVERWRITE TABLE t1 SELECT a, COUNT(*) WHERE a > 1 GROUP BY a INSERT OVERWRITE TABLE t2 SELECT b, SUM(c) GROUP BY b;"
+      - id: from_subquery
+        sql: "FROM (SELECT a, b FROM s) x INSERT OVERWRITE TABLE t1 SELECT x.a INSERT OVERWRITE TABLE t2 SELECT x.b;"
+      - id: from_join
+        sql: "FROM s JOIN u ON s.id = u.id INSERT OVERWRITE TABLE t1 SELECT s.a INSERT OVERWRITE TABLE t2 SELECT u.b;"
+      - id: directory_overwrite
+        sql: "FROM s INSERT OVERWRITE DIRECTORY '/tmp/out1' SELECT a INSERT OVERWRITE DIRECTORY '/tmp/out2' SELECT b;"
+      - id: local_directory_overwrite
+        sql: "FROM s INSERT OVERWRITE LOCAL DIRECTORY '/tmp/out1' SELECT a INSERT OVERWRITE LOCAL DIRECTORY '/tmp/out2' SELECT b;"
+      - id: table_and_directory
+        sql: "FROM s INSERT OVERWRITE TABLE t1 SELECT a INSERT OVERWRITE DIRECTORY '/tmp/out' SELECT b;"
+      - id: standard_form_select_first
+        sql: "INSERT OVERWRITE TABLE t1 SELECT a FROM s;"
+        note: Standard syntax in the same Syntax block, select_statement1 FROM from_statement
+      - id: standard_into_partition
+        sql: "INSERT INTO TABLE t1 PARTITION (p1 = 'x') SELECT a FROM s;"
+      - id: standard_dynamic_partition
+        sql: "INSERT OVERWRITE TABLE t1 PARTITION (p1, p2) SELECT a, p1, p2 FROM s;"
+      - id: insert_into_without_table_keyword
+        sql: "FROM s INSERT INTO t1 SELECT a INSERT INTO t2 SELECT b;"
+        note: Hive 0.13+ allows omitting the TABLE keyword in INSERT INTO
+    examples: []
+
+  - id: insert_values
+    name: INSERT INTO ... VALUES
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-dml/
+    tier: high
+    probes:
+      - id: into_table_values
+        sql: "INSERT INTO TABLE t VALUES (1, 'a');"
+      - id: into_without_table_keyword
+        sql: "INSERT INTO t VALUES (1, 'a');"
+      - id: multiple_rows
+        sql: "INSERT INTO TABLE t VALUES (1, 'a'), (2, 'b');"
+      - id: null_value
+        sql: "INSERT INTO TABLE t VALUES (1, null);"
+      - id: partition_static
+        sql: "INSERT INTO TABLE t PARTITION (p = 'x') VALUES (1, 'a'), (2, null);"
+      - id: partition_dynamic
+        sql: "INSERT INTO TABLE t PARTITION (p) VALUES (1, 'a', 'x'), (2, 'b', 'y');"
+      - id: partition_mixed
+        sql: "INSERT INTO TABLE t PARTITION (p1 = 'x', p2) VALUES (1, 'a', 'y');"
+      - id: overwrite_values
+        sql: "INSERT OVERWRITE TABLE t VALUES (1, 'a');"
+      - id: overwrite_partition_values
+        sql: "INSERT OVERWRITE TABLE t PARTITION (p = 'x') VALUES (1, 'a');"
+      - id: column_list
+        sql: "INSERT INTO TABLE t (c1, c2) VALUES (1, 'a');"
+        note: Hive 1.2.0+ supports an optional column list in INSERT ... VALUES
+      - id: negative_and_decimal_literals
+        sql: "INSERT INTO TABLE t VALUES (-1, 1.28, 'x');"
+    examples:
+      - "INSERT INTO TABLE students VALUES ('fred flintstone', 35, 1.28), ('barney rubble', 32, 2.32);"
+      - "INSERT INTO TABLE pageviews PARTITION (datestamp = '2014-09-23') VALUES ('jsmith', 'mail.com', 'sports.com'), ('jdoe', 'mail.com', null);"
+      - "INSERT INTO TABLE pageviews PARTITION (datestamp) VALUES ('tjohnson', 'sports.com', 'finance.com', '2014-09-23'), ('tlee', 'finance.com', null, '2014-09-21');"
