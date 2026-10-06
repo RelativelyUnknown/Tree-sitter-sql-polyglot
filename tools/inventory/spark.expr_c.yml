@@ -1,0 +1,277 @@
+dialect: spark
+engine: Apache Spark SQL
+version: "4.x (docs/latest)"
+source: https://spark.apache.org/docs/latest/sql-ref-syntax.html
+
+statements: []
+
+expressions:
+  - id: c_aggregate_filter
+    name: Aggregate FILTER clause
+    doc: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+    tier: high
+    probes:
+      - { id: filter_where, sql: "SELECT count(*) FILTER (WHERE c > 4) FROM t;" }
+      - { id: filter_sum, sql: "SELECT sum(c) FILTER (WHERE c > 0) AS total FROM t GROUP BY s;" }
+      - { id: filter_collect, sql: "SELECT collect_list(c) FILTER (WHERE c IS NOT NULL) FROM t;" }
+      - { id: filter_over, sql: "SELECT sum(c) FILTER (WHERE c > 0) OVER (PARTITION BY s) FROM t;" }
+
+  - id: c_aggregate_within_group
+    name: Ordered-set aggregates (WITHIN GROUP)
+    doc: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+    tier: medium
+    probes:
+      - { id: listagg_within_group, sql: "SELECT listagg(c, ',') WITHIN GROUP (ORDER BY c DESC) FROM t;" }
+      - { id: percentile_cont, sql: "SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY c) FROM t;" }
+      - { id: percentile_disc, sql: "SELECT percentile_disc(0.25) WITHIN GROUP (ORDER BY c) FROM t;" }
+      - { id: mode_within_group, sql: "SELECT mode() WITHIN GROUP (ORDER BY c) FROM t;" }
+
+  - id: c_aggregate_distinct
+    name: Aggregate DISTINCT and ALL
+    doc: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+    tier: high
+    probes:
+      - { id: count_distinct, sql: "SELECT count(DISTINCT c) FROM t;" }
+      - { id: count_distinct_multi, sql: "SELECT count(DISTINCT a, b) FROM t;" }
+      - { id: sum_distinct, sql: "SELECT sum(DISTINCT c) FROM t;" }
+      - { id: count_all, sql: "SELECT count(ALL c) FROM t;" }
+
+  - id: c_aggregate_functions
+    name: Aggregate function families
+    doc: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+    tier: high
+    probes:
+      - { id: count_star, sql: "SELECT count(*), count(1) FROM t;" }
+      - { id: basic_aggs, sql: "SELECT min(c), max(c), avg(c), sum(c) FROM t;" }
+      - { id: statistical, sql: "SELECT stddev(c), variance(c), corr(a, b), covar_pop(a, b) FROM t;" }
+      - { id: collect, sql: "SELECT collect_list(c), collect_set(c) FROM t;" }
+      - { id: approx, sql: "SELECT approx_count_distinct(c), approx_percentile(c, 0.5) FROM t;" }
+      - { id: percentile, sql: "SELECT percentile(c, array(0.25, 0.75)) FROM t;" }
+      - { id: bool_aggs, sql: "SELECT bool_and(b), bool_or(b), every(b), any(b), some(b) FROM t;" }
+      - { id: first_last, sql: "SELECT first(c), last(c, true), any_value(c) FROM t;" }
+      - { id: max_by_min_by, sql: "SELECT max_by(a, b), min_by(a, b) FROM t;" }
+      - { id: bit_aggs, sql: "SELECT bit_and(c), bit_or(c), bit_xor(c) FROM t;" }
+      - { id: regr, sql: "SELECT regr_slope(y, x), regr_intercept(y, x), regr_r2(y, x) FROM t;" }
+      - { id: histogram_numeric, sql: "SELECT histogram_numeric(c, 5) FROM t;" }
+
+  - id: c_window_over
+    name: Window functions (OVER)
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-window.html
+    tier: high
+    probes:
+      - { id: over_empty, sql: "SELECT sum(c) OVER () FROM t;" }
+      - { id: partition_order, sql: "SELECT rank() OVER (PARTITION BY dept ORDER BY salary) FROM t;" }
+      - { id: distribute_sort, sql: "SELECT rank() OVER (DISTRIBUTE BY dept SORT BY salary) FROM t;" }
+      - { id: order_desc_nulls, sql: "SELECT row_number() OVER (ORDER BY c DESC NULLS LAST) FROM t;" }
+      - { id: ignore_nulls, sql: "SELECT first_value(c) IGNORE NULLS OVER (ORDER BY o) FROM t;" }
+      - { id: respect_nulls, sql: "SELECT last_value(c) RESPECT NULLS OVER (ORDER BY o) FROM t;" }
+      - { id: lag_lead, sql: "SELECT lag(c, 1, 0) OVER (ORDER BY o), lead(c) OVER (ORDER BY o) FROM t;" }
+      - { id: ranking_family, sql: "SELECT dense_rank() OVER (ORDER BY c), percent_rank() OVER (ORDER BY c), ntile(4) OVER (ORDER BY c), cume_dist() OVER (ORDER BY c) FROM t;" }
+      - { id: nth_value, sql: "SELECT nth_value(c, 2) OVER (ORDER BY o) FROM t;" }
+
+  - id: c_window_frames
+    name: Window frames
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-window.html
+    tier: high
+    probes:
+      - { id: rows_unbounded_preceding, sql: "SELECT sum(c) OVER (ORDER BY o ROWS UNBOUNDED PRECEDING) FROM t;" }
+      - { id: rows_between_offsets, sql: "SELECT avg(c) OVER (ORDER BY o ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;" }
+      - { id: rows_between_unbounded, sql: "SELECT sum(c) OVER (ORDER BY o ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: rows_current_row, sql: "SELECT sum(c) OVER (ORDER BY o ROWS BETWEEN CURRENT ROW AND 2 FOLLOWING) FROM t;" }
+      - { id: range_between, sql: "SELECT sum(c) OVER (ORDER BY o RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: range_offset, sql: "SELECT sum(c) OVER (ORDER BY o RANGE BETWEEN 10 PRECEDING AND 10 FOLLOWING) FROM t;" }
+      - { id: range_interval, sql: "SELECT count(*) OVER (ORDER BY ts RANGE BETWEEN INTERVAL 1 DAY PRECEDING AND CURRENT ROW) FROM t;" }
+
+  - id: c_named_windows
+    name: Named windows (WINDOW clause)
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select.html
+    tier: medium
+    probes:
+      - { id: named_window, sql: "SELECT sum(c) OVER w FROM t WINDOW w AS (PARTITION BY s ORDER BY o);" }
+      - { id: named_window_multi, sql: "SELECT sum(c) OVER w1, avg(c) OVER w2 FROM t WINDOW w1 AS (PARTITION BY s), w2 AS (ORDER BY o);" }
+      - { id: named_window_extend, sql: "SELECT sum(c) OVER (w ORDER BY o) FROM t WINDOW w AS (PARTITION BY s);" }
+      - { id: named_window_frame, sql: "SELECT sum(c) OVER w FROM t WINDOW w AS (ORDER BY o ROWS BETWEEN 1 PRECEDING AND CURRENT ROW);" }
+
+  - id: c_lambdas
+    name: Lambda expressions
+    doc: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+    tier: high
+    probes:
+      - { id: single_param, sql: "SELECT transform(array(1, 2, 3), x -> x + 1);" }
+      - { id: paren_single_param, sql: "SELECT transform(array(1, 2, 3), (x) -> x + 1);" }
+      - { id: two_params_index, sql: "SELECT transform(array(1, 2, 3), (x, i) -> x + i);" }
+      - { id: filter_lambda, sql: "SELECT filter(array(1, 2, 3), x -> x % 2 == 1);" }
+      - { id: exists_lambda, sql: "SELECT exists(array(1, 2, 3), x -> x % 2 == 0);" }
+      - { id: forall_lambda, sql: "SELECT forall(array(1, 2, 3), x -> x > 0);" }
+      - { id: aggregate_lambda, sql: "SELECT aggregate(array(1, 2, 3), 0, (acc, x) -> acc + x);" }
+      - { id: aggregate_finish, sql: "SELECT aggregate(array(1, 2, 3), 0, (acc, x) -> acc + x, acc -> acc * 10);" }
+      - { id: reduce_lambda, sql: "SELECT reduce(array(1, 2, 3), 0, (acc, x) -> acc + x);" }
+      - { id: map_filter, sql: "SELECT map_filter(map(1, 0, 2, 2, 3, -1), (k, v) -> k > v);" }
+      - { id: map_zip_with, sql: "SELECT map_zip_with(map(1, 'a'), map(1, 'x'), (k, v1, v2) -> concat(v1, v2));" }
+      - { id: transform_keys_values, sql: "SELECT transform_keys(m, (k, v) -> k + 1), transform_values(m, (k, v) -> v + 1) FROM t;" }
+      - { id: zip_with, sql: "SELECT zip_with(array(1, 2), array(3, 4), (x, y) -> x + y);" }
+      - { id: array_sort_lambda, sql: "SELECT array_sort(array(5, 6, 1), (l, r) -> CASE WHEN l < r THEN -1 WHEN l > r THEN 1 ELSE 0 END);" }
+      - { id: nested_lambda, sql: "SELECT transform(arr, x -> transform(x, y -> y + 1)) FROM t;" }
+
+  - id: c_array_access_constructors
+    name: Array access and constructors
+    doc: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+    tier: high
+    probes:
+      - { id: array_ctor, sql: "SELECT array(1, 2, 3);" }
+      - { id: array_empty, sql: "SELECT array();" }
+      - { id: subscript, sql: "SELECT arr[0], arr[1] FROM t;" }
+      - { id: subscript_expr, sql: "SELECT arr[i + 1] FROM t;" }
+      - { id: subscript_nested, sql: "SELECT arr[0][1] FROM t;" }
+      - { id: element_at, sql: "SELECT element_at(array(1, 2, 3), 2);" }
+      - { id: array_functions, sql: "SELECT size(arr), array_contains(arr, 1), array_distinct(arr), sort_array(arr, false) FROM t;" }
+      - { id: sequence_slice, sql: "SELECT sequence(1, 5), slice(arr, 1, 2), flatten(nested) FROM t;" }
+      - { id: array_ops, sql: "SELECT array_union(a, b), array_intersect(a, b), array_except(a, b), arrays_zip(a, b) FROM t;" }
+      - { id: explode_select, sql: "SELECT explode(arr) FROM t;" }
+
+  - id: c_map_access_constructors
+    name: Map access and constructors
+    doc: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+    tier: high
+    probes:
+      - { id: map_ctor, sql: "SELECT map(1.0, '2', 3.0, '4');" }
+      - { id: map_empty, sql: "SELECT map();" }
+      - { id: map_subscript, sql: "SELECT m['key'] FROM t;" }
+      - { id: map_element_at, sql: "SELECT element_at(m, 'key') FROM t;" }
+      - { id: map_from_arrays, sql: "SELECT map_from_arrays(array(1, 2), array('a', 'b'));" }
+      - { id: map_from_entries, sql: "SELECT map_from_entries(array(struct(1, 'a'), struct(2, 'b')));" }
+      - { id: map_functions, sql: "SELECT map_keys(m), map_values(m), map_concat(m1, m2), map_entries(m) FROM t;" }
+      - { id: str_to_map, sql: "SELECT str_to_map('a:1,b:2', ',', ':');" }
+
+  - id: c_struct_access_constructors
+    name: Struct access and constructors
+    doc: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+    tier: high
+    probes:
+      - { id: struct_ctor, sql: "SELECT struct(1, 'a', 3.0);" }
+      - { id: named_struct, sql: "SELECT named_struct('a', 1, 'b', 2);" }
+      - { id: field_access, sql: "SELECT s.a FROM t;" }
+      - { id: field_access_nested, sql: "SELECT t.s.a.b FROM t;" }
+      - { id: field_star, sql: "SELECT s.* FROM t;" }
+      - { id: struct_in_array_access, sql: "SELECT arr[0].a FROM t;" }
+      - { id: struct_field_func, sql: "SELECT struct(a, b).col1 FROM t;" }
+
+  - id: c_json_functions
+    name: JSON functions
+    doc: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+    tier: high
+    probes:
+      - { id: get_json_object, sql: "SELECT get_json_object(j, '$.a.b') FROM t;" }
+      - { id: json_tuple, sql: "SELECT json_tuple(j, 'a', 'b') FROM t;" }
+      - { id: json_tuple_lateral, sql: "SELECT x.a FROM t LATERAL VIEW json_tuple(j, 'a', 'b') x AS a, b;" }
+      - { id: from_json, sql: "SELECT from_json(j, 'a INT, b STRING') FROM t;" }
+      - { id: from_json_options, sql: "SELECT from_json(j, 'a INT', map('mode', 'FAILFAST')) FROM t;" }
+      - { id: to_json, sql: "SELECT to_json(named_struct('a', 1)) FROM t;" }
+      - { id: schema_of_json, sql: "SELECT schema_of_json('{\"a\": 1}');" }
+      - { id: json_array_length, sql: "SELECT json_array_length('[1,2,3]'), json_object_keys('{\"a\": 1}');" }
+
+  - id: c_variant_path_access
+    name: VARIANT functions and path extraction
+    doc: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+    tier: medium
+    probes:
+      - { id: parse_json, sql: "SELECT parse_json('{\"a\": 1}');" }
+      - { id: try_parse_json, sql: "SELECT try_parse_json(j) FROM t;" }
+      - { id: colon_path, sql: "SELECT v:a FROM t;" }
+      - { id: colon_path_nested, sql: "SELECT v:a.b[0] FROM t;" }
+      - { id: colon_path_cast, sql: "SELECT v:a::int FROM t;" }
+      - { id: variant_get, sql: "SELECT variant_get(v, '$.a', 'int') FROM t;" }
+      - { id: try_variant_get, sql: "SELECT try_variant_get(v, '$.a', 'int') FROM t;" }
+      - { id: is_variant_null, sql: "SELECT is_variant_null(v), schema_of_variant(v), to_variant_object(s) FROM t;" }
+
+  - id: c_cast_functions
+    name: Cast and conversion functions
+    doc: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+    tier: high
+    probes:
+      - { id: cast_as, sql: "SELECT CAST(c AS INT) FROM t;" }
+      - { id: double_colon, sql: "SELECT c::INT FROM t;" }
+      - { id: try_cast, sql: "SELECT TRY_CAST(c AS DOUBLE) FROM t;" }
+      - { id: cast_complex, sql: "SELECT CAST(c AS ARRAY<STRUCT<a: INT, b: STRING>>) FROM t;" }
+      - { id: type_functions, sql: "SELECT int(c), bigint(c), string(c), date(c), timestamp(c), decimal(c) FROM t;" }
+      - { id: to_date_timestamp, sql: "SELECT to_date(c, 'yyyy-MM-dd'), to_timestamp(c, 'yyyy-MM-dd HH:mm:ss') FROM t;" }
+
+  - id: c_string_functions
+    name: String function family
+    doc: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+    tier: medium
+    probes:
+      - { id: concat_family, sql: "SELECT concat(a, b), concat_ws(',', a, b), a || b FROM t;" }
+      - { id: case_trim, sql: "SELECT upper(c), lower(c), initcap(c), trim(c), ltrim(c), rtrim(c) FROM t;" }
+      - { id: substring_forms, sql: "SELECT substring(c, 2, 3), substr(c, 2), substring(c FROM 2 FOR 3) FROM t;" }
+      - { id: trim_special, sql: "SELECT trim(BOTH 'x' FROM c), trim(LEADING 'x' FROM c), trim(TRAILING 'x' FROM c) FROM t;" }
+      - { id: position_overlay, sql: "SELECT position('a' IN c), overlay(c PLACING 'x' FROM 2 FOR 1) FROM t;" }
+      - { id: regex_functions, sql: "SELECT regexp_replace(c, 'a+', 'b'), regexp_extract(c, '(a+)', 1), c RLIKE 'a.*' FROM t;" }
+      - { id: split_format, sql: "SELECT split(c, ','), format_string('%d-%s', 1, 'a'), lpad(c, 5, '0'), repeat(c, 2) FROM t;" }
+      - { id: like_escape, sql: "SELECT c LIKE 'a%' ESCAPE '/', c ILIKE 'A%', c LIKE ANY ('a%', 'b%'), c LIKE ALL ('a%', '%b') FROM t;" }
+
+  - id: c_math_functions
+    name: Math function family
+    doc: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+    tier: medium
+    probes:
+      - { id: basic_math, sql: "SELECT abs(c), ceil(c), floor(c), round(c, 2), bround(c, 2) FROM t;" }
+      - { id: power_log, sql: "SELECT pow(a, b), sqrt(c), exp(c), ln(c), log10(c), log(2, c) FROM t;" }
+      - { id: trig, sql: "SELECT sin(c), cos(c), tan(c), atan2(a, b) FROM t;" }
+      - { id: integer_ops, sql: "SELECT a % b, mod(a, b), pmod(a, b), a div b, a / b FROM t;" }
+      - { id: bit_ops, sql: "SELECT a & b, a | b, a ^ b, ~a, a << 2, a >> 1, a >>> 1 FROM t;" }
+      - { id: greatest_least, sql: "SELECT greatest(a, b, c), least(a, b, c), rand(), randn(42) FROM t;" }
+      - { id: try_arith, sql: "SELECT try_add(a, b), try_divide(a, b), try_multiply(a, b), try_subtract(a, b) FROM t;" }
+
+  - id: c_datetime_functions
+    name: Date and time function family
+    doc: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+    tier: medium
+    probes:
+      - { id: current_values, sql: "SELECT current_date(), current_timestamp(), now(), current_timezone();" }
+      - { id: current_keywords, sql: "SELECT current_date, current_timestamp, localtimestamp;" }
+      - { id: date_arith, sql: "SELECT date_add(d, 1), date_sub(d, 1), datediff(d1, d2), add_months(d, 1), months_between(d1, d2) FROM t;" }
+      - { id: date_parts, sql: "SELECT year(d), month(d), day(d), dayofweek(d), hour(ts), minute(ts), second(ts), quarter(d) FROM t;" }
+      - { id: extract_from, sql: "SELECT extract(YEAR FROM d), extract(DAY FROM ts) FROM t;" }
+      - { id: date_part_fn, sql: "SELECT date_part('year', d), datepart('month', d) FROM t;" }
+      - { id: date_trunc, sql: "SELECT date_trunc('MONTH', ts), trunc(d, 'YEAR') FROM t;" }
+      - { id: date_format, sql: "SELECT date_format(ts, 'yyyy-MM'), unix_timestamp(ts), from_unixtime(1), to_utc_timestamp(ts, 'UTC') FROM t;" }
+      - { id: make_functions, sql: "SELECT make_date(2020, 1, 1), make_timestamp(2020, 1, 1, 0, 0, 0), make_interval(1, 2) FROM t;" }
+      - { id: timestampadd_diff, sql: "SELECT timestampadd(DAY, 1, ts), timestampdiff(HOUR, ts1, ts2), dateadd(DAY, 1, ts) FROM t;" }
+      - { id: window_time, sql: "SELECT window(ts, '10 minutes'), window(ts, '10 minutes', '5 minutes') FROM t;" }
+
+  - id: c_conditional_functions
+    name: Conditional function family
+    doc: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+    tier: medium
+    probes:
+      - { id: coalesce_nvl, sql: "SELECT coalesce(a, b, 0), nvl(a, b), nvl2(a, b, c), ifnull(a, b), nullif(a, b) FROM t;" }
+      - { id: if_iff, sql: "SELECT if(a > 0, 'p', 'n'), nullifzero(a), zeroifnull(a) FROM t;" }
+      - { id: case_searched, sql: "SELECT CASE WHEN a > 0 THEN 'p' WHEN a < 0 THEN 'n' ELSE 'z' END FROM t;" }
+      - { id: case_simple, sql: "SELECT CASE a WHEN 1 THEN 'one' WHEN 2 THEN 'two' END FROM t;" }
+      - { id: decode_fn, sql: "SELECT decode(a, 1, 'one', 2, 'two', 'other') FROM t;" }
+      - { id: assert_raise, sql: "SELECT assert_true(a > 0), raise_error('bad') FROM t;" }
+
+  - id: c_hash_misc_functions
+    name: Hash, encoding and misc function family
+    doc: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+    tier: low
+    probes:
+      - { id: hashes, sql: "SELECT md5(c), sha1(c), sha2(c, 256), crc32(c), hash(a, b), xxhash64(c) FROM t;" }
+      - { id: encoding, sql: "SELECT base64(c), unbase64(c), hex(c), unhex(c), encode(c, 'UTF-8'), decode(b, 'UTF-8') FROM t;" }
+      - { id: generators, sql: "SELECT uuid(), monotonically_increasing_id(), spark_partition_id(), input_file_name();" }
+      - { id: session_info, sql: "SELECT current_user(), current_catalog(), current_database(), version();" }
+      - { id: typeof, sql: "SELECT typeof(c), try_to_number(c, '999'), to_number(c, '999.99'), to_char(c, '999') FROM t;" }
+
+  - id: c_generator_functions
+    name: Generator and table-valued functions
+    doc: https://spark.apache.org/docs/latest/sql-ref-functions-builtin.html
+    tier: medium
+    probes:
+      - { id: explode_from, sql: "SELECT * FROM explode(array(1, 2, 3));" }
+      - { id: posexplode, sql: "SELECT posexplode(arr) FROM t;" }
+      - { id: explode_outer, sql: "SELECT explode_outer(arr) FROM t;" }
+      - { id: inline, sql: "SELECT inline(array(struct(1, 'a'), struct(2, 'b')));" }
+      - { id: stack, sql: "SELECT stack(2, 'a', 1, 'b', 2);" }
+      - { id: range_tvf, sql: "SELECT * FROM range(1, 10, 2);" }
+      - { id: aliased_generator, sql: "SELECT explode(arr) AS (x) FROM t;" }

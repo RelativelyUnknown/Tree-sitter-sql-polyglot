@@ -1,0 +1,83 @@
+dialect: base
+engine: ISO SQL
+version: "SQL:2016"
+source: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html
+
+statements:
+  - id: insert
+    name: INSERT
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_14_11_insert_statement
+    tier: high
+    probes:
+      - id: values
+        sql: "INSERT INTO t VALUES (1, 'a');"
+      - id: values_multi_row
+        sql: "INSERT INTO t VALUES (1, 'a'), (2, 'b');"
+      - id: column_list_values
+        sql: "INSERT INTO t (a, b) VALUES (1, 'a');"
+      - id: values_default
+        sql: "INSERT INTO t (a, b) VALUES (1, DEFAULT);"
+      - id: values_null
+        sql: "INSERT INTO t (a, b) VALUES (1, NULL);"
+      - id: subquery
+        sql: "INSERT INTO t SELECT a, b FROM s;"
+      - id: column_list_subquery
+        sql: "INSERT INTO t (a, b) SELECT a, b FROM s WHERE a > 1;"
+      - id: subquery_with_cte
+        sql: "INSERT INTO t (a) WITH w AS (SELECT a FROM s) SELECT a FROM w;"
+      - id: subquery_parenthesized
+        sql: "INSERT INTO t (a, b) (SELECT a, b FROM s);"
+      - id: schema_qualified_target
+        sql: "INSERT INTO sch.t (a) VALUES (1);"
+      - id: override_user_value_values
+        sql: "INSERT INTO t (a, b) OVERRIDING USER VALUE VALUES (1, 'a');"
+      - id: override_system_value_values
+        sql: "INSERT INTO t (a, b) OVERRIDING SYSTEM VALUE VALUES (1, 'a');"
+      - id: override_user_value_subquery
+        sql: "INSERT INTO t (a, b) OVERRIDING USER VALUE SELECT a, b FROM s;"
+      - id: override_system_value_subquery
+        sql: "INSERT INTO t (a, b) OVERRIDING SYSTEM VALUE SELECT a, b FROM s;"
+      - id: override_without_column_list
+        sql: "INSERT INTO t OVERRIDING SYSTEM VALUE VALUES (1, 'a');"
+      - id: default_values
+        sql: "INSERT INTO t DEFAULT VALUES;"
+
+  - id: update_searched
+    name: UPDATE (searched)
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_14_14_update_statement_searched
+    tier: high
+    probes:
+      - id: basic
+        sql: "UPDATE t SET a = 1;"
+      - id: where
+        sql: "UPDATE t SET a = 1 WHERE b = 2;"
+      - id: multiple_assignments
+        sql: "UPDATE t SET a = 1, b = 'x' WHERE c > 3;"
+      - id: set_default
+        sql: "UPDATE t SET a = DEFAULT WHERE b = 2;"
+      - id: set_null
+        sql: "UPDATE t SET a = NULL;"
+      - id: set_expression
+        sql: "UPDATE t SET a = a + 1 WHERE b IS NOT NULL;"
+      - id: set_scalar_subquery
+        sql: "UPDATE t SET a = (SELECT MAX(x) FROM s) WHERE b = 2;"
+      - id: correlation_name
+        sql: "UPDATE t x SET a = 1 WHERE x.b = 2;"
+      - id: correlation_name_as
+        sql: "UPDATE t AS x SET a = 1 WHERE x.b = 2;"
+      - id: multiple_column_assignment_row
+        sql: "UPDATE t SET (a, b) = (1, 'x') WHERE c = 3;"
+      - id: multiple_column_assignment_subquery
+        sql: "UPDATE t SET (a, b) = (SELECT x, y FROM s WHERE s.id = 1) WHERE c = 3;"
+      - id: multiple_column_assignment_row_keyword
+        sql: "UPDATE t SET (a, b) = ROW (1, 'x');"
+      - id: array_element_target
+        sql: "UPDATE t SET a[1] = 5 WHERE b = 2;"
+      - id: where_subquery
+        sql: "UPDATE t SET a = 1 WHERE b IN (SELECT x FROM s);"
+      - id: schema_qualified_target
+        sql: "UPDATE sch.t SET a = 1;"
+      - id: for_portion_of
+        sql: "UPDATE t FOR PORTION OF valid_period FROM DATE '2020-01-01' TO DATE '2021-01-01' SET a = 1;"
+      - id: for_portion_of_correlation
+        sql: "UPDATE t FOR PORTION OF valid_period FROM DATE '2020-01-01' TO DATE '2021-01-01' AS x SET a = 1 WHERE x.b = 2;"
