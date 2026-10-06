@@ -1,0 +1,53 @@
+dialect: spark
+engine: Apache Spark SQL
+version: "4.x (docs/latest)"
+source: https://spark.apache.org/docs/latest/sql-ref-syntax.html
+
+statements:
+  - id: where_clause
+    name: WHERE Clause
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-where.html
+    tier: high
+    probes:
+      - id: comparison
+        sql: "SELECT * FROM t WHERE c > 1;"
+      - id: and_or
+        sql: "SELECT * FROM t WHERE a = 1 OR b = 2 AND c = 3;"
+      - id: is_null
+        sql: "SELECT * FROM t WHERE a > 3 OR b IS NULL;"
+      - id: function_expression
+        sql: "SELECT * FROM t WHERE length(name) > 3;"
+      - id: between
+        sql: "SELECT * FROM t WHERE id BETWEEN 200 AND 300;"
+      - id: scalar_subquery
+        sql: "SELECT * FROM t WHERE age > (SELECT avg(age) FROM t);"
+      - id: correlated_exists_subquery
+        sql: "SELECT * FROM t AS parent WHERE EXISTS (SELECT 1 FROM t AS child WHERE parent.id = child.id AND child.age IS NULL);"
+      - id: in_subquery
+        sql: "SELECT * FROM t WHERE id IN (SELECT id FROM s);"
+    examples:
+      - "SELECT * FROM person WHERE id > 200 ORDER BY id;"
+      - "SELECT * FROM person WHERE id = 200 OR id = 300 ORDER BY id;"
+      - "SELECT * FROM person WHERE age > (SELECT avg(age) FROM person);"
+
+  - id: aggregate_function
+    name: Aggregate Function
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-aggregate.html
+    tier: high
+    probes:
+      - id: basic_aggregate
+        sql: "SELECT sum(c) FROM t;"
+      - id: multi_arg_aggregate
+        sql: "SELECT max_by(a, b) FROM t;"
+      - id: aggregate_filter
+        sql: "SELECT count(*) FILTER (WHERE c > 1) FROM t;"
+      - id: percentile_cont_within_group
+        sql: "SELECT percentile_cont(0.25) WITHIN GROUP (ORDER BY c) FROM t;"
+      - id: percentile_disc_desc_nulls
+        sql: "SELECT percentile_disc(0.25) WITHIN GROUP (ORDER BY c DESC NULLS LAST) FROM t;"
+      - id: within_group_filter
+        sql: "SELECT percentile_cont(0.25) WITHIN GROUP (ORDER BY c) FILTER (WHERE d LIKE '%Bo%') FROM t;"
+      - id: within_group_group_by
+        sql: "SELECT department, percentile_disc(0.5) WITHIN GROUP (ORDER BY salary ASC NULLS FIRST, bonus) FROM t GROUP BY department;"
+    examples:
+      - "SELECT department, percentile_cont(0.25) WITHIN GROUP (ORDER BY salary) AS pc1, percentile_cont(0.25) WITHIN GROUP (ORDER BY salary) FILTER (WHERE employee_name LIKE '%Bo%') AS pc2, percentile_cont(0.25) WITHIN GROUP (ORDER BY salary DESC) AS pc3, percentile_cont(0.25) WITHIN GROUP (ORDER BY salary DESC) FILTER (WHERE employee_name LIKE '%Bo%') AS pc4, percentile_disc(0.25) WITHIN GROUP (ORDER BY salary) AS pd1, percentile_disc(0.25) WITHIN GROUP (ORDER BY salary) FILTER (WHERE employee_name LIKE '%Bo%') AS pd2, percentile_disc(0.25) WITHIN GROUP (ORDER BY salary DESC) AS pd3, percentile_disc(0.25) WITHIN GROUP (ORDER BY salary DESC) FILTER (WHERE employee_name LIKE '%Bo%') AS pd4 FROM basic_pays GROUP BY department ORDER BY department;"
