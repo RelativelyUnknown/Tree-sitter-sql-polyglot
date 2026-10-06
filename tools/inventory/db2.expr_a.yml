@@ -1,0 +1,219 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "12.1"
+source: https://www.ibm.com/docs/en/db2/12.1.x?topic=reference-statements
+
+statements: []
+
+expressions:
+  - id: a_numeric_constants
+    name: Numeric constants
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=elements-constants
+    tier: high
+    probes:
+      - { id: integer, sql: "VALUES 64;" }
+      - { id: negative_integer, sql: "VALUES -32768;" }
+      - { id: decimal, sql: "VALUES 25.5;" }
+      - { id: decimal_trailing_point, sql: "VALUES 30.;" }
+      - { id: floating_point, sql: "VALUES 15E1;" }
+      - { id: floating_point_signed_exponent, sql: "VALUES 2.2E-1;" }
+      - { id: floating_point_trailing_point, sql: "VALUES 5.E+2;" }
+      - { id: bigint_range, sql: "VALUES 9223372036854775807;" }
+      - { id: decfloat_literal, sql: "VALUES DECFLOAT('1.5E3');" }
+    examples:
+      - "VALUES 6.0221415E+23;"
+  - id: a_character_string_constants
+    name: Character string constants
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=elements-constants
+    tier: high
+    probes:
+      - { id: simple, sql: "VALUES 'abc';" }
+      - { id: empty, sql: "VALUES '';" }
+      - { id: embedded_quote, sql: "VALUES 'O''Brien';" }
+      - { id: multiline, sql: "VALUES 'line1\nline2';" }
+      - { id: hex_string, sql: "VALUES X'4A4B';" }
+      - { id: hex_string_lowercase_prefix, sql: "VALUES x'4a4b';" }
+  - id: a_graphic_unicode_string_constants
+    name: Graphic and Unicode string constants
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=elements-constants
+    tier: medium
+    probes:
+      - { id: graphic_n_prefix, sql: "VALUES N'abc';" }
+      - { id: graphic_g_prefix, sql: "VALUES G'abc';" }
+      - { id: graphic_hex, sql: "VALUES GX'00610062';" }
+      - { id: unicode_ux, sql: "VALUES UX'0061';" }
+      - { id: unicode_escape, sql: "VALUES U&'\\0061bc';" }
+      - { id: unicode_escape_uescape, sql: "VALUES U&'!0061bc' UESCAPE '!';" }
+  - id: a_binary_string_constants
+    name: Binary string constants
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=elements-constants
+    tier: medium
+    probes:
+      - { id: bx, sql: "VALUES BX'0A0B';" }
+      - { id: bx_empty, sql: "VALUES BX'';" }
+  - id: a_boolean_null_constants
+    name: Boolean and null constants
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=elements-constants
+    tier: high
+    probes:
+      - { id: bool_true, sql: "VALUES TRUE;" }
+      - { id: bool_false, sql: "VALUES FALSE;" }
+      - { id: null_cast, sql: "VALUES CAST(NULL AS INTEGER);" }
+      - { id: null_in_select, sql: "SELECT NULL FROM t;" }
+      - { id: unknown_boolean, sql: "VALUES CAST(NULL AS BOOLEAN);" }
+  - id: a_datetime_constants
+    name: Datetime constants
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=elements-constants
+    tier: high
+    probes:
+      - { id: date, sql: "VALUES DATE '2024-03-15';" }
+      - { id: date_us_format, sql: "VALUES DATE '03/15/2024';" }
+      - { id: time, sql: "VALUES TIME '13:30:00';" }
+      - { id: time_am_pm, sql: "VALUES TIME '1:30 PM';" }
+      - { id: timestamp, sql: "VALUES TIMESTAMP '2024-03-15 13:30:00';" }
+      - { id: timestamp_fraction, sql: "VALUES TIMESTAMP '2024-03-15-13.30.00.123456';" }
+      - { id: timestamp_picoseconds, sql: "VALUES TIMESTAMP '2024-03-15 13:30:00.123456789012';" }
+  - id: a_labeled_durations
+    name: Labeled durations and datetime arithmetic
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=expressions-datetime-operations-durations
+    tier: high
+    probes:
+      - { id: days, sql: "SELECT CURRENT DATE + 30 DAYS FROM sysibm.sysdummy1;" }
+      - { id: day_singular, sql: "SELECT CURRENT DATE - 1 DAY FROM sysibm.sysdummy1;" }
+      - { id: months_years, sql: "SELECT d + 1 YEAR + 2 MONTHS FROM t;" }
+      - { id: time_units, sql: "SELECT ts + 5 HOURS + 10 MINUTES + 30 SECONDS FROM t;" }
+      - { id: microseconds, sql: "SELECT ts + 100 MICROSECONDS FROM t;" }
+      - { id: expression_duration, sql: "SELECT d + (c * 2) DAYS FROM t;" }
+      - { id: parenthesized_duration, sql: "SELECT d - (SELECT 1 FROM sysibm.sysdummy1) MONTH FROM t;" }
+      - { id: date_difference, sql: "SELECT d1 - d2 FROM t;" }
+  - id: a_array_constructors
+    name: Array constructors and subscripts
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=expressions-array-constructor
+    tier: medium
+    probes:
+      - { id: constructor, sql: "SET a = ARRAY[1, 2, 3];" }
+      - { id: constructor_subquery, sql: "SET a = ARRAY[SELECT c FROM t ORDER BY c];" }
+      - { id: element_reference, sql: "SET x = a[1];" }
+      - { id: element_assignment, sql: "SET a[2] = 5;" }
+      - { id: cast_to_array_type, sql: "VALUES CAST(ARRAY[1, 2] AS INTEGER ARRAY[10]);" }
+  - id: a_json_constructors
+    name: SQL/JSON functions and predicates
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=functions-json-value
+    tier: medium
+    probes:
+      - { id: json_value, sql: "SELECT JSON_VALUE(j, '$.a') FROM t;" }
+      - { id: json_value_returning, sql: "SELECT JSON_VALUE(j, '$.a' RETURNING INTEGER) FROM t;" }
+      - { id: json_query, sql: "SELECT JSON_QUERY(j, '$.a' WITH ARRAY WRAPPER) FROM t;" }
+      - { id: json_object, sql: "SELECT JSON_OBJECT(KEY 'a' VALUE 1) FROM t;" }
+      - { id: json_array, sql: "SELECT JSON_ARRAY(1, 2, 3) FROM t;" }
+      - { id: json_exists, sql: "SELECT 1 FROM t WHERE JSON_EXISTS(j, '$.a');" }
+      - { id: is_json, sql: "SELECT 1 FROM t WHERE j IS JSON;" }
+  - id: a_built_in_types
+    name: Built-in data type names
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=elements-data-types
+    tier: high
+    probes:
+      - { id: smallint_integer_bigint, sql: "CREATE TABLE t (a SMALLINT, b INTEGER, c BIGINT, d INT);" }
+      - { id: decimal_precision_scale, sql: "CREATE TABLE t (a DECIMAL(10, 2), b NUMERIC(5), c DEC(7, 3));" }
+      - { id: decimal_default, sql: "CREATE TABLE t (a DECIMAL, b NUMERIC);" }
+      - { id: real_double_float, sql: "CREATE TABLE t (a REAL, b DOUBLE, c DOUBLE PRECISION, d FLOAT(53));" }
+      - { id: decfloat, sql: "CREATE TABLE t (a DECFLOAT, b DECFLOAT(16), c DECFLOAT(34));" }
+      - { id: char_varchar, sql: "CREATE TABLE t (a CHAR(10), b VARCHAR(100), c CHARACTER(5), d CHARACTER VARYING(20));" }
+      - { id: char_for_bit_data, sql: "CREATE TABLE t (a CHAR(8) FOR BIT DATA, b VARCHAR(16) FOR BIT DATA);" }
+      - { id: string_units, sql: "CREATE TABLE t (a VARCHAR(10 OCTETS), b VARCHAR(10 CODEUNITS32), c CHAR(5 CODEUNITS16));" }
+      - { id: graphic_types, sql: "CREATE TABLE t (a GRAPHIC(10), b VARGRAPHIC(20), c NCHAR(5), d NVARCHAR(10));" }
+      - { id: nchar_varying, sql: "CREATE TABLE t (a NATIONAL CHARACTER(5), b NATIONAL CHAR VARYING(10));" }
+      - { id: binary_types, sql: "CREATE TABLE t (a BINARY(8), b VARBINARY(16));" }
+      - { id: lob_types, sql: "CREATE TABLE t (a CLOB(1M), b BLOB(2G), c DBCLOB(500K));" }
+      - { id: lob_synonyms, sql: "CREATE TABLE t (a CHARACTER LARGE OBJECT(1M), b BINARY LARGE OBJECT(1M), c CHAR LARGE OBJECT(10));" }
+      - { id: lob_options, sql: "CREATE TABLE t (a CLOB(1M) LOGGED COMPACT, b BLOB(1M) NOT LOGGED);" }
+      - { id: date_time, sql: "CREATE TABLE t (a DATE, b TIME);" }
+      - { id: timestamp, sql: "CREATE TABLE t (a TIMESTAMP, b TIMESTAMP(6), c TIMESTAMP(12));" }
+      - { id: boolean, sql: "CREATE TABLE t (a BOOLEAN);" }
+      - { id: xml, sql: "CREATE TABLE t (a XML);" }
+      - { id: user_defined_type, sql: "CREATE TABLE t (a myschema.mytype);" }
+  - id: a_user_defined_types
+    name: Array, row and cursor type names
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=elements-data-types
+    tier: medium
+    probes:
+      - { id: array_type, sql: "CREATE TYPE intarr AS INTEGER ARRAY[100];" }
+      - { id: array_type_unbounded, sql: "CREATE TYPE intarr AS INTEGER ARRAY[];" }
+      - { id: associative_array, sql: "CREATE TYPE assoc AS VARCHAR(10) ARRAY[VARCHAR(5)];" }
+      - { id: row_type, sql: "CREATE TYPE rt AS ROW (a INTEGER, b VARCHAR(10));" }
+      - { id: anchored_type, sql: "BEGIN DECLARE v ANCHOR DATA TYPE TO t.c; END" }
+      - { id: row_anchored, sql: "BEGIN DECLARE r ANCHOR ROW t; END" }
+  - id: a_cast_expressions
+    name: Casts
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=expressions-cast-specification
+    tier: high
+    probes:
+      - { id: cast_basic, sql: "SELECT CAST(c AS INTEGER) FROM t;" }
+      - { id: cast_varchar, sql: "SELECT CAST(c AS VARCHAR(10)) FROM t;" }
+      - { id: cast_decimal, sql: "SELECT CAST(c AS DECIMAL(10, 2)) FROM t;" }
+      - { id: cast_null, sql: "SELECT CAST(NULL AS DATE) FROM t;" }
+      - { id: cast_parameter_marker, sql: "SELECT CAST(? AS INTEGER) FROM t;" }
+      - { id: cast_timestamp_precision, sql: "SELECT CAST(c AS TIMESTAMP(9)) FROM t;" }
+      - { id: cast_user_defined, sql: "SELECT CAST(c AS myschema.mytype) FROM t;" }
+      - { id: cast_to_boolean, sql: "SELECT CAST('true' AS BOOLEAN) FROM t;" }
+      - { id: scalar_conversion_function, sql: "SELECT INTEGER(c), VARCHAR(c), DECIMAL(c, 5, 2), DATE(c) FROM t;" }
+      - { id: treat_as, sql: "SELECT TREAT(c AS myschema.subtype) FROM t;" }
+      - { id: datatype_prefixed_literal, sql: "SELECT BIGINT('12') FROM t;" }
+  - id: a_identifier_quoting
+    name: Identifiers and quoting
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=elements-identifiers
+    tier: high
+    probes:
+      - { id: ordinary, sql: "SELECT a FROM t;" }
+      - { id: delimited, sql: "SELECT \"My Column\" FROM \"My Table\";" }
+      - { id: delimited_embedded_quote, sql: "SELECT \"a\"\"b\" FROM t;" }
+      - { id: qualified, sql: "SELECT s.t.c FROM s.t;" }
+      - { id: three_part_name, sql: "SELECT c FROM db.s.t;" }
+      - { id: correlation_name, sql: "SELECT x.c FROM t AS x;" }
+      - { id: special_chars_ordinary, sql: "SELECT c#1, c$2, c@3 FROM t;" }
+      - { id: delimited_keyword, sql: "SELECT \"SELECT\" FROM \"TABLE\";" }
+      - { id: delimited_lowercase, sql: "SELECT \"abc\" FROM t;" }
+  - id: a_comments
+    name: Comments
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=elements-comments-sql-statements
+    tier: high
+    probes:
+      - { id: line_comment, sql: "SELECT 1 -- comment\nFROM t;" }
+      - { id: bracketed_comment, sql: "SELECT /* comment */ 1 FROM t;" }
+      - { id: multiline_bracketed, sql: "SELECT 1 /* line1\nline2 */ FROM t;" }
+      - { id: leading_comment, sql: "-- leading\nSELECT 1 FROM t;" }
+  - id: a_parameter_markers_and_host_variables
+    name: Parameter markers and variables
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=elements-references-host-variables
+    tier: high
+    probes:
+      - { id: untyped_marker, sql: "SELECT c FROM t WHERE c = ?;" }
+      - { id: typed_marker, sql: "SELECT c FROM t WHERE c = CAST(? AS INTEGER);" }
+      - { id: multiple_markers, sql: "SELECT c FROM t WHERE a BETWEEN ? AND ?;" }
+      - { id: host_variable, sql: "SELECT c FROM t WHERE c = :hv;" }
+      - { id: host_variable_indicator, sql: "SELECT c INTO :hv :ind FROM t;" }
+      - { id: host_variable_indicator_keyword, sql: "SELECT c INTO :hv INDICATOR :ind FROM t;" }
+  - id: a_sql_variables_and_registers
+    name: SQL variables, global variables and special registers
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=elements-special-registers
+    tier: high
+    probes:
+      - { id: current_date, sql: "VALUES CURRENT DATE;" }
+      - { id: current_time, sql: "VALUES CURRENT TIME;" }
+      - { id: current_timestamp_keyword, sql: "VALUES CURRENT TIMESTAMP;" }
+      - { id: current_timestamp_precision, sql: "VALUES CURRENT TIMESTAMP(6);" }
+      - { id: current_timestamp_underscore, sql: "VALUES CURRENT_TIMESTAMP;" }
+      - { id: current_user, sql: "VALUES CURRENT USER;" }
+      - { id: user_session_system, sql: "VALUES (USER, SESSION_USER, SYSTEM_USER);" }
+      - { id: current_schema, sql: "VALUES CURRENT SCHEMA;" }
+      - { id: current_path, sql: "VALUES CURRENT PATH;" }
+      - { id: current_timezone, sql: "VALUES CURRENT TIMEZONE;" }
+      - { id: current_isolation, sql: "VALUES CURRENT ISOLATION;" }
+      - { id: current_client_acctng, sql: "VALUES CURRENT CLIENT_ACCTNG;" }
+      - { id: current_decfloat_rounding, sql: "VALUES CURRENT DECFLOAT ROUNDING MODE;" }
+      - { id: current_special_register_in_select, sql: "SELECT CURRENT DATE, CURRENT TIME FROM t;" }
+      - { id: global_variable, sql: "VALUES myschema.gv;" }
+      - { id: sql_variable_in_expression, sql: "SET v = v + 1;" }
+      - { id: next_value_for, sql: "VALUES NEXT VALUE FOR s;" }
+      - { id: previous_value_for, sql: "VALUES PREVIOUS VALUE FOR s;" }
+      - { id: nextval_previous, sql: "VALUES NEXTVAL FOR myschema.s;" }
