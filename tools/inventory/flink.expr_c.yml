@@ -1,0 +1,228 @@
+dialect: flink
+engine: Apache Flink SQL
+version: "2.3"
+source: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/
+
+statements: []
+
+expressions:
+  - id: c_aggregate_distinct
+    name: Aggregate functions with ALL / DISTINCT
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/queries/group-agg/
+    tier: high
+    probes:
+      - { id: count_distinct, sql: "SELECT COUNT(DISTINCT c) FROM t;" }
+      - { id: sum_all, sql: "SELECT SUM(ALL c) FROM t;" }
+      - { id: collect_distinct, sql: "SELECT COLLECT(DISTINCT c) FROM t;" }
+      - { id: var_pop_distinct, sql: "SELECT VAR_POP(DISTINCT c) FROM t;" }
+      - { id: distinct_group_by, sql: "SELECT g, COUNT(DISTINCT c) FROM t GROUP BY g;" }
+    examples:
+      - "SELECT COUNT(DISTINCT order_id) FROM Orders GROUP BY order_id;"
+  - id: c_aggregate_grouping
+    name: GROUPING and GROUPING_ID
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: medium
+    probes:
+      - { id: grouping, sql: "SELECT GROUPING(a), COUNT(*) FROM t GROUP BY ROLLUP (a);" }
+      - { id: grouping_id, sql: "SELECT GROUPING_ID(a, b), COUNT(*) FROM t GROUP BY CUBE (a, b);" }
+  - id: c_aggregate_listagg
+    name: LISTAGG
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: medium
+    probes:
+      - { id: listagg, sql: "SELECT LISTAGG(c) FROM t;" }
+      - { id: listagg_separator, sql: "SELECT LISTAGG(c, ',') FROM t;" }
+  - id: c_aggregate_array_agg
+    name: ARRAY_AGG with null treatment
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: medium
+    probes:
+      - { id: array_agg, sql: "SELECT ARRAY_AGG(c) FROM t;" }
+      - { id: array_agg_distinct, sql: "SELECT ARRAY_AGG(DISTINCT c) FROM t;" }
+      - { id: array_agg_respect_nulls, sql: "SELECT ARRAY_AGG(c RESPECT NULLS) FROM t;" }
+      - { id: array_agg_ignore_nulls, sql: "SELECT ARRAY_AGG(c IGNORE NULLS) FROM t;" }
+  - id: c_aggregate_json
+    name: JSON_OBJECTAGG and JSON_ARRAYAGG
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: medium
+    probes:
+      - { id: json_objectagg, sql: "SELECT JSON_OBJECTAGG(KEY k VALUE v) FROM t;" }
+      - { id: json_objectagg_null, sql: "SELECT JSON_OBJECTAGG(KEY k VALUE v ABSENT ON NULL) FROM t;" }
+      - { id: json_arrayagg, sql: "SELECT JSON_ARRAYAGG(c) FROM t;" }
+      - { id: json_arrayagg_null, sql: "SELECT JSON_ARRAYAGG(c NULL ON NULL) FROM t;" }
+  - id: c_aggregate_ordinary
+    name: Ordinary aggregate functions
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: count_star, sql: "SELECT COUNT(*) FROM t;" }
+      - { id: stat_family, sql: "SELECT AVG(c), MIN(c), MAX(c), STDDEV_POP(c), VAR_SAMP(c) FROM t;" }
+      - { id: first_last_value, sql: "SELECT FIRST_VALUE(c), LAST_VALUE(c) FROM t;" }
+      - { id: percentile, sql: "SELECT PERCENTILE(c, 0.5) FROM t;" }
+  - id: c_window_over
+    name: OVER window aggregation
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/queries/over-agg/
+    tier: high
+    probes:
+      - { id: over_partition_order, sql: "SELECT SUM(a) OVER (PARTITION BY p ORDER BY ts) FROM t;" }
+      - { id: over_order_only, sql: "SELECT SUM(a) OVER (ORDER BY ts) FROM t;" }
+      - { id: over_range_interval, sql: "SELECT SUM(a) OVER (PARTITION BY p ORDER BY ts RANGE BETWEEN INTERVAL '1' HOUR PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: over_range_unbounded, sql: "SELECT SUM(a) OVER (ORDER BY ts RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: over_rows_between, sql: "SELECT SUM(a) OVER (ORDER BY ts ROWS BETWEEN 10 PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: over_rows_unbounded, sql: "SELECT SUM(a) OVER (ORDER BY ts ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+    examples:
+      - "SELECT order_id, order_time, amount, SUM(amount) OVER (PARTITION BY product ORDER BY order_time RANGE BETWEEN INTERVAL '1' HOUR PRECEDING AND CURRENT ROW) AS one_hour_prod_amount_sum FROM Orders;"
+  - id: c_window_named
+    name: Named windows (WINDOW clause)
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/queries/over-agg/
+    tier: high
+    probes:
+      - { id: window_clause, sql: "SELECT SUM(a) OVER w, AVG(a) OVER w FROM t WINDOW w AS (PARTITION BY p ORDER BY ts RANGE BETWEEN INTERVAL '1' HOUR PRECEDING AND CURRENT ROW);" }
+    examples:
+      - "SELECT order_id, order_time, amount, SUM(amount) OVER w AS sum_amount, AVG(amount) OVER w AS avg_amount FROM Orders WINDOW w AS (PARTITION BY product ORDER BY order_time RANGE BETWEEN INTERVAL '1' HOUR PRECEDING AND CURRENT ROW);"
+  - id: c_window_ranking
+    name: Ranking and value window functions
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: row_number, sql: "SELECT ROW_NUMBER() OVER (PARTITION BY p ORDER BY ts DESC) FROM t;" }
+      - { id: rank_dense_rank, sql: "SELECT RANK() OVER (ORDER BY a), DENSE_RANK() OVER (ORDER BY a) FROM t;" }
+      - { id: percent_rank_cume_dist, sql: "SELECT PERCENT_RANK() OVER (ORDER BY a), CUME_DIST() OVER (ORDER BY a) FROM t;" }
+      - { id: ntile, sql: "SELECT NTILE(4) OVER (ORDER BY a) FROM t;" }
+      - { id: lag_lead, sql: "SELECT LAG(a, 1, 0) OVER (ORDER BY ts), LEAD(a) OVER (ORDER BY ts) FROM t;" }
+  - id: c_lambda
+    name: Lambda expressions
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: low
+    status: not-applicable
+    reason: The Flink SQL built-in function reference documents no lambda expression syntax; array and map functions take values only.
+  - id: c_array_access
+    name: Array, map and row access
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: array_index, sql: "SELECT arr[1] FROM t;" }
+      - { id: map_key, sql: "SELECT m['k'] FROM t;" }
+      - { id: row_field, sql: "SELECT r.f FROM t;" }
+      - { id: row_field_star, sql: "SELECT r.* FROM t;" }
+      - { id: cardinality, sql: "SELECT CARDINALITY(arr), ELEMENT(arr) FROM t;" }
+  - id: c_constructors
+    name: Array, map, row and multiset constructors
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: array_ctor, sql: "SELECT ARRAY[1, 2, 3];" }
+      - { id: map_ctor, sql: "SELECT MAP['a', 1, 'b', 2];" }
+      - { id: row_ctor, sql: "SELECT ROW(1, 'a');" }
+      - { id: row_parens, sql: "SELECT (1, 'a');" }
+      - { id: object_of, sql: "SELECT OBJECT_OF('com.example.User', 'name', 'Bob', 'age', 42);" }
+  - id: c_collection_functions
+    name: Collection functions
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: medium
+    probes:
+      - { id: array_funcs, sql: "SELECT ARRAY_CONTAINS(arr, 1), ARRAY_JOIN(arr, ','), ARRAY_SORT(arr), ARRAY_SLICE(arr, 1, 2), ARRAY_UNION(arr, arr), ARRAY_EXCEPT(arr, arr) FROM t;" }
+      - { id: map_funcs, sql: "SELECT MAP_KEYS(m), MAP_ENTRIES(m), MAP_UNION(m, m) FROM t;" }
+      - { id: str_to_map, sql: "SELECT STR_TO_MAP('a=1,b=2', ',', '=');" }
+  - id: c_json_functions
+    name: JSON functions
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: is_json, sql: "SELECT s IS JSON FROM t;" }
+      - { id: is_json_object, sql: "SELECT s IS JSON OBJECT, s IS NOT JSON ARRAY FROM t;" }
+      - { id: json_exists, sql: "SELECT JSON_EXISTS(s, '$.a') FROM t;" }
+      - { id: json_exists_error, sql: "SELECT JSON_EXISTS(s, '$.a' TRUE ON ERROR) FROM t;" }
+      - { id: json_value, sql: "SELECT JSON_VALUE(s, '$.a') FROM t;" }
+      - { id: json_value_returning, sql: "SELECT JSON_VALUE(s, '$.a' RETURNING INT DEFAULT 0 ON EMPTY DEFAULT 1 ON ERROR) FROM t;" }
+      - { id: json_query, sql: "SELECT JSON_QUERY(s, '$.a') FROM t;" }
+      - { id: json_query_wrapper, sql: "SELECT JSON_QUERY(s, '$.a' RETURNING STRING WITH CONDITIONAL ARRAY WRAPPER EMPTY ARRAY ON EMPTY NULL ON ERROR) FROM t;" }
+      - { id: json_object, sql: "SELECT JSON_OBJECT(KEY 'k' VALUE 1);" }
+      - { id: json_object_null, sql: "SELECT JSON_OBJECT('k' VALUE v ABSENT ON NULL) FROM t;" }
+      - { id: json_array, sql: "SELECT JSON_ARRAY(1, 'a', NULL);" }
+      - { id: json_array_null, sql: "SELECT JSON_ARRAY(1, NULL ON NULL);" }
+      - { id: json_string, sql: "SELECT JSON_STRING(c) FROM t;" }
+  - id: c_cast
+    name: CAST and TRY_CAST
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: cast, sql: "SELECT CAST(c AS INT) FROM t;" }
+      - { id: try_cast, sql: "SELECT TRY_CAST('42' AS INT);" }
+      - { id: cast_parameterized, sql: "SELECT CAST(c AS DECIMAL(10, 2)), CAST(c AS VARCHAR(20)) FROM t;" }
+      - { id: cast_complex, sql: "SELECT CAST(c AS ARRAY<INT>), CAST(c AS MAP<STRING, INT>), CAST(c AS ROW<a INT, b STRING>) FROM t;" }
+      - { id: cast_timestamp, sql: "SELECT CAST(c AS TIMESTAMP(3)), CAST(c AS TIMESTAMP_LTZ(3)), CAST(c AS TIMESTAMP(3) WITH LOCAL TIME ZONE) FROM t;" }
+  - id: c_case_conditional
+    name: CASE and conditional functions
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: case_simple, sql: "SELECT CASE c WHEN 1 THEN 'a' ELSE 'b' END FROM t;" }
+      - { id: case_searched, sql: "SELECT CASE WHEN c > 1 THEN 'a' WHEN c > 0 THEN 'b' END FROM t;" }
+      - { id: nullif_coalesce, sql: "SELECT NULLIF(a, b), COALESCE(a, b, 0) FROM t;" }
+      - { id: if_function, sql: "SELECT IF(a > 0, 'x', 'y') FROM t;" }
+      - { id: least_greatest, sql: "SELECT LEAST(a, b), GREATEST(a, b) FROM t;" }
+  - id: c_comparison_logical
+    name: Comparison and logical operators
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: comparisons, sql: "SELECT a = b, a <> b, a != b, a < b, a >= b FROM t;" }
+      - { id: logical, sql: "SELECT a AND b, a OR b, NOT a FROM t;" }
+      - { id: is_null, sql: "SELECT a IS NULL, a IS NOT NULL FROM t;" }
+      - { id: is_distinct, sql: "SELECT a IS DISTINCT FROM b, a IS NOT DISTINCT FROM b FROM t;" }
+      - { id: is_boolean, sql: "SELECT a IS TRUE, a IS NOT TRUE, a IS FALSE, a IS NOT FALSE, a IS UNKNOWN, a IS NOT UNKNOWN FROM t;" }
+      - { id: between, sql: "SELECT a BETWEEN 1 AND 2, a NOT BETWEEN 1 AND 2 FROM t;" }
+      - { id: between_symmetric, sql: "SELECT a BETWEEN SYMMETRIC 2 AND 1, a BETWEEN ASYMMETRIC 1 AND 2 FROM t;" }
+      - { id: like, sql: "SELECT s LIKE 'a%', s NOT LIKE 'a%', s LIKE 'a$%' ESCAPE '$' FROM t;" }
+      - { id: similar_to, sql: "SELECT s SIMILAR TO 'a+', s NOT SIMILAR TO 'a+' ESCAPE '$' FROM t;" }
+      - { id: in_list, sql: "SELECT a IN (1, 2, 3), a NOT IN (1, 2) FROM t;" }
+      - { id: in_subquery, sql: "SELECT a IN (SELECT b FROM u) FROM t;" }
+      - { id: exists, sql: "SELECT EXISTS (SELECT 1 FROM u), NOT EXISTS (SELECT 1 FROM u) FROM t;" }
+  - id: c_arithmetic
+    name: Arithmetic functions and operators
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: operators, sql: "SELECT a + b, a - b, a * b, a / b, a % b, -a, +a FROM t;" }
+      - { id: math_family, sql: "SELECT ABS(a), POWER(a, 2), SQRT(a), EXP(a), LN(a), LOG10(a), LOG2(a), LOG(2, a), MOD(a, 3) FROM t;" }
+      - { id: rounding, sql: "SELECT FLOOR(a), CEIL(a), CEILING(a), ROUND(a, 2), TRUNCATE(a, 1) FROM t;" }
+      - { id: trig, sql: "SELECT SIN(a), COS(a), TAN(a), ATAN2(a, b), DEGREES(a), RADIANS(a), PI() FROM t;" }
+      - { id: random, sql: "SELECT RAND(), RAND(1), RAND_INTEGER(10), UUID();" }
+      - { id: bit_functions, sql: "SELECT BITAND(a, b), BITOR(a, b), BITXOR(a, b), BITNOT(a) FROM t;" }
+  - id: c_string_functions
+    name: String functions and special forms
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: concat_op, sql: "SELECT a || b FROM t;" }
+      - { id: trim, sql: "SELECT TRIM(c), TRIM(BOTH ' ' FROM c), TRIM(LEADING 'x' FROM c), TRIM(TRAILING 'x' FROM c) FROM t;" }
+      - { id: overlay, sql: "SELECT OVERLAY(s PLACING 'xx' FROM 2), OVERLAY(s PLACING 'xx' FROM 2 FOR 3) FROM t;" }
+      - { id: position, sql: "SELECT POSITION('a' IN s) FROM t;" }
+      - { id: substring, sql: "SELECT SUBSTRING(s FROM 2), SUBSTRING(s FROM 2 FOR 3) FROM t;" }
+      - { id: case_functions, sql: "SELECT UPPER(s), LOWER(s), INITCAP(s), LENGTH(s), CHAR_LENGTH(s) FROM t;" }
+      - { id: pad_replace, sql: "SELECT LPAD(s, 5, '0'), RPAD(s, 5, '0'), REPLACE(s, 'a', 'b'), TRANSLATE(s, 'ab', 'xy'), REPEAT(s, 2), REVERSE(s) FROM t;" }
+      - { id: concat_functions, sql: "SELECT CONCAT(a, b), CONCAT_WS(',', a, b), SPLIT_INDEX(s, ',', 0) FROM t;" }
+      - { id: regexp, sql: "SELECT REGEXP(s, 'a+'), REGEXP_EXTRACT(s, 'a(b)', 1), REGEXP_REPLACE(s, 'a', 'b') FROM t;" }
+      - { id: encoding_hash, sql: "SELECT MD5(s), SHA256(s), TO_BASE64(s), FROM_BASE64(s), ENCODE(s, 'UTF-8'), DECODE(b, 'UTF-8') FROM t;" }
+      - { id: parse_url, sql: "SELECT PARSE_URL(s, 'HOST'), ASCII(s), CHR(65) FROM t;" }
+  - id: c_datetime_functions
+    name: Date and time functions and special forms
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: current_values, sql: "SELECT CURRENT_DATE, CURRENT_TIME, CURRENT_TIMESTAMP, LOCALTIME, LOCALTIMESTAMP, NOW();" }
+      - { id: typed_literals, sql: "SELECT DATE '2020-01-01', TIME '10:00:00', TIMESTAMP '2020-01-01 10:00:00';" }
+      - { id: interval_literals, sql: "SELECT INTERVAL '1' DAY, INTERVAL '1' HOUR, INTERVAL '2' YEAR, INTERVAL '1-2' YEAR TO MONTH, INTERVAL '1 02:03:04' DAY TO SECOND;" }
+      - { id: extract, sql: "SELECT EXTRACT(YEAR FROM ts), EXTRACT(DAY FROM ts) FROM t;" }
+      - { id: floor_ceil_to, sql: "SELECT FLOOR(ts TO HOUR), CEIL(ts TO DAY) FROM t;" }
+      - { id: timestampadd_diff, sql: "SELECT TIMESTAMPADD(DAY, 1, ts), TIMESTAMPDIFF(DAY, ts, ts2) FROM t;" }
+      - { id: overlaps, sql: "SELECT (ts1, ts2) OVERLAPS (ts3, ts4) FROM t;" }
+      - { id: format_convert, sql: "SELECT DATE_FORMAT(ts, 'yyyy-MM-dd'), TO_TIMESTAMP('2020-01-01 10:00:00'), TO_TIMESTAMP_LTZ(1000, 3), FROM_UNIXTIME(1000), UNIX_TIMESTAMP(), CONVERT_TZ('1970-01-01 00:00:00', 'UTC', 'Asia/Shanghai') FROM t;" }
+      - { id: current_watermark, sql: "SELECT * FROM t WHERE CURRENT_WATERMARK(ts) IS NULL OR ts > CURRENT_WATERMARK(ts);" }
+  - id: c_system_functions
+    name: Type and miscellaneous system functions
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: low
+    probes:
+      - { id: typeof, sql: "SELECT TYPEOF(c) FROM t;" }
