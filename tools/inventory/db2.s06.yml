@@ -1,0 +1,74 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "12.1"
+source: https://www.ibm.com/docs/en/db2/12.1.x?topic=reference-statements
+
+statements:
+  - id: commit
+    name: COMMIT
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-commit
+    tier: high
+    probes:
+      - id: commit
+        sql: "COMMIT;"
+      - id: commit_work
+        sql: "COMMIT WORK;"
+    examples:
+      - "COMMIT WORK;"
+
+  - id: compound_sql_inlined
+    name: Compound SQL (inlined)
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-compound-sql-inlined
+    tier: high
+    probes:
+      - id: begin_atomic
+        sql: "BEGIN ATOMIC INSERT INTO t VALUES (1); END;"
+      - id: labeled
+        sql: "lbl: BEGIN ATOMIC INSERT INTO t VALUES (1); END lbl;"
+        note: label allowed only in a function, method or trigger body
+      - id: declare_variable
+        sql: "BEGIN ATOMIC DECLARE v INTEGER; SET v = 1; END;"
+      - id: declare_variable_default
+        sql: "BEGIN ATOMIC DECLARE v INTEGER DEFAULT 0; INSERT INTO t VALUES (v); END;"
+      - id: declare_variable_default_null
+        sql: "BEGIN ATOMIC DECLARE a, b VARCHAR(10) DEFAULT NULL; SET a = 'x'; END;"
+      - id: declare_condition
+        sql: "BEGIN ATOMIC DECLARE c CONDITION FOR SQLSTATE '70001'; SIGNAL c; END;"
+      - id: declare_condition_value
+        sql: "BEGIN ATOMIC DECLARE c CONDITION FOR SQLSTATE VALUE '70001'; SIGNAL c; END;"
+      - id: stmt_call
+        sql: "BEGIN ATOMIC CALL p(1); END;"
+      - id: stmt_for
+        sql: "BEGIN ATOMIC FOR r AS SELECT a FROM t DO INSERT INTO u VALUES (r.a); END FOR; END;"
+      - id: stmt_fullselect
+        sql: "BEGIN ATOMIC VALUES (1); END;"
+      - id: stmt_cte_fullselect
+        sql: "BEGIN ATOMIC WITH x(a) AS (SELECT a FROM t) SELECT a FROM x; END;"
+      - id: stmt_get_diagnostics
+        sql: "BEGIN ATOMIC DECLARE n INTEGER; INSERT INTO t VALUES (1); GET DIAGNOSTICS n = ROW_COUNT; END;"
+      - id: stmt_if
+        sql: "BEGIN ATOMIC DECLARE v INTEGER DEFAULT 0; IF v = 0 THEN SET v = 1; ELSE SET v = 2; END IF; END;"
+      - id: stmt_iterate_leave
+        sql: "l: BEGIN ATOMIC DECLARE v INTEGER DEFAULT 0; w: WHILE v < 10 DO SET v = v + 1; IF v = 5 THEN LEAVE w; END IF; END WHILE w; END l;"
+        note: ITERATE and LEAVE are listed SQL-statements; label qualifies the enclosing loop
+      - id: stmt_iterate
+        sql: "l: BEGIN ATOMIC DECLARE v INTEGER DEFAULT 0; w: WHILE v < 10 DO SET v = v + 1; IF v = 5 THEN ITERATE w; END IF; END WHILE w; END l;"
+      - id: stmt_insert
+        sql: "BEGIN ATOMIC INSERT INTO t VALUES (1); INSERT INTO t VALUES (2); END;"
+      - id: stmt_merge
+        sql: "BEGIN ATOMIC MERGE INTO t USING s ON t.a = s.a WHEN MATCHED THEN UPDATE SET b = s.b; END;"
+      - id: stmt_return
+        sql: "BEGIN ATOMIC RETURN 1; END;"
+        note: RETURN is valid in an SQL function or method body
+      - id: stmt_searched_delete
+        sql: "BEGIN ATOMIC DELETE FROM t WHERE a = 1; END;"
+      - id: stmt_searched_update
+        sql: "BEGIN ATOMIC UPDATE t SET b = 1 WHERE a = 1; END;"
+      - id: stmt_set_variable
+        sql: "BEGIN ATOMIC DECLARE v INTEGER; SET v = 1; END;"
+      - id: stmt_signal
+        sql: "BEGIN ATOMIC SIGNAL SQLSTATE '70001' SET MESSAGE_TEXT = 'err'; END;"
+      - id: stmt_while
+        sql: "BEGIN ATOMIC DECLARE v INTEGER DEFAULT 0; WHILE v < 3 DO SET v = v + 1; END WHILE; END;"
+    examples:
+      - "BEGIN ATOMIC FOR ROW AS SELECT PK, C1, DISCRETIZE(C1) AS D FROM SOURCE DO IF ROW.D IS NULL THEN INSERT INTO EXCEPT VALUES (ROW.PK, ROW.C1); ELSE INSERT INTO TARGET VALUES (ROW.PK, ROW.D); END IF; END FOR; END;"
