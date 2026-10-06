@@ -1,0 +1,54 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: select_lateral_view
+    name: LATERAL VIEW
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-lateralview/
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT pageid, adid FROM pageAds LATERAL VIEW explode(adid_list) adTable AS adid;"
+      - id: outer
+        sql: "SELECT * FROM src LATERAL VIEW OUTER explode(arr) t AS a;"
+      - id: multiple_column_aliases
+        sql: "SELECT * FROM src LATERAL VIEW explode(m) t AS k, v;"
+      - id: alias_omitted
+        sql: "SELECT * FROM src LATERAL VIEW inline(arr) t;"
+        note: From Hive 0.12.0 column aliases can be omitted
+      - id: multiple_lateral_views
+        sql: "SELECT * FROM t LATERAL VIEW explode(col1) t1 AS c1 LATERAL VIEW explode(c1) t2 AS c2;"
+      - id: with_where_group_by
+        sql: "SELECT adid, count(1) FROM pageAds LATERAL VIEW explode(adid_list) adTable AS adid WHERE adid > 1 GROUP BY adid;"
+    examples:
+      - "SELECT pageid, adid FROM pageAds LATERAL VIEW explode(adid_list) adTable AS adid;"
+      - "SELECT adid, count(1) FROM pageAds LATERAL VIEW explode(adid_list) adTable AS adid GROUP BY adid;"
+      - "SELECT * FROM exampleTable LATERAL VIEW explode(col1) myTable1 AS myCol1 LATERAL VIEW explode(myCol1) myTable2 AS myCol2;"
+
+  - id: select_subquery
+    name: Subqueries
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-subqueries/
+    tier: high
+    probes:
+      - id: from_subquery
+        sql: "SELECT col FROM (SELECT a + b AS col FROM t1) t2;"
+      - id: from_subquery_as
+        sql: "SELECT col FROM (SELECT a + b AS col FROM t1) AS t2;"
+      - id: from_subquery_union_all
+        sql: "SELECT t3.col FROM (SELECT a + b AS col FROM t1 UNION ALL SELECT c + d AS col FROM t2) t3;"
+      - id: nested_from_subquery
+        sql: "SELECT x FROM (SELECT y AS x FROM (SELECT 1 AS y FROM t) a) b;"
+      - id: where_in
+        sql: "SELECT * FROM A WHERE A.a IN (SELECT foo FROM B);"
+      - id: where_not_in
+        sql: "SELECT * FROM A WHERE A.a NOT IN (SELECT foo FROM B);"
+      - id: where_exists
+        sql: "SELECT A FROM T1 WHERE EXISTS (SELECT B FROM T2 WHERE T1.X = T2.Y);"
+      - id: where_not_exists
+        sql: "SELECT A FROM T1 WHERE NOT EXISTS (SELECT B FROM T2 WHERE T1.X = T2.Y);"
+    examples:
+      - "SELECT col FROM ( SELECT a+b AS col FROM t1 ) t2;"
+      - "SELECT t3.col FROM ( SELECT a+b AS col FROM t1 UNION ALL SELECT c+d AS col FROM t2 ) t3;"
+      - "SELECT * FROM A WHERE A.a IN (SELECT foo FROM B);"
