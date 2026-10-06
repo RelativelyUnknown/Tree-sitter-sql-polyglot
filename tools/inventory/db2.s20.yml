@@ -1,0 +1,158 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "12.1"
+source: https://www.ibm.com/docs/en/db2/12.1.x?topic=reference-statements
+
+statements:
+  - id: loop
+    name: LOOP
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-loop
+    tier: high
+    probes:
+      - id: basic
+        sql: |-
+          CREATE PROCEDURE p() LANGUAGE SQL BEGIN DECLARE i INTEGER DEFAULT 0; LOOP SET i = i + 1; END LOOP; END;
+      - id: labeled
+        sql: |-
+          CREATE PROCEDURE p() LANGUAGE SQL BEGIN DECLARE i INTEGER DEFAULT 0; lp: LOOP SET i = i + 1; END LOOP; END;
+      - id: end_label
+        sql: |-
+          CREATE PROCEDURE p() LANGUAGE SQL BEGIN DECLARE i INTEGER DEFAULT 0; lp: LOOP SET i = i + 1; END LOOP lp; END;
+      - id: leave
+        sql: |-
+          CREATE PROCEDURE p() LANGUAGE SQL BEGIN DECLARE i INTEGER DEFAULT 0; lp: LOOP IF i > 10 THEN LEAVE lp; END IF; SET i = i + 1; END LOOP lp; END;
+      - id: iterate
+        sql: |-
+          CREATE PROCEDURE p() LANGUAGE SQL BEGIN DECLARE i INTEGER DEFAULT 0; lp: LOOP SET i = i + 1; IF i < 5 THEN ITERATE lp; END IF; LEAVE lp; END LOOP lp; END;
+      - id: multiple_statements
+        sql: |-
+          CREATE PROCEDURE p() LANGUAGE SQL BEGIN DECLARE i INTEGER DEFAULT 0; lp: LOOP SET i = i + 1; INSERT INTO t VALUES (i); IF i = 3 THEN LEAVE lp; END IF; END LOOP lp; END;
+    examples:
+      - |-
+        CREATE PROCEDURE LOOP_UNTIL_SPACE(OUT counter INTEGER)
+          LANGUAGE SQL
+          BEGIN
+            DECLARE v_counter INTEGER DEFAULT 0;
+            DECLARE v_firstnme VARCHAR(12);
+            DECLARE v_midinit CHAR(1);
+            DECLARE v_lastname VARCHAR(15);
+            DECLARE c1 CURSOR FOR
+              SELECT firstnme, midinit, lastname
+                FROM employee;
+            DECLARE CONTINUE HANDLER FOR NOT FOUND
+              SET counter = -1;
+            OPEN c1;
+            fetch_loop:
+            LOOP
+              FETCH c1 INTO v_firstnme, v_midinit, v_lastname;
+              IF v_midinit = ' ' THEN
+                LEAVE fetch_loop;
+              END IF;
+              SET v_counter = v_counter + 1;
+            END LOOP fetch_loop;
+            SET counter = v_counter;
+            CLOSE c1;
+          END;
+
+  - id: merge
+    name: MERGE
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-merge
+    tier: high
+    probes:
+      - id: update_insert
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET c = s.c WHEN NOT MATCHED THEN INSERT (id, c) VALUES (s.id, s.c);"
+      - id: target_view
+        sql: "MERGE INTO v USING s ON v.id = s.id WHEN MATCHED THEN UPDATE SET c = s.c;"
+      - id: target_fullselect
+        sql: "MERGE INTO (SELECT id, c FROM t) USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET c = s.c;"
+        note: "MERGE INTO ( fullselect ) target form"
+      - id: target_correlation
+        sql: "MERGE INTO t AS x USING s ON x.id = s.id WHEN MATCHED THEN UPDATE SET c = s.c;"
+      - id: target_correlation_columns
+        sql: "MERGE INTO t AS x (a, b) USING s ON x.a = s.id WHEN MATCHED THEN UPDATE SET b = s.c;"
+      - id: with_cte
+        sql: "MERGE INTO (WITH cte AS (SELECT id, c FROM t) SELECT id, c FROM cte) USING s ON id = s.id WHEN MATCHED THEN UPDATE SET c = s.c;"
+        note: "Syntax block: MERGE INTO ( WITH common-table-expression fullselect ) target form"
+      - id: using_subquery
+        sql: "MERGE INTO t USING (SELECT id, c FROM s) AS x ON t.id = x.id WHEN MATCHED THEN UPDATE SET c = x.c;"
+      - id: using_table_values
+        sql: "MERGE INTO t USING TABLE (VALUES (1, 2)) AS s(id, c) ON t.id = s.id WHEN MATCHED THEN UPDATE SET c = s.c;"
+      - id: matched_and_condition
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED AND s.c > 0 THEN UPDATE SET c = s.c;"
+      - id: matched_delete
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN DELETE;"
+      - id: multiple_matched
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED AND s.c IS NULL THEN DELETE WHEN MATCHED THEN UPDATE SET c = s.c;"
+      - id: update_multi_assign
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET c1 = s.c1, c2 = s.c2;"
+      - id: update_default_null
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET c1 = DEFAULT, c2 = NULL;"
+      - id: update_row_assign
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET (c1, c2) = (s.c1, s.c2);"
+      - id: update_row_assign_default_null
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET (c1, c2) = (DEFAULT, NULL);"
+      - id: update_row_fullselect
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET (c1, c2) = (SELECT a, b FROM u WHERE u.id = s.id);"
+      - id: update_for_portion
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE FOR PORTION OF BUSINESS_TIME FROM '2020-01-01' TO '2021-01-01' SET c = s.c;"
+      - id: delete_for_portion
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN DELETE FOR PORTION OF BUSINESS_TIME FROM '2020-01-01' TO '2021-01-01';"
+      - id: not_matched_insert
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED THEN INSERT VALUES (s.id, s.c);"
+      - id: not_matched_insert_columns
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED THEN INSERT (id, c) VALUES (s.id, s.c);"
+      - id: not_matched_insert_default_null
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED THEN INSERT (id, c1, c2) VALUES (s.id, DEFAULT, NULL);"
+      - id: not_matched_and_condition
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED AND s.c > 0 THEN INSERT (id, c) VALUES (s.id, s.c);"
+      - id: signal_matched
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED AND s.c IS NULL THEN SIGNAL SQLSTATE '70001' SET MESSAGE_TEXT = 'null value';"
+      - id: signal_not_matched
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED AND s.c IS NULL THEN SIGNAL SQLSTATE '70002' SET MESSAGE_TEXT = 'null value';"
+      - id: else_ignore
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET c = s.c ELSE IGNORE;"
+      - id: isolation_ur
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET c = s.c WITH UR;"
+      - id: isolation_cs
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET c = s.c WITH CS;"
+      - id: isolation_rs
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET c = s.c WITH RS;"
+      - id: isolation_rr
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET c = s.c WITH RR;"
+    examples:
+      - |-
+        MERGE INTO archive ar
+          USING (SELECT activity, description FROM activities) ac
+          ON (ar.activity = ac.activity)
+          WHEN MATCHED THEN
+            UPDATE SET description = ac.description
+          WHEN NOT MATCHED THEN
+            INSERT (activity, description)
+              VALUES (ac.activity, ac.description);
+      - |-
+        MERGE INTO account AS a
+          USING (SELECT id, sum(amount) sum_amount FROM transaction GROUP BY id) AS t
+          ON a.id = t.id
+          WHEN MATCHED THEN
+            UPDATE SET balance = a.balance + t.sum_amount
+          WHEN NOT MATCHED THEN
+            INSERT (id, balance) VALUES (t.id, t.sum_amount);
+      - |-
+        MERGE INTO archive ar
+          USING (SELECT activity, description, date, last_modified
+                   FROM activities_groupA) ac
+          ON (ar.activity = ac.activity) AND ar.group = 'A'
+          WHEN MATCHED AND ac.date IS NULL THEN
+            SIGNAL SQLSTATE '70001'
+              SET MESSAGE_TEXT = ac.activity CONCAT ' cannot be modified. Reason: Date is not known'
+          WHEN MATCHED AND ac.date < CURRENT DATE THEN
+            DELETE
+          WHEN MATCHED AND ar.last_modified < ac.last_modified THEN
+            UPDATE SET (description, date, last_modified) = (ac.description, ac.date, DEFAULT)
+          WHEN NOT MATCHED AND ac.date IS NULL THEN
+            SIGNAL SQLSTATE '70002'
+              SET MESSAGE_TEXT = ac.activity CONCAT ' cannot be inserted. Reason: Date is not known'
+          WHEN NOT MATCHED AND ac.date >= CURRENT DATE THEN
+            INSERT (group, activity, description, date)
+              VALUES ('A', ac.activity, ac.description, ac.date)
+          ELSE IGNORE;
