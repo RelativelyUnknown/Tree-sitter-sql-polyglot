@@ -4,3 +4,74 @@ version: "4.x (docs/latest)"
 source: https://spark.apache.org/docs/latest/sql-ref-syntax.html
 
 statements:
+  - id: alter_view
+    name: ALTER VIEW
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-alter-view.html
+    tier: high
+    probes:
+      - id: rename_to
+        sql: "ALTER VIEW v RENAME TO v2;"
+      - id: rename_to_qualified
+        sql: "ALTER VIEW db.v RENAME TO db.v2;"
+      - id: set_tblproperties
+        sql: "ALTER VIEW v SET TBLPROPERTIES ('k' = 'v');"
+      - id: set_tblproperties_multi
+        sql: "ALTER VIEW db.v SET TBLPROPERTIES ('created.by.user' = 'John', 'created.date' = '01-01-2001');"
+      - id: unset_tblproperties
+        sql: "ALTER VIEW v UNSET TBLPROPERTIES ('k');"
+      - id: unset_tblproperties_if_exists
+        sql: "ALTER VIEW v UNSET TBLPROPERTIES IF EXISTS ('k1', 'k2');"
+      - id: as_select
+        sql: "ALTER VIEW v AS SELECT * FROM t;"
+      - id: as_select_qualified
+        sql: "ALTER VIEW db.v AS SELECT c1, c2 FROM db.t WHERE c1 > 0;"
+      - id: with_schema_binding
+        sql: "ALTER VIEW v WITH SCHEMA BINDING;"
+      - id: with_schema_compensation
+        sql: "ALTER VIEW v WITH SCHEMA COMPENSATION;"
+      - id: with_schema_evolution
+        sql: "ALTER VIEW v WITH SCHEMA EVOLUTION;"
+      - id: with_schema_type_evolution
+        sql: "ALTER VIEW v WITH SCHEMA TYPE EVOLUTION;"
+    examples:
+      - "ALTER VIEW tempdb1.v1 RENAME TO tempdb1.v2;"
+      - "ALTER VIEW tempdb1.v2 SET TBLPROPERTIES ('created.by.user' = \"John\", 'created.date' = '01-01-2001' );"
+      - "ALTER VIEW tempdb1.v2 UNSET TBLPROPERTIES ('created.by.user', 'created.date');"
+
+  - id: create_function_external
+    name: CREATE FUNCTION (External)
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-create-function.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE FUNCTION f AS 'com.example.Udf';"
+      - id: qualified_name
+        sql: "CREATE FUNCTION db.f AS 'com.example.Udf';"
+      - id: catalog_qualified_name
+        sql: "CREATE FUNCTION cat.db.f AS 'com.example.Udf';"
+      - id: if_not_exists
+        sql: "CREATE FUNCTION IF NOT EXISTS f AS 'com.example.Udf';"
+      - id: or_replace
+        sql: "CREATE OR REPLACE FUNCTION f AS 'com.example.Udf';"
+      - id: temporary
+        sql: "CREATE TEMPORARY FUNCTION f AS 'com.example.Udf';"
+      - id: temporary_if_not_exists
+        sql: "CREATE TEMPORARY FUNCTION IF NOT EXISTS f AS 'com.example.Udf';"
+      - id: or_replace_temporary
+        sql: "CREATE OR REPLACE TEMPORARY FUNCTION f AS 'com.example.Udf';"
+      - id: temporary_session_qualified
+        sql: "CREATE TEMPORARY FUNCTION session.f AS 'com.example.Udf';"
+      - id: temporary_system_session_qualified
+        sql: "CREATE TEMPORARY FUNCTION system.session.f AS 'com.example.Udf';"
+      - id: using_jar
+        sql: "CREATE FUNCTION f AS 'com.example.Udf' USING JAR '/tmp/udf.jar';"
+      - id: using_file
+        sql: "CREATE FUNCTION f AS 'com.example.Udf' USING FILE '/tmp/data.txt';"
+      - id: using_archive
+        sql: "CREATE FUNCTION f AS 'com.example.Udf' USING ARCHIVE '/tmp/res.zip';"
+      - id: using_multiple_resources
+        sql: "CREATE FUNCTION f AS 'com.example.Udf' USING JAR '/tmp/udf.jar', FILE '/tmp/data.txt', ARCHIVE '/tmp/res.zip';"
+    examples:
+      - "CREATE FUNCTION simple_udf AS 'SimpleUdf' USING JAR '/tmp/SimpleUdf.jar';"
+      - "CREATE TEMPORARY FUNCTION simple_temp_udf AS 'SimpleUdf' USING JAR '/tmp/SimpleUdf.jar';"
+      - "CREATE OR REPLACE FUNCTION simple_udf AS 'SimpleUdfR' USING JAR '/tmp/SimpleUdfR.jar';"
