@@ -1,0 +1,53 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: lateral_view
+    name: LATERAL VIEW clause
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-lateral-view
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT * FROM t LATERAL VIEW EXPLODE(ARRAY(30, 60)) AS c;"
+      - id: table_alias
+        sql: "SELECT * FROM t LATERAL VIEW EXPLODE(ARRAY(30, 60)) tbl AS c;"
+      - id: outer
+        sql: "SELECT * FROM t LATERAL VIEW OUTER EXPLODE(ARRAY()) tbl AS c;"
+      - id: multiple_columns
+        sql: "SELECT * FROM t LATERAL VIEW INLINE(ARRAY(STRUCT(1, 'a'))) tbl AS c1, c2;"
+      - id: multiple_lateral_views
+        sql: "SELECT * FROM t LATERAL VIEW EXPLODE(ARRAY(30, 60)) AS c_age LATERAL VIEW EXPLODE(ARRAY(40, 80)) AS d_age;"
+      - id: with_group_by
+        sql: "SELECT c_age, COUNT(1) FROM t LATERAL VIEW EXPLODE(ARRAY(30, 60)) AS c_age GROUP BY c_age;"
+    examples:
+      - "SELECT * FROM person LATERAL VIEW EXPLODE(ARRAY(30, 60)) tableName AS c_age LATERAL VIEW EXPLODE(ARRAY(40, 80)) AS d_age;"
+      - "SELECT c_age, COUNT(1) FROM person LATERAL VIEW EXPLODE(ARRAY(30, 60)) AS c_age LATERAL VIEW EXPLODE(ARRAY(40, 80)) AS d_age GROUP BY c_age;"
+      - "SELECT * FROM person LATERAL VIEW OUTER EXPLODE(ARRAY()) tableName AS c_age;"
+
+  - id: tablesample
+    name: TABLESAMPLE clause
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-sampling
+    tier: high
+    probes:
+      - id: percent
+        sql: "SELECT * FROM t TABLESAMPLE (30 PERCENT);"
+      - id: percent_decimal
+        sql: "SELECT * FROM t TABLESAMPLE (12.5 PERCENT);"
+      - id: rows
+        sql: "SELECT * FROM t TABLESAMPLE (5 ROWS);"
+      - id: bucket
+        sql: "SELECT * FROM t TABLESAMPLE (BUCKET 4 OUT OF 10);"
+      - id: percent_repeatable
+        sql: "SELECT * FROM t TABLESAMPLE (30 PERCENT) REPEATABLE (123);"
+      - id: rows_repeatable
+        sql: "SELECT * FROM t TABLESAMPLE (5 ROWS) REPEATABLE (123);"
+      - id: bucket_repeatable
+        sql: "SELECT * FROM t TABLESAMPLE (BUCKET 4 OUT OF 10) REPEATABLE (123);"
+      - id: with_alias
+        sql: "SELECT * FROM t AS a TABLESAMPLE (30 PERCENT);"
+    examples:
+      - "SELECT * FROM test TABLESAMPLE (30 PERCENT) REPEATABLE (123);"
+      - "SELECT * FROM test TABLESAMPLE (5 ROWS);"
+      - "SELECT * FROM test TABLESAMPLE (BUCKET 4 OUT OF 10);"

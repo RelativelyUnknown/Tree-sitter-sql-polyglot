@@ -1,0 +1,68 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: set_operators
+    name: Set operators
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-setops
+    tier: high
+    probes:
+      - id: union
+        sql: "SELECT c FROM t1 UNION SELECT c FROM t2;"
+      - id: union_all
+        sql: "SELECT c FROM t1 UNION ALL SELECT c FROM t2;"
+      - id: union_distinct
+        sql: "SELECT c FROM t1 UNION DISTINCT SELECT c FROM t2;"
+      - id: intersect
+        sql: "SELECT c FROM t1 INTERSECT SELECT c FROM t2;"
+      - id: intersect_all
+        sql: "SELECT c FROM t1 INTERSECT ALL SELECT c FROM t2;"
+      - id: intersect_distinct
+        sql: "SELECT c FROM t1 INTERSECT DISTINCT SELECT c FROM t2;"
+      - id: except
+        sql: "SELECT c FROM t1 EXCEPT SELECT c FROM t2;"
+      - id: except_all
+        sql: "SELECT c FROM t1 EXCEPT ALL SELECT c FROM t2;"
+      - id: except_distinct
+        sql: "SELECT c FROM t1 EXCEPT DISTINCT SELECT c FROM t2;"
+      - id: minus
+        sql: "SELECT c FROM t1 MINUS SELECT c FROM t2;"
+        note: MINUS is a documented synonym of EXCEPT (shown in the page examples).
+      - id: minus_all
+        sql: "SELECT c FROM t1 MINUS ALL SELECT c FROM t2;"
+      - id: parenthesized_operands
+        sql: "(SELECT c FROM t1) INTERSECT (SELECT c FROM t2);"
+      - id: parenthesized_right_operand
+        sql: "SELECT c FROM t1 UNION ALL (SELECT c FROM t2);"
+      - id: chained
+        sql: "SELECT c FROM t1 UNION SELECT c FROM t2 EXCEPT SELECT c FROM t3;"
+        note: "Syntax block allows [...] repetition of the set operator."
+      - id: with_order_limit
+        sql: "SELECT c FROM t1 UNION ALL SELECT c FROM t2 ORDER BY c LIMIT 10;"
+    examples:
+      - "SELECT c FROM number1 EXCEPT ALL ( SELECT c FROM number2 );"
+      - "( SELECT c FROM number1 ) INTERSECT ALL ( SELECT c FROM number2 );"
+      - "SELECT c FROM number1 UNION ALL ( SELECT c FROM number2 );"
+
+  - id: window_clause
+    name: WINDOW clause
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-named-window
+    tier: high
+    probes:
+      - id: single_window
+        sql: "SELECT avg(a) OVER w FROM t WINDOW w AS (PARTITION BY b ORDER BY c);"
+      - id: multiple_windows
+        sql: "SELECT sum(a) OVER w1, avg(a) OVER w2 FROM t WINDOW w1 AS (PARTITION BY b), w2 AS (ORDER BY c);"
+      - id: frame_rows
+        sql: "SELECT min(a) OVER w FROM t WINDOW w AS (ORDER BY c ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING);"
+      - id: frame_range
+        sql: "SELECT min(a) OVER w FROM t WINDOW w AS (ORDER BY c RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW);"
+      - id: with_where_group_by
+        sql: "SELECT b, rank() OVER w FROM t WHERE a > 0 GROUP BY b, c WINDOW w AS (ORDER BY c) ORDER BY b;"
+      - id: window_referencing_window
+        sql: "SELECT sum(a) OVER w2 FROM t WINDOW w1 AS (PARTITION BY b), w2 AS (w1 ORDER BY c);"
+        note: "A window_spec may extend a named window, as in the window function syntax."
+    examples:
+      - "SELECT round ( avg ( age ) OVER win , 1 ) AS avgage , round ( avg ( salary ) OVER win , 1 ) AS avgsalary , min ( salary ) OVER win AS minsalary , max ( salary ) OVER win AS maxsalary , count ( 1 ) OVER win AS numEmps FROM employees WINDOW win AS ( ORDER BY age ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING );"

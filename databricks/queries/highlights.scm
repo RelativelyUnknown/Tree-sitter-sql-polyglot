@@ -78,3 +78,32 @@
   (keyword_procedures)
   (keyword_dropped)
 ] @keyword
+
+; ============================================================
+; Remaining databricks keywords
+; ============================================================
+
+[
+  (keyword_appends)
+  (keyword_apply)
+  (keyword_at)
+  (keyword_branch)
+  (keyword_changes)
+  (keyword_copy)
+  (keyword_copy_options)
+  (keyword_cron)
+  (keyword_every)
+  (keyword_fileformat)
+  (keyword_flow)
+  (keyword_format_options)
+  (keyword_global)
+  (keyword_keys)
+  (keyword_pattern)
+  (keyword_position)
+  (keyword_schedule)
+  (keyword_service)
+  (keyword_tag)
+  (keyword_unload)
+  (keyword_upsert)
+  (keyword_validate)
+] @keyword

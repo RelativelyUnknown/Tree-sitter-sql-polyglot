@@ -1,0 +1,165 @@
+dialect: cockroachdb
+engine: CockroachDB
+version: "v26.3 (stable)"
+source: https://www.cockroachlabs.com/docs/stable/sql-statements
+
+statements:
+  - id: create_database
+    name: CREATE DATABASE
+    doc: https://www.cockroachlabs.com/docs/stable/create-database
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE DATABASE d;" }
+      - { id: if_not_exists, sql: "CREATE DATABASE IF NOT EXISTS d;" }
+      - { id: with_encoding, sql: "CREATE DATABASE d WITH ENCODING = 'UTF-8';" }
+      - { id: connection_limit, sql: "CREATE DATABASE d CONNECTION LIMIT = -1;" }
+      - { id: primary_region, sql: "CREATE DATABASE d PRIMARY REGION \"us-east1\" REGIONS \"us-east1\", \"us-central1\" SURVIVE REGION FAILURE;" }
+      - { id: survive_zone, sql: "CREATE DATABASE d PRIMARY REGION \"us-east1\" SURVIVE ZONE FAILURE;" }
+      - { id: super_region, sql: "CREATE DATABASE d PRIMARY REGION \"us-east1\" REGIONS \"us-east1\", \"us-central1\" SUPER REGION \"us\" VALUES \"us-east1\", \"us-central1\";" }
+      - { id: secondary_region, sql: "CREATE DATABASE d PRIMARY REGION \"us-east1\" REGIONS \"us-east1\", \"us-west1\" SECONDARY REGION \"us-west1\";" }
+    examples:
+      - "CREATE DATABASE bank;"
+      - "CREATE DATABASE IF NOT EXISTS bank;"
+      - "CREATE DATABASE bank PRIMARY REGION \"us-east1\" REGIONS \"us-east1\", \"us-central1\", \"us-west1\" SURVIVE REGION FAILURE;"
+
+  - id: create_domain
+    name: CREATE DOMAIN
+    doc: https://www.cockroachlabs.com/docs/stable/create-domain
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE DOMAIN d AS INT;" }
+      - { id: default, sql: "CREATE DOMAIN d AS INT DEFAULT 0;" }
+      - { id: not_null, sql: "CREATE DOMAIN d AS INT NOT NULL;" }
+      - { id: check, sql: "CREATE DOMAIN d AS INT CHECK (VALUE >= 0);" }
+      - { id: named_constraint, sql: "CREATE DOMAIN d AS INT CONSTRAINT c CHECK (VALUE >= 0);" }
+    examples:
+      - "CREATE DOMAIN price AS DECIMAL DEFAULT 0 NOT NULL CHECK (VALUE >= 0);"
+      - "CREATE DOMAIN us_phone AS STRING CONSTRAINT us_phone_format CHECK (VALUE ~ '^[0-9]{10}$');"
+
+  - id: create_schema
+    name: CREATE SCHEMA
+    doc: https://www.cockroachlabs.com/docs/stable/create-schema
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE SCHEMA s;" }
+      - { id: if_not_exists, sql: "CREATE SCHEMA IF NOT EXISTS s;" }
+      - { id: qualified, sql: "CREATE SCHEMA d.s;" }
+      - { id: authorization, sql: "CREATE SCHEMA s AUTHORIZATION r;" }
+      - { id: authorization_only, sql: "CREATE SCHEMA AUTHORIZATION r;" }
+    examples:
+      - "CREATE SCHEMA org_one;"
+      - "CREATE SCHEMA IF NOT EXISTS org_one;"
+      - "CREATE SCHEMA org_two AUTHORIZATION max;"
+
+  - id: create_sequence
+    name: CREATE SEQUENCE
+    doc: https://www.cockroachlabs.com/docs/stable/create-sequence
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE SEQUENCE s;" }
+      - { id: if_not_exists, sql: "CREATE SEQUENCE IF NOT EXISTS s;" }
+      - { id: temp, sql: "CREATE TEMP SEQUENCE s;" }
+      - { id: as_type, sql: "CREATE SEQUENCE s AS INT4;" }
+      - { id: increment_by, sql: "CREATE SEQUENCE s INCREMENT BY 2;" }
+      - { id: min_max, sql: "CREATE SEQUENCE s MINVALUE 1 MAXVALUE 100;" }
+      - { id: no_minmax, sql: "CREATE SEQUENCE s NO MINVALUE NO MAXVALUE;" }
+      - { id: start_with, sql: "CREATE SEQUENCE s START WITH 10;" }
+      - { id: cycle, sql: "CREATE SEQUENCE s CYCLE;" }
+      - { id: owned_by, sql: "CREATE SEQUENCE s OWNED BY t.c;" }
+      - { id: owned_by_none, sql: "CREATE SEQUENCE s OWNED BY NONE;" }
+      - { id: cache, sql: "CREATE SEQUENCE s CACHE 10;" }
+      - { id: cache_per_node, sql: "CREATE SEQUENCE s PER NODE CACHE 10;" }
+      - { id: cache_per_session, sql: "CREATE SEQUENCE s PER SESSION CACHE 10;" }
+      - { id: virtual, sql: "CREATE SEQUENCE s VIRTUAL;" }
+    examples:
+      - "CREATE TEMP SEQUENCE temp_seq START 1 INCREMENT 1;"
+      - "CREATE SEQUENCE customer_seq;"
+      - "CREATE SEQUENCE desc_customer_list START -1 INCREMENT -2;"
+
+  - id: create_trigger
+    name: CREATE TRIGGER
+    doc: https://www.cockroachlabs.com/docs/stable/create-trigger
+    tier: medium
+    probes:
+      - { id: before_insert, sql: "CREATE TRIGGER trg BEFORE INSERT ON t FOR EACH ROW EXECUTE FUNCTION f();" }
+      - { id: after_delete, sql: "CREATE TRIGGER trg AFTER DELETE ON t FOR EACH ROW EXECUTE FUNCTION f();" }
+      - { id: update, sql: "CREATE TRIGGER trg AFTER UPDATE ON t FOR EACH ROW EXECUTE FUNCTION f();" }
+      - { id: multiple_events, sql: "CREATE TRIGGER trg BEFORE INSERT OR UPDATE OR DELETE ON t FOR EACH ROW EXECUTE FUNCTION f();" }
+      - { id: when, sql: "CREATE TRIGGER trg BEFORE UPDATE ON t FOR EACH ROW WHEN (c > 0) EXECUTE FUNCTION f();" }
+      - { id: func_args, sql: "CREATE TRIGGER trg BEFORE INSERT ON t FOR EACH ROW EXECUTE FUNCTION f('a', 'b');" }
+    examples:
+      - |-
+        CREATE TRIGGER prevent_locked_delete
+        BEFORE DELETE ON lock_table
+        FOR EACH ROW
+        EXECUTE FUNCTION prevent_delete_locked();
+      - |-
+        CREATE TRIGGER trg_update_stock_after_order
+        AFTER INSERT ON orders_placed
+        FOR EACH ROW
+        EXECUTE FUNCTION update_stock_after_order();
+
+  - id: create_type
+    name: CREATE TYPE
+    doc: https://www.cockroachlabs.com/docs/stable/create-type
+    tier: medium
+    probes:
+      - { id: enum, sql: "CREATE TYPE s AS ENUM ('a', 'b');" }
+      - { id: enum_empty, sql: "CREATE TYPE s AS ENUM ();" }
+      - { id: if_not_exists, sql: "CREATE TYPE IF NOT EXISTS s AS ENUM ('a', 'b');" }
+      - { id: qualified, sql: "CREATE TYPE d.sc.s AS ENUM ('a');" }
+      - { id: composite, sql: "CREATE TYPE p AS (x INT, y INT);" }
+    examples:
+      - "CREATE TYPE IF NOT EXISTS status AS ENUM ('open', 'closed', 'inactive');"
+      - "CREATE TYPE IF NOT EXISTS my_point AS (x INT, y INT);"
+
+  - id: drop_database
+    name: DROP DATABASE
+    doc: https://www.cockroachlabs.com/docs/stable/drop-database
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP DATABASE d;" }
+      - { id: if_exists, sql: "DROP DATABASE IF EXISTS d;" }
+      - { id: cascade, sql: "DROP DATABASE d CASCADE;" }
+      - { id: restrict, sql: "DROP DATABASE d RESTRICT;" }
+    examples:
+      - "DROP DATABASE movr;"
+      - "DROP DATABASE movr CASCADE;"
+      - "DROP DATABASE movr RESTRICT;"
+
+  - id: drop_domain
+    name: DROP DOMAIN
+    doc: https://www.cockroachlabs.com/docs/stable/drop-type#drop-a-domain
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP DOMAIN d;" }
+      - { id: if_exists, sql: "DROP DOMAIN IF EXISTS d;" }
+      - { id: multiple, sql: "DROP DOMAIN d1, d2;" }
+    examples:
+      - "DROP DOMAIN postal_code;"
+
+  - id: drop_owned_by
+    name: DROP OWNED BY
+    doc: https://www.cockroachlabs.com/docs/stable/drop-owned-by
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP OWNED BY r;" }
+      - { id: multiple_roles, sql: "DROP OWNED BY r1, r2;" }
+      - { id: restrict, sql: "DROP OWNED BY r RESTRICT;" }
+    examples:
+      - "DROP OWNED BY maxroach;"
+
+  - id: drop_schema
+    name: DROP SCHEMA
+    doc: https://www.cockroachlabs.com/docs/stable/drop-schema
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP SCHEMA s;" }
+      - { id: if_exists, sql: "DROP SCHEMA IF EXISTS s;" }
+      - { id: qualified, sql: "DROP SCHEMA IF EXISTS d.s;" }
+      - { id: multiple, sql: "DROP SCHEMA s1, s2;" }
+      - { id: cascade, sql: "DROP SCHEMA s CASCADE;" }
+      - { id: restrict, sql: "DROP SCHEMA s RESTRICT;" }
+    examples:
+      - "DROP SCHEMA org_one;"
+      - "DROP SCHEMA org_two CASCADE;"

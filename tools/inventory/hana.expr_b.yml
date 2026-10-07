@@ -1,0 +1,271 @@
+dialect: hana
+engine: SAP HANA Platform
+version: "2.0 SPS 08 (2.0.08)"
+source: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/3bc1a0d4611d40c4a6e3fc7c8e80395d.html?version=2.0.08
+
+statements: []
+
+expressions:
+  - id: b_arithmetic_operators
+    name: Arithmetic operators
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20a380977519101494ceddd944e87527.html
+    tier: high
+    probes:
+      - { id: add_sub, sql: "SELECT a + b, a - b FROM t;" }
+      - { id: mul_div, sql: "SELECT a * b, a / b FROM t;" }
+      - { id: unary_minus, sql: "SELECT -a FROM t;" }
+      - { id: unary_plus, sql: "SELECT +a FROM t;" }
+      - { id: precedence_parens, sql: "SELECT (a + b) * c - d / e FROM t;" }
+
+  - id: b_string_operators
+    name: String concatenation operator
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20a380977519101494ceddd944e87527.html
+    tier: high
+    probes:
+      - { id: concat, sql: "SELECT a || b FROM t;" }
+      - { id: concat_chain, sql: "SELECT a || ' ' || b || 'x' FROM t;" }
+
+  - id: b_comparison_operators
+    name: Comparison operators
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20a380977519101494ceddd944e87527.html
+    tier: high
+    probes:
+      - { id: eq, sql: "SELECT * FROM students WHERE id = 25;" }
+      - { id: gt_lt, sql: "SELECT * FROM students WHERE id > 25 AND id < 30;" }
+      - { id: ge_le, sql: "SELECT * FROM students WHERE id >= 25 AND id <= 30;" }
+      - { id: ne_bang, sql: "SELECT * FROM students WHERE id != 25;" }
+      - { id: ne_angle, sql: "SELECT * FROM students WHERE id <> 25;" }
+      - { id: tuple_eq, sql: "SELECT * FROM t WHERE (a, b) = ('x', 2);" }
+      - { id: tuple_ne, sql: "SELECT * FROM t WHERE (a, b) <> ('x', 2);" }
+      - { id: tuple_ne_bang, sql: "SELECT * FROM t WHERE (a, b) != ('x', 2);" }
+
+  - id: b_logical_operators
+    name: Logical operators
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20a380977519101494ceddd944e87527.html
+    tier: high
+    probes:
+      - { id: and_or, sql: "SELECT * FROM t WHERE a = 1 AND b = 2 OR c = 3;" }
+      - { id: not, sql: "SELECT * FROM t WHERE NOT a = 1;" }
+      - { id: parens, sql: "SELECT * FROM t WHERE NOT (a = 1 OR b = 2) AND c = 3;" }
+
+  - id: b_set_operators
+    name: Set operators
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20a380977519101494ceddd944e87527.html
+    tier: high
+    probes:
+      - { id: union, sql: "SELECT a FROM t UNION SELECT a FROM s;" }
+      - { id: union_all, sql: "SELECT a FROM t UNION ALL SELECT a FROM s;" }
+      - { id: intersect, sql: "SELECT a FROM t INTERSECT SELECT a FROM s;" }
+      - { id: except, sql: "SELECT a FROM t EXCEPT SELECT a FROM s;" }
+      - { id: minus, sql: "SELECT a FROM t MINUS SELECT a FROM s;", note: "MINUS is an accepted synonym for EXCEPT" }
+
+  - id: b_scalar_subquery
+    name: Subqueries in expressions
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20a4389775191014b5a6bf2ccc0df2ed.html
+    tier: high
+    probes:
+      - { id: select_list, sql: "SELECT DepartmentName, COUNT(*), 'out of', (SELECT COUNT(*) FROM Employees) FROM Departments AS D, Employees AS E WHERE D.DepartmentID = E.DepartmentID GROUP BY DepartmentName;" }
+      - { id: in_where, sql: "SELECT * FROM t WHERE a = (SELECT MAX(a) FROM s);" }
+      - { id: in_update_set, sql: "UPDATE t SET a = (SELECT MAX(a) FROM s);" }
+    examples:
+      - "SELECT DepartmentName, COUNT(*), 'out of', (SELECT COUNT(*) FROM Employees) FROM Departments AS D, Employees AS E WHERE D.DepartmentID = E.DepartmentID GROUP BY DepartmentName;"
+
+  - id: b_case_expression
+    name: CASE expression
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20a4389775191014b5a6bf2ccc0df2ed.html
+    tier: high
+    probes:
+      - { id: simple_case, sql: "SELECT CASE a WHEN 1 THEN 'one' WHEN 2 THEN 'two' ELSE 'other' END FROM t;" }
+      - { id: simple_case_no_else, sql: "SELECT CASE a WHEN 1 THEN 'one' END FROM t;" }
+      - { id: search_case, sql: "SELECT CASE WHEN a > 1 THEN 'big' WHEN a = 1 THEN 'one' ELSE 'small' END FROM t;" }
+      - { id: search_case_no_else, sql: "SELECT CASE WHEN a > 1 AND NOT b IS NULL THEN 'big' END FROM t;" }
+      - { id: nested_case, sql: "SELECT CASE WHEN a > 1 THEN CASE b WHEN 1 THEN 'x' ELSE 'y' END ELSE 'z' END FROM t;" }
+      - { id: case_in_where, sql: "SELECT * FROM t WHERE CASE WHEN a = 1 THEN b ELSE c END > 5;" }
+
+  - id: b_comparison_quantified
+    name: Comparison predicates (ANY, SOME, ALL)
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20f91040751910148e96d6cb73119afc.html
+    tier: high
+    probes:
+      - { id: some_list, sql: "SELECT * FROM DeptTable WHERE DeptTable.LocColumn = SOME ('BOSTON','DALLAS');" }
+      - { id: any_list, sql: "SELECT * FROM t WHERE a = ANY (1, 2, 3);" }
+      - { id: all_list, sql: "SELECT * FROM EmployeeTable WHERE EmployeeTable.Salary >= ALL (1400, 3000);" }
+      - { id: any_subquery, sql: "SELECT * FROM t WHERE a > ANY (SELECT a FROM s);" }
+      - { id: all_subquery, sql: "SELECT * FROM t WHERE a <> ALL (SELECT a FROM s);" }
+      - { id: some_subquery, sql: "SELECT * FROM t WHERE a < SOME (SELECT a FROM s);" }
+      - { id: tuple_all_subquery, sql: "SELECT * FROM t WHERE (a, b) <> ALL (SELECT a, b FROM s);" }
+      - { id: tuple_any_list, sql: "SELECT * FROM t WHERE (a, b) = ANY (('x', 2), ('y', 1));" }
+    examples:
+      - "SELECT * FROM DeptTable WHERE DeptTable.LocColumn = SOME ('BOSTON','DALLAS');"
+      - "SELECT * FROM EmployeeTable WHERE EmployeeTable.Salary >= ALL (1400, 3000);"
+
+  - id: b_between_predicate
+    name: BETWEEN predicate
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20faa69a75191014b3c8e132b035d5a8.html
+    tier: high
+    probes:
+      - { id: between, sql: "SELECT * FROM t WHERE a BETWEEN 1 AND 10;" }
+      - { id: not_between, sql: "SELECT * FROM t WHERE a NOT BETWEEN 1 AND 10;" }
+      - { id: between_expr, sql: "SELECT * FROM t WHERE a + 1 BETWEEN b AND (SELECT MAX(c) FROM s);" }
+
+  - id: b_in_predicate
+    name: IN predicate
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20a2ab29751910148de0fe7189c330bc.html
+    tier: high
+    probes:
+      - { id: in_list, sql: "SELECT * FROM t WHERE a IN (1, 2, 3);" }
+      - { id: not_in_list, sql: "SELECT * FROM t WHERE a NOT IN (1, 2, 3);" }
+      - { id: in_subquery, sql: "SELECT * FROM t WHERE a IN (SELECT a FROM s);" }
+      - { id: not_in_subquery, sql: "SELECT * FROM t WHERE a NOT IN (SELECT a FROM s);" }
+      - { id: tuple_in_list, sql: "SELECT * FROM t WHERE (zone, company) IN (('124110','00'), ('124116','00'));" }
+      - { id: tuple_in_subquery, sql: "SELECT * FROM t WHERE (a, b) IN (SELECT a, b FROM s);" }
+    examples:
+      - "SELECT * FROM \"mySchema\".\"myTable\" WHERE (zone, company) IN (('124110','00'), ('124116','00'));"
+      - "SELECT * FROM \"my_tab\" WHERE (order_nr, item_nr) in (('A000000001', 2), ('B000000001', 1));"
+
+  - id: b_like_predicate
+    name: LIKE predicate
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20fa17f375191014a4d8d8cbfddfe340.html
+    tier: high
+    probes:
+      - { id: like, sql: "SELECT * FROM t WHERE a LIKE 'data%';" }
+      - { id: not_like, sql: "SELECT * FROM t WHERE a NOT LIKE 'data%';" }
+      - { id: like_escape, sql: "SELECT * FROM t WHERE a LIKE 'data_%' ESCAPE '_';" }
+      - { id: not_like_escape, sql: "SELECT * FROM t WHERE a NOT LIKE 'data\\%%' ESCAPE '\\';" }
+      - { id: like_expr_pattern, sql: "SELECT * FROM t WHERE a LIKE b || '%';" }
+
+  - id: b_like_regexpr_predicate
+    name: LIKE_REGEXPR predicate
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/b40d483dd34d47aa9cc89b4d8a6e617e.html
+    tier: medium
+    probes:
+      - { id: like_regexpr, sql: "SELECT * FROM mytab WHERE text LIKE_REGEXPR ' them|this ';" }
+      - { id: like_regexpr_flag, sql: "SELECT * FROM mytab WHERE text LIKE_REGEXPR 'them|this' FLAG 'i';" }
+    examples:
+      - "SELECT * FROM mytab WHERE text LIKE_REGEXPR ' them|this ';"
+
+  - id: b_member_of_predicate
+    name: MEMBER OF predicate
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/f666b950e5d34f84bb5b6f125e7e85c4.html
+    tier: medium
+    probes:
+      - { id: member_of, sql: "SELECT IDX FROM ARRAY_TEST WHERE 10 MEMBER OF VAL;" }
+      - { id: not_member_of, sql: "SELECT IDX FROM ARRAY_TEST WHERE 10 NOT MEMBER OF VAL;" }
+    examples:
+      - "SELECT IDX FROM ARRAY_TEST WHERE 10 MEMBER OF VAL;"
+      - "SELECT IDX FROM ARRAY_TEST WHERE 10 NOT MEMBER OF VAL;"
+
+  - id: b_exists_predicate
+    name: EXISTS predicate
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20f9915f75191014a3d7aa14a0637e41.html
+    tier: high
+    probes:
+      - { id: exists, sql: "SELECT * FROM t WHERE EXISTS (SELECT 1 FROM s WHERE s.a = t.a);" }
+      - { id: not_exists, sql: "SELECT * FROM t WHERE NOT EXISTS (SELECT 1 FROM s WHERE s.a = t.a);" }
+
+  - id: b_null_predicate
+    name: NULL predicate
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20fa62ef75191014a797dae048566adc.html
+    tier: high
+    probes:
+      - { id: is_null, sql: "SELECT * FROM t WHERE a IS NULL;" }
+      - { id: is_not_null, sql: "SELECT * FROM t WHERE a IS NOT NULL;" }
+      - { id: is_null_expr, sql: "SELECT * FROM t WHERE (a + b) IS NULL;" }
+
+  - id: b_contains_predicate
+    name: CONTAINS predicate
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20f952437519101487edc3d9aba84238.html
+    tier: medium
+    probes:
+      - { id: contains_exact, sql: "SELECT * FROM t WHERE CONTAINS(c, 'cap OR sky');" }
+      - { id: contains_fuzzy, sql: "SELECT SCORE() AS SCORE, * FROM t WHERE CONTAINS(c, 'cap', FUZZY(0.0)) ORDER BY SCORE DESC;" }
+      - { id: contains_star, sql: "SELECT * FROM t WHERE CONTAINS(*, 'cap');" }
+      - { id: contains_column_list, sql: "SELECT * FROM t WHERE CONTAINS((c1, c2), 'cap', EXACT);" }
+      - { id: contains_linguistic, sql: "SELECT * FROM t WHERE CONTAINS(c, 'cap', LINGUISTIC);" }
+    examples:
+      - "SELECT SCORE() AS SCORE,* FROM mySchema.SEARCH_TEXT WHERE CONTAINS(CONTENT,'cap',FUZZY(0.0)) ORDER BY SCORE DESC;"
+      - "SELECT * FROM mySchema.SEARCH_TEXT WHERE CONTAINS(CONTENT,'cap OR sky');"
+      - "SELECT * FROM mySchema.SEARCH_TEXT WHERE CONTAINS(CONTENT, '\"baseball cap\"');"
+
+  - id: b_extract_function
+    name: EXTRACT function
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20e1a58475191014a343f6fe96c9846c.html
+    tier: high
+    probes:
+      - { id: year, sql: "SELECT EXTRACT(YEAR FROM d) FROM t;" }
+      - { id: month, sql: "SELECT EXTRACT(MONTH FROM d) FROM t;" }
+      - { id: day, sql: "SELECT EXTRACT(DAY FROM d) FROM t;" }
+      - { id: hour, sql: "SELECT EXTRACT(HOUR FROM ts) FROM t;" }
+      - { id: minute, sql: "SELECT EXTRACT(MINUTE FROM ts) FROM t;" }
+      - { id: second, sql: "SELECT EXTRACT(SECOND FROM ts) FROM t;" }
+    examples:
+      - "SELECT EXTRACT (YEAR FROM TO_DATE ('2010-01-04', 'YYYY-MM-DD')) \"extract\" FROM DUMMY;"
+
+  - id: b_trim_function
+    name: TRIM function
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20f266137519101480abfc0aeb6c9dc3.html
+    tier: high
+    probes:
+      - { id: plain, sql: "SELECT TRIM(s) FROM t;" }
+      - { id: char_from, sql: "SELECT TRIM('a' FROM s) FROM t;" }
+      - { id: leading, sql: "SELECT TRIM(LEADING 'a' FROM s) FROM t;" }
+      - { id: trailing, sql: "SELECT TRIM(TRAILING 'a' FROM s) FROM t;" }
+      - { id: both, sql: "SELECT TRIM(BOTH 'a' FROM s) FROM t;" }
+    examples:
+      - "SELECT TRIM ('a' FROM 'aaa123456789aa') \"trim both\" FROM DUMMY;"
+      - "SELECT TRIM (LEADING 'a' FROM 'aaa123456789aa') \"trim leading\" FROM DUMMY;"
+
+  - id: b_substring_function
+    name: SUBSTRING function
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20e8341275191014a4cfdcd3c830fc98.html
+    tier: high
+    probes:
+      - { id: start, sql: "SELECT SUBSTRING(s, 4) FROM t;" }
+      - { id: start_length, sql: "SELECT SUBSTRING(s, 4, 2) FROM t;" }
+      - { id: binary, sql: "SELECT SUBSTRING(x'ABCDEF', 1, 2) FROM t;" }
+      - { id: substr_alias, sql: "SELECT SUBSTR(s, 4, 2) FROM t;", note: "SUBSTR is the documented short form (SUBSTR[ING]_REGEXPR page; SUBSTR function listed with String Functions)" }
+    examples:
+      - "SELECT SUBSTRING ('1234567890',4,2) \"substring\" FROM DUMMY;"
+      - "SELECT SUBSTRING(x'ABCDEF',1,2) \"substring\" FROM DUMMY;"
+
+  - id: b_locate_function
+    name: LOCATE function
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20e3b6b77519101485e6bd62f7018f75.html
+    tier: medium
+    probes:
+      - { id: two_args, sql: "SELECT LOCATE(s, 'ab') FROM t;" }
+      - { id: with_start, sql: "SELECT LOCATE(s, 'ab', 3) FROM t;" }
+      - { id: with_start_occurrence, sql: "SELECT LOCATE(s, 'ab', -1, 2) FROM t;" }
+
+  - id: b_regexpr_functions
+    name: Regular expression functions (OCCURRENCES_REGEXPR, REPLACE_REGEXPR, SUBSTR_REGEXPR)
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/4114b026f750429c8eeef9f54258edfa.html
+    tier: medium
+    probes:
+      - { id: occurrences, sql: "SELECT OCCURRENCES_REGEXPR('a' IN s) FROM t;" }
+      - { id: occurrences_flag_from, sql: "SELECT OCCURRENCES_REGEXPR('a' FLAG 'i' IN s FROM 2) FROM t;" }
+      - { id: replace, sql: "SELECT REPLACE_REGEXPR('a' IN s WITH 'b') FROM t;" }
+      - { id: replace_all_options, sql: "SELECT REPLACE_REGEXPR('a' FLAG 'i' IN s WITH 'b' FROM 2 OCCURRENCE 1) FROM t;" }
+      - { id: substr_regexpr, sql: "SELECT SUBSTR_REGEXPR('a(b)' IN s) FROM t;" }
+      - { id: substr_regexpr_group, sql: "SELECT SUBSTR_REGEXPR('([[:digit:]]{4})([[:digit:]]{2})([[:digit:]]{2})' IN '20140401' GROUP 3) FROM DUMMY;" }
+      - { id: substr_regexpr_all, sql: "SELECT SUBSTR_REGEXPR('a' FLAG 'i' IN s FROM 2 OCCURRENCE 1 GROUP 1) FROM t;" }
+      - { id: substring_regexpr, sql: "SELECT SUBSTRING_REGEXPR('a' IN s) FROM t;" }
+    examples:
+      - "SELECT SUBSTR_REGEXPR('([[:digit:]]{4})([[:digit:]]{2})([[:digit:]]{2})' IN '20140401' GROUP 3) \"substring_regexpr\" FROM DUMMY;"
+
+  - id: b_cast_function
+    name: CAST function
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20db6dd475191014aa7b978452f92bbd.html
+    tier: high
+    probes:
+      - { id: cast_varchar, sql: "SELECT CAST(7 AS VARCHAR) FROM t;" }
+      - { id: cast_varchar_len, sql: "SELECT CAST(a AS VARCHAR(10)) FROM t;" }
+      - { id: cast_nvarchar_len, sql: "SELECT CAST(a AS NVARCHAR(10)) FROM t;" }
+      - { id: cast_integer, sql: "SELECT CAST(10.5 AS INTEGER) FROM t;" }
+      - { id: cast_decimal, sql: "SELECT CAST(a AS DECIMAL(10, 2)) FROM t;" }
+      - { id: cast_date, sql: "SELECT CAST(a AS DATE) FROM t;" }
+      - { id: cast_timestamp, sql: "SELECT CAST(a AS TIMESTAMP) FROM t;" }
+      - { id: cast_boolean, sql: "SELECT CAST(a AS BOOLEAN) FROM t;" }
+    examples:
+      - "SELECT CAST (7 AS VARCHAR) \"cast\" FROM DUMMY;"
+      - "SELECT CAST (10.5 AS INTEGER) \"cast\" FROM DUMMY;"

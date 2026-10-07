@@ -1,0 +1,69 @@
+dialect: spark
+engine: Apache Spark SQL
+version: "4.x (docs/latest)"
+source: https://spark.apache.org/docs/latest/sql-ref-syntax.html
+
+statements:
+  - id: transform_clause
+    name: TRANSFORM Clause
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-transform.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT TRANSFORM(a, b) USING 'cat' FROM t;"
+      - id: single_expression
+        sql: "SELECT TRANSFORM(a + 1) USING 'cat' FROM t;"
+      - id: as_names
+        sql: "SELECT TRANSFORM(a, b) USING 'cat' AS (x, y) FROM t;"
+      - id: as_names_types
+        sql: "SELECT TRANSFORM(a, b) USING 'cat' AS (x INT, y STRING) FROM t;"
+      - id: as_empty
+        sql: "SELECT TRANSFORM(a, b) USING 'cat' AS () FROM t;"
+      - id: input_row_format_delimited
+        sql: "SELECT TRANSFORM(a, b) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' USING 'cat' FROM t;"
+      - id: output_row_format_delimited
+        sql: "SELECT TRANSFORM(a, b) USING 'cat' AS (x STRING) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' FROM t;"
+      - id: row_format_delimited_lines_null
+        sql: "SELECT TRANSFORM(a, b) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\\n' NULL DEFINED AS 'NULL' USING 'cat' FROM t;"
+      - id: row_format_serde
+        sql: "SELECT TRANSFORM(a, b) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe' USING 'cat' FROM t;"
+      - id: row_format_serde_properties
+        sql: "SELECT TRANSFORM(a, b) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe' WITH SERDEPROPERTIES ('field.delim' = '\\t') USING 'cat' FROM t;"
+      - id: recordwriter
+        sql: "SELECT TRANSFORM(a, b) RECORDWRITER 'org.apache.hadoop.hive.ql.exec.TextRecordWriter' USING 'cat' FROM t;"
+      - id: recordreader
+        sql: "SELECT TRANSFORM(a, b) USING 'cat' RECORDREADER 'org.apache.hadoop.hive.ql.exec.TextRecordReader' FROM t;"
+      - id: with_where
+        sql: "SELECT TRANSFORM(a, b) USING 'cat' AS (x, y) FROM t WHERE a > 1;"
+    examples:
+      - "SELECT TRANSFORM (zip_code, name, age) USING 'cat' AS (a, b, c) FROM person WHERE zip_code > 94511;"
+      - "SELECT TRANSFORM (zip_code, name, age) USING 'cat' AS (a STRING, b STRING, c STRING) FROM person WHERE zip_code > 94511;"
+      - "SELECT TRANSFORM (zip_code, name, age) USING 'cat' FROM person WHERE zip_code > 94500;"
+
+  - id: star_clause
+    name: Star (*) clause
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-star.html
+    tier: high
+    probes:
+      - id: star
+        sql: "SELECT * FROM t;"
+      - id: qualified_star
+        sql: "SELECT t.* FROM t;"
+      - id: star_except
+        sql: "SELECT * EXCEPT (c1, c2) FROM t;"
+      - id: qualified_star_except
+        sql: "SELECT t.* EXCEPT (c1, c2) FROM t;"
+      - id: star_except_field
+        sql: "SELECT t.* EXCEPT (c1.x) FROM t;"
+      - id: star_in_function
+        sql: "SELECT coalesce(t.*) FROM t;"
+      - id: star_in_predicate
+        sql: "SELECT CASE WHEN 'c' IN (t.*) THEN 1 END FROM t;"
+      - id: parenthesized_star_struct
+        sql: "SELECT (*) FROM t;"
+      - id: struct_field_star
+        sql: "SELECT c1.* FROM t;"
+    examples:
+      - "SELECT * FROM VALUES (1, 2) AS TA(c1, c2), VALUES ('a', 'b') AS TB(ca, cb);"
+      - "SELECT TA.* FROM VALUES (1, 2) AS TA(c1, c2), VALUES ('a', 'b') AS TB(ca, cb);"
+      - "SELECT * EXCEPT (c1, cb) FROM VALUES (1, 2) AS TA(c1, c2), VALUES ('a', 'b') AS TB(ca, cb);"

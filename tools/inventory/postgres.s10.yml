@@ -1,0 +1,457 @@
+dialect: postgres
+engine: PostgreSQL
+version: "17"
+source: https://www.postgresql.org/docs/17/sql-commands.html
+
+statements:
+  - id: alter_tablespace
+    name: ALTER TABLESPACE
+    doc: https://www.postgresql.org/docs/17/sql-altertablespace.html
+    tier: low
+    probes:
+      - id: rename
+        sql: "ALTER TABLESPACE ts RENAME TO ts2;"
+      - id: owner
+        sql: "ALTER TABLESPACE ts OWNER TO u;"
+      - id: owner_current_user
+        sql: "ALTER TABLESPACE ts OWNER TO CURRENT_USER;"
+      - id: set_options
+        sql: "ALTER TABLESPACE ts SET (seq_page_cost = 1.0, random_page_cost = 2.5);"
+      - id: reset_options
+        sql: "ALTER TABLESPACE ts RESET (seq_page_cost, random_page_cost);"
+  - id: alter_text_search_configuration
+    name: ALTER TEXT SEARCH CONFIGURATION
+    doc: https://www.postgresql.org/docs/17/sql-altertsconfig.html
+    tier: low
+    probes:
+      - id: add_mapping
+        sql: "ALTER TEXT SEARCH CONFIGURATION cfg ADD MAPPING FOR asciiword, word WITH english_stem;"
+      - id: alter_mapping_for
+        sql: "ALTER TEXT SEARCH CONFIGURATION cfg ALTER MAPPING FOR asciiword WITH simple, english_stem;"
+      - id: alter_mapping_replace
+        sql: "ALTER TEXT SEARCH CONFIGURATION cfg ALTER MAPPING REPLACE english_stem WITH simple;"
+      - id: alter_mapping_for_replace
+        sql: "ALTER TEXT SEARCH CONFIGURATION cfg ALTER MAPPING FOR asciiword REPLACE english_stem WITH simple;"
+      - id: drop_mapping
+        sql: "ALTER TEXT SEARCH CONFIGURATION cfg DROP MAPPING IF EXISTS FOR asciiword, word;"
+      - id: rename
+        sql: "ALTER TEXT SEARCH CONFIGURATION cfg RENAME TO cfg2;"
+      - id: owner
+        sql: "ALTER TEXT SEARCH CONFIGURATION cfg OWNER TO u;"
+      - id: set_schema
+        sql: "ALTER TEXT SEARCH CONFIGURATION cfg SET SCHEMA s;"
+  - id: alter_text_search_dictionary
+    name: ALTER TEXT SEARCH DICTIONARY
+    doc: https://www.postgresql.org/docs/17/sql-altertsdictionary.html
+    tier: low
+    probes:
+      - id: options
+        sql: "ALTER TEXT SEARCH DICTIONARY d (StopWords = russian, Language = russian);"
+      - id: option_no_value
+        sql: "ALTER TEXT SEARCH DICTIONARY d (Accept);"
+      - id: rename
+        sql: "ALTER TEXT SEARCH DICTIONARY d RENAME TO d2;"
+      - id: owner
+        sql: "ALTER TEXT SEARCH DICTIONARY d OWNER TO u;"
+      - id: set_schema
+        sql: "ALTER TEXT SEARCH DICTIONARY d SET SCHEMA s;"
+  - id: alter_text_search_parser
+    name: ALTER TEXT SEARCH PARSER
+    doc: https://www.postgresql.org/docs/17/sql-altertsparser.html
+    tier: low
+    probes:
+      - id: rename
+        sql: "ALTER TEXT SEARCH PARSER p RENAME TO p2;"
+      - id: set_schema
+        sql: "ALTER TEXT SEARCH PARSER p SET SCHEMA s;"
+  - id: alter_text_search_template
+    name: ALTER TEXT SEARCH TEMPLATE
+    doc: https://www.postgresql.org/docs/17/sql-altertstemplate.html
+    tier: low
+    probes:
+      - id: rename
+        sql: "ALTER TEXT SEARCH TEMPLATE tpl RENAME TO tpl2;"
+      - id: set_schema
+        sql: "ALTER TEXT SEARCH TEMPLATE tpl SET SCHEMA s;"
+  - id: alter_user_mapping
+    name: ALTER USER MAPPING
+    doc: https://www.postgresql.org/docs/17/sql-alterusermapping.html
+    tier: low
+    probes:
+      - id: set_option
+        sql: "ALTER USER MAPPING FOR bob SERVER foo OPTIONS (SET password 'public');"
+      - id: add_drop_options
+        sql: "ALTER USER MAPPING FOR CURRENT_USER SERVER foo OPTIONS (ADD user 'u', DROP password);"
+      - id: public
+        sql: "ALTER USER MAPPING FOR PUBLIC SERVER foo OPTIONS (user 'u');"
+  - id: checkpoint
+    name: CHECKPOINT
+    doc: https://www.postgresql.org/docs/17/sql-checkpoint.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CHECKPOINT;"
+  - id: create_access_method
+    name: CREATE ACCESS METHOD
+    doc: https://www.postgresql.org/docs/17/sql-create-access-method.html
+    tier: low
+    probes:
+      - id: table
+        sql: "CREATE ACCESS METHOD heptable TYPE TABLE HANDLER heptable_handler;"
+      - id: index
+        sql: "CREATE ACCESS METHOD myam TYPE INDEX HANDLER myam_handler;"
+  - id: create_aggregate
+    name: CREATE AGGREGATE
+    doc: https://www.postgresql.org/docs/17/sql-createaggregate.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE AGGREGATE sum2 (float8) (SFUNC = float8pl, STYPE = float8);"
+      - id: or_replace_initcond
+        sql: "CREATE OR REPLACE AGGREGATE sum2 (float8) (SFUNC = float8pl, STYPE = float8, INITCOND = '0');"
+      - id: all_options
+        sql: "CREATE AGGREGATE agg (integer) (SFUNC = sf, STYPE = integer, SSPACE = 16, FINALFUNC = ff, FINALFUNC_EXTRA, FINALFUNC_MODIFY = READ_ONLY, COMBINEFUNC = cf, SERIALFUNC = sef, DESERIALFUNC = def, INITCOND = '0', MSFUNC = msf, MINVFUNC = mif, MSTYPE = integer, MSSPACE = 16, MFINALFUNC = mff, MFINALFUNC_EXTRA, MFINALFUNC_MODIFY = SHAREABLE, MINITCOND = '0', SORTOP = <, PARALLEL = SAFE);"
+      - id: named_args
+        sql: "CREATE AGGREGATE agg (IN a integer, b text) (SFUNC = sf, STYPE = integer);"
+      - id: ordered_set
+        sql: "CREATE AGGREGATE myrank (VARIADIC \"any\" ORDER BY VARIADIC \"any\") (SFUNC = sf, STYPE = internal, FINALFUNC = ff, FINALFUNC_EXTRA, HYPOTHETICAL);"
+      - id: ordered_set_plain
+        sql: "CREATE AGGREGATE mypct (float8 ORDER BY float8) (SFUNC = sf, STYPE = internal, FINALFUNC = ff, PARALLEL = RESTRICTED);"
+      - id: old_syntax
+        sql: "CREATE AGGREGATE oldagg (BASETYPE = integer, SFUNC = sf, STYPE = integer, FINALFUNC = ff, INITCOND = '0');"
+  - id: create_cast
+    name: CREATE CAST
+    doc: https://www.postgresql.org/docs/17/sql-createcast.html
+    tier: low
+    probes:
+      - id: with_function
+        sql: "CREATE CAST (bigint AS int4) WITH FUNCTION int4(bigint);"
+      - id: with_function_assignment
+        sql: "CREATE CAST (text AS myint) WITH FUNCTION text_to_myint(text) AS ASSIGNMENT;"
+      - id: with_function_implicit
+        sql: "CREATE CAST (text AS myint) WITH FUNCTION text_to_myint AS IMPLICIT;"
+      - id: without_function
+        sql: "CREATE CAST (int4 AS myint) WITHOUT FUNCTION AS IMPLICIT;"
+      - id: with_inout
+        sql: "CREATE CAST (myint AS text) WITH INOUT AS ASSIGNMENT;"
+  - id: create_collation
+    name: CREATE COLLATION
+    doc: https://www.postgresql.org/docs/17/sql-createcollation.html
+    tier: low
+    probes:
+      - id: locale
+        sql: "CREATE COLLATION german (provider = icu, locale = 'de-DE');"
+      - id: if_not_exists_all_options
+        sql: "CREATE COLLATION IF NOT EXISTS c (LOCALE = 'en_US', LC_COLLATE = 'en_US', LC_CTYPE = 'en_US', PROVIDER = libc, DETERMINISTIC = true, RULES = '', VERSION = '1');"
+      - id: from
+        sql: "CREATE COLLATION german FROM \"de_DE\";"
+      - id: from_if_not_exists
+        sql: "CREATE COLLATION IF NOT EXISTS c2 FROM c;"
+  - id: create_conversion
+    name: CREATE CONVERSION
+    doc: https://www.postgresql.org/docs/17/sql-createconversion.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE CONVERSION myconv FOR 'UTF8' TO 'LATIN1' FROM myfunc;"
+      - id: default
+        sql: "CREATE DEFAULT CONVERSION myconv FOR 'UTF8' TO 'LATIN1' FROM myfunc;"
+  - id: create_event_trigger
+    name: CREATE EVENT TRIGGER
+    doc: https://www.postgresql.org/docs/17/sql-createeventtrigger.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE EVENT TRIGGER abort_ddl ON ddl_command_start EXECUTE FUNCTION abort_any_command();"
+      - id: when_filter
+        sql: "CREATE EVENT TRIGGER t ON ddl_command_start WHEN TAG IN ('CREATE TABLE', 'DROP TABLE') EXECUTE FUNCTION f();"
+      - id: when_multiple_filters
+        sql: "CREATE EVENT TRIGGER t ON ddl_command_end WHEN TAG IN ('CREATE TABLE') AND TAG IN ('DROP TABLE') EXECUTE FUNCTION f();"
+      - id: execute_procedure
+        sql: "CREATE EVENT TRIGGER t ON sql_drop EXECUTE PROCEDURE f();"
+  - id: create_foreign_data_wrapper
+    name: CREATE FOREIGN DATA WRAPPER
+    doc: https://www.postgresql.org/docs/17/sql-createforeigndatawrapper.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE FOREIGN DATA WRAPPER dummy;"
+      - id: handler
+        sql: "CREATE FOREIGN DATA WRAPPER w HANDLER file_fdw_handler;"
+      - id: handler_validator_options
+        sql: "CREATE FOREIGN DATA WRAPPER mywrapper HANDLER myhandler VALIDATOR myvalidator OPTIONS (debug 'true');"
+      - id: no_handler_no_validator
+        sql: "CREATE FOREIGN DATA WRAPPER w NO HANDLER NO VALIDATOR;"
+  - id: create_language
+    name: CREATE LANGUAGE
+    doc: https://www.postgresql.org/docs/17/sql-createlanguage.html
+    tier: low
+    probes:
+      - id: handler
+        sql: "CREATE LANGUAGE plsample HANDLER plsample_call_handler;"
+      - id: trusted_procedural_inline_validator
+        sql: "CREATE OR REPLACE TRUSTED PROCEDURAL LANGUAGE plsample HANDLER h INLINE ih VALIDATOR v;"
+      - id: name_only
+        sql: "CREATE LANGUAGE plsample;"
+  - id: create_operator
+    name: CREATE OPERATOR
+    doc: https://www.postgresql.org/docs/17/sql-createoperator.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE OPERATOR === (LEFTARG = box, RIGHTARG = box, FUNCTION = area_equal_function);"
+      - id: all_options
+        sql: "CREATE OPERATOR === (FUNCTION = f, LEFTARG = box, RIGHTARG = box, COMMUTATOR = ===, NEGATOR = !==, RESTRICT = eqsel, JOIN = eqjoinsel, HASHES, MERGES);"
+      - id: procedure_keyword
+        sql: "CREATE OPERATOR ## (PROCEDURE = f, RIGHTARG = box);"
+      - id: schema_qualified_name
+        sql: "CREATE OPERATOR s.=== (FUNCTION = f, LEFTARG = box, RIGHTARG = box);"
+  - id: create_operator_class
+    name: CREATE OPERATOR CLASS
+    doc: https://www.postgresql.org/docs/17/sql-createopclass.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE OPERATOR CLASS gist__int_ops DEFAULT FOR TYPE _int4 USING gist AS OPERATOR 3 &&, FUNCTION 1 g_int_consistent (internal, _int4, smallint, oid, internal), STORAGE intbig_gkey;"
+      - id: family_strategy
+        sql: "CREATE OPERATOR CLASS c FOR TYPE int4 USING btree FAMILY f AS OPERATOR 1 <, OPERATOR 2 <=, FUNCTION 1 btint4cmp(int4, int4);"
+      - id: operator_for_order_by
+        sql: "CREATE OPERATOR CLASS c FOR TYPE point USING gist AS OPERATOR 15 <-> (point, point) FOR ORDER BY float_ops, OPERATOR 11 >> (point, point) FOR SEARCH;"
+      - id: function_support
+        sql: "CREATE OPERATOR CLASS c FOR TYPE int4 USING btree AS FUNCTION 1 (int4, int4) btint4cmp(int4, int4);"
+  - id: create_operator_family
+    name: CREATE OPERATOR FAMILY
+    doc: https://www.postgresql.org/docs/17/sql-createopfamily.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE OPERATOR FAMILY f USING btree;"
+      - id: gist
+        sql: "CREATE OPERATOR FAMILY s.f USING gist;"
+  - id: create_publication
+    name: CREATE PUBLICATION
+    doc: https://www.postgresql.org/docs/17/sql-createpublication.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE PUBLICATION p;"
+      - id: for_all_tables
+        sql: "CREATE PUBLICATION p FOR ALL TABLES;"
+      - id: for_table
+        sql: "CREATE PUBLICATION p FOR TABLE t1, t2;"
+      - id: for_table_only_star
+        sql: "CREATE PUBLICATION p FOR TABLE ONLY t1, t2 *;"
+      - id: columns_where
+        sql: "CREATE PUBLICATION p FOR TABLE t (a, b) WHERE (a > 5);"
+      - id: tables_in_schema
+        sql: "CREATE PUBLICATION p FOR TABLES IN SCHEMA s, CURRENT_SCHEMA;"
+      - id: table_and_schema
+        sql: "CREATE PUBLICATION p FOR TABLE t, TABLES IN SCHEMA s;"
+      - id: with_parameters
+        sql: "CREATE PUBLICATION p FOR TABLE t WITH (publish = 'insert, update', publish_via_partition_root = true);"
+  - id: create_server
+    name: CREATE SERVER
+    doc: https://www.postgresql.org/docs/17/sql-createserver.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE SERVER myserver FOREIGN DATA WRAPPER postgres_fdw OPTIONS (host 'foo', dbname 'foodb', port '5432');"
+      - id: type_version
+        sql: "CREATE SERVER IF NOT EXISTS s TYPE 'oracle' VERSION '11.1' FOREIGN DATA WRAPPER w;"
+  - id: create_statistics
+    name: CREATE STATISTICS
+    doc: https://www.postgresql.org/docs/17/sql-createstatistics.html
+    tier: low
+    probes:
+      - id: columns
+        sql: "CREATE STATISTICS s1 ON a, b FROM t1;"
+      - id: kinds
+        sql: "CREATE STATISTICS s2 (ndistinct, dependencies, mcv) ON a, b FROM t1;"
+      - id: if_not_exists
+        sql: "CREATE STATISTICS IF NOT EXISTS s3 (dependencies) ON a, b FROM t1;"
+      - id: expressions
+        sql: "CREATE STATISTICS s4 ON (date_trunc('month', c)), (a + b) FROM t1;"
+      - id: single_expression
+        sql: "CREATE STATISTICS s5 ON (a + b) FROM t1;"
+      - id: unnamed
+        sql: "CREATE STATISTICS ON a, b FROM t1;"
+  - id: create_subscription
+    name: CREATE SUBSCRIPTION
+    doc: https://www.postgresql.org/docs/17/sql-createsubscription.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE SUBSCRIPTION mysub CONNECTION 'host=192.168.1.50 port=5432 user=foo dbname=foodb' PUBLICATION mypublication, insert_only;"
+      - id: with_parameters
+        sql: "CREATE SUBSCRIPTION s CONNECTION 'host=h dbname=d' PUBLICATION p WITH (copy_data = false, create_slot = false, enabled = false, slot_name = 'sl', synchronous_commit = 'off');"
+      - id: with_flag_param
+        sql: "CREATE SUBSCRIPTION s CONNECTION 'host=h dbname=d' PUBLICATION p WITH (connect = false, binary, streaming = parallel, two_phase = true, disable_on_error = true, run_as_owner = true, password_required = false, origin = none, failover = true);"
+  - id: create_tablespace
+    name: CREATE TABLESPACE
+    doc: https://www.postgresql.org/docs/17/sql-createtablespace.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE TABLESPACE dbspace LOCATION '/data/dbs';"
+      - id: owner
+        sql: "CREATE TABLESPACE indexspace OWNER genevieve LOCATION '/data/indexes';"
+      - id: with_options
+        sql: "CREATE TABLESPACE ts LOCATION '/data/ts' WITH (random_page_cost = 1.1, seq_page_cost = 1.0);"
+  - id: create_text_search_configuration
+    name: CREATE TEXT SEARCH CONFIGURATION
+    doc: https://www.postgresql.org/docs/17/sql-createtsconfig.html
+    tier: low
+    probes:
+      - id: parser
+        sql: "CREATE TEXT SEARCH CONFIGURATION cfg (PARSER = default);"
+      - id: copy
+        sql: "CREATE TEXT SEARCH CONFIGURATION cfg (COPY = pg_catalog.english);"
+  - id: create_text_search_dictionary
+    name: CREATE TEXT SEARCH DICTIONARY
+    doc: https://www.postgresql.org/docs/17/sql-createtsdictionary.html
+    tier: low
+    probes:
+      - id: template_only
+        sql: "CREATE TEXT SEARCH DICTIONARY d (TEMPLATE = simple);"
+      - id: template_options
+        sql: "CREATE TEXT SEARCH DICTIONARY my_russian (template = snowball, language = russian, stopwords = myrussian);"
+  - id: create_text_search_parser
+    name: CREATE TEXT SEARCH PARSER
+    doc: https://www.postgresql.org/docs/17/sql-createtsparser.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE TEXT SEARCH PARSER p (START = prsd_start, GETTOKEN = prsd_nexttoken, END = prsd_end, LEXTYPES = prsd_lextype);"
+      - id: headline
+        sql: "CREATE TEXT SEARCH PARSER p (START = prsd_start, GETTOKEN = prsd_nexttoken, END = prsd_end, LEXTYPES = prsd_lextype, HEADLINE = prsd_headline);"
+  - id: create_text_search_template
+    name: CREATE TEXT SEARCH TEMPLATE
+    doc: https://www.postgresql.org/docs/17/sql-createtstemplate.html
+    tier: low
+    probes:
+      - id: lexize_only
+        sql: "CREATE TEXT SEARCH TEMPLATE tpl (LEXIZE = dsimple_lexize);"
+      - id: init_lexize
+        sql: "CREATE TEXT SEARCH TEMPLATE tpl (INIT = dsimple_init, LEXIZE = dsimple_lexize);"
+  - id: create_transform
+    name: CREATE TRANSFORM
+    doc: https://www.postgresql.org/docs/17/sql-createtransform.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE TRANSFORM FOR hstore LANGUAGE plpython3u (FROM SQL WITH FUNCTION hstore_to_plpython(internal), TO SQL WITH FUNCTION plpython_to_hstore(internal));"
+      - id: or_replace
+        sql: "CREATE OR REPLACE TRANSFORM FOR hstore LANGUAGE plperl (FROM SQL WITH FUNCTION f1(internal), TO SQL WITH FUNCTION f2(internal));"
+      - id: from_only
+        sql: "CREATE TRANSFORM FOR hstore LANGUAGE plperl (FROM SQL WITH FUNCTION f1(internal));"
+      - id: to_only
+        sql: "CREATE TRANSFORM FOR hstore LANGUAGE plperl (TO SQL WITH FUNCTION f2(internal));"
+  - id: create_user_mapping
+    name: CREATE USER MAPPING
+    doc: https://www.postgresql.org/docs/17/sql-createusermapping.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE USER MAPPING FOR bob SERVER foo OPTIONS (user 'bob', password 'secret');"
+      - id: if_not_exists_current_user
+        sql: "CREATE USER MAPPING IF NOT EXISTS FOR CURRENT_USER SERVER foo;"
+      - id: public
+        sql: "CREATE USER MAPPING FOR PUBLIC SERVER foo OPTIONS (user 'u');"
+      - id: user_keyword
+        sql: "CREATE USER MAPPING FOR USER SERVER foo;"
+  - id: drop_access_method
+    name: DROP ACCESS METHOD
+    doc: https://www.postgresql.org/docs/17/sql-drop-access-method.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP ACCESS METHOD heptable;"
+      - id: if_exists_cascade
+        sql: "DROP ACCESS METHOD IF EXISTS heptable CASCADE;"
+  - id: drop_aggregate
+    name: DROP AGGREGATE
+    doc: https://www.postgresql.org/docs/17/sql-dropaggregate.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP AGGREGATE myavg(integer);"
+      - id: if_exists_list_cascade
+        sql: "DROP AGGREGATE IF EXISTS myavg(integer), myavg(bigint) CASCADE;"
+      - id: star
+        sql: "DROP AGGREGATE mycount(*);"
+      - id: ordered_set
+        sql: "DROP AGGREGATE myrank(VARIADIC \"any\" ORDER BY VARIADIC \"any\") RESTRICT;"
+  - id: drop_cast
+    name: DROP CAST
+    doc: https://www.postgresql.org/docs/17/sql-dropcast.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP CAST (text AS int);"
+      - id: if_exists_cascade
+        sql: "DROP CAST IF EXISTS (text AS int) CASCADE;"
+  - id: drop_collation
+    name: DROP COLLATION
+    doc: https://www.postgresql.org/docs/17/sql-dropcollation.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP COLLATION german;"
+      - id: if_exists_restrict
+        sql: "DROP COLLATION IF EXISTS german RESTRICT;"
+  - id: drop_conversion
+    name: DROP CONVERSION
+    doc: https://www.postgresql.org/docs/17/sql-dropconversion.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP CONVERSION myname;"
+      - id: if_exists_cascade
+        sql: "DROP CONVERSION IF EXISTS myname CASCADE;"
+  - id: drop_event_trigger
+    name: DROP EVENT TRIGGER
+    doc: https://www.postgresql.org/docs/17/sql-dropeventtrigger.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP EVENT TRIGGER snitch;"
+      - id: if_exists_cascade
+        sql: "DROP EVENT TRIGGER IF EXISTS snitch CASCADE;"
+  - id: drop_foreign_data_wrapper
+    name: DROP FOREIGN DATA WRAPPER
+    doc: https://www.postgresql.org/docs/17/sql-dropforeigndatawrapper.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP FOREIGN DATA WRAPPER dbi;"
+      - id: if_exists_list_cascade
+        sql: "DROP FOREIGN DATA WRAPPER IF EXISTS w1, w2 CASCADE;"
+  - id: drop_language
+    name: DROP LANGUAGE
+    doc: https://www.postgresql.org/docs/17/sql-droplanguage.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP LANGUAGE plsample;"
+      - id: procedural_if_exists_cascade
+        sql: "DROP PROCEDURAL LANGUAGE IF EXISTS plsample CASCADE;"
+  - id: drop_operator
+    name: DROP OPERATOR
+    doc: https://www.postgresql.org/docs/17/sql-dropoperator.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP OPERATOR ^ (integer, integer);"
+      - id: prefix_none
+        sql: "DROP OPERATOR ~ (none, bit);"
+      - id: list_if_exists_cascade
+        sql: "DROP OPERATOR IF EXISTS ^ (integer, integer), ~ (none, bit) CASCADE;"
+  - id: drop_operator_class
+    name: DROP OPERATOR CLASS
+    doc: https://www.postgresql.org/docs/17/sql-dropopclass.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP OPERATOR CLASS widget_ops USING btree;"
+      - id: if_exists_cascade
+        sql: "DROP OPERATOR CLASS IF EXISTS widget_ops USING btree CASCADE;"

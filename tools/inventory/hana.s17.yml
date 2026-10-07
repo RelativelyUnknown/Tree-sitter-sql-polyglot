@@ -1,0 +1,156 @@
+dialect: hana
+engine: SAP HANA Platform
+version: "2.0 SPS 08 (2.0.08)"
+source: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/3bc1a0d4611d40c4a6e3fc7c8e80395d.html?version=2.0.08
+
+statements:
+  - id: alter_database
+    name: ALTER DATABASE
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/ee36e3441ae24a7883ab353631ecd4d6.html?version=2.0.08
+    tier: medium
+    probes:
+      - { id: add_service, sql: "ALTER DATABASE db1 ADD 'scriptserver' AT LOCATION 'hostA:30303';" }
+      - { id: remove_service, sql: "ALTER DATABASE db1 REMOVE 'scriptserver' AT LOCATION 'hostA:30303';" }
+      - { id: alter_service_port, sql: "ALTER DATABASE db1 ALTER 'scriptserver' AT 'hostA:30303' TO '30340';" }
+      - { id: os_user_group, sql: "ALTER DATABASE db1 OS USER 'usr1' OS GROUP 'grp1';" }
+      - { id: finalize_replica, sql: "ALTER DATABASE db1 FINALIZE REPLICA DROP SOURCE DATABASE;" }
+      - { id: cancel_replica, sql: "ALTER DATABASE db1 CANCEL REPLICA;" }
+      - { id: system_user_password, sql: "ALTER DATABASE db1 SYSTEM USER PASSWORD 'Passw0rd1';" }
+      - { id: no_restart, sql: "ALTER DATABASE db1 NO RESTART;" }
+      - { id: default_restart, sql: "ALTER DATABASE db1 DEFAULT RESTART;" }
+      - { id: encryption_controlled_by_local, sql: "ALTER DATABASE db1 ENCRYPTION CONFIGURATION CONTROLLED BY LOCAL DATABASE;" }
+      - { id: log_encryption_on, sql: "ALTER DATABASE db1 LOG ENCRYPTION ON;" }
+      - { id: encryption_off, sql: "ALTER DATABASE db1 ENCRYPTION OFF;" }
+      - { id: create_fallback_snapshot, sql: "ALTER DATABASE db1 CREATE FALLBACK SNAPSHOT;" }
+      - { id: drop_fallback_snapshot, sql: "ALTER DATABASE db1 DROP FALLBACK SNAPSHOT;" }
+      - { id: add_key_management, sql: "ALTER DATABASE db1 ADD KEY MANAGEMENT CONFIGURATION AWS_HSM PROPERTIES 'key=value';" }
+      - { id: alter_key_management, sql: "ALTER DATABASE db1 ALTER KEY MANAGEMENT CONFIGURATION AWS_HSM PROPERTIES 'key=value';" }
+      - { id: activate_key_management, sql: "ALTER DATABASE db1 ACTIVATE KEY MANAGEMENT CONFIGURATION AWS_HSM;" }
+      - { id: drop_key_management, sql: "ALTER DATABASE db1 DROP KEY MANAGEMENT CONFIGURATION AWS_HSM;" }
+      - { id: unset_license_all, sql: "ALTER DATABASE db1 UNSET LICENSE ALL;" }
+      - { id: validate_root_keys_backup_password, sql: "ALTER DATABASE db1 VALIDATE ENCRYPTION ROOT KEYS BACKUP PASSWORD 'Passw0rd1';" }
+      - { id: set_root_keys_backup_password, sql: "ALTER DATABASE db1 SET ENCRYPTION ROOT KEYS BACKUP PASSWORD 'Passw0rd1';" }
+    examples:
+      - "ALTER DATABASE my_database ADD 'scriptserver' AT LOCATION 'hostA:30303';"
+      - "ALTER DATABASE my_database ALTER 'scriptserver' AT 'hostA:30303' TO '30340';"
+      - "ALTER DATABASE my_database OS USER 'KPC28' OS GROUP 'admin';"
+
+  - id: alter_fulltext_index
+    name: ALTER FULLTEXT INDEX
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20cff899751910149ae0e4315dbc6add.html?version=2.0.08
+    tier: medium
+    probes:
+      - { id: fuzzy_search_index, sql: "ALTER FULLTEXT INDEX s.i1 FUZZY SEARCH INDEX ON;" }
+      - { id: phrase_index_ratio, sql: "ALTER FULLTEXT INDEX i1 PHRASE INDEX RATIO 0.3;" }
+      - { id: text_mining, sql: "ALTER FULLTEXT INDEX i1 TEXT MINING OFF;" }
+      - { id: text_mining_configuration, sql: "ALTER FULLTEXT INDEX i1 TEXT MINING CONFIGURATION 'cfg';" }
+      - { id: text_mining_configuration_overlay, sql: "ALTER FULLTEXT INDEX i1 TEXT MINING CONFIGURATION OVERLAY 'cfg';" }
+      - { id: parameter_list, sql: "ALTER FULLTEXT INDEX i1 PHRASE INDEX RATIO 0.3, FUZZY SEARCH INDEX ON;" }
+      - { id: flush_queue, sql: "ALTER FULLTEXT INDEX i2 FLUSH QUEUE;" }
+      - { id: suspend_queue, sql: "ALTER FULLTEXT INDEX i2 SUSPEND QUEUE;" }
+      - { id: activate_queue, sql: "ALTER FULLTEXT INDEX i2 ACTIVATE QUEUE;" }
+    examples:
+      - "ALTER FULLTEXT INDEX i1 PHRASE INDEX RATIO 0.3 FUZZY SEARCH INDEX ON;"
+      - "ALTER FULLTEXT INDEX i2 PHRASE INDEX RATIO 0.3 FUZZY SEARCH INDEX ON;"
+      - "ALTER FULLTEXT INDEX i2 SUSPEND QUEUE;"
+    note: "Doc syntax block lists the parameters space-separated in the examples and comma-separated in the grammar; both are probed."
+
+  - id: alter_role
+    name: ALTER ROLE
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/c16ff341be00433f862b2c064431ec0c.html?version=2.0.08
+    tier: medium
+    probes:
+      - { id: add_ldap_group, sql: "ALTER ROLE r ADD LDAP GROUP 'cn=grp,ou=g,o=org';" }
+      - { id: add_ldap_group_list, sql: "ALTER ROLE s.r ADD LDAP GROUP 'cn=a,o=org', 'cn=b,o=org';" }
+      - { id: drop_ldap_group, sql: "ALTER ROLE r DROP LDAP GROUP 'cn=grp,ou=g,o=org';" }
+    examples:
+      - "ALTER ROLE Securities_DBA ADD LDAP GROUP 'cn=Securities_DBA,OU=Application,OU=Groups,ou=DatabaseAdmins,cn=Users,o=verylargebank.com';"
+
+  - id: alter_sequence
+    name: ALTER SEQUENCE
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d06b0575191014afb2dfcb7aed7fff.html?version=2.0.08
+    tier: medium
+    probes:
+      - { id: restart_with, sql: "ALTER SEQUENCE seq RESTART WITH 2;" }
+      - { id: increment_by, sql: "ALTER SEQUENCE s.seq INCREMENT BY 3;" }
+      - { id: maxvalue_minvalue, sql: "ALTER SEQUENCE seq MAXVALUE 100 MINVALUE 1;" }
+      - { id: no_maxvalue_no_minvalue, sql: "ALTER SEQUENCE seq NO MAXVALUE NO MINVALUE;" }
+      - { id: cycle, sql: "ALTER SEQUENCE seq CYCLE;" }
+      - { id: no_cycle, sql: "ALTER SEQUENCE seq NO CYCLE;" }
+      - { id: cache, sql: "ALTER SEQUENCE seq CACHE 10;" }
+      - { id: no_cache, sql: "ALTER SEQUENCE seq NO CACHE;" }
+      - { id: reset_by, sql: "ALTER SEQUENCE seq RESET BY SELECT MAX(a) FROM t;" }
+      - { id: restart_params_reset_by, sql: "ALTER SEQUENCE seq RESTART WITH 5 INCREMENT BY 2 NO CYCLE RESET BY SELECT IFNULL(MAX(a), 0) + 1 FROM t;" }
+    examples:
+      - "ALTER SEQUENCE seq RESTART WITH 2;"
+      - "ALTER SEQUENCE seq MAXVALUE 100 NO MINVALUE;"
+      - "ALTER SEQUENCE seq INCREMENT BY 3 NO CYCLE;"
+
+  - id: alter_scheduler_job
+    name: ALTER SCHEDULER JOB
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/701e46758a044d868365b54bac173405.html?version=2.0.08
+    tier: medium
+    probes:
+      - { id: disable, sql: "ALTER SCHEDULER JOB schedule1 DISABLE;" }
+      - { id: enable, sql: "ALTER SCHEDULER JOB s.schedule1 ENABLE;" }
+      - { id: cron, sql: "ALTER SCHEDULER JOB schedule1 CRON '* * */1 * 12 34 56';" }
+      - { id: from_until, sql: "ALTER SCHEDULER JOB schedule1 FROM '2024-01-01 00:00:00' UNTIL '2025-01-01 00:00:00';" }
+      - { id: cron_enable_parameters, sql: "ALTER SCHEDULER JOB schedule1 CRON '* * */1 * 12 34 56' ENABLE PARAMETERS DAYS=7;" }
+    examples:
+      - "ALTER SCHEDULER JOB schedule1 DISABLE;"
+
+  - id: alter_statistics
+    name: ALTER STATISTICS
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/c6564762f4b846e5a76fcfb3fd7a1a88.html?version=2.0.08
+    tier: medium
+    probes:
+      - { id: by_name_set, sql: "ALTER STATISTICS st1 SET REFRESH TYPE AUTO;" }
+      - { id: by_name_list, sql: "ALTER STATISTICS s.st1, st2 SET ENABLE OFF;" }
+      - { id: on_table_columns, sql: "ALTER STATISTICS ON t (a, b) SET BUCKETS 100;" }
+      - { id: on_table_match_type, sql: "ALTER STATISTICS ON t (a, b) EXACT SET ENABLE ON;" }
+      - { id: having_match_properties, sql: "ALTER STATISTICS ON t HAVING TYPE HISTOGRAM REFRESH TYPE MANUAL SET REFRESH TYPE AUTO;" }
+      - { id: set_property_list, sql: "ALTER STATISTICS st1 SET QERROR 1.5, QTHETA 10, ACCURACY 0.5, PREFIXBITS 8, PERSISTENT ON;" }
+      - { id: set_memory, sql: "ALTER STATISTICS st1 SET MEMORY 1048576;" }
+      - { id: set_memory_percent, sql: "ALTER STATISTICS st1 SET MEMORY PERCENT 10;" }
+      - { id: add_valid_for, sql: "ALTER STATISTICS st1 ADD VALID FOR ESTIMATION, DATA DEPENDENCY;" }
+      - { id: drop_valid_for, sql: "ALTER STATISTICS st1 DROP VALID FOR DATA DEPENDENCY;" }
+      - { id: initial_refresh, sql: "ALTER STATISTICS st1 SET ENABLE ON INITIAL REFRESH;" }
+      - { id: no_initial_refresh, sql: "ALTER STATISTICS st1 SET ENABLE OFF NO INITIAL REFRESH;" }
+    note: "The page has no examples. SET CONSTRAINT <constraint_param> is documented but its values were not probed."
+
+  - id: alter_structured_privilege
+    name: ALTER STRUCTURED PRIVILEGE
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/fd4016543766478ea6304c3909b4245c.html?version=2.0.08
+    tier: medium
+    probes:
+      - { id: static_filter, sql: "ALTER STRUCTURED PRIVILEGE sp FOR SELECT ON v WHERE c = 1;" }
+      - { id: multiple_views, sql: "ALTER STRUCTURED PRIVILEGE s.sp FOR SELECT ON s.v1, s.v2 WHERE c IN (SELECT x FROM t);" }
+      - { id: condition_provider, sql: "ALTER STRUCTURED PRIVILEGE sp FOR SELECT ON v CONDITION PROVIDER s.proc;" }
+
+  - id: alter_system_alter_configuration
+    name: ALTER SYSTEM ALTER CONFIGURATION
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d08a5b751910148145dbc016c826a4.html?version=2.0.08
+    tier: medium
+    probes:
+      - { id: set_system, sql: "ALTER SYSTEM ALTER CONFIGURATION ('global.ini', 'SYSTEM') SET ('sec', 'key') = 'val';" }
+      - { id: set_host_layer_name, sql: "ALTER SYSTEM ALTER CONFIGURATION ('indexserver.ini', 'HOST', 'host1') SET ('sec', 'key') = 'val';" }
+      - { id: set_multiple, sql: "ALTER SYSTEM ALTER CONFIGURATION ('global.ini', 'SYSTEM') SET ('sec', 'k1') = 'v1', ('sec', 'k2') = 'v2';" }
+      - { id: unset, sql: "ALTER SYSTEM ALTER CONFIGURATION ('global.ini', 'SYSTEM') UNSET ('sec', 'key');" }
+      - { id: with_reconfigure_comment, sql: "ALTER SYSTEM ALTER CONFIGURATION ('indexserver.ini', 'DATABASE', 'C11') SET ('memorymanager', 'allocationlimit') = '500000' WITH RECONFIGURE COMMENT 'Reverting to previous setting';" }
+    examples:
+      - "ALTER SYSTEM ALTER CONFIGURATION ('global.ini', 'SYSTEM') SET ('alt_sys_test', 'new_test_value') = 'test';"
+      - "ALTER SYSTEM ALTER CONFIGURATION ('indexserver.ini', 'DATABASE', 'C11') SET ('memorymanager', 'allocationlimit') = '500000' WITH RECONFIGURE COMMENT 'Reverting to previous setting';"
+
+  - id: alter_system_alter_session_set
+    name: ALTER SYSTEM ALTER SESSION SET
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d0b09375191014b517e1ec387f9c26.html?version=2.0.08
+    tier: medium
+    probes:
+      - { id: set_session_variable, sql: "ALTER SYSTEM ALTER SESSION 200001 SET 'MY_VAR' = 'some_value';" }
+
+  - id: alter_system_alter_session_unset
+    name: ALTER SYSTEM ALTER SESSION UNSET
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d0ce04751910149e6bf5840bb2042a.html?version=2.0.08
+    tier: medium
+    probes:
+      - { id: unset_session_variable, sql: "ALTER SYSTEM ALTER SESSION 200001 UNSET 'MY_VAR';" }

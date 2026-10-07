@@ -1,0 +1,543 @@
+dialect: trino
+engine: Trino
+version: "483"
+source: https://trino.io/docs/current/sql.html
+
+statements: []
+
+expressions:
+  - id: c_aggregate_filter
+    name: Aggregate FILTER clause
+    doc: https://trino.io/docs/current/functions/aggregate.html
+    tier: high
+    probes:
+      - { id: filter_where, sql: "SELECT count(*) FILTER (WHERE c > 4) FROM t;" }
+      - { id: filter_array_agg, sql: "SELECT array_agg(name) FILTER (WHERE name IS NOT NULL) FROM region;" }
+      - { id: filter_grouped, sql: "SELECT species, count(*) FILTER (WHERE petal_length_cm > 4) AS count FROM iris GROUP BY species;" }
+    examples:
+      - "SELECT array_agg(name) FILTER (WHERE name IS NOT NULL) FROM region;"
+      - "SELECT species, count(*) FILTER (where petal_length_cm > 4) AS count FROM iris GROUP BY species;"
+
+  - id: c_aggregate_order_by
+    name: Ordered aggregates (ORDER BY inside the call)
+    doc: https://trino.io/docs/current/functions/aggregate.html
+    tier: high
+    probes:
+      - { id: order_desc, sql: "SELECT array_agg(x ORDER BY y DESC) FROM t;" }
+      - { id: order_multi, sql: "SELECT array_agg(x ORDER BY x, y, z) FROM t;" }
+      - { id: order_with_filter, sql: "SELECT array_agg(x ORDER BY y) FILTER (WHERE x > 0) FROM t;" }
+
+  - id: c_aggregate_distinct
+    name: Aggregate DISTINCT and ALL
+    doc: https://trino.io/docs/current/functions/aggregate.html
+    tier: high
+    probes:
+      - { id: count_distinct, sql: "SELECT count(DISTINCT c) FROM t;" }
+      - { id: sum_distinct, sql: "SELECT sum(DISTINCT c) FROM t;" }
+      - { id: count_all, sql: "SELECT count(ALL c) FROM t;" }
+      - { id: count_star, sql: "SELECT count(*) FROM t;" }
+      - { id: distinct_order_by, sql: "SELECT array_agg(DISTINCT c ORDER BY c) FROM t;" }
+
+  - id: c_aggregate_listagg
+    name: LISTAGG ... WITHIN GROUP
+    doc: https://trino.io/docs/current/functions/aggregate.html
+    tier: high
+    probes:
+      - { id: listagg_within_group, sql: "SELECT listagg(value, ',') WITHIN GROUP (ORDER BY value) csv_value FROM t;" }
+      - { id: listagg_cast, sql: "SELECT listagg(CAST(v AS VARCHAR), ',') WITHIN GROUP (ORDER BY v) csv_value FROM t;" }
+      - { id: listagg_overflow_error, sql: "SELECT listagg(value, ',' ON OVERFLOW ERROR) WITHIN GROUP (ORDER BY value) csv_value FROM t;" }
+      - { id: listagg_overflow_truncate_count, sql: "SELECT listagg(value, ',' ON OVERFLOW TRUNCATE '.....' WITH COUNT) WITHIN GROUP (ORDER BY value) csv_value FROM t;" }
+      - { id: listagg_overflow_truncate_without_count, sql: "SELECT listagg(value, ',' ON OVERFLOW TRUNCATE '...' WITHOUT COUNT) WITHIN GROUP (ORDER BY value) csv_value FROM t;" }
+      - { id: listagg_filter, sql: "SELECT listagg(value, ',') WITHIN GROUP (ORDER BY value) FILTER (WHERE value IS NOT NULL) FROM t;" }
+    examples:
+      - "SELECT listagg(value, ',') WITHIN GROUP (ORDER BY value) csv_value FROM (VALUES 'a', 'c', 'b') t(value);"
+      - "SELECT listagg(CAST(v AS VARCHAR), ',') WITHIN GROUP (ORDER BY v) csv_value FROM (VALUES 1, 3, 2) t(v);"
+      - "SELECT listagg(value, ',' ON OVERFLOW ERROR) WITHIN GROUP (ORDER BY value) csv_value FROM (VALUES 'a', 'b', 'c') t(value);"
+
+  - id: c_aggregate_function_families
+    name: Aggregate function families
+    doc: https://trino.io/docs/current/functions/aggregate.html
+    tier: high
+    probes:
+      - { id: general, sql: "SELECT avg(c), sum(c), min(c), max(c), bool_and(b), bool_or(b), count_if(b), arbitrary(c), any_value(c) FROM t;" }
+      - { id: max_by_min_by, sql: "SELECT max_by(x, y), min_by(x, y), max_by(x, y, 3) FROM t;" }
+      - { id: bitwise_agg, sql: "SELECT bitwise_and_agg(c), bitwise_or_agg(c), bitwise_xor_agg(c) FROM t;" }
+      - { id: map_agg, sql: "SELECT histogram(c), map_agg(k, v), map_union(m), multimap_agg(k, v) FROM t;" }
+      - { id: approximate, sql: "SELECT approx_distinct(c), approx_percentile(c, 0.5), approx_most_frequent(3, c, 10) FROM t;" }
+      - { id: statistical, sql: "SELECT corr(x, y), covar_pop(x, y), stddev(x), variance(x), var_samp(x), skewness(x), kurtosis(x), regr_slope(y, x) FROM t;" }
+      - { id: reduce_agg, sql: "SELECT reduce_agg(x, 0, (a, b) -> a + b, (a, b) -> a + b) FROM t;" }
+
+  - id: c_window_over
+    name: Window function OVER clause
+    doc: https://trino.io/docs/current/functions/window.html
+    tier: high
+    probes:
+      - { id: over_empty, sql: "SELECT count(*) OVER () FROM t;" }
+      - { id: over_partition_order, sql: "SELECT orderkey, clerk, totalprice, rank() OVER (PARTITION BY clerk ORDER BY totalprice DESC) AS rnk FROM orders;" }
+      - { id: over_order_only, sql: "SELECT row_number() OVER (ORDER BY c) FROM t;" }
+      - { id: over_partition_only, sql: "SELECT sum(c) OVER (PARTITION BY p) FROM t;" }
+      - { id: over_nulls_ordering, sql: "SELECT rank() OVER (ORDER BY c DESC NULLS LAST, d ASC NULLS FIRST) FROM t;" }
+      - { id: aggregate_as_window, sql: "SELECT sum(totalprice) OVER (PARTITION BY clerk ORDER BY orderdate) AS rolling_sum FROM orders;" }
+      - { id: over_filter, sql: "SELECT count(*) FILTER (WHERE c > 0) OVER (PARTITION BY p) FROM t;" }
+    examples:
+      - "SELECT orderkey, clerk, totalprice, rank() OVER (PARTITION BY clerk ORDER BY totalprice DESC) AS rnk FROM orders ORDER BY clerk, rnk;"
+      - "SELECT clerk, orderdate, orderkey, totalprice, sum(totalprice) OVER (PARTITION BY clerk ORDER BY orderdate) AS rolling_sum FROM orders ORDER BY clerk, orderdate, orderkey;"
+
+  - id: c_window_frames
+    name: Window frames (ROWS, RANGE, GROUPS)
+    doc: https://trino.io/docs/current/sql/select.html
+    tier: high
+    probes:
+      - { id: rows_unbounded_preceding, sql: "SELECT sum(c) OVER (ORDER BY o ROWS UNBOUNDED PRECEDING) FROM t;" }
+      - { id: rows_between_unbounded, sql: "SELECT sum(c) OVER (ORDER BY o ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: rows_between_offsets, sql: "SELECT avg(c) OVER (ORDER BY o ROWS BETWEEN 2 PRECEDING AND 1 FOLLOWING) FROM t;" }
+      - { id: rows_current_row, sql: "SELECT sum(c) OVER (ORDER BY o ROWS BETWEEN CURRENT ROW AND CURRENT ROW) FROM t;" }
+      - { id: rows_current_row_start, sql: "SELECT sum(c) OVER (ORDER BY o ROWS CURRENT ROW) FROM t;" }
+      - { id: range_unbounded_preceding, sql: "SELECT sum(c) OVER (ORDER BY o RANGE UNBOUNDED PRECEDING) FROM t;" }
+      - { id: range_between_current, sql: "SELECT sum(c) OVER (ORDER BY o RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: range_between_offset, sql: "SELECT sum(c) OVER (ORDER BY o RANGE BETWEEN 10 PRECEDING AND 10 FOLLOWING) FROM t;" }
+      - { id: range_interval_offset, sql: "SELECT sum(c) OVER (ORDER BY d RANGE BETWEEN INTERVAL '1' DAY PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: groups_between, sql: "SELECT sum(c) OVER (ORDER BY o GROUPS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;" }
+      - { id: groups_unbounded_following, sql: "SELECT sum(c) OVER (ORDER BY o GROUPS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: frame_with_partition, sql: "SELECT sum(c) OVER (PARTITION BY p ORDER BY o ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) FROM t;" }
+
+  - id: c_window_named
+    name: Named windows (WINDOW clause)
+    doc: https://trino.io/docs/current/sql/select.html
+    tier: high
+    probes:
+      - { id: over_named, sql: "SELECT orderkey, clerk, totalprice, rank() OVER w AS rnk FROM orders WINDOW w AS (PARTITION BY clerk ORDER BY totalprice DESC) ORDER BY count() OVER w, clerk, rnk;" }
+      - { id: over_named_extend, sql: "SELECT sum(c) OVER (w ORDER BY o) FROM t WINDOW w AS (PARTITION BY p);" }
+      - { id: window_chain, sql: "SELECT sum(c) OVER w2 FROM t WINDOW w1 AS (PARTITION BY p), w2 AS (w1 ORDER BY o ROWS BETWEEN 1 PRECEDING AND CURRENT ROW);" }
+      - { id: multiple_windows, sql: "SELECT rank() OVER w1, sum(c) OVER w2 FROM t WINDOW w1 AS (ORDER BY a), w2 AS (PARTITION BY b);" }
+    examples:
+      - "SELECT orderkey, clerk, totalprice, rank() OVER w AS rnk FROM orders WINDOW w AS (PARTITION BY clerk ORDER BY totalprice DESC) ORDER BY count() OVER w, clerk, rnk;"
+
+  - id: c_window_functions
+    name: Ranking and value window functions
+    doc: https://trino.io/docs/current/functions/window.html
+    tier: high
+    probes:
+      - { id: ranking, sql: "SELECT cume_dist() OVER (ORDER BY c), dense_rank() OVER (ORDER BY c), ntile(4) OVER (ORDER BY c), percent_rank() OVER (ORDER BY c), rank() OVER (ORDER BY c), row_number() OVER (ORDER BY c) FROM t;" }
+      - { id: first_last_nth, sql: "SELECT first_value(c) OVER (ORDER BY o), last_value(c) OVER (ORDER BY o), nth_value(c, 2) OVER (ORDER BY o) FROM t;" }
+      - { id: lead_lag, sql: "SELECT lead(c) OVER (ORDER BY o), lead(c, 2, 0) OVER (ORDER BY o), lag(c) OVER (ORDER BY o), lag(c, 1, -1) OVER (ORDER BY o) FROM t;" }
+      - { id: ignore_nulls, sql: "SELECT first_value(c) IGNORE NULLS OVER (ORDER BY o) FROM t;" }
+      - { id: lag_ignore_nulls, sql: "SELECT lag(c, 1, 0) IGNORE NULLS OVER (ORDER BY o) FROM t;" }
+
+  - id: c_window_row_pattern
+    name: Row pattern recognition in window structures
+    doc: https://trino.io/docs/current/sql/select.html
+    tier: medium
+    probes:
+      - { id: window_pattern, sql: "SELECT sum(c) OVER (ORDER BY o MEASURES MATCH_NUMBER() AS m AFTER MATCH SKIP PAST LAST ROW PATTERN (A B+) DEFINE B AS c > PREV(c)) FROM t;" }
+      - { id: window_pattern_rows_between, sql: "SELECT last_value(m) OVER w FROM t WINDOW w AS (ORDER BY o MEASURES RUNNING LAST(c) AS m ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING PATTERN (A+) DEFINE A AS c > 0);" }
+    note: "Window frame syntax supports additional row pattern recognition clauses (MEASURES, AFTER MATCH, PATTERN, DEFINE) per the WINDOW clause section of the SELECT page."
+
+  - id: c_lambda_expressions
+    name: Lambda expressions
+    doc: https://trino.io/docs/current/functions/lambda.html
+    tier: high
+    probes:
+      - { id: single_arg, sql: "SELECT transform(numbers, n -> n * n) FROM t;" }
+      - { id: two_args, sql: "SELECT reduce(a, 0, (s, x) -> s + x, s -> s) FROM t;" }
+      - { id: zip_with_lambda, sql: "SELECT zip_with(a, b, (x, y) -> x + y) FROM t;" }
+      - { id: lambda_function_call_body, sql: "SELECT filter(a, x -> regexp_like(x, 'a+')) FROM t;" }
+      - { id: lambda_subscript_body, sql: "SELECT transform(a, x -> x[1] / x[2]) FROM t;" }
+      - { id: lambda_if_body, sql: "SELECT transform(a, x -> IF(x > 0, x, -x)) FROM t;" }
+      - { id: lambda_coalesce_body, sql: "SELECT transform(a, x -> COALESCE(x, 0)) FROM t;" }
+      - { id: lambda_cast_body, sql: "SELECT transform(a, x -> CAST(x AS JSON)) FROM t;" }
+      - { id: lambda_try_body, sql: "SELECT transform(a, x -> x + TRY(1 / 0)) FROM t;" }
+      - { id: lambda_try_cast, sql: "SELECT transform(prices, n -> TRY_CAST(n AS VARCHAR) || '$') AS price_tags FROM t;" }
+      - { id: lambda_capture, sql: "SELECT transform(xvalues, x -> a * x + b) AS linear_function_values FROM t;" }
+      - { id: lambda_any_match, sql: "SELECT numbers FROM t WHERE any_match(numbers, n -> COALESCE(n, 0) > 100);" }
+      - { id: map_lambda, sql: "SELECT map_filter(m, (k, v) -> v > 0), transform_values(m, (k, v) -> v + 1), transform_keys(m, (k, v) -> k + 1) FROM t;" }
+    examples:
+      - "SELECT numbers, transform(numbers, n -> n * n) as squared_numbers FROM (VALUES (ARRAY[1, 2]), (ARRAY[3, 4]), (ARRAY[5, 6, 7])) AS t(numbers);"
+      - "SELECT transform(prices, n -> TRY_CAST(n AS VARCHAR) || '$') as price_tags FROM (VALUES (ARRAY[100, 200]), (ARRAY[30, 4])) AS t(prices);"
+      - "SELECT xvalues, a, b, transform(xvalues, x -> a * x + b) as linear_function_values FROM (VALUES (ARRAY[1, 2], 10, 5), (ARRAY[3, 4], 4, 2)) AS t(xvalues, a, b);"
+
+  - id: c_array_constructors_access
+    name: ARRAY constructors, subscript and concatenation
+    doc: https://trino.io/docs/current/functions/array.html
+    tier: high
+    probes:
+      - { id: array_constructor, sql: "SELECT ARRAY[1, 2, 3];" }
+      - { id: array_empty, sql: "SELECT ARRAY[];" }
+      - { id: array_nested, sql: "SELECT ARRAY[ARRAY[1, 2], ARRAY[3]];" }
+      - { id: array_subscript, sql: "SELECT my_array[1] AS first_element FROM t;" }
+      - { id: array_literal_subscript, sql: "SELECT ARRAY[1, 1.2, 4][2];" }
+      - { id: array_concat_arrays, sql: "SELECT ARRAY[1] || ARRAY[2];" }
+      - { id: array_concat_element, sql: "SELECT ARRAY[1] || 2;" }
+      - { id: element_prepend, sql: "SELECT 2 || ARRAY[1];" }
+      - { id: array_cast, sql: "SELECT CAST(ARRAY[1, 2] AS ARRAY(BIGINT));" }
+      - { id: array_type_column, sql: "SELECT CAST(NULL AS ARRAY(VARCHAR));" }
+      - { id: array_in_values, sql: "SELECT * FROM (VALUES (ARRAY[1, 2])) AS t(numbers);" }
+    examples:
+      - "SELECT ARRAY[1, 1.2, 4][2];"
+      - "SELECT ARRAY[1] || ARRAY[2];"
+      - "SELECT ARRAY[1] || 2;"
+      - "SELECT 2 || ARRAY[1];"
+
+  - id: c_array_functions
+    name: Array function family
+    doc: https://trino.io/docs/current/functions/array.html
+    tier: high
+    probes:
+      - { id: element_predicates, sql: "SELECT all_match(a, x -> x > 0), any_match(a, x -> x > 0), none_match(a, x -> x > 0) FROM t;" }
+      - { id: set_ops, sql: "SELECT array_distinct(a), array_intersect(a, b), array_union(a, b), array_except(a, b), arrays_overlap(a, b) FROM t;" }
+      - { id: lookup, sql: "SELECT array_position(a, 3), array_max(a), array_min(a), array_first(a), array_last(a), contains(a, 1), element_at(a, 1), cardinality(a) FROM t;" }
+      - { id: transform_filter_reduce, sql: "SELECT transform(a, x -> x + 1), filter(a, x -> x > 1), reduce(a, 0, (s, x) -> s + x, s -> s) FROM t;" }
+      - { id: shape, sql: "SELECT flatten(a), slice(a, 1, 2), array_sort(a), array_remove(a, 1), repeat(1, 3), sequence(1, 5), shuffle(a), combinations(a, 2), trim_array(a, 1) FROM t;" }
+      - { id: array_join_zip, sql: "SELECT array_join(a, ','), zip(a, b), zip_with(a, b, (x, y) -> x + y), ngrams(a, 2) FROM t;" }
+      - { id: array_sort_lambda, sql: "SELECT array_sort(a, (x, y) -> IF(x < y, 1, IF(x = y, 0, -1))) FROM t;" }
+
+  - id: c_map_constructors_access
+    name: MAP constructors and subscript
+    doc: https://trino.io/docs/current/functions/map.html
+    tier: high
+    probes:
+      - { id: map_two_arrays, sql: "SELECT MAP(ARRAY['a', 'b'], ARRAY[1, 2]);" }
+      - { id: map_empty, sql: "SELECT MAP();" }
+      - { id: map_subscript, sql: "SELECT m['a'] FROM t;" }
+      - { id: map_literal_subscript, sql: "SELECT MAP(ARRAY['a'], ARRAY[1])['a'];" }
+      - { id: map_cast, sql: "SELECT CAST(m AS MAP(VARCHAR, BIGINT)) FROM t;" }
+      - { id: map_from_entries, sql: "SELECT map_from_entries(ARRAY[(1, 'x'), (2, 'y')]);" }
+      - { id: map_type_cast_null, sql: "SELECT CAST(NULL AS MAP(VARCHAR, ARRAY(INTEGER)));" }
+
+  - id: c_map_functions
+    name: Map function family
+    doc: https://trino.io/docs/current/functions/map.html
+    tier: high
+    probes:
+      - { id: accessors, sql: "SELECT map_keys(m), map_values(m), map_entries(m), element_at(m, 'a'), cardinality(m) FROM t;" }
+      - { id: combine, sql: "SELECT map_concat(m1, m2), multimap_from_entries(e) FROM t;" }
+      - { id: map_filter, sql: "SELECT map_filter(m, (k, v) -> v IS NOT NULL) FROM t;" }
+      - { id: map_zip_with, sql: "SELECT map_zip_with(m1, m2, (k, v1, v2) -> v1 + v2) FROM t;" }
+      - { id: transform_keys_values, sql: "SELECT transform_keys(m, (k, v) -> k + 1), transform_values(m, (k, v) -> v * 2) FROM t;" }
+
+  - id: c_row_constructors_access
+    name: ROW constructors and field access
+    doc: https://trino.io/docs/current/language/types.html
+    tier: high
+    probes:
+      - { id: row_constructor, sql: "SELECT ROW(1, 2.5, 'x');" }
+      - { id: row_bare_tuple, sql: "SELECT (1, 'a');" }
+      - { id: row_cast_named, sql: "SELECT CAST(ROW(1, 2.5) AS ROW(x BIGINT, y DOUBLE));" }
+      - { id: row_field_dot, sql: "SELECT r.x FROM t;" }
+      - { id: row_field_nested, sql: "SELECT r.a.b FROM t;" }
+      - { id: row_field_from_expr, sql: "SELECT CAST(ROW(1, 2) AS ROW(x BIGINT, y BIGINT)).x;" }
+      - { id: row_subscript_field, sql: "SELECT arr[1].x FROM t;" }
+      - { id: row_unnamed_type, sql: "SELECT CAST(NULL AS ROW(BIGINT, VARCHAR));" }
+
+  - id: c_json_exists
+    name: JSON_EXISTS
+    doc: https://trino.io/docs/current/functions/json.html
+    tier: high
+    probes:
+      - { id: basic, sql: "SELECT json_exists(description, 'lax $.children[*]?(@ > 10)') FROM t;" }
+      - { id: strict, sql: "SELECT json_exists(description, 'strict $.children[2]?(@ > 10)') FROM t;" }
+      - { id: format_json, sql: "SELECT json_exists(j FORMAT JSON, 'lax $.a') FROM t;" }
+      - { id: format_json_encoding, sql: "SELECT json_exists(b FORMAT JSON ENCODING UTF16, 'lax $.a') FROM t;" }
+      - { id: passing, sql: "SELECT json_exists(j, 'lax $.a?(@ > $x)' PASSING 5 AS x) FROM t;" }
+      - { id: on_error_true, sql: "SELECT json_exists(j, 'lax $.a' TRUE ON ERROR) FROM t;" }
+      - { id: on_error_false, sql: "SELECT json_exists(j, 'strict $.a' FALSE ON ERROR) FROM t;" }
+      - { id: on_error_unknown, sql: "SELECT json_exists(j, 'strict $.a' UNKNOWN ON ERROR) FROM t;" }
+      - { id: on_error_error, sql: "SELECT json_exists(j, 'strict $.a' ERROR ON ERROR) FROM t;" }
+
+  - id: c_json_value
+    name: JSON_VALUE
+    doc: https://trino.io/docs/current/functions/json.html
+    tier: high
+    probes:
+      - { id: basic, sql: "SELECT json_value(description, 'lax $.comment') FROM t;" }
+      - { id: returning, sql: "SELECT json_value(description, 'lax $.comment' RETURNING char(12)) FROM t;" }
+      - { id: returning_tinyint, sql: "SELECT json_value(description, 'lax $.children[0]' RETURNING tinyint) FROM t;" }
+      - { id: format_json_input, sql: "SELECT json_value(j FORMAT JSON, 'lax $.a') FROM t;" }
+      - { id: passing, sql: "SELECT json_value(j, 'lax $.a?(@ > $x)' PASSING 5 AS x) FROM t;" }
+      - { id: on_empty_null, sql: "SELECT json_value(j, 'lax $.a' NULL ON EMPTY) FROM t;" }
+      - { id: on_empty_error, sql: "SELECT json_value(j, 'lax $.a' ERROR ON EMPTY) FROM t;" }
+      - { id: on_empty_default, sql: "SELECT json_value(description, 'lax $.children[2]' DEFAULT 'missing' ON EMPTY) FROM t;" }
+      - { id: on_error_default, sql: "SELECT json_value(description, 'strict $.children[2]' DEFAULT 'err' ON ERROR) FROM t;" }
+      - { id: on_error_null, sql: "SELECT json_value(j, 'strict $.a' NULL ON ERROR) FROM t;" }
+      - { id: on_error_error, sql: "SELECT json_value(j, 'strict $.a' ERROR ON ERROR) FROM t;" }
+      - { id: on_empty_and_on_error, sql: "SELECT json_value(j, 'lax $.a' RETURNING bigint DEFAULT 0 ON EMPTY ERROR ON ERROR) FROM t;" }
+
+  - id: c_json_query
+    name: JSON_QUERY
+    doc: https://trino.io/docs/current/functions/json.html
+    tier: high
+    probes:
+      - { id: basic, sql: "SELECT json_query(description, 'lax $.children') FROM t;" }
+      - { id: without_wrapper, sql: "SELECT json_query(description, 'lax $.children[*]' WITHOUT ARRAY WRAPPER NULL ON ERROR) FROM t;" }
+      - { id: with_wrapper, sql: "SELECT json_query(description, 'lax $.children[last]' WITH ARRAY WRAPPER) FROM t;" }
+      - { id: with_conditional_wrapper, sql: "SELECT json_query(j, 'lax $.a' WITH CONDITIONAL ARRAY WRAPPER) FROM t;" }
+      - { id: with_unconditional_wrapper, sql: "SELECT json_query(j, 'lax $.a' WITH UNCONDITIONAL ARRAY WRAPPER) FROM t;" }
+      - { id: without_wrapper_plain, sql: "SELECT json_query(j, 'lax $.a' WITHOUT WRAPPER) FROM t;" }
+      - { id: keep_quotes, sql: "SELECT json_query(description, 'strict $.comment' KEEP QUOTES) FROM t;" }
+      - { id: omit_quotes, sql: "SELECT json_query(description, 'strict $.comment' OMIT QUOTES) FROM t;" }
+      - { id: omit_quotes_on_scalar, sql: "SELECT json_query(j, 'lax $.a' OMIT QUOTES ON SCALAR STRING) FROM t;" }
+      - { id: returning_format, sql: "SELECT json_query(j, 'lax $.a' RETURNING varchar FORMAT JSON) FROM t;" }
+      - { id: passing, sql: "SELECT json_query(j, 'lax $.a?(@ > $x)' PASSING 5 AS x) FROM t;" }
+      - { id: on_empty_array, sql: "SELECT json_query(j, 'lax $.a' EMPTY ARRAY ON EMPTY) FROM t;" }
+      - { id: on_empty_object, sql: "SELECT json_query(j, 'lax $.a' EMPTY OBJECT ON EMPTY) FROM t;" }
+      - { id: on_error_empty_array, sql: "SELECT json_query(j, 'strict $.a' EMPTY ARRAY ON ERROR) FROM t;" }
+      - { id: on_error_error, sql: "SELECT json_query(j, 'strict $.a' ERROR ON ERROR) FROM t;" }
+
+  - id: c_json_table
+    name: JSON_TABLE
+    doc: https://trino.io/docs/current/functions/json.html
+    tier: high
+    probes:
+      - { id: basic_columns, sql: "SELECT * FROM JSON_TABLE(j, 'lax $[*]' COLUMNS (id integer PATH 'lax $.id', name varchar PATH 'lax $.name'));" }
+      - { id: nested_path, sql: "SELECT * FROM JSON_TABLE('[{\"id\":1,\"name\":\"Africa\"}]', 'strict $' COLUMNS (NESTED PATH 'strict $[*]' COLUMNS (id integer PATH 'strict $.id', name varchar PATH 'strict $.name')));" }
+      - { id: for_ordinality, sql: "SELECT * FROM JSON_TABLE(j, 'lax $[*]' COLUMNS (seq FOR ORDINALITY, id integer PATH 'lax $.id'));" }
+      - { id: exists_column, sql: "SELECT * FROM JSON_TABLE(j, 'lax $[*]' COLUMNS (has_id boolean EXISTS PATH 'lax $.id'));" }
+      - { id: exists_on_error, sql: "SELECT * FROM JSON_TABLE(j, 'lax $[*]' COLUMNS (has_id boolean EXISTS PATH 'lax $.id' TRUE ON ERROR));" }
+      - { id: query_column, sql: "SELECT * FROM JSON_TABLE(j, 'lax $[*]' COLUMNS (items varchar FORMAT JSON PATH 'lax $.items' WITH ARRAY WRAPPER));" }
+      - { id: value_column_on_empty_error, sql: "SELECT * FROM JSON_TABLE(j, 'lax $[*]' COLUMNS (id integer PATH 'lax $.id' DEFAULT 0 ON EMPTY NULL ON ERROR));" }
+      - { id: root_path_name, sql: "SELECT * FROM JSON_TABLE(j, 'lax $' AS root_path COLUMNS (a varchar(1) PATH 'lax $.a'));" }
+      - { id: passing, sql: "SELECT * FROM JSON_TABLE(j, 'lax $[*]?(@.a > $x)' PASSING 5 AS x COLUMNS (a integer PATH 'lax $.a'));" }
+      - { id: plan_outer, sql: "SELECT * FROM JSON_TABLE('[]', 'lax $' AS \"root_path\" COLUMNS (a varchar(1) PATH 'lax \"A\"', NESTED PATH 'lax $[*]' AS \"nested_path\" COLUMNS (b varchar(1) PATH 'lax \"B\"')) PLAN (\"root_path\" OUTER \"nested_path\"));" }
+      - { id: plan_inner, sql: "SELECT * FROM JSON_TABLE('[]', 'lax $' AS \"root_path\" COLUMNS (a varchar(1) PATH 'lax \"A\"', NESTED PATH 'lax $[*]' AS \"nested_path\" COLUMNS (b varchar(1) PATH 'lax \"B\"')) PLAN (\"root_path\" INNER \"nested_path\"));" }
+      - { id: plan_default, sql: "SELECT * FROM JSON_TABLE(j, 'lax $' AS p COLUMNS (a integer PATH 'lax $.a') PLAN DEFAULT (INNER));" }
+      - { id: lateral_join, sql: "SELECT t.id, jt.a FROM t CROSS JOIN JSON_TABLE(t.j, 'lax $[*]' COLUMNS (a integer PATH 'lax $.a')) AS jt;" }
+      - { id: on_error_clause, sql: "SELECT * FROM JSON_TABLE(j, 'lax $[*]' COLUMNS (a integer PATH 'lax $.a') ERROR ON ERROR);" }
+
+  - id: c_json_array
+    name: JSON_ARRAY
+    doc: https://trino.io/docs/current/functions/json.html
+    tier: high
+    probes:
+      - { id: values, sql: "SELECT json_array(true, 12e-1, 'text');" }
+      - { id: empty, sql: "SELECT json_array();" }
+      - { id: format_json_value, sql: "SELECT json_array('[ \"text\" ] ' FORMAT JSON, X'5B0035005D00' FORMAT JSON ENCODING UTF16);" }
+      - { id: nested_json_query, sql: "SELECT json_array(json_query('{\"key\" : [ \"value\" ]}', 'lax $.key'));" }
+      - { id: typed_literals, sql: "SELECT json_array(DATE '2001-01-31', UUID '12151fd2-7586-11e9-8f9e-2a86e4085a59');" }
+      - { id: null_on_null, sql: "SELECT json_array(1, NULL NULL ON NULL);" }
+      - { id: absent_on_null, sql: "SELECT json_array(1, NULL ABSENT ON NULL);" }
+      - { id: returning, sql: "SELECT json_array(1, 2 RETURNING varchar);" }
+      - { id: returning_varbinary_format, sql: "SELECT json_array(1 RETURNING varbinary FORMAT JSON ENCODING UTF16);" }
+      - { id: returning_char_format, sql: "SELECT json_array(1 RETURNING varchar FORMAT JSON);" }
+    examples:
+      - "SELECT json_array(true, 12e-1, 'text');"
+      - "SELECT json_array('[ \"text\" ] ' FORMAT JSON, X'5B0035005D00' FORMAT JSON ENCODING UTF16);"
+      - "SELECT json_array(json_query('{\"key\" : [ \"value\" ]}', 'lax $.key'));"
+      - "SELECT json_array(DATE '2001-01-31', UUID '12151fd2-7586-11e9-8f9e-2a86e4085a59');"
+      - "SELECT json_array();"
+
+  - id: c_json_object
+    name: JSON_OBJECT
+    doc: https://trino.io/docs/current/functions/json.html
+    tier: high
+    probes:
+      - { id: colon_convention, sql: "SELECT json_object('key1': 1, 'key2': true);" }
+      - { id: key_value_convention, sql: "SELECT json_object(KEY 'key1' VALUE 1, KEY 'key2' VALUE true);" }
+      - { id: value_without_key, sql: "SELECT json_object('key1' VALUE 1, 'key2' VALUE true);" }
+      - { id: empty, sql: "SELECT json_object();" }
+      - { id: null_on_null, sql: "SELECT json_object('x': NULL NULL ON NULL);" }
+      - { id: absent_on_null, sql: "SELECT json_object('x': NULL ABSENT ON NULL);" }
+      - { id: with_unique_keys, sql: "SELECT json_object('x': 1 WITH UNIQUE KEYS);" }
+      - { id: without_unique, sql: "SELECT json_object('x': 1 WITHOUT UNIQUE);" }
+      - { id: format_json_value, sql: "SELECT json_object('x': '[1]' FORMAT JSON);" }
+      - { id: returning, sql: "SELECT json_object('x': 1 RETURNING varchar);" }
+      - { id: returning_varbinary, sql: "SELECT json_object('x': 1 RETURNING varbinary FORMAT JSON ENCODING UTF8);" }
+      - { id: all_options, sql: "SELECT json_object('x': 1 ABSENT ON NULL WITH UNIQUE KEYS RETURNING varchar FORMAT JSON);" }
+    examples:
+      - "SELECT json_object('key1': 1, 'key2': true);"
+      - "SELECT json_object(KEY 'key1' VALUE 1, KEY 'key2' VALUE true);"
+      - "SELECT json_object('key1' VALUE 1, 'key2' VALUE true);"
+
+  - id: c_json_simplified_accessor
+    name: JSON simplified accessor
+    doc: https://trino.io/docs/current/functions/json.html
+    tier: medium
+    probes:
+      - { id: member, sql: "SELECT j.name FROM t;" }
+      - { id: quoted_member, sql: "SELECT j.\"FooBar\" FROM t;" }
+      - { id: string_member, sql: "SELECT j.'foo bar' FROM t;" }
+      - { id: subscript, sql: "SELECT j[3] FROM t;" }
+      - { id: array_wildcard, sql: "SELECT j[*] FROM t;" }
+      - { id: member_wildcard, sql: "SELECT j.* FROM t;" }
+      - { id: item_method_bigint, sql: "SELECT j.name.bigint() FROM t;" }
+      - { id: item_method_decimal, sql: "SELECT j.payload.amount.decimal(18,2) FROM t;" }
+      - { id: chained, sql: "SELECT j.rows[1].cells[*] FROM t;" }
+    note: "Receiver must be a value of declared type JSON (column j assumed JSON)."
+
+  - id: c_json_conversion_functions
+    name: JSON casts and other JSON functions
+    doc: https://trino.io/docs/current/functions/json.html
+    tier: high
+    probes:
+      - { id: json_literal, sql: "SELECT JSON '{\"a\": 1}';" }
+      - { id: cast_to_json, sql: "SELECT CAST(ARRAY[1, 2] AS JSON), CAST(MAP(ARRAY['a'], ARRAY[1]) AS JSON);" }
+      - { id: cast_from_json, sql: "SELECT CAST(j AS ARRAY(BIGINT)), CAST(j AS MAP(VARCHAR, BIGINT)) FROM t;" }
+      - { id: json_parse_format, sql: "SELECT json_parse('[1,2]'), json_format(j) FROM t;" }
+      - { id: json_scalar_funcs, sql: "SELECT is_json_scalar(j), json_array_contains(j, 1), json_array_get(j, 0), json_array_length(j), json_extract(j, '$.a'), json_extract_scalar(j, '$.a'), json_size(j, '$.a') FROM t;" }
+
+  - id: c_math_functions
+    name: Mathematical functions and operators
+    doc: https://trino.io/docs/current/functions/math.html
+    tier: high
+    probes:
+      - { id: arithmetic_operators, sql: "SELECT 1 + 2, 3 - 1, 2 * 3, 7 / 2, 7 % 3, -c FROM t;" }
+      - { id: functions, sql: "SELECT abs(c), ceil(c), floor(c), round(c, 2), truncate(c), sign(c), sqrt(c), cbrt(c), exp(c), ln(c), log10(c), log2(c), log(2, c), mod(c, 3), power(c, 2), pow(c, 2) FROM t;" }
+      - { id: trigonometry, sql: "SELECT sin(c), cos(c), tan(c), asin(c), acos(c), atan(c), atan2(c, 1), degrees(c), radians(c), pi(), e() FROM t;" }
+      - { id: random_and_misc, sql: "SELECT rand(), random(), random(10), greatest(1, 2), least(1, 2), width_bucket(c, 0, 10, 5), from_base('ff', 16), to_base(255, 16) FROM t;" }
+      - { id: float_checks, sql: "SELECT is_nan(c), is_finite(c), is_infinite(c), nan(), infinity() FROM t;" }
+
+  - id: c_string_functions
+    name: String functions and operators
+    doc: https://trino.io/docs/current/functions/string.html
+    tier: high
+    probes:
+      - { id: concat_operator, sql: "SELECT 'a' || 'b' || c FROM t;" }
+      - { id: basic_functions, sql: "SELECT length(s), lower(s), upper(s), reverse(s), concat(s, 'x'), replace(s, 'a', 'b'), ltrim(s), rtrim(s), trim(s), lpad(s, 5, '0'), rpad(s, 5, '0') FROM t;" }
+      - { id: substring_functions, sql: "SELECT substr(s, 2, 3), substring(s, 2), strpos(s, 'a'), position('a' IN s), starts_with(s, 'a'), split(s, ','), split_part(s, ',', 2) FROM t;" }
+      - { id: trim_forms, sql: "SELECT trim(BOTH 'x' FROM s), trim(LEADING 'x' FROM s), trim(TRAILING 'x' FROM s), trim(BOTH FROM s) FROM t;" }
+      - { id: similarity, sql: "SELECT levenshtein_distance(a, b), hamming_distance(a, b), soundex(a), word_stem(a), normalize(a, NFC), to_utf8(a), from_utf8(b), chr(65), codepoint('A') FROM t;" }
+      - { id: format_function, sql: "SELECT format('%s-%d', s, 3) FROM t;" }
+      - { id: like_operator, sql: "SELECT s LIKE 'a%', s NOT LIKE 'a%', s LIKE 'a#%' ESCAPE '#' FROM t;" }
+
+  - id: c_regexp_functions
+    name: Regular expression functions
+    doc: https://trino.io/docs/current/functions/regexp.html
+    tier: medium
+    probes:
+      - { id: regexp_like_extract, sql: "SELECT regexp_like(s, 'a+'), regexp_extract(s, 'a(b)', 1), regexp_extract_all(s, 'a+'), regexp_count(s, 'a') FROM t;" }
+      - { id: regexp_replace, sql: "SELECT regexp_replace(s, 'a+', 'b'), regexp_replace(s, '(\\w)(\\w*)', x -> upper(x[1]) || lower(x[2])) FROM t;" }
+      - { id: regexp_split_position, sql: "SELECT regexp_split(s, ','), regexp_position(s, 'a') FROM t;" }
+
+  - id: c_datetime_functions
+    name: Date and time functions and operators
+    doc: https://trino.io/docs/current/functions/datetime.html
+    tier: high
+    probes:
+      - { id: at_time_zone, sql: "SELECT timestamp '2012-10-31 01:00 UTC' AT TIME ZONE 'America/Los_Angeles';" }
+      - { id: at_time_zone_offset, sql: "SELECT ts AT TIME ZONE '+01:00' FROM t;" }
+      - { id: at_local, sql: "SELECT ts AT LOCAL FROM t;" }
+      - { id: current_values, sql: "SELECT current_date, current_time, current_timestamp, localtime, localtimestamp, current_timezone();" }
+      - { id: current_with_precision, sql: "SELECT current_time(3), current_timestamp(6), localtime(3), localtimestamp(6);" }
+      - { id: interval_arithmetic, sql: "SELECT ts + INTERVAL '1' DAY, ts - INTERVAL '2' HOUR, INTERVAL '1' YEAR + INTERVAL '2' MONTH FROM t;" }
+      - { id: interval_ranges, sql: "SELECT INTERVAL '1-2' YEAR TO MONTH, INTERVAL '3 04:05:06' DAY TO SECOND;" }
+      - { id: extract, sql: "SELECT extract(YEAR FROM ts), extract(DOW FROM ts), extract(TIMEZONE_HOUR FROM ts) FROM t;" }
+      - { id: date_trunc_add_diff, sql: "SELECT date_trunc('day', ts), date_add('day', 1, ts), date_diff('day', ts1, ts2) FROM t;" }
+      - { id: format_parse, sql: "SELECT date_format(ts, '%Y-%m-%d'), date_parse(s, '%Y-%m-%d'), format_datetime(ts, 'yyyy-MM-dd'), parse_datetime(s, 'yyyy-MM-dd') FROM t;" }
+      - { id: unix_conversions, sql: "SELECT from_unixtime(1700000000), to_unixtime(ts), from_iso8601_timestamp(s), to_iso8601(ts), last_day_of_month(d) FROM t;" }
+      - { id: field_functions, sql: "SELECT year(ts), month(ts), day(ts), hour(ts), minute(ts), second(ts), quarter(ts), week(ts), day_of_week(ts), day_of_year(ts) FROM t;" }
+    examples:
+      - "SELECT timestamp '2012-10-31 01:00 UTC' AT TIME ZONE 'America/Los_Angeles';"
+
+  - id: c_conversion_functions
+    name: Conversion functions
+    doc: https://trino.io/docs/current/functions/conversion.html
+    tier: high
+    probes:
+      - { id: cast, sql: "SELECT CAST(c AS bigint) FROM t;" }
+      - { id: try_cast, sql: "SELECT TRY_CAST(c AS integer) FROM t;" }
+      - { id: try, sql: "SELECT TRY(1 / 0) FROM t;" }
+      - { id: format_number_typeof, sql: "SELECT format_number(1234567), typeof(c), parse_data_size('1kB'), parse_duration('1h') FROM t;" }
+      - { id: cast_parameterized, sql: "SELECT CAST(c AS decimal(10, 2)), CAST(c AS varchar(10)), CAST(c AS timestamp(3) WITH TIME ZONE) FROM t;" }
+
+  - id: c_conditional_expressions
+    name: Conditional expressions
+    doc: https://trino.io/docs/current/functions/conditional.html
+    tier: high
+    probes:
+      - { id: case_searched, sql: "SELECT CASE WHEN c > 0 THEN 'pos' WHEN c < 0 THEN 'neg' ELSE 'zero' END FROM t;" }
+      - { id: case_simple, sql: "SELECT CASE c WHEN 1 THEN 'one' WHEN 2 THEN 'two' END FROM t;" }
+      - { id: if_function, sql: "SELECT if(c > 0, 'a'), if(c > 0, 'a', 'b') FROM t;" }
+      - { id: coalesce_nullif, sql: "SELECT coalesce(a, b, 0), nullif(a, b), try(a / b) FROM t;" }
+      - { id: greatest_least, sql: "SELECT greatest(a, b, c), least(a, b, c) FROM t;" }
+
+  - id: c_comparison_functions
+    name: Comparison functions and operators
+    doc: https://trino.io/docs/current/functions/comparison.html
+    tier: high
+    probes:
+      - { id: operators, sql: "SELECT a < b, a > b, a <= b, a >= b, a = b, a <> b, a != b FROM t;" }
+      - { id: between, sql: "SELECT a BETWEEN 1 AND 10, a NOT BETWEEN 1 AND 10 FROM t;" }
+      - { id: is_null, sql: "SELECT a IS NULL, a IS NOT NULL FROM t;" }
+      - { id: is_distinct_from, sql: "SELECT a IS DISTINCT FROM b, a IS NOT DISTINCT FROM b FROM t;" }
+      - { id: in_list, sql: "SELECT a IN (1, 2, 3), a NOT IN (1, 2) FROM t;" }
+      - { id: quantified_any_all, sql: "SELECT a < ALL (SELECT b FROM s), a = ANY (SELECT b FROM s), a = SOME (SELECT b FROM s) FROM t;" }
+      - { id: row_comparison, sql: "SELECT (a, b) = (1, 2), ROW(a, b) < ROW(1, 2) FROM t;" }
+
+  - id: c_logical_operators
+    name: Logical operators
+    doc: https://trino.io/docs/current/functions/logical.html
+    tier: high
+    probes:
+      - { id: and_or_not, sql: "SELECT a AND b, a OR b, NOT a FROM t;" }
+      - { id: precedence, sql: "SELECT NOT a AND (b OR c) FROM t;" }
+
+  - id: c_bitwise_functions
+    name: Bitwise functions
+    doc: https://trino.io/docs/current/functions/bitwise.html
+    tier: medium
+    probes:
+      - { id: and_or_xor_not, sql: "SELECT bitwise_and(a, b), bitwise_or(a, b), bitwise_xor(a, b), bitwise_not(a) FROM t;" }
+      - { id: shifts_count, sql: "SELECT bitwise_left_shift(a, 2), bitwise_right_shift(a, 2), bitwise_right_shift_arithmetic(a, 2), bit_count(a, 64) FROM t;" }
+
+  - id: c_binary_functions
+    name: Binary functions and operators
+    doc: https://trino.io/docs/current/functions/binary.html
+    tier: medium
+    probes:
+      - { id: concat_binary, sql: "SELECT X'0A' || X'0B';" }
+      - { id: binary_funcs, sql: "SELECT length(b), concat(b, b), substr(b, 1, 2), to_hex(b), from_hex('0A'), to_base64(b), from_base64('AA=='), md5(b), sha1(b), sha256(b), sha512(b), crc32(b), xxhash64(b) FROM t;" }
+
+  - id: c_decimal_literals_operators
+    name: Decimal functions and operators
+    doc: https://trino.io/docs/current/functions/decimal.html
+    tier: medium
+    probes:
+      - { id: decimal_literal, sql: "SELECT DECIMAL '1.5', DECIMAL '-10.123456789';" }
+      - { id: decimal_arithmetic, sql: "SELECT DECIMAL '1.5' + DECIMAL '2.25', CAST(c AS decimal(10, 2)) * 2 FROM t;" }
+
+  - id: c_ip_uuid_url_functions
+    name: IP address, UUID and URL functions
+    doc: https://trino.io/docs/current/functions/url.html
+    tier: low
+    probes:
+      - { id: uuid, sql: "SELECT uuid(), UUID '12151fd2-7586-11e9-8f9e-2a86e4085a59';" }
+      - { id: ipaddress_contains, sql: "SELECT contains('10.0.0.0/8', IPADDRESS '10.1.2.3');" }
+      - { id: url_extract, sql: "SELECT url_extract_host(u), url_extract_parameter(u, 'p'), url_encode(u), url_decode(u) FROM t;" }
+
+  - id: c_sketch_and_digest_functions
+    name: HyperLogLog, set digest, quantile digest and T-Digest functions
+    doc: https://trino.io/docs/current/functions/hyperloglog.html
+    tier: low
+    probes:
+      - { id: hyperloglog, sql: "SELECT cardinality(approx_set(c)), merge(approx_set(c)), empty_approx_set() FROM t;" }
+      - { id: qdigest, sql: "SELECT value_at_quantile(qdigest_agg(c), 0.5), values_at_quantiles(qdigest_agg(c), ARRAY[0.5, 0.9]) FROM t;" }
+      - { id: tdigest, sql: "SELECT value_at_quantile(tdigest_agg(c), 0.5) FROM t;" }
+      - { id: set_digest, sql: "SELECT make_set_digest(c), intersection_cardinality(make_set_digest(a), make_set_digest(b)) FROM t;" }
+
+  - id: c_geospatial_functions
+    name: Geospatial functions
+    doc: https://trino.io/docs/current/functions/geospatial.html
+    tier: low
+    probes:
+      - { id: constructors, sql: "SELECT ST_Point(1, 2), ST_GeometryFromText('POINT (1 2)'), ST_AsText(g), ST_LineString(ARRAY[ST_Point(1, 2), ST_Point(3, 4)]) FROM t;" }
+      - { id: relationships, sql: "SELECT ST_Contains(a, b), ST_Intersects(a, b), ST_Distance(a, b), ST_Area(g), ST_Buffer(g, 1) FROM t;" }
+      - { id: spherical, sql: "SELECT to_spherical_geography(g), ST_Distance(to_spherical_geography(a), to_spherical_geography(b)) FROM t;" }
+
+  - id: c_table_system_teradata_color_functions
+    name: Color, Teradata-compatibility and system functions
+    doc: https://trino.io/docs/current/functions/teradata.html
+    tier: low
+    probes:
+      - { id: color, sql: "SELECT color('red'), rgb(255, 0, 0), bar(0.5, 10), render(true) FROM t;" }
+      - { id: teradata, sql: "SELECT index(s, 'a'), char2hexint(s), to_char(ts, 'YYYY-MM-DD'), to_timestamp(s, 'YYYY-MM-DD'), to_date(s, 'YYYY-MM-DD') FROM t;" }
+      - { id: session_system, sql: "SELECT current_user, current_catalog, current_schema, current_path;" }
+
+  - id: c_set_membership_and_unnest_expressions
+    name: UNNEST and subquery expressions inside expressions
+    doc: https://trino.io/docs/current/functions/array.html
+    tier: medium
+    probes:
+      - { id: exists_subquery, sql: "SELECT EXISTS (SELECT 1 FROM t) FROM s;" }
+      - { id: scalar_subquery, sql: "SELECT (SELECT max(c) FROM t) FROM s;" }
+      - { id: in_subquery, sql: "SELECT a IN (SELECT b FROM s) FROM t;" }
+      - { id: unnest_with_ordinality, sql: "SELECT x, o FROM t CROSS JOIN UNNEST(arr) WITH ORDINALITY AS u(x, o);" }
+      - { id: unnest_multi, sql: "SELECT * FROM UNNEST(ARRAY[1, 2], ARRAY['a', 'b']) AS u(n, s);" }

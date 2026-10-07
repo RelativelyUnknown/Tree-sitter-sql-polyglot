@@ -1,0 +1,304 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: collect_statistics_qcd
+    name: "COLLECT STATISTICS (QCD Form)"
+    doc: https://docs.teradata.com/reader/4_jiz05LXsLWBbfvKTLneg/PxJfRVBGo_1qGp2Szbj_tg
+    tier: low
+    probes:
+      - id: column
+        sql: "COLLECT STATISTICS FOR SAMPLE 5 PERCENT INTO qcd ON t COLUMN c;"
+      - id: index_columns
+        sql: "COLLECT STATS FOR SAMPLE 10 INTO qcd SET QUERY 1 SAMPLEID 2 UPDATE MODIFIED ON t INDEX (c1, c2);"
+  - id: drop_statistics_qcd
+    name: "DROP STATISTICS (QCD Form)"
+    doc: https://docs.teradata.com/reader/4_jiz05LXsLWBbfvKTLneg/jVx9wQztWWG3C6XQFugP6w
+    tier: low
+    probes:
+      - id: table
+        sql: "DROP STATISTICS FROM qcd ON t;"
+      - id: column
+        sql: "DROP STATISTICS FROM qcd ON t COLUMN c;"
+      - id: index
+        sql: "DROP STATS FROM qcd ON t INDEX (c1, c2);"
+  - id: dump_explain
+    name: "DUMP EXPLAIN"
+    doc: https://docs.teradata.com/reader/4_jiz05LXsLWBbfvKTLneg/0Ir_JaFIIZDoQTUr35zvCw
+    tier: low
+    probes:
+      - id: basic
+        sql: "DUMP EXPLAIN INTO qcd SELECT * FROM t;"
+      - id: options
+        sql: "DUMP EXPLAIN INTO qcd AS plan1 LIMIT SQL=100 CHECK STATISTICS SELECT * FROM t;"
+  - id: initiate_index_analysis
+    name: "INITIATE INDEX ANALYSIS"
+    doc: https://docs.teradata.com/reader/4_jiz05LXsLWBbfvKTLneg/EXl_pbXVeUycO001I0Q3Qw
+    tier: low
+    probes:
+      - id: basic
+        sql: "INITIATE INDEX ANALYSIS FOR wl IN qcd AS tag WITH INDEX TYPE 1;"
+      - id: options
+        sql: "INITIATE INDEX ANALYSIS ON t FOR wl IN qcd AS tag SET IndexesPerTable = 4 KEEP INDEX USE MODIFIED STATISTICS WITH NO INDEX TYPE 1, 2 CHECKPOINT 10 TIME LIMIT = 60;"
+  - id: initiate_partition_analysis
+    name: "INITIATE PARTITION ANALYSIS"
+    doc: https://docs.teradata.com/reader/4_jiz05LXsLWBbfvKTLneg/33Djyz90JWYrJs4Rl9kiqA
+    tier: low
+    probes:
+      - id: basic
+        sql: "INITIATE PARTITION ANALYSIS FOR wl IN qcd AS tag;"
+      - id: options
+        sql: "INITIATE PARTITION ANALYSIS ON t FOR wl IN qcd AS tag TIME LIMIT = 60;"
+  - id: insert_explain
+    name: "INSERT EXPLAIN"
+    doc: https://docs.teradata.com/reader/4_jiz05LXsLWBbfvKTLneg/SK2aZtDhUQp5HyiKNJEYQw
+    tier: low
+    probes:
+      - id: basic
+        sql: "INSERT EXPLAIN INTO qcd SELECT * FROM t;"
+      - id: with_statistics
+        sql: "INSERT EXPLAIN WITH STATISTICS USING SAMPLE 10 PERCENT AND DEMOGRAPHICS INTO qcd AS plan1 LIMIT SQL = 100 CHECK STATISTICS SELECT * FROM t;"
+      - id: in_xml
+        sql: "INSERT EXPLAIN INTO qcd IN XML NODDLTEXT SELECT * FROM t;"
+  - id: restart_index_analysis
+    name: "RESTART INDEX ANALYSIS"
+    doc: https://docs.teradata.com/reader/4_jiz05LXsLWBbfvKTLneg/jD_9mApeNn~S8U8BDl8eWw
+    tier: low
+    probes:
+      - id: basic
+        sql: "RESTART INDEX ANALYSIS FOR wl IN qcd AS tag;"
+      - id: options
+        sql: "RESTART INDEX ANALYSIS FOR wl IN qcd AS tag CHECKPOINT 10 TIME LIMIT = 60;"
+  - id: grant_monitor
+    name: "GRANT (Monitor Form)"
+    doc: https://docs.teradata.com/reader/~XaK0mxyTPufZup~1UD0sA/ID_l~l_oO4LBL4g8Opj0hg
+    tier: low
+    probes:
+      - id: monitor
+        sql: "GRANT MONITOR TO u;"
+      - id: but_not
+        sql: "GRANT MONITOR BUT NOT ABORTSESSION TO u, v WITH GRANT OPTION;"
+      - id: privilege_role
+        sql: "GRANT ABORTSESSION, MONITORSESSION TO r;"
+  - id: grant_connect_through
+    name: "GRANT CONNECT THROUGH"
+    doc: https://docs.teradata.com/reader/~XaK0mxyTPufZup~1UD0sA/YLsszI9M7iqMotASkSCAyg
+    tier: low
+    probes:
+      - id: application_user
+        sql: "GRANT CONNECT THROUGH tu TO app1 WITH ROLE r1 WITH PROFILE p1;"
+      - id: permanent_user
+        sql: "GRANT CONNECT THROUGH tu WITH TRUST ONLY TO PERMANENT u1, u2 WITHOUT ROLE;"
+  - id: grant_logon
+    name: "GRANT LOGON"
+    doc: https://docs.teradata.com/reader/~XaK0mxyTPufZup~1UD0sA/P2HIoeASOfPjVIM7rsXOlw
+    tier: low
+    probes:
+      - id: to_user
+        sql: "GRANT LOGON ON ALL TO u WITH NULL PASSWORD;"
+      - id: as_default
+        sql: "GRANT LOGON ON 1, 2 AS DEFAULT;"
+  - id: grant_map
+    name: "GRANT MAP"
+    doc: https://docs.teradata.com/reader/~XaK0mxyTPufZup~1UD0sA/ys_4oQpjB5xGqny3uwTvgg
+    tier: low
+    probes:
+      - id: to_user
+        sql: "GRANT MAP m1, m2 TO u, r;"
+      - id: with_grant_option
+        sql: "GRANT MAP m1 TO u WITH GRANT OPTION;"
+  - id: grant_zone
+    name: "GRANT ZONE"
+    doc: https://docs.teradata.com/reader/~XaK0mxyTPufZup~1UD0sA/aT7_hI39VlKkF4ghl8CMQA
+    tier: low
+    probes:
+      - id: basic
+        sql: "GRANT ZONE z1, z2 TO u, r;"
+  - id: grant_zone_override
+    name: "GRANT ZONE OVERRIDE"
+    doc: https://docs.teradata.com/reader/~XaK0mxyTPufZup~1UD0sA/1nAzMFQFNBGfbkOSQflepQ
+    tier: low
+    probes:
+      - id: basic
+        sql: "GRANT ZONE OVERRIDE TO u1, u2;"
+  - id: revoke_monitor
+    name: "REVOKE (Monitor Form)"
+    doc: https://docs.teradata.com/reader/~XaK0mxyTPufZup~1UD0sA/Emqe0X2mSlXWkRFbma0qQw
+    tier: low
+    probes:
+      - id: monitor
+        sql: "REVOKE MONITOR FROM u;"
+      - id: but_not
+        sql: "REVOKE GRANT OPTION FOR MONITOR BUT NOT ABORTSESSION FROM u, PUBLIC;"
+  - id: revoke_connect_through
+    name: "REVOKE CONNECT THROUGH"
+    doc: https://docs.teradata.com/reader/~XaK0mxyTPufZup~1UD0sA/tLFSYTmh36O0yOhTJgbSCg
+    tier: low
+    probes:
+      - id: application_user
+        sql: "REVOKE CONNECT THROUGH tu FROM app1 WITH ROLE r1 WITH PROFILE p1;"
+      - id: permanent_user
+        sql: "REVOKE CONNECT THROUGH tu TO PERMANENT u1, u2 WITH ROLE r1;"
+      - id: trust_only
+        sql: "REVOKE CONNECT THROUGH tu WITH TRUST ONLY;"
+  - id: revoke_logon
+    name: "REVOKE LOGON"
+    doc: https://docs.teradata.com/reader/~XaK0mxyTPufZup~1UD0sA/El3QsYuHR83l~hxc3T9~NQ
+    tier: low
+    probes:
+      - id: from_user
+        sql: "REVOKE LOGON ON ALL FROM u;"
+      - id: as_default
+        sql: "REVOKE LOGON ON 1, 2 AS DEFAULT;"
+  - id: revoke_map
+    name: "REVOKE MAP"
+    doc: https://docs.teradata.com/reader/~XaK0mxyTPufZup~1UD0sA/Eq_TrSd4MiNGcB9t2zTixQ
+    tier: low
+    probes:
+      - id: from_user
+        sql: "REVOKE MAP m1 FROM u, r;"
+      - id: grant_option
+        sql: "REVOKE GRANT OPTION FOR MAP m1 FROM PUBLIC;"
+  - id: revoke_zone
+    name: "REVOKE ZONE"
+    doc: https://docs.teradata.com/reader/~XaK0mxyTPufZup~1UD0sA/uDJdfhYK8dRL4qo9crZQNg
+    tier: low
+    probes:
+      - id: from_user
+        sql: "REVOKE ZONE z1 FROM u, r;"
+      - id: public
+        sql: "REVOKE ZONE z1 FROM PUBLIC;"
+  - id: revoke_zone_override
+    name: "REVOKE ZONE OVERRIDE"
+    doc: https://docs.teradata.com/reader/~XaK0mxyTPufZup~1UD0sA/5sFo_fukaF~mrx5m2lxIcA
+    tier: low
+    probes:
+      - id: basic
+        sql: "REVOKE ZONE OVERRIDE FROM u1, u2;"
+  - id: select_and_consume_into
+    name: "SELECT AND CONSUME ... INTO"
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/EvP4Na9rcd3elQ5P2qBYgw
+    tier: low
+    probes:
+      - id: select
+        sql: "SELECT AND CONSUME TOP 1 * INTO v1, v2 FROM qt;"
+      - id: set
+        sql: "SET AND CONSUME TOP 1 c1, c2 INTO :v1, :v2 FROM qt;"
+  - id: deallocate_prepare
+    name: "DEALLOCATE PREPARE"
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/KGlz5V47xeqd4tWLWxcBqw
+    tier: low
+    probes:
+      - id: basic
+        sql: "DEALLOCATE PREPARE stmt1;"
+  - id: allocate
+    name: "ALLOCATE"
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/nF4DSgrU40nFrUepkQpaeA
+    tier: low
+    probes:
+      - id: basic
+        sql: "ALLOCATE cur1 CURSOR FOR PROCEDURE p;"
+  - id: position
+    name: "POSITION"
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/AUa9ycizs1WGE8iSRJ6KIg
+    tier: low
+    status: not-sql
+    reason: "Invocation: Executable. Embedded SQL only. Embedded-SQL host/preprocessor construct, not seen by a SQL parser."
+  - id: rewind
+    name: "REWIND"
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/Frz~QLBscwfLCPCr~r13WQ
+    tier: low
+    status: not-sql
+    reason: "Invocation: Executable. Embedded SQL only. Embedded-SQL host/preprocessor construct, not seen by a SQL parser."
+  - id: describe
+    name: "DESCRIBE (Dynamic SQL)"
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/kvE5sA~N1WJ5L0qJc1LaMA
+    tier: low
+    status: not-sql
+    reason: "Dynamic embedded SQL statement that fills a host-language SQLDA descriptor area; only valid inside a precompiled application. Embedded-SQL host/preprocessor construct, not seen by a SQL parser."
+  - id: begin_declare_section
+    name: "BEGIN DECLARE SECTION"
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/rwv0eOpQJRkDH9isQ9lg5g
+    tier: low
+    status: not-sql
+    reason: "Invocation: Nonexecutable preprocessor declaration. Embedded SQL only. Embedded-SQL host/preprocessor construct, not seen by a SQL parser."
+  - id: end_declare_section
+    name: "END DECLARE SECTION"
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/3bRnEM_mcTyPEnT940fXFw
+    tier: low
+    status: not-sql
+    reason: "Invocation: Nonexecutable preprocessor declaration. Embedded SQL only. Embedded-SQL host/preprocessor construct, not seen by a SQL parser."
+  - id: declare_statement
+    name: "DECLARE STATEMENT"
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/gICGLFyMKx3QfU0ODVK4iw
+    tier: low
+    status: not-sql
+    reason: "Invocation: Nonexecutable preprocessor declaration. Embedded SQL only. Embedded-SQL host/preprocessor construct, not seen by a SQL parser."
+  - id: declare_table
+    name: "DECLARE TABLE"
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/iNxbePgMwYG7ulbsCgZqEQ
+    tier: low
+    status: not-sql
+    reason: "Invocation: Nonexecutable preprocessor declaration. Embedded SQL only. Embedded-SQL host/preprocessor construct, not seen by a SQL parser."
+  - id: whenever
+    name: "WHENEVER"
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/_Q16Pg6R5ABFPupQfXc0dw
+    tier: low
+    status: not-sql
+    reason: "Invocation: Executable. Embedded SQL only. Embedded-SQL host/preprocessor construct, not seen by a SQL parser."
+  - id: include
+    name: "INCLUDE"
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/mTpSQJT6exoK1TAe7ZmuiA
+    tier: low
+    status: not-sql
+    reason: "Invocation: Nonexecutable preprocessor declaration. Embedded SQL only. Embedded-SQL host/preprocessor construct, not seen by a SQL parser."
+  - id: include_sqlca
+    name: "INCLUDE SQLCA"
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/Km1_PvZNeilietgMnhHbAg
+    tier: low
+    status: not-sql
+    reason: "Invocation: Nonexecutable preprocessor declaration. Embedded SQL only. Embedded-SQL host/preprocessor construct, not seen by a SQL parser."
+  - id: include_sqlda
+    name: "INCLUDE SQLDA"
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/sCzbpBCnLyrsPJgWCuXymQ
+    tier: low
+    status: not-sql
+    reason: "Invocation: Nonexecutable preprocessor declaration. Embedded SQL only. Embedded-SQL host/preprocessor construct, not seen by a SQL parser."
+  - id: connect
+    name: "CONNECT"
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/OaADLV9AX49E47sJt1YFnw
+    tier: low
+    status: not-sql
+    reason: "Invocation: Executable. Embedded SQL only. Embedded-SQL host/preprocessor construct, not seen by a SQL parser."
+  - id: get_crash
+    name: "GET CRASH"
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/OfLzbX9JQirSk60VtfE0_Q
+    tier: low
+    status: not-sql
+    reason: "Invocation: Executable. Embedded SQL only; valid only for workstation platforms. Embedded-SQL host/preprocessor construct, not seen by a SQL parser."
+  - id: logoff
+    name: "LOGOFF"
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/mPmjZbC4_i0Q_8Bjyq42EQ
+    tier: low
+    status: not-sql
+    reason: "Invocation: Executable. Embedded SQL only. Embedded-SQL host/preprocessor construct, not seen by a SQL parser."
+  - id: logon
+    name: "LOGON"
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/ZIBZeb1dKnRWdK8XkzAjdw
+    tier: low
+    status: not-sql
+    reason: "Invocation: Executable. Embedded SQL only. Embedded-SQL host/preprocessor construct, not seen by a SQL parser."
+  - id: set_buffersize
+    name: "SET BUFFERSIZE"
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/1rB66tsQBqSXcHnuREFftA
+    tier: low
+    status: not-sql
+    reason: "Preprocessor2 directive that sets the response buffer length for subsequent embedded SQL requests; nonexecutable. Embedded-SQL host/preprocessor construct, not seen by a SQL parser."
+  - id: set_charset
+    name: "SET CHARSET"
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/oSekvFOMkgumaYHTVQkCMA
+    tier: low
+    status: not-sql
+    reason: "Invocation: Executable. Embedded SQL only. Embedded-SQL host/preprocessor construct, not seen by a SQL parser."

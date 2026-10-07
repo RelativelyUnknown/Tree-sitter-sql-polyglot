@@ -100,6 +100,7 @@ scripts/
   generate.js                   # Hash-cached wrapper around tree-sitter generate
   generate-all.js               # Generates every parser, concurrency capped by memory
   test-keywords.sh              # Checks keyword and highlights.scm sync
+  bundle-highlights.js          # Builds <dialect>/queries/highlights.bundled.scm (gitignored) for the packages
   bump-version.sh               # Bumps the version in all 5 manifest files
   docs-prep.js                  # Prepares generated pages for the VitePress site
 bindings/                       # Node/Python/Rust/Go/Swift language bindings
@@ -191,6 +192,12 @@ dispatch list has to re-enumerate all base alternatives alongside the new ones.
 
 6. Run `npm run generate && npm run test:corpus`. The keyword sync check in `test:keywords` fails
    if step 5 is missing.
+
+   The Rust/Node/Python packages ship a standalone per-dialect query,
+   `<dialect>/queries/highlights.bundled.scm` (base + parent chain + dialect, minus whatever the
+   dialect's grammar lacks). It is a gitignored build output like `parser.c`:
+   `scripts/inflate-parsers.js` regenerates it, or run `node scripts/bundle-highlights.js` directly
+   after editing a `highlights.scm`. Never commit it.
 
 7. Add a corpus test case to the relevant file in `test/corpus/`.
 
@@ -414,8 +421,11 @@ Every keyword reachable in a parse tree (present in `src/node-types.json`) must 
 1. Add the missing keyword: `(keyword_foo) @keyword` in `queries/highlights.scm`
 2. Or if the keyword is intentionally not highlighted, re-examine whether it needs to exist
 
-The check covers the base grammar only. Dialect-specific keywords live in the dialect's own
-`queries/highlights.scm` and are not checked by `test-keywords.sh`.
+`test-keywords.sh` covers the base grammar only. For dialects, `node scripts/bundle-highlights.js
+--check` (also run in CI) fails when a keyword in the dialect's `node-types.json` has no capture in
+its bundled query, i.e. in its own `queries/highlights.scm` or in one inherited along its grammar
+chain. Add the keyword to the highest dialect in the chain that can produce it, so its children
+inherit the capture.
 
 ---
 

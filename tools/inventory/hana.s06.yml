@@ -1,0 +1,332 @@
+dialect: hana
+engine: SAP HANA Platform
+version: "2.0 SPS 08 (2.0.08)"
+source: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/3bc1a0d4611d40c4a6e3fc7c8e80395d.html?version=2.0.08
+
+statements:
+  - id: create_projection_view
+    name: CREATE PROJECTION VIEW
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/e35411b417a94f199679b9f9f45c2306.html?version=2.0.08
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE PROJECTION VIEW v AS SELECT a, b FROM t;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE PROJECTION VIEW v AS SELECT a, b FROM t;"
+      - id: column_name_list
+        sql: "CREATE PROJECTION VIEW v (x, y) AS SELECT a, b FROM t;"
+      - id: select_star
+        sql: "CREATE PROJECTION VIEW v AS SELECT * FROM t;"
+      - id: schema_qualified_source
+        sql: "CREATE PROJECTION VIEW v AS SELECT a, b FROM s.t;"
+      - id: with_associations_join
+        sql: "CREATE PROJECTION VIEW v AS SELECT a, b FROM t WITH ASSOCIATIONS(JOIN t2 AS c ON c.a = a);"
+      - id: with_associations_join_no_alias
+        sql: "CREATE PROJECTION VIEW v AS SELECT a, b FROM t WITH ASSOCIATIONS(JOIN t2 ON t2.a = a);"
+      - id: with_associations_cardinality
+        sql: "CREATE PROJECTION VIEW v AS SELECT a, b FROM t WITH ASSOCIATIONS(MANY TO ONE JOIN t2 AS c ON c.a = a);"
+      - id: with_associations_multiple
+        sql: "CREATE PROJECTION VIEW v AS SELECT a, b FROM t WITH ASSOCIATIONS(JOIN t2 AS c ON c.a = a, ONE TO MANY JOIN t3 AS d ON d.a = a);"
+      - id: with_associations_propagation
+        sql: "CREATE PROJECTION VIEW v AS SELECT a, b FROM t WITH ASSOCIATIONS(s.t.assoc AS al);"
+        note: "propagation_def ::= [ <schema> .][ <table> .] <association_identifier> [AS <alias>]"
+      - id: with_annotations_view
+        sql: "CREATE PROJECTION VIEW v AS SELECT * FROM t WITH ANNOTATIONS(SET 'k1' = 'v1', 'k2' = 'v2');"
+      - id: with_annotations_column
+        sql: "CREATE PROJECTION VIEW v AS SELECT * FROM t WITH ANNOTATIONS(COLUMN a SET 'k1' = 'v1');"
+      - id: with_annotations_view_and_column
+        sql: "CREATE PROJECTION VIEW v AS SELECT * FROM t WITH ANNOTATIONS(SET 'v_k1' = 'v_v1' COLUMN a SET 'c_k1' = 'c_v1', 'c_k2' = 'c_v2');"
+      - id: with_annotations_parameter
+        sql: "CREATE PROJECTION VIEW v AS SELECT * FROM t WITH ANNOTATIONS(PARAMETER a SET 'k1' = 'v1');"
+      - id: with_ddl_only
+        sql: "CREATE PROJECTION VIEW v AS SELECT * FROM t WITH DDL ONLY;"
+      - id: associations_annotations_ddl_only
+        sql: "CREATE PROJECTION VIEW v AS SELECT a FROM t WITH ASSOCIATIONS(JOIN t2 AS c ON c.a = a) WITH ANNOTATIONS(SET 'k' = 'v') WITH DDL ONLY;"
+    examples:
+      - "CREATE PROJECTION VIEW myProjView (Item, Description, Status) AS SELECT * FROM SEARCH_TEXT;"
+      - "CREATE PROJECTION VIEW V1 AS SELECT A, B FROM T1 WITH ASSOCIATIONS(JOIN T2 AS C ON C.A = A);"
+      - "CREATE PROJECTION VIEW v1 AS SELECT * FROM t1 WITH DDL ONLY;"
+
+  - id: create_table
+    name: CREATE TABLE
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d58a5f75191014b2fe92141b7df228.html?version=2.0.08
+    tier: high
+    probes:
+      # table types
+      - id: basic
+        sql: "CREATE TABLE t (a INT, b VARCHAR(10));"
+      - id: row_table
+        sql: "CREATE ROW TABLE t (a INT PRIMARY KEY, b INT);"
+      - id: column_table
+        sql: "CREATE COLUMN TABLE t (a INT, b INT);"
+      - id: history_column_table
+        sql: "CREATE HISTORY COLUMN TABLE t (a INT);"
+      - id: global_temporary_table
+        sql: "CREATE GLOBAL TEMPORARY TABLE t (a INT);"
+      - id: global_temporary_row_table
+        sql: "CREATE GLOBAL TEMPORARY ROW TABLE t (a INT PRIMARY KEY);"
+      - id: global_temporary_column_table
+        sql: "CREATE GLOBAL TEMPORARY COLUMN TABLE t (a INT);"
+      - id: local_temporary_table
+        sql: "CREATE LOCAL TEMPORARY TABLE #t (a INT);"
+      - id: local_temporary_row_table
+        sql: "CREATE LOCAL TEMPORARY ROW TABLE #t (a INT);"
+      - id: local_temporary_column_table
+        sql: "CREATE LOCAL TEMPORARY COLUMN TABLE #t (a INT);"
+      - id: virtual_table
+        sql: "CREATE VIRTUAL TABLE t AT \"remote\".\"<NULL>\".\"<NULL>\".\"rt\";"
+        note: "VIRTUAL TABLE is a listed <table_type>; its AT clause is documented on the CREATE VIRTUAL TABLE page, not this one"
+      - id: schema_qualified_name
+        sql: "CREATE COLUMN TABLE s.t (a INT);"
+      # data types
+      - id: data_types_numeric
+        sql: "CREATE TABLE t (a TINYINT, b SMALLINT, c INT, d BIGINT, e SMALLDECIMAL, f REAL, g DOUBLE, h DECIMAL(10, 2), i DECIMAL(10), j DECIMAL, k FLOAT(20), l FLOAT);"
+      - id: data_types_datetime
+        sql: "CREATE TABLE t (a DATE, b TIME, c SECONDDATE, d TIMESTAMP);"
+      - id: data_types_character_binary
+        sql: "CREATE TABLE t (a VARCHAR(10), b NVARCHAR(10), c ALPHANUM(10), d SHORTTEXT(10), e VARBINARY(10), f TEXT, g BINTEXT, h BOOLEAN);"
+      - id: data_type_array
+        sql: "CREATE TABLE t (a INT ARRAY);"
+        note: "ARRAY is listed in <data_type>; the element-type form is from the data types chapter"
+      - id: lob_types
+        sql: "CREATE TABLE t (a BLOB, b CLOB, c NCLOB);"
+      - id: lob_memory_threshold
+        sql: "CREATE TABLE t (a BLOB MEMORY THRESHOLD 1000, b NCLOB MEMORY THRESHOLD NULL);"
+      - id: ddic_data_type
+        sql: "CREATE COLUMN TABLE t (a NVARCHAR(10) DDIC_CHAR);"
+        note: "<column_definition> ::= <column_name> { <data_type> | <lob_data_type> } [ <ddic_data_type> ]"
+      # column definition options
+      - id: default_literal
+        sql: "CREATE TABLE t (a INT DEFAULT 0, b VARCHAR(10) DEFAULT 'x', c INT DEFAULT NULL, d DECIMAL(5, 2) DEFAULT -1.5);"
+      - id: default_datetime_function
+        sql: "CREATE TABLE t (a DATE DEFAULT CURRENT_DATE, b TIMESTAMP DEFAULT CURRENT_TIMESTAMP, c TIME DEFAULT CURRENT_UTCTIME);"
+      - id: clientside_encryption
+        sql: "CREATE COLUMN TABLE t (a NVARCHAR(10) CLIENTSIDE ENCRYPTION ON WITH cek);"
+      - id: clientside_encryption_deterministic
+        sql: "CREATE COLUMN TABLE t (a NVARCHAR(10) CLIENTSIDE ENCRYPTION ON WITH cek DETERMINISTIC, b INT CLIENTSIDE ENCRYPTION ON WITH s.cek RANDOM);"
+      - id: generated_always_as_expression
+        sql: "CREATE COLUMN TABLE t (a INT, b INT GENERATED ALWAYS AS a * 2);"
+      - id: generated_always_as_identity
+        sql: "CREATE COLUMN TABLE t (a INT GENERATED ALWAYS AS IDENTITY);"
+      - id: generated_by_default_as_identity
+        sql: "CREATE COLUMN TABLE t (a INT GENERATED BY DEFAULT AS IDENTITY);"
+      - id: identity_sequence_options
+        sql: "CREATE COLUMN TABLE t (a INT GENERATED ALWAYS AS IDENTITY (START WITH 100 INCREMENT BY 10 MAXVALUE 1000 MINVALUE 1 CYCLE CACHE 10));"
+      - id: identity_no_options
+        sql: "CREATE COLUMN TABLE t (a INT GENERATED ALWAYS AS IDENTITY (NO MAXVALUE NO MINVALUE NO CYCLE NO CACHE));"
+      - id: identity_reset_by
+        sql: "CREATE COLUMN TABLE t (a INT GENERATED BY DEFAULT AS IDENTITY (START WITH 1 RESET BY SELECT IFNULL(MAX(a), 0) + 1 FROM t));"
+      - id: calculated_field
+        sql: "CREATE COLUMN TABLE t (a INT, b INT AS a + 1);"
+      - id: calculated_field_with_type
+        sql: "CREATE COLUMN TABLE t (a INT, b BIGINT AS a * 2);"
+      - id: column_schema_flexibility
+        sql: "CREATE COLUMN TABLE t (a INT ENABLE SCHEMA FLEXIBILITY, b INT DISABLE SCHEMA FLEXIBILITY);"
+      - id: column_fuzzy_search_index
+        sql: "CREATE COLUMN TABLE t (a NVARCHAR(100) FUZZY SEARCH INDEX ON, b NVARCHAR(100) FUZZY SEARCH INDEX OFF);"
+      - id: column_fuzzy_search_mode
+        sql: "CREATE COLUMN TABLE t (a NVARCHAR(100) FUZZY SEARCH MODE 'postcode', b NVARCHAR(100) FUZZY SEARCH MODE NULL);"
+      - id: column_persistent_memory
+        sql: "CREATE COLUMN TABLE t (a INT PERSISTENT MEMORY ON, b INT PERSISTENT MEMORY OFF);"
+      - id: column_comment
+        sql: "CREATE COLUMN TABLE t (a NVARCHAR(10) COMMENT 'My data values');"
+      - id: column_load_unit
+        sql: "CREATE COLUMN TABLE t (a INT PAGE LOADABLE, b INT COLUMN LOADABLE);"
+      - id: column_numa_node
+        sql: "CREATE COLUMN TABLE t (a INT NUMA NODE (1));"
+      # column constraints
+      - id: column_null
+        sql: "CREATE TABLE t (a INT NULL, b INT NOT NULL);"
+      - id: column_hidden
+        sql: "CREATE COLUMN TABLE t (a INT HIDDEN, b INT NOT HIDDEN);"
+      - id: column_primary_key
+        sql: "CREATE TABLE t (a INT PRIMARY KEY);"
+      - id: column_unique
+        sql: "CREATE TABLE t (a INT UNIQUE);"
+      - id: column_named_constraint
+        sql: "CREATE TABLE t (a INT CONSTRAINT pk PRIMARY KEY, b INT CONSTRAINT uq UNIQUE);"
+      - id: column_primary_key_btree
+        sql: "CREATE ROW TABLE t (a INT PRIMARY KEY BTREE, b INT UNIQUE CPBTREE);"
+      - id: column_primary_key_inverted
+        sql: "CREATE COLUMN TABLE t (a INT PRIMARY KEY INVERTED VALUE, b INT UNIQUE INVERTED HASH);"
+      - id: column_references
+        sql: "CREATE TABLE t (a INT REFERENCES r);"
+      - id: column_references_columns
+        sql: "CREATE TABLE t (a INT REFERENCES r (id));"
+      - id: column_references_actions
+        sql: "CREATE TABLE t (a INT REFERENCES r (id) ON UPDATE CASCADE ON DELETE SET NULL);"
+      - id: column_references_delete_update_order
+        sql: "CREATE TABLE t (a INT REFERENCES r (id) ON DELETE RESTRICT ON UPDATE SET DEFAULT);"
+      - id: column_references_enforcement
+        sql: "CREATE TABLE t (a INT REFERENCES r (id) NOT ENFORCED);"
+      - id: column_references_validation
+        sql: "CREATE TABLE t (a INT REFERENCES r (id) ENFORCED NOT VALIDATED);"
+      - id: column_references_initially
+        sql: "CREATE TABLE t (a INT REFERENCES r (id) INITIALLY DEFERRED);"
+      # table constraints
+      - id: table_primary_key
+        sql: "CREATE TABLE t (a INT, b INT, PRIMARY KEY (a, b));"
+      - id: table_unique
+        sql: "CREATE TABLE t (a INT, b INT, UNIQUE (a, b));"
+      - id: table_named_constraint
+        sql: "CREATE TABLE t (a INT, b INT, CONSTRAINT pk PRIMARY KEY (a), CONSTRAINT uq UNIQUE (b));"
+      - id: table_primary_key_index_type
+        sql: "CREATE COLUMN TABLE t (a INT, b INT, PRIMARY KEY INVERTED INDIVIDUAL (a, b));"
+      - id: table_unique_inverted_hash
+        sql: "CREATE COLUMN TABLE t (a INT, b INT, UNIQUE INVERTED HASH (a, b));"
+      - id: table_foreign_key
+        sql: "CREATE TABLE t (a INT, b INT, FOREIGN KEY (a, b) REFERENCES r (x, y));"
+      - id: table_foreign_key_actions
+        sql: "CREATE TABLE t (a INT, FOREIGN KEY (a) REFERENCES r (x) ON UPDATE RESTRICT ON DELETE CASCADE);"
+      - id: table_foreign_key_enforcement
+        sql: "CREATE TABLE t (a INT, FOREIGN KEY (a) REFERENCES r (x) NOT ENFORCED NOT VALIDATED INITIALLY IMMEDIATE);"
+      - id: table_named_foreign_key
+        sql: "CREATE TABLE t (a INT, CONSTRAINT fk FOREIGN KEY (a) REFERENCES r (x));"
+      - id: table_check
+        sql: "CREATE TABLE t (a INT, CHECK (a > 0));"
+      - id: table_named_check
+        sql: "CREATE TABLE t (a INT, b INT, CONSTRAINT ck CHECK (a < b));"
+      # table contents sources
+      - id: like_table
+        sql: "CREATE COLUMN TABLE t LIKE s;"
+      - id: like_table_with_data
+        sql: "CREATE COLUMN TABLE t LIKE s WITH DATA;"
+      - id: like_table_with_no_data
+        sql: "CREATE COLUMN TABLE t LIKE s WITH NO DATA;"
+      - id: like_table_schema_qualified
+        sql: "CREATE COLUMN TABLE t LIKE s1.s2;"
+      - id: like_table_without_option
+        sql: "CREATE ROW TABLE t LIKE s WITH NO DATA WITHOUT HISTORY;"
+      - id: like_table_without_constraint
+        sql: "CREATE COLUMN TABLE t LIKE s WITHOUT CONSTRAINT;"
+      - id: like_table_without_partition
+        sql: "CREATE COLUMN TABLE t LIKE s WITHOUT PARTITION;"
+      - id: like_table_with_index
+        sql: "CREATE COLUMN TABLE t LIKE s WITH DATA WITH INDEX idx1 AS idx2;"
+      - id: like_table_replica
+        sql: "CREATE ROW TABLE r LIKE s ASYNCHRONOUS REPLICA;"
+      - id: like_table_replica_columns
+        sql: "CREATE COLUMN TABLE r LIKE s SYNCHRONOUS REPLICA (a, c);"
+      - id: like_table_replica_partition
+        sql: "CREATE COLUMN TABLE r LIKE s REPLICA PARTITION BY HASH (c2) PARTITIONS 8;"
+      - id: like_table_replica_at
+        sql: "CREATE COLUMN TABLE r LIKE s REPLICA AT 'host:30040';"
+      - id: as_subquery
+        sql: "CREATE TABLE t AS (SELECT * FROM s);"
+      - id: as_subquery_with_data
+        sql: "CREATE TABLE t AS (SELECT * FROM s) WITH DATA;"
+      - id: as_subquery_with_no_data
+        sql: "CREATE TABLE t AS (SELECT * FROM s) WITH NO DATA;"
+      - id: as_subquery_column_names
+        sql: "CREATE TABLE t (x, y) AS (SELECT a, b FROM s);"
+      - id: as_subquery_add_identity
+        sql: "CREATE LOCAL TEMPORARY TABLE #t (x, y) ADD (id INT GENERATED ALWAYS AS IDENTITY(START WITH 1 INCREMENT BY 1)) AS (SELECT * FROM s);"
+      - id: as_with_clause
+        sql: "CREATE TABLE t AS (WITH w AS (SELECT * FROM s) SELECT * FROM w);"
+      # table-level options
+      - id: system_versioning_history
+        sql: "CREATE COLUMN TABLE t (a INT PRIMARY KEY, vf TIMESTAMP NOT NULL GENERATED ALWAYS AS ROW START, vt TIMESTAMP NOT NULL GENERATED ALWAYS AS ROW END, PERIOD FOR SYSTEM_TIME (vf, vt)) WITH SYSTEM VERSIONING HISTORY TABLE t_hist;"
+      - id: system_versioning_history_table_def
+        sql: "CREATE COLUMN TABLE t_hist (a INT, vf TIMESTAMP NOT NULL, vt TIMESTAMP NOT NULL);"
+      - id: application_time_period
+        sql: "CREATE COLUMN TABLE t (a INT, vf DATE NOT NULL, vt DATE NOT NULL, PERIOD FOR APPLICATION_TIME (vf, vt));"
+        note: "application_time_period_configuration; period columns per <application_time_period_spec>, PERIOD FOR APPLICATION_TIME is the SQL:2011 form HANA uses"
+      - id: bitemporal
+        sql: "CREATE COLUMN TABLE t (a INT, sf TIMESTAMP NOT NULL GENERATED ALWAYS AS ROW START, st TIMESTAMP NOT NULL GENERATED ALWAYS AS ROW END, vf DATE NOT NULL, vt DATE NOT NULL, PERIOD FOR SYSTEM_TIME (sf, st), PERIOD FOR APPLICATION_TIME (vf, vt)) WITH SYSTEM VERSIONING HISTORY TABLE t_hist;"
+      - id: with_associations
+        sql: "CREATE COLUMN TABLE t (a INT) WITH ASSOCIATIONS (JOIN r ON r.a = t.a);"
+      - id: with_associations_cardinality_filter
+        sql: "CREATE COLUMN TABLE t (a INT) WITH ASSOCIATIONS (MANY TO ONE JOIN r AS x ON x.a = t.a WITH DEFAULT FILTER x.b = 1);"
+      - id: with_annotations
+        sql: "CREATE COLUMN TABLE t (c1 INT) WITH ANNOTATIONS(SET 't_k1' = 't_v1', 't_k2' = 't_v2' COLUMN c1 SET 'c_k1' = 'c_v1', 'c_k2' = 'c_v2');"
+      - id: with_mask
+        sql: "CREATE COLUMN TABLE t (a NVARCHAR(10), b NVARCHAR(10)) WITH MASK (a USING 'XXXX', b USING SUBSTRING(b, 1, 2));"
+      - id: logging
+        sql: "CREATE COLUMN TABLE t (a INT) LOGGING;"
+      - id: no_logging
+        sql: "CREATE COLUMN TABLE t (a INT) NO LOGGING;"
+      - id: no_logging_retention
+        sql: "CREATE COLUMN TABLE t (a INT) NO LOGGING RETENTION 60;"
+      - id: auto_merge
+        sql: "CREATE COLUMN TABLE t (a INT) AUTO MERGE;"
+      - id: no_auto_merge
+        sql: "CREATE COLUMN TABLE t (a INT) NO AUTO MERGE;"
+      - id: unload_priority
+        sql: "CREATE COLUMN TABLE t (a INT) UNLOAD PRIORITY 5;"
+      - id: with_schema_flexibility
+        sql: "CREATE COLUMN TABLE t (a INT) WITH SCHEMA FLEXIBILITY;"
+      - id: with_schema_flexibility_options
+        sql: "CREATE COLUMN TABLE t (a INT) WITH SCHEMA FLEXIBILITY (RECLAIM, DEFAULT DATA TYPE NVARCHAR(100), AUTO DATA TYPE PROMOTION);"
+      - id: with_schema_flexibility_negated_options
+        sql: "CREATE COLUMN TABLE t (a INT) WITH SCHEMA FLEXIBILITY (NO RECLAIM, NO DEFAULT DATA TYPE, NO AUTO DATA TYPE PROMOTION);"
+      - id: persistent_memory
+        sql: "CREATE COLUMN TABLE t (a INT) PERSISTENT MEMORY ON;"
+      - id: group_type_and_name
+        sql: "CREATE ROW TABLE t (c1 INT PRIMARY KEY, c2 DATE) GROUP TYPE group_type1 GROUP NAME group_name1;"
+      - id: group_subtype_name_lead
+        sql: "CREATE COLUMN TABLE t (a INT) GROUP TYPE gt GROUP SUBTYPE gs GROUP NAME gn GROUP LEAD;"
+      - id: location
+        sql: "CREATE COLUMN TABLE t (a INT) AT ('host:30003');"
+      - id: location_movable
+        sql: "CREATE COLUMN TABLE t (a INT) NOT MOVABLE AT LOCATION ('host:30003');"
+      - id: replica_asynchronous_at
+        sql: "CREATE COLUMN TABLE t (a INT) ASYNCHRONOUS REPLICA AT 'seltera17:30040';"
+      - id: replica_all_locations
+        sql: "CREATE ROW TABLE t (c1 INT PRIMARY KEY) REPLICA AT ALL LOCATIONS;"
+      - id: replica_column_columns
+        sql: "CREATE ROW TABLE t (a INT, b INT) SYNCHRONOUS COLUMN REPLICA (a);"
+      - id: with_replica
+        sql: "CREATE ROW TABLE t (a INT) WITH ASYNCHRONOUS COLUMN REPLICA;"
+        note: "<with_replica_clause> ::= WITH [ <sync_or_async> ] [ <column_or_row> ] ... body truncated on the page; REPLICA keyword assumed"
+      - id: global_temporary_preserve_rows
+        sql: "CREATE GLOBAL TEMPORARY TABLE t (a INT) ON COMMIT PRESERVE ROWS;"
+      - id: global_temporary_delete_rows
+        sql: "CREATE GLOBAL TEMPORARY TABLE t (a INT) ON COMMIT DELETE ROWS;"
+      - id: series_basic
+        sql: "CREATE COLUMN TABLE t (ts TIMESTAMP, v DOUBLE) SERIES (PERIOD FOR SERIES (ts));"
+      - id: series_key_equidistant
+        sql: "CREATE COLUMN TABLE t (k INT, ts TIMESTAMP, v DOUBLE) SERIES (SERIES KEY (k) EQUIDISTANT INCREMENT BY INTERVAL 1 MINUTE PERIOD FOR SERIES (ts));"
+      - id: series_not_equidistant_min_max
+        sql: "CREATE COLUMN TABLE t (ts TIMESTAMP, v DOUBLE) SERIES (NOT EQUIDISTANT MINVALUE '2020-01-01' MAXVALUE '2030-01-01' PERIOD FOR SERIES (ts));"
+      - id: series_missing_elements
+        sql: "CREATE COLUMN TABLE t (ts INT, v DOUBLE) SERIES (EQUIDISTANT INCREMENT BY 3 MISSING ELEMENTS ALLOWED NO MINVALUE NO MAXVALUE PERIOD FOR SERIES (ts));"
+      - id: series_period_start_end
+        sql: "CREATE COLUMN TABLE t (s TIMESTAMP, e TIMESTAMP) SERIES (PERIOD FOR SERIES (s, e));"
+      - id: series_alternate_period
+        sql: "CREATE COLUMN TABLE t (s TIMESTAMP, e TIMESTAMP, a TIMESTAMP) SERIES (PERIOD FOR SERIES (s, e) ALTERNATE PERIOD FOR SERIES (a));"
+      - id: unused_retention_period
+        sql: "CREATE COLUMN TABLE t (a INT) UNUSED RETENTION PERIOD 3600;"
+        note: "<unused_retention_period_option> keyword spelling is lost in the page text; UNUSED RETENTION PERIOD per the engine's ALTER TABLE syntax"
+      - id: record_commit_timestamp
+        sql: "CREATE COLUMN TABLE t (a INT) RECORD COMMIT TIMESTAMP;"
+      - id: table_comment
+        sql: "CREATE COLUMN TABLE t (a NVARCHAR(10) COMMENT 'My data values') COMMENT 'Table for data';"
+      - id: numa_node_preference
+        sql: "CREATE COLUMN TABLE t (a INT) NUMA NODE (1, 2 TO 3);"
+      - id: table_load_unit
+        sql: "CREATE COLUMN TABLE t (a INT) PAGE LOADABLE;"
+      - id: primary_key_update_off
+        sql: "CREATE COLUMN TABLE t (a INT PRIMARY KEY) PRIMARY KEY UPDATE OFF;"
+      - id: primary_key_update_on
+        sql: "CREATE COLUMN TABLE t (a INT PRIMARY KEY) PRIMARY KEY UPDATE ON;"
+      # partitioning (syntax lives on the Create Partition Clauses pages; forms taken from this page's examples)
+      - id: partition_hash
+        sql: "CREATE COLUMN TABLE t (i INT, j INT, k INT, PRIMARY KEY (i, j)) PARTITION BY HASH (i, j) PARTITIONS 2;"
+      - id: partition_hash_hash
+        sql: "CREATE COLUMN TABLE t (i INT, j INT, k INT, PRIMARY KEY (i, j)) PARTITION BY HASH (i, j) PARTITIONS 2, HASH (k) PARTITIONS 2;"
+      - id: partition_range
+        sql: "CREATE COLUMN TABLE t (a INT PRIMARY KEY) PARTITION BY RANGE (a) (PARTITION 1 <= VALUES < 10, PARTITION VALUE = 20, PARTITION OTHERS);"
+      - id: partition_range_range
+        sql: "CREATE COLUMN TABLE t (a INT, b INT NOT NULL) PARTITION BY RANGE (a) (PARTITION VALUES = 10), RANGE (b) (PARTITION VALUES = 20, PARTITION OTHERS DYNAMIC THRESHOLD 2);"
+      - id: partition_range_persistent_memory_numa
+        sql: "CREATE COLUMN TABLE t (a INT, b INT) PARTITION BY RANGE (a) (PARTITION 10 <= VALUES < 20 PERSISTENT MEMORY ON NUMA NODE ('3'), PARTITION OTHERS PERSISTENT MEMORY ON);"
+      - id: partition_heterogeneous_range
+        sql: "CREATE COLUMN TABLE t (i INT, j INT, k INT, PRIMARY KEY (i, j)) PARTITION BY RANGE (i) ((PARTITION 10 <= VALUES < 20, PARTITION 20 <= VALUES < 30));"
+      - id: partition_heterogeneous_subpartition
+        sql: "CREATE COLUMN TABLE t (i INT, j INT, k INT, PRIMARY KEY (i, j)) PARTITION BY RANGE (i) ((PARTITION 10 <= VALUES < 20, PARTITION 20 <= VALUES < 30) SUBPARTITION BY RANGE (j) (PARTITION 100 <= VALUES < 150, PARTITION VALUE = 200));"
+      - id: partition_time_selection
+        sql: "CREATE COLUMN TABLE t (a INT, b INT PRIMARY KEY, _DATAAGING NVARCHAR(8)) PARTITION BY RANGE (_DATAAGING) (USING DEFAULT STORAGE (PARTITION VALUE = '00000000' IS CURRENT, PARTITION '20100101' <= VALUES < '20110101', PARTITION OTHERS)) WITH PARTITIONING ON ANY COLUMNS ON FOR NON CURRENT PARTITIONS UNIQUE CONSTRAINTS OFF FOR DEFAULT STORAGE NON CURRENT PARTITIONS PAGE LOADABLE;"
+    examples:
+      - "CREATE ROW TABLE A (A INT PRIMARY KEY, B INT);"
+      - "CREATE COLUMN TABLE T (A INT, B INT GENERATED ALWAYS AS IDENTITY (START WITH 100 INCREMENT BY 10));"
+      - "CREATE COLUMN TABLE A2 LIKE A1 WITH DATA WITH INDEX index1 AS INDEX2;"

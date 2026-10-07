@@ -1,0 +1,118 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "12.1"
+source: https://www.ibm.com/docs/en/db2/12.1.x?topic=reference-statements
+
+statements:
+  - id: for
+    name: FOR
+    doc: https://www.ibm.com/docs/SSEPGG_12.1.0/com.ibm.db2.luw.apdv.sqlpl.doc/doc/c0024351.html
+    tier: high
+    probes:
+      - id: basic
+        sql: |-
+          CREATE PROCEDURE p() LANGUAGE SQL BEGIN
+            FOR v AS SELECT c FROM t DO
+              INSERT INTO t2 VALUES (v.c);
+            END FOR;
+          END;
+        note: for-loop-name AS select-statement DO ... END FOR
+      - id: with_cursor_name
+        sql: |-
+          CREATE PROCEDURE p() LANGUAGE SQL BEGIN
+            FOR v AS cur1 CURSOR FOR SELECT c FROM t DO
+              INSERT INTO t2 VALUES (v.c);
+            END FOR;
+          END;
+      - id: with_hold
+        sql: |-
+          CREATE PROCEDURE p() LANGUAGE SQL BEGIN
+            FOR v AS cur1 CURSOR WITH HOLD FOR SELECT c FROM t DO
+              INSERT INTO t2 VALUES (v.c);
+            END FOR;
+          END;
+      - id: labeled
+        sql: |-
+          CREATE PROCEDURE p() LANGUAGE SQL BEGIN
+            l1: FOR v AS SELECT c FROM t DO
+              INSERT INTO t2 VALUES (v.c);
+            END FOR l1;
+          END;
+      - id: multiple_statements
+        sql: |-
+          CREATE PROCEDURE p() LANGUAGE SQL BEGIN
+            DECLARE x INTEGER;
+            FOR v AS SELECT c FROM t DO
+              SET x = v.c;
+              INSERT INTO t2 VALUES (x);
+            END FOR;
+          END;
+      - id: for_update
+        sql: |-
+          CREATE PROCEDURE p() LANGUAGE SQL BEGIN
+            FOR v AS cur1 CURSOR FOR SELECT c FROM t FOR UPDATE DO
+              UPDATE t SET c = c + 1 WHERE CURRENT OF cur1;
+            END FOR;
+          END;
+    examples:
+      - |-
+        CREATE PROCEDURE P() LANGUAGE SQL BEGIN ATOMIC DECLARE fullname CHAR(40); FOR v AS cur1 CURSOR FOR SELECT firstnme, midinit, lastname FROM employee DO SET fullname = v.lastname || ',' || v.firstnme ||' ' || v.midinit; INSERT INTO tnames VALUES (fullname); END FOR; END;
+
+  - id: get_diagnostics
+    name: GET DIAGNOSTICS
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-get-diagnostics
+    tier: high
+    probes:
+      - id: row_count
+        sql: |-
+          CREATE PROCEDURE p() LANGUAGE SQL BEGIN
+            DECLARE rc INTEGER;
+            GET DIAGNOSTICS rc = ROW_COUNT;
+          END;
+      - id: return_status
+        sql: |-
+          CREATE PROCEDURE p() LANGUAGE SQL BEGIN
+            DECLARE rv INTEGER;
+            GET DIAGNOSTICS rv = DB2_RETURN_STATUS;
+          END;
+      - id: return_status_alt
+        sql: |-
+          CREATE PROCEDURE p() LANGUAGE SQL BEGIN
+            DECLARE rv INTEGER;
+            GET DIAGNOSTICS rv = RETURN_STATUS;
+          END;
+        note: RETURN_STATUS as a compatibility alternative to DB2_RETURN_STATUS
+      - id: nesting_level
+        sql: |-
+          CREATE PROCEDURE p() LANGUAGE SQL BEGIN
+            DECLARE lvl INTEGER;
+            GET DIAGNOSTICS lvl = DB2_SQL_NESTING_LEVEL;
+          END;
+      - id: sqlerrd4
+        sql: |-
+          CREATE PROCEDURE p() LANGUAGE SQL BEGIN
+            DECLARE e4 INTEGER;
+            GET DIAGNOSTICS e4 = DB2_SQLERRD4;
+          END;
+      - id: exception_message_text
+        sql: |-
+          CREATE PROCEDURE p() LANGUAGE SQL BEGIN
+            DECLARE msg VARCHAR(1000);
+            GET DIAGNOSTICS EXCEPTION 1 msg = MESSAGE_TEXT;
+          END;
+      - id: exception_token_string
+        sql: |-
+          CREATE PROCEDURE p() LANGUAGE SQL BEGIN
+            DECLARE tok VARCHAR(1000);
+            GET DIAGNOSTICS EXCEPTION 1 tok = DB2_TOKEN_STRING;
+          END;
+      - id: exception_multiple_items
+        sql: |-
+          CREATE PROCEDURE p() LANGUAGE SQL BEGIN
+            DECLARE msg VARCHAR(1000);
+            DECLARE tok VARCHAR(1000);
+            GET DIAGNOSTICS EXCEPTION 1 msg = MESSAGE_TEXT, tok = DB2_TOKEN_STRING;
+          END;
+    examples:
+      - |-
+        CREATE PROCEDURE sqlprocg ( IN deptnbr VARCHAR (3)) LANGUAGE SQL BEGIN DECLARE SQLSTATE CHAR (5); DECLARE rcount INTEGER ; UPDATE CORPDATA.PROJECT SET PRSTAFF = PRSTAFF + 1.5 WHERE DEPTNO = deptnbr; GET DIAGNOSTICS rcount = ROW_COUNT ; END;

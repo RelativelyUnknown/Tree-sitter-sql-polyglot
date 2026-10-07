@@ -1,0 +1,114 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: offset
+    name: OFFSET clause
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-offset
+    tier: high
+    probes:
+      - id: offset_only
+        sql: "SELECT c FROM t ORDER BY c OFFSET 3;"
+      - id: limit_offset
+        sql: "SELECT c FROM t ORDER BY c LIMIT 2 OFFSET 3;"
+      - id: limit_all_offset
+        sql: "SELECT c FROM t ORDER BY c LIMIT ALL OFFSET 0;"
+      - id: offset_function_expression
+        sql: "SELECT c FROM t ORDER BY c OFFSET length('SPARK');"
+      - id: offset_in_subquery
+        sql: "SELECT c FROM (SELECT c FROM t ORDER BY c LIMIT 5 OFFSET 2) AS s;"
+    examples:
+      - "SELECT name, age FROM person ORDER BY name LIMIT 2 OFFSET 3;"
+      - "SELECT name, age FROM person ORDER BY name LIMIT ALL OFFSET 0;"
+      - "SELECT name, age FROM person ORDER BY name OFFSET length('SPARK');"
+
+  - id: match_recognize
+    name: MATCH_RECOGNIZE clause
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-match-recognize
+    tier: high
+    probes:
+      - id: pattern_define_only
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (PATTERN (a) DEFINE a AS c > 1) AS m;"
+      - id: partition_by
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (PARTITION BY p PATTERN (a) DEFINE a AS c > 1) AS m;"
+      - id: partition_by_multiple
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (PARTITION BY p, q PATTERN (a) DEFINE a AS c > 1) AS m;"
+      - id: order_by
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts PATTERN (a) DEFINE a AS c > 1) AS m;"
+      - id: partition_and_order_by
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (PARTITION BY p ORDER BY ts PATTERN (a) DEFINE a AS c > 1) AS m;"
+      - id: measures
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts MEASURES FIRST(ts) AS start_ts, LAST(ts) AS end_ts, COUNT(*) AS n PATTERN (a) DEFINE a AS c > 1) AS m;"
+      - id: measures_variable_qualified
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts MEASURES LAST(down.ts) AS bottom_ts PATTERN (strt down+) DEFINE down AS c < PREV(c)) AS m;"
+      - id: measures_match_number
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts MEASURES MATCH_NUMBER() AS mn PATTERN (a) DEFINE a AS c > 1) AS m;"
+      - id: one_row_per_match
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts ONE ROW PER MATCH PATTERN (a) DEFINE a AS c > 1) AS m;"
+      - id: all_rows_per_match
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts ALL ROWS PER MATCH PATTERN (a) DEFINE a AS c > 1) AS m;"
+      - id: all_rows_per_match_show_empty
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts ALL ROWS PER MATCH SHOW EMPTY MATCHES PATTERN (a) DEFINE a AS c > 1) AS m;"
+      - id: after_match_skip_past_last_row
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts AFTER MATCH SKIP PAST LAST ROW PATTERN (a) DEFINE a AS c > 1) AS m;"
+      - id: pattern_plus_quantifier
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts PATTERN (strt up+) DEFINE up AS c > PREV(c)) AS m;"
+      - id: pattern_star_quantifier
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts PATTERN (strt same_session*) DEFINE same_session AS c <= PREV(c)) AS m;"
+      - id: define_multiple_variables
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY ts PATTERN (strt down+ up+) DEFINE down AS c < PREV(c), up AS c > PREV(c)) AS m;"
+      - id: all_clauses
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (PARTITION BY p ORDER BY ts MEASURES FIRST(ts) AS start_ts, LAST(ts) AS end_ts ONE ROW PER MATCH AFTER MATCH SKIP PAST LAST ROW PATTERN (strt up+) DEFINE up AS c > PREV(c)) AS m;"
+    examples:
+      - |-
+        SELECT symbol, start_tstamp, end_tstamp, run_length
+          FROM stock_ticker
+            MATCH_RECOGNIZE (
+              PARTITION BY symbol
+              ORDER BY tstamp
+              MEASURES
+                FIRST(tstamp) AS start_tstamp,
+                LAST(tstamp) AS end_tstamp,
+                COUNT(*) AS run_length
+              ONE ROW PER MATCH
+              AFTER MATCH SKIP PAST LAST ROW
+              PATTERN (strt up+)
+              DEFINE
+                up AS price > PREV(price)
+            ) AS T;
+      - |-
+        SELECT symbol, start_tstamp, bottom_tstamp, end_tstamp
+          FROM stock_ticker
+            MATCH_RECOGNIZE (
+              PARTITION BY symbol
+              ORDER BY tstamp
+              MEASURES
+                FIRST(tstamp) AS start_tstamp,
+                LAST(down.tstamp) AS bottom_tstamp,
+                LAST(tstamp) AS end_tstamp
+              ONE ROW PER MATCH
+              AFTER MATCH SKIP PAST LAST ROW
+              PATTERN (strt down+ up+)
+              DEFINE
+                down AS price < PREV(price),
+                up AS price > PREV(price)
+            ) AS T;
+      - |-
+        SELECT user_id, session_no, session_start, session_end, event_count
+          FROM page_views
+            MATCH_RECOGNIZE (
+              PARTITION BY user_id
+              ORDER BY event_time
+              MEASURES
+                MATCH_NUMBER() AS session_no,
+                FIRST(event_time) AS session_start,
+                LAST(event_time) AS session_end,
+                COUNT(*) AS event_count
+              ONE ROW PER MATCH
+              AFTER MATCH SKIP PAST LAST ROW
+              PATTERN (strt same_session*)
+              DEFINE
+                same_session AS event_time <= PREV(event_time) + INTERVAL 30 MINUTE
+            ) AS T;

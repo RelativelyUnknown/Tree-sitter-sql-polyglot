@@ -1,0 +1,76 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "12.1"
+source: https://www.ibm.com/docs/en/db2/12.1.x?topic=reference-statements
+
+statements:
+  - id: update
+    name: UPDATE
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-update
+    tier: high
+    probes:
+      - { id: basic_set, sql: "UPDATE t SET c = 1;" }
+      - { id: where, sql: "UPDATE t SET c = 1 WHERE d = 2;" }
+      - { id: multi_assign, sql: "UPDATE t SET c = 1, d = 2 WHERE e = 3;" }
+      - { id: set_null, sql: "UPDATE t SET c = NULL WHERE d = 2;" }
+      - { id: set_default, sql: "UPDATE t SET c = DEFAULT WHERE d = 2;" }
+      - { id: set_row_values, sql: "UPDATE t SET (c, d) = (1, 2) WHERE e = 3;" }
+      - { id: set_row_null_default, sql: "UPDATE t SET (c, d) = (NULL, DEFAULT) WHERE e = 3;" }
+      - { id: set_row_subquery, sql: "UPDATE t SET (c, d) = (SELECT a, b FROM s WHERE s.k = t.k) WHERE e = 3;" }
+      - { id: set_subquery_scalar, sql: "UPDATE t SET c = (SELECT MAX(a) FROM s) WHERE d = 2;" }
+      - { id: view_target, sql: "UPDATE v SET c = 1;" }
+      - { id: only_table, sql: "UPDATE ONLY (t) SET c = 1;" }
+      - { id: correlation_name, sql: "UPDATE t AS x SET x.c = 1 WHERE x.d = 2;" }
+      - { id: correlation_no_as, sql: "UPDATE t x SET c = 1 WHERE x.d = 2;" }
+      - { id: correlation_columns, sql: "UPDATE t AS x (a, b) SET a = 1 WHERE b = 2;" }
+      - { id: include_columns, sql: "UPDATE t INCLUDE (n INTEGER) SET c = 1;" }
+      - { id: fullselect_target, sql: "UPDATE (SELECT a, b FROM t) AS x (a, b) SET b = 1 WHERE a = 2;" }
+      - { id: fullselect_window_target, sql: "UPDATE (SELECT k, c, AVG(c) OVER (PARTITION BY d) FROM t e) AS e (k, c, avgc) SET c = avgc WHERE k = 1;" }
+      - { id: with_cte, sql: "UPDATE WITH x AS (SELECT a FROM s) t SET c = 1 WHERE d IN (SELECT a FROM x);" }
+      - { id: from_clause, sql: "UPDATE t SET c = s.a FROM s WHERE t.k = s.k;" }
+      - { id: from_multiple_tables, sql: "UPDATE t SET c = s.a FROM s, u WHERE t.k = s.k AND s.j = u.j;" }
+      - { id: from_correlated_alias, sql: "UPDATE t p SET p.c = d.a FROM s d WHERE p.k = d.k;" }
+      - { id: order_by_fetch, sql: "UPDATE t SET c = 1 ORDER BY d FETCH FIRST 10 ROWS ONLY;" }
+      - { id: offset_fetch, sql: "UPDATE t SET c = 1 OFFSET 5 ROWS FETCH FIRST 10 ROWS ONLY;" }
+      - { id: fetch_only, sql: "UPDATE t SET c = 1 FETCH FIRST 10 ROWS ONLY;" }
+      - { id: offset_only, sql: "UPDATE t SET c = 1 OFFSET 5 ROWS;" }
+      - { id: isolation_ur, sql: "UPDATE t SET c = 1 WITH UR;" }
+      - { id: isolation_cs, sql: "UPDATE t SET c = 1 WHERE d = 2 WITH CS;" }
+      - { id: isolation_rs, sql: "UPDATE t SET c = 1 WHERE d = 2 WITH RS;" }
+      - { id: isolation_rr, sql: "UPDATE t SET c = 1 WHERE d = 2 WITH RR;" }
+      - { id: skip_locked, sql: "UPDATE t SET c = 1 WHERE d = 2 SKIP LOCKED DATA;" }
+      - { id: wait_for_outcome, sql: "UPDATE t SET c = 1 WHERE d = 2 WAIT FOR OUTCOME;" }
+      - { id: nowait, sql: "UPDATE t SET c = 1 WHERE d = 2 NOWAIT;" }
+      - { id: wait_seconds, sql: "UPDATE t SET c = 1 WHERE d = 2 WAIT 5;" }
+      - { id: isolation_with_lock_wait, sql: "UPDATE t SET c = 1 WHERE d = 2 WITH RS SKIP LOCKED DATA;" }
+      - id: period_clause_business_time
+        sql: "UPDATE t FOR PORTION OF BUSINESS_TIME FROM '2024-01-01' TO '2024-06-01' SET c = 1 WHERE d = 2;"
+      - { id: positioned, sql: "UPDATE t SET c = 1 WHERE CURRENT OF cur;" }
+      - { id: positioned_correlation, sql: "UPDATE t AS x SET c = 1 WHERE CURRENT OF cur;" }
+      - { id: structured_attribute, sql: "UPDATE t SET o = 'a', c..radius = 5 WHERE id = 1;" }
+      - { id: structured_nested_attribute, sql: "UPDATE t SET c..center..x = c..center..y, c..center..y = c..center..x WHERE id = 1;" }
+      - { id: structured_attribute_row, sql: "UPDATE t SET (o, c..radius, c..center..x) = ('a', 5, c..center..y) WHERE id = 1;" }
+      - { id: xml_subselect, sql: "UPDATE t SET xmldoc = (SELECT XMLPARSE(DOCUMENT c1 STRIP WHITESPACE) FROM s WHERE id = '001') WHERE docid = '001';" }
+    examples:
+      - "UPDATE EMPLOYEE SET JOB = 'LABORER' WHERE EMPNO = '000290';"
+      - "UPDATE PROJECT SET PRSTAFF = PRSTAFF + 1.5 WHERE DEPTNO = 'D21';"
+      - "UPDATE PROJECT P SET P.LOCATION = D.LOCATION FROM DEPARTMENT D WHERE P.DEPTNO = D.DEPTNO;"
+
+  - id: values
+    name: VALUES
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-values
+    tier: high
+    probes:
+      - { id: single_value, sql: "VALUES 1;" }
+      - { id: single_row_multi_column, sql: "VALUES (1, 'a');" }
+      - { id: multiple_rows, sql: "VALUES (1, 'a'), (2, 'b');" }
+      - { id: multiple_rows_unparenthesized, sql: "VALUES 1, 2, 3;" }
+      - { id: null_and_expression, sql: "VALUES (NULL, 1 + 2);" }
+      - { id: special_register, sql: "VALUES CURRENT DATE;" }
+      - { id: function_call, sql: "VALUES CURRENT TIMESTAMP;" }
+      - { id: next_value, sql: "VALUES NEXT VALUE FOR s;" }
+      - { id: values_into, sql: "VALUES 1 INTO v;" }
+      - { id: values_into_multiple, sql: "VALUES (1, 2) INTO v1, v2;" }
+      - { id: order_by, sql: "VALUES (2), (1) ORDER BY 1;" }
+      - { id: fetch_first, sql: "VALUES (1), (2), (3) FETCH FIRST 2 ROWS ONLY;" }
+      - { id: isolation, sql: "VALUES (1), (2) WITH UR;" }

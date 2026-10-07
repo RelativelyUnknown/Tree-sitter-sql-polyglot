@@ -1,0 +1,203 @@
+dialect: trino
+engine: Trino
+version: "483"
+source: https://trino.io/docs/current/sql.html
+
+statements:
+  - id: show_grants
+    name: SHOW GRANTS
+    doc: https://trino.io/docs/current/sql/show-grants.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW GRANTS;"
+      - id: on_table
+        sql: "SHOW GRANTS ON t;"
+      - id: on_table_keyword
+        sql: "SHOW GRANTS ON TABLE t;"
+    examples:
+      - "SHOW GRANTS ON TABLE orders;"
+      - "SHOW GRANTS;"
+
+  - id: show_role_grants
+    name: SHOW ROLE GRANTS
+    doc: https://trino.io/docs/current/sql/show-role-grants.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW ROLE GRANTS;"
+      - id: from_catalog
+        sql: "SHOW ROLE GRANTS FROM c;"
+
+  - id: show_roles
+    name: SHOW ROLES
+    doc: https://trino.io/docs/current/sql/show-roles.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW ROLES;"
+      - id: from_catalog
+        sql: "SHOW ROLES FROM c;"
+      - id: current
+        sql: "SHOW CURRENT ROLES;"
+      - id: current_from_catalog
+        sql: "SHOW CURRENT ROLES FROM c;"
+
+  - id: show_schemas
+    name: SHOW SCHEMAS
+    doc: https://trino.io/docs/current/sql/show-schemas.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW SCHEMAS;"
+      - id: from_catalog
+        sql: "SHOW SCHEMAS FROM c;"
+      - id: like
+        sql: "SHOW SCHEMAS LIKE 'a%';"
+      - id: from_like
+        sql: "SHOW SCHEMAS FROM c LIKE 'a%';"
+    examples:
+      - "SHOW SCHEMAS FROM tpch LIKE '__3%';"
+
+  - id: show_session
+    name: SHOW SESSION
+    doc: https://trino.io/docs/current/sql/show-session.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW SESSION;"
+      - id: like
+        sql: "SHOW SESSION LIKE 'query%';"
+    examples:
+      - "SHOW SESSION LIKE 'query%';"
+
+  - id: show_tables
+    name: SHOW TABLES
+    doc: https://trino.io/docs/current/sql/show-tables.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW TABLES;"
+      - id: from_schema
+        sql: "SHOW TABLES FROM s;"
+      - id: from_qualified_schema
+        sql: "SHOW TABLES FROM c.s;"
+      - id: like
+        sql: "SHOW TABLES LIKE 'p%';"
+      - id: from_like
+        sql: "SHOW TABLES FROM c.s LIKE 'p%';"
+    examples:
+      - "SHOW TABLES FROM tpch.tiny LIKE 'p%';"
+
+  - id: use
+    name: USE
+    doc: https://trino.io/docs/current/sql/use.html
+    tier: medium
+    probes:
+      - id: catalog_schema
+        sql: "USE c.s;"
+      - id: schema
+        sql: "USE s;"
+    examples:
+      - "USE hive.finance;"
+      - "USE information_schema;"
+
+  - id: alter_branch
+    name: ALTER BRANCH
+    doc: https://trino.io/docs/current/sql/alter-branch.html
+    tier: low
+    probes:
+      - id: fast_forward
+        sql: "ALTER BRANCH main IN TABLE t FAST FORWARD TO audit;"
+
+  - id: create_branch
+    name: CREATE BRANCH
+    doc: https://trino.io/docs/current/sql/create-branch.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE BRANCH b IN TABLE t;"
+      - id: full
+        sql: "CREATE OR REPLACE BRANCH IF NOT EXISTS b WITH (retention = '7d') IN TABLE t FROM main;"
+
+  - id: create_catalog
+    name: CREATE CATALOG
+    doc: https://trino.io/docs/current/sql/create-catalog.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE CATALOG c USING tpch;"
+      - id: with_properties
+        sql: "CREATE CATALOG c USING memory WITH (\"memory.max-data-per-node\" = '128MB');"
+
+  - id: deny
+    name: DENY
+    doc: https://trino.io/docs/current/sql/deny.html
+    tier: low
+    probes:
+      - id: table
+        sql: "DENY INSERT, SELECT ON t TO alice;"
+      - id: all_privileges_schema_role
+        sql: "DENY ALL PRIVILEGES ON SCHEMA s TO ROLE r;"
+
+  - id: drop_branch
+    name: DROP BRANCH
+    doc: https://trino.io/docs/current/sql/drop-branch.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP BRANCH IF EXISTS b IN TABLE t;"
+
+  - id: drop_catalog
+    name: DROP CATALOG
+    doc: https://trino.io/docs/current/sql/drop-catalog.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP CATALOG c;"
+
+  - id: reset_session_authorization
+    name: RESET SESSION AUTHORIZATION
+    doc: https://trino.io/docs/current/sql/reset-session-authorization.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "RESET SESSION AUTHORIZATION;"
+
+  - id: set_path
+    name: SET PATH
+    doc: https://trino.io/docs/current/sql/set-path.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "SET PATH c.s, s2;"
+
+  - id: set_session_authorization
+    name: SET SESSION AUTHORIZATION
+    doc: https://trino.io/docs/current/sql/set-session-authorization.html
+    tier: low
+    probes:
+      - id: string_user
+        sql: "SET SESSION AUTHORIZATION 'John';"
+      - id: identifier_user
+        sql: "SET SESSION AUTHORIZATION john;"
+
+  - id: show_branches
+    name: SHOW BRANCHES
+    doc: https://trino.io/docs/current/sql/show-branches.html
+    tier: low
+    probes:
+      - id: in_table
+        sql: "SHOW BRANCHES IN TABLE t;"
+      - id: from_table
+        sql: "SHOW BRANCHES FROM TABLE t;"
+
+  - id: show_stats
+    name: SHOW STATS
+    doc: https://trino.io/docs/current/sql/show-stats.html
+    tier: low
+    probes:
+      - id: for_table
+        sql: "SHOW STATS FOR t;"
+      - id: for_query
+        sql: "SHOW STATS FOR (SELECT * FROM t WHERE x > 1);"

@@ -1,0 +1,61 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: qualify
+    name: QUALIFY clause
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-qualify
+    tier: high
+    probes:
+      - id: qualify_window_in_select
+        sql: "SELECT c1, RANK() OVER (PARTITION BY c2 ORDER BY c3) AS r FROM t QUALIFY r = 1;"
+        note: "Syntax: QUALIFY boolean_expression; window function in the SELECT list"
+      - id: qualify_window_in_clause
+        sql: "SELECT c1 FROM t QUALIFY RANK() OVER (PARTITION BY c2 ORDER BY c3) = 1;"
+        note: "Window function inside the QUALIFY clause itself"
+      - id: qualify_and_or
+        sql: "SELECT c1 FROM t QUALIFY ROW_NUMBER() OVER (PARTITION BY c2 ORDER BY c3) = 1 AND c1 > 0 OR c1 IS NULL;"
+        note: "boolean_expression may combine expressions with AND / OR"
+    examples:
+      - "SELECT city, car_model, RANK() OVER (PARTITION BY car_model ORDER BY quantity) AS rank FROM dealer QUALIFY rank = 1;"
+      - "SELECT city, car_model FROM dealer QUALIFY RANK() OVER (PARTITION BY car_model ORDER BY quantity) = 1;"
+
+  - id: order_by
+    name: ORDER BY clause
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-orderby
+    tier: high
+    probes:
+      - id: order_by_expression
+        sql: "SELECT c1 FROM t ORDER BY c1;"
+      - id: order_by_asc
+        sql: "SELECT c1 FROM t ORDER BY c1 ASC;"
+      - id: order_by_desc
+        sql: "SELECT c1 FROM t ORDER BY c1 DESC;"
+      - id: order_by_nulls_first
+        sql: "SELECT c1 FROM t ORDER BY c1 NULLS FIRST;"
+      - id: order_by_nulls_last
+        sql: "SELECT c1 FROM t ORDER BY c1 NULLS LAST;"
+      - id: order_by_desc_nulls_first
+        sql: "SELECT c1 FROM t ORDER BY c1 DESC NULLS FIRST;"
+      - id: order_by_asc_nulls_last
+        sql: "SELECT c1 FROM t ORDER BY c1 ASC NULLS LAST;"
+      - id: order_by_multiple
+        sql: "SELECT c1, c2 FROM t ORDER BY c1 ASC, c2 DESC;"
+      - id: order_by_position
+        sql: "SELECT c1, c2 FROM t ORDER BY 2;"
+        note: "A literal INTEGER expression is a select-list column position"
+      - id: order_by_expression_general
+        sql: "SELECT c1, c2 FROM t ORDER BY c1 + c2 DESC;"
+      - id: order_by_all
+        sql: "SELECT c1, c2 FROM t ORDER BY ALL;"
+        note: "Syntax: ORDER BY ALL (Databricks Runtime 12.2 LTS and above)"
+      - id: order_by_all_direction
+        sql: "SELECT c1, c2 FROM t ORDER BY ALL DESC;"
+      - id: order_by_all_direction_nulls
+        sql: "SELECT c1, c2 FROM t ORDER BY ALL DESC NULLS LAST;"
+    examples:
+      - "SELECT name, age FROM person ORDER BY age NULLS LAST;"
+      - "SELECT * FROM person ORDER BY name ASC, age DESC;"
+      - "SELECT * FROM person ORDER BY ALL ASC;"

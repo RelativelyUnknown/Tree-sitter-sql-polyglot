@@ -1,0 +1,269 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements:
+  - id: create_table
+    name: CREATE TABLE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-definition/create/create-table
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE TABLE t (a INT, b VARCHAR(10));" }
+      - { id: or_replace, sql: "CREATE OR REPLACE TABLE t (a INT);" }
+      - { id: temporary, sql: "CREATE TEMPORARY TABLE t (a INT);" }
+      - { id: or_replace_temporary, sql: "CREATE OR REPLACE TEMPORARY TABLE t (a INT);" }
+      - { id: if_not_exists, sql: "CREATE TABLE IF NOT EXISTS t (a INT);" }
+      - { id: like, sql: "CREATE TABLE t LIKE old_t;" }
+      - { id: like_parenthesized, sql: "CREATE TABLE t (LIKE old_t);" }
+      - { id: temporary_like, sql: "CREATE TEMPORARY TABLE IF NOT EXISTS t LIKE old_t;" }
+      - { id: select_as, sql: "CREATE TABLE t AS SELECT a, b FROM s;" }
+      - { id: select_no_as, sql: "CREATE TABLE t SELECT a, b FROM s;" }
+      - { id: select_ignore, sql: "CREATE TABLE t (a INT PRIMARY KEY) IGNORE AS SELECT a FROM s;" }
+      - { id: select_replace, sql: "CREATE TABLE t (a INT PRIMARY KEY) REPLACE SELECT a FROM s;" }
+      - { id: select_with_column_defs, sql: "CREATE TABLE t (a INT NOT NULL, b CHAR(10)) ENGINE=MyISAM SELECT 5 AS b, c, d FROM s;" }
+      - { id: col_not_null, sql: "CREATE TABLE t (a INT NOT NULL, b INT NULL);" }
+      - { id: col_default_literal, sql: "CREATE TABLE t (a INT DEFAULT 0, b VARCHAR(10) DEFAULT 'x', c INT DEFAULT NULL);" }
+      - { id: col_default_expression, sql: "CREATE TABLE t (a INT DEFAULT (1+1), b INT DEFAULT (a+1), expires DATETIME DEFAULT (NOW() + INTERVAL 1 YEAR));" }
+      - { id: col_default_function, sql: "CREATE TABLE t (a BIGINT PRIMARY KEY DEFAULT UUID_SHORT(), x BLOB DEFAULT USER());" }
+      - { id: col_default_next_value_for, sql: "CREATE TABLE t (id INT DEFAULT (NEXT VALUE FOR s));" }
+      - { id: col_on_update, sql: "CREATE TABLE t (ts TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP);" }
+      - { id: col_on_update_now_precision, sql: "CREATE TABLE t (ts DATETIME(6) DEFAULT NOW(6) ON UPDATE NOW(6));" }
+      - { id: col_auto_increment, sql: "CREATE TABLE t (id INT AUTO_INCREMENT PRIMARY KEY);" }
+      - { id: col_zerofill, sql: "CREATE TABLE t (a INT(5) UNSIGNED ZEROFILL);" }
+      - { id: col_unique, sql: "CREATE TABLE t (a INT UNIQUE, b INT UNIQUE KEY);" }
+      - { id: col_primary_key, sql: "CREATE TABLE t (a INT PRIMARY KEY, b INT);" }
+      - { id: col_key_shortcut, sql: "CREATE TABLE t (a INT KEY);" }
+      - { id: col_invisible, sql: "CREATE TABLE t (a INT, b INT INVISIBLE);" }
+      - { id: col_with_system_versioning, sql: "CREATE TABLE t (a INT WITH SYSTEM VERSIONING, b INT WITHOUT SYSTEM VERSIONING) WITH SYSTEM VERSIONING;" }
+      - { id: col_comment, sql: "CREATE TABLE t (a INT COMMENT 'first column');" }
+      - { id: col_ref_system_id, sql: "CREATE TABLE t (g GEOMETRY(9,4) REF_SYSTEM_ID=101);" }
+      - { id: col_inline_references, sql: "CREATE TABLE t (for_key INT REFERENCES a (not_key));" }
+      - { id: col_inline_check, sql: "CREATE TABLE t (a INT CHECK (a > 0), b INT CHECK (b > 0));" }
+      - { id: col_charset_collate, sql: "CREATE TABLE t (name VARCHAR(128) CHARSET utf8 COLLATE utf8_bin);" }
+      - { id: col_generated_virtual, sql: "CREATE TABLE t (a INT, b INT GENERATED ALWAYS AS (a * 2) VIRTUAL);" }
+      - { id: col_generated_persistent, sql: "CREATE TABLE t (a INT, b INT AS (a * 2) PERSISTENT);" }
+      - { id: col_generated_stored, sql: "CREATE TABLE t (a INT, b INT GENERATED ALWAYS AS (a * 2) STORED);" }
+      - { id: col_generated_options, sql: "CREATE TABLE t (a INT, b INT AS (a * 2) VIRTUAL INVISIBLE UNIQUE KEY COMMENT 'doubled');" }
+      - { id: col_generated_row_start_end, sql: "CREATE TABLE t (a INT, row_start TIMESTAMP(6) GENERATED ALWAYS AS ROW START, row_end TIMESTAMP(6) GENERATED ALWAYS AS ROW END, PERIOD FOR SYSTEM_TIME (row_start, row_end)) WITH SYSTEM VERSIONING;" }
+      - { id: col_generated_row_start_options, sql: "CREATE TABLE t (a INT, row_start TIMESTAMP(6) GENERATED ALWAYS AS ROW START NOT NULL ENABLE PRIMARY KEY, row_end TIMESTAMP(6) GENERATED ALWAYS AS ROW END);" }
+      - { id: col_compressed, sql: "CREATE TABLE t (a BLOB COMPRESSED, b TEXT COMPRESSED);" }
+      - { id: constraint_check, sql: "CREATE TABLE t (a INT, b INT, CONSTRAINT abc CHECK (a > b));" }
+      - { id: constraint_check_unnamed, sql: "CREATE TABLE t (a INT, b INT, CHECK (a > b));" }
+      - { id: constraint_check_no_name, sql: "CREATE TABLE t (a INT, b INT, CONSTRAINT CHECK (a > b));" }
+      - { id: index_key, sql: "CREATE TABLE t (a INT, KEY (a));" }
+      - { id: index_named, sql: "CREATE TABLE t (a INT, INDEX idx (a));" }
+      - { id: index_type_before, sql: "CREATE TABLE t (a INT, INDEX idx USING BTREE (a));" }
+      - { id: index_type_hash_after, sql: "CREATE TABLE t (a INT, KEY idx (a) USING HASH);" }
+      - { id: index_col_length_order, sql: "CREATE TABLE t (name VARCHAR(100), a INT, KEY name_idx (name(32) ASC, a DESC));" }
+      - { id: index_key_block_size, sql: "CREATE TABLE t (a INT, KEY idx (a) KEY_BLOCK_SIZE=8);" }
+      - { id: index_comment, sql: "CREATE TABLE t (a INT, KEY idx (a) COMMENT 'idx comment');" }
+      - { id: index_visible, sql: "CREATE TABLE t (a INT, KEY idx (a) VISIBLE);" }
+      - { id: index_ignored, sql: "CREATE TABLE t (a INT, KEY idx (a) IGNORED);" }
+      - { id: index_not_ignored, sql: "CREATE TABLE t (a INT, KEY idx (a) NOT IGNORED);" }
+      - { id: index_adaptive_hash, sql: "CREATE TABLE t (a INT, KEY idx (a) ADAPTIVE_HASH_INDEX=YES);" }
+      - { id: index_complete_fields, sql: "CREATE TABLE t (a INT, KEY idx (a) COMPLETE_FIELDS=1 BYTES_FROM_INCOMPLETE_FIELD=2);" }
+      - { id: index_for_equal_hash_point, sql: "CREATE TABLE t (a INT, KEY idx (a) FOR_EQUAL_HASH_POINT_TO_LAST_RECORD=NO);" }
+      - { id: primary_key, sql: "CREATE TABLE t (a INT, b INT, PRIMARY KEY (a, b));" }
+      - { id: primary_key_constraint, sql: "CREATE TABLE t (a INT, CONSTRAINT pk PRIMARY KEY USING BTREE (a));" }
+      - { id: unique, sql: "CREATE TABLE t (a INT, UNIQUE (a));" }
+      - { id: unique_key_named, sql: "CREATE TABLE t (a INT, CONSTRAINT uq UNIQUE KEY uk_a USING BTREE (a) COMMENT 'u');" }
+      - { id: unique_index, sql: "CREATE TABLE t (a INT, UNIQUE INDEX u (a));" }
+      - { id: fulltext, sql: "CREATE TABLE t (a TEXT, FULLTEXT KEY ft (a)) ENGINE=InnoDB;" }
+      - { id: fulltext_with_parser, sql: "CREATE TABLE t (a TEXT, FULLTEXT INDEX (a) WITH PARSER p) ENGINE=MyISAM;" }
+      - { id: spatial, sql: "CREATE TABLE t (g GEOMETRY NOT NULL, SPATIAL INDEX sp (g));" }
+      - { id: foreign_key, sql: "CREATE TABLE t (a INT, FOREIGN KEY (a) REFERENCES p (id));" }
+      - { id: foreign_key_named, sql: "CREATE TABLE t (a INT, CONSTRAINT fk FOREIGN KEY fk_idx (a) REFERENCES p (id));" }
+      - { id: foreign_key_match, sql: "CREATE TABLE t (a INT, FOREIGN KEY (a) REFERENCES p (id) MATCH FULL);" }
+      - { id: foreign_key_on_delete_update, sql: "CREATE TABLE t (a INT, FOREIGN KEY (a) REFERENCES p (id) ON DELETE CASCADE ON UPDATE SET NULL);" }
+      - { id: foreign_key_restrict_no_action, sql: "CREATE TABLE t (a INT, FOREIGN KEY (a) REFERENCES p (id) ON DELETE RESTRICT ON UPDATE NO ACTION);" }
+      - { id: period_system_time, sql: "CREATE TABLE t (a INT, s TIMESTAMP(6) GENERATED ALWAYS AS ROW START, e TIMESTAMP(6) GENERATED ALWAYS AS ROW END, PERIOD FOR SYSTEM_TIME (s, e)) WITH SYSTEM VERSIONING;" }
+      - { id: period_application_time, sql: "CREATE TABLE t (a INT, d1 DATE, d2 DATE, PERIOD FOR p (d1, d2));" }
+      - { id: primary_key_without_overlaps, sql: "CREATE TABLE t (a INT, d1 DATE, d2 DATE, PERIOD FOR p (d1, d2), PRIMARY KEY (a, p WITHOUT OVERLAPS));" }
+      - { id: opt_engine, sql: "CREATE TABLE t (a INT) ENGINE=InnoDB;" }
+      - { id: opt_storage_engine, sql: "CREATE TABLE t (a INT) STORAGE ENGINE InnoDB;" }
+      - { id: opt_adaptive_hash_index, sql: "CREATE TABLE t (a INT) ADAPTIVE_HASH_INDEX=NO;" }
+      - { id: opt_auto_increment, sql: "CREATE TABLE t (a INT AUTO_INCREMENT PRIMARY KEY) AUTO_INCREMENT=100;" }
+      - { id: opt_avg_row_length, sql: "CREATE TABLE t (a INT) AVG_ROW_LENGTH=100;" }
+      - { id: opt_character_set, sql: "CREATE TABLE t (a INT) DEFAULT CHARACTER SET = utf8mb4;" }
+      - { id: opt_charset, sql: "CREATE TABLE t (a INT) DEFAULT CHARSET latin1;" }
+      - { id: opt_checksum, sql: "CREATE TABLE t (a INT) CHECKSUM=1;" }
+      - { id: opt_collate, sql: "CREATE TABLE t (a INT) DEFAULT COLLATE utf8mb4_bin;" }
+      - { id: opt_comment, sql: "CREATE TABLE t (a INT) COMMENT='table comment';" }
+      - { id: opt_connection, sql: "CREATE TABLE t (a INT) ENGINE=FEDERATED CONNECTION='mysql://user@host/db/tbl';" }
+      - { id: opt_data_index_directory, sql: "CREATE TABLE t (a INT) ENGINE=MyISAM DATA DIRECTORY='/data' INDEX DIRECTORY='/idx';" }
+      - { id: opt_delay_key_write, sql: "CREATE TABLE t (a INT) DELAY_KEY_WRITE=1;" }
+      - { id: opt_encrypted, sql: "CREATE TABLE t (a INT) ENCRYPTED=YES ENCRYPTION_KEY_ID=2;" }
+      - { id: opt_ietf_quotes, sql: "CREATE TABLE t (a INT) ENGINE=CONNECT IETF_QUOTES=YES;" }
+      - { id: opt_insert_method, sql: "CREATE TABLE t (a INT) ENGINE=MRG_MyISAM UNION=(t1, t2) INSERT_METHOD=LAST;" }
+      - { id: opt_key_block_size, sql: "CREATE TABLE t (a INT) KEY_BLOCK_SIZE=8;" }
+      - { id: opt_min_max_rows, sql: "CREATE TABLE t (a INT) MIN_ROWS=10 MAX_ROWS=1000;" }
+      - { id: opt_pack_keys, sql: "CREATE TABLE t (a INT) PACK_KEYS=DEFAULT;" }
+      - { id: opt_page_checksum, sql: "CREATE TABLE t (a INT) ENGINE=Aria PAGE_CHECKSUM=1 TRANSACTIONAL=1;" }
+      - { id: opt_page_compressed, sql: "CREATE TABLE t (a INT) PAGE_COMPRESSED=1 PAGE_COMPRESSION_LEVEL=5;" }
+      - { id: opt_password, sql: "CREATE TABLE t (a INT) PASSWORD='secret';" }
+      - { id: opt_row_format, sql: "CREATE TABLE t (a INT) ROW_FORMAT=DYNAMIC;" }
+      - { id: opt_sequence, sql: "CREATE TABLE t (a INT) SEQUENCE=1;" }
+      - { id: opt_stats, sql: "CREATE TABLE t (a INT) STATS_AUTO_RECALC=DEFAULT STATS_PERSISTENT=1 STATS_SAMPLE_PAGES=10;" }
+      - { id: opt_tablespace, sql: "CREATE TABLE t (a INT) TABLESPACE ts1;" }
+      - { id: opt_union, sql: "CREATE TABLE t (a INT) ENGINE=MRG_MyISAM UNION=(t1, t2);" }
+      - { id: opt_with_system_versioning, sql: "CREATE TABLE t (a INT) WITH SYSTEM VERSIONING;" }
+      - { id: opt_multiple_comma_separated, sql: "CREATE TABLE t (a INT) ENGINE=InnoDB, CHARSET=utf8mb4, COMMENT='x';" }
+      - { id: partition_hash, sql: "CREATE TABLE t (a INT, b CHAR(5), c DATETIME) PARTITION BY HASH (YEAR(c));" }
+      - { id: partition_linear_hash, sql: "CREATE TABLE t (a INT) PARTITION BY LINEAR HASH (a) PARTITIONS 4;" }
+      - { id: partition_key, sql: "CREATE TABLE t (a INT PRIMARY KEY) PARTITION BY KEY (a) PARTITIONS 4;" }
+      - { id: partition_linear_key, sql: "CREATE TABLE t (a INT PRIMARY KEY) PARTITION BY LINEAR KEY (a) PARTITIONS 4;" }
+      - { id: partition_range, sql: "CREATE TABLE t (x INT) PARTITION BY RANGE (x) (PARTITION p1 VALUES LESS THAN (10), PARTITION p2 VALUES LESS THAN (20), PARTITION pn VALUES LESS THAN MAXVALUE);" }
+      - { id: partition_range_without_partition_keyword, sql: "CREATE TABLE t (x INT) PARTITION BY RANGE (x) (p1 VALUES LESS THAN (10), p2 VALUES LESS THAN (20), pn VALUES LESS THAN MAXVALUE);" }
+      - { id: partition_range_columns, sql: "CREATE TABLE t (a INT, b INT) PARTITION BY RANGE COLUMNS (a, b) (PARTITION p0 VALUES LESS THAN (5, 12), PARTITION p1 VALUES LESS THAN (MAXVALUE, MAXVALUE));" }
+      - { id: partition_range_columns_interval, sql: "CREATE TABLE t (d DATE) PARTITION BY RANGE COLUMNS (d) INTERVAL 1 MONTH AUTO (PARTITION p0 VALUES LESS THAN ('2024-01-01'));" }
+      - { id: partition_list, sql: "CREATE TABLE t (a INT) PARTITION BY LIST (a) (PARTITION p0 VALUES IN (1, 2, 3), PARTITION p1 VALUES IN (4, 5, 6));" }
+      - { id: partition_list_columns, sql: "CREATE TABLE t (a INT, b INT) PARTITION BY LIST COLUMNS (a, b) (PARTITION p0 VALUES IN ((1, 2), (3, 4)));" }
+      - { id: partition_system_time_interval, sql: "CREATE TABLE t (a INT) WITH SYSTEM VERSIONING PARTITION BY SYSTEM_TIME INTERVAL 1 MONTH LIMIT 12 PARTITIONS 12;" }
+      - { id: partition_subpartition, sql: "CREATE TABLE t (a INT, b DATE) PARTITION BY RANGE (a) SUBPARTITION BY HASH (TO_DAYS(b)) SUBPARTITIONS 2 (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20));" }
+      - { id: partition_subpartition_linear_key, sql: "CREATE TABLE t (a INT, b INT) PARTITION BY RANGE (a) SUBPARTITION BY LINEAR KEY (b) (PARTITION p0 VALUES LESS THAN (10) (SUBPARTITION s0, SUBPARTITION s1), PARTITION p1 VALUES LESS THAN (20) (SUBPARTITION s2, SUBPARTITION s3));" }
+      - { id: partition_definition_options, sql: "CREATE TABLE t (a INT) PARTITION BY RANGE (a) (PARTITION p0 VALUES LESS THAN (10) ENGINE=InnoDB COMMENT='first' DATA DIRECTORY='/d' INDEX DIRECTORY='/i' MAX_ROWS=100 MIN_ROWS=1 TABLESPACE=ts NODEGROUP=0);" }
+      - { id: partition_with_select, sql: "CREATE TABLE t (a INT) PARTITION BY HASH (a) PARTITIONS 4 AS SELECT a FROM s;" }
+    examples:
+      - |-
+        CREATE TABLE IF NOT EXISTS test (
+        a BIGINT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(128) CHARSET utf8,
+        KEY name (name(32))
+        ) ENGINE=InnoDB DEFAULT CHARSET latin1;
+      - |-
+        CREATE TABLE test (a INT NOT NULL, b CHAR(10)) ENGINE=MyISAM
+            SELECT 5 AS b, c, d FROM another_table;
+      - |-
+        CREATE TABLE t1 (a INT, b CHAR(5), c DATETIME)
+            PARTITION BY HASH ( YEAR(c) );
+
+  - id: alter_table
+    name: ALTER TABLE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-definition/alter/alter-table
+    tier: high
+    probes:
+      - { id: online, sql: "ALTER ONLINE TABLE t ADD COLUMN c INT;" }
+      - { id: ignore, sql: "ALTER IGNORE TABLE t ADD UNIQUE INDEX u (c);" }
+      - { id: online_ignore, sql: "ALTER ONLINE IGNORE TABLE t ADD COLUMN c INT;" }
+      - { id: if_exists, sql: "ALTER TABLE IF EXISTS t ADD COLUMN c INT;" }
+      - { id: wait, sql: "ALTER TABLE t WAIT 10 ADD COLUMN c INT;" }
+      - { id: nowait, sql: "ALTER TABLE t NOWAIT ADD COLUMN c INT;" }
+      - { id: table_options, sql: "ALTER TABLE t ENGINE = InnoDB COMMENT = 'First of three tables containing usage info';" }
+      - { id: table_options_comma, sql: "ALTER TABLE t ENGINE=InnoDB, AUTO_INCREMENT=100, ROW_FORMAT=DYNAMIC;" }
+      - { id: add_column, sql: "ALTER TABLE t ADD COLUMN c INT;" }
+      - { id: add_column_no_keyword, sql: "ALTER TABLE t ADD x INT;" }
+      - { id: add_column_if_not_exists, sql: "ALTER TABLE t ADD COLUMN IF NOT EXISTS c INT NOT NULL DEFAULT 0;" }
+      - { id: add_column_first, sql: "ALTER TABLE t ADD COLUMN c INT FIRST;" }
+      - { id: add_column_after, sql: "ALTER TABLE t ADD COLUMN c INT AFTER a;" }
+      - { id: add_column_list, sql: "ALTER TABLE t ADD COLUMN (c INT, d VARCHAR(10));" }
+      - { id: add_column_list_if_not_exists, sql: "ALTER TABLE t ADD COLUMN IF NOT EXISTS (c INT, d INT);" }
+      - { id: add_index, sql: "ALTER TABLE t ADD INDEX idx (c);" }
+      - { id: add_key_if_not_exists, sql: "ALTER TABLE t ADD KEY IF NOT EXISTS idx (c);" }
+      - { id: add_index_type_options, sql: "ALTER TABLE t ADD INDEX idx USING BTREE (c(10) DESC) KEY_BLOCK_SIZE=8 COMMENT 'x' VISIBLE;" }
+      - { id: add_index_clustering, sql: "ALTER TABLE t ADD INDEX idx (c) CLUSTERING=YES;" }
+      - { id: add_index_ignored, sql: "ALTER TABLE t ADD INDEX idx (c) IGNORED;" }
+      - { id: add_index_with_parser, sql: "ALTER TABLE t ADD INDEX idx (c) WITH PARSER p;" }
+      - { id: add_primary_key, sql: "ALTER TABLE t ADD PRIMARY KEY (a, b);" }
+      - { id: add_primary_key_constraint, sql: "ALTER TABLE t ADD CONSTRAINT pk PRIMARY KEY IF NOT EXISTS USING BTREE (a);" }
+      - { id: add_primary_key_without_overlaps, sql: "ALTER TABLE rooms ADD PRIMARY KEY (room_number, p WITHOUT OVERLAPS);" }
+      - { id: add_unique, sql: "ALTER TABLE t ADD UNIQUE (c);" }
+      - { id: add_unique_index, sql: "ALTER TABLE rooms ADD UNIQUE INDEX u (room_number);" }
+      - { id: add_unique_key_constraint, sql: "ALTER TABLE t ADD CONSTRAINT uq UNIQUE KEY IF NOT EXISTS u (c) USING HASH;" }
+      - { id: add_fulltext, sql: "ALTER TABLE t ADD FULLTEXT INDEX ft (c);" }
+      - { id: add_fulltext_if_not_exists, sql: "ALTER TABLE t ADD FULLTEXT KEY IF NOT EXISTS ft (c);" }
+      - { id: add_spatial, sql: "ALTER TABLE t ADD SPATIAL INDEX sp (g);" }
+      - { id: add_spatial_if_not_exists, sql: "ALTER TABLE t ADD SPATIAL KEY IF NOT EXISTS sp (g);" }
+      - { id: add_vector, sql: "ALTER TABLE t ADD VECTOR INDEX v (embedding) DISTANCE=COSINE M=8;" }
+      - { id: add_foreign_key, sql: "ALTER TABLE t ADD FOREIGN KEY (a) REFERENCES p (id);" }
+      - { id: add_foreign_key_named, sql: "ALTER TABLE t ADD CONSTRAINT fk FOREIGN KEY IF NOT EXISTS fk_idx (a) REFERENCES p (id) ON DELETE CASCADE ON UPDATE RESTRICT;" }
+      - { id: add_foreign_key_match, sql: "ALTER TABLE t ADD FOREIGN KEY (a) REFERENCES p (id) MATCH SIMPLE ON DELETE SET NULL ON UPDATE NO ACTION;" }
+      - { id: add_constraint_check, sql: "ALTER TABLE t ADD CONSTRAINT chk CHECK (a > 0);" }
+      - { id: add_check_unnamed, sql: "ALTER TABLE t ADD CHECK (a > 0);" }
+      - { id: add_period, sql: "ALTER TABLE t ADD PERIOD FOR p (d1, d2);" }
+      - { id: add_period_system_time, sql: "ALTER TABLE t ADD PERIOD FOR SYSTEM_TIME (s, e);" }
+      - { id: alter_column_set_default, sql: "ALTER TABLE t ALTER COLUMN c SET DEFAULT 10;" }
+      - { id: alter_column_set_default_expression, sql: "ALTER TABLE t ALTER c SET DEFAULT (a + 1);" }
+      - { id: alter_column_drop_default, sql: "ALTER TABLE t ALTER COLUMN c DROP DEFAULT;" }
+      - { id: alter_index_ignored, sql: "ALTER TABLE t ALTER INDEX idx IGNORED;" }
+      - { id: alter_key_if_exists_not_ignored, sql: "ALTER TABLE t ALTER KEY IF EXISTS idx NOT IGNORED;" }
+      - { id: change_column, sql: "ALTER TABLE t CHANGE a b bigint unsigned auto_increment;" }
+      - { id: change_column_if_exists_after, sql: "ALTER TABLE t CHANGE COLUMN IF EXISTS a b INT NOT NULL AFTER c;" }
+      - { id: change_column_first, sql: "ALTER TABLE t CHANGE a b INT FIRST;" }
+      - { id: modify_column, sql: "ALTER TABLE t MODIFY x bigint unsigned;" }
+      - { id: modify_column_if_exists_first, sql: "ALTER TABLE t MODIFY COLUMN IF EXISTS x VARCHAR(20) NOT NULL FIRST;" }
+      - { id: modify_column_after, sql: "ALTER TABLE t MODIFY c INT AFTER a;" }
+      - { id: drop_column, sql: "ALTER TABLE t DROP x;" }
+      - { id: drop_column_if_exists, sql: "ALTER TABLE t DROP COLUMN IF EXISTS c;" }
+      - { id: drop_column_restrict, sql: "ALTER TABLE t DROP COLUMN c RESTRICT;" }
+      - { id: drop_column_cascade, sql: "ALTER TABLE t DROP COLUMN c CASCADE;" }
+      - { id: drop_primary_key, sql: "ALTER TABLE t DROP PRIMARY KEY;" }
+      - { id: drop_constraint_primary_key, sql: "ALTER TABLE t DROP CONSTRAINT PRIMARY KEY;" }
+      - { id: drop_index, sql: "ALTER TABLE rooms DROP INDEX u;" }
+      - { id: drop_key_if_exists, sql: "ALTER TABLE t DROP KEY IF EXISTS idx;" }
+      - { id: drop_foreign_key, sql: "ALTER TABLE t DROP FOREIGN KEY fk;" }
+      - { id: drop_foreign_key_if_exists, sql: "ALTER TABLE t DROP FOREIGN KEY IF EXISTS fk;" }
+      - { id: drop_constraint, sql: "ALTER TABLE t DROP CONSTRAINT chk;" }
+      - { id: drop_constraint_if_exists, sql: "ALTER TABLE t DROP CONSTRAINT IF EXISTS chk;" }
+      - { id: disable_keys, sql: "ALTER TABLE t DISABLE KEYS;" }
+      - { id: enable_keys, sql: "ALTER TABLE t ENABLE KEYS;" }
+      - { id: rename_to, sql: "ALTER TABLE t RENAME TO t2;" }
+      - { id: rename_no_to, sql: "ALTER TABLE t RENAME t2;" }
+      - { id: order_by, sql: "ALTER TABLE t ORDER BY a, b;" }
+      - { id: rename_column, sql: "ALTER TABLE t RENAME COLUMN a TO b;" }
+      - { id: rename_column_if_exists, sql: "ALTER TABLE t RENAME COLUMN IF EXISTS a TO b;" }
+      - { id: rename_index, sql: "ALTER TABLE t RENAME INDEX old_idx TO new_idx;" }
+      - { id: rename_key, sql: "ALTER TABLE t RENAME KEY old_idx TO new_idx;" }
+      - { id: convert_to_character_set, sql: "ALTER TABLE t CONVERT TO CHARACTER SET utf8mb4;" }
+      - { id: convert_to_character_set_collate, sql: "ALTER TABLE t CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;" }
+      - { id: default_character_set, sql: "ALTER TABLE t DEFAULT CHARACTER SET = utf8mb4;" }
+      - { id: character_set, sql: "ALTER TABLE t CHARACTER SET utf8mb4;" }
+      - { id: default_collate, sql: "ALTER TABLE t DEFAULT COLLATE = utf8mb4_bin;" }
+      - { id: collate, sql: "ALTER TABLE t COLLATE utf8mb4_bin;" }
+      - { id: discard_tablespace, sql: "ALTER TABLE t DISCARD TABLESPACE;" }
+      - { id: import_tablespace, sql: "ALTER TABLE t IMPORT TABLESPACE;" }
+      - { id: algorithm_default, sql: "ALTER TABLE t ADD COLUMN c INT, ALGORITHM = DEFAULT;" }
+      - { id: algorithm_inplace, sql: "ALTER TABLE t ADD COLUMN c INT, ALGORITHM=INPLACE;" }
+      - { id: algorithm_copy, sql: "ALTER TABLE t ADD COLUMN c INT, ALGORITHM COPY;" }
+      - { id: algorithm_nocopy, sql: "ALTER TABLE t ADD COLUMN c INT, ALGORITHM=NOCOPY;" }
+      - { id: algorithm_instant, sql: "ALTER TABLE t ADD COLUMN c INT, ALGORITHM=INSTANT;" }
+      - { id: lock_default, sql: "ALTER TABLE t ADD COLUMN c INT, LOCK=DEFAULT;" }
+      - { id: lock_none, sql: "ALTER TABLE t ADD COLUMN c INT, LOCK=NONE;" }
+      - { id: lock_shared, sql: "ALTER TABLE t ADD COLUMN c INT, LOCK SHARED;" }
+      - { id: lock_exclusive, sql: "ALTER TABLE t ADD COLUMN c INT, LOCK=EXCLUSIVE;" }
+      - { id: algorithm_and_lock, sql: "ALTER TABLE t ADD COLUMN c INT, ALGORITHM=INPLACE, LOCK=NONE;" }
+      - { id: force, sql: "ALTER TABLE t FORCE;" }
+      - { id: multiple_specifications, sql: "ALTER TABLE t DROP x, ADD x2 INT, CHANGE y y2 INT;" }
+      - { id: partition_by_hash, sql: "ALTER TABLE t PARTITION BY HASH (a) PARTITIONS 4;" }
+      - { id: partition_by_range, sql: "ALTER TABLE t PARTITION BY RANGE (a) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN MAXVALUE);" }
+      - { id: partition_by_system_time, sql: "ALTER TABLE t PARTITION BY SYSTEM_TIME INTERVAL 1 MONTH LIMIT 12 PARTITIONS 12;" }
+      - { id: convert_table_to_partition, sql: "ALTER TABLE t CONVERT TABLE normal_t TO PARTITION p0 VALUES LESS THAN (100);" }
+      - { id: convert_table_to_partition_validation, sql: "ALTER TABLE t CONVERT TABLE normal_t TO PARTITION p0 VALUES IN (1, 2) WITH VALIDATION;" }
+      - { id: convert_table_to_partition_without_validation, sql: "ALTER TABLE t CONVERT TABLE normal_t TO PARTITION p0 VALUES LESS THAN MAXVALUE WITHOUT VALIDATION;" }
+      - { id: convert_partition_to_table, sql: "ALTER TABLE t CONVERT PARTITION p0 TO TABLE t2;" }
+      - { id: add_partition, sql: "ALTER TABLE t ADD PARTITION (PARTITION p3 VALUES LESS THAN (40));" }
+      - { id: add_partition_if_not_exists, sql: "ALTER TABLE t ADD PARTITION IF NOT EXISTS (PARTITION p3 VALUES LESS THAN (40));" }
+      - { id: drop_partition, sql: "ALTER TABLE t DROP PARTITION p0, p1;" }
+      - { id: drop_partition_if_exists, sql: "ALTER TABLE t DROP PARTITION IF EXISTS p0;" }
+      - { id: truncate_partition, sql: "ALTER TABLE t TRUNCATE PARTITION p0;" }
+      - { id: coalesce_partition, sql: "ALTER TABLE t COALESCE PARTITION 2;" }
+      - { id: reorganize_partition, sql: "ALTER TABLE t REORGANIZE PARTITION p0, p1 INTO (PARTITION p01 VALUES LESS THAN (20));" }
+      - { id: reorganize_partition_bare, sql: "ALTER TABLE t REORGANIZE PARTITION;" }
+      - { id: analyze_partition, sql: "ALTER TABLE t ANALYZE PARTITION p0, p1;" }
+      - { id: check_partition, sql: "ALTER TABLE t CHECK PARTITION p0;" }
+      - { id: optimize_partition, sql: "ALTER TABLE t OPTIMIZE PARTITION p0;" }
+      - { id: rebuild_partition, sql: "ALTER TABLE t REBUILD PARTITION p0;" }
+      - { id: repair_partition, sql: "ALTER TABLE t REPAIR PARTITION p0;" }
+      - { id: exchange_partition, sql: "ALTER TABLE t EXCHANGE PARTITION p0 WITH TABLE t2;" }
+      - { id: exchange_partition_with_validation, sql: "ALTER TABLE t EXCHANGE PARTITION p0 WITH TABLE t2 WITH VALIDATION;" }
+      - { id: exchange_partition_without_validation, sql: "ALTER TABLE t EXCHANGE PARTITION p0 WITH TABLE t2 WITHOUT VALIDATION;" }
+      - { id: remove_partitioning, sql: "ALTER TABLE t REMOVE PARTITIONING;" }
+      - { id: add_system_versioning, sql: "ALTER TABLE t ADD SYSTEM VERSIONING;" }
+      - { id: drop_system_versioning, sql: "ALTER TABLE t DROP SYSTEM VERSIONING;" }
+    examples:
+      - "ALTER TABLE t1 ADD x INT;"
+      - "ALTER TABLE t1 DROP x, ADD x2 INT,  CHANGE y y2 INT;"
+      - |-
+        ALTER TABLE t1 
+          ENGINE = InnoDB 
+          COMMENT = 'First of three tables containing usage info';

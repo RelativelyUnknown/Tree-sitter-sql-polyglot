@@ -1,0 +1,397 @@
+dialect: snowflake
+engine: Snowflake
+version: "current (docs read 2026-10-04)"
+source: https://docs.snowflake.com/en/sql-reference/sql-all
+
+statements:
+  - id: alter_external_consumer_rotate_programmatic_access_token_pat
+    name: ALTER EXTERNAL CONSUMER ... ROTATE PROGRAMMATIC ACCESS TOKEN (PAT)
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-external-consumer-rotate-programmatic-access-token
+    tier: low
+    probes:
+      - id: rotate_pat
+        sql: "ALTER EXTERNAL CONSUMER c ROTATE PAT IF EXISTS tok EXPIRE_ROTATED_TOKEN_AFTER_HOURS = 24;"
+      - id: rotate_programmatic_access_token
+        sql: "ALTER EXTERNAL CONSUMER c ROTATE PROGRAMMATIC ACCESS TOKEN tok;"
+
+  - id: alter_external_volume
+    name: ALTER EXTERNAL VOLUME
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-external-volume
+    tier: low
+    probes:
+      - id: add_storage_location
+        sql: "ALTER EXTERNAL VOLUME IF EXISTS ev ADD STORAGE_LOCATION = (NAME = 'loc' STORAGE_PROVIDER = 'S3' STORAGE_AWS_ROLE_ARN = 'arn:aws:iam::123456789012:role/r' STORAGE_BASE_URL = 's3://bucket/path/');"
+      - id: set_allow_writes
+        sql: "ALTER EXTERNAL VOLUME ev SET ALLOW_WRITES = TRUE;"
+
+  - id: alter_failover_group
+    name: ALTER FAILOVER GROUP
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-failover-group
+    tier: low
+    probes:
+      - id: rename_to
+        sql: "ALTER FAILOVER GROUP IF EXISTS fg RENAME TO fg2;"
+      - id: set_replication_schedule
+        sql: "ALTER FAILOVER GROUP fg SET REPLICATION_SCHEDULE = '10 MINUTE';"
+
+  - id: alter_feature_policy
+    name: ALTER FEATURE POLICY
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-feature-policy
+    tier: low
+    probes:
+      - id: set_blocked_object_types
+        sql: "ALTER FEATURE POLICY IF EXISTS fp SET BLOCKED_OBJECT_TYPES_FOR_CREATION = (DATABASES, WAREHOUSES) COMMENT = 'c';"
+      - id: unset_comment
+        sql: "ALTER FEATURE POLICY fp UNSET COMMENT;"
+
+  - id: alter_gateway
+    name: ALTER GATEWAY
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-gateway
+    tier: low
+    probes:
+      - id: from_specification
+        sql: |-
+          ALTER GATEWAY IF EXISTS g FROM SPECIFICATION $$
+          spec:
+            type: traffic_split
+          $$;
+
+  - id: alter_git_repository
+    name: ALTER GIT REPOSITORY
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-git-repository
+    tier: low
+    probes:
+      - id: set_properties
+        sql: "ALTER GIT REPOSITORY IF EXISTS r SET GIT_CREDENTIALS = sec API_INTEGRATION = api COMMENT = 'c';"
+      - id: fetch
+        sql: "ALTER GIT REPOSITORY r FETCH;"
+
+  - id: alter_integration
+    name: ALTER INTEGRATION
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-integration
+    tier: low
+    note: Umbrella page; the syntax is ALTER <integration_type> INTEGRATION <object_name> <actions>, with actions on the type-specific pages.
+    probes:
+      - id: alter_api_integration
+        sql: "ALTER API INTEGRATION i SET ENABLED = TRUE;"
+      - id: alter_storage_integration
+        sql: "ALTER STORAGE INTEGRATION i SET COMMENT = 'c';"
+
+  - id: alter_join_policy
+    name: ALTER JOIN POLICY
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-join-policy
+    tier: low
+    probes:
+      - id: set_body
+        sql: "ALTER JOIN POLICY IF EXISTS jp SET BODY -> NO_JOIN_REQUIRED();"
+      - id: rename_to
+        sql: "ALTER JOIN POLICY jp RENAME TO jp2;"
+
+  - id: alter_listing
+    name: ALTER LISTING
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-listing
+    tier: low
+    probes:
+      - id: publish
+        sql: "ALTER LISTING IF EXISTS l PUBLISH;"
+      - id: add_version
+        sql: "ALTER LISTING l ADD VERSION IF NOT EXISTS v1 FROM @db.sch.stg/manifest COMMENT = 'c';"
+
+  - id: alter_maintenance_policy
+    name: ALTER MAINTENANCE POLICY
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-maintenance-policy
+    tier: low
+    probes:
+      - id: set_schedule
+        sql: "ALTER MAINTENANCE POLICY IF EXISTS mp SET SCHEDULE = 'SUN 02:00' COMMENT = 'c';"
+      - id: rename_to
+        sql: "ALTER MAINTENANCE POLICY mp RENAME TO mp2;"
+
+  - id: alter_model
+    name: ALTER MODEL
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-model
+    tier: low
+    probes:
+      - id: set_comment_default_version
+        sql: "ALTER MODEL IF EXISTS m SET COMMENT = 'c' DEFAULT_VERSION = 'v1';"
+      - id: version_set_alias
+        sql: "ALTER MODEL m VERSION v1 SET ALIAS = prod;"
+
+  - id: alter_model_add_version
+    name: ALTER MODEL ... ADD VERSION
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-model-add-version
+    tier: low
+    probes:
+      - id: from_model
+        sql: "ALTER MODEL IF EXISTS m ADD VERSION v2 FROM MODEL src VERSION v1;"
+      - id: from_internal_stage
+        sql: "ALTER MODEL m ADD VERSION v2 FROM @stg/path;"
+
+  - id: alter_model_drop_version
+    name: ALTER MODEL ... DROP VERSION
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-model-drop-version
+    tier: low
+    probes:
+      - id: drop_version
+        sql: "ALTER MODEL IF EXISTS m DROP VERSION v1;"
+
+  - id: alter_model_modify_version
+    name: ALTER MODEL ... MODIFY VERSION
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-model-modify-version
+    tier: low
+    probes:
+      - id: set_comment_metadata
+        sql: "ALTER MODEL IF EXISTS m MODIFY VERSION v1 SET COMMENT = 'c' METADATA = '{\"k\": 1}';"
+
+  - id: alter_model_monitor
+    name: ALTER MODEL MONITOR
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-model-monitor
+    tier: low
+    probes:
+      - id: suspend
+        sql: "ALTER MODEL MONITOR IF EXISTS mm SUSPEND;"
+      - id: set_refresh_interval
+        sql: "ALTER MODEL MONITOR mm SET REFRESH_INTERVAL = '1 day' WAREHOUSE = wh COMMENT = 'c';"
+
+  - id: alter_multi_party_approval_policy
+    name: ALTER MULTI PARTY APPROVAL POLICY
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-multi-party-approval-policy
+    tier: low
+    probes:
+      - id: rename_to
+        sql: "ALTER MULTI PARTY APPROVAL POLICY p RENAME TO p2;"
+      - id: as_body
+        sql: |-
+          ALTER MULTI PARTY APPROVAL POLICY p AS $$
+          rules:
+            - name: r1
+              operations: [MODIFY_MULTI_PARTY_APPROVAL]
+              approvers:
+                users: ['u1']
+              required_approvals: 1
+          $$;
+
+  - id: alter_notebook
+    name: ALTER NOTEBOOK
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-notebook
+    tier: low
+    probes:
+      - id: rename_to
+        sql: "ALTER NOTEBOOK IF EXISTS nb RENAME TO nb2;"
+      - id: set_properties
+        sql: "ALTER NOTEBOOK nb SET COMMENT = 'c' QUERY_WAREHOUSE = wh IDLE_AUTO_SHUTDOWN_TIME_SECONDS = 3600;"
+
+  - id: alter_notification_integration
+    name: ALTER NOTIFICATION INTEGRATION
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-notification-integration
+    tier: low
+    note: Umbrella page with no syntax block of its own; it links to the per-service pages covered by the entries below.
+    probes:
+      - id: set_enabled
+        sql: "ALTER NOTIFICATION INTEGRATION IF EXISTS i SET ENABLED = TRUE COMMENT = 'c';"
+
+  - id: alter_notification_integration_email
+    name: ALTER NOTIFICATION INTEGRATION (email)
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-notification-integration-email
+    tier: low
+    probes:
+      - id: set_recipients
+        sql: "ALTER NOTIFICATION INTEGRATION IF EXISTS i SET ENABLED = TRUE ALLOWED_RECIPIENTS = ('a@example.com', 'b@example.com') DEFAULT_SUBJECT = 's';"
+      - id: unset_default_recipients
+        sql: "ALTER INTEGRATION i UNSET DEFAULT_RECIPIENTS;"
+
+  - id: alter_notification_integration_queue_inbound_azure
+    name: ALTER NOTIFICATION INTEGRATION (inbound from an Azure Event Grid topic)
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-notification-integration-queue-inbound-azure
+    tier: low
+    probes:
+      - id: set_enabled_comment
+        sql: "ALTER NOTIFICATION INTEGRATION IF EXISTS i SET ENABLED = FALSE COMMENT = 'c';"
+      - id: unset_comment
+        sql: "ALTER NOTIFICATION INTEGRATION IF EXISTS i UNSET COMMENT;"
+
+  - id: alter_notification_integration_queue_inbound_gcp
+    name: ALTER NOTIFICATION INTEGRATION (inbound from a Google Pub/Sub topic)
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-notification-integration-queue-inbound-gcp
+    tier: low
+    probes:
+      - id: set_enabled_comment
+        sql: "ALTER NOTIFICATION INTEGRATION IF EXISTS i SET ENABLED = TRUE COMMENT = 'c';"
+      - id: set_tag
+        sql: "ALTER NOTIFICATION INTEGRATION i SET TAG t = 'v';"
+
+  - id: alter_notification_integration_queue_outbound_aws
+    name: ALTER NOTIFICATION INTEGRATION (outbound to an Amazon SNS topic)
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-notification-integration-queue-outbound-aws
+    tier: low
+    probes:
+      - id: set_sns
+        sql: "ALTER NOTIFICATION INTEGRATION IF EXISTS i SET ENABLED = TRUE AWS_SNS_TOPIC_ARN = 'arn:aws:sns:us-east-1:123456789012:t' AWS_SNS_ROLE_ARN = 'arn:aws:iam::123456789012:role/r' COMMENT = 'c';"
+      - id: unset_comment
+        sql: "ALTER NOTIFICATION INTEGRATION i UNSET COMMENT;"
+
+  - id: alter_notification_integration_queue_outbound_azure
+    name: ALTER NOTIFICATION INTEGRATION (outbound to an Azure Event Grid topic)
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-notification-integration-queue-outbound-azure
+    tier: low
+    probes:
+      - id: set_event_grid
+        sql: "ALTER NOTIFICATION INTEGRATION IF EXISTS i SET ENABLED = TRUE AZURE_EVENT_GRID_TOPIC_ENDPOINT = 'https://t.eventgrid.azure.net/api/events' AZURE_TENANT_ID = 'tenant' COMMENT = 'c';"
+      - id: unset_tag
+        sql: "ALTER NOTIFICATION INTEGRATION i UNSET TAG t;"
+
+  - id: alter_notification_integration_queue_outbound_gcp
+    name: ALTER NOTIFICATION INTEGRATION (outbound to a Google Pub/Sub topic)
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-notification-integration-queue-outbound-gcp
+    tier: low
+    probes:
+      - id: set_pubsub
+        sql: "ALTER NOTIFICATION INTEGRATION IF EXISTS i SET ENABLED = TRUE GCP_PUBSUB_SUBSCRIPTION_NAME = 'projects/p/subscriptions/s' COMMENT = 'c';"
+      - id: unset_comment
+        sql: "ALTER NOTIFICATION INTEGRATION i UNSET COMMENT;"
+
+  - id: alter_notification_integration_webhooks
+    name: ALTER NOTIFICATION INTEGRATION (webhooks)
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-notification-integration-webhooks
+    tier: low
+    probes:
+      - id: set_webhook
+        sql: "ALTER NOTIFICATION INTEGRATION IF EXISTS i SET ENABLED = TRUE WEBHOOK_URL = 'https://example.com/hook' WEBHOOK_SECRET = db.sch.sec WEBHOOK_BODY_TEMPLATE = '{\"text\": \"x\"}' WEBHOOK_HEADERS = ('Content-Type' = 'application/json') COMMENT = 'c';"
+      - id: unset_webhook_headers
+        sql: "ALTER NOTIFICATION INTEGRATION i UNSET WEBHOOK_HEADERS;"
+
+  - id: alter_openflow_data_plane
+    name: ALTER OPENFLOW DATA PLANE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-oflow-data-plane
+    tier: low
+    probes:
+      - id: set_event_table
+        sql: "ALTER OPENFLOW DATA PLANE INTEGRATION i SET EVENT_TABLE = 'db.sch.events';"
+
+  - id: alter_openflow_connector
+    name: ALTER OPENFLOW CONNECTOR
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-openflow-connector
+    tier: low
+    probes:
+      - id: add_version_from_stage
+        sql: "ALTER OPENFLOW CONNECTOR c ADD VERSION FROM '@stg/path';"
+      - id: set_default_version
+        sql: "ALTER OPENFLOW CONNECTOR IF EXISTS c SET DEFAULT_VERSION = LAST;"
+      - id: commit
+        sql: "ALTER OPENFLOW CONNECTOR c COMMIT COMMENT = 'c';"
+
+  - id: alter_openflow_deployment
+    name: ALTER OPENFLOW DEPLOYMENT
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-openflow-deployment
+    tier: low
+    probes:
+      - id: set_properties
+        sql: "ALTER OPENFLOW DEPLOYMENT IF EXISTS d SET DISPLAY_NAME = 'n' COMMENT = 'c' EVENT_TABLE = 'db.sch.events';"
+      - id: upgrade
+        sql: "ALTER OPENFLOW DEPLOYMENT d UPGRADE;"
+
+  - id: alter_openflow_runtime
+    name: ALTER OPENFLOW RUNTIME
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-openflow-runtime
+    tier: low
+    probes:
+      - id: set_properties
+        sql: "ALTER OPENFLOW RUNTIME IF EXISTS r SET MIN_NODES = 1 MAX_NODES = 3 NODE_TYPE_TIER = 'S1' COMMENT = 'c';"
+      - id: terminate_cascade
+        sql: "ALTER OPENFLOW RUNTIME r TERMINATE CASCADE;"
+
+  - id: alter_organization
+    name: ALTER ORGANIZATION
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-organization
+    tier: low
+    probes:
+      - id: set_default_tenant_type
+        sql: "ALTER ORGANIZATION SET DEFAULT_TENANT_TYPE = INTERNAL;"
+      - id: set_domain_names
+        sql: "ALTER ORGANIZATION SET DOMAIN_NAMES = ('example.com', 'example.org');"
+
+  - id: alter_organization_account
+    name: ALTER ORGANIZATION ACCOUNT
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-organization-account
+    tier: low
+    probes:
+      - id: set_resource_monitor
+        sql: "ALTER ORGANIZATION ACCOUNT SET RESOURCE_MONITOR = rm;"
+      - id: set_password_policy
+        sql: "ALTER ORGANIZATION ACCOUNT SET PASSWORD POLICY pp;"
+
+  - id: alter_organization_profile
+    name: ALTER ORGANIZATION PROFILE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-organization-profile
+    tier: low
+    probes:
+      - id: rename_to
+        sql: "ALTER ORGANIZATION PROFILE IF EXISTS p RENAME TO p2;"
+      - id: add_version_from_stage
+        sql: "ALTER ORGANIZATION PROFILE p ADD VERSION IF NOT EXISTS v1 FROM @db.sch.stg/manifest.yml;"
+
+  - id: alter_organization_set_event_routing_table
+    name: ALTER ORGANIZATION SET EVENT ROUTING TABLE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-organization-set-event-routing-table
+    tier: low
+    probes:
+      - id: set_event_routing_table
+        sql: "ALTER ORGANIZATION SET EVENT ROUTING TABLE db.sch.t FOR ALL APPLICATION LISTINGS;"
+
+  - id: alter_organization_unset_event_routing_table
+    name: ALTER ORGANIZATION UNSET EVENT ROUTING TABLE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-organization-unset-event-routing-table
+    tier: low
+    probes:
+      - id: unset_event_routing_table
+        sql: "ALTER ORGANIZATION UNSET EVENT ROUTING TABLE FOR ALL APPLICATION LISTINGS;"
+
+  - id: alter_organization_user
+    name: ALTER ORGANIZATION USER
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-organization-user
+    tier: low
+    probes:
+      - id: set_properties
+        sql: "ALTER ORGANIZATION USER IF EXISTS u SET EMAIL = 'u@example.com' DISPLAY_NAME = 'U' FIRST_NAME = 'F' LAST_NAME = 'L' COMMENT = 'c';"
+      - id: unset_properties
+        sql: "ALTER ORGANIZATION USER u UNSET COMMENT;"
+
+  - id: alter_organization_user_group
+    name: ALTER ORGANIZATION USER GROUP
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-organization-user-group
+    tier: low
+    probes:
+      - id: add_organization_users
+        sql: "ALTER ORGANIZATION USER GROUP IF EXISTS g ADD ORGANIZATION USERS u1, u2;"
+      - id: set_visibility_accounts
+        sql: "ALTER ORGANIZATION USER GROUP g SET VISIBILITY = ACCOUNTS a1, a2;"
+
+  - id: alter_packages_policy
+    name: ALTER PACKAGES POLICY
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-packages-policy
+    tier: low
+    probes:
+      - id: set_lists
+        sql: "ALTER PACKAGES POLICY IF EXISTS pp SET ALLOWLIST = ('numpy', 'pandas==2.0') BLOCKLIST = ('badpkg') COMMENT = 'c';"
+      - id: unset_blocklist
+        sql: "ALTER PACKAGES POLICY pp UNSET BLOCKLIST;"
+
+  - id: alter_password_policy
+    name: ALTER PASSWORD POLICY
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-password-policy
+    tier: low
+    probes:
+      - id: set_properties
+        sql: "ALTER PASSWORD POLICY IF EXISTS pp SET PASSWORD_MIN_LENGTH = 12 PASSWORD_MAX_AGE_DAYS = 90 PASSWORD_HISTORY = 5 COMMENT = 'c';"
+      - id: rename_to
+        sql: "ALTER PASSWORD POLICY pp RENAME TO pp2;"
+
+  - id: alter_postgres_instance
+    name: ALTER POSTGRES INSTANCE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-postgres-instance
+    tier: low
+    probes:
+      - id: set_properties
+        sql: "ALTER POSTGRES INSTANCE IF EXISTS pg SET HIGH_AVAILABILITY = TRUE STORAGE_SIZE_GB = 100 POSTGRES_VERSION = 17 APPLY IMMEDIATELY;"
+      - id: suspend
+        sql: "ALTER POSTGRES INSTANCE pg SUSPEND;"

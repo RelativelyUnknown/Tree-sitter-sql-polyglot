@@ -1,0 +1,312 @@
+dialect: spark
+engine: Apache Spark SQL
+version: "4.x (docs/latest)"
+source: https://spark.apache.org/docs/latest/sql-ref-syntax.html
+
+statements: []
+
+expressions:
+  - id: a_string_literals
+    name: String literals
+    doc: https://spark.apache.org/docs/latest/sql-ref-literals.html
+    tier: high
+    probes:
+      - { id: single_quoted, sql: "SELECT 'Hello, World!';" }
+      - { id: double_quoted, sql: "SELECT \"SPARK SQL\";" }
+      - { id: backslash_escape_quote, sql: "SELECT 'it\\'s $10.';" }
+      - { id: unicode_escape_16, sql: "SELECT '\\u3042';" }
+      - { id: unicode_escape_32, sql: "SELECT '\\U0001F44D';" }
+      - { id: octal_escape, sql: "SELECT '\\101';" }
+      - { id: control_escapes, sql: "SELECT 'a\\tb\\nc\\0d\\Ze';" }
+      - { id: like_escapes, sql: "SELECT 'a\\%b\\_c';" }
+      - { id: raw_single, sql: "SELECT r'\\n is not a newline';" }
+      - { id: raw_double_upper, sql: "SELECT R\"\\n is not a newline\";" }
+      - { id: coalesced_adjacent, sql: "SELECT 'Hello' ', ' 'World!';" }
+      - { id: coalesced_mixed_quotes, sql: "SELECT 'Hello' \"World\";" }
+    examples:
+      - "SELECT 'Hello, World!' AS col;"
+      - "SELECT \"SPARK SQL\" AS col;"
+      - "SELECT 'it\\'s $10.' AS col;"
+
+  - id: a_binary_boolean_null_literals
+    name: Binary, boolean and null literals
+    doc: https://spark.apache.org/docs/latest/sql-ref-literals.html
+    tier: high
+    probes:
+      - { id: binary_single, sql: "SELECT X'123456';" }
+      - { id: binary_double, sql: "SELECT x\"ABCDEF\";" }
+      - { id: null_literal, sql: "SELECT NULL;" }
+      - { id: boolean_true, sql: "SELECT TRUE;" }
+      - { id: boolean_false, sql: "SELECT FALSE;" }
+    examples:
+      - "SELECT X'123456' AS col;"
+      - "SELECT NULL AS col;"
+      - "SELECT TRUE AS col;"
+
+  - id: a_integral_literals
+    name: Integral literals
+    doc: https://spark.apache.org/docs/latest/sql-ref-literals.html
+    tier: high
+    probes:
+      - { id: plain, sql: "SELECT 2147483647;" }
+      - { id: negative, sql: "SELECT -2147483648;" }
+      - { id: positive_sign, sql: "SELECT +5;" }
+      - { id: bigint_suffix, sql: "SELECT 9223372036854775807L;" }
+      - { id: bigint_suffix_lower, sql: "SELECT 9223372036854775807 l;" }
+      - { id: smallint_suffix, sql: "SELECT 482S;" }
+      - { id: tinyint_suffix, sql: "SELECT -32Y;" }
+    examples:
+      - "SELECT -2147483648 AS col;"
+      - "SELECT 9223372036854775807l AS col;"
+      - "SELECT -32Y AS col;"
+      - "SELECT 482S AS col;"
+
+  - id: a_fractional_literals
+    name: Fractional literals (decimal, double, float)
+    doc: https://spark.apache.org/docs/latest/sql-ref-literals.html
+    tier: high
+    probes:
+      - { id: decimal_point, sql: "SELECT 12.578;" }
+      - { id: leading_dot, sql: "SELECT .1234567;" }
+      - { id: negative_leading_dot, sql: "SELECT -.1234567;" }
+      - { id: trailing_dot, sql: "SELECT 123.;" }
+      - { id: decimal_bd_suffix, sql: "SELECT 123.BD;" }
+      - { id: integer_bd_suffix, sql: "SELECT -5BD;" }
+      - { id: double_exponent, sql: "SELECT 12.578E0;" }
+      - { id: integer_exponent, sql: "SELECT 5E2;" }
+      - { id: double_d_suffix, sql: "SELECT 5D;" }
+      - { id: signed_exponent_d, sql: "SELECT 12.578e-2d;" }
+      - { id: exponent_bd, sql: "SELECT -.1234567E+2BD;" }
+      - { id: trailing_dot_exponent, sql: "SELECT +3.e+3;" }
+      - { id: negative_exponent_d, sql: "SELECT -3.E-3D;" }
+      - { id: float_suffix, sql: "SELECT 1.5F;" }
+      - { id: float_exponent, sql: "SELECT 1E3f;" }
+    examples:
+      - "SELECT 12.578 AS col, TYPEOF(12.578) AS type;"
+      - "SELECT 12.578E0 AS col, TYPEOF(12.578E0) AS type;"
+      - "SELECT -.1234567E+2BD AS col;"
+
+  - id: a_date_time_timestamp_literals
+    name: Date, time and timestamp literals
+    doc: https://spark.apache.org/docs/latest/sql-ref-literals.html
+    tier: high
+    probes:
+      - { id: date_year, sql: "SELECT DATE '1997';" }
+      - { id: date_year_month, sql: "SELECT DATE '1997-01';" }
+      - { id: date_full, sql: "SELECT DATE '2011-11-11';" }
+      - { id: time_hour_minute, sql: "SELECT TIME '12:00';" }
+      - { id: time_fraction, sql: "SELECT TIME '23:59:59.999999';" }
+      - { id: timestamp_fraction, sql: "SELECT TIMESTAMP '1997-01-31 09:26:56.123';" }
+      - { id: timestamp_zone_offset, sql: "SELECT TIMESTAMP '1997-01-31 09:26:56.66666666UTC+08:00';" }
+      - { id: timestamp_year_month, sql: "SELECT TIMESTAMP '1997-01';" }
+      - { id: timestamp_zulu, sql: "SELECT TIMESTAMP '2020-01-01T00:00:00Z';" }
+      - { id: timestamp_region_zone, sql: "SELECT TIMESTAMP '2020-01-01 00:00:00 Europe/Paris';" }
+      - { id: timestamp_ntz_literal, sql: "SELECT TIMESTAMP_NTZ '2020-01-01 00:00:00';" }
+      - { id: timestamp_ltz_literal, sql: "SELECT TIMESTAMP_LTZ '2020-01-01 00:00:00';" }
+    examples:
+      - "SELECT DATE '1997' AS col;"
+      - "SELECT TIME '23:59:59.999999' AS col;"
+      - "SELECT TIMESTAMP '1997-01-31 09:26:56.123' AS col;"
+
+  - id: a_interval_literals
+    name: Interval literals
+    doc: https://spark.apache.org/docs/latest/sql-ref-literals.html
+    tier: high
+    probes:
+      - { id: ansi_year_to_month, sql: "SELECT INTERVAL '2-3' YEAR TO MONTH;" }
+      - { id: ansi_year, sql: "SELECT INTERVAL -'2021' YEAR;" }
+      - { id: ansi_month_lower, sql: "SELECT interval '10' month;" }
+      - { id: ansi_day_to_hour, sql: "SELECT INTERVAL '-100 10' DAY TO HOUR;" }
+      - { id: ansi_day_to_minute, sql: "SELECT INTERVAL '100 10:30' DAY TO MINUTE;" }
+      - { id: ansi_day_to_second_signed, sql: "SELECT INTERVAL -'20 15:40:32.99899999' DAY TO SECOND;" }
+      - { id: ansi_hour_to_minute, sql: "SELECT INTERVAL -'-123:10' HOUR TO MINUTE;" }
+      - { id: ansi_hour_to_second, sql: "SELECT INTERVAL '123:10:59' HOUR TO SECOND;" }
+      - { id: ansi_minute_to_second, sql: "SELECT INTERVAL '1000:01.001' MINUTE TO SECOND;" }
+      - { id: ansi_second, sql: "SELECT INTERVAL '1000.000001' SECOND;" }
+      - { id: multi_unit_single, sql: "SELECT INTERVAL 3 YEAR;" }
+      - { id: multi_unit_mixed_quote, sql: "SELECT INTERVAL -2 HOUR '3' MINUTE;" }
+      - { id: multi_unit_quoted_string, sql: "SELECT INTERVAL '1 YEAR 2 DAYS 3 HOURS';" }
+      - { id: multi_unit_all_units, sql: "SELECT INTERVAL 1 YEARS 2 MONTH 3 WEEK 4 DAYS 5 HOUR 6 MINUTES 7 SECOND 8 MILLISECOND 9 MICROSECONDS;" }
+      - { id: multi_unit_signed, sql: "SELECT INTERVAL +1 WEEK -2 DAYS;" }
+    examples:
+      - "SELECT INTERVAL '2-3' YEAR TO MONTH AS col;"
+      - "SELECT INTERVAL -'20 15:40:32.99899999' DAY TO SECOND AS col;"
+      - "SELECT INTERVAL 3 YEAR AS col;"
+
+  - id: a_array_map_struct_constructors
+    name: Array, map and struct constructors
+    doc: https://spark.apache.org/docs/latest/api/sql/index.html
+    tier: high
+    probes:
+      - { id: array_function, sql: "SELECT array(1, 2, 3);" }
+      - { id: array_empty, sql: "SELECT array();" }
+      - { id: map_function, sql: "SELECT map('a', 1, 'b', 2);" }
+      - { id: struct_function, sql: "SELECT struct(1, 'a');" }
+      - { id: named_struct_function, sql: "SELECT named_struct('a', 1, 'b', 'x');" }
+      - { id: array_index, sql: "SELECT arr[0] FROM t;" }
+      - { id: map_lookup, sql: "SELECT m['key'] FROM t;" }
+      - { id: struct_field, sql: "SELECT s.field FROM t;" }
+      - { id: nested_access, sql: "SELECT a.b[0].c['k'] FROM t;" }
+      - { id: values_complex, sql: "SELECT * FROM VALUES (array(1, 2), map('a', 1)) AS t(arr, m);" }
+
+  - id: a_json_variant_access
+    name: JSON and VARIANT access
+    doc: https://spark.apache.org/docs/latest/api/sql/index.html
+    tier: medium
+    probes:
+      - { id: get_json_object, sql: "SELECT get_json_object(j, '$.a.b') FROM t;" }
+      - { id: from_json, sql: "SELECT from_json(j, 'a INT, b STRING') FROM t;" }
+      - { id: to_json, sql: "SELECT to_json(named_struct('a', 1));" }
+      - { id: json_tuple_lateral, sql: "SELECT j2.a FROM t LATERAL VIEW json_tuple(j, 'a') j2 AS a;" }
+      - { id: parse_json, sql: "SELECT parse_json('{\"a\": 1}');" }
+      - { id: variant_colon_path, sql: "SELECT v:a.b FROM t;" }
+      - { id: variant_colon_bracket, sql: "SELECT v:a['b'] FROM t;" }
+      - { id: variant_cast_path, sql: "SELECT v:a::int FROM t;" }
+
+  - id: a_type_names
+    name: Data type names
+    doc: https://spark.apache.org/docs/latest/sql-ref-datatypes.html
+    tier: high
+    probes:
+      - { id: integral_types, sql: "SELECT CAST(c AS TINYINT), CAST(c AS SMALLINT), CAST(c AS INT), CAST(c AS BIGINT) FROM t;" }
+      - { id: integer_aliases, sql: "SELECT CAST(c AS BYTE), CAST(c AS SHORT), CAST(c AS INTEGER), CAST(c AS LONG) FROM t;" }
+      - { id: float_types, sql: "SELECT CAST(c AS FLOAT), CAST(c AS REAL), CAST(c AS DOUBLE) FROM t;" }
+      - { id: decimal_plain, sql: "SELECT CAST(c AS DECIMAL) FROM t;" }
+      - { id: decimal_precision, sql: "SELECT CAST(c AS DECIMAL(10)) FROM t;" }
+      - { id: decimal_precision_scale, sql: "SELECT CAST(c AS DECIMAL(10, 2)) FROM t;" }
+      - { id: dec_numeric_aliases, sql: "SELECT CAST(c AS DEC(10, 2)), CAST(c AS NUMERIC(10, 2)) FROM t;" }
+      - { id: string_type, sql: "SELECT CAST(c AS STRING) FROM t;" }
+      - { id: varchar_length, sql: "SELECT CAST(c AS VARCHAR(10)) FROM t;" }
+      - { id: char_length, sql: "SELECT CAST(c AS CHAR(5)) FROM t;" }
+      - { id: binary_boolean, sql: "SELECT CAST(c AS BINARY), CAST(c AS BOOLEAN) FROM t;" }
+      - { id: date_type, sql: "SELECT CAST(c AS DATE) FROM t;" }
+      - { id: time_type, sql: "SELECT CAST(c AS TIME) FROM t;" }
+      - { id: time_precision, sql: "SELECT CAST(c AS TIME(3)) FROM t;" }
+      - { id: timestamp_types, sql: "SELECT CAST(c AS TIMESTAMP), CAST(c AS TIMESTAMP_LTZ), CAST(c AS TIMESTAMP_NTZ) FROM t;" }
+      - { id: interval_year_month_types, sql: "SELECT CAST(c AS INTERVAL YEAR), CAST(c AS INTERVAL YEAR TO MONTH), CAST(c AS INTERVAL MONTH) FROM t;" }
+      - { id: interval_day_time_types, sql: "SELECT CAST(c AS INTERVAL DAY), CAST(c AS INTERVAL DAY TO SECOND), CAST(c AS INTERVAL HOUR TO MINUTE), CAST(c AS INTERVAL MINUTE TO SECOND) FROM t;" }
+      - { id: variant_type, sql: "SELECT CAST(c AS VARIANT) FROM t;" }
+      - { id: geometry_srid, sql: "SELECT CAST(c AS GEOMETRY(4326)) FROM t;" }
+      - { id: geometry_any, sql: "SELECT CAST(c AS GEOMETRY(ANY)) FROM t;" }
+      - { id: geography_srid, sql: "SELECT CAST(c AS GEOGRAPHY(4326)) FROM t;" }
+      - { id: geography_any, sql: "SELECT CAST(c AS GEOGRAPHY(ANY)) FROM t;" }
+
+  - id: a_complex_type_names
+    name: Complex and parameterized data types
+    doc: https://spark.apache.org/docs/latest/sql-ref-datatypes.html
+    tier: high
+    probes:
+      - { id: array_type, sql: "SELECT CAST(c AS ARRAY<INT>) FROM t;" }
+      - { id: map_type, sql: "SELECT CAST(c AS MAP<STRING, INT>) FROM t;" }
+      - { id: struct_type, sql: "SELECT CAST(c AS STRUCT<a: INT, b: STRING>) FROM t;" }
+      - { id: struct_type_no_colon, sql: "SELECT CAST(c AS STRUCT<a INT, b STRING>) FROM t;" }
+      - { id: struct_field_comment, sql: "SELECT CAST(c AS STRUCT<a: INT COMMENT 'first', b: STRING>) FROM t;" }
+      - { id: struct_field_not_null, sql: "SELECT CAST(c AS STRUCT<a: INT NOT NULL>) FROM t;" }
+      - { id: nested_types, sql: "SELECT CAST(c AS ARRAY<MAP<STRING, STRUCT<x: DECIMAL(10, 2), y: ARRAY<INT>>>>) FROM t;" }
+      - { id: column_def_complex, sql: "CREATE TABLE t (a ARRAY<STRING>, m MAP<STRING, BIGINT>, s STRUCT<x: INT, y: STRING>);" }
+
+  - id: a_casts
+    name: Casts
+    doc: https://spark.apache.org/docs/latest/sql-ref-ansi-compliance.html
+    tier: high
+    probes:
+      - { id: cast_function, sql: "SELECT CAST(c AS INT) FROM t;" }
+      - { id: cast_string_to_date, sql: "SELECT CAST('2020-01-01' AS DATE);" }
+      - { id: try_cast, sql: "SELECT TRY_CAST(c AS INT) FROM t;" }
+      - { id: double_colon, sql: "SELECT c::INT FROM t;" }
+      - { id: double_colon_parameterized, sql: "SELECT c::DECIMAL(10, 2) FROM t;" }
+      - { id: double_colon_chained, sql: "SELECT c::STRING::INT FROM t;" }
+      - { id: double_colon_complex, sql: "SELECT c::ARRAY<INT> FROM t;" }
+      - { id: cast_to_complex, sql: "SELECT CAST(c AS STRUCT<a: INT, b: STRING>) FROM t;" }
+      - { id: cast_expression, sql: "SELECT CAST(a + b AS BIGINT) FROM t;" }
+      - { id: typed_function_names, sql: "SELECT int(c), bigint(c), string(c), double(c), date(c), timestamp(c), boolean(c) FROM t;" }
+
+  - id: a_identifier_quoting
+    name: Identifiers and backtick quoting
+    doc: https://spark.apache.org/docs/latest/sql-ref-identifier.html
+    tier: high
+    probes:
+      - { id: regular_identifier, sql: "SELECT a_1 FROM t;" }
+      - { id: digit_leading_identifier, sql: "SELECT 1a FROM t;" }
+      - { id: delimited_column, sql: "SELECT `a.b` FROM t;" }
+      - { id: delimited_with_space, sql: "SELECT `my col` FROM `my table`;" }
+      - { id: escaped_backtick, sql: "SELECT `a``b` FROM t;" }
+      - { id: delimited_qualified, sql: "SELECT `db`.`t`.`c` FROM `db`.`t`;" }
+      - { id: three_part_name, sql: "SELECT * FROM catalog.db.t;" }
+      - { id: delimited_ddl, sql: "CREATE TABLE test (`a.b` int);" }
+      - { id: delimited_alias, sql: "SELECT c AS `my alias` FROM t;" }
+      - { id: keyword_as_delimited, sql: "SELECT `select` FROM `from`;" }
+      - { id: regex_column_spec, sql: "SELECT `(a|b)?+.+` FROM t;" }
+      - { id: star_qualified, sql: "SELECT t.* FROM t;" }
+    examples:
+      - "CREATE TABLE test (`a.b` int);"
+      - "CREATE TABLE test (`a``b` int);"
+
+  - id: a_identifier_clause
+    name: IDENTIFIER clause
+    doc: https://spark.apache.org/docs/latest/sql-ref-identifier-clause.html
+    tier: medium
+    probes:
+      - { id: table_literal, sql: "SELECT * FROM IDENTIFIER('db.t');" }
+      - { id: table_coalesced_marker, sql: "SELECT * FROM IDENTIFIER('default.' :tablename);" }
+      - { id: column_literal, sql: "SELECT IDENTIFIER('c') FROM t;" }
+      - { id: table_concat_expr, sql: "SELECT * FROM IDENTIFIER(session.schema || '.' || session.tablename);" }
+      - { id: table_concat_function, sql: "SELECT * FROM IDENTIFIER(CONCAT(:catalog, '.', :namespace, '.', :tablename));" }
+      - { id: create_table_identifier, sql: "CREATE TABLE IDENTIFIER('db.t') (c INT);" }
+
+  - id: a_comments
+    name: Comments
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax.html
+    tier: high
+    probes:
+      - { id: line_comment, sql: "SELECT 1; -- trailing comment" }
+      - { id: line_comment_before, sql: "-- leading comment\nSELECT 1;" }
+      - { id: bracketed_comment, sql: "SELECT /* inline */ 1;" }
+      - { id: bracketed_multiline, sql: "/* multi\nline */\nSELECT 1;" }
+      - { id: nested_bracketed, sql: "SELECT /* outer /* inner */ still outer */ 1;" }
+      - { id: hint_comment, sql: "SELECT /*+ BROADCAST(t) */ * FROM t;" }
+      - { id: comment_between_tokens, sql: "SELECT a, -- first\n b /* second */ FROM t;" }
+
+  - id: a_named_parameter_markers
+    name: Named parameter markers
+    doc: https://spark.apache.org/docs/latest/sql-ref-parameter-markers.html
+    tier: high
+    probes:
+      - { id: select_marker, sql: "SELECT :x * :y AS volume;" }
+      - { id: where_marker, sql: "SELECT * FROM t WHERE c = :value;" }
+      - { id: repeated_marker, sql: "SELECT :x * :x AS square;" }
+      - { id: marker_with_interval, sql: "SELECT current_timestamp() + :later;" }
+      - { id: marker_in_limit, sql: "SELECT * FROM t LIMIT :n;" }
+      - { id: marker_in_string_coalesce, sql: "SELECT 'Hello, ' :p '!' AS col;" }
+    examples:
+      - "EXECUTE IMMEDIATE 'SELECT \"Hello, \" :p \"!\" AS col' USING 'World' AS p;"
+      - "EXECUTE IMMEDIATE stmtStr USING INTERVAL '3' HOURS AS later, 15.0 AS x;"
+
+  - id: a_unnamed_parameter_markers
+    name: Unnamed parameter markers
+    doc: https://spark.apache.org/docs/latest/sql-ref-parameter-markers.html
+    tier: high
+    probes:
+      - { id: select_markers, sql: "SELECT ? * ? AS volume;" }
+      - { id: where_markers, sql: "SELECT * FROM t WHERE a = ? AND b > ?;" }
+      - { id: marker_in_values, sql: "INSERT INTO t VALUES (?, ?);" }
+      - { id: marker_in_limit, sql: "SELECT * FROM t LIMIT ?;" }
+
+  - id: a_session_variables
+    name: Session variable references
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-declare-variable.html
+    tier: high
+    probes:
+      - { id: unqualified_reference, sql: "SELECT var1;" }
+      - { id: session_qualified, sql: "SELECT session.var1;" }
+      - { id: system_session_qualified, sql: "SELECT system.session.var1;" }
+      - { id: variable_in_where, sql: "SELECT * FROM t WHERE c = var1;" }
+      - { id: variable_in_expression, sql: "SELECT var1 + 1 AS c;" }
+      - { id: set_var_assignment, sql: "SET VAR var1 = 5;" }
+      - { id: set_variable_expr, sql: "SET VARIABLE var1 = (SELECT max(c1) FROM t);" }
+      - { id: declare_default, sql: "DECLARE VARIABLE size DEFAULT 6;" }
+      - { id: declare_typed, sql: "DECLARE OR REPLACE VARIABLE v INT DEFAULT 7;" }
+    examples:
+      - "DECLARE five = 5;"
+      - "DECLARE VARIABLE size DEFAULT 6;"
+      - "DECLARE some_var STRING;"

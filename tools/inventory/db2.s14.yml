@@ -1,0 +1,118 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "12.1"
+source: https://www.ibm.com/docs/en/db2/12.1.x?topic=reference-statements
+
+statements:
+  - id: declare_cursor
+    name: DECLARE CURSOR
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-declare-cursor
+    tier: high
+    probes:
+      - id: basic
+        sql: "DECLARE c1 CURSOR FOR SELECT a FROM t;"
+      - id: asensitive
+        sql: "DECLARE c1 ASENSITIVE CURSOR FOR SELECT a FROM t;"
+      - id: insensitive
+        sql: "DECLARE c1 INSENSITIVE CURSOR FOR SELECT a FROM t;"
+      - id: without_hold
+        sql: "DECLARE c1 CURSOR WITHOUT HOLD FOR SELECT a FROM t;"
+      - id: with_hold
+        sql: "DECLARE c1 CURSOR WITH HOLD FOR SELECT a FROM t;"
+      - id: without_return
+        sql: "DECLARE c1 CURSOR WITHOUT RETURN FOR SELECT a FROM t;"
+      - id: with_return_default
+        sql: "DECLARE c1 CURSOR WITH RETURN FOR SELECT a FROM t;"
+      - id: with_return_to_caller
+        sql: "DECLARE c1 CURSOR WITH RETURN TO CALLER FOR SELECT a FROM t;"
+      - id: with_return_to_client
+        sql: "DECLARE c1 CURSOR WITH RETURN TO CLIENT FOR SELECT a FROM t;"
+      - id: hold_and_return
+        sql: "DECLARE c1 CURSOR WITH HOLD WITH RETURN TO CALLER FOR SELECT a FROM t;"
+      - id: insensitive_all_clauses
+        sql: "DECLARE c1 INSENSITIVE CURSOR WITHOUT HOLD WITHOUT RETURN FOR SELECT a FROM t;"
+      - id: for_statement_name
+        sql: "DECLARE c1 CURSOR FOR s1;"
+      - id: for_data_change_table
+        sql: "DECLARE c2 CURSOR FOR SELECT e.a FROM NEW TABLE (INSERT INTO t (a) VALUES (1)) AS e;"
+
+  - id: delete
+    name: DELETE
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-delete
+    tier: high
+    probes:
+      - id: basic
+        sql: "DELETE FROM t;"
+      - id: where
+        sql: "DELETE FROM t WHERE a = 1;"
+      - id: omit_from
+        sql: "DELETE t WHERE a = 1;"
+        note: Non-standard syntax alternative, FROM may be omitted (Syntax alternatives section)
+      - id: view_target
+        sql: "DELETE FROM v WHERE a = 1;"
+      - id: schema_qualified
+        sql: "DELETE FROM s.t WHERE a = 1;"
+      - id: only_table
+        sql: "DELETE FROM ONLY (t) WHERE a = 1;"
+      - id: fullselect_target
+        sql: "DELETE FROM (SELECT a, b FROM t) WHERE a = 1;"
+      - id: fullselect_target_correlation
+        sql: "DELETE FROM (SELECT ROW_NUMBER() OVER (PARTITION BY a ORDER BY b) FROM t) AS e(rn) WHERE rn > 1;"
+      - id: correlation_as
+        sql: "DELETE FROM t AS x WHERE x.a = 1;"
+      - id: correlation_no_as
+        sql: "DELETE FROM t x WHERE x.a = 1;"
+      - id: correlation_column_list
+        sql: "DELETE FROM t AS x (c1, c2) WHERE x.c1 = 1;"
+      - id: with_cte
+        sql: "WITH q AS (SELECT a FROM t2) DELETE FROM t WHERE a IN (SELECT a FROM q);"
+      - id: with_cte_column_list
+        sql: "WITH q (x) AS (SELECT a FROM t2) DELETE FROM t WHERE a IN (SELECT x FROM q);"
+      - id: for_portion_of_business_time
+        sql: "DELETE FROM t FOR PORTION OF BUSINESS_TIME FROM '2020-01-01' TO '2021-01-01' WHERE a = 1;"
+      - id: include_columns
+        sql: "DELETE FROM t INCLUDE (c INTEGER) WHERE a = 1;"
+      - id: include_columns_multiple
+        sql: "DELETE FROM t INCLUDE (c1 INTEGER, c2 VARCHAR(10)) WHERE a = 1;"
+      - id: assignment_clause
+        sql: "DELETE FROM t INCLUDE (c INTEGER) SET c = 1 WHERE a = 1;"
+      - id: order_by_fetch_first
+        sql: "DELETE FROM t ORDER BY a FETCH FIRST 10 ROWS ONLY;"
+      - id: order_by_offset
+        sql: "DELETE FROM t ORDER BY a OFFSET 5 ROWS;"
+      - id: fetch_first_only
+        sql: "DELETE FROM t FETCH FIRST 10 ROWS ONLY;"
+      - id: offset_fetch
+        sql: "DELETE FROM t OFFSET 5 ROWS FETCH NEXT 10 ROWS ONLY;"
+      - id: with_rr
+        sql: "DELETE FROM t WHERE a = 1 WITH RR;"
+      - id: with_rs
+        sql: "DELETE FROM t WHERE a = 1 WITH RS;"
+      - id: with_cs
+        sql: "DELETE FROM t WHERE a = 1 WITH CS;"
+      - id: with_ur
+        sql: "DELETE FROM t WHERE a = 1 WITH UR;"
+      - id: skip_locked_data
+        sql: "DELETE FROM t WHERE a = 1 SKIP LOCKED DATA;"
+      - id: wait_for_outcome
+        sql: "DELETE FROM t WHERE a = 1 WAIT FOR OUTCOME;"
+      - id: nowait
+        sql: "DELETE FROM t WHERE a = 1 NOWAIT;"
+      - id: wait_seconds
+        sql: "DELETE FROM t WHERE a = 1 WAIT 5;"
+      - id: isolation_and_lock_option
+        sql: "DELETE FROM t WHERE a = 1 WITH CS SKIP LOCKED DATA;"
+      - id: subquery_in_where
+        sql: "DELETE FROM t WHERE a NOT IN (SELECT b FROM u WHERE YEAR(d) = 1995) AND j IN ('X', 'Y');"
+      - id: positioned
+        sql: "DELETE FROM t WHERE CURRENT OF c1;"
+      - id: positioned_correlation
+        sql: "DELETE FROM t AS x WHERE CURRENT OF c1;"
+      - id: positioned_only
+        sql: "DELETE FROM ONLY (t) WHERE CURRENT OF c1;"
+      - id: positioned_with_cte
+        sql: "WITH q AS (SELECT a FROM t2) DELETE FROM t WHERE CURRENT OF c1;"
+    examples:
+      - "DELETE FROM DEPARTMENT WHERE DEPTNO = 'D11';"
+      - "DELETE FROM DEPARTMENT;"
+      - "DELETE FROM EMPLOYEE WHERE LASTNAME NOT IN ( SELECT SALES_PERSON FROM SALES WHERE YEAR (SALES_DATE)=1995) AND JOB IN ('SALESREP','FIELDREP');"

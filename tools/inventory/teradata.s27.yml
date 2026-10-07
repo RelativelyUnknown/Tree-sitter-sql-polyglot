@@ -1,0 +1,158 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: rename_table
+    name: RENAME TABLE
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/Zl1FhsAaEyEGxC57dk3NSA
+    tier: medium
+    probes:
+      - id: to
+        sql: "RENAME TABLE t TO t2;"
+      - id: as
+        sql: "RENAME TABLE t AS t2;"
+      - id: qualified
+        sql: "RENAME TABLE db1.t TO db1.t2;"
+    examples:
+      - "RENAME TABLE emp TO employee;"
+
+  - id: drop_error_table
+    name: DROP ERROR TABLE
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/E4KuMcRRfq68EPcip_m8iQ
+    tier: medium
+    probes:
+      - id: for_data_table
+        sql: "DROP ERROR TABLE FOR t;"
+      - id: for_data_table_qualified
+        sql: "DROP ERROR TABLE FOR db1.t;"
+      - id: error_table_name
+        sql: "DROP ERROR TABLE db1.et_t;"
+
+  - id: help_column
+    name: HELP COLUMN
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/PYX~3rOhIfheZyIJciG6Aw
+    tier: medium
+    probes:
+      - id: column_from_table
+        sql: "HELP COLUMN c1, c2 FROM t;"
+      - id: all_columns_from_table
+        sql: "HELP COLUMN * FROM db1.t;"
+      - id: column_spec
+        sql: "HELP COLUMN t.c1;"
+      - id: expression
+        sql: "HELP COLUMN c1 + 1;"
+      - id: from_error_table_for
+        sql: "HELP COLUMN c1 FROM ERROR TABLE FOR db1.t;"
+      - id: from_error_table
+        sql: "HELP COLUMN c1 FROM db1.et_t;"
+    examples:
+      - "HELP COLUMN table_name.column_name;"
+
+  - id: help_table
+    name: HELP TABLE
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/gft41L1zSaxZC_M4BpJq4g
+    tier: medium
+    probes:
+      - id: basic
+        sql: "HELP TABLE t;"
+      - id: qualified
+        sql: "HELP TABLE db1.t;"
+      - id: layer
+        sql: "HELP TABLE db1.t LAYER (l1);"
+
+  - id: help_volatile_table
+    name: HELP VOLATILE TABLE
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/0ry0VV52iw1qzXmkJihvBg
+    tier: medium
+    probes:
+      - id: all
+        sql: "HELP VOLATILE TABLE;"
+      - id: named
+        sql: "HELP VOLATILE TABLE vt;"
+    examples:
+      - "HELP VOLATILE TABLE sales_temp;"
+
+  - id: show_table
+    name: SHOW TABLE
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/LTTsCDeeGJV9TStxlbrumw
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW TABLE t;"
+      - id: qualified
+        sql: "SHOW TABLE db1.t;"
+      - id: in_xml
+        sql: "SHOW IN XML TABLE t;"
+      - id: temporary
+        sql: "SHOW TEMPORARY TABLE t;"
+      - id: in_xml_temporary
+        sql: "SHOW IN XML TEMPORARY TABLE db1.t;"
+
+  - id: rename_view
+    name: RENAME VIEW
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/obAvh_MszyqiamsQZK2miA
+    tier: medium
+    probes:
+      - id: to
+        sql: "RENAME VIEW v TO v2;"
+      - id: as
+        sql: "RENAME VIEW v AS v2;"
+      - id: no_keyword
+        sql: "RENAME VIEW v v2;"
+      - id: qualified
+        sql: "RENAME VIEW db1.v TO db1.v2;"
+    examples:
+      - "RENAME VIEW staff_info TO staff_information;"
+
+  - id: help_view
+    name: HELP VIEW
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/1MJ_kdTop9muSaSnBcoPeQ
+    tier: medium
+    probes:
+      - id: basic
+        sql: "HELP VIEW v;"
+      - id: qualified
+        sql: "HELP VIEW db1.v;"
+
+  - id: create_hash_index
+    name: CREATE HASH INDEX
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/yC8BI8RK7TpPmZ47PKykkg
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE HASH INDEX hidx (c1, c2) ON t;"
+      - id: qualified
+        sql: "CREATE HASH INDEX db1.hidx (c1) ON db1.t;"
+      - id: by
+        sql: "CREATE HASH INDEX hidx (c1, c2) ON t BY (c1);"
+      - id: order_by_values
+        sql: "CREATE HASH INDEX hidx (c1, c2) ON t BY (c1) ORDER BY VALUES;"
+      - id: order_by_values_column
+        sql: "CREATE HASH INDEX hidx (c1, c2) ON t BY (c1) ORDER BY VALUES (c1);"
+      - id: order_by_hash
+        sql: "CREATE HASH INDEX hidx (c1, c2) ON t BY (c1) ORDER BY HASH (c1);"
+      - id: index_options
+        sql: "CREATE HASH INDEX hidx, NO FALLBACK, CHECKSUM = ON, BLOCKCOMPRESSION = AUTOTEMP (c1) ON t;"
+      - id: fallback_protection
+        sql: "CREATE HASH INDEX hidx, FALLBACK PROTECTION (c1) ON t;"
+    examples:
+      - |-
+        CREATE HASH INDEX ord_hidx_1 (o_orderdate) ON orders
+        BY (o_orderdate)
+        ORDER BY (o_orderdate);
+      - |-
+        CREATE HASH INDEX ord_hidx_2 (o_custkey) ON orders
+        BY (o_custkey)
+        ORDER BY HASH (o_custkey);
+
+  - id: drop_hash_index
+    name: DROP HASH INDEX
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/4Hbu2xWl_Cu4c5vVu9zpbQ
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP HASH INDEX hidx;"
+      - id: qualified
+        sql: "DROP HASH INDEX db1.hidx;"

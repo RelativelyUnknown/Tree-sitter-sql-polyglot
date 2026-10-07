@@ -1,0 +1,30 @@
+dialect: cockroachdb
+engine: CockroachDB
+version: "v26.3 (stable)"
+source: https://www.cockroachlabs.com/docs/stable/sql-statements
+
+statements:
+  - id: release_savepoint
+    name: RELEASE SAVEPOINT
+    doc: https://www.cockroachlabs.com/docs/stable/release-savepoint
+    tier: high
+    probes:
+      - { id: basic, sql: "RELEASE SAVEPOINT s;" }
+      - { id: without_savepoint_keyword, sql: "RELEASE s;" }
+      - { id: retry_savepoint, sql: "RELEASE SAVEPOINT cockroach_restart;" }
+    examples:
+      - "RELEASE SAVEPOINT higher;"
+      - "RELEASE SAVEPOINT cockroach_restart;"
+
+  - id: rollback_to_savepoint
+    name: ROLLBACK TO SAVEPOINT
+    doc: https://www.cockroachlabs.com/docs/stable/rollback-transaction#rollback-a-nested-transaction
+    tier: high
+    probes:
+      - { id: basic, sql: "ROLLBACK TO SAVEPOINT s;" }
+      - { id: without_savepoint_keyword, sql: "ROLLBACK TO s;" }
+      - { id: transaction_keyword, sql: "ROLLBACK TRANSACTION TO SAVEPOINT s;" }
+      - { id: retry_savepoint, sql: "ROLLBACK TO SAVEPOINT cockroach_restart;" }
+    examples:
+      - "ROLLBACK TO SAVEPOINT lower;"
+      - "ROLLBACK TO SAVEPOINT cockroach_restart;"

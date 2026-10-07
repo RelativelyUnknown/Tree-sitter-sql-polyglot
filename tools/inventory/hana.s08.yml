@@ -1,0 +1,106 @@
+dialect: hana
+engine: SAP HANA Platform
+version: "2.0 SPS 08 (2.0.08)"
+source: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/3bc1a0d4611d40c4a6e3fc7c8e80395d.html?version=2.0.08
+
+statements:
+  - id: do_begin_end
+    name: DO BEGIN...END
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/52103853351841f6a1e87f40b2686da9.html?version=2.0.08
+    tier: high
+    probes:
+      - id: basic
+        sql: "DO BEGIN SELECT 1 FROM DUMMY; END;"
+      - id: declare_type
+        sql: "DO BEGIN DECLARE i INTEGER; i = 1; END;"
+      - id: declare_type_default
+        sql: "DO BEGIN DECLARE i INTEGER DEFAULT 1; END;"
+      - id: declare_table
+        sql: "DO BEGIN DECLARE t TABLE (a INT, b VARCHAR(10)); END;"
+      - id: declare_table_search_key
+        sql: "DO BEGIN DECLARE t TABLE (a INT, b INT, SEARCH KEY (a)); END;"
+      - id: declare_auto
+        sql: "DO BEGIN DECLARE i AUTO = 1; END;"
+      - id: declare_auto_assign
+        sql: "DO BEGIN DECLARE i AUTO := 1; END;"
+      - id: declare_multiple
+        sql: "DO BEGIN DECLARE i INTEGER; DECLARE j INTEGER; i = 1; j = 2; END;"
+      - id: block_sequential
+        sql: "DO BEGIN SEQUENTIAL EXECUTION SELECT 1 FROM DUMMY; END;"
+      - id: block_parallel
+        sql: "DO BEGIN PARALLEL EXECUTION SELECT 1 FROM DUMMY; END;"
+      - id: block_autonomous
+        sql: "DO BEGIN AUTONOMOUS TRANSACTION INSERT INTO t VALUES (1); END;"
+      - id: named_parameters
+        sql: "DO (IN a INT => 1, OUT c INT => ?) BEGIN c = :a + 1; END;"
+      - id: bound_parameters
+        sql: "DO (IN a INT => 1, IN b INT => ?, OUT c INT => ?) BEGIN c = :a + :b; END;"
+      - id: bound_parameter_table
+        sql: "DO (IN t TABLE (i INT) => t1, OUT r TABLE (i INT) => ?) BEGIN r = SELECT i FROM :t; END;"
+      - id: table_variable_assignment
+        sql: "DO BEGIN t1 = SELECT i, 10 AS j FROM tab; SELECT * FROM :t1; END;"
+      - id: for_loop
+        sql: "DO BEGIN DECLARE i INTEGER; FOR i IN 1..10 DO INSERT INTO tab1 VALUES (:i); END FOR; END;"
+      - id: if_block
+        sql: "DO BEGIN DECLARE j INTEGER = 1; IF :j <> 3 THEN SIGNAL SQL_ERROR_CODE 10001; END IF; END;"
+      - id: exception_handler
+        sql: "DO BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION RESIGNAL; DELETE FROM tab; END;"
+      - id: call_procedure
+        sql: "DO BEGIN t1 = SELECT * FROM tab; CALL proc3(:t1, t2); SELECT * FROM :t2; END;"
+      - id: commit_rollback
+        sql: "DO BEGIN CREATE ROW TABLE tab2 (k INT); COMMIT; DROP TABLE tab; ROLLBACK; DELETE FROM tab; END;"
+    examples:
+      - |-
+        DO
+        BEGIN
+         DECLARE I INTEGER;
+         CREATE ROW TABLE TAB1 (I INTEGER);
+         FOR I IN 1..10 DO
+         INSERT INTO TAB1 VALUES (:I);
+         END FOR;
+        END;
+      - |-
+        DO
+        BEGIN
+         T1 = SELECT I, 10 AS J FROM TAB;
+         T2 = SELECT I, 20 AS K FROM TAB;
+         T3 = SELECT J, K FROM :T1, :T2 WHERE :T1.I = :T2.I;
+         SELECT * FROM :T3;
+        END;
+      - |-
+        DO
+        BEGIN
+         DECLARE I, J INTEGER;
+         BEGIN
+         DECLARE EXIT HANDLER FOR SQLEXCEPTION
+         IF ::SQL_ERROR_CODE = 288 THEN
+         DROP TABLE TAB;
+         CREATE ROW TABLE TAB (I INTEGER PRIMARY KEY);
+         ELSE
+         RESIGNAL;
+         END IF;
+         CREATE ROW TABLE TAB (I INTEGER PRIMARY KEY);
+         END;
+         FOR I in 1..3 DO
+         INSERT INTO TAB VALUES (:I);
+         END FOR;
+         IF :J <> 3 THEN
+         SIGNAL SQL_ERROR_CODE 10001;
+         END IF;
+        END;
+
+  - id: drop_function
+    name: DROP FUNCTION
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d6852375191014a6e2f134db8fc8cb.html?version=2.0.08
+    tier: high
+    probes:
+      - id: basic
+        sql: "DROP FUNCTION f;"
+      - id: schema_qualified
+        sql: "DROP FUNCTION s.f;"
+      - id: cascade
+        sql: "DROP FUNCTION f CASCADE;"
+      - id: restrict
+        sql: "DROP FUNCTION f RESTRICT;"
+    examples:
+      - "DROP FUNCTION my_func;"

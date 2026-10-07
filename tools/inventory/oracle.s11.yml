@@ -1,0 +1,43 @@
+dialect: oracle
+engine: Oracle AI Database
+version: "26ai"
+source: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/toc.htm
+
+statements:
+  - id: noaudit_traditional
+    name: NOAUDIT (Traditional Auditing)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/NOAUDIT-Traditional-Auditing.html
+    tier: low
+    probes:
+      - id: statement_option
+        sql: "NOAUDIT ROLE;"
+      - id: schema_object
+        sql: "NOAUDIT SELECT ON hr.employees WHENEVER SUCCESSFUL;"
+
+  - id: noaudit_unified
+    name: NOAUDIT (Unified Auditing)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/NOAUDIT-Unified-Auditing.html
+    tier: low
+    probes:
+      - id: policy_by_user
+        sql: "NOAUDIT POLICY dml_pol BY hr;"
+      - id: context
+        sql: "NOAUDIT CONTEXT NAMESPACE userenv ATTRIBUTES current_user;"
+
+  - id: set_use_data_grants_only
+    name: SET USE DATA GRANTS ONLY
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/set-use-data-grants-only.html
+    tier: low
+    probes:
+      - id: enabled
+        sql: "SET USE DATA GRANTS ONLY ON hr.employees ENABLED;"
+      - id: disabled
+        sql: "SET USE DATA GRANTS ONLY ON hr.employees DISABLED;"
+
+  - id: update_end_user_context
+    name: UPDATE END USER CONTEXT
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/update-end-user-context.html
+    tier: low
+    probes:
+      - id: set_attribute
+        sql: "UPDATE END_USER_CONTEXT t SET t.CONTEXT.emp_id = 3 WHERE owner = 'HR' AND name = 'HCM';"

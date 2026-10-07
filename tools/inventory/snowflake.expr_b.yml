@@ -1,0 +1,666 @@
+dialect: snowflake
+engine: Snowflake
+version: "current (docs read 2026-10-04)"
+source: https://docs.snowflake.com/en/sql-reference/sql-all
+
+statements: []
+
+expressions:
+  - id: b_arithmetic_operators
+    name: "Arithmetic operators"
+    doc: https://docs.snowflake.com/en/sql-reference/operators-arithmetic
+    tier: high
+    probes:
+      - id: add
+        sql: "SELECT a + b FROM t;"
+      - id: subtract
+        sql: "SELECT a - b FROM t;"
+      - id: multiply
+        sql: "SELECT a * b FROM t;"
+      - id: divide
+        sql: "SELECT a / b FROM t;"
+      - id: modulo
+        sql: "SELECT a % b FROM t;"
+      - id: unary_minus
+        sql: "SELECT -a FROM t;"
+      - id: unary_plus
+        sql: "SELECT +a FROM t;"
+      - id: date_subtract
+        sql: "SELECT d1 - d2 FROM t;"
+      - id: precedence
+        sql: "SELECT (a + b) * c - d / e % f FROM t;"
+    examples:
+      - "SELECT 10.01 n1, 1.1 n2, n1 * n2;"
+      - "SELECT 2 n1, 7 n2, n1 / n2;"
+      - "SELECT 10.1 n1, 2.1 n2, n1 / n2;"
+
+  - id: b_comparison_operators
+    name: "Comparison operators"
+    doc: https://docs.snowflake.com/en/sql-reference/operators-comparison
+    tier: high
+    probes:
+      - id: equal
+        sql: "SELECT * FROM t WHERE a = b;"
+      - id: not_equal_bang
+        sql: "SELECT * FROM t WHERE a != b;"
+      - id: not_equal_angle
+        sql: "SELECT * FROM t WHERE a <> b;"
+      - id: less
+        sql: "SELECT * FROM t WHERE a < b;"
+      - id: less_equal
+        sql: "SELECT * FROM t WHERE a <= b;"
+      - id: greater
+        sql: "SELECT * FROM t WHERE a > b;"
+      - id: greater_equal
+        sql: "SELECT * FROM t WHERE a >= b;"
+
+  - id: b_logical_operators
+    name: "Logical operators"
+    doc: https://docs.snowflake.com/en/sql-reference/operators-logical
+    tier: high
+    probes:
+      - id: and
+        sql: "SELECT * FROM t WHERE a > 20 AND b = 1;"
+      - id: or
+        sql: "SELECT * FROM t WHERE a > 20 OR b = 1;"
+      - id: not
+        sql: "SELECT * FROM t WHERE NOT a > 20;"
+      - id: precedence
+        sql: "SELECT * FROM t WHERE b = 1 OR a = 8 AND c = 2;"
+      - id: parenthesized
+        sql: "SELECT * FROM t WHERE (b = 1 OR a = 8) AND c = 2;"
+      - id: not_and
+        sql: "SELECT * FROM t WHERE NOT (a = 15 AND b = 1);"
+    examples:
+      - |-
+        SELECT *
+          FROM logical_test1
+          WHERE a > 20 AND
+                b = 'Down';
+      - |-
+        SELECT *
+          FROM logical_test1
+          WHERE a > 20 OR
+                b = 'Down';
+      - |-
+        SELECT *
+          FROM logical_test1
+          WHERE (b = 'Down' OR a = 8) AND b = 'Up';
+
+  - id: b_concat_operator
+    name: "String concatenation operator ||"
+    doc: https://docs.snowflake.com/en/sql-reference/functions/concat
+    tier: high
+    probes:
+      - id: two
+        sql: "SELECT a || b FROM t;"
+      - id: chain
+        sql: "SELECT 'x' || a || 'y' || b FROM t;"
+    examples:
+      - "SELECT 'This ' || 'is ' || 'another ' || 'concatenation ' || 'technique.';"
+
+  - id: b_collate_operator
+    name: "COLLATE (infix)"
+    doc: https://docs.snowflake.com/en/sql-reference/functions/collate
+    tier: medium
+    probes:
+      - id: infix
+        sql: "SELECT a COLLATE 'en-ci' FROM t;"
+      - id: infix_order_by
+        sql: "SELECT a FROM t ORDER BY a COLLATE 'utf8';"
+      - id: function
+        sql: "SELECT COLLATE(a, 'es-ci') FROM t;"
+    examples:
+      - |-
+        SELECT spanish_phrase FROM collation_demo 
+          ORDER BY spanish_phrase COLLATE 'utf8';
+
+  - id: b_set_operators
+    name: "Set operators (UNION, INTERSECT, MINUS, EXCEPT)"
+    doc: https://docs.snowflake.com/en/sql-reference/operators-query
+    tier: high
+    probes:
+      - id: union
+        sql: "SELECT a FROM t1 UNION SELECT a FROM t2;"
+      - id: union_distinct
+        sql: "SELECT a FROM t1 UNION DISTINCT SELECT a FROM t2;"
+      - id: union_all
+        sql: "SELECT a FROM t1 UNION ALL SELECT a FROM t2;"
+      - id: union_by_name
+        sql: "SELECT a, b FROM t1 UNION BY NAME SELECT b, a FROM t2;"
+      - id: union_all_by_name
+        sql: "SELECT a, b FROM t1 UNION ALL BY NAME SELECT b, a FROM t2;"
+      - id: intersect
+        sql: "SELECT a FROM t1 INTERSECT SELECT a FROM t2;"
+      - id: minus
+        sql: "SELECT a FROM t1 MINUS SELECT a FROM t2;"
+      - id: except
+        sql: "SELECT a FROM t1 EXCEPT SELECT a FROM t2;"
+      - id: parenthesized
+        sql: "(SELECT a FROM t1) UNION ALL (SELECT a FROM t2);"
+      - id: chained_with_order_by
+        sql: "SELECT a FROM t1 UNION SELECT a FROM t2 INTERSECT SELECT a FROM t3 ORDER BY a;"
+    examples:
+      - |-
+        SELECT * FROM table1
+        UNION ALL
+        SELECT * FROM table2;
+      - |-
+        SELECT postal_code FROM sales_office_postal_example
+        INTERSECT
+        SELECT postal_code FROM customer_postal_example
+        ORDER BY postal_code;
+      - |-
+        SELECT postal_code FROM sales_office_postal_example
+        MINUS
+        SELECT postal_code FROM customer_postal_example
+        ORDER BY postal_code;
+
+  - id: b_spread_operator
+    name: "Spread operator (**)"
+    doc: https://docs.snowflake.com/en/sql-reference/operators-expansion
+    tier: medium
+    probes:
+      - id: in_list
+        sql: "SELECT * FROM t WHERE c IN (** [3, 4]);"
+      - id: in_list_mixed
+        sql: "SELECT * FROM t WHERE c IN (** [1, 2], 4, 5);"
+      - id: function_args
+        sql: "SELECT COALESCE(** [NULL, NULL, 'a', 'b']) AS first_non_null;"
+      - id: greatest
+        sql: "SELECT GREATEST(** [1, 2, 5, 4, 5]) AS greatest_value;"
+    examples:
+      - |-
+        SELECT * FROM spread_demo
+          WHERE col1 IN (** [3, 4])
+          ORDER BY col1;
+      - |-
+        SELECT * FROM spread_demo
+          WHERE col1 IN (** [1, 2], 4, 5)
+          ORDER BY col1;
+      - "SELECT GREATEST(** [1, 2, 5, 4, 5]) AS greatest_value;"
+
+  - id: b_pipe_operator
+    name: "Pipe operator (->>)"
+    doc: https://docs.snowflake.com/en/sql-reference/operators-flow
+    tier: medium
+    probes:
+      - id: select_chain
+        sql: "SELECT 1 ->> SELECT $1 FROM $1;"
+      - id: show_then_select
+        sql: "SHOW WAREHOUSES ->> SELECT \"name\", \"state\" FROM $1;"
+      - id: three_statements
+        sql: "SELECT 1 ->> SELECT 2 ->> SELECT * FROM $2;"
+      - id: dml_chain
+        sql: "INSERT INTO t VALUES (1, 2) ->> SELECT * FROM t;"
+    examples:
+      - |-
+        SHOW WAREHOUSES
+          ->> SELECT "name", "state", "type", "size" FROM $1;
+      - |-
+        SELECT * FROM dept_pipe_demo WHERE dname = 'SALES'
+          ->> SELECT * FROM emp_pipe_demo WHERE sal > 1500 AND deptno IN (SELECT deptno FROM $1)
+          ->> SELECT ename, sal FROM $1 ORDER BY 2 DESC;
+
+  - id: b_like
+    name: "LIKE and ILIKE predicates"
+    doc: https://docs.snowflake.com/en/sql-reference/functions/like
+    tier: high
+    probes:
+      - id: like
+        sql: "SELECT * FROM t WHERE name LIKE '%Jo%oe%';"
+      - id: not_like
+        sql: "SELECT * FROM t WHERE name NOT LIKE 'John%';"
+      - id: like_escape
+        sql: "SELECT * FROM t WHERE name LIKE '%J%h%^_do%' ESCAPE '^';"
+      - id: not_like_escape
+        sql: "SELECT * FROM t WHERE name NOT LIKE '100^%' ESCAPE '^';"
+      - id: like_function
+        sql: "SELECT LIKE(name, '%Jo%oe%') FROM t;"
+      - id: like_function_escape
+        sql: "SELECT LIKE(name, '%J%h%^_do%', '^') FROM t;"
+      - id: ilike
+        sql: "SELECT * FROM t WHERE name ILIKE '%j%h%do%';"
+      - id: not_ilike
+        sql: "SELECT * FROM t WHERE name NOT ILIKE '%j%h%do%';"
+      - id: ilike_escape
+        sql: "SELECT * FROM t WHERE name ILIKE '%j%h%^_do%' ESCAPE '^';"
+      - id: ilike_function
+        sql: "SELECT ILIKE(name, '%j%h%do%') FROM t;"
+      - id: ilike_function_escape
+        sql: "SELECT ILIKE(name, '%j%h%^_do%', '^') FROM t;"
+    examples:
+      - |-
+        SELECT name
+          FROM like_ex
+          WHERE name LIKE '%Jo%oe%'
+          ORDER BY name;
+      - |-
+        SELECT name
+          FROM like_ex
+          WHERE name LIKE '%J%h%^_do%' ESCAPE '^'
+          ORDER BY name;
+      - "SELECT * FROM ilike_ex WHERE name ILIKE '%j%h%do%' ORDER BY 1;"
+
+  - id: b_like_any_all
+    name: "LIKE / ILIKE ANY and ALL"
+    doc: https://docs.snowflake.com/en/sql-reference/functions/like_any
+    tier: high
+    probes:
+      - id: like_any
+        sql: "SELECT * FROM t WHERE name LIKE ANY ('%Jo%oe%', 'T%e');"
+      - id: like_any_escape
+        sql: "SELECT * FROM t WHERE name LIKE ANY ('%J%h%^_do%', 'T%^%e') ESCAPE '^';"
+      - id: like_any_subquery
+        sql: "SELECT * FROM t WHERE x LIKE ANY (SELECT p FROM pats);"
+      - id: like_all
+        sql: "SELECT * FROM t WHERE name LIKE ALL ('%Jo%oe%', 'J%e');"
+      - id: like_all_escape
+        sql: "SELECT * FROM t WHERE name LIKE ALL ('%J%h%^_do%', 'J%^%wn') ESCAPE '^';"
+      - id: ilike_any
+        sql: "SELECT * FROM t WHERE name ILIKE ANY ('jane%', '%SMITH');"
+      - id: ilike_any_subquery
+        sql: "SELECT * FROM t WHERE x ILIKE ANY (SELECT p FROM pats);"
+      - id: ilike_all
+        sql: "SELECT * FROM t WHERE name ILIKE ALL ('jane%', '%doe');"
+      - id: not_like_any
+        sql: "SELECT * FROM t WHERE NOT name LIKE ANY ('%Jo%oe%', 'T%e');"
+    examples:
+      - |-
+        SELECT *
+          FROM like_example
+          WHERE name LIKE ANY ('%Jo%oe%','T%e')
+          ORDER BY name;
+      - |-
+        SELECT *
+          FROM like_all_example
+          WHERE name LIKE ALL ('%Jo%oe%','J%e')
+          ORDER BY name;
+      - |-
+        SELECT *
+          FROM ilike_example
+          WHERE name ILIKE ANY ('jane%', '%SMITH')
+          ORDER BY name;
+
+  - id: b_regex_predicates
+    name: "RLIKE, REGEXP and REGEXP_LIKE"
+    doc: https://docs.snowflake.com/en/sql-reference/functions/rlike
+    tier: high
+    probes:
+      - id: rlike_operator
+        sql: "SELECT * FROM t WHERE city RLIKE 'San.*';"
+      - id: not_rlike
+        sql: "SELECT * FROM t WHERE city NOT RLIKE 'San.*';"
+      - id: rlike_function
+        sql: "SELECT * FROM t WHERE RLIKE(city, 'san.*', 'i');"
+      - id: not_rlike_function
+        sql: "SELECT * FROM t WHERE NOT RLIKE(city, 'san.*', 'i');"
+      - id: regexp_operator
+        sql: "SELECT * FROM t WHERE v REGEXP 'San* [fF].*';"
+      - id: not_regexp
+        sql: "SELECT * FROM t WHERE v NOT REGEXP 'San* [fF].*';"
+      - id: regexp_like_function
+        sql: "SELECT * FROM t WHERE REGEXP_LIKE(city, '.*fran.*', 'i');"
+      - id: rlike_dollar_quoted
+        sql: "SELECT RLIKE('800-456-7891', $$[2-9]\\d{2}-\\d{3}-\\d{4}$$) AS matches_phone_number;"
+    examples:
+      - "SELECT * FROM rlike_ex WHERE RLIKE(city, 'san.*', 'i');"
+      - "SELECT v FROM strings WHERE v REGEXP 'San* [fF].*' ORDER BY v;"
+
+  - id: b_between
+    name: "BETWEEN predicate"
+    doc: https://docs.snowflake.com/en/sql-reference/functions/between
+    tier: high
+    probes:
+      - id: between
+        sql: "SELECT * FROM t WHERE a BETWEEN 1 AND 10;"
+      - id: not_between
+        sql: "SELECT * FROM t WHERE a NOT BETWEEN 1 AND 10;"
+      - id: between_expressions
+        sql: "SELECT * FROM t WHERE a + 1 BETWEEN b * 2 AND c - 1;"
+      - id: between_strings
+        sql: "SELECT * FROM t WHERE s BETWEEN 'that' AND 'then';"
+      - id: between_collate
+        sql: "SELECT 'm' BETWEEN COLLATE('A', 'lower') AND COLLATE('Z', 'lower');"
+      - id: between_in_and
+        sql: "SELECT * FROM t WHERE a BETWEEN 1 AND 10 AND b = 2;"
+    examples:
+      - "SELECT 'true' WHERE 1 BETWEEN 0 AND 10;"
+      - "SELECT 'true' WHERE 1.35 BETWEEN 1 AND 2;"
+      - "SELECT 'true' WHERE 'the' BETWEEN 'that' AND 'then';"
+
+  - id: b_in_list
+    name: "IN predicate (value lists and row constructors)"
+    doc: https://docs.snowflake.com/en/sql-reference/functions/in
+    tier: high
+    probes:
+      - id: in_list
+        sql: "SELECT * FROM t WHERE a IN (1, 2, 3);"
+      - id: not_in_list
+        sql: "SELECT * FROM t WHERE a NOT IN (1, 2, 3);"
+      - id: in_single_paren
+        sql: "SELECT * FROM t WHERE (a) IN (1, 10, 100);"
+      - id: in_row_constructor
+        sql: "SELECT * FROM t WHERE (a, b, c) IN ((1, 2, 3), (4, 5, 6));"
+      - id: in_null
+        sql: "SELECT NULL IN (1, 2, NULL) AS result;"
+      - id: in_select_item
+        sql: "SELECT 1 IN (1, 2, 3) AS result;"
+      - id: in_spread
+        sql: "SELECT * FROM t WHERE a IN (** [1, 2], 4);"
+      - id: in_subquery
+        sql: "SELECT * FROM t WHERE a IN (SELECT b FROM u);"
+      - id: not_in_subquery
+        sql: "SELECT * FROM t WHERE a NOT IN (SELECT b FROM u);"
+      - id: in_row_subquery
+        sql: "SELECT (1, 2, 3) IN (SELECT a, b, c FROM t) AS result;"
+    examples:
+      - "SELECT 1 IN (1, 2, 3) AS RESULT;"
+      - "SELECT 4 NOT IN (1, 2, 3) AS RESULT;"
+      - |-
+        SELECT col_1, col_2, col_3
+          FROM in_function_demo
+          WHERE (col_1, col_2, col_3) IN (
+            (1,2,3),
+            (4,5,6));
+
+  - id: b_is_null
+    name: "IS [NOT] NULL predicate"
+    doc: https://docs.snowflake.com/en/sql-reference/functions/is-null
+    tier: high
+    probes:
+      - id: is_null
+        sql: "SELECT * FROM t WHERE c IS NULL;"
+      - id: is_not_null
+        sql: "SELECT * FROM t WHERE c IS NOT NULL;"
+      - id: combined
+        sql: "SELECT * FROM t WHERE a IS NOT NULL AND b IS NULL;"
+    examples:
+      - "SELECT * FROM test_is_not_null WHERE col1 IS NOT NULL ORDER BY id;"
+      - "SELECT * FROM test_is_not_null WHERE col2 IS NULL ORDER BY id;"
+
+  - id: b_is_distinct_from
+    name: "IS [NOT] DISTINCT FROM predicate"
+    doc: https://docs.snowflake.com/en/sql-reference/functions/is-distinct-from
+    tier: high
+    probes:
+      - id: is_distinct_from
+        sql: "SELECT * FROM t WHERE a IS DISTINCT FROM b;"
+      - id: is_not_distinct_from
+        sql: "SELECT * FROM t WHERE a IS NOT DISTINCT FROM b;"
+      - id: join_condition
+        sql: "SELECT * FROM t1 JOIN t2 ON t1.a IS NOT DISTINCT FROM t2.a;"
+    examples:
+      - |-
+        SELECT x1.i x1_i, x2.i x2_i
+            FROM x x1, x x2
+            WHERE x1.i IS NOT DISTINCT FROM x2.i
+            ORDER BY x1.i;
+
+  - id: b_exists_predicate
+    name: "[NOT] EXISTS predicate"
+    doc: https://docs.snowflake.com/en/sql-reference/operators-subquery
+    tier: high
+    probes:
+      - id: exists
+        sql: "SELECT * FROM t WHERE EXISTS (SELECT 1 FROM u);"
+      - id: not_exists
+        sql: "SELECT * FROM t WHERE NOT EXISTS (SELECT 1 FROM u WHERE u.id = t.id);"
+      - id: exists_in_having
+        sql: "SELECT a, COUNT(*) FROM t GROUP BY a HAVING EXISTS (SELECT 1 FROM u WHERE u.a = t.a);"
+      - id: exists_select_item
+        sql: "SELECT EXISTS (SELECT 1 FROM t) AS has_rows;"
+    examples:
+      - |-
+        SELECT department_id
+          FROM departments d
+          WHERE NOT EXISTS (
+            SELECT 1
+              FROM employees e
+              WHERE e.department_id = d.department_id);
+
+  - id: b_any_all_subquery
+    name: "Comparison with ANY / ALL subquery"
+    doc: https://docs.snowflake.com/en/sql-reference/operators-subquery
+    tier: high
+    probes:
+      - id: eq_any
+        sql: "SELECT * FROM t WHERE a = ANY (SELECT b FROM u);"
+      - id: ne_all
+        sql: "SELECT * FROM t WHERE a != ALL (SELECT b FROM u);"
+      - id: gt_all
+        sql: "SELECT * FROM t WHERE a > ALL (SELECT b FROM u);"
+      - id: ge_any
+        sql: "SELECT * FROM t WHERE a >= ANY (SELECT b FROM u);"
+      - id: lt_any
+        sql: "SELECT * FROM t WHERE a < ANY (SELECT b FROM u);"
+      - id: le_all
+        sql: "SELECT * FROM t WHERE a <= ALL (SELECT b FROM u);"
+    examples:
+      - |-
+        SELECT department_id
+          FROM departments d
+          WHERE d.department_id != ALL (
+            SELECT e.department_id
+              FROM employees e);
+
+  - id: b_scalar_subquery
+    name: "Scalar and IN subqueries in expressions"
+    doc: https://docs.snowflake.com/en/sql-reference/operators-subquery
+    tier: medium
+    probes:
+      - id: not_in_subquery_where
+        sql: "SELECT a FROM t WHERE a NOT IN (SELECT b FROM u);"
+      - id: scalar_subquery_select
+        sql: "SELECT (SELECT MAX(b) FROM u) AS m FROM t;"
+      - id: scalar_subquery_compare
+        sql: "SELECT * FROM t WHERE a = (SELECT MAX(b) FROM u);"
+    examples:
+      - |-
+        SELECT department_id
+          FROM departments d
+          WHERE d.department_id NOT IN (
+            SELECT e.department_id
+              FROM employees e);
+
+  - id: b_case
+    name: "CASE expression"
+    doc: https://docs.snowflake.com/en/sql-reference/functions/case
+    tier: high
+    probes:
+      - id: searched
+        sql: "SELECT CASE WHEN c = 1 THEN 'one' WHEN c = 2 THEN 'two' ELSE 'other' END AS r FROM t;"
+      - id: searched_no_else
+        sql: "SELECT CASE WHEN c = 1 THEN 'one' WHEN c = 2 THEN 'two' END AS r FROM t;"
+      - id: simple
+        sql: "SELECT CASE c WHEN 1 THEN 'one' WHEN 2 THEN 'two' ELSE 'other' END AS r FROM t;"
+      - id: simple_no_else
+        sql: "SELECT CASE c WHEN 1 THEN 'one' END FROM t;"
+      - id: searched_is_null
+        sql: "SELECT CASE WHEN c IS NULL THEN 'NULL' ELSE 'other' END FROM t;"
+      - id: nested
+        sql: "SELECT CASE WHEN a > 0 THEN CASE WHEN b > 0 THEN 'pp' ELSE 'pn' END ELSE 'n' END FROM t;"
+      - id: in_where
+        sql: "SELECT * FROM t WHERE CASE WHEN a > 0 THEN b ELSE c END = 1;"
+      - id: in_order_by
+        sql: "SELECT * FROM t ORDER BY CASE WHEN a IS NULL THEN 1 ELSE 0 END, a;"
+      - id: simple_collate
+        sql: "SELECT CASE COLLATE('m', 'upper') WHEN 'M' THEN TRUE ELSE FALSE END;"
+      - id: simple_with_subquery
+        sql: "SELECT CASE (SELECT MAX(a) FROM u) WHEN 1 THEN 10 ELSE 20 END FROM t;"
+    examples:
+      - |-
+        SELECT
+            column1,
+            CASE
+                WHEN column1=1 THEN 'one'
+                WHEN column1=2 THEN 'two'
+                ELSE 'other'
+            END AS result
+        FROM (values(1),(2),(3)) v;
+      - |-
+        SELECT
+            column1,
+            CASE
+                WHEN column1=1 THEN 'one'
+                WHEN column1=2 THEN 'two'
+            END AS result
+        FROM (values(1),(2),(3)) v;
+      - |-
+        SELECT CASE COLLATE('m', 'upper')
+            WHEN 'M' THEN TRUE
+            ELSE FALSE
+        END;
+
+  - id: b_extract
+    name: "EXTRACT"
+    doc: https://docs.snowflake.com/en/sql-reference/functions/extract
+    tier: high
+    probes:
+      - id: from_unquoted_part
+        sql: "SELECT EXTRACT(year FROM ts) FROM t;"
+      - id: from_string_part
+        sql: "SELECT EXTRACT('month' FROM ts) FROM t;"
+      - id: comma_form
+        sql: "SELECT EXTRACT(day, ts) FROM t;"
+      - id: from_expression
+        sql: "SELECT EXTRACT(year FROM TO_TIMESTAMP('2024-04-10T23:39:20.123-07:00')) AS year;"
+      - id: dayofweek
+        sql: "SELECT EXTRACT(dayofweek FROM SYSTIMESTAMP()) FROM t;"
+      - id: epoch_second
+        sql: "SELECT EXTRACT(epoch_second FROM ts) FROM t;"
+    examples:
+      - "SELECT EXTRACT(year FROM TO_TIMESTAMP('2024-04-10T23:39:20.123-07:00')) AS YEAR;"
+      - |-
+        SELECT DECODE(EXTRACT(dayofweek FROM SYSTIMESTAMP()),
+          1, 'Monday',
+          2, 'Tuesday',
+          3, 'Wednesday',
+          4, 'Thursday',
+          5, 'Friday',
+          6, 'Saturday',
+          7, 'Sunday') AS DAYOFWEEK;
+
+  - id: b_position
+    name: "POSITION"
+    doc: https://docs.snowflake.com/en/sql-reference/functions/position
+    tier: high
+    probes:
+      - id: comma_form
+        sql: "SELECT POSITION('an', 'banana');"
+      - id: comma_form_start
+        sql: "SELECT POSITION('an', 'banana', 3);"
+      - id: in_form
+        sql: "SELECT POSITION(n IN h) FROM t;"
+      - id: in_form_literals
+        sql: "SELECT POSITION('an' IN 'banana');"
+      - id: binary
+        sql: "SELECT POSITION(X'EF', X'ABCDEF');"
+    examples:
+      - "SELECT POSITION('an', 'banana', 1);"
+      - "SELECT POSITION('an', 'banana', 3);"
+      - "SELECT n, h, POSITION(n IN h) FROM pos;"
+
+  - id: b_substr
+    name: "SUBSTR / SUBSTRING"
+    doc: https://docs.snowflake.com/en/sql-reference/functions/substr
+    tier: high
+    probes:
+      - id: substr_two_args
+        sql: "SELECT SUBSTR(s, 5) FROM t;"
+      - id: substr_three_args
+        sql: "SELECT SUBSTR(s, 1, 3) FROM t;"
+      - id: substring_two_args
+        sql: "SELECT SUBSTRING(s, 5) FROM t;"
+      - id: substring_three_args
+        sql: "SELECT SUBSTRING(s, 1, 3) FROM t;"
+      - id: substr_position
+        sql: "SELECT SUBSTR(e, POSITION('@' IN e) + 1) AS domain FROM t;"
+    examples:
+      - "SELECT SUBSTR('testing 1 2 3', 9, 3);"
+      - |-
+        SELECT cust_id,
+               cust_phone,
+               SUBSTR(cust_phone, 1, 3) AS area_code
+          FROM customer_contact_example;
+
+  - id: b_trim
+    name: "TRIM"
+    doc: https://docs.snowflake.com/en/sql-reference/functions/trim
+    tier: high
+    probes:
+      - id: trim_default
+        sql: "SELECT TRIM(s) FROM t;"
+      - id: trim_characters
+        sql: "SELECT TRIM('*-*ABC-*-', '*-');"
+    examples:
+      - |-
+        SELECT '*-*ABC-*-' AS original,
+               TRIM('*-*ABC-*-', '*-') AS trimmed;
+
+  - id: b_cast
+    name: "CAST and :: cast"
+    doc: https://docs.snowflake.com/en/sql-reference/functions/cast
+    tier: high
+    probes:
+      - id: cast_as_type
+        sql: "SELECT CAST(a AS VARCHAR) FROM t;"
+      - id: cast_precision_scale
+        sql: "SELECT CAST(a AS NUMBER(5, 2)) FROM t;"
+      - id: cast_varchar_length
+        sql: "SELECT CAST(a AS VARCHAR(9)) FROM t;"
+      - id: cast_timestamp
+        sql: "SELECT CAST(ts AS DATE) FROM t;"
+      - id: double_colon
+        sql: "SELECT a::NUMBER(6, 5) FROM t;"
+      - id: double_colon_chain
+        sql: "SELECT '2024-05-09'::DATE::VARCHAR FROM t;"
+      - id: cast_rename_fields
+        sql: "SELECT CAST(o AS OBJECT(x INT, y INT) RENAME FIELDS) FROM t;"
+      - id: cast_add_fields
+        sql: "SELECT CAST(o AS OBJECT(x INT, y INT, z INT) ADD FIELDS) FROM t;"
+      - id: cast_in_where
+        sql: "SELECT * FROM t WHERE d > '2025-04-15'::DATE;"
+    examples:
+      - |-
+        SELECT CAST(varchar_value AS NUMBER(5,2)) AS varchar_to_number1,
+               SYSTEM$TYPEOF(varchar_to_number1) AS data_type
+          FROM test_data_type_conversion;
+      - |-
+        SELECT varchar_value::NUMBER(6,5) AS varchar_to_number2,
+               SYSTEM$TYPEOF(varchar_to_number2) AS data_type
+          FROM test_data_type_conversion;
+
+  - id: b_try_cast
+    name: "TRY_CAST"
+    doc: https://docs.snowflake.com/en/sql-reference/functions/try_cast
+    tier: medium
+    probes:
+      - id: try_cast_timestamp
+        sql: "SELECT TRY_CAST('05-Mar-2016' AS TIMESTAMP);"
+      - id: try_cast_char_length
+        sql: "SELECT TRY_CAST('ABCD' AS CHAR(2));"
+      - id: try_cast_varchar_length
+        sql: "SELECT TRY_CAST('ABCD' AS VARCHAR(10));"
+    examples:
+      - "SELECT TRY_CAST('05-Mar-2016' AS TIMESTAMP);"
+      - "SELECT TRY_CAST('ABCD' AS VARCHAR(10));"
+
+  - id: b_format_conversion
+    name: "Format-string conversion functions (no CAST ... FORMAT)"
+    doc: https://docs.snowflake.com/en/sql-reference/functions/to_char
+    tier: medium
+    probes:
+      - id: to_varchar_format
+        sql: "SELECT TO_VARCHAR(ts, 'mm/dd/yyyy, hh24:mi hours') FROM t;"
+      - id: to_char_format
+        sql: "SELECT TO_CHAR(d, 'yyyy.mm.dd') FROM t;"
+      - id: to_date_format
+        sql: "SELECT TO_DATE('2024.05.10', 'YYYY.MM.DD');"
+      - id: date_format
+        sql: "SELECT DATE('05/10/2024', 'MM/DD/YYYY');"
+      - id: cast_then_format
+        sql: "SELECT TO_VARCHAR('2024-04-05 01:02:03'::TIMESTAMP, 'mm/dd/yyyy, hh24:mi hours');"
+    examples:
+      - "SELECT TO_VARCHAR('2024-04-05 01:02:03'::TIMESTAMP, 'mm/dd/yyyy, hh24:mi hours');"
+      - "SELECT TO_DATE('2024.05.10', 'YYYY.MM.DD'), DATE('2024.05.10', 'YYYY.MM.DD');"

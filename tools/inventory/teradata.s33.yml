@@ -1,0 +1,142 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: rename_trigger
+    name: RENAME TRIGGER
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/GangbZoW0AqLk0Czh1x_mQ
+    tier: medium
+    probes:
+      - { id: to, sql: "RENAME TRIGGER old_trg TO new_trg;" }
+      - { id: as, sql: "RENAME TRIGGER old_trg AS new_trg;" }
+      - { id: qualified, sql: "RENAME TRIGGER db1.old_trg TO db2.new_trg;" }
+    examples:
+      - "RENAME TRIGGER parent_tab TO parent_table;"
+
+  - id: comment
+    name: COMMENT (Comment-Placing Form)
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/COWV20u7w9bTm1w5Y6G5YQ
+    tier: medium
+    probes:
+      - { id: on_column_is, sql: "COMMENT ON COLUMN t.c IS 'a comment';" }
+      - { id: on_table_as, sql: "COMMENT ON TABLE db.t AS 'a comment';" }
+      - { id: without_on, sql: "COMMENT TABLE t 'a comment';" }
+      - { id: view, sql: "COMMENT ON VIEW v IS 'a comment';" }
+      - { id: macro, sql: "COMMENT ON MACRO m IS 'a comment';" }
+      - { id: retrieve_form, sql: "COMMENT ON TABLE t;", note: "Comment-returning form: the optional comment text is omitted" }
+    examples:
+      - "COMMENT ON COLUMN employee.name IS 'Employee name, last name followed by first initial';"
+
+  - id: show_object
+    name: SHOW object (SHOW MACRO/VIEW/PROCEDURE/FUNCTION/...)
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/_LEOhy~BRmTt2I7pHc9BaQ
+    tier: medium
+    probes:
+      - { id: macro, sql: "SHOW MACRO m;" }
+      - { id: table, sql: "SHOW TABLE db.t;" }
+      - { id: temporary_table, sql: "SHOW TEMPORARY TABLE t;" }
+      - { id: view, sql: "SHOW VIEW v;" }
+      - { id: in_xml_view, sql: "SHOW IN XML VIEW v;" }
+      - { id: procedure, sql: "SHOW PROCEDURE p;" }
+      - { id: function_with_types, sql: "SHOW FUNCTION f (INTEGER, VARCHAR(10));" }
+      - { id: trigger, sql: "SHOW TRIGGER trg;" }
+      - { id: join_index, sql: "SHOW JOIN INDEX ji;" }
+      - { id: hash_index, sql: "SHOW HASH INDEX hi;" }
+      - { id: error_table_for, sql: "SHOW ERROR TABLE FOR t;" }
+      - { id: type, sql: "SHOW TYPE SYSUDTLIB.my_udt;" }
+    examples:
+      - "SHOW MACRO new_emp;"
+
+  - id: select_and_consume
+    name: SELECT AND CONSUME
+    doc: https://docs.teradata.com/reader/4_jiz05LXsLWBbfvKTLneg/sotCDU39t2ZsbnZlvbMmIw
+    tier: medium
+    probes:
+      - { id: star, sql: "SELECT AND CONSUME TOP 1 * FROM queue_t;" }
+      - { id: select_list, sql: "SELECT AND CONSUME TOP 1 a, b + 1 FROM queue_t;" }
+    examples:
+      - "SELECT AND CONSUME TOP 1 * FROM shopping_cart;"
+
+  - id: execute_macro
+    name: EXECUTE (Macro Form)
+    doc: https://docs.teradata.com/reader/4_jiz05LXsLWBbfvKTLneg/7gk3hBD3FuArqt9sy9DiBA
+    tier: medium
+    probes:
+      - { id: no_args, sql: "EXECUTE m;" }
+      - { id: exec_abbrev, sql: "EXEC m;" }
+      - { id: positional, sql: "EXECUTE m (1, 'a');" }
+      - { id: named, sql: "EXECUTE m (a = 1, b = 'x');" }
+      - { id: positional_skipped, sql: "EXECUTE m (1, , 3);" }
+    examples:
+      - |-
+        EXECUTE new_emp1(number=10015, dept=500, name='Omura H', gender='M',
+                position='Programmer');
+
+  - id: using_modifier
+    name: USING Request Modifier
+    doc: https://docs.teradata.com/reader/4_jiz05LXsLWBbfvKTLneg/Gp~HJ7rRDPzKW7w8eBHF9Q
+    tier: medium
+    probes:
+      - { id: select, sql: "USING (a INTEGER) SELECT * FROM t WHERE c = :a;" }
+      - { id: multiple_vars, sql: "USING (a INTEGER, b CHARACTER(5)) INSERT INTO t (c1, c2) VALUES (:a, :b);" }
+      - { id: top_param, sql: "USING (a INTEGER) SELECT TOP :a * FROM t;" }
+      - { id: deferred, sql: "USING (a BLOB(2000) AS DEFERRED) INSERT INTO t (c) VALUES (:a);" }
+      - { id: locator, sql: "USING (a CLOB AS LOCATOR) INSERT INTO t (c) VALUES (:a);" }
+      - { id: deferred_by_name, sql: "USING (a BLOB AS DEFERRED BY NAME) INSERT INTO t (c) VALUES (:a);" }
+    examples:
+      - |-
+        USING (a INTEGER)
+             SELECT TOP :a *
+             FROM employee;
+
+  - id: explain
+    name: EXPLAIN Request Modifier
+    doc: https://docs.teradata.com/reader/4_jiz05LXsLWBbfvKTLneg/ghB0ZvEcE_xQ2Gb94Elvrg
+    tier: medium
+    probes:
+      - { id: basic, sql: "EXPLAIN SELECT * FROM t;" }
+      - { id: static, sql: "STATIC EXPLAIN SELECT * FROM t;" }
+      - { id: dynamic, sql: "DYNAMIC EXPLAIN SELECT * FROM t;" }
+      - { id: in_xml, sql: "EXPLAIN IN XML SELECT * FROM t;" }
+      - { id: in_xml_noddltext, sql: "EXPLAIN IN XML NODDLTEXT SELECT * FROM t;" }
+      - { id: insert, sql: "EXPLAIN INSERT INTO t VALUES (1);" }
+
+  - id: give
+    name: GIVE
+    doc: https://docs.teradata.com/reader/~XaK0mxyTPufZup~1UD0sA/pPFErLDQm46cnGhzOckD7w
+    tier: medium
+    probes:
+      - { id: basic, sql: "GIVE db TO recipient;" }
+    examples:
+      - "GIVE Finance TO Chin;"
+
+  - id: grant
+    name: GRANT (SQL Form)
+    doc: https://docs.teradata.com/reader/~XaK0mxyTPufZup~1UD0sA/SIZoy9vkpohC2WIcJGtbLg
+    tier: medium
+    probes:
+      - { id: privilege_on_table, sql: "GRANT SELECT ON t TO u;" }
+      - { id: multiple_privileges, sql: "GRANT SELECT, INSERT, UPDATE ON db.t TO u1, u2;" }
+      - { id: all_privileges, sql: "GRANT ALL PRIVILEGES ON db TO u;" }
+      - { id: all, sql: "GRANT ALL ON db TO u;" }
+      - { id: all_but, sql: "GRANT ALL BUT DELETE ON t TO u;" }
+      - { id: public_with_grant_option, sql: "GRANT SELECT ON t TO PUBLIC WITH GRANT OPTION;" }
+      - { id: column_level, sql: "GRANT UPDATE (c1, c2) ON t TO u;" }
+      - { id: procedure, sql: "GRANT EXECUTE ON PROCEDURE p TO u;" }
+      - { id: function_signature, sql: "GRANT EXECUTE ON FUNCTION f (INTEGER) TO u;" }
+      - { id: to_role, sql: "GRANT SELECT ON t TO r;" }
+      - { id: to_all_grantee, sql: "GRANT SELECT ON t TO ALL db;" }
+
+  - id: grant_role
+    name: GRANT (Role Form)
+    doc: https://docs.teradata.com/reader/~XaK0mxyTPufZup~1UD0sA/J277IKgRGxQuF1VPIXl0QA
+    tier: medium
+    probes:
+      - { id: basic, sql: "GRANT r TO u;" }
+      - { id: multiple, sql: "GRANT r1, r2 TO u1, u2;" }
+      - { id: with_admin_option, sql: "GRANT r TO u WITH ADMIN OPTION;" }
+    examples:
+      - "GRANT sales TO services;"
+      - "GRANT sales TO marks WITH ADMIN OPTION;"

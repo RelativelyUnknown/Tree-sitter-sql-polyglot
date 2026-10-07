@@ -32,3 +32,18 @@
   (keyword_analyze)
   (keyword_verbose)
 ] @keyword
+
+; ============================================================
+; Remaining athena keywords
+; ============================================================
+
+[
+  (keyword_bin_pack)
+  (keyword_databases)
+  (keyword_dbproperties)
+  (keyword_dialect)
+  (keyword_optimize)
+  (keyword_rewrite)
+  (keyword_vacuum)
+  (keyword_views)
+] @keyword

@@ -1,0 +1,66 @@
+dialect: spark
+engine: Apache Spark SQL
+version: "4.x (docs/latest)"
+source: https://spark.apache.org/docs/latest/sql-ref-syntax.html
+
+statements:
+  - id: lateral_view_clause
+    name: LATERAL VIEW Clause
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-lateral-view.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT * FROM t LATERAL VIEW EXPLODE(arr) AS c;"
+      - id: outer
+        sql: "SELECT * FROM t LATERAL VIEW OUTER EXPLODE(arr) AS c;"
+      - id: table_alias
+        sql: "SELECT * FROM t LATERAL VIEW EXPLODE(arr) tbl AS c;"
+      - id: multiple_column_aliases
+        sql: "SELECT * FROM t LATERAL VIEW EXPLODE(m) tbl AS k, v;"
+      - id: inline_generator
+        sql: "SELECT * FROM t LATERAL VIEW INLINE(arr_of_structs) tbl AS a, b;"
+      - id: outer_table_alias_multi
+        sql: "SELECT * FROM t LATERAL VIEW OUTER EXPLODE(m) tbl AS k, v;"
+      - id: multiple_lateral_views
+        sql: "SELECT * FROM t LATERAL VIEW EXPLODE(ARRAY(30, 60)) AS c_age LATERAL VIEW EXPLODE(ARRAY(40, 80)) AS d_age;"
+      - id: multiple_expression_args
+        sql: "SELECT * FROM t LATERAL VIEW STACK(2, 1, 2, 3, 4) tbl AS a, b;"
+      - id: with_where_group_by
+        sql: "SELECT c, COUNT(1) FROM t LATERAL VIEW EXPLODE(arr) AS c WHERE c > 1 GROUP BY c;"
+    examples:
+      - "SELECT * FROM person LATERAL VIEW EXPLODE(ARRAY(30, 60)) tableName AS c_age LATERAL VIEW EXPLODE(ARRAY(40, 80)) AS d_age;"
+      - "SELECT c_age, COUNT(1) FROM person LATERAL VIEW EXPLODE(ARRAY(30, 60)) AS c_age LATERAL VIEW EXPLODE(ARRAY(40, 80)) AS d_age GROUP BY c_age;"
+      - "SELECT * FROM person LATERAL VIEW OUTER EXPLODE(ARRAY()) tableName AS c_age;"
+
+  - id: lateral_subquery
+    name: LATERAL SUBQUERY
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-lateral-subquery.html
+    tier: high
+    probes:
+      - id: lateral_aliased_query
+        sql: "SELECT * FROM t1, LATERAL (SELECT * FROM t2 WHERE t1.c1 = t2.c1);"
+      - id: lateral_aliased_query_alias
+        sql: "SELECT * FROM t1, LATERAL (SELECT * FROM t2 WHERE t1.c1 = t2.c1) AS x;"
+      - id: lateral_aliased_query_alias_no_as
+        sql: "SELECT * FROM t1, LATERAL (SELECT * FROM t2 WHERE t1.c1 = t2.c1) x;"
+      - id: lateral_chained
+        sql: "SELECT a, b, c FROM t1, LATERAL (SELECT c1 + c2 AS a), LATERAL (SELECT c1 - c2 AS b), LATERAL (SELECT a * b AS c);"
+      - id: lateral_table_value_function
+        sql: "SELECT * FROM t1, LATERAL range(t1.c1);"
+      - id: lateral_inline_table
+        sql: "SELECT * FROM t1, LATERAL (VALUES (1, 2)) AS v(a, b);"
+      - id: lateral_aliased_relation
+        sql: "SELECT * FROM t1, LATERAL (t2) AS x;"
+      - id: lateral_table_relation
+        sql: "SELECT * FROM t1, LATERAL t2;"
+      - id: lateral_with_join_relation
+        sql: "SELECT * FROM t1, LATERAL (SELECT * FROM t2 WHERE t1.c1 = t2.c1) AS x JOIN t3 ON x.c1 = t3.c1;"
+      - id: join_lateral_on
+        sql: "SELECT * FROM t1 JOIN LATERAL (SELECT * FROM t2 WHERE t1.c1 = t2.c1) AS x ON true;"
+      - id: left_join_lateral
+        sql: "SELECT * FROM t1 LEFT JOIN LATERAL (SELECT * FROM t2 WHERE t1.c1 = t2.c1) AS x ON true;"
+      - id: cross_join_lateral
+        sql: "SELECT * FROM t1 CROSS JOIN LATERAL (SELECT * FROM t2 WHERE t1.c1 = t2.c1) AS x;"
+    examples:
+      - "SELECT * FROM t1, LATERAL (SELECT * FROM t2 WHERE t1.c1 = t2.c1);"
+      - "SELECT a, b, c FROM t1, LATERAL (SELECT c1 + c2 AS a), LATERAL (SELECT c1 - c2 AS b), LATERAL (SELECT a * b AS c);"

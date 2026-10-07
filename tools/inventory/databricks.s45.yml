@@ -1,0 +1,215 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: show_schemas
+    name: SHOW SCHEMAS
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-schemas
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW SCHEMAS;"
+      - id: databases_keyword
+        sql: "SHOW DATABASES;"
+        note: The page says the keywords SCHEMAS and DATABASES are interchangeable.
+      - id: in_catalog
+        sql: "SHOW SCHEMAS IN c;"
+      - id: from_catalog
+        sql: "SHOW SCHEMAS FROM c;"
+      - id: like_pattern
+        sql: "SHOW SCHEMAS LIKE 'pay*';"
+      - id: in_catalog_pattern_no_like
+        sql: "SHOW SCHEMAS IN c 'pay*';"
+        note: LIKE is optional in "[ [ LIKE ] regex_pattern ]".
+    examples:
+      - "SHOW SCHEMAS;"
+      - "SHOW SCHEMAS LIKE 'pay*';"
+      - "SHOW SCHEMAS IN some_catalog;"
+
+  - id: show_table_extended
+    name: SHOW TABLE EXTENDED
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-table
+    tier: medium
+    probes:
+      - id: like
+        sql: "SHOW TABLE EXTENDED LIKE 't';"
+      - id: in_schema
+        sql: "SHOW TABLE EXTENDED IN s LIKE 't*';"
+      - id: from_schema
+        sql: "SHOW TABLE EXTENDED FROM s LIKE 't';"
+      - id: partition
+        sql: "SHOW TABLE EXTENDED IN s LIKE 't' PARTITION (c = 1);"
+    examples:
+      - "SHOW TABLE EXTENDED LIKE 'employee';"
+      - "SHOW TABLE EXTENDED LIKE 'employe*';"
+      - "SHOW TABLE EXTENDED IN default LIKE 'employee' PARTITION (grade = 1);"
+
+  - id: show_tables
+    name: SHOW TABLES
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-tables
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW TABLES;"
+      - id: from_schema
+        sql: "SHOW TABLES FROM s;"
+      - id: in_schema
+        sql: "SHOW TABLES IN s;"
+      - id: like_pattern
+        sql: "SHOW TABLES LIKE 'sam*|suj';"
+      - id: from_schema_like
+        sql: "SHOW TABLES FROM s LIKE 'sam*';"
+      - id: pattern_without_like
+        sql: "SHOW TABLES IN s 'sam*';"
+        note: LIKE is optional in "[ [ LIKE ] regex_pattern ]".
+    examples:
+      - "SHOW TABLES;"
+      - "SHOW TABLES FROM usersc;"
+      - "SHOW TABLES LIKE 'sam*|suj';"
+
+  - id: show_tblproperties
+    name: SHOW TBLPROPERTIES
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-tblproperties
+    tier: medium
+    probes:
+      - id: all
+        sql: "SHOW TBLPROPERTIES t;"
+      - id: qualified_table
+        sql: "SHOW TBLPROPERTIES s.t;"
+      - id: unquoted_key
+        sql: "SHOW TBLPROPERTIES t (created.by.user);"
+      - id: string_key
+        sql: "SHOW TBLPROPERTIES t ('created.date');"
+    examples:
+      - "SHOW TBLPROPERTIES customer;"
+      - "SHOW TBLPROPERTIES customer (created.by.user);"
+      - "SHOW TBLPROPERTIES customer ('created.date');"
+
+  - id: show_views
+    name: SHOW VIEWS
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-views
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW VIEWS;"
+      - id: from_schema
+        sql: "SHOW VIEWS FROM s;"
+      - id: in_schema
+        sql: "SHOW VIEWS IN s;"
+      - id: like_pattern
+        sql: "SHOW VIEWS LIKE 'sam|suj|temp*';"
+      - id: from_schema_like
+        sql: "SHOW VIEWS FROM s LIKE 'sam*';"
+    examples:
+      - "SHOW VIEWS;"
+      - "SHOW VIEWS FROM usersc;"
+      - "SHOW VIEWS FROM default LIKE 'sam*';"
+
+  - id: execute_immediate
+    name: EXECUTE IMMEDIATE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-execute-immediate
+    tier: medium
+    probes:
+      - id: string_literal
+        sql: "EXECUTE IMMEDIATE 'SELECT 1';"
+      - id: variable
+        sql: "EXECUTE IMMEDIATE v;"
+      - id: into
+        sql: "EXECUTE IMMEDIATE v INTO a, b;"
+      - id: using
+        sql: "EXECUTE IMMEDIATE v USING 5, 6;"
+      - id: using_alias
+        sql: "EXECUTE IMMEDIATE v USING 5 AS first, 6 AS second;"
+      - id: using_alias_without_as
+        sql: "EXECUTE IMMEDIATE v USING 5 first, 6 second;"
+        note: AS is optional in "{ arg_expr [ AS ] [alias] }".
+      - id: into_using
+        sql: "EXECUTE IMMEDIATE v INTO a USING 1, 2;"
+      - id: using_parenthesized
+        sql: "EXECUTE IMMEDIATE v INTO a USING (5 AS first, c AS second);"
+        note: The page documents the USING ( ... ) form for compatibility with other SQL dialects.
+      - id: expression_sql_string
+        sql: "EXECUTE IMMEDIATE 'SELECT ' || f || '(c1) FROM t' USING 5 + 7 AS first;"
+        note: From Databricks Runtime 17.3 sql_string and arg_expr can be constant expressions.
+    examples:
+      - "EXECUTE IMMEDIATE 'SELECT SUM(c1) FROM VALUES(?), (?) AS t(c1)' USING 5, 6;"
+      - "EXECUTE IMMEDIATE sqlStr USING arg1, arg2;"
+      - "EXECUTE IMMEDIATE sqlStr INTO sum USING (5 AS first, arg2 AS second);"
+
+  - id: reset
+    name: RESET
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-reset
+    tier: medium
+    probes:
+      - id: all
+        sql: "RESET;"
+      - id: parameter
+        sql: "RESET ansi_mode;"
+      - id: dotted_parameter
+        sql: "RESET spark.sql.shuffle.partitions;"
+    examples:
+      - "RESET;"
+      - "RESET ansi_mode;"
+
+  - id: set
+    name: SET
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set
+    tier: medium
+    probes:
+      - id: list_all
+        sql: "SET;"
+      - id: verbose
+        sql: "SET -v;"
+      - id: get_parameter
+        sql: "SET ansi_mode;"
+      - id: set_parameter
+        sql: "SET ansi_mode = true;"
+      - id: set_dotted_parameter
+        sql: "SET spark.sql.variable.substitute = false;"
+      - id: get_dotted_parameter
+        sql: "SET spark.sql.variable.substitute;"
+    examples:
+      - "SET ansi_mode = true;"
+      - "SET -v;"
+      - "SET ansi_mode;"
+
+  - id: set_time_zone
+    name: SET TIME ZONE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone
+    tier: medium
+    probes:
+      - id: local
+        sql: "SET TIME ZONE LOCAL;"
+      - id: region_id
+        sql: "SET TIME ZONE 'America/Los_Angeles';"
+      - id: zone_offset
+        sql: "SET TIME ZONE '+08:00';"
+      - id: interval_literal
+        sql: "SET TIME ZONE INTERVAL '08:30:00' HOUR TO SECOND;"
+    examples:
+      - "SET TIME ZONE LOCAL;"
+      - "SET TIME ZONE 'America/Los_Angeles';"
+      - "SET TIME ZONE '+08:00';"
+
+  - id: use_catalog
+    name: USE CATALOG
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-use-catalog
+    tier: medium
+    probes:
+      - id: use_catalog
+        sql: "USE CATALOG c;"
+      - id: use_catalog_string
+        sql: "USE CATALOG 'c';"
+      - id: set_catalog
+        sql: "SET CATALOG c;"
+      - id: identifier_clause
+        sql: "USE CATALOG IDENTIFIER(mycat);"
+        note: The examples section shows IDENTIFIER(var) for the catalog name.
+      - id: backticked
+        sql: "USE CATALOG `some_catalog`;"
+    examples:
+      - "USE CATALOG hive_metastore;"
+      - "USE CATALOG 'hive_metastore';"
+      - "USE CATALOG IDENTIFIER(mycat);"

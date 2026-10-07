@@ -1,0 +1,65 @@
+dialect: spanner
+engine: Google Cloud Spanner (GoogleSQL dialect)
+version: "current managed service (docs as of 2026-10)"
+source: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language
+
+statements:
+  - id: create_index
+    name: CREATE INDEX
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#create-index
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE INDEX idx ON t (c);"
+      - id: unique
+        sql: "CREATE UNIQUE INDEX idx ON t (c);"
+      - id: null_filtered
+        sql: "CREATE NULL_FILTERED INDEX idx ON t (c);"
+      - id: unique_null_filtered
+        sql: "CREATE UNIQUE NULL_FILTERED INDEX idx ON t (c);"
+      - id: if_not_exists
+        sql: "CREATE INDEX IF NOT EXISTS idx ON t (c);"
+      - id: multiple_key_parts
+        sql: "CREATE INDEX idx ON t (c1, c2);"
+      - id: key_part_asc
+        sql: "CREATE INDEX idx ON t (c ASC);"
+      - id: key_part_desc
+        sql: "CREATE INDEX idx ON t (c1 ASC, c2 DESC);"
+      - id: expression_key_part
+        sql: "CREATE INDEX idx ON t ((UPPER(c)));"
+      - id: expression_key_part_desc
+        sql: "CREATE INDEX idx ON t ((c1 + c2) DESC);"
+      - id: storing
+        sql: "CREATE INDEX idx ON t (c1) STORING (c2, c3);"
+      - id: where_not_null
+        sql: "CREATE INDEX idx ON t (c1) WHERE c1 IS NOT NULL;"
+      - id: where_not_null_and
+        sql: "CREATE INDEX idx ON t (c1, c2) WHERE c1 IS NOT NULL AND c2 IS NOT NULL;"
+      - id: interleave_in
+        sql: "CREATE INDEX idx ON t (c1, c2), INTERLEAVE IN p;"
+      - id: options_locality_group
+        sql: "CREATE INDEX idx ON t (c) OPTIONS (locality_group = 'lg');"
+      - id: options_columnar_policy
+        sql: "CREATE INDEX idx ON t (c) OPTIONS (columnar_policy = 'enabled');"
+      - id: options_multiple
+        sql: "CREATE INDEX idx ON t (c) OPTIONS (locality_group = 'lg', columnar_policy = 'enabled');"
+      - id: all_clauses
+        sql: "CREATE UNIQUE NULL_FILTERED INDEX IF NOT EXISTS idx ON t (c1 DESC, c2) STORING (c3) WHERE c1 IS NOT NULL, INTERLEAVE IN p OPTIONS (locality_group = 'lg');"
+      - id: doc_naming_example
+        sql: "CREATE INDEX SingersByFirstLastName ON Singers (FirstName, LastName);"
+
+  - id: alter_index
+    name: ALTER INDEX
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#alter-index
+    tier: high
+    probes:
+      - id: add_stored_column
+        sql: "ALTER INDEX idx ADD STORED COLUMN c;"
+      - id: drop_stored_column
+        sql: "ALTER INDEX idx DROP STORED COLUMN c;"
+      - id: add_stored_column_options
+        sql: "ALTER INDEX idx ADD STORED COLUMN c OPTIONS (locality_group = 'lg');"
+      - id: drop_stored_column_options_columnar
+        sql: "ALTER INDEX idx DROP STORED COLUMN c OPTIONS (columnar_policy = 'enabled');"
+      - id: options_columnar_null
+        sql: "ALTER INDEX idx ADD STORED COLUMN c OPTIONS (columnar_policy = null);"

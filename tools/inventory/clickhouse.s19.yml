@@ -1,0 +1,160 @@
+dialect: clickhouse
+engine: ClickHouse
+version: "current docs (2026)"
+source: https://clickhouse.com/docs/sql-reference/statements/
+
+statements:
+  - id: set_role
+    name: SET ROLE
+    doc: https://clickhouse.com/docs/sql-reference/statements/set-role
+    tier: medium
+    probes:
+      - { id: role_list, sql: "SET ROLE r1, r2;" }
+      - { id: default, sql: "SET ROLE DEFAULT;" }
+      - { id: none, sql: "SET ROLE NONE;" }
+      - { id: all, sql: "SET ROLE ALL;" }
+      - { id: all_except, sql: "SET ROLE ALL EXCEPT r1, r2;" }
+    examples:
+      - "SET ROLE ALL;"
+
+  - id: set_default_role
+    name: SET DEFAULT ROLE
+    doc: https://clickhouse.com/docs/sql-reference/statements/set-role
+    tier: medium
+    probes:
+      - { id: roles_to_user, sql: "SET DEFAULT ROLE r1, r2 TO u;" }
+      - { id: none, sql: "SET DEFAULT ROLE NONE TO u;" }
+      - { id: all, sql: "SET DEFAULT ROLE ALL TO u;" }
+      - { id: all_except, sql: "SET DEFAULT ROLE ALL EXCEPT r1, r2 TO u;" }
+      - { id: current_user, sql: "SET DEFAULT ROLE r1 TO CURRENT_USER;" }
+      - { id: multiple_users, sql: "SET DEFAULT ROLE r1 TO u1, u2;" }
+      - { id: on_cluster_end, sql: "SET DEFAULT ROLE r1 TO u ON CLUSTER my_cluster;" }
+      - { id: on_cluster_front, sql: "SET DEFAULT ROLE ON CLUSTER my_cluster r1 TO u;" }
+    examples:
+      - "SET DEFAULT ROLE ALL TO user;"
+      - "SET DEFAULT ROLE NONE TO user;"
+      - "SET DEFAULT ROLE ALL EXCEPT role1, role2 TO user;"
+
+  - id: set
+    name: SET
+    doc: https://clickhouse.com/docs/sql-reference/statements/set
+    tier: medium
+    probes:
+      - { id: param_value, sql: "SET max_threads = 8;" }
+      - { id: profile, sql: "SET profile = 'default';" }
+      - { id: boolean_shorthand, sql: "SET force_index_by_date;" }
+      - { id: time_zone, sql: "SET TIME ZONE 'UTC';" }
+      - { id: time_zone_equals, sql: "SET TIME ZONE = 'Europe/Amsterdam';" }
+      - { id: query_parameter, sql: "SET param_id = 42;" }
+    examples:
+      - "SET TIME ZONE 'UTC';"
+      - "SET TIME ZONE 'Europe/Amsterdam';"
+      - "SET TIME ZONE 'America/New_York';"
+
+  - id: use
+    name: USE
+    doc: https://clickhouse.com/docs/sql-reference/statements/use
+    tier: medium
+    probes:
+      - { id: db, sql: "USE db;" }
+      - { id: database_keyword, sql: "USE DATABASE db;" }
+
+  - id: explain
+    name: EXPLAIN
+    doc: https://clickhouse.com/docs/sql-reference/statements/explain
+    tier: medium
+    probes:
+      - { id: plain, sql: "EXPLAIN SELECT 1;" }
+      - { id: ast, sql: "EXPLAIN AST SELECT 1;" }
+      - { id: syntax, sql: "EXPLAIN SYNTAX SELECT 1;" }
+      - { id: query_tree, sql: "EXPLAIN QUERY TREE SELECT 1;" }
+      - { id: plan, sql: "EXPLAIN PLAN SELECT 1;" }
+      - { id: pipeline, sql: "EXPLAIN PIPELINE SELECT 1;" }
+      - { id: analyze, sql: "EXPLAIN ANALYZE SELECT 1;" }
+      - { id: estimate, sql: "EXPLAIN ESTIMATE SELECT 1;" }
+      - { id: with_settings, sql: "EXPLAIN PLAN indexes = 1, actions = 1 SELECT 1;" }
+      - { id: syntax_setting, sql: "EXPLAIN SYNTAX run_query_tree_passes = 1 SELECT 1;" }
+      - { id: format, sql: "EXPLAIN SELECT 1 FORMAT TSV;" }
+      - { id: ast_alter, sql: "EXPLAIN AST ALTER TABLE t DELETE WHERE d = today();" }
+    examples:
+      - "EXPLAIN AST SELECT 1;"
+      - "EXPLAIN AST ALTER TABLE t1 DELETE WHERE date = today();"
+      - "EXPLAIN PIPELINE SELECT sum(number) FROM numbers_mt(100000) GROUP BY number % 4;"
+
+  - id: describe_table
+    name: DESCRIBE TABLE
+    doc: https://clickhouse.com/docs/sql-reference/statements/describe-table
+    tier: medium
+    probes:
+      - { id: describe_table, sql: "DESCRIBE TABLE t;" }
+      - { id: desc, sql: "DESC t;" }
+      - { id: qualified, sql: "DESCRIBE TABLE db.t;" }
+      - { id: into_outfile, sql: "DESCRIBE TABLE t INTO OUTFILE 'f.txt';" }
+      - { id: format, sql: "DESCRIBE TABLE t FORMAT TSV;" }
+      - { id: settings, sql: "DESCRIBE TABLE t SETTINGS describe_include_subcolumns = 1;" }
+    examples:
+      - "DESCRIBE TABLE describe_example;"
+      - "DESCRIBE TABLE describe_example SETTINGS describe_include_subcolumns = 1;"
+
+  - id: exists
+    name: EXISTS
+    doc: https://clickhouse.com/docs/sql-reference/statements/exists
+    tier: medium
+    probes:
+      - { id: subquery, sql: "SELECT EXISTS (SELECT 1 FROM t WHERE c > 1);" }
+      - { id: in_where, sql: "SELECT count() FROM t WHERE EXISTS (SELECT c FROM t2 WHERE c > 1);" }
+    examples:
+      - "SELECT EXISTS (SELECT * FROM numbers(10) WHERE number > 8), EXISTS (SELECT * FROM numbers(10) WHERE number > 11);"
+      - "SELECT count() FROM numbers(10) WHERE EXISTS (SELECT number FROM numbers(10) WHERE number > 8);"
+      - "SELECT count() FROM numbers(10) WHERE EXISTS (SELECT number FROM numbers(10) WHERE number > 11);"
+
+  - id: show_create
+    name: SHOW CREATE TABLE | DICTIONARY | VIEW | DATABASE
+    doc: https://clickhouse.com/docs/sql-reference/statements/show
+    tier: medium
+    probes:
+      - { id: table, sql: "SHOW CREATE TABLE t;" }
+      - { id: table_qualified, sql: "SHOW CREATE TABLE db.t;" }
+      - { id: bare_table, sql: "SHOW TABLE t;" }
+      - { id: temporary_table, sql: "SHOW CREATE TEMPORARY TABLE t;" }
+      - { id: dictionary, sql: "SHOW CREATE DICTIONARY d;" }
+      - { id: view, sql: "SHOW CREATE VIEW v;" }
+      - { id: database, sql: "SHOW CREATE DATABASE db;" }
+      - { id: into_outfile, sql: "SHOW CREATE TABLE t INTO OUTFILE 'f.txt';" }
+      - { id: format, sql: "SHOW CREATE TABLE t FORMAT TSV;" }
+
+  - id: show_databases
+    name: SHOW DATABASES
+    doc: https://clickhouse.com/docs/sql-reference/statements/show
+    tier: medium
+    probes:
+      - { id: plain, sql: "SHOW DATABASES;" }
+      - { id: like, sql: "SHOW DATABASES LIKE '%de%';" }
+      - { id: ilike, sql: "SHOW DATABASES ILIKE '%DE%';" }
+      - { id: not_like, sql: "SHOW DATABASES NOT LIKE '%de%';" }
+      - { id: limit, sql: "SHOW DATABASES LIMIT 2;" }
+      - { id: into_outfile_format, sql: "SHOW DATABASES INTO OUTFILE 'f.txt' FORMAT TSV;" }
+    examples:
+      - "SHOW DATABASES LIKE '%de%';"
+      - "SHOW DATABASES ILIKE '%DE%';"
+      - "SHOW DATABASES NOT LIKE '%de%';"
+
+  - id: show_tables
+    name: SHOW TABLES
+    doc: https://clickhouse.com/docs/sql-reference/statements/show
+    tier: medium
+    probes:
+      - { id: plain, sql: "SHOW TABLES;" }
+      - { id: from_db, sql: "SHOW TABLES FROM db;" }
+      - { id: in_db, sql: "SHOW TABLES IN db;" }
+      - { id: full, sql: "SHOW FULL TABLES;" }
+      - { id: temporary, sql: "SHOW TEMPORARY TABLES;" }
+      - { id: like, sql: "SHOW TABLES FROM db LIKE '%user%';" }
+      - { id: ilike, sql: "SHOW TABLES FROM db ILIKE '%USER%';" }
+      - { id: not_like, sql: "SHOW TABLES FROM db NOT LIKE '%s%';" }
+      - { id: limit, sql: "SHOW TABLES FROM db LIMIT 2;" }
+      - { id: into_outfile_format, sql: "SHOW TABLES INTO OUTFILE 'f.txt' FORMAT TSV;" }
+    examples:
+      - "SHOW TABLES FROM system LIKE '%user%';"
+      - "SHOW TABLES FROM system ILIKE '%USER%';"
+      - "SHOW TABLES FROM system NOT LIKE '%s%';"

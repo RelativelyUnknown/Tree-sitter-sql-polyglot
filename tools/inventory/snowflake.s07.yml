@@ -1,0 +1,253 @@
+dialect: snowflake
+engine: Snowflake
+version: "current (docs read 2026-10-04)"
+source: https://docs.snowflake.com/en/sql-reference/sql-all
+
+statements:
+  - id: alter_user_rotate_key_pair
+    name: ALTER USER … ROTATE KEY PAIR
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-user-rotate-key-pair
+    tier: medium
+    probes:
+      - id: basic
+        sql: "ALTER USER u ROTATE KEY PAIR my_key PUBLIC_KEY = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A';"
+      - id: current_user_if_exists
+        sql: "ALTER USER IF EXISTS ROTATE KEY PAIR my_key PUBLIC_KEY = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A';"
+      - id: expire_rotated_key_pair
+        sql: "ALTER USER IF EXISTS u ROTATE KEY PAIR my_key PUBLIC_KEY = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A' EXPIRE_ROTATED_KEY_PAIR_AFTER_HOURS = 0;"
+
+  - id: alter_warehouse
+    name: ALTER WAREHOUSE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-warehouse
+    tier: medium
+    probes:
+      - id: suspend
+        sql: "ALTER WAREHOUSE IF EXISTS wh SUSPEND;"
+      - id: resume_if_suspended
+        sql: "ALTER WAREHOUSE wh RESUME IF SUSPENDED;"
+      - id: enable
+        sql: "ALTER WAREHOUSE IF EXISTS wh ENABLE;"
+      - id: disable
+        sql: "ALTER WAREHOUSE wh DISABLE;"
+      - id: abort_all_queries
+        sql: "ALTER WAREHOUSE wh ABORT ALL QUERIES;"
+      - id: rename_to
+        sql: "ALTER WAREHOUSE IF EXISTS wh RENAME TO wh2;"
+      - id: set_size
+        sql: "ALTER WAREHOUSE wh SET WAREHOUSE_SIZE = MEDIUM;"
+      - id: set_properties
+        sql: "ALTER WAREHOUSE wh SET WAREHOUSE_TYPE = 'SNOWPARK-OPTIMIZED' MAX_CLUSTER_COUNT = 4 MIN_CLUSTER_COUNT = 1 SCALING_POLICY = ECONOMY AUTO_SUSPEND = 300 AUTO_RESUME = TRUE RESOURCE_MONITOR = rm COMMENT = 'c' ENABLE_QUERY_ACCELERATION = TRUE QUERY_ACCELERATION_MAX_SCALE_FACTOR = 4 WAIT_FOR_COMPLETION = TRUE;"
+      - id: set_params
+        sql: "ALTER WAREHOUSE wh SET MAX_CONCURRENCY_LEVEL = 8 STATEMENT_QUEUED_TIMEOUT_IN_SECONDS = 60 STATEMENT_TIMEOUT_IN_SECONDS = 3600;"
+      - id: set_tag
+        sql: "ALTER WAREHOUSE IF EXISTS wh SET TAG t1 = 'v1', t2 = 'v2';"
+      - id: unset_tag
+        sql: "ALTER WAREHOUSE wh UNSET TAG t1, t2;"
+      - id: unset_property
+        sql: "ALTER WAREHOUSE wh UNSET AUTO_SUSPEND, COMMENT;"
+      - id: add_tables
+        sql: "ALTER WAREHOUSE wh ADD TABLES (t1, t2);"
+      - id: drop_tables
+        sql: "ALTER WAREHOUSE wh DROP TABLES (t1, t2);"
+    examples:
+      - "ALTER WAREHOUSE IF EXISTS wh1 RENAME TO wh2;"
+      - "ALTER WAREHOUSE my_wh RESUME;"
+      - "ALTER WAREHOUSE my_wh SET warehouse_size = MEDIUM;"
+
+  - id: comment
+    name: COMMENT
+    doc: https://docs.snowflake.com/en/sql-reference/sql/comment
+    tier: medium
+    probes:
+      - id: on_object
+        sql: "COMMENT ON TABLE t IS 'a comment';"
+      - id: if_exists
+        sql: "COMMENT IF EXISTS ON SCHEMA s IS 'a comment';"
+      - id: on_column
+        sql: "COMMENT ON COLUMN t.c IS 'a comment';"
+      - id: if_exists_on_column
+        sql: "COMMENT IF EXISTS ON COLUMN t.c IS 'a comment';"
+    examples:
+      - "COMMENT ON SCHEMA my_schema IS 'now comment2';"
+      - "COMMENT ON COLUMN test_comment_table_column.my_column IS 'now comment4';"
+
+  - id: copy_files
+    name: COPY FILES
+    doc: https://docs.snowflake.com/en/sql-reference/sql/copy-files
+    tier: medium
+    probes:
+      - id: from_stage
+        sql: "COPY FILES INTO @trg_stage FROM @src_stage;"
+      - id: from_stage_paths
+        sql: "COPY FILES INTO @db.sch.trg_stage/trg_path/ FROM @db.sch.src_stage/src_path/;"
+      - id: files_list
+        sql: "COPY FILES INTO @trg_stage FROM @src_stage FILES = ('file1.csv', 'file2.csv');"
+      - id: pattern
+        sql: "COPY FILES INTO @trg_stage FROM @src_stage PATTERN = '.*sales.*[.]csv';"
+      - id: detailed_output
+        sql: "COPY FILES INTO @trg_stage FROM @src_stage DETAILED_OUTPUT = TRUE;"
+      - id: from_query
+        sql: "COPY FILES INTO @trg_stage FROM (SELECT '@src_stage/file.txt', 'new_filename.txt' FROM t);"
+      - id: from_query_detailed_output
+        sql: "COPY FILES INTO @trg_stage FROM (SELECT relative_path FROM t) DETAILED_OUTPUT = FALSE;"
+    examples:
+      - "COPY FILES INTO @trg_stage FROM @src_stage;"
+      - "COPY FILES INTO @trg_stage FROM @src_stage FILES = ('file1.csv', 'file2.csv');"
+      - "COPY FILES INTO @trg_stage/trg_path/ FROM @src_stage/src_path/;"
+
+  - id: create_alert
+    name: CREATE ALERT
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-alert
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE ALERT a IF (EXISTS (SELECT 1 FROM t WHERE c > 1)) THEN INSERT INTO log VALUES (1);"
+      - id: or_replace_if_not_exists
+        sql: "CREATE OR REPLACE ALERT IF NOT EXISTS a WAREHOUSE = wh SCHEDULE = '1 MINUTE' IF (EXISTS (SELECT 1 FROM t)) THEN INSERT INTO log VALUES (1);"
+      - id: schedule_cron
+        sql: "CREATE ALERT a SCHEDULE = 'USING CRON 0 8 * * * UTC' IF (EXISTS (SELECT 1 FROM t)) THEN INSERT INTO log VALUES (1);"
+      - id: with_tag
+        sql: "CREATE ALERT a WITH TAG (t1 = 'v1', t2 = 'v2') WAREHOUSE = wh IF (EXISTS (SELECT 1 FROM t)) THEN INSERT INTO log VALUES (1);"
+      - id: all_options
+        sql: "CREATE ALERT a WAREHOUSE = wh SCHEDULE = '5 MINUTE' COMMENT = 'c' CONFIG = '{\"k\": 1}' RUNBOOK = 'https://example.com/runbook' SUSPEND_ALERT_AFTER_NUM_FAILURES = 3 IF (EXISTS (SELECT 1 FROM t)) THEN CALL SYSTEM$SEND_EMAIL('int', 'a@example.com', 's', 'b');"
+      - id: create_or_alter
+        sql: "CREATE OR ALTER ALERT a WAREHOUSE = wh SCHEDULE = '1 MINUTE' IF (EXISTS (SELECT 1 FROM t)) THEN INSERT INTO log VALUES (1);"
+      - id: clone
+        sql: "CREATE OR REPLACE ALERT a CLONE src_alert;"
+    examples:
+      - |-
+        CREATE OR REPLACE ALERT my_db.my_schema.task_error_rate_alert
+          FROM TEMPLATE TASKS_ERROR_RATE
+          WAREHOUSE = my_wh
+          SCHEDULE = '30 MINUTE'
+          TEMPLATE_PARAMS = '{
+            "template_variables": {
+              "ERROR_RATE_THRESHOLD": 0.4,
+              "SCOPE_ACTIVE": "DATABASE",
+              "SCOPE_DATABASE": "MY_DB"
+            },
+            "notification_config": {
+              "notification_integration": "my_email_int",
+              "email_config": { "toAddress": ["oncall@example.com"] }
+            }
+          }';
+
+  - id: create_api_integration
+    name: CREATE API INTEGRATION
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-api-integration
+    tier: medium
+    probes:
+      - id: aws_api_gateway
+        sql: "CREATE API INTEGRATION i API_PROVIDER = aws_api_gateway API_AWS_ROLE_ARN = 'arn:aws:iam::123456789012:role/r' API_ALLOWED_PREFIXES = ('https://xyz.execute-api.us-west-2.amazonaws.com/production') ENABLED = TRUE;"
+      - id: aws_or_replace_if_not_exists_key_comment
+        sql: "CREATE OR REPLACE API INTEGRATION i API_PROVIDER = aws_private_api_gateway API_AWS_ROLE_ARN = 'arn:aws:iam::123456789012:role/r' API_KEY = 'k' API_ALLOWED_PREFIXES = ('https://a.example.com', 'https://b.example.com') ENABLED = FALSE COMMENT = 'c';"
+      - id: azure_api_management
+        sql: "CREATE API INTEGRATION i API_PROVIDER = azure_api_management AZURE_TENANT_ID = 'tenant' AZURE_AD_APPLICATION_ID = 'app' API_KEY = 'k' API_ALLOWED_PREFIXES = ('https://example.azure-api.net') API_BLOCKED_PREFIXES = ('https://example.azure-api.net/blocked') ENABLED = TRUE;"
+      - id: google_api_gateway
+        sql: "CREATE API INTEGRATION i API_PROVIDER = google_api_gateway GOOGLE_AUDIENCE = 'aud' API_ALLOWED_PREFIXES = ('https://gateway.example.com') API_BLOCKED_PREFIXES = ('https://gateway.example.com/blocked') ENABLED = TRUE;"
+      - id: git_https_secrets
+        sql: "CREATE API INTEGRATION i API_PROVIDER = git_https_api API_ALLOWED_PREFIXES = ('https://github.com/org') ALLOWED_AUTHENTICATION_SECRETS = (my_secret) ENABLED = TRUE;"
+      - id: git_github_app
+        sql: "CREATE API INTEGRATION i API_PROVIDER = git_https_api API_ALLOWED_PREFIXES = ('https://github.com/org') API_USER_AUTHENTICATION = (TYPE = SNOWFLAKE_GITHUB_APP) ENABLED = TRUE;"
+    examples:
+      - "CREATE OR REPLACE API INTEGRATION demonstration_external_api_integration_01 API_PROVIDER = aws_api_gateway API_AWS_ROLE_ARN = 'arn:aws:iam::123456789012:role/my_cloud_account_role' API_ALLOWED_PREFIXES = ('https://xyz.execute-api.us-west-2.amazonaws.com/production') ENABLED = TRUE;"
+      - |-
+        CREATE API INTEGRATION jira_mcp_api_integration
+          API_PROVIDER = external_mcp
+          API_ALLOWED_PREFIXES = ('https://mcp.jira.atlassian.com')
+          API_USER_AUTHENTICATION = (
+            TYPE = OAUTH_DYNAMIC_CLIENT
+            OAUTH_RESOURCE_URL = 'https://mcp.atlassian.com/v1/mcp'
+          )
+          ENABLED = TRUE;
+
+  - id: create_database_role
+    name: CREATE DATABASE ROLE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-database-role
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE DATABASE ROLE d1.dr1;"
+      - id: or_replace_if_not_exists_comment
+        sql: "CREATE OR REPLACE DATABASE ROLE IF NOT EXISTS d1.dr1 COMMENT = 'c';"
+      - id: create_or_alter
+        sql: "CREATE OR ALTER DATABASE ROLE d1.dr1 COMMENT = 'c';"
+    examples:
+      - "CREATE DATABASE ROLE d1.dr1;"
+      - "CREATE DATABASE ROLE my_linked_db.reader_role COMMENT = 'Read-only role for catalog-linked database';"
+
+  - id: create_external_access_integration
+    name: CREATE EXTERNAL ACCESS INTEGRATION
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-external-access-integration
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE EXTERNAL ACCESS INTEGRATION i ALLOWED_NETWORK_RULES = (rule1) ENABLED = TRUE;"
+      - id: or_replace_multiple_rules_comment
+        sql: "CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION i ALLOWED_NETWORK_RULES = (rule1, rule2) ENABLED = FALSE COMMENT = 'c';"
+      - id: authentication_integrations
+        sql: "CREATE EXTERNAL ACCESS INTEGRATION i ALLOWED_NETWORK_RULES = (rule1) ALLOWED_API_AUTHENTICATION_INTEGRATIONS = (int1, int2) ENABLED = TRUE;"
+      - id: authentication_integrations_none
+        sql: "CREATE EXTERNAL ACCESS INTEGRATION i ALLOWED_NETWORK_RULES = (rule1) ALLOWED_API_AUTHENTICATION_INTEGRATIONS = none ENABLED = TRUE;"
+      - id: authentication_secrets
+        sql: "CREATE EXTERNAL ACCESS INTEGRATION i ALLOWED_NETWORK_RULES = (rule1) ALLOWED_AUTHENTICATION_SECRETS = (s1, s2) ENABLED = TRUE;"
+      - id: authentication_secrets_all
+        sql: "CREATE EXTERNAL ACCESS INTEGRATION i ALLOWED_NETWORK_RULES = (rule1) ALLOWED_AUTHENTICATION_SECRETS = all ENABLED = TRUE;"
+    examples:
+      - "CREATE OR REPLACE EXTERNAL ACCESS INTEGRATION google_apis_access_integration ALLOWED_NETWORK_RULES = (google_apis_network_rule) ALLOWED_AUTHENTICATION_SECRETS = (oauth_token) ENABLED = true;"
+
+  - id: create_file_format
+    name: CREATE FILE FORMAT
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-file-format
+    tier: medium
+    probes:
+      - id: basic_csv
+        sql: "CREATE FILE FORMAT ff TYPE = CSV;"
+      - id: or_replace_if_not_exists_comment
+        sql: "CREATE OR REPLACE FILE FORMAT IF NOT EXISTS ff TYPE = CSV COMMENT = 'c';"
+      - id: temporary
+        sql: "CREATE TEMPORARY FILE FORMAT ff TYPE = JSON;"
+      - id: volatile
+        sql: "CREATE OR REPLACE VOLATILE FILE FORMAT ff TYPE = CSV;"
+      - id: no_type
+        sql: "CREATE FILE FORMAT ff COMMENT = 'c';"
+      - id: csv_options
+        sql: "CREATE FILE FORMAT ff TYPE = CSV COMPRESSION = GZIP RECORD_DELIMITER = '\\n' FIELD_DELIMITER = '|' MULTI_LINE = FALSE FILE_EXTENSION = 'csv' SKIP_HEADER = 1 SKIP_BLANK_LINES = TRUE DATE_FORMAT = 'YYYY-MM-DD' TIME_FORMAT = AUTO TIMESTAMP_FORMAT = AUTO BINARY_FORMAT = HEX ESCAPE = '\\\\' ESCAPE_UNENCLOSED_FIELD = NONE TRIM_SPACE = TRUE FIELD_OPTIONALLY_ENCLOSED_BY = '\"' NULL_IF = ('NULL', 'null') ERROR_ON_COLUMN_COUNT_MISMATCH = FALSE REPLACE_INVALID_CHARACTERS = TRUE EMPTY_FIELD_AS_NULL = TRUE SKIP_BYTE_ORDER_MARK = TRUE ENCODING = 'UTF8';"
+      - id: csv_parse_header
+        sql: "CREATE FILE FORMAT ff TYPE = CSV PARSE_HEADER = TRUE FIELD_DELIMITER = NONE RECORD_DELIMITER = NONE;"
+      - id: json_options
+        sql: "CREATE FILE FORMAT ff TYPE = JSON COMPRESSION = AUTO DATE_FORMAT = AUTO BINARY_FORMAT = BASE64 TRIM_SPACE = TRUE MULTI_LINE = TRUE NULL_IF = ('null') FILE_EXTENSION = 'json' ENABLE_OCTAL = FALSE ALLOW_DUPLICATE = FALSE STRIP_OUTER_ARRAY = TRUE STRIP_NULL_VALUES = TRUE REPLACE_INVALID_CHARACTERS = FALSE IGNORE_UTF8_ERRORS = FALSE SKIP_BYTE_ORDER_MARK = TRUE;"
+      - id: avro_options
+        sql: "CREATE FILE FORMAT ff TYPE = AVRO COMPRESSION = BROTLI TRIM_SPACE = TRUE REPLACE_INVALID_CHARACTERS = TRUE NULL_IF = ('NULL');"
+      - id: orc_options
+        sql: "CREATE FILE FORMAT ff TYPE = ORC TRIM_SPACE = TRUE REPLACE_INVALID_CHARACTERS = TRUE NULL_IF = ('NULL');"
+      - id: parquet_options
+        sql: "CREATE FILE FORMAT ff TYPE = PARQUET COMPRESSION = SNAPPY SNAPPY_COMPRESSION = TRUE BINARY_AS_TEXT = FALSE USE_LOGICAL_TYPE = TRUE TRIM_SPACE = TRUE USE_VECTORIZED_SCANNER = TRUE REPLACE_INVALID_CHARACTERS = TRUE NULL_IF = ('NULL');"
+      - id: xml_options
+        sql: "CREATE FILE FORMAT ff TYPE = XML COMPRESSION = GZIP IGNORE_UTF8_ERRORS = FALSE PRESERVE_SPACE = TRUE STRIP_OUTER_ELEMENT = TRUE DISABLE_AUTO_CONVERT = TRUE REPLACE_INVALID_CHARACTERS = TRUE SKIP_BYTE_ORDER_MARK = TRUE;"
+      - id: create_or_alter
+        sql: "CREATE OR ALTER FILE FORMAT ff TYPE = CSV FIELD_DELIMITER = '|' SKIP_HEADER = 1;"
+    examples:
+      - "CREATE OR REPLACE FILE FORMAT my_csv_format TYPE = CSV COMMENT = 'my_file_format';"
+      - "CREATE OR ALTER FILE FORMAT my_csv_format TYPE = CSV FIELD_DELIMITER = '|' SKIP_HEADER = 1 NULL_IF = ('NULL', 'null') EMPTY_FIELD_AS_NULL = true COMPRESSION = gzip;"
+      - "CREATE OR REPLACE FILE FORMAT my_parquet_format TYPE = PARQUET USE_VECTORIZED_SCANNER = TRUE USE_LOGICAL_TYPE = TRUE;"
+
+  - id: create_masking_policy
+    name: CREATE MASKING POLICY
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-masking-policy
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE MASKING POLICY p AS (val STRING) RETURNS STRING -> CASE WHEN current_role() IN ('ANALYST') THEN val ELSE '*********' END;"
+      - id: or_replace_if_not_exists
+        sql: "CREATE OR REPLACE MASKING POLICY IF NOT EXISTS p AS (val STRING) RETURNS STRING -> '*****';"
+      - id: multiple_arguments
+        sql: "CREATE MASKING POLICY p AS (email VARCHAR, visibility STRING) RETURNS VARCHAR -> CASE WHEN visibility = 'Public' THEN email ELSE '***MASKED***' END;"
+      - id: comment_exempt_other_policies
+        sql: "CREATE MASKING POLICY p AS (val STRING) RETURNS STRING -> val COMMENT = 'c' EXEMPT_OTHER_POLICIES = TRUE;"
+      - id: create_or_alter
+        sql: "CREATE OR ALTER MASKING POLICY p AS (val STRING) RETURNS STRING -> CASE WHEN current_role() IN ('ANALYST') THEN val ELSE '*********' END COMMENT = 'c';"
+    examples:
+      - "CREATE OR REPLACE MASKING POLICY email_mask AS (val string) returns string -> CASE WHEN current_role() IN ('ANALYST') THEN VAL ELSE '*********' END;"
+      - "create masking policy email_visibility as (email varchar, visibility string) returns varchar -> case when current_role() = 'ADMIN' then email when visibility = 'Public' then email else '***MASKED***' end;"
+      - "CREATE OR ALTER MASKING POLICY email_mask AS (val string) RETURNS string -> CASE WHEN current_role() IN ('ANALYST') THEN val ELSE '*********' END COMMENT = 'Mask email addresses from non-analyst roles';"

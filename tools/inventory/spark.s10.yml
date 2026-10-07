@@ -1,0 +1,77 @@
+dialect: spark
+engine: Apache Spark SQL
+version: "4.x (docs/latest)"
+source: https://spark.apache.org/docs/latest/sql-ref-syntax.html
+
+statements:
+  - id: hints
+    name: Hints
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-hints.html
+    tier: high
+    probes:
+      - id: coalesce
+        sql: "SELECT /*+ COALESCE(3) */ * FROM t;"
+      - id: repartition_num
+        sql: "SELECT /*+ REPARTITION(3) */ * FROM t;"
+      - id: repartition_col
+        sql: "SELECT /*+ REPARTITION(c) */ * FROM t;"
+      - id: repartition_num_col
+        sql: "SELECT /*+ REPARTITION(3, c) */ * FROM t;"
+      - id: repartition_by_range_col
+        sql: "SELECT /*+ REPARTITION_BY_RANGE(c) */ * FROM t;"
+      - id: repartition_by_range_num_col
+        sql: "SELECT /*+ REPARTITION_BY_RANGE(3, c) */ * FROM t;"
+      - id: rebalance
+        sql: "SELECT /*+ REBALANCE */ * FROM t;"
+      - id: rebalance_num
+        sql: "SELECT /*+ REBALANCE(3) */ * FROM t;"
+      - id: rebalance_col
+        sql: "SELECT /*+ REBALANCE(c) */ * FROM t;"
+      - id: rebalance_num_col
+        sql: "SELECT /*+ REBALANCE(3, c) */ * FROM t;"
+      - id: multiple_hints
+        sql: "SELECT /*+ REPARTITION(100), COALESCE(500), REPARTITION_BY_RANGE(3, c) */ * FROM t;"
+      - id: broadcast
+        sql: "SELECT /*+ BROADCAST(t1) */ * FROM t1 INNER JOIN t2 ON t1.key = t2.key;"
+      - id: broadcastjoin
+        sql: "SELECT /*+ BROADCASTJOIN (t1) */ * FROM t1 LEFT JOIN t2 ON t1.key = t2.key;"
+      - id: mapjoin
+        sql: "SELECT /*+ MAPJOIN(t2) */ * FROM t1 RIGHT JOIN t2 ON t1.key = t2.key;"
+      - id: shuffle_merge
+        sql: "SELECT /*+ SHUFFLE_MERGE(t1) */ * FROM t1 INNER JOIN t2 ON t1.key = t2.key;"
+      - id: mergejoin
+        sql: "SELECT /*+ MERGEJOIN(t2) */ * FROM t1 INNER JOIN t2 ON t1.key = t2.key;"
+      - id: merge
+        sql: "SELECT /*+ MERGE(t1) */ * FROM t1 INNER JOIN t2 ON t1.key = t2.key;"
+      - id: shuffle_hash
+        sql: "SELECT /*+ SHUFFLE_HASH(t1) */ * FROM t1 INNER JOIN t2 ON t1.key = t2.key;"
+      - id: shuffle_replicate_nl
+        sql: "SELECT /*+ SHUFFLE_REPLICATE_NL(t1) */ * FROM t1 INNER JOIN t2 ON t1.key = t2.key;"
+      - id: multiple_join_hints
+        sql: "SELECT /*+ BROADCAST(t1), MERGE(t1, t2) */ * FROM t1 INNER JOIN t2 ON t1.key = t2.key;"
+    examples:
+      - "SELECT /*+ COALESCE(3) */ * FROM t;"
+      - "SELECT /*+ BROADCAST(t1) */ * FROM t1 INNER JOIN t2 ON t1.key = t2.key;"
+      - "SELECT /*+ BROADCAST(t1), MERGE(t1, t2) */ * FROM t1 INNER JOIN t2 ON t1.key = t2.key;"
+
+  - id: inline_table
+    name: Inline Table
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-inline-table.html
+    tier: high
+    probes:
+      - id: single_row
+        sql: "SELECT * FROM VALUES (\"one\", 1);"
+      - id: multi_row_alias
+        sql: "SELECT * FROM VALUES (1, 2), (3, 4) AS data(a, b);"
+      - id: alias_without_as
+        sql: "SELECT * FROM VALUES (1, 2) data(a, b);"
+      - id: alias_no_columns
+        sql: "SELECT * FROM VALUES (1), (2) AS data;"
+      - id: expressions
+        sql: "SELECT * FROM VALUES (1 + 2, upper('a')) AS data(a, b);"
+      - id: null_value
+        sql: "SELECT * FROM VALUES ('three', null) AS data(a, b);"
+    examples:
+      - "SELECT * FROM VALUES (\"one\", 1);"
+      - "SELECT * FROM VALUES (\"one\", 1), (\"two\", 2), (\"three\", null) AS data(a, b);"
+      - "SELECT * FROM VALUES (\"one\", array(0, 1)), (\"two\", array(2, 3)) AS data(a, b);"

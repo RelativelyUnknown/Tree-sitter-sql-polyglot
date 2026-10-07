@@ -1,0 +1,239 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: create_table
+    name: CREATE TABLE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-table
+    tier: high
+    probes:
+      - id: using_form
+        sql: "CREATE TABLE t (c INT);"
+        note: "Overview page lists CREATE TABLE [USING] as the form based on a column definition, a storage location or a query"
+      - id: using_as_query
+        sql: "CREATE TABLE t AS SELECT 1 AS c;"
+        note: "Overview page: derived from a query"
+      - id: using_location
+        sql: "CREATE TABLE t USING DELTA LOCATION '/path/to/data';"
+        note: "Overview page: derived from data at an existing storage location"
+      - id: hive_format
+        sql: "CREATE TABLE t (c INT) STORED AS PARQUET;"
+        note: "Overview page lists CREATE TABLE (Hive format), Databricks Runtime only"
+      - id: like
+        sql: "CREATE TABLE t LIKE s;"
+        note: "Overview page lists CREATE TABLE LIKE"
+      - id: deep_clone
+        sql: "CREATE TABLE t DEEP CLONE s;"
+        note: "Overview page lists CREATE TABLE CLONE with DEEP CLONE"
+      - id: shallow_clone
+        sql: "CREATE TABLE t SHALLOW CLONE s;"
+        note: "Overview page lists CREATE TABLE CLONE with a shallow clone referring to the original table's storage"
+
+  - id: create_table_using
+    name: CREATE TABLE [USING]
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-table-using
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE TABLE t (c INT);"
+      - id: if_not_exists
+        sql: "CREATE TABLE IF NOT EXISTS t (c INT);"
+      - id: external
+        sql: "CREATE EXTERNAL TABLE t (c INT) LOCATION '/path/to/data';"
+      - id: external_if_not_exists
+        sql: "CREATE EXTERNAL TABLE IF NOT EXISTS t (c INT) LOCATION '/path/to/data';"
+      - id: create_or_replace
+        sql: "CREATE OR REPLACE TABLE t (c INT);"
+      - id: create_temp
+        sql: "CREATE TEMP TABLE t (c INT);"
+      - id: create_temporary
+        sql: "CREATE TEMPORARY TABLE t (c INT);"
+      - id: create_or_replace_temp
+        sql: "CREATE OR REPLACE TEMP TABLE t (c INT);"
+      - id: create_or_replace_temporary
+        sql: "CREATE OR REPLACE TEMPORARY TABLE t (c INT);"
+      - id: replace_temp
+        sql: "REPLACE TEMP TABLE t (c INT);"
+      - id: replace_temporary
+        sql: "REPLACE TEMPORARY TABLE t (c INT);"
+      - id: qualified_name
+        sql: "CREATE TABLE cat.sch.t (c INT);"
+      - id: temp_as_query
+        sql: "CREATE TEMP TABLE t AS SELECT 1 AS c;"
+      - id: no_table_specification_as_query
+        sql: "CREATE TABLE t AS SELECT * FROM s;"
+      - id: using_data_source_as_query
+        sql: "CREATE TABLE t USING PARQUET AS SELECT * FROM s;"
+      - id: using_delta
+        sql: "CREATE TABLE t (c INT) USING DELTA;"
+      - id: using_iceberg
+        sql: "CREATE TABLE t (c INT) USING ICEBERG;"
+      - id: using_csv_location
+        sql: "CREATE TABLE t USING CSV LOCATION '/path/to/csv_files';"
+      - id: using_parquet
+        sql: "CREATE TABLE t (c INT) USING PARQUET;"
+      - id: using_json
+        sql: "CREATE TABLE t (c INT) USING JSON;"
+      - id: using_orc
+        sql: "CREATE TABLE t (c INT) USING ORC;"
+      - id: using_avro
+        sql: "CREATE TABLE t (c INT) USING AVRO;"
+      - id: using_text
+        sql: "CREATE TABLE t (c STRING) USING TEXT;"
+      - id: using_binaryfile
+        sql: "CREATE TABLE t USING BINARYFILE LOCATION '/path/to/files';"
+      - id: using_jdbc_federated
+        sql: "CREATE TABLE t USING POSTGRESQL OPTIONS (url 'jdbc:postgresql://host/db', dbtable 'tbl', user 'u', password 'p');"
+        note: "Federated JDBC source; OPTIONS required"
+      - id: using_secret_option
+        sql: "CREATE TABLE IF NOT EXISTS t USING ORACLE OPTIONS (url 'jdbc:oracle:thin:@host:1521/db', dbtable 'tbl', user secret('scope', 'user'), password secret('scope', 'pass'));"
+      - id: using_hive
+        sql: "CREATE TABLE t (c INT) USING HIVE OPTIONS (fileFormat 'parquet');"
+        note: "HIVE data source with Hive-specific options, Databricks Runtime"
+      - id: using_custom_class
+        sql: "CREATE TABLE t (c INT) USING com.example.DefaultSource;"
+        note: "Fully-qualified class name of a custom DataSourceRegister implementation, Databricks Runtime"
+      - id: using_libsvm
+        sql: "CREATE TABLE t USING LIBSVM LOCATION '/path/to/data';"
+      - id: multiple_columns
+        sql: "CREATE TABLE t (id INT, name STRING, age INT);"
+      - id: not_null
+        sql: "CREATE TABLE t (c INT NOT NULL);"
+      - id: column_collate
+        sql: "CREATE TABLE t (c STRING COLLATE UNICODE_CI);"
+      - id: column_generated_always_as
+        sql: "CREATE TABLE t (a INT, b INT, area INT GENERATED ALWAYS AS (a * b));"
+      - id: column_generated_always_identity
+        sql: "CREATE TABLE t (id BIGINT GENERATED ALWAYS AS IDENTITY);"
+      - id: column_generated_by_default_identity
+        sql: "CREATE TABLE t (id BIGINT GENERATED BY DEFAULT AS IDENTITY);"
+      - id: column_identity_start_with
+        sql: "CREATE TABLE t (id BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 10));"
+      - id: column_identity_increment_by
+        sql: "CREATE TABLE t (id BIGINT GENERATED ALWAYS AS IDENTITY (INCREMENT BY 5));"
+      - id: column_identity_start_and_increment
+        sql: "CREATE TABLE t (id BIGINT GENERATED BY DEFAULT AS IDENTITY (START WITH 1 INCREMENT BY 2));"
+      - id: column_identity_increment_then_start
+        sql: "CREATE TABLE t (id BIGINT GENERATED ALWAYS AS IDENTITY (INCREMENT BY 2 START WITH 1));"
+        note: "Prior to Databricks Runtime 16.1 START WITH must precede INCREMENT BY; the reverse order is valid in current docs (syntax: [ START WITH start | INCREMENT BY step ] [ ...])"
+      - id: column_default
+        sql: "CREATE TABLE t (c INT DEFAULT 0);"
+      - id: column_comment
+        sql: "CREATE TABLE t (c INT COMMENT 'column comment');"
+      - id: column_primary_key
+        sql: "CREATE TABLE t (c INT NOT NULL PRIMARY KEY);"
+      - id: column_named_primary_key
+        sql: "CREATE TABLE t (c INT NOT NULL CONSTRAINT pk PRIMARY KEY);"
+      - id: column_primary_key_option
+        sql: "CREATE TABLE t (c INT NOT NULL PRIMARY KEY RELY);"
+      - id: column_unique
+        sql: "CREATE TABLE t (c INT UNIQUE);"
+      - id: column_references
+        sql: "CREATE TABLE t (c INT REFERENCES p);"
+      - id: column_foreign_key_references
+        sql: "CREATE TABLE t (c INT FOREIGN KEY REFERENCES p (pc));"
+      - id: column_foreign_key_option
+        sql: "CREATE TABLE t (c INT REFERENCES p (pc) MATCH FULL ON UPDATE NO ACTION ON DELETE NO ACTION);"
+      - id: column_constraint_not_enforced
+        sql: "CREATE TABLE t (c INT NOT NULL PRIMARY KEY NOT ENFORCED);"
+      - id: column_constraint_deferrable
+        sql: "CREATE TABLE t (c INT UNIQUE NOT ENFORCED DEFERRABLE INITIALLY DEFERRED);"
+      - id: column_constraint_norely
+        sql: "CREATE TABLE t (c INT UNIQUE NORELY);"
+      - id: column_mask
+        sql: "CREATE TABLE t (c STRING MASK mask_fn);"
+      - id: column_mask_using_columns
+        sql: "CREATE TABLE t (c STRING MASK mask_fn USING COLUMNS (d, 'x'), d STRING);"
+      - id: column_multiple_properties
+        sql: "CREATE TABLE t (c INT NOT NULL DEFAULT 0 COMMENT 'cmt');"
+      - id: table_primary_key
+        sql: "CREATE TABLE t (c INT NOT NULL, PRIMARY KEY (c));"
+      - id: table_named_primary_key
+        sql: "CREATE TABLE t (c INT NOT NULL, CONSTRAINT pk PRIMARY KEY (c));"
+      - id: table_primary_key_timeseries
+        sql: "CREATE TABLE t (c INT NOT NULL, d TIMESTAMP NOT NULL, PRIMARY KEY (c, d TIMESERIES));"
+      - id: table_primary_key_option
+        sql: "CREATE TABLE t (c INT NOT NULL, PRIMARY KEY (c) RELY);"
+      - id: table_unique
+        sql: "CREATE TABLE t (c INT, UNIQUE (c));"
+      - id: table_foreign_key
+        sql: "CREATE TABLE t (c INT, FOREIGN KEY (c) REFERENCES p);"
+      - id: table_foreign_key_columns
+        sql: "CREATE TABLE t (c INT, d INT, FOREIGN KEY (c, d) REFERENCES p (pc, pd));"
+      - id: table_foreign_key_options
+        sql: "CREATE TABLE t (c INT, CONSTRAINT fk FOREIGN KEY (c) REFERENCES p (pc) MATCH FULL ON UPDATE NO ACTION ON DELETE NO ACTION NOT ENFORCED RELY);"
+      - id: table_constraint_enable_novalidate
+        sql: "CREATE TABLE t (c INT, UNIQUE (c) ENABLE NOVALIDATE);"
+        note: "ENABLE NOVALIDATE accepted instead of NOT ENFORCED DEFERRABLE INITIALLY DEFERRED"
+      - id: table_multiple_constraints
+        sql: "CREATE TABLE t (c INT NOT NULL, d INT, PRIMARY KEY (c), UNIQUE (d));"
+      - id: clause_options
+        sql: "CREATE TABLE t (c INT) USING CSV OPTIONS (header 'true', delimiter ',');"
+      - id: clause_partitioned_by
+        sql: "CREATE TABLE t (c INT, p INT) PARTITIONED BY (p);"
+      - id: clause_partitioned_by_multiple
+        sql: "CREATE TABLE t (c INT, p INT, q INT) PARTITIONED BY (p, q);"
+      - id: clause_cluster_by
+        sql: "CREATE TABLE t (a INT, b STRING) CLUSTER BY (a);"
+      - id: clause_cluster_by_multiple
+        sql: "CREATE TABLE t (a INT, b STRING) CLUSTER BY (a, b);"
+      - id: clause_cluster_by_auto
+        sql: "CREATE TABLE t (a INT, b STRING) CLUSTER BY AUTO;"
+      - id: clause_cluster_by_none
+        sql: "CREATE TABLE t (a INT, b STRING) CLUSTER BY NONE;"
+      - id: clause_clustered_by
+        sql: "CREATE TABLE t (a INT, b STRING) USING PARQUET CLUSTERED BY (a) INTO 4 BUCKETS;"
+      - id: clause_clustered_by_multiple
+        sql: "CREATE TABLE t (a INT, b STRING) USING PARQUET CLUSTERED BY (a, b) INTO 4 BUCKETS;"
+      - id: clause_clustered_by_sorted_by
+        sql: "CREATE TABLE t (a INT, b STRING) USING PARQUET CLUSTERED BY (a) SORTED BY (b) INTO 4 BUCKETS;"
+      - id: clause_clustered_by_sorted_by_order
+        sql: "CREATE TABLE t (a INT, b STRING) USING PARQUET CLUSTERED BY (a) SORTED BY (b DESC, a ASC) INTO 4 BUCKETS;"
+      - id: clause_partitioned_by_clustered_by
+        sql: "CREATE TABLE t (a INT, b STRING, p INT) USING PARQUET PARTITIONED BY (p) CLUSTERED BY (a) INTO 4 BUCKETS;"
+      - id: clause_location
+        sql: "CREATE TABLE t (c INT) LOCATION '/path/to/data';"
+      - id: clause_location_with_credential
+        sql: "CREATE TABLE t (c INT) LOCATION 's3://bucket/path' WITH (CREDENTIAL cred);"
+      - id: clause_comment
+        sql: "CREATE TABLE t (c INT) COMMENT 'table comment';"
+      - id: clause_tblproperties
+        sql: "CREATE TABLE t (c INT) TBLPROPERTIES ('foo' = 'bar');"
+      - id: clause_tblproperties_dotted_key
+        sql: "CREATE TABLE t (c INT) TBLPROPERTIES (this.is.my.key = 12, this.is.my.key2 = true);"
+      - id: clause_tblproperties_no_equals
+        sql: "CREATE TABLE t (c INT) TBLPROPERTIES ('foo' 'bar');"
+        note: "Syntax: property_key [ = ] property_val, the equals sign is optional"
+      - id: clause_default_collation
+        sql: "CREATE TABLE t (c STRING) DEFAULT COLLATION UNICODE_CI;"
+      - id: clause_row_filter
+        sql: "CREATE TABLE t (c INT) WITH ROW FILTER filter_fn ON (c);"
+      - id: clause_row_filter_constant
+        sql: "CREATE TABLE t (c INT, d STRING) WITH ROW FILTER filter_fn ON (c, 'x');"
+      - id: clause_row_filter_no_columns
+        sql: "CREATE TABLE t (c INT) WITH ROW FILTER filter_fn ON ();"
+        note: "ROW FILTER func_name ON ( [ column_name | constant_literal [, ...] ] ): zero input columns are allowed"
+      - id: clauses_any_order
+        sql: "CREATE TABLE t (c INT) TBLPROPERTIES ('foo' = 'bar') COMMENT 'cmt';"
+      - id: clauses_all_combined
+        sql: "CREATE TABLE t (c INT, p INT) USING DELTA PARTITIONED BY (p) LOCATION '/path/to/data' COMMENT 'cmt' TBLPROPERTIES ('foo' = 'bar') DEFAULT COLLATION UTF8_BINARY;"
+      - id: as_query_with_clauses
+        sql: "CREATE TABLE t USING DELTA PARTITIONED BY (c) COMMENT 'cmt' AS SELECT 1 AS c;"
+      - id: as_query_cluster_by
+        sql: "CREATE TABLE t CLUSTER BY (c) AS SELECT 1 AS c;"
+      - id: as_query_cte
+        sql: "CREATE TABLE t AS WITH x AS (SELECT 1 AS c) SELECT * FROM x;"
+      - id: create_or_replace_as_query
+        sql: "CREATE OR REPLACE TABLE t AS SELECT * FROM s;"
+      - id: external_with_location_and_using
+        sql: "CREATE EXTERNAL TABLE t USING DELTA LOCATION '/path/to/data';"
+      - id: temp_table_default_column
+        sql: "CREATE TEMP TABLE t (c INT DEFAULT 1, d STRING NOT NULL COMMENT 'cmt');"
+      - id: temp_table_comment_tblproperties
+        sql: "CREATE TEMP TABLE t (c INT) COMMENT 'cmt' TBLPROPERTIES ('foo' = 'bar');"
+    examples:
+      - "CREATE TABLE student (id INT, name STRING, age INT) COMMENT 'this is a comment' TBLPROPERTIES ('foo' = 'bar');"
+      - "CREATE TABLE rectangles (a INT, b INT, area INT GENERATED ALWAYS AS (a * b));"
+      - "CREATE TABLE names (name STRING, first_name STRING, id STRING COLLATE UTF8_BINARY) DEFAULT COLLATION UNICODE_CI;"

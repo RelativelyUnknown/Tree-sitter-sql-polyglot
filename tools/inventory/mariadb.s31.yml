@@ -1,0 +1,205 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements:
+  - id: analyze_table
+    name: ANALYZE TABLE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/table-statements/analyze-table
+    tier: medium
+    probes:
+      - id: basic
+        sql: "ANALYZE TABLE t;"
+      - id: multiple_tables
+        sql: "ANALYZE TABLE t1, t2;"
+      - id: no_write_to_binlog
+        sql: "ANALYZE NO_WRITE_TO_BINLOG TABLE t;"
+      - id: local
+        sql: "ANALYZE LOCAL TABLE t;"
+      - id: persistent_for_all
+        sql: "ANALYZE TABLE t PERSISTENT FOR ALL;"
+      - id: persistent_for_columns_indexes
+        sql: "ANALYZE TABLE t PERSISTENT FOR COLUMNS (c1, c2) INDEXES (idx1, idx2);"
+    examples:
+      - "ANALYZE TABLE large_text_table PERSISTENT FOR COLUMNS(long_description);"
+
+  - id: check_table
+    name: CHECK TABLE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/table-statements/check-table
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CHECK TABLE t;"
+      - id: multiple_tables
+        sql: "CHECK TABLE t1, t2;"
+      - id: for_upgrade
+        sql: "CHECK TABLE t FOR UPGRADE;"
+      - id: quick
+        sql: "CHECK TABLE t QUICK;"
+      - id: fast
+        sql: "CHECK TABLE t FAST;"
+      - id: medium
+        sql: "CHECK TABLE t MEDIUM;"
+      - id: extended
+        sql: "CHECK TABLE t EXTENDED;"
+      - id: changed
+        sql: "CHECK TABLE t CHANGED;"
+      - id: multiple_options
+        sql: "CHECK TABLE t QUICK EXTENDED;"
+    examples:
+      - "CHECK TABLE y EXTENDED;"
+      - "CHECK TABLE t1 EXTENDED;"
+
+  - id: optimize_table
+    name: OPTIMIZE TABLE
+    doc: https://mariadb.com/docs/server/ha-and-performance/optimization-and-tuning/optimizing-tables/optimize-table
+    tier: medium
+    probes:
+      - id: basic
+        sql: "OPTIMIZE TABLE t;"
+      - id: multiple_tables
+        sql: "OPTIMIZE TABLE t1, t2;"
+      - id: no_write_to_binlog
+        sql: "OPTIMIZE NO_WRITE_TO_BINLOG TABLE t;"
+      - id: local
+        sql: "OPTIMIZE LOCAL TABLE t;"
+      - id: wait
+        sql: "OPTIMIZE TABLE t WAIT 10;"
+      - id: nowait
+        sql: "OPTIMIZE TABLE t NOWAIT;"
+
+  - id: repair_table
+    name: REPAIR TABLE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/table-statements/repair-table
+    tier: medium
+    probes:
+      - id: basic
+        sql: "REPAIR TABLE t;"
+      - id: multiple_tables
+        sql: "REPAIR TABLE t1, t2;"
+      - id: no_write_to_binlog
+        sql: "REPAIR NO_WRITE_TO_BINLOG TABLE t;"
+      - id: local
+        sql: "REPAIR LOCAL TABLE t;"
+      - id: quick
+        sql: "REPAIR TABLE t QUICK;"
+      - id: extended
+        sql: "REPAIR TABLE t EXTENDED;"
+      - id: use_frm
+        sql: "REPAIR TABLE t USE_FRM;"
+      - id: force
+        sql: "REPAIR TABLE t FORCE;"
+        note: FORCE is listed in the syntax block for MariaDB 11.5 and later.
+
+  - id: lock_tables
+    name: LOCK TABLES
+    doc: https://mariadb.com/docs/server/reference/sql-statements/transactions/lock-tables
+    tier: medium
+    probes:
+      - id: read
+        sql: "LOCK TABLES t READ;"
+      - id: table_singular
+        sql: "LOCK TABLE t READ;"
+      - id: read_local
+        sql: "LOCK TABLES t READ LOCAL;"
+      - id: write
+        sql: "LOCK TABLES t WRITE;"
+      - id: low_priority_write
+        sql: "LOCK TABLES t LOW_PRIORITY WRITE;"
+      - id: write_concurrent
+        sql: "LOCK TABLES t WRITE CONCURRENT;"
+      - id: alias_with_as
+        sql: "LOCK TABLES t AS a READ;"
+      - id: alias_without_as
+        sql: "LOCK TABLES t a WRITE;"
+      - id: multiple_tables
+        sql: "LOCK TABLES t1 READ, t2 WRITE;"
+      - id: wait
+        sql: "LOCK TABLES t WRITE WAIT 5;"
+      - id: nowait
+        sql: "LOCK TABLES t WRITE NOWAIT;"
+    examples:
+      - "LOCK TABLE t1 AS t1_alias1 READ;"
+
+  - id: unlock_tables
+    name: UNLOCK TABLES
+    doc: https://mariadb.com/docs/server/reference/sql-statements/transactions/transactions-unlock-tables
+    tier: medium
+    probes:
+      - id: basic
+        sql: "UNLOCK TABLES;"
+
+  - id: prepare
+    name: PREPARE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/prepared-statements/prepare-statement
+    tier: medium
+    probes:
+      - id: from_string
+        sql: "PREPARE stmt FROM 'SELECT 1';"
+      - id: from_user_variable
+        sql: "PREPARE stmt FROM @sql;"
+      - id: from_parameter_marker
+        sql: "PREPARE stmt FROM 'SELECT * FROM t WHERE c = ?';"
+      - id: local
+        sql: "PREPARE LOCAL stmt FROM 'SELECT 1';"
+    examples:
+      - "PREPARE test FROM \"select * from t1 where a=?\";"
+      - "PREPARE stmt FROM 'SELECT @x;';"
+
+  - id: execute
+    name: EXECUTE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/prepared-statements/execute-statement
+    tier: medium
+    probes:
+      - id: basic
+        sql: "EXECUTE stmt;"
+      - id: using_variable
+        sql: "EXECUTE stmt USING @a;"
+      - id: using_multiple
+        sql: "EXECUTE stmt USING @a, @b;"
+      - id: using_expressions
+        sql: "EXECUTE stmt USING 1, 'x', @a + 1;"
+      - id: local
+        sql: "EXECUTE LOCAL stmt USING @a;"
+    examples:
+      - "EXECUTE test USING @param;"
+
+  - id: execute_immediate
+    name: EXECUTE IMMEDIATE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/prepared-statements/execute-immediate
+    tier: medium
+    probes:
+      - id: string
+        sql: "EXECUTE IMMEDIATE 'SELECT 1';"
+      - id: user_variable
+        sql: "EXECUTE IMMEDIATE @stmt;"
+      - id: using_expression
+        sql: "EXECUTE IMMEDIATE 'SELECT * FROM t WHERE a = ?' USING 5;"
+      - id: using_multiple
+        sql: "EXECUTE IMMEDIATE 'SELECT ?, ?' USING @a, @b;"
+      - id: using_default
+        sql: "EXECUTE IMMEDIATE 'INSERT INTO t VALUES (?)' USING DEFAULT;"
+      - id: using_ignore
+        sql: "EXECUTE IMMEDIATE 'UPDATE t SET a = ?' USING IGNORE;"
+      - id: concat_source
+        sql: "EXECUTE IMMEDIATE CONCAT('SELECT COUNT(*) FROM ', 't1', ' WHERE a=?') USING 5 + 5;"
+    examples:
+      - "EXECUTE IMMEDIATE CONCAT('SELECT COUNT(*) FROM ', 't1', ' WHERE a=?') USING 5 + 5;"
+      - "EXECUTE IMMEDIATE 'INSERT INTO t1 VALUES (?)' USING DEFAULT;"
+
+  - id: deallocate_prepare
+    name: DEALLOCATE / DROP PREPARE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/prepared-statements/deallocate-drop-prepare
+    tier: medium
+    probes:
+      - id: deallocate
+        sql: "DEALLOCATE PREPARE stmt;"
+      - id: drop
+        sql: "DROP PREPARE stmt;"
+      - id: deallocate_local
+        sql: "DEALLOCATE PREPARE LOCAL stmt;"
+      - id: drop_local
+        sql: "DROP PREPARE LOCAL stmt;"
+    examples:
+      - "DEALLOCATE PREPARE stmt;"

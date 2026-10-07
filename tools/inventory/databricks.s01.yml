@@ -1,0 +1,135 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: query
+    name: Query
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-query
+    tier: high
+    probes:
+      - id: subselect
+        sql: "SELECT c FROM t;"
+      - id: cte
+        sql: "WITH q AS (SELECT c FROM t) SELECT c FROM q;"
+      - id: cte_multiple
+        sql: "WITH a AS (SELECT 1 AS c), b AS (SELECT 2 AS c) SELECT * FROM a UNION ALL SELECT * FROM b;"
+      - id: values_clause
+        sql: "VALUES (1, 'a'), (2, 'b');"
+      - id: nested_query
+        sql: "(SELECT c FROM t);"
+      - id: nested_query_with_cte
+        sql: "(WITH q AS (SELECT c FROM t) SELECT c FROM q) ORDER BY c;"
+      - id: table_clause
+        sql: "TABLE t;"
+      - id: from_clause
+        sql: "FROM t;"
+        note: FROM as the root of a query, Databricks Runtime 16.2 and above
+      - id: from_multiple_tables
+        sql: "FROM t1, t2;"
+      - id: from_stream
+        sql: "FROM STREAM t;"
+      - id: set_union
+        sql: "SELECT c FROM t1 UNION SELECT c FROM t2;"
+      - id: set_union_all
+        sql: "SELECT c FROM t1 UNION ALL SELECT c FROM t2;"
+      - id: set_except
+        sql: "SELECT c FROM t1 EXCEPT SELECT c FROM t2;"
+      - id: set_intersect
+        sql: "SELECT c FROM t1 INTERSECT SELECT c FROM t2;"
+      - id: order_by
+        sql: "SELECT c FROM t ORDER BY c DESC NULLS LAST;"
+      - id: distribute_by
+        sql: "SELECT c FROM t DISTRIBUTE BY c;"
+      - id: sort_by
+        sql: "SELECT c FROM t SORT BY c;"
+      - id: distribute_by_sort_by
+        sql: "SELECT c FROM t DISTRIBUTE BY c SORT BY c DESC;"
+      - id: cluster_by
+        sql: "SELECT c FROM t CLUSTER BY c;"
+      - id: window_clause
+        sql: "SELECT c, sum(c) OVER w FROM t WINDOW w AS (PARTITION BY c ORDER BY c);"
+      - id: limit
+        sql: "SELECT c FROM t LIMIT 10;"
+      - id: offset
+        sql: "SELECT c FROM t ORDER BY c LIMIT 10 OFFSET 5;"
+      - id: offset_only
+        sql: "SELECT c FROM t ORDER BY c OFFSET 5;"
+      - id: set_op_order_limit_offset
+        sql: "SELECT c FROM t1 UNION ALL SELECT c FROM t2 ORDER BY c LIMIT 10 OFFSET 2;"
+      - id: pipe_where
+        sql: "FROM t |> WHERE c > 1;"
+      - id: pipe_select
+        sql: "FROM t |> SELECT c, c + 1 AS d;"
+      - id: pipe_chain
+        sql: "FROM t |> WHERE c > 1 |> AGGREGATE sum(c) AS s GROUP BY d |> ORDER BY s |> LIMIT 10;"
+      - id: pipe_after_select
+        sql: "SELECT c FROM t |> WHERE c > 1;"
+
+  - id: select
+    name: SELECT (subselect)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT c FROM t;"
+      - id: select_all
+        sql: "SELECT ALL c FROM t;"
+      - id: select_distinct
+        sql: "SELECT DISTINCT c FROM t;"
+      - id: expression_alias
+        sql: "SELECT c + 1 AS d, c e FROM t;"
+      - id: star
+        sql: "SELECT * FROM t;"
+      - id: qualified_star
+        sql: "SELECT t.* FROM t;"
+      - id: star_except
+        sql: "SELECT * EXCEPT (c) FROM t;"
+      - id: star_except_multiple
+        sql: "SELECT * EXCEPT (c1, c2) FROM t;"
+      - id: qualified_star_except
+        sql: "SELECT t.* EXCEPT (c) FROM t;"
+      - id: star_except_nested_field
+        sql: "SELECT * EXCEPT (c.a) FROM t;"
+      - id: from_multiple_tables
+        sql: "SELECT * FROM t1, t2;"
+      - id: from_stream
+        sql: "SELECT * FROM STREAM t;"
+      - id: lateral_view
+        sql: "SELECT c, e FROM t LATERAL VIEW explode(arr) tbl AS e;"
+      - id: lateral_view_outer
+        sql: "SELECT c, e FROM t LATERAL VIEW OUTER explode(arr) tbl AS e;"
+      - id: lateral_view_multiple
+        sql: "SELECT c, e, f FROM t LATERAL VIEW explode(a1) t1 AS e LATERAL VIEW explode(a2) t2 AS f;"
+      - id: where
+        sql: "SELECT c FROM t WHERE c > 1;"
+      - id: group_by
+        sql: "SELECT c, count(*) FROM t GROUP BY c;"
+      - id: aggregate_filter
+        sql: "SELECT count(*) FILTER (WHERE c > 1) FROM t GROUP BY d;"
+      - id: having
+        sql: "SELECT c, count(*) FROM t GROUP BY c HAVING count(*) > 1;"
+      - id: having_without_group_by
+        sql: "SELECT count(*) FROM t HAVING count(*) > 1;"
+      - id: qualify
+        sql: "SELECT c, row_number() OVER (PARTITION BY c ORDER BY d) AS rn FROM t QUALIFY rn = 1;"
+      - id: qualify_window_in_clause
+        sql: "SELECT c FROM t QUALIFY row_number() OVER (PARTITION BY c ORDER BY d) = 1;"
+      - id: all_clauses
+        sql: "SELECT c, count(*) FROM t LATERAL VIEW explode(arr) x AS e WHERE c > 1 GROUP BY c HAVING count(*) > 1 QUALIFY rank() OVER (ORDER BY c) = 1;"
+      - id: time_travel_timestamp
+        sql: "SELECT * FROM t TIMESTAMP AS OF '2018-10-18T22:15:12.013Z';"
+      - id: time_travel_timestamp_expr
+        sql: "SELECT * FROM t TIMESTAMP AS OF current_timestamp() - INTERVAL 12 HOURS;"
+        note: "expression form listed under AS OF syntax on the SELECT page"
+      - id: time_travel_version
+        sql: "SELECT * FROM t VERSION AS OF 123;"
+      - id: at_syntax_timestamp
+        sql: "SELECT * FROM t@20190101000000000;"
+      - id: at_syntax_version
+        sql: "SELECT * FROM t@v123;"
+    examples:
+      - "SELECT * FROM VALUES ( 1 , 2 ) AS t1 ( c1 , c2 ) , VALUES ( 3 , 4 ) AS t2 ( c3 , c4 ) ;"
+      - "SELECT t2 . * FROM VALUES ( 1 , 2 ) AS t1 ( c1 , c2 ) , VALUES ( 3 , 4 ) AS t2 ( c3 , c4 ) ;"
+      - "SELECT * EXCEPT ( c4 ) FROM VALUES ( 1 , 2 ) AS t1 ( c1 , c2 ) , VALUES ( 3 , 4 ) AS t2 ( c3 , c4 ) ;"

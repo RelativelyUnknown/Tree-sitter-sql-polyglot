@@ -1,0 +1,145 @@
+dialect: tsql
+engine: SQL Server 2022 / Azure SQL Database
+version: "2022"
+source: https://learn.microsoft.com/en-us/sql/t-sql/statements/statements
+
+statements:
+  - id: create_trigger
+    name: CREATE TRIGGER
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-trigger-transact-sql
+    tier: high
+    probes:
+      - { id: dml_after_insert, sql: "CREATE TRIGGER trg ON t AFTER INSERT AS SELECT 1;" }
+      - { id: dml_for_insert, sql: "CREATE TRIGGER trg ON t FOR INSERT AS SELECT 1;" }
+      - { id: dml_schema_qualified, sql: "CREATE TRIGGER dbo.trg ON dbo.t AFTER INSERT AS SELECT 1;" }
+      - { id: or_alter, sql: "CREATE OR ALTER TRIGGER trg ON t AFTER INSERT AS SELECT 1;" }
+      - { id: on_view_instead_of, sql: "CREATE TRIGGER trg ON v INSTEAD OF INSERT AS SELECT 1;" }
+      - { id: after_update, sql: "CREATE TRIGGER trg ON t AFTER UPDATE AS SELECT 1;" }
+      - { id: after_delete, sql: "CREATE TRIGGER trg ON t AFTER DELETE AS SELECT 1;" }
+      - { id: events_comma_list, sql: "CREATE TRIGGER trg ON t AFTER INSERT, UPDATE, DELETE AS SELECT 1;" }
+      - { id: events_no_comma, sql: "CREATE TRIGGER trg ON t AFTER INSERT UPDATE DELETE AS SELECT 1;" }
+      - { id: with_encryption, sql: "CREATE TRIGGER trg ON t WITH ENCRYPTION AFTER INSERT AS SELECT 1;" }
+      - { id: with_execute_as_caller, sql: "CREATE TRIGGER trg ON t WITH EXECUTE AS CALLER AFTER INSERT AS SELECT 1;" }
+      - { id: with_execute_as_self, sql: "CREATE TRIGGER trg ON t WITH EXECUTE AS SELF AFTER INSERT AS SELECT 1;" }
+      - { id: with_execute_as_owner, sql: "CREATE TRIGGER trg ON t WITH EXECUTE AS OWNER AFTER INSERT AS SELECT 1;" }
+      - { id: with_execute_as_user, sql: "CREATE TRIGGER trg ON t WITH EXECUTE AS 'user1' AFTER INSERT AS SELECT 1;" }
+      - { id: with_multiple_options, sql: "CREATE TRIGGER trg ON t WITH ENCRYPTION, EXECUTE AS OWNER AFTER INSERT AS SELECT 1;" }
+      - { id: with_append, sql: "CREATE TRIGGER trg ON t AFTER INSERT WITH APPEND AS SELECT 1;" }
+      - { id: not_for_replication, sql: "CREATE TRIGGER trg ON t AFTER INSERT NOT FOR REPLICATION AS SELECT 1;" }
+      - { id: with_append_not_for_replication, sql: "CREATE TRIGGER trg ON t AFTER INSERT WITH APPEND NOT FOR REPLICATION AS SELECT 1;" }
+      - id: multiple_statements
+        sql: "CREATE TRIGGER trg ON t AFTER INSERT AS SELECT 1; SELECT 2;"
+        note: sql_statement [ ; ] [ , ...n ] - the body is a sequence of statements
+      - { id: begin_end_body, sql: "CREATE TRIGGER trg ON t AFTER INSERT AS BEGIN SET NOCOUNT ON; UPDATE t SET c = 1; END;" }
+      - { id: body_inserted_table, sql: "CREATE TRIGGER trg ON t AFTER INSERT AS BEGIN INSERT INTO log (id) SELECT id FROM inserted; END;" }
+      - { id: external_name, sql: "CREATE TRIGGER trg ON t AFTER INSERT AS EXTERNAL NAME asm.cls.mth;" }
+      - { id: external_name_with_options, sql: "CREATE TRIGGER trg ON t WITH EXECUTE AS OWNER AFTER INSERT AS EXTERNAL NAME asm.cls.mth;" }
+      - { id: memory_optimized_native, sql: "CREATE TRIGGER trg ON t WITH NATIVE_COMPILATION, SCHEMABINDING AFTER INSERT AS BEGIN ATOMIC WITH (TRANSACTION ISOLATION LEVEL = SNAPSHOT, LANGUAGE = N'us_english') SELECT 1; END;" }
+      - { id: memory_optimized_for, sql: "CREATE TRIGGER trg ON t WITH NATIVE_COMPILATION, SCHEMABINDING, EXECUTE AS OWNER FOR UPDATE AS BEGIN ATOMIC WITH (TRANSACTION ISOLATION LEVEL = SNAPSHOT, LANGUAGE = N'us_english') SELECT 1; END;" }
+      - { id: ddl_database, sql: "CREATE TRIGGER trg ON DATABASE FOR DROP_TABLE AS SELECT 1;" }
+      - { id: ddl_database_after, sql: "CREATE TRIGGER trg ON DATABASE AFTER CREATE_TABLE AS SELECT 1;" }
+      - { id: ddl_all_server, sql: "CREATE TRIGGER trg ON ALL SERVER FOR CREATE_DATABASE AS SELECT 1;" }
+      - { id: ddl_event_list, sql: "CREATE TRIGGER trg ON DATABASE FOR CREATE_TABLE, ALTER_TABLE, DROP_TABLE AS SELECT 1;" }
+      - { id: ddl_event_group, sql: "CREATE TRIGGER trg ON DATABASE FOR DDL_TABLE_EVENTS AS SELECT 1;" }
+      - { id: ddl_or_alter, sql: "CREATE OR ALTER TRIGGER trg ON DATABASE FOR DROP_SYNONYM AS SELECT 1;" }
+      - { id: ddl_with_encryption, sql: "CREATE TRIGGER trg ON DATABASE WITH ENCRYPTION FOR DROP_TABLE AS SELECT 1;" }
+      - { id: ddl_with_execute_as, sql: "CREATE TRIGGER trg ON ALL SERVER WITH EXECUTE AS 'login1' FOR CREATE_LOGIN AS SELECT 1;" }
+      - { id: ddl_external_name, sql: "CREATE TRIGGER trg ON DATABASE FOR DROP_TABLE AS EXTERNAL NAME asm.cls.mth;" }
+      - { id: ddl_multiple_statements, sql: "CREATE TRIGGER trg ON DATABASE FOR DROP_TABLE AS PRINT 'dropped'; ROLLBACK;" }
+      - { id: logon, sql: "CREATE TRIGGER trg ON ALL SERVER FOR LOGON AS SELECT 1;" }
+      - { id: logon_after, sql: "CREATE TRIGGER trg ON ALL SERVER AFTER LOGON AS SELECT 1;" }
+      - { id: logon_with_options, sql: "CREATE TRIGGER trg ON ALL SERVER WITH ENCRYPTION, EXECUTE AS 'login1' FOR LOGON AS SELECT 1;" }
+      - { id: logon_external_name, sql: "CREATE TRIGGER trg ON ALL SERVER FOR LOGON AS EXTERNAL NAME asm.cls.mth;" }
+    examples:
+      - |-
+        CREATE TRIGGER reminder1
+        ON Sales.Customer
+        AFTER INSERT, UPDATE
+        AS RAISERROR ('Notify Customer Relations', 16, 10);
+      - |-
+        CREATE TRIGGER safety
+            ON DATABASE
+            FOR DROP_SYNONYM
+            AS IF (@@ROWCOUNT = 0)
+                   RETURN;
+               RAISERROR ('You must disable Trigger "safety" to remove synonyms!', 10, 1);
+               ROLLBACK;
+      - |-
+        CREATE TRIGGER ddl_trig_database
+            ON ALL SERVER
+            FOR CREATE_DATABASE
+            AS PRINT 'Database Created.';
+               SELECT EVENTDATA().value('(/EVENT_INSTANCE/TSQLCommand/CommandText)[1]', 'nvarchar(max)');
+
+  - id: create_type
+    name: CREATE TYPE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-type-transact-sql
+    tier: high
+    probes:
+      - { id: from_base_type, sql: "CREATE TYPE ssn FROM VARCHAR(11);" }
+      - { id: schema_qualified, sql: "CREATE TYPE dbo.ssn FROM VARCHAR(11);" }
+      - { id: from_precision_scale, sql: "CREATE TYPE money_t FROM DECIMAL(18, 4);" }
+      - { id: from_not_null, sql: "CREATE TYPE ssn FROM VARCHAR(11) NOT NULL;" }
+      - { id: from_null, sql: "CREATE TYPE ssn FROM VARCHAR(11) NULL;" }
+      - { id: from_no_length, sql: "CREATE TYPE id_t FROM INT;" }
+      - { id: external_name_assembly, sql: "CREATE TYPE tp EXTERNAL NAME asm;" }
+      - { id: external_name_class, sql: "CREATE TYPE tp EXTERNAL NAME asm.cls;" }
+      - { id: external_name_bracketed_class, sql: "CREATE TYPE Utf8String EXTERNAL NAME utf8string.[Microsoft.Samples.SqlServer.utf8string];" }
+      - { id: as_table, sql: "CREATE TYPE tt AS TABLE (a INT, b VARCHAR(50));" }
+      - { id: table_column_collate, sql: "CREATE TYPE tt AS TABLE (a VARCHAR(10) COLLATE Latin1_General_CI_AS);" }
+      - { id: table_column_null_not_null, sql: "CREATE TYPE tt AS TABLE (a INT NOT NULL, b INT NULL);" }
+      - { id: table_column_default, sql: "CREATE TYPE tt AS TABLE (a INT DEFAULT 0);" }
+      - { id: table_column_identity, sql: "CREATE TYPE tt AS TABLE (a INT IDENTITY);" }
+      - { id: table_column_identity_seed, sql: "CREATE TYPE tt AS TABLE (a INT IDENTITY (1, 1));" }
+      - { id: table_column_rowguidcol, sql: "CREATE TYPE tt AS TABLE (a UNIQUEIDENTIFIER ROWGUIDCOL);" }
+      - { id: table_column_max, sql: "CREATE TYPE tt AS TABLE (a NVARCHAR(MAX));" }
+      - { id: table_column_schema_type, sql: "CREATE TYPE tt AS TABLE (a dbo.ssn);" }
+      - { id: table_column_xml_collection, sql: "CREATE TYPE tt AS TABLE (a XML(DOCUMENT dbo.sc));" }
+      - { id: table_column_primary_key, sql: "CREATE TYPE tt AS TABLE (a INT PRIMARY KEY);" }
+      - { id: table_column_unique, sql: "CREATE TYPE tt AS TABLE (a INT UNIQUE);" }
+      - { id: table_column_pk_clustered, sql: "CREATE TYPE tt AS TABLE (a INT PRIMARY KEY CLUSTERED);" }
+      - { id: table_column_unique_nonclustered, sql: "CREATE TYPE tt AS TABLE (a INT UNIQUE NONCLUSTERED);" }
+      - { id: table_column_pk_with_option, sql: "CREATE TYPE tt AS TABLE (a INT PRIMARY KEY WITH (IGNORE_DUP_KEY = ON));" }
+      - { id: table_column_check, sql: "CREATE TYPE tt AS TABLE (a INT CHECK (a > 0));" }
+      - { id: table_computed_column, sql: "CREATE TYPE tt AS TABLE (a INT, b AS a * 2);" }
+      - { id: table_computed_persisted, sql: "CREATE TYPE tt AS TABLE (a INT, b AS a * 2 PERSISTED);" }
+      - { id: table_computed_persisted_not_null, sql: "CREATE TYPE tt AS TABLE (a INT, b AS a * 2 PERSISTED NOT NULL);" }
+      - { id: table_computed_primary_key, sql: "CREATE TYPE tt AS TABLE (a INT, b AS a * 2 PRIMARY KEY);" }
+      - { id: table_computed_check, sql: "CREATE TYPE tt AS TABLE (a INT, b AS a * 2 CHECK (b > 0));" }
+      - { id: table_pk_constraint, sql: "CREATE TYPE tt AS TABLE (a INT NOT NULL, PRIMARY KEY (a));" }
+      - { id: table_pk_constraint_clustered_desc, sql: "CREATE TYPE tt AS TABLE (a INT NOT NULL, b INT NOT NULL, PRIMARY KEY CLUSTERED (a ASC, b DESC));" }
+      - { id: table_unique_constraint, sql: "CREATE TYPE tt AS TABLE (a INT, UNIQUE NONCLUSTERED (a));" }
+      - { id: table_constraint_with_option, sql: "CREATE TYPE tt AS TABLE (a INT NOT NULL, PRIMARY KEY (a) WITH (IGNORE_DUP_KEY = OFF));" }
+      - { id: table_check_constraint, sql: "CREATE TYPE tt AS TABLE (a INT, b INT, CHECK (a < b));" }
+      - { id: table_index, sql: "CREATE TYPE tt AS TABLE (a INT, INDEX ix (a));" }
+      - { id: table_index_clustered, sql: "CREATE TYPE tt AS TABLE (a INT, INDEX ix CLUSTERED (a));" }
+      - { id: table_index_nonclustered_desc, sql: "CREATE TYPE tt AS TABLE (a INT, b INT, INDEX ix NONCLUSTERED (a ASC, b DESC));" }
+      - { id: table_index_include, sql: "CREATE TYPE tt AS TABLE (a INT, b INT, INDEX ix (a) INCLUDE (b));" }
+      - { id: table_pk_and_index, sql: "CREATE TYPE tt AS TABLE (a INT NOT NULL, b INT, PRIMARY KEY (a), INDEX ix (b));" }
+      - { id: memory_optimized, sql: "CREATE TYPE tt AS TABLE (a INT NOT NULL PRIMARY KEY NONCLUSTERED, b INT) WITH (MEMORY_OPTIMIZED = ON);" }
+      - { id: memory_optimized_off, sql: "CREATE TYPE tt AS TABLE (a INT) WITH (MEMORY_OPTIMIZED = OFF);" }
+      - { id: memory_optimized_column_pk_hash, sql: "CREATE TYPE tt AS TABLE (a INT NOT NULL PRIMARY KEY NONCLUSTERED HASH WITH (BUCKET_COUNT = 1024)) WITH (MEMORY_OPTIMIZED = ON);" }
+      - { id: memory_optimized_table_pk_hash, sql: "CREATE TYPE tt AS TABLE (a INT NOT NULL, b INT NOT NULL, PRIMARY KEY NONCLUSTERED HASH (a, b) WITH (BUCKET_COUNT = 1024)) WITH (MEMORY_OPTIMIZED = ON);" }
+      - { id: memory_optimized_table_pk_nonclustered, sql: "CREATE TYPE tt AS TABLE (a INT NOT NULL, PRIMARY KEY NONCLUSTERED (a ASC)) WITH (MEMORY_OPTIMIZED = ON);" }
+      - { id: memory_optimized_column_index_hash, sql: "CREATE TYPE tt AS TABLE (a INT NOT NULL PRIMARY KEY NONCLUSTERED, b INT INDEX ix NONCLUSTERED HASH (b) WITH (BUCKET_COUNT = 1024)) WITH (MEMORY_OPTIMIZED = ON);" }
+      - { id: memory_optimized_column_index_range, sql: "CREATE TYPE tt AS TABLE (a INT NOT NULL PRIMARY KEY NONCLUSTERED, b INT INDEX ix NONCLUSTERED (b DESC)) WITH (MEMORY_OPTIMIZED = ON);" }
+      - { id: memory_optimized_table_index_hash, sql: "CREATE TYPE tt AS TABLE (a INT NOT NULL, b INT, PRIMARY KEY NONCLUSTERED (a), INDEX ix HASH (b) WITH (BUCKET_COUNT = 1024)) WITH (MEMORY_OPTIMIZED = ON);" }
+      - { id: memory_optimized_table_index_range, sql: "CREATE TYPE tt AS TABLE (a INT NOT NULL, b INT, PRIMARY KEY NONCLUSTERED (a), INDEX ix NONCLUSTERED (b ASC)) WITH (MEMORY_OPTIMIZED = ON);" }
+      - { id: memory_optimized_identity, sql: "CREATE TYPE tt AS TABLE (a INT NOT NULL IDENTITY (1, 1) PRIMARY KEY NONCLUSTERED) WITH (MEMORY_OPTIMIZED = ON);" }
+    examples:
+      - |-
+        CREATE TYPE SSN
+        FROM VARCHAR(11) NOT NULL;
+      - |-
+        CREATE TYPE LocationTableType AS TABLE (
+            LocationName VARCHAR(50),
+            CostRate INT
+        );
+      - |-
+        CREATE TYPE InventoryItem AS TABLE (
+            [Name] NVARCHAR(50) NOT NULL,
+            SupplierId BIGINT NOT NULL,
+            Price DECIMAL(18, 4) NULL,
+            PRIMARY KEY (Name),
+            INDEX IX_InventoryItem_Price(Price)
+        );

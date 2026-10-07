@@ -1,0 +1,236 @@
+dialect: postgres
+engine: PostgreSQL
+version: "17"
+source: https://www.postgresql.org/docs/17/sql-commands.html
+
+statements:
+  - id: set_constraints
+    name: SET CONSTRAINTS
+    doc: https://www.postgresql.org/docs/17/sql-set-constraints.html
+    tier: medium
+    probes:
+      - { id: all_deferred, sql: "SET CONSTRAINTS ALL DEFERRED;" }
+      - { id: all_immediate, sql: "SET CONSTRAINTS ALL IMMEDIATE;" }
+      - { id: named_deferred, sql: "SET CONSTRAINTS c1, c2 DEFERRED;" }
+      - { id: schema_qualified_immediate, sql: "SET CONSTRAINTS s.c1 IMMEDIATE;" }
+
+  - id: set_role
+    name: SET ROLE
+    doc: https://www.postgresql.org/docs/17/sql-set-role.html
+    tier: medium
+    probes:
+      - { id: set_role, sql: "SET ROLE r;" }
+      - { id: session_role, sql: "SET SESSION ROLE r;" }
+      - { id: local_role_string, sql: "SET LOCAL ROLE 'r';" }
+      - { id: role_none, sql: "SET ROLE NONE;" }
+      - { id: session_role_none, sql: "SET SESSION ROLE NONE;" }
+      - { id: reset_role, sql: "RESET ROLE;" }
+    examples:
+      - "SET ROLE 'paul';"
+
+  - id: set_session_authorization
+    name: SET SESSION AUTHORIZATION
+    doc: https://www.postgresql.org/docs/17/sql-set-session-authorization.html
+    tier: medium
+    probes:
+      - { id: set_user, sql: "SET SESSION AUTHORIZATION u;" }
+      - { id: session_user_string, sql: "SET SESSION SESSION AUTHORIZATION 'u';" }
+      - { id: local_user, sql: "SET LOCAL SESSION AUTHORIZATION u;" }
+      - { id: default, sql: "SET SESSION AUTHORIZATION DEFAULT;" }
+      - { id: reset, sql: "RESET SESSION AUTHORIZATION;" }
+    examples:
+      - "SET SESSION AUTHORIZATION 'paul';"
+
+  - id: show
+    name: SHOW
+    doc: https://www.postgresql.org/docs/17/sql-show.html
+    tier: medium
+    probes:
+      - { id: show_name, sql: "SHOW search_path;" }
+      - { id: show_all, sql: "SHOW ALL;" }
+      - { id: show_server_version, sql: "SHOW server_version;" }
+    examples:
+      - "SHOW DateStyle;"
+      - "SHOW geqo;"
+      - "SHOW ALL;"
+
+  - id: unlisten
+    name: UNLISTEN
+    doc: https://www.postgresql.org/docs/17/sql-unlisten.html
+    tier: medium
+    probes:
+      - { id: channel, sql: "UNLISTEN ch;" }
+      - { id: all_channels, sql: "UNLISTEN *;" }
+    examples:
+      - "UNLISTEN virtual;"
+
+  - id: vacuum
+    name: VACUUM
+    doc: https://www.postgresql.org/docs/17/sql-vacuum.html
+    tier: medium
+    probes:
+      - { id: plain, sql: "VACUUM;" }
+      - { id: table, sql: "VACUUM t;" }
+      - { id: table_columns, sql: "VACUUM t (a, b);" }
+      - { id: multiple_tables, sql: "VACUUM t1, t2 (c);" }
+      - { id: option_list, sql: "VACUUM (FULL, FREEZE, VERBOSE, ANALYZE) t;" }
+      - { id: option_booleans, sql: "VACUUM (FULL true, FREEZE false, VERBOSE on, ANALYZE off) t;" }
+      - { id: skip_options, sql: "VACUUM (DISABLE_PAGE_SKIPPING, SKIP_LOCKED, SKIP_DATABASE_STATS) t;" }
+      - { id: index_cleanup, sql: "VACUUM (INDEX_CLEANUP AUTO) t;" }
+      - { id: index_cleanup_off, sql: "VACUUM (INDEX_CLEANUP OFF, PROCESS_MAIN false, PROCESS_TOAST true, TRUNCATE false) t;" }
+      - { id: parallel, sql: "VACUUM (PARALLEL 2) t;" }
+      - { id: only_database_stats, sql: "VACUUM (ONLY_DATABASE_STATS);" }
+      - { id: buffer_usage_limit, sql: "VACUUM (BUFFER_USAGE_LIMIT '256kB') t;" }
+    examples:
+      - "VACUUM (VERBOSE, ANALYZE) onek;"
+
+  - id: alter_aggregate
+    name: ALTER AGGREGATE
+    doc: https://www.postgresql.org/docs/17/sql-alteraggregate.html
+    tier: low
+    probes:
+      - { id: rename, sql: "ALTER AGGREGATE agg (integer) RENAME TO agg2;" }
+      - { id: owner_star, sql: "ALTER AGGREGATE agg (*) OWNER TO CURRENT_USER;" }
+      - { id: set_schema_order_by, sql: "ALTER AGGREGATE agg (integer ORDER BY integer) SET SCHEMA s;" }
+
+  - id: alter_collation
+    name: ALTER COLLATION
+    doc: https://www.postgresql.org/docs/17/sql-altercollation.html
+    tier: low
+    probes:
+      - { id: refresh_version, sql: "ALTER COLLATION coll REFRESH VERSION;" }
+      - { id: rename, sql: "ALTER COLLATION coll RENAME TO coll2;" }
+      - { id: owner, sql: "ALTER COLLATION coll OWNER TO r;" }
+      - { id: set_schema, sql: "ALTER COLLATION coll SET SCHEMA s;" }
+
+  - id: alter_conversion
+    name: ALTER CONVERSION
+    doc: https://www.postgresql.org/docs/17/sql-alterconversion.html
+    tier: low
+    probes:
+      - { id: rename, sql: "ALTER CONVERSION conv RENAME TO conv2;" }
+      - { id: owner, sql: "ALTER CONVERSION conv OWNER TO SESSION_USER;" }
+      - { id: set_schema, sql: "ALTER CONVERSION conv SET SCHEMA s;" }
+
+  - id: alter_event_trigger
+    name: ALTER EVENT TRIGGER
+    doc: https://www.postgresql.org/docs/17/sql-altereventtrigger.html
+    tier: low
+    probes:
+      - { id: disable, sql: "ALTER EVENT TRIGGER et DISABLE;" }
+      - { id: enable_always, sql: "ALTER EVENT TRIGGER et ENABLE ALWAYS;" }
+      - { id: owner, sql: "ALTER EVENT TRIGGER et OWNER TO r;" }
+      - { id: rename, sql: "ALTER EVENT TRIGGER et RENAME TO et2;" }
+
+  - id: alter_foreign_data_wrapper
+    name: ALTER FOREIGN DATA WRAPPER
+    doc: https://www.postgresql.org/docs/17/sql-alterforeigndatawrapper.html
+    tier: low
+    probes:
+      - { id: handler_validator_options, sql: "ALTER FOREIGN DATA WRAPPER fdw HANDLER h VALIDATOR v OPTIONS (ADD o1 'v1', SET o2 'v2', DROP o3);" }
+      - { id: no_handler, sql: "ALTER FOREIGN DATA WRAPPER fdw NO HANDLER NO VALIDATOR;" }
+      - { id: owner, sql: "ALTER FOREIGN DATA WRAPPER fdw OWNER TO r;" }
+      - { id: rename, sql: "ALTER FOREIGN DATA WRAPPER fdw RENAME TO fdw2;" }
+
+  - id: alter_language
+    name: ALTER LANGUAGE
+    doc: https://www.postgresql.org/docs/17/sql-alterlanguage.html
+    tier: low
+    probes:
+      - { id: rename, sql: "ALTER LANGUAGE lang RENAME TO lang2;" }
+      - { id: procedural_owner, sql: "ALTER PROCEDURAL LANGUAGE lang OWNER TO r;" }
+
+  - id: alter_large_object
+    name: ALTER LARGE OBJECT
+    doc: https://www.postgresql.org/docs/17/sql-alterlargeobject.html
+    tier: low
+    probes:
+      - { id: owner, sql: "ALTER LARGE OBJECT 16385 OWNER TO r;" }
+
+  - id: alter_operator
+    name: ALTER OPERATOR
+    doc: https://www.postgresql.org/docs/17/sql-alteroperator.html
+    tier: low
+    probes:
+      - { id: owner, sql: "ALTER OPERATOR === (integer, integer) OWNER TO r;" }
+      - { id: set_schema_none, sql: "ALTER OPERATOR ~~~ (NONE, integer) SET SCHEMA s;" }
+      - { id: set_options, sql: "ALTER OPERATOR === (integer, integer) SET (RESTRICT = NONE, JOIN = NONE, COMMUTATOR = ===, NEGATOR = !==, HASHES, MERGES);" }
+
+  - id: alter_operator_class
+    name: ALTER OPERATOR CLASS
+    doc: https://www.postgresql.org/docs/17/sql-alteropclass.html
+    tier: low
+    probes:
+      - { id: rename, sql: "ALTER OPERATOR CLASS oc USING btree RENAME TO oc2;" }
+      - { id: owner, sql: "ALTER OPERATOR CLASS oc USING btree OWNER TO r;" }
+      - { id: set_schema, sql: "ALTER OPERATOR CLASS oc USING btree SET SCHEMA s;" }
+
+  - id: alter_operator_family
+    name: ALTER OPERATOR FAMILY
+    doc: https://www.postgresql.org/docs/17/sql-alteropfamily.html
+    tier: low
+    probes:
+      - { id: add_operator_function, sql: "ALTER OPERATOR FAMILY f USING btree ADD OPERATOR 1 < (integer, bigint) FOR SEARCH, FUNCTION 1 (integer, bigint) btint48cmp(integer, bigint);" }
+      - { id: drop_operator_function, sql: "ALTER OPERATOR FAMILY f USING btree DROP OPERATOR 1 (integer, bigint), FUNCTION 1 (integer, bigint);" }
+      - { id: rename, sql: "ALTER OPERATOR FAMILY f USING btree RENAME TO f2;" }
+      - { id: owner, sql: "ALTER OPERATOR FAMILY f USING btree OWNER TO r;" }
+      - { id: set_schema, sql: "ALTER OPERATOR FAMILY f USING btree SET SCHEMA s;" }
+
+  - id: alter_publication
+    name: ALTER PUBLICATION
+    doc: https://www.postgresql.org/docs/17/sql-alterpublication.html
+    tier: low
+    probes:
+      - { id: add_table, sql: "ALTER PUBLICATION p ADD TABLE ONLY t (a, b) WHERE (a > 0);" }
+      - { id: set_tables_in_schema, sql: "ALTER PUBLICATION p SET TABLES IN SCHEMA s, CURRENT_SCHEMA;" }
+      - { id: drop_table, sql: "ALTER PUBLICATION p DROP TABLE t;" }
+      - { id: set_parameter, sql: "ALTER PUBLICATION p SET (publish = 'insert, update');" }
+      - { id: owner, sql: "ALTER PUBLICATION p OWNER TO r;" }
+      - { id: rename, sql: "ALTER PUBLICATION p RENAME TO p2;" }
+
+  - id: alter_server
+    name: ALTER SERVER
+    doc: https://www.postgresql.org/docs/17/sql-alterserver.html
+    tier: low
+    probes:
+      - { id: version_options, sql: "ALTER SERVER srv VERSION '2.0' OPTIONS (ADD host 'h', SET port '5433', DROP dbname);" }
+      - { id: owner, sql: "ALTER SERVER srv OWNER TO r;" }
+      - { id: rename, sql: "ALTER SERVER srv RENAME TO srv2;" }
+
+  - id: alter_statistics
+    name: ALTER STATISTICS
+    doc: https://www.postgresql.org/docs/17/sql-alterstatistics.html
+    tier: low
+    probes:
+      - { id: owner, sql: "ALTER STATISTICS st OWNER TO r;" }
+      - { id: rename, sql: "ALTER STATISTICS st RENAME TO st2;" }
+      - { id: set_schema, sql: "ALTER STATISTICS st SET SCHEMA s;" }
+      - { id: set_statistics, sql: "ALTER STATISTICS st SET STATISTICS 500;" }
+      - { id: set_statistics_default, sql: "ALTER STATISTICS st SET STATISTICS DEFAULT;" }
+
+  - id: alter_subscription
+    name: ALTER SUBSCRIPTION
+    doc: https://www.postgresql.org/docs/17/sql-altersubscription.html
+    tier: low
+    probes:
+      - { id: connection, sql: "ALTER SUBSCRIPTION sub CONNECTION 'host=h dbname=d';" }
+      - { id: set_publication, sql: "ALTER SUBSCRIPTION sub SET PUBLICATION p1, p2 WITH (refresh = false);" }
+      - { id: add_publication, sql: "ALTER SUBSCRIPTION sub ADD PUBLICATION p3;" }
+      - { id: drop_publication, sql: "ALTER SUBSCRIPTION sub DROP PUBLICATION p3;" }
+      - { id: refresh_publication, sql: "ALTER SUBSCRIPTION sub REFRESH PUBLICATION WITH (copy_data = false);" }
+      - { id: enable_disable, sql: "ALTER SUBSCRIPTION sub ENABLE;" }
+      - { id: disable, sql: "ALTER SUBSCRIPTION sub DISABLE;" }
+      - { id: set_parameter, sql: "ALTER SUBSCRIPTION sub SET (slot_name = 's', synchronous_commit = 'off');" }
+      - { id: skip, sql: "ALTER SUBSCRIPTION sub SKIP (lsn = '0/14C0378');" }
+      - { id: owner, sql: "ALTER SUBSCRIPTION sub OWNER TO r;" }
+      - { id: rename, sql: "ALTER SUBSCRIPTION sub RENAME TO sub2;" }
+
+  - id: alter_system
+    name: ALTER SYSTEM
+    doc: https://www.postgresql.org/docs/17/sql-altersystem.html
+    tier: low
+    probes:
+      - { id: set_to, sql: "ALTER SYSTEM SET work_mem TO '64MB';" }
+      - { id: set_equals_default, sql: "ALTER SYSTEM SET work_mem = DEFAULT;" }
+      - { id: reset, sql: "ALTER SYSTEM RESET work_mem;" }
+      - { id: reset_all, sql: "ALTER SYSTEM RESET ALL;" }

@@ -1,0 +1,53 @@
+dialect: trino
+engine: Trino
+version: "483"
+source: https://trino.io/docs/current/sql.html
+
+statements:
+  - id: update
+    name: UPDATE
+    doc: https://trino.io/docs/current/sql/update.html
+    tier: high
+    probes:
+      - id: set_single
+        sql: "UPDATE t SET c = 1;"
+      - id: set_multiple
+        sql: "UPDATE t SET c = 1, d = 'x';"
+      - id: where
+        sql: "UPDATE t SET c = 1 WHERE d IS NULL;"
+      - id: branch
+        sql: "UPDATE t @ audit SET c = 1;"
+      - id: branch_where
+        sql: "UPDATE t @ audit SET c = 1 WHERE d IS NULL;"
+      - id: qualified_table
+        sql: "UPDATE cat.sch.t SET c = 1;"
+      - id: scalar_subquery_value
+        sql: "UPDATE t SET c = (SELECT e.name FROM s e WHERE e.id = t.id);"
+      - id: function_value
+        sql: "UPDATE t SET c = now();"
+    examples:
+      - "UPDATE purchases SET status = 'OVERDUE' WHERE ship_date IS NULL;"
+      - "UPDATE customers SET account_manager = 'John Henry', assign_date = now();"
+      - "UPDATE new_hires SET manager = (SELECT e.name FROM employees e WHERE e.employee_id = new_hires.manager_id);"
+
+  - id: values
+    name: VALUES
+    doc: https://trino.io/docs/current/sql/values.html
+    tier: high
+    probes:
+      - id: single_expressions
+        sql: "VALUES 1, 2, 3;"
+      - id: rows
+        sql: "VALUES (1, 'a'), (2, 'b'), (3, 'c');"
+      - id: single_row
+        sql: "VALUES (1, 'a');"
+      - id: from_subquery_aliases
+        sql: "SELECT * FROM (VALUES (1, 'a'), (2, 'b')) AS t (id, name);"
+      - id: insert_values
+        sql: "INSERT INTO t VALUES (1, 'a'), (2, 'b');"
+      - id: create_table_as_values
+        sql: "CREATE TABLE example AS SELECT * FROM (VALUES (1, 'a'), (2, 'b')) AS t (id, name);"
+    examples:
+      - "VALUES 1, 2, 3;"
+      - "VALUES (1, 'a'), (2, 'b'), (3, 'c');"
+      - "SELECT * FROM (VALUES (1, 'a'), (2, 'b'), (3, 'c')) AS t (id, name);"

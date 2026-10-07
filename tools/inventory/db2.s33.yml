@@ -1,0 +1,201 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "12.1"
+source: https://www.ibm.com/docs/en/db2/12.1.x?topic=reference-statements
+
+statements:
+  - id: grant_sequence_privileges
+    name: GRANT (sequence privileges)
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-grant-sequence-privileges
+    tier: medium
+    probes:
+      - id: usage
+        sql: "GRANT USAGE ON SEQUENCE s TO USER u;"
+      - id: alter_group
+        sql: "GRANT ALTER ON SEQUENCE s TO GROUP g;"
+      - id: both_to_role
+        sql: "GRANT USAGE, ALTER ON SEQUENCE s TO ROLE r;"
+      - id: public_with_grant_option
+        sql: "GRANT USAGE ON SEQUENCE s TO PUBLIC WITH GRANT OPTION;"
+    examples:
+      - "GRANT USAGE ON SEQUENCE ORG_SEQ TO PUBLIC;"
+      - "GRANT ALTER ON SEQUENCE GENERATE_ID TO BOBBY WITH GRANT OPTION;"
+
+  - id: grant_table_view_or_nickname_privileges
+    name: GRANT (table, view, or nickname privileges)
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-grant-table-view-nickname-privileges
+    tier: medium
+    probes:
+      - id: all_privileges
+        sql: "GRANT ALL PRIVILEGES ON TABLE t TO PUBLIC;"
+      - id: select_insert_users
+        sql: "GRANT SELECT, INSERT ON t TO USER u1, USER u2;"
+      - id: control_to_role
+        sql: "GRANT CONTROL ON TABLE t TO ROLE r;"
+      - id: update_columns
+        sql: "GRANT UPDATE (c1, c2) ON t TO GROUP g;"
+      - id: references_columns
+        sql: "GRANT REFERENCES (c1) ON TABLE t TO u;"
+      - id: alter_index_delete
+        sql: "GRANT ALTER, INDEX, DELETE ON TABLE t TO u;"
+      - id: with_grant_option
+        sql: "GRANT SELECT ON t TO u WITH GRANT OPTION;"
+    examples:
+      - "GRANT ALL ON WESTERN_CR TO PUBLIC;"
+      - "GRANT SELECT, INSERT ON CALENDAR TO USER PHIL, USER CLAIRE;"
+      - "GRANT ALL ON COUNCIL TO USER FRANK WITH GRANT OPTION;"
+
+  - id: pipe
+    name: PIPE
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-pipe
+    tier: medium
+    probes:
+      - id: expression_list
+        sql: "CREATE FUNCTION f() RETURNS TABLE (a INT, b INT) BEGIN PIPE (1, 2); RETURN; END;"
+        note: PIPE is only valid inside a compiled SQL table function body
+      - id: null_in_list
+        sql: "CREATE FUNCTION f() RETURNS TABLE (a INT, b INT) BEGIN PIPE (1, NULL); RETURN; END;"
+      - id: row_fullselect
+        sql: "CREATE FUNCTION f() RETURNS TABLE (a INT, b INT) BEGIN PIPE (SELECT 1, 2 FROM SYSIBM.SYSDUMMY1); RETURN; END;"
+
+  - id: prepare
+    name: PREPARE
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-prepare
+    tier: medium
+    probes:
+      - id: from_string
+        sql: "PREPARE s FROM 'SELECT 1 FROM SYSIBM.SYSDUMMY1';"
+      - id: from_host_variable
+        sql: "PREPARE s FROM v;"
+      - id: output_into
+        sql: "PREPARE s OUTPUT INTO d FROM v;"
+      - id: input_into
+        sql: "PREPARE s INPUT INTO d FROM v;"
+      - id: output_and_input_into
+        sql: "PREPARE s OUTPUT INTO d1 INPUT INTO d2 FROM v;"
+
+  - id: refresh_table
+    name: REFRESH TABLE
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-refresh-table
+    tier: medium
+    probes:
+      - id: basic
+        sql: "REFRESH TABLE t;"
+      - id: multiple_tables
+        sql: "REFRESH TABLE t1, t2;"
+      - id: incremental
+        sql: "REFRESH TABLE t INCREMENTAL;"
+      - id: not_incremental
+        sql: "REFRESH TABLE t NOT INCREMENTAL;"
+      - id: allow_no_access
+        sql: "REFRESH TABLE t ALLOW NO ACCESS;"
+      - id: allow_read_access
+        sql: "REFRESH TABLE t ALLOW READ ACCESS;"
+      - id: allow_write_access
+        sql: "REFRESH TABLE t ALLOW WRITE ACCESS;"
+      - id: query_optimization
+        sql: "REFRESH TABLE t ALLOW QUERY OPTIMIZATION USING REFRESH DEFERRED TABLES WITH REFRESH AGE ANY;"
+
+  - id: release_connection
+    name: RELEASE (connection)
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-release-connection
+    tier: medium
+    probes:
+      - id: server_name
+        sql: "RELEASE srv;"
+      - id: host_variable
+        sql: "RELEASE :hv;"
+      - id: current
+        sql: "RELEASE CURRENT;"
+      - id: all
+        sql: "RELEASE ALL;"
+      - id: all_sql
+        sql: "RELEASE ALL SQL;"
+
+  - id: rename
+    name: RENAME
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-rename
+    tier: medium
+    probes:
+      - id: table
+        sql: "RENAME TABLE t TO t2;"
+      - id: table_qualified_source
+        sql: "RENAME TABLE s.t TO t2;"
+      - id: index
+        sql: "RENAME INDEX idx TO idx2;"
+      - id: index_qualified_source
+        sql: "RENAME INDEX s.idx TO idx2;"
+    examples:
+      - "RENAME TABLE EMP TO EMPLOYEE;"
+      - "RENAME TABLE ABC.EMP TO EMPLOYEE;"
+
+  - id: revoke_database_authorities
+    name: REVOKE (database authorities)
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-revoke-database-authorities
+    tier: medium
+    probes:
+      - id: single_from_user
+        sql: "REVOKE CREATETAB ON DATABASE FROM USER u;"
+      - id: from_group
+        sql: "REVOKE BINDADD ON DATABASE FROM GROUP g;"
+      - id: from_role
+        sql: "REVOKE CONNECT ON DATABASE FROM ROLE r;"
+      - id: multiple_authorities
+        sql: "REVOKE LOAD, EXPLAIN, IMPLICIT_SCHEMA ON DATABASE FROM PUBLIC;"
+      - id: dbadm_dataaccess
+        sql: "REVOKE DBADM, DATAACCESS, ACCESSCTRL ON DATABASE FROM USER u;"
+      - id: by_all
+        sql: "REVOKE SECADM ON DATABASE FROM USER u BY ALL;"
+    examples:
+      - "REVOKE CREATETAB ON DATABASE FROM USER6;"
+      - "REVOKE BINDADD ON DATABASE FROM GROUP D024;"
+      - "REVOKE SECADM ON DATABASE FROM USER Walid;"
+
+  - id: revoke_role
+    name: REVOKE (role)
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-revoke-role
+    tier: medium
+    probes:
+      - id: basic
+        sql: "REVOKE ROLE r FROM USER u;"
+      - id: admin_option_for
+        sql: "REVOKE ADMIN OPTION FOR ROLE r FROM USER u;"
+      - id: multiple_roles_and_grantees
+        sql: "REVOKE ROLE r1, r2 FROM USER u, GROUP g, ROLE r3;"
+      - id: from_public
+        sql: "REVOKE ROLE r FROM PUBLIC;"
+      - id: by_all
+        sql: "REVOKE ROLE r FROM USER u BY ALL;"
+    examples:
+      - "REVOKE ROLE INTERN FROM ROLE DOCTOR;"
+      - "REVOKE ROLE INTERN FROM PUBLIC;"
+      - "REVOKE ROLE SPECIALIST FROM USER BOB, GROUP TORONTO BY ALL;"
+
+  - id: revoke_routine_privileges
+    name: REVOKE (routine privileges)
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-revoke-routine-privileges
+    tier: medium
+    probes:
+      - id: function
+        sql: "REVOKE EXECUTE ON FUNCTION f FROM u RESTRICT;"
+      - id: function_with_signature
+        sql: "REVOKE EXECUTE ON FUNCTION s.f (INTEGER, CHAR(10)) FROM USER u RESTRICT;"
+      - id: specific_function
+        sql: "REVOKE EXECUTE ON SPECIFIC FUNCTION sf FROM PUBLIC RESTRICT;"
+      - id: all_functions_in_schema
+        sql: "REVOKE EXECUTE ON FUNCTION s.* FROM GROUP g RESTRICT;"
+      - id: method
+        sql: "REVOKE EXECUTE ON METHOD m (INTEGER) FOR typ FROM ROLE r RESTRICT;"
+      - id: specific_method
+        sql: "REVOKE EXECUTE ON SPECIFIC METHOD sm FROM u RESTRICT;"
+      - id: all_methods_for_type
+        sql: "REVOKE EXECUTE ON METHOD * FOR typ FROM u RESTRICT;"
+      - id: procedure
+        sql: "REVOKE EXECUTE ON PROCEDURE p FROM PUBLIC RESTRICT;"
+      - id: specific_procedure
+        sql: "REVOKE EXECUTE ON SPECIFIC PROCEDURE sp FROM u RESTRICT;"
+      - id: all_procedures_by_all
+        sql: "REVOKE EXECUTE ON PROCEDURE s.* FROM u BY ALL RESTRICT;"
+    examples:
+      - "REVOKE EXECUTE ON FUNCTION CALC_SALARY FROM JONES RESTRICT;"
+      - "REVOKE EXECUTE ON PROCEDURE VACATION_ACCR FROM PUBLIC RESTRICT;"

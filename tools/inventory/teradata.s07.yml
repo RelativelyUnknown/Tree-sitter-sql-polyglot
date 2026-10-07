@@ -1,0 +1,73 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: drop_procedure
+    name: DROP PROCEDURE
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/7XmAFYWoccoyvfYaz0LLfA
+    tier: high
+    probes:
+      - id: basic
+        sql: "DROP PROCEDURE p;"
+      - id: database_qualified
+        sql: "DROP PROCEDURE db.p;"
+
+  - id: create_function
+    name: CREATE FUNCTION / REPLACE FUNCTION (SQL Form)
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/sXdVA2eDLR~01xeoXfMkkA
+    tier: high
+    probes:
+      - id: create_basic
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE SQL CONTAINS SQL RETURN a + 1;"
+      - id: replace_basic
+        sql: "REPLACE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE SQL CONTAINS SQL RETURN a + 1;"
+      - id: qualified_name
+        sql: "CREATE FUNCTION db.f (a INTEGER) RETURNS INTEGER LANGUAGE SQL CONTAINS SQL RETURN a + 1;"
+      - id: no_parameters
+        sql: "CREATE FUNCTION f () RETURNS INTEGER LANGUAGE SQL CONTAINS SQL RETURN 1;"
+      - id: multiple_parameters
+        sql: "CREATE FUNCTION f (a INTEGER, b VARCHAR(20), c DECIMAL(10,2)) RETURNS INTEGER LANGUAGE SQL CONTAINS SQL RETURN a;"
+      - id: no_language_clause
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER CONTAINS SQL RETURN a;"
+      - id: access_before_language
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER CONTAINS SQL LANGUAGE SQL RETURN a;"
+      - id: specific_name
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE SQL CONTAINS SQL SPECIFIC f_int COLLATION INVOKER INLINE TYPE 1 RETURN a;"
+      - id: specific_qualified
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE SQL CONTAINS SQL SPECIFIC db.f_int COLLATION INVOKER INLINE TYPE 1 RETURN a;"
+      - id: deterministic
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE SQL CONTAINS SQL DETERMINISTIC RETURN a;"
+      - id: not_deterministic
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE SQL CONTAINS SQL NOT DETERMINISTIC RETURN a;"
+      - id: called_on_null_input
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE SQL CONTAINS SQL CALLED ON NULL INPUT RETURN a;"
+      - id: returns_null_on_null_input
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE SQL CONTAINS SQL RETURNS NULL ON NULL INPUT RETURN a;"
+      - id: multiple_attributes
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE SQL CONTAINS SQL SPECIFIC f_int DETERMINISTIC CALLED ON NULL INPUT COLLATION INVOKER INLINE TYPE 1 RETURN a;"
+      - id: sql_security_definer
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE SQL CONTAINS SQL SQL SECURITY DEFINER RETURN a;"
+      - id: collation_invoker
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE SQL CONTAINS SQL COLLATION INVOKER INLINE TYPE 1 RETURN a;"
+      - id: inline_type_1
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE SQL CONTAINS SQL COLLATION INVOKER INLINE TYPE 1 RETURN a;"
+      - id: security_collation_inline
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE SQL CONTAINS SQL SQL SECURITY DEFINER COLLATION INVOKER INLINE TYPE 1 RETURN a;"
+      - id: return_case_expression
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS VARCHAR(10) LANGUAGE SQL CONTAINS SQL RETURN CASE WHEN a > 0 THEN 'pos' ELSE 'neg' END;"
+      - id: type_timestamp_tz
+        sql: "CREATE FUNCTION f (a TIMESTAMP(3) WITH TIME ZONE) RETURNS DATE LANGUAGE SQL CONTAINS SQL RETURN CAST(a AS DATE);"
+      - id: type_interval
+        sql: "CREATE FUNCTION f (a INTERVAL DAY(2) TO SECOND(3)) RETURNS INTEGER LANGUAGE SQL CONTAINS SQL COLLATION INVOKER INLINE TYPE 1 RETURN 1;"
+      - id: type_period
+        sql: "CREATE FUNCTION f (a PERIOD(DATE)) RETURNS INTEGER LANGUAGE SQL CONTAINS SQL RETURN 1;"
+      - id: type_numeric_family
+        sql: "CREATE FUNCTION f (a NUMBER(10,2), b DOUBLE PRECISION, c FLOAT, d BIGINT, e BYTEINT, g SMALLINT) RETURNS REAL LANGUAGE SQL CONTAINS SQL RETURN 1;"
+      - id: type_char_family
+        sql: "CREATE FUNCTION f (a CHAR(5), b CHAR VARYING(5), c LONG VARCHAR, d CLOB(1M), e BLOB(1K)) RETURNS VARCHAR(5) LANGUAGE SQL CONTAINS SQL COLLATION INVOKER INLINE TYPE 1 RETURN a;"
+      - id: type_json
+        sql: "CREATE FUNCTION f (a JSON(1M) INLINE LENGTH 100 CHARACTER SET UNICODE) RETURNS INTEGER LANGUAGE SQL CONTAINS SQL COLLATION INVOKER INLINE TYPE 1 RETURN 1;"
+      - id: type_sysudtlib_xml
+        sql: "CREATE FUNCTION f (a SYSUDTLIB.XML(1M)) RETURNS INTEGER LANGUAGE SQL CONTAINS SQL RETURN 1;"

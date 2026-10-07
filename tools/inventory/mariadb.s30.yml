@@ -1,0 +1,199 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements:
+  - id: create_event
+    name: CREATE EVENT
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-definition/create/create-event
+    tier: medium
+    probes:
+      - { id: at, sql: "CREATE EVENT e ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 1 HOUR DO UPDATE t SET c = c + 1;" }
+      - { id: at_multiple_intervals, sql: "CREATE EVENT e ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 1 DAY + INTERVAL 3 HOUR DO UPDATE t SET c = 1;" }
+      - { id: every, sql: "CREATE EVENT e ON SCHEDULE EVERY 1 DAY DO DELETE FROM t WHERE c < 1;" }
+      - { id: every_starts_ends, sql: "CREATE EVENT e ON SCHEDULE EVERY 1 HOUR STARTS CURRENT_TIMESTAMP + INTERVAL 1 MONTH ENDS CURRENT_TIMESTAMP + INTERVAL 1 MONTH + INTERVAL 1 WEEK DO UPDATE t SET c = 1;" }
+      - { id: compound_interval_unit, sql: "CREATE EVENT e ON SCHEDULE EVERY '2:3' DAY_HOUR DO UPDATE t SET c = 1;" }
+      - { id: or_replace, sql: "CREATE OR REPLACE EVENT e ON SCHEDULE EVERY 1 DAY DO UPDATE t SET c = 1;" }
+      - { id: if_not_exists, sql: "CREATE EVENT IF NOT EXISTS e ON SCHEDULE EVERY 1 DAY DO UPDATE t SET c = 1;" }
+      - { id: definer, sql: "CREATE DEFINER = CURRENT_USER EVENT e ON SCHEDULE EVERY 1 DAY DO UPDATE t SET c = 1;" }
+      - { id: definer_user, sql: "CREATE DEFINER = 'admin'@'localhost' EVENT e ON SCHEDULE EVERY 1 DAY DO UPDATE t SET c = 1;" }
+      - { id: on_completion_preserve, sql: "CREATE EVENT e ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 1 HOUR ON COMPLETION PRESERVE DO UPDATE t SET c = 1;" }
+      - { id: on_completion_not_preserve, sql: "CREATE EVENT e ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 1 HOUR ON COMPLETION NOT PRESERVE DO UPDATE t SET c = 1;" }
+      - { id: enable, sql: "CREATE EVENT e ON SCHEDULE EVERY 1 DAY ENABLE DO UPDATE t SET c = 1;" }
+      - { id: disable, sql: "CREATE EVENT e ON SCHEDULE EVERY 1 DAY DISABLE DO UPDATE t SET c = 1;" }
+      - { id: disable_on_slave, sql: "CREATE EVENT e ON SCHEDULE EVERY 1 DAY DISABLE ON SLAVE DO UPDATE t SET c = 1;" }
+      - { id: comment, sql: "CREATE EVENT e ON SCHEDULE EVERY 1 DAY COMMENT 'nightly cleanup' DO UPDATE t SET c = 1;" }
+      - { id: qualified_name, sql: "CREATE EVENT db.e ON SCHEDULE EVERY 1 DAY DO UPDATE t SET c = 1;" }
+      - { id: compound_body, sql: "CREATE EVENT e ON SCHEDULE EVERY 1 DAY DO BEGIN DELETE FROM t WHERE c < 1; UPDATE s SET n = n + 1; END;" }
+      - { id: all_clauses, sql: "CREATE OR REPLACE DEFINER = CURRENT_USER EVENT IF NOT EXISTS e ON SCHEDULE EVERY 1 DAY ON COMPLETION PRESERVE ENABLE COMMENT 'c' DO UPDATE t SET c = 1;" }
+    examples:
+      - "CREATE EVENT myevent ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 1 HOUR DO UPDATE myschema.mytable SET mycol = mycol + 1;"
+      - "CREATE OR REPLACE EVENT myevent ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 1 HOUR DO UPDATE myschema.mytable SET mycol = mycol + 1;"
+      - "CREATE EVENT IF NOT EXISTS myevent ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 1 HOUR DO UPDATE myschema.mytable SET mycol = mycol + 1;"
+
+  - id: alter_event
+    name: ALTER EVENT
+    doc: https://mariadb.com/docs/server/server-usage/triggers-events/event-scheduler/alter-event
+    tier: medium
+    probes:
+      - { id: on_schedule_at, sql: "ALTER EVENT e ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 2 HOUR;" }
+      - { id: on_schedule_every, sql: "ALTER EVENT e ON SCHEDULE EVERY 1 DAY STARTS CURRENT_TIMESTAMP ENDS CURRENT_TIMESTAMP + INTERVAL 1 WEEK;" }
+      - { id: on_completion, sql: "ALTER EVENT e ON COMPLETION PRESERVE;" }
+      - { id: on_completion_not_preserve, sql: "ALTER EVENT e ON COMPLETION NOT PRESERVE;" }
+      - { id: rename_to, sql: "ALTER EVENT e RENAME TO e2;" }
+      - { id: enable, sql: "ALTER EVENT e ENABLE;" }
+      - { id: disable, sql: "ALTER EVENT e DISABLE;" }
+      - { id: disable_on_slave, sql: "ALTER EVENT e DISABLE ON SLAVE;" }
+      - { id: comment, sql: "ALTER EVENT e COMMENT 'new comment';" }
+      - { id: do_body, sql: "ALTER EVENT e DO UPDATE t SET c = c + 1;" }
+      - { id: definer, sql: "ALTER DEFINER = CURRENT_USER EVENT e DISABLE;" }
+      - { id: definer_user, sql: "ALTER DEFINER = 'admin'@'localhost' EVENT e DISABLE;" }
+      - { id: combined, sql: "ALTER EVENT e ON SCHEDULE EVERY 1 HOUR ON COMPLETION PRESERVE RENAME TO e2 ENABLE COMMENT 'c' DO UPDATE t SET c = 1;" }
+    examples:
+      - "ALTER EVENT myevent ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 2 HOUR DO UPDATE myschema.mytable SET mycol = mycol + 1;"
+
+  - id: drop_event
+    name: DROP EVENT
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-definition/drop/drop-event
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP EVENT e;" }
+      - { id: if_exists, sql: "DROP EVENT IF EXISTS e;" }
+      - { id: qualified_name, sql: "DROP EVENT db.e;" }
+    examples:
+      - "DROP EVENT myevent3;"
+      - "DROP EVENT IF EXISTS myevent3;"
+
+  - id: create_sequence
+    name: CREATE SEQUENCE
+    doc: https://mariadb.com/docs/server/reference/sql-structure/sequences/create-sequence
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE SEQUENCE s;" }
+      - { id: or_replace, sql: "CREATE OR REPLACE SEQUENCE s;" }
+      - { id: temporary, sql: "CREATE TEMPORARY SEQUENCE s;" }
+      - { id: if_not_exists, sql: "CREATE SEQUENCE IF NOT EXISTS s;" }
+      - { id: as_type, sql: "CREATE SEQUENCE s AS BIGINT;", note: "AS data type, MariaDB 11.5+" }
+      - { id: as_type_unsigned, sql: "CREATE SEQUENCE s AS BIGINT UNSIGNED START WITH 10;", note: "AS data type with SIGNED/UNSIGNED, MariaDB 11.5+" }
+      - { id: increment_by, sql: "CREATE SEQUENCE s INCREMENT BY 10;" }
+      - { id: increment_equals, sql: "CREATE SEQUENCE s INCREMENT = 10;" }
+      - { id: minvalue, sql: "CREATE SEQUENCE s MINVALUE 1;" }
+      - { id: minvalue_equals, sql: "CREATE SEQUENCE s MINVALUE = -100;" }
+      - { id: no_minvalue, sql: "CREATE SEQUENCE s NO MINVALUE;" }
+      - { id: nominvalue, sql: "CREATE SEQUENCE s NOMINVALUE;" }
+      - { id: maxvalue, sql: "CREATE SEQUENCE s MAXVALUE 1000;" }
+      - { id: maxvalue_equals, sql: "CREATE SEQUENCE s MAXVALUE=1000;" }
+      - { id: no_maxvalue, sql: "CREATE SEQUENCE s NO MAXVALUE;" }
+      - { id: nomaxvalue, sql: "CREATE SEQUENCE s NOMAXVALUE;" }
+      - { id: start_with, sql: "CREATE SEQUENCE s START WITH 100;" }
+      - { id: start_equals, sql: "CREATE SEQUENCE s START = 100;" }
+      - { id: cache, sql: "CREATE SEQUENCE s CACHE 100;" }
+      - { id: cache_equals, sql: "CREATE SEQUENCE s CACHE=5;" }
+      - { id: nocache, sql: "CREATE SEQUENCE s NOCACHE;" }
+      - { id: cycle, sql: "CREATE SEQUENCE s CYCLE;" }
+      - { id: nocycle, sql: "CREATE SEQUENCE s NOCYCLE;" }
+      - { id: table_options, sql: "CREATE SEQUENCE s ENGINE=InnoDB COMMENT='ids';" }
+      - { id: combined, sql: "CREATE SEQUENCE s START WITH 100 INCREMENT BY 10 MINVALUE=1 MAXVALUE=1000 CACHE=5 CYCLE;" }
+    examples:
+      - "CREATE SEQUENCE s START WITH 100 INCREMENT BY 10;"
+      - "CREATE SEQUENCE s3 START WITH -100 INCREMENT BY 10 MINVALUE=-100 MAXVALUE=1000;"
+      - "CREATE OR REPLACE SEQUENCE s START WITH 1 INCREMENT BY 1 MAXVALUE=10 CACHE=5;"
+
+  - id: alter_sequence
+    name: ALTER SEQUENCE
+    doc: https://mariadb.com/docs/server/reference/sql-structure/sequences/alter-sequence
+    tier: medium
+    probes:
+      - { id: if_exists, sql: "ALTER SEQUENCE IF EXISTS s INCREMENT 5;" }
+      - { id: as_type, sql: "ALTER SEQUENCE s AS BIGINT UNSIGNED;" }
+      - { id: increment_by, sql: "ALTER SEQUENCE s INCREMENT BY 10;" }
+      - { id: increment_equals, sql: "ALTER SEQUENCE s INCREMENT = 10;" }
+      - { id: minvalue, sql: "ALTER SEQUENCE s MINVALUE 10;" }
+      - { id: no_minvalue, sql: "ALTER SEQUENCE s NO MINVALUE;" }
+      - { id: nominvalue, sql: "ALTER SEQUENCE s NOMINVALUE;" }
+      - { id: maxvalue, sql: "ALTER SEQUENCE s MAXVALUE 2000;" }
+      - { id: no_maxvalue, sql: "ALTER SEQUENCE s NO MAXVALUE;" }
+      - { id: nomaxvalue, sql: "ALTER SEQUENCE s NOMAXVALUE;" }
+      - { id: start_with, sql: "ALTER SEQUENCE s START WITH 100;" }
+      - { id: cache, sql: "ALTER SEQUENCE s CACHE 50;" }
+      - { id: cache_equals, sql: "ALTER SEQUENCE s CACHE = 50;" }
+      - { id: cycle, sql: "ALTER SEQUENCE s CYCLE;" }
+      - { id: no_cycle, sql: "ALTER SEQUENCE s NO CYCLE;" }
+      - { id: restart, sql: "ALTER SEQUENCE s RESTART;" }
+      - { id: restart_with, sql: "ALTER SEQUENCE s RESTART WITH 10;" }
+      - { id: restart_equals, sql: "ALTER SEQUENCE s RESTART = 10;" }
+      - { id: combined, sql: "ALTER SEQUENCE s MINVALUE 10 START 10 RESTART 10;" }
+    examples:
+      - "ALTER SEQUENCE s1 MINVALUE 10 START 10 RESTART 10;"
+
+  - id: drop_sequence
+    name: DROP SEQUENCE
+    doc: https://mariadb.com/docs/server/reference/sql-structure/sequences/drop-sequence
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP SEQUENCE s;" }
+      - { id: if_exists, sql: "DROP SEQUENCE IF EXISTS s;" }
+      - { id: temporary, sql: "DROP TEMPORARY SEQUENCE s;" }
+      - { id: multiple, sql: "DROP SEQUENCE s1, s2;" }
+
+  - id: create_database
+    name: CREATE DATABASE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-definition/create/create-database
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE DATABASE db;" }
+      - { id: schema_synonym, sql: "CREATE SCHEMA db;" }
+      - { id: or_replace, sql: "CREATE OR REPLACE DATABASE db;" }
+      - { id: if_not_exists, sql: "CREATE DATABASE IF NOT EXISTS db;" }
+      - { id: character_set, sql: "CREATE DATABASE db CHARACTER SET utf8mb4;" }
+      - { id: default_character_set_equals, sql: "CREATE DATABASE db DEFAULT CHARACTER SET = 'utf8mb4';" }
+      - { id: collate, sql: "CREATE DATABASE db COLLATE utf8mb4_bin;" }
+      - { id: default_collate_equals, sql: "CREATE DATABASE db DEFAULT COLLATE = utf8mb4_bin;" }
+      - { id: comment, sql: "CREATE DATABASE db COMMENT 'Presentations for conferences';" }
+      - { id: comment_equals, sql: "CREATE DATABASE db COMMENT = 'c';" }
+      - { id: multiple_specifications, sql: "CREATE DATABASE db CHARACTER SET utf8mb4 COLLATE utf8mb4_bin COMMENT 'c';" }
+    examples:
+      - "CREATE DATABASE db1;"
+      - "CREATE DATABASE czech_slovak_names CHARACTER SET = 'keybcs2' COLLATE = 'keybcs2_bin';"
+      - "CREATE DATABASE presentations COMMENT 'Presentations for conferences';"
+
+  - id: alter_database
+    name: ALTER DATABASE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-definition/alter/alter-database
+    tier: medium
+    probes:
+      - { id: character_set, sql: "ALTER DATABASE db CHARACTER SET utf8mb4;" }
+      - { id: default_character_set_equals, sql: "ALTER DATABASE db DEFAULT CHARACTER SET = utf8mb4;" }
+      - { id: collate, sql: "ALTER DATABASE db COLLATE utf8mb4_bin;" }
+      - { id: comment, sql: "ALTER DATABASE db COMMENT = 'c';" }
+      - { id: schema_synonym, sql: "ALTER SCHEMA db CHARACTER SET utf8mb4;" }
+      - { id: no_db_name, sql: "ALTER DATABASE CHARACTER SET utf8mb4;", note: "db_name may be omitted, applying to the default database" }
+      - { id: upgrade_data_directory_name, sql: "ALTER DATABASE db UPGRADE DATA DIRECTORY NAME;" }
+    examples:
+      - "ALTER DATABASE `#mysql50#a-b-c` UPGRADE DATA DIRECTORY NAME;"
+      - "ALTER DATABASE p COMMENT='Presentations';"
+
+  - id: drop_database
+    name: DROP DATABASE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-definition/drop/drop-database
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP DATABASE db;" }
+      - { id: if_exists, sql: "DROP DATABASE IF EXISTS db;" }
+      - { id: schema_synonym, sql: "DROP SCHEMA db;" }
+      - { id: schema_if_exists, sql: "DROP SCHEMA IF EXISTS db;" }
+    examples:
+      - "DROP DATABASE bufg;"
+      - "DROP DATABASE IF EXISTS bufg;"
+
+  - id: use
+    name: USE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/use-database
+    tier: medium
+    probes:
+      - { id: basic, sql: "USE db;" }
+      - { id: backtick_name, sql: "USE `my-db`;" }
+    examples:
+      - "USE db1;"
+      - "USE db2;"

@@ -1,0 +1,195 @@
+dialect: clickhouse
+engine: ClickHouse
+version: "current docs (2026)"
+source: https://clickhouse.com/docs/sql-reference/statements/
+
+statements:
+  - id: alter_table_column
+    name: ALTER TABLE ... ADD/DROP/RENAME/CLEAR/COMMENT/MODIFY/MATERIALIZE COLUMN
+    doc: https://clickhouse.com/docs/sql-reference/statements/alter/column
+    tier: high
+    probes:
+      - id: add_column
+        sql: "ALTER TABLE t ADD COLUMN c UInt32;"
+      - id: add_column_on_cluster
+        sql: "ALTER TABLE db.t ON CLUSTER cl ADD COLUMN c UInt32;"
+      - id: add_column_if_not_exists
+        sql: "ALTER TABLE t ADD COLUMN IF NOT EXISTS c UInt32;"
+      - id: add_column_default
+        sql: "ALTER TABLE t ADD COLUMN c UInt32 DEFAULT 0;"
+      - id: add_column_materialized
+        sql: "ALTER TABLE t ADD COLUMN s String MATERIALIZED toString(x);"
+      - id: add_column_comment
+        sql: "ALTER TABLE t ADD COLUMN c UInt32 COMMENT 'my column';"
+      - id: add_column_codec
+        sql: "ALTER TABLE t ADD COLUMN c UInt32 CODEC(ZSTD(3));"
+      - id: add_column_statistics
+        sql: "ALTER TABLE t ADD COLUMN c UInt32 STATISTICS(tdigest);"
+      - id: add_column_ttl
+        sql: "ALTER TABLE t ADD COLUMN c UInt32 TTL d + INTERVAL 1 DAY;"
+      - id: add_column_settings
+        sql: "ALTER TABLE t ADD COLUMN c String SETTINGS (max_compress_block_size = 1048576);"
+      - id: add_column_after
+        sql: "ALTER TABLE t ADD COLUMN c UInt32 AFTER other;"
+      - id: add_column_first
+        sql: "ALTER TABLE t ADD COLUMN c UInt32 FIRST;"
+      - id: add_column_no_type
+        sql: "ALTER TABLE t ADD COLUMN c DEFAULT 1;"
+      - id: add_column_chain
+        sql: "ALTER TABLE t ADD COLUMN a UInt32, ADD COLUMN b UInt32 AFTER a;"
+      - id: drop_column
+        sql: "ALTER TABLE t DROP COLUMN c;"
+      - id: drop_column_if_exists
+        sql: "ALTER TABLE t DROP COLUMN IF EXISTS c;"
+      - id: drop_and_add_column
+        sql: "ALTER TABLE visits DROP COLUMN browser, ADD COLUMN referrer String;"
+      - id: rename_column
+        sql: "ALTER TABLE t RENAME COLUMN c TO d;"
+      - id: rename_column_if_exists
+        sql: "ALTER TABLE t RENAME COLUMN IF EXISTS c TO d;"
+      - id: clear_column
+        sql: "ALTER TABLE t CLEAR COLUMN c IN PARTITION tuple();"
+      - id: clear_column_if_exists
+        sql: "ALTER TABLE t CLEAR COLUMN IF EXISTS c IN PARTITION 201902;"
+      - id: comment_column
+        sql: "ALTER TABLE t COMMENT COLUMN c 'Text comment';"
+      - id: comment_column_if_exists
+        sql: "ALTER TABLE t COMMENT COLUMN IF EXISTS c 'Text comment';"
+      - id: modify_column_type
+        sql: "ALTER TABLE t MODIFY COLUMN c Array(String);"
+      - id: modify_column_if_exists
+        sql: "ALTER TABLE t MODIFY COLUMN IF EXISTS c String;"
+      - id: modify_column_default
+        sql: "ALTER TABLE t MODIFY COLUMN c DEFAULT 'x';"
+      - id: modify_column_comment
+        sql: "ALTER TABLE t MODIFY COLUMN c String COMMENT 'new comment';"
+      - id: modify_column_codec
+        sql: "ALTER TABLE t MODIFY COLUMN c String CODEC(LZ4);"
+      - id: modify_column_ttl
+        sql: "ALTER TABLE t MODIFY COLUMN c String TTL d + INTERVAL 1 MONTH;"
+      - id: modify_column_settings
+        sql: "ALTER TABLE t MODIFY COLUMN c String SETTINGS (max_compress_block_size = 1048576);"
+      - id: modify_column_first
+        sql: "ALTER TABLE t MODIFY COLUMN c String FIRST;"
+      - id: modify_column_after
+        sql: "ALTER TABLE t MODIFY COLUMN c String AFTER other;"
+      - id: modify_column_add_enum_values
+        sql: "ALTER TABLE t MODIFY COLUMN e ADD ENUM VALUES ('Hundred' = 100, 'HundredOne');"
+      - id: alter_column_type
+        sql: "ALTER TABLE t ALTER COLUMN c TYPE String AFTER other;"
+      - id: alter_column_if_exists_type
+        sql: "ALTER TABLE t ALTER COLUMN IF EXISTS c TYPE String;"
+      - id: modify_column_remove_ttl
+        sql: "ALTER TABLE t MODIFY COLUMN c REMOVE TTL;"
+      - id: modify_column_remove_default
+        sql: "ALTER TABLE t MODIFY COLUMN c REMOVE DEFAULT;"
+      - id: modify_column_remove_codec
+        sql: "ALTER TABLE t MODIFY COLUMN c REMOVE CODEC;"
+      - id: modify_column_remove_settings
+        sql: "ALTER TABLE t MODIFY COLUMN c REMOVE SETTINGS;"
+      - id: modify_column_modify_setting
+        sql: "ALTER TABLE t MODIFY COLUMN c MODIFY SETTING max_compress_block_size = 1048576;"
+      - id: modify_column_reset_setting
+        sql: "ALTER TABLE t MODIFY COLUMN c RESET SETTING max_compress_block_size;"
+      - id: materialize_column
+        sql: "ALTER TABLE t MATERIALIZE COLUMN s;"
+      - id: materialize_column_on_cluster
+        sql: "ALTER TABLE db.t ON CLUSTER cl MATERIALIZE COLUMN s;"
+      - id: materialize_column_in_partition
+        sql: "ALTER TABLE t MATERIALIZE COLUMN s IN PARTITION 201902;"
+      - id: materialize_column_in_partition_id
+        sql: "ALTER TABLE t MATERIALIZE COLUMN s IN PARTITION ID '201902';"
+    examples:
+      - "ALTER TABLE alter_test ADD COLUMN Added1 UInt32 FIRST;"
+      - "ALTER TABLE visits DROP COLUMN browser;"
+      - "ALTER TABLE visits RENAME COLUMN webBrowser TO browser;"
+
+  - id: alter_table_partition
+    name: ALTER TABLE ... PARTITION|PART operations
+    doc: https://clickhouse.com/docs/sql-reference/statements/alter/partition
+    tier: high
+    probes:
+      - id: detach_partition
+        sql: "ALTER TABLE mt DETACH PARTITION '2020-11-21';"
+      - id: detach_partition_on_cluster
+        sql: "ALTER TABLE mt ON CLUSTER cl DETACH PARTITION 201901;"
+      - id: detach_part
+        sql: "ALTER TABLE mt DETACH PART 'all_2_2_0';"
+      - id: detach_partition_id
+        sql: "ALTER TABLE mt DETACH PARTITION ID '201901';"
+      - id: detach_partition_tuple
+        sql: "ALTER TABLE visits DETACH PARTITION tuple(toYYYYMM(toDate('2019-01-25')));"
+      - id: detach_partition_all
+        sql: "ALTER TABLE mt DETACH PARTITION ALL;"
+      - id: drop_partition
+        sql: "ALTER TABLE mt DROP PARTITION '2020-11-21';"
+      - id: drop_part
+        sql: "ALTER TABLE mt DROP PART 'all_4_4_0';"
+      - id: drop_partition_all
+        sql: "ALTER TABLE mt DROP PARTITION ALL;"
+      - id: drop_detached_partition
+        sql: "ALTER TABLE mt DROP DETACHED PARTITION 201901;"
+      - id: drop_detached_part
+        sql: "ALTER TABLE mt DROP DETACHED PART '201901_1_1_0';"
+      - id: drop_detached_partition_all
+        sql: "ALTER TABLE mt ON CLUSTER cl DROP DETACHED PARTITION ALL;"
+      - id: forget_partition
+        sql: "ALTER TABLE mt FORGET PARTITION '20201121';"
+      - id: attach_partition
+        sql: "ALTER TABLE visits ATTACH PARTITION 201901;"
+      - id: attach_part
+        sql: "ALTER TABLE visits ATTACH PART 201901_2_2_0;"
+      - id: attach_partition_all
+        sql: "ALTER TABLE visits ATTACH PARTITION ALL;"
+      - id: attach_partition_from
+        sql: "ALTER TABLE t2 ATTACH PARTITION 201901 FROM t1;"
+      - id: attach_partition_from_on_cluster
+        sql: "ALTER TABLE t2 ON CLUSTER cl ATTACH PARTITION ID '201901' FROM t1;"
+      - id: attach_partition_all_from
+        sql: "ALTER TABLE t2 ATTACH PARTITION ALL FROM t1;"
+      - id: replace_partition
+        sql: "ALTER TABLE t2 REPLACE PARTITION 201901 FROM t1;"
+      - id: move_partition_to_table
+        sql: "ALTER TABLE t1 MOVE PARTITION 201901 TO TABLE t2;"
+      - id: clear_column_in_partition
+        sql: "ALTER TABLE visits CLEAR COLUMN hour IN PARTITION 201902;"
+      - id: clear_index_in_partition
+        sql: "ALTER TABLE t CLEAR INDEX idx IN PARTITION 201902;"
+      - id: freeze_all
+        sql: "ALTER TABLE t FREEZE;"
+      - id: freeze_partition
+        sql: "ALTER TABLE t FREEZE PARTITION 201902;"
+      - id: freeze_partition_with_name
+        sql: "ALTER TABLE t ON CLUSTER cl FREEZE PARTITION 201902 WITH NAME 'backup_name';"
+      - id: freeze_with_name
+        sql: "ALTER TABLE t FREEZE WITH NAME 'backup_name';"
+      - id: unfreeze_with_name
+        sql: "ALTER TABLE t UNFREEZE WITH NAME 'backup_name';"
+      - id: unfreeze_partition_with_name
+        sql: "ALTER TABLE t UNFREEZE PARTITION '201902' WITH NAME 'backup_name';"
+      - id: fetch_partition
+        sql: "ALTER TABLE users FETCH PARTITION 201902 FROM '/clickhouse/tables/01-01/visits';"
+      - id: fetch_part
+        sql: "ALTER TABLE users FETCH PART 201901_2_2_0 FROM '/clickhouse/tables/01-01/visits';"
+      - id: move_part_to_volume
+        sql: "ALTER TABLE hits MOVE PART '20190301_14343_16206_438' TO VOLUME 'slow';"
+      - id: move_partition_to_disk
+        sql: "ALTER TABLE hits MOVE PARTITION '2019-09-01' TO DISK 'fast_ssd';"
+      - id: update_in_partition
+        sql: "ALTER TABLE mt UPDATE x = x + 1 IN PARTITION 2 WHERE p = 2;"
+      - id: update_in_partition_id
+        sql: "ALTER TABLE mt UPDATE x = x + 1 IN PARTITION ID '2' WHERE p = 2;"
+      - id: update_in_partition_on_cluster
+        sql: "ALTER TABLE db.mt ON CLUSTER cl UPDATE x = 1, y = 2 IN PARTITION 2 WHERE p = 2;"
+      - id: delete_in_partition
+        sql: "ALTER TABLE mt DELETE IN PARTITION 2 WHERE p = 2;"
+      - id: delete_in_partition_id
+        sql: "ALTER TABLE mt DELETE IN PARTITION ID '2' WHERE p = 2;"
+      - id: rewrite_parts
+        sql: "ALTER TABLE mt REWRITE PARTS;"
+      - id: rewrite_parts_in_partition
+        sql: "ALTER TABLE mt REWRITE PARTS IN PARTITION 2;"
+    examples:
+      - "ALTER TABLE mt DETACH PARTITION '2020-11-21';"
+      - "ALTER TABLE visits ATTACH PART 201901_2_2_0;"
+      - "ALTER TABLE hits MOVE PARTITION '2019-09-01' TO DISK 'fast_ssd';"

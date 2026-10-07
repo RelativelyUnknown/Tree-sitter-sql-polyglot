@@ -1,0 +1,60 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "12.1"
+source: https://www.ibm.com/docs/en/db2/12.1.x?topic=reference-statements
+
+statements:
+  - id: case
+    name: CASE
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-case
+    tier: high
+    probes:
+      - id: simple_case
+        sql: |-
+          CREATE PROCEDURE p (IN v INTEGER)
+          LANGUAGE SQL
+          BEGIN
+            CASE v WHEN 1 THEN UPDATE t SET c = 1; END CASE;
+          END;
+      - id: simple_case_else
+        sql: |-
+          CREATE PROCEDURE p (IN v INTEGER)
+          LANGUAGE SQL
+          BEGIN
+            CASE v WHEN 1 THEN UPDATE t SET c = 1; WHEN 2 THEN UPDATE t SET c = 2; ELSE UPDATE t SET c = 3; END CASE;
+          END;
+      - id: searched_case
+        sql: |-
+          CREATE PROCEDURE p (IN v INTEGER)
+          LANGUAGE SQL
+          BEGIN
+            CASE WHEN v = 1 THEN UPDATE t SET c = 1; END CASE;
+          END;
+      - id: searched_case_else
+        sql: |-
+          CREATE PROCEDURE p (IN v INTEGER)
+          LANGUAGE SQL
+          BEGIN
+            CASE WHEN v = 1 THEN UPDATE t SET c = 1; WHEN v = 2 THEN UPDATE t SET c = 2; ELSE UPDATE t SET c = 3; END CASE;
+          END;
+    examples:
+      - "CASE v_workdept WHEN 'A00' THEN UPDATE department SET deptname = 'DATA ACCESS 1'; WHEN 'B01' THEN UPDATE department SET deptname = 'DATA ACCESS 2'; ELSE UPDATE department SET deptname = 'DATA ACCESS 3'; END CASE;"
+      - "CASE WHEN v_workdept = 'A00' THEN UPDATE department SET deptname = 'DATA ACCESS 1'; WHEN v_workdept = 'B01' THEN UPDATE department SET deptname = 'DATA ACCESS 2'; ELSE UPDATE department SET deptname = 'DATA ACCESS 3'; END CASE;"
+
+  - id: close
+    name: CLOSE
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-close
+    tier: high
+    probes:
+      - id: close_cursor
+        sql: "CLOSE c1;"
+      - id: close_with_release
+        sql: "CLOSE c1 WITH RELEASE;"
+      - id: close_cursor_variable
+        sql: |-
+          CREATE PROCEDURE p ()
+          LANGUAGE SQL
+          BEGIN
+            DECLARE cv CURSOR;
+            CLOSE cv;
+          END;

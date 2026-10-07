@@ -1,0 +1,270 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: revoke
+    name: REVOKE (SQL Form)
+    doc: https://docs.teradata.com/reader/~XaK0mxyTPufZup~1UD0sA/LQTb3zDTA1HS4DkOcdq8QQ
+    tier: medium
+    probes:
+      - id: privilege_on_table
+        sql: "REVOKE INSERT ON db1.t FROM u1;"
+      - id: grant_option_for
+        sql: "REVOKE GRANT OPTION FOR SELECT ON db1.t FROM u1;"
+      - id: all_privileges
+        sql: "REVOKE ALL PRIVILEGES ON db1 FROM u1;"
+      - id: all_but
+        sql: "REVOKE ALL BUT SELECT ON db1.t FROM u1;"
+      - id: multiple_privileges_revokees
+        sql: "REVOKE SELECT, UPDATE ON db1.t FROM u1, u2;"
+      - id: from_public
+        sql: "REVOKE SELECT ON db1.t FROM PUBLIC;"
+      - id: on_procedure
+        sql: "REVOKE EXECUTE PROCEDURE ON PROCEDURE db1.p FROM u1;"
+      - id: on_function
+        sql: "REVOKE EXECUTE FUNCTION ON FUNCTION db1.f (INTEGER, VARCHAR(10)) FROM u1;"
+    examples:
+      - |-
+        REVOKE INSERT
+        ON personnel.employee
+        FROM UserA;
+      - |-
+        REVOKE ALL PRIVILEGES
+        ON personnel
+        FROM UserA;
+      - |-
+        REVOKE ALL BUT SELECT
+        ON Personnel.Department
+        FROM UserA;
+
+  - id: revoke_role
+    name: REVOKE (Role Form)
+    doc: https://docs.teradata.com/reader/~XaK0mxyTPufZup~1UD0sA/fMDW72s3WlXGtQeY7bV6MA
+    tier: medium
+    probes:
+      - id: from_user
+        sql: "REVOKE r1 FROM u1;"
+      - id: multiple_roles_and_grantees
+        sql: "REVOKE r1, r2 FROM u1, r3;"
+      - id: admin_option_for
+        sql: "REVOKE ADMIN OPTION FOR r1 FROM u1;"
+      - id: to_keyword
+        sql: "REVOKE r1 TO u1;"
+        note: TO is accepted as a Teradata extension per the Syntax Elements.
+
+  - id: delete_positioned
+    name: DELETE ... WHERE CURRENT OF (Positioned Form)
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/8unuf7skIHqz2dafHIqwYg
+    tier: medium
+    probes:
+      - id: delete_from
+        sql: "DELETE FROM t WHERE CURRENT OF c1;"
+      - id: del_abbreviation
+        sql: "DEL FROM t WHERE CURRENT OF c1;"
+
+  - id: update_positioned
+    name: UPDATE ... WHERE CURRENT OF (Positioned Form)
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/gexIuvWBYWzOpa86_LaKOQ
+    tier: medium
+    probes:
+      - id: update_set
+        sql: "UPDATE t SET c = 1 WHERE CURRENT OF c1;"
+      - id: upd_abbreviation_alias
+        sql: "UPD t a SET c = 1, d = 2 WHERE CURRENT OF c1;"
+
+  - id: prepare
+    name: PREPARE
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/V9KjzSszlo6MejM_UJh6Eg
+    tier: medium
+    probes:
+      - id: from_string
+        sql: "PREPARE stmt1 FROM 'SELECT c FROM t WHERE d = ?';"
+      - id: from_variable
+        sql: "PREPARE stmt1 FROM sql_stmt1;"
+
+  - id: execute_prepared
+    name: EXECUTE (prepared statement)
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/h73ma_515LfFBuGWXB1CMA
+    tier: medium
+    probes:
+      - id: basic
+        sql: |-
+          CREATE PROCEDURE p ()
+          BEGIN
+            DECLARE sql_stmt VARCHAR(100);
+            SET sql_stmt = 'DELETE FROM t';
+            PREPARE stmt1 FROM sql_stmt;
+            EXECUTE stmt1;
+          END;
+      - id: using_variables
+        sql: |-
+          CREATE PROCEDURE p (price DECIMAL(8,2), item INTEGER)
+          BEGIN
+            DECLARE sql_stmt VARCHAR(100);
+            SET sql_stmt = 'UPDATE t SET store_price=? WHERE store_item=?;';
+            PREPARE stmt1 FROM sql_stmt;
+            EXECUTE stmt1 USING price, item;
+          END;
+    examples:
+      - |-
+        CREATE PROCEDURE sales_update(store_table VARCHAR(10),
+                                      item INTEGER,
+                                      price DECIMAL(8,2) )
+        BEGIN
+          DECLARE price_read DECIMAL(8,2);
+          DECLARE sql_stmt VARCHAR(100);
+          SET sql_stmt = 'UPDATE ' || store_table || ' SET store_price=?           WHERE store_item = ?;';
+          PREPARE stmt1 FROM sql_stmt;
+          EXECUTE stmt1 USING price, item;
+        END;
+
+  - id: create_table_datalake
+    name: CREATE TABLE (Datalake Form)
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/YAP5E7dvxGfdjuWTqcbEkw
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE TABLE lake1.db1.t (c1 VARCHAR(50) NOT NULL, c2 INT);"
+      - id: partitioned_by_column
+        sql: "CREATE TABLE lake1.db1.t (c1 INT, c2 INT) PARTITIONED BY c1;"
+      - id: partition_by_transforms
+        sql: "CREATE TABLE lake1.db1.t (c1 INT, dt TIMESTAMP(6)) PARTITION BY (YEAR(dt), BUCKET(16, c1), TRUNCATE(3, c1), IDENTITY(c1));"
+      - id: sorted_by
+        sql: "CREATE TABLE lake1.db1.t (c1 INT, c2 INT) SORTED BY c1 ASC, c2 DESC;"
+      - id: order_by
+        sql: "CREATE TABLE lake1.db1.t (c1 INT, c2 INT) ORDER BY c1;"
+      - id: tblproperties
+        sql: "CREATE TABLE lake1.db1.t (c1 INT) TBLPROPERTIES ('write.format.default'='orc');"
+      - id: properties_keyword
+        sql: "CREATE TABLE lake1.db1.t (c1 INT) PROPERTIES ('write.format.default'='orc', 'write.orc.compression-codec'='snappy');"
+      - id: deltalake_partition_columns
+        sql: "CREATE TABLE lake1.db1.t (c1 INT, c2 INT) PARTITIONED BY (c1, c2);"
+    examples:
+      - |-
+        CREATE TABLE MyIceberg.MyDatabase.Tab1
+            ( c1 VARCHAR(50) NOT NULL,
+              c2 INT,
+              dt TIMESTAMP(6),
+              country VARCHAR(50) )
+        PARTITIONED BY (YEAR(dt), country, BUCKET(16,c2))
+        SORTED BY c1 ASC, c2 DESC
+        TBLPROPERTIES(
+              'write.format.default'='orc','write.orc.compression-codec'='snappy',
+              'write.data.path'='<s3://db/tbl1>',
+              'write.orc.bloom.filter.columns'='c1,c2');
+
+  - id: create_table_as_datalake
+    name: CREATE TABLE AS (Datalake Form)
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/jWOtiaFT6~PGsO8CNaMUrw
+    tier: medium
+    probes:
+      - id: subquery_with_data
+        sql: "CREATE TABLE lake1.db1.t AS (SELECT c1 FROM lake1.db1.s) WITH DATA;"
+      - id: source_table_with_no_data
+        sql: "CREATE TABLE lake1.db1.t AS lake1.db1.s WITH NO DATA;"
+      - id: column_list
+        sql: "CREATE TABLE lake1.db1.t (c1 INT NOT NULL) AS (SELECT c1 FROM lake1.db1.s) WITH DATA;"
+      - id: partitioned_sorted
+        sql: "CREATE TABLE lake1.db1.t PARTITIONED BY (c1) SORTED BY c1 AS (SELECT c1 FROM lake1.db1.s) WITH DATA;"
+      - id: partition_transform_properties
+        sql: "CREATE TABLE lake1.db1.t PARTITION BY (BUCKET(8, c1)) TBLPROPERTIES ('write.format.default'='parquet') AS (SELECT c1 FROM lake1.db1.s) WITH DATA;"
+    examples:
+      - |-
+        CREATE TABLE MyIceberg.MyDatabase.Tab1
+        PARTITIONED BY (id)
+        SORTED BY id
+        AS (SELECT id FROM MyIceberg.MyDatabase.Tab2 as D) WITH DATA;
+
+  - id: create_table_ofs
+    name: CREATE TABLE / CREATE TABLE AS (Object File System Table Form)
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/Fgdgggh5e8Ya1Lekfipj7g
+    tier: medium
+    probes:
+      - id: basic_primary_index
+        sql: "CREATE MULTISET TABLE t, STORAGE = TD_OFSSTORAGE (c INTEGER, d INTEGER) PRIMARY INDEX (c);"
+      - id: retentiondays
+        sql: "CREATE MULTISET TABLE t, STORAGE = TD_OFSSTORAGE, RETENTIONDAYS = 90 (c INTEGER) PRIMARY INDEX (c);"
+      - id: map_colocate
+        sql: "CREATE MULTISET TABLE t, STORAGE = TD_OFSSTORAGE, MAP = m1 COLOCATE USING colo1 (c INTEGER) PRIMARY INDEX (c);"
+      - id: order_by_no_primary_index
+        sql: "CREATE MULTISET TABLE t, STORAGE = TD_OFSSTORAGE (c INTEGER, d DATE) ORDER BY (d) NO PRIMARY INDEX;"
+      - id: unique_primary_index_partition_by_column
+        sql: "CREATE MULTISET TABLE t, STORAGE = TD_OFSSTORAGE (c INTEGER) UNIQUE PRIMARY INDEX (c) PARTITION BY COLUMN;"
+      - id: not_partitioned
+        sql: "CREATE MULTISET TABLE t, STORAGE = TD_OFSSTORAGE (c INTEGER) PRIMARY INDEX (c) NOT PARTITIONED;"
+      - id: column_attributes
+        sql: "CREATE MULTISET TABLE t, STORAGE = TD_OFSSTORAGE (c VARCHAR(10) CHARACTER SET UNICODE NOT CASESPECIFIC NOT NULL, d DATE FORMAT 'YYYY-MM-DD') PRIMARY INDEX (c);"
+      - id: ct_abbreviation_as_with_data
+        sql: "CT t, STORAGE = TD_OFSSTORAGE AS (SELECT c FROM s) WITH DATA PRIMARY INDEX (c);"
+      - id: as_with_no_data_and_statistics
+        sql: "CREATE MULTISET TABLE t, STORAGE = TD_OFSSTORAGE AS s WITH NO DATA AND NO STATISTICS NO PRIMARY INDEX;"
+    examples:
+      - |-
+        CREATE MULTISET TABLE Orders, STORAGE=TD_OFSSTORAGE, NO Fallback, MAP=TD_MAP1
+        ( StoreNo SMALLINT
+        , OrderId INTEGER
+        , OrderDate DATE FORMAT 'YYYY-MM-DD'
+        , OrderTotal INTEGER
+        ) PRIMARY INDEX (StoreNo, OrderId);
+      - |-
+        CREATE MULTISET TABLE Orders, STORAGE=TD_OFSSTORAGE, NO Fallback, MAP=TD_MAP1
+        ( StoreNo SMALLINT
+        , OrderId INTEGER
+        , OrderDate DATE FORMAT 'YYYY-MM-DD'
+        , OrderTotal INTEGER
+        )
+        ORDER BY (OrderDate)
+        PRIMARY INDEX (StoreNo, OrderId);
+      - |-
+        ct tp1, storage = TD_OFSSTORAGE,
+        RETENTIONDAYS = 90
+        (a1 int, b1 int, c1 int);
+
+  - id: alter_table_datalake
+    name: ALTER TABLE (Datalake Form)
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/1PTNC~J0kMbnUYeZeP004w
+    tier: medium
+    probes:
+      - id: add_columns
+        sql: "ALTER TABLE lake1.db1.t ADD (c3 INT NULL, c4 INTEGER NOT NULL);"
+      - id: add_column_unparenthesized
+        sql: "ALTER TABLE lake1.db1.t ADD c3 INT NULL, ADD cnt INTEGER NOT NULL;"
+      - id: add_column_comment
+        sql: "ALTER TABLE lake1.db1.t ADD c3 INT COMMENT 'note';"
+      - id: add_columns_after
+        sql: "ALTER TABLE lake1.db1.t ADD (c7, c8) AFTER c6;"
+      - id: add_columns_before
+        sql: "ALTER TABLE lake1.db1.t ADD (c7, c8) BEFORE c6;"
+      - id: modify_not_null
+        sql: "ALTER TABLE lake1.db1.t MODIFY c3 NOT NULL;"
+      - id: modify_type
+        sql: "ALTER TABLE lake1.db1.t MODIFY c3 VARCHAR(255);"
+      - id: rename_column
+        sql: "ALTER TABLE lake1.db1.t RENAME c2 TO cnt;"
+      - id: drop_columns
+        sql: "ALTER TABLE lake1.db1.t DROP c3, DROP c4;"
+      - id: add_partitioned_by
+        sql: "ALTER TABLE lake1.db1.t ADD PARTITIONED BY c3;"
+      - id: add_partition_by_transforms
+        sql: "ALTER TABLE lake1.db1.t ADD PARTITION BY (c4, BUCKET(16,c1), TRUNCATE(3,c1));"
+      - id: drop_partitioned_by
+        sql: "ALTER TABLE lake1.db1.t DROP PARTITIONED BY c3;"
+      - id: add_sorted_by
+        sql: "ALTER TABLE lake1.db1.t ADD SORTED BY c2 ASC, c3 DESC;"
+      - id: drop_sorted_by
+        sql: "ALTER TABLE lake1.db1.t DROP SORTED BY;"
+      - id: add_tblproperties
+        sql: "ALTER TABLE lake1.db1.t ADD TBLPROPERTIES('write.merge.mode'='copy-on-write');"
+      - id: drop_tblproperties
+        sql: "ALTER TABLE lake1.db1.t DROP TBLPROPERTIES('write.merge.mode'='merge-on-read');"
+    examples:
+      - |-
+        ALTER TABLE MyIceberg.MyDatabase.Tab1
+           ADD c3 INT NULL,
+           ADD count INTEGER NOT NULL;
+      - |-
+        ALTER TABLE MyIceberg.MyDatabase.Tab1
+           RENAME c2 TO count;
+      - "ALTER TABLE MyIceberg.MyDatabase.Tab1 ADD SORTED BY c2 ASC, c3 DESC;"

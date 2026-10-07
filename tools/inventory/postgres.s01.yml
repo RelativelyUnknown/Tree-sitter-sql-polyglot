@@ -1,0 +1,105 @@
+dialect: postgres
+engine: PostgreSQL
+version: "17"
+source: https://www.postgresql.org/docs/17/sql-commands.html
+
+statements:
+  - id: alter_routine
+    name: ALTER ROUTINE
+    doc: https://www.postgresql.org/docs/17/sql-alterroutine.html
+    tier: high
+    probes:
+      - id: rename_to
+        sql: "ALTER ROUTINE f(integer) RENAME TO g;"
+      - id: no_arg_list
+        sql: "ALTER ROUTINE f RENAME TO g;"
+      - id: empty_arg_list
+        sql: "ALTER ROUTINE f() RENAME TO g;"
+      - id: schema_qualified_name
+        sql: "ALTER ROUTINE s.f(integer) RENAME TO g;"
+      - id: arg_mode_and_name
+        sql: "ALTER ROUTINE f(IN a integer, OUT b text, INOUT c numeric, VARIADIC d integer[]) RENAME TO g;"
+      - id: owner_to_role
+        sql: "ALTER ROUTINE f(integer) OWNER TO r;"
+      - id: owner_to_current_role
+        sql: "ALTER ROUTINE f(integer) OWNER TO CURRENT_ROLE;"
+      - id: owner_to_current_user
+        sql: "ALTER ROUTINE f(integer) OWNER TO CURRENT_USER;"
+      - id: owner_to_session_user
+        sql: "ALTER ROUTINE f(integer) OWNER TO SESSION_USER;"
+      - id: set_schema
+        sql: "ALTER ROUTINE f(integer) SET SCHEMA s;"
+      - id: depends_on_extension
+        sql: "ALTER ROUTINE f(integer) DEPENDS ON EXTENSION e;"
+      - id: no_depends_on_extension
+        sql: "ALTER ROUTINE f(integer) NO DEPENDS ON EXTENSION e;"
+      - id: action_immutable
+        sql: "ALTER ROUTINE f(integer) IMMUTABLE;"
+      - id: action_stable
+        sql: "ALTER ROUTINE f(integer) STABLE;"
+      - id: action_volatile
+        sql: "ALTER ROUTINE f(integer) VOLATILE;"
+      - id: action_leakproof
+        sql: "ALTER ROUTINE f(integer) LEAKPROOF;"
+      - id: action_not_leakproof
+        sql: "ALTER ROUTINE f(integer) NOT LEAKPROOF;"
+      - id: action_security_invoker
+        sql: "ALTER ROUTINE f(integer) SECURITY INVOKER;"
+      - id: action_security_definer
+        sql: "ALTER ROUTINE f(integer) SECURITY DEFINER;"
+      - id: action_external_security_definer
+        sql: "ALTER ROUTINE f(integer) EXTERNAL SECURITY DEFINER;"
+      - id: action_external_security_invoker
+        sql: "ALTER ROUTINE f(integer) EXTERNAL SECURITY INVOKER;"
+      - id: action_parallel_unsafe
+        sql: "ALTER ROUTINE f(integer) PARALLEL UNSAFE;"
+      - id: action_parallel_restricted
+        sql: "ALTER ROUTINE f(integer) PARALLEL RESTRICTED;"
+      - id: action_parallel_safe
+        sql: "ALTER ROUTINE f(integer) PARALLEL SAFE;"
+      - id: action_cost
+        sql: "ALTER ROUTINE f(integer) COST 100;"
+      - id: action_rows
+        sql: "ALTER ROUTINE f(integer) ROWS 1000;"
+      - id: action_set_to
+        sql: "ALTER ROUTINE f(integer) SET search_path TO s, public;"
+      - id: action_set_equals
+        sql: "ALTER ROUTINE f(integer) SET work_mem = '64MB';"
+      - id: action_set_default
+        sql: "ALTER ROUTINE f(integer) SET work_mem TO DEFAULT;"
+      - id: action_set_from_current
+        sql: "ALTER ROUTINE f(integer) SET search_path FROM CURRENT;"
+      - id: action_reset
+        sql: "ALTER ROUTINE f(integer) RESET search_path;"
+      - id: action_reset_all
+        sql: "ALTER ROUTINE f(integer) RESET ALL;"
+      - id: multiple_actions
+        sql: "ALTER ROUTINE f(integer) IMMUTABLE LEAKPROOF COST 10;"
+      - id: actions_restrict
+        sql: "ALTER ROUTINE f(integer) STABLE PARALLEL SAFE RESTRICT;"
+        note: "action [ ... ] [ RESTRICT ]: several actions followed by the ignored RESTRICT noise word"
+    examples:
+      - "ALTER ROUTINE foo(integer) RENAME TO foobar;"
+
+  - id: call
+    name: CALL
+    doc: https://www.postgresql.org/docs/17/sql-call.html
+    tier: high
+    probes:
+      - id: no_arguments
+        sql: "CALL p();"
+      - id: positional_arguments
+        sql: "CALL p(1, 'a');"
+      - id: schema_qualified
+        sql: "CALL s.p(1);"
+      - id: named_arguments
+        sql: "CALL p(a => 1, b => 'x');"
+      - id: mixed_arguments
+        sql: "CALL p(1, b => 'x');"
+      - id: null_for_out_parameter
+        sql: "CALL p(1, NULL);"
+        note: arguments matching OUT parameters are customarily written as NULL
+      - id: expression_arguments
+        sql: "CALL p(1 + 2, now(), ARRAY[1, 2]);"
+    examples:
+      - "CALL do_db_maintenance();"

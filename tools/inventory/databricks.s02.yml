@@ -1,0 +1,100 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: values
+    name: VALUES clause
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-values
+    tier: high
+    probes:
+      - id: values_tuple
+        sql: "VALUES (1, 'a');"
+      - id: values_multiple_rows
+        sql: "VALUES (1, 'a'), (2, 'b');"
+      - id: values_bare_expressions
+        sql: "VALUES 1, 2, 3;"
+        note: "Each bare expression is a single-field tuple (syntax: VALUES { expression | ( expression [, ...] ) } [, ...])"
+      - id: values_table_alias
+        sql: "VALUES (1, 'a'), (2, 'b') AS data;"
+      - id: values_table_alias_columns
+        sql: "VALUES (1, 'a'), (2, 'b') AS data(a, b);"
+      - id: values_in_from
+        sql: "SELECT a, b FROM VALUES (1, 'a'), (2, 'b') AS data(a, b);"
+      - id: values_in_from_no_alias
+        sql: "SELECT * FROM VALUES (1, 'a'), (2, 'b');"
+      - id: values_multiple_in_from
+        sql: "SELECT * FROM VALUES (1, 2) AS t1(c1, c2), VALUES (3, 4) AS t2(c3, c4);"
+      - id: values_expressions
+        sql: "VALUES (1 + 2, upper('a')), (NULL, 'b');"
+      - id: values_complex_types
+        sql: "SELECT a, b FROM VALUES ('one', array(0, 1)), ('two', array(2, 3)) AS data(a, b);"
+      - id: select_without_from
+        sql: "SELECT 'one', 2;"
+        note: "Syntax line: SELECT expression [, ...] [table_alias]; all expressions constitute a single-row temporary table"
+    examples:
+      - 'VALUES ("one", 1);'
+      - "SELECT data.a, b FROM VALUES ('one', 1), ('two', 2), ('three', NULL) AS data(a, b);"
+      - "SELECT a, b FROM VALUES ('one', array(0, 1)), ('two', array(2, 3)) AS data(a, b);"
+
+  - id: select_list
+    name: SELECT clause
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-column-list
+    tier: high
+    probes:
+      - id: select_column
+        sql: "SELECT c FROM t;"
+      - id: select_columns
+        sql: "SELECT c1, c2 FROM t;"
+      - id: select_all_keyword
+        sql: "SELECT ALL c FROM t;"
+      - id: select_distinct
+        sql: "SELECT DISTINCT c FROM t;"
+      - id: select_expression
+        sql: "SELECT c1 + c2 FROM t;"
+      - id: select_alias_as
+        sql: "SELECT c AS a FROM t;"
+      - id: select_alias_no_as
+        sql: "SELECT c a FROM t;"
+      - id: select_expression_alias
+        sql: "SELECT c1 + c2 AS total, upper(c3) AS u FROM t;"
+      - id: select_without_from
+        sql: "SELECT 1;"
+      - id: select_star
+        sql: "SELECT * FROM t;"
+      - id: select_table_star
+        sql: "SELECT t.* FROM t;"
+      - id: select_star_except
+        sql: "SELECT * EXCEPT (c2) FROM t;"
+      - id: select_table_star_except
+        sql: "SELECT t.* EXCEPT (c2) FROM t;"
+      - id: select_star_except_multiple
+        sql: "SELECT * EXCEPT (c1, c2) FROM t;"
+      - id: select_star_except_nested_field
+        sql: "SELECT * EXCEPT (c2.b) FROM t;"
+      - id: select_star_except_nested_fields
+        sql: "SELECT * EXCEPT (c2.b, c2.a) FROM t;"
+      - id: select_star_multiple_tables
+        sql: "SELECT * FROM t1, t2;"
+      - id: select_table_star_join
+        sql: "SELECT t2.* FROM t1 JOIN t2 ON t1.c = t2.c;"
+      - id: select_star_and_columns
+        sql: "SELECT *, c + 1 AS d FROM t;"
+      - id: select_struct_star
+        sql: "SELECT c2.* FROM t;"
+        note: "star_clause may name a specific table reference's columns or fields; struct expansion is documented on the Star clause page"
+      - id: select_hint
+        sql: "SELECT /*+ BROADCAST(t2) */ t1.c FROM t1 JOIN t2 ON t1.c = t2.c;"
+        note: "[ hints ] in the syntax block; join strategy hint"
+      - id: select_hint_repartition
+        sql: "SELECT /*+ REPARTITION(10) */ c FROM t;"
+        note: "Databricks supports repartitioning hints"
+      - id: select_hint_multiple
+        sql: "SELECT /*+ BROADCAST(t2), REPARTITION(10) */ t1.c FROM t1 JOIN t2 ON t1.c = t2.c;"
+      - id: select_hint_distinct
+        sql: "SELECT /*+ COALESCE(3) */ DISTINCT c FROM t;"
+    examples:
+      - "SELECT * FROM VALUES (1, 2) AS t1(c1, c2), VALUES (3, 4) AS t2(c3, c4);"
+      - "SELECT t2.* FROM VALUES (1, 2) AS t1(c1, c2), VALUES (3, 4) AS t2(c3, c4);"
+      - "SELECT * EXCEPT (c4) FROM VALUES (1, 2) AS t1(c1, c2), VALUES (3, 4) AS t2(c3, c4);"

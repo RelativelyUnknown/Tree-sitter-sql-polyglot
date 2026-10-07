@@ -1,0 +1,129 @@
+dialect: spanner
+engine: Google Cloud Spanner (GoogleSQL dialect)
+version: "current managed service (docs as of 2026-10)"
+source: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language
+
+statements:
+  - id: create_change_stream
+    name: CREATE CHANGE STREAM
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#create-change-stream
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE CHANGE STREAM cs;" }
+      - { id: if_not_exists, sql: "CREATE CHANGE STREAM IF NOT EXISTS cs FOR ALL;" }
+      - { id: for_table, sql: "CREATE CHANGE STREAM cs FOR t;" }
+      - { id: for_table_columns, sql: "CREATE CHANGE STREAM cs FOR t(c1, c2), u();" }
+      - { id: options, sql: "CREATE CHANGE STREAM cs FOR ALL OPTIONS (retention_period = '7d', value_capture_type = 'NEW_ROW', exclude_ttl_deletes = true, exclude_insert = false, allow_txn_exclusion = true);" }
+
+  - id: alter_change_stream
+    name: ALTER CHANGE STREAM
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#alter-change-stream
+    tier: medium
+    probes:
+      - { id: set_for_tables, sql: "ALTER CHANGE STREAM cs SET FOR t(c1), u;" }
+      - { id: set_for_all, sql: "ALTER CHANGE STREAM cs SET FOR ALL;" }
+      - { id: drop_for_all, sql: "ALTER CHANGE STREAM cs DROP FOR ALL;" }
+      - { id: set_options, sql: "ALTER CHANGE STREAM cs SET OPTIONS (retention_period = '3d', value_capture_type = 'NEW_VALUES');" }
+      - { id: set_options_null, sql: "ALTER CHANGE STREAM cs SET OPTIONS (retention_period = null, exclude_delete = null);" }
+
+  - id: drop_change_stream
+    name: DROP CHANGE STREAM
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#drop_change_stream
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP CHANGE STREAM cs;" }
+      - { id: if_exists, sql: "DROP CHANGE STREAM IF EXISTS cs;" }
+
+  - id: create_role
+    name: CREATE ROLE
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#create_role
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE ROLE r;" }
+    examples:
+      - "CREATE ROLE hr_manager;"
+
+  - id: drop_role
+    name: DROP ROLE
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#drop_role
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP ROLE r;" }
+    examples:
+      - "DROP ROLE hr_manager;"
+
+  - id: grant
+    name: GRANT
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#grant_statement
+    tier: medium
+    probes:
+      - { id: table_privileges, sql: "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE t, u TO ROLE r1, r2;" }
+      - { id: all_tables_in_schema, sql: "GRANT SELECT ON ALL TABLES IN SCHEMA s TO ROLE r;" }
+      - { id: column_privileges, sql: "GRANT SELECT (c1, c2), UPDATE (c1) ON TABLE t TO ROLE r;" }
+      - { id: change_stream, sql: "GRANT SELECT ON CHANGE STREAM cs TO ROLE r;" }
+      - { id: all_change_streams, sql: "GRANT SELECT ON ALL CHANGE STREAMS IN SCHEMA s TO ROLE r;" }
+      - { id: sequence, sql: "GRANT SELECT, UPDATE ON SEQUENCE sq TO ROLE r;" }
+      - { id: all_sequences, sql: "GRANT SELECT ON ALL SEQUENCES IN SCHEMA s TO ROLE r;" }
+      - { id: view, sql: "GRANT SELECT ON VIEW v TO ROLE r;" }
+      - { id: all_views, sql: "GRANT SELECT ON ALL VIEWS IN SCHEMA s TO ROLE r;" }
+      - { id: execute_function, sql: "GRANT EXECUTE ON TABLE FUNCTION f TO ROLE r;" }
+      - { id: role_to_role, sql: "GRANT ROLE r1 TO ROLE r2, r3;" }
+      - { id: usage_schema, sql: "GRANT USAGE ON SCHEMA s TO ROLE r;" }
+      - { id: usage_default_schema, sql: "GRANT USAGE ON SCHEMA DEFAULT TO ROLE r;" }
+    examples:
+      - "GRANT SELECT ON TABLE employees TO ROLE hr_rep;"
+      - "GRANT SELECT (name, address, phone) ON TABLE contractors TO ROLE hr_rep;"
+      - "GRANT ROLE pii_access TO ROLE hr_manager, hr_director;"
+
+  - id: revoke
+    name: REVOKE
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#revoke_statement
+    tier: medium
+    probes:
+      - { id: table_privileges, sql: "REVOKE SELECT, INSERT, UPDATE, DELETE ON TABLE t, u FROM ROLE r1, r2;" }
+      - { id: all_tables_in_schema, sql: "REVOKE SELECT ON ALL TABLES IN SCHEMA s FROM ROLE r;" }
+      - { id: column_privileges, sql: "REVOKE SELECT (c1, c2), UPDATE (c1) ON TABLE t FROM ROLE r;" }
+      - { id: view, sql: "REVOKE SELECT ON VIEW v FROM ROLE r;" }
+      - { id: change_stream, sql: "REVOKE SELECT ON CHANGE STREAM cs FROM ROLE r;" }
+      - { id: sequence, sql: "REVOKE SELECT, UPDATE ON SEQUENCE sq FROM ROLE r;" }
+      - { id: all_sequences, sql: "REVOKE SELECT ON ALL SEQUENCES IN SCHEMA s FROM ROLE r;" }
+      - { id: execute_function, sql: "REVOKE EXECUTE ON TABLE FUNCTION f FROM ROLE r;" }
+      - { id: role_from_role, sql: "REVOKE ROLE r1 FROM ROLE r2, r3;" }
+    examples:
+      - "REVOKE SELECT ON TABLE employees FROM ROLE hr_rep;"
+      - "REVOKE SELECT(name, address, phone) ON TABLE contractors FROM ROLE hr_rep;"
+      - "REVOKE SELECT, UPDATE(location) ON TABLE employees FROM ROLE hr_manager;"
+
+  - id: create_sequence
+    name: CREATE SEQUENCE
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#create-sequence
+    tier: medium
+    probes:
+      - { id: options, sql: "CREATE SEQUENCE sq OPTIONS (sequence_kind = 'bit_reversed_positive');" }
+      - { id: if_not_exists, sql: "CREATE SEQUENCE IF NOT EXISTS sq OPTIONS (sequence_kind = 'bit_reversed_positive');" }
+      - { id: bit_reversed_positive, sql: "CREATE SEQUENCE sq BIT_REVERSED_POSITIVE;" }
+      - { id: skip_range, sql: "CREATE SEQUENCE sq BIT_REVERSED_POSITIVE SKIP RANGE 1, 1000;" }
+      - { id: start_counter, sql: "CREATE SEQUENCE sq BIT_REVERSED_POSITIVE START COUNTER WITH 50;" }
+      - { id: all_options, sql: "CREATE SEQUENCE sq OPTIONS (sequence_kind = 'bit_reversed_positive', skip_range_min = 1, skip_range_max = 1000, start_with_counter = 50);" }
+    examples:
+      - "CREATE SEQUENCE MySequence OPTIONS (sequence_kind = 'bit_reversed_positive', skip_range_min = 1, skip_range_max = 1000, start_with_counter = 50);"
+
+  - id: alter_sequence
+    name: ALTER SEQUENCE
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#alter-sequence
+    tier: medium
+    probes:
+      - { id: set_options, sql: "ALTER SEQUENCE sq SET OPTIONS (skip_range_min = 1, skip_range_max = 1000);" }
+      - { id: skip_range, sql: "ALTER SEQUENCE sq SKIP RANGE 1, 1000;" }
+      - { id: no_skip_range, sql: "ALTER SEQUENCE sq NO SKIP RANGE;" }
+      - { id: restart_counter, sql: "ALTER SEQUENCE sq RESTART COUNTER WITH 100;" }
+    examples:
+      - "ALTER SEQUENCE MySequence SET OPTIONS (skip_range_min = 1, skip_range_max = 1234567);"
+
+  - id: drop_sequence
+    name: DROP SEQUENCE
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#drop-sequence
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP SEQUENCE sq;" }
+      - { id: if_exists, sql: "DROP SEQUENCE IF EXISTS sq;" }

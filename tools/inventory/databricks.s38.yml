@@ -1,0 +1,159 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: call
+    name: CALL
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-call
+    tier: high
+    probes:
+      - id: no_args
+        sql: "CALL p();"
+      - id: positional_args
+        sql: "CALL p(5, 10);"
+      - id: qualified_name
+        sql: "CALL s.p(5, 10);"
+      - id: three_part_name
+        sql: "CALL c.s.p(5, 10);"
+      - id: default_arg
+        sql: "CALL p(DEFAULT, 10);"
+      - id: out_variable_args
+        sql: "CALL p(5, 10, area, acc);"
+      - id: named_args
+        sql: "CALL p(y => 10, x => 5);"
+      - id: positional_then_named
+        sql: "CALL p(5, y => 10);"
+      - id: expression_args
+        sql: "CALL p(1 + 2, DATE'2015-01-01', 'abc');"
+    examples:
+      - "CALL area_of_rectangle(5, 10, area, acc);"
+      - "CALL area_of_rectangle(y => 10, x => 5, area => area, acc => acc);"
+
+  - id: explain
+    name: EXPLAIN
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-explain
+    tier: medium
+    probes:
+      - id: basic
+        sql: "EXPLAIN SELECT 1;"
+      - id: extended
+        sql: "EXPLAIN EXTENDED SELECT 1;"
+      - id: codegen
+        sql: "EXPLAIN CODEGEN SELECT 1;"
+      - id: cost
+        sql: "EXPLAIN COST SELECT 1;"
+      - id: formatted
+        sql: "EXPLAIN FORMATTED SELECT 1;"
+      - id: dml_statement
+        sql: "EXPLAIN INSERT INTO t SELECT * FROM s;"
+    examples:
+      - "EXPLAIN select k, sum(v) from values (1, 2), (1, 3) t(k, v) group by k;"
+      - "EXPLAIN EXTENDED select k, sum(v) from values (1, 2), (1, 3) t(k, v) group by k;"
+      - "EXPLAIN FORMATTED select k, sum(v) from values (1, 2), (1, 3) t(k, v) group by k;"
+
+  - id: insert_overwrite_directory
+    name: INSERT OVERWRITE DIRECTORY
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-dml-insert-overwrite-directory
+    tier: medium
+    probes:
+      - id: using_select
+        sql: "INSERT OVERWRITE DIRECTORY '/tmp/out' USING parquet SELECT * FROM t;"
+      - id: local
+        sql: "INSERT OVERWRITE LOCAL DIRECTORY '/tmp/out' USING csv SELECT * FROM t;"
+      - id: options
+        sql: "INSERT OVERWRITE DIRECTORY '/tmp/out' USING parquet OPTIONS (col1 1, col2 2, col3 'test') SELECT * FROM t;"
+      - id: options_equals
+        sql: "INSERT OVERWRITE DIRECTORY '/tmp/out' USING csv OPTIONS (header = 'true', delimiter = ',') SELECT * FROM t;"
+      - id: path_in_options
+        sql: "INSERT OVERWRITE DIRECTORY USING parquet OPTIONS ('path' '/tmp/out') SELECT * FROM t;"
+      - id: values
+        sql: "INSERT OVERWRITE DIRECTORY '/tmp/out' USING json VALUES (1, 'a'), (2, NULL);"
+      - id: table_query
+        sql: "INSERT OVERWRITE DIRECTORY '/tmp/out' USING orc TABLE t;"
+      - id: from_query
+        sql: "INSERT OVERWRITE DIRECTORY '/tmp/out' USING parquet FROM t SELECT c;"
+    examples:
+      - "INSERT OVERWRITE DIRECTORY '/Volumes/my_catalog/my_schema/my_volume/' USING parquet OPTIONS (col1 1, col2 2, col3 'test') SELECT * FROM test_table;"
+      - "INSERT OVERWRITE DIRECTORY USING parquet OPTIONS ('path' '/Volumes/my_catalog/my_schema/my_volume/', col1 1, col2 2, col3 'test') SELECT * FROM test_table;"
+
+  - id: insert_overwrite_directory_hive
+    name: INSERT OVERWRITE DIRECTORY with Hive format
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-dml-insert-overwrite-directory-hive
+    tier: medium
+    probes:
+      - id: basic
+        sql: "INSERT OVERWRITE DIRECTORY '/tmp/out' SELECT * FROM t;"
+      - id: local_stored_as
+        sql: "INSERT OVERWRITE LOCAL DIRECTORY '/tmp/out' STORED AS orc SELECT * FROM t;"
+      - id: row_format_delimited
+        sql: "INSERT OVERWRITE LOCAL DIRECTORY '/tmp/out' ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' SELECT * FROM t;"
+      - id: row_format_serde
+        sql: "INSERT OVERWRITE DIRECTORY '/tmp/out' ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe' STORED AS TEXTFILE SELECT * FROM t;"
+      - id: stored_as_inputformat
+        sql: "INSERT OVERWRITE DIRECTORY '/tmp/out' STORED AS INPUTFORMAT 'org.apache.hadoop.mapred.TextInputFormat' OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat' SELECT * FROM t;"
+      - id: values
+        sql: "INSERT OVERWRITE DIRECTORY '/tmp/out' STORED AS parquet VALUES (1, 'a'), (2, NULL);"
+    examples:
+      - "INSERT OVERWRITE LOCAL DIRECTORY '/tmp/destination' STORED AS orc SELECT * FROM test_table;"
+      - "INSERT OVERWRITE LOCAL DIRECTORY '/tmp/destination' ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' SELECT * FROM test_table;"
+
+  - id: load_data
+    name: LOAD DATA
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-dml-load
+    tier: medium
+    probes:
+      - id: basic
+        sql: "LOAD DATA INPATH '/user/hive/warehouse/students' INTO TABLE t;"
+      - id: local
+        sql: "LOAD DATA LOCAL INPATH '/user/hive/warehouse/students' INTO TABLE t;"
+      - id: overwrite
+        sql: "LOAD DATA INPATH '/user/hive/warehouse/students' OVERWRITE INTO TABLE t;"
+      - id: local_overwrite
+        sql: "LOAD DATA LOCAL INPATH '/user/hive/warehouse/students' OVERWRITE INTO TABLE t;"
+      - id: partition
+        sql: "LOAD DATA INPATH '/user/hive/warehouse/students' INTO TABLE t PARTITION (c2 = 2, c3 = 3);"
+      - id: qualified_table_partition_overwrite
+        sql: "LOAD DATA LOCAL INPATH '/tmp/data' OVERWRITE INTO TABLE s.t PARTITION (c2 = 2);"
+    examples:
+      - "LOAD DATA LOCAL INPATH '/user/hive/warehouse/students' OVERWRITE INTO TABLE test_load;"
+      - "LOAD DATA LOCAL INPATH '/user/hive/warehouse/test_partition/c2=2/c3=3' OVERWRITE INTO TABLE test_load_partition PARTITION (c2 = 2, c3 = 3);"
+
+  - id: copy_into
+    name: COPY INTO
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/delta-copy-into
+    tier: medium
+    probes:
+      - id: basic
+        sql: "COPY INTO t FROM 's3://bucket/path' FILEFORMAT = CSV;"
+      - id: by_position
+        sql: "COPY INTO t BY POSITION FROM 's3://bucket/path' FILEFORMAT = CSV;"
+      - id: column_list
+        sql: "COPY INTO t (c1, c2) FROM 's3://bucket/path' FILEFORMAT = CSV;"
+      - id: select_source
+        sql: "COPY INTO t FROM (SELECT c1, CAST(c2 AS INT) AS c2 FROM 's3://bucket/path') FILEFORMAT = CSV;"
+      - id: validate
+        sql: "COPY INTO t FROM 's3://bucket/path' FILEFORMAT = JSON VALIDATE;"
+      - id: validate_all
+        sql: "COPY INTO t FROM 's3://bucket/path' FILEFORMAT = JSON VALIDATE ALL;"
+      - id: validate_rows
+        sql: "COPY INTO t FROM 's3://bucket/path' FILEFORMAT = JSON VALIDATE 15 ROWS;"
+      - id: files
+        sql: "COPY INTO t FROM 's3://bucket/path' FILEFORMAT = PARQUET FILES = ('a.parquet', 'b.parquet');"
+      - id: pattern
+        sql: "COPY INTO t FROM 's3://bucket/path' FILEFORMAT = PARQUET PATTERN = 'data-*.parquet';"
+      - id: format_options
+        sql: "COPY INTO t FROM 's3://bucket/path' FILEFORMAT = CSV FORMAT_OPTIONS ('header' = 'true', 'inferSchema' = 'true');"
+      - id: copy_options
+        sql: "COPY INTO t FROM 's3://bucket/path' FILEFORMAT = CSV COPY_OPTIONS ('force' = 'true', 'mergeSchema' = 'true');"
+      - id: with_credential_name
+        sql: "COPY INTO t FROM 's3://bucket/path' WITH (CREDENTIAL my_cred) FILEFORMAT = CSV;"
+      - id: with_credential_options
+        sql: "COPY INTO t FROM 's3://bucket/path' WITH (CREDENTIAL (AWS_ACCESS_KEY = 'k', AWS_SECRET_KEY = 's', AWS_SESSION_TOKEN = 'tok')) FILEFORMAT = CSV;"
+      - id: with_encryption
+        sql: "COPY INTO t FROM 's3://bucket/path' WITH (ENCRYPTION (TYPE = 'AWS_SSE_C', MASTER_KEY = 'key')) FILEFORMAT = CSV;"
+      - id: location_target
+        sql: "COPY INTO delta.`/some/location` FROM 's3://bucket/path' WITH (CREDENTIAL my_cred) FILEFORMAT = CSV;"
+      - id: all_clauses
+        sql: "COPY INTO c.s.t FROM 's3://bucket/path' FILEFORMAT = CSV VALIDATE 10 ROWS PATTERN = '*.csv' FORMAT_OPTIONS ('header' = 'true') COPY_OPTIONS ('force' = 'true');"

@@ -1,0 +1,93 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: show_create_table
+    name: SHOW CREATE TABLE
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: medium
+    probes:
+      - { id: table, sql: "SHOW CREATE TABLE t;" }
+      - { id: qualified, sql: "SHOW CREATE TABLE db.t;" }
+  - id: show_columns
+    name: SHOW COLUMNS
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: medium
+    probes:
+      - { id: from_table, sql: "SHOW COLUMNS FROM t;" }
+      - { id: in_table, sql: "SHOW COLUMNS IN t;" }
+      - { id: from_db, sql: "SHOW COLUMNS FROM t FROM db;" }
+      - { id: in_db, sql: "SHOW COLUMNS IN t IN db;" }
+      - { id: like, sql: "SHOW COLUMNS FROM t LIKE 'col*';" }
+      - { id: like_db, sql: "SHOW COLUMNS FROM t FROM db LIKE 'col*';" }
+    examples:
+      - "SHOW COLUMNS FROM foo;"
+      - "SHOW COLUMNS IN foo \"col*\";"
+      - "SHOW COLUMNS FROM foo LIKE \"col1|cola\";"
+  - id: show_functions
+    name: SHOW FUNCTIONS
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: medium
+    probes:
+      - { id: plain, sql: "SHOW FUNCTIONS;" }
+      - { id: like, sql: "SHOW FUNCTIONS LIKE 'f*';" }
+  - id: show_grant
+    name: SHOW GRANT
+    doc: https://hive.apache.org/docs/latest/language/sql-standard-based-hive-authorization/
+    tier: medium
+    probes:
+      - { id: on_all, sql: "SHOW GRANT ON ALL;" }
+      - { id: on_table, sql: "SHOW GRANT ON TABLE t;" }
+      - { id: on_name, sql: "SHOW GRANT ON t;" }
+      - { id: user_on_table, sql: "SHOW GRANT USER u ON TABLE t;" }
+      - { id: role_on_all, sql: "SHOW GRANT ROLE r ON ALL;" }
+    examples:
+      - "show grant user ashutosh on table hivejiratable;"
+  - id: show_roles
+    name: SHOW ROLES / SHOW CURRENT ROLES
+    doc: https://hive.apache.org/docs/latest/language/sql-standard-based-hive-authorization/
+    tier: medium
+    probes:
+      - { id: roles, sql: "SHOW ROLES;" }
+      - { id: current_roles, sql: "SHOW CURRENT ROLES;" }
+  - id: show_role_grant
+    name: SHOW ROLE GRANT
+    doc: https://hive.apache.org/docs/latest/language/sql-standard-based-hive-authorization/
+    tier: medium
+    probes:
+      - { id: user, sql: "SHOW ROLE GRANT USER u;" }
+      - { id: role, sql: "SHOW ROLE GRANT ROLE r;" }
+    examples:
+      - "SHOW ROLE GRANT USER user1;"
+  - id: show_principals
+    name: SHOW PRINCIPALS
+    doc: https://hive.apache.org/docs/latest/language/sql-standard-based-hive-authorization/
+    tier: medium
+    probes:
+      - { id: role_name, sql: "SHOW PRINCIPALS r;" }
+    examples:
+      - "SHOW PRINCIPALS role1;"
+  - id: create_role
+    name: CREATE ROLE
+    doc: https://hive.apache.org/docs/latest/language/sql-standard-based-hive-authorization/
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE ROLE r;" }
+  - id: drop_role
+    name: DROP ROLE
+    doc: https://hive.apache.org/docs/latest/language/sql-standard-based-hive-authorization/
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP ROLE r;" }
+  - id: grant_privilege
+    name: GRANT privilege
+    doc: https://hive.apache.org/docs/latest/language/sql-standard-based-hive-authorization/
+    tier: medium
+    probes:
+      - { id: to_user, sql: "GRANT SELECT ON t TO USER u;" }
+      - { id: to_role, sql: "GRANT INSERT ON TABLE t TO ROLE r;" }
+      - { id: multi_priv, sql: "GRANT SELECT, INSERT, UPDATE, DELETE ON t TO USER u;" }
+      - { id: all_priv, sql: "GRANT ALL ON t TO USER u, ROLE r;" }
+      - { id: with_grant_option, sql: "GRANT SELECT ON t TO USER u WITH GRANT OPTION;" }

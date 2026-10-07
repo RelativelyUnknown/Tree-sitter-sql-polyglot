@@ -1,0 +1,83 @@
+dialect: postgres
+engine: PostgreSQL
+version: "17"
+source: https://www.postgresql.org/docs/17/sql-commands.html
+
+statements:
+  - id: copy
+    name: COPY
+    doc: https://www.postgresql.org/docs/17/sql-copy.html
+    tier: high
+    probes:
+      - { id: from_file, sql: "COPY t FROM '/tmp/t.dat';" }
+      - { id: from_columns, sql: "COPY t (a, b) FROM '/tmp/t.dat';" }
+      - { id: from_stdin, sql: "COPY t FROM STDIN;" }
+      - { id: from_program, sql: "COPY t FROM PROGRAM 'gunzip < /tmp/t.gz';" }
+      - { id: from_with_options, sql: "COPY t FROM STDIN WITH (FORMAT csv, HEADER);" }
+      - { id: from_options_no_with, sql: "COPY t FROM STDIN (FORMAT csv);" }
+      - { id: from_where, sql: "COPY t FROM STDIN WHERE a > 0;" }
+      - { id: to_file, sql: "COPY t TO '/tmp/t.dat';" }
+      - { id: to_columns, sql: "COPY t (a, b) TO '/tmp/t.dat';" }
+      - { id: to_stdout, sql: "COPY t TO STDOUT;" }
+      - { id: to_program, sql: "COPY t TO PROGRAM 'gzip > /tmp/t.gz';" }
+      - { id: to_query_file, sql: "COPY (SELECT * FROM t WHERE a > 0) TO '/tmp/t.dat';" }
+      - { id: to_query_stdout, sql: "COPY (SELECT a, b FROM t) TO STDOUT WITH (FORMAT csv);" }
+      - { id: to_values_query, sql: "COPY (VALUES (1, 'a'), (2, 'b')) TO STDOUT;" }
+      - { id: to_with_options, sql: "COPY t TO STDOUT WITH (FORMAT csv, HEADER true);" }
+      - { id: opt_format, sql: "COPY t TO STDOUT (FORMAT binary);" }
+      - { id: opt_freeze, sql: "COPY t FROM STDIN (FREEZE);" }
+      - { id: opt_freeze_boolean, sql: "COPY t FROM STDIN (FREEZE true);" }
+      - { id: opt_delimiter, sql: "COPY t TO STDOUT (DELIMITER '|');" }
+      - { id: opt_null, sql: "COPY t TO STDOUT (NULL 'NULL');" }
+      - { id: opt_default, sql: "COPY t FROM STDIN (DEFAULT '\\D');" }
+      - { id: opt_header_boolean, sql: "COPY t TO STDOUT (FORMAT csv, HEADER false);" }
+      - { id: opt_header_match, sql: "COPY t FROM STDIN (FORMAT csv, HEADER MATCH);" }
+      - { id: opt_quote, sql: "COPY t TO STDOUT (FORMAT csv, QUOTE '\"');" }
+      - { id: opt_escape, sql: "COPY t TO STDOUT (FORMAT csv, ESCAPE '\\');" }
+      - { id: opt_force_quote_columns, sql: "COPY t TO STDOUT (FORMAT csv, FORCE_QUOTE (a, b));" }
+      - { id: opt_force_quote_star, sql: "COPY t TO STDOUT (FORMAT csv, FORCE_QUOTE *);" }
+      - { id: opt_force_not_null_columns, sql: "COPY t FROM STDIN (FORMAT csv, FORCE_NOT_NULL (a, b));" }
+      - { id: opt_force_not_null_star, sql: "COPY t FROM STDIN (FORMAT csv, FORCE_NOT_NULL *);" }
+      - { id: opt_force_null_columns, sql: "COPY t FROM STDIN (FORMAT csv, FORCE_NULL (a, b));" }
+      - { id: opt_force_null_star, sql: "COPY t FROM STDIN (FORMAT csv, FORCE_NULL *);" }
+      - { id: opt_on_error, sql: "COPY t FROM STDIN (ON_ERROR ignore);" }
+      - { id: opt_encoding, sql: "COPY t TO STDOUT (ENCODING 'UTF8');" }
+      - { id: opt_log_verbosity, sql: "COPY t FROM STDIN (ON_ERROR ignore, LOG_VERBOSITY verbose);" }
+      - { id: opt_many, sql: "COPY t FROM '/tmp/t.csv' WITH (FORMAT csv, HEADER, DELIMITER ',', NULL '', QUOTE '\"', ESCAPE '\"', ENCODING 'UTF8') WHERE a IS NOT NULL;" }
+      - { id: legacy_from_with_binary, sql: "COPY t FROM '/tmp/t.dat' WITH BINARY;", note: "Pre-9.0 syntax in the Compatibility section, still supported." }
+      - { id: legacy_from_delimiter_as, sql: "COPY t (a, b) FROM STDIN WITH DELIMITER AS '|' NULL AS '';", note: "Pre-9.0 syntax in the Compatibility section." }
+      - { id: legacy_from_csv, sql: "COPY t FROM '/tmp/t.csv' WITH CSV HEADER QUOTE AS '\"' ESCAPE AS '\\';", note: "Pre-9.0 syntax in the Compatibility section." }
+      - { id: legacy_from_csv_force_not_null, sql: "COPY t FROM STDIN CSV FORCE NOT NULL a, b;", note: "Pre-9.0 syntax in the Compatibility section." }
+      - { id: legacy_to_csv_force_quote, sql: "COPY t TO STDOUT CSV HEADER FORCE QUOTE a, b;", note: "Pre-9.0 syntax in the Compatibility section." }
+      - { id: legacy_to_csv_force_quote_star, sql: "COPY t TO STDOUT WITH CSV FORCE QUOTE *;", note: "Pre-9.0 syntax in the Compatibility section." }
+      - { id: legacy_to_query_binary, sql: "COPY (SELECT 1) TO STDOUT BINARY;", note: "Pre-9.0 syntax in the Compatibility section." }
+      - { id: legacy_binary_table_from, sql: "COPY BINARY t FROM '/tmp/t.dat';", note: "Pre-7.3 syntax in the Compatibility section, still supported." }
+      - { id: legacy_binary_table_to, sql: "COPY BINARY t TO STDOUT;", note: "Pre-7.3 syntax in the Compatibility section." }
+      - { id: legacy_using_delimiters, sql: "COPY t FROM STDIN USING DELIMITERS '|';", note: "Pre-7.3 syntax in the Compatibility section." }
+      - { id: legacy_delimiters_with_null, sql: "COPY t TO STDOUT DELIMITERS '|' WITH NULL AS '';", note: "Pre-7.3 syntax in the Compatibility section." }
+    examples:
+      - "COPY country TO STDOUT (DELIMITER '|');"
+      - "COPY country FROM '/usr1/proj/bray/sql/country_data';"
+      - "COPY (SELECT * FROM country WHERE country_name LIKE 'A%') TO '/usr1/proj/bray/sql/a_list_countries.copy';"
+
+  - id: do
+    name: DO
+    doc: https://www.postgresql.org/docs/17/sql-do.html
+    tier: high
+    probes:
+      - { id: basic, sql: "DO $$ BEGIN NULL; END $$;" }
+      - { id: language_before, sql: "DO LANGUAGE plpgsql $$ BEGIN NULL; END $$;" }
+      - { id: language_after, sql: "DO $$ BEGIN NULL; END $$ LANGUAGE plpgsql;", note: "Synopsis says the LANGUAGE clause can be written before or after the code block." }
+      - { id: tagged_dollar_quote, sql: "DO $body$ BEGIN RAISE NOTICE 'hi'; END $body$;" }
+      - { id: string_literal_body, sql: "DO 'BEGIN NULL; END';" }
+      - { id: language_quoted, sql: "DO LANGUAGE 'plpgsql' $$ BEGIN NULL; END $$;" }
+    examples:
+      - |-
+        DO $$DECLARE r record;
+        BEGIN
+            FOR r IN SELECT table_schema, table_name FROM information_schema.tables
+                     WHERE table_type = 'VIEW' AND table_schema = 'public'
+            LOOP
+                EXECUTE 'GRANT ALL ON ' || quote_ident(r.table_schema) || '.' || quote_ident(r.table_name) || ' TO webuser';
+            END LOOP;
+        END$$;

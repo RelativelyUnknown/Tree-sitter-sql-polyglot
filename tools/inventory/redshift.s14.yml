@@ -1,0 +1,50 @@
+dialect: redshift
+engine: Amazon Redshift
+version: "current"
+source: https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_commands.html
+
+statements:
+  - id: select_into
+    name: SELECT INTO
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_SELECT_INTO.html
+    tier: high
+    probes:
+      - { id: basic, sql: "SELECT * INTO t2 FROM t;" }
+      - { id: columns, sql: "SELECT a, b AS x INTO t2 FROM t;" }
+      - { id: temporary, sql: "SELECT * INTO TEMPORARY t2 FROM t;" }
+      - { id: temp_table, sql: "SELECT * INTO TEMP TABLE t2 FROM t;" }
+      - { id: table_kw, sql: "SELECT * INTO TABLE t2 FROM t;" }
+      - { id: top, sql: "SELECT TOP 10 * INTO t2 FROM t;" }
+      - { id: distinct, sql: "SELECT DISTINCT * INTO t2 FROM t;" }
+      - { id: all_quantifier, sql: "SELECT ALL * INTO t2 FROM t;" }
+      - { id: exclude, sql: "SELECT * EXCLUDE (c) INTO t2 FROM t;" }
+      - { id: with_subquery, sql: "WITH w AS (SELECT a FROM t) SELECT a INTO t2 FROM w;" }
+      - { id: where, sql: "SELECT * INTO t2 FROM t WHERE a > 1;" }
+      - { id: connect_by, sql: "SELECT a INTO t2 FROM t START WITH a = 1 CONNECT BY PRIOR a = b;" }
+      - { id: connect_by_only, sql: "SELECT a INTO t2 FROM t CONNECT BY PRIOR a = b;" }
+      - { id: group_by_having, sql: "SELECT a, COUNT(*) INTO t2 FROM t GROUP BY a HAVING COUNT(*) > 1;" }
+      - { id: group_by_all, sql: "SELECT a, COUNT(*) INTO t2 FROM t GROUP BY ALL;" }
+      - { id: qualify, sql: "SELECT a INTO t2 FROM t QUALIFY ROW_NUMBER() OVER (ORDER BY a) = 1;" }
+      - { id: union, sql: "SELECT a INTO t2 FROM t UNION SELECT a FROM u;" }
+      - { id: union_all, sql: "SELECT a INTO t2 FROM t UNION ALL SELECT a FROM u;" }
+      - { id: intersect, sql: "SELECT a INTO t2 FROM t INTERSECT SELECT a FROM u;" }
+      - { id: except, sql: "SELECT a INTO t2 FROM t EXCEPT SELECT a FROM u;" }
+      - { id: minus, sql: "SELECT a INTO t2 FROM t MINUS SELECT a FROM u;" }
+      - { id: order_by, sql: "SELECT a INTO t2 FROM t ORDER BY a DESC;" }
+      - { id: limit_offset, sql: "SELECT a INTO t2 FROM t LIMIT 10 OFFSET 5;" }
+      - { id: limit_all, sql: "SELECT a INTO t2 FROM t LIMIT ALL;" }
+    examples:
+      - "select * into newevent from event;"
+      - "select username, lastname, sum(pricepaid-commission) as profit into temp table profits from sales, users where sales.sellerid=users.userid group by 1, 2 order by 3 desc;"
+
+  - id: start_transaction
+    name: START TRANSACTION
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_START_TRANSACTION.html
+    tier: high
+    probes:
+      - { id: basic, sql: "START TRANSACTION;" }
+      - { id: isolation_serializable, sql: "START TRANSACTION ISOLATION LEVEL SERIALIZABLE;" }
+      - { id: isolation_read_committed, sql: "START TRANSACTION ISOLATION LEVEL READ COMMITTED;" }
+      - { id: read_write, sql: "START TRANSACTION READ WRITE;" }
+      - { id: read_only, sql: "START TRANSACTION READ ONLY;" }
+      - { id: isolation_and_mode, sql: "START TRANSACTION ISOLATION LEVEL SERIALIZABLE READ ONLY;" }

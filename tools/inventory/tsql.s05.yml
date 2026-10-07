@@ -1,0 +1,394 @@
+dialect: tsql
+engine: SQL Server 2022 / Azure SQL Database
+version: "2022"
+source: https://learn.microsoft.com/en-us/sql/t-sql/statements/statements
+
+statements:
+  - id: alter_role
+    name: ALTER ROLE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-role-transact-sql
+    tier: medium
+    probes:
+      - id: add_member
+        sql: "ALTER ROLE r ADD MEMBER u;"
+      - id: drop_member
+        sql: "ALTER ROLE r DROP MEMBER u;"
+      - id: with_name
+        sql: "ALTER ROLE r WITH NAME = r2;"
+    examples:
+      - "ALTER ROLE buyers WITH NAME = purchasing;"
+      - "ALTER ROLE Sales ADD MEMBER Barry;"
+      - "ALTER ROLE Sales DROP MEMBER Barry;"
+
+  - id: alter_sequence
+    name: ALTER SEQUENCE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-sequence-transact-sql
+    tier: medium
+    probes:
+      - id: restart
+        sql: "ALTER SEQUENCE s RESTART;"
+      - id: restart_with
+        sql: "ALTER SEQUENCE dbo.s RESTART WITH 100;"
+      - id: increment_by
+        sql: "ALTER SEQUENCE s INCREMENT BY 5;"
+      - id: minvalue_maxvalue
+        sql: "ALTER SEQUENCE s MINVALUE 1 MAXVALUE 1000;"
+      - id: no_minvalue_no_maxvalue
+        sql: "ALTER SEQUENCE s NO MINVALUE NO MAXVALUE;"
+      - id: cycle
+        sql: "ALTER SEQUENCE s CYCLE;"
+      - id: no_cycle
+        sql: "ALTER SEQUENCE s NO CYCLE;"
+      - id: cache
+        sql: "ALTER SEQUENCE s CACHE 10;"
+      - id: cache_default
+        sql: "ALTER SEQUENCE s CACHE;"
+      - id: no_cache
+        sql: "ALTER SEQUENCE s NO CACHE;"
+    examples:
+      - |-
+        ALTER SEQUENCE Test.TestSeq
+            RESTART WITH 100
+            INCREMENT BY 50
+            MINVALUE 50
+            MAXVALUE 200
+            NO CYCLE
+            NO CACHE;
+
+  - id: alter_user
+    name: ALTER USER
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-user-transact-sql
+    tier: medium
+    probes:
+      - id: name
+        sql: "ALTER USER u WITH NAME = u2;"
+      - id: default_schema
+        sql: "ALTER USER u WITH DEFAULT_SCHEMA = s;"
+      - id: default_schema_null
+        sql: "ALTER USER u WITH DEFAULT_SCHEMA = NULL;"
+      - id: login
+        sql: "ALTER USER u WITH LOGIN = l;"
+      - id: password
+        sql: "ALTER USER u WITH PASSWORD = 'newpass';"
+      - id: password_old_password
+        sql: "ALTER USER u WITH PASSWORD = 'newpass' OLD_PASSWORD = 'oldpass';"
+      - id: default_language
+        sql: "ALTER USER u WITH DEFAULT_LANGUAGE = French;"
+      - id: default_language_none
+        sql: "ALTER USER u WITH DEFAULT_LANGUAGE = NONE;"
+      - id: allow_encrypted_value_modifications
+        sql: "ALTER USER u WITH ALLOW_ENCRYPTED_VALUE_MODIFICATIONS = ON;"
+      - id: multiple_options
+        sql: "ALTER USER u WITH NAME = u2, DEFAULT_SCHEMA = s, LOGIN = l;"
+    examples:
+      - "ALTER USER Mary5 WITH NAME = Mary51;"
+      - "ALTER USER Mary51 WITH DEFAULT_SCHEMA = Purchasing;"
+      - "ALTER USER Mai WITH LOGIN = Mai;"
+
+  - id: backup
+    name: BACKUP
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/backup-transact-sql
+    tier: medium
+    probes:
+      - id: database_to_disk
+        sql: "BACKUP DATABASE d TO DISK = 'C:\\backups\\d.bak';"
+      - id: database_to_logical_device
+        sql: "BACKUP DATABASE d TO backup_dev;"
+      - id: database_to_url
+        sql: "BACKUP DATABASE d TO URL = 'https://acct.blob.core.windows.net/c/d.bak';"
+      - id: database_multiple_devices
+        sql: "BACKUP DATABASE d TO DISK = 'C:\\b\\d1.bak', DISK = 'C:\\b\\d2.bak';"
+      - id: database_mirror_to
+        sql: "BACKUP DATABASE d TO DISK = 'C:\\b\\d1.bak' MIRROR TO DISK = 'C:\\b\\d2.bak';"
+      - id: database_differential
+        sql: "BACKUP DATABASE d TO DISK = 'C:\\b\\d.bak' WITH DIFFERENTIAL;"
+      - id: database_file
+        sql: "BACKUP DATABASE d FILE = 'f1' TO DISK = 'C:\\b\\d.bak';"
+      - id: database_filegroup
+        sql: "BACKUP DATABASE d FILEGROUP = 'fg1', FILEGROUP = 'fg2' TO DISK = 'C:\\b\\d.bak';"
+      - id: database_read_write_filegroups
+        sql: "BACKUP DATABASE d READ_WRITE_FILEGROUPS TO DISK = 'C:\\b\\d.bak';"
+      - id: database_read_write_filegroups_with_read_only
+        sql: "BACKUP DATABASE d READ_WRITE_FILEGROUPS, FILEGROUP = 'fg1' TO DISK = 'C:\\b\\d.bak';"
+      - id: database_with_options
+        sql: "BACKUP DATABASE d TO DISK = 'C:\\b\\d.bak' WITH FORMAT, INIT, NAME = 'full backup', MEDIANAME = 'm', MEDIADESCRIPTION = 'desc', DESCRIPTION = 'text', COPY_ONLY, STATS = 10;"
+      - id: database_with_compression
+        sql: "BACKUP DATABASE d TO DISK = 'C:\\b\\d.bak' WITH COMPRESSION, CHECKSUM, STOP_ON_ERROR;"
+      - id: database_with_compression_algorithm
+        sql: "BACKUP DATABASE d TO DISK = 'C:\\b\\d.bak' WITH COMPRESSION (ALGORITHM = ZSTD, LEVEL = HIGH);"
+      - id: database_with_retention
+        sql: "BACKUP DATABASE d TO DISK = 'C:\\b\\d.bak' WITH RETAINDAYS = 30, NO_COMPRESSION, NO_CHECKSUM, CONTINUE_AFTER_ERROR;"
+      - id: database_with_encryption
+        sql: "BACKUP DATABASE d TO DISK = 'C:\\b\\d.bak' WITH ENCRYPTION (ALGORITHM = AES_256, SERVER CERTIFICATE = c);"
+      - id: database_with_variable_names
+        sql: "BACKUP DATABASE @db TO DISK = @path WITH BLOCKSIZE = 4096, BUFFERCOUNT = 50, MAXTRANSFERSIZE = 1048576;"
+      - id: database_with_tape_options
+        sql: "BACKUP DATABASE d TO TAPE = '\\\\.\\tape0' WITH NOINIT, NOSKIP, NOFORMAT, REWIND, UNLOAD;"
+      - id: database_with_metadata_only
+        sql: "BACKUP DATABASE d TO DISK = 'C:\\b\\d.bak' WITH METADATA_ONLY;"
+      - id: database_with_snapshot
+        sql: "BACKUP DATABASE d TO DISK = 'C:\\b\\d.bak' WITH FILE_SNAPSHOT, CREDENTIAL;"
+      - id: log
+        sql: "BACKUP LOG d TO DISK = 'C:\\b\\d.trn';"
+      - id: log_with_options
+        sql: "BACKUP LOG d TO DISK = 'C:\\b\\d.trn' WITH NORECOVERY, NO_TRUNCATE;"
+      - id: log_standby
+        sql: "BACKUP LOG d TO DISK = 'C:\\b\\d.trn' WITH STANDBY = 'C:\\b\\undo.dat';"
+      - id: server
+        sql: "BACKUP SERVER TO DISK = 'C:\\b\\server.bkm' WITH METADATA_ONLY;"
+      - id: group
+        sql: "BACKUP GROUP db1, db2 TO DISK = 'C:\\b\\group.bkm' WITH METADATA_ONLY;"
+    examples:
+      - |-
+        BACKUP DATABASE AdventureWorks2022
+        TO DISK = 'X:\SQLServerBackups\AdventureWorks1.bak',
+        DISK = 'Y:\SQLServerBackups\AdventureWorks2.bak',
+        DISK = 'Z:\SQLServerBackups\AdventureWorks3.bak'
+        WITH FORMAT,
+            MEDIANAME = 'AdventureWorksStripedSet0',
+            MEDIADESCRIPTION = 'Striped media set for AdventureWorks2022 database';
+      - |-
+        BACKUP LOG AdventureWorks2022
+        TO TAPE = '\\.\tape0', TAPE = '\\.\tape1'
+        MIRROR TO TAPE = '\\.\tape2', TAPE = '\\.\tape3'
+        WITH NOINIT, MEDIANAME = 'AdventureWorksSet1';
+      - |-
+        BACKUP DATABASE Sales
+        TO URL = 'https://mystorageaccount.blob.core.windows.net/myfirstcontainer/Sales_20160726.bak'
+        WITH STATS = 5, COPY_ONLY;
+
+  - id: restore
+    name: RESTORE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/restore-statements-transact-sql
+    tier: medium
+    probes:
+      - id: database_from_logical_device
+        sql: "RESTORE DATABASE d FROM backup_dev;"
+      - id: database_from_disk
+        sql: "RESTORE DATABASE d FROM DISK = 'C:\\b\\d.bak';"
+      - id: database_from_url
+        sql: "RESTORE DATABASE d FROM URL = 'https://acct.blob.core.windows.net/c/d.bak';"
+      - id: database_without_from
+        sql: "RESTORE DATABASE d WITH RECOVERY;"
+      - id: database_multiple_devices
+        sql: "RESTORE DATABASE d FROM DISK = 'C:\\b\\d1.bak', DISK = 'C:\\b\\d2.bak';"
+      - id: database_norecovery
+        sql: "RESTORE DATABASE d FROM DISK = 'C:\\b\\d.bak' WITH NORECOVERY;"
+      - id: database_standby
+        sql: "RESTORE DATABASE d FROM DISK = 'C:\\b\\d.bak' WITH STANDBY = 'C:\\b\\undo.dat';"
+      - id: database_move_replace
+        sql: "RESTORE DATABASE d FROM DISK = 'C:\\b\\d.bak' WITH MOVE 'd_data' TO 'C:\\data\\d.mdf', MOVE 'd_log' TO 'C:\\data\\d.ldf', REPLACE;"
+      - id: database_file_number_stats
+        sql: "RESTORE DATABASE d FROM DISK = 'C:\\b\\d.bak' WITH FILE = 6, NORECOVERY, STATS = 10;"
+      - id: database_general_options
+        sql: "RESTORE DATABASE d FROM DISK = 'C:\\b\\d.bak' WITH RESTART, RESTRICTED_USER, CHECKSUM, CONTINUE_AFTER_ERROR, BUFFERCOUNT = 20, MAXTRANSFERSIZE = 65536, BLOCKSIZE = 4096;"
+      - id: database_keep_replication_cdc
+        sql: "RESTORE DATABASE d FROM DISK = 'C:\\b\\d.bak' WITH KEEP_REPLICATION, KEEP_CDC;"
+      - id: database_filestream
+        sql: "RESTORE DATABASE d FROM DISK = 'C:\\b\\d.bak' WITH FILESTREAM (DIRECTORY_NAME = 'dir');"
+      - id: database_service_broker
+        sql: "RESTORE DATABASE d FROM DISK = 'C:\\b\\d.bak' WITH ENABLE_BROKER;"
+      - id: database_point_in_time_stopat
+        sql: "RESTORE DATABASE d FROM DISK = 'C:\\b\\d.bak' WITH STOPAT = '2024-01-01T12:00:00';"
+      - id: database_stopatmark
+        sql: "RESTORE DATABASE d FROM DISK = 'C:\\b\\d.bak' WITH STOPATMARK = 'lsn:15000000040000037' AFTER '2024-01-01T12:00:00';"
+      - id: database_stopbeforemark
+        sql: "RESTORE DATABASE d FROM DISK = 'C:\\b\\d.bak' WITH STOPBEFOREMARK = 'lsn:15000000040000037';"
+      - id: database_piecemeal_partial
+        sql: "RESTORE DATABASE d FILEGROUP = 'fg1' FROM DISK = 'C:\\b\\d.bak' WITH PARTIAL, NORECOVERY;"
+      - id: database_read_write_filegroups
+        sql: "RESTORE DATABASE d READ_WRITE_FILEGROUPS FROM DISK = 'C:\\b\\d.bak' WITH PARTIAL, NORECOVERY;"
+      - id: database_file
+        sql: "RESTORE DATABASE d FILE = 'f1' FROM DISK = 'C:\\b\\d.bak' WITH RECOVERY;"
+      - id: database_pages
+        sql: "RESTORE DATABASE d PAGE = '1:57, 1:202' FROM DISK = 'C:\\b\\d.bak' WITH NORECOVERY;"
+      - id: database_snapshot
+        sql: "RESTORE DATABASE d FROM DATABASE_SNAPSHOT = d_snap;"
+      - id: database_variables
+        sql: "RESTORE DATABASE @db FROM DISK = @path;"
+      - id: log
+        sql: "RESTORE LOG d FROM DISK = 'C:\\b\\d.trn';"
+      - id: log_with_recovery
+        sql: "RESTORE LOG d FROM backup_dev WITH RECOVERY;"
+      - id: log_stopat
+        sql: "RESTORE LOG d FROM DISK = 'C:\\b\\d.trn' WITH RECOVERY, STOPAT = '2024-01-01T12:00:00';"
+      - id: log_stopatmark_mark_name
+        sql: "RESTORE LOG d FROM DISK = 'C:\\b\\d.trn' WITH STOPATMARK = 'mark1' AFTER '2024-01-01T12:00:00';"
+    examples:
+      - |-
+        RESTORE DATABASE AdventureWorks2022
+          FROM AdventureWorks2022Backups;
+      - |-
+        RESTORE DATABASE AdventureWorks2022
+            FROM DISK = 'Z:\SQLServerBackups\AdventureWorks2022.bak'
+            WITH FILE = 6,
+              NORECOVERY;
+      - |-
+        RESTORE DATABASE AdventureWorks2022
+            FROM AdventureWorksBackups
+            WITH NORECOVERY,
+              MOVE 'AdventureWorks2022_Data' TO
+        'C:\Program Files\Microsoft SQL Server\MSSQL13.MSSQLSERVER\MSSQL\Data\NewAdvWorks.mdf',
+              MOVE 'AdventureWorks2022_Log'
+        TO 'C:\Program Files\Microsoft SQL Server\MSSQL13.MSSQLSERVER\MSSQL\Data\NewAdvWorks.ldf';
+
+  - id: restore_filelistonly
+    name: RESTORE FILELISTONLY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/restore-statements-filelistonly-transact-sql
+    tier: medium
+    probes:
+      - id: from_logical_device
+        sql: "RESTORE FILELISTONLY FROM backup_dev;"
+      - id: from_disk
+        sql: "RESTORE FILELISTONLY FROM DISK = 'C:\\b\\d.bak';"
+      - id: from_url
+        sql: "RESTORE FILELISTONLY FROM URL = 'https://acct.blob.core.windows.net/c/d.bak';"
+      - id: with_file
+        sql: "RESTORE FILELISTONLY FROM backup_dev WITH FILE = 2;"
+      - id: with_options
+        sql: "RESTORE FILELISTONLY FROM DISK = 'C:\\b\\d.bak' WITH CHECKSUM, STOP_ON_ERROR, REWIND, UNLOAD;"
+      - id: with_password_media_options
+        sql: "RESTORE FILELISTONLY FROM DISK = 'C:\\b\\d.bak' WITH PASSWORD = 'p', MEDIANAME = 'm', MEDIAPASSWORD = 'mp';"
+    examples:
+      - "RESTORE FILELISTONLY FROM AdventureWorksBackups WITH FILE=2;"
+
+  - id: restore_headeronly
+    name: RESTORE HEADERONLY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/restore-statements-headeronly-transact-sql
+    tier: medium
+    probes:
+      - id: from_logical_device
+        sql: "RESTORE HEADERONLY FROM backup_dev;"
+      - id: from_disk
+        sql: "RESTORE HEADERONLY FROM DISK = 'C:\\b\\d.bak';"
+      - id: from_url
+        sql: "RESTORE HEADERONLY FROM URL = 'https://acct.blob.core.windows.net/c/d.bak';"
+      - id: with_file
+        sql: "RESTORE HEADERONLY FROM DISK = 'C:\\b\\d.bak' WITH FILE = 1;"
+      - id: with_options
+        sql: "RESTORE HEADERONLY FROM DISK = 'C:\\b\\d.bak' WITH NO_CHECKSUM, CONTINUE_AFTER_ERROR, NOREWIND, NOUNLOAD;"
+    examples:
+      - "RESTORE HEADERONLY FROM DISK = N'C:\\AdventureWorks-FullBackup.bak';"
+
+  - id: restore_verifyonly
+    name: RESTORE VERIFYONLY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/restore-statements-verifyonly-transact-sql
+    tier: medium
+    probes:
+      - id: from_disk
+        sql: "RESTORE VERIFYONLY FROM DISK = 'C:\\b\\d.bak';"
+      - id: from_logical_device
+        sql: "RESTORE VERIFYONLY FROM backup_dev;"
+      - id: from_multiple_devices
+        sql: "RESTORE VERIFYONLY FROM DISK = 'C:\\b\\d1.bak', DISK = 'C:\\b\\d2.bak';"
+      - id: with_loadhistory
+        sql: "RESTORE VERIFYONLY FROM DISK = 'C:\\b\\d.bak' WITH LOADHISTORY;"
+      - id: with_move
+        sql: "RESTORE VERIFYONLY FROM DISK = 'C:\\b\\d.bak' WITH MOVE 'd_data' TO 'C:\\data\\d.mdf', MOVE 'd_log' TO 'C:\\data\\d.ldf';"
+      - id: with_options
+        sql: "RESTORE VERIFYONLY FROM DISK = 'C:\\b\\d.bak' WITH FILE = 1, CHECKSUM, STOP_ON_ERROR, STATS = 10, REWIND, UNLOAD;"
+    examples:
+      - "RESTORE VERIFYONLY FROM DISK = 'D:\\AdventureWorks.bak';"
+
+  - id: create_external_table
+    name: CREATE EXTERNAL TABLE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-external-table-transact-sql
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE EXTERNAL TABLE t (c INT) WITH (LOCATION = '/folder/', DATA_SOURCE = ds, FILE_FORMAT = ff);"
+      - id: qualified_name
+        sql: "CREATE EXTERNAL TABLE d.s.t (c INT) WITH (LOCATION = '/folder/', DATA_SOURCE = ds, FILE_FORMAT = ff);"
+      - id: schema_qualified_name
+        sql: "CREATE EXTERNAL TABLE s.t (c INT) WITH (LOCATION = '/folder/', DATA_SOURCE = ds);"
+      - id: collate_nullability
+        sql: "CREATE EXTERNAL TABLE t (c1 VARCHAR(10) COLLATE Latin1_General_BIN NOT NULL, c2 INT NULL) WITH (LOCATION = '/folder/', DATA_SOURCE = ds, FILE_FORMAT = ff);"
+      - id: reject_options
+        sql: "CREATE EXTERNAL TABLE t (c INT) WITH (LOCATION = '/folder/', DATA_SOURCE = ds, FILE_FORMAT = ff, REJECT_TYPE = value, REJECT_VALUE = 10);"
+      - id: reject_percentage_sample
+        sql: "CREATE EXTERNAL TABLE t (c INT) WITH (LOCATION = '/folder/', DATA_SOURCE = ds, FILE_FORMAT = ff, REJECT_TYPE = percentage, REJECT_VALUE = 5, REJECT_SAMPLE_VALUE = 1000, REJECTED_ROW_LOCATION = '/reject_dir');"
+      - id: serverless_table_options
+        sql: "CREATE EXTERNAL TABLE t (c INT) WITH (LOCATION = 'folder', DATA_SOURCE = ds, FILE_FORMAT = ff, TABLE_OPTIONS = N'{\"READ_OPTIONS\":[\"ALLOW_INCONSISTENT_READS\"]}');"
+      - id: elastic_query_sharded
+        sql: "CREATE EXTERNAL TABLE t (c INT) WITH (DATA_SOURCE = ds, SCHEMA_NAME = N'dbo', OBJECT_NAME = N'remote_t', DISTRIBUTION = SHARDED(c));"
+      - id: elastic_query_replicated
+        sql: "CREATE EXTERNAL TABLE t (c INT) WITH (DATA_SOURCE = ds, SCHEMA_NAME = N'dbo', OBJECT_NAME = N'remote_t', DISTRIBUTION = REPLICATED);"
+    examples:
+      - |-
+        CREATE EXTERNAL TABLE ClickStream
+        (
+            url VARCHAR (50),
+            event_date DATE,
+            user_IP VARCHAR (50)
+        )
+        WITH (
+            DATA_SOURCE = mydatasource,
+            LOCATION = '/webdata/employee.tbl',
+            FILE_FORMAT = myfileformat
+        );
+      - |-
+        CREATE EXTERNAL TABLE ClickStream_orc (
+            url VARCHAR (50),
+            event_date DATE,
+            user_ip VARCHAR (50)
+        )
+        WITH (
+            LOCATION='/webdata/',
+            DATA_SOURCE = mydatasource_orc,
+            FILE_FORMAT = myfileformat_orc
+        );
+      - |-
+        CREATE EXTERNAL TABLE Region (
+            r_regionkey BIGINT,
+            r_name CHAR(25),
+            r_comment VARCHAR(152)
+        )
+        WITH (
+            LOCATION = '/region/',
+            DATA_SOURCE = 's3_ds',
+            FILE_FORMAT = ParquetFileFormat
+        );
+
+  - id: create_external_table_as_select
+    name: CREATE EXTERNAL TABLE AS SELECT
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-external-table-as-select-transact-sql
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE EXTERNAL TABLE t WITH (LOCATION = '/folder/', DATA_SOURCE = ds, FILE_FORMAT = ff) AS SELECT * FROM s;"
+      - id: qualified_name
+        sql: "CREATE EXTERNAL TABLE d.s.t WITH (LOCATION = '/folder/', DATA_SOURCE = ds, FILE_FORMAT = ff) AS SELECT * FROM src;"
+      - id: column_name_list
+        sql: "CREATE EXTERNAL TABLE t (a, b) WITH (LOCATION = '/folder/', DATA_SOURCE = ds, FILE_FORMAT = ff) AS SELECT x, y FROM s;"
+      - id: reject_options
+        sql: "CREATE EXTERNAL TABLE t WITH (LOCATION = '/folder/', DATA_SOURCE = ds, FILE_FORMAT = ff, REJECT_TYPE = value, REJECT_VALUE = 0, REJECT_SAMPLE_VALUE = 1000) AS SELECT * FROM s;"
+      - id: with_cte
+        sql: "CREATE EXTERNAL TABLE t WITH (LOCATION = '/folder/', DATA_SOURCE = ds, FILE_FORMAT = ff) AS WITH c AS (SELECT a FROM s) SELECT a FROM c;"
+      - id: partition
+        sql: "CREATE EXTERNAL TABLE t WITH (LOCATION = 'folder/', DATA_SOURCE = ds, FILE_FORMAT = ff, PARTITION (a, b)) AS SELECT a, b, c FROM s;"
+      - id: query_hint
+        sql: "CREATE EXTERNAL TABLE t WITH (LOCATION = '/folder/', DATA_SOURCE = ds, FILE_FORMAT = ff) AS SELECT t1.* FROM s1 t1 INNER JOIN s2 t2 ON (t1.k = t2.k) OPTION (HASH JOIN);"
+    examples:
+      - |-
+        CREATE EXTERNAL TABLE hdfsCustomer
+            WITH (
+                    LOCATION = '/pdwdata/customer.tbl',
+                    DATA_SOURCE = customer_ds,
+                    FILE_FORMAT = customer_ff
+                    ) AS
+
+        SELECT *
+        FROM dimCustomer;
+      - |-
+        CREATE EXTERNAL TABLE dbo.FactInternetSalesNew
+            WITH (
+                    LOCATION = '/files/Customer',
+                    DATA_SOURCE = customer_ds,
+                    FILE_FORMAT = customer_ff
+                    ) AS
+
+        SELECT T1.*
+        FROM dbo.FactInternetSales T1
+        INNER JOIN dbo.DimCustomer T2
+            ON (T1.CustomerKey = T2.CustomerKey)
+        OPTION (HASH JOIN);

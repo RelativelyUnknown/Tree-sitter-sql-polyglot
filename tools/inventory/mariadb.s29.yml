@@ -1,0 +1,353 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements:
+  - id: select_into_outfile
+    name: SELECT INTO OUTFILE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-manipulation/selecting-data/select-into-outfile
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SELECT a, b FROM t INTO OUTFILE '/tmp/out.txt';"
+      - id: into_before_from
+        sql: "SELECT a, b INTO OUTFILE '/tmp/out.txt' FROM t;"
+        note: ANSI placement of INTO, documented for a simple SELECT without UNION
+      - id: character_set
+        sql: "SELECT a, b FROM t INTO OUTFILE '/tmp/out.txt' CHARACTER SET utf8mb4;"
+      - id: fields_options
+        sql: "SELECT a, b FROM t INTO OUTFILE '/tmp/out.txt' FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' ESCAPED BY '\\\\';"
+      - id: columns_enclosed
+        sql: "SELECT a, b FROM t INTO OUTFILE '/tmp/out.txt' COLUMNS TERMINATED BY '\\t' ENCLOSED BY '\"';"
+      - id: lines_options
+        sql: "SELECT a, b FROM t INTO OUTFILE '/tmp/out.txt' LINES STARTING BY 'x' TERMINATED BY '\\n';"
+      - id: from_subquery_union
+        sql: "SELECT * INTO OUTFILE '/tmp/out.txt' FROM (SELECT * FROM t1 UNION SELECT * FROM t2) AS u;"
+    examples:
+      - "SELECT customer_id, firstname, surname FROM customer INTO OUTFILE '/exportdata/customers.txt' FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\\n';"
+      - "SELECT customer_id, firstname, surname INTO OUTFILE '/exportdata/customers.txt' FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' LINES TERMINATED BY '\\n' FROM customers;"
+      - "SELECT * INTO OUTFILE \"/tmp/skr3\" FROM (SELECT * FROM t1 UNION SELECT * FROM t1);"
+
+  - id: load_data
+    name: LOAD DATA INFILE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-manipulation/inserting-loading-data/load-data-into-tables-or-index/load-data-infile
+    tier: medium
+    probes:
+      - id: basic
+        sql: "LOAD DATA INFILE '/tmp/data.txt' INTO TABLE t;"
+      - id: low_priority_local
+        sql: "LOAD DATA LOW_PRIORITY LOCAL INFILE '/tmp/data.txt' INTO TABLE t;"
+      - id: concurrent
+        sql: "LOAD DATA CONCURRENT INFILE '/tmp/data.txt' INTO TABLE t;"
+      - id: replace
+        sql: "LOAD DATA INFILE '/tmp/data.txt' REPLACE INTO TABLE t;"
+      - id: ignore
+        sql: "LOAD DATA INFILE '/tmp/data.txt' IGNORE INTO TABLE t;"
+      - id: partition
+        sql: "LOAD DATA INFILE '/tmp/data.txt' INTO TABLE t PARTITION (p0, p1);"
+      - id: character_set
+        sql: "LOAD DATA INFILE '/tmp/data.txt' INTO TABLE t CHARACTER SET utf8mb4;"
+      - id: fields_options
+        sql: "LOAD DATA INFILE '/tmp/data.txt' INTO TABLE t FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '\"' ESCAPED BY '\\\\';"
+      - id: lines_options
+        sql: "LOAD DATA INFILE '/tmp/data.txt' INTO TABLE t LINES STARTING BY 'x' TERMINATED BY '\\n';"
+      - id: ignore_lines
+        sql: "LOAD DATA INFILE '/tmp/data.txt' INTO TABLE t IGNORE 1 LINES;"
+      - id: ignore_rows
+        sql: "LOAD DATA INFILE '/tmp/data.txt' INTO TABLE t IGNORE 1 ROWS;"
+      - id: column_list_user_var_set
+        sql: "LOAD DATA INFILE '/tmp/data.txt' INTO TABLE t (a, @b) SET c = @b * 2;"
+    examples:
+      - "LOAD DATA LOCAL INFILE '/tmp/loaddata7.dat' INTO TABLE t1 FIELDS TERMINATED BY ',' (a,b) SET c=a+b;"
+      - "LOAD DATA INFILE 'ld.txt' INTO TABLE ld (@i,v) SET i=@i*2;"
+
+  - id: load_xml
+    name: LOAD XML
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-manipulation/inserting-loading-data/load-data-into-tables-or-index/load-xml
+    tier: medium
+    probes:
+      - id: basic
+        sql: "LOAD XML INFILE '/tmp/data.xml' INTO TABLE t;"
+      - id: local_low_priority
+        sql: "LOAD XML LOW_PRIORITY LOCAL INFILE '/tmp/data.xml' INTO TABLE t;"
+      - id: concurrent_replace
+        sql: "LOAD XML CONCURRENT INFILE '/tmp/data.xml' REPLACE INTO TABLE db.t;"
+      - id: ignore_into
+        sql: "LOAD XML INFILE '/tmp/data.xml' IGNORE INTO TABLE t;"
+      - id: character_set
+        sql: "LOAD XML INFILE '/tmp/data.xml' INTO TABLE t CHARACTER SET utf8mb4;"
+      - id: rows_identified_by
+        sql: "LOAD XML INFILE '/tmp/data.xml' INTO TABLE t ROWS IDENTIFIED BY '<person>';"
+      - id: ignore_rows
+        sql: "LOAD XML INFILE '/tmp/data.xml' INTO TABLE t IGNORE 1 ROWS;"
+      - id: column_list_set
+        sql: "LOAD XML INFILE '/tmp/data.xml' INTO TABLE t (a, @b) SET c = @b + 1;"
+
+  - id: do
+    name: DO
+    doc: https://mariadb.com/docs/server/reference/sql-statements/stored-routine-statements/do
+    tier: medium
+    probes:
+      - id: single_expr
+        sql: "DO 1;"
+      - id: multiple_exprs
+        sql: "DO RELEASE_LOCK('lock1'), SLEEP(1);"
+
+  - id: create_package
+    name: CREATE PACKAGE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-definition/create/create-package
+    tier: medium
+    probes:
+      - id: oracle_basic
+        sql: |-
+          CREATE PACKAGE pkg AS
+            PROCEDURE p1;
+          END;
+      - id: or_replace_if_not_exists
+        sql: |-
+          CREATE OR REPLACE PACKAGE IF NOT EXISTS db.pkg AS
+            PROCEDURE p1;
+          END pkg;
+      - id: definer
+        sql: |-
+          CREATE DEFINER = CURRENT_USER PACKAGE pkg AS
+            PROCEDURE p1;
+          END;
+      - id: characteristics
+        sql: |-
+          CREATE PACKAGE pkg COMMENT 'c' SQL SECURITY INVOKER AS
+            PROCEDURE p1;
+          END;
+      - id: oracle_function_return
+        sql: |-
+          CREATE PACKAGE pkg AS
+            FUNCTION f1(a INT) RETURN INT;
+          END;
+        note: Oracle-mode specification uses RETURN
+      - id: param_modes_routine_characteristics
+        sql: |-
+          CREATE PACKAGE pkg AS
+            PROCEDURE p1(a IN INT, b OUT INT, c INOUT INT, d IN OUT INT) COMMENT 'c' LANGUAGE SQL READS SQL DATA SQL SECURITY DEFINER;
+          END;
+      - id: is_keyword
+        sql: |-
+          CREATE PACKAGE pkg IS
+            PROCEDURE p1;
+          END;
+      - id: non_oracle_returns
+        sql: |-
+          CREATE PACKAGE pkg
+            FUNCTION f1(a INT) RETURNS INT;
+            PROCEDURE p1(a INT);
+          END;
+        note: Non-Oracle mode form, available in any mode from MariaDB 11.4 (no AS/IS, RETURNS)
+      - id: type_declaration
+        sql: |-
+          CREATE PACKAGE pkg AS
+            TYPE varchar_array IS TABLE OF VARCHAR(2000) INDEX BY INTEGER;
+          END;
+        note: Package-wide type declarations, MariaDB 13.1 and later, sql_mode=ORACLE only
+    examples:
+      - |-
+        CREATE OR REPLACE PACKAGE pkg AS
+        TYPE varchar_array IS TABLE OF VARCHAR(2000) INDEX BY INTEGER;
+        END;
+      - |-
+        CREATE OR REPLACE PACKAGE employee_tools AS
+        FUNCTION getSalary(eid INT) RETURN DECIMAL(10,2);
+        PROCEDURE raiseSalary(eid INT, amount DECIMAL(10,2));
+        PROCEDURE raiseSalaryStd(eid INT);
+        PROCEDURE hire(ename TEXT, esalary DECIMAL(10,2));
+        END;
+
+  - id: create_package_body
+    name: CREATE PACKAGE BODY
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-definition/create/create-package-body
+    tier: medium
+    probes:
+      - id: empty_body
+        sql: |-
+          CREATE PACKAGE BODY pkg AS
+          END;
+      - id: or_replace_if_not_exists_definer
+        sql: |-
+          CREATE OR REPLACE DEFINER = CURRENT_USER PACKAGE BODY IF NOT EXISTS db.pkg AS
+          END pkg;
+      - id: characteristics
+        sql: |-
+          CREATE PACKAGE BODY pkg COMMENT 'c' SQL SECURITY INVOKER IS
+          END;
+      - id: variable_and_procedure
+        sql: |-
+          CREATE PACKAGE BODY pkg AS
+            v INT := 5;
+            PROCEDURE p1 AS
+            BEGIN
+              NULL;
+            END;
+          END;
+      - id: function_with_declarations
+        sql: |-
+          CREATE PACKAGE BODY pkg AS
+            FUNCTION f1(a INT) RETURN INT AS
+              x INT;
+            BEGIN
+              x := a;
+              RETURN x;
+            END;
+          END;
+      - id: initialization_section
+        sql: |-
+          CREATE PACKAGE BODY pkg AS
+            v INT;
+          BEGIN
+            v := 1;
+          END;
+      - id: exception_handler
+        sql: |-
+          CREATE PACKAGE BODY pkg AS
+            PROCEDURE p1 AS
+            BEGIN
+              NULL;
+            EXCEPTION
+              WHEN NOT FOUND THEN NULL;
+              WHEN OTHERS THEN NULL;
+            END;
+          END;
+      - id: cursor_declaration
+        sql: |-
+          CREATE PACKAGE BODY pkg AS
+            PROCEDURE p1 AS
+              CURSOR c1 IS SELECT 1;
+            BEGIN
+              NULL;
+            END;
+          END;
+    examples:
+      - |-
+        CREATE PACKAGE BODY employee_tools AS
+        -- package body variables
+        stdRaiseAmount DECIMAL(10,2):=500;
+        -- private routines
+        PROCEDURE log (eid INT, ecmnt TEXT) AS
+        BEGIN
+        INSERT INTO employee_log (id, cmnt) VALUES (eid, ecmnt);
+        END;
+        -- public routines
+        PROCEDURE hire(ename TEXT, esalary DECIMAL(10,2)) AS
+        eid INT;
+        BEGIN
+        INSERT INTO employee (name, salary) VALUES (ename, esalary);
+        eid:= last_insert_id();
+        log(eid, 'hire ' || ename);
+        END;
+        FUNCTION getSalary(eid INT) RETURN DECIMAL(10,2) AS
+        nSalary DECIMAL(10,2);
+        BEGIN
+        SELECT salary INTO nSalary FROM employee WHERE id=eid;
+        log(eid, 'getSalary id=' || eid || ' salary=' || nSalary);
+        RETURN nSalary;
+        END;
+        PROCEDURE raiseSalary(eid INT, amount DECIMAL(10,2)) AS
+        BEGIN
+        UPDATE employee SET salary=salary+amount WHERE id=eid;
+        log(eid, 'raiseSalary id=' || eid || ' amount=' || amount);
+        END;
+        PROCEDURE raiseSalaryStd(eid INT) AS
+        BEGIN
+        raiseSalary(eid, stdRaiseAmount);
+        log(eid, 'raiseSalaryStd id=' || eid);
+        END;
+        BEGIN
+        -- This code is executed when the current session
+        -- accesses any of the package routines for the first time
+        log(0, 'Session ' || connection_id() || ' ' || current_user || ' started');
+        END;
+
+  - id: drop_package
+    name: DROP PACKAGE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-definition/drop/drop-package
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP PACKAGE pkg;"
+      - id: if_exists_qualified
+        sql: "DROP PACKAGE IF EXISTS db.pkg;"
+
+  - id: drop_package_body
+    name: DROP PACKAGE BODY
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-definition/drop/drop-package-body
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP PACKAGE BODY pkg;"
+      - id: if_exists_qualified
+        sql: "DROP PACKAGE BODY IF EXISTS db.pkg;"
+
+  - id: create_trigger
+    name: CREATE TRIGGER
+    doc: https://mariadb.com/docs/server/server-usage/triggers-events/triggers/create-trigger
+    tier: medium
+    probes:
+      - id: before_insert
+        sql: "CREATE TRIGGER trg BEFORE INSERT ON t FOR EACH ROW SET NEW.a = 1;"
+      - id: after_update
+        sql: "CREATE TRIGGER trg AFTER UPDATE ON t FOR EACH ROW UPDATE s SET n = n + 1;"
+      - id: after_delete
+        sql: "CREATE TRIGGER trg AFTER DELETE ON t FOR EACH ROW DELETE FROM s WHERE id = OLD.id;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE TRIGGER trg BEFORE INSERT ON t FOR EACH ROW SET NEW.a = 1;"
+      - id: if_not_exists
+        sql: "CREATE TRIGGER IF NOT EXISTS trg BEFORE INSERT ON t FOR EACH ROW SET NEW.a = 1;"
+      - id: definer_user
+        sql: "CREATE DEFINER = 'root'@'localhost' TRIGGER trg BEFORE INSERT ON t FOR EACH ROW SET NEW.a = 1;"
+      - id: definer_current_user
+        sql: "CREATE DEFINER = CURRENT_USER TRIGGER trg BEFORE INSERT ON t FOR EACH ROW SET NEW.a = 1;"
+      - id: definer_role
+        sql: "CREATE DEFINER = CURRENT_ROLE TRIGGER trg BEFORE INSERT ON t FOR EACH ROW SET NEW.a = 1;"
+      - id: multiple_events
+        sql: "CREATE TRIGGER trg BEFORE INSERT OR UPDATE OR DELETE ON t FOR EACH ROW SET @x = 1;"
+        note: Multiple trigger events joined by OR, MariaDB 11.x
+      - id: update_of_columns
+        sql: "CREATE TRIGGER trg BEFORE UPDATE OF a, b ON t FOR EACH ROW SET NEW.c = 1;"
+      - id: follows
+        sql: "CREATE TRIGGER trg BEFORE INSERT ON t FOR EACH ROW FOLLOWS other_trg SET NEW.a = 1;"
+      - id: precedes
+        sql: "CREATE TRIGGER trg BEFORE INSERT ON t FOR EACH ROW PRECEDES other_trg SET NEW.a = 1;"
+      - id: begin_end_body
+        sql: |-
+          CREATE TRIGGER trg BEFORE UPDATE ON t
+          FOR EACH ROW
+          BEGIN
+            IF NEW.a < 1 THEN
+              SET NEW.a = 1;
+            END IF;
+          END;
+    examples:
+      - |-
+        CREATE TRIGGER t1_b_any BEFORE INSERT OR UPDATE OR DELETE ON t1 FOR EACH ROW
+        BEGIN
+        IF INSERTING THEN
+        INSERT INTO t2 VALUES (NEW.a, 'INSERTING');
+        ELSEIF UPDATING THEN
+        INSERT INTO t2 VALUES (NEW.a, 'UPDATING');
+        ELSEIF DELETING THEN
+        INSERT INTO t2 VALUES (OLD.a, 'DELETING');
+        END IF;
+        END;
+      - "CREATE DEFINER=`root`@`localhost` TRIGGER increment_animal AFTER INSERT ON animals FOR EACH ROW UPDATE animal_count SET animal_count.animals = animal_count.animals+1;"
+      - "CREATE OR REPLACE DEFINER=`root`@`localhost` TRIGGER increment_animal AFTER INSERT ON animals FOR EACH ROW UPDATE animal_count SET animal_count.animals = animal_count.animals+1;"
+
+  - id: drop_trigger
+    name: DROP TRIGGER
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-definition/drop/drop-trigger
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP TRIGGER trg;"
+      - id: if_exists_qualified
+        sql: "DROP TRIGGER IF EXISTS s.trg;"
+    examples:
+      - "DROP TRIGGER test.example_trigger;"
+      - "DROP TRIGGER IF EXISTS test.example_trigger;"

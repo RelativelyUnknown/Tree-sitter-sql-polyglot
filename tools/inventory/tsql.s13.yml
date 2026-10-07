@@ -1,0 +1,373 @@
+dialect: tsql
+engine: SQL Server 2022 / Azure SQL Database
+version: "2022"
+source: https://learn.microsoft.com/en-us/sql/t-sql/statements/statements
+
+statements:
+  - id: alter_application_role
+    name: ALTER APPLICATION ROLE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-application-role-transact-sql
+    tier: low
+    probes:
+      - id: rename
+        sql: "ALTER APPLICATION ROLE r WITH NAME = r2;"
+      - id: password_schema
+        sql: "ALTER APPLICATION ROLE r WITH PASSWORD = 'Str0ng!Pass', DEFAULT_SCHEMA = s;"
+  - id: alter_assembly
+    name: ALTER ASSEMBLY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-assembly-transact-sql
+    tier: low
+    probes:
+      - id: from_with_option
+        sql: "ALTER ASSEMBLY a FROM 'C:\\path\\a.dll' WITH PERMISSION_SET = SAFE;"
+      - id: add_drop_file
+        sql: "ALTER ASSEMBLY a DROP FILE ALL ADD FILE FROM 'C:\\path\\a.pdb' AS a_pdb;"
+      - id: visibility
+        sql: "ALTER ASSEMBLY a WITH VISIBILITY = OFF, UNCHECKED DATA;"
+  - id: alter_asymmetric_key
+    name: ALTER ASYMMETRIC KEY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-asymmetric-key-transact-sql
+    tier: low
+    probes:
+      - id: remove_private_key
+        sql: "ALTER ASYMMETRIC KEY k REMOVE PRIVATE KEY;"
+      - id: change_password
+        sql: "ALTER ASYMMETRIC KEY k WITH PRIVATE KEY (DECRYPTION BY PASSWORD = 'oldPass1!', ENCRYPTION BY PASSWORD = 'newPass1!');"
+  - id: alter_authorization
+    name: ALTER AUTHORIZATION
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-authorization-transact-sql
+    tier: low
+    probes:
+      - id: on_class_entity
+        sql: "ALTER AUTHORIZATION ON OBJECT::dbo.t TO u;"
+      - id: on_entity_schema_owner
+        sql: "ALTER AUTHORIZATION ON dbo.t TO SCHEMA OWNER;"
+  - id: alter_availability_group
+    name: ALTER AVAILABILITY GROUP
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-availability-group-transact-sql
+    tier: low
+    probes:
+      - id: set_option
+        sql: "ALTER AVAILABILITY GROUP ag SET (AUTOMATED_BACKUP_PREFERENCE = SECONDARY, FAILURE_CONDITION_LEVEL = 3);"
+      - id: add_database
+        sql: "ALTER AVAILABILITY GROUP ag ADD DATABASE d;"
+      - id: add_replica
+        sql: "ALTER AVAILABILITY GROUP ag ADD REPLICA ON 'srv2' WITH (ENDPOINT_URL = 'TCP://srv2.example.com:5022', AVAILABILITY_MODE = SYNCHRONOUS_COMMIT, FAILOVER_MODE = AUTOMATIC);"
+      - id: modify_replica
+        sql: "ALTER AVAILABILITY GROUP ag MODIFY REPLICA ON 'srv2' WITH (SECONDARY_ROLE (ALLOW_CONNECTIONS = ALL));"
+      - id: failover
+        sql: "ALTER AVAILABILITY GROUP ag FAILOVER;"
+  - id: alter_broker_priority
+    name: ALTER BROKER PRIORITY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-broker-priority-transact-sql
+    tier: low
+    probes:
+      - id: set
+        sql: "ALTER BROKER PRIORITY p FOR CONVERSATION SET (CONTRACT_NAME = c, LOCAL_SERVICE_NAME = ANY, REMOTE_SERVICE_NAME = 'svc', PRIORITY_LEVEL = 5);"
+  - id: alter_certificate
+    name: ALTER CERTIFICATE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-certificate-transact-sql
+    tier: low
+    probes:
+      - id: remove_private_key
+        sql: "ALTER CERTIFICATE c REMOVE PRIVATE KEY;"
+      - id: with_private_key
+        sql: "ALTER CERTIFICATE c WITH PRIVATE KEY (FILE = 'C:\\c.pvk', DECRYPTION BY PASSWORD = 'oldPass1!', ENCRYPTION BY PASSWORD = 'newPass1!');"
+      - id: active_for_begin_dialog
+        sql: "ALTER CERTIFICATE c WITH ACTIVE FOR BEGIN_DIALOG = ON;"
+  - id: alter_column_encryption_key
+    name: ALTER COLUMN ENCRYPTION KEY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-column-encryption-key-transact-sql
+    tier: low
+    probes:
+      - id: add_value
+        sql: "ALTER COLUMN ENCRYPTION KEY k ADD VALUE (COLUMN_MASTER_KEY = cmk, ALGORITHM = 'RSA_OAEP', ENCRYPTED_VALUE = 0x01AB);"
+      - id: drop_value
+        sql: "ALTER COLUMN ENCRYPTION KEY k DROP VALUE (COLUMN_MASTER_KEY = cmk);"
+  - id: alter_credential
+    name: ALTER CREDENTIAL
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-credential-transact-sql
+    tier: low
+    probes:
+      - id: identity_secret
+        sql: "ALTER CREDENTIAL c WITH IDENTITY = 'user1', SECRET = 'secret1';"
+  - id: alter_cryptographic_provider
+    name: ALTER CRYPTOGRAPHIC PROVIDER
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-cryptographic-provider-transact-sql
+    tier: low
+    probes:
+      - id: enable
+        sql: "ALTER CRYPTOGRAPHIC PROVIDER p ENABLE;"
+      - id: from_file_disable
+        sql: "ALTER CRYPTOGRAPHIC PROVIDER p FROM FILE = 'C:\\provider.dll' DISABLE;"
+  - id: alter_database_audit_specification
+    name: ALTER DATABASE AUDIT SPECIFICATION
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-database-audit-specification-transact-sql
+    tier: low
+    probes:
+      - id: add_group_state
+        sql: "ALTER DATABASE AUDIT SPECIFICATION s FOR SERVER AUDIT a ADD (SCHEMA_OBJECT_ACCESS_GROUP) WITH (STATE = ON);"
+      - id: drop_action
+        sql: "ALTER DATABASE AUDIT SPECIFICATION s DROP (SELECT ON OBJECT::dbo.t BY public);"
+  - id: alter_database_encryption_key
+    name: ALTER DATABASE ENCRYPTION KEY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-database-encryption-key-transact-sql
+    tier: low
+    probes:
+      - id: regenerate
+        sql: "ALTER DATABASE ENCRYPTION KEY REGENERATE WITH ALGORITHM = AES_256;"
+      - id: encryption_by_certificate
+        sql: "ALTER DATABASE ENCRYPTION KEY ENCRYPTION BY SERVER CERTIFICATE c;"
+  - id: alter_database_scoped_credential
+    name: ALTER DATABASE SCOPED CREDENTIAL
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-database-scoped-credential-transact-sql
+    tier: low
+    probes:
+      - id: identity_secret
+        sql: "ALTER DATABASE SCOPED CREDENTIAL c WITH IDENTITY = 'user1', SECRET = 'secret1';"
+  - id: alter_database_scoped_configuration
+    name: ALTER DATABASE SCOPED CONFIGURATION
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-database-scoped-configuration-transact-sql
+    tier: low
+    probes:
+      - id: set_maxdop
+        sql: "ALTER DATABASE SCOPED CONFIGURATION SET MAXDOP = 4;"
+      - id: for_secondary
+        sql: "ALTER DATABASE SCOPED CONFIGURATION FOR SECONDARY SET MAXDOP = PRIMARY;"
+      - id: clear_procedure_cache
+        sql: "ALTER DATABASE SCOPED CONFIGURATION CLEAR PROCEDURE_CACHE;"
+  - id: alter_endpoint
+    name: ALTER ENDPOINT
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-endpoint-transact-sql
+    tier: low
+    probes:
+      - id: state
+        sql: "ALTER ENDPOINT e STATE = STARTED;"
+      - id: as_tcp_for_database_mirroring
+        sql: "ALTER ENDPOINT e AS TCP (LISTENER_PORT = 5022) FOR DATABASE_MIRRORING (ROLE = ALL, AUTHENTICATION = WINDOWS NEGOTIATE, ENCRYPTION = REQUIRED ALGORITHM AES);"
+  - id: alter_event_session
+    name: ALTER EVENT SESSION
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-event-session-transact-sql
+    tier: low
+    probes:
+      - id: add_event_target
+        sql: "ALTER EVENT SESSION s ON SERVER ADD EVENT sqlserver.sql_statement_completed (ACTION (sqlserver.sql_text) WHERE duration > 1000), ADD TARGET package0.ring_buffer;"
+      - id: drop_event
+        sql: "ALTER EVENT SESSION s ON DATABASE DROP EVENT sqlserver.sql_statement_completed;"
+      - id: state_start
+        sql: "ALTER EVENT SESSION s ON SERVER STATE = START;"
+  - id: alter_external_data_source
+    name: ALTER EXTERNAL DATA SOURCE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-external-data-source-transact-sql
+    tier: low
+    probes:
+      - id: set_location_credential
+        sql: "ALTER EXTERNAL DATA SOURCE ds SET LOCATION = 'abs://acct.blob.core.windows.net', CREDENTIAL = cred;"
+  - id: alter_external_language
+    name: ALTER EXTERNAL LANGUAGE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-external-language-transact-sql
+    tier: low
+    probes:
+      - id: set_file_spec
+        sql: "ALTER EXTERNAL LANGUAGE lang SET (CONTENT = 'C:\\lang.zip', FILE_NAME = 'lang.dll', PLATFORM = WINDOWS);"
+      - id: remove_platform
+        sql: "ALTER EXTERNAL LANGUAGE lang REMOVE PLATFORM LINUX;"
+  - id: alter_external_library
+    name: ALTER EXTERNAL LIBRARY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-external-library-transact-sql
+    tier: low
+    probes:
+      - id: set_content
+        sql: "ALTER EXTERNAL LIBRARY lib SET (CONTENT = 'C:\\lib.zip') WITH (LANGUAGE = 'R');"
+  - id: alter_external_resource_pool
+    name: ALTER EXTERNAL RESOURCE POOL
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-external-resource-pool-transact-sql
+    tier: low
+    probes:
+      - id: with_options
+        sql: "ALTER EXTERNAL RESOURCE POOL p WITH (MAX_CPU_PERCENT = 50, MAX_MEMORY_PERCENT = 30, MAX_PROCESSES = 20);"
+  - id: alter_fulltext_catalog
+    name: ALTER FULLTEXT CATALOG
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-fulltext-catalog-transact-sql
+    tier: low
+    probes:
+      - id: rebuild
+        sql: "ALTER FULLTEXT CATALOG c REBUILD WITH ACCENT_SENSITIVITY = OFF;"
+      - id: reorganize
+        sql: "ALTER FULLTEXT CATALOG c REORGANIZE;"
+      - id: as_default
+        sql: "ALTER FULLTEXT CATALOG c AS DEFAULT;"
+  - id: alter_fulltext_stoplist
+    name: ALTER FULLTEXT STOPLIST
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-fulltext-stoplist-transact-sql
+    tier: low
+    probes:
+      - id: add_stopword
+        sql: "ALTER FULLTEXT STOPLIST sl ADD 'word' LANGUAGE 'English';"
+      - id: drop_all
+        sql: "ALTER FULLTEXT STOPLIST sl DROP ALL;"
+  - id: alter_master_key
+    name: ALTER MASTER KEY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-master-key-transact-sql
+    tier: low
+    probes:
+      - id: regenerate
+        sql: "ALTER MASTER KEY FORCE REGENERATE WITH ENCRYPTION BY PASSWORD = 'newPass1!';"
+      - id: add_encryption_smk
+        sql: "ALTER MASTER KEY ADD ENCRYPTION BY SERVICE MASTER KEY;"
+      - id: drop_encryption_password
+        sql: "ALTER MASTER KEY DROP ENCRYPTION BY PASSWORD = 'pass1!';"
+  - id: alter_message_type
+    name: ALTER MESSAGE TYPE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-message-type-transact-sql
+    tier: low
+    probes:
+      - id: validation_none
+        sql: "ALTER MESSAGE TYPE mt VALIDATION = NONE;"
+      - id: validation_valid_xml
+        sql: "ALTER MESSAGE TYPE mt VALIDATION = VALID_XML WITH SCHEMA COLLECTION sc;"
+  - id: alter_queue
+    name: ALTER QUEUE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-queue-transact-sql
+    tier: low
+    probes:
+      - id: with_settings
+        sql: "ALTER QUEUE q WITH STATUS = ON, RETENTION = OFF, ACTIVATION (STATUS = ON, PROCEDURE_NAME = dbo.proc1, MAX_QUEUE_READERS = 5, EXECUTE AS OWNER);"
+      - id: rebuild
+        sql: "ALTER QUEUE q REBUILD WITH (MAXDOP = 2);"
+      - id: move_to
+        sql: "ALTER QUEUE q MOVE TO [default];"
+  - id: alter_remote_service_binding
+    name: ALTER REMOTE SERVICE BINDING
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-remote-service-binding-transact-sql
+    tier: low
+    probes:
+      - id: with_user_anonymous
+        sql: "ALTER REMOTE SERVICE BINDING b WITH USER = u, ANONYMOUS = ON;"
+  - id: alter_resource_governor
+    name: ALTER RESOURCE GOVERNOR
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-resource-governor-transact-sql
+    tier: low
+    probes:
+      - id: reconfigure
+        sql: "ALTER RESOURCE GOVERNOR RECONFIGURE;"
+      - id: with_classifier
+        sql: "ALTER RESOURCE GOVERNOR WITH (CLASSIFIER_FUNCTION = dbo.f);"
+      - id: disable
+        sql: "ALTER RESOURCE GOVERNOR DISABLE;"
+  - id: alter_resource_pool
+    name: ALTER RESOURCE POOL
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-resource-pool-transact-sql
+    tier: low
+    probes:
+      - id: with_options
+        sql: "ALTER RESOURCE POOL p WITH (MIN_CPU_PERCENT = 10, MAX_CPU_PERCENT = 50, MAX_MEMORY_PERCENT = 40);"
+      - id: affinity
+        sql: "ALTER RESOURCE POOL p WITH (AFFINITY SCHEDULER = (0, 2 TO 4));"
+  - id: alter_route
+    name: ALTER ROUTE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-route-transact-sql
+    tier: low
+    probes:
+      - id: with_options
+        sql: "ALTER ROUTE r WITH SERVICE_NAME = 'svc', BROKER_INSTANCE = 'inst', LIFETIME = 600, ADDRESS = 'TCP://host:1234';"
+  - id: alter_search_property_list
+    name: ALTER SEARCH PROPERTY LIST
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-search-property-list-transact-sql
+    tier: low
+    probes:
+      - id: add_property
+        sql: "ALTER SEARCH PROPERTY LIST pl ADD 'Title' WITH (PROPERTY_SET_GUID = 'F29F85E0-4FF9-1068-AB91-08002B27B3D9', PROPERTY_INT_ID = 2, PROPERTY_DESCRIPTION = 'System.Title');"
+      - id: drop_property
+        sql: "ALTER SEARCH PROPERTY LIST pl DROP 'Title';"
+  - id: alter_security_policy
+    name: ALTER SECURITY POLICY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-security-policy-transact-sql
+    tier: low
+    probes:
+      - id: add_filter_predicate
+        sql: "ALTER SECURITY POLICY sec.p ADD FILTER PREDICATE sec.fn(c) ON dbo.t;"
+      - id: add_block_predicate
+        sql: "ALTER SECURITY POLICY sec.p ADD BLOCK PREDICATE sec.fn(c) ON dbo.t AFTER INSERT;"
+      - id: drop_predicate
+        sql: "ALTER SECURITY POLICY sec.p DROP FILTER PREDICATE ON dbo.t;"
+      - id: with_state
+        sql: "ALTER SECURITY POLICY sec.p WITH (STATE = OFF);"
+  - id: alter_server_audit
+    name: ALTER SERVER AUDIT
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-server-audit-transact-sql
+    tier: low
+    probes:
+      - id: to_file_with_options
+        sql: "ALTER SERVER AUDIT a TO FILE (FILEPATH = 'C:\\audit\\', MAXSIZE = 100 MB) WITH (QUEUE_DELAY = 1000, ON_FAILURE = CONTINUE);"
+      - id: remove_where
+        sql: "ALTER SERVER AUDIT a REMOVE WHERE;"
+      - id: modify_name
+        sql: "ALTER SERVER AUDIT a MODIFY NAME = a2;"
+  - id: alter_server_audit_specification
+    name: ALTER SERVER AUDIT SPECIFICATION
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-server-audit-specification-transact-sql
+    tier: low
+    probes:
+      - id: add_group
+        sql: "ALTER SERVER AUDIT SPECIFICATION s FOR SERVER AUDIT a ADD (FAILED_LOGIN_GROUP) WITH (STATE = ON);"
+      - id: drop_group
+        sql: "ALTER SERVER AUDIT SPECIFICATION s DROP (FAILED_LOGIN_GROUP);"
+  - id: alter_server_configuration
+    name: ALTER SERVER CONFIGURATION
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-server-configuration-transact-sql
+    tier: low
+    probes:
+      - id: process_affinity_cpu
+        sql: "ALTER SERVER CONFIGURATION SET PROCESS AFFINITY CPU = 0 TO 3;"
+      - id: diagnostics_log
+        sql: "ALTER SERVER CONFIGURATION SET DIAGNOSTICS LOG MAX_SIZE = 10 MB;"
+      - id: buffer_pool_extension
+        sql: "ALTER SERVER CONFIGURATION SET BUFFER POOL EXTENSION ON (FILENAME = 'F:\\ssd.bpe', SIZE = 50 GB);"
+      - id: memory_optimized
+        sql: "ALTER SERVER CONFIGURATION SET MEMORY_OPTIMIZED TEMPDB_METADATA = ON;"
+  - id: alter_server_role
+    name: ALTER SERVER ROLE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-server-role-transact-sql
+    tier: low
+    probes:
+      - id: add_member
+        sql: "ALTER SERVER ROLE r ADD MEMBER l;"
+      - id: drop_member
+        sql: "ALTER SERVER ROLE r DROP MEMBER l;"
+      - id: rename
+        sql: "ALTER SERVER ROLE r WITH NAME = r2;"
+  - id: alter_service
+    name: ALTER SERVICE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-service-transact-sql
+    tier: low
+    probes:
+      - id: on_queue
+        sql: "ALTER SERVICE svc ON QUEUE dbo.q;"
+      - id: add_drop_contract
+        sql: "ALTER SERVICE svc (ADD CONTRACT c1, DROP CONTRACT c2);"
+  - id: alter_service_master_key
+    name: ALTER SERVICE MASTER KEY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-service-master-key-transact-sql
+    tier: low
+    probes:
+      - id: force_regenerate
+        sql: "ALTER SERVICE MASTER KEY FORCE REGENERATE;"
+      - id: new_account
+        sql: "ALTER SERVICE MASTER KEY WITH NEW_ACCOUNT = 'DOMAIN\\acct', NEW_PASSWORD = 'pass1!';"
+  - id: alter_symmetric_key
+    name: ALTER SYMMETRIC KEY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-symmetric-key-transact-sql
+    tier: low
+    probes:
+      - id: add_encryption_cert
+        sql: "ALTER SYMMETRIC KEY k ADD ENCRYPTION BY CERTIFICATE c;"
+      - id: drop_encryption_password
+        sql: "ALTER SYMMETRIC KEY k DROP ENCRYPTION BY PASSWORD = 'pass1!';"
+  - id: alter_workload_group
+    name: ALTER WORKLOAD GROUP
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-workload-group-transact-sql
+    tier: low
+    probes:
+      - id: with_options
+        sql: "ALTER WORKLOAD GROUP g WITH (MIN_PERCENTAGE_RESOURCE = 10, CAP_PERCENTAGE_RESOURCE = 50, REQUEST_MIN_RESOURCE_GRANT_PERCENT = 5, REQUEST_MAX_RESOURCE_GRANT_PERCENT = 25, IMPORTANCE = HIGH, QUERY_EXECUTION_TIMEOUT_SEC = 60);"

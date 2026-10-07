@@ -1,0 +1,261 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "12.1"
+source: https://www.ibm.com/docs/en/db2/12.1.x?topic=reference-statements
+
+statements:
+  - id: compound_sql_embedded
+    name: Compound SQL (embedded)
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-compound-sql-embedded
+    tier: high
+    probes:
+      - id: atomic_static
+        sql: |-
+          BEGIN COMPOUND ATOMIC STATIC
+            UPDATE t SET c = 1 WHERE k = 2;
+            INSERT INTO t (k, c) VALUES (3, 0);
+          END COMPOUND;
+      - id: not_atomic_static
+        sql: |-
+          BEGIN COMPOUND NOT ATOMIC STATIC
+            UPDATE t SET c = 1 WHERE k = 2;
+          END COMPOUND;
+      - id: stop_after_first
+        sql: |-
+          BEGIN COMPOUND NOT ATOMIC STATIC STOP AFTER FIRST :nbr STATEMENTS
+            EXECUTE s1 USING DESCRIPTOR :*sqlda0;
+            EXECUTE s1 USING DESCRIPTOR :*sqlda1;
+          END COMPOUND;
+        note: STOP AFTER FIRST host-variable STATEMENTS clause; host variable is part of the embedded syntax
+      - id: commit_last
+        sql: |-
+          BEGIN COMPOUND ATOMIC STATIC
+            UPDATE t SET c = 1 WHERE k = 2;
+            COMMIT;
+          END COMPOUND;
+        note: COMMIT may be the last sub-statement
+
+  - id: compound_sql_compiled
+    name: Compound SQL (compiled)
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-compound-sql-compiled
+    tier: high
+    probes:
+      - id: begin_end
+        sql: |-
+          BEGIN
+            SET v = 1;
+          END;
+      - id: not_atomic
+        sql: |-
+          BEGIN NOT ATOMIC
+            SET v = 1;
+          END;
+      - id: atomic
+        sql: |-
+          BEGIN ATOMIC
+            SET v = 1;
+          END;
+      - id: labels
+        sql: |-
+          lbl: BEGIN
+            SET v = 1;
+          END lbl;
+      - id: declare_variable
+        sql: |-
+          BEGIN
+            DECLARE v INTEGER DEFAULT 0;
+            SET v = 1;
+          END;
+      - id: declare_variable_list
+        sql: |-
+          BEGIN
+            DECLARE a, b VARCHAR(10) DEFAULT NULL;
+            SET a = 'x';
+          END;
+      - id: declare_constant
+        sql: |-
+          BEGIN
+            DECLARE k CONSTANT INTEGER 5;
+            SET v = k;
+          END;
+      - id: declare_anchored_type
+        sql: |-
+          BEGIN
+            DECLARE v ANCHOR DATA TYPE TO t.c;
+            SET v = 1;
+          END;
+      - id: declare_row_anchor
+        sql: |-
+          BEGIN
+            DECLARE r ANCHOR DATA TYPE TO ROW OF t;
+            SET v = 1;
+          END;
+      - id: declare_type_array
+        sql: |-
+          BEGIN
+            DECLARE TYPE intarr AS INTEGER ARRAY[100];
+            DECLARE a intarr;
+            SET a[1] = 5;
+          END;
+      - id: declare_type_row
+        sql: |-
+          BEGIN
+            DECLARE TYPE rt AS ROW (a INTEGER, b VARCHAR(10));
+            DECLARE r rt;
+            SET v = 1;
+          END;
+      - id: declare_type_distinct
+        sql: |-
+          BEGIN
+            DECLARE TYPE money AS DECIMAL(9,2) WITH WEAK TYPE RULES NOT NULL CHECK (VALUE > 0);
+            SET v = 1;
+          END;
+      - id: declare_condition
+        sql: |-
+          BEGIN
+            DECLARE cnd CONDITION FOR SQLSTATE VALUE '12345';
+            SET v = 1;
+          END;
+      - id: declare_return_codes
+        sql: |-
+          BEGIN
+            DECLARE SQLSTATE CHAR(5) DEFAULT '00000';
+            DECLARE SQLCODE INTEGER DEFAULT 0;
+            SET v = 1;
+          END;
+      - id: declare_statement
+        sql: |-
+          BEGIN
+            DECLARE s1, s2 STATEMENT;
+            SET v = 1;
+          END;
+      - id: declare_cursor
+        sql: |-
+          BEGIN
+            DECLARE c1 CURSOR FOR SELECT a FROM t;
+            OPEN c1;
+            CLOSE c1;
+          END;
+      - id: declare_cursor_with_hold
+        sql: |-
+          BEGIN
+            DECLARE c1 CURSOR WITH HOLD FOR SELECT a FROM t;
+            OPEN c1;
+          END;
+      - id: declare_cursor_statement_name
+        sql: |-
+          BEGIN
+            DECLARE c1 CURSOR FOR s1;
+            OPEN c1;
+          END;
+      - id: declare_cursor_variable
+        sql: |-
+          BEGIN
+            DECLARE cv CURSOR DEFAULT CURSOR (p INTEGER) FOR SELECT a FROM t WHERE a = p;
+            SET v = 1;
+          END;
+      - id: declare_result_set_locator
+        sql: |-
+          BEGIN
+            DECLARE rs RESULT_SET_LOCATOR VARYING;
+            SET v = 1;
+          END;
+      - id: declare_procedure
+        sql: |-
+          BEGIN
+            DECLARE PROCEDURE p1 (IN a INTEGER)
+              BEGIN
+                SET v = a;
+              END;
+            CALL p1(1);
+          END;
+      - id: declare_handler_continue
+        sql: |-
+          BEGIN
+            DECLARE CONTINUE HANDLER FOR SQLEXCEPTION SET v = 1;
+            SET v = 2;
+          END;
+      - id: declare_handler_exit
+        sql: |-
+          BEGIN
+            DECLARE EXIT HANDLER FOR NOT FOUND SET v = 1;
+            SET v = 2;
+          END;
+      - id: declare_handler_undo
+        sql: |-
+          BEGIN ATOMIC
+            DECLARE UNDO HANDLER FOR SQLWARNING SET v = 1;
+            SET v = 2;
+          END;
+      - id: declare_handler_sqlstate_list
+        sql: |-
+          BEGIN
+            DECLARE CONTINUE HANDLER FOR SQLSTATE VALUE '23505', SQLSTATE '02000' SET v = 1;
+            SET v = 2;
+          END;
+      - id: declare_handler_condition_name
+        sql: |-
+          BEGIN
+            DECLARE cnd CONDITION FOR SQLSTATE '12345';
+            DECLARE EXIT HANDLER FOR cnd SET v = 1;
+            SET v = 2;
+          END;
+      - id: declare_handler_compound_body
+        sql: |-
+          BEGIN
+            DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+              h1: BEGIN
+                SET v = 1;
+              END;
+            SET v = 2;
+          END;
+      - id: labeled_statement
+        sql: |-
+          BEGIN
+            lbl: SET v = 1;
+          END;
+      - id: nested_blocks
+        sql: |-
+          BEGIN
+            DECLARE v INTEGER DEFAULT 0;
+            inner1: BEGIN
+              DECLARE w INTEGER DEFAULT 1;
+              SET v = w;
+            END inner1;
+          END;
+    examples:
+      - |-
+        BEGIN
+          CALL DBMS_OUTPUT.PUT_LINE ( 'Hello' );
+        END;
+      - |-
+        BEGIN
+          DECLARE v_numRecords INTEGER DEFAULT 1;
+          SELECT COUNT(*) INTO v_numRecords FROM staff;
+          CALL DBMS_OUTPUT.PUT_LINE (v_numRecords);
+        END;
+      - |-
+        CREATE PROCEDURE DEPT_MEDIAN
+          (IN deptNumber SMALLINT, OUT medianSalary DOUBLE)
+          LANGUAGE SQL
+          BEGIN
+            DECLARE v_numRecords INTEGER DEFAULT 1;
+            DECLARE v_counter INTEGER DEFAULT 0;
+            DECLARE c1 CURSOR FOR
+              SELECT CAST( salary AS DOUBLE )
+              FROM staff
+              WHERE DEPT = deptNumber
+              ORDER BY salary;
+            DECLARE EXIT HANDLER FOR NOT FOUND
+              SET medianSalary = 6666;
+            SET medianSalary = 0;
+            SELECT COUNT(*) INTO v_numRecords
+              FROM staff
+              WHERE DEPT = deptNumber;
+            OPEN c1;
+            WHILE v_counter < (v_numRecords / 2 + 1) DO
+              FETCH c1 INTO medianSalary;
+              SET v_counter = v_counter + 1;
+            END WHILE;
+            CLOSE c1;
+          END;

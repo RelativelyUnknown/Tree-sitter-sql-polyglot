@@ -1,0 +1,1071 @@
+dialect: sqlite
+engine: SQLite
+version: "3.53"
+source: https://www.sqlite.org/lang.html
+
+statements:
+  - id: select
+    name: SELECT
+    doc: https://www.sqlite.org/lang_select.html
+    tier: high
+    probes:
+      - { id: star, sql: "SELECT * FROM t;" }
+      - { id: no_from, sql: "SELECT 1 + 1;" }
+      - { id: all, sql: "SELECT ALL c FROM t;" }
+      - { id: distinct, sql: "SELECT DISTINCT c FROM t;" }
+      - { id: alias_as, sql: "SELECT c AS a FROM t;" }
+      - { id: alias_no_as, sql: "SELECT c a FROM t;" }
+      - id: alias_string
+        sql: "SELECT c AS 'x-y' FROM t;"
+        note: "column-alias may be a string literal; the pragma.html example uses AS 'indexed-columns'"
+      - { id: qualified_star, sql: "SELECT t.*, u.c FROM t, u;" }
+      - { id: schema_qualified_table, sql: "SELECT c FROM main.t;" }
+      - { id: schema_table_column, sql: "SELECT main.t.c FROM main.t;" }
+      - { id: table_alias_as, sql: "SELECT x.c FROM t AS x;" }
+      - { id: table_alias_no_as, sql: "SELECT x.c FROM t x;" }
+      - { id: where, sql: "SELECT c FROM t WHERE c > 0;" }
+      - { id: group_by, sql: "SELECT a, count(*) FROM t GROUP BY a;" }
+      - { id: group_by_multiple, sql: "SELECT a, b, sum(c) FROM t GROUP BY a, b;" }
+      - { id: group_by_position, sql: "SELECT a, b, sum(c) FROM t GROUP BY 1, 2;" }
+      - { id: having, sql: "SELECT a, count(*) FROM t GROUP BY a HAVING count(*) > 1;" }
+      - { id: window_clause, sql: "SELECT sum(c) OVER w FROM t WINDOW w AS (PARTITION BY a ORDER BY b);" }
+      - { id: window_clause_multiple, sql: "SELECT sum(c) OVER w1, rank() OVER w2 FROM t WINDOW w1 AS (ORDER BY a), w2 AS (PARTITION BY b ORDER BY a);" }
+      - { id: window_clause_base_window, sql: "SELECT sum(c) OVER w2 FROM t WINDOW w1 AS (PARTITION BY a), w2 AS (w1 ORDER BY b);" }
+      - { id: order_by, sql: "SELECT c FROM t ORDER BY c;" }
+      - { id: order_by_asc_desc, sql: "SELECT a, b FROM t ORDER BY a ASC, b DESC;" }
+      - { id: order_by_nulls_first, sql: "SELECT c FROM t ORDER BY c ASC NULLS FIRST;" }
+      - { id: order_by_nulls_last, sql: "SELECT c FROM t ORDER BY c DESC NULLS LAST;" }
+      - { id: order_by_collate, sql: "SELECT c FROM t ORDER BY c COLLATE NOCASE DESC;" }
+      - { id: order_by_position, sql: "SELECT a, b FROM t ORDER BY 2, 1;" }
+      - { id: limit, sql: "SELECT c FROM t LIMIT 10;" }
+      - { id: limit_offset, sql: "SELECT c FROM t LIMIT 10 OFFSET 5;" }
+      - { id: limit_comma, sql: "SELECT c FROM t LIMIT 5, 10;" }
+      - { id: limit_expression, sql: "SELECT c FROM t LIMIT (SELECT count(*) FROM u) / 2;" }
+      - { id: comma_join, sql: "SELECT * FROM t, u WHERE t.a = u.a;" }
+      - { id: join, sql: "SELECT * FROM t JOIN u ON t.a = u.a;" }
+      - { id: inner_join, sql: "SELECT * FROM t INNER JOIN u ON t.a = u.a;" }
+      - { id: left_join, sql: "SELECT * FROM t LEFT JOIN u ON t.a = u.a;" }
+      - { id: left_outer_join, sql: "SELECT * FROM t LEFT OUTER JOIN u ON t.a = u.a;" }
+      - { id: right_join, sql: "SELECT * FROM t RIGHT JOIN u ON t.a = u.a;" }
+      - { id: right_outer_join, sql: "SELECT * FROM t RIGHT OUTER JOIN u ON t.a = u.a;" }
+      - { id: full_join, sql: "SELECT * FROM t FULL JOIN u ON t.a = u.a;" }
+      - { id: full_outer_join, sql: "SELECT * FROM t FULL OUTER JOIN u ON t.a = u.a;" }
+      - { id: cross_join, sql: "SELECT * FROM t CROSS JOIN u;" }
+      - { id: natural_join, sql: "SELECT * FROM t NATURAL JOIN u;" }
+      - { id: natural_left_join, sql: "SELECT * FROM t NATURAL LEFT OUTER JOIN u;" }
+      - { id: natural_full_join, sql: "SELECT * FROM t NATURAL FULL JOIN u;" }
+      - { id: natural_inner_join, sql: "SELECT * FROM t NATURAL INNER JOIN u;" }
+      - { id: join_using, sql: "SELECT * FROM t JOIN u USING (a, b);" }
+      - { id: join_no_constraint, sql: "SELECT * FROM t JOIN u;" }
+      - { id: multiple_joins, sql: "SELECT * FROM t LEFT JOIN u ON t.a = u.a JOIN v USING (b);" }
+      - { id: subquery_in_from, sql: "SELECT x.c FROM (SELECT c FROM t) AS x;" }
+      - { id: subquery_in_from_no_alias, sql: "SELECT c FROM (SELECT c FROM t);" }
+      - { id: parenthesized_join, sql: "SELECT * FROM (t JOIN u ON t.a = u.a) JOIN v ON v.b = u.b;" }
+      - { id: parenthesized_table_list, sql: "SELECT * FROM (t, u);" }
+      - { id: table_valued_function, sql: "SELECT * FROM json_each('[1,2,3]');" }
+      - { id: table_valued_function_alias, sql: "SELECT j.value FROM t, json_each(t.c) AS j;" }
+      - { id: table_valued_function_schema, sql: "SELECT * FROM main.pragma_table_info('t');" }
+      - { id: indexed_by, sql: "SELECT c FROM t INDEXED BY idx WHERE c = 1;" }
+      - { id: not_indexed, sql: "SELECT c FROM t NOT INDEXED WHERE c = 1;" }
+      - { id: values, sql: "VALUES (1, 'a'), (2, 'b');" }
+      - { id: values_with_order_limit, sql: "VALUES (3), (1), (2) ORDER BY 1 LIMIT 2;" }
+      - { id: union, sql: "SELECT a FROM t UNION SELECT a FROM u;" }
+      - { id: union_all, sql: "SELECT a FROM t UNION ALL SELECT a FROM u;" }
+      - { id: intersect, sql: "SELECT a FROM t INTERSECT SELECT a FROM u;" }
+      - { id: except, sql: "SELECT a FROM t EXCEPT SELECT a FROM u;" }
+      - { id: compound_chain_order_limit, sql: "SELECT a FROM t UNION SELECT a FROM u EXCEPT SELECT a FROM v ORDER BY 1 LIMIT 5 OFFSET 1;" }
+      - { id: compound_with_values, sql: "SELECT a FROM t UNION ALL VALUES (1), (2);" }
+      - { id: scalar_subquery, sql: "SELECT (SELECT max(c) FROM u) FROM t;" }
+      - { id: rowid, sql: "SELECT rowid, oid, _rowid_ FROM t;" }
+      - { id: all_clauses, sql: "WITH q AS (SELECT a, c FROM t) SELECT DISTINCT a, sum(c) OVER w FROM q WHERE c > 0 GROUP BY a HAVING count(*) > 1 WINDOW w AS (ORDER BY a) ORDER BY a LIMIT 5 OFFSET 1;" }
+    examples:
+      - "SELECT a, b, sum(c) FROM tab1 GROUP BY a;"
+      - "SELECT a, b, max(c) FROM tab1 GROUP BY a;"
+
+  - id: with
+    name: WITH clause
+    doc: https://www.sqlite.org/lang_with.html
+    tier: high
+    probes:
+      - { id: basic, sql: "WITH q AS (SELECT c FROM t) SELECT c FROM q;" }
+      - { id: column_list, sql: "WITH q(x, y) AS (SELECT a, b FROM t) SELECT x, y FROM q;" }
+      - { id: multiple, sql: "WITH q1 AS (SELECT a FROM t), q2 AS (SELECT a FROM q1) SELECT a FROM q2;" }
+      - { id: materialized, sql: "WITH q AS MATERIALIZED (SELECT c FROM t) SELECT c FROM q;" }
+      - { id: not_materialized, sql: "WITH q AS NOT MATERIALIZED (SELECT c FROM t) SELECT c FROM q;" }
+      - { id: recursive_union_all, sql: "WITH RECURSIVE cnt(x) AS (SELECT 1 UNION ALL SELECT x + 1 FROM cnt WHERE x < 10) SELECT x FROM cnt;" }
+      - { id: recursive_union, sql: "WITH RECURSIVE r(n) AS (VALUES (1) UNION SELECT n + 1 FROM r WHERE n < 5) SELECT n FROM r;" }
+      - { id: recursive_order_limit, sql: "WITH RECURSIVE r(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r ORDER BY 1 DESC LIMIT 10) SELECT n FROM r;" }
+      - { id: recursive_multiple_recursive_selects, sql: "WITH RECURSIVE r(x) AS (SELECT 1 UNION SELECT a FROM t JOIN r ON b = x UNION SELECT b FROM t JOIN r ON a = x) SELECT x FROM r;" }
+      - { id: cte_values_body, sql: "WITH q(x) AS (VALUES (1), (2)) SELECT x FROM q;" }
+      - { id: in_cte_name, sql: "WITH q(n) AS (SELECT a FROM t) SELECT c FROM u WHERE c IN q;" }
+      - { id: compound_main_query, sql: "WITH q AS (SELECT a FROM t) SELECT a FROM q UNION SELECT a FROM u;" }
+    examples:
+      - |-
+        WITH RECURSIVE
+          cnt(x) AS (VALUES(1) UNION ALL SELECT x+1 FROM cnt WHERE x<1000000)
+        SELECT x FROM cnt;
+      - |-
+        WITH RECURSIVE
+          cnt(x) AS (
+             SELECT 1
+             UNION ALL
+             SELECT x+1 FROM cnt
+              LIMIT 1000000
+          )
+        SELECT x FROM cnt;
+      - |-
+        WITH RECURSIVE
+          works_for_alice(n) AS (
+            VALUES('Alice')
+            UNION
+            SELECT name FROM org, works_for_alice
+             WHERE org.boss=works_for_alice.n
+          )
+        SELECT avg(height) FROM org
+         WHERE org.name IN works_for_alice;
+      - |-
+        WITH RECURSIVE
+          parent_of(name, parent) AS
+            (SELECT name, mom FROM family UNION SELECT name, dad FROM family),
+          ancestor_of_alice(name) AS
+            (SELECT parent FROM parent_of WHERE name='Alice'
+             UNION ALL
+             SELECT parent FROM parent_of JOIN ancestor_of_alice USING(name))
+        SELECT family.name FROM ancestor_of_alice, family
+         WHERE ancestor_of_alice.name=family.name
+           AND died IS NULL
+         ORDER BY born;
+      - |-
+        WITH RECURSIVE nodes(x) AS (
+           SELECT 59
+           UNION
+           SELECT aa FROM edge JOIN nodes ON bb=x
+           UNION
+           SELECT bb FROM edge JOIN nodes ON aa=x
+        )
+        SELECT x FROM nodes;
+
+  - id: insert
+    name: INSERT
+    doc: https://www.sqlite.org/lang_insert.html
+    tier: high
+    probes:
+      - { id: values, sql: "INSERT INTO t VALUES (1, 'a');" }
+      - { id: column_list, sql: "INSERT INTO t (a, b) VALUES (1, 'a');" }
+      - { id: multi_row, sql: "INSERT INTO t (a, b) VALUES (1, 'a'), (2, 'b');" }
+      - { id: select, sql: "INSERT INTO t (a, b) SELECT a, b FROM u WHERE a > 0;" }
+      - { id: default_values, sql: "INSERT INTO t DEFAULT VALUES;" }
+      - { id: schema_qualified, sql: "INSERT INTO main.t (a) VALUES (1);" }
+      - { id: table_alias, sql: "INSERT INTO t AS x (a) VALUES (1) ON CONFLICT (a) DO UPDATE SET b = x.b + 1;" }
+      - { id: or_replace, sql: "INSERT OR REPLACE INTO t (a, b) VALUES (1, 'a');" }
+      - { id: or_rollback, sql: "INSERT OR ROLLBACK INTO t (a) VALUES (1);" }
+      - { id: or_abort, sql: "INSERT OR ABORT INTO t (a) VALUES (1);" }
+      - { id: or_fail, sql: "INSERT OR FAIL INTO t (a) VALUES (1);" }
+      - { id: or_ignore, sql: "INSERT OR IGNORE INTO t (a) VALUES (1);" }
+      - { id: replace_into, sql: "REPLACE INTO t (a, b) VALUES (1, 'a');" }
+      - { id: with_cte, sql: "WITH q AS (SELECT a FROM u) INSERT INTO t (a) SELECT a FROM q;" }
+      - { id: with_recursive, sql: "WITH RECURSIVE r(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r WHERE n < 5) INSERT INTO t (a) SELECT n FROM r;" }
+      - { id: values_upsert, sql: "INSERT INTO t (a, b) VALUES (1, 2) ON CONFLICT (a) DO NOTHING;" }
+      - { id: select_upsert, sql: "INSERT INTO t SELECT * FROM u WHERE true ON CONFLICT (a) DO UPDATE SET b = excluded.b;" }
+      - { id: returning, sql: "INSERT INTO t (a) VALUES (1) RETURNING *;" }
+      - { id: default_values_returning, sql: "INSERT INTO t DEFAULT VALUES RETURNING rowid;" }
+      - { id: values_expressions, sql: "INSERT INTO t (a, b) VALUES (random(), CURRENT_TIMESTAMP);" }
+
+  - id: replace
+    name: REPLACE
+    doc: https://www.sqlite.org/lang_replace.html
+    tier: high
+    probes:
+      - { id: values, sql: "REPLACE INTO t (a, b) VALUES (1, 'a');" }
+      - { id: no_column_list, sql: "REPLACE INTO t VALUES (1, 'a');" }
+      - { id: select, sql: "REPLACE INTO t (a, b) SELECT a, b FROM u;" }
+      - { id: default_values, sql: "REPLACE INTO t DEFAULT VALUES;" }
+      - { id: schema_alias_returning, sql: "REPLACE INTO main.t AS x (a) VALUES (1) RETURNING x.a;" }
+
+  - id: upsert
+    name: UPSERT
+    doc: https://www.sqlite.org/lang_upsert.html
+    tier: high
+    probes:
+      - { id: do_nothing, sql: "INSERT INTO t (a) VALUES (1) ON CONFLICT (a) DO NOTHING;" }
+      - { id: do_nothing_no_target, sql: "INSERT INTO t (a) VALUES (1) ON CONFLICT DO NOTHING;" }
+      - { id: do_update, sql: "INSERT INTO t (a, b) VALUES (1, 2) ON CONFLICT (a) DO UPDATE SET b = excluded.b;" }
+      - { id: do_update_no_target, sql: "INSERT INTO t (a, b) VALUES (1, 2) ON CONFLICT DO UPDATE SET b = excluded.b;" }
+      - { id: do_update_multiple_set, sql: "INSERT INTO t (a, b, c) VALUES (1, 2, 3) ON CONFLICT (a) DO UPDATE SET b = excluded.b, c = c + 1;" }
+      - { id: do_update_column_list_set, sql: "INSERT INTO t (a, b, c) VALUES (1, 2, 3) ON CONFLICT (a) DO UPDATE SET (b, c) = (excluded.b, excluded.c);" }
+      - { id: do_update_where, sql: "INSERT INTO t (a, b) VALUES (1, 2) ON CONFLICT (a) DO UPDATE SET b = excluded.b WHERE excluded.b > t.b;" }
+      - { id: target_multiple_columns, sql: "INSERT INTO t (a, b) VALUES (1, 2) ON CONFLICT (a, b) DO NOTHING;" }
+      - { id: target_collate_order, sql: "INSERT INTO t (a) VALUES ('x') ON CONFLICT (a COLLATE NOCASE ASC) DO NOTHING;" }
+      - { id: target_where, sql: "INSERT INTO t (a, b) VALUES (1, 2) ON CONFLICT (a) WHERE b IS NOT NULL DO UPDATE SET b = excluded.b;" }
+      - { id: multiple_clauses, sql: "INSERT INTO t (a, b) VALUES (1, 2) ON CONFLICT (a) DO UPDATE SET b = excluded.b ON CONFLICT (b) DO NOTHING ON CONFLICT DO NOTHING;" }
+      - { id: with_returning, sql: "INSERT INTO t (a, b) VALUES (1, 2) ON CONFLICT (a) DO UPDATE SET b = excluded.b RETURNING a, b;" }
+      - { id: select_source_where_true, sql: "INSERT INTO t SELECT * FROM u WHERE true ON CONFLICT (a) DO UPDATE SET b = excluded.b;" }
+    examples:
+      - |-
+        INSERT INTO vocabulary(word) VALUES('jovial')
+          ON CONFLICT(word) DO UPDATE SET count=count+1;
+      - |-
+        INSERT INTO phonebook(name,phonenumber) VALUES('Alice','704-555-1212')
+          ON CONFLICT(name) DO UPDATE SET phonenumber=excluded.phonenumber;
+      - |-
+        INSERT INTO phonebook2(name,phonenumber,validDate)
+          VALUES('Alice','704-555-1212','2018-05-08')
+          ON CONFLICT(name) DO UPDATE SET
+            phonenumber=excluded.phonenumber,
+            validDate=excluded.validDate
+          WHERE excluded.validDate>phonebook2.validDate;
+      - |-
+        INSERT INTO t1 SELECT * FROM t2
+        ON CONFLICT(x) DO UPDATE SET y=excluded.y;
+      - |-
+        INSERT INTO t1 SELECT * FROM t2 WHERE true
+        ON CONFLICT(x) DO UPDATE SET y=excluded.y;
+
+  - id: returning
+    name: RETURNING clause
+    doc: https://www.sqlite.org/lang_returning.html
+    tier: high
+    probes:
+      - { id: insert_star, sql: "INSERT INTO t (a) VALUES (1) RETURNING *;" }
+      - { id: insert_exprs_alias, sql: "INSERT INTO t (a) VALUES (1) RETURNING a, b AS bb, a + 1 total;" }
+      - { id: update, sql: "UPDATE t SET a = a + 1 WHERE b = 2 RETURNING a;" }
+      - { id: delete, sql: "DELETE FROM t WHERE a = 1 RETURNING *, rowid;" }
+    examples:
+      - "INSERT INTO t0(c) VALUES(random()) RETURNING *;"
+
+  - id: on_conflict
+    name: ON CONFLICT clause
+    doc: https://www.sqlite.org/lang_conflict.html
+    tier: high
+    probes:
+      - { id: column_not_null_on_conflict, sql: "CREATE TABLE t (a INTEGER NOT NULL ON CONFLICT REPLACE);" }
+      - { id: column_unique_on_conflict, sql: "CREATE TABLE t (a INTEGER UNIQUE ON CONFLICT IGNORE);" }
+      - { id: column_primary_key_on_conflict, sql: "CREATE TABLE t (a INTEGER PRIMARY KEY ON CONFLICT FAIL);" }
+      - { id: table_unique_on_conflict, sql: "CREATE TABLE t (a, b, UNIQUE (a, b) ON CONFLICT ROLLBACK);" }
+      - { id: table_primary_key_on_conflict, sql: "CREATE TABLE t (a, b, PRIMARY KEY (a) ON CONFLICT ABORT);" }
+      - { id: update_or_ignore, sql: "UPDATE OR IGNORE t SET a = 1;" }
+      - { id: insert_or_fail, sql: "INSERT OR FAIL INTO t VALUES (1);" }
+
+  - id: update
+    name: UPDATE
+    doc: https://www.sqlite.org/lang_update.html
+    tier: high
+    probes:
+      - { id: basic, sql: "UPDATE t SET a = 1;" }
+      - { id: where, sql: "UPDATE t SET a = a + 1 WHERE b = 2;" }
+      - { id: multiple_set, sql: "UPDATE t SET a = 1, b = 'x' WHERE c IS NULL;" }
+      - { id: column_list_set, sql: "UPDATE t SET (a, b) = (1, 2) WHERE c = 3;" }
+      - { id: column_list_set_subquery, sql: "UPDATE t SET (a, b) = (SELECT x, y FROM u WHERE u.id = t.id);" }
+      - { id: or_rollback, sql: "UPDATE OR ROLLBACK t SET a = 1;" }
+      - { id: or_abort, sql: "UPDATE OR ABORT t SET a = 1;" }
+      - { id: or_replace, sql: "UPDATE OR REPLACE t SET a = 1;" }
+      - { id: or_fail, sql: "UPDATE OR FAIL t SET a = 1;" }
+      - { id: or_ignore, sql: "UPDATE OR IGNORE t SET a = 1;" }
+      - { id: schema_qualified_alias, sql: "UPDATE main.t AS x SET a = 1 WHERE x.b = 2;" }
+      - { id: indexed_by, sql: "UPDATE t INDEXED BY idx SET a = 1 WHERE b = 2;" }
+      - { id: not_indexed, sql: "UPDATE t NOT INDEXED SET a = 1 WHERE b = 2;" }
+      - { id: from, sql: "UPDATE t SET a = u.a FROM u WHERE t.id = u.id;" }
+      - { id: from_subquery, sql: "UPDATE t SET a = d.s FROM (SELECT id, sum(c) AS s FROM u GROUP BY id) AS d WHERE t.id = d.id;" }
+      - { id: from_join, sql: "UPDATE t SET a = u.a FROM u JOIN v ON u.id = v.id WHERE t.id = u.id;" }
+      - { id: with_cte, sql: "WITH q AS (SELECT id FROM u) UPDATE t SET a = 0 WHERE id IN q;" }
+      - { id: returning, sql: "UPDATE t SET a = a + 1 RETURNING a, b;" }
+      - id: order_by_limit
+        sql: "UPDATE t SET a = 0 WHERE b = 1 ORDER BY c LIMIT 10;"
+        note: "update-stmt-limited; requires the SQLITE_ENABLE_UPDATE_DELETE_LIMIT compile-time option"
+      - id: limit_offset
+        sql: "UPDATE t SET a = 0 ORDER BY c DESC LIMIT 10 OFFSET 5;"
+        note: "update-stmt-limited; requires the SQLITE_ENABLE_UPDATE_DELETE_LIMIT compile-time option"
+    examples:
+      - |-
+        UPDATE inventory
+           SET quantity = quantity - daily.amt
+          FROM (SELECT sum(quantity) AS amt, itemId FROM sales GROUP BY 2) AS daily
+         WHERE inventory.itemId = daily.itemId;
+
+  - id: delete
+    name: DELETE
+    doc: https://www.sqlite.org/lang_delete.html
+    tier: high
+    probes:
+      - { id: all_rows, sql: "DELETE FROM t;" }
+      - { id: where, sql: "DELETE FROM t WHERE a = 1;" }
+      - { id: schema_qualified, sql: "DELETE FROM main.t WHERE a = 1;" }
+      - { id: alias, sql: "DELETE FROM t AS x WHERE x.a = 1;" }
+      - { id: indexed_by, sql: "DELETE FROM t INDEXED BY idx WHERE a = 1;" }
+      - { id: not_indexed, sql: "DELETE FROM t NOT INDEXED WHERE a = 1;" }
+      - { id: with_cte, sql: "WITH q AS (SELECT id FROM u) DELETE FROM t WHERE id IN q;" }
+      - { id: subquery_predicate, sql: "DELETE FROM t WHERE id IN (SELECT id FROM u WHERE c > 0);" }
+      - { id: returning, sql: "DELETE FROM t WHERE a = 1 RETURNING *;" }
+      - id: order_by_limit
+        sql: "DELETE FROM t WHERE a > 0 ORDER BY b LIMIT 10;"
+        note: "delete-stmt-limited; requires the SQLITE_ENABLE_UPDATE_DELETE_LIMIT compile-time option"
+      - id: limit_offset
+        sql: "DELETE FROM t ORDER BY b LIMIT 10 OFFSET 5;"
+        note: "delete-stmt-limited; requires the SQLITE_ENABLE_UPDATE_DELETE_LIMIT compile-time option"
+      - id: limit_comma
+        sql: "DELETE FROM t LIMIT 5, 10;"
+        note: "delete-stmt-limited, LIMIT expr , expr form; requires SQLITE_ENABLE_UPDATE_DELETE_LIMIT"
+
+  - id: indexed_by
+    name: INDEXED BY
+    doc: https://www.sqlite.org/lang_indexedby.html
+    tier: medium
+    probes:
+      - { id: select_indexed_by, sql: "SELECT * FROM t INDEXED BY idx WHERE a = 1;" }
+      - { id: select_not_indexed, sql: "SELECT * FROM t NOT INDEXED WHERE a = 1;" }
+      - { id: alias_indexed_by, sql: "SELECT x.a FROM main.t AS x INDEXED BY idx;" }
+      - { id: delete_indexed_by, sql: "DELETE FROM t INDEXED BY idx WHERE a = 1;" }
+
+  - id: create_table
+    name: CREATE TABLE
+    doc: https://www.sqlite.org/lang_createtable.html
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE TABLE t (a INTEGER, b TEXT);" }
+      - { id: if_not_exists, sql: "CREATE TABLE IF NOT EXISTS t (a INTEGER);" }
+      - { id: temp, sql: "CREATE TEMP TABLE t (a INTEGER);" }
+      - { id: temporary, sql: "CREATE TEMPORARY TABLE IF NOT EXISTS t (a INTEGER);" }
+      - { id: schema_qualified, sql: "CREATE TABLE main.t (a INTEGER);" }
+      - { id: as_select, sql: "CREATE TABLE t AS SELECT a, b FROM u WHERE a > 0;" }
+      - { id: temp_as_select, sql: "CREATE TEMP TABLE IF NOT EXISTS t AS SELECT * FROM u;" }
+      - { id: untyped_columns, sql: "CREATE TABLE t (a, b, c);" }
+      - { id: type_with_length, sql: "CREATE TABLE t (a VARCHAR(255), b DECIMAL(10, 5));" }
+      - { id: multiword_types, sql: "CREATE TABLE t (a UNSIGNED BIG INT, b DOUBLE PRECISION, c NATIVE CHARACTER(70), d VARYING CHARACTER(255));" }
+      - { id: type_signed_numbers, sql: "CREATE TABLE t (a NUMERIC(+10, -2));" }
+      - { id: named_constraint, sql: "CREATE TABLE t (a INTEGER CONSTRAINT pk PRIMARY KEY, b TEXT CONSTRAINT nn NOT NULL);" }
+      - { id: primary_key, sql: "CREATE TABLE t (id INTEGER PRIMARY KEY, b TEXT);" }
+      - { id: primary_key_desc, sql: "CREATE TABLE t (id INTEGER PRIMARY KEY DESC);" }
+      - { id: primary_key_autoincrement, sql: "CREATE TABLE t (id INTEGER PRIMARY KEY AUTOINCREMENT, b TEXT);" }
+      - { id: primary_key_asc_conflict_autoincrement, sql: "CREATE TABLE t (id INTEGER PRIMARY KEY ASC ON CONFLICT REPLACE AUTOINCREMENT);" }
+      - { id: not_null, sql: "CREATE TABLE t (a TEXT NOT NULL);" }
+      - { id: unique, sql: "CREATE TABLE t (a TEXT UNIQUE);" }
+      - { id: check, sql: "CREATE TABLE t (a INT CHECK (a > 3));" }
+      - { id: default_literal, sql: "CREATE TABLE t (a TEXT DEFAULT 'x', b BLOB DEFAULT X'00', c INT DEFAULT NULL, d INT DEFAULT TRUE);" }
+      - { id: default_signed_number, sql: "CREATE TABLE t (a INT DEFAULT -1, b REAL DEFAULT +1.5);" }
+      - { id: default_expression, sql: "CREATE TABLE t (a REAL DEFAULT (random() / 2));" }
+      - { id: default_current_timestamp, sql: "CREATE TABLE t (a DATE DEFAULT CURRENT_TIMESTAMP, b TEXT DEFAULT CURRENT_DATE, c TEXT DEFAULT CURRENT_TIME);" }
+      - { id: collate, sql: "CREATE TABLE t (a TEXT COLLATE NOCASE);" }
+      - { id: references, sql: "CREATE TABLE t (a INTEGER REFERENCES u (id));" }
+      - { id: references_no_columns, sql: "CREATE TABLE t (a TEXT REFERENCES u);" }
+      - { id: references_on_delete_update, sql: "CREATE TABLE t (a INTEGER REFERENCES u (id) ON DELETE CASCADE ON UPDATE SET NULL);" }
+      - { id: references_actions, sql: "CREATE TABLE t (a INTEGER REFERENCES u (id) ON DELETE SET DEFAULT ON UPDATE RESTRICT, b INTEGER REFERENCES v ON DELETE NO ACTION);" }
+      - { id: references_match, sql: "CREATE TABLE t (a INTEGER REFERENCES u (id) MATCH FULL);" }
+      - { id: references_deferrable, sql: "CREATE TABLE t (a INTEGER REFERENCES u (id) DEFERRABLE INITIALLY DEFERRED);" }
+      - { id: references_not_deferrable, sql: "CREATE TABLE t (a INTEGER REFERENCES u (id) NOT DEFERRABLE INITIALLY IMMEDIATE);" }
+      - { id: generated_virtual, sql: "CREATE TABLE t (a INT, b INT GENERATED ALWAYS AS (a * 2) VIRTUAL);" }
+      - { id: generated_stored, sql: "CREATE TABLE t (a INT, b INT GENERATED ALWAYS AS (a * 2) STORED);" }
+      - { id: generated_short, sql: "CREATE TABLE t (a INT, b INT AS (a + 1));" }
+      - { id: multiple_column_constraints, sql: "CREATE TABLE t (a TEXT NOT NULL UNIQUE CHECK (length(a) > 0) DEFAULT 'x' COLLATE NOCASE);" }
+      - { id: table_primary_key, sql: "CREATE TABLE t (a, b, PRIMARY KEY (a, b));" }
+      - { id: table_primary_key_collate_desc, sql: "CREATE TABLE t (a, b, PRIMARY KEY (a COLLATE NOCASE, b DESC));" }
+      - { id: table_unique, sql: "CREATE TABLE t (a, b, UNIQUE (a, b));" }
+      - { id: table_check, sql: "CREATE TABLE t (a, b, CHECK (a < b));" }
+      - { id: table_foreign_key, sql: "CREATE TABLE t (a, b, FOREIGN KEY (a, b) REFERENCES u (x, y) ON DELETE CASCADE);" }
+      - { id: table_named_constraints, sql: "CREATE TABLE t (a, b, CONSTRAINT pk PRIMARY KEY (a), CONSTRAINT fk FOREIGN KEY (b) REFERENCES u (id), CONSTRAINT ck CHECK (b > 0));" }
+      - { id: without_rowid, sql: "CREATE TABLE t (a TEXT PRIMARY KEY, b TEXT) WITHOUT ROWID;" }
+      - { id: strict, sql: "CREATE TABLE t (a INT, b TEXT, c ANY) STRICT;" }
+      - { id: strict_without_rowid, sql: "CREATE TABLE t (a TEXT PRIMARY KEY, b INT) STRICT, WITHOUT ROWID;" }
+      - { id: keyword_column_names, sql: "CREATE TABLE t (\"order\" INT, [group] TEXT, `key` BLOB);" }
+    examples:
+      - "CREATE TABLE t1(x INT CHECK( x>3 ));"
+
+  - id: alter_table
+    name: ALTER TABLE
+    doc: https://www.sqlite.org/lang_altertable.html
+    tier: high
+    probes:
+      - { id: rename_to, sql: "ALTER TABLE t RENAME TO t2;" }
+      - { id: rename_schema_qualified, sql: "ALTER TABLE main.t RENAME TO t2;" }
+      - { id: rename_column, sql: "ALTER TABLE t RENAME COLUMN a TO b;" }
+      - { id: rename_without_column_keyword, sql: "ALTER TABLE t RENAME a TO b;" }
+      - { id: add_column, sql: "ALTER TABLE t ADD COLUMN c TEXT;" }
+      - { id: add_without_column_keyword, sql: "ALTER TABLE t ADD c TEXT;" }
+      - { id: add_column_constraints, sql: "ALTER TABLE t ADD COLUMN c INTEGER NOT NULL DEFAULT 0 REFERENCES u (id);" }
+      - { id: add_generated_column, sql: "ALTER TABLE t ADD COLUMN c INT GENERATED ALWAYS AS (a + b) VIRTUAL;" }
+      - { id: drop_column, sql: "ALTER TABLE t DROP COLUMN c;" }
+      - { id: drop_without_column_keyword, sql: "ALTER TABLE t DROP c;" }
+      - { id: add_check_constraint, sql: "ALTER TABLE t ADD CHECK (a > 0);" }
+      - { id: add_named_check_constraint, sql: "ALTER TABLE t ADD CONSTRAINT ck CHECK (a > 0);" }
+      - { id: add_check_on_conflict, sql: "ALTER TABLE t ADD CONSTRAINT ck CHECK (a > 0) ON CONFLICT ABORT;" }
+      - { id: drop_constraint, sql: "ALTER TABLE t DROP CONSTRAINT ck;" }
+      - { id: alter_column_set_not_null, sql: "ALTER TABLE t ALTER COLUMN a SET NOT NULL;" }
+      - { id: alter_column_set_not_null_conflict, sql: "ALTER TABLE t ALTER COLUMN a SET NOT NULL ON CONFLICT FAIL;" }
+      - { id: alter_column_drop_not_null, sql: "ALTER TABLE t ALTER COLUMN a DROP NOT NULL;" }
+
+  - id: drop_table
+    name: DROP TABLE
+    doc: https://www.sqlite.org/lang_droptable.html
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP TABLE t;" }
+      - { id: if_exists, sql: "DROP TABLE IF EXISTS t;" }
+      - { id: schema_qualified, sql: "DROP TABLE IF EXISTS main.t;" }
+
+  - id: create_index
+    name: CREATE INDEX
+    doc: https://www.sqlite.org/lang_createindex.html
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE INDEX idx ON t (a);" }
+      - { id: unique, sql: "CREATE UNIQUE INDEX idx ON t (a);" }
+      - { id: if_not_exists, sql: "CREATE INDEX IF NOT EXISTS idx ON t (a);" }
+      - { id: schema_qualified, sql: "CREATE INDEX main.idx ON t (a);" }
+      - { id: multiple_columns, sql: "CREATE INDEX idx ON t (a, b, c);" }
+      - { id: asc_desc, sql: "CREATE INDEX idx ON t (a ASC, b DESC);" }
+      - { id: collate, sql: "CREATE INDEX idx ON t (a COLLATE NOCASE DESC);" }
+      - { id: expression, sql: "CREATE INDEX idx ON t (lower(a), a + b);" }
+      - { id: partial, sql: "CREATE INDEX idx ON t (a) WHERE b IS NOT NULL;" }
+      - { id: all_options, sql: "CREATE UNIQUE INDEX IF NOT EXISTS main.idx ON t (a COLLATE BINARY ASC, length(b) DESC) WHERE a > 0;" }
+
+  - id: drop_index
+    name: DROP INDEX
+    doc: https://www.sqlite.org/lang_dropindex.html
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP INDEX idx;" }
+      - { id: if_exists, sql: "DROP INDEX IF EXISTS main.idx;" }
+
+  - id: create_view
+    name: CREATE VIEW
+    doc: https://www.sqlite.org/lang_createview.html
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE VIEW v AS SELECT a, b FROM t;" }
+      - { id: temp, sql: "CREATE TEMP VIEW v AS SELECT a FROM t;" }
+      - { id: temporary, sql: "CREATE TEMPORARY VIEW v AS SELECT a FROM t;" }
+      - { id: if_not_exists, sql: "CREATE VIEW IF NOT EXISTS v AS SELECT a FROM t;" }
+      - { id: schema_qualified, sql: "CREATE VIEW main.v AS SELECT a FROM t;" }
+      - { id: column_list, sql: "CREATE VIEW v (x, y) AS SELECT a, b FROM t;" }
+      - { id: with_cte, sql: "CREATE VIEW v AS WITH q AS (SELECT a FROM t) SELECT a FROM q;" }
+      - { id: compound, sql: "CREATE VIEW v AS SELECT a FROM t UNION ALL SELECT a FROM u ORDER BY 1;" }
+      - { id: values, sql: "CREATE VIEW v (x) AS VALUES (1), (2);" }
+
+  - id: drop_view
+    name: DROP VIEW
+    doc: https://www.sqlite.org/lang_dropview.html
+    tier: high
+    probes:
+      - { id: basic, sql: "DROP VIEW v;" }
+      - { id: if_exists, sql: "DROP VIEW IF EXISTS main.v;" }
+
+  - id: create_trigger
+    name: CREATE TRIGGER
+    doc: https://www.sqlite.org/lang_createtrigger.html
+    tier: medium
+    probes:
+      - { id: after_insert, sql: "CREATE TRIGGER tr AFTER INSERT ON t BEGIN INSERT INTO log VALUES (new.a); END;" }
+      - { id: before_delete, sql: "CREATE TRIGGER tr BEFORE DELETE ON t BEGIN DELETE FROM u WHERE u.a = old.a; END;" }
+      - { id: update_of_columns_no_timing, sql: "CREATE TRIGGER tr UPDATE OF a, b ON t BEGIN UPDATE u SET a = new.a WHERE id = old.id; END;" }
+      - { id: instead_of_view, sql: "CREATE TRIGGER tr INSTEAD OF UPDATE OF a ON v BEGIN UPDATE t SET a = new.a WHERE id = new.id; END;" }
+      - { id: temp_if_not_exists, sql: "CREATE TEMP TRIGGER IF NOT EXISTS main.tr AFTER INSERT ON t BEGIN SELECT 1; END;" }
+      - { id: for_each_row_when, sql: "CREATE TRIGGER tr AFTER UPDATE ON t FOR EACH ROW WHEN new.a <> old.a BEGIN INSERT INTO log VALUES (old.a, new.a); END;" }
+      - { id: multiple_statements, sql: "CREATE TRIGGER tr AFTER DELETE ON t BEGIN DELETE FROM u WHERE a = old.a; UPDATE v SET n = n - 1; SELECT 1; END;" }
+      - { id: raise_in_body, sql: "CREATE TRIGGER tr BEFORE INSERT ON t WHEN new.a IS NULL BEGIN SELECT RAISE(ABORT, 'a is required'); END;" }
+      - { id: body_with_upsert, sql: "CREATE TRIGGER tr AFTER INSERT ON t BEGIN INSERT INTO u (a, n) VALUES (new.a, 1) ON CONFLICT (a) DO UPDATE SET n = n + 1; END;" }
+    examples:
+      - |-
+        CREATE TRIGGER update_customer_address UPDATE OF address ON customers 
+          BEGIN
+            UPDATE orders SET address = new.address WHERE customer_name = old.name;
+          END;
+      - |-
+        CREATE TRIGGER cust_addr_chng
+        INSTEAD OF UPDATE OF cust_addr ON customer_address
+        BEGIN
+          UPDATE customer SET cust_addr=NEW.cust_addr
+           WHERE cust_id=NEW.cust_id;
+        END;
+
+  - id: drop_trigger
+    name: DROP TRIGGER
+    doc: https://www.sqlite.org/lang_droptrigger.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP TRIGGER tr;" }
+      - { id: if_exists, sql: "DROP TRIGGER IF EXISTS main.tr;" }
+
+  - id: create_virtual_table
+    name: CREATE VIRTUAL TABLE
+    doc: https://www.sqlite.org/lang_createvtab.html
+    tier: medium
+    probes:
+      - { id: no_arguments, sql: "CREATE VIRTUAL TABLE t USING m;" }
+      - { id: arguments, sql: "CREATE VIRTUAL TABLE t USING fts5(title, body);" }
+      - { id: if_not_exists_schema, sql: "CREATE VIRTUAL TABLE IF NOT EXISTS main.t USING rtree(id, minx, maxx);" }
+      - { id: column_def_like_arguments, sql: "CREATE VIRTUAL TABLE t USING m(a INTEGER, b TEXT HIDDEN, tokenize = 'porter ascii');" }
+
+  - id: begin
+    name: BEGIN TRANSACTION
+    doc: https://www.sqlite.org/lang_transaction.html
+    tier: high
+    probes:
+      - { id: begin, sql: "BEGIN;" }
+      - { id: begin_transaction, sql: "BEGIN TRANSACTION;" }
+      - { id: deferred, sql: "BEGIN DEFERRED TRANSACTION;" }
+      - { id: immediate, sql: "BEGIN IMMEDIATE;" }
+      - { id: exclusive, sql: "BEGIN EXCLUSIVE TRANSACTION;" }
+
+  - id: commit
+    name: COMMIT TRANSACTION
+    doc: https://www.sqlite.org/lang_transaction.html
+    tier: high
+    probes:
+      - { id: commit, sql: "COMMIT;" }
+      - { id: commit_transaction, sql: "COMMIT TRANSACTION;" }
+
+  - id: end
+    name: END TRANSACTION
+    doc: https://www.sqlite.org/lang_transaction.html
+    tier: high
+    probes:
+      - { id: end, sql: "END;" }
+      - { id: end_transaction, sql: "END TRANSACTION;" }
+
+  - id: rollback
+    name: ROLLBACK TRANSACTION
+    doc: https://www.sqlite.org/lang_transaction.html
+    tier: high
+    probes:
+      - { id: rollback, sql: "ROLLBACK;" }
+      - { id: rollback_transaction, sql: "ROLLBACK TRANSACTION;" }
+      - { id: rollback_to_savepoint, sql: "ROLLBACK TO SAVEPOINT sp;" }
+      - { id: rollback_to, sql: "ROLLBACK TO sp;" }
+      - { id: rollback_transaction_to_savepoint, sql: "ROLLBACK TRANSACTION TO SAVEPOINT sp;" }
+
+  - id: savepoint
+    name: SAVEPOINT
+    doc: https://www.sqlite.org/lang_savepoint.html
+    tier: high
+    probes:
+      - { id: savepoint, sql: "SAVEPOINT sp;" }
+
+  - id: release_savepoint
+    name: RELEASE SAVEPOINT
+    doc: https://www.sqlite.org/lang_savepoint.html
+    tier: high
+    probes:
+      - { id: release_savepoint, sql: "RELEASE SAVEPOINT sp;" }
+      - { id: release, sql: "RELEASE sp;" }
+
+  - id: explain
+    name: EXPLAIN
+    doc: https://www.sqlite.org/lang_explain.html
+    tier: medium
+    probes:
+      - { id: explain_select, sql: "EXPLAIN SELECT * FROM t WHERE a = 1;" }
+      - { id: explain_query_plan, sql: "EXPLAIN QUERY PLAN SELECT * FROM t JOIN u ON t.a = u.a;" }
+      - { id: explain_dml, sql: "EXPLAIN UPDATE t SET a = 1 WHERE b = 2;" }
+      - { id: explain_query_plan_ddl, sql: "EXPLAIN QUERY PLAN DELETE FROM t WHERE a IN (SELECT a FROM u);" }
+      - { id: explain_create, sql: "EXPLAIN CREATE TABLE t (a INTEGER);" }
+
+  - id: attach
+    name: ATTACH DATABASE
+    doc: https://www.sqlite.org/lang_attach.html
+    tier: medium
+    probes:
+      - { id: attach_database, sql: "ATTACH DATABASE 'other.db' AS other;" }
+      - id: attach_without_database
+        sql: "ATTACH 'other.db' AS other;"
+        note: "the DATABASE keyword is optional in attach-stmt"
+      - { id: attach_memory, sql: "ATTACH DATABASE ':memory:' AS aux1;" }
+      - { id: attach_uri_expression, sql: "ATTACH DATABASE 'file:' || 'data.db' || '?mode=ro' AS ro;" }
+
+  - id: detach
+    name: DETACH DATABASE
+    doc: https://www.sqlite.org/lang_detach.html
+    tier: medium
+    probes:
+      - { id: detach_database, sql: "DETACH DATABASE other;" }
+      - id: detach_without_database
+        sql: "DETACH other;"
+        note: "the DATABASE keyword is optional in detach-stmt"
+
+  - id: analyze
+    name: ANALYZE
+    doc: https://www.sqlite.org/lang_analyze.html
+    tier: medium
+    probes:
+      - { id: all, sql: "ANALYZE;" }
+      - { id: schema, sql: "ANALYZE main;" }
+      - { id: table_or_index, sql: "ANALYZE t;" }
+      - { id: schema_table, sql: "ANALYZE main.t;" }
+
+  - id: reindex
+    name: REINDEX
+    doc: https://www.sqlite.org/lang_reindex.html
+    tier: low
+    probes:
+      - { id: all, sql: "REINDEX;" }
+      - { id: collation_or_object, sql: "REINDEX NOCASE;" }
+      - { id: schema_object, sql: "REINDEX main.idx;" }
+      - id: expressions
+        sql: "REINDEX EXPRESSIONS;"
+        note: "new in SQLite 3.53.0: rebuilds all indexes on expressions"
+
+  - id: vacuum
+    name: VACUUM
+    doc: https://www.sqlite.org/lang_vacuum.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "VACUUM;" }
+      - { id: schema, sql: "VACUUM main;" }
+      - { id: into, sql: "VACUUM INTO 'backup.db';" }
+      - { id: schema_into, sql: "VACUUM main INTO 'backup.db';" }
+
+  - id: pragma
+    name: PRAGMA
+    doc: https://www.sqlite.org/pragma.html
+    tier: medium
+    probes:
+      - { id: query, sql: "PRAGMA foreign_keys;" }
+      - { id: assign_keyword, sql: "PRAGMA foreign_keys = ON;" }
+      - { id: assign_number, sql: "PRAGMA cache_size = -2000;" }
+      - { id: assign_string, sql: "PRAGMA encoding = 'UTF-8';" }
+      - { id: schema_qualified_assign, sql: "PRAGMA main.journal_mode = WAL;" }
+      - { id: call_form, sql: "PRAGMA table_info(t);" }
+      - { id: schema_call_form_string, sql: "PRAGMA main.index_info('idx');" }
+      - { id: table_valued_function, sql: "SELECT name FROM pragma_table_info('t') WHERE pk > 0;" }
+    examples:
+      - "PRAGMA index_info('idx52');"
+      - "SELECT * FROM pragma_index_info('idx52');"
+      - |-
+        SELECT DISTINCT m.name || '.' || ii.name AS 'indexed-columns'
+          FROM sqlite_schema AS m,
+               pragma_index_list(m.name) AS il,
+               pragma_index_info(il.name) AS ii
+         WHERE m.type='table'
+         ORDER BY 1;
+      - "PRAGMA main.locking_mode=EXCLUSIVE;"
+
+expressions:
+  - id: numeric_literals
+    name: Numeric literals
+    doc: https://www.sqlite.org/lang_expr.html
+    tier: high
+    probes:
+      - { id: integer, sql: "SELECT 42;" }
+      - { id: decimal, sql: "SELECT 3.14, .5, 5.;" }
+      - { id: exponent, sql: "SELECT 1e10, 1.5E-3, 2e+4;" }
+      - { id: hexadecimal, sql: "SELECT 0x1F, 0XFF;" }
+      - id: digit_separators
+        sql: "SELECT 1_000_000, 3.141_592, 0xFF_FF;"
+        note: "single underscores between digits, SQLite 3.46.0 and later"
+      - { id: signed, sql: "SELECT -1, +2.5;" }
+
+  - id: string_literals
+    name: String literals
+    doc: https://www.sqlite.org/lang_expr.html
+    tier: high
+    probes:
+      - { id: single_quoted, sql: "SELECT 'hello';" }
+      - { id: doubled_quote_escape, sql: "SELECT 'it''s';" }
+      - { id: empty, sql: "SELECT '';" }
+      - { id: multiline, sql: "SELECT 'line1\nline2';" }
+
+  - id: blob_literals
+    name: BLOB literals
+    doc: https://www.sqlite.org/lang_expr.html
+    tier: high
+    probes:
+      - { id: upper_x, sql: "SELECT X'53514C697465';" }
+      - { id: lower_x, sql: "SELECT x'0a';" }
+      - { id: empty_blob, sql: "SELECT x'';" }
+
+  - id: keyword_literals
+    name: NULL, TRUE, FALSE and CURRENT_* literals
+    doc: https://www.sqlite.org/lang_expr.html
+    tier: high
+    probes:
+      - { id: null_literal, sql: "SELECT NULL;" }
+      - { id: booleans, sql: "SELECT TRUE, FALSE;" }
+      - { id: current_time_date_timestamp, sql: "SELECT CURRENT_TIME, CURRENT_DATE, CURRENT_TIMESTAMP;" }
+
+  - id: parameters
+    name: Parameters
+    doc: https://www.sqlite.org/lang_expr.html
+    tier: high
+    probes:
+      - { id: question_mark, sql: "SELECT * FROM t WHERE a = ? AND b = ?;" }
+      - { id: numbered, sql: "SELECT * FROM t WHERE a = ?1 AND b = ?2;" }
+      - { id: colon_named, sql: "SELECT * FROM t WHERE a = :a;" }
+      - { id: at_named, sql: "SELECT * FROM t WHERE a = @a;" }
+      - { id: dollar_named, sql: "SELECT * FROM t WHERE a = $a;" }
+      - id: dollar_tcl_form
+        sql: "SELECT * FROM t WHERE a = $ns::var(idx);"
+        note: "lang_expr.html: the $AAAA name may include :: and a (...) suffix (Tcl variable syntax)"
+
+  - id: column_references
+    name: Column references
+    doc: https://www.sqlite.org/lang_expr.html
+    tier: high
+    probes:
+      - { id: column, sql: "SELECT a FROM t;" }
+      - { id: table_column, sql: "SELECT t.a FROM t;" }
+      - { id: schema_table_column, sql: "SELECT main.t.a FROM main.t;" }
+
+  - id: unary_operators
+    name: Unary operators
+    doc: https://www.sqlite.org/lang_expr.html
+    tier: high
+    probes:
+      - { id: bitwise_not, sql: "SELECT ~a FROM t;" }
+      - { id: plus_minus, sql: "SELECT +a, -a, - -a FROM t;" }
+      - { id: not, sql: "SELECT NOT a FROM t;" }
+
+  - id: arithmetic_bitwise_operators
+    name: Arithmetic and bitwise operators
+    doc: https://www.sqlite.org/lang_expr.html
+    tier: high
+    probes:
+      - { id: multiplicative, sql: "SELECT a * b, a / b, a % b FROM t;" }
+      - { id: additive, sql: "SELECT a + b, a - b FROM t;" }
+      - { id: bitwise, sql: "SELECT a & b, a | b, a << 2, a >> 1 FROM t;" }
+      - { id: precedence, sql: "SELECT a + b * c - d / 2 % 3 << 1 & 7 | 8 FROM t;" }
+
+  - id: concat_and_extract_operators
+    name: Concatenation and JSON extract operators
+    doc: https://www.sqlite.org/lang_expr.html
+    tier: high
+    probes:
+      - { id: concat, sql: "SELECT a || '-' || b FROM t;" }
+      - { id: arrow, sql: "SELECT j -> '$.a' FROM t;" }
+      - { id: double_arrow, sql: "SELECT j ->> '$.a.b[0]' FROM t;" }
+      - { id: arrow_label_and_index, sql: "SELECT j -> 'a', j ->> 2 FROM t;" }
+
+  - id: comparison_operators
+    name: Comparison operators
+    doc: https://www.sqlite.org/lang_expr.html
+    tier: high
+    probes:
+      - { id: relational, sql: "SELECT a < b, a > b, a <= b, a >= b FROM t;" }
+      - { id: equality, sql: "SELECT a = b, a == b, a <> b, a != b FROM t;" }
+      - { id: is, sql: "SELECT a IS b, a IS NOT b FROM t;" }
+      - { id: is_distinct_from, sql: "SELECT a IS DISTINCT FROM b, a IS NOT DISTINCT FROM b FROM t;" }
+
+  - id: null_tests
+    name: NULL tests
+    doc: https://www.sqlite.org/lang_expr.html
+    tier: high
+    probes:
+      - { id: is_null, sql: "SELECT * FROM t WHERE a IS NULL AND b IS NOT NULL;" }
+      - { id: isnull_notnull, sql: "SELECT a ISNULL, b NOTNULL FROM t;" }
+      - { id: not_null_postfix, sql: "SELECT * FROM t WHERE a NOT NULL;" }
+
+  - id: logical_operators
+    name: Logical operators
+    doc: https://www.sqlite.org/lang_expr.html
+    tier: high
+    probes:
+      - { id: and_or_not, sql: "SELECT * FROM t WHERE a = 1 AND (b = 2 OR NOT c = 3);" }
+
+  - id: pattern_matching
+    name: LIKE, GLOB, REGEXP and MATCH operators
+    doc: https://www.sqlite.org/lang_expr.html
+    tier: high
+    probes:
+      - { id: like, sql: "SELECT * FROM t WHERE a LIKE 'ab%';" }
+      - { id: not_like, sql: "SELECT * FROM t WHERE a NOT LIKE '_b%';" }
+      - { id: like_escape, sql: "SELECT * FROM t WHERE a LIKE '10\\%%' ESCAPE '\\';" }
+      - { id: glob, sql: "SELECT * FROM t WHERE a GLOB '*.txt' AND b NOT GLOB '[0-9]*';" }
+      - id: regexp
+        sql: "SELECT * FROM t WHERE a REGEXP '^[a-z]+$' AND b NOT REGEXP 'x';"
+        note: "REGEXP is parsed by the core; a regexp() function must be supplied by the application or extension at run time"
+      - id: match
+        sql: "SELECT * FROM docs WHERE docs MATCH 'sqlite';"
+        note: "MATCH is parsed by the core; the operator is implemented by virtual tables such as FTS5"
+
+  - id: between
+    name: BETWEEN
+    doc: https://www.sqlite.org/lang_expr.html
+    tier: high
+    probes:
+      - { id: between, sql: "SELECT * FROM t WHERE a BETWEEN 1 AND 10;" }
+      - { id: not_between, sql: "SELECT * FROM t WHERE a NOT BETWEEN b AND c + 1;" }
+
+  - id: in_operator
+    name: IN and NOT IN
+    doc: https://www.sqlite.org/lang_expr.html
+    tier: high
+    probes:
+      - { id: list, sql: "SELECT * FROM t WHERE a IN (1, 2, 3);" }
+      - { id: not_in_list, sql: "SELECT * FROM t WHERE a NOT IN ('x', 'y');" }
+      - { id: subquery, sql: "SELECT * FROM t WHERE a IN (SELECT a FROM u);" }
+      - { id: empty_list, sql: "SELECT * FROM t WHERE a IN ();" }
+      - { id: table_name, sql: "SELECT * FROM t WHERE a IN u;" }
+      - { id: schema_table_name, sql: "SELECT * FROM t WHERE a NOT IN main.u;" }
+      - { id: table_function, sql: "SELECT * FROM t WHERE a IN json_each('[1,2]');" }
+      - id: schema_table_function
+        sql: "SELECT * FROM t WHERE a IN main.generate_series(1, 10);"
+        note: "expr diagram: expr [NOT] IN schema-name . table-function ( expr, ... )"
+
+  - id: exists
+    name: EXISTS
+    doc: https://www.sqlite.org/lang_expr.html
+    tier: high
+    probes:
+      - { id: exists, sql: "SELECT * FROM t WHERE EXISTS (SELECT 1 FROM u WHERE u.a = t.a);" }
+      - { id: not_exists, sql: "SELECT * FROM t WHERE NOT EXISTS (SELECT 1 FROM u WHERE u.a = t.a);" }
+
+  - id: scalar_subquery
+    name: Scalar subqueries
+    doc: https://www.sqlite.org/lang_expr.html
+    tier: high
+    probes:
+      - { id: in_select_list, sql: "SELECT a, (SELECT max(b) FROM u WHERE u.a = t.a) FROM t;" }
+      - { id: in_where, sql: "SELECT * FROM t WHERE a = (SELECT min(a) FROM u);" }
+
+  - id: case
+    name: CASE expressions
+    doc: https://www.sqlite.org/lang_expr.html
+    tier: high
+    probes:
+      - { id: simple, sql: "SELECT CASE a WHEN 1 THEN 'one' WHEN 2 THEN 'two' ELSE 'many' END FROM t;" }
+      - { id: searched, sql: "SELECT CASE WHEN a > 0 THEN 'pos' WHEN a < 0 THEN 'neg' END FROM t;" }
+
+  - id: cast
+    name: CAST expressions
+    doc: https://www.sqlite.org/lang_expr.html
+    tier: high
+    probes:
+      - { id: basic, sql: "SELECT CAST(a AS INTEGER), CAST(b AS TEXT), CAST(c AS REAL), CAST(d AS BLOB), CAST(e AS NUMERIC) FROM t;" }
+      - { id: parameterized_type, sql: "SELECT CAST(a AS VARCHAR(10)), CAST(b AS DECIMAL(10, 2)) FROM t;" }
+      - { id: multiword_type, sql: "SELECT CAST(a AS UNSIGNED BIG INT), CAST(b AS DOUBLE PRECISION) FROM t;" }
+
+  - id: collate
+    name: COLLATE operator
+    doc: https://www.sqlite.org/lang_expr.html
+    tier: high
+    probes:
+      - { id: postfix, sql: "SELECT * FROM t WHERE a = b COLLATE NOCASE;" }
+      - { id: rtrim, sql: "SELECT a COLLATE RTRIM FROM t ORDER BY 1;" }
+
+  - id: row_values
+    name: Row values
+    doc: https://www.sqlite.org/rowvalue.html
+    tier: high
+    probes:
+      - { id: equality, sql: "SELECT * FROM t WHERE (a, b) = (1, 2);" }
+      - { id: less_than, sql: "SELECT * FROM t WHERE (a, b) > (?1, ?2) ORDER BY a, b LIMIT 7;" }
+      - { id: in_subquery, sql: "SELECT * FROM t WHERE (a, b) IN (SELECT x, y FROM u);" }
+      - { id: between, sql: "SELECT * FROM t WHERE (a, b, c) BETWEEN (2015, 9, 12) AND (2016, 9, 12);" }
+      - { id: compare_subquery, sql: "SELECT (1, 2, 3) = (SELECT a, b, c FROM t);" }
+    examples:
+      - |-
+        SELECT * FROM info
+         WHERE (year,month,day) BETWEEN (2015,9,12) AND (2016,9,12);
+      - |-
+        SELECT ordid, prodid, qty
+          FROM item
+         WHERE (prodid, qty) IN (SELECT prodid, qty
+                                   FROM item
+                                  WHERE ordid = 365);
+      - |-
+        SELECT t1.ordid, t1.prodid, t1.qty
+          FROM item AS t1, item AS t2
+         WHERE (t1.prodid,t1.qty) = (t2.prodid,t2.qty)
+           AND t2.ordid=365;
+      - |-
+        UPDATE tab3 
+           SET (a,b,c) = (SELECT x,y,z
+                            FROM tab4
+                           WHERE tab4.w=tab3.d)
+         WHERE tab3.e BETWEEN 55 AND 66;
+      - "UPDATE tab1 SET (a,b)=(b,a);"
+
+  - id: raise_function
+    name: RAISE function
+    doc: https://www.sqlite.org/lang_createtrigger.html
+    tier: medium
+    probes:
+      - { id: ignore, sql: "CREATE TRIGGER tr BEFORE INSERT ON t BEGIN SELECT RAISE(IGNORE); END;" }
+      - { id: rollback, sql: "CREATE TRIGGER tr BEFORE INSERT ON t BEGIN SELECT RAISE(ROLLBACK, 'no'); END;" }
+      - { id: abort_when, sql: "CREATE TRIGGER tr BEFORE UPDATE ON t BEGIN SELECT CASE WHEN new.a < 0 THEN RAISE(ABORT, 'negative') END; END;" }
+      - { id: fail_expression_message, sql: "CREATE TRIGGER tr BEFORE DELETE ON t BEGIN SELECT RAISE(FAIL, 'cannot delete ' || old.a); END;" }
+
+  - id: function_calls
+    name: Function call syntax
+    doc: https://www.sqlite.org/lang_expr.html
+    tier: high
+    probes:
+      - { id: simple, sql: "SELECT abs(a), coalesce(a, b, 0), iif(a > 0, 'p', 'n') FROM t;" }
+      - { id: no_arguments, sql: "SELECT random(), changes(), last_insert_rowid();" }
+      - { id: star_argument, sql: "SELECT count(*) FROM t;" }
+      - { id: keyword_named_functions, sql: "SELECT glob('*a', a), like('a%', a), replace(a, 'x', 'y'), date('now') FROM t;" }
+      - { id: nested, sql: "SELECT upper(substr(trim(a), 1, 3)) FROM t;" }
+
+  - id: core_functions
+    name: Core scalar functions
+    doc: https://www.sqlite.org/lang_corefunc.html
+    tier: medium
+    probes:
+      - { id: string_functions, sql: "SELECT length(a), lower(a), ltrim(a, ' '), instr(a, 'x'), substring(a, 2), printf('%d-%s', 1, a), format('%5.2f', b), concat_ws(',', a, b), unhex('41'), hex(a) FROM t;" }
+      - { id: misc_functions, sql: "SELECT ifnull(a, 0), nullif(a, b), typeof(a), quote(a), randomblob(16), zeroblob(4), likelihood(a = 1, 0.5), unlikely(a = 1), sqlite_version(), max(a, b, c), min(a, b) FROM t;" }
+      - id: if_function
+        sql: "SELECT if(a > 0, 'p', a < 0, 'n', 'z') FROM t;"
+        note: "lang_corefunc.html: if() is an alias for iif() and accepts additional condition/value pairs"
+
+  - id: date_time_functions
+    name: Date and time functions
+    doc: https://www.sqlite.org/lang_datefunc.html
+    tier: medium
+    probes:
+      - { id: functions, sql: "SELECT date('now'), time('now', 'localtime'), datetime('now', '+1 day'), julianday('2024-01-01'), unixepoch('now', 'subsec'), strftime('%Y-%m-%d', 'now'), timediff('2023-02-15', '2023-03-15');" }
+      - { id: modifiers, sql: "SELECT date('now', 'start of month', '+1 month', '-1 day');" }
+    examples:
+      - "SELECT timediff('2023-02-15','2023-03-15');"
+      - "SELECT date('now','start of month','+1 month','-1 day');"
+      - "SELECT datetime(1092941466, 'unixepoch', 'localtime');"
+      - "SELECT julianday('now') - julianday('1776-07-04');"
+      - "SELECT unixepoch() - unixepoch('2004-01-01 02:34:56');"
+
+  - id: math_functions
+    name: Math functions
+    doc: https://www.sqlite.org/lang_mathfunc.html
+    tier: medium
+    probes:
+      - { id: functions, sql: "SELECT ceil(a), floor(a), trunc(a), ln(a), log(a), log(2, a), log10(a), pow(a, 2), power(a, 2), sqrt(a), mod(a, 3), pi(), sin(a), atan2(a, b), degrees(a), radians(a) FROM t;" }
+
+  - id: json_functions
+    name: JSON functions
+    doc: https://www.sqlite.org/json1.html
+    tier: medium
+    probes:
+      - { id: scalar_functions, sql: "SELECT json('{\"a\":1}'), json_extract(j, '$.a'), json_array(1, 2), json_object('a', 1), json_set(j, '$.b', 2), json_valid(j), jsonb(j) FROM t;" }
+      - { id: aggregate_functions, sql: "SELECT json_group_array(a), json_group_object(a, b) FROM t;" }
+      - { id: table_valued, sql: "SELECT key, value FROM t, json_each(t.j) WHERE json_each.type = 'integer';" }
+      - { id: json_tree_path, sql: "SELECT fullkey FROM t, json_tree(t.j, '$.partlist');" }
+      - { id: nested_extract_operators, sql: "SELECT json_object('ex', '[52,3.14159]' -> '$');" }
+    examples:
+      - |-
+        SELECT DISTINCT user.name
+          FROM user, json_each(user.phone)
+         WHERE json_each.value LIKE '704-%';
+      - |-
+        SELECT name FROM user WHERE phone LIKE '704-%'
+        UNION
+        SELECT user.name
+          FROM user, json_each(user.phone)
+         WHERE json_valid(user.phone)
+           AND json_each.value LIKE '704-%';
+      - |-
+        SELECT big.rowid, fullkey, value
+          FROM big, json_tree(big.json)
+         WHERE json_tree.type NOT IN ('object','array');
+      - |-
+        SELECT big.rowid, fullkey, atom
+          FROM big, json_tree(big.json)
+         WHERE atom IS NOT NULL;
+      - |-
+        SELECT DISTINCT json_extract(big.json,'$.id')
+          FROM big, json_tree(big.json, '$.partlist')
+         WHERE json_tree.key='uuid'
+           AND json_tree.value='6fa5181e-5721-11e5-a04e-57f3d7b32808';
+
+  - id: aggregate_syntax
+    name: Aggregate function syntax
+    doc: https://www.sqlite.org/lang_aggfunc.html
+    tier: high
+    probes:
+      - { id: basic, sql: "SELECT count(*), count(a), avg(a), sum(a), total(a), min(a), max(a) FROM t;" }
+      - { id: distinct, sql: "SELECT count(DISTINCT a), group_concat(DISTINCT b) FROM t;" }
+      - { id: filter, sql: "SELECT count(*) FILTER (WHERE a > 0) FROM t;" }
+      - { id: order_by_argument, sql: "SELECT group_concat(a, ',' ORDER BY b DESC) FROM t;" }
+      - { id: string_agg_order_by, sql: "SELECT string_agg(a, ';' ORDER BY a COLLATE NOCASE) FROM t;" }
+      - { id: distinct_order_by_filter, sql: "SELECT json_group_array(DISTINCT a ORDER BY a) FILTER (WHERE a IS NOT NULL) FROM t;" }
+      - { id: statistics_functions, sql: "SELECT median(a), percentile(a, 90), percentile_cont(a, 0.5), percentile_disc(a, 0.5) FROM t;" }
+      - id: within_group
+        sql: "SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY a) FROM t;"
+        note: "percentile.html: SQL-standard ordered-set syntax, only with the SQLITE_ENABLE_ORDERED_SET_AGGREGATES compile-time option"
+    examples:
+      - "SELECT sum(x), decimal_sum(x) FROM t1;"
+
+  - id: window_syntax
+    name: Window function syntax
+    doc: https://www.sqlite.org/windowfunctions.html
+    tier: high
+    probes:
+      - { id: over_empty, sql: "SELECT row_number() OVER () FROM t;" }
+      - { id: over_order_by, sql: "SELECT rank() OVER (ORDER BY a DESC NULLS LAST) FROM t;" }
+      - { id: partition_by, sql: "SELECT sum(a) OVER (PARTITION BY b, c ORDER BY d) FROM t;" }
+      - { id: named_window, sql: "SELECT sum(a) OVER w FROM t WINDOW w AS (ORDER BY b);" }
+      - { id: named_window_parenthesized, sql: "SELECT sum(a) OVER (w) FROM t WINDOW w AS (ORDER BY b);" }
+      - { id: base_window_with_frame, sql: "SELECT sum(a) OVER (w ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t WINDOW w AS (PARTITION BY b ORDER BY c);" }
+      - { id: rows_frame, sql: "SELECT sum(a) OVER (ORDER BY b ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;" }
+      - { id: range_frame, sql: "SELECT sum(a) OVER (ORDER BY b RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: range_offset_frame, sql: "SELECT sum(a) OVER (ORDER BY b RANGE BETWEEN 5 PRECEDING AND 5 FOLLOWING) FROM t;" }
+      - { id: groups_frame, sql: "SELECT sum(a) OVER (ORDER BY b GROUPS BETWEEN 1 PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: frame_start_only, sql: "SELECT sum(a) OVER (ORDER BY b ROWS UNBOUNDED PRECEDING), sum(a) OVER (ORDER BY b ROWS 2 PRECEDING), sum(a) OVER (ORDER BY b ROWS CURRENT ROW) FROM t;" }
+      - { id: frame_following_bounds, sql: "SELECT sum(a) OVER (ORDER BY b ROWS BETWEEN 1 FOLLOWING AND 3 FOLLOWING) FROM t;" }
+      - { id: exclude_no_others, sql: "SELECT sum(a) OVER (ORDER BY b ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW EXCLUDE NO OTHERS) FROM t;" }
+      - { id: exclude_current_row, sql: "SELECT sum(a) OVER (ORDER BY b GROUPS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW EXCLUDE CURRENT ROW) FROM t;" }
+      - { id: exclude_group, sql: "SELECT sum(a) OVER (ORDER BY b GROUPS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW EXCLUDE GROUP) FROM t;" }
+      - { id: exclude_ties, sql: "SELECT sum(a) OVER (ORDER BY b GROUPS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW EXCLUDE TIES) FROM t;" }
+      - { id: filter_over, sql: "SELECT group_concat(b, '.') FILTER (WHERE c != 'two') OVER (ORDER BY a) FROM t;" }
+      - { id: builtin_window_functions, sql: "SELECT row_number() OVER w, dense_rank() OVER w, percent_rank() OVER w, cume_dist() OVER w, ntile(4) OVER w, lag(a) OVER w, lead(a, 2, 0) OVER w, first_value(a) OVER w, last_value(a) OVER w, nth_value(a, 3) OVER w FROM t WINDOW w AS (ORDER BY a);" }
+    examples:
+      - |-
+        SELECT x, y, row_number() OVER win1, rank() OVER win2
+        FROM t0
+        WINDOW win1 AS (ORDER BY y RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW),
+               win2 AS (PARTITION BY y ORDER BY x)
+        ORDER BY x;
+      - |-
+        SELECT a, b, group_concat(b, '.') OVER (
+          ORDER BY a ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING
+        ) AS group_concat FROM t1;
+      - |-
+        SELECT c, a, b,
+          group_concat(b, '.') OVER (
+            ORDER BY c GROUPS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW EXCLUDE NO OTHERS
+          ) AS no_others,
+          group_concat(b, '.') OVER (
+            ORDER BY c GROUPS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW EXCLUDE CURRENT ROW
+          ) AS current_row,
+          group_concat(b, '.') OVER (
+            ORDER BY c GROUPS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW EXCLUDE GROUP
+          ) AS grp,
+          group_concat(b, '.') OVER (
+            ORDER BY c GROUPS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW EXCLUDE TIES
+          ) AS ties
+        FROM t1 ORDER BY c, a;
+      - |-
+        SELECT c, a, b, group_concat(b, '.') FILTER (WHERE c!='two') OVER (
+          ORDER BY a
+        ) AS group_concat
+        FROM t1 ORDER BY a;
+      - |-
+        SELECT a                        AS a,
+               row_number() OVER win    AS row_number,
+               rank() OVER win          AS rank,
+               dense_rank() OVER win    AS dense_rank,
+               percent_rank() OVER win  AS percent_rank,
+               cume_dist() OVER win     AS cume_dist
+        FROM t2
+        WINDOW win AS (ORDER BY a);
+
+  - id: identifier_quoting
+    name: Identifier quoting
+    doc: https://www.sqlite.org/lang_keywords.html
+    tier: high
+    probes:
+      - { id: double_quotes, sql: "SELECT \"select\" FROM \"table\";" }
+      - { id: square_brackets, sql: "SELECT [select] FROM [my table];" }
+      - { id: backticks, sql: "SELECT `select` FROM `my table`;" }
+      - { id: doubled_double_quote, sql: "SELECT \"a\"\"b\" FROM t;" }
+      - id: single_quoted_identifier_fallback
+        sql: "CREATE TABLE 'key' ('glob' INT);"
+        note: "lang_keywords.html: a single-quoted keyword is taken as an identifier where a string literal is not allowed (legacy compatibility)"
+      - { id: non_reserved_keyword_names, sql: "SELECT key, action, temp, rowid FROM t;" }
+
+  - id: comments
+    name: Comments
+    doc: https://www.sqlite.org/lang_comment.html
+    tier: high
+    probes:
+      - { id: line_comment, sql: "SELECT 1; -- trailing comment" }
+      - { id: block_comment, sql: "SELECT /* inline */ 1;" }
+      - { id: multiline_block_comment, sql: "/* first\n   second */ SELECT 1;" }
+      - id: unterminated_block_comment
+        sql: "SELECT 1; /* runs to end of input"
+        note: "lang_comment.html: a C-style comment may run to end-of-input"
+

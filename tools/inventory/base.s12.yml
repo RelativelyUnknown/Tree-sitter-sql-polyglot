@@ -1,0 +1,119 @@
+dialect: base
+engine: ISO SQL
+version: "SQL:2016"
+source: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html
+
+statements:
+  - id: drop_type
+    name: DROP TYPE
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_59_drop_data_type_statement
+    tier: medium
+    probes:
+      - { id: restrict, sql: "DROP TYPE t RESTRICT;" }
+      - { id: cascade, sql: "DROP TYPE s.t CASCADE;" }
+
+  - id: alter_routine
+    name: ALTER ROUTINE
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_61_alter_routine_statement
+    tier: medium
+    probes:
+      - { id: specific_routine_language, sql: "ALTER SPECIFIC ROUTINE r LANGUAGE SQL RESTRICT;" }
+      - { id: function_with_params, sql: "ALTER FUNCTION f(INTEGER) NO SQL RESTRICT;" }
+      - { id: procedure_dynamic_result_sets, sql: "ALTER PROCEDURE p(INTEGER) DYNAMIC RESULT SETS 2 RESTRICT;" }
+      - { id: null_call, sql: "ALTER FUNCTION f(INTEGER) RETURNS NULL ON NULL INPUT RESTRICT;" }
+      - { id: parameter_style, sql: "ALTER ROUTINE r(INTEGER) PARAMETER STYLE SQL RESTRICT;" }
+      - { id: name_external, sql: "ALTER FUNCTION f(INTEGER) NAME 'ext_f' RESTRICT;" }
+
+  - id: create_sequence
+    name: CREATE SEQUENCE
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_72_sequence_generator_definition
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE SEQUENCE s;" }
+      - { id: as_type, sql: "CREATE SEQUENCE s AS INTEGER;" }
+      - { id: start_with, sql: "CREATE SEQUENCE s START WITH 10;" }
+      - { id: increment_by, sql: "CREATE SEQUENCE s INCREMENT BY -2;" }
+      - { id: maxvalue, sql: "CREATE SEQUENCE s MAXVALUE 100;" }
+      - { id: no_maxvalue, sql: "CREATE SEQUENCE s NO MAXVALUE;" }
+      - { id: minvalue, sql: "CREATE SEQUENCE s MINVALUE 1;" }
+      - { id: no_minvalue, sql: "CREATE SEQUENCE s NO MINVALUE;" }
+      - { id: cycle, sql: "CREATE SEQUENCE s CYCLE;" }
+      - { id: no_cycle, sql: "CREATE SEQUENCE s NO CYCLE;" }
+      - { id: all_options, sql: "CREATE SEQUENCE sch.s AS BIGINT START WITH 1 INCREMENT BY 1 MINVALUE 1 MAXVALUE 1000 CYCLE;" }
+
+  - id: alter_sequence
+    name: ALTER SEQUENCE
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_73_alter_sequence_generator_statement
+    tier: medium
+    probes:
+      - { id: restart, sql: "ALTER SEQUENCE s RESTART;" }
+      - { id: restart_with, sql: "ALTER SEQUENCE s RESTART WITH 5;" }
+      - { id: increment_by, sql: "ALTER SEQUENCE s INCREMENT BY 2;" }
+      - { id: maxvalue, sql: "ALTER SEQUENCE s MAXVALUE 500;" }
+      - { id: no_minvalue, sql: "ALTER SEQUENCE s NO MINVALUE;" }
+      - { id: cycle, sql: "ALTER SEQUENCE s CYCLE;" }
+      - { id: multiple_options, sql: "ALTER SEQUENCE s RESTART WITH 1 INCREMENT BY 1 NO CYCLE;" }
+
+  - id: drop_sequence
+    name: DROP SEQUENCE
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_74_drop_sequence_generator_statement
+    tier: medium
+    probes:
+      - { id: restrict, sql: "DROP SEQUENCE s RESTRICT;" }
+      - { id: cascade, sql: "DROP SEQUENCE sch.s CASCADE;" }
+
+  - id: grant_privilege
+    name: GRANT (privileges)
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_12_2_grant_privilege_statement
+    tier: medium
+    probes:
+      - { id: select, sql: "GRANT SELECT ON t TO u;" }
+      - { id: all_privileges, sql: "GRANT ALL PRIVILEGES ON TABLE t TO u;" }
+      - { id: multiple_privileges_grantees, sql: "GRANT SELECT, INSERT, DELETE ON t TO u1, u2;" }
+      - { id: column_privileges, sql: "GRANT UPDATE (c1, c2), REFERENCES (c1) ON t TO u;" }
+      - { id: public_grantee, sql: "GRANT SELECT ON t TO PUBLIC;" }
+      - { id: with_hierarchy_option, sql: "GRANT SELECT ON t TO u WITH HIERARCHY OPTION;" }
+      - { id: with_grant_option, sql: "GRANT SELECT ON t TO u WITH GRANT OPTION;" }
+      - { id: granted_by, sql: "GRANT SELECT ON t TO u GRANTED BY CURRENT_USER;" }
+      - { id: execute_routine, sql: "GRANT EXECUTE ON SPECIFIC FUNCTION f TO u;" }
+      - { id: usage_sequence, sql: "GRANT USAGE ON SEQUENCE s TO u;" }
+      - { id: usage_domain, sql: "GRANT USAGE ON DOMAIN d TO u;" }
+
+  - id: create_role
+    name: CREATE ROLE
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_12_4_role_definition
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE ROLE r;" }
+      - { id: with_admin_current_user, sql: "CREATE ROLE r WITH ADMIN CURRENT_USER;" }
+      - { id: with_admin_current_role, sql: "CREATE ROLE r WITH ADMIN CURRENT_ROLE;" }
+
+  - id: grant_role
+    name: GRANT (roles)
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_12_5_grant_role_statement
+    tier: medium
+    probes:
+      - { id: basic, sql: "GRANT r TO u;" }
+      - { id: multiple_roles_grantees, sql: "GRANT r1, r2 TO u1, u2;" }
+      - { id: with_admin_option, sql: "GRANT r TO u WITH ADMIN OPTION;" }
+      - { id: granted_by, sql: "GRANT r TO u GRANTED BY CURRENT_ROLE;" }
+
+  - id: drop_role
+    name: DROP ROLE
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_12_6_drop_role_statement
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP ROLE r;" }
+
+  - id: revoke
+    name: REVOKE
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_12_7_revoke_statement
+    tier: medium
+    probes:
+      - { id: privilege_restrict, sql: "REVOKE SELECT ON t FROM u RESTRICT;" }
+      - { id: privilege_cascade, sql: "REVOKE ALL PRIVILEGES ON t FROM u1, u2 CASCADE;" }
+      - { id: grant_option_for, sql: "REVOKE GRANT OPTION FOR SELECT ON t FROM u CASCADE;" }
+      - { id: hierarchy_option_for, sql: "REVOKE HIERARCHY OPTION FOR SELECT ON t FROM u RESTRICT;" }
+      - { id: privilege_granted_by, sql: "REVOKE SELECT ON t FROM u GRANTED BY CURRENT_USER RESTRICT;" }
+      - { id: role_restrict, sql: "REVOKE r FROM u RESTRICT;" }
+      - { id: role_admin_option_for, sql: "REVOKE ADMIN OPTION FOR r1, r2 FROM u1, u2 GRANTED BY CURRENT_ROLE CASCADE;" }

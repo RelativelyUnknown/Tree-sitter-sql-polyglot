@@ -1,0 +1,87 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: table_valued_function
+    name: Table-valued function (TVF) invocation
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-tvf
+    tier: high
+    probes:
+      - id: no_arguments
+        sql: "SELECT * FROM f();"
+      - id: one_argument
+        sql: "SELECT * FROM range(10);"
+      - id: multiple_arguments
+        sql: "SELECT * FROM range(5, 10);"
+      - id: expression_argument
+        sql: "SELECT * FROM range(6 + cos(3));"
+      - id: with_table_alias
+        sql: "SELECT * FROM range(5, 8) AS test;"
+      - id: alias_without_as
+        sql: "SELECT * FROM range(5, 8) test;"
+      - id: alias_with_column_aliases
+        sql: "SELECT * FROM range(5, 8) AS test(c1);"
+      - id: explode
+        sql: "SELECT * FROM explode(array(10, 20));"
+      - id: inline
+        sql: "SELECT * FROM inline(array(struct(1, 'a'), struct(2, 'b')));"
+      - id: stack
+        sql: "SELECT * FROM stack(2, 1, 2, 3);"
+      - id: lateral_correlation
+        sql: "SELECT table_func.res FROM VALUES (10), (20) AS S(c1), LATERAL table_func(c1);"
+      - id: lateral_explode_with_aliases
+        sql: "SELECT * FROM VALUES (1), (2) AS t1(c1), LATERAL explode(ARRAY(3, 4)) AS t2(c2);"
+      - id: qualified_function_name
+        sql: "SELECT * FROM main.default.table_func(5);"
+      - id: named_argument
+        sql: "SELECT order_priority, measure(discounted_revenue) FROM discounted_sales_metrics(discount => 0.15) GROUP BY ALL;"
+        note: Parameterized metric view invoked as a table-valued function with a named argument (Databricks 18.2 and above).
+    examples:
+      - "SELECT * FROM range(6 + cos(3));"
+      - "SELECT * FROM range(5, 8) AS test;"
+      - "SELECT * FROM VALUES (1), (2) AS t1(c1), LATERAL explode(ARRAY(3, 4)) AS t2(c2);"
+
+  - id: cte
+    name: Common table expression (CTE)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-cte
+    tier: high
+    probes:
+      - id: basic
+        sql: "WITH t AS (SELECT 1) SELECT * FROM t;"
+      - id: column_list
+        sql: "WITH t (x, y) AS (SELECT 1, 2) SELECT * FROM t;"
+      - id: without_as
+        sql: "WITH t (SELECT 1) SELECT * FROM t;"
+        note: The syntax block makes AS optional ([ AS ] before the parenthesized query).
+      - id: multiple_ctes
+        sql: "WITH t AS (SELECT 1), t2 AS (SELECT 2) SELECT * FROM t, t2;"
+      - id: cte_references_earlier_cte
+        sql: "WITH t AS (SELECT 1 AS c), t2 AS (SELECT c + 1 AS d FROM t) SELECT * FROM t2;"
+      - id: nested_in_cte_definition
+        sql: "WITH t AS (WITH t2 AS (SELECT 1) SELECT * FROM t2) SELECT * FROM t;"
+      - id: nested_in_from_subquery
+        sql: "SELECT max(c) FROM (WITH t (c) AS (SELECT 1) SELECT * FROM t);"
+      - id: nested_in_scalar_subquery
+        sql: "SELECT (WITH t AS (SELECT 1) SELECT * FROM t);"
+      - id: in_create_view
+        sql: "CREATE VIEW v AS WITH t (a, b, c, d) AS (SELECT 1, 2, 3, 4) SELECT * FROM t;"
+      - id: with_union_body
+        sql: "WITH t AS (SELECT 1 AS c UNION ALL SELECT 2) SELECT * FROM t;"
+      - id: before_insert_select
+        sql: "INSERT INTO t2 WITH s AS (SELECT 1) SELECT * FROM s;"
+      - id: recursive
+        sql: "WITH RECURSIVE r (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r WHERE n < 10) SELECT * FROM r;"
+      - id: recursive_without_column_list
+        sql: "WITH RECURSIVE r AS (SELECT 1 AS n UNION ALL SELECT n + 1 FROM r WHERE n < 10) SELECT * FROM r;"
+      - id: recursive_max_recursion_level
+        sql: "WITH RECURSIVE r (n) MAX RECURSION LEVEL 200 AS (SELECT 1 UNION ALL SELECT n + 1 FROM r WHERE n < 10) SELECT * FROM r;"
+        note: recursion_limit (MAX RECURSION LEVEL maxLevel) sits between the column list and AS (Databricks 17.0 and above).
+      - id: recursive_with_limit_all
+        sql: "WITH RECURSIVE r (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r) SELECT * FROM r LIMIT ALL;"
+        note: LIMIT ALL lifts the 1,000,000 row cap on recursive results (Databricks Runtime 17.2 and above).
+    examples:
+      - "WITH t (x, y) AS (SELECT 1, 2) SELECT * FROM t WHERE x = 1 AND y = 2;"
+      - "WITH t AS (SELECT 1), t2 AS (WITH t AS (SELECT 2) SELECT * FROM t) SELECT * FROM t2;"
+      - "WITH RECURSIVE r (col) AS (SELECT 'a' UNION ALL SELECT col || char(ascii(substr(col, -1)) + 1) FROM r WHERE LENGTH(col) < 10) SELECT * FROM r;"

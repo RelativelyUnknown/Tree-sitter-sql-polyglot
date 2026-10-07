@@ -1,0 +1,146 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "12.1"
+source: https://www.ibm.com/docs/en/db2/12.1.x?topic=reference-statements
+
+statements:
+  - id: revoke_schema_privileges_and_authorities
+    name: REVOKE (schema privileges and authorities)
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-revoke-schema-privileges-authorities
+    tier: medium
+    probes:
+      - { id: privilege, sql: "REVOKE CREATEIN ON SCHEMA s FROM USER u;" }
+      - { id: all_privileges, sql: "REVOKE ALL PRIVILEGES ON SCHEMA s FROM PUBLIC;" }
+      - { id: multiple_privileges, sql: "REVOKE ALTERIN, DROPIN, SELECTIN ON SCHEMA s FROM USER u1, GROUP g1, ROLE r1;" }
+      - { id: authority, sql: "REVOKE SCHEMAADM, DATAACCESS, ACCESSCTRL, LOAD ON SCHEMA s FROM USER u;" }
+      - { id: current_schema, sql: "REVOKE EXECUTEIN, INSERTIN, UPDATEIN, DELETEIN ON SCHEMA CURRENT SCHEMA FROM u;" }
+      - { id: by_all, sql: "REVOKE CREATEIN ON SCHEMA s FROM USER u BY ALL;" }
+    examples:
+      - "REVOKE CREATEIN ON SCHEMA DEPTIDX FROM USER4;"
+      - "REVOKE DROPIN ON SCHEMA LUNCH FROM USER CHEF, GROUP WAITERS;"
+
+  - id: revoke_sequence_privileges
+    name: REVOKE (sequence privileges)
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-revoke-sequence-privileges
+    tier: medium
+    probes:
+      - { id: usage, sql: "REVOKE USAGE ON SEQUENCE s FROM u;" }
+      - { id: alter_usage, sql: "REVOKE ALTER, USAGE ON SEQUENCE s FROM USER u1, GROUP g1, ROLE r1;" }
+      - { id: public, sql: "REVOKE ALTER ON SEQUENCE s FROM PUBLIC;" }
+      - { id: by_all, sql: "REVOKE USAGE ON SEQUENCE s FROM USER u BY ALL;" }
+      - { id: restrict, sql: "REVOKE USAGE ON SEQUENCE s FROM USER u RESTRICT;" }
+    examples:
+      - "REVOKE USAGE ON SEQUENCE GENERATE_ID FROM ENGLES;"
+      - "REVOKE ALTER ON SEQUENCE GENERATE_ID FROM PUBLIC;"
+      - "REVOKE ALTER, USAGE ON SEQUENCE GENERATE_ID FROM USER PELLOW, USER MLI, GROUP PLANNERS;"
+
+  - id: revoke_table_view_or_nickname_privileges
+    name: REVOKE (table, view, or nickname privileges)
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-revoke-table-view-nickname-privileges
+    tier: medium
+    probes:
+      - { id: select, sql: "REVOKE SELECT ON TABLE t FROM u;" }
+      - { id: without_table_keyword, sql: "REVOKE UPDATE ON t FROM PUBLIC;" }
+      - { id: all_privileges, sql: "REVOKE ALL PRIVILEGES ON TABLE t FROM USER u;" }
+      - { id: multiple_privileges, sql: "REVOKE ALTER, DELETE, INDEX, INSERT, REFERENCES, SELECT, UPDATE ON t FROM USER u1, GROUP g1, ROLE r1;" }
+      - { id: control, sql: "REVOKE CONTROL ON TABLE t FROM u;" }
+      - { id: by_all, sql: "REVOKE SELECT ON TABLE t FROM USER u BY ALL;" }
+    examples:
+      - "REVOKE SELECT ON TABLE EMPLOYEE FROM ENGLES;"
+      - "REVOKE UPDATE ON EMPLOYEE FROM PUBLIC;"
+      - "REVOKE ALL ON EMPLOYEE FROM USER PELLOW, USER MLI, GROUP PLANNERS;"
+
+  - id: set_connection
+    name: SET CONNECTION
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-set-connection
+    tier: medium
+    probes:
+      - { id: server_name, sql: "SET CONNECTION IBMSTHDB;" }
+
+  - id: set_current_degree
+    name: SET CURRENT DEGREE
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-set-current-degree
+    tier: medium
+    probes:
+      - { id: number, sql: "SET CURRENT DEGREE = '1';" }
+      - { id: any, sql: "SET CURRENT DEGREE = 'ANY';" }
+    examples:
+      - "SET CURRENT DEGREE = '1';"
+      - "SET CURRENT DEGREE = 'ANY';"
+
+  - id: set_current_isolation
+    name: SET CURRENT ISOLATION
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-set-current-isolation
+    tier: medium
+    probes:
+      - { id: ur, sql: "SET CURRENT ISOLATION = UR;" }
+      - { id: cs, sql: "SET CURRENT ISOLATION = CS;" }
+      - { id: rs, sql: "SET CURRENT ISOLATION = RS;" }
+      - { id: rr, sql: "SET CURRENT ISOLATION = RR;" }
+      - { id: reset, sql: "SET CURRENT ISOLATION = RESET;" }
+      - { id: to_alternative, sql: "SET CURRENT ISOLATION TO CS;" }
+      - { id: long_name_alternative, sql: "SET CURRENT ISOLATION = READ UNCOMMITTED;" }
+
+  - id: set_current_lock_timeout
+    name: SET CURRENT LOCK TIMEOUT
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-set-current-lock-timeout
+    tier: medium
+    probes:
+      - { id: wait, sql: "SET CURRENT LOCK TIMEOUT = WAIT;" }
+      - { id: not_wait, sql: "SET CURRENT LOCK TIMEOUT NOT WAIT;" }
+      - { id: null_value, sql: "SET CURRENT LOCK TIMEOUT NULL;" }
+      - { id: wait_integer, sql: "SET CURRENT LOCK TIMEOUT = WAIT 30;" }
+      - { id: integer_only, sql: "SET CURRENT LOCK TIMEOUT 30;" }
+    examples:
+      - "SET CURRENT LOCK TIMEOUT 30;"
+      - "SET CURRENT LOCK TIMEOUT NULL;"
+
+  - id: set_current_temporal_business_time
+    name: SET CURRENT TEMPORAL BUSINESS_TIME
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-set-current-temporal-business-time
+    tier: medium
+    probes:
+      - { id: null_value, sql: "SET CURRENT TEMPORAL BUSINESS_TIME = NULL;" }
+      - { id: expression, sql: "SET CURRENT TEMPORAL BUSINESS_TIME = CURRENT TIMESTAMP - 1 MONTH;" }
+      - { id: constant, sql: "SET CURRENT TEMPORAL BUSINESS_TIME = '2020-01-01';" }
+    examples:
+      - "SET CURRENT TEMPORAL BUSINESS_TIME = CURRENT TIMESTAMP - 1 MONTH;"
+      - "SET CURRENT TEMPORAL BUSINESS_TIME = NULL;"
+
+  - id: set_current_temporal_system_time
+    name: SET CURRENT TEMPORAL SYSTEM_TIME
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-set-current-temporal-system-time
+    tier: medium
+    probes:
+      - { id: null_value, sql: "SET CURRENT TEMPORAL SYSTEM_TIME = NULL;" }
+      - { id: expression, sql: "SET CURRENT TEMPORAL SYSTEM_TIME = CURRENT TIMESTAMP - 1 MONTH;" }
+      - { id: constant, sql: "SET CURRENT TEMPORAL SYSTEM_TIME = '2020-01-01-00.00.00';" }
+    examples:
+      - "SET CURRENT TEMPORAL SYSTEM_TIME = CURRENT TIMESTAMP - 1 MONTH;"
+      - "SET CURRENT TEMPORAL SYSTEM_TIME = NULL;"
+
+  - id: set_integrity
+    name: SET INTEGRITY
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-set-integrity
+    tier: medium
+    probes:
+      - { id: set_off, sql: "SET INTEGRITY FOR t OFF;" }
+      - { id: off_no_access_cascade_immediate, sql: "SET INTEGRITY FOR t OFF NO ACCESS CASCADE IMMEDIATE;" }
+      - { id: off_read_access_cascade_deferred, sql: "SET INTEGRITY FOR t OFF READ ACCESS CASCADE DEFERRED;" }
+      - { id: cascade_to_tables, sql: "SET INTEGRITY FOR t OFF CASCADE IMMEDIATE TO ALL TABLES;" }
+      - { id: cascade_to_kinds, sql: "SET INTEGRITY FOR t OFF CASCADE DEFERRED TO MATERIALIZED QUERY TABLES, FOREIGN KEY TABLES, STAGING TABLES;" }
+      - { id: immediate_checked, sql: "SET INTEGRITY FOR t IMMEDIATE CHECKED;" }
+      - { id: checked_not_incremental, sql: "SET INTEGRITY FOR t IMMEDIATE CHECKED NOT INCREMENTAL;" }
+      - { id: checked_force_generated, sql: "SET INTEGRITY FOR t IMMEDIATE CHECKED FORCE GENERATED;" }
+      - { id: checked_prune_full_access, sql: "SET INTEGRITY FOR t IMMEDIATE CHECKED PRUNE FULL ACCESS;" }
+      - { id: checked_for_exception, sql: "SET INTEGRITY FOR t1, t2 IMMEDIATE CHECKED FOR EXCEPTION IN t1 USE e1, IN t2 USE e2;" }
+      - { id: checked_allow_access, sql: "SET INTEGRITY FOR t IMMEDIATE CHECKED ALLOW WRITE ACCESS;" }
+      - { id: checked_generate_identity, sql: "SET INTEGRITY FOR t IMMEDIATE CHECKED GENERATE IDENTITY;" }
+      - { id: checked_query_optimization, sql: "SET INTEGRITY FOR t IMMEDIATE CHECKED ALLOW QUERY OPTIMIZATION USING REFRESH DEFERRED TABLES WITH REFRESH AGE ANY;" }
+      - { id: immediate_unchecked, sql: "SET INTEGRITY FOR t IMMEDIATE UNCHECKED;" }
+      - { id: unchecked_options, sql: "SET INTEGRITY FOR t1 FOREIGN KEY, t2 CHECK, t3 MATERIALIZED QUERY, t4 GENERATED COLUMN, t5 STAGING IMMEDIATE UNCHECKED;" }
+      - { id: unchecked_all, sql: "SET INTEGRITY FOR t ALL IMMEDIATE UNCHECKED;" }
+    examples:
+      - "SET INTEGRITY FOR PARENT OFF NO ACCESS CASCADE IMMEDIATE;"
+      - "SET INTEGRITY FOR PARENT OFF READ ACCESS CASCADE DEFERRED;"
+      - "SET INTEGRITY FOR FACT_TABLE IMMEDIATE CHECKED;"

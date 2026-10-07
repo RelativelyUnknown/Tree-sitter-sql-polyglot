@@ -1,0 +1,195 @@
+dialect: clickhouse
+engine: ClickHouse
+version: "current docs (2026)"
+source: https://clickhouse.com/docs/sql-reference/statements/
+
+statements:
+  - id: drop_row_policy
+    name: DROP ROW POLICY
+    doc: https://clickhouse.com/docs/sql-reference/statements/drop
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP ROW POLICY p ON t;"
+      - id: if_exists_policy_keyword_optional
+        sql: "DROP POLICY IF EXISTS p ON db.t;"
+      - id: multiple
+        sql: "DROP ROW POLICY p1, p2 ON db.t1, db.t2;"
+      - id: on_cluster_from
+        sql: "DROP ROW POLICY p ON t ON CLUSTER c FROM local_directory;"
+
+  - id: truncate
+    name: TRUNCATE TABLE / DATABASE / ALL TABLES
+    doc: https://clickhouse.com/docs/sql-reference/statements/truncate
+    tier: medium
+    probes:
+      - id: table
+        sql: "TRUNCATE TABLE t;"
+      - id: table_full
+        sql: "TRUNCATE TABLE IF EXISTS db.t ON CLUSTER c SYNC;"
+      - id: all_tables
+        sql: "TRUNCATE ALL TABLES FROM IF EXISTS db LIKE '%pattern%' ON CLUSTER c;"
+      - id: tables_not_like
+        sql: "TRUNCATE TABLES FROM db NOT LIKE 'tmp_%';"
+      - id: database
+        sql: "TRUNCATE DATABASE IF EXISTS db ON CLUSTER c;"
+
+  - id: rename
+    name: RENAME TABLE / DATABASE / DICTIONARY
+    doc: https://clickhouse.com/docs/sql-reference/statements/rename
+    tier: medium
+    probes:
+      - id: table
+        sql: "RENAME TABLE db1.t1 TO db2.t2, t3 TO t4 ON CLUSTER c;"
+      - id: table_keyword_omitted
+        sql: "RENAME t1 TO t2;"
+      - id: database
+        sql: "RENAME DATABASE d1 TO d2, d3 TO d4 ON CLUSTER c;"
+      - id: dictionary
+        sql: "RENAME DICTIONARY db0.dict_a TO db1.dict_b ON CLUSTER c;"
+    examples:
+      - "RENAME TABLE table_A TO table_A_bak, table_B TO table_B_bak;"
+      - "RENAME table_A TO table_A_bak, table_B TO table_B_bak;"
+
+  - id: exchange
+    name: EXCHANGE TABLES / DICTIONARIES
+    doc: https://clickhouse.com/docs/sql-reference/statements/exchange
+    tier: medium
+    probes:
+      - id: tables
+        sql: "EXCHANGE TABLES db0.a AND db1.b ON CLUSTER c;"
+      - id: multiple_tables
+        sql: "EXCHANGE TABLES a AND b, c AND d;"
+      - id: dictionaries
+        sql: "EXCHANGE DICTIONARIES db0.dict_a AND db1.dict_b ON CLUSTER c;"
+    examples:
+      - "EXCHANGE TABLES a AND b, c AND d;"
+
+  - id: attach
+    name: ATTACH
+    doc: https://clickhouse.com/docs/sql-reference/statements/attach
+    tier: medium
+    probes:
+      - id: table
+        sql: "ATTACH TABLE IF NOT EXISTS db.t ON CLUSTER c;"
+      - id: dictionary
+        sql: "ATTACH DICTIONARY IF NOT EXISTS db.d;"
+      - id: database
+        sql: "ATTACH DATABASE IF NOT EXISTS db ON CLUSTER c;"
+      - id: from_path
+        sql: "ATTACH TABLE t FROM 'path/to/data/' (s String, n UInt8) ENGINE = File(TSV);"
+      - id: with_uuid
+        sql: "ATTACH TABLE t UUID '123e4567-e89b-12d3-a456-426614174000' (s String, n UInt8) ENGINE = MergeTree ORDER BY n;"
+      - id: as_replicated
+        sql: "ATTACH TABLE db.t AS REPLICATED;"
+      - id: as_not_replicated
+        sql: "ATTACH TABLE db.t AS NOT REPLICATED;"
+    examples:
+      - "ATTACH TABLE test FROM '01188_attach/test' (s String, n UInt8) ENGINE = File (TSV);"
+
+  - id: detach
+    name: DETACH
+    doc: https://clickhouse.com/docs/sql-reference/statements/detach
+    tier: medium
+    probes:
+      - id: table
+        sql: "DETACH TABLE IF EXISTS db.t ON CLUSTER c;"
+      - id: view
+        sql: "DETACH VIEW v;"
+      - id: dictionary
+        sql: "DETACH DICTIONARY db.d;"
+      - id: database
+        sql: "DETACH DATABASE db;"
+      - id: permanently_sync
+        sql: "DETACH TABLE t PERMANENTLY SYNC;"
+    examples:
+      - "DETACH TABLE test;"
+
+  - id: optimize
+    name: OPTIMIZE TABLE
+    doc: https://clickhouse.com/docs/sql-reference/statements/optimize
+    tier: medium
+    probes:
+      - id: basic
+        sql: "OPTIMIZE TABLE db.t ON CLUSTER c;"
+      - id: partition
+        sql: "OPTIMIZE TABLE t PARTITION 202401 FINAL;"
+      - id: partition_id_force
+        sql: "OPTIMIZE TABLE t PARTITION ID '202401' FORCE;"
+      - id: deduplicate
+        sql: "OPTIMIZE TABLE t DEDUPLICATE;"
+      - id: deduplicate_by_columns
+        sql: "OPTIMIZE TABLE t DEDUPLICATE BY colX, colY, colZ;"
+      - id: deduplicate_by_star
+        sql: "OPTIMIZE TABLE t DEDUPLICATE BY *;"
+      - id: deduplicate_by_star_except
+        sql: "OPTIMIZE TABLE t DEDUPLICATE BY * EXCEPT (colX, colY);"
+      - id: deduplicate_by_columns_regex
+        sql: "OPTIMIZE TABLE t DEDUPLICATE BY COLUMNS('column-matched-by-regex') EXCEPT colX;"
+      - id: dry_run_parts
+        sql: "OPTIMIZE TABLE t DRY RUN PARTS 'all_1_1_0', 'all_2_2_0' DEDUPLICATE CLEANUP;"
+    examples:
+      - "OPTIMIZE TABLE dry_run_example DRY RUN PARTS 'all_1_1_0', 'all_2_2_0';"
+      - "OPTIMIZE TABLE dry_run_example DRY RUN PARTS 'all_1_1_0', 'all_2_2_0' DEDUPLICATE;"
+
+  - id: check_table
+    name: CHECK TABLE
+    doc: https://clickhouse.com/docs/sql-reference/statements/check-table
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CHECK TABLE t;"
+      - id: partition
+        sql: "CHECK TABLE t PARTITION 201003;"
+      - id: part
+        sql: "CHECK TABLE t PART 'all_1_1_0';"
+      - id: format_settings
+        sql: "CHECK TABLE t FORMAT PrettyCompactMonoBlock SETTINGS check_query_single_value_result = 0;"
+    examples:
+      - "CHECK TABLE test_table;"
+      - "CHECK TABLE t0 PARTITION ID '201003' FORMAT PrettyCompactMonoBlock SETTINGS check_query_single_value_result = 0;"
+
+  - id: grant
+    name: GRANT
+    doc: https://clickhouse.com/docs/sql-reference/statements/grant
+    tier: medium
+    probes:
+      - id: privilege_on_table
+        sql: "GRANT SELECT ON db.t TO john;"
+      - id: columns_with_grant_option
+        sql: "GRANT SELECT(x, y) ON db.t TO john, CURRENT_USER WITH GRANT OPTION;"
+      - id: all_on_all
+        sql: "GRANT ON CLUSTER c ALL ON *.* TO r WITH REPLACE OPTION;"
+      - id: wildcard_db
+        sql: "GRANT INSERT ON db.* TO john;"
+      - id: role
+        sql: "GRANT ON CLUSTER c r1, r2 TO john, r3 WITH ADMIN OPTION;"
+      - id: role_replace
+        sql: "GRANT r1 TO CURRENT_USER WITH REPLACE OPTION;"
+      - id: current_grants
+        sql: "GRANT CURRENT GRANTS ON db.t TO john WITH GRANT OPTION;"
+      - id: current_grants_privilege
+        sql: "GRANT CURRENT GRANTS(SELECT(x) ON db.t) TO john;"
+    examples:
+      - "GRANT SELECT (x,y) ON db.table TO john WITH GRANT OPTION;"
+
+  - id: revoke
+    name: REVOKE
+    doc: https://clickhouse.com/docs/sql-reference/statements/revoke
+    tier: medium
+    probes:
+      - id: privilege
+        sql: "REVOKE SELECT ON db.t FROM john;"
+      - id: columns
+        sql: "REVOKE ON CLUSTER c SELECT(x, y) ON db.t FROM john, CURRENT_USER;"
+      - id: from_all
+        sql: "REVOKE SELECT ON *.* FROM ALL;"
+      - id: from_all_except
+        sql: "REVOKE SELECT ON db.t FROM ALL EXCEPT john, CURRENT_USER;"
+      - id: role
+        sql: "REVOKE ADMIN OPTION FOR r1, r2 FROM john, r3;"
+      - id: role_from_all_except
+        sql: "REVOKE r1 FROM ALL EXCEPT john;"
+    examples:
+      - "REVOKE SELECT ON accounts.* FROM john;"
+      - "REVOKE SELECT (wage) ON accounts.staff FROM mira;"

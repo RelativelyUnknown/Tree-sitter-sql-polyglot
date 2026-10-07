@@ -1,0 +1,404 @@
+dialect: athena
+engine: Amazon Athena
+version: "engine version 3 (Trino-based DML, Hive-style DDL)"
+source: https://docs.aws.amazon.com/athena/latest/ug/ddl-reference.html ; https://docs.aws.amazon.com/athena/latest/ug/dml-queries-functions-operators.html
+
+statements: []
+
+expressions:
+  - id: c_aggregate_filter
+    name: Aggregate FILTER clause
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: high
+    probes:
+      - { id: filter_where, sql: "SELECT count(*) FILTER (WHERE c > 4) FROM t;" }
+      - { id: filter_array_agg, sql: "SELECT array_agg(name) FILTER (WHERE name IS NOT NULL) FROM t;" }
+      - { id: filter_grouped, sql: "SELECT s, sum(c) FILTER (WHERE c > 0) AS total FROM t GROUP BY s;" }
+
+  - id: c_aggregate_order_by
+    name: Ordered aggregates (ORDER BY inside the call)
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: high
+    probes:
+      - { id: order_desc, sql: "SELECT array_agg(x ORDER BY y DESC) FROM t;" }
+      - { id: order_multi, sql: "SELECT array_agg(x ORDER BY x, y, z) FROM t;" }
+      - { id: order_with_filter, sql: "SELECT array_agg(x ORDER BY y) FILTER (WHERE x > 0) FROM t;" }
+
+  - id: c_aggregate_distinct
+    name: Aggregate DISTINCT and ALL
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: high
+    probes:
+      - { id: count_distinct, sql: "SELECT count(DISTINCT c) FROM t;" }
+      - { id: sum_distinct, sql: "SELECT sum(DISTINCT c) FROM t;" }
+      - { id: count_star, sql: "SELECT count(*) FROM t;" }
+      - { id: distinct_order_by, sql: "SELECT array_agg(DISTINCT c ORDER BY c) FROM t;" }
+
+  - id: c_aggregate_listagg
+    name: LISTAGG ... WITHIN GROUP
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: high
+    probes:
+      - { id: listagg_within_group, sql: "SELECT listagg(v, ',') WITHIN GROUP (ORDER BY v) FROM t;" }
+      - { id: listagg_filter, sql: "SELECT listagg(v, ',') WITHIN GROUP (ORDER BY v) FILTER (WHERE v IS NOT NULL) FROM t;" }
+
+  - id: c_aggregate_function_families
+    name: Aggregate function families
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: high
+    probes:
+      - { id: general, sql: "SELECT arbitrary(c), array_agg(c), avg(c), bool_and(b), bool_or(b), count_if(b), every(b), max_by(c, d), min_by(c, d), max(c, 3), min(c, 3) FROM t;" }
+      - { id: bitwise_agg, sql: "SELECT bitwise_and_agg(c), bitwise_or_agg(c) FROM t;" }
+      - { id: map_agg, sql: "SELECT map_agg(k, v), map_union(m), multimap_agg(k, v) FROM t;" }
+      - { id: checksum_geomean, sql: "SELECT checksum(c), geometric_mean(c) FROM t;" }
+      - { id: approx, sql: "SELECT approx_distinct(c), approx_distinct(c, 0.023), approx_percentile(c, 0.5), approx_percentile(c, ARRAY[0.25, 0.75]), approx_most_frequent(3, c, 10) FROM t;" }
+      - { id: statistics, sql: "SELECT corr(y, x), covar_pop(y, x), covar_samp(y, x), regr_intercept(y, x), regr_slope(y, x), stddev(c), stddev_pop(c), stddev_samp(c), variance(c), var_pop(c), var_samp(c), kurtosis(c), skewness(c) FROM t;" }
+      - { id: sketches, sql: "SELECT approx_set(c), merge(hll), qdigest_agg(c), tdigest_agg(c) FROM t;" }
+
+  - id: c_grouping_functions
+    name: GROUPING function and grouping sets
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: medium
+    probes:
+      - { id: grouping_func, sql: "SELECT a, b, grouping(a, b) FROM t GROUP BY ROLLUP (a, b);" }
+
+  - id: c_window_over
+    name: Window functions with OVER
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: high
+    probes:
+      - { id: over_empty, sql: "SELECT sum(c) OVER () FROM t;" }
+      - { id: over_partition, sql: "SELECT sum(c) OVER (PARTITION BY a) FROM t;" }
+      - { id: over_order, sql: "SELECT rank() OVER (ORDER BY c DESC) FROM t;" }
+      - { id: over_partition_order, sql: "SELECT row_number() OVER (PARTITION BY a ORDER BY b NULLS LAST) FROM t;" }
+      - { id: over_filter, sql: "SELECT count(*) FILTER (WHERE c > 0) OVER (PARTITION BY a) FROM t;" }
+
+  - id: c_window_frames
+    name: Window frame clauses
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: high
+    probes:
+      - { id: rows_unbounded, sql: "SELECT sum(c) OVER (ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: rows_n_preceding, sql: "SELECT avg(c) OVER (ORDER BY d ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING) FROM t;" }
+      - { id: rows_short, sql: "SELECT sum(c) OVER (ORDER BY d ROWS UNBOUNDED PRECEDING) FROM t;" }
+      - { id: range_frame, sql: "SELECT sum(c) OVER (ORDER BY d RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: range_current_row, sql: "SELECT sum(c) OVER (ORDER BY d RANGE CURRENT ROW) FROM t;" }
+      - { id: groups_frame, sql: "SELECT sum(c) OVER (ORDER BY d GROUPS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;" }
+      - { id: range_interval, sql: "SELECT sum(c) OVER (ORDER BY d RANGE BETWEEN INTERVAL '1' DAY PRECEDING AND CURRENT ROW) FROM t;" }
+
+  - id: c_window_named
+    name: Named windows (WINDOW clause)
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: medium
+    probes:
+      - { id: window_clause, sql: "SELECT sum(c) OVER w FROM t WINDOW w AS (PARTITION BY a ORDER BY b);" }
+      - { id: window_over_name_paren, sql: "SELECT sum(c) OVER (w) FROM t WINDOW w AS (PARTITION BY a);" }
+      - { id: window_multiple, sql: "SELECT sum(c) OVER w1, avg(c) OVER w2 FROM t WINDOW w1 AS (PARTITION BY a), w2 AS (ORDER BY b);" }
+      - { id: window_inherit, sql: "SELECT sum(c) OVER (w ORDER BY b) FROM t WINDOW w AS (PARTITION BY a);" }
+
+  - id: c_window_function_families
+    name: Window function families
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: high
+    probes:
+      - { id: ranking, sql: "SELECT cume_dist() OVER (ORDER BY c), dense_rank() OVER (ORDER BY c), percent_rank() OVER (ORDER BY c), rank() OVER (ORDER BY c), row_number() OVER (ORDER BY c) FROM t;" }
+      - { id: ntile, sql: "SELECT ntile(4) OVER (ORDER BY c) FROM t;" }
+      - { id: value_functions, sql: "SELECT first_value(c) OVER (ORDER BY d), last_value(c) OVER (ORDER BY d), nth_value(c, 2) OVER (ORDER BY d) FROM t;" }
+      - { id: lead_lag, sql: "SELECT lead(c) OVER (ORDER BY d), lag(c, 1) OVER (ORDER BY d), lag(c, 1, 0) OVER (ORDER BY d) FROM t;" }
+      - { id: ignore_nulls, sql: "SELECT first_value(c) IGNORE NULLS OVER (ORDER BY d), lag(c) RESPECT NULLS OVER (ORDER BY d) FROM t;" }
+
+  - id: c_lambda_expressions
+    name: Lambda expressions
+    doc: https://docs.aws.amazon.com/athena/latest/ug/lambda-functions.html
+    tier: high
+    probes:
+      - { id: single_param, sql: "SELECT transform(arr, x -> x + 1) FROM t;" }
+      - { id: paren_params, sql: "SELECT reduce(arr, 0, (s, x) -> s + x, s -> s) FROM t;" }
+      - { id: filter_lambda, sql: "SELECT filter(arr, x -> x IS NOT NULL) FROM t;" }
+      - { id: zip_with_lambda, sql: "SELECT zip_with(a, b, (x, y) -> x + y) FROM t;" }
+      - { id: map_filter_lambda, sql: "SELECT map_filter(m, (k, v) -> v > 0), transform_keys(m, (k, v) -> k + 1), transform_values(m, (k, v) -> v * 2) FROM t;" }
+      - { id: any_all_none_match, sql: "SELECT any_match(arr, x -> x > 0), all_match(arr, x -> x > 0), none_match(arr, x -> x > 0) FROM t;" }
+      - { id: lambda_case, sql: "SELECT transform(arr, x -> CASE WHEN x > 0 THEN 1 ELSE 0 END) FROM t;" }
+      - { id: nested_lambda, sql: "SELECT transform(arr, x -> transform(x, y -> y + 1)) FROM t;" }
+    examples:
+      - "SELECT numbers, transform(numbers, n -> n * n) as squared_numbers FROM (VALUES (ARRAY[1, NULL, 3, NULL, 5])) AS t(numbers);"
+
+  - id: c_array_constructors_access
+    name: ARRAY constructors and subscripts
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: high
+    probes:
+      - { id: array_literal, sql: "SELECT ARRAY[1, 2, 3];" }
+      - { id: array_empty, sql: "SELECT ARRAY[];" }
+      - { id: array_nested, sql: "SELECT ARRAY[ARRAY[1, 2], ARRAY[3, 4]];" }
+      - { id: array_subscript, sql: "SELECT arr[1] FROM t;" }
+      - { id: array_subscript_expr, sql: "SELECT arr[cardinality(arr)] FROM t;" }
+      - { id: array_nested_subscript, sql: "SELECT arr[1][2] FROM t;" }
+      - { id: array_concat_op, sql: "SELECT a || b FROM t;" }
+      - { id: array_type_cast, sql: "SELECT CAST(ARRAY[1, 2] AS ARRAY(BIGINT));" }
+      - { id: array_type_hive, sql: "SELECT CAST(c AS ARRAY<VARCHAR>) FROM t;" }
+
+  - id: c_array_function_families
+    name: Array function families
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: high
+    probes:
+      - { id: array_basic, sql: "SELECT cardinality(arr), contains(arr, 1), element_at(arr, 1), array_distinct(arr), array_sort(arr), array_max(arr), array_min(arr), reverse(arr) FROM t;" }
+      - { id: array_set, sql: "SELECT array_union(a, b), array_intersect(a, b), array_except(a, b), arrays_overlap(a, b) FROM t;" }
+      - { id: array_misc, sql: "SELECT array_join(arr, ','), array_position(arr, 1), array_remove(arr, 1), concat(a, b), flatten(arr), sequence(1, 10), sequence(1, 10, 2), slice(arr, 1, 2), shuffle(arr), repeat(1, 3) FROM t;" }
+      - { id: array_zip, sql: "SELECT zip(a, b), combinations(arr, 2), ngrams(arr, 2), array_histogram(arr) FROM t;" }
+
+  - id: c_unnest
+    name: UNNEST of arrays and maps
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: high
+    probes:
+      - { id: unnest_cross_join, sql: "SELECT t.id, x FROM t CROSS JOIN UNNEST(t.arr) AS u(x);" }
+      - { id: unnest_ordinality, sql: "SELECT x, n FROM t CROSS JOIN UNNEST(t.arr) WITH ORDINALITY AS u(x, n);" }
+      - { id: unnest_map, sql: "SELECT k, v FROM t CROSS JOIN UNNEST(t.m) AS u(k, v);" }
+      - { id: unnest_multi, sql: "SELECT x, y FROM UNNEST(ARRAY[1, 2], ARRAY['a', 'b']) AS u(x, y);" }
+      - { id: unnest_implicit_join, sql: "SELECT t.id, x FROM t, UNNEST(t.arr) AS u(x);" }
+
+  - id: c_map_constructors_access
+    name: MAP constructors and subscripts
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: high
+    probes:
+      - { id: map_two_arrays, sql: "SELECT MAP(ARRAY['a', 'b'], ARRAY[1, 2]);" }
+      - { id: map_empty, sql: "SELECT MAP();" }
+      - { id: map_subscript, sql: "SELECT m['key'] FROM t;" }
+      - { id: map_type_cast, sql: "SELECT CAST(c AS MAP(VARCHAR, BIGINT)) FROM t;" }
+      - { id: map_type_hive, sql: "SELECT CAST(c AS MAP<VARCHAR, BIGINT>) FROM t;" }
+
+  - id: c_map_function_families
+    name: Map function families
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: medium
+    probes:
+      - { id: map_basic, sql: "SELECT cardinality(m), element_at(m, 'k'), map_keys(m), map_values(m), map_entries(m) FROM t;" }
+      - { id: map_build, sql: "SELECT map_concat(m1, m2), map_from_entries(e), multimap_from_entries(e), map_zip_with(m1, m2, (k, v1, v2) -> v1 + v2) FROM t;" }
+
+  - id: c_row_constructors_access
+    name: ROW constructors and field access
+    doc: https://docs.aws.amazon.com/athena/latest/ug/data-types.html
+    tier: high
+    probes:
+      - { id: row_constructor, sql: "SELECT ROW(1, 2.5, 'x');" }
+      - { id: row_implicit, sql: "SELECT (1, 'x');" }
+      - { id: row_cast_named, sql: "SELECT CAST(ROW(1, 2.5) AS ROW(x BIGINT, y DOUBLE));" }
+      - { id: row_field_dot, sql: "SELECT r.x FROM t;" }
+      - { id: row_field_nested, sql: "SELECT r.a.b FROM t;" }
+      - { id: row_subscript, sql: "SELECT r[1] FROM t;" }
+      - { id: row_type_hive_struct, sql: "SELECT CAST(c AS ROW(a INT, b VARCHAR)) FROM t;" }
+
+  - id: c_json_functions
+    name: JSON functions and JSON path
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: high
+    probes:
+      - { id: json_extract, sql: "SELECT json_extract(j, '$.a.b') FROM t;" }
+      - { id: json_extract_scalar, sql: "SELECT json_extract_scalar(j, '$.a[0]') FROM t;" }
+      - { id: json_parse_format, sql: "SELECT json_parse('{\"a\": 1}'), json_format(j) FROM t;" }
+      - { id: json_array_fns, sql: "SELECT json_array_contains(j, 1), json_array_get(j, 0), json_array_length(j), json_size(j, '$.a'), is_json_scalar(j) FROM t;" }
+      - { id: json_cast, sql: "SELECT CAST(j AS ARRAY(JSON)), CAST(j AS MAP(VARCHAR, JSON)), CAST(ARRAY[1, 2] AS JSON) FROM t;" }
+      - { id: json_literal, sql: "SELECT JSON '{\"a\": 1}';" }
+
+  - id: c_string_function_families
+    name: String function families
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: medium
+    probes:
+      - { id: string_basic, sql: "SELECT length(s), lower(s), upper(s), reverse(s), concat(s, 'x'), replace(s, 'a', 'b'), lpad(s, 5, '0'), rpad(s, 5, '0'), ltrim(s), rtrim(s), trim(s) FROM t;" }
+      - { id: string_search, sql: "SELECT strpos(s, 'a'), position('a' IN s), substr(s, 1, 2), substring(s, 1, 2), split(s, ','), split_part(s, ',', 1), starts_with(s, 'a') FROM t;" }
+      - { id: string_misc, sql: "SELECT chr(65), codepoint('A'), levenshtein_distance(s, 'x'), hamming_distance(s, 'x'), soundex(s), normalize(s), translate(s, 'ab', 'cd'), word_stem(s), to_utf8(s), from_utf8(b) FROM t;" }
+      - { id: string_concat_op, sql: "SELECT s || 'x' || t2 FROM t;" }
+
+  - id: c_regexp_function_families
+    name: Regular expression functions
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: medium
+    probes:
+      - { id: regexp_like, sql: "SELECT regexp_like(s, '^a.*b$') FROM t;" }
+      - { id: regexp_extract, sql: "SELECT regexp_extract(s, '(\\d+)', 1), regexp_extract_all(s, '\\d+') FROM t;" }
+      - { id: regexp_replace, sql: "SELECT regexp_replace(s, 'a', 'b'), regexp_replace(s, '(a)', x -> upper(x[1])) FROM t;" }
+      - { id: regexp_split, sql: "SELECT regexp_split(s, ','), regexp_count(s, 'a'), regexp_position(s, 'a') FROM t;" }
+
+  - id: c_math_function_families
+    name: Mathematical function families
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: medium
+    probes:
+      - { id: math_basic, sql: "SELECT abs(c), ceil(c), ceiling(c), floor(c), round(c), round(c, 2), truncate(c), sign(c), mod(c, 3), power(c, 2), pow(c, 2), sqrt(c), cbrt(c) FROM t;" }
+      - { id: math_log_exp, sql: "SELECT exp(c), ln(c), log(2, c), log2(c), log10(c), e(), pi(), degrees(c), radians(c) FROM t;" }
+      - { id: math_trig, sql: "SELECT sin(c), cos(c), tan(c), asin(c), acos(c), atan(c), atan2(c, d), sinh(c), cosh(c), tanh(c) FROM t;" }
+      - { id: math_random, sql: "SELECT rand(), random(), random(10), random(1, 10) FROM t;" }
+      - { id: math_misc, sql: "SELECT greatest(a, b), least(a, b), is_nan(c), is_finite(c), is_infinite(c), infinity(), nan(), width_bucket(c, 0, 10, 5), from_base('ff', 16), to_base(255, 16), cosine_similarity(m1, m2) FROM t;" }
+      - { id: math_modulo_op, sql: "SELECT a % b, a + b, a - b, a * b, a / b, -a FROM t;" }
+
+  - id: c_bitwise_function_families
+    name: Bitwise functions
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: low
+    probes:
+      - { id: bitwise_fns, sql: "SELECT bit_count(c, 64), bitwise_and(a, b), bitwise_not(a), bitwise_or(a, b), bitwise_xor(a, b), bitwise_left_shift(a, 1), bitwise_right_shift(a, 1), bitwise_right_shift_arithmetic(a, 1) FROM t;" }
+
+  - id: c_conditional_expressions
+    name: Conditional expressions
+    doc: https://docs.aws.amazon.com/athena/latest/ug/conditional-expressions.html
+    tier: high
+    probes:
+      - { id: case_searched, sql: "SELECT CASE WHEN c > 0 THEN 'pos' WHEN c < 0 THEN 'neg' ELSE 'zero' END FROM t;" }
+      - { id: case_simple, sql: "SELECT CASE c WHEN 1 THEN 'one' WHEN 2 THEN 'two' END FROM t;" }
+      - { id: if_two, sql: "SELECT if(c > 0, 'a') FROM t;" }
+      - { id: if_three, sql: "SELECT if(c > 0, 'a', 'b') FROM t;" }
+      - { id: coalesce_nullif, sql: "SELECT coalesce(a, b, 0), nullif(a, 0) FROM t;" }
+      - { id: try, sql: "SELECT try(a / b) FROM t;" }
+      - { id: try_cast, sql: "SELECT TRY_CAST(s AS INTEGER) FROM t;" }
+
+  - id: c_conversion_function_families
+    name: Conversion functions
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: medium
+    probes:
+      - { id: cast, sql: "SELECT CAST(c AS VARCHAR), CAST(c AS DECIMAL(10, 2)), CAST(c AS TIMESTAMP) FROM t;" }
+      - { id: typeof_format, sql: "SELECT typeof(c), format('%s-%s', a, b), format_number(c) FROM t;" }
+      - { id: parse_data_size, sql: "SELECT parse_data_size('1MB'), to_hex(b), from_hex('ff'), to_base64(b), from_base64(s) FROM t;" }
+
+  - id: c_datetime_function_families
+    name: Date and time function families
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: high
+    probes:
+      - { id: current_values, sql: "SELECT current_date, current_time, current_timestamp, localtime, localtimestamp, now(), current_timezone();" }
+      - { id: date_trunc_add_diff, sql: "SELECT date_trunc('day', ts), date_add('day', 1, ts), date_diff('day', a, b) FROM t;" }
+      - { id: format_parse, sql: "SELECT date_format(ts, '%Y-%m-%d'), date_parse(s, '%Y-%m-%d'), format_datetime(ts, 'yyyy-MM-dd'), parse_datetime(s, 'yyyy-MM-dd') FROM t;" }
+      - { id: unixtime, sql: "SELECT from_unixtime(c), to_unixtime(ts), from_iso8601_timestamp(s), to_iso8601(ts), from_iso8601_date(s) FROM t;" }
+      - { id: field_extractors, sql: "SELECT year(ts), month(ts), day(ts), hour(ts), minute(ts), second(ts), quarter(ts), week(ts), day_of_week(ts), day_of_year(ts), last_day_of_month(ts), to_milliseconds(INTERVAL '1' DAY) FROM t;" }
+      - { id: extract_fn, sql: "SELECT EXTRACT(YEAR FROM ts), EXTRACT(DOW FROM ts), EXTRACT(HOUR FROM ts) FROM t;" }
+      - { id: at_time_zone, sql: "SELECT ts AT TIME ZONE 'America/Los_Angeles', with_timezone(ts, 'UTC'), at_timezone(ts, 'UTC') FROM t;" }
+      - { id: interval_arith, sql: "SELECT ts + INTERVAL '1' DAY, ts - INTERVAL '2' HOUR, INTERVAL '1-2' YEAR TO MONTH FROM t;" }
+      - { id: date_literals, sql: "SELECT DATE '2020-01-01', TIMESTAMP '2020-01-01 00:00:00', TIME '12:00:00', TIMESTAMP '2020-01-01 00:00:00 UTC';" }
+
+  - id: c_binary_function_families
+    name: Binary and hash functions
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: low
+    probes:
+      - { id: hashes, sql: "SELECT md5(b), sha1(b), sha256(b), sha512(b), crc32(b), xxhash64(b), spooky_hash_v2_32(b), hmac_sha256(b, k), length(b), to_big_endian_32(1), from_big_endian_64(b) FROM t;" }
+      - { id: varbinary_literal, sql: "SELECT X'65683F';" }
+
+  - id: c_url_ip_uuid_function_families
+    name: URL, IP address and UUID functions
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: low
+    probes:
+      - { id: url_fns, sql: "SELECT url_extract_host(u), url_extract_path(u), url_extract_parameter(u, 'q'), url_encode(u), url_decode(u) FROM t;" }
+      - { id: ip_fns, sql: "SELECT contains(c, ip), IPADDRESS '10.0.0.1', IPPREFIX '10.0.0.0/8' FROM t;" }
+      - { id: uuid_fn, sql: "SELECT uuid();" }
+
+  - id: c_geospatial_function_families
+    name: Geospatial functions
+    doc: https://docs.aws.amazon.com/athena/latest/ug/geospatial-functions-list-v3.html
+    tier: low
+    probes:
+      - { id: constructors, sql: "SELECT ST_Point(1, 2), ST_LineString('linestring(1 1, 2 2)'), ST_Polygon('polygon ((1 1, 4 1, 1 4))'), ST_GeometryFromText('POINT (1 2)') FROM t;" }
+      - { id: relationships, sql: "SELECT ST_Contains(a, b), ST_Intersects(a, b), ST_Distance(a, b), ST_Area(g), ST_Length(g), ST_AsText(g) FROM t;" }
+
+  - id: c_colour_hll_setdigest_function_families
+    name: HyperLogLog, Quantile digest and T-Digest functions
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: low
+    probes:
+      - { id: hll_fns, sql: "SELECT cardinality(hll), empty_approx_set(), merge(hll) FROM t;" }
+      - { id: qdigest_fns, sql: "SELECT value_at_quantile(q, 0.5), values_at_quantiles(q, ARRAY[0.1, 0.9]) FROM t;" }
+
+  - id: c_comparison_operators
+    name: Comparison operators and predicates
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: high
+    probes:
+      - { id: relational, sql: "SELECT a < b, a > b, a <= b, a >= b, a = b, a <> b, a != b FROM t;" }
+      - { id: between, sql: "SELECT a BETWEEN 1 AND 10, a NOT BETWEEN 1 AND 10 FROM t;" }
+      - { id: distinct_from, sql: "SELECT a IS DISTINCT FROM b, a IS NOT DISTINCT FROM b FROM t;" }
+      - { id: null_tests, sql: "SELECT a IS NULL, a IS NOT NULL FROM t;" }
+      - { id: like, sql: "SELECT s LIKE 'a%', s NOT LIKE 'a%', s LIKE 'a!%' ESCAPE '!' FROM t;" }
+      - { id: in_list, sql: "SELECT a IN (1, 2, 3), a NOT IN (1, 2, 3) FROM t;" }
+      - { id: quantified, sql: "SELECT a > ALL (SELECT c FROM t), a = ANY (SELECT c FROM t), a < SOME (SELECT c FROM t) FROM t;" }
+      - { id: greatest_least, sql: "SELECT greatest(a, b, c), least(a, b, c) FROM t;" }
+
+  - id: c_logical_operators
+    name: Logical operators
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: high
+    probes:
+      - { id: and_or_not, sql: "SELECT a AND b, a OR b, NOT a FROM t;" }
+      - { id: boolean_literals, sql: "SELECT TRUE, FALSE, NULL;" }
+
+  - id: c_subquery_predicates
+    name: Subquery expressions
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: high
+    probes:
+      - { id: exists, sql: "SELECT * FROM t WHERE EXISTS (SELECT 1 FROM s WHERE s.a = t.a);" }
+      - { id: not_exists, sql: "SELECT * FROM t WHERE NOT EXISTS (SELECT 1 FROM s WHERE s.a = t.a);" }
+      - { id: in_subquery, sql: "SELECT * FROM t WHERE a IN (SELECT a FROM s);" }
+      - { id: scalar_subquery, sql: "SELECT (SELECT max(a) FROM s) FROM t;" }
+
+  - id: c_special_form_functions
+    name: Special-form functions with keywords inside the parentheses
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: medium
+    probes:
+      - { id: extract_from, sql: "SELECT EXTRACT(MONTH FROM d) FROM t;" }
+      - { id: substring_from_for, sql: "SELECT SUBSTRING(s FROM 2 FOR 3) FROM t;" }
+      - { id: trim_leading, sql: "SELECT TRIM(LEADING 'x' FROM s), TRIM(BOTH FROM s), TRIM(TRAILING 'x' FROM s) FROM t;" }
+      - { id: position_in, sql: "SELECT POSITION('a' IN s) FROM t;" }
+      - { id: cast_as, sql: "SELECT CAST(a AS BIGINT);" }
+      - { id: at_time_zone_interval, sql: "SELECT ts AT TIME ZONE INTERVAL '2' HOUR FROM t;" }
+
+  - id: c_type_names
+    name: Data type names and parameterized types
+    doc: https://docs.aws.amazon.com/athena/latest/ug/data-types.html
+    tier: high
+    probes:
+      - { id: numeric_types, sql: "SELECT CAST(a AS BOOLEAN), CAST(a AS TINYINT), CAST(a AS SMALLINT), CAST(a AS INTEGER), CAST(a AS BIGINT), CAST(a AS REAL), CAST(a AS DOUBLE), CAST(a AS DECIMAL(38, 10)) FROM t;" }
+      - { id: char_types, sql: "SELECT CAST(a AS VARCHAR), CAST(a AS VARCHAR(10)), CAST(a AS CHAR(5)), CAST(a AS VARBINARY) FROM t;" }
+      - { id: temporal_types, sql: "SELECT CAST(a AS DATE), CAST(a AS TIME), CAST(a AS TIMESTAMP), CAST(a AS TIMESTAMP(3)), CAST(a AS TIMESTAMP WITH TIME ZONE), CAST(a AS TIME WITH TIME ZONE) FROM t;" }
+      - { id: interval_types, sql: "SELECT CAST(a AS INTERVAL DAY TO SECOND), CAST(a AS INTERVAL YEAR TO MONTH) FROM t;" }
+      - { id: other_types, sql: "SELECT CAST(a AS JSON), CAST(a AS UUID), CAST(a AS IPADDRESS), CAST(a AS HYPERLOGLOG) FROM t;" }
+
+  - id: c_literals
+    name: Literals
+    doc: https://docs.aws.amazon.com/athena/latest/ug/data-types.html
+    tier: high
+    probes:
+      - { id: numbers, sql: "SELECT 1, 1.5, 1e10, 1.5E-3, .5, 123456789012;" }
+      - { id: strings, sql: "SELECT 'abc', 'it''s', '';" }
+      - { id: unicode_string, sql: "SELECT U&'\\0041bc';" }
+      - { id: binary_literal, sql: "SELECT X'ff00';" }
+      - { id: decimal_literal, sql: "SELECT DECIMAL '1.23';" }
+      - { id: typed_literals, sql: "SELECT DATE '2020-01-01', TIME '10:00:00', INTERVAL '1' DAY, INTERVAL '1' MONTH, INTERVAL '1 02:03:04' DAY TO SECOND;" }
+
+  - id: c_identifiers_comments_parameters
+    name: Identifier quoting, comments and parameters
+    doc: https://docs.aws.amazon.com/athena/latest/ug/tables-databases-columns-names.html
+    tier: high
+    probes:
+      - { id: double_quoted_ident, sql: "SELECT \"my col\" FROM \"my table\";" }
+      - { id: qualified_ident, sql: "SELECT t.c FROM db.t;" }
+      - { id: three_part_name, sql: "SELECT c FROM catalog.db.t;" }
+      - { id: line_comment, sql: "SELECT 1 -- comment\n;" }
+      - { id: block_comment, sql: "SELECT /* comment */ 1;" }
+      - { id: positional_parameter, sql: "SELECT * FROM t WHERE c = ?;" }
+      - { id: column_alias, sql: "SELECT a AS x, b y FROM t;" }
+
+  - id: c_table_valued_and_misc
+    name: Table-valued and miscellaneous expression syntax
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-env3.html
+    tier: medium
+    probes:
+      - { id: values_table, sql: "SELECT * FROM (VALUES (1, 'a'), (2, 'b')) AS t(x, y);" }
+      - { id: sequence_unnest_dates, sql: "SELECT d FROM UNNEST(sequence(DATE '2020-01-01', DATE '2020-01-10', INTERVAL '1' DAY)) AS u(d);" }
+      - { id: tablesample, sql: "SELECT * FROM t TABLESAMPLE BERNOULLI (10);" }
+      - { id: lateral_subquery, sql: "SELECT * FROM t CROSS JOIN LATERAL (SELECT 1 AS x) AS u;" }
+      - { id: dollar_path_pseudo, sql: "SELECT \"$path\", \"$file_modified_time\", \"$file_size\" FROM t;" }

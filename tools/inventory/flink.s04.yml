@@ -1,0 +1,102 @@
+dialect: flink
+engine: Apache Flink SQL
+version: "2.3"
+source: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/
+
+statements:
+  - id: create_or_replace_table
+    name: "[CREATE OR] REPLACE TABLE"
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/ddl/create/#create-or-replace-table
+    tier: high
+    probes:
+      - id: replace_basic
+        sql: "REPLACE TABLE t WITH ('connector' = 'kafka') AS SELECT id FROM s;"
+      - id: create_or_replace
+        sql: "CREATE OR REPLACE TABLE t WITH ('connector' = 'kafka') AS SELECT id FROM s;"
+      - id: qualified_name
+        sql: "REPLACE TABLE c.d.t WITH ('connector' = 'kafka') AS SELECT id FROM s;"
+      - id: physical_column
+        sql: "REPLACE TABLE t (id BIGINT, name STRING) WITH ('connector' = 'kafka') AS SELECT id, name FROM s;"
+      - id: physical_column_constraint
+        sql: "REPLACE TABLE t (id BIGINT NOT NULL PRIMARY KEY NOT ENFORCED COMMENT 'key') WITH ('connector' = 'kafka') AS SELECT id FROM s;"
+      - id: metadata_column
+        sql: "REPLACE TABLE t (m BIGINT METADATA) WITH ('connector' = 'kafka') AS SELECT id FROM s;"
+      - id: metadata_column_from_virtual
+        sql: "REPLACE TABLE t (m BIGINT METADATA FROM 'k' VIRTUAL) WITH ('connector' = 'kafka') AS SELECT id FROM s;"
+      - id: computed_column
+        sql: "REPLACE TABLE t (cost AS price * quantity COMMENT 'total') WITH ('connector' = 'kafka') AS SELECT price, quantity FROM s;"
+      - id: watermark
+        sql: "REPLACE TABLE t (WATERMARK FOR order_time AS order_time - INTERVAL '5' SECOND) WITH ('connector' = 'kafka') AS SELECT order_time FROM s;"
+      - id: primary_key_constraint
+        sql: "REPLACE TABLE t (CONSTRAINT pk PRIMARY KEY (id) NOT ENFORCED) WITH ('connector' = 'kafka') AS SELECT id FROM s;"
+      - id: comment
+        sql: "REPLACE TABLE t COMMENT 'replaced' WITH ('connector' = 'kafka') AS SELECT id FROM s;"
+      - id: distributed_by_buckets
+        sql: "REPLACE TABLE t DISTRIBUTED BY (id) INTO 4 BUCKETS WITH ('connector' = 'kafka') AS SELECT id FROM s;"
+      - id: distributed_by_hash
+        sql: "REPLACE TABLE t DISTRIBUTED BY HASH (id) WITH ('connector' = 'kafka') AS SELECT id FROM s;"
+      - id: distributed_by_range
+        sql: "REPLACE TABLE t DISTRIBUTED BY RANGE (id) INTO 4 BUCKETS WITH ('connector' = 'kafka') AS SELECT id FROM s;"
+      - id: distributed_into_buckets
+        sql: "REPLACE TABLE t DISTRIBUTED INTO 4 BUCKETS WITH ('connector' = 'kafka') AS SELECT id FROM s;"
+      - id: all_clauses
+        sql: "CREATE OR REPLACE TABLE t (id BIGINT, cost AS id * 2, WATERMARK FOR ts AS ts - INTERVAL '5' SECOND, PRIMARY KEY (id) NOT ENFORCED) COMMENT 'c' DISTRIBUTED BY (id) INTO 4 BUCKETS WITH ('connector' = 'kafka') AS SELECT id, ts FROM s;"
+    examples:
+      - "REPLACE TABLE my_rtas_table (desc STRING, quantity DOUBLE, cost AS price * quantity, WATERMARK FOR order_time AS order_time - INTERVAL '5' SECOND, PRIMARY KEY(id) NOT ENFORCED) DISTRIBUTED BY (id) INTO 4 buckets AS SELECT id, price, quantity, order_time FROM source_table;"
+
+  - id: create_materialized_table
+    name: CREATE [OR ALTER] MATERIALIZED TABLE
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/ddl/create/#create-or-alter-materialized-table
+    tier: high
+    note: The create page defers to the dedicated Materialized Table statements page (docs/sql/materialized-table/statements/), where the syntax block was read.
+    probes:
+      - id: basic
+        sql: "CREATE MATERIALIZED TABLE t AS SELECT * FROM s;"
+      - id: or_alter
+        sql: "CREATE OR ALTER MATERIALIZED TABLE t AS SELECT * FROM s;"
+      - id: qualified_name
+        sql: "CREATE MATERIALIZED TABLE c.d.t AS SELECT * FROM s;"
+      - id: physical_column
+        sql: "CREATE MATERIALIZED TABLE t (ds STRING, id BIGINT NOT NULL PRIMARY KEY NOT ENFORCED COMMENT 'k') AS SELECT ds, id FROM s;"
+      - id: column_names_only
+        sql: "CREATE MATERIALIZED TABLE t (ds, id) AS SELECT ds, id FROM s;"
+      - id: metadata_column
+        sql: "CREATE MATERIALIZED TABLE t (m BIGINT METADATA FROM 'k' VIRTUAL) AS SELECT id FROM s;"
+      - id: computed_column
+        sql: "CREATE MATERIALIZED TABLE t (cost AS price * quantity COMMENT 'total') AS SELECT price, quantity FROM s;"
+      - id: watermark
+        sql: "CREATE MATERIALIZED TABLE t (WATERMARK FOR ts AS ts - INTERVAL '5' SECOND) AS SELECT ts FROM s;"
+      - id: table_constraint
+        sql: "CREATE MATERIALIZED TABLE t (CONSTRAINT pk PRIMARY KEY (id) NOT ENFORCED) AS SELECT id FROM s;"
+      - id: comment
+        sql: "CREATE MATERIALIZED TABLE t COMMENT 'mt' AS SELECT * FROM s;"
+      - id: distributed_by_buckets
+        sql: "CREATE MATERIALIZED TABLE t DISTRIBUTED BY (id) INTO 4 BUCKETS AS SELECT * FROM s;"
+      - id: distributed_by_hash
+        sql: "CREATE MATERIALIZED TABLE t DISTRIBUTED BY HASH (id) AS SELECT * FROM s;"
+      - id: distributed_by_range
+        sql: "CREATE MATERIALIZED TABLE t DISTRIBUTED BY RANGE (id) INTO 4 BUCKETS AS SELECT * FROM s;"
+      - id: distributed_into_buckets
+        sql: "CREATE MATERIALIZED TABLE t DISTRIBUTED INTO 4 BUCKETS AS SELECT * FROM s;"
+      - id: partitioned_by
+        sql: "CREATE MATERIALIZED TABLE t PARTITIONED BY (ds) AS SELECT * FROM s;"
+      - id: with_options
+        sql: "CREATE MATERIALIZED TABLE t WITH ('format' = 'json') AS SELECT * FROM s;"
+      - id: freshness_second
+        sql: "CREATE MATERIALIZED TABLE t FRESHNESS = INTERVAL '30' SECOND AS SELECT * FROM s;"
+      - id: freshness_minutes
+        sql: "CREATE MATERIALIZED TABLE t FRESHNESS = INTERVAL '1' MINUTE AS SELECT * FROM s;"
+      - id: freshness_hour
+        sql: "CREATE MATERIALIZED TABLE t FRESHNESS = INTERVAL '1' HOUR AS SELECT * FROM s;"
+      - id: freshness_day
+        sql: "CREATE MATERIALIZED TABLE t FRESHNESS = INTERVAL '1' DAY AS SELECT * FROM s;"
+      - id: refresh_mode_continuous
+        sql: "CREATE MATERIALIZED TABLE t REFRESH_MODE = CONTINUOUS AS SELECT * FROM s;"
+      - id: refresh_mode_full
+        sql: "CREATE MATERIALIZED TABLE t REFRESH_MODE = FULL AS SELECT * FROM s;"
+      - id: all_clauses
+        sql: "CREATE OR ALTER MATERIALIZED TABLE c.d.t (ds STRING, id BIGINT, PRIMARY KEY (id) NOT ENFORCED) COMMENT 'mt' DISTRIBUTED BY HASH (id) INTO 4 BUCKETS PARTITIONED BY (ds) WITH ('format' = 'json') FRESHNESS = INTERVAL '10' SECOND REFRESH_MODE = FULL AS SELECT ds, id FROM s;"
+    examples:
+      - "CREATE MATERIALIZED TABLE my_materialized_table_continuous PARTITIONED BY (ds) WITH ('format' = 'debezium-json', 'partition.fields.ds.date-formatter' = 'yyyy-MM-dd') FRESHNESS = INTERVAL '10' SECOND AS SELECT k.ds, k.user_id, COUNT(*) AS event_count, SUM(k.amount) AS total_amount, MAX(u.age) AS max_age FROM kafka_catalog.db1.kafka_table k JOIN user_catalog.db1.user_table u ON k.user_id = u.user_id WHERE k.event_type = 'purchase' GROUP BY k.ds, k.user_id;"
+      - "CREATE MATERIALIZED TABLE my_materialized_table_full_mode REFRESH_MODE = FULL AS SELECT * FROM source_table;"
+      - "CREATE OR ALTER MATERIALIZED TABLE my_materialized_table FRESHNESS = INTERVAL '10' SECOND AS SELECT user_id, COUNT(*) AS event_count, SUM(amount) AS total_amount FROM kafka_catalog.db1.events WHERE event_type = 'purchase' GROUP BY user_id;"

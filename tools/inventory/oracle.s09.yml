@@ -1,0 +1,436 @@
+dialect: oracle
+engine: Oracle AI Database
+version: "26ai"
+source: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/toc.htm
+
+statements:
+  - id: alter_pmem_filestore
+    name: ALTER PMEM FILESTORE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/alter-pmem-filestore.html
+    tier: low
+    probes:
+      - id: resize
+        sql: "ALTER PMEM FILESTORE fs RESIZE 100M;"
+      - id: mount_force
+        sql: "ALTER PMEM FILESTORE fs MOUNT MOUNTPOINT '/mnt/fs' BACKINGFILE '/bk/fs' FORCE;"
+
+  - id: alter_resource_cost
+    name: ALTER RESOURCE COST
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-RESOURCE-COST.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "ALTER RESOURCE COST CPU_PER_SESSION 100 CONNECT_TIME 1 LOGICAL_READS_PER_SESSION 2 PRIVATE_SGA 3;"
+
+  - id: alter_rollback_segment
+    name: ALTER ROLLBACK SEGMENT
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-ROLLBACK-SEGMENT.html
+    tier: low
+    probes:
+      - id: online
+        sql: "ALTER ROLLBACK SEGMENT rbs ONLINE;"
+      - id: shrink_to
+        sql: "ALTER ROLLBACK SEGMENT rbs SHRINK TO 10M;"
+
+  - id: alter_tablespace_set
+    name: ALTER TABLESPACE SET
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-TABLESPACE-SET.html
+    tier: low
+    probes:
+      - id: resize
+        sql: "ALTER TABLESPACE SET ts RESIZE 100M;"
+
+  - id: associate_statistics
+    name: ASSOCIATE STATISTICS
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ASSOCIATE-STATISTICS.html
+    tier: low
+    probes:
+      - id: columns
+        sql: "ASSOCIATE STATISTICS WITH COLUMNS t.c USING stats_type;"
+      - id: functions_default_cost
+        sql: "ASSOCIATE STATISTICS WITH FUNCTIONS f DEFAULT COST (100, 5, 0), DEFAULT SELECTIVITY 10;"
+
+  - id: audit_traditional
+    name: AUDIT (Traditional Auditing)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/AUDIT-Traditional-Auditing.html
+    tier: low
+    status: not-applicable
+    reason: 'The page states "Traditional Auditing is desupported in Oracle Database Release 23. Oracle recommends that you use unified auditing instead."'
+
+  - id: audit_unified
+    name: AUDIT (Unified Auditing)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/AUDIT-Unified-Auditing.html
+    tier: low
+    probes:
+      - id: policy
+        sql: "AUDIT POLICY p BY u WHENEVER SUCCESSFUL;"
+      - id: context_namespace
+        sql: "AUDIT CONTEXT NAMESPACE ns ATTRIBUTES a1, a2 BY u;"
+
+  - id: alter_system
+    name: ALTER SYSTEM
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-SYSTEM.html
+    tier: low
+    probes:
+      - id: set_parameter
+        sql: "ALTER SYSTEM SET open_cursors = 500 COMMENT = 'raised' SCOPE = BOTH SID = '*';"
+      - id: reset_parameter
+        sql: "ALTER SYSTEM RESET open_cursors SCOPE = SPFILE;"
+      - id: kill_session
+        sql: "ALTER SYSTEM KILL SESSION '10, 100' IMMEDIATE;"
+      - id: flush_shared_pool
+        sql: "ALTER SYSTEM FLUSH SHARED_POOL;"
+      - id: switch_logfile
+        sql: "ALTER SYSTEM SWITCH LOGFILE;"
+      - id: checkpoint
+        sql: "ALTER SYSTEM CHECKPOINT GLOBAL;"
+      - id: enable_restricted_session
+        sql: "ALTER SYSTEM ENABLE RESTRICTED SESSION;"
+
+  - id: alter_pluggable_database
+    name: ALTER PLUGGABLE DATABASE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-PLUGGABLE-DATABASE.html
+    tier: low
+    probes:
+      - id: open
+        sql: "ALTER PLUGGABLE DATABASE pdb1 OPEN READ WRITE;"
+      - id: close_immediate
+        sql: "ALTER PLUGGABLE DATABASE pdb1 CLOSE IMMEDIATE;"
+      - id: open_all_except
+        sql: "ALTER PLUGGABLE DATABASE ALL EXCEPT pdb2 OPEN;"
+      - id: unplug
+        sql: "ALTER PLUGGABLE DATABASE pdb1 UNPLUG INTO '/tmp/pdb1.xml';"
+      - id: storage_clause
+        sql: "ALTER PLUGGABLE DATABASE pdb1 STORAGE (MAXSIZE 2G);"
+      - id: datafile_online
+        sql: "ALTER PLUGGABLE DATABASE pdb1 DATAFILE ALL ONLINE;"
+      - id: refresh_mode
+        sql: "ALTER PLUGGABLE DATABASE pdb1 REFRESH MODE EVERY 10 MINUTES;"
+      - id: application_begin_install
+        sql: "ALTER PLUGGABLE DATABASE APPLICATION app BEGIN INSTALL '1.0';"
+
+  - id: create_analytic_view
+    name: CREATE ANALYTIC VIEW
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-ANALYTIC-VIEW.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE ANALYTIC VIEW av USING sales_fact DIMENSION BY (time_attr_dim KEY time_id REFERENCES time_id HIERARCHIES (time_hier DEFAULT)) MEASURES (sales FACT sales_amt AGGREGATE BY SUM, units FACT unit_cnt) DEFAULT MEASURE sales;"
+      - id: or_replace_calc_measure
+        sql: "CREATE OR REPLACE ANALYTIC VIEW av USING sales_fact DIMENSION BY (d KEY k REFERENCES k HIERARCHIES (h)) MEASURES (m FACT f, m2 AS (m * 2));"
+
+  - id: create_application_identity
+    name: CREATE APPLICATION IDENTITY
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-application-identity.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE APPLICATION IDENTITY app MAPPED TO 'id_string';"
+      - id: or_replace
+        sql: "CREATE OR REPLACE APPLICATION IDENTITY app MAPPED TO 'id_string';"
+      - id: if_not_exists
+        sql: "CREATE APPLICATION IDENTITY IF NOT EXISTS app MAPPED TO 'id_string';"
+
+  - id: create_assertion
+    name: CREATE ASSERTION
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-assertion.html
+    tier: low
+    probes:
+      - id: not_exists
+        sql: "CREATE ASSERTION a CHECK (NOT EXISTS (SELECT 1 FROM t WHERE c < 0));"
+      - id: deferrable
+        sql: "CREATE ASSERTION s.a CHECK (EXISTS (SELECT 1 FROM t)) DEFERRABLE INITIALLY DEFERRED;"
+      - id: universal
+        sql: "CREATE ASSERTION a CHECK (ALL (SELECT * FROM t) x SATISFY (x.c > 0));"
+
+  - id: create_attribute_dimension
+    name: CREATE ATTRIBUTE DIMENSION
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-ATTRIBUTE-DIMENSION.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE ATTRIBUTE DIMENSION d USING t ATTRIBUTES (c1, c2 AS a2) LEVEL l1 KEY c1;"
+      - id: time_dimension_all_member
+        sql: "CREATE OR REPLACE ATTRIBUTE DIMENSION d DIMENSION TYPE TIME USING t ATTRIBUTES (c1) LEVEL l1 LEVEL TYPE YEARS KEY c1 ORDER BY MIN c1 ASC NULLS LAST ALL MEMBER NAME 'All';"
+
+  - id: create_audit_policy_unified
+    name: CREATE AUDIT POLICY (Unified Auditing)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-AUDIT-POLICY-Unified-Auditing.html
+    tier: low
+    probes:
+      - id: privileges
+        sql: "CREATE AUDIT POLICY p PRIVILEGES CREATE ANY TABLE, DROP ANY TABLE;"
+      - id: actions_on_object
+        sql: "CREATE AUDIT POLICY p ACTIONS SELECT ON s.t, UPDATE ON s.t WHEN 'SYS_CONTEXT(''USERENV'', ''SESSION_USER'') = ''U''' EVALUATE PER SESSION;"
+      - id: roles_container
+        sql: "CREATE AUDIT POLICY p ROLES dba ONLY TOPLEVEL CONTAINER = ALL;"
+
+  - id: create_cluster
+    name: CREATE CLUSTER
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-CLUSTER.html
+    tier: low
+    probes:
+      - id: index_cluster
+        sql: "CREATE CLUSTER c (id NUMBER(4)) SIZE 512 TABLESPACE users;"
+      - id: hash_cluster
+        sql: "CREATE CLUSTER c (id NUMBER) SINGLE TABLE HASHKEYS 100 HASH IS id;"
+
+  - id: create_controlfile
+    name: CREATE CONTROLFILE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-CONTROLFILE.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE CONTROLFILE REUSE DATABASE db NORESETLOGS ARCHIVELOG MAXLOGFILES 5 DATAFILE '/u01/system.dbf' CHARACTER SET AL32UTF8;"
+      - id: logfile_resetlogs
+        sql: "CREATE CONTROLFILE SET DATABASE db LOGFILE GROUP 1 '/u01/redo1.log' SIZE 10M RESETLOGS DATAFILE '/u01/system.dbf';"
+
+  - id: create_data_grant
+    name: CREATE DATA GRANT
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-data-grant.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE DATA GRANT g AS SELECT ON t TO r;"
+      - id: columns_where_time
+        sql: "CREATE OR REPLACE DATA GRANT s.g AS SELECT (ALL COLUMNS EXCEPT c1), UPDATE (c2) ON s.t WHERE c3 > 0 TO r1, r2 START TIME TIMESTAMP '2026-01-01 00:00:00' END TIME TIMESTAMP '2027-01-01 00:00:00';"
+
+  - id: create_data_role
+    name: CREATE DATA ROLE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-data-role.html
+    tier: low
+    probes:
+      - id: local
+        sql: "CREATE DATA ROLE r ENABLED;"
+      - id: mapped
+        sql: "CREATE OR REPLACE DATA ROLE r MAPPED TO 'ext_role';"
+      - id: if_not_exists
+        sql: "CREATE DATA ROLE IF NOT EXISTS r;"
+
+  - id: create_dimension
+    name: CREATE DIMENSION
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-DIMENSION.html
+    tier: low
+    probes:
+      - id: levels_hierarchy
+        sql: "CREATE DIMENSION d LEVEL city IS t.city LEVEL state IS t.state HIERARCHY geo (city CHILD OF state JOIN KEY t.state_id REFERENCES state);"
+      - id: attribute
+        sql: "CREATE DIMENSION d LEVEL city IS t.city ATTRIBUTE city DETERMINES (t.zip, t.area);"
+
+  - id: create_directive_validate
+    name: CREATE DIRECTIVE (VALIDATE)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-directive-validate.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE DIRECTIVE d FOR dv VALIDATE ON INSERT UPDATE BEFORE OBJECT ENABLE USING (c > 0);"
+      - id: or_replace_on_commit
+        sql: "CREATE OR REPLACE DIRECTIVE s.d FOR s.dv VALIDATE ON INSERT UPDATE ON COMMIT NOVALIDATE DISABLE USING (c > 0);"
+
+  - id: create_diskgroup
+    name: CREATE DISKGROUP
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-DISKGROUP.html
+    tier: low
+    probes:
+      - id: normal_redundancy
+        sql: "CREATE DISKGROUP dg NORMAL REDUNDANCY FAILGROUP fg1 DISK '/devices/d1' NAME d1 SIZE 100M FAILGROUP fg2 DISK '/devices/d2' NAME d2;"
+      - id: external_attribute
+        sql: "CREATE DISKGROUP dg EXTERNAL REDUNDANCY DISK '/devices/d1' ATTRIBUTE 'compatible.asm' = '19.0';"
+
+  - id: create_edition
+    name: CREATE EDITION
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-EDITION.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE EDITION e;"
+      - id: as_child_of
+        sql: "CREATE EDITION IF NOT EXISTS e2 AS CHILD OF e;"
+
+  - id: create_end_user
+    name: CREATE END USER
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-end-user.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE END USER eu IDENTIFIED BY pw ADD FACTOR f AS 'ext';"
+      - id: with_options
+        sql: "CREATE END USER IF NOT EXISTS eu ADD FACTOR f AS 'ext' PROFILE p PASSWORD EXPIRE ACCOUNT LOCK SCHEMA s START TIME TIMESTAMP '2026-01-01 00:00:00' END TIME TIMESTAMP '2027-01-01 00:00:00';"
+
+  - id: create_end_user_context
+    name: CREATE END USER CONTEXT
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-end-user-context.html
+    tier: low
+    probes:
+      - id: basic
+        sql: |-
+          CREATE END USER CONTEXT hr.hcm USING JSON SCHEMA '{ "type": "object", "properties": { "emp_id": { "type": "integer" } } }';
+      - id: if_not_exists
+        sql: |-
+          CREATE END USER CONTEXT IF NOT EXISTS ctx USING JSON SCHEMA '{ "type": "object", "properties": { "a": { "type": "string" } } }';
+
+  - id: create_flashback_archive
+    name: CREATE FLASHBACK ARCHIVE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-FLASHBACK-ARCHIVE.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE FLASHBACK ARCHIVE fba TABLESPACE ts RETENTION 1 YEAR;"
+      - id: default_quota_optimize
+        sql: "CREATE FLASHBACK ARCHIVE DEFAULT fba TABLESPACE ts QUOTA 10 G NO OPTIMIZE DATA RETENTION 5 DAY;"
+
+  - id: create_hierarchy
+    name: CREATE HIERARCHY
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-HIERARCHY.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE HIERARCHY h USING ad (month CHILD OF quarter CHILD OF year);"
+      - id: hierarchical_attributes
+        sql: "CREATE OR REPLACE HIERARCHY s.h USING s.ad (month CHILD OF year) HIERARCHICAL ATTRIBUTES (member_name, level_name);"
+
+  - id: create_indextype
+    name: CREATE INDEXTYPE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-INDEXTYPE.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE INDEXTYPE it FOR op(VARCHAR2, NUMBER) USING impl_type;"
+      - id: array_dml_local_partition
+        sql: "CREATE OR REPLACE INDEXTYPE s.it FOR s.op1(NUMBER), s.op2(VARCHAR2) USING s.impl_type WITH ARRAY DML WITH LOCAL RANGE PARTITION;"
+
+  - id: create_inmemory_join_group
+    name: CREATE INMEMORY JOIN GROUP
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-INMEMORY-JOIN-GROUP.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE INMEMORY JOIN GROUP jg (t1(c1), t2(c2));"
+      - id: if_not_exists_qualified
+        sql: "CREATE INMEMORY JOIN GROUP IF NOT EXISTS s.jg (s.t1(c1), s.t2(c2), s.t3(c3));"
+
+  - id: create_java
+    name: CREATE JAVA
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-JAVA.html
+    tier: low
+    probes:
+      - id: class_using_bfile
+        sql: "CREATE JAVA CLASS USING BFILE (java_dir, 'Agent.class');"
+      - id: source_named
+        sql: |-
+          CREATE OR REPLACE AND COMPILE JAVA SOURCE NAMED "Welcome" AS public class Welcome { public static String welcome() { return "Welcome World"; } };
+      - id: resource_named
+        sql: "CREATE JAVA RESOURCE NAMED \"appText\" USING BFILE (java_dir, 'textBundle.dat');"
+
+  - id: create_library
+    name: CREATE LIBRARY
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-LIBRARY.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE LIBRARY lib AS '/usr/lib/libx.so';"
+      - id: or_replace_agent
+        sql: "CREATE OR REPLACE LIBRARY s.lib IS '/usr/lib/libx.so' AGENT 'agent_link';"
+
+  - id: create_lockdown_profile
+    name: CREATE LOCKDOWN PROFILE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-LOCKDOWN-PROFILE.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE LOCKDOWN PROFILE lp;"
+      - id: from_base
+        sql: "CREATE LOCKDOWN PROFILE lp FROM base_lp;"
+      - id: including_base
+        sql: "CREATE LOCKDOWN PROFILE lp INCLUDING base_lp;"
+
+  - id: create_logical_partition_tracking
+    name: CREATE LOGICAL PARTITION TRACKING
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-logical-partition-tracking.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE LOGICAL PARTITION TRACKING ON t PARTITION BY RANGE (c) (PARTITION p1 VALUES LESS THAN (100), PARTITION p2 VALUES LESS THAN (200));"
+      - id: interval
+        sql: "CREATE LOGICAL PARTITION TRACKING ON t PARTITION BY RANGE (c) INTERVAL (100) (PARTITION p1 VALUES LESS THAN (100));"
+
+  - id: create_materialized_zonemap
+    name: CREATE MATERIALIZED ZONEMAP
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-MATERIALIZED-ZONEMAP.html
+    tier: low
+    probes:
+      - id: on_table
+        sql: "CREATE MATERIALIZED ZONEMAP zm ON t (c1, c2);"
+      - id: on_table_attributes
+        sql: "CREATE MATERIALIZED ZONEMAP zm TABLESPACE ts SCALE 8 REFRESH FAST ON COMMIT DISABLE PRUNING ON t (c1);"
+      - id: as_subquery
+        sql: "CREATE MATERIALIZED ZONEMAP zm AS SELECT SYS_OP_ZONE_ID(f.rowid), MIN(f.c), MAX(f.c) FROM f f GROUP BY SYS_OP_ZONE_ID(f.rowid);"
+
+  - id: create_mle_env
+    name: CREATE MLE ENV
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-mle-env.html
+    tier: low
+    probes:
+      - id: clone
+        sql: "CREATE MLE ENV e CLONE base_env;"
+      - id: imports_language_options
+        sql: "CREATE OR REPLACE MLE ENV e IMPORTS ('lib' MODULE m) LANGUAGE OPTIONS 'js.strict=true' PURE;"
+
+  - id: create_mle_module
+    name: CREATE MLE MODULE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-mle-module.html
+    tier: low
+    probes:
+      - id: inline_text
+        sql: |-
+          CREATE MLE MODULE m LANGUAGE JAVASCRIPT AS export function f() { return 1; } ;
+      - id: using_bfile
+        sql: "CREATE OR REPLACE MLE MODULE m LANGUAGE JAVASCRIPT VERSION '1.0' USING BFILE (dir, 'm.js');"
+
+  - id: create_operator
+    name: CREATE OPERATOR
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-OPERATOR.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE OPERATOR op BINDING (VARCHAR2, VARCHAR2) RETURN NUMBER USING f;"
+      - id: multiple_bindings_context
+        sql: "CREATE OR REPLACE OPERATOR s.op BINDING (NUMBER) RETURN NUMBER WITH INDEX CONTEXT, SCAN CONTEXT impl_type COMPUTE ANCILLARY DATA USING pkg.f1, (VARCHAR2) RETURN NUMBER USING f2;"
+      - id: ancillary
+        sql: "CREATE OPERATOR anc BINDING (NUMBER) RETURN NUMBER ANCILLARY TO prim (NUMBER) USING f;"
+
+  - id: create_outline
+    name: CREATE OUTLINE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-OUTLINE.html
+    tier: low
+    probes:
+      - id: on_statement
+        sql: "CREATE OUTLINE o FOR CATEGORY cat ON SELECT * FROM t;"
+      - id: from_source
+        sql: "CREATE OR REPLACE PRIVATE OUTLINE o FROM PUBLIC src;"
+
+  - id: create_pfile
+    name: CREATE PFILE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-PFILE.html
+    tier: low
+    probes:
+      - id: from_spfile
+        sql: "CREATE PFILE = '/tmp/init.ora' FROM SPFILE = '/tmp/spfile.ora';"
+      - id: from_memory
+        sql: "CREATE PFILE FROM MEMORY;"
+
+  - id: create_pluggable_database
+    name: CREATE PLUGGABLE DATABASE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-PLUGGABLE-DATABASE.html
+    tier: low
+    probes:
+      - id: from_seed
+        sql: "CREATE PLUGGABLE DATABASE pdb1 ADMIN USER admin IDENTIFIED BY pw ROLES = (dba) FILE_NAME_CONVERT = ('/seed/', '/pdb1/');"
+      - id: clone
+        sql: "CREATE PLUGGABLE DATABASE pdb2 FROM pdb1 SNAPSHOT COPY;"
+      - id: clone_over_dblink
+        sql: "CREATE PLUGGABLE DATABASE pdb2 FROM pdb1@lnk REFRESH MODE EVERY 10 MINUTES;"
+      - id: from_xml
+        sql: "CREATE PLUGGABLE DATABASE pdb3 USING '/tmp/pdb.xml' NOCOPY;"
+      - id: application_container
+        sql: "CREATE PLUGGABLE DATABASE app_root AS APPLICATION CONTAINER ADMIN USER admin IDENTIFIED BY pw;"

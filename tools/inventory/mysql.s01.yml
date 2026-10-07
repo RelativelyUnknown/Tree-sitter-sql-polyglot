@@ -1,0 +1,43 @@
+dialect: mysql
+engine: MySQL
+version: "8.4"
+source: https://dev.mysql.com/doc/refman/8.4/en/sql-statements.html
+
+statements:
+  - id: rename_table
+    name: RENAME TABLE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/rename-table.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "RENAME TABLE t TO t2;"
+      - id: multiple_tables
+        sql: "RENAME TABLE t1 TO t1_new, t2 TO t2_new;"
+      - id: schema_qualified
+        sql: "RENAME TABLE db1.t TO db2.t;"
+      - id: swap_via_temp
+        sql: "RENAME TABLE t1 TO tmp, t2 TO t1, tmp TO t2;"
+    examples:
+      - "RENAME TABLE old_table TO new_table;"
+      - "RENAME TABLE old_table1 TO new_table1, old_table2 TO new_table2, old_table3 TO new_table3;"
+      - "RENAME TABLE old_table TO tmp_table, new_table TO old_table, tmp_table TO new_table;"
+
+  - id: call
+    name: CALL
+    doc: https://dev.mysql.com/doc/refman/8.4/en/call.html
+    tier: high
+    probes:
+      - id: with_args
+        sql: "CALL p(1, 'a');"
+      - id: no_args_parens
+        sql: "CALL p();"
+      - id: no_parens
+        sql: "CALL p;"
+      - id: user_variable_args
+        sql: "CALL p(@a, @b);"
+      - id: schema_qualified
+        sql: "CALL db.p(1);"
+      - id: expression_args
+        sql: "CALL p(1 + 2, CONCAT('a', 'b'));"
+    examples:
+      - "CALL p(@version, @increment);"

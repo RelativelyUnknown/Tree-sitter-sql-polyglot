@@ -1,0 +1,424 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements: []
+
+expressions:
+  - id: b_arithmetic_operators
+    name: Arithmetic operators (+ - * / % DIV MOD, unary - and +)
+    doc: https://mariadb.com/docs/server/reference/sql-structure/operators/arithmetic-operators
+    tier: high
+    probes:
+      - { id: plus, sql: "SELECT c + 1 FROM t;" }
+      - { id: minus, sql: "SELECT c - 1 FROM t;" }
+      - { id: multiply, sql: "SELECT c * 2 FROM t;" }
+      - { id: divide, sql: "SELECT c / 2 FROM t;" }
+      - { id: modulo_percent, sql: "SELECT c % 2 FROM t;" }
+      - { id: modulo_mod, sql: "SELECT c MOD 2 FROM t;" }
+      - { id: mod_function, sql: "SELECT MOD(c, 2) FROM t;" }
+      - { id: integer_div, sql: "SELECT c DIV 2 FROM t;" }
+      - { id: unary_minus, sql: "SELECT -c FROM t;" }
+      - { id: unary_plus, sql: "SELECT +c FROM t;" }
+    examples:
+      - "SELECT 300 DIV 7;"
+      - "SELECT 1042 % 50;"
+      - "SELECT 29 MOD 9;"
+
+  - id: b_date_interval_arithmetic
+    name: Temporal arithmetic with INTERVAL expr unit (+ and -)
+    doc: https://mariadb.com/docs/server/reference/sql-functions/date-time-functions/date_add
+    tier: high
+    probes:
+      - { id: plus_interval, sql: "SELECT '2008-12-31 23:59:59' + INTERVAL 1 SECOND;" }
+      - { id: interval_plus_date, sql: "SELECT INTERVAL 1 DAY + '2008-12-31';" }
+      - { id: minus_interval, sql: "SELECT '2005-01-01' - INTERVAL 1 SECOND;" }
+      - { id: composite_unit, sql: "SELECT '2100-12-31 23:59:59' + INTERVAL '1:1' MINUTE_SECOND;" }
+      - { id: column_interval, sql: "SELECT d + INTERVAL c DAY FROM t;" }
+      - { id: date_add, sql: "SELECT DATE_ADD('2010-12-31 23:59:59', INTERVAL 1 DAY);" }
+      - { id: date_sub, sql: "SELECT DATE_SUB('2010-12-31', INTERVAL 1 MONTH);" }
+      - { id: date_add_composite, sql: "SELECT DATE_ADD('1900-01-01 00:00:00', INTERVAL '-1 10' DAY_HOUR);" }
+      - { id: adddate_interval, sql: "SELECT ADDDATE('2008-01-02', INTERVAL 31 DAY);" }
+      - { id: timestampadd, sql: "SELECT TIMESTAMPADD(MINUTE, 1, '2003-01-02');" }
+      - { id: timestampdiff, sql: "SELECT TIMESTAMPDIFF(MONTH, '2003-02-01', '2003-05-01');" }
+    examples:
+      - "SELECT '2008-12-31 23:59:59' + INTERVAL 1 SECOND;"
+      - "SELECT INTERVAL 1 DAY + '2008-12-31';"
+      - "SELECT DATE_ADD('2010-12-31 23:59:59', INTERVAL 1 DAY);"
+
+  - id: b_bitwise_operators
+    name: Bit operators (| & ^ ~ << >>)
+    doc: https://mariadb.com/docs/server/reference/sql-functions/secondary-functions/bit-functions-and-operators
+    tier: medium
+    probes:
+      - { id: bit_or, sql: "SELECT a | b FROM t;" }
+      - { id: bit_and, sql: "SELECT a & b FROM t;" }
+      - { id: bit_xor, sql: "SELECT a ^ b FROM t;" }
+      - { id: bit_not, sql: "SELECT ~a FROM t;" }
+      - { id: bit_and_not, sql: "SELECT 3 & ~1;" }
+      - { id: shift_left, sql: "SELECT 1 << 2;" }
+      - { id: shift_right, sql: "SELECT 4 >> 2;" }
+      - { id: bit_count, sql: "SELECT BIT_COUNT(29);" }
+    examples:
+      - "SELECT 3 & ~1;"
+      - "SELECT 1 << 2;"
+
+  - id: b_comparison_operators
+    name: Comparison operators (= <=> <> != < <= > >=) and row comparison
+    doc: https://mariadb.com/docs/server/reference/sql-structure/operators/comparison-operators
+    tier: high
+    probes:
+      - { id: equal, sql: "SELECT a = b FROM t;" }
+      - { id: null_safe_equal, sql: "SELECT a <=> b FROM t;" }
+      - { id: not_equal_angle, sql: "SELECT a <> b FROM t;" }
+      - { id: not_equal_bang, sql: "SELECT a != b FROM t;" }
+      - { id: less_than, sql: "SELECT a < b FROM t;" }
+      - { id: less_equal, sql: "SELECT a <= b FROM t;" }
+      - { id: greater_than, sql: "SELECT a > b FROM t;" }
+      - { id: greater_equal, sql: "SELECT a >= b FROM t;" }
+      - { id: row_equal, sql: "SELECT * FROM t WHERE (a, b) = (1, 2);" }
+      - { id: row_less, sql: "SELECT (t1.a, t1.b) < (t2.x, t2.y) FROM t1 INNER JOIN t2;" }
+      - { id: row_null_safe, sql: "SELECT (t1.a, t1.b) <=> (t2.x, t2.y) FROM t1 INNER JOIN t2;" }
+      - { id: coalesce, sql: "SELECT COALESCE(a, b, 0) FROM t;" }
+      - { id: greatest_least, sql: "SELECT GREATEST(2, 0), LEAST(2, 0);" }
+      - { id: isnull_function, sql: "SELECT ISNULL(a) FROM t;" }
+      - { id: interval_function, sql: "SELECT INTERVAL(22, 24, 26, 28);" }
+    examples:
+      - "SELECT 1 <=> 1, NULL <=> NULL, 1 <=> NULL;"
+      - "SELECT 1 = 1, NULL = NULL, 1 = NULL;"
+      - "SELECT INTERVAL(22, 24, 26, 28);"
+
+  - id: b_logical_operators
+    name: Logical operators (AND && OR || NOT ! XOR)
+    doc: https://mariadb.com/docs/server/reference/sql-structure/operators/logical-operators
+    tier: high
+    probes:
+      - { id: and_keyword, sql: "SELECT * FROM t WHERE a = 1 AND b = 2;" }
+      - { id: and_symbol, sql: "SELECT * FROM t WHERE a = 1 && b = 2;" }
+      - { id: or_keyword, sql: "SELECT * FROM t WHERE a = 1 OR b = 2;" }
+      - { id: or_symbol, sql: "SELECT * FROM t WHERE a = 1 || b = 2;" }
+      - { id: not_keyword, sql: "SELECT * FROM t WHERE NOT a = 1;" }
+      - { id: not_symbol, sql: "SELECT !a FROM t;" }
+      - { id: xor, sql: "SELECT 1 XOR 0;" }
+      - { id: combined_parens, sql: "SELECT * FROM t WHERE (a = 1 OR b = 2) AND NOT c = 3 XOR d = 4;" }
+    examples:
+      - "SELECT 1 XOR 1;"
+      - "SELECT 1 XOR 0;"
+
+  - id: b_assignment_operators
+    name: Assignment operators (:= on user variables, = in SET)
+    doc: https://mariadb.com/docs/server/reference/sql-structure/operators/assignment-operators/assignment-operator
+    tier: medium
+    probes:
+      - { id: assign_colon_equals, sql: "SELECT @x := 10;" }
+      - { id: assign_chain, sql: "SELECT @x, @y := @x;" }
+      - { id: assign_in_where, sql: "SELECT * FROM t WHERE (@n := @n + 1) > 1;" }
+      - { id: set_assign, sql: "UPDATE t SET c = 1 WHERE a = 2;" }
+    examples:
+      - "SELECT @x := 10;"
+      - "SELECT @x, @y := @x;"
+
+  - id: b_string_unary_operators
+    name: BINARY and COLLATE prefix/postfix operators
+    doc: https://mariadb.com/docs/server/reference/sql-functions/string-functions/binary-operator
+    tier: medium
+    probes:
+      - { id: binary_operator, sql: "SELECT BINARY 'a' = 'A';" }
+      - { id: binary_column, sql: "SELECT * FROM t WHERE BINARY c = 'abc';" }
+      - { id: collate_postfix, sql: "SELECT c COLLATE utf8mb4_bin FROM t;" }
+      - { id: collate_comparison, sql: "SELECT * FROM t WHERE c = 'abc' COLLATE utf8mb4_general_ci;" }
+    examples:
+      - "SELECT BINARY 'a' = 'A';"
+      - "SELECT 'a' = 'a ';"
+      - "SELECT BINARY 'a' = 'a ';"
+
+  - id: b_operator_precedence
+    name: Operator precedence and parenthesised grouping
+    doc: https://mariadb.com/docs/server/reference/sql-structure/operators/operator-precedence
+    tier: medium
+    probes:
+      - { id: arithmetic_mix, sql: "SELECT 1 + 2 * 3 - 4 / 2 DIV 1 % 3;" }
+      - { id: bit_and_comparison, sql: "SELECT a | b & c ^ d << 1 >> 2 FROM t;" }
+      - { id: comparison_logic, sql: "SELECT * FROM t WHERE a < 1 OR b >= 2 AND NOT c <=> 3;" }
+      - { id: unary_chain, sql: "SELECT -~a, !b FROM t;" }
+      - { id: parenthesised, sql: "SELECT (a + b) * (c - d) FROM t;" }
+
+  - id: b_like_predicate
+    name: LIKE / NOT LIKE with ESCAPE
+    doc: https://mariadb.com/docs/server/reference/sql-functions/string-functions/like
+    tier: high
+    probes:
+      - { id: like, sql: "SELECT * FROM t WHERE c LIKE 'T%';" }
+      - { id: not_like, sql: "SELECT * FROM t WHERE c NOT LIKE 'T%';" }
+      - { id: like_escape, sql: "SELECT * FROM t WHERE c LIKE '%\\_%' ESCAPE '\\';" }
+      - { id: not_like_escape, sql: "SELECT * FROM t WHERE c NOT LIKE '%|%%' ESCAPE '|';" }
+      - { id: like_expression_pattern, sql: "SELECT * FROM t WHERE c LIKE CONCAT(p, '%');" }
+    examples:
+      - "SELECT * FROM t1 WHERE d LIKE \"T%\";"
+      - "SELECT * FROM t1 WHERE d LIKE \"%es%\";"
+      - "SELECT * FROM t1 WHERE d like \"___day\";"
+
+  - id: b_regexp_predicate
+    name: REGEXP / RLIKE / NOT REGEXP / NOT RLIKE
+    doc: https://mariadb.com/docs/server/reference/sql-functions/string-functions/regular-expressions-functions/regexp
+    tier: high
+    probes:
+      - { id: regexp, sql: "SELECT * FROM t WHERE c REGEXP '^[a-d]';" }
+      - { id: rlike, sql: "SELECT * FROM t WHERE c RLIKE '^[a-d]';" }
+      - { id: not_regexp, sql: "SELECT * FROM t WHERE c NOT REGEXP '^[a-d]';" }
+      - { id: not_rlike, sql: "SELECT * FROM t WHERE c NOT RLIKE '^[a-d]';" }
+      - { id: regexp_binary, sql: "SELECT 'a' REGEXP BINARY 'A';" }
+    examples:
+      - "SELECT 'Monty!' REGEXP 'm%y%%';"
+      - "SELECT 'Monty!' REGEXP '.*';"
+      - "SELECT 'a' REGEXP '^[a-d]';"
+
+  - id: b_sounds_like
+    name: SOUNDS LIKE
+    doc: https://mariadb.com/docs/server/reference/sql-functions/string-functions/sounds-like
+    tier: low
+    probes:
+      - { id: sounds_like, sql: "SELECT * FROM t WHERE c SOUNDS LIKE 'robert';" }
+    examples:
+      - "SELECT givenname, surname FROM users WHERE givenname SOUNDS LIKE \"robert\";"
+
+  - id: b_between_predicate
+    name: BETWEEN ... AND / NOT BETWEEN
+    doc: https://mariadb.com/docs/server/reference/sql-structure/operators/comparison-operators/between-and
+    tier: high
+    probes:
+      - { id: between, sql: "SELECT * FROM t WHERE c BETWEEN 1 AND 10;" }
+      - { id: not_between, sql: "SELECT * FROM t WHERE c NOT BETWEEN 1 AND 10;" }
+      - { id: not_prefix_between, sql: "SELECT * FROM t WHERE NOT c BETWEEN 1 AND 10;" }
+      - { id: between_strings, sql: "SELECT 'b' BETWEEN 'a' AND 'c';" }
+      - { id: between_expressions, sql: "SELECT * FROM t WHERE c + 1 BETWEEN a * 2 AND b - 1;" }
+    examples:
+      - "SELECT 1 BETWEEN 2 AND 3;"
+      - "SELECT 'b' BETWEEN 'a' AND 'c';"
+      - "SELECT 2 BETWEEN 2 AND '3';"
+
+  - id: b_in_predicate
+    name: IN / NOT IN (value list and subquery)
+    doc: https://mariadb.com/docs/server/reference/sql-structure/operators/comparison-operators/in
+    tier: high
+    probes:
+      - { id: in_list, sql: "SELECT * FROM t WHERE c IN (1, 2, 3);" }
+      - { id: not_in_list, sql: "SELECT * FROM t WHERE c NOT IN (1, 2, 3);" }
+      - { id: in_strings, sql: "SELECT 'wefwf' IN ('wee', 'wefwf', 'weg');" }
+      - { id: in_with_null, sql: "SELECT 1 IN (1, 2, NULL);" }
+      - { id: in_subquery, sql: "SELECT * FROM t WHERE c IN (SELECT x FROM s);" }
+      - { id: not_in_subquery, sql: "SELECT * FROM t WHERE c NOT IN (SELECT x FROM s);" }
+      - { id: row_in_subquery, sql: "SELECT name, age FROM staff WHERE (name, age) IN (SELECT name, age FROM customer);" }
+      - { id: row_in_list, sql: "SELECT * FROM t WHERE (a, b) IN ((1, 2), (3, 4));" }
+    examples:
+      - "SELECT 2 IN (0,3,5,7);"
+      - "SELECT 'wefwf' IN ('wee','wefwf','weg');"
+      - "SELECT 1 IN ('1', '2', '3');"
+
+  - id: b_is_predicates
+    name: IS [NOT] NULL / TRUE / FALSE / UNKNOWN
+    doc: https://mariadb.com/docs/server/reference/sql-structure/operators/comparison-operators/is
+    tier: high
+    probes:
+      - { id: is_null, sql: "SELECT * FROM t WHERE c IS NULL;" }
+      - { id: is_not_null, sql: "SELECT * FROM t WHERE c IS NOT NULL;" }
+      - { id: is_true, sql: "SELECT 1 IS TRUE;" }
+      - { id: is_false, sql: "SELECT 0 IS FALSE;" }
+      - { id: is_unknown, sql: "SELECT NULL IS UNKNOWN;" }
+      - { id: is_not_true, sql: "SELECT 1 IS NOT TRUE;" }
+      - { id: is_not_false, sql: "SELECT 1 IS NOT FALSE;" }
+      - { id: is_not_unknown, sql: "SELECT 1 IS NOT UNKNOWN;" }
+    examples:
+      - "SELECT 1 IS TRUE, 0 IS FALSE, NULL IS UNKNOWN;"
+      - "SELECT 2 = TRUE, 2 IS TRUE;"
+      - "SELECT 1 IS NULL, 0 IS NULL, NULL IS NULL;"
+
+  - id: b_is_json_predicate
+    name: IS [NOT] JSON predicate
+    doc: https://mariadb.com/docs/server/reference/sql-structure/operators/comparison-operators/is-json
+    tier: low
+    probes:
+      - { id: is_json, sql: "SELECT c IS JSON FROM t;" }
+      - { id: is_not_json, sql: "SELECT c IS NOT JSON FROM t;" }
+      - { id: is_json_object, sql: "SELECT c IS JSON OBJECT FROM t;" }
+      - { id: is_json_array, sql: "SELECT c IS JSON ARRAY FROM t;" }
+      - { id: is_json_scalar, sql: "SELECT c IS JSON SCALAR FROM t;" }
+      - { id: is_json_value_unique, sql: "SELECT c IS JSON VALUE WITH UNIQUE KEYS FROM t;" }
+      - { id: is_json_without_unique, sql: "SELECT c IS JSON OBJECT WITHOUT UNIQUE KEYS FROM t;" }
+    examples:
+      - "SELECT '\"abc\"' IS JSON;"
+
+  - id: b_exists_predicate
+    name: EXISTS / NOT EXISTS subquery predicate
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-manipulation/selecting-data/subqueries/subqueries-and-exists
+    tier: high
+    probes:
+      - { id: exists, sql: "SELECT * FROM t WHERE EXISTS (SELECT * FROM s);" }
+      - { id: not_exists, sql: "SELECT * FROM t WHERE NOT EXISTS (SELECT * FROM s);" }
+      - { id: correlated_exists, sql: "SELECT * FROM t WHERE EXISTS (SELECT 1 FROM s WHERE s.a = t.a);" }
+      - { id: exists_in_select_list, sql: "SELECT EXISTS (SELECT 1 FROM s) FROM t;" }
+    examples:
+      - "SELECT col1 FROM t1 WHERE EXISTS (SELECT * FROM t2);"
+      - "SELECT * FROM sq1 WHERE EXISTS (SELECT * FROM sq2 WHERE num2>50);"
+      - "SELECT * FROM sq1 WHERE NOT EXISTS (SELECT * FROM sq2 GROUP BY num2 HAVING MIN(num2)=40);"
+
+  - id: b_any_all_predicates
+    name: ANY / SOME / ALL quantified subquery comparisons
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-manipulation/selecting-data/subqueries/subqueries-and-any
+    tier: high
+    probes:
+      - { id: any, sql: "SELECT * FROM t WHERE a > ANY (SELECT x FROM s);" }
+      - { id: some, sql: "SELECT * FROM t WHERE a > SOME (SELECT x FROM s);" }
+      - { id: all, sql: "SELECT * FROM t WHERE a > ALL (SELECT x FROM s);" }
+      - { id: equal_any, sql: "SELECT * FROM t WHERE a = ANY (SELECT x FROM s);" }
+      - { id: not_equal_all, sql: "SELECT * FROM t WHERE a <> ALL (SELECT x FROM s);" }
+      - { id: bang_equal_all, sql: "SELECT * FROM t WHERE a != ALL (SELECT x FROM s);" }
+      - { id: less_equal_any, sql: "SELECT * FROM t WHERE a <= ANY (SELECT x FROM s);" }
+      - { id: greater_equal_all, sql: "SELECT * FROM t WHERE a >= ALL (SELECT x FROM s);" }
+    examples:
+      - "SELECT * FROM sq1 WHERE num1 > ANY (SELECT * FROM sq2);"
+      - "SELECT * FROM sq1 WHERE num1 > SOME (SELECT * FROM sq2);"
+      - "SELECT * FROM sq1 WHERE num > ALL (SELECT * FROM sq2);"
+
+  - id: b_scalar_row_subqueries
+    name: Scalar and row subqueries in expressions
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-manipulation/selecting-data/subqueries/subqueries-scalar-subqueries
+    tier: high
+    probes:
+      - { id: scalar_in_select_list, sql: "SELECT (SELECT MAX(x) FROM s) FROM t;" }
+      - { id: scalar_in_comparison, sql: "SELECT * FROM t WHERE a = (SELECT MAX(x) FROM s);" }
+      - { id: scalar_in_insert_values, sql: "INSERT INTO sq2 VALUES (10 * (SELECT num FROM sq1));" }
+      - { id: row_subquery_equal, sql: "SELECT * FROM staff WHERE (name, age) = (SELECT name, age FROM customer WHERE name = 'Valerius');" }
+      - { id: correlated_scalar, sql: "SELECT a, (SELECT COUNT(*) FROM s WHERE s.a = t.a) FROM t;" }
+    examples:
+      - "INSERT INTO sq2 VALUES (10* (SELECT num FROM sq1));"
+      - "SELECT * FROM staff WHERE (name,age) = (SELECT name,age FROM customer WHERE name='Valerius');"
+      - "SELECT name,age FROM staff WHERE (name,age) IN (SELECT name,age FROM customer);"
+
+  - id: b_match_against
+    name: MATCH ... AGAINST full-text predicate
+    doc: https://mariadb.com/docs/server/reference/sql-functions/string-functions/match-against
+    tier: medium
+    probes:
+      - { id: match_basic, sql: "SELECT * FROM t WHERE MATCH (a) AGAINST ('word');" }
+      - { id: match_multi_column, sql: "SELECT * FROM t WHERE MATCH (a, b) AGAINST ('word');" }
+      - { id: match_natural_language, sql: "SELECT * FROM t WHERE MATCH (a) AGAINST ('word' IN NATURAL LANGUAGE MODE);" }
+      - { id: match_natural_expansion, sql: "SELECT * FROM t WHERE MATCH (a) AGAINST ('word' IN NATURAL LANGUAGE MODE WITH QUERY EXPANSION);" }
+      - { id: match_boolean, sql: "SELECT * FROM t WHERE MATCH (a) AGAINST ('+word -other' IN BOOLEAN MODE);" }
+      - { id: match_query_expansion, sql: "SELECT * FROM t WHERE MATCH (a) AGAINST ('word' WITH QUERY EXPANSION);" }
+      - { id: match_in_select_list, sql: "SELECT id, MATCH (title, body) AGAINST ('word') AS score FROM t;" }
+    examples:
+      - "SELECT * FROM ft_myisam WHERE MATCH(copy) AGAINST('wicked');"
+
+  - id: b_case_expression
+    name: CASE expression (simple and searched)
+    doc: https://mariadb.com/docs/server/reference/sql-functions/control-flow-functions/case-operator
+    tier: high
+    probes:
+      - { id: simple_case, sql: "SELECT CASE c WHEN 1 THEN 'one' WHEN 2 THEN 'two' END FROM t;" }
+      - { id: simple_case_else, sql: "SELECT CASE c WHEN 1 THEN 'one' WHEN 2 THEN 'two' ELSE 'more' END FROM t;" }
+      - { id: searched_case, sql: "SELECT CASE WHEN c > 0 THEN 'pos' WHEN c < 0 THEN 'neg' END FROM t;" }
+      - { id: searched_case_else, sql: "SELECT CASE WHEN c > 0 THEN 'pos' ELSE 'other' END FROM t;" }
+      - { id: case_binary_operand, sql: "SELECT CASE BINARY 'B' WHEN 'a' THEN 1 WHEN 'b' THEN 2 END;" }
+      - { id: case_in_where, sql: "SELECT * FROM t WHERE CASE WHEN a = 1 THEN b ELSE c END > 2;" }
+      - { id: nested_case, sql: "SELECT CASE WHEN a = 1 THEN CASE WHEN b = 2 THEN 'x' ELSE 'y' END ELSE 'z' END FROM t;" }
+      - { id: case_in_order_by, sql: "SELECT * FROM t ORDER BY CASE WHEN a IS NULL THEN 1 ELSE 0 END, a;" }
+    examples:
+      - "SELECT CASE 1 WHEN 1 THEN 'one' WHEN 2 THEN 'two' ELSE 'more' END;"
+      - "SELECT CASE WHEN 1>0 THEN 'true' ELSE 'false' END;"
+      - "SELECT CASE BINARY 'B' WHEN 'a' THEN 1 WHEN 'b' THEN 2 END;"
+
+  - id: b_extract_function
+    name: EXTRACT(unit FROM date)
+    doc: https://mariadb.com/docs/server/reference/sql-functions/date-time-functions/extract
+    tier: high
+    probes:
+      - { id: extract_year, sql: "SELECT EXTRACT(YEAR FROM d) FROM t;" }
+      - { id: extract_month, sql: "SELECT EXTRACT(MONTH FROM '2009-07-02');" }
+      - { id: extract_hour, sql: "SELECT EXTRACT(HOUR FROM '26:30:00');" }
+      - { id: extract_microsecond, sql: "SELECT EXTRACT(MICROSECOND FROM '2003-01-02 10:30:00.000123');" }
+      - { id: extract_year_month, sql: "SELECT EXTRACT(YEAR_MONTH FROM '2009-07-02 01:02:03');" }
+      - { id: extract_day_minute, sql: "SELECT EXTRACT(DAY_MINUTE FROM '2009-07-02 01:02:03');" }
+      - { id: extract_week, sql: "SELECT EXTRACT(WEEK FROM d) FROM t;" }
+      - { id: extract_quarter, sql: "SELECT EXTRACT(QUARTER FROM d) FROM t;" }
+    examples:
+      - "SELECT EXTRACT(YEAR_MONTH FROM '2009-07-02 01:02:03');"
+      - "SELECT EXTRACT(DAY_MINUTE FROM '2009-07-02 01:02:03');"
+      - "SELECT EXTRACT(MICROSECOND FROM '2003-01-02 10:30:00.000123');"
+
+  - id: b_substring_function
+    name: SUBSTRING / SUBSTR with FROM ... FOR
+    doc: https://mariadb.com/docs/server/reference/sql-functions/string-functions/substring
+    tier: high
+    probes:
+      - { id: substring_comma_pos, sql: "SELECT SUBSTRING(c, 2) FROM t;" }
+      - { id: substring_comma_pos_len, sql: "SELECT SUBSTRING(c, 2, 3) FROM t;" }
+      - { id: substring_from, sql: "SELECT SUBSTRING(c FROM 2) FROM t;" }
+      - { id: substring_from_for, sql: "SELECT SUBSTRING(c FROM 2 FOR 3) FROM t;" }
+      - { id: substring_negative_from_for, sql: "SELECT SUBSTRING('Knowledgebase' FROM -8 FOR 4);" }
+      - { id: substr_comma, sql: "SELECT SUBSTR(c, 1, 2) FROM t;" }
+      - { id: substr_from, sql: "SELECT SUBSTR(c FROM 2) FROM t;" }
+      - { id: substr_from_for, sql: "SELECT SUBSTR(c FROM 2 FOR 3) FROM t;" }
+    examples:
+      - "SELECT SUBSTRING('MariaDB' FROM 6);"
+      - "SELECT SUBSTRING('Knowledgebase', -8, 4);"
+      - "SELECT SUBSTRING('Knowledgebase' FROM -8 FOR 4);"
+
+  - id: b_trim_function
+    name: TRIM([{BOTH | LEADING | TRAILING} [remstr] FROM] str)
+    doc: https://mariadb.com/docs/server/reference/sql-functions/string-functions/trim
+    tier: high
+    probes:
+      - { id: trim_plain, sql: "SELECT TRIM(c) FROM t;" }
+      - { id: trim_remstr_from, sql: "SELECT TRIM('x' FROM c) FROM t;" }
+      - { id: trim_both_remstr, sql: "SELECT TRIM(BOTH 'x' FROM c) FROM t;" }
+      - { id: trim_leading_remstr, sql: "SELECT TRIM(LEADING 'x' FROM c) FROM t;" }
+      - { id: trim_trailing_remstr, sql: "SELECT TRIM(TRAILING 'xyz' FROM c) FROM t;" }
+      - { id: trim_both_no_remstr, sql: "SELECT TRIM(BOTH FROM c) FROM t;" }
+      - { id: trim_leading_no_remstr, sql: "SELECT TRIM(LEADING FROM c) FROM t;" }
+      - { id: trim_trailing_no_remstr, sql: "SELECT TRIM(TRAILING FROM c) FROM t;" }
+      - { id: trim_oracle, sql: "SELECT TRIM_ORACLE(LEADING 'x' FROM c) FROM t;" }
+      - { id: ltrim_rtrim, sql: "SELECT LTRIM(c), RTRIM(c) FROM t;" }
+
+  - id: b_position_function
+    name: POSITION(substr IN str)
+    doc: https://mariadb.com/docs/server/reference/sql-functions/string-functions/position
+    tier: medium
+    probes:
+      - { id: position_in, sql: "SELECT POSITION('bar' IN c) FROM t;" }
+      - { id: position_literal, sql: "SELECT POSITION('bar' IN 'foobarbar');" }
+      - { id: locate_function, sql: "SELECT LOCATE('bar', c) FROM t;" }
+
+  - id: b_cast_convert_functions
+    name: CAST(expr AS type), CONVERT(expr, type), CONVERT(expr USING charset)
+    doc: https://mariadb.com/docs/server/reference/sql-functions/string-functions/cast
+    tier: high
+    probes:
+      - { id: cast_binary, sql: "SELECT CAST(c AS BINARY) FROM t;" }
+      - { id: cast_binary_len, sql: "SELECT CAST(c AS BINARY(4)) FROM t;" }
+      - { id: cast_char, sql: "SELECT CAST(c AS CHAR) FROM t;" }
+      - { id: cast_char_len, sql: "SELECT CAST(c AS CHAR(10)) FROM t;" }
+      - { id: cast_char_charset, sql: "SELECT CAST(123 AS CHAR CHARACTER SET utf8);" }
+      - { id: cast_varchar, sql: "SELECT CAST(c AS VARCHAR(10)) FROM t;" }
+      - { id: cast_date, sql: "SELECT CAST(c AS DATE) FROM t;" }
+      - { id: cast_datetime, sql: "SELECT CAST(c AS DATETIME) FROM t;" }
+      - { id: cast_datetime_precision, sql: "SELECT CAST(c AS DATETIME(6)) FROM t;" }
+      - { id: cast_time, sql: "SELECT CAST(c AS TIME) FROM t;" }
+      - { id: cast_decimal, sql: "SELECT CAST(c AS DECIMAL) FROM t;" }
+      - { id: cast_decimal_m_d, sql: "SELECT CAST(c AS DECIMAL(10, 2)) FROM t;" }
+      - { id: cast_double, sql: "SELECT CAST(c AS DOUBLE) FROM t;" }
+      - { id: cast_float, sql: "SELECT CAST(c AS FLOAT) FROM t;" }
+      - { id: cast_integer, sql: "SELECT CAST(c AS INTEGER) FROM t;" }
+      - { id: cast_signed, sql: "SELECT CAST(c AS SIGNED) FROM t;" }
+      - { id: cast_signed_integer, sql: "SELECT CAST(c AS SIGNED INTEGER) FROM t;" }
+      - { id: cast_unsigned, sql: "SELECT CAST(c AS UNSIGNED) FROM t;" }
+      - { id: cast_unsigned_integer, sql: "SELECT CAST('1' AS UNSIGNED INTEGER);" }
+      - { id: cast_interval, sql: "SELECT CAST(c AS INTERVAL DAY_SECOND(2)) FROM t;" }
+      - { id: convert_type, sql: "SELECT CONVERT(c, SIGNED) FROM t;" }
+      - { id: convert_char, sql: "SELECT CONVERT(c, CHAR) FROM t;" }
+      - { id: convert_using, sql: "SELECT CONVERT(c USING utf8) FROM t;" }
+    examples:
+      - "SELECT CAST(\"abc\" AS BINARY);"
+      - "SELECT CAST(\"1\" AS UNSIGNED INTEGER);"
+      - "SELECT CAST('abc' AS CHAR CHARACTER SET utf8mb4);"

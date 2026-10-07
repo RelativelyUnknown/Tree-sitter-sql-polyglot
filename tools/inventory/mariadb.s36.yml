@@ -1,0 +1,222 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements:
+  - id: show_processlist
+    name: SHOW PROCESSLIST
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/show/show-processlist
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW PROCESSLIST;"
+      - id: full
+        sql: "SHOW FULL PROCESSLIST;"
+    examples:
+      - "SHOW PROCESSLIST;"
+
+  - id: show_status
+    name: SHOW STATUS
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/show/show-status
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW STATUS;"
+      - id: global
+        sql: "SHOW GLOBAL STATUS;"
+      - id: session_like
+        sql: "SHOW SESSION STATUS LIKE 'Key%';"
+      - id: where
+        sql: "SHOW STATUS WHERE Variable_name = 'Uptime';"
+    examples:
+      - "SHOW GLOBAL STATUS;"
+      - "SHOW STATUS LIKE 'Key%';"
+
+  - id: show_table_status
+    name: SHOW TABLE STATUS
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/show/show-table-status
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW TABLE STATUS;"
+      - id: from_db
+        sql: "SHOW TABLE STATUS FROM d;"
+      - id: in_db_like
+        sql: "SHOW TABLE STATUS IN d LIKE 't%';"
+      - id: where
+        sql: "SHOW TABLE STATUS WHERE Engine = 'InnoDB';"
+
+  - id: show_tables
+    name: SHOW TABLES
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/show/show-tables
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW TABLES;"
+      - id: full
+        sql: "SHOW FULL TABLES;"
+      - id: from_db
+        sql: "SHOW TABLES FROM d;"
+      - id: like
+        sql: "SHOW TABLES LIKE 'a%';"
+      - id: where
+        sql: "SHOW TABLES WHERE Tables_in_test LIKE 'a%';"
+    examples:
+      - "SHOW TABLES;"
+      - "SHOW TABLES WHERE Tables_in_test LIKE 'a%';"
+      - "SHOW FULL TABLES;"
+
+  - id: show_triggers
+    name: SHOW TRIGGERS
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/show/show-triggers
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW TRIGGERS;"
+      - id: from_db
+        sql: "SHOW TRIGGERS FROM d;"
+      - id: like
+        sql: "SHOW TRIGGERS LIKE 'animals';"
+      - id: where
+        sql: "SHOW TRIGGERS WHERE Event = 'INSERT';"
+
+  - id: show_variables
+    name: SHOW VARIABLES
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/show/show-variables
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW VARIABLES;"
+      - id: global
+        sql: "SHOW GLOBAL VARIABLES;"
+      - id: session_like
+        sql: "SHOW SESSION VARIABLES LIKE 'maria_group_commit';"
+      - id: where
+        sql: "SHOW VARIABLES WHERE Variable_name = 'version';"
+    examples:
+      - "SHOW VARIABLES LIKE 'maria_group_commit';"
+      - "SHOW SESSION VARIABLES LIKE 'maria_group_commit';"
+      - "SHOW VARIABLES LIKE 'aria%';"
+
+  - id: show_warnings
+    name: SHOW WARNINGS
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/show/show-warnings
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW WARNINGS;"
+      - id: limit
+        sql: "SHOW WARNINGS LIMIT 5;"
+      - id: limit_offset
+        sql: "SHOW WARNINGS LIMIT 2, 5;"
+      - id: show_errors
+        sql: "SHOW ERRORS;"
+      - id: show_errors_limit_offset
+        sql: "SHOW ERRORS LIMIT 5 OFFSET 2;"
+      - id: count_warnings
+        sql: "SHOW COUNT(*) WARNINGS;"
+    examples:
+      - "SHOW COUNT(*) WARNINGS;"
+
+  - id: minus
+    name: MINUS
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-manipulation/selecting-data/set-operations/minus
+    tier: low
+    probes:
+      - id: basic
+        sql: "SELECT i FROM t WHERE i <= 3 MINUS SELECT i FROM t WHERE i >= 3;"
+        note: Synonym for EXCEPT; the page says it is a synonym when SQL_MODE=ORACLE is set.
+
+  - id: select_into_dumpfile
+    name: SELECT ... INTO DUMPFILE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-manipulation/selecting-data/select-into-dumpfile
+    tier: low
+    probes:
+      - id: basic
+        sql: "SELECT c FROM t INTO DUMPFILE '/tmp/f';"
+
+  - id: insert_delayed
+    name: INSERT DELAYED
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-manipulation/inserting-loading-data/insert-delayed
+    tier: low
+    probes:
+      - id: basic
+        sql: "INSERT DELAYED INTO t (c) VALUES (1);"
+
+  - id: load_index_into_cache
+    name: LOAD INDEX INTO CACHE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-manipulation/inserting-loading-data/load-data-into-tables-or-index/load-index
+    tier: low
+    probes:
+      - id: basic
+        sql: "LOAD INDEX INTO CACHE t;"
+      - id: index_ignore_leaves
+        sql: "LOAD INDEX INTO CACHE t1 INDEX (idx1, idx2) IGNORE LEAVES, t2 KEY (idx3);"
+
+  - id: handler
+    name: HANDLER
+    doc: https://mariadb.com/docs/server/reference/sql-structure/nosql/handler/handler-commands
+    tier: low
+    probes:
+      - id: open_alias
+        sql: "HANDLER t OPEN AS h;"
+      - id: read_index_value
+        sql: "HANDLER t READ idx = (1) WHERE c > 0 LIMIT 5;"
+      - id: read_index_first
+        sql: "HANDLER t READ idx FIRST;"
+      - id: read_next
+        sql: "HANDLER t READ NEXT LIMIT 10;"
+      - id: close
+        sql: "HANDLER t CLOSE;"
+
+  - id: create_function_udf
+    name: CREATE FUNCTION ... SONAME (UDF)
+    doc: https://mariadb.com/docs/server/server-usage/user-defined-functions/create-function-udf
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE FUNCTION f RETURNS STRING SONAME 'ha_udf.so';"
+      - id: or_replace_aggregate
+        sql: "CREATE OR REPLACE AGGREGATE FUNCTION IF NOT EXISTS f RETURNS INTEGER SONAME 'ha_udf.so';"
+
+  - id: drop_function_udf
+    name: DROP FUNCTION (UDF)
+    doc: https://mariadb.com/docs/server/server-usage/user-defined-functions/drop-function-udf
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP FUNCTION IF EXISTS f;"
+
+  - id: create_server
+    name: CREATE SERVER
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-definition/create/create-server
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE SERVER s FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'remotehost', DATABASE 'd', USER 'u', PASSWORD 'p', PORT 3306);"
+      - id: or_replace_if_not_exists
+        sql: "CREATE OR REPLACE SERVER IF NOT EXISTS s FOREIGN DATA WRAPPER mysql OPTIONS (SOCKET '/tmp/mysql.sock', OWNER 'o');"
+
+  - id: alter_server
+    name: ALTER SERVER
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-definition/alter/alter-server
+    tier: low
+    probes:
+      - id: basic
+        sql: "ALTER SERVER s OPTIONS (HOST 'newhost', USER 'u2');"
+
+  - id: drop_server
+    name: DROP SERVER
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-definition/drop/drop-server
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP SERVER IF EXISTS s;"
+
+  - id: create_tablespace
+    name: CREATE TABLESPACE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-definition/create/create-tablespace
+    tier: low
+    status: not-applicable
+    reason: 'The page states "The CREATE TABLESPACE statement is not supported by MariaDB. It was originally inherited from MySQL NDB Cluster."'

@@ -1,0 +1,92 @@
+dialect: spark
+engine: Apache Spark SQL
+version: "4.x (docs/latest)"
+source: https://spark.apache.org/docs/latest/sql-ref-syntax.html
+
+statements:
+  - id: drop_view
+    name: DROP VIEW
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-drop-view.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "DROP VIEW v;"
+      - id: if_exists
+        sql: "DROP VIEW IF EXISTS v;"
+      - id: database_qualified
+        sql: "DROP VIEW db.v;"
+      - id: catalog_database_qualified
+        sql: "DROP VIEW IF EXISTS cat.db.v;"
+      - id: temporary_session_qualified
+        sql: "DROP VIEW session.v;"
+    examples:
+      - "DROP VIEW employeeView;"
+      - "DROP VIEW IF EXISTS employeeView;"
+      - "DROP VIEW session.recent_orders;"
+
+  - id: insert_table
+    name: INSERT TABLE
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-dml-insert-table.html
+    tier: high
+    probes:
+      - id: into_values
+        sql: "INSERT INTO t VALUES (1, 'a');"
+      - id: into_table_keyword
+        sql: "INSERT INTO TABLE t VALUES (1, 'a');"
+      - id: values_null
+        sql: "INSERT INTO t VALUES (1, NULL);"
+      - id: values_multi_row
+        sql: "INSERT INTO t VALUES (1, 'a'), (2, 'b');"
+      - id: into_select
+        sql: "INSERT INTO t SELECT a, b FROM s;"
+      - id: into_qualified
+        sql: "INSERT INTO db.t SELECT a, b FROM s;"
+      - id: overwrite
+        sql: "INSERT OVERWRITE t SELECT a, b FROM s;"
+      - id: overwrite_table
+        sql: "INSERT OVERWRITE TABLE t SELECT a, b FROM s;"
+      - id: overwrite_values
+        sql: "INSERT OVERWRITE t VALUES (1, 'a');"
+      - id: table_keyword_omitted_into_omitted
+        sql: "INSERT TABLE t VALUES (1, 'a');"
+        note: "Syntax block makes both INTO|OVERWRITE and TABLE optional, so INSERT TABLE t is derivable from the grammar."
+      - id: partition_static
+        sql: "INSERT INTO t PARTITION (p = 1) SELECT a, b FROM s;"
+      - id: partition_multi
+        sql: "INSERT INTO t PARTITION (p = 1, q = 'x') SELECT a FROM s;"
+      - id: partition_dynamic
+        sql: "INSERT INTO t PARTITION (p) SELECT a, p FROM s;"
+      - id: partition_typed_literal
+        sql: "INSERT INTO t PARTITION (birthday = date '2019-01-02') VALUES ('a', 'b');"
+      - id: overwrite_partition
+        sql: "INSERT OVERWRITE TABLE t PARTITION (p = 1) SELECT a FROM s;"
+      - id: column_list
+        sql: "INSERT INTO t (b, a) VALUES (1, 2);"
+      - id: column_list_select
+        sql: "INSERT INTO t (b, a) SELECT x, y FROM s;"
+      - id: partition_and_column_list
+        sql: "INSERT INTO t PARTITION (p = 1) (b, a) VALUES (1, 2);"
+      - id: by_name
+        sql: "INSERT INTO t BY NAME SELECT 1 AS a, 2 AS b;"
+      - id: overwrite_by_name
+        sql: "INSERT OVERWRITE t BY NAME SELECT 1 AS a, 2 AS b;"
+      - id: partition_by_name
+        sql: "INSERT INTO t PARTITION (p = 1) BY NAME SELECT 1 AS a;"
+      - id: query_table_statement
+        sql: "INSERT INTO t TABLE s;"
+      - id: query_from_statement
+        sql: "INSERT INTO t FROM s SELECT a, b WHERE c = true;"
+      - id: query_inline_table
+        sql: "INSERT INTO t SELECT * FROM VALUES (1, 'a'), (2, 'b') AS v(a, b);"
+      - id: query_cte
+        sql: "INSERT INTO t WITH c AS (SELECT 1 AS a) SELECT a FROM c;"
+      - id: query_set_operation
+        sql: "INSERT INTO t SELECT a FROM s UNION ALL SELECT a FROM u;"
+      - id: replace_where
+        sql: "INSERT INTO t REPLACE WHERE a > 1 SELECT a, b FROM s;"
+      - id: replace_where_table_keyword
+        sql: "INSERT INTO TABLE t REPLACE WHERE a > 1 AND b = 2 SELECT a, b FROM s;"
+    examples:
+      - "INSERT INTO students VALUES ('Amy Smith', '123 Park Ave, San Jose', 111111);"
+      - "INSERT INTO students PARTITION (student_id = 444444) SELECT name, address FROM persons WHERE name = \"Dora Williams\";"
+      - "INSERT INTO students PARTITION (student_id = 11215017) (address, name) VALUES ('Hangzhou, China', 'Kent Yao Jr.');"

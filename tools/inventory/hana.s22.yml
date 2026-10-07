@@ -1,0 +1,282 @@
+dialect: hana
+engine: SAP HANA Platform
+version: "2.0 SPS 08 (2.0.08)"
+source: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/3bc1a0d4611d40c4a6e3fc7c8e80395d.html?version=2.0.08
+
+statements:
+  - id: explain_plan
+    name: EXPLAIN PLAN
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d9ec5575191014a251e58ecf90997a.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: for_select
+        sql: "EXPLAIN PLAN FOR SELECT a FROM t;"
+      - id: set_statement_name
+        sql: "EXPLAIN PLAN SET STATEMENT_NAME = 'q1' FOR SELECT a FROM t WHERE a > 1;"
+      - id: for_insert
+        sql: "EXPLAIN PLAN FOR INSERT INTO t VALUES (1);"
+      - id: plan_cache_entry
+        sql: "EXPLAIN PLAN FOR SQL PLAN CACHE ENTRY 2050002;"
+      - id: plan_cache_entry_variant
+        sql: "EXPLAIN PLAN SET STATEMENT_NAME = 'q1' FOR SQL PLAN CACHE ENTRY 2050002 VARIANT 1;"
+    examples:
+      - "EXPLAIN PLAN SET STATEMENT_NAME = 'TPC-H Q10' FOR SQL PLAN CACHE ENTRY 2050002;"
+
+  - id: export
+    name: EXPORT
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20da0bec751910148e69c9668ea3ccb8.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: table_into_path
+        sql: "EXPORT s.t INTO '/tmp/exp';"
+      - id: schema_wildcard
+        sql: "EXPORT s.\"*\" AS CSV INTO '/tmp/exp' WITH REPLACE;"
+      - id: all_objects
+        sql: "EXPORT ALL INTO '/tmp/exp';"
+      - id: binary_format
+        sql: "EXPORT s.t AS BINARY INTO '/tmp/exp';"
+      - id: binary_raw_format
+        sql: "EXPORT s.t AS BINARY RAW INTO '/tmp/exp';"
+      - id: where_clause
+        sql: "EXPORT s.t WHERE a > 5 INTO '/tmp/exp' WITH REPLACE;"
+      - id: having_clause
+        sql: "EXPORT ALL HAVING schema_name = 's' AND object_type = 'VIEW' INTO '/tmp/exp';"
+      - id: archive_file_name
+        sql: "EXPORT s.t INTO '/tmp/exp' 'out.tar.gz';"
+      - id: clientside_encryption_key
+        sql: "EXPORT CLIENTSIDE ENCRYPTION COLUMN KEY s.k1, s.k2 AS CSV INTO '/tmp/';"
+      - id: cloud_storage_path
+        sql: "EXPORT s.t INTO 's3-eu-central-1://key:secret@bucket/path' WITH CREDENTIAL 'cred';"
+      - id: with_option_list
+        sql: "EXPORT s.t INTO '/tmp/exp' WITH REPLACE, THREADS 4, CATALOG ONLY, NO DEPENDENCIES;"
+      - id: with_statistics_options
+        sql: "EXPORT s.t INTO '/tmp/exp' WITH SYSTEM STATISTICS COLUMNS a, b ONLY;"
+      - id: with_scramble_by
+        sql: "EXPORT s.t INTO '/tmp/exp' WITH SCRAMBLE BY 'pwd';"
+      - id: with_encryption_password
+        sql: "EXPORT s.t INTO '/tmp/exp' WITH ENCRYPTION PASSWORD 'pwd';"
+      - id: with_dependencies_condition
+        sql: "EXPORT ALL HAVING object_type = 'VIEW' INTO '/tmp/exp' WITH REPLACE DEPENDENCIES object_name = 't';"
+      - id: query_export
+        sql: "EXPORT s.p INTO '/tmp/exp' FOR CALL s.p();"
+        note: "<query_export_specification> ::= [ ON <sqlscript_location_list> ] FOR <procedure_call_statement>; the ON location list is not documented on this page"
+    examples:
+      - "EXPORT CLIENTSIDE ENCRYPTION COLUMN KEY MYSCHEMA.MYCEK1, MYSCHEMA.MYCEK2 AS CSV INTO '/tmp/';"
+      - "EXPORT MY_SCHEMA.TAB1 AS CSV INTO '/tmp' WITH REPLACE SCRAMBLE THREADS 10 ;"
+      - "EXPORT a.\"*\", b.\"*\" AS CSV INTO '/tmp' WITH REPLACE;"
+
+  - id: export_into
+    name: EXPORT INTO
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/6a6f59bbfbb64ade84d83d7f87789753.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: basic
+        sql: "EXPORT INTO '/tmp/t.csv' FROM s.t;"
+      - id: column_list_in_first_row
+        sql: "EXPORT INTO '/tmp/t.csv' FROM t WITH COLUMN LIST IN FIRST ROW;"
+      - id: delimiters_and_escape
+        sql: "EXPORT INTO '/tmp/t.csv' FROM t WITH RECORD DELIMITED BY '\\n' FIELD DELIMITED BY ',' OPTIONALLY ENCLOSED BY '\"' ESCAPE '@';"
+      - id: threads_replace
+        sql: "EXPORT INTO '/tmp/t.csv' FROM t WITH THREADS 4 REPLACE;"
+      - id: cloud_storage_credential
+        sql: "EXPORT INTO 's3-eu-central-1://bucket/t.csv' FROM t WITH CREDENTIAL 'cred';"
+    examples:
+      - "EXPORT INTO '/tmp/view_content.csv' FROM v;"
+      - "EXPORT INTO '/tmp/table_with_header.csv' FROM t WITH COLUMN LIST IN FIRST ROW FIELD DELIMITED BY '!' ESCAPE '@';"
+      - "EXPORT INTO 's3-eu-central-1://AKIAxxxxxxxxxx:xl6WWxxxxxxxxxx@imex-demo/tpch1_lineitem.csv' FROM TPCH1.LINEITEM WITH FIELD DELIMITED BY',' THREADS 4;"
+
+  - id: grant
+    name: GRANT
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20f674e1751910148a8b990d33efbdc5.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: system_privilege
+        sql: "GRANT BACKUP ADMIN TO u;"
+      - id: system_privileges_admin_option
+        sql: "GRANT INIFILE ADMIN, TRACE ADMIN TO u WITH ADMIN OPTION;"
+      - id: remote_source_privilege
+        sql: "GRANT CREATE VIRTUAL TABLE ON REMOTE SOURCE rs TO u WITH GRANT OPTION;"
+      - id: schema_privilege
+        sql: "GRANT SELECT, INSERT ON SCHEMA s TO u;"
+      - id: schema_privilege_grant_option
+        sql: "GRANT CREATE ANY ON SCHEMA s TO u WITH GRANT OPTION;"
+      - id: object_privilege
+        sql: "GRANT SELECT ON s.t TO u;"
+      - id: object_privilege_grant_option
+        sql: "GRANT INSERT, UPDATE, DELETE ON t TO r WITH GRANT OPTION;"
+      - id: all_privileges
+        sql: "GRANT ALL PRIVILEGES ON t TO u;"
+      - id: execute_on_procedure
+        sql: "GRANT EXECUTE ON s.p TO u;"
+      - id: column_key_privilege
+        sql: "GRANT USAGE ON CLIENTSIDE ENCRYPTION COLUMN KEY k TO u WITH GRANT OPTION;"
+      - id: role_to_user
+        sql: "GRANT r1, r2 TO u WITH ADMIN OPTION;"
+      - id: schema_local_role
+        sql: "GRANT s.r TO u;"
+      - id: structured_privilege
+        sql: "GRANT STRUCTURED PRIVILEGE sp TO u WITH GRANT OPTION;"
+      - id: usergroup_operator
+        sql: "GRANT USERGROUP OPERATOR ON USERGROUP g TO u WITH GRANT OPTION;"
+    examples:
+      - "GRANT SELECT ON SCHEMA my_schema TO role_for_work_on_my_schema;"
+      - "GRANT INSERT ON my_schoolwork_done TO role_for_work_on_my_schema;"
+      - "GRANT role_for_work_on_my_schema TO worker WITH ADMIN OPTION;"
+
+  - id: import
+    name: IMPORT
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20f75ade751910148492a90e5e375b8f.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: table_from_path
+        sql: "IMPORT s.t FROM '/tmp/exp';"
+      - id: schema_wildcard
+        sql: "IMPORT s.\"*\" AS CSV FROM '/tmp' WITH REPLACE THREADS 10;"
+      - id: all_objects
+        sql: "IMPORT ALL FROM '/tmp/exp';"
+      - id: binary_format
+        sql: "IMPORT s.t AS BINARY RAW FROM '/tmp/exp';"
+      - id: having_clause
+        sql: "IMPORT ALL HAVING schema_name = 's' AND object_type = 'VIEW' FROM '/tmp/exp';"
+      - id: archive_file_name
+        sql: "IMPORT s.t FROM '/tmp/exp' 'in.tar.gz';"
+      - id: clientside_encryption_key
+        sql: "IMPORT CLIENTSIDE ENCRYPTION COLUMN KEY s.k1, s.k2 FROM '/tmp/cek';"
+      - id: load_history_format
+        sql: "IMPORT s.data AS LOAD_HISTORY FROM '/tmp/dump';"
+      - id: timezone_dataset_format
+        sql: "IMPORT * AS SAP_TIMEZONE_DATASET FROM '/tmp/tzdata.dat';"
+      - id: with_option_list
+        sql: "IMPORT s.t FROM '/tmp/exp' WITH REPLACE, CATALOG ONLY, THREADS 4, IGNORE EXISTING, FAIL ON INVALID DATA;"
+      - id: with_rename_schema
+        sql: "IMPORT s.\"*\" FROM '/tmp/exp' WITH RENAME SCHEMA s TO s2;"
+      - id: with_dependencies_condition
+        sql: "IMPORT ALL HAVING object_type = 'VIEW' FROM '/tmp/exp' WITH REPLACE DEPENDENCIES object_name = 't';"
+      - id: with_encryption_password
+        sql: "IMPORT t FROM '/tmp/exp' WITH ENCRYPTION PASSWORD 'pwd';"
+      - id: cloud_storage_credential
+        sql: "IMPORT ALL FROM 's3-eu-central-1://bucket/path' WITH CREDENTIAL 'cred';"
+      - id: at_location
+        sql: "IMPORT s.t FROM '/tmp/exp' AT LOCATION 'host:30003';"
+      - id: ignore_numa_node
+        sql: "IMPORT s.t FROM '/tmp/exp' WITH IGNORE NUMA NODE;"
+        note: "Syntax block has [ WITH IGNORE NUMA NODE ]; the page example writes it as WITH REPLACE THREADS 40 IGNORE NUMA NODE"
+    examples:
+      - "IMPORT CLIENTSIDE ENCRYPTION COLUMN KEY MYSCHEMA.MYCEK1, MYSCHEAM.MYCEK2 FROM '/path/to/cek';"
+      - "IMPORT TESTSCH.\"*\" AS CSV FROM '/tmp' WITH REPLACE THREADS 10;"
+      - "IMPORT MYSCHEMA.DATA AS LOAD_HISTORY FROM '/path/to/dump';"
+
+  - id: import_from
+    name: IMPORT FROM
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20f712e175191014907393741fadcb97.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: control_file
+        sql: "IMPORT FROM CONTROL FILE '/data/data.ctl';"
+      - id: default_control_file
+        sql: "IMPORT FROM '/data/data.ctl';"
+      - id: csv_file_into_table
+        sql: "IMPORT FROM CSV FILE '/data/data.csv' INTO s.t;"
+      - id: into_statistics
+        sql: "IMPORT FROM CONTROL FILE '/data/data.ctl' INTO STATISTICS s.stat;"
+      - id: delimiters
+        sql: "IMPORT FROM CSV FILE '/data/data.csv' INTO t WITH RECORD DELIMITED BY '\\n' FIELD DELIMITED BY ',' OPTIONALLY ENCLOSED BY '\"' ESCAPE '\\\\';"
+      - id: threads_batch_table_lock
+        sql: "IMPORT FROM CSV FILE '/data/data.csv' INTO t WITH THREADS 20 BATCH 50000 TABLE LOCK NO TYPE CHECK;"
+      - id: skip_first_row
+        sql: "IMPORT FROM CSV FILE '/data/data.csv' INTO t WITH SKIP FIRST 1 ROW;"
+      - id: column_list_in_first_row
+        sql: "IMPORT FROM CSV FILE '/data/data.csv' INTO t WITH COLUMN LIST IN FIRST ROW WITH SCHEMA FLEXIBILITY;"
+      - id: column_list
+        sql: "IMPORT FROM CSV FILE '/data/data.csv' INTO t WITH COLUMN LIST (a, b, c);"
+      - id: date_time_formats
+        sql: "IMPORT FROM CSV FILE '/data/data.csv' INTO t WITH DATE FORMAT 'YYYY-MM-DD' TIME FORMAT 'HH24:MI:SS' TIMESTAMP FORMAT 'YYYY-MM-DD HH24:MI:SS';"
+      - id: error_log_fail_on_invalid
+        sql: "IMPORT FROM CSV FILE '/data/data.csv' INTO t WITH ERROR LOG '/data/data.err' FAIL ON INVALID DATA;"
+      - id: cloud_storage_credential
+        sql: "IMPORT FROM CSV FILE 's3-eu-central-1://bucket/data.csv' INTO t WITH CREDENTIAL 'cred';"
+    examples:
+      - "IMPORT FROM CSV FILE '/data/data.csv' INTO \"MYTABLE\" WITH RECORD DELIMITED BY '\\n' FIELD DELIMITED BY ',';"
+      - "IMPORT FROM CONTROL FILE '/data/data.ctl';"
+      - "IMPORT FROM CSV FILE '/data/data_different_date.csv' INTO \"MYTABLE\" WITH RECORD DELIMITED BY '\\n' FIELD DELIMITED BY ',' DATE FORMAT 'MM-DD-YYYY';"
+
+  - id: import_scan
+    name: IMPORT SCAN
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20f79b2175191014a45f9947577a2e85.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: path
+        sql: "IMPORT SCAN '/tmp/exp';"
+      - id: cloud_storage_path
+        sql: "IMPORT SCAN 's3-eu-central-1://bucket/path';"
+      - id: with_credential
+        sql: "IMPORT SCAN 's3-eu-central-1://bucket/path' WITH CREDENTIAL 'cred';"
+        note: "Syntax block: IMPORT SCAN { <path> | <storage_path> } [ WITH CREDENTIAL ' <purpose_def> ' }"
+
+  - id: load
+    name: LOAD
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20f83c8c75191014b215d6c8c427c91b.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: all
+        sql: "LOAD t ALL;"
+      - id: delta
+        sql: "LOAD s.t DELTA;"
+      - id: column_list
+        sql: "LOAD t (a, b);"
+      - id: history_all
+        sql: "LOAD t HISTORY ALL;"
+      - id: history_delta
+        sql: "LOAD t HISTORY DELTA;"
+      - id: history_column_list
+        sql: "LOAD t HISTORY (a);"
+    examples:
+      - "LOAD A all;"
+      - "LOAD A (A,B);"
+
+  - id: lock_table
+    name: LOCK TABLE
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20f88d8d75191014a51abbaa4e3d36cb.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: exclusive
+        sql: "LOCK TABLE t IN EXCLUSIVE MODE;"
+      - id: intentional_exclusive
+        sql: "LOCK TABLE s.t IN INTENTIONAL EXCLUSIVE MODE;"
+      - id: nowait
+        sql: "LOCK TABLE t IN EXCLUSIVE MODE NOWAIT;"
+      - id: wait_seconds
+        sql: "LOCK TABLE t IN EXCLUSIVE MODE WAIT 10;"
+      - id: partition
+        sql: "LOCK TABLE t PARTITION (1) IN EXCLUSIVE MODE;"
+        note: "Syntax block shows PARTITION <partition_id>; the page example writes PARTITION (1)"
+      - id: partition_no_parens
+        sql: "LOCK TABLE t PARTITION 1 IN EXCLUSIVE MODE;"
+    examples:
+      - "LOCK TABLE A IN EXCLUSIVE MODE;"
+      - "LOCK TABLE A IN EXCLUSIVE MODE NOWAIT;"
+      - "LOCK TABLE PART_A PARTITION (1) IN EXCLUSIVE MODE;"
+
+  - id: merge_delta
+    name: MERGE DELTA
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20f8d0a175191014a7c192193b8645a9.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: basic
+        sql: "MERGE DELTA OF t;"
+      - id: schema_qualified
+        sql: "MERGE DELTA OF s.t;"
+      - id: history
+        sql: "MERGE HISTORY DELTA OF t;"
+      - id: part
+        sql: "MERGE DELTA OF t PART 1;"
+      - id: with_parameters
+        sql: "MERGE DELTA OF t WITH PARAMETERS ('SMART_MERGE' = 'ON');"
+      - id: force_rebuild
+        sql: "MERGE DELTA OF t FORCE REBUILD;"
+      - id: all_clauses
+        sql: "MERGE HISTORY DELTA OF s.t PART 1 WITH PARAMETERS ('SMART_MERGE' = 'OFF') FORCE REBUILD;"
+    examples:
+      - "MERGE DELTA OF TableA;"
+      - "MERGE DELTA OF TableA WITH PARAMETERS('SMART_MERGE' = 'ON');"
+      - "MERGE DELTA OF TableA PART 1;"

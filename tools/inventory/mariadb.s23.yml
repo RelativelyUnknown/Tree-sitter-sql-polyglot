@@ -1,0 +1,38 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements:
+  - id: leave
+    name: LEAVE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/programmatic-compound-statements/leave
+    tier: high
+    probes:
+      - id: leave_loop
+        sql: "CREATE PROCEDURE p() BEGIN lbl: LOOP LEAVE lbl; END LOOP lbl; END;"
+        note: "LEAVE label; valid inside LOOP, REPEAT or WHILE"
+      - id: leave_block
+        sql: "CREATE PROCEDURE p(IN n INT) proc: BEGIN IF n < 1 THEN LEAVE proc; END IF; SELECT n; END;"
+        note: "LEAVE can refer to the outermost BEGIN ... END of a procedure"
+      - id: leave_while
+        sql: "CREATE PROCEDURE p() BEGIN lbl: WHILE 1 = 1 DO LEAVE lbl; END WHILE lbl; END;"
+      - id: leave_repeat
+        sql: "CREATE PROCEDURE p() BEGIN lbl: REPEAT LEAVE lbl; UNTIL 1 END REPEAT lbl; END;"
+    examples:
+      - "CREATE PROCEDURE proc(IN p TINYINT) CONTAINS SQL `whole_proc`: BEGIN SELECT 1; IF p < 1 THEN LEAVE `whole_proc`; END IF; SELECT 2; END;"
+
+  - id: return
+    name: RETURN
+    doc: https://mariadb.com/docs/server/reference/sql-statements/programmatic-compound-statements/return
+    tier: high
+    probes:
+      - id: return_expr
+        sql: "CREATE FUNCTION f(a INT) RETURNS INT RETURN a + 1;"
+        note: "RETURN expr; only valid in stored functions"
+      - id: return_in_block
+        sql: "CREATE FUNCTION f(a INT) RETURNS INT BEGIN RETURN a * 2; END;"
+      - id: return_subquery
+        sql: "CREATE FUNCTION f() RETURNS INT BEGIN RETURN (SELECT COUNT(*) FROM t); END;"
+    examples:
+      - "CREATE FUNCTION users_count() RETURNS BOOL READS SQL DATA BEGIN RETURN (SELECT COUNT(DISTINCT User) FROM mysql.user); END;"

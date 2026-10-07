@@ -1,0 +1,205 @@
+dialect: trino
+engine: Trino
+version: "483"
+source: https://trino.io/docs/current/sql.html
+
+statements:
+  - id: rollback
+    name: ROLLBACK
+    doc: https://trino.io/docs/current/sql/rollback.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "ROLLBACK;"
+      - id: work
+        sql: "ROLLBACK WORK;"
+    examples:
+      - "ROLLBACK;"
+      - "ROLLBACK WORK;"
+
+  - id: select
+    name: SELECT
+    doc: https://trino.io/docs/current/sql/select.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT a, b FROM t;"
+      - id: with_session
+        sql: "WITH SESSION query_max_execution_time = '2h', example.query_partition_filter_required = true SELECT * FROM example.default.thetable LIMIT 100;"
+      - id: with_function
+        sql: "WITH FUNCTION hello(name varchar) RETURNS varchar RETURN format('Hello %s!', name) SELECT hello('Finn');"
+      - id: with_function_multiple
+        sql: "WITH FUNCTION hello(name varchar) RETURNS varchar RETURN format('Hello %s!', name), FUNCTION bye(name varchar) RETURNS varchar RETURN format('Bye %s!', name) SELECT hello('Finn') || ' and ' || bye('Joe');"
+      - id: with_clause
+        sql: "WITH x AS (SELECT a, MAX(b) AS b FROM t GROUP BY a) SELECT a, b FROM x;"
+      - id: with_multiple
+        sql: "WITH t1 AS (SELECT a FROM x), t2 AS (SELECT a FROM y) SELECT t1.*, t2.* FROM t1 JOIN t2 ON t1.a = t2.a;"
+      - id: with_recursive
+        sql: "WITH RECURSIVE t(n) AS (VALUES (1) UNION ALL SELECT n + 1 FROM t WHERE n < 4) SELECT sum(n) FROM t;"
+      - id: select_all
+        sql: "SELECT ALL a FROM t;"
+      - id: select_distinct
+        sql: "SELECT DISTINCT a FROM t;"
+      - id: select_alias_as
+        sql: "SELECT a AS x, b y FROM t;"
+      - id: select_star
+        sql: "SELECT * FROM t;"
+      - id: select_relation_star
+        sql: "SELECT t.* FROM t;"
+      - id: select_row_star
+        sql: "SELECT (ROW(1, true)).*;"
+      - id: select_row_star_aliases
+        sql: "SELECT (CAST(ROW(1, true) AS ROW(field1 bigint, field2 boolean))).* AS (alias1, alias2);"
+      - id: from_table_alias_columns
+        sql: "SELECT x FROM t AS a (x, y);"
+      - id: from_multiple
+        sql: "SELECT * FROM nation, region;"
+      - id: where
+        sql: "SELECT * FROM t WHERE a > 1 AND b < 2;"
+      - id: join_inner
+        sql: "SELECT * FROM a INNER JOIN b ON a.id = b.id;"
+      - id: join_plain
+        sql: "SELECT * FROM a JOIN b ON a.id = b.id;"
+      - id: join_using
+        sql: "SELECT * FROM a JOIN b USING (id, c);"
+      - id: join_left
+        sql: "SELECT * FROM a LEFT OUTER JOIN b ON a.id = b.id;"
+      - id: join_right
+        sql: "SELECT * FROM a RIGHT JOIN b ON a.id = b.id;"
+      - id: join_full
+        sql: "SELECT * FROM a FULL OUTER JOIN b ON a.id = b.id;"
+      - id: join_cross
+        sql: "SELECT * FROM nation CROSS JOIN region;"
+      - id: join_natural
+        sql: "SELECT * FROM a NATURAL JOIN b;"
+      - id: cross_join_lateral
+        sql: "SELECT name, x, y FROM nation CROSS JOIN LATERAL (SELECT name || ' :-' AS x) CROSS JOIN LATERAL (SELECT x || ')' AS y);"
+      - id: nearest_cross_join
+        sql: "SELECT trades.symbol, trades.ts, quotes.price FROM trades CROSS JOIN NEAREST (FROM quotes WHERE quotes.symbol = trades.symbol MATCH quotes.ts <= trades.ts);"
+      - id: nearest_left_join
+        sql: "SELECT trades.symbol, quotes.price FROM trades LEFT JOIN NEAREST (FROM quotes WHERE quotes.symbol = trades.symbol MATCH quotes.ts >= trades.ts) ON TRUE;"
+      - id: nearest_inner_join
+        sql: "SELECT * FROM trades INNER JOIN NEAREST (FROM quotes MATCH quotes.ts < trades.ts) ON TRUE;"
+      - id: nearest_comma_join
+        sql: "SELECT * FROM trades, NEAREST (FROM quotes MATCH quotes.ts > trades.ts);"
+      - id: from_subquery
+        sql: "SELECT a, b FROM (SELECT a, MAX(b) AS b FROM t GROUP BY a) AS x;"
+      - id: from_table_function
+        sql: "SELECT * FROM TABLE(my_function(1, 2)) AS f (x, y);"
+      - id: from_match_recognize
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (PARTITION BY a ORDER BY b MEASURES MATCH_NUMBER() AS m ONE ROW PER MATCH PATTERN (A B+) DEFINE B AS b > PREV(b)) AS mr;"
+        note: MATCH_RECOGNIZE form per the pattern recognition in FROM clause page referenced from the SELECT syntax block
+      - id: from_pivot
+        sql: "SELECT * FROM t PIVOT (sum(amount) FOR quarter IN ('Q1', 'Q2')) AS p;"
+        note: PIVOT form per the pivot page referenced from the SELECT syntax block
+      - id: tablesample_bernoulli
+        sql: "SELECT * FROM users TABLESAMPLE BERNOULLI (50);"
+      - id: tablesample_system
+        sql: "SELECT * FROM users TABLESAMPLE SYSTEM (75);"
+      - id: tablesample_join
+        sql: "SELECT o.*, i.* FROM orders o TABLESAMPLE SYSTEM (10) JOIN lineitem i TABLESAMPLE BERNOULLI (40) ON o.orderkey = i.orderkey;"
+      - id: unnest_array
+        sql: "SELECT * FROM UNNEST(ARRAY[1, 2]) AS t (number);"
+      - id: unnest_map
+        sql: "SELECT * FROM UNNEST(map_from_entries(ARRAY[('SQL', 1974), ('Java', 1995)])) AS t (language, first_appeared_year);"
+      - id: unnest_with_ordinality
+        sql: "SELECT a, b, rownumber FROM UNNEST(ARRAY[2, 5], ARRAY[7, 8, 9]) WITH ORDINALITY AS t (a, b, rownumber);"
+      - id: unnest_cross_join
+        sql: "SELECT student, score FROM (VALUES ('John', ARRAY[7, 10, 9]), ('Mary', ARRAY[4, 8, 9])) AS tests (student, scores) CROSS JOIN UNNEST(scores) AS t (score);"
+      - id: unnest_left_join_on_true
+        sql: "SELECT runner, checkpoint FROM (VALUES ('Joe', ARRAY[10, 20]), ('Levi', NULL)) AS marathon (runner, checkpoints) LEFT JOIN UNNEST(checkpoints) AS t (checkpoint) ON TRUE;"
+      - id: json_table
+        sql: "SELECT * FROM JSON_TABLE(j, 'lax $[*]' COLUMNS (a bigint PATH 'lax $.a')) AS jt;"
+        note: JSON_TABLE form per the json_table function page referenced from the SELECT page
+      - id: group_by_ordinal
+        sql: "SELECT count(*), nationkey FROM customer GROUP BY 2;"
+      - id: group_by_expression
+        sql: "SELECT count(*), nationkey FROM customer GROUP BY nationkey;"
+      - id: group_by_empty
+        sql: "SELECT count(*) FROM t GROUP BY ();"
+      - id: group_by_auto
+        sql: "SELECT mktsegment, sum(acctbal) FROM shipping GROUP BY AUTO;"
+      - id: group_by_grouping_sets
+        sql: "SELECT origin_state, origin_zip, destination_state, sum(package_weight) FROM shipping GROUP BY GROUPING SETS ((origin_state), (origin_state, origin_zip), (destination_state));"
+      - id: group_by_cube
+        sql: "SELECT origin_state, destination_state, sum(package_weight) FROM shipping GROUP BY CUBE (origin_state, destination_state);"
+      - id: group_by_rollup
+        sql: "SELECT origin_state, origin_zip, sum(package_weight) FROM shipping GROUP BY ROLLUP (origin_state, origin_zip);"
+      - id: group_by_combined
+        sql: "SELECT origin_state, destination_state, origin_zip, sum(package_weight) FROM shipping GROUP BY GROUPING SETS ((origin_state, destination_state)), ROLLUP (origin_zip);"
+      - id: group_by_all_quantifier
+        sql: "SELECT origin_state, destination_state, origin_zip, sum(package_weight) FROM shipping GROUP BY ALL CUBE (origin_state, destination_state), ROLLUP (origin_state, origin_zip);"
+      - id: group_by_distinct_quantifier
+        sql: "SELECT origin_state, destination_state, origin_zip, sum(package_weight) FROM shipping GROUP BY DISTINCT CUBE (origin_state, destination_state), ROLLUP (origin_state, origin_zip);"
+      - id: grouping_operation
+        sql: "SELECT origin_state, origin_zip, destination_state, sum(package_weight), grouping(origin_state, origin_zip, destination_state) FROM shipping GROUP BY GROUPING SETS ((origin_state), (origin_state, origin_zip), (destination_state));"
+      - id: having
+        sql: "SELECT mktsegment, nationkey FROM customer GROUP BY mktsegment, nationkey HAVING sum(acctbal) > 5700000;"
+      - id: window_clause
+        sql: "SELECT orderkey, clerk, totalprice, rank() OVER w AS rnk FROM orders WINDOW w AS (PARTITION BY clerk ORDER BY totalprice DESC) ORDER BY count() OVER w, clerk, rnk;"
+      - id: window_clause_multiple_referencing
+        sql: "SELECT rank() OVER w2 FROM t WINDOW w1 AS (PARTITION BY a), w2 AS (w1 ORDER BY b);"
+      - id: union
+        sql: "SELECT 13 UNION SELECT 42;"
+      - id: union_all
+        sql: "SELECT 13 UNION ALL SELECT * FROM (VALUES 42, 13);"
+      - id: union_distinct
+        sql: "SELECT a FROM t UNION DISTINCT SELECT a FROM u;"
+      - id: union_corresponding
+        sql: "SELECT * FROM (VALUES (1, 'alice')) AS t (id, name) UNION ALL CORRESPONDING SELECT * FROM (VALUES ('bob', 2)) AS t (name, id);"
+      - id: intersect
+        sql: "SELECT * FROM (VALUES 13, 42) INTERSECT SELECT 13;"
+      - id: intersect_all
+        sql: "SELECT a FROM t INTERSECT ALL SELECT a FROM u;"
+      - id: intersect_corresponding
+        sql: "SELECT * FROM (VALUES (1, 'alice')) AS t (id, name) INTERSECT CORRESPONDING SELECT * FROM (VALUES ('alice', 1)) AS t (name, id);"
+      - id: except
+        sql: "SELECT * FROM (VALUES 13, 42) EXCEPT SELECT 13;"
+      - id: except_distinct
+        sql: "SELECT a FROM t EXCEPT DISTINCT SELECT a FROM u;"
+      - id: except_corresponding
+        sql: "SELECT * FROM (VALUES (1, 'alice'), (2, 'bob')) AS t (id, name) EXCEPT CORRESPONDING SELECT * FROM (VALUES ('alice', 1)) AS t (name, id);"
+      - id: set_operation_parentheses
+        sql: "SELECT a FROM t UNION (SELECT a FROM u INTERSECT SELECT a FROM v) EXCEPT SELECT a FROM w;"
+      - id: order_by
+        sql: "SELECT a FROM t ORDER BY a;"
+      - id: order_by_asc_desc
+        sql: "SELECT a, b FROM t ORDER BY a ASC, b DESC;"
+      - id: order_by_nulls
+        sql: "SELECT a, b FROM t ORDER BY a NULLS FIRST, b DESC NULLS LAST;"
+      - id: order_by_ordinal
+        sql: "SELECT n.name, r.name FROM nation AS n CROSS JOIN region AS r ORDER BY 1, 2;"
+      - id: offset
+        sql: "SELECT name FROM nation ORDER BY name OFFSET 22;"
+      - id: offset_row
+        sql: "SELECT name FROM nation ORDER BY name OFFSET 1 ROW;"
+      - id: offset_rows
+        sql: "SELECT name FROM nation ORDER BY name OFFSET 22 ROWS;"
+      - id: limit
+        sql: "SELECT orderdate FROM orders LIMIT 5;"
+      - id: limit_all
+        sql: "SELECT orderdate FROM orders LIMIT ALL;"
+      - id: offset_limit
+        sql: "SELECT * FROM (VALUES 5, 2, 4, 1, 3) t (x) ORDER BY x OFFSET 2 LIMIT 2;"
+      - id: fetch_first_row_only
+        sql: "SELECT orderdate FROM orders FETCH FIRST ROW ONLY;"
+      - id: fetch_first_rows_only
+        sql: "SELECT orderdate FROM orders FETCH FIRST 5 ROWS ONLY;"
+      - id: fetch_next
+        sql: "SELECT orderdate FROM orders FETCH NEXT 5 ROWS ONLY;"
+      - id: fetch_first_with_ties
+        sql: "SELECT name, regionkey FROM nation ORDER BY regionkey FETCH FIRST ROW WITH TIES;"
+      - id: fetch_first_count_with_ties
+        sql: "SELECT name, regionkey FROM nation ORDER BY regionkey FETCH FIRST 2 ROWS WITH TIES;"
+      - id: offset_fetch
+        sql: "SELECT name FROM nation ORDER BY name OFFSET 2 ROWS FETCH NEXT 3 ROWS ONLY;"
+      - id: subquery_exists
+        sql: "SELECT name FROM nation WHERE EXISTS (SELECT * FROM region WHERE region.regionkey = nation.regionkey);"
+      - id: subquery_in
+        sql: "SELECT name FROM nation WHERE regionkey IN (SELECT regionkey FROM region WHERE name = 'AMERICA' OR name = 'AFRICA');"
+      - id: subquery_scalar
+        sql: "SELECT name FROM nation WHERE regionkey = (SELECT max(regionkey) FROM region);"
+    examples:
+      - "SELECT count(*), nationkey FROM customer GROUP BY 2;"
+      - "SELECT * FROM users TABLESAMPLE BERNOULLI (50);"
+      - "SELECT name FROM nation ORDER BY name OFFSET 22;"

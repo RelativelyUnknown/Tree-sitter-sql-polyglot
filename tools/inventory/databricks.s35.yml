@@ -1,0 +1,83 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: alter_materialized_view
+    name: ALTER MATERIALIZED VIEW
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-alter-materialized-view
+    tier: high
+    probes:
+      - id: add_schedule_every_hours
+        sql: "ALTER MATERIALIZED VIEW mv ADD SCHEDULE EVERY 2 HOURS;"
+      - id: add_schedule_refresh_every_day
+        sql: "ALTER MATERIALIZED VIEW mv ADD SCHEDULE REFRESH EVERY 1 DAY;"
+      - id: alter_schedule_every_week
+        sql: "ALTER MATERIALIZED VIEW mv ALTER SCHEDULE EVERY 1 WEEK;"
+      - id: add_schedule_cron
+        sql: "ALTER MATERIALIZED VIEW mv ADD SCHEDULE CRON '0 0 0 * * ?';"
+      - id: alter_schedule_cron_time_zone
+        sql: "ALTER MATERIALIZED VIEW mv ALTER SCHEDULE CRON '0 0 0 * * ?' AT TIME ZONE 'UTC';"
+      - id: add_trigger_on_update
+        sql: "ALTER MATERIALIZED VIEW mv ADD TRIGGER ON UPDATE;"
+      - id: alter_trigger_at_most_every
+        sql: "ALTER MATERIALIZED VIEW mv ALTER TRIGGER ON UPDATE AT MOST EVERY INTERVAL 1 HOUR;"
+      - id: drop_schedule
+        sql: "ALTER MATERIALIZED VIEW mv DROP SCHEDULE;"
+      - id: qualified_name
+        sql: "ALTER MATERIALIZED VIEW cat.sch.mv DROP SCHEDULE;"
+      - id: set_row_filter
+        sql: "ALTER MATERIALIZED VIEW mv SET ROW FILTER f ON (c);"
+      - id: set_row_filter_no_columns
+        sql: "ALTER MATERIALIZED VIEW mv SET ROW FILTER f ON ();"
+      - id: drop_row_filter
+        sql: "ALTER MATERIALIZED VIEW mv DROP ROW FILTER;"
+      - id: set_tags
+        sql: "ALTER MATERIALIZED VIEW mv SET TAGS ('k1' = 'v1', 'k2' = 'v2');"
+      - id: unset_tags
+        sql: "ALTER MATERIALIZED VIEW mv UNSET TAGS ('k1', 'k2');"
+      - id: set_owner
+        sql: "ALTER MATERIALIZED VIEW mv SET OWNER TO `someone@example.com`;"
+      - id: alter_column_comment
+        sql: "ALTER MATERIALIZED VIEW mv ALTER COLUMN c COMMENT 'test';"
+      - id: alter_column_set_mask
+        sql: "ALTER MATERIALIZED VIEW mv ALTER COLUMN c SET MASK m;"
+      - id: alter_column_set_mask_using_columns
+        sql: "ALTER MATERIALIZED VIEW mv ALTER COLUMN c SET MASK m USING COLUMNS (d);"
+      - id: alter_column_drop_mask
+        sql: "ALTER MATERIALIZED VIEW mv ALTER COLUMN c DROP MASK;"
+      - id: alter_column_set_tags
+        sql: "ALTER MATERIALIZED VIEW mv ALTER COLUMN c SET TAGS ('k' = 'v');"
+      - id: alter_column_unset_tags
+        sql: "ALTER MATERIALIZED VIEW mv ALTER COLUMN c UNSET TAGS ('k');"
+    examples:
+      - "ALTER MATERIALIZED VIEW my_mv ADD TRIGGER ON UPDATE;"
+      - "ALTER MATERIALIZED VIEW my_mv ALTER SCHEDULE EVERY 2 HOURS;"
+      - "ALTER MATERIALIZED VIEW my_mv ALTER SCHEDULE CRON '0 0 0 * * ? *' AT TIME ZONE 'America/Los_Angeles';"
+
+  - id: drop_table
+    name: DROP TABLE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-drop-table
+    tier: high
+    probes:
+      - id: basic
+        sql: "DROP TABLE t;"
+      - id: qualified_name
+        sql: "DROP TABLE cat.sch.t;"
+      - id: if_exists
+        sql: "DROP TABLE IF EXISTS t;"
+      - id: force
+        sql: "DROP TABLE t FORCE;"
+      - id: if_exists_force
+        sql: "DROP TABLE IF EXISTS t FORCE;"
+      - id: temp_table
+        sql: "DROP TEMP TABLE t;"
+      - id: temporary_table
+        sql: "DROP TEMPORARY TABLE t;"
+      - id: temporary_if_exists
+        sql: "DROP TEMPORARY TABLE t IF EXISTS;"
+    examples:
+      - "DROP TABLE employeetable;"
+      - "DROP TABLE userdb.employeetable;"
+      - "DROP TABLE IF EXISTS employeetable;"

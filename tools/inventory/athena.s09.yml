@@ -1,0 +1,37 @@
+dialect: athena
+engine: Amazon Athena
+version: "engine version 3 (Trino-based DML, Hive-style DDL)"
+source: https://docs.aws.amazon.com/athena/latest/ug/ddl-reference.html ; https://docs.aws.amazon.com/athena/latest/ug/dml-queries-functions-operators.html
+
+statements:
+  - id: values
+    name: VALUES
+    doc: https://docs.aws.amazon.com/athena/latest/ug/values-statement.html
+    tier: high
+    probes:
+      - id: single_expression_rows
+        sql: "VALUES 1, 2, 3;"
+      - id: multi_column_rows
+        sql: "VALUES (1, 'a'), (2, 'b'), (3, 'c');"
+      - id: in_from_with_alias
+        sql: "SELECT * FROM (VALUES (1, 'a'), (2, 'b')) AS t (id, name);"
+      - id: ctas_from_values
+        sql: "CREATE TABLE t AS SELECT * FROM (VALUES (1, 'a'), (2, 'b')) AS v (id, name);"
+    examples:
+      - "VALUES 1, 2, 3;"
+      - "VALUES (1, 'a'), (2, 'b'), (3, 'c');"
+      - "SELECT * FROM ( VALUES (1, 'a'), (2, 'b'), (3, 'c') ) AS t (id, name);"
+
+  - id: delete
+    name: DELETE
+    doc: https://docs.aws.amazon.com/athena/latest/ug/delete-statement.html
+    tier: high
+    probes:
+      - id: delete_all
+        sql: "DELETE FROM t;"
+      - id: delete_where
+        sql: "DELETE FROM t WHERE c = 1;"
+      - id: delete_qualified
+        sql: "DELETE FROM db.t WHERE c = 1;"
+    examples:
+      - "DELETE FROM iceberg_table WHERE category='c3';"

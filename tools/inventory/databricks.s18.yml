@@ -1,0 +1,107 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: delete
+    name: DELETE FROM
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/delta-delete-from
+    tier: high
+    probes:
+      - id: basic
+        sql: "DELETE FROM t;"
+      - id: where
+        sql: "DELETE FROM t WHERE a < 1;"
+      - id: table_alias
+        sql: "DELETE FROM t AS t1 WHERE t1.a = 1;"
+      - id: table_alias_no_as
+        sql: "DELETE FROM t t1 WHERE t1.a = 1;"
+      - id: schema_qualified
+        sql: "DELETE FROM s.t WHERE a = 1;"
+      - id: where_in_subquery
+        sql: "DELETE FROM t WHERE a IN (SELECT b FROM t2);"
+      - id: where_not_in_subquery
+        sql: "DELETE FROM t WHERE a NOT IN (SELECT b FROM t2 WHERE c > 1);"
+      - id: where_exists_subquery
+        sql: "DELETE FROM t AS t1 WHERE EXISTS (SELECT 1 FROM t2 WHERE t1.a = t2.a);"
+      - id: where_not_exists_subquery
+        sql: "DELETE FROM t AS t1 WHERE NOT EXISTS (SELECT 1 FROM t2 WHERE t1.a = t2.a);"
+      - id: where_scalar_subquery
+        sql: "DELETE FROM t WHERE a < (SELECT min(b) FROM t2);"
+      - id: with_cte
+        sql: "WITH c AS (SELECT a FROM t2) DELETE FROM t WHERE a IN (SELECT a FROM c);"
+    examples:
+      - "DELETE FROM events WHERE date < '2017-01-01';"
+      - "DELETE FROM all_events WHERE session_time < (SELECT min(session_time) FROM good_events);"
+      - "DELETE FROM orders AS t1 WHERE EXISTS (SELECT oid FROM returned_orders WHERE t1.oid = oid);"
+
+  - id: merge
+    name: MERGE INTO
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/delta-merge-into
+    tier: high
+    probes:
+      - id: when_matched_delete
+        sql: "MERGE INTO t USING s ON t.k = s.k WHEN MATCHED THEN DELETE;"
+      - id: when_matched_update_star
+        sql: "MERGE INTO t USING s ON t.k = s.k WHEN MATCHED THEN UPDATE SET *;"
+      - id: when_matched_update_star_except
+        sql: "MERGE INTO t USING s ON t.k = s.k WHEN MATCHED THEN UPDATE SET * EXCEPT (c);"
+      - id: when_matched_update_columns
+        sql: "MERGE INTO t USING s ON t.k = s.k WHEN MATCHED THEN UPDATE SET t.a = s.a, t.b = s.b;"
+      - id: when_matched_update_default
+        sql: "MERGE INTO t USING s ON t.k = s.k WHEN MATCHED THEN UPDATE SET t.a = DEFAULT;"
+      - id: when_matched_and_condition
+        sql: "MERGE INTO t USING s ON t.k = s.k WHEN MATCHED AND t.u < s.u THEN UPDATE SET *;"
+      - id: multiple_matched_clauses
+        sql: "MERGE INTO t USING s ON t.k = s.k WHEN MATCHED AND t.d THEN DELETE WHEN MATCHED THEN UPDATE SET t.u = s.u;"
+      - id: when_not_matched_insert_star
+        sql: "MERGE INTO t USING s ON t.k = s.k WHEN NOT MATCHED THEN INSERT *;"
+      - id: when_not_matched_insert_star_except
+        sql: "MERGE INTO t USING s ON t.k = s.k WHEN NOT MATCHED THEN INSERT * EXCEPT (c);"
+      - id: when_not_matched_insert_values
+        sql: "MERGE INTO t USING s ON t.k = s.k WHEN NOT MATCHED THEN INSERT (a, b) VALUES (s.a, s.b);"
+      - id: when_not_matched_insert_default
+        sql: "MERGE INTO t USING s ON t.k = s.k WHEN NOT MATCHED THEN INSERT (a, b) VALUES (s.a, DEFAULT);"
+      - id: when_not_matched_by_target
+        sql: "MERGE INTO t USING s ON t.k = s.k WHEN NOT MATCHED BY TARGET THEN INSERT *;"
+      - id: when_not_matched_and_condition
+        sql: "MERGE INTO t USING s ON t.k = s.k WHEN NOT MATCHED AND s.a > 1 THEN INSERT (a) VALUES (s.a);"
+      - id: when_not_matched_by_target_and_condition
+        sql: "MERGE INTO t USING s ON t.k = s.k WHEN NOT MATCHED BY TARGET AND s.a > 1 THEN INSERT (a) VALUES (s.a);"
+      - id: when_not_matched_by_source_delete
+        sql: "MERGE INTO t USING s ON t.k = s.k WHEN NOT MATCHED BY SOURCE THEN DELETE;"
+      - id: when_not_matched_by_source_update
+        sql: "MERGE INTO t USING s ON t.k = s.k WHEN NOT MATCHED BY SOURCE THEN UPDATE SET t.a = 1;"
+      - id: when_not_matched_by_source_update_default
+        sql: "MERGE INTO t USING s ON t.k = s.k WHEN NOT MATCHED BY SOURCE THEN UPDATE SET t.a = DEFAULT;"
+      - id: when_not_matched_by_source_and_condition
+        sql: "MERGE INTO t USING s ON t.k = s.k WHEN NOT MATCHED BY SOURCE AND t.d THEN DELETE WHEN NOT MATCHED BY SOURCE THEN UPDATE SET t.a = DEFAULT;"
+      - id: all_three_clause_kinds
+        sql: "MERGE INTO t USING s ON t.k = s.k WHEN MATCHED THEN UPDATE SET * WHEN NOT MATCHED THEN INSERT * WHEN NOT MATCHED BY SOURCE THEN DELETE;"
+      - id: aliases
+        sql: "MERGE INTO t AS tgt USING s AS src ON tgt.k = src.k WHEN MATCHED THEN DELETE;"
+      - id: aliases_no_as
+        sql: "MERGE INTO t tgt USING s src ON tgt.k = src.k WHEN MATCHED THEN DELETE;"
+      - id: using_subquery
+        sql: "MERGE INTO t USING (SELECT k, a FROM s2) AS src ON t.k = src.k WHEN MATCHED THEN UPDATE SET t.a = src.a;"
+      - id: schema_qualified
+        sql: "MERGE INTO c.d.t USING c.d.s ON t.k = s.k WHEN MATCHED THEN DELETE;"
+      - id: with_schema_evolution
+        sql: "MERGE WITH SCHEMA EVOLUTION INTO t USING s ON s.k = t.k WHEN MATCHED THEN UPDATE SET * WHEN NOT MATCHED THEN INSERT *;"
+        note: "MERGE [ WITH SCHEMA EVOLUTION ] INTO in the doc syntax block (Databricks Runtime 15.2 or above)"
+      - id: with_cte
+        sql: "WITH c AS (SELECT k FROM s2) MERGE INTO t USING c ON t.k = c.k WHEN MATCHED THEN DELETE;"
+    examples:
+      - |-
+        MERGE INTO target USING source ON target.key = source.key
+          WHEN MATCHED AND target.marked_for_deletion THEN DELETE
+          WHEN MATCHED THEN UPDATE SET target.updated_at = source.updated_at, target.value = DEFAULT;
+      - |-
+        MERGE INTO target USING source ON target.key = source.key
+          WHEN NOT MATCHED THEN INSERT * EXCEPT (last_updated);
+      - |-
+        MERGE WITH SCHEMA EVOLUTION INTO target USING source ON source.key = target.key
+          WHEN MATCHED THEN UPDATE SET *
+          WHEN NOT MATCHED THEN INSERT *
+          WHEN NOT MATCHED BY SOURCE THEN DELETE;

@@ -1,0 +1,274 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: create_global_temporary_trace_table
+    name: "CREATE GLOBAL TEMPORARY TRACE TABLE"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/AJRdzSNxs49G5dKiz64A8A
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE GLOBAL TEMPORARY TRACE TABLE t (proc_ID BYTE(2), sequence INTEGER);" }
+      - { id: columns_on_commit, sql: "CREATE GLOBAL TEMPORARY TRACE TABLE db1.t (proc_ID BYTE(2), sequence INTEGER, c VARCHAR(100)) ON COMMIT PRESERVE ROWS;" }
+  - id: alter_table_map
+    name: "ALTER TABLE (Map and Colocation Form)"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/OtChv5O~QBABnxs2s6mb8w
+    tier: low
+    probes:
+      - { id: map, sql: "ALTER TABLE t, MAP = m;" }
+      - { id: map_colocate, sql: "ALTER TABLE db1.t, MAP = m COLOCATE USING colo;" }
+  - id: help_constraint
+    name: "HELP CONSTRAINT"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/wbj9vbF5RZrTRfatDVLTjA
+    tier: low
+    probes:
+      - { id: basic, sql: "HELP CONSTRAINT db1.t.c1;" }
+  - id: help_error_table
+    name: "HELP ERROR TABLE"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/gL8iBVV5TDt9jvhVWNt6dw
+    tier: low
+    probes:
+      - { id: for_data_table, sql: "HELP ERROR TABLE FOR db1.t;" }
+      - { id: error_table, sql: "HELP TABLE db1.et;" }
+  - id: alter_join_index
+    name: "ALTER JOIN INDEX"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/P3U2RRhSA6i3x2f6SCzB8g
+    tier: low
+    probes:
+      - { id: map, sql: "ALTER JOIN INDEX ji, MAP = m;" }
+      - { id: map_colocate, sql: "ALTER JOIN INDEX db1.ji, MAP = m COLOCATE USING colo;" }
+  - id: alter_hash_index
+    name: "ALTER HASH INDEX"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/s0Vnhlj0tHElDCHzVFonkA
+    tier: low
+    probes:
+      - { id: map, sql: "ALTER HASH INDEX hi, MAP = m;" }
+      - { id: map_colocate, sql: "ALTER HASH INDEX db1.hi, MAP = m COLOCATE USING colo;" }
+  - id: help_join_index
+    name: "HELP JOIN INDEX"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/BN7cSv8StGASyQOYeivGGQ
+    tier: low
+    probes:
+      - { id: basic, sql: "HELP JOIN INDEX db1.ji;" }
+  - id: help_hash_index
+    name: "HELP HASH INDEX"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/p3ypPKy_BFuPb7RpGR9mYg
+    tier: low
+    probes:
+      - { id: basic, sql: "HELP HASH INDEX db1.hi;" }
+  - id: create_authorization
+    name: "CREATE AUTHORIZATION / REPLACE AUTHORIZATION"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/itFMc2KlGjgW6IrYgHO8tg
+    tier: low
+    probes:
+      - { id: create_user_password, sql: "CREATE AUTHORIZATION a AS DEFINER TRUSTED USER 'u' PASSWORD 'p';" }
+      - { id: replace_domain_invoker, sql: "REPLACE AUTHORIZATION db1.a AS INVOKER DOMAIN d USER 'u' PASSWORD 'p' SESSION_TOKEN 'tok';" }
+      - { id: extended_assume_role, sql: "CREATE AUTHORIZATION a USING AUTHSERVICETYPE 'ASSUME_ROLE ROLENAME ''r'' EXTERNALID ''e'' DURATION_SECONDS ''3600''';" }
+  - id: drop_authorization
+    name: "DROP AUTHORIZATION"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/2QFzH2~SmqE6W5PuM4mxGQ
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP AUTHORIZATION db1.a;" }
+  - id: create_glop_set
+    name: "CREATE GLOP SET"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/KGwsF2_akht3zVYU5X6SJg
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE GLOP SET db1.g;" }
+  - id: drop_glop_set
+    name: "DROP GLOP SET"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/pqOHYBVdAcU1gIkWhlWVAw
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP GLOP SET db1.g;" }
+  - id: alter_procedure_external
+    name: "ALTER PROCEDURE (External Form)"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/awNt7uu9WGUKKVW8PL6PUw
+    tier: low
+    probes:
+      - { id: compile_time_zone, sql: "ALTER PROCEDURE db1.p LANGUAGE C COMPILE ONLY AT TIME ZONE LOCAL;" }
+      - { id: execute_not_protected, sql: "ALTER PROCEDURE p LANGUAGE JAVA EXECUTE NOT PROTECTED;" }
+  - id: create_function_mapping
+    name: "CREATE FUNCTION MAPPING / REPLACE FUNCTION MAPPING"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/VDarpZZabTPmPLvbHLEMzg
+    tier: low
+    probes:
+      - { id: create_basic, sql: "CREATE FUNCTION MAPPING fm FOR f;" }
+      - { id: replace_server_security_using, sql: "REPLACE FUNCTION MAPPING db1.fm FOR db2.sch.f SERVER db3.srv EXTERNAL SECURITY INVOKER TRUSTED auth USING ANY IN TABLE;" }
+      - { id: map_json_storedas, sql: "CREATE FUNCTION MAPPING fm FOR f MAP JSON ('{\"k\":\"v\"}') STOREDAS ('PARQUET') USING a IN TABLE, b(5) OUT TABLE;" }
+  - id: drop_function_mapping
+    name: "DROP FUNCTION MAPPING"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/HXqfYf0C6olGrIvElB4FSw
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP FUNCTION MAPPING db1.fm;" }
+  - id: rename_function_external
+    name: "RENAME FUNCTION (External Form)"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/Z9szBPBvvRzvc3E0n174eg
+    tier: low
+    probes:
+      - { id: function_to, sql: "RENAME FUNCTION db1.f (INTEGER, VARCHAR(10)) TO g;" }
+      - { id: specific_function_as, sql: "RENAME SPECIFIC FUNCTION db1.sf AS sg;" }
+  - id: show_function_mapping
+    name: "SHOW FUNCTION MAPPING"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/3GlMnkJ8bMndXGFApJJIcg
+    tier: low
+    probes:
+      - { id: basic, sql: "SHOW FUNCTION MAPPING db1.fm;" }
+      - { id: in_xml, sql: "SHOW IN XML FUNCTION MAPPING fm;" }
+  - id: create_method
+    name: "CREATE METHOD"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/huFAZwld2XOq1RkadzLmkQ
+    tier: low
+    probes:
+      - { id: instance_external, sql: "CREATE INSTANCE METHOD SYSUDTLIB.m (x INTEGER) RETURNS INTEGER FOR SYSUDTLIB.udt EXTERNAL NAME 'F!ext_m' EXTERNAL SECURITY INVOKER;" }
+      - { id: constructor_glop, sql: "CREATE CONSTRUCTOR METHOD m (INTEGER) RETURNS VARCHAR(10) CAST FROM INTEGER FOR udt USING GLOP SET g EXTERNAL;" }
+  - id: alter_method
+    name: "ALTER METHOD"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/1_XkrIT1ecM97KlRLHxkLQ
+    tier: low
+    probes:
+      - { id: specific_compile, sql: "ALTER SPECIFIC METHOD SYSUDTLIB.sm FOR udt COMPILE ONLY;" }
+      - { id: method_execute_protected, sql: "ALTER INSTANCE METHOD m (INTEGER, SYSUDTLIB.udt2) FOR udt EXECUTE NOT PROTECTED;" }
+  - id: replace_method
+    name: "REPLACE METHOD"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/a01CqsUcKrMOEFH5dZRwsA
+    tier: low
+    probes:
+      - { id: method_external_name, sql: "REPLACE INSTANCE METHOD SYSUDTLIB.m (x INTEGER AS LOCATOR) FOR SYSUDTLIB.udt EXTERNAL NAME 'ext_m';" }
+      - { id: specific_external, sql: "REPLACE SPECIFIC METHOD sm EXTERNAL;" }
+  - id: help_method
+    name: "HELP METHOD"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/SX0njSp5IWW1hn3Vs4DfTQ
+    tier: low
+    probes:
+      - { id: method, sql: "HELP INSTANCE METHOD db1.m (udt1) FOR udt;" }
+      - { id: specific, sql: "HELP SPECIFIC METHOD db1.sm;" }
+  - id: create_storage_format_schema
+    name: "CREATE storage_format SCHEMA"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/E_Drg4XIwVSYJId1XXagNg
+    tier: low
+    probes:
+      - { id: avro, sql: "CREATE Avro SCHEMA SYSUDTLIB.s AS '{\"type\": \"record\", \"name\": \"User\", \"fields\": [{\"name\": \"name\", \"type\": \"string\"}]}';" }
+      - { id: csv, sql: "CREATE CSV SCHEMA s AS '{\"field_delimiter\":\",\", \"field_names\":[\"a\",\"b\"]}';" }
+  - id: create_cast
+    name: "CREATE CAST / REPLACE CAST"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/P4r4~sOjD_lOpeg3hmCgIw
+    tier: low
+    probes:
+      - { id: create_method, sql: "CREATE CAST (SYSUDTLIB.udt AS INTEGER) WITH INSTANCE METHOD m () FOR udt;" }
+      - { id: replace_function_assignment, sql: "REPLACE CAST (VARCHAR(10) AS SYSUDTLIB.udt) WITH FUNCTION SYSUDTLIB.f (VARCHAR(10)) AS ASSIGNMENT;" }
+      - { id: specific_function, sql: "CREATE CAST (udt AS udt2) WITH SPECIFIC FUNCTION sf;" }
+  - id: create_ordering
+    name: "CREATE ORDERING / REPLACE ORDERING"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/VAR1O4BU7MAv6hxJT_SSzA
+    tier: low
+    probes:
+      - { id: method, sql: "CREATE ORDERING FOR SYSUDTLIB.udt ORDER FULL BY MAP WITH INSTANCE METHOD SYSUDTLIB.m () FOR udt;" }
+      - { id: function, sql: "REPLACE ORDERING FOR udt ORDER FULL BY MAP WITH FUNCTION SYSUDTLIB.f (udt);" }
+      - { id: specific_function, sql: "CREATE ORDERING FOR udt ORDER FULL BY MAP WITH SPECIFIC FUNCTION sf;" }
+  - id: create_transform
+    name: "CREATE TRANSFORM / REPLACE TRANSFORM"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/wDwmOwhr_paCFsNWXGMitA
+    tier: low
+    probes:
+      - { id: method_group, sql: "CREATE TRANSFORM FOR SYSUDTLIB.udt tg (TO SQL WITH SPECIFIC METHOD tosql FOR udt FROM SQL WITH INSTANCE METHOD fromsql () FOR udt);" }
+      - { id: function_replace, sql: "REPLACE TRANSFORM FOR udt tg (TO SQL WITH FUNCTION f1 (VARCHAR(10)) FROM SQL WITH SPECIFIC FUNCTION sf2);" }
+      - { id: multiple_groups, sql: "CREATE TRANSFORM FOR udt tg1 (TO SQL WITH SPECIFIC FUNCTION a FROM SQL WITH SPECIFIC FUNCTION b) tg2 (TO SQL WITH SPECIFIC FUNCTION c FROM SQL WITH SPECIFIC FUNCTION d);" }
+  - id: set_transform_group_for_type
+    name: "SET TRANSFORM GROUP FOR TYPE"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/D8Mz5Sav4s2t2nUrSeZkqA
+    tier: low
+    probes:
+      - { id: basic, sql: "SET TRANSFORM GROUP FOR TYPE ST_GEOMETRY TD_GEO_VARCHAR;" }
+      - { id: json_character_set, sql: "SET TRANSFORM GROUP FOR TYPE JSON CHARACTER SET LATIN TD_JSON_VARCHAR;" }
+      - { id: json_storage_format, sql: "SET TRANSFORM GROUP FOR TYPE JSON STORAGE FORMAT BSON TD_JSON_VARCHAR;" }
+  - id: drop_storage_format_schema
+    name: "DROP storage_format SCHEMA"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/ZjDIIXP~YL~lfHfhrIjhfg
+    tier: low
+    probes:
+      - { id: avro, sql: "DROP Avro SCHEMA SYSUDTLIB.s;" }
+      - { id: csv, sql: "DROP CSV SCHEMA s;" }
+  - id: drop_cast
+    name: "DROP CAST"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/dDJ7aI9um91PoCjL67zwOQ
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP CAST (udt AS INTEGER);" }
+      - { id: db_qualified, sql: "DROP CAST SYSUDTLIB.(INTEGER AS udt);" }
+  - id: drop_ordering
+    name: "DROP ORDERING"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/LelD5KKB2ZYtqjxsPZ9A6g
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP ORDERING FOR SYSUDTLIB.udt;" }
+  - id: drop_transform
+    name: "DROP TRANSFORM"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/QjE2ZDN5Lqq3GmGcvSeVgw
+    tier: low
+    probes:
+      - { id: group, sql: "DROP TRANSFORM tg FOR udt;" }
+      - { id: all, sql: "DROP TRANSFORM SYSUDTLIB.ALL FOR udt;" }
+  - id: help_type
+    name: "HELP TYPE"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/E29Z90_08ikHLofdYq6Ehg
+    tier: low
+    probes:
+      - { id: basic, sql: "HELP TYPE SYSUDTLIB.udt;" }
+      - { id: attribute, sql: "HELP TYPE udt ATTRIBUTE;" }
+      - { id: method, sql: "HELP TYPE udt METHOD;" }
+  - id: help_storage_format_schema
+    name: "HELP storage_format SCHEMA"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/jpwBrQawjt09NMWB0r19VA
+    tier: low
+    probes:
+      - { id: avro, sql: "HELP Avro SCHEMA SYSUDTLIB.s;" }
+      - { id: csv, sql: "HELP CSV SCHEMA s;" }
+  - id: help_cast
+    name: "HELP CAST"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/XYzSHt_lgccUF5dP0hjgAA
+    tier: low
+    probes:
+      - { id: basic, sql: "HELP CAST SYSUDTLIB.udt;" }
+      - { id: source, sql: "HELP CAST udt SOURCE;" }
+      - { id: target, sql: "HELP CAST udt TARGET;" }
+  - id: help_transform
+    name: "HELP TRANSFORM"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/nzu9bLZF3GuDOs5v~A0ENQ
+    tier: low
+    probes:
+      - { id: basic, sql: "HELP TRANSFORM db1.udt;" }
+  - id: logging_incremental_archive_on
+    name: "LOGGING INCREMENTAL ARCHIVE ON FOR object_list"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/LXll2RQtjkRrePaNk1yi8Q
+    tier: low
+    probes:
+      - { id: tables, sql: "LOGGING INCREMENTAL ARCHIVE ON FOR db1.t1, db1.t2;" }
+      - { id: delete_log_rows, sql: "LOGGING INCREMENTAL ARCHIVE ON FOR db1, DELETE LOG ROWS;" }
+  - id: logging_incremental_archive_off
+    name: "LOGGING INCREMENTAL ARCHIVE OFF FOR object_list"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/qIJ8_WJKqXsL2kas10wioQ
+    tier: low
+    probes:
+      - { id: basic, sql: "LOGGING INCREMENTAL ARCHIVE OFF FOR db1.t, db2;" }
+  - id: incremental_restore_allow_write
+    name: "INCREMENTAL RESTORE ALLOW WRITE FOR object_list"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/OHLFB3eIiAkduMMZb0CfKw
+    tier: low
+    probes:
+      - { id: basic, sql: "INCREMENTAL RESTORE ALLOW WRITE FOR db1.t, db2;" }
+  - id: create_map
+    name: "CREATE MAP"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/zp9bJOIOasifct0shXAejQ
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE MAP sm FROM cm SPARSE AMPCOUNT = 4;" }
+  - id: drop_map
+    name: "DROP MAP"
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/E~orsowhp4D0M9KHywfpEQ
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP MAP m;" }

@@ -1,0 +1,51 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: sort_by
+    name: SORT BY clause
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-sortby
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT c FROM t SORT BY c;"
+      - id: asc
+        sql: "SELECT c FROM t SORT BY c ASC;"
+      - id: desc
+        sql: "SELECT c FROM t SORT BY c DESC;"
+      - id: nulls_first
+        sql: "SELECT c FROM t SORT BY c NULLS FIRST;"
+      - id: nulls_last
+        sql: "SELECT c FROM t SORT BY c NULLS LAST;"
+      - id: desc_nulls_first
+        sql: "SELECT c FROM t SORT BY c DESC NULLS FIRST;"
+      - id: multiple_expressions
+        sql: "SELECT a, b FROM t SORT BY a ASC, b DESC;"
+      - id: column_position
+        sql: "SELECT a, b FROM t SORT BY 1;"
+      - id: expression
+        sql: "SELECT a, b FROM t SORT BY a + b;"
+      - id: with_repartition_hint
+        sql: "SELECT /*+ REPARTITION(a) */ a, b FROM t SORT BY b;"
+    examples:
+      - "SELECT /*+ REPARTITION(zip_code) */ name, age, zip_code FROM person SORT BY name;"
+      - "SELECT /*+ REPARTITION(zip_code) */ age, name, zip_code FROM person SORT BY age DESC NULLS FIRST;"
+      - "SELECT /*+ REPARTITION(zip_code) */ name, age, zip_code FROM person SORT BY name ASC, age DESC;"
+
+  - id: cluster_by_select
+    name: CLUSTER BY clause (SELECT)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-clusterby
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT c FROM t CLUSTER BY c;"
+      - id: multiple_expressions
+        sql: "SELECT a, b FROM t CLUSTER BY a, b;"
+      - id: expression
+        sql: "SELECT a, b FROM t CLUSTER BY a + b;"
+      - id: with_where
+        sql: "SELECT a, b FROM t WHERE a > 1 CLUSTER BY a;"
+    examples:
+      - "SELECT age, name FROM person CLUSTER BY age;"

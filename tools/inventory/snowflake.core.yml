@@ -1,0 +1,3713 @@
+dialect: snowflake
+engine: Snowflake
+version: "current (docs read 2026-10-04)"
+source: https://docs.snowflake.com/en/sql-reference/sql-all
+
+statements:
+  - id: select
+    name: "SELECT"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/select
+    tier: high
+    probes:
+      - { id: star, sql: "SELECT * FROM t;" }
+      - { id: no_from, sql: "SELECT 1 + 1;" }
+      - { id: select_all, sql: "SELECT ALL c FROM t;" }
+      - { id: distinct, sql: "SELECT DISTINCT c FROM t;" }
+      - { id: top, sql: "SELECT TOP 10 c FROM t;" }
+      - { id: qualified_star, sql: "SELECT t.* FROM t;" }
+      - { id: alias_qualified_star, sql: "SELECT x.* FROM t AS x;" }
+      - { id: star_ilike, sql: "SELECT * ILIKE '%id%' FROM t;" }
+      - { id: star_exclude_one, sql: "SELECT * EXCLUDE c FROM t;" }
+      - { id: star_exclude_list, sql: "SELECT * EXCLUDE (a, b) FROM t;" }
+      - { id: star_replace, sql: "SELECT * REPLACE ('X-' || c AS c) FROM t;" }
+      - { id: star_replace_multiple, sql: "SELECT * REPLACE (a + 1 AS a, b * 2 AS b) FROM t;" }
+      - { id: star_rename_one, sql: "SELECT * RENAME c AS d FROM t;" }
+      - { id: star_rename_list, sql: "SELECT * RENAME (a AS x, b AS y) FROM t;" }
+      - { id: star_ilike_replace, sql: "SELECT * ILIKE '%id%' REPLACE ('X-' || id AS id) FROM t;" }
+      - { id: star_ilike_rename, sql: "SELECT * ILIKE '%id%' RENAME id AS ident FROM t;" }
+      - { id: star_exclude_replace_rename, sql: "SELECT * EXCLUDE a REPLACE (b + 1 AS b) RENAME b AS bb FROM t;" }
+      - { id: qualified_star_exclude, sql: "SELECT t.* EXCLUDE c, u.* RENAME d AS e FROM t JOIN u ON t.id = u.id;" }
+      - { id: column_alias_as, sql: "SELECT a AS x FROM t;" }
+      - { id: column_alias_no_as, sql: "SELECT a x FROM t;" }
+      - { id: positional_column, sql: "SELECT $1, t.$2 FROM t;" }
+      - { id: expression_no_from_alias, sql: "SELECT pi() * 2.0 AS area;" }
+      - id: trailing_comma_select_list
+        sql: "SELECT a, b, FROM t;"
+        note: "The syntax section shows \"SELECT emp_id, name, dept, FROM employees;\": a trailing comma after the last select item is accepted."
+      - { id: all_clauses, sql: "SELECT a, count(*) FROM t WHERE b > 0 GROUP BY a HAVING count(*) > 1 QUALIFY row_number() OVER (ORDER BY a) <= 5 ORDER BY a LIMIT 10;" }
+    examples:
+      - "SELECT * ILIKE '%id%' FROM employee_table;"
+      - "SELECT * EXCLUDE (department_id, employee_id) FROM employee_table;"
+      - "SELECT * EXCLUDE first_name RENAME (department_id AS department, employee_id AS id) FROM employee_table;"
+      - "SELECT * ILIKE '%id%' REPLACE('DEPT-' || department_id AS department_id) FROM employee_table;"
+      - "SELECT $2 FROM employee_table ORDER BY $2;"
+
+  - id: with
+    name: "WITH"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/with
+    tier: high
+    probes:
+      - { id: cte, sql: "WITH c AS (SELECT a FROM t) SELECT a FROM c;" }
+      - { id: cte_column_list, sql: "WITH c (x, y) AS (SELECT a, b FROM t) SELECT x, y FROM c;" }
+      - { id: multiple_ctes, sql: "WITH c1 AS (SELECT a FROM t), c2 AS (SELECT a FROM c1) SELECT * FROM c2;" }
+      - { id: recursive, sql: "WITH RECURSIVE c (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM c WHERE n < 10) SELECT n FROM c;" }
+      - id: recursive_implicit
+        sql: "WITH c (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM c WHERE n < 10) SELECT n FROM c;"
+        note: "RECURSIVE is optional in the recursive form (\"WITH [ RECURSIVE ]\")."
+      - { id: recursive_join, sql: "WITH RECURSIVE c (id, parent) AS (SELECT id, parent FROM t WHERE parent IS NULL UNION ALL SELECT t.id, t.parent FROM t JOIN c ON t.parent = c.id) SELECT * FROM c;" }
+    examples:
+      - |-
+        with
+          albums_1976 as (select * from music_albums where album_year = 1976)
+        select album_name from albums_1976 order by album_name;
+      - |-
+        with
+           album_info_1976 as (select m.album_ID, m.album_name, b.band_name
+              from music_albums as m inner join music_bands as b
+              where m.band_id = b.band_id and album_year = 1976),
+           Journey_album_info_1976 as (select *
+              from album_info_1976
+              where band_name = 'Journey')
+        select album_name, band_name
+           from Journey_album_info_1976;
+      - |-
+        with
+          musicians_in_bands as (
+             select distinct musicians.musician_id, musician_name, band_name
+              from musicians inner join musicians_and_albums inner join music_albums inner join music_bands
+              where musicians.musician_ID = musicians_and_albums.musician_ID
+                and musicians_and_albums.album_ID = music_albums.album_ID
+                and music_albums.band_ID = music_bands.band_ID)
+        select musician_ID, musician_name from musicians_in_bands where band_name = 'Santana'
+        intersect
+        select musician_ID, musician_name from musicians_in_bands where band_name = 'Journey'
+        order by musician_ID
+          ;
+
+  - id: top_n
+    name: "TOP <n>"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/top_n
+    tier: high
+    probes:
+      - { id: top, sql: "SELECT TOP 4 c FROM t;" }
+      - { id: top_order_by, sql: "SELECT TOP 4 c FROM t ORDER BY c;" }
+      - { id: top_distinct, sql: "SELECT DISTINCT TOP 4 c FROM t;" }
+    examples:
+      - "SELECT TOP 4 c1 FROM testtable;"
+
+  - id: into
+    name: "INTO"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/into
+    tier: high
+    probes:
+      - id: into_variable
+        sql: "SELECT c INTO :v FROM t WHERE id = 1;"
+        note: "INTO :<variable> is only valid inside Snowflake Scripting; outside a block the variable is unbound but the statement form is from the syntax block."
+      - { id: into_multiple_variables, sql: "SELECT a, b INTO :v1, :v2 FROM t WHERE id = 1;" }
+
+  - id: from
+    name: "FROM"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/from
+    tier: high
+    probes:
+      - { id: table, sql: "SELECT * FROM t;" }
+      - { id: qualified_table, sql: "SELECT * FROM db.s.t;" }
+      - { id: alias, sql: "SELECT x.c FROM t AS x;" }
+      - { id: alias_no_as, sql: "SELECT x.c FROM t x;" }
+      - { id: inline_view, sql: "SELECT v.c FROM (SELECT c FROM t) AS v;" }
+      - { id: inline_view_no_alias, sql: "SELECT * FROM (SELECT c FROM t);" }
+      - { id: lateral_inline_view, sql: "SELECT * FROM t, LATERAL (SELECT * FROM u WHERE u.id = t.id) AS v;" }
+      - { id: table_function, sql: "SELECT * FROM TABLE(f(1));" }
+      - { id: table_function_alias, sql: "SELECT * FROM TABLE(f(1)) AS x;" }
+      - { id: values_clause, sql: "SELECT * FROM (VALUES (1, 'a'), (2, 'b'));" }
+      - { id: values_no_parens, sql: "SELECT column1 FROM VALUES (1), (2);" }
+      - { id: stage, sql: "SELECT $1, $2 FROM @s;" }
+      - { id: stage_path_options, sql: "SELECT v.$1 FROM @db.sch.s/path/ (FILE_FORMAT => 'csv_format', PATTERN => '.*my_pattern.*') v;" }
+      - { id: user_stage, sql: "SELECT $1 FROM @~/data/;" }
+      - { id: table_stage, sql: "SELECT $1 FROM @%t;" }
+      - { id: directory, sql: "SELECT * FROM DIRECTORY(@s);" }
+      - { id: error_table, sql: "SELECT * FROM ERROR_TABLE(t);" }
+      - { id: dynamic_table_refresh_boundary, sql: "SELECT * FROM DYNAMIC_TABLE_REFRESH_BOUNDARY(dt) AS x;" }
+      - { id: semantic_view, sql: "SELECT * FROM SEMANTIC_VIEW(sv METRICS m DIMENSIONS d);" }
+    examples:
+      - |-
+        SELECT description, retail_price, wholesale_cost
+          FROM temporary_doc_test.ftable1;
+      - |-
+        SELECT v.profit
+          FROM (SELECT retail_price - wholesale_cost AS profit FROM ftable1) AS v;
+      - |-
+        SELECT *
+          FROM TABLE(Fibonacci_Sequence_UDTF(6.0::FLOAT));
+      - "SELECT * FROM DIRECTORY(@mystage);"
+      - "SELECT FILE_URL FROM DIRECTORY(@mystage) WHERE RELATIVE_PATH LIKE '%.csv';"
+
+  - id: join
+    name: "JOIN"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/join
+    tier: high
+    probes:
+      - { id: join, sql: "SELECT * FROM t JOIN u ON t.id = u.id;" }
+      - { id: inner_join, sql: "SELECT * FROM t INNER JOIN u ON t.id = u.id;" }
+      - { id: left_join, sql: "SELECT * FROM t LEFT JOIN u ON t.id = u.id;" }
+      - { id: left_outer_join, sql: "SELECT * FROM t LEFT OUTER JOIN u ON t.id = u.id;" }
+      - { id: right_outer_join, sql: "SELECT * FROM t RIGHT OUTER JOIN u ON t.id = u.id;" }
+      - { id: full_outer_join, sql: "SELECT * FROM t FULL OUTER JOIN u ON t.id = u.id;" }
+      - { id: full_join, sql: "SELECT * FROM t FULL JOIN u ON t.id = u.id;" }
+      - { id: cross_join, sql: "SELECT * FROM t CROSS JOIN u;" }
+      - { id: natural_join, sql: "SELECT * FROM t NATURAL JOIN u;" }
+      - { id: natural_inner_join, sql: "SELECT * FROM t NATURAL INNER JOIN u;" }
+      - { id: natural_full_outer_join, sql: "SELECT * FROM t NATURAL FULL OUTER JOIN u;" }
+      - { id: join_using, sql: "SELECT * FROM t JOIN u USING (id, k);" }
+      - { id: left_join_using, sql: "SELECT * FROM t LEFT JOIN u USING(id);" }
+      - id: join_without_on
+        sql: "SELECT * FROM t INNER JOIN u WHERE t.id = u.id;"
+        note: "The ON clause is optional in the syntax (\"[ ON <condition> ]\"); doc examples join with the condition in WHERE."
+      - { id: directed_join, sql: "SELECT * FROM t INNER DIRECTED JOIN u ON u.id = t.id;" }
+      - { id: left_directed_join, sql: "SELECT * FROM t LEFT OUTER DIRECTED JOIN u ON u.id = t.id;" }
+      - { id: cross_directed_join, sql: "SELECT * FROM t CROSS DIRECTED JOIN u;" }
+      - { id: natural_directed_join, sql: "SELECT * FROM t NATURAL INNER DIRECTED JOIN u;" }
+      - { id: directed_join_first, sql: "SELECT * FROM t INNER DIRECTED JOIN u ON u.id = t.id FIRST(u);" }
+      - { id: join_last, sql: "SELECT * FROM t INNER JOIN u ON u.id = t.id LAST(u);" }
+      - { id: implicit_join, sql: "SELECT * FROM t, u WHERE t.id = u.id;" }
+      - { id: chained_joins, sql: "SELECT * FROM t LEFT OUTER JOIN u ON (t.id = u.id) RIGHT OUTER JOIN v ON (v.id = u.id);" }
+      - { id: parenthesized_join, sql: "SELECT * FROM t LEFT OUTER JOIN (u RIGHT OUTER JOIN v ON (v.id = u.id)) ON (t.id = u.id);" }
+    examples:
+      - |-
+        SELECT t1.col1, t2.col1
+          FROM t1 INNER DIRECTED JOIN t2
+            ON t2.col1 = t1.col1
+          ORDER BY 1,2;
+      - |-
+        SELECT *
+          FROM d1 NATURAL FULL OUTER JOIN d2
+          ORDER BY id;
+      - |-
+        SELECT t1.*, t2.*, t3.*
+        FROM t1
+          LEFT OUTER JOIN
+            (t2 RIGHT OUTER JOIN t3 ON (t3.col1 = t2.col1))
+          ON (t1.col1 = t2.col1)
+        ORDER BY t1.col1;
+      - |-
+        WITH
+          l AS (
+               SELECT 'a' AS userid
+               ),
+          r AS (
+               SELECT 'b' AS userid
+               )
+        SELECT *
+          FROM l LEFT JOIN r USING(userid);
+      - |-
+        SELECT t1.col1, t2.col1, t3.col1
+          FROM t1
+            INNER JOIN t2 ON t2.col1 = t1.col1
+            INNER DIRECTED JOIN t3 ON t3.col1 = t2.col1 FIRST(t3)
+          ORDER BY 1,2,3;
+
+  - id: asof_join
+    name: "ASOF JOIN"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/asof-join
+    tier: high
+    probes:
+      - { id: asof_join, sql: "SELECT * FROM t ASOF JOIN u MATCH_CONDITION (t.ts >= u.ts);" }
+      - { id: asof_join_on, sql: "SELECT * FROM t ASOF JOIN u MATCH_CONDITION (t.ts >= u.ts) ON t.k = u.k;" }
+      - { id: asof_join_on_and, sql: "SELECT * FROM t ASOF JOIN u MATCH_CONDITION (t.ts < u.ts) ON t.k = u.k AND t.j = u.j;" }
+      - { id: asof_join_using, sql: "SELECT * FROM t ASOF JOIN u MATCH_CONDITION (t.ts <= u.ts) USING (k);" }
+      - { id: asof_join_then_join, sql: "SELECT * FROM t ASOF JOIN u MATCH_CONDITION (t.ts > u.ts) ON t.k = u.k INNER JOIN v ON v.k = t.k;" }
+    examples:
+      - |-
+        SELECT t.stock_symbol, t.trade_time, t.quantity, q.quote_time, q.price
+          FROM trades t ASOF JOIN quotes q
+            MATCH_CONDITION(t.trade_time >= quote_time)
+            ON t.stock_symbol=q.stock_symbol
+          ORDER BY t.stock_symbol;
+      - |-
+        SELECT t.stock_symbol, t.trade_time, t.quantity, q.quote_time, q.price
+          FROM trades t ASOF JOIN quotes q
+            MATCH_CONDITION(t.trade_time <= quote_time)
+            USING(stock_symbol)
+          ORDER BY t.stock_symbol;
+      - |-
+        SELECT *
+          FROM trades_unixtime tu
+            ASOF JOIN quotes_unixtime qu
+            MATCH_CONDITION(tu.trade_time>=qu.quote_time);
+
+  - id: lateral
+    name: "LATERAL"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/join-lateral
+    tier: high
+    probes:
+      - { id: lateral_subquery, sql: "SELECT * FROM t AS d, LATERAL (SELECT * FROM u AS e WHERE e.id = d.id) AS v;" }
+      - { id: inner_join_lateral, sql: "SELECT * FROM t AS d INNER JOIN LATERAL (SELECT * FROM u AS e WHERE e.id = d.id) AS v;" }
+      - { id: lateral_flatten, sql: "SELECT f.value FROM t, LATERAL FLATTEN(INPUT => t.c) f;" }
+      - { id: lateral_flatten_path, sql: "SELECT f.value FROM t p, LATERAL FLATTEN(INPUT => p.c, PATH => 'contact') f;" }
+      - { id: lateral_flatten_chained, sql: "SELECT f1.value FROM t p, LATERAL FLATTEN(INPUT => p.c) f, LATERAL FLATTEN(INPUT => f.value:business) f1;" }
+    examples:
+      - |-
+        SELECT *
+          FROM departments AS d,
+            LATERAL (SELECT * FROM employees AS e WHERE e.department_ID = d.department_ID) AS iv2
+          ORDER BY employee_ID;
+      - |-
+        SELECT *
+          FROM departments AS d INNER JOIN
+            LATERAL (SELECT * FROM employees AS e WHERE e.department_ID = d.department_ID) AS iv2
+          ORDER BY employee_ID;
+      - |-
+        SELECT id,
+            f1.value:type::STRING AS contact_type,
+            f1.value:content::STRING AS contact_details
+          FROM persons p,
+            LATERAL FLATTEN(INPUT => p.c, PATH => 'contact') f,
+            LATERAL FLATTEN(INPUT => f.value:business) f1;
+
+  - id: at_before
+    name: "AT | BEFORE"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/at-before
+    tier: high
+    probes:
+      - { id: at_timestamp, sql: "SELECT * FROM t AT(TIMESTAMP => '2024-06-05 17:50:00'::TIMESTAMP_LTZ);" }
+      - { id: at_offset, sql: "SELECT * FROM t AT(OFFSET => -60*5) AS x WHERE x.flag = 'valid';" }
+      - { id: at_statement, sql: "SELECT * FROM t AT(STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726');" }
+      - { id: at_stream, sql: "SELECT * FROM t AT(STREAM => 's1');" }
+      - { id: before_timestamp, sql: "SELECT * FROM t BEFORE(TIMESTAMP => TO_TIMESTAMP(1432669154242, 3));" }
+      - { id: before_offset, sql: "SELECT * FROM t BEFORE(OFFSET => -3600);" }
+      - { id: before_statement, sql: "SELECT * FROM t BEFORE(STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726');" }
+      - { id: at_in_join, sql: "SELECT * FROM t AT(TIMESTAMP => '2024-06-05 17:50:00'::TIMESTAMP_LTZ) h JOIN u AT(OFFSET => -60) x ON h.c = x.c;" }
+    examples:
+      - "SELECT * FROM my_table AT(TIMESTAMP => 'Wed, 26 Jun 2024 09:20:00 -0700'::TIMESTAMP_LTZ);"
+      - "SELECT * FROM my_table AT(TIMESTAMP => TO_TIMESTAMP(1432669154242, 3));"
+      - "SELECT * FROM my_table AT(OFFSET => -60*5) AS T WHERE T.flag = 'valid';"
+      - "SELECT * FROM my_table BEFORE(STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726');"
+      - |-
+        SELECT oldt.* ,newt.*
+          FROM my_table BEFORE(STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726') AS oldt
+            FULL OUTER JOIN my_table AT(STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726') AS newt
+            ON oldt.id = newt.id
+          WHERE oldt.id IS NULL OR newt.id IS NULL;
+
+  - id: changes
+    name: "CHANGES"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/changes
+    tier: high
+    probes:
+      - { id: changes_default_at_timestamp, sql: "SELECT * FROM t CHANGES(INFORMATION => DEFAULT) AT(TIMESTAMP => $ts1);" }
+      - { id: changes_append_only_at_offset, sql: "SELECT * FROM t CHANGES(INFORMATION => APPEND_ONLY) AT(OFFSET => -3600);" }
+      - { id: changes_at_stream, sql: "SELECT * FROM t CHANGES(INFORMATION => DEFAULT) AT(STREAM => 's1');" }
+      - { id: changes_before_statement, sql: "SELECT * FROM t CHANGES(INFORMATION => DEFAULT) BEFORE(STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726');" }
+      - { id: changes_end, sql: "SELECT * FROM t CHANGES(INFORMATION => DEFAULT) AT(TIMESTAMP => $ts1) END(TIMESTAMP => $ts2);" }
+      - { id: changes_end_offset, sql: "SELECT * FROM t CHANGES(INFORMATION => APPEND_ONLY) AT(STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726') END(OFFSET => -60);" }
+    examples:
+      - |-
+        SELECT *
+         FROM t1
+           CHANGES(INFORMATION => DEFAULT)
+           AT(TIMESTAMP => $ts1);
+      - |-
+        SELECT *
+         FROM t1
+           CHANGES(INFORMATION => APPEND_ONLY)
+           AT(TIMESTAMP => $ts1);
+
+  - id: connect_by
+    name: "CONNECT BY"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/connect-by
+    tier: high
+    probes:
+      - { id: start_with_connect_by, sql: "SELECT id, parent FROM t START WITH parent IS NULL CONNECT BY parent = PRIOR id;" }
+      - { id: prior_left, sql: "SELECT id FROM t START WITH id = 1 CONNECT BY PRIOR id = parent;" }
+      - { id: multiple_conditions, sql: "SELECT id FROM t START WITH id = 1 CONNECT BY parent = PRIOR id, k = PRIOR k;" }
+      - { id: level, sql: "SELECT id, LEVEL FROM t START WITH id = 1 CONNECT BY parent = PRIOR id;" }
+      - { id: connect_by_root, sql: "SELECT id, CONNECT_BY_ROOT title AS root_title FROM t START WITH id = 1 CONNECT BY parent = PRIOR id;" }
+      - { id: sys_connect_by_path, sql: "SELECT SYS_CONNECT_BY_PATH(title, ' -> ') FROM t START WITH id = 1 CONNECT BY parent = PRIOR id ORDER BY 1;" }
+      - id: connect_by_then_where
+        sql: "SELECT id FROM t START WITH id = 1 CONNECT BY parent = PRIOR id WHERE id > 1;"
+        note: "Usage notes: filters in a WHERE clause are processed after the CONNECT BY; the syntax block places the clause directly after the data source."
+    examples:
+      - |-
+        SELECT employee_ID, manager_ID, title
+          FROM employees
+            START WITH title = 'President'
+            CONNECT BY
+              manager_ID = PRIOR employee_id
+          ORDER BY employee_ID;
+      - |-
+        SELECT SYS_CONNECT_BY_PATH(title, ' -> '), employee_ID, manager_ID, title
+          FROM employees
+            START WITH title = 'President'
+            CONNECT BY
+              manager_ID = PRIOR employee_id
+          ORDER BY employee_ID;
+      - |-
+        SELECT
+        employee_ID, manager_ID, title,
+        CONNECT_BY_ROOT title AS root_title
+          FROM employees
+            START WITH title = 'President'
+            CONNECT BY
+              manager_ID = PRIOR employee_id
+          ORDER BY employee_ID;
+      - |-
+        SELECT
+          description,
+          quantity,
+          component_id,
+          parent_component_ID,
+          SYS_CONNECT_BY_PATH(component_ID, ' -> ') AS path
+          FROM components
+            START WITH component_ID = 1
+            CONNECT BY
+              parent_component_ID = PRIOR component_ID
+          ORDER BY path
+          ;
+
+  - id: match_recognize
+    name: "MATCH_RECOGNIZE"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/match_recognize
+    tier: high
+    probes:
+      - { id: minimal, sql: "SELECT * FROM t MATCH_RECOGNIZE(PATTERN (a b+) DEFINE b AS price < LAG(price));" }
+      - { id: partition_order, sql: "SELECT * FROM t MATCH_RECOGNIZE(PARTITION BY company ORDER BY d PATTERN (a b+) DEFINE b AS price < LAG(price));" }
+      - { id: measures, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d MEASURES MATCH_NUMBER() AS mn, FIRST(d) AS start_date, LAST(d) end_date, COUNT(b.*) AS nb PATTERN (a b+) DEFINE b AS price < LAG(price));" }
+      - { id: order_nulls, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d DESC NULLS LAST PATTERN (a) DEFINE a AS TRUE);" }
+      - { id: one_row_per_match, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d MEASURES MATCH_NUMBER() AS mn ONE ROW PER MATCH PATTERN (a b+) DEFINE b AS price < LAG(price));" }
+      - { id: all_rows_per_match, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d ALL ROWS PER MATCH PATTERN (a b+) DEFINE b AS price < LAG(price));" }
+      - { id: all_rows_show_empty, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d ALL ROWS PER MATCH SHOW EMPTY MATCHES PATTERN (a*) DEFINE a AS price > 10);" }
+      - { id: all_rows_omit_empty, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d ALL ROWS PER MATCH OMIT EMPTY MATCHES PATTERN (a*) DEFINE a AS price > 10);" }
+      - { id: all_rows_with_unmatched, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d ALL ROWS PER MATCH WITH UNMATCHED ROWS PATTERN (a+) DEFINE a AS price > 10);" }
+      - { id: skip_past_last_row, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d AFTER MATCH SKIP PAST LAST ROW PATTERN (a a) DEFINE a AS price < 45);" }
+      - { id: skip_to_next_row, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d AFTER MATCH SKIP TO NEXT ROW PATTERN (a a) DEFINE a AS price < 45);" }
+      - { id: skip_to_last, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d AFTER MATCH SKIP TO LAST b PATTERN (a b+) DEFINE b AS price > LAG(price));" }
+      - { id: skip_to_first, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d AFTER MATCH SKIP TO FIRST b PATTERN (a b+) DEFINE b AS price > LAG(price));" }
+      - { id: skip_to_symbol, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d AFTER MATCH SKIP TO b PATTERN (a b+) DEFINE b AS price > LAG(price));" }
+      - { id: pattern_operators, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d PATTERN (^ s1 s2*? ( {- s3 -} s4 )+ | PERMUTE(s1, s2){1,2} $) DEFINE s1 AS c = 1, s2 AS c = 2, s3 AS c = 3, s4 AS c = 4);" }
+      - { id: pattern_quantifier_ranges, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d PATTERN (a{1,3} b{,2} c{2} d?) DEFINE a AS c = 1, b AS c = 2, c AS c = 3, d AS c = 4);" }
+      - { id: running_final, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d MEASURES FINAL FIRST(a.price) AS ff, RUNNING LAST(a.price) AS rl ALL ROWS PER MATCH PATTERN (a a) DEFINE a AS price < 45);" }
+      - { id: classifier_sequence, sql: "SELECT * FROM t MATCH_RECOGNIZE(ORDER BY d MEASURES MATCH_SEQUENCE_NUMBER() AS msq, CLASSIFIER() AS cl ALL ROWS PER MATCH PATTERN (any_row up+) DEFINE any_row AS TRUE, up AS price > LAG(price));" }
+      - { id: on_subquery, sql: "SELECT * FROM (SELECT * FROM t WHERE k = 1) MATCH_RECOGNIZE(ORDER BY d PATTERN (a+) DEFINE a AS price > 10);" }
+    examples:
+      - |-
+        SELECT * FROM stock_price_history
+          MATCH_RECOGNIZE(
+            PARTITION BY company
+            ORDER BY price_date
+            MEASURES
+              MATCH_NUMBER() AS match_number,
+              FIRST(price_date) AS start_date,
+              LAST(price_date) AS end_date,
+              COUNT(*) AS rows_in_sequence,
+              COUNT(row_with_price_decrease.*) AS num_decreases,
+              COUNT(row_with_price_increase.*) AS num_increases
+            ONE ROW PER MATCH
+            AFTER MATCH SKIP TO LAST row_with_price_increase
+            PATTERN(row_before_decrease row_with_price_decrease+ row_with_price_increase+)
+            DEFINE
+              row_with_price_decrease AS price < LAG(price),
+              row_with_price_increase AS price > LAG(price)
+          )
+        ORDER BY company, match_number;
+      - |-
+        select price_date, match_number, msq, price, cl from
+          (select * from stock_price_history where company='ABCD') match_recognize(
+            order by price_date
+            measures
+                match_number() as "MATCH_NUMBER",
+                match_sequence_number() as msq,
+                classifier() as cl
+            all rows per match
+            pattern(ANY_ROW UP+)
+            define
+                ANY_ROW AS TRUE,
+                UP as price > lag(price)
+        )
+        order by match_number, msq;
+      - |-
+        select * from stock_price_history match_recognize(
+            partition by company
+            order by price_date
+            measures
+                match_number() as "MATCH_NUMBER"
+            all rows per match omit empty matches
+            pattern(OVERAVG*)
+            define
+                OVERAVG as price > avg(price) over (rows between unbounded
+                                          preceding and unbounded following)
+        )
+        order by company, price_date;
+      - |-
+        select * from stock_price_history match_recognize(
+            partition by company
+            order by price_date
+            measures
+                match_number() as "MATCH_NUMBER",
+                classifier() as cl
+            all rows per match with unmatched rows
+            pattern(OVERAVG+)
+            define
+                OVERAVG as price > avg(price) over (rows between unbounded
+                                         preceding and unbounded following)
+        )
+        order by company, price_date;
+      - |-
+        SELECT company, price_date, price, "FINAL FIRST(LT45.price)", "FINAL LAST(LT45.price)"
+            FROM stock_price_history
+               MATCH_RECOGNIZE (
+                   PARTITION BY company
+                   ORDER BY price_date
+                   MEASURES
+                       FINAL FIRST(LT45.price) AS "FINAL FIRST(LT45.price)",
+                       FINAL LAST(LT45.price)  AS "FINAL LAST(LT45.price)"
+                   ALL ROWS PER MATCH
+                   AFTER MATCH SKIP PAST LAST ROW
+                   PATTERN (LT45 LT45)
+                   DEFINE
+                       LT45 AS price < 45.00
+                   )
+            WHERE company = 'ABCD'
+            ORDER BY price_date;
+
+  - id: pivot
+    name: "PIVOT"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/pivot
+    tier: high
+    probes:
+      - { id: pivot_values, sql: "SELECT * FROM t PIVOT(SUM(amount) FOR quarter IN ('2023_Q1', '2023_Q2', '2023_Q3')) ORDER BY empid;" }
+      - { id: pivot_value_aliases, sql: "SELECT * FROM t PIVOT(SUM(amount) FOR quarter IN ('2023_Q1' AS q1, '2023_Q2' q2));" }
+      - { id: pivot_aggregate_alias, sql: "SELECT * FROM t PIVOT(SUM(amount) AS total FOR quarter IN ('2023_Q1', '2023_Q2'));" }
+      - { id: pivot_any, sql: "SELECT * FROM t PIVOT(SUM(amount) FOR quarter IN (ANY));" }
+      - { id: pivot_any_order_by, sql: "SELECT * FROM t PIVOT(SUM(amount) FOR quarter IN (ANY ORDER BY quarter));" }
+      - { id: pivot_subquery, sql: "SELECT * FROM t PIVOT(SUM(amount) FOR quarter IN (SELECT DISTINCT quarter FROM u WHERE flag = TRUE ORDER BY quarter));" }
+      - { id: pivot_default_on_null, sql: "SELECT * FROM t PIVOT(SUM(amount) FOR quarter IN ('2023_Q1', '2023_Q2') DEFAULT ON NULL (0));" }
+      - { id: pivot_table_alias, sql: "SELECT * FROM t PIVOT(SUM(amount) FOR quarter IN ('2023_Q1', '2023_Q2')) AS p (empid, q1, q2);" }
+      - { id: pivot_on_subquery, sql: "SELECT * FROM (SELECT empid, amount, quarter FROM t) PIVOT(SUM(amount) FOR quarter IN (ANY));" }
+    examples:
+      - |-
+        SELECT *
+          FROM quarterly_sales
+            PIVOT(SUM(amount) FOR quarter IN (ANY ORDER BY quarter))
+          ORDER BY empid;
+      - |-
+        SELECT *
+          FROM quarterly_sales
+            PIVOT(SUM(amount) AS total FOR quarter IN (ANY ORDER BY quarter))
+          ORDER BY empid;
+      - |-
+        SELECT *
+          FROM quarterly_sales
+            PIVOT(SUM(amount) FOR quarter IN (
+              SELECT DISTINCT quarter
+                FROM ad_campaign_types_by_quarter
+                WHERE television = TRUE
+                ORDER BY quarter))
+          ORDER BY empid;
+      - |-
+        SELECT *
+          FROM quarterly_sales
+            PIVOT(SUM(amount) FOR quarter IN (ANY ORDER BY quarter)
+              DEFAULT ON NULL (0))
+          ORDER BY empid;
+
+  - id: unpivot
+    name: "UNPIVOT"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/unpivot
+    tier: high
+    probes:
+      - { id: unpivot, sql: "SELECT * FROM t UNPIVOT (sales FOR month IN (jan, feb, mar, apr)) ORDER BY empid;" }
+      - { id: unpivot_column_aliases, sql: "SELECT * FROM t UNPIVOT (sales FOR month IN (jan AS january, feb february));" }
+      - { id: unpivot_include_nulls, sql: "SELECT * FROM t UNPIVOT INCLUDE NULLS (sales FOR month IN (jan, feb));" }
+      - { id: unpivot_exclude_nulls, sql: "SELECT * FROM t UNPIVOT EXCLUDE NULLS (sales FOR month IN (jan, feb));" }
+    examples:
+      - |-
+        SELECT *
+          FROM monthly_sales
+            UNPIVOT (sales FOR month IN (jan, feb, mar, apr))
+          ORDER BY empid;
+      - |-
+        SELECT *
+          FROM monthly_sales
+            UNPIVOT (sales FOR month IN (
+              jan AS january,
+              feb AS february,
+              mar AS march,
+              apr AS april)
+            )
+          ORDER BY empid;
+      - |-
+        SELECT *
+          FROM monthly_sales
+            UNPIVOT INCLUDE NULLS (sales FOR month IN (jan, feb, mar, apr))
+          ORDER BY empid;
+
+  - id: values
+    name: "VALUES"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/values
+    tier: high
+    probes:
+      - { id: values_in_from, sql: "SELECT * FROM (VALUES (1, 'one'), (2, 'two'), (3, 'three'));" }
+      - { id: values_alias_columns, sql: "SELECT c1, c2 FROM (VALUES (1, 'one'), (2, 'two')) AS v1 (c1, c2);" }
+      - { id: values_default_column_names, sql: "SELECT column1, $2 FROM (VALUES (1, 'one'), (2, 'two'));" }
+      - { id: values_join, sql: "SELECT v1.$2, v2.$2 FROM (VALUES (1, 'one'), (2, 'two')) AS v1 INNER JOIN (VALUES (1, 'One'), (3, 'three')) AS v2 WHERE v2.$1 = v1.$1;" }
+    examples:
+      - "SELECT * FROM (VALUES (1, 'one'), (2, 'two'), (3, 'three'));"
+      - "SELECT column1, $2 FROM (VALUES (1, 'one'), (2, 'two'), (3, 'three'));"
+      - |-
+        SELECT v1.$2, v2.$2
+          FROM (VALUES (1, 'one'), (2, 'two')) AS v1
+                INNER JOIN (VALUES (1, 'One'), (3, 'three')) AS v2
+          WHERE v2.$1 = v1.$1;
+      - |-
+        SELECT c1, c2
+          FROM (VALUES (1, 'one'), (2, 'two')) AS v1 (c1, c2);
+
+  - id: sample
+    name: "SAMPLE / TABLESAMPLE"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/sample
+    tier: high
+    probes:
+      - { id: sample_probability, sql: "SELECT * FROM t SAMPLE (10);" }
+      - { id: tablesample_probability, sql: "SELECT * FROM t TABLESAMPLE (100);" }
+      - { id: bernoulli, sql: "SELECT * FROM t TABLESAMPLE BERNOULLI (20.3);" }
+      - { id: row_method, sql: "SELECT * FROM t SAMPLE ROW (0);" }
+      - { id: fixed_rows, sql: "SELECT * FROM t SAMPLE (10 ROWS);" }
+      - { id: bernoulli_rows, sql: "SELECT * FROM t SAMPLE BERNOULLI (10 ROWS);" }
+      - { id: system_seed, sql: "SELECT * FROM t SAMPLE SYSTEM (3) SEED (82);" }
+      - { id: block_repeatable, sql: "SELECT * FROM t SAMPLE BLOCK (0.012) REPEATABLE (99992);" }
+      - { id: alias_then_sample, sql: "SELECT * FROM t AS x SAMPLE (25) INNER JOIN u AS y SAMPLE (50) WHERE y.j = x.i;" }
+      - { id: subquery_sample, sql: "SELECT * FROM (SELECT * FROM t JOIN u ON t.a = u.c) SAMPLE (1);" }
+    examples:
+      - "SELECT * FROM testtable TABLESAMPLE BERNOULLI (20.3);"
+      - "SELECT * FROM testtable SAMPLE ROW (0);"
+      - |-
+        SELECT i, j
+          FROM
+            table1 AS t1 SAMPLE (25)
+              INNER JOIN
+            table2 AS t2 SAMPLE (50)
+          WHERE t2.j = t1.i;
+      - "SELECT * FROM testtable SAMPLE SYSTEM (3) SEED (82);"
+      - "SELECT * FROM testtable SAMPLE (10 ROWS);"
+
+  - id: resample
+    name: "RESAMPLE"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/resample
+    tier: medium
+    probes:
+      - { id: resample, sql: "SELECT * FROM t RESAMPLE(USING ts INCREMENT BY INTERVAL '1 day');" }
+      - { id: resample_partition, sql: "SELECT * FROM t RESAMPLE(USING ts INCREMENT BY INTERVAL '5 minutes' PARTITION BY city, county);" }
+      - { id: resample_metadata_columns, sql: "SELECT * FROM t RESAMPLE(USING ts INCREMENT BY INTERVAL '5 minutes' METADATA_COLUMNS IS_GENERATED() AS generated_row, BUCKET_START());" }
+      - { id: resample_numeric, sql: "SELECT * FROM t AS x RESAMPLE(USING unixtime INCREMENT BY 1) ORDER BY unixtime;" }
+    examples:
+      - |-
+        SELECT * FROM sensor_data_unixtime
+          RESAMPLE(USING unixtime INCREMENT BY 1) ORDER BY unixtime;
+      - |-
+        CREATE OR REPLACE TABLE march_temps_every_five_mins AS
+          SELECT * FROM march_temps
+            RESAMPLE(
+              USING observed
+              INCREMENT BY INTERVAL '5 minutes'
+              PARTITION BY city, county
+              METADATA_COLUMNS IS_GENERATED() AS generated_row, BUCKET_START()
+              )
+          ORDER BY observed;
+      - |-
+        SELECT bucket_start, county, COUNT(*)
+          FROM march_temps
+            RESAMPLE(
+              USING observed
+              INCREMENT BY INTERVAL '1 day'
+              METADATA_COLUMNS IS_GENERATED(), BUCKET_START()
+              )
+          WHERE IS_GENERATED = 'False'
+          GROUP BY bucket_start, county;
+
+  - id: semantic_view_clause
+    name: "SEMANTIC_VIEW"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/semantic_view
+    tier: medium
+    probes:
+      - { id: metrics_dimensions, sql: "SELECT * FROM SEMANTIC_VIEW(sv METRICS customer.order_count DIMENSIONS customer.name) ORDER BY name LIMIT 5;" }
+      - { id: dimensions_first, sql: "SELECT * FROM SEMANTIC_VIEW(db.s.sv DIMENSIONS customer.name METRICS customer.order_count);" }
+      - { id: facts_where, sql: "SELECT * FROM SEMANTIC_VIEW(sv FACTS orders.amount DIMENSIONS orders.region AS r WHERE orders.region = 'EU');" }
+    examples:
+      - |-
+        SELECT * FROM SEMANTIC_VIEW(
+         tpch_analysis
+         METRICS customer.customer_order_count
+         DIMENSIONS customer.customer_name
+          )
+          ORDER BY customer_name
+          LIMIT 5;
+      - |-
+        SELECT * FROM SEMANTIC_VIEW(
+         tpch_analysis
+         DIMENSIONS customer.customer_name
+         METRICS customer.customer_order_count
+          )
+          ORDER BY customer_name
+          LIMIT 5;
+
+  - id: where
+    name: "WHERE"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/where
+    tier: high
+    probes:
+      - { id: where, sql: "SELECT * FROM t WHERE d < '2018-01-01' AND paid = FALSE;" }
+      - { id: where_subquery, sql: "SELECT * FROM t WHERE amount < (SELECT AVG(amount) FROM t);" }
+      - { id: where_join_condition, sql: "SELECT t.c, u.c FROM t, u WHERE u.c = t.c;" }
+      - { id: outer_join_plus, sql: "SELECT t.c1, u.c2 FROM t, u WHERE t.c1 = u.c2(+);" }
+      - { id: outer_join_plus_spaced_multi, sql: "SELECT t.c1, u.c2 FROM t, u WHERE t.c1 = u.c2 (+) AND t.c3 = u.c4 (+);" }
+      - { id: outer_join_plus_chain, sql: "SELECT t1.c1 FROM t1, t2, t3 WHERE t1.c1 = t2.c2 (+) AND t2.c2 = t3.c3 (+);" }
+    examples:
+      - |-
+        SELECT * FROM invoices
+            WHERE amount < (
+                           SELECT AVG(amount)
+                               FROM invoices
+                           )
+            ;
+      - |-
+        SELECT t1.col1, t2.col1
+            FROM t1, t2
+            WHERE t2.col1 = t1.col1
+            ORDER BY 1, 2;
+      - |-
+        SELECT t1.c1, t2.c2
+        FROM t1, t2
+        WHERE t1.c1 = t2.c2 (+)
+          AND t1.c3 = t2.c4 (+);
+      - |-
+        select t1.c1
+         from t1, t2, t3
+         where t1.c1 = t2.c2 (+)
+           and t2.c2 = t3.c3 (+);
+
+  - id: group_by
+    name: "GROUP BY"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/group-by
+    tier: high
+    probes:
+      - { id: group_by_column, sql: "SELECT a, SUM(b) FROM t GROUP BY a;" }
+      - { id: group_by_multiple, sql: "SELECT a, c, SUM(b) FROM t GROUP BY a, c;" }
+      - { id: group_by_position, sql: "SELECT a, SUM(b) FROM t GROUP BY 1;" }
+      - { id: group_by_alias, sql: "SELECT a + 1 AS x, SUM(b) FROM t GROUP BY x;" }
+      - { id: group_by_expression, sql: "SELECT SUM(b) FROM t GROUP BY a * 2;" }
+      - { id: group_by_all, sql: "SELECT a, c, SUM(b) FROM t GROUP BY ALL;" }
+    examples:
+      - |-
+        SELECT product_ID, SUM(retail_price * quantity) AS gross_revenue
+          FROM sales
+          GROUP BY product_ID;
+      - |-
+        SELECT p.product_ID, SUM((s.retail_price - p.wholesale_price) * s.quantity) AS profit
+          FROM products AS p, sales AS s
+          WHERE s.product_ID = p.product_ID
+          GROUP BY p.product_ID;
+      - |-
+        SELECT state, city, SUM(retail_price * quantity) AS gross_revenue
+          FROM sales
+          GROUP BY ALL;
+      - |-
+        SELECT SUM(salary), ANY_VALUE(employment_state)
+          FROM employees
+          GROUP BY employment_state;
+
+  - id: group_by_cube
+    name: "GROUP BY CUBE"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/group-by-cube
+    tier: high
+    probes:
+      - { id: cube, sql: "SELECT a, b, SUM(c) FROM t GROUP BY CUBE (a, b);" }
+      - { id: items_then_cube, sql: "SELECT a, b, d, SUM(c) FROM t GROUP BY d, CUBE (a, b);" }
+    examples:
+      - |-
+        SELECT state, city, SUM((s.retail_price - p.wholesale_price) * s.quantity) AS profit 
+         FROM products AS p, sales AS s
+         WHERE s.product_ID = p.product_ID
+         GROUP BY CUBE (state, city)
+         ORDER BY state, city NULLS LAST
+         ;
+
+  - id: group_by_grouping_sets
+    name: "GROUP BY GROUPING SETS"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/group-by-grouping-sets
+    tier: high
+    probes:
+      - { id: grouping_sets, sql: "SELECT COUNT(*), a, b FROM t GROUP BY GROUPING SETS (a, b);" }
+      - { id: grouping_sets_composite, sql: "SELECT COUNT(*), a, b FROM t GROUP BY GROUPING SETS ((a, b));" }
+      - { id: items_then_grouping_sets_empty, sql: "SELECT COUNT(*), a, b FROM t GROUP BY a, GROUPING SETS (b, ());" }
+    examples:
+      - |-
+        SELECT COUNT(*), medical_license, radio_license
+          FROM nurses
+          GROUP BY GROUPING SETS (medical_license, radio_license)
+          ORDER BY 3 DESC NULLS FIRST;
+      - |-
+        SELECT COUNT(*), medical_license, radio_license
+          FROM nurses
+          GROUP BY GROUPING SETS ((medical_license, radio_license))
+          ORDER BY 3 DESC NULLS FIRST;
+      - |-
+        SELECT COUNT(*), medical_license, radio_license
+          FROM nurses
+          GROUP BY medical_license, GROUPING SETS (radio_license, ())
+          ORDER BY 3 DESC NULLS FIRST;
+
+  - id: group_by_rollup
+    name: "GROUP BY ROLLUP"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/group-by-rollup
+    tier: high
+    probes:
+      - { id: rollup, sql: "SELECT a, b, SUM(c) FROM t GROUP BY ROLLUP (a, b);" }
+      - { id: items_then_rollup, sql: "SELECT a, b, d, SUM(c) FROM t GROUP BY d, ROLLUP (a, b);" }
+    examples:
+      - |-
+        SELECT state, city, SUM((s.retail_price - p.wholesale_price) * s.quantity) AS profit 
+         FROM products AS p, sales AS s
+         WHERE s.product_ID = p.product_ID
+         GROUP BY ROLLUP (state, city)
+         ORDER BY state, city NULLS LAST
+         ;
+
+  - id: having
+    name: "HAVING"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/having
+    tier: high
+    probes:
+      - { id: having, sql: "SELECT a FROM t GROUP BY a HAVING count(*) < 10;" }
+      - { id: having_without_group_by, sql: "SELECT SUM(b) FROM t HAVING SUM(b) > 10;" }
+    examples:
+      - |-
+        SELECT department_id
+        FROM employees
+        GROUP BY department_id
+        HAVING count(*) < 10;
+
+  - id: qualify
+    name: "QUALIFY"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/qualify
+    tier: high
+    probes:
+      - { id: qualify_window, sql: "SELECT i, p, o FROM t QUALIFY ROW_NUMBER() OVER (PARTITION BY p ORDER BY o) = 1;" }
+      - { id: qualify_alias, sql: "SELECT i, ROW_NUMBER() OVER (PARTITION BY p ORDER BY o) AS row_num FROM t QUALIFY row_num = 1;" }
+      - { id: qualify_after_having, sql: "SELECT p, SUM(o) OVER (PARTITION BY p) AS r FROM t WHERE o < 4 GROUP BY p, o HAVING SUM(i) > 3 QUALIFY r IN (SELECT MIN(i) FROM t GROUP BY p HAVING MIN(i) > 3);" }
+      - { id: qualify_without_where, sql: "SELECT * FROM t QUALIFY RANK() OVER (ORDER BY c DESC) <= 3 ORDER BY c;" }
+    examples:
+      - |-
+        SELECT i, p, o
+          FROM qt
+          QUALIFY ROW_NUMBER() OVER (PARTITION BY p ORDER BY o) = 1;
+      - |-
+        SELECT i, p, o, ROW_NUMBER() OVER (PARTITION BY p ORDER BY o) AS row_num
+          FROM qt
+          QUALIFY row_num = 1;
+      - |-
+        SELECT p, SUM(o) OVER (PARTITION BY p) AS r
+          FROM qt
+          WHERE o < 4
+          GROUP BY p, o
+          HAVING SUM(i) > 3
+          QUALIFY r IN (
+            SELECT MIN(i)
+              FROM qt
+              GROUP BY p
+              HAVING MIN(i) > 3);
+
+  - id: order_by
+    name: "ORDER BY"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/order-by
+    tier: high
+    probes:
+      - { id: order_by_column, sql: "SELECT * FROM t ORDER BY c;" }
+      - { id: order_by_asc_desc, sql: "SELECT * FROM t ORDER BY a ASC, b DESC;" }
+      - { id: order_by_position, sql: "SELECT a, b FROM t ORDER BY 2, 1;" }
+      - { id: order_by_alias, sql: "SELECT a + 1 AS x FROM t ORDER BY x;" }
+      - { id: order_by_nulls_first, sql: "SELECT * FROM t ORDER BY c NULLS FIRST;" }
+      - { id: order_by_desc_nulls_last, sql: "SELECT * FROM t ORDER BY c DESC NULLS LAST;" }
+      - { id: order_by_all, sql: "SELECT * FROM t ORDER BY ALL;" }
+      - { id: order_by_all_asc, sql: "SELECT * FROM t ORDER BY ALL ASC;" }
+      - { id: order_by_all_desc_nulls_first, sql: "SELECT * FROM t ORDER BY ALL DESC NULLS FIRST;" }
+    examples:
+      - |-
+        SELECT column1
+          FROM VALUES
+            ('a'), ('1'), ('B'), (null), ('2'), ('01'), ('05'),
+            (' this'), ('this'), ('this and that'), ('&'), ('%')
+          ORDER BY column1;
+      - |-
+        SELECT column1
+          FROM VALUES (1), (null), (2), (null), (3)
+          ORDER BY column1 NULLS FIRST;
+      - |-
+        SELECT * FROM my_sort_example
+          ORDER BY ALL;
+      - |-
+        SELECT * FROM my_sort_example
+          ORDER BY ALL NULLS FIRST;
+      - |-
+        SELECT b, s, a FROM my_sort_example
+          ORDER BY ALL NULLS LAST;
+
+  - id: limit_fetch
+    name: "LIMIT / FETCH"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/limit
+    tier: high
+    probes:
+      - { id: limit, sql: "SELECT c FROM t LIMIT 3;" }
+      - { id: limit_offset, sql: "SELECT c FROM t ORDER BY c LIMIT 3 OFFSET 3;" }
+      - { id: limit_null_offset_null, sql: "SELECT * FROM t ORDER BY i LIMIT NULL OFFSET NULL;" }
+      - { id: limit_empty_string, sql: "SELECT * FROM t ORDER BY i LIMIT '' OFFSET '';" }
+      - { id: fetch_first, sql: "SELECT c FROM t FETCH FIRST 3 ROWS ONLY;" }
+      - { id: fetch_next_row, sql: "SELECT c FROM t FETCH NEXT 1 ROW ONLY;" }
+      - id: fetch_bare
+        sql: "SELECT c FROM t ORDER BY c FETCH 3;"
+        note: "ANSI syntax block: FIRST/NEXT, ROW/ROWS and ONLY are all optional (\"FETCH [ { FIRST | NEXT } ] <count> [ { ROW | ROWS } ] [ ONLY ]\")."
+      - { id: offset_fetch, sql: "SELECT c FROM t ORDER BY c OFFSET 3 ROWS FETCH NEXT 3 ROWS ONLY;" }
+      - { id: offset_no_rows_fetch, sql: "SELECT c FROM t ORDER BY c OFFSET 3 FETCH 3;" }
+    examples:
+      - "SELECT c1 FROM testtable LIMIT 3 OFFSET 3;"
+      - "SELECT c1 FROM testtable ORDER BY c1 LIMIT 3 OFFSET 3;"
+      - "SELECT * FROM demo1 ORDER BY i LIMIT NULL OFFSET NULL;"
+      - "SELECT * FROM demo1 ORDER BY i LIMIT '' OFFSET '';"
+      - "SELECT * FROM demo1 ORDER BY i LIMIT $$$$ OFFSET $$$$;"
+
+  - id: for_update
+    name: "FOR UPDATE"
+    doc: https://docs.snowflake.com/en/sql-reference/constructs/for-update
+    tier: high
+    probes:
+      - { id: for_update, sql: "SELECT * FROM t WHERE id < 20 FOR UPDATE;" }
+      - { id: for_update_nowait, sql: "SELECT * FROM t FOR UPDATE NOWAIT;" }
+      - { id: for_update_wait, sql: "SELECT * FROM t FOR UPDATE WAIT 60;" }
+      - { id: for_update_after_order_by, sql: "SELECT * FROM t ORDER BY c FOR UPDATE;" }
+    examples:
+      - "SELECT * FROM T WHERE ID < 20 FOR UPDATE;"
+
+  - id: set_operators
+    name: "Set operators"
+    doc: https://docs.snowflake.com/en/sql-reference/operators-query
+    tier: high
+    probes:
+      - { id: union, sql: "SELECT a FROM t UNION SELECT a FROM u;" }
+      - { id: union_all, sql: "SELECT a FROM t UNION ALL SELECT a FROM u;" }
+      - { id: union_distinct, sql: "SELECT a FROM t UNION DISTINCT SELECT a FROM u;" }
+      - { id: union_by_name, sql: "SELECT * FROM t UNION BY NAME SELECT * FROM u ORDER BY a;" }
+      - { id: union_all_by_name, sql: "SELECT * FROM t UNION ALL BY NAME SELECT * FROM u;" }
+      - { id: union_distinct_by_name, sql: "SELECT * FROM t UNION DISTINCT BY NAME SELECT * FROM u;" }
+      - { id: intersect, sql: "SELECT a FROM t INTERSECT SELECT a FROM u ORDER BY a;" }
+      - { id: minus, sql: "SELECT a FROM t MINUS SELECT a FROM u;" }
+      - { id: except, sql: "SELECT a FROM t EXCEPT SELECT a FROM u;" }
+      - { id: parenthesized_operands, sql: "(SELECT a FROM t) UNION (SELECT a FROM u) ORDER BY a LIMIT 10;" }
+      - { id: chained, sql: "SELECT a FROM t UNION SELECT a FROM u INTERSECT SELECT a FROM v;" }
+    examples:
+      - |-
+        SELECT LastName, FirstName FROM employees
+        UNION ALL BY NAME
+        SELECT FirstName, LastName FROM contractors;
+      - |-
+        SELECT postal_code FROM sales_office_postal_example
+        INTERSECT
+        SELECT postal_code FROM customer_postal_example
+        ORDER BY postal_code;
+      - |-
+        SELECT postal_code FROM sales_office_postal_example
+        MINUS
+        SELECT postal_code FROM customer_postal_example
+        ORDER BY postal_code;
+      - |-
+        SELECT office_name office_or_customer, postal_code FROM sales_office_postal_example
+        UNION
+        SELECT customer, postal_code FROM customer_postal_example
+        ORDER BY postal_code;
+      - |-
+        SELECT * FROM union_demo_column_order1
+        UNION BY NAME
+        SELECT * FROM union_demo_column_order2
+        ORDER BY a;
+
+  - id: flow_operator
+    name: "Flow operator (->>)"
+    doc: https://docs.snowflake.com/en/sql-reference/operators-flow
+    tier: medium
+    probes:
+      - { id: pipe_two_selects, sql: "SELECT * FROM t WHERE c = 1 ->> SELECT * FROM $1;" }
+      - { id: pipe_chain, sql: "SELECT * FROM t ->> SELECT * FROM u WHERE id IN (SELECT id FROM $1) ->> SELECT c FROM $1 ORDER BY 1;" }
+      - { id: pipe_from_show, sql: "SHOW TABLES ->> SELECT \"name\" FROM $1;" }
+      - { id: pipe_dml, sql: "CREATE OR REPLACE TABLE t (a INT) ->> INSERT INTO t VALUES (1) ->> SELECT $1 FROM $1;" }
+    examples:
+      - |-
+        SHOW WAREHOUSES
+          ->> SELECT "name", "state", "type", "size" FROM $1;
+      - |-
+        SHOW TABLES
+          ->> SELECT "created_on" AS creation_date,
+                     "name" AS table_name,
+                     "owner" AS table_owner
+                FROM $1
+                WHERE creation_date > '2025-04-15'::DATE;
+      - |-
+        SELECT * FROM dept_pipe_demo WHERE dname = 'SALES'
+          ->> SELECT * FROM emp_pipe_demo WHERE sal > 1500 AND deptno IN (SELECT deptno FROM $1)
+          ->> SELECT ename, sal FROM $1 ORDER BY 2 DESC;
+      - |-
+        CREATE OR REPLACE TABLE test_sql_pipe_dml (a INT, b INT)
+          ->> INSERT INTO test_sql_pipe_dml VALUES (1, 2)
+          ->> INSERT INTO test_sql_pipe_dml VALUES (3, 4)
+          ->> INSERT INTO test_sql_pipe_dml VALUES (5, 6)
+          ->> INSERT INTO test_sql_pipe_dml VALUES (7, 8)
+          ->> SELECT (SELECT $1 FROM $4) +
+                     (SELECT $1 FROM $3) +
+                     (SELECT $1 FROM $2) +
+                     (SELECT $1 FROM $1)
+                AS "Number of rows";
+      - |-
+        BEGIN TRANSACTION
+          ->> INSERT INTO test_sql_pipe_dml VALUES (1, 2)
+          ->> DELETE FROM test_sql_pipe_dml WHERE a = 1
+          ->> UPDATE test_sql_pipe_dml SET b = 2
+          ->> COMMIT
+          ->> SELECT
+                (SELECT $1 FROM $4) AS "Inserted rows",
+                (SELECT $1 FROM $3) AS "Deleted rows",
+                (SELECT $1 FROM $2) AS "Updated rows";
+
+  - id: insert
+    name: "INSERT"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/insert
+    tier: high
+    probes:
+      - { id: values_single_row, sql: "INSERT INTO t VALUES (1, 'a');" }
+      - { id: column_list, sql: "INSERT INTO t (a, b) VALUES (1, 'a');" }
+      - { id: values_multiple_rows, sql: "INSERT INTO t (a, b) VALUES (1, 'a'), (2, 'b'), (3, 'c');" }
+      - { id: values_default_null, sql: "INSERT INTO t (a, b, c) VALUES (DEFAULT, NULL, 3);" }
+      - { id: values_expression, sql: "INSERT INTO t (id, v) VALUES (4, PARSE_JSON('{ \"key1\": \"value1\" }'));" }
+      - id: values_unparenthesized_single
+        sql: "INSERT INTO t VALUES 12;"
+        note: "From the FOR UPDATE usage notes (\"INSERT INTO T VALUES 12;\"); kept as written in the vendor docs."
+      - { id: insert_select, sql: "INSERT INTO t SELECT a, b FROM u WHERE c > 0;" }
+      - { id: insert_select_column_list, sql: "INSERT INTO t (a, c) SELECT x, y FROM u;" }
+      - { id: insert_with_cte, sql: "INSERT INTO t (a, b) WITH cte AS (SELECT x AS a, y AS b FROM u) SELECT a, b FROM cte;" }
+      - { id: insert_select_join, sql: "INSERT INTO t (a, b) SELECT u.a, v.b FROM u INNER JOIN v ON u.id = v.id;" }
+      - { id: overwrite_select, sql: "INSERT OVERWRITE INTO t SELECT * FROM u WHERE city = 'San Francisco';" }
+      - { id: overwrite_values, sql: "INSERT OVERWRITE INTO t (a) VALUES (1);" }
+      - { id: qualified_target, sql: "INSERT INTO db.s.t (a) VALUES (1);" }
+    examples:
+      - |-
+        INSERT INTO table1 (ID, varchar1, variant1)
+         SELECT 4, 'Fourier', PARSE_JSON('{ "key1": "value1", "key2": "value2" }');
+      - |-
+        INSERT INTO mytable (col1, col3)
+          SELECT
+            TO_DATE('2013-05-08T23:39:20.123'),
+            TO_TIMESTAMP('2013-05-08T23:39:20.123');
+      - |-
+        INSERT INTO employees(first_name, last_name, workphone, city, postal_code)
+          SELECT contractor_first, contractor_last, worknum, NULL, zip_code
+            FROM contractors
+            WHERE CONTAINS(worknum,'650');
+      - |-
+        INSERT INTO employees (first_name, last_name, workphone, city, postal_code)
+          WITH cte AS
+            (SELECT contractor_first AS first_name,
+                    contractor_last AS last_name,
+                    worknum AS workphone,
+                    city,
+                    zip_code AS postal_code
+               FROM contractors)
+          SELECT first_name, last_name, workphone, city, postal_code
+            FROM cte;
+      - |-
+        INSERT OVERWRITE INTO sf_employees
+          SELECT * FROM employees
+          WHERE city = 'San Francisco';
+
+  - id: insert_multi_table
+    name: "INSERT (multi-table)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/insert-multi-table
+    tier: high
+    probes:
+      - { id: unconditional_all, sql: "INSERT ALL INTO t1 INTO t2 SELECT a, b, c FROM src;" }
+      - { id: unconditional_columns_values, sql: "INSERT ALL INTO t1 (c1, c2, c3) VALUES (n2, n1, DEFAULT) INTO t2 VALUES (n3, n2, NULL) SELECT n1, n2, n3 FROM src;" }
+      - { id: unconditional_overwrite, sql: "INSERT OVERWRITE ALL INTO t1 INTO t2 (c1, c2, c3) SELECT n1, n2, n3 FROM src;" }
+      - { id: conditional_all, sql: "INSERT ALL WHEN n1 > 100 THEN INTO t1 WHEN n1 > 10 THEN INTO t1 INTO t2 ELSE INTO t2 SELECT n1 FROM src;" }
+      - { id: conditional_first, sql: "INSERT FIRST WHEN n1 > 100 THEN INTO t1 WHEN n1 > 10 THEN INTO t1 INTO t2 ELSE INTO t2 SELECT n1 FROM src;" }
+      - { id: conditional_overwrite_first, sql: "INSERT OVERWRITE FIRST WHEN a > 0 THEN INTO t1 (c1) VALUES (a) SELECT a FROM src;" }
+      - { id: conditional_no_else, sql: "INSERT ALL WHEN c > 10 THEN INTO t1 (col1, col2) VALUES (a, b) SELECT a, b, c FROM src;" }
+      - { id: values_positional_reference, sql: "INSERT ALL INTO t1 VALUES ($1, an_alias, \"10 + 20\") SELECT 1, 50 AS an_alias, 10 + 20;" }
+    examples:
+      - |-
+        INSERT ALL
+          WHEN n1 > 100 THEN
+         INTO t1
+          WHEN n1 > 10 THEN
+         INTO t1
+         INTO t2
+          ELSE
+         INTO t2
+        SELECT n1 from src;
+      - |-
+        INSERT FIRST
+          WHEN n1 > 100 THEN
+            INTO t1
+          WHEN n1 > 10 THEN
+            INTO t1
+            INTO t2
+          ELSE
+            INTO t2
+        SELECT n1 from src;
+      - |-
+        INSERT ALL
+          INTO t1 VALUES ($1, an_alias, "10 + 20")
+        SELECT 1, 50 AS an_alias, 10 + 20;
+      - |-
+        INSERT ALL
+          INTO t1
+          INTO t1 (c1, c2, c3) VALUES (n2, n1, DEFAULT)
+          INTO t2 (c1, c2, c3)
+          INTO t2 VALUES (n3, n2, n1)
+        SELECT n1, n2, n3 from src;
+      - |-
+        INSERT OVERWRITE ALL
+          INTO t1
+          INTO t1 (c1, c2, c3) VALUES (n2, n1, DEFAULT)
+          INTO t2 (c1, c2, c3)
+          INTO t2 VALUES (n3, n2, n1)
+        SELECT n1, n2, n3 from src;
+
+  - id: update
+    name: "UPDATE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/update
+    tier: high
+    probes:
+      - { id: update_set, sql: "UPDATE t SET c = 1;" }
+      - { id: update_where, sql: "UPDATE t SET c = c + 1, d = 'x' WHERE id = 1;" }
+      - { id: update_qualified_set_column, sql: "UPDATE t SET t.c = 'ASDF' WHERE t.id = 1;" }
+      - { id: update_from, sql: "UPDATE t SET v = s.v FROM s WHERE t.k = s.k;" }
+      - { id: update_from_multiple, sql: "UPDATE t SET v = s.v + u.v FROM s, u WHERE t.k = s.k AND s.k = u.k;" }
+      - { id: update_from_subquery, sql: "UPDATE t SET v = b.v FROM (SELECT k, MIN(v) v FROM s GROUP BY k) b WHERE t.k = b.k;" }
+      - { id: update_set_subquery, sql: "UPDATE t SET c = (SELECT MAX(c) FROM u) WHERE id = 1;" }
+      - { id: update_set_default, sql: "UPDATE t SET c = DEFAULT;" }
+    examples:
+      - |-
+        UPDATE t1
+          SET number_column = t1.number_column + t2.number_column, t1.text_column = 'ASDF'
+          FROM t2
+          WHERE t1.key_column = t2.t1_key and t1.number_column < 10;
+      - |-
+        UPDATE target
+          SET v = src.v
+          FROM src
+          WHERE target.k = src.k;
+      - |-
+        UPDATE target SET v = b.v
+          FROM (SELECT k, MIN(v) v FROM src GROUP BY k) b
+          WHERE target.k = b.k;
+
+  - id: delete
+    name: "DELETE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/delete
+    tier: high
+    probes:
+      - { id: delete_all, sql: "DELETE FROM t;" }
+      - { id: delete_where, sql: "DELETE FROM t WHERE id = 105;" }
+      - { id: delete_using, sql: "DELETE FROM t USING u WHERE t.k = u.k;" }
+      - { id: delete_using_multiple, sql: "DELETE FROM t USING u, v WHERE t.k = u.k AND u.j = v.j;" }
+      - { id: delete_using_subquery, sql: "DELETE FROM t USING (SELECT id AS id FROM u) AS r WHERE t.id = r.id;" }
+      - { id: delete_where_subquery, sql: "DELETE FROM t WHERE id IN (SELECT id FROM u);" }
+    examples:
+      - "DELETE FROM leased_bicycles WHERE bicycle_ID = 105;"
+      - |-
+        DELETE FROM leased_bicycles 
+            USING returned_bicycles
+            WHERE leased_bicycles.bicycle_ID = returned_bicycles.bicycle_ID;
+      - |-
+        DELETE FROM leased_bicycles 
+            USING (SELECT bicycle_ID AS bicycle_ID FROM returned_bicycles) AS returned
+            WHERE leased_bicycles.bicycle_ID = returned.bicycle_ID;
+
+  - id: merge
+    name: "MERGE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/merge
+    tier: high
+    probes:
+      - { id: matched_update, sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET t.d = s.d;" }
+      - { id: matched_update_multiple, sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET val = s.newval, status = s.newstatus;" }
+      - { id: matched_delete, sql: "MERGE INTO t USING s ON t.k = s.k WHEN MATCHED AND s.v <= 12 THEN DELETE;" }
+      - { id: matched_and_condition, sql: "MERGE INTO t USING s ON t.k = s.k WHEN MATCHED AND s.v = 11 THEN UPDATE SET t.v = s.v;" }
+      - { id: not_matched_insert, sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED THEN INSERT (id, d) VALUES (s.id, s.d);" }
+      - { id: not_matched_insert_no_columns, sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED THEN INSERT VALUES (s.id, s.d);" }
+      - { id: not_matched_and_condition, sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED AND s.flag = 1 THEN INSERT (id) VALUES (s.id);" }
+      - { id: multiple_clauses, sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED AND s.marked = 'Y' THEN DELETE WHEN MATCHED AND s.isnew = 1 THEN UPDATE SET val = s.newval WHEN MATCHED THEN UPDATE SET val = s.newval WHEN NOT MATCHED THEN INSERT (id, val) VALUES (s.id, s.newval);" }
+      - { id: update_all_by_name, sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE ALL BY NAME;" }
+      - { id: insert_all_by_name, sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED THEN INSERT ALL BY NAME;" }
+      - { id: source_subquery, sql: "MERGE INTO t USING (SELECT k, MAX(v) AS v FROM s GROUP BY k) AS b ON t.k = b.k WHEN MATCHED THEN UPDATE SET v = b.v;" }
+      - { id: target_alias, sql: "MERGE INTO t AS x USING s AS y ON x.id = y.id WHEN MATCHED THEN DELETE;" }
+    examples:
+      - |-
+        MERGE INTO merge_example_target
+          USING merge_example_source
+          ON merge_example_target.id = merge_example_source.id
+          WHEN MATCHED THEN
+            UPDATE SET merge_example_target.description = merge_example_source.description;
+      - |-
+        MERGE INTO merge_example_mult_target
+          USING merge_example_mult_source
+          ON merge_example_mult_target.id = merge_example_mult_source.id
+          WHEN MATCHED AND merge_example_mult_source.marked = 'Y'
+            THEN DELETE
+          WHEN MATCHED AND merge_example_mult_source.isnewstatus = 1
+            THEN UPDATE SET val = merge_example_mult_source.newval, status = merge_example_mult_source.newstatus
+          WHEN MATCHED
+            THEN UPDATE SET val = merge_example_mult_source.newval
+          WHEN NOT MATCHED
+            THEN INSERT (id, val, status) VALUES (
+              merge_example_mult_source.id,
+              merge_example_mult_source.newval,
+              merge_example_mult_source.newstatus);
+      - |-
+        MERGE INTO merge_example_target_all
+          USING merge_example_source_all
+          ON merge_example_target_all.id = merge_example_source_all.id
+          WHEN MATCHED THEN
+            UPDATE ALL BY NAME
+          WHEN NOT MATCHED THEN
+            INSERT ALL BY NAME;
+      - |-
+        MERGE INTO merge_example_target
+          USING merge_example_source
+          ON merge_example_target.id = merge_example_source.id
+          WHEN MATCHED THEN
+            UPDATE SET merge_example_target.description = merge_example_source.description
+          WHEN NOT MATCHED THEN
+            INSERT (id, description) VALUES
+              (merge_example_source.id, merge_example_source.description);
+      - |-
+        MERGE INTO merge_example_target_clone
+          USING merge_example_src
+          ON merge_example_target_clone.k = merge_example_src.k
+          WHEN MATCHED AND merge_example_src.v = 11 THEN DELETE
+          WHEN MATCHED THEN UPDATE SET merge_example_target_clone.v = merge_example_src.v;
+
+  - id: truncate_table
+    name: "TRUNCATE TABLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/truncate-table
+    tier: high
+    probes:
+      - { id: truncate_table, sql: "TRUNCATE TABLE t;" }
+      - { id: truncate_bare, sql: "TRUNCATE t;" }
+      - { id: truncate_if_exists, sql: "TRUNCATE TABLE IF EXISTS db.s.t;" }
+      - { id: truncate_error_table, sql: "TRUNCATE TABLE ERROR_TABLE(t);" }
+      - { id: truncate_if_exists_error_table, sql: "TRUNCATE IF EXISTS ERROR_TABLE(t);" }
+    examples:
+      - "TRUNCATE TABLE IF EXISTS temp_test_truncate;"
+      - "TRUNCATE table merge_example_target;"
+
+  - id: truncate_materialized_view
+    name: "TRUNCATE MATERIALIZED VIEW"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/truncate-materialized-view
+    tier: medium
+    status: not-applicable
+    reason: "Snowflake docs: truncation of materialized views is no longer supported"
+
+  - id: create_table
+    name: "CREATE TABLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-table
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE TABLE t (amount NUMBER);" }
+      - { id: or_replace, sql: "CREATE OR REPLACE TABLE t (a INT, b VARCHAR);" }
+      - { id: if_not_exists, sql: "CREATE TABLE IF NOT EXISTS db.s.t (a INT);" }
+      - { id: temporary, sql: "CREATE TEMPORARY TABLE t (i INTEGER);" }
+      - { id: temp, sql: "CREATE TEMP TABLE t (i INTEGER);" }
+      - { id: local_temporary, sql: "CREATE LOCAL TEMPORARY TABLE t (i INTEGER);" }
+      - { id: global_temp, sql: "CREATE GLOBAL TEMP TABLE t (i INTEGER);" }
+      - { id: volatile, sql: "CREATE VOLATILE TABLE t (i INTEGER);" }
+      - { id: transient, sql: "CREATE TRANSIENT TABLE t (i INTEGER);" }
+      - { id: virtual_column, sql: "CREATE TABLE t (a INT, b INT AS (a * 2));" }
+      - { id: generated_always_virtual, sql: "CREATE TABLE t (a INT, b INT GENERATED ALWAYS AS (a * 2) VIRTUAL);" }
+      - { id: not_null, sql: "CREATE TABLE t (a INT NOT NULL);" }
+      - { id: collate, sql: "CREATE TABLE t (a VARCHAR COLLATE 'en-ci');" }
+      - { id: default, sql: "CREATE TABLE t (a INT DEFAULT 0, b TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP());" }
+      - { id: autoincrement, sql: "CREATE TABLE t (id INT AUTOINCREMENT, v VARCHAR);" }
+      - { id: identity_start_step, sql: "CREATE TABLE t (id INT IDENTITY (1, 1), v VARCHAR);" }
+      - { id: identity_start_increment_order, sql: "CREATE TABLE t (id INT IDENTITY START 10 INCREMENT 1 ORDER, v VARCHAR);" }
+      - { id: autoincrement_noorder, sql: "CREATE TABLE t (id NUMBER AUTOINCREMENT START 1 INCREMENT 1 NOORDER);" }
+      - { id: masking_policy, sql: "CREATE TABLE t (ssn VARCHAR WITH MASKING POLICY mp);" }
+      - { id: masking_policy_using, sql: "CREATE TABLE t (email VARCHAR MASKING POLICY mp USING (email, visibility), visibility VARCHAR);" }
+      - { id: projection_policy, sql: "CREATE TABLE t (a VARCHAR WITH PROJECTION POLICY pp);" }
+      - { id: column_tag, sql: "CREATE TABLE t (a VARCHAR WITH TAG (tg = 'v1', tg2 = 'v2'));" }
+      - { id: column_comment, sql: "CREATE TABLE t (col1 NUMBER COMMENT 'a column comment') COMMENT = 'a table comment';" }
+      - { id: inline_primary_key, sql: "CREATE TABLE t (a INT PRIMARY KEY, b VARCHAR);" }
+      - { id: inline_unique_named, sql: "CREATE TABLE t (a INT CONSTRAINT uq_a UNIQUE);" }
+      - { id: inline_references, sql: "CREATE TABLE t (a INT REFERENCES p (id));" }
+      - { id: inline_foreign_key_references, sql: "CREATE TABLE t (a INT FOREIGN KEY REFERENCES p (id));" }
+      - { id: inline_check, sql: "CREATE TABLE t (q INT CHECK (q > 0));" }
+      - { id: out_of_line_primary_key, sql: "CREATE TABLE t (a INT, b INT, CONSTRAINT pk PRIMARY KEY (a, b));" }
+      - { id: out_of_line_unique, sql: "CREATE TABLE t (a INT, b INT, UNIQUE (a, b));" }
+      - { id: out_of_line_foreign_key, sql: "CREATE TABLE t (a INT, b INT, CONSTRAINT fk FOREIGN KEY (a, b) REFERENCES p (x, y));" }
+      - { id: out_of_line_check, sql: "CREATE TABLE t (p NUMBER(10, 2), m NUMBER(10, 2), CONSTRAINT chk CHECK (p < m));" }
+      - { id: out_of_line_constraint_comment, sql: "CREATE TABLE t (c1 INT, c2 INT, CONSTRAINT uni1 UNIQUE (c1) COMMENT 'Unique column');" }
+      - { id: cluster_by, sql: "CREATE TABLE t (d TIMESTAMP_NTZ, id NUMBER, content VARIANT) CLUSTER BY (d, id);" }
+      - { id: cluster_by_expression, sql: "CREATE TABLE t (d TIMESTAMP_NTZ, id NUMBER) CLUSTER BY (TO_DATE(d), id);" }
+      - { id: table_properties, sql: "CREATE TABLE t (a INT) ENABLE_SCHEMA_EVOLUTION = TRUE DATA_RETENTION_TIME_IN_DAYS = 1 MAX_DATA_EXTENSION_TIME_IN_DAYS = 14 CHANGE_TRACKING = TRUE;" }
+      - { id: default_ddl_collation, sql: "CREATE TABLE t (a VARCHAR) DEFAULT_DDL_COLLATION = 'en-ci';" }
+      - { id: iceberg_default_ddl_collation, sql: "CREATE TABLE t (a VARCHAR) ICEBERG_DEFAULT_DDL_COLLATION = 'en-ci';" }
+      - { id: copy_grants, sql: "CREATE OR REPLACE TABLE t (a INT) COPY GRANTS;" }
+      - { id: error_logging, sql: "CREATE TABLE t (a INT) ERROR_LOGGING = TRUE;" }
+      - { id: copy_tags, sql: "CREATE OR REPLACE TABLE t (a INT) COPY TAGS;" }
+      - { id: table_comment, sql: "CREATE TABLE t (a INT) COMMENT = 'a table comment';" }
+      - { id: row_access_policy, sql: "CREATE TABLE t (a INT, r VARCHAR) WITH ROW ACCESS POLICY rap ON (r);" }
+      - { id: aggregation_policy, sql: "CREATE TABLE t (a INT, k INT) WITH AGGREGATION POLICY ap ENTITY KEY (k);" }
+      - { id: join_policy, sql: "CREATE TABLE t (a INT, k INT) JOIN POLICY jp ALLOWED JOIN KEYS (k);" }
+      - { id: storage_lifecycle_policy, sql: "CREATE TABLE t (a INT, d DATE) WITH STORAGE LIFECYCLE POLICY slp ON (d);" }
+      - { id: table_tag, sql: "CREATE TABLE t (a INT) WITH TAG (cost_center = 'sales');" }
+      - { id: with_contact, sql: "CREATE TABLE t (a INT) WITH CONTACT (steward = my_contact);" }
+      - { id: row_timestamp, sql: "CREATE TABLE t (a INT) ROW_TIMESTAMP = TRUE;" }
+      - { id: from_backup_set, sql: "CREATE TABLE t FROM BACKUP SET bs IDENTIFIER '5f8e5a7b-1234-4cd2-9876-0a1b2c3d4e5f';" }
+      - { id: create_or_alter, sql: "CREATE OR ALTER TABLE t (a INT PRIMARY KEY, b VARCHAR(200) COLLATE 'fr') DATA_RETENTION_TIME_IN_DAYS = 5 DEFAULT_DDL_COLLATION = 'de';" }
+      - { id: create_or_alter_transient, sql: "CREATE OR ALTER TRANSIENT TABLE t (a INT);" }
+      - { id: ctas, sql: "CREATE TABLE t AS SELECT * FROM u;" }
+      - { id: ctas_column_names, sql: "CREATE TABLE t (name, summary_amount) AS SELECT name, a1 + a2 FROM u;" }
+      - { id: ctas_column_types, sql: "CREATE OR REPLACE TABLE t (k NUMBER DEFAULT NULL, d DATE, s VARCHAR(100)) AS SELECT $1:k::NUMBER, $1:d::DATE, $1:s::TEXT FROM @st;" }
+      - { id: ctas_cluster_by, sql: "CREATE TABLE t CLUSTER BY (ts) AS SELECT * FROM u;" }
+      - { id: ctas_copy_grants_tags, sql: "CREATE OR REPLACE TABLE t COPY GRANTS COPY TAGS AS SELECT b AS a, a AS b FROM u;" }
+      - { id: ctas_masking_row_access, sql: "CREATE TABLE t (a INT WITH MASKING POLICY mp) WITH ROW ACCESS POLICY rap ON (a) AS SELECT a FROM u;" }
+      - { id: ctas_with_check_constraint, sql: "CREATE TABLE t (id INT, p NUMBER(10, 2), CONSTRAINT high_price CHECK (p > 100)) AS SELECT id, p FROM u WHERE p > 100;" }
+      - { id: using_template, sql: "CREATE TABLE t USING TEMPLATE (SELECT ARRAY_AGG(OBJECT_CONSTRUCT(*)) FROM TABLE(INFER_SCHEMA(LOCATION => '@s', FILE_FORMAT => 'ff')));" }
+      - { id: using_template_copy_grants, sql: "CREATE OR REPLACE TABLE t COPY GRANTS USING TEMPLATE (SELECT ARRAY_AGG(OBJECT_CONSTRUCT(*)) FROM TABLE(INFER_SCHEMA(LOCATION => '@s', FILE_FORMAT => 'ff')));" }
+      - { id: like, sql: "CREATE TABLE t2 LIKE t;" }
+      - { id: like_options, sql: "CREATE OR REPLACE TABLE t2 LIKE t CLUSTER BY (a) COPY GRANTS COPY TAGS;" }
+      - { id: clone, sql: "CREATE TABLE t2 CLONE t;" }
+      - { id: clone_at_timestamp, sql: "CREATE OR REPLACE TABLE t2 CLONE t AT (TIMESTAMP => '2024-01-01 00:00:00'::TIMESTAMP_LTZ);" }
+      - { id: clone_before_statement, sql: "CREATE TABLE t2 CLONE t BEFORE (STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726') COPY GRANTS;" }
+      - { id: clone_temp_read_only, sql: "CREATE TEMP READ ONLY TABLE t2 CLONE t;" }
+      - { id: from_archive_of, sql: "CREATE TABLE IF NOT EXISTS t2 FROM ARCHIVE OF t AS a WHERE a.d < '2024-01-01';" }
+    examples:
+      - "CREATE TABLE example (col1 NUMBER COMMENT 'a column comment') COMMENT='a table comment';"
+      - "CREATE TABLE testtable_summary (name, summary_amount) AS SELECT name, amount1 + amount2 FROM testtable;"
+      - "CREATE TABLE mytable (date TIMESTAMP_NTZ, id NUMBER, content VARIANT) CLUSTER BY (date, id);"
+      - |-
+        CREATE OR ALTER TABLE my_table(
+            a INT PRIMARY KEY,
+            b VARCHAR(200)
+          )
+          DATA_RETENTION_TIME_IN_DAYS = 5
+          DEFAULT_DDL_COLLATION = 'de';
+      - "CREATE LOCAL TEMPORARY TABLE demo_local_temporary (i INTEGER);"
+
+  - id: create_alter_table_constraint
+    name: "CREATE | ALTER TABLE … CONSTRAINT"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-table-constraint
+    tier: high
+    probes:
+      - { id: inline_pk_properties, sql: "CREATE TABLE t (a INT NOT NULL PRIMARY KEY NOT ENFORCED NOT DEFERRABLE INITIALLY IMMEDIATE DISABLE NOVALIDATE RELY);" }
+      - { id: inline_unique_enforced, sql: "CREATE TABLE t (a INT CONSTRAINT uq UNIQUE ENFORCED DEFERRABLE INITIALLY DEFERRED ENABLE VALIDATE NORELY);" }
+      - { id: inline_fk_match_actions, sql: "CREATE TABLE t (a INT CONSTRAINT fk FOREIGN KEY REFERENCES p (id) MATCH FULL ON UPDATE CASCADE ON DELETE SET NULL NOT ENFORCED);" }
+      - { id: inline_fk_match_simple_no_action, sql: "CREATE TABLE t (a INT REFERENCES p (id) MATCH SIMPLE ON DELETE NO ACTION);" }
+      - { id: inline_check_enable_validate, sql: "CREATE TABLE t (q INT CONSTRAINT ck CHECK (q > 0) ENABLE VALIDATE);" }
+      - { id: out_of_line_pk_not_enforced, sql: "CREATE TABLE t (a INT NOT NULL, b INT NOT NULL, CONSTRAINT pkey_1 PRIMARY KEY (a, b) NOT ENFORCED);" }
+      - { id: out_of_line_fk_properties, sql: "CREATE TABLE t (a INT, b INT, CONSTRAINT fkey_1 FOREIGN KEY (a, b) REFERENCES p (x, y) MATCH PARTIAL ON UPDATE RESTRICT ON DELETE SET DEFAULT NOT ENFORCED RELY);" }
+      - { id: out_of_line_unique_comment, sql: "CREATE TABLE t (c1 INT, c2 INT, CONSTRAINT uni1 UNIQUE (c1) RELY COMMENT 'Unique column');" }
+      - { id: inline_unique_comment, sql: "CREATE TABLE t (c1 INT UNIQUE COMMENT 'Unique column', c2 INT);" }
+      - { id: out_of_line_check_enable_novalidate, sql: "CREATE TABLE t (a INT, b INT, CONSTRAINT ck CHECK (a < b) ENABLE NOVALIDATE);" }
+      - { id: alter_add_column_inline_constraint, sql: "ALTER TABLE t ADD COLUMN c VARCHAR NOT NULL CONSTRAINT uniq_c UNIQUE NOT ENFORCED;" }
+      - { id: alter_add_out_of_line, sql: "ALTER TABLE t ADD CONSTRAINT pk PRIMARY KEY (a, b);" }
+      - { id: alter_add_foreign_key, sql: "ALTER TABLE t ADD FOREIGN KEY (a) REFERENCES p (id) NOT ENFORCED;" }
+      - { id: alter_constraint_rely, sql: "ALTER TABLE t ALTER CONSTRAINT pk RELY;" }
+    examples:
+      - |-
+        ALTER TABLE table1
+          ADD COLUMN col3 VARCHAR NOT NULL CONSTRAINT uniq_col3 UNIQUE NOT ENFORCED;
+      - |-
+        CREATE TABLE test_check_constraint_orders (
+          order_id INT,
+          quantity INT CHECK (quantity > 0),
+          price NUMBER(10, 2));
+      - |-
+        CREATE TABLE test_check_constraint_max_orders (
+          order_id INT,
+          quantity INT,
+          price NUMBER(10, 2),
+          max_price NUMBER(10, 2),
+          CONSTRAINT chk_price_max CHECK (price < max_price));
+      - |-
+        CREATE TABLE high_value_products (
+          product_id INT,
+          product_name VARCHAR(100),
+          list_price NUMBER(10, 2),
+          CONSTRAINT high_price CHECK (list_price > 100)
+          )
+          AS SELECT product_id,
+                    product_name,
+                    list_price
+          FROM products
+          WHERE list_price > 100;
+      - "CREATE OR REPLACE TABLE uni (c1 INT, c2 int, CONSTRAINT uni1 UNIQUE(C1) COMMENT 'Unique column');"
+
+  - id: alter_table
+    name: "ALTER TABLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-table
+    tier: high
+    probes:
+      - { id: rename_to, sql: "ALTER TABLE t RENAME TO t2;" }
+      - { id: if_exists_rename, sql: "ALTER TABLE IF EXISTS t RENAME TO t2;" }
+      - { id: swap_with, sql: "ALTER TABLE t SWAP WITH u;" }
+      - { id: cluster_by, sql: "ALTER TABLE t CLUSTER BY (d, id);" }
+      - id: recluster
+        sql: "ALTER TABLE t RECLUSTER MAX_SIZE = 100000000 WHERE d > '2024-01-01';"
+        note: "Marked deprecated in the syntax block but still listed there."
+      - { id: suspend_recluster, sql: "ALTER TABLE t SUSPEND RECLUSTER;" }
+      - { id: resume_recluster, sql: "ALTER TABLE t RESUME RECLUSTER;" }
+      - { id: drop_clustering_key, sql: "ALTER TABLE t DROP CLUSTERING KEY;" }
+      - { id: add_column, sql: "ALTER TABLE t ADD COLUMN c NUMBER;" }
+      - { id: add_without_column_keyword, sql: "ALTER TABLE t ADD c NUMBER;" }
+      - { id: add_column_if_not_exists, sql: "ALTER TABLE t ADD COLUMN IF NOT EXISTS c NUMBER;" }
+      - { id: add_column_not_null, sql: "ALTER TABLE t ADD COLUMN c NUMBER NOT NULL;" }
+      - { id: add_column_default_not_null, sql: "ALTER TABLE t ADD COLUMN c NUMBER DEFAULT 0 NOT NULL;" }
+      - { id: add_column_collate, sql: "ALTER TABLE t ADD COLUMN c VARCHAR COLLATE 'en_US';" }
+      - { id: add_column_virtual, sql: "ALTER TABLE t ADD COLUMN c INT AS (a + b);" }
+      - { id: add_column_generated_virtual, sql: "ALTER TABLE t ADD COLUMN c INT GENERATED ALWAYS AS (a + b) VIRTUAL;" }
+      - { id: add_column_identity, sql: "ALTER TABLE t ADD COLUMN id INT IDENTITY START 1 INCREMENT 1 ORDER;" }
+      - { id: add_column_autoincrement_pair, sql: "ALTER TABLE t ADD COLUMN id INT AUTOINCREMENT (1, 1) NOORDER;" }
+      - { id: add_column_inline_constraint, sql: "ALTER TABLE t ADD COLUMN c INT CONSTRAINT uq UNIQUE;" }
+      - { id: add_column_masking_policy, sql: "ALTER TABLE t ADD COLUMN c VARCHAR WITH MASKING POLICY mp USING (c, d);" }
+      - { id: add_column_projection_policy_tag, sql: "ALTER TABLE t ADD COLUMN c VARCHAR PROJECTION POLICY pp WITH TAG (tg = 'v');" }
+      - { id: rename_column, sql: "ALTER TABLE t RENAME COLUMN a TO b;" }
+      - { id: drop_column, sql: "ALTER TABLE t DROP COLUMN a;" }
+      - { id: drop_without_column_keyword, sql: "ALTER TABLE t DROP a, b;" }
+      - { id: drop_column_if_exists, sql: "ALTER TABLE t DROP COLUMN IF EXISTS a;" }
+      - { id: add_constraint, sql: "ALTER TABLE t ADD CONSTRAINT pk PRIMARY KEY (a);" }
+      - { id: add_unique_no_columns, sql: "ALTER TABLE t ADD UNIQUE (a, b);" }
+      - { id: rename_constraint, sql: "ALTER TABLE t RENAME CONSTRAINT c1 TO c2;" }
+      - { id: alter_constraint_properties, sql: "ALTER TABLE t ALTER CONSTRAINT pk (a) NOT ENFORCED NOVALIDATE RELY;" }
+      - { id: modify_primary_key, sql: "ALTER TABLE t MODIFY PRIMARY KEY (a) ENFORCED;" }
+      - { id: drop_constraint, sql: "ALTER TABLE t DROP CONSTRAINT pk;" }
+      - { id: drop_primary_key_cascade, sql: "ALTER TABLE t DROP PRIMARY KEY (c) CASCADE;" }
+      - { id: drop_unique_columns_restrict, sql: "ALTER TABLE t DROP UNIQUE (a, b) RESTRICT;" }
+      - { id: drop_foreign_key, sql: "ALTER TABLE t DROP FOREIGN KEY (a);" }
+      - { id: set_data_metric_schedule_minutes, sql: "ALTER TABLE t SET DATA_METRIC_SCHEDULE = '5 MINUTE';" }
+      - { id: set_data_metric_schedule_cron, sql: "ALTER TABLE t SET DATA_METRIC_SCHEDULE = 'USING CRON 0 8 * * * UTC';" }
+      - { id: unset_data_metric_schedule, sql: "ALTER TABLE t UNSET DATA_METRIC_SCHEDULE;" }
+      - { id: add_data_metric_function, sql: "ALTER TABLE t ADD DATA METRIC FUNCTION snowflake.core.null_count ON (c);" }
+      - { id: add_data_metric_function_options, sql: "ALTER TABLE t ADD DATA METRIC FUNCTION dmf ON (c, TABLE u(d)) WITHIN GROUP (g) GROUP LIMIT 10 FILTER (c > 0) EXPECTATION e1 (VALUE = 0) EXECUTE AS ROLE r ANOMALY_DETECTION = TRUE SENSITIVITY = 'LOW';" }
+      - { id: drop_data_metric_function, sql: "ALTER TABLE t DROP DATA METRIC FUNCTION dmf ON (c);" }
+      - { id: modify_data_metric_function_suspend, sql: "ALTER TABLE t MODIFY DATA METRIC FUNCTION dmf ON (c) SUSPEND;" }
+      - { id: modify_data_metric_function_expectation, sql: "ALTER TABLE t MODIFY DATA METRIC FUNCTION dmf ON (c) ADD EXPECTATION e1 (VALUE < 10);" }
+      - { id: modify_data_metric_function_drop_expectation, sql: "ALTER TABLE t MODIFY DATA METRIC FUNCTION dmf ON (c) DROP EXPECTATION e1;" }
+      - { id: set_tag, sql: "ALTER TABLE t SET TAG tg = 'v1', tg2 = 'v2';" }
+      - { id: unset_tag, sql: "ALTER TABLE t UNSET TAG tg, tg2;" }
+      - { id: add_row_access_policy, sql: "ALTER TABLE t ADD ROW ACCESS POLICY rap ON (a, b);" }
+      - { id: drop_row_access_policy, sql: "ALTER TABLE t DROP ROW ACCESS POLICY rap;" }
+      - { id: drop_add_row_access_policy, sql: "ALTER TABLE t DROP ROW ACCESS POLICY rap1, ADD ROW ACCESS POLICY rap2 ON (a);" }
+      - { id: drop_all_row_access_policies, sql: "ALTER TABLE t DROP ALL ROW ACCESS POLICIES;" }
+      - { id: set_aggregation_policy, sql: "ALTER TABLE t SET AGGREGATION POLICY ap ENTITY KEY (a) FORCE;" }
+      - { id: unset_aggregation_policy, sql: "ALTER TABLE t UNSET AGGREGATION POLICY;" }
+      - { id: set_join_policy, sql: "ALTER TABLE t SET JOIN POLICY jp FORCE;" }
+      - { id: unset_join_policy, sql: "ALTER TABLE t UNSET JOIN POLICY;" }
+      - { id: column_set_masking_policy, sql: "ALTER TABLE t MODIFY COLUMN c SET MASKING POLICY mp USING (c, d) FORCE;" }
+      - { id: column_unset_masking_policy, sql: "ALTER TABLE t ALTER COLUMN c UNSET MASKING POLICY;" }
+      - { id: column_set_projection_policy, sql: "ALTER TABLE t ALTER COLUMN c SET PROJECTION POLICY pp FORCE;" }
+      - { id: column_set_tag, sql: "ALTER TABLE t ALTER COLUMN c SET TAG tg = 'v', COLUMN d SET TAG tg = 'w';" }
+      - { id: column_unset_tag, sql: "ALTER TABLE t MODIFY COLUMN c UNSET TAG tg;" }
+      - { id: ext_add_column, sql: "ALTER TABLE t ADD COLUMN a1 VARCHAR AS (value:a1::VARCHAR);" }
+      - { id: add_search_optimization, sql: "ALTER TABLE t ADD SEARCH OPTIMIZATION;" }
+      - { id: add_search_optimization_on, sql: "ALTER TABLE t ADD SEARCH OPTIMIZATION ON EQUALITY(c1, c2), SUBSTRING(c3);" }
+      - { id: drop_search_optimization_on, sql: "ALTER TABLE t DROP SEARCH OPTIMIZATION ON EQUALITY(c1);" }
+      - { id: add_storage_lifecycle_policy, sql: "ALTER TABLE t ADD STORAGE LIFECYCLE POLICY slp ON (d);" }
+      - { id: drop_storage_lifecycle_policy, sql: "ALTER TABLE t DROP STORAGE LIFECYCLE POLICY;" }
+      - { id: set_properties, sql: "ALTER TABLE t SET DATA_RETENTION_TIME_IN_DAYS = 1 MAX_DATA_EXTENSION_TIME_IN_DAYS = 14 CHANGE_TRACKING = TRUE;" }
+      - { id: set_collation_schema_evolution, sql: "ALTER TABLE t SET DEFAULT_DDL_COLLATION = 'en-ci' ENABLE_SCHEMA_EVOLUTION = TRUE ERROR_LOGGING = FALSE ROW_TIMESTAMP = TRUE;" }
+      - { id: set_contact, sql: "ALTER TABLE t SET CONTACT steward = my_contact;" }
+      - { id: set_comment, sql: "ALTER TABLE t SET COMMENT = 'table comment';" }
+      - { id: unset_properties, sql: "ALTER TABLE t UNSET DATA_RETENTION_TIME_IN_DAYS, CHANGE_TRACKING, COMMENT;" }
+      - { id: unset_contact, sql: "ALTER TABLE t UNSET CONTACT steward;" }
+    examples:
+      - "ALTER TABLE t1 SWAP WITH t2;"
+      - "ALTER TABLE t1 ADD COLUMN a4 NUMBER DEFAULT 0 NOT NULL;"
+      - "ALTER TABLE t1 ADD COLUMN IF NOT EXISTS a2 NUMBER;"
+      - |-
+        alter table t1
+          drop row access policy rap_t1_version_1,
+          add row access policy rap_t1_version_2 on (empl_id);
+      - |-
+        ALTER TABLE hr.tables.empl_info SET
+          DATA_METRIC_SCHEDULE = 'USING CRON 0 8 * * MON,TUE,WED,THU,FRI UTC';
+
+  - id: alter_table_alter_column
+    name: "ALTER TABLE … ALTER COLUMN"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-table-column
+    tier: high
+    probes:
+      - { id: drop_default, sql: "ALTER TABLE t ALTER COLUMN c DROP DEFAULT;" }
+      - { id: set_default_nextval, sql: "ALTER TABLE t MODIFY c SET DEFAULT seq.NEXTVAL;" }
+      - { id: set_not_null, sql: "ALTER TABLE t ALTER COLUMN c SET NOT NULL;" }
+      - { id: not_null_without_set, sql: "ALTER TABLE t MODIFY COLUMN c NOT NULL;" }
+      - { id: drop_not_null, sql: "ALTER TABLE t ALTER COLUMN c DROP NOT NULL;" }
+      - { id: set_data_type, sql: "ALTER TABLE t ALTER c SET DATA TYPE VARCHAR(50);" }
+      - { id: type, sql: "ALTER TABLE t ALTER c TYPE VARCHAR(50);" }
+      - { id: bare_type, sql: "ALTER TABLE t MODIFY COLUMN c NUMBER(38, 2);" }
+      - { id: comment, sql: "ALTER TABLE t ALTER c COMMENT '50 character column';" }
+      - { id: unset_comment, sql: "ALTER TABLE t ALTER COLUMN c UNSET COMMENT;" }
+      - { id: multiple_actions, sql: "ALTER TABLE t MODIFY c2 DROP DEFAULT, c3 SET DEFAULT seq5.nextval;" }
+      - { id: parenthesized_list, sql: "ALTER TABLE t ALTER (c1 DROP NOT NULL, c4 TYPE VARCHAR(50), COLUMN c3 SET DEFAULT seq5.nextval);" }
+      - { id: set_masking_policy, sql: "ALTER TABLE t MODIFY COLUMN c SET MASKING POLICY mp;" }
+    examples:
+      - "ALTER TABLE t1 ALTER COLUMN c1 DROP NOT NULL;"
+      - "ALTER TABLE t1 MODIFY c2 DROP DEFAULT, c3 SET DEFAULT seq5.nextval ;"
+      - "ALTER TABLE t1 ALTER c4 SET DATA TYPE VARCHAR(50), COLUMN c4 DROP DEFAULT;"
+      - |-
+        ALTER TABLE t1 ALTER (
+           c1 DROP NOT NULL,
+           c5 COMMENT '50 character column',
+           c4 TYPE VARCHAR(50),
+           c2 DROP DEFAULT,
+           COLUMN c4 DROP DEFAULT,
+           COLUMN c3 SET DEFAULT seq5.nextval
+          );
+      - |-
+        ALTER TABLE empl_info MODIFY
+            COLUMN empl_id SET MASKING POLICY mask_empl_id
+          , COLUMN empl_dob SET MASKING POLICY mask_empl_dob
+        ;
+
+  - id: alter_table_event_table
+    name: "ALTER TABLE (event tables)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-table-event-table
+    tier: low
+    probes:
+      - { id: rename, sql: "ALTER TABLE IF EXISTS et RENAME TO et2;" }
+      - { id: set_change_tracking, sql: "ALTER TABLE et SET CHANGE_TRACKING = TRUE COMMENT = 'events';" }
+
+  - id: drop_table
+    name: "DROP TABLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/drop-table
+    tier: high
+    probes:
+      - { id: drop, sql: "DROP TABLE t;" }
+      - { id: if_exists, sql: "DROP TABLE IF EXISTS db.s.t;" }
+      - { id: cascade, sql: "DROP TABLE t CASCADE;" }
+      - { id: restrict, sql: "DROP TABLE IF EXISTS t RESTRICT;" }
+    examples:
+      - "DROP TABLE IF EXISTS t2;"
+
+  - id: create_view
+    name: "CREATE VIEW"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-view
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE VIEW v AS SELECT a, b FROM t;" }
+      - { id: or_replace, sql: "CREATE OR REPLACE VIEW v AS SELECT a FROM t;" }
+      - { id: if_not_exists, sql: "CREATE VIEW IF NOT EXISTS v AS SELECT a FROM t;" }
+      - { id: secure, sql: "CREATE OR REPLACE SECURE VIEW v COMMENT = 'Test secure view' AS SELECT a, b FROM t;" }
+      - { id: temporary, sql: "CREATE TEMPORARY VIEW v AS SELECT a FROM t;" }
+      - { id: local_temp, sql: "CREATE LOCAL TEMP VIEW v AS SELECT a FROM t;" }
+      - { id: volatile, sql: "CREATE VOLATILE VIEW v AS SELECT a FROM t;" }
+      - { id: recursive, sql: "CREATE RECURSIVE VIEW v (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM v WHERE n < 10);" }
+      - { id: column_list, sql: "CREATE VIEW v (x, y) AS SELECT a, b FROM t;" }
+      - { id: column_comments, sql: "CREATE VIEW v (x COMMENT 'first', y) AS SELECT a, b FROM t;" }
+      - { id: column_masking_policy, sql: "CREATE VIEW v (x WITH MASKING POLICY mp USING (x, y), y) AS SELECT a, b FROM t;" }
+      - { id: column_projection_policy_tag, sql: "CREATE VIEW v (x PROJECTION POLICY pp TAG (tg = 'v')) AS SELECT a FROM t;" }
+      - { id: row_access_policy, sql: "CREATE VIEW v WITH ROW ACCESS POLICY rap ON (a) AS SELECT a FROM t;" }
+      - { id: tag, sql: "CREATE VIEW v WITH TAG (tg = 'v1', tg2 = 'v2') AS SELECT a FROM t;" }
+      - { id: change_tracking, sql: "CREATE VIEW v CHANGE_TRACKING = TRUE AS SELECT a FROM t;" }
+      - { id: copy_grants, sql: "CREATE OR REPLACE VIEW v COPY GRANTS AS SELECT a FROM t;" }
+      - { id: copy_tags, sql: "CREATE OR REPLACE VIEW v COPY TAGS AS SELECT b AS a, a AS b FROM t;" }
+      - { id: comment, sql: "CREATE VIEW v COMMENT = 'Test view' AS SELECT a FROM t;" }
+      - { id: aggregation_policy, sql: "CREATE VIEW v WITH AGGREGATION POLICY ap ENTITY KEY (a) AS SELECT a FROM t;" }
+      - { id: join_policy, sql: "CREATE VIEW v JOIN POLICY jp ALLOWED JOIN KEYS (a) AS SELECT a FROM t;" }
+      - { id: with_contact, sql: "CREATE VIEW v WITH CONTACT (steward = my_contact) AS SELECT a FROM t;" }
+      - { id: parenthesized_query, sql: "CREATE VIEW v (a) AS (WITH c AS (SELECT a FROM t) SELECT a FROM c);" }
+      - { id: create_or_alter, sql: "CREATE OR ALTER SECURE VIEW v (x) CHANGE_TRACKING = TRUE COMMENT = 'c' AS SELECT a FROM t;" }
+    examples:
+      - "CREATE VIEW myview COMMENT='Test view' AS SELECT col1, col2 FROM mytable;"
+      - "CREATE OR REPLACE SECURE VIEW myview COMMENT='Test secure view' AS SELECT col1, col2 FROM mytable;"
+      - |-
+        CREATE VIEW v1 (pre_tax_profit, taxes, after_tax_profit) AS
+            SELECT revenue - cost, (revenue - cost) * tax_rate, (revenue - cost) * (1.0 - tax_rate)
+            FROM table1;
+      - |-
+        CREATE VIEW v1 (pre_tax_profit COMMENT 'revenue minus cost',
+                        taxes COMMENT 'assumes taxes are a fixed percentage of profit',
+                        after_tax_profit)
+            AS
+            SELECT revenue - cost, (revenue - cost) * tax_rate, (revenue - cost) * (1.0 - tax_rate)
+            FROM table1;
+      - |-
+        CREATE RECURSIVE VIEW employee_hierarchy_02 (title, employee_ID, manager_ID, "MGR_EMP_ID (SHOULD BE SAME)", "MGR TITLE") AS (
+              -- Start at the top of the hierarchy ...
+              SELECT title, employee_ID, manager_ID, NULL AS "MGR_EMP_ID (SHOULD BE SAME)", 'President' AS "MGR TITLE"
+                FROM employees
+                WHERE title = 'President'
+              UNION ALL
+              -- ... and work our way down one level at a time.
+              SELECT employees.title,
+                     employees.employee_ID,
+                     employees.manager_ID,
+                     employee_hierarchy_02.employee_id AS "MGR_EMP_ID (SHOULD BE SAME)",
+                     employee_hierarchy_02.title AS "MGR TITLE"
+                FROM employees INNER JOIN employee_hierarchy_02
+                WHERE employee_hierarchy_02.employee_ID = employees.manager_ID
+        );
+
+  - id: alter_view
+    name: "ALTER VIEW"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-view
+    tier: high
+    probes:
+      - { id: rename, sql: "ALTER VIEW v RENAME TO v2;" }
+      - { id: if_exists_rename, sql: "ALTER VIEW IF EXISTS v RENAME TO v2;" }
+      - { id: set_secure, sql: "ALTER VIEW v SET SECURE;" }
+      - { id: set_properties, sql: "ALTER VIEW v SET CHANGE_TRACKING = TRUE COMMENT = 'view comment';" }
+      - { id: set_contact, sql: "ALTER VIEW v SET CONTACT steward = my_contact;" }
+      - { id: unset_secure, sql: "ALTER VIEW v UNSET SECURE;" }
+      - { id: unset_comment, sql: "ALTER VIEW v UNSET COMMENT;" }
+      - { id: set_data_metric_schedule, sql: "ALTER VIEW v SET DATA_METRIC_SCHEDULE = 'TRIGGER_ON_CHANGES';" }
+      - { id: add_data_metric_function, sql: "ALTER VIEW v ADD DATA METRIC FUNCTION snowflake.core.null_count ON (c);" }
+      - { id: set_tag, sql: "ALTER VIEW v SET TAG tg = 'v1';" }
+      - { id: unset_tag, sql: "ALTER VIEW v UNSET TAG tg;" }
+      - { id: add_row_access_policy, sql: "ALTER VIEW v ADD ROW ACCESS POLICY rap ON (empl_id);" }
+      - { id: drop_add_row_access_policy, sql: "ALTER VIEW v DROP ROW ACCESS POLICY rap1, ADD ROW ACCESS POLICY rap2 ON (empl_id);" }
+      - { id: drop_all_row_access_policies, sql: "ALTER VIEW v DROP ALL ROW ACCESS POLICIES;" }
+      - { id: set_aggregation_policy, sql: "ALTER VIEW v SET AGGREGATION POLICY ap ENTITY KEY (a) FORCE;" }
+      - { id: set_join_policy, sql: "ALTER VIEW v SET JOIN POLICY jp;" }
+      - { id: unset_join_policy, sql: "ALTER VIEW v UNSET JOIN POLICY;" }
+      - { id: column_set_masking_policy, sql: "ALTER VIEW v MODIFY COLUMN c SET MASKING POLICY mp FORCE;" }
+      - { id: column_unset_projection_policy, sql: "ALTER VIEW v ALTER COLUMN c UNSET PROJECTION POLICY;" }
+      - { id: column_set_tag, sql: "ALTER VIEW v ALTER COLUMN c SET TAG tg = 'v';" }
+    examples:
+      - "ALTER VIEW view1 RENAME TO view2;"
+      - "ALTER VIEW view1 SET SECURE;"
+      - |-
+        ALTER VIEW v1
+          ADD ROW ACCESS POLICY rap_v1 ON (empl_id);
+      - |-
+        ALTER VIEW v1
+          DROP ROW ACCESS POLICY rap_v1_version_1,
+          ADD ROW ACCESS POLICY rap_v1_version_2 ON (empl_id);
+      - |-
+        ALTER VIEW join_view
+          SET JOIN POLICY jp1;
+
+  - id: drop_view
+    name: "DROP VIEW"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/drop-view
+    tier: high
+    probes:
+      - { id: drop, sql: "DROP VIEW v;" }
+      - { id: if_exists, sql: "DROP VIEW IF EXISTS db.s.v;" }
+    examples:
+      - "DROP VIEW myview;"
+
+  - id: create_materialized_view
+    name: "CREATE MATERIALIZED VIEW"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-materialized-view
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE MATERIALIZED VIEW mv AS SELECT a, b FROM t;" }
+      - { id: or_replace_secure, sql: "CREATE OR REPLACE SECURE MATERIALIZED VIEW mv AS SELECT a FROM t;" }
+      - { id: interactive_if_not_exists, sql: "CREATE INTERACTIVE MATERIALIZED VIEW IF NOT EXISTS mv AS SELECT SUM(q) AS total FROM t WHERE k = 52;" }
+      - { id: copy_grants_column_list, sql: "CREATE OR REPLACE MATERIALIZED VIEW mv COPY GRANTS (x, y) AS SELECT a, b FROM t;" }
+      - { id: column_masking_policy, sql: "CREATE MATERIALIZED VIEW mv (x WITH MASKING POLICY mp, y) AS SELECT a, b FROM t;" }
+      - { id: comment, sql: "CREATE MATERIALIZED VIEW mv COMMENT = 'Test view' AS SELECT a FROM t;" }
+      - { id: row_access_policy, sql: "CREATE MATERIALIZED VIEW mv WITH ROW ACCESS POLICY rap ON (a) AS SELECT a FROM t;" }
+      - { id: aggregation_policy, sql: "CREATE MATERIALIZED VIEW mv AGGREGATION POLICY ap ENTITY KEY (a) AS SELECT a FROM t;" }
+      - { id: cluster_by, sql: "CREATE MATERIALIZED VIEW mv CLUSTER BY (a) AS SELECT a, b FROM t;" }
+      - { id: tag, sql: "CREATE MATERIALIZED VIEW mv WITH TAG (tg = 'v') AS SELECT a FROM t;" }
+      - { id: with_contact, sql: "CREATE MATERIALIZED VIEW mv WITH CONTACT (steward = my_contact) AS SELECT a FROM t;" }
+    examples:
+      - |-
+        CREATE MATERIALIZED VIEW mymv
+            COMMENT='Test view'
+            AS
+            SELECT col1, col2 FROM mytable;
+      - |-
+        CREATE INTERACTIVE MATERIALIZED VIEW IF NOT EXISTS mv_summary
+            AS
+            SELECT SUM(quantity) AS total_quantity, SUM(net_paid) AS total_net_paid
+            FROM my_interactive_table
+            WHERE call_center_id = 52;
+
+  - id: alter_materialized_view
+    name: "ALTER MATERIALIZED VIEW"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-materialized-view
+    tier: high
+    probes:
+      - { id: rename, sql: "ALTER MATERIALIZED VIEW mv RENAME TO mv2;" }
+      - { id: cluster_by, sql: "ALTER MATERIALIZED VIEW mv CLUSTER BY (i);" }
+      - { id: drop_clustering_key, sql: "ALTER MATERIALIZED VIEW mv DROP CLUSTERING KEY;" }
+      - { id: suspend_recluster, sql: "ALTER MATERIALIZED VIEW mv SUSPEND RECLUSTER;" }
+      - { id: resume_recluster, sql: "ALTER MATERIALIZED VIEW mv RESUME RECLUSTER;" }
+      - { id: suspend, sql: "ALTER MATERIALIZED VIEW mv SUSPEND;" }
+      - { id: resume, sql: "ALTER MATERIALIZED VIEW mv RESUME;" }
+      - { id: set_secure, sql: "ALTER MATERIALIZED VIEW mv SET SECURE;" }
+      - { id: set_comment, sql: "ALTER MATERIALIZED VIEW mv SET COMMENT = 'Sample view';" }
+      - { id: set_contact, sql: "ALTER MATERIALIZED VIEW mv SET CONTACT steward = my_contact;" }
+      - { id: unset_secure, sql: "ALTER MATERIALIZED VIEW mv UNSET SECURE;" }
+      - { id: unset_comment, sql: "ALTER MATERIALIZED VIEW mv UNSET COMMENT;" }
+      - { id: set_data_metric_schedule, sql: "ALTER MATERIALIZED VIEW mv SET DATA_METRIC_SCHEDULE = '5 MINUTE';" }
+      - { id: unset_data_metric_schedule, sql: "ALTER MATERIALIZED VIEW mv UNSET DATA_METRIC_SCHEDULE;" }
+    examples:
+      - "ALTER MATERIALIZED VIEW table1_MV RENAME TO my_mv;"
+      - "ALTER MATERIALIZED VIEW my_mv CLUSTER BY(i);"
+      - "ALTER MATERIALIZED VIEW my_mv SUSPEND RECLUSTER;"
+      - "ALTER MATERIALIZED VIEW my_mv RESUME;"
+      - "ALTER MATERIALIZED VIEW mv1 SET COMMENT = 'Sample view';"
+
+  - id: drop_materialized_view
+    name: "DROP MATERIALIZED VIEW"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/drop-materialized-view
+    tier: high
+    probes:
+      - { id: drop, sql: "DROP MATERIALIZED VIEW mv;" }
+      - { id: if_exists, sql: "DROP MATERIALIZED VIEW IF EXISTS db.s.mv;" }
+    examples:
+      - "DROP MATERIALIZED VIEW mv1;"
+
+  - id: create_index
+    name: "CREATE INDEX"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-index
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE INDEX idx ON t (c);" }
+      - { id: or_replace, sql: "CREATE OR REPLACE INDEX idx ON t (val);" }
+      - { id: if_not_exists_multi_column, sql: "CREATE INDEX IF NOT EXISTS idx ON db.s.t (a, b);" }
+      - { id: include, sql: "CREATE INDEX idx ON t (a) INCLUDE (b, c);" }
+    examples:
+      - "CREATE OR REPLACE INDEX vidx ON mytable (val);"
+
+  - id: drop_index
+    name: "DROP INDEX"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/drop-index
+    tier: high
+    probes:
+      - { id: drop, sql: "DROP INDEX t.idx;" }
+      - { id: if_exists, sql: "DROP INDEX IF EXISTS t.idx;" }
+    examples:
+      - "DROP INDEX t0.c_idx;"
+      - "DROP INDEX mytable.vidx;"
+
+  - id: create_semantic_view
+    name: "CREATE SEMANTIC VIEW"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-semantic-view
+    tier: medium
+    probes:
+      - { id: tables_only, sql: "CREATE SEMANTIC VIEW sv TABLES (orders);" }
+      - id: full
+        sql: |-
+          CREATE OR REPLACE SEMANTIC VIEW sv
+            TABLES (o AS orders PRIMARY KEY (id) WITH SYNONYMS ('sales orders') COMMENT = 'orders', c AS customers PRIMARY KEY (cid))
+            RELATIONSHIPS (orders_to_customers AS o (cid) REFERENCES c)
+            FACTS (o.amount AS amount)
+            DIMENSIONS (c.name AS customer_name WITH SYNONYMS = ('client name'))
+            METRICS (o.total_revenue AS SUM(o.amount) COMMENT = 'revenue')
+            COMMENT = 'sales semantic view';
+      - { id: window_function_metric, sql: "CREATE SEMANTIC VIEW sv TABLES (t1 AS t) DIMENSIONS (t1.d1 AS d1, t1.d2 AS d2) METRICS (t1.m1 AS SUM(x), t1.m2 AS SUM(t1.m1) OVER (PARTITION BY EXCLUDING t1.d1 ORDER BY t1.d2));" }
+      - { id: create_or_alter, sql: "CREATE OR ALTER SEMANTIC VIEW sv TABLES (orders) COMMENT = 'c';" }
+
+  - id: alter_semantic_view
+    name: "ALTER SEMANTIC VIEW"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-semantic-view
+    tier: medium
+    probes:
+      - { id: rename, sql: "ALTER SEMANTIC VIEW IF EXISTS sv RENAME TO sv2;" }
+      - { id: set_comment, sql: "ALTER SEMANTIC VIEW sv SET COMMENT = 'my comment';" }
+      - { id: set_max_staleness, sql: "ALTER SEMANTIC VIEW sv SET MAX_STALENESS = 7200;" }
+      - { id: unset, sql: "ALTER SEMANTIC VIEW sv UNSET COMMENT;" }
+      - { id: set_tag, sql: "ALTER SEMANTIC VIEW sv SET TAG tg = 'v';" }
+      - { id: add_materialization, sql: "ALTER SEMANTIC VIEW sv ADD MATERIALIZATION m WAREHOUSE = wh REFRESH_MODE = AUTO IMMUTABLE WHERE (d < '2024-01-01') AS DIMENSIONS c.name METRICS o.total WHERE (o.region = 'EU');" }
+      - { id: suspend_materialization, sql: "ALTER SEMANTIC VIEW sv SUSPEND MATERIALIZATION m;" }
+      - { id: refresh_materialization, sql: "ALTER SEMANTIC VIEW sv REFRESH MATERIALIZATION m;" }
+      - { id: drop_materialization, sql: "ALTER SEMANTIC VIEW sv DROP MATERIALIZATION m;" }
+    examples:
+      - "ALTER SEMANTIC VIEW sv RENAME TO sv_new_name;"
+      - "ALTER SEMANTIC VIEW my_semantic_view SET COMMENT = 'my comment';"
+      - "ALTER SEMANTIC VIEW revenue_analysis SET MAX_STALENESS = 7200;"
+      - |-
+        ALTER SEMANTIC VIEW revenue_analysis ADD MATERIALIZATION revenue_by_customer
+          WAREHOUSE = my_wh
+          IMMUTABLE WHERE (order_date < '2024-01-01')
+          AS
+            DIMENSIONS customers.customer_name
+            METRICS orders.total_revenue;
+      - "ALTER SEMANTIC VIEW revenue_analysis DROP MATERIALIZATION revenue_by_customer;"
+
+  - id: drop_semantic_view
+    name: "DROP SEMANTIC VIEW"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/drop-semantic-view
+    tier: medium
+    probes:
+      - { id: drop, sql: "DROP SEMANTIC VIEW sv;" }
+      - { id: if_exists, sql: "DROP SEMANTIC VIEW IF EXISTS sv;" }
+    examples:
+      - "DROP SEMANTIC VIEW my_semantic_view;"
+
+  - id: create_hybrid_table
+    name: "CREATE HYBRID TABLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-hybrid-table
+    tier: medium
+    probes:
+      - { id: basic_index, sql: "CREATE HYBRID TABLE t (id INT AUTOINCREMENT PRIMARY KEY, name VARCHAR(255), email VARCHAR(255) UNIQUE, info VARIANT, INDEX idx_name (name));" }
+      - { id: or_replace_if_not_exists, sql: "CREATE OR REPLACE HYBRID TABLE IF NOT EXISTS t (id INT PRIMARY KEY);" }
+      - { id: out_of_line_pk_fk, sql: "CREATE HYBRID TABLE t (id INT PRIMARY KEY, team_id INT, FOREIGN KEY (team_id) REFERENCES team(team_id));" }
+      - { id: index_include, sql: "CREATE HYBRID TABLE t (id INT PRIMARY KEY, a INT, b INT, INDEX idx_a (a) INCLUDE (b)) COMMENT = 'hybrid';" }
+      - { id: check_constraint, sql: "CREATE HYBRID TABLE t (id INT PRIMARY KEY, q INT CHECK (q > 0), lp NUMBER(10,2), sp NUMBER(10,2), CONSTRAINT chk CHECK (sp <= lp));" }
+      - { id: ctas, sql: "CREATE HYBRID TABLE t (id INT PRIMARY KEY, v VARCHAR) AS SELECT id, v FROM u;" }
+      - { id: like, sql: "CREATE OR REPLACE HYBRID TABLE t LIKE u;" }
+    examples:
+      - |-
+        CREATE HYBRID TABLE mytable (
+          customer_id INT AUTOINCREMENT PRIMARY KEY,
+          full_name VARCHAR(255),
+          email VARCHAR(255) UNIQUE,
+          extended_customer_info VARIANT,
+          INDEX index_full_name (full_name)
+        );
+      - |-
+        CREATE OR REPLACE HYBRID TABLE ht2pk (
+          col1 INTEGER NOT NULL,
+          col2 INTEGER NOT NULL,
+          col3 VARCHAR,
+          CONSTRAINT pkey_1 PRIMARY KEY (col1, col2)
+          );
+      - |-
+        CREATE OR REPLACE HYBRID TABLE orders (
+          order_id INTEGER PRIMARY KEY,
+          quantity INTEGER CHECK (quantity > 0),
+          list_price NUMBER(10,2),
+          sale_price NUMBER(10,2),
+          CONSTRAINT check_sale_price CHECK (sale_price <= list_price)
+          );
+      - |-
+        CREATE OR REPLACE HYBRID TABLE ht2 (c1 INT PRIMARY KEY, c2 VARCHAR(10),
+          INDEX idx_c2 (c2))
+          DEFAULT_DDL_COLLATION = '';
+      - |-
+        CREATE OR REPLACE HYBRID TABLE player
+          (player_id INT PRIMARY KEY,
+          first_name VARCHAR(40),
+          last_name VARCHAR(40),
+          team_id INT,
+          FOREIGN KEY (team_id) REFERENCES team(team_id));
+
+  - id: create_iceberg_table
+    name: "CREATE ICEBERG TABLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-iceberg-table
+    tier: medium
+    probes:
+      - { id: snowflake_catalog, sql: "CREATE ICEBERG TABLE t (amount INT) CATALOG = 'SNOWFLAKE' EXTERNAL_VOLUME = 'ev' BASE_LOCATION = 't';" }
+      - { id: rest_catalog, sql: "CREATE OR REPLACE ICEBERG TABLE t EXTERNAL_VOLUME = 'ev' CATALOG = 'rest_int' CATALOG_TABLE_NAME = 'remote_t' AUTO_REFRESH = TRUE;" }
+      - { id: ctas, sql: "CREATE OR REPLACE ICEBERG TABLE t (c INT) EXTERNAL_VOLUME = 'ev' CATALOG = 'SNOWFLAKE' BASE_LOCATION = 't' AS SELECT * FROM u;" }
+      - { id: like, sql: "CREATE ICEBERG TABLE t LIKE u;" }
+    examples:
+      - |-
+        CREATE ICEBERG TABLE my_iceberg_table (amount int)
+          CATALOG = 'SNOWFLAKE'
+          EXTERNAL_VOLUME = 'my_external_volume'
+          BASE_LOCATION = 'my_iceberg_table';
+
+  - id: create_iceberg_table_snowflake
+    name: "CREATE ICEBERG TABLE (Snowflake as the Iceberg catalog)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-iceberg-table-snowflake
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE ICEBERG TABLE t (amount INT) CATALOG = 'SNOWFLAKE' EXTERNAL_VOLUME = 'ev' BASE_LOCATION = 't';" }
+      - { id: transient_if_not_exists, sql: "CREATE OR REPLACE TRANSIENT ICEBERG TABLE IF NOT EXISTS t (a INT DEFAULT 0 NOT NULL, b STRING COMMENT 'b');" }
+      - { id: partition_by_transforms, sql: "CREATE ICEBERG TABLE t (a INT, b STRING, d DATE, ts TIMESTAMP_NTZ(6)) PARTITION BY (a, BUCKET(16, b), TRUNCATE(4, b), YEAR(d), MONTH(d), DAY(d), HOUR(ts)) PATH_LAYOUT = HIERARCHICAL EXTERNAL_VOLUME = 'ev' CATALOG = 'SNOWFLAKE' BASE_LOCATION = 't';" }
+      - { id: properties, sql: "CREATE ICEBERG TABLE t (a INT) CLUSTER BY (a) EXTERNAL_VOLUME = 'ev' CATALOG = 'SNOWFLAKE' BASE_LOCATION = 't' TARGET_FILE_SIZE = '64MB' CATALOG_SYNC = 'oc_int' STORAGE_SERIALIZATION_POLICY = OPTIMIZED DATA_RETENTION_TIME_IN_DAYS = 1 CHANGE_TRACKING = TRUE COMMENT = 'c' ICEBERG_VERSION = 3 ENABLE_DATA_COMPACTION = TRUE ENABLE_SCHEMA_EVOLUTION = FALSE;" }
+      - { id: merge_on_read, sql: "CREATE ICEBERG TABLE t (a INT) CATALOG = 'SNOWFLAKE' ICEBERG_MERGE_ON_READ_BEHAVIOR = 'ENABLED' ENABLE_ICEBERG_MERGE_ON_READ = TRUE;" }
+      - { id: policies, sql: "CREATE ICEBERG TABLE t (a INT WITH MASKING POLICY mp, b INT) CATALOG = 'SNOWFLAKE' WITH ROW ACCESS POLICY rap ON (b) WITH TAG (tg = 'v');" }
+      - { id: ctas, sql: "CREATE OR REPLACE ICEBERG TABLE t (c INT) EXTERNAL_VOLUME = 'ev' CATALOG = 'SNOWFLAKE' BASE_LOCATION = 't' AS SELECT * FROM u;" }
+      - { id: ctas_copy_tags, sql: "CREATE OR REPLACE ICEBERG TABLE t COPY TAGS AS SELECT b AS a, a AS b FROM u;" }
+      - { id: like, sql: "CREATE OR REPLACE TRANSIENT ICEBERG TABLE t LIKE u CLUSTER BY (a) COPY GRANTS;" }
+      - { id: clone, sql: "CREATE ICEBERG TABLE IF NOT EXISTS t CLONE u AT (OFFSET => -3600) COPY GRANTS;" }
+    examples:
+      - |-
+        CREATE OR REPLACE ICEBERG TABLE customer_iceberg_partitioned (
+          c_custkey INTEGER,
+          c_name STRING,
+          c_address STRING,
+          c_nationkey INTEGER,
+          c_phone STRING,
+          c_acctbal INTEGER,
+          c_mktsegment STRING,
+          c_comment STRING
+        )
+          PARTITION BY (c_nationkey)
+          PATH_LAYOUT = HIERARCHICAL
+          EXTERNAL_VOLUME = 'my_ext_vol'
+          CATALOG = 'SNOWFLAKE'
+          BASE_LOCATION = 'customer_iceberg_partitioned';
+      - |-
+        CREATE OR REPLACE ICEBERG TABLE iceberg_table_copy (column1 int)
+          EXTERNAL_VOLUME = 'my_external_volume'
+          CATALOG = 'SNOWFLAKE'
+          BASE_LOCATION = 'iceberg_table_copy'
+          AS SELECT * FROM base_iceberg_table;
+      - |-
+        CREATE OR REPLACE ICEBERG TABLE table_with_quoted_external_volume
+          EXTERNAL_VOLUME = '"external_volume_1"'
+          CATALOG = 'SNOWFLAKE'
+          BASE_LOCATION = 'my/relative/path/from/external_volume';
+      - |-
+        CREATE ICEBERG TABLE my_v3_iceberg_table (
+          record VARIANT,
+          event_timestamp TIMESTAMP_LTZ(6)
+        )
+          CATALOG = 'SNOWFLAKE'
+          EXTERNAL_VOLUME = 'my_external_volume'
+          BASE_LOCATION = 'my_iceberg_table'
+          ICEBERG_VERSION = 3;
+
+  - id: create_iceberg_table_aws_glue
+    name: "CREATE ICEBERG TABLE (AWS Glue as the Iceberg catalog)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-iceberg-table-aws-glue
+    tier: low
+    probes:
+      - { id: glue, sql: "CREATE ICEBERG TABLE t EXTERNAL_VOLUME = 'ev' CATALOG = 'glue_int' CATALOG_TABLE_NAME = 'gt' CATALOG_NAMESPACE = 'ns' REPLACE_INVALID_CHARACTERS = TRUE AUTO_REFRESH = TRUE COMMENT = 'c';" }
+    examples:
+      - |-
+        CREATE ICEBERG TABLE glue_iceberg_table
+          EXTERNAL_VOLUME='glue_catalog_volume'
+          CATALOG='glue_catalog_integration'
+          CATALOG_TABLE_NAME='my_glue_catalog_table'
+          CATALOG_NAMESPACE='icebergcatalogdb2'
+          AUTO_REFRESH = TRUE;
+
+  - id: create_iceberg_table_iceberg_files
+    name: "CREATE ICEBERG TABLE (Iceberg files in object storage)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-iceberg-table-iceberg-files
+    tier: low
+    probes:
+      - { id: metadata_file_path, sql: "CREATE ICEBERG TABLE t EXTERNAL_VOLUME = 'ev' CATALOG = 'cat_int' METADATA_FILE_PATH = 'path/to/metadata/v1.metadata.json';" }
+    examples:
+      - |-
+        CREATE ICEBERG TABLE my_iceberg_table
+          EXTERNAL_VOLUME='my_external_volume'
+          CATALOG='my_catalog_integration'
+          METADATA_FILE_PATH='path/to/metadata/v1.metadata.json';
+
+  - id: create_iceberg_table_rest
+    name: "CREATE ICEBERG TABLE (Iceberg REST catalog)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-iceberg-table-rest
+    tier: low
+    probes:
+      - { id: rest, sql: "CREATE OR REPLACE ICEBERG TABLE t EXTERNAL_VOLUME = 'ev' CATALOG = 'rest_int' CATALOG_TABLE_NAME = 'remote_t' CATALOG_NAMESPACE = 'ns' TARGET_FILE_SIZE = 'AUTO' AUTO_REFRESH = TRUE;" }
+      - { id: catalog_linked_columns, sql: "CREATE OR REPLACE ICEBERG TABLE t (first_name STRING, amount INT, create_date DATE) PARTITION BY (DAY(create_date)) AUTO_REFRESH = TRUE;" }
+    examples:
+      - |-
+        CREATE OR REPLACE ICEBERG TABLE my_iceberg_table
+          EXTERNAL_VOLUME = 'my_external_volume'
+          CATALOG = 'my_rest_catalog_integration'
+          CATALOG_TABLE_NAME = 'my_remote_table'
+          AUTO_REFRESH = TRUE;
+      - |-
+        CREATE OR REPLACE ICEBERG TABLE my_iceberg_table (
+          first_name string,
+          last_name string,
+          amount int,
+          create_date date
+        );
+
+  - id: create_iceberg_table_delta
+    name: "CREATE ICEBERG TABLE (Delta files in object storage)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-iceberg-table-delta
+    tier: low
+    probes:
+      - { id: delta, sql: "CREATE ICEBERG TABLE t CATALOG = delta_int EXTERNAL_VOLUME = delta_ev BASE_LOCATION = 'relative/path/' AUTO_REFRESH = TRUE;" }
+    examples:
+      - |-
+        CREATE ICEBERG TABLE my_delta_iceberg_table
+          CATALOG = delta_catalog_integration
+          EXTERNAL_VOLUME = delta_external_volume
+          BASE_LOCATION = 'relative/path/from/ext/vol/'
+          AUTO_REFRESH = TRUE;
+
+  - id: alter_iceberg_table
+    name: "ALTER ICEBERG TABLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-iceberg-table
+    tier: medium
+    probes:
+      - { id: cluster_by, sql: "ALTER ICEBERG TABLE t CLUSTER BY (a);" }
+      - { id: add_column, sql: "ALTER ICEBERG TABLE IF EXISTS t ADD COLUMN IF NOT EXISTS c INT DEFAULT 0;" }
+      - { id: rename_column, sql: "ALTER ICEBERG TABLE t RENAME COLUMN a TO b;" }
+      - { id: alter_column_write_default, sql: "ALTER ICEBERG TABLE t ALTER COLUMN c SET WRITE DEFAULT 5;" }
+      - { id: set_properties, sql: "ALTER ICEBERG TABLE t SET AUTO_REFRESH = TRUE TARGET_FILE_SIZE = AUTO LOG_EVENT_LEVEL = ERROR;" }
+      - { id: unset_properties, sql: "ALTER ICEBERG TABLE t UNSET ENABLE_DATA_COMPACTION;" }
+      - { id: set_tag, sql: "ALTER ICEBERG TABLE t SET TAG tg = 'customer';" }
+      - { id: search_optimization, sql: "ALTER ICEBERG TABLE t ADD SEARCH OPTIMIZATION ON SUBSTRING(c6);" }
+    examples:
+      - "ALTER ICEBERG TABLE my_iceberg_table SET TAG my_tag = 'customer';"
+      - "ALTER ICEBERG TABLE my_iceberg_table SET AUTO_REFRESH = TRUE;"
+      - "ALTER ICEBERG TABLE my_iceberg_table ADD SEARCH OPTIMIZATION ON SUBSTRING(C6);"
+      - "ALTER ICEBERG TABLE my_iceberg_table DROP SEARCH OPTIMIZATION ON EQUALITY(C7, C8);"
+
+  - id: alter_iceberg_table_alter_column_set_data_type
+    name: "ALTER ICEBERG TABLE … ALTER COLUMN … SET DATA TYPE (structured types)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-iceberg-table-alter-column-set-data-type
+    tier: low
+    probes:
+      - { id: set_data_type, sql: "ALTER ICEBERG TABLE t ALTER COLUMN c SET DATA TYPE ARRAY(LONG);" }
+      - { id: rename_fields, sql: "ALTER ICEBERG TABLE IF EXISTS t ALTER COLUMN c SET DATA TYPE OBJECT(x INT, y INT) RENAME FIELDS;" }
+    examples:
+      - |-
+        ALTER ICEBERG TABLE my_iceberg_table ALTER COLUMN col1
+          SET DATA TYPE ARRAY(long);
+      - |-
+        ALTER ICEBERG TABLE my_iceberg_table ALTER COLUMN column_1
+          SET DATA TYPE OBJECT(
+            key_b int,
+            key_a int
+          );
+
+  - id: alter_iceberg_table_convert_to_managed
+    name: "ALTER ICEBERG TABLE … CONVERT TO MANAGED"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-iceberg-table-convert-to-managed
+    tier: low
+    probes:
+      - { id: convert, sql: "ALTER ICEBERG TABLE t CONVERT TO MANAGED BASE_LOCATION = 'my/path' STORAGE_SERIALIZATION_POLICY = COMPATIBLE;" }
+    examples:
+      - |-
+        ALTER ICEBERG TABLE myTable CONVERT TO MANAGED
+          BASE_LOCATION = 'my/relative/path/from/external_volume';
+
+  - id: alter_iceberg_table_partition_evolution
+    name: "ALTER ICEBERG TABLE … ADD | DROP | REPLACE PARTITION BY"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-iceberg-table-partition-evolution
+    tier: medium
+    probes:
+      - { id: add_partition, sql: "ALTER ICEBERG TABLE t ADD PARTITION BY (BUCKET(10, c));" }
+      - { id: drop_partition, sql: "ALTER ICEBERG TABLE t DROP PARTITION BY (c);" }
+      - { id: replace_partition, sql: "ALTER ICEBERG TABLE t REPLACE PARTITION BY (BUCKET(10, c)) WITH (BUCKET(20, c));" }
+    examples:
+      - "ALTER ICEBERG TABLE myTable ADD PARTITION BY (BUCKET(10, col1));"
+      - "ALTER ICEBERG TABLE myTable REPLACE PARTITION BY (BUCKET(10, col1)) WITH (BUCKET(20, col1));"
+
+  - id: alter_iceberg_table_refresh
+    name: "ALTER ICEBERG TABLE … REFRESH"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-iceberg-table-refresh
+    tier: low
+    probes:
+      - { id: refresh, sql: "ALTER ICEBERG TABLE t REFRESH;" }
+      - { id: refresh_path, sql: "ALTER ICEBERG TABLE IF EXISTS t REFRESH 'path/to/metadata/v2.metadata.json';" }
+    examples:
+      - "ALTER ICEBERG TABLE my_iceberg_table REFRESH 'path/to/metadata/v2.metadata.json';"
+
+  - id: drop_iceberg_table
+    name: "DROP ICEBERG TABLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/drop-iceberg-table
+    tier: medium
+    probes:
+      - { id: drop, sql: "DROP ICEBERG TABLE t;" }
+      - { id: if_exists_cascade_purge, sql: "DROP ICEBERG TABLE IF EXISTS db.s.t CASCADE PURGE;" }
+    examples:
+      - "DROP ICEBERG TABLE IF EXISTS t2;"
+      - "DROP ICEBERG TABLE my_catalog_linked_db.public.my_iceberg_table PURGE;"
+
+  - id: create_dynamic_table
+    name: "CREATE DYNAMIC TABLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-dynamic-table
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE OR REPLACE DYNAMIC TABLE dt TARGET_LAG = '20 minutes' WAREHOUSE = wh AS SELECT a, b FROM t;" }
+      - { id: columns_cluster_by, sql: "CREATE DYNAMIC TABLE dt (d TIMESTAMP_NTZ, id NUMBER, content VARIANT) TARGET_LAG = '20 minutes' WAREHOUSE = wh CLUSTER BY (d, id) AS SELECT d, id, content FROM t;" }
+      - { id: downstream_options, sql: "CREATE TRANSIENT DYNAMIC TABLE IF NOT EXISTS dt TARGET_LAG = DOWNSTREAM SCHEDULER = ENABLE WAREHOUSE = wh INITIALIZATION_WAREHOUSE = wh2 REFRESH_MODE = INCREMENTAL INITIALIZE = ON_SCHEDULE REQUIRE USER AS SELECT a FROM t;" }
+      - { id: frozen_where, sql: "CREATE DYNAMIC TABLE dt TARGET_LAG = '1 hour' WAREHOUSE = wh FROZEN WHERE (ts < CURRENT_TIMESTAMP() - INTERVAL '1 day') AS SELECT * FROM t;" }
+      - { id: execute_as_user, sql: "CREATE DYNAMIC TABLE dt TARGET_LAG = '1 hour' WAREHOUSE = wh EXECUTE AS USER u USE SECONDARY ROLES ALL AS SELECT * FROM t;" }
+      - { id: refresh_using, sql: "CREATE DYNAMIC TABLE dt TARGET_LAG = '1 hour' WAREHOUSE = wh REFRESH_MODE = CUSTOM_INCREMENTAL BACKFILL FROM t0 START AT (OFFSET => -3600) REFRESH USING (INSERT INTO dt SELECT * FROM t);" }
+      - { id: create_or_alter, sql: "CREATE OR ALTER DYNAMIC TABLE dt TARGET_LAG = DOWNSTREAM WAREHOUSE = wh AS SELECT a, b FROM t;" }
+      - { id: clone, sql: "CREATE DYNAMIC TABLE dt2 CLONE dt AT (TIMESTAMP => TO_TIMESTAMP_TZ('04/05/2013 01:02:03', 'mm/dd/yyyy hh24:mi:ss'));" }
+      - { id: dynamic_iceberg, sql: "CREATE DYNAMIC ICEBERG TABLE dt (d TIMESTAMP_NTZ, id NUMBER) TARGET_LAG = '20 minutes' WAREHOUSE = wh EXTERNAL_VOLUME = 'ev' CATALOG = 'SNOWFLAKE' BASE_LOCATION = 'dt' AS SELECT d, id FROM t;" }
+      - { id: from_backup_set, sql: "CREATE DYNAMIC TABLE dt FROM BACKUP SET bs IDENTIFIER '5f8e5a7b-1234-4cd2-9876-0a1b2c3d4e5f';" }
+    examples:
+      - |-
+        CREATE OR REPLACE DYNAMIC TABLE my_dynamic_table
+          TARGET_LAG = '20 minutes'
+          WAREHOUSE = mywh
+          AS
+            SELECT product_id, product_name FROM staging_table;
+      - |-
+        CREATE DYNAMIC TABLE my_dynamic_table (date TIMESTAMP_NTZ, id NUMBER, content VARIANT)
+          TARGET_LAG = '20 minutes'
+          WAREHOUSE = mywh
+          CLUSTER BY (date, id)
+          AS
+            SELECT product_id, product_name FROM staging_table;
+      - "CREATE DYNAMIC TABLE my_cloned_dynamic_table CLONE my_dynamic_table AT (TIMESTAMP => TO_TIMESTAMP_TZ('04/05/2013 01:02:03', 'mm/dd/yyyy hh24:mi:ss'));"
+      - |-
+        CREATE DYNAMIC TABLE my_dynamic_table
+          TARGET_LAG = 'DOWNSTREAM'
+          WAREHOUSE = mywh
+          INITIALIZE = on_schedule
+          REQUIRE USER
+          AS
+            SELECT product_id, product_name FROM staging_table;
+      - |-
+        CREATE DYNAMIC TABLE my_dynamic_table
+          TARGET_LAG = '1 hour'
+          WAREHOUSE = my_warehouse
+          FROZEN WHERE (ts < CURRENT_TIMESTAMP() - INTERVAL '1 day')
+        AS
+          SELECT * FROM source_table;
+
+  - id: alter_dynamic_table
+    name: "ALTER DYNAMIC TABLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-dynamic-table
+    tier: medium
+    probes:
+      - { id: suspend, sql: "ALTER DYNAMIC TABLE dt SUSPEND;" }
+      - { id: rename, sql: "ALTER DYNAMIC TABLE IF EXISTS dt RENAME TO dt2;" }
+      - { id: swap, sql: "ALTER DYNAMIC TABLE dt SWAP WITH dt2;" }
+      - { id: refresh, sql: "ALTER DYNAMIC TABLE dt REFRESH COPY SESSION;" }
+      - { id: set_target_lag, sql: "ALTER DYNAMIC TABLE dt SET TARGET_LAG = '1 hour';" }
+      - { id: set_frozen_where, sql: "ALTER DYNAMIC TABLE dt SET FROZEN WHERE (ts < '2024-01-01');" }
+      - { id: unset_frozen_where, sql: "ALTER DYNAMIC TABLE dt UNSET FROZEN WHERE;" }
+      - { id: cluster_by, sql: "ALTER DYNAMIC TABLE dt CLUSTER BY (d);" }
+      - { id: column_comment, sql: "ALTER DYNAMIC TABLE dt ALTER COLUMN c COMMENT 'text';" }
+      - { id: add_storage_lifecycle_policy, sql: "ALTER DYNAMIC TABLE dt ADD STORAGE LIFECYCLE POLICY slp ON (d);" }
+      - { id: suspend_search_optimization, sql: "ALTER DYNAMIC TABLE dt SUSPEND SEARCH OPTIMIZATION ON EQUALITY(c);" }
+    examples:
+      - |-
+        ALTER DYNAMIC TABLE my_dynamic_table SET
+          TARGET_LAG = '1 hour';
+      - "ALTER DYNAMIC TABLE my_dynamic_table SET TARGET_LAG = DOWNSTREAM;"
+      - "ALTER DYNAMIC TABLE my_dynamic_table SWAP WITH my_new_dynamic_table;"
+      - "ALTER DYNAMIC TABLE my_dynamic_table UNSET FROZEN WHERE;"
+      - "ALTER DYNAMIC TABLE dt_orders ADD STORAGE LIFECYCLE POLICY expire_after_1w ON (order_date);"
+
+  - id: drop_dynamic_table
+    name: "DROP DYNAMIC TABLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/drop-dynamic-table
+    tier: medium
+    probes:
+      - { id: drop, sql: "DROP DYNAMIC TABLE dt;" }
+      - { id: if_exists, sql: "DROP DYNAMIC TABLE IF EXISTS dt;" }
+    examples:
+      - "DROP DYNAMIC TABLE my_dynamic_table;"
+
+  - id: create_external_table
+    name: "CREATE EXTERNAL TABLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-external-table
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE EXTERNAL TABLE et LOCATION = @s/logs/ FILE_FORMAT = (TYPE = PARQUET);" }
+      - { id: columns_partition_auto_refresh, sql: "CREATE OR REPLACE EXTERNAL TABLE IF NOT EXISTS et (d DATE AS TO_DATE(SPLIT_PART(metadata$filename, '/', 3), 'YYYY'), ts BIGINT AS (value:timestamp::BIGINT)) PARTITION BY (d) LOCATION = @s/logs/ AUTO_REFRESH = TRUE PATTERN = '.*[.]parquet' FILE_FORMAT = (TYPE = PARQUET) AWS_SNS_TOPIC = 'arn:aws:sns:us-west-2:001234567890:s3_mybucket';" }
+      - { id: integration_with_location, sql: "CREATE EXTERNAL TABLE et (c VARCHAR AS (value:c::VARCHAR)) INTEGRATION = 'MY_INT' WITH LOCATION = @s/ REFRESH_ON_CREATE = FALSE FILE_FORMAT = (FORMAT_NAME = 'ff') COPY GRANTS COMMENT = 'c';" }
+      - { id: user_specified_partitions, sql: "CREATE EXTERNAL TABLE et (c1 DATE AS (PARSE_JSON(metadata$external_table_partition):COL1::DATE)) PARTITION BY (c1) LOCATION = @s2/logs/ PARTITION_TYPE = USER_SPECIFIED FILE_FORMAT = (TYPE = PARQUET);" }
+      - { id: delta, sql: "CREATE EXTERNAL TABLE et (c VARCHAR AS (value:c::VARCHAR)) LOCATION = @s/ PARTITION_TYPE = USER_SPECIFIED FILE_FORMAT = (TYPE = PARQUET) TABLE_FORMAT = DELTA;" }
+      - { id: format_options_policies, sql: "CREATE EXTERNAL TABLE et LOCATION = @s/ FILE_FORMAT = (TYPE = CSV SKIP_HEADER = 1 FIELD_DELIMITER = '|' NULL_IF = ('NULL', '')) WITH ROW ACCESS POLICY rap ON (VALUE) WITH TAG (tg = 'v');" }
+      - { id: using_template, sql: "CREATE EXTERNAL TABLE et USING TEMPLATE (SELECT ARRAY_AGG(OBJECT_CONSTRUCT(*)) FROM TABLE(INFER_SCHEMA(LOCATION => '@s', FILE_FORMAT => 'ff'))) LOCATION = @s/ FILE_FORMAT = (FORMAT_NAME = 'ff');" }
+    examples:
+      - |-
+        CREATE EXTERNAL TABLE et1(
+          date_part date AS TO_DATE(SPLIT_PART(metadata$filename, '/', 3)
+         || '/' || SPLIT_PART(metadata$filename, '/', 4)
+         || '/' || SPLIT_PART(metadata$filename, '/', 5), 'YYYY/MM/DD'),
+          timestamp bigint AS (value:timestamp::bigint),
+          col2 varchar AS (value:col2::varchar))
+          PARTITION BY (date_part)
+          LOCATION=@s1/logs/
+          AUTO_REFRESH = true
+          FILE_FORMAT = (TYPE = PARQUET);
+      - |-
+        CREATE EXTERNAL TABLE et1(
+          date_part date AS TO_DATE(SPLIT_PART(metadata$filename, '/', 3)
+         || '/' || SPLIT_PART(metadata$filename, '/', 4)
+         || '/' || SPLIT_PART(metadata$filename, '/', 5), 'YYYY/MM/DD'),
+          timestamp bigint AS (value:timestamp::bigint),
+          col2 varchar AS (value:col2::varchar))
+          PARTITION BY (date_part)
+          INTEGRATION = 'MY_INT'
+          LOCATION=@s1/logs/
+          AUTO_REFRESH = true
+          FILE_FORMAT = (TYPE = PARQUET);
+      - |-
+        create external table et2(
+          col1 date as (parse_json(metadata$external_table_partition):COL1::date),
+          col2 varchar as (parse_json(metadata$external_table_partition):COL2::varchar),
+          col3 number as (parse_json(metadata$external_table_partition):COL3::number))
+          partition by (col1,col2,col3)
+          location=@s2/logs/
+          partition_type = user_specified
+          file_format = (type = parquet);
+      - |-
+        CREATE OR REPLACE EXTERNAL TABLE daily_tweets
+          WITH LOCATION = @twitter_feed/daily/;
+
+  - id: alter_external_table
+    name: "ALTER EXTERNAL TABLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-external-table
+    tier: medium
+    probes:
+      - { id: refresh, sql: "ALTER EXTERNAL TABLE et REFRESH;" }
+      - { id: refresh_path, sql: "ALTER EXTERNAL TABLE IF EXISTS et REFRESH '2018/08/05/';" }
+      - { id: add_files, sql: "ALTER EXTERNAL TABLE et ADD FILES ('path1/sales4.json.gz', 'path1/sales5.json.gz');" }
+      - { id: remove_files, sql: "ALTER EXTERNAL TABLE et REMOVE FILES ('path1/sales4.json.gz');" }
+      - { id: set_auto_refresh, sql: "ALTER EXTERNAL TABLE et SET AUTO_REFRESH = TRUE;" }
+      - { id: add_partition, sql: "ALTER EXTERNAL TABLE et ADD PARTITION (c1 = '2022-01-24', c2 = 'a') LOCATION '2022/01';" }
+      - { id: drop_partition, sql: "ALTER EXTERNAL TABLE et DROP PARTITION LOCATION '2022/01';" }
+    examples:
+      - "ALTER EXTERNAL TABLE exttable_json REFRESH;"
+      - "ALTER EXTERNAL TABLE exttable_part REFRESH '2018/08/05/';"
+      - "ALTER EXTERNAL TABLE exttable1 ADD FILES ('path1/sales4.json.gz', 'path1/sales5.json.gz');"
+      - "ALTER EXTERNAL TABLE et2 ADD PARTITION(col1='2022-01-24', col2='a', col3='12') LOCATION '2022/01';"
+      - "ALTER EXTERNAL TABLE et2 DROP PARTITION LOCATION '2022/01';"
+
+  - id: drop_external_table
+    name: "DROP EXTERNAL TABLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/drop-external-table
+    tier: medium
+    probes:
+      - { id: drop, sql: "DROP EXTERNAL TABLE et;" }
+      - { id: if_exists_cascade, sql: "DROP EXTERNAL TABLE IF EXISTS et CASCADE;" }
+    examples:
+      - "DROP EXTERNAL TABLE IF EXISTS t2;"
+
+  - id: create_event_table
+    name: "CREATE EVENT TABLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-event-table
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE EVENT TABLE et;" }
+      - { id: options, sql: "CREATE OR REPLACE EVENT TABLE IF NOT EXISTS et CLUSTER BY (timestamp) DATA_RETENTION_TIME_IN_DAYS = 1 CHANGE_TRACKING = TRUE COPY GRANTS WITH COMMENT = 'events' WITH TAG (tg = 'v');" }
+      - { id: clone, sql: "CREATE EVENT TABLE et2 CLONE et AT (OFFSET => -60);" }
+    examples:
+      - "CREATE EVENT TABLE my_events;"
+
+  - id: create_interactive_table
+    name: "CREATE INTERACTIVE TABLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-interactive-table
+    tier: low
+    probes:
+      - { id: static, sql: "CREATE INTERACTIVE TABLE t CLUSTER BY (a, b) COMMENT = 'c' AS SELECT a, b, c FROM u;" }
+      - { id: dynamic, sql: "CREATE OR REPLACE INTERACTIVE TABLE t CLUSTER BY (a) TARGET_LAG = '5 minutes' WAREHOUSE = wh AS SELECT a, SUM(b) AS s FROM u GROUP BY a;" }
+      - { id: columns, sql: "CREATE INTERACTIVE TABLE IF NOT EXISTS t (a INT, b VARCHAR WITH MASKING POLICY mp) CLUSTER BY (a) AS SELECT a, b FROM u;" }
+    examples:
+      - |-
+        CREATE INTERACTIVE TABLE orders_interactive
+          CLUSTER BY (customer_id, order_date)
+          COMMENT = 'Interactive table for real-time order analytics'
+        AS
+          SELECT customer_id, order_date, product_id, quantity, total_amount
+          FROM orders_staging
+          WHERE order_date >= '2024-01-01';
+
+  - id: create_online_feature_table
+    name: "CREATE ONLINE FEATURE TABLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-online-feature-table
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE OR REPLACE ONLINE FEATURE TABLE oft PRIMARY KEY (id) TARGET_LAG = '30 seconds' WAREHOUSE = wh REFRESH_MODE = AUTO TIMESTAMP_COLUMN = ts WITH COMMENT = 'c' FROM src_dt;" }
+    examples:
+      - |-
+        CREATE ONLINE FEATURE TABLE my_online_feature_table
+          PRIMARY KEY (ID)
+          TIMESTAMP_COLUMN = 'TS'
+          TARGET_LAG = '30 seconds'
+          WAREHOUSE = MY_WAREHOUSE
+        FROM MY_SOURCE_DYNAMIC_TABLE;
+
+  - id: alter_online_feature_table
+    name: "ALTER ONLINE FEATURE TABLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-online-feature-table
+    tier: low
+    probes:
+      - { id: suspend, sql: "ALTER ONLINE FEATURE TABLE oft SUSPEND;" }
+      - { id: set_target_lag, sql: "ALTER ONLINE FEATURE TABLE IF EXISTS oft SET TARGET_LAG = '1 minute' WAREHOUSE = wh;" }
+    examples:
+      - "ALTER ONLINE FEATURE TABLE my_online_feature_table REFRESH;"
+      - "ALTER ONLINE FEATURE TABLE my_online_feature_table RENAME TO my_new_online_feature_table;"
+
+  - id: drop_online_feature_table
+    name: "DROP ONLINE FEATURE TABLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/drop-online-feature-table
+    tier: low
+    probes:
+      - { id: drop, sql: "DROP ONLINE FEATURE TABLE IF EXISTS oft;" }
+    examples:
+      - "DROP ONLINE FEATURE TABLE my_online_feature_table;"
+
+  - id: create_event_routing_table
+    name: "CREATE EVENT ROUTING TABLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-event-routing-table
+    tier: low
+    probes:
+      - id: with_rules
+        sql: |-
+          CREATE EVENT ROUTING TABLE ert
+            WITH RULES
+              default = (REGION_GROUP='PUBLIC', REGIONS=('ALL'), DESTINATION_ACCOUNT = org.account1)
+              aws_us = (REGION_GROUP='PUBLIC', REGIONS=('AWS_US_EAST_1', 'AWS_US_WEST_2'), DESTINATION_ACCOUNT = org.account1);
+        note: "Rules are separated by whitespace, not commas, as in the doc example."
+
+  - id: alter_event_routing_table
+    name: "ALTER EVENT ROUTING TABLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-event-routing-table
+    tier: low
+    probes:
+      - { id: set_rule, sql: "ALTER EVENT ROUTING TABLE ert FORCE SET RULE r1 REGION_GROUP=PUBLIC REGIONS=('AWS_EU_WEST_1') DESTINATION_ACCOUNT = org.account2;" }
+      - { id: unset_rule, sql: "ALTER EVENT ROUTING TABLE ert UNSET RULE r1;" }
+      - { id: rename, sql: "ALTER EVENT ROUTING TABLE ert RENAME TO ert2;" }
+
+  - id: drop_event_routing_table
+    name: "DROP EVENT ROUTING TABLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/drop-event-routing-table
+    tier: low
+    probes:
+      - { id: drop, sql: "DROP EVENT ROUTING TABLE ert;" }
+
+  - id: create_database
+    name: "CREATE DATABASE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-database
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE DATABASE db;" }
+      - { id: or_replace_transient_if_not_exists, sql: "CREATE OR REPLACE TRANSIENT DATABASE IF NOT EXISTS db;" }
+      - { id: properties, sql: "CREATE DATABASE db DATA_RETENTION_TIME_IN_DAYS = 10 MAX_DATA_EXTENSION_TIME_IN_DAYS = 14 DEFAULT_DDL_COLLATION = 'en-ci' COMMENT = 'c';" }
+      - { id: iceberg_properties, sql: "CREATE DATABASE db EXTERNAL_VOLUME = ev CATALOG = cat ICEBERG_VERSION_DEFAULT = 2 STORAGE_SERIALIZATION_POLICY = OPTIMIZED CATALOG_SYNC = 'oc' CATALOG_SYNC_NAMESPACE_MODE = FLATTEN;" }
+      - { id: tag_contact, sql: "CREATE DATABASE db WITH TAG (tg = 'v') WITH CONTACT (steward = c1);" }
+      - { id: clone, sql: "CREATE DATABASE db2 CLONE db AT (OFFSET => -3600) IGNORE TABLES WITH INSUFFICIENT DATA RETENTION IGNORE HYBRID TABLES;" }
+      - { id: from_share, sql: "CREATE DATABASE db FROM SHARE ab67890.sales_s;" }
+      - { id: from_listing, sql: "CREATE DATABASE db FROM LISTING 'GZSTZ67BY9OQ4';" }
+      - { id: from_backup_set, sql: "CREATE DATABASE db FROM BACKUP SET bs IDENTIFIER '5f8e5a7b-1234-4cd2-9876-0a1b2c3d4e5f';" }
+      - { id: as_replica, sql: "CREATE DATABASE db AS REPLICA OF myorg.acct1.db1 DATA_RETENTION_TIME_IN_DAYS = 1;" }
+      - { id: create_or_alter, sql: "CREATE OR ALTER DATABASE db DATA_RETENTION_TIME_IN_DAYS = 5 DEFAULT_DDL_COLLATION = 'de';" }
+    examples:
+      - "CREATE DATABASE mytestdb2 DATA_RETENTION_TIME_IN_DAYS = 10;"
+      - "CREATE TRANSIENT DATABASE mytransientdb;"
+      - "CREATE DATABASE snow_sales FROM SHARE ab67890.sales_s;"
+      - |-
+        CREATE OR ALTER DATABASE db1
+          DATA_RETENTION_TIME_IN_DAYS = 5
+          DEFAULT_DDL_COLLATION = 'de';
+
+  - id: create_database_catalog_linked
+    name: "CREATE DATABASE (catalog-linked)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-database-catalog-linked
+    tier: low
+    probes:
+      - { id: linked_catalog, sql: "CREATE DATABASE db LINKED_CATALOG = (CATALOG = 'cat_int', ALLOWED_NAMESPACES = ('ns1'), NAMESPACE_MODE = FLATTEN_NESTED_NAMESPACE, NAMESPACE_FLATTEN_DELIMITER = '-') EXTERNAL_VOLUME = 'ev' CATALOG_CASE_SENSITIVITY = CASE_INSENSITIVE;" }
+    examples:
+      - |-
+        CREATE DATABASE my_linked_db
+          LINKED_CATALOG = (
+            CATALOG = 'my_catalog_int',
+            NAMESPACE_MODE = FLATTEN_NESTED_NAMESPACE,
+            NAMESPACE_FLATTEN_DELIMITER = '-'
+          )
+          EXTERNAL_VOLUME = 'my_external_vol';
+      - |-
+        CREATE DATABASE my_linked_db
+          LINKED_CATALOG = (
+            CATALOG = 'my_catalog_int_vended_creds',
+            ALLOWED_NAMESPACES = ('my_namespace')
+          );
+
+  - id: alter_database
+    name: "ALTER DATABASE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-database
+    tier: medium
+    probes:
+      - { id: rename, sql: "ALTER DATABASE IF EXISTS db RENAME TO db2;" }
+      - { id: swap, sql: "ALTER DATABASE db SWAP WITH db2;" }
+      - { id: set_properties, sql: "ALTER DATABASE db SET DATA_RETENTION_TIME_IN_DAYS = 1 DEFAULT_DDL_COLLATION = 'en' LOG_LEVEL = 'INFO' COMMENT = 'c';" }
+      - { id: set_contact, sql: "ALTER DATABASE db SET CONTACT steward = c1;" }
+      - { id: set_tag, sql: "ALTER DATABASE db SET TAG tg = 'v', tg2 = 'w';" }
+      - { id: unset_tag, sql: "ALTER DATABASE db UNSET TAG tg;" }
+      - { id: set_feature_policy, sql: "ALTER DATABASE db SET FEATURE POLICY fp FORCE;" }
+      - { id: unset_properties, sql: "ALTER DATABASE db UNSET DATA_RETENTION_TIME_IN_DAYS, COMMENT;" }
+      - { id: enable_replication, sql: "ALTER DATABASE db ENABLE REPLICATION TO ACCOUNTS myorg.acct2, myorg.acct3 IGNORE EDITION CHECK;" }
+      - { id: disable_replication, sql: "ALTER DATABASE db DISABLE REPLICATION;" }
+      - { id: refresh, sql: "ALTER DATABASE db REFRESH;" }
+      - { id: enable_failover, sql: "ALTER DATABASE db ENABLE FAILOVER TO ACCOUNTS myorg.acct2;" }
+      - { id: primary, sql: "ALTER DATABASE db PRIMARY;" }
+    examples:
+      - "ALTER DATABASE IF EXISTS db1 RENAME TO db2;"
+
+  - id: alter_database_catalog_linked
+    name: "ALTER DATABASE (catalog-linked)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-database-catalog-linked
+    tier: low
+    probes:
+      - { id: suspend_discovery, sql: "ALTER DATABASE db SUSPEND DISCOVERY;" }
+      - { id: add_allowed_namespaces, sql: "ALTER DATABASE IF EXISTS db UPDATE LINKED_CATALOG ADD ('ns1') TO ALLOWED_NAMESPACES;" }
+      - { id: set_sync_interval, sql: "ALTER DATABASE db UPDATE LINKED_CATALOG SET SYNC_INTERVAL_SECONDS = 60;" }
+    examples:
+      - |-
+        ALTER DATABASE IF EXISTS my_linked_db UPDATE LINKED_CATALOG
+          UNSET ALLOWED_NAMESPACES;
+      - |-
+        ALTER DATABASE IF EXISTS my_linked_db UPDATE LINKED_CATALOG
+         ADD ('my_namespace') TO ALLOWED_NAMESPACES;
+
+  - id: drop_database
+    name: "DROP DATABASE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/drop-database
+    tier: medium
+    probes:
+      - { id: drop, sql: "DROP DATABASE db;" }
+      - { id: if_exists_cascade, sql: "DROP DATABASE IF EXISTS db CASCADE;" }
+      - { id: restrict, sql: "DROP DATABASE db RESTRICT;" }
+    examples:
+      - "DROP DATABASE mytestdb2;"
+
+  - id: create_schema
+    name: "CREATE SCHEMA"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-schema
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE SCHEMA s;" }
+      - { id: qualified_or_replace_transient, sql: "CREATE OR REPLACE TRANSIENT SCHEMA IF NOT EXISTS db.s;" }
+      - { id: managed_access, sql: "CREATE SCHEMA s WITH MANAGED ACCESS;" }
+      - { id: properties, sql: "CREATE SCHEMA s DATA_RETENTION_TIME_IN_DAYS = 1 MAX_DATA_EXTENSION_TIME_IN_DAYS = 14 DEFAULT_DDL_COLLATION = 'en-ci' COMMENT = 'c' OBJECT_VISIBILITY = PRIVILEGED;" }
+      - { id: tag_contact, sql: "CREATE SCHEMA s WITH TAG (tg = 'v') WITH CONTACT (steward = c1);" }
+      - { id: clone, sql: "CREATE SCHEMA s2 CLONE s BEFORE (TIMESTAMP => '2024-01-01 00:00:00'::TIMESTAMP_LTZ) IGNORE HYBRID TABLES;" }
+      - { id: from_backup_set, sql: "CREATE SCHEMA s FROM BACKUP SET bs IDENTIFIER '5f8e5a7b-1234-4cd2-9876-0a1b2c3d4e5f';" }
+      - { id: create_or_alter, sql: "CREATE OR ALTER SCHEMA s WITH MANAGED ACCESS DATA_RETENTION_TIME_IN_DAYS = 5 DEFAULT_DDL_COLLATION = 'de';" }
+    examples:
+      - "CREATE SCHEMA myschema;"
+      - "CREATE TRANSIENT SCHEMA tschema;"
+      - "CREATE SCHEMA mschema WITH MANAGED ACCESS;"
+      - |-
+        CREATE OR ALTER SCHEMA s1
+          WITH MANAGED ACCESS
+          DATA_RETENTION_TIME_IN_DAYS = 5
+          DEFAULT_DDL_COLLATION = 'de';
+
+  - id: create_versioned_schema
+    name: "CREATE OR ALTER VERSIONED SCHEMA"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-versioned-schema
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE OR ALTER VERSIONED SCHEMA s;" }
+      - { id: options, sql: "CREATE OR ALTER VERSIONED SCHEMA s WITH MANAGED ACCESS DATA_RETENTION_TIME_IN_DAYS = 1 DEFAULT_DDL_COLLATION = 'en' COMMENT = 'c';" }
+
+  - id: alter_schema
+    name: "ALTER SCHEMA"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-schema
+    tier: medium
+    probes:
+      - { id: rename, sql: "ALTER SCHEMA IF EXISTS s RENAME TO s2;" }
+      - { id: swap, sql: "ALTER SCHEMA s SWAP WITH s2;" }
+      - { id: set_properties, sql: "ALTER SCHEMA s SET DATA_RETENTION_TIME_IN_DAYS = 1 DEFAULT_DDL_COLLATION = 'de' COMMENT = 'c';" }
+      - { id: set_tag, sql: "ALTER SCHEMA s SET TAG tg = 'v';" }
+      - { id: unset, sql: "ALTER SCHEMA s UNSET DATA_RETENTION_TIME_IN_DAYS, COMMENT;" }
+      - { id: enable_managed_access, sql: "ALTER SCHEMA s ENABLE MANAGED ACCESS;" }
+      - { id: disable_managed_access, sql: "ALTER SCHEMA IF EXISTS s DISABLE MANAGED ACCESS;" }
+    examples:
+      - "ALTER SCHEMA IF EXISTS schema1 RENAME TO schema2;"
+      - "ALTER SCHEMA schema2 ENABLE MANAGED ACCESS;"
+
+  - id: drop_schema
+    name: "DROP SCHEMA"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/drop-schema
+    tier: medium
+    probes:
+      - { id: drop, sql: "DROP SCHEMA s;" }
+      - { id: if_exists_cascade, sql: "DROP SCHEMA IF EXISTS db.s CASCADE;" }
+      - { id: restrict, sql: "DROP SCHEMA s RESTRICT;" }
+    examples:
+      - "DROP SCHEMA myschema;"
+
+  - id: create_function
+    name: "CREATE FUNCTION"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-function
+    tier: high
+    probes:
+      - { id: sql_scalar, sql: "CREATE FUNCTION f (a NUMBER, b NUMBER) RETURNS NUMBER AS 'a * b';" }
+      - { id: sql_no_args, sql: "CREATE FUNCTION pi_udf() RETURNS FLOAT AS '3.141592654::FLOAT';" }
+      - { id: sql_dollar_body, sql: "CREATE OR REPLACE FUNCTION f (x INT) RETURNS INT AS $$ x + 1 $$;" }
+      - { id: sql_table_function, sql: "CREATE FUNCTION f () RETURNS TABLE (x INTEGER, y INTEGER) AS $$ SELECT 1, 2 UNION ALL SELECT 3, 4 $$;" }
+      - { id: sql_table_function_quoted_body, sql: "CREATE OR REPLACE FUNCTION f (id NUMBER) RETURNS TABLE (cc CHAR, cn VARCHAR) AS 'SELECT DISTINCT c.cc, c.cn FROM t c WHERE c.uid = id';" }
+      - { id: temp_secure_if_not_exists, sql: "CREATE OR REPLACE TEMPORARY SECURE FUNCTION f (x INT) RETURNS INT AS 'x';" }
+      - { id: arg_default, sql: "CREATE FUNCTION f (a INT, b INT DEFAULT 10) RETURNS INT AS 'a + b';" }
+      - { id: copy_grants, sql: "CREATE OR REPLACE FUNCTION f (x INT) COPY GRANTS RETURNS INT AS 'x';" }
+      - { id: not_null_return, sql: "CREATE FUNCTION f (x INT) RETURNS INT NOT NULL AS 'x';" }
+      - { id: volatility_memoizable, sql: "CREATE FUNCTION f () RETURNS INT IMMUTABLE MEMOIZABLE COMMENT = 'memo' AS 'SELECT 1';" }
+      - { id: sql_comment, sql: "CREATE FUNCTION f (a NUMBER, b NUMBER) RETURNS NUMBER COMMENT = 'multiply two numbers' AS 'a * b';" }
+      - { id: create_or_alter, sql: "CREATE OR ALTER SECURE FUNCTION f (a NUMBER, b NUMBER) RETURNS NUMBER COMMENT = 'Multiply two numbers.' AS 'a * b';" }
+      - { id: javascript, sql: "CREATE OR REPLACE FUNCTION f (d DOUBLE) RETURNS DOUBLE LANGUAGE JAVASCRIPT STRICT AS 'return D * 2;';" }
+      - { id: javascript_null_input_volatile, sql: "CREATE FUNCTION f (d DOUBLE) RETURNS DOUBLE NULL LANGUAGE JAVASCRIPT CALLED ON NULL INPUT VOLATILE AS $$ return D; $$;" }
+      - { id: java_inline, sql: "CREATE OR REPLACE FUNCTION f (x VARCHAR) RETURNS VARCHAR LANGUAGE JAVA CALLED ON NULL INPUT HANDLER = 'TestFunc.echoVarchar' TARGET_PATH = '@~/testfunc.jar' AS 'class TestFunc { public static String echoVarchar(String x) { return x; } }';" }
+      - { id: java_staged, sql: "CREATE FUNCTION f (i NUMERIC(9, 0)) RETURNS NUMERIC LANGUAGE JAVA RUNTIME_VERSION = '11' IMPORTS = ('@~/dir/f.jar') HANDLER = 'pkg.cls.method';" }
+      - { id: java_options, sql: "CREATE FUNCTION IF NOT EXISTS f (x INT) RETURNS INT LANGUAGE JAVA RETURNS NULL ON NULL INPUT IMMUTABLE PACKAGES = ('com.snowflake:snowpark:latest') HANDLER = 'C.m' EXTERNAL_ACCESS_INTEGRATIONS = (eai) SECRETS = ('cred' = s1) AS 'class C { public static int m(int x) { return x; } }';" }
+      - { id: python_inline, sql: "CREATE OR REPLACE FUNCTION f () RETURNS VARIANT LANGUAGE PYTHON RUNTIME_VERSION = '3.10' PACKAGES = ('numpy', 'pandas', 'xgboost==1.5.0') HANDLER = 'udf' AS $$ def udf(): return 1 $$;" }
+      - { id: python_staged, sql: "CREATE OR REPLACE FUNCTION f (i INT) RETURNS VARIANT LANGUAGE PYTHON RUNTIME_VERSION = '3.10' HANDLER = 'sleepy.snore' IMPORTS = ('@my_stage/sleepy.py');" }
+      - { id: python_aggregate, sql: "CREATE AGGREGATE FUNCTION f (a INT) RETURNS INT LANGUAGE PYTHON RUNTIME_VERSION = '3.11' ARTIFACT_REPOSITORY = 'snowflake.snowpark.pypi_shared_repository' HANDLER = 'Agg' AS $$ class Agg: pass $$;" }
+      - { id: python_udtf, sql: "CREATE FUNCTION f (s VARCHAR) RETURNS TABLE (w VARCHAR) LANGUAGE PYTHON RUNTIME_VERSION = '3.10' HANDLER = 'Splitter' AS $$ class Splitter: pass $$;" }
+      - { id: scala, sql: "CREATE OR REPLACE FUNCTION f (x VARCHAR) RETURNS VARCHAR LANGUAGE SCALA RUNTIME_VERSION = 2.12 HANDLER = 'Echo.echoVarchar' AS $$ class Echo { def echoVarchar(x : String): String = { return x } } $$;" }
+      - { id: scala_staged, sql: "CREATE OR REPLACE FUNCTION f (x VARCHAR) RETURNS VARCHAR LANGUAGE SCALA RUNTIME_VERSION = 2.13 IMPORTS = ('@udf_libs/echohandler.jar') HANDLER = 'Echo.echoVarchar';" }
+    examples:
+      - |-
+        CREATE FUNCTION pi_udf()
+          RETURNS FLOAT
+          AS '3.141592654::FLOAT'
+          ;
+      - |-
+        CREATE FUNCTION simple_table_function ()
+          RETURNS TABLE (x INTEGER, y INTEGER)
+          AS
+          $$
+            SELECT 1, 2
+            UNION ALL
+            SELECT 3, 4
+          $$
+          ;
+      - |-
+        CREATE OR REPLACE FUNCTION js_factorial(d double)
+          RETURNS double
+          LANGUAGE JAVASCRIPT
+          STRICT
+          AS '
+          if (D <= 0) {
+            return 1;
+          } else {
+            var result = 1;
+            for (var i = 2; i <= D; i++) {
+              result = result * i;
+            }
+            return result;
+          }
+          ';
+      - |-
+        CREATE OR REPLACE FUNCTION py_udf()
+          RETURNS VARIANT
+          LANGUAGE PYTHON
+          RUNTIME_VERSION = '3.10'
+          PACKAGES = ('numpy','pandas','xgboost==1.5.0')
+          HANDLER = 'udf'
+        AS $$
+        import numpy as np
+        import pandas as pd
+        import xgboost as xgb
+        def udf():
+            return [np.__version__, pd.__version__, xgb.__version__]
+        $$;
+      - |-
+        CREATE OR REPLACE FUNCTION get_countries_for_user ( id NUMBER )
+          RETURNS TABLE (country_code CHAR, country_name VARCHAR)
+          AS 'SELECT DISTINCT c.country_code, c.country_name
+              FROM user_addresses a, countries c
+              WHERE a.user_id = id
+              AND c.country_code = a.country_code';
+
+  - id: alter_function
+    name: "ALTER FUNCTION"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-function
+    tier: high
+    probes:
+      - { id: rename, sql: "ALTER FUNCTION IF EXISTS f(NUMBER) RENAME TO f2;" }
+      - { id: rename_no_args, sql: "ALTER FUNCTION f() RENAME TO f2;" }
+      - { id: set_secure, sql: "ALTER FUNCTION f(NUMBER) SET SECURE;" }
+      - { id: unset_secure, sql: "ALTER FUNCTION f(NUMBER, VARCHAR) UNSET SECURE;" }
+      - { id: unset_comment, sql: "ALTER FUNCTION f(NUMBER) UNSET COMMENT;" }
+      - { id: set_options, sql: "ALTER FUNCTION f(NUMBER) SET LOG_LEVEL = 'INFO' TRACE_LEVEL = 'ALWAYS' COMMENT = 'c';" }
+      - { id: set_external_access, sql: "ALTER FUNCTION f(VARCHAR) SET EXTERNAL_ACCESS_INTEGRATIONS = (eai1, eai2) SECRETS = ('cred' = s1);" }
+      - { id: set_tag, sql: "ALTER FUNCTION f(NUMBER) SET TAG tg = 'v';" }
+      - { id: unset_tag, sql: "ALTER FUNCTION f(NUMBER) UNSET TAG tg;" }
+      - { id: external_set_api_integration, sql: "ALTER FUNCTION f(NUMBER) SET API_INTEGRATION = api_int_2;" }
+      - { id: external_set_headers, sql: "ALTER FUNCTION f(NUMBER) SET HEADERS = ('h1' = 'v1');" }
+      - { id: external_set_context_headers, sql: "ALTER FUNCTION f(NUMBER) SET CONTEXT_HEADERS = (current_timestamp);" }
+      - { id: external_set_max_batch_rows, sql: "ALTER FUNCTION f(NUMBER) SET MAX_BATCH_ROWS = 100;" }
+      - { id: external_set_compression, sql: "ALTER FUNCTION f(NUMBER) SET COMPRESSION = GZIP;" }
+      - { id: external_set_translator, sql: "ALTER FUNCTION f(NUMBER) SET REQUEST_TRANSLATOR = tr;" }
+      - { id: external_unset, sql: "ALTER FUNCTION f(NUMBER) UNSET HEADERS;" }
+    examples:
+      - "ALTER FUNCTION IF EXISTS function1(number) RENAME TO function2;"
+      - "ALTER FUNCTION function2(number) SET SECURE;"
+      - "ALTER FUNCTION function4(number) SET API_INTEGRATION = api_integration_2;"
+      - "ALTER FUNCTION function5(number) SET MAX_BATCH_ROWS = 100;"
+
+  - id: alter_function_dmf
+    name: "ALTER FUNCTION (DMF)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-function-dmf
+    tier: low
+    probes:
+      - { id: rename, sql: "ALTER FUNCTION IF EXISTS dmf(TABLE(NUMBER, NUMBER)) RENAME TO dmf2;" }
+      - { id: set_secure_two_tables, sql: "ALTER FUNCTION dmf(TABLE(INT), TABLE(INT)) SET SECURE;" }
+      - { id: set_comment, sql: "ALTER FUNCTION dmf(TABLE(NUMBER)) SET COMMENT = 'c';" }
+
+  - id: alter_function_spcs
+    name: "ALTER FUNCTION (Snowpark Container Services)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-function-spcs
+    tier: low
+    probes:
+      - { id: set_service_endpoint, sql: "ALTER FUNCTION f(VARCHAR) SET SERVICE = 'svc' ENDPOINT = 'ep';" }
+      - { id: set_batch_options, sql: "ALTER FUNCTION IF EXISTS f(VARCHAR) SET ON_BATCH_FAILURE = RETURN_NULL;" }
+      - { id: unset, sql: "ALTER FUNCTION f(VARCHAR) UNSET MAX_BATCH_ROWS;" }
+    examples:
+      - "ALTER FUNCTION my_echo_udf(VARCHAR) RENAME TO my_echo_udf_temp;"
+      - "ALTER FUNCTION my_echo_udf(VARCHAR) SET COMMENT = 'some comment';"
+      - "ALTER FUNCTION my_echo_udf(number) SET MAX_BATCH_ROWS = 100;"
+      - "ALTER FUNCTION my_echo_udf(VARCHAR) UNSET MAX_BATCH_ROWS;"
+
+  - id: drop_function
+    name: "DROP FUNCTION"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/drop-function
+    tier: high
+    probes:
+      - { id: drop, sql: "DROP FUNCTION f(NUMBER, NUMBER);" }
+      - { id: if_exists_no_args, sql: "DROP FUNCTION IF EXISTS f();" }
+      - { id: qualified, sql: "DROP FUNCTION db.s.f(VARCHAR);" }
+    examples:
+      - "DROP FUNCTION multiply(number, number);"
+
+  - id: drop_function_dmf
+    name: "DROP FUNCTION (DMF)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/drop-function-dmf
+    tier: low
+    probes:
+      - { id: drop, sql: "DROP FUNCTION IF EXISTS dmf(TABLE(NUMBER, NUMBER, NUMBER));" }
+      - { id: two_tables, sql: "DROP FUNCTION dmf(TABLE(INT), TABLE(INT));" }
+
+  - id: drop_function_spcs
+    name: "DROP FUNCTION (Snowpark Container Services)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/drop-function-spcs
+    tier: low
+    probes:
+      - { id: drop, sql: "DROP FUNCTION IF EXISTS f(VARCHAR);" }
+    examples:
+      - "DROP FUNCTION my_echo_udf(VARCHAR);"
+
+  - id: create_external_function
+    name: "CREATE EXTERNAL FUNCTION"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-external-function
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE OR REPLACE EXTERNAL FUNCTION f (s VARCHAR) RETURNS VARIANT API_INTEGRATION = api_int AS 'https://xyz.execute-api.us-west-2.amazonaws.com/prod/remote_echo';" }
+      - { id: options, sql: "CREATE SECURE EXTERNAL FUNCTION f (a INT, b VARCHAR) RETURNS VARIANT NOT NULL RETURNS NULL ON NULL INPUT VOLATILE COMMENT = 'c' API_INTEGRATION = api_int HEADERS = ('h1' = 'v1', 'h2' = 'v2') CONTEXT_HEADERS = (current_timestamp, current_account) MAX_BATCH_ROWS = 100 COMPRESSION = GZIP REQUEST_TRANSLATOR = rq RESPONSE_TRANSLATOR = rs AS 'https://example.com/f';" }
+      - { id: create_or_alter, sql: "CREATE OR ALTER SECURE EXTERNAL FUNCTION f (s VARCHAR) RETURNS VARIANT API_INTEGRATION = api_int COMPRESSION = \"GZIP\" AS 'https://example.com/f';" }
+    examples:
+      - |-
+        CREATE OR REPLACE EXTERNAL FUNCTION local_echo(string_col VARCHAR)
+          RETURNS VARIANT
+          API_INTEGRATION = demonstration_external_api_integration_01
+          AS 'https://xyz.execute-api.us-west-2.amazonaws.com/prod/remote_echo';
+      - |-
+        CREATE OR ALTER SECURE EXTERNAL FUNCTION local_echo(string_col VARCHAR)
+          RETURNS VARIANT
+          API_INTEGRATION = demonstration_external_api_integration_01
+          HEADERS = ('header_variable1'='header_value', 'header_variable2'='header_value2')
+          CONTEXT_HEADERS = (current_account)
+          MAX_BATCH_ROWS = 100
+          COMPRESSION = "GZIP"
+          AS 'https://xyz.execute-api.us-west-2.amazonaws.com/prod/remote_echo';
+
+  - id: create_function_spcs
+    name: "CREATE FUNCTION (Snowpark Container Services)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-function-spcs
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE FUNCTION f (t VARCHAR) RETURNS VARCHAR SERVICE = echo_service ENDPOINT = echoendpoint AS '/echo';" }
+      - { id: options, sql: "CREATE OR REPLACE FUNCTION f (t VARCHAR) RETURNS VARCHAR NOT NULL STRICT IMMUTABLE SERVICE = svc ENDPOINT = ep COMMENT = 'c' CONTEXT_HEADERS = (current_account) MAX_BATCH_ROWS = 100 MAX_BATCH_RETRIES = 3 ON_BATCH_FAILURE = ABORT BATCH_TIMEOUT_SECS = 60 AS '/echo';" }
+    examples:
+      - |-
+        CREATE FUNCTION my_echo_udf (InputText VARCHAR)
+          RETURNS VARCHAR
+          SERVICE=echo_service
+          ENDPOINT=echoendpoint
+          AS '/echo';
+      - |-
+        CREATE OR ALTER FUNCTION my_echo_udf (InputText VARCHAR)
+          RETURNS VARCHAR
+          SERVICE = echo_service
+          ENDPOINT = reverse_echoendpoint
+          CONTEXT_HEADERS = (current_account)
+          MAX_BATCH_ROWS = 100
+          AS '/echo';
+
+  - id: create_data_metric_function
+    name: "CREATE DATA METRIC FUNCTION"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-data-metric-function
+    tier: low
+    probes:
+      - { id: single_table, sql: "CREATE OR REPLACE DATA METRIC FUNCTION dmf (arg_t TABLE(c1 NUMBER, c2 NUMBER)) RETURNS NUMBER AS 'SELECT COUNT(*) FROM arg_t WHERE c1 > 0';" }
+      - { id: multiple_tables_options, sql: "CREATE SECURE DATA METRIC FUNCTION IF NOT EXISTS dmf (t1 TABLE (c1 INT), t2 TABLE (c2 INT)) RETURNS NUMBER NOT NULL LANGUAGE SQL COMMENT = 'c' AS $$ SELECT COUNT(*) FROM t1 WHERE c1 NOT IN (SELECT c2 FROM t2) $$;" }
+    examples:
+      - |-
+        CREATE OR REPLACE DATA METRIC FUNCTION governance.dmfs.referential_check(
+          arg_t1 TABLE (arg_c1 INT), arg_t2 TABLE (arg_c2 INT))
+        RETURNS NUMBER
+        AS
+        $$
+          SELECT
+            COUNT(*)
+            FROM arg_t1
+          WHERE
+            arg_c1 NOT IN (SELECT arg_c2 FROM arg_t2)
+        $$;
+
+  - id: create_ai_function
+    name: "CREATE AI FUNCTION"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-ai-function
+    tier: low
+    probes:
+      - { id: dollar_body, sql: "CREATE OR REPLACE AI FUNCTION f (body VARCHAR) RETURNS VARCHAR COMMENT = 'c' AS $$ AI_COMPLETE('claude-haiku-4-5', 'Summarize: ' || body)::VARCHAR $$;" }
+      - { id: from_experiment, sql: "CREATE AI FUNCTION IF NOT EXISTS f (body VARCHAR) RETURNS VARCHAR FROM EXPERIMENT exp1 RUN iter_7;" }
+    examples:
+      - |-
+        CREATE OR REPLACE AI FUNCTION my_db.my_schema.classify_ticket(body VARCHAR)
+          RETURNS VARCHAR
+          AS $$
+            AI_COMPLETE(
+              'claude-sonnet-4-5',
+              'Classify this support ticket into exactly one of: '
+              || 'BILLING, BUG, FEATURE_REQUEST, OTHER. '
+              || 'Return only the label.' || CHR(10) || body
+            )::VARCHAR
+          $$;
+
+  - id: create_procedure
+    name: "CREATE PROCEDURE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-procedure
+    tier: high
+    probes:
+      - { id: sql_scripting_dollar, sql: "CREATE OR REPLACE PROCEDURE p () RETURNS VARCHAR LANGUAGE SQL AS $$ BEGIN RETURN 'done'; END; $$;" }
+      - id: sql_scripting_inline
+        sql: |-
+          CREATE OR REPLACE PROCEDURE p (x NUMBER)
+          RETURNS NUMBER
+          LANGUAGE SQL
+          AS
+          BEGIN
+            RETURN x * 2;
+          END;
+        note: "Snowflake Scripting handler syntax \"AS <procedure_definition>\" without string delimiters; Snowsight and Python connector accept the block unquoted (Snowflake Scripting developer guide)."
+      - { id: sql_args_in_out, sql: "CREATE OR REPLACE PROCEDURE p (a IN NUMBER, b OUT NUMBER, c INPUT VARCHAR DEFAULT 'x', d OUTPUT VARCHAR) RETURNS NUMBER LANGUAGE SQL AS $$ BEGIN b := a + 1; RETURN b; END; $$;" }
+      - { id: sql_returns_table, sql: "CREATE OR REPLACE PROCEDURE p () RETURNS TABLE (sales_date DATE, quantity NUMBER) LANGUAGE SQL AS $$ DECLARE res RESULTSET DEFAULT (SELECT d, q FROM t); BEGIN RETURN TABLE(res); END; $$;" }
+      - { id: sql_returns_table_empty, sql: "CREATE OR REPLACE PROCEDURE p () RETURNS TABLE () LANGUAGE SQL AS $$ DECLARE res RESULTSET DEFAULT (SELECT * FROM t); BEGIN RETURN TABLE(res); END; $$;" }
+      - { id: sql_options, sql: "CREATE PROCEDURE p (x INT) COPY GRANTS RETURNS INT NOT NULL LANGUAGE SQL RETURNS NULL ON NULL INPUT COMMENT = 'c' EXECUTE AS CALLER AS $$ BEGIN RETURN x; END; $$;" }
+      - { id: execute_as_restricted_caller, sql: "CREATE PROCEDURE p () RETURNS INT LANGUAGE SQL EXECUTE AS RESTRICTED CALLER AS $$ BEGIN RETURN 1; END; $$;" }
+      - { id: javascript, sql: "CREATE OR REPLACE PROCEDURE p () RETURNS FLOAT NOT NULL LANGUAGE JAVASCRIPT AS $$ return 3.1415926; $$;" }
+      - { id: javascript_strict_owner, sql: "CREATE OR REPLACE PROCEDURE p (f FLOAT) RETURNS STRING LANGUAGE JAVASCRIPT STRICT EXECUTE AS OWNER AS 'return \"ok\";';" }
+      - { id: temp_secure, sql: "CREATE OR REPLACE TEMPORARY SECURE PROCEDURE p () RETURNS STRING LANGUAGE JAVASCRIPT AS 'return 1;';" }
+      - { id: python_inline, sql: "CREATE OR REPLACE PROCEDURE p (from_table STRING, to_table STRING, count INT) RETURNS STRING LANGUAGE PYTHON RUNTIME_VERSION = '3.9' PACKAGES = ('snowflake-snowpark-python') HANDLER = 'run' AS $$ def run(session, f, t, c): return \"SUCCESS\" $$;" }
+      - { id: python_external_access, sql: "CREATE OR ALTER PROCEDURE p (a NUMBER) RETURNS NUMBER LANGUAGE PYTHON HANDLER = 'main' RUNTIME_VERSION = '3.10' EXTERNAL_ACCESS_INTEGRATIONS = (eai) SECRETS = ('cred' = s1) PACKAGES = ('snowflake-snowpark-python') EXECUTE AS OWNER AS $$ def main(session, a): return a + 1 $$;" }
+      - { id: python_returns_table_staged, sql: "CREATE PROCEDURE p () RETURNS TABLE (a INT) LANGUAGE PYTHON RUNTIME_VERSION = '3.10' PACKAGES = ('snowflake-snowpark-python') IMPORTS = ('@s/m.py') HANDLER = 'm.run';" }
+      - { id: java_staged, sql: "CREATE OR REPLACE PROCEDURE p (f STRING, t STRING, c INT) RETURNS STRING LANGUAGE JAVA RUNTIME_VERSION = '11' PACKAGES = ('com.snowflake:snowpark:latest') IMPORTS = ('@mystage/myjar.jar') HANDLER = 'MyClass.myMethod';" }
+      - { id: java_inline_target_path, sql: "CREATE PROCEDURE p () RETURNS STRING LANGUAGE JAVA RUNTIME_VERSION = '11' PACKAGES = ('com.snowflake:snowpark:latest') HANDLER = 'C.run' TARGET_PATH = '@~/p.jar' AS 'class C { public String run(com.snowflake.snowpark_java.Session s) { return \"ok\"; } }';" }
+      - { id: scala, sql: "CREATE PROCEDURE p () RETURNS STRING LANGUAGE SCALA RUNTIME_VERSION = '2.12' PACKAGES = ('com.snowflake:snowpark_2.12:latest') HANDLER = 'C.run' AS 'object C { def run(s: com.snowflake.snowpark.Session): String = \"ok\" }';" }
+      - { id: arg_default, sql: "CREATE PROCEDURE p (a INT, b INT DEFAULT 0) RETURNS INT LANGUAGE SQL AS $$ BEGIN RETURN a + b; END; $$;" }
+      - { id: procedure_scoped_temp_table, sql: "CREATE OR REPLACE PROCEDURE SCOPED TEMPORARY TABLE tt (c INT, d VARCHAR);" }
+    examples:
+      - |-
+        CREATE OR REPLACE PROCEDURE sp_pi()
+            RETURNS FLOAT NOT NULL
+            LANGUAGE JAVASCRIPT
+            AS
+            $$
+            return 3.1415926;
+            $$
+            ;
+      - |-
+        CREATE OR REPLACE PROCEDURE my_proc(from_table STRING, to_table STRING, count INT)
+          RETURNS STRING
+          LANGUAGE PYTHON
+          RUNTIME_VERSION = '3.9'
+          PACKAGES = ('snowflake-snowpark-python')
+          HANDLER = 'run'
+        AS
+        $$
+        def run(session, from_table, to_table, count):
+          session.table(from_table).limit(count).write.save_as_table(to_table)
+          return "SUCCESS"
+        $$;
+      - |-
+        CREATE OR REPLACE PROCEDURE my_proc(fromTable STRING, toTable STRING, count INT)
+          RETURNS STRING
+          LANGUAGE JAVA
+          RUNTIME_VERSION = '11'
+          PACKAGES = ('com.snowflake:snowpark:latest')
+          IMPORTS = ('@mystage/myjar.jar')
+          HANDLER = 'MyClass.myMethod';
+      - |-
+        CREATE OR ALTER PROCEDURE python_add1(A NUMBER)
+          RETURNS NUMBER
+          LANGUAGE PYTHON
+          HANDLER='main'
+          RUNTIME_VERSION = '3.10'
+          EXTERNAL_ACCESS_INTEGRATIONS=(example_integration)
+          SECRETS = ('secret_variable_name' = secret_name)
+          PACKAGES = ('snowflake-snowpark-python')
+          EXECUTE AS CALLER
+          AS
+        $$
+        def main(session, a):
+            return a+1
+        $$;
+
+  - id: alter_procedure
+    name: "ALTER PROCEDURE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-procedure
+    tier: high
+    probes:
+      - { id: rename, sql: "ALTER PROCEDURE IF EXISTS p(FLOAT) RENAME TO p2;" }
+      - { id: set_options, sql: "ALTER PROCEDURE p(NUMBER) SET LOG_LEVEL = 'INFO' TRACE_LEVEL = 'ALWAYS' COMMENT = 'c';" }
+      - { id: set_external_access, sql: "ALTER PROCEDURE p(VARCHAR) SET EXTERNAL_ACCESS_INTEGRATIONS = 'eai1' SECRETS = 'cred' = s1;" }
+      - { id: unset_comment, sql: "ALTER PROCEDURE p() UNSET COMMENT;" }
+      - { id: set_tag, sql: "ALTER PROCEDURE p(NUMBER) SET TAG tg = 'v';" }
+      - { id: unset_tag, sql: "ALTER PROCEDURE p(NUMBER) UNSET TAG tg;" }
+      - { id: execute_as_caller, sql: "ALTER PROCEDURE p(NUMBER) EXECUTE AS CALLER;" }
+      - { id: execute_as_restricted_caller, sql: "ALTER PROCEDURE p(NUMBER, VARCHAR) EXECUTE AS RESTRICTED CALLER;" }
+    examples:
+      - "ALTER PROCEDURE IF EXISTS procedure1(FLOAT) RENAME TO procedure2;"
+
+  - id: drop_procedure
+    name: "DROP PROCEDURE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/drop-procedure
+    tier: high
+    probes:
+      - { id: drop, sql: "DROP PROCEDURE p(VARCHAR);" }
+      - { id: if_exists_no_args, sql: "DROP PROCEDURE IF EXISTS p();" }
+      - { id: multiple_arg_types, sql: "DROP PROCEDURE db.s.p(NUMBER, VARCHAR);" }
+    examples:
+      - "DROP PROCEDURE add_accounting_user(varchar);"
+
+  - id: begin
+    name: "BEGIN"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/begin
+    tier: high
+    probes:
+      - { id: begin, sql: "BEGIN;" }
+      - { id: begin_work, sql: "BEGIN WORK;" }
+      - { id: begin_transaction, sql: "BEGIN TRANSACTION;" }
+      - { id: begin_name, sql: "BEGIN NAME t1;" }
+      - { id: begin_transaction_name, sql: "BEGIN TRANSACTION NAME t1;" }
+      - { id: start_transaction, sql: "START TRANSACTION;" }
+      - { id: start_transaction_name, sql: "START TRANSACTION NAME t2;" }
+    examples:
+      - "BEGIN;"
+      - "BEGIN NAME T1;"
+      - "START TRANSACTION NAME T2;"
+
+  - id: commit
+    name: "COMMIT"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/commit
+    tier: high
+    probes:
+      - { id: commit, sql: "COMMIT;" }
+      - { id: commit_work, sql: "COMMIT WORK;" }
+    examples:
+      - "COMMIT WORK;"
+
+  - id: rollback
+    name: "ROLLBACK"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/rollback
+    tier: high
+    probes:
+      - { id: rollback, sql: "ROLLBACK;" }
+      - { id: rollback_work, sql: "ROLLBACK WORK;" }
+
+  - id: explain
+    name: "EXPLAIN"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/explain
+    tier: medium
+    probes:
+      - { id: explain, sql: "EXPLAIN SELECT * FROM t;" }
+      - { id: using_tabular, sql: "EXPLAIN USING TABULAR SELECT t.id FROM t, u WHERE u.id = t.id;" }
+      - { id: using_json, sql: "EXPLAIN USING JSON SELECT * FROM t;" }
+      - { id: using_text, sql: "EXPLAIN USING TEXT SELECT * FROM t;" }
+      - { id: explain_dml, sql: "EXPLAIN INSERT INTO t SELECT * FROM u;" }
+    examples:
+      - |-
+        EXPLAIN USING TABULAR SELECT Z1.ID, Z2.ID
+            FROM Z1, Z2
+            WHERE Z2.ID = Z1.ID;
+      - |-
+        EXPLAIN USING TEXT SELECT Z1.ID, Z2.ID
+            FROM Z1, Z2
+            WHERE Z2.ID = Z1.ID;
+      - |-
+        EXPLAIN USING JSON SELECT Z1.ID, Z2.ID
+            FROM Z1, Z2
+            WHERE Z2.ID = Z1.ID;
+
+  - id: grant_privileges_to_role
+    name: "GRANT <privileges> … TO ROLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/grant-privilege
+    tier: medium
+    probes:
+      - { id: global_on_account, sql: "GRANT CREATE DATABASE, CREATE WAREHOUSE ON ACCOUNT TO ROLE r;" }
+      - { id: all_on_account, sql: "GRANT ALL PRIVILEGES ON ACCOUNT TO ROLE r;" }
+      - { id: apply_policy_on_account, sql: "GRANT APPLY MASKING POLICY ON ACCOUNT TO ROLE r;" }
+      - { id: account_object, sql: "GRANT OPERATE ON WAREHOUSE wh TO ROLE r WITH GRANT OPTION;" }
+      - { id: database_usage, sql: "GRANT USAGE, MONITOR ON DATABASE db TO r;" }
+      - { id: schema, sql: "GRANT USAGE ON SCHEMA db.s TO ROLE r;" }
+      - { id: all_schemas, sql: "GRANT USAGE ON ALL SCHEMAS IN DATABASE db TO ROLE r;" }
+      - { id: future_schemas, sql: "GRANT USAGE ON FUTURE SCHEMAS IN DATABASE db TO ROLE r;" }
+      - { id: schema_create_privileges, sql: "GRANT CREATE TABLE, CREATE MATERIALIZED VIEW, CREATE DYNAMIC TABLE ON SCHEMA db.s TO ROLE r;" }
+      - { id: table, sql: "GRANT SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES ON TABLE db.s.t TO ROLE r;" }
+      - { id: all_tables_in_schema, sql: "GRANT SELECT ON ALL TABLES IN SCHEMA db.s TO ROLE r;" }
+      - { id: future_tables, sql: "GRANT SELECT, INSERT ON FUTURE TABLES IN SCHEMA db.s TO ROLE r;" }
+      - { id: function_signature, sql: "GRANT ALL PRIVILEGES ON FUNCTION db.s.f(NUMBER) TO ROLE r;" }
+      - { id: procedure_signature, sql: "GRANT USAGE ON PROCEDURE db.s.p(NUMBER) TO ROLE r;" }
+      - { id: to_database_role, sql: "GRANT SELECT ON ALL TABLES IN SCHEMA db.s TO DATABASE ROLE db.dr1;" }
+      - { id: database_role_future, sql: "GRANT USAGE ON FUTURE SCHEMAS IN DATABASE db TO DATABASE ROLE db.dr1;" }
+      - { id: class_privilege, sql: "GRANT CREATE SNOWFLAKE.CORE.BUDGET ON SCHEMA db.s TO ROLE r;" }
+    examples:
+      - "GRANT OPERATE ON WAREHOUSE report_wh TO ROLE analyst WITH GRANT OPTION;"
+      - "GRANT SELECT ON ALL TABLES IN SCHEMA mydb.myschema to ROLE analyst;"
+      - "GRANT ALL PRIVILEGES ON FUNCTION mydb.myschema.add5(number) TO ROLE analyst;"
+      - "GRANT SELECT, INSERT ON FUTURE TABLES IN SCHEMA mydb.myschema TO ROLE role1;"
+      - |-
+        GRANT SELECT ON ALL TABLES IN SCHEMA mydb.myschema
+          TO DATABASE ROLE mydb.dr1;
+
+  - id: grant_privileges_to_application
+    name: "GRANT <privileges> … TO APPLICATION"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/grant-privilege-application
+    tier: low
+    probes:
+      - { id: account, sql: "GRANT CREATE DATABASE ON ACCOUNT TO APPLICATION app;" }
+      - { id: object, sql: "GRANT USAGE ON WAREHOUSE wh TO APPLICATION app;" }
+
+  - id: grant_privileges_to_application_role
+    name: "GRANT <privileges> … TO APPLICATION ROLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/grant-privilege-application-role
+    tier: low
+    probes:
+      - { id: schema, sql: "GRANT USAGE ON SCHEMA s TO APPLICATION ROLE app_role WITH GRANT OPTION;" }
+      - { id: future, sql: "GRANT SELECT ON FUTURE TABLES IN SCHEMA s TO APPLICATION ROLE app_role;" }
+
+  - id: grant_privilege_to_share
+    name: "GRANT <privilege> … TO SHARE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/grant-privilege-share
+    tier: low
+    probes:
+      - { id: database, sql: "GRANT USAGE ON DATABASE db TO SHARE sh;" }
+      - { id: all_tables, sql: "GRANT SELECT ON ALL TABLES IN SCHEMA db.s TO SHARE sh;" }
+    examples:
+      - "GRANT USAGE ON DATABASE mydb TO SHARE share1;"
+      - "GRANT SELECT ON ALL TABLES IN SCHEMA mydb.public TO SHARE share1;"
+
+  - id: grant_privileges_to_user
+    name: "GRANT <privileges> … TO USER"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/grant-privilege-user
+    tier: low
+    probes:
+      - { id: object, sql: "GRANT USAGE ON STREAMLIT db.s.app TO USER joe;" }
+      - { id: procedure, sql: "GRANT USAGE ON PROCEDURE db.s.p(NUMBER) TO USER u1 WITH GRANT OPTION;" }
+    examples:
+      - "GRANT USAGE ON STREAMLIT streamlit_db.streamlit_schema.streamlit_app TO USER joe;"
+      - "GRANT USAGE ON PROCEDURE mydb.myschema.myprocedure(number) TO USER user1;"
+
+  - id: grant_role
+    name: "GRANT ROLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/grant-role
+    tier: medium
+    probes:
+      - { id: to_role, sql: "GRANT ROLE analyst TO ROLE sysadmin;" }
+      - { id: to_role_with_grant_option, sql: "GRANT ROLE analyst TO ROLE data_steward WITH GRANT OPTION;" }
+      - { id: to_user, sql: "GRANT ROLE analyst TO USER user1;" }
+    examples:
+      - "GRANT ROLE analyst TO ROLE SYSADMIN;"
+      - "GRANT ROLE analyst TO USER user1;"
+      - "GRANT ROLE analyst TO ROLE data_steward WITH GRANT OPTION;"
+
+  - id: grant_ownership
+    name: "GRANT OWNERSHIP"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/grant-ownership
+    tier: medium
+    probes:
+      - { id: object, sql: "GRANT OWNERSHIP ON TABLE db.s.t TO ROLE r COPY CURRENT GRANTS;" }
+      - { id: all_in_schema, sql: "GRANT OWNERSHIP ON ALL TABLES IN SCHEMA db.s TO ROLE r REVOKE CURRENT GRANTS;" }
+      - { id: future, sql: "GRANT OWNERSHIP ON FUTURE VIEWS IN DATABASE db TO DATABASE ROLE db.dr1;" }
+      - { id: database, sql: "GRANT OWNERSHIP ON DATABASE db TO ROLE r;" }
+    examples:
+      - |-
+        GRANT OWNERSHIP ON DATA EXCHANGE LISTING mylisting TO ROLE myrole
+          REVOKE CURRENT GRANTS;
+      - "GRANT OWNERSHIP ON ALL TABLES IN SCHEMA mydb.public TO ROLE analyst COPY CURRENT GRANTS;"
+      - "GRANT OWNERSHIP ON TABLE mydb.public.mytable TO ROLE analyst COPY CURRENT GRANTS;"
+
+  - id: grant_database_role
+    name: "GRANT DATABASE ROLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/grant-database-role
+    tier: medium
+    probes:
+      - { id: to_role, sql: "GRANT DATABASE ROLE db.analyst TO ROLE sysadmin WITH GRANT OPTION;" }
+      - { id: to_database_role, sql: "GRANT DATABASE ROLE dr1 TO DATABASE ROLE dr2;" }
+      - { id: to_user, sql: "GRANT DATABASE ROLE dr3 TO USER u1;" }
+      - { id: to_application, sql: "GRANT DATABASE ROLE dr1 TO APPLICATION app;" }
+    examples:
+      - "GRANT DATABASE ROLE analyst TO ROLE SYSADMIN;"
+      - "GRANT DATABASE ROLE dr1 TO DATABASE ROLE dr2;"
+      - "GRANT DATABASE ROLE mydb.analyst TO ROLE data_steward WITH GRANT OPTION;"
+
+  - id: grant_database_role_to_share
+    name: "GRANT DATABASE ROLE … TO SHARE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/grant-database-role-share
+    tier: low
+    probes:
+      - { id: to_share, sql: "GRANT DATABASE ROLE d1.dr1 TO SHARE share1;" }
+    examples:
+      - "GRANT DATABASE ROLE d1.dr1 TO SHARE share1;"
+
+  - id: grant_application_role
+    name: "GRANT APPLICATION ROLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/grant-application-role
+    tier: low
+    probes:
+      - { id: to_application_role, sql: "GRANT APPLICATION ROLE app_role TO APPLICATION ROLE other_app_role;" }
+      - { id: to_role, sql: "GRANT APPLICATION ROLE app_role TO ROLE r;" }
+    examples:
+      - "GRANT APPLICATION ROLE app_role to USER user1;"
+
+  - id: grant_caller
+    name: "GRANT CALLER"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/grant-caller
+    tier: low
+    probes:
+      - { id: caller, sql: "GRANT CALLER SELECT ON VIEW v1 TO ROLE owner_role;" }
+      - { id: inherited_caller, sql: "GRANT INHERITED CALLER SELECT, INSERT ON ALL TABLES IN SCHEMA db.sch TO ROLE owner_role;" }
+      - { id: all_caller_privileges, sql: "GRANT ALL CALLER PRIVILEGES ON DATABASE my_db TO ROLE owner_role;" }
+    examples:
+      - "GRANT INHERITED CALLER SELECT, INSERT ON ALL TABLES IN SCHEMA db.sch TO ROLE owner_role;"
+      - "GRANT ALL INHERITED CALLER PRIVILEGES ON ALL SCHEMAS IN ACCOUNT TO ROLE owner_role;"
+      - "GRANT CALLER SELECT ON TABLE db.sch1.t1 TO DATABASE ROLE db.r;"
+
+  - id: grant_service_role
+    name: "GRANT SERVICE ROLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/grant-service-role
+    tier: low
+    probes:
+      - { id: to_role, sql: "GRANT SERVICE ROLE echo_service!echoendpoint_role TO ROLE r;" }
+    examples:
+      - "GRANT SERVICE ROLE echo_service!echoendpoint_role TO ROLE service_function_user_role;"
+
+  - id: revoke_privileges_from_role
+    name: "REVOKE <privileges> … FROM ROLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/revoke-privilege
+    tier: medium
+    probes:
+      - { id: account, sql: "REVOKE CREATE WAREHOUSE ON ACCOUNT FROM ROLE analyst;" }
+      - { id: object, sql: "REVOKE OPERATE ON WAREHOUSE wh FROM ROLE r;" }
+      - { id: grant_option_for, sql: "REVOKE GRANT OPTION FOR OPERATE ON WAREHOUSE wh FROM ROLE r;" }
+      - { id: all_tables, sql: "REVOKE SELECT ON ALL TABLES IN SCHEMA db.s FROM ROLE r;" }
+      - { id: future_tables_cascade, sql: "REVOKE SELECT ON FUTURE TABLES IN SCHEMA db.s FROM ROLE r CASCADE;" }
+      - { id: all_privileges_restrict, sql: "REVOKE ALL PRIVILEGES ON DATABASE db FROM r RESTRICT;" }
+      - { id: from_database_role, sql: "REVOKE USAGE ON SCHEMA db.s FROM DATABASE ROLE db.dr1;" }
+    examples:
+      - "REVOKE CREATE WAREHOUSE ON ACCOUNT FROM ROLE analyst;"
+      - "REVOKE GRANT OPTION FOR OPERATE ON WAREHOUSE report_wh FROM ROLE analyst;"
+      - "REVOKE SELECT ON ALL TABLES IN SCHEMA mydb.myschema from ROLE analyst;"
+
+  - id: revoke_privileges_from_application
+    name: "REVOKE <privileges> … FROM APPLICATION"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/revoke-privilege-application
+    tier: low
+    probes:
+      - { id: object, sql: "REVOKE USAGE ON WAREHOUSE wh FROM APPLICATION app;" }
+
+  - id: revoke_privileges_from_application_role
+    name: "REVOKE <privileges> … FROM APPLICATION ROLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/revoke-privilege-application-role
+    tier: low
+    probes:
+      - { id: schema, sql: "REVOKE GRANT OPTION FOR USAGE ON SCHEMA s FROM APPLICATION ROLE app_role CASCADE;" }
+
+  - id: revoke_privilege_from_share
+    name: "REVOKE <privilege> … FROM SHARE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/revoke-privilege-share
+    tier: low
+    probes:
+      - { id: view, sql: "REVOKE SELECT ON VIEW db.s.v1 FROM SHARE sh;" }
+    examples:
+      - "REVOKE SELECT ON VIEW mydb.shared_schema.view1 FROM SHARE share1;"
+      - "REVOKE USAGE ON SCHEMA mydb.shared_schema FROM SHARE share1;"
+
+  - id: revoke_privileges_from_user
+    name: "REVOKE <privileges> … FROM USER"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/revoke-privilege-user
+    tier: low
+    probes:
+      - { id: object, sql: "REVOKE USAGE ON STREAMLIT db.s.app FROM USER joe;" }
+    examples:
+      - "REVOKE USAGE ON PROCEDURE mydb.myschema.myprocedure(number) FROM USER user1;"
+
+  - id: revoke_role
+    name: "REVOKE ROLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/revoke-role
+    tier: medium
+    probes:
+      - { id: from_role, sql: "REVOKE ROLE analyst FROM ROLE sysadmin;" }
+      - { id: from_user, sql: "REVOKE ROLE analyst FROM USER user1;" }
+      - { id: grant_option_for, sql: "REVOKE GRANT OPTION FOR ROLE analyst FROM ROLE data_steward;" }
+      - { id: cascade, sql: "REVOKE ROLE analyst FROM ROLE data_steward CASCADE;" }
+    examples:
+      - "REVOKE ROLE analyst FROM ROLE SYSADMIN;"
+      - "REVOKE GRANT OPTION FOR ROLE analyst FROM ROLE data_steward;"
+      - "REVOKE ROLE analyst FROM ROLE data_steward CASCADE;"
+
+  - id: revoke_database_role
+    name: "REVOKE DATABASE ROLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/revoke-database-role
+    tier: medium
+    probes:
+      - { id: from_role, sql: "REVOKE DATABASE ROLE analyst FROM ROLE sysadmin;" }
+      - { id: from_database_role_cascade, sql: "REVOKE DATABASE ROLE db.dr1 FROM DATABASE ROLE db.dr2 CASCADE;" }
+      - { id: grant_option_for, sql: "REVOKE GRANT OPTION FOR DATABASE ROLE db.analyst FROM ROLE data_steward;" }
+      - { id: from_application, sql: "REVOKE DATABASE ROLE dr1 FROM APPLICATION app;" }
+    examples:
+      - "REVOKE DATABASE ROLE dr1 FROM DATABASE ROLE dr2;"
+      - "REVOKE GRANT OPTION FOR DATABASE ROLE mydb.analyst FROM ROLE data_steward;"
+      - "REVOKE DATABASE ROLE mydb.analyst FROM ROLE data_steward CASCADE;"
+
+  - id: revoke_database_role_from_share
+    name: "REVOKE DATABASE ROLE … FROM SHARE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/revoke-database-role-share
+    tier: low
+    probes:
+      - { id: from_share, sql: "REVOKE DATABASE ROLE d1.dr1 FROM SHARE share1;" }
+    examples:
+      - "REVOKE DATABASE ROLE d1.dr1 FROM SHARE share1;"
+
+  - id: revoke_application_role
+    name: "REVOKE APPLICATION ROLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/revoke-application-role
+    tier: low
+    probes:
+      - { id: from_application_role, sql: "REVOKE APPLICATION ROLE app_role FROM APPLICATION ROLE other_role;" }
+    examples:
+      - "REVOKE APPLICATION ROLE app_role FROM APPLICATION ROLE other_role;"
+
+  - id: revoke_caller
+    name: "REVOKE CALLER"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/revoke-caller
+    tier: low
+    probes:
+      - { id: caller, sql: "REVOKE CALLER USAGE ON SCHEMA db.sch1 FROM ROLE owner_role;" }
+      - { id: all_inherited, sql: "REVOKE ALL INHERITED CALLER PRIVILEGES ON ALL VIEWS IN ACCOUNT FROM ROLE owner_role;" }
+    examples:
+      - "REVOKE ALL INHERITED CALLER PRIVILEGES ON ALL VIEWS IN ACCOUNT FROM ROLE owner_role;"
+      - "REVOKE CALLER USAGE ON SCHEMA db.sch1 FROM ROLE owner_role;"
+
+  - id: revoke_service_role
+    name: "REVOKE SERVICE ROLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/revoke-service-role
+    tier: low
+    probes:
+      - { id: from_role, sql: "REVOKE SERVICE ROLE echo_service!echoendpoint_role FROM ROLE r;" }
+    examples:
+      - "REVOKE SERVICE ROLE echo_service!echoendpoint_role FROM ROLE service_function_user_role;"
+
+  - id: scripting_block
+    name: "BEGIN … END (Snowflake Scripting)"
+    doc: https://docs.snowflake.com/en/sql-reference/snowflake-scripting/begin
+    tier: high
+    probes:
+      - { id: anonymous_block, sql: "BEGIN CREATE TABLE parent (id INTEGER); RETURN 'Completed'; END;" }
+      - { id: declare_block, sql: "DECLARE x INTEGER; BEGIN x := 1; RETURN x; END;" }
+      - { id: block_with_transaction, sql: "BEGIN BEGIN TRANSACTION; TRUNCATE TABLE child; COMMIT; RETURN ''; END;" }
+      - { id: nested_block, sql: "BEGIN BEGIN LET x := 1; END; RETURN 'ok'; END;" }
+      - { id: block_with_exception, sql: "BEGIN SELECT 1 / 0; EXCEPTION WHEN OTHER THEN RETURN SQLERRM; END;" }
+      - { id: execute_immediate_wrapped, sql: "EXECUTE IMMEDIATE $$ BEGIN RETURN 'Completed'; END; $$;" }
+    examples:
+      - |-
+        EXECUTE IMMEDIATE $$
+        BEGIN
+            CREATE TABLE parent (ID INTEGER);
+            CREATE TABLE child (ID INTEGER, parent_ID INTEGER);
+            RETURN 'Completed';
+        END;
+        $$
+        ;
+      - |-
+        EXECUTE IMMEDIATE $$
+        BEGIN
+            BEGIN TRANSACTION;
+            TRUNCATE TABLE child;
+            TRUNCATE TABLE parent;
+            COMMIT;
+            RETURN '';
+        END;
+        $$
+        ;
+
+  - id: scripting_declare
+    name: "DECLARE (Snowflake Scripting)"
+    doc: https://docs.snowflake.com/en/sql-reference/snowflake-scripting/declare
+    tier: high
+    probes:
+      - { id: variable_type_default, sql: "DECLARE profit NUMBER(38, 2) DEFAULT 0.0; BEGIN RETURN profit; END;" }
+      - { id: variable_assign_operator, sql: "DECLARE profit NUMBER(38, 2) := 0; BEGIN RETURN profit; END;" }
+      - { id: variable_no_type, sql: "DECLARE v DEFAULT 'x'; BEGIN RETURN v; END;" }
+      - { id: variable_type_only, sql: "DECLARE v VARCHAR; BEGIN v := 'a'; RETURN v; END;" }
+      - { id: cursor, sql: "DECLARE c1 CURSOR FOR SELECT id, price FROM invoices; BEGIN OPEN c1; CLOSE c1; RETURN 1; END;" }
+      - { id: resultset_default, sql: "DECLARE res RESULTSET DEFAULT (SELECT col1 FROM mytable ORDER BY col1); BEGIN RETURN TABLE(res); END;" }
+      - { id: resultset_async, sql: "DECLARE res RESULTSET := ASYNC (SELECT * FROM t); BEGIN AWAIT res; RETURN TABLE(res); END;" }
+      - { id: resultset_no_default, sql: "DECLARE res RESULTSET; BEGIN res := (SELECT 1); RETURN TABLE(res); END;" }
+      - { id: exception_declaration, sql: "DECLARE e1 EXCEPTION (-20003, 'ERROR: Could not create table.'); BEGIN RAISE e1; END;" }
+      - { id: exception_no_number, sql: "DECLARE my_exception EXCEPTION; BEGIN RAISE my_exception; END;" }
+      - { id: nested_procedure, sql: "DECLARE myproc PROCEDURE (a INT) RETURNS INT AS BEGIN RETURN a + 1; END; BEGIN CALL myproc(1); RETURN 1; END;" }
+    examples:
+      - |-
+        DECLARE
+          profit number(38, 2) DEFAULT 0.0;
+        BEGIN
+          LET cost number(38, 2) := 100.0;
+          LET revenue number(38, 2) DEFAULT 110.0;
+
+          profit := revenue - cost;
+          RETURN profit;
+        END;
+
+  - id: scripting_let
+    name: "LET (Snowflake Scripting)"
+    doc: https://docs.snowflake.com/en/sql-reference/snowflake-scripting/let
+    tier: high
+    probes:
+      - { id: let_type_default, sql: "BEGIN LET profit NUMBER(38, 2) DEFAULT 0.0; RETURN profit; END;" }
+      - { id: let_type_assign, sql: "BEGIN LET cost NUMBER(38, 2) := 100.0; RETURN cost; END;" }
+      - { id: let_no_type, sql: "BEGIN LET mydate := '2024-05-08'; RETURN mydate; END;" }
+      - { id: let_cursor, sql: "BEGIN LET c1 CURSOR FOR SELECT price FROM invoices; OPEN c1; RETURN 1; END;" }
+      - { id: let_cursor_for_resultset, sql: "BEGIN LET res RESULTSET := (SELECT price FROM invoices); LET c1 CURSOR FOR res; RETURN 1; END;" }
+      - { id: let_resultset, sql: "BEGIN LET res RESULTSET := (SELECT price FROM invoices); RETURN TABLE(res); END;" }
+      - { id: resultset_assignment, sql: "DECLARE res RESULTSET; BEGIN res := (SELECT price FROM invoices); RETURN TABLE(res); END;" }
+
+  - id: scripting_assignment
+    name: "Variable assignment (Snowflake Scripting)"
+    doc: https://docs.snowflake.com/en/sql-reference/snowflake-scripting/declare
+    tier: high
+    probes:
+      - { id: assign, sql: "DECLARE x INT; BEGIN x := 10 / 2; RETURN x; END;" }
+      - { id: select_into_variable, sql: "DECLARE x INT; BEGIN SELECT COUNT(*) INTO :x FROM t; RETURN x; END;" }
+      - id: bind_variable_in_sql
+        sql: "DECLARE x INT DEFAULT 5; BEGIN INSERT INTO t (id) VALUES (:x); RETURN x; END;"
+        note: "The DECLARE page defines \"<variable_name> [<type>] [ { DEFAULT | := } <expression>]\"; assignment statements \"name := expression;\" and colon-prefixed references inside SQL appear throughout the DECLARE, LET and loop examples."
+
+  - id: scripting_if
+    name: "IF (Snowflake Scripting)"
+    doc: https://docs.snowflake.com/en/sql-reference/snowflake-scripting/if
+    tier: high
+    probes:
+      - { id: if_then, sql: "BEGIN IF (x = 1) THEN RETURN 'one'; END IF; END;" }
+      - { id: if_else, sql: "BEGIN IF (x = 1) THEN RETURN 'one'; ELSE RETURN 'other'; END IF; END;" }
+      - { id: if_elseif_else, sql: "BEGIN IF (flag = 1) THEN RETURN 'one'; ELSEIF (flag = 2) THEN RETURN 'two'; ELSE RETURN 'Unexpected input.'; END IF; END;" }
+    examples:
+      - |-
+        CREATE OR REPLACE PROCEDURE example_if(flag INTEGER)
+        RETURNS VARCHAR
+        LANGUAGE SQL
+        AS
+        $$
+        BEGIN
+          IF (FLAG = 1) THEN
+            RETURN 'one';
+          ELSEIF (FLAG = 2) THEN
+            RETURN 'two';
+          ELSE
+            RETURN 'Unexpected input.';
+          END IF;
+        END;
+        $$
+        ;
+
+  - id: scripting_case
+    name: "CASE (Snowflake Scripting)"
+    doc: https://docs.snowflake.com/en/sql-reference/snowflake-scripting/case
+    tier: high
+    probes:
+      - { id: simple_case, sql: "BEGIN CASE (v) WHEN 'first choice' THEN RETURN 'one'; WHEN 'second choice' THEN RETURN 'two'; ELSE RETURN 'unexpected choice'; END CASE; END;" }
+      - { id: simple_case_end_only, sql: "BEGIN CASE (v) WHEN 'a' THEN RETURN 'one'; ELSE RETURN 'other'; END; END;" }
+      - { id: searched_case, sql: "BEGIN CASE WHEN v = 'first choice' THEN RETURN 'one'; WHEN v = 'second choice' THEN RETURN 'two'; ELSE RETURN 'unexpected choice'; END CASE; END;" }
+      - { id: searched_case_no_else, sql: "BEGIN CASE WHEN v > 0 THEN RETURN 'pos'; END CASE; RETURN 'non-pos'; END;" }
+    examples:
+      - |-
+        CREATE PROCEDURE case_demo_01(v VARCHAR)
+        RETURNS VARCHAR
+        LANGUAGE SQL
+        AS
+          BEGIN
+            CASE (v)
+              WHEN 'first choice' THEN
+                RETURN 'one';
+              WHEN 'second choice' THEN
+                RETURN 'two';
+              ELSE
+                RETURN 'unexpected choice';
+            END;
+          END;
+      - |-
+        CREATE PROCEDURE case_demo_2(v VARCHAR)
+        RETURNS VARCHAR
+        LANGUAGE SQL
+        AS
+          BEGIN
+            CASE
+              WHEN v = 'first choice' THEN
+                RETURN 'one';
+              WHEN v = 'second choice' THEN
+                RETURN 'two';
+              ELSE
+                RETURN 'unexpected choice';
+            END;
+          END;
+      - |-
+        CREATE PROCEDURE case_demo_01(v VARCHAR)
+        RETURNS VARCHAR
+        LANGUAGE SQL
+        AS
+        $$
+            BEGIN
+                CASE (v)
+                    WHEN 'first choice' THEN
+                        RETURN 'one';
+                    WHEN 'second choice' THEN
+                        RETURN 'two';
+                    ELSE
+                        RETURN 'unexpected choice';
+               END CASE;
+            END;
+        $$
+        ;
+
+  - id: scripting_for
+    name: "FOR (Snowflake Scripting)"
+    doc: https://docs.snowflake.com/en/sql-reference/snowflake-scripting/for
+    tier: high
+    probes:
+      - { id: cursor_for, sql: "DECLARE total FLOAT; c1 CURSOR FOR SELECT price FROM invoices; BEGIN total := 0.0; FOR rec IN c1 DO total := total + rec.price; END FOR; RETURN total; END;" }
+      - { id: counter_for_do, sql: "DECLARE counter INTEGER DEFAULT 0; BEGIN FOR i IN 1 TO 3 DO counter := counter + 1; END FOR; RETURN counter; END;" }
+      - { id: counter_for_reverse, sql: "DECLARE s VARCHAR DEFAULT ''; BEGIN FOR i IN REVERSE 1 TO 3 DO s := s || ' ' || i::VARCHAR; END FOR; RETURN s; END;" }
+      - { id: counter_for_loop_keyword, sql: "DECLARE c INTEGER DEFAULT 0; BEGIN FOR i IN 1 TO 3 LOOP c := c + 1; END LOOP; RETURN c; END;" }
+      - { id: for_with_label, sql: "DECLARE c INTEGER DEFAULT 0; BEGIN FOR i IN 1 TO 3 DO c := c + 1; END FOR my_loop; RETURN c; END;" }
+      - { id: resultset_for, sql: "DECLARE res RESULTSET DEFAULT (SELECT price FROM invoices); t FLOAT DEFAULT 0; BEGIN FOR rec IN res DO t := t + rec.price; END FOR; RETURN t; END;" }
+    examples:
+      - |-
+        CREATE OR REPLACE PROCEDURE for_loop_over_cursor()
+        RETURNS FLOAT
+        LANGUAGE SQL
+        AS
+        $$
+        DECLARE
+            total_price FLOAT;
+            c1 CURSOR FOR SELECT price FROM invoices;
+        BEGIN
+            total_price := 0.0;
+            OPEN c1;
+            FOR rec IN c1 DO
+                total_price := total_price + rec.price;
+            END FOR;
+            CLOSE c1;
+            RETURN total_price;
+        END;
+        $$
+        ;
+      - |-
+        CREATE PROCEDURE simple_for(iteration_limit INTEGER)
+        RETURNS INTEGER
+        LANGUAGE SQL
+        AS
+        $$
+            DECLARE
+                counter INTEGER DEFAULT 0;
+            BEGIN
+                FOR i IN 1 TO iteration_limit DO
+                    counter := counter + 1;
+                END FOR;
+                RETURN counter;
+            END;
+        $$;
+      - |-
+        CREATE PROCEDURE reverse_loop(iteration_limit INTEGER)
+        RETURNS VARCHAR
+        LANGUAGE SQL
+        AS
+        $$
+            DECLARE
+                values_of_i VARCHAR DEFAULT '';
+            BEGIN
+                FOR i IN REVERSE 1 TO iteration_limit DO
+                    values_of_i := values_of_i || ' ' || i::varchar;
+                END FOR;
+                RETURN values_of_i;
+            END;
+        $$;
+
+  - id: scripting_while
+    name: "WHILE (Snowflake Scripting)"
+    doc: https://docs.snowflake.com/en/sql-reference/snowflake-scripting/while
+    tier: high
+    probes:
+      - { id: while_do, sql: "DECLARE c INT DEFAULT 1; BEGIN WHILE (c <= 8) DO c := c + 1; END WHILE; RETURN c; END;" }
+      - { id: while_loop, sql: "DECLARE c INT DEFAULT 1; BEGIN WHILE (c <= 8) LOOP c := c + 1; END LOOP; RETURN c; END;" }
+      - { id: while_label, sql: "DECLARE c INT DEFAULT 1; BEGIN WHILE (c <= 8) DO c := c + 1; END WHILE outer_loop; RETURN c; END;" }
+    examples:
+      - |-
+        CREATE PROCEDURE power_of_2()
+        RETURNS NUMBER(8, 0)
+        LANGUAGE SQL
+        AS
+        $$
+        DECLARE
+          counter NUMBER(8, 0);      -- Loop counter.
+          power_of_2 NUMBER(8, 0);   -- Stores the most recent power of 2 that we calculated.
+        BEGIN
+          counter := 1;
+          power_of_2 := 1;
+          WHILE (counter <= 8) DO
+            power_of_2 := power_of_2 * 2;
+            counter := counter + 1;
+          END WHILE;
+          RETURN power_of_2;
+        END;
+        $$
+        ;
+      - |-
+        EXECUTE IMMEDIATE $$
+        BEGIN
+          LET mydate := '2024-05-08';
+          WHILE (mydate < '2024-05-20') DO
+            mydate := DATEADD(day, 1, mydate);
+          END WHILE;
+          RETURN mydate;
+        END;
+        $$
+        ;
+
+  - id: scripting_repeat
+    name: "REPEAT (Snowflake Scripting)"
+    doc: https://docs.snowflake.com/en/sql-reference/snowflake-scripting/repeat
+    tier: high
+    probes:
+      - { id: repeat_until, sql: "DECLARE c INT DEFAULT 1; BEGIN REPEAT c := c + 1; UNTIL (c > 8) END REPEAT; RETURN c; END;" }
+      - { id: repeat_label, sql: "DECLARE c INT DEFAULT 1; BEGIN REPEAT c := c + 1; UNTIL (c > 8) END REPEAT my_label; RETURN c; END;" }
+    examples:
+      - |-
+        CREATE PROCEDURE power_of_2()
+        RETURNS NUMBER(8, 0)
+        LANGUAGE SQL
+        AS
+        $$
+        DECLARE
+            counter NUMBER(8, 0);      -- Loop counter.
+            power_of_2 NUMBER(8, 0);   -- Stores the most recent power of 2 that we calculated.
+        BEGIN
+            counter := 1;
+            power_of_2 := 1;
+            REPEAT
+                power_of_2 := power_of_2 * 2;
+                counter := counter + 1;
+            UNTIL (counter > 8)
+            END REPEAT;
+            RETURN power_of_2;
+        END;
+        $$;
+
+  - id: scripting_loop
+    name: "LOOP (Snowflake Scripting)"
+    doc: https://docs.snowflake.com/en/sql-reference/snowflake-scripting/loop
+    tier: high
+    probes:
+      - { id: loop_break, sql: "DECLARE c INT DEFAULT 0; BEGIN LOOP c := c + 1; IF (c > 5) THEN BREAK; END IF; END LOOP; RETURN c; END;" }
+      - { id: loop_label, sql: "DECLARE c INT DEFAULT 0; BEGIN LOOP c := c + 1; IF (c > 5) THEN BREAK my_loop; END IF; END LOOP my_loop; RETURN c; END;" }
+
+  - id: scripting_break
+    name: "BREAK (Snowflake Scripting)"
+    doc: https://docs.snowflake.com/en/sql-reference/snowflake-scripting/break
+    tier: high
+    probes:
+      - { id: break, sql: "DECLARE i INT DEFAULT 0; BEGIN LOOP i := i + 1; BREAK; END LOOP; RETURN i; END;" }
+      - { id: exit_label, sql: "DECLARE i INT DEFAULT 0; BEGIN WHILE (i < 4) DO i := i + 1; EXIT outer_loop; END WHILE outer_loop; RETURN i; END;" }
+    examples:
+      - |-
+        DECLARE
+          i INTEGER;
+          j INTEGER;
+        BEGIN
+          i := 1;
+          j := 1;
+          WHILE (i <= 4) DO
+            WHILE (j <= 4) DO
+              -- Exit when j is 3, even if i is still 1.
+              IF (j = 3) THEN
+                BREAK outer_loop;
+              END IF;
+              j := j + 1;
+            END WHILE inner_loop;
+            i := i + 1;
+          END WHILE outer_loop;
+          -- Execution resumes here after the BREAK executes.
+          RETURN i;
+        END;
+
+  - id: scripting_continue
+    name: "CONTINUE (Snowflake Scripting)"
+    doc: https://docs.snowflake.com/en/sql-reference/snowflake-scripting/continue
+    tier: high
+    probes:
+      - { id: continue, sql: "DECLARE c INT DEFAULT 0; BEGIN WHILE (c < 3) DO c := c + 1; CONTINUE; END WHILE; RETURN c; END;" }
+      - { id: iterate_label, sql: "DECLARE c INT DEFAULT 0; BEGIN WHILE (c < 3) DO c := c + 1; ITERATE my_loop; END WHILE my_loop; RETURN c; END;" }
+    examples:
+      - |-
+        DECLARE
+          counter1 NUMBER(8, 0);
+          counter2 NUMBER(8, 0);
+        BEGIN
+          counter1 := 0;
+          counter2 := 0;
+          WHILE (counter1 < 3) DO
+            counter1 := counter1 + 1;
+            CONTINUE;
+            counter2 := counter2 + 1;
+          END WHILE;
+          RETURN counter2;
+        END;
+
+  - id: scripting_exception
+    name: "EXCEPTION (Snowflake Scripting)"
+    doc: https://docs.snowflake.com/en/sql-reference/snowflake-scripting/exception
+    tier: high
+    probes:
+      - { id: when_named, sql: "DECLARE e1 EXCEPTION (-20001, 'msg'); BEGIN RAISE e1; EXCEPTION WHEN e1 THEN RETURN SQLERRM; END;" }
+      - { id: when_or, sql: "BEGIN RETURN 1; EXCEPTION WHEN e1 OR e2 OR e3 THEN RETURN 123; WHEN e4 THEN RETURN 4; WHEN OTHER THEN RETURN 99; END;" }
+      - { id: when_continue, sql: "DECLARE e1 EXCEPTION (-20001, 'x'); BEGIN LET c := 0; RAISE e1; RETURN c; EXCEPTION WHEN e1 CONTINUE THEN c := c + 1; END;" }
+      - { id: when_exit, sql: "BEGIN RETURN 1; EXCEPTION WHEN STATEMENT_ERROR EXIT THEN RETURN SQLCODE; END;" }
+      - { id: when_other_continue, sql: "BEGIN RETURN 1; EXCEPTION WHEN OTHER CONTINUE THEN INSERT INTO log SELECT 'continue', :SQLERRM; END;" }
+      - { id: builtin_variables, sql: "BEGIN RETURN 1; EXCEPTION WHEN EXPRESSION_ERROR THEN RETURN OBJECT_CONSTRUCT('SQLCODE', SQLCODE, 'SQLERRM', SQLERRM, 'SQLSTATE', SQLSTATE); END;" }
+    examples:
+      - |-
+        DECLARE
+          result VARCHAR;
+          exception_1 EXCEPTION (-20001, 'I caught the expected exception.');
+          exception_2 EXCEPTION (-20002, 'Not the expected exception!');
+        BEGIN
+          result := 'If you see this, I did not catch any exception.';
+          IF (TRUE) THEN
+            RAISE exception_1;
+          END IF;
+          RETURN result;
+        EXCEPTION
+          WHEN exception_2 THEN
+            RETURN SQLERRM;
+          WHEN exception_1 THEN
+            RETURN SQLERRM;
+        END;
+      - |-
+        DECLARE
+          exception_1 EXCEPTION (-20001, 'Catch and continue');
+        BEGIN
+          LET counter := 0;
+          IF (TRUE) THEN
+            RAISE exception_1;
+          END IF;
+          counter := counter + 10;
+          RETURN 'Counter value: ' || counter;
+        EXCEPTION
+          WHEN exception_1 CONTINUE THEN
+            counter := counter +1;
+        END;
+      - |-
+        DECLARE
+          e1 EXCEPTION (-20001, 'Exception e1');
+        BEGIN
+          -- Inner block.
+          DECLARE
+            e2 EXCEPTION (-20002, 'Exception e2');
+            selector BOOLEAN DEFAULT TRUE;
+          BEGIN
+            IF (selector) THEN
+              RAISE e1;
+            ELSE
+              RAISE e2;
+            END IF;
+          END;
+        EXCEPTION
+          WHEN e1 THEN
+            RETURN SQLERRM || ' caught in outer block.';
+        END;
+      - |-
+        DECLARE
+          MY_EXCEPTION EXCEPTION (-20001, 'Sample message');
+        BEGIN
+          RAISE MY_EXCEPTION;
+        EXCEPTION
+          WHEN STATEMENT_ERROR THEN
+            RETURN OBJECT_CONSTRUCT('Error type', 'STATEMENT_ERROR',
+                                    'SQLCODE', SQLCODE,
+                                    'SQLERRM', SQLERRM,
+                                    'SQLSTATE', SQLSTATE);
+          WHEN EXPRESSION_ERROR THEN
+            RETURN OBJECT_CONSTRUCT('Error type', 'EXPRESSION_ERROR',
+                                    'SQLCODE', SQLCODE,
+                                    'SQLERRM', SQLERRM,
+                                    'SQLSTATE', SQLSTATE);
+          WHEN OTHER THEN
+            RETURN OBJECT_CONSTRUCT('Error type', 'Other error',
+                                    'SQLCODE', SQLCODE,
+                                    'SQLERRM', SQLERRM,
+                                    'SQLSTATE', SQLSTATE);
+        END;
+
+  - id: scripting_raise
+    name: "RAISE (Snowflake Scripting)"
+    doc: https://docs.snowflake.com/en/sql-reference/snowflake-scripting/raise
+    tier: high
+    probes:
+      - { id: raise, sql: "DECLARE my_exception EXCEPTION; BEGIN RAISE my_exception; END;" }
+      - id: reraise_in_handler
+        sql: "BEGIN SELECT 1 / 0; EXCEPTION WHEN OTHER THEN RAISE; END;"
+        note: "The RAISE page usage notes describe re-raising the caught exception with RAISE and no exception name inside a handler."
+    examples:
+      - |-
+        CREATE PROCEDURE thrower()
+        RETURNS VARCHAR
+        LANGUAGE SQL
+        AS
+        $$
+            DECLARE
+                MY_EXCEPTION EXCEPTION;
+            BEGIN
+                RAISE MY_EXCEPTION;
+            END;
+        $$
+        ;
+
+  - id: scripting_return
+    name: "RETURN (Snowflake Scripting)"
+    doc: https://docs.snowflake.com/en/sql-reference/snowflake-scripting/return
+    tier: high
+    probes:
+      - { id: return_expression, sql: "DECLARE my_var VARCHAR; BEGIN my_var := 'Snowflake'; RETURN my_var; END;" }
+      - { id: return_table_resultset, sql: "DECLARE res RESULTSET DEFAULT (SELECT * FROM t); BEGIN RETURN TABLE(res); END;" }
+    examples:
+      - |-
+        DECLARE
+          my_var VARCHAR;
+        BEGIN
+          my_var := 'Snowflake';
+          RETURN my_var;
+        END;
+
+  - id: scripting_null
+    name: "NULL (Snowflake Scripting)"
+    doc: https://docs.snowflake.com/en/sql-reference/snowflake-scripting/null
+    tier: medium
+    probes:
+      - { id: null_statement, sql: "BEGIN SELECT 1 / 0; RETURN 'x'; EXCEPTION WHEN OTHER THEN NULL; END;" }
+    examples:
+      - |-
+        CREATE PROCEDURE null_as_statement()
+        RETURNS VARCHAR
+        LANGUAGE SQL
+        AS
+        $$
+        BEGIN
+          SELECT 1 / 0;
+          RETURN 'If you see this, the exception was not thrown/caught properly.';
+        EXCEPTION
+          WHEN OTHER THEN
+              NULL;
+        END;
+        $$
+        ;
+
+  - id: scripting_open
+    name: "OPEN (Snowflake Scripting)"
+    doc: https://docs.snowflake.com/en/sql-reference/snowflake-scripting/open
+    tier: high
+    probes:
+      - { id: open, sql: "DECLARE c1 CURSOR FOR SELECT price FROM invoices; BEGIN OPEN c1; RETURN 1; END;" }
+      - { id: open_using, sql: "DECLARE p FLOAT DEFAULT 11.11; c2 CURSOR FOR SELECT COUNT(*) FROM invoices WHERE price = ?; BEGIN OPEN c2 USING (p); RETURN 1; END;" }
+
+  - id: scripting_fetch
+    name: "FETCH (Snowflake Scripting)"
+    doc: https://docs.snowflake.com/en/sql-reference/snowflake-scripting/fetch
+    tier: high
+    probes:
+      - { id: fetch_into, sql: "DECLARE c1 CURSOR FOR SELECT id, price FROM invoices; i INT; p FLOAT; BEGIN OPEN c1; FETCH c1 INTO i, p; CLOSE c1; RETURN p; END;" }
+      - id: fetch_statement
+        sql: "FETCH my_cursor_name INTO my_variable_name;"
+        note: "Statement form exactly as in the doc example; only valid inside a Snowflake Scripting block."
+    examples:
+      - "FETCH my_cursor_name INTO my_variable_name ;"
+
+  - id: scripting_close
+    name: "CLOSE (Snowflake Scripting)"
+    doc: https://docs.snowflake.com/en/sql-reference/snowflake-scripting/close
+    tier: high
+    probes:
+      - { id: close_in_block, sql: "DECLARE c1 CURSOR FOR SELECT 1; BEGIN OPEN c1; CLOSE c1; RETURN 1; END;" }
+      - { id: close_statement, sql: "CLOSE my_cursor_name;" }
+    examples:
+      - "CLOSE my_cursor_name;"
+
+  - id: scripting_await
+    name: "AWAIT (Snowflake Scripting)"
+    doc: https://docs.snowflake.com/en/sql-reference/snowflake-scripting/await
+    tier: medium
+    probes:
+      - { id: await_resultset, sql: "BEGIN LET res RESULTSET := ASYNC (SELECT * FROM t); AWAIT res; RETURN TABLE(res); END;" }
+      - id: await_all
+        sql: "BEGIN ASYNC (INSERT INTO t VALUES (1)); ASYNC (INSERT INTO t VALUES (2)); AWAIT ALL; RETURN 'done'; END;"
+        note: "Usage notes: ASYNC child jobs are awaited with AWAIT ALL."
+    examples:
+      - "AWAIT ALL;"
+      - "AWAIT my_result_set;"
+
+  - id: scripting_cancel
+    name: "CANCEL (Snowflake Scripting)"
+    doc: https://docs.snowflake.com/en/sql-reference/snowflake-scripting/cancel
+    tier: low
+    probes:
+      - { id: cancel, sql: "BEGIN LET res RESULTSET := ASYNC (SELECT * FROM t); CANCEL res; RETURN 'cancelled'; END;" }
+    examples:
+      - "CANCEL my_result_set;"
+
+  - id: execute_immediate
+    name: "EXECUTE IMMEDIATE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/execute-immediate
+    tier: high
+    probes:
+      - { id: string_literal, sql: "EXECUTE IMMEDIATE 'SELECT PI()';" }
+      - { id: dollar_block, sql: "EXECUTE IMMEDIATE $$ DECLARE r FLOAT; BEGIN r := 3; RETURN PI() * r * r; END; $$;" }
+      - { id: session_variable, sql: "EXECUTE IMMEDIATE $stmt;" }
+      - { id: using_binds, sql: "EXECUTE IMMEDIATE 'SELECT * FROM t WHERE a > ? AND a < ?' USING (lo, hi);" }
+      - { id: variable_in_block, sql: "DECLARE v1 VARCHAR DEFAULT 'CREATE TABLE t1 (i INTEGER)'; BEGIN EXECUTE IMMEDIATE v1; RETURN 'ok'; END;" }
+      - { id: resultset_from_execute_immediate, sql: "DECLARE rs RESULTSET; q VARCHAR DEFAULT 'SELECT * FROM t WHERE p > ?'; BEGIN rs := (EXECUTE IMMEDIATE :q USING (minimum_price)); RETURN TABLE(rs); END;" }
+    examples:
+      - "EXECUTE IMMEDIATE $stmt;"
+      - |-
+        EXECUTE IMMEDIATE $$
+        DECLARE
+          radius_of_circle FLOAT;
+          area_of_circle FLOAT;
+        BEGIN
+          radius_of_circle := 3;
+          area_of_circle := PI() * radius_of_circle * radius_of_circle;
+          RETURN area_of_circle;
+        END;
+        $$
+        ;
+      - |-
+        CREATE PROCEDURE execute_immediate_local_variable()
+        RETURNS VARCHAR
+        AS
+        DECLARE
+          v1 VARCHAR DEFAULT 'CREATE TABLE temporary1 (i INTEGER)';
+          v2 VARCHAR DEFAULT 'INSERT INTO temporary1 (i) VALUES (76)';
+          result INTEGER DEFAULT 0;
+        BEGIN
+          EXECUTE IMMEDIATE v1;
+          EXECUTE IMMEDIATE v2  ||  ',(80)'  ||  ',(84)';
+          result := (SELECT SUM(i) FROM temporary1);
+          RETURN result::VARCHAR;
+        END;
+      - |-
+        CREATE OR REPLACE PROCEDURE min_max_invoices_sp(
+            minimum_price NUMBER(12,2),
+            maximum_price NUMBER(12,2))
+          RETURNS TABLE (id INTEGER, price NUMBER(12, 2))
+          LANGUAGE SQL
+        AS
+        DECLARE
+          rs RESULTSET;
+          query VARCHAR DEFAULT 'SELECT * FROM invoices WHERE price > ? AND price < ?';
+        BEGIN
+          rs := (EXECUTE IMMEDIATE :query USING (minimum_price, maximum_price));
+          RETURN TABLE(rs);
+        END;
+

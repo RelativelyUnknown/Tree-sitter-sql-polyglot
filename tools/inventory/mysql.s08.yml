@@ -1,0 +1,341 @@
+dialect: mysql
+engine: MySQL
+version: "8.4"
+source: https://dev.mysql.com/doc/refman/8.4/en/sql-statements.html
+
+statements:
+  - id: drop_tablespace
+    name: DROP TABLESPACE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/drop-tablespace.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP TABLESPACE ts1;"
+      - id: undo
+        sql: "DROP UNDO TABLESPACE ts1;"
+  - id: handler
+    name: HANDLER
+    doc: https://dev.mysql.com/doc/refman/8.4/en/handler.html
+    tier: low
+    probes:
+      - id: open
+        sql: "HANDLER t OPEN AS h;"
+      - id: read_index
+        sql: "HANDLER t READ idx = (1, 2) WHERE c > 0 LIMIT 5;"
+      - id: read_first
+        sql: "HANDLER t READ FIRST;"
+      - id: close
+        sql: "HANDLER t CLOSE;"
+  - id: import_table
+    name: IMPORT TABLE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/import-table.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "IMPORT TABLE FROM '/tmp/t1.sdi', '/tmp/t2.sdi';"
+  - id: lock_instance_for_backup
+    name: LOCK INSTANCE FOR BACKUP / UNLOCK INSTANCE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/lock-instance-for-backup.html
+    tier: low
+    probes:
+      - id: lock
+        sql: "LOCK INSTANCE FOR BACKUP;"
+      - id: unlock
+        sql: "UNLOCK INSTANCE;"
+  - id: xa
+    name: XA transaction statements
+    doc: https://dev.mysql.com/doc/refman/8.4/en/xa-statements.html
+    tier: low
+    probes:
+      - id: start
+        sql: "XA START 'xa1';"
+      - id: end_suspend
+        sql: "XA END 'xa1' SUSPEND FOR MIGRATE;"
+      - id: prepare
+        sql: "XA PREPARE 'xa1';"
+      - id: commit_one_phase
+        sql: "XA COMMIT 'xa1' ONE PHASE;"
+      - id: rollback
+        sql: "XA ROLLBACK 'xa1';"
+      - id: recover
+        sql: "XA RECOVER CONVERT XID;"
+  - id: purge_binary_logs
+    name: PURGE BINARY LOGS
+    doc: https://dev.mysql.com/doc/refman/8.4/en/purge-binary-logs.html
+    tier: low
+    probes:
+      - id: to
+        sql: "PURGE BINARY LOGS TO 'mysql-bin.010';"
+      - id: before
+        sql: "PURGE BINARY LOGS BEFORE '2019-04-02 22:46:26';"
+  - id: reset_binary_logs_and_gtids
+    name: RESET BINARY LOGS AND GTIDS
+    doc: https://dev.mysql.com/doc/refman/8.4/en/reset-binary-logs-and-gtids.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "RESET BINARY LOGS AND GTIDS;"
+      - id: to
+        sql: "RESET BINARY LOGS AND GTIDS TO 1234;"
+  - id: set_sql_log_bin
+    name: SET sql_log_bin
+    doc: https://dev.mysql.com/doc/refman/8.4/en/set-sql-log-bin.html
+    tier: low
+    probes:
+      - id: set_off
+        sql: "SET sql_log_bin = OFF;"
+      - id: set_on
+        sql: "SET sql_log_bin = ON;"
+  - id: change_replication_filter
+    name: CHANGE REPLICATION FILTER
+    doc: https://dev.mysql.com/doc/refman/8.4/en/change-replication-filter.html
+    tier: low
+    probes:
+      - id: do_db
+        sql: "CHANGE REPLICATION FILTER REPLICATE_DO_DB = (d1, d2);"
+      - id: rewrite_db_channel
+        sql: "CHANGE REPLICATION FILTER REPLICATE_REWRITE_DB = ((db1, db2)) FOR CHANNEL 'ch1';"
+  - id: change_replication_source_to
+    name: CHANGE REPLICATION SOURCE TO
+    doc: https://dev.mysql.com/doc/refman/8.4/en/change-replication-source-to.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CHANGE REPLICATION SOURCE TO SOURCE_HOST = 'host', SOURCE_USER = 'u', SOURCE_PASSWORD = 'p', SOURCE_PORT = 3306, SOURCE_AUTO_POSITION = 1;"
+      - id: channel
+        sql: "CHANGE REPLICATION SOURCE TO SOURCE_HOST = 'host' FOR CHANNEL 'ch1';"
+  - id: reset_replica
+    name: RESET REPLICA
+    doc: https://dev.mysql.com/doc/refman/8.4/en/reset-replica.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "RESET REPLICA;"
+      - id: all_channel
+        sql: "RESET REPLICA ALL FOR CHANNEL 'ch1';"
+  - id: start_replica
+    name: START REPLICA
+    doc: https://dev.mysql.com/doc/refman/8.4/en/start-replica.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "START REPLICA;"
+      - id: threads_until
+        sql: "START REPLICA IO_THREAD, SQL_THREAD UNTIL SOURCE_LOG_FILE = 'log', SOURCE_LOG_POS = 100 FOR CHANNEL 'ch1';"
+  - id: stop_replica
+    name: STOP REPLICA
+    doc: https://dev.mysql.com/doc/refman/8.4/en/stop-replica.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "STOP REPLICA;"
+      - id: threads_channel
+        sql: "STOP REPLICA IO_THREAD, SQL_THREAD FOR CHANNEL 'ch1';"
+  - id: start_group_replication
+    name: START GROUP_REPLICATION
+    doc: https://dev.mysql.com/doc/refman/8.4/en/start-group-replication.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "START GROUP_REPLICATION;"
+      - id: credentials
+        sql: "START GROUP_REPLICATION USER = 'u', PASSWORD = 'p', DEFAULT_AUTH = 'plugin';"
+  - id: stop_group_replication
+    name: STOP GROUP_REPLICATION
+    doc: https://dev.mysql.com/doc/refman/8.4/en/stop-group-replication.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "STOP GROUP_REPLICATION;"
+  - id: alter_resource_group
+    name: ALTER RESOURCE GROUP
+    doc: https://dev.mysql.com/doc/refman/8.4/en/alter-resource-group.html
+    tier: low
+    probes:
+      - id: vcpu
+        sql: "ALTER RESOURCE GROUP rg1 VCPU = 0-63;"
+      - id: priority_disable
+        sql: "ALTER RESOURCE GROUP rg1 THREAD_PRIORITY = 5 DISABLE FORCE;"
+  - id: create_resource_group
+    name: CREATE RESOURCE GROUP
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-resource-group.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE RESOURCE GROUP rg1 TYPE = USER VCPU = 0-3, 9-10 THREAD_PRIORITY = 5 ENABLE;"
+  - id: drop_resource_group
+    name: DROP RESOURCE GROUP
+    doc: https://dev.mysql.com/doc/refman/8.4/en/drop-resource-group.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP RESOURCE GROUP rg1;"
+      - id: force
+        sql: "DROP RESOURCE GROUP rg1 FORCE;"
+  - id: set_resource_group
+    name: SET RESOURCE GROUP
+    doc: https://dev.mysql.com/doc/refman/8.4/en/set-resource-group.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "SET RESOURCE GROUP rg1;"
+      - id: for_threads
+        sql: "SET RESOURCE GROUP rg1 FOR 14, 78, 4;"
+  - id: install_component
+    name: INSTALL COMPONENT
+    doc: https://dev.mysql.com/doc/refman/8.4/en/install-component.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "INSTALL COMPONENT 'file://component1', 'file://component2';"
+      - id: set
+        sql: "INSTALL COMPONENT 'file://component1' SET GLOBAL c.v = 1, PERSIST c.w = 2;"
+  - id: install_plugin
+    name: INSTALL PLUGIN
+    doc: https://dev.mysql.com/doc/refman/8.4/en/install-plugin.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "INSTALL PLUGIN myplugin SONAME 'plugin.so';"
+  - id: uninstall_component
+    name: UNINSTALL COMPONENT
+    doc: https://dev.mysql.com/doc/refman/8.4/en/uninstall-component.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "UNINSTALL COMPONENT 'file://component1', 'file://component2';"
+  - id: uninstall_plugin
+    name: UNINSTALL PLUGIN
+    doc: https://dev.mysql.com/doc/refman/8.4/en/uninstall-plugin.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "UNINSTALL PLUGIN myplugin;"
+  - id: clone
+    name: CLONE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/clone.html
+    tier: low
+    probes:
+      - id: local
+        sql: "CLONE LOCAL DATA DIRECTORY = '/path/to/clone_dir';"
+      - id: instance
+        sql: "CLONE INSTANCE FROM 'user'@'host':3306 IDENTIFIED BY 'password' DATA DIRECTORY = '/path/to/clone_dir' REQUIRE NO SSL;"
+  - id: show_binary_log_status
+    name: SHOW BINARY LOG STATUS
+    doc: https://dev.mysql.com/doc/refman/8.4/en/show-binary-log-status.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW BINARY LOG STATUS;"
+  - id: show_binary_logs
+    name: SHOW BINARY LOGS
+    doc: https://dev.mysql.com/doc/refman/8.4/en/show-binary-logs.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW BINARY LOGS;"
+  - id: show_binlog_events
+    name: SHOW BINLOG EVENTS
+    doc: https://dev.mysql.com/doc/refman/8.4/en/show-binlog-events.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW BINLOG EVENTS;"
+      - id: in_from_limit
+        sql: "SHOW BINLOG EVENTS IN 'binlog.000001' FROM 4 LIMIT 2, 10;"
+  - id: show_engine
+    name: SHOW ENGINE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/show-engine.html
+    tier: low
+    probes:
+      - id: status
+        sql: "SHOW ENGINE INNODB STATUS;"
+      - id: mutex
+        sql: "SHOW ENGINE INNODB MUTEX;"
+  - id: show_function_code
+    name: SHOW FUNCTION CODE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/show-function-code.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW FUNCTION CODE f;"
+  - id: show_open_tables
+    name: SHOW OPEN TABLES
+    doc: https://dev.mysql.com/doc/refman/8.4/en/show-open-tables.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW OPEN TABLES;"
+      - id: from_like
+        sql: "SHOW OPEN TABLES FROM d LIKE 't%';"
+      - id: in_where
+        sql: "SHOW OPEN TABLES IN d WHERE In_use > 0;"
+  - id: show_parse_tree
+    name: SHOW PARSE_TREE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/show-parse-tree.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW PARSE_TREE SELECT * FROM t3 WHERE o_id > 2;"
+  - id: show_plugins
+    name: SHOW PLUGINS
+    doc: https://dev.mysql.com/doc/refman/8.4/en/show-plugins.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW PLUGINS;"
+  - id: show_procedure_code
+    name: SHOW PROCEDURE CODE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/show-procedure-code.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW PROCEDURE CODE p;"
+  - id: show_profile
+    name: SHOW PROFILE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/show-profile.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW PROFILE;"
+      - id: types_for_query_limit
+        sql: "SHOW PROFILE CPU, BLOCK IO FOR QUERY 2 LIMIT 5 OFFSET 1;"
+  - id: show_profiles
+    name: SHOW PROFILES
+    doc: https://dev.mysql.com/doc/refman/8.4/en/show-profiles.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW PROFILES;"
+  - id: show_relaylog_events
+    name: SHOW RELAYLOG EVENTS
+    doc: https://dev.mysql.com/doc/refman/8.4/en/show-relaylog-events.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW RELAYLOG EVENTS;"
+      - id: in_from_limit_channel
+        sql: "SHOW RELAYLOG EVENTS IN 'relay.000001' FROM 4 LIMIT 2, 10 FOR CHANNEL 'ch1';"
+  - id: show_replica_status
+    name: SHOW REPLICA STATUS
+    doc: https://dev.mysql.com/doc/refman/8.4/en/show-replica-status.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW REPLICA STATUS;"
+      - id: channel
+        sql: "SHOW REPLICA STATUS FOR CHANNEL 'ch1';"
+  - id: show_replicas
+    name: SHOW REPLICAS
+    doc: https://dev.mysql.com/doc/refman/8.4/en/show-replicas.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW REPLICAS;"
+  - id: binlog
+    name: BINLOG
+    doc: https://dev.mysql.com/doc/refman/8.4/en/binlog.html
+    tier: low
+    probes:
+      - id: basic
+        sql: "BINLOG 'aGVsbG8=';"

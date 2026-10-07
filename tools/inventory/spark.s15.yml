@@ -1,0 +1,71 @@
+dialect: spark
+engine: Apache Spark SQL
+version: "4.x (docs/latest)"
+source: https://spark.apache.org/docs/latest/sql-ref-syntax.html
+
+statements:
+  - id: tablesample
+    name: TABLESAMPLE
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-sampling.html
+    tier: high
+    probes:
+      - id: percent_integer
+        sql: "SELECT * FROM t TABLESAMPLE (50 PERCENT);"
+      - id: percent_decimal
+        sql: "SELECT * FROM t TABLESAMPLE (12.5 PERCENT);"
+      - id: rows
+        sql: "SELECT * FROM t TABLESAMPLE (5 ROWS);"
+      - id: bucket
+        sql: "SELECT * FROM t TABLESAMPLE (BUCKET 4 OUT OF 10);"
+      - id: with_alias
+        sql: "SELECT * FROM t TABLESAMPLE (5 ROWS) AS s;"
+        note: Sampling clause in a table reference followed by an alias, per the SELECT table_reference grammar.
+    examples:
+      - "SELECT * FROM test TABLESAMPLE (50 PERCENT);"
+      - "SELECT * FROM test TABLESAMPLE (5 ROWS);"
+      - "SELECT * FROM test TABLESAMPLE (BUCKET 4 OUT OF 10);"
+
+  - id: table_valued_function
+    name: Table-valued Function
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-tvf.html
+    tier: high
+    probes:
+      - id: range_end
+        sql: "SELECT * FROM range(6);"
+      - id: range_start_end
+        sql: "SELECT * FROM range(5, 10);"
+      - id: range_step
+        sql: "SELECT * FROM range(0, 10, 2);"
+      - id: range_num_partitions
+        sql: "SELECT * FROM range(0, 10, 2, 200);"
+      - id: range_alias
+        sql: "SELECT * FROM range(5, 8) AS test;"
+      - id: explode
+        sql: "SELECT * FROM explode(array(10, 20));"
+      - id: explode_outer
+        sql: "SELECT * FROM explode_outer(array(10, 20));"
+      - id: inline
+        sql: "SELECT * FROM inline(array(struct(1, 'a'), struct(2, 'b')));"
+      - id: inline_outer
+        sql: "SELECT * FROM inline_outer(array(struct(1, 'a'), struct(2, 'b')));"
+      - id: posexplode
+        sql: "SELECT * FROM posexplode(array(10, 20));"
+      - id: posexplode_outer
+        sql: "SELECT * FROM posexplode_outer(array(10, 20));"
+      - id: stack
+        sql: "SELECT * FROM stack(2, 1, 2, 3);"
+      - id: json_tuple
+        sql: |-
+          SELECT * FROM json_tuple('{"a":1, "b":2}', 'a', 'b');
+      - id: lateral_join_explode
+        sql: "SELECT * FROM t, LATERAL explode(ARRAY(3, 4)) AS c2;"
+      - id: select_list_explode
+        sql: "SELECT explode(array(10, 20));"
+        note: TVFs may be specified in the SELECT clause per the page's second table.
+      - id: lateral_view_explode
+        sql: "SELECT * FROM t LATERAL VIEW explode(ARRAY(3, 4)) tbl AS c2;"
+        note: TVFs may be specified in LATERAL VIEW clauses per the page's second table.
+    examples:
+      - "SELECT * FROM range(6 + cos(3));"
+      - "SELECT * FROM range(5, 10);"
+      - "SELECT * FROM range(0, 10, 2, 200);"

@@ -1,0 +1,91 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: select_group_by
+    name: SELECT ... GROUP BY / GROUPING SETS / CUBE / ROLLUP
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-groupby/
+    tier: high
+    probes:
+      - id: group_by_single
+        sql: "SELECT a, sum(b) FROM t GROUP BY a;"
+      - id: group_by_multiple
+        sql: "SELECT a, b, count(*) FROM t GROUP BY a, b;"
+      - id: group_by_expression
+        sql: "SELECT upper(a), count(*) FROM t GROUP BY upper(a);"
+      - id: group_by_position
+        sql: "SELECT a, count(*) FROM t GROUP BY 1;"
+        note: Position aliases need hive.groupby.position.alias=true (syntax groupByExpression).
+      - id: group_by_no_clause_aggregate
+        sql: "SELECT COUNT(*) FROM t;"
+      - id: group_by_count_distinct
+        sql: "SELECT a, count(DISTINCT b) FROM t GROUP BY a;"
+      - id: group_by_distinct_same_column
+        sql: "SELECT a, count(DISTINCT b), count(*), sum(DISTINCT b) FROM t GROUP BY a;"
+      - id: group_by_insert_overwrite
+        sql: "INSERT OVERWRITE TABLE s SELECT a, count(DISTINCT b) FROM t GROUP BY a;"
+      - id: group_by_multi_insert
+        sql: |-
+          FROM t INSERT OVERWRITE TABLE s1 SELECT a, count(DISTINCT b) GROUP BY a INSERT OVERWRITE DIRECTORY '/tmp/s2' SELECT c, count(DISTINCT b) GROUP BY c;
+      - id: group_by_with_rollup
+        sql: "SELECT a, b, sum(c) FROM t GROUP BY a, b WITH ROLLUP;"
+        note: Enhanced Aggregation page, linked from the GroupBy page (Hive 0.10.0+).
+      - id: group_by_with_cube
+        sql: "SELECT a, b, sum(c) FROM t GROUP BY a, b WITH CUBE;"
+      - id: group_by_grouping_sets
+        sql: "SELECT a, b, sum(c) FROM t GROUP BY a, b GROUPING SETS ((a, b), a, b, ());"
+      - id: group_by_grouping_sets_simple
+        sql: "SELECT a, b, sum(c) FROM t GROUP BY a, b GROUPING SETS (a, b);"
+      - id: group_by_grouping_id
+        sql: "SELECT a, b, GROUPING__ID, count(*) FROM t GROUP BY a, b WITH CUBE;"
+      - id: group_by_grouping_fn
+        sql: "SELECT a, b, grouping(a), count(*) FROM t GROUP BY a, b GROUPING SETS ((a, b), a);"
+      - id: group_by_having
+        sql: "SELECT a, count(*) FROM t GROUP BY a HAVING count(*) > 1;"
+    examples:
+      - "SELECT a, sum(b) FROM t1 GROUP BY a;"
+      - "INSERT OVERWRITE TABLE pv_gender_sum SELECT pv_users.gender, count (DISTINCT pv_users.userid) FROM pv_users GROUP BY pv_users.gender;"
+      - "INSERT OVERWRITE TABLE pv_gender_agg SELECT pv_users.gender, count(DISTINCT pv_users.userid), count(*), sum(DISTINCT pv_users.userid) FROM pv_users GROUP BY pv_users.gender;"
+
+  - id: select_order_cluster_distribute_sort
+    name: ORDER BY / SORT BY / CLUSTER BY / DISTRIBUTE BY
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-sortby/
+    tier: high
+    probes:
+      - id: order_by_basic
+        sql: "SELECT a, b FROM t ORDER BY a;"
+      - id: order_by_asc_desc
+        sql: "SELECT a, b FROM t ORDER BY a ASC, b DESC;"
+      - id: order_by_nulls_first
+        sql: "SELECT a FROM t ORDER BY a NULLS FIRST;"
+      - id: order_by_nulls_last
+        sql: "SELECT a FROM t ORDER BY a DESC NULLS LAST;"
+      - id: order_by_multi_nulls
+        sql: "SELECT a, b FROM t ORDER BY a ASC NULLS LAST, b DESC NULLS FIRST;"
+      - id: order_by_position
+        sql: "SELECT a, b FROM t ORDER BY 1;"
+      - id: order_by_limit
+        sql: "SELECT a FROM t ORDER BY a LIMIT 10;"
+      - id: sort_by_basic
+        sql: "SELECT a, b FROM t SORT BY a;"
+      - id: sort_by_asc_desc
+        sql: "SELECT key, value FROM src SORT BY key ASC, value DESC;"
+      - id: distribute_by_basic
+        sql: "SELECT a, b FROM t DISTRIBUTE BY a;"
+      - id: distribute_by_multiple
+        sql: "SELECT a, b FROM t DISTRIBUTE BY a, b;"
+      - id: distribute_by_sort_by
+        sql: "SELECT a, b FROM t DISTRIBUTE BY a SORT BY a ASC, b DESC;"
+      - id: cluster_by_basic
+        sql: "SELECT a, b FROM t CLUSTER BY a;"
+      - id: cluster_by_multiple
+        sql: "SELECT a, b FROM t CLUSTER BY a, b;"
+      - id: sort_by_with_limit
+        sql: "SELECT a FROM t SORT BY a LIMIT 5;"
+      - id: sort_by_after_transform
+        sql: "FROM (FROM (FROM src SELECT TRANSFORM(value) USING 'mapper' AS value, count) mapped SELECT cast(value as double) AS value, cast(count as int) AS count SORT BY value, count) sorted SELECT TRANSFORM(value, count) USING 'reducer' AS whatever;"
+    examples:
+      - "SELECT key, value FROM src SORT BY key ASC, value DESC;"
+      - "FROM (FROM (FROM src SELECT TRANSFORM(value) USING 'mapper' AS value, count) mapped SELECT cast(value as double) AS value, cast(count as int) AS count SORT BY value, count) sorted SELECT TRANSFORM(value, count) USING 'reducer' AS whatever;"

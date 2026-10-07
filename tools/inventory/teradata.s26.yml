@@ -1,0 +1,189 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: execute_immediate
+    name: EXECUTE IMMEDIATE
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/V5WK29cok~FGfcHCbCpqHQ
+    tier: high
+    probes:
+      - id: string_variable
+        sql: |-
+          CREATE PROCEDURE p ()
+          BEGIN
+            DECLARE sql_stmt VARCHAR(100);
+            SET sql_stmt = 'DELETE FROM t';
+            EXECUTE IMMEDIATE sql_stmt;
+          END;
+        note: statement_name is a literal, an SQL string variable or a parameter; valid only inside a stored procedure
+      - id: literal
+        sql: |-
+          CREATE PROCEDURE p ()
+          BEGIN
+            EXECUTE IMMEDIATE 'DELETE FROM t';
+          END;
+      - id: in_procedure
+        sql: |-
+          CREATE PROCEDURE p (IN stmt VARCHAR(100))
+          BEGIN
+            EXECUTE IMMEDIATE stmt;
+          END;
+    examples:
+      - |-
+        CREATE PROCEDURE sales_update(store_table VARCHAR(10),
+                                      item INTEGER,
+                                      price DECIMAL(8,2) )
+        BEGIN
+          DECLARE sql_stmt VARCHAR(100);
+          SET sql_stmt = 'UPDATE ' || store_table ||  ' SET store_price=' || price ||
+                         ' WHERE store_item =' || item;
+          EXECUTE IMMEDIATE sql_stmt;
+        END;
+
+  - id: create_queue_table
+    name: CREATE TABLE (Queue Table Form)
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/Zp_QXTFuokNGwqGLHA5gfQ
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE TABLE t, QUEUE (qits TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), c INTEGER);"
+      - id: set_multiset
+        sql: "CREATE MULTISET TABLE t, QUEUE (qits TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), c INTEGER);"
+      - id: ct_abbreviation
+        sql: "CT t, QUEUE (qits TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), c INTEGER);"
+      - id: table_options
+        sql: "CREATE TABLE t, QUEUE, FALLBACK, NO JOURNAL, CHECKSUM = DEFAULT (qits TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), c INTEGER);"
+      - id: primary_index
+        sql: "CREATE TABLE t, QUEUE (qits TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), c INTEGER) PRIMARY INDEX (c);"
+      - id: secondary_index
+        sql: "CREATE TABLE t, QUEUE (qits TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6), c INTEGER) UNIQUE INDEX idx (c);"
+    examples:
+      - |-
+        CREATE SET TABLE qtbl_1, QUEUE, FALLBACK,
+        NO BEFORE JOURNAL,
+        NO AFTER JOURNAL (
+         col_1 TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+         col_2 INTEGER,
+         col_3 INTEGER)
+        PRIMARY INDEX (col_2, col_3);
+      - |-
+        CREATE MULTISET TABLE qtbl_3, QUEUE,
+        NO BEFORE JOURNAL,
+        NO AFTER JOURNAL (
+         qits  TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+         col_2 INTEGER,
+         col_3 INTEGER CHECK (col_3 > 10))
+        PRIMARY INDEX (qits);
+
+  - id: create_foreign_table
+    name: CREATE FOREIGN TABLE
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/Zxgx1jonoNb2IkqgpfhudA
+    tier: medium
+    probes:
+      - id: location_only
+        sql: "CREATE FOREIGN TABLE t USING (LOCATION ('/S3/bucket.s3.amazonaws.com/data'));"
+      - id: multiset_columns
+        sql: "CREATE MULTISET FOREIGN TABLE t (Location VARCHAR(2048) CHARACTER SET UNICODE CASESPECIFIC, Payload JSON(8388096) INLINE LENGTH 32000 CHARACTER SET UNICODE) USING (LOCATION ('/S3/bucket.s3.amazonaws.com/data')) NO PRIMARY INDEX;"
+      - id: external_security
+        sql: "CREATE FOREIGN TABLE t, EXTERNAL SECURITY DEFINER TRUSTED auth USING (LOCATION ('/S3/bucket.s3.amazonaws.com/data'));"
+      - id: using_options
+        sql: "CREATE FOREIGN TABLE t USING (LOCATION ('/S3/bucket.s3.amazonaws.com/data') PATHPATTERN ('$Var1/$Var2') MANIFEST ('TRUE') ROWFORMAT ('{\"record_delimiter\":\"\\n\"}') STOREDAS ('TEXTFILE') HEADER ('TRUE') STRIP_EXTERIOR_SPACES ('TRUE') STRIP_ENCLOSING_CHAR ('NONE'));"
+      - id: table_format_snapshot
+        sql: "CREATE FOREIGN TABLE t USING (LOCATION ('/S3/bucket.s3.amazonaws.com/data') TABLE_FORMAT ('DELTALAKE') SNAPSHOT_LOCATION ('/S3/bucket.s3.amazonaws.com/manifest'));"
+      - id: partition_by_spec
+        sql: "CREATE FOREIGN TABLE t USING (LOCATION ('/S3/bucket.s3.amazonaws.com/data')) PARTITION BY (COLUMN, year_a INTEGER);"
+    examples:
+      - |-
+        CREATE MULTISET FOREIGN TABLE sensordata (
+          Location VARCHAR(2048) CHARACTER SET UNICODE CASESPECIFIC,
+          Payload JSON(8388096) INLINE LENGTH 32000 CHARACTER SET UNICODE
+        )
+        USING (
+          LOCATION ('/S3/YOUR-BUCKET.s3.amazonaws.com/data/logs')
+          PATHPATTERN ('$Var1/$Var2/$var3/$Var4/$date')
+        )
+        NO PRIMARY INDEX;
+      - |-
+        CREATE FOREIGN TABLE riverflow_parquet
+        , EXTERNAL SECURITY MyAuthObj
+        (
+        Location VARCHAR(2048) CHARACTER SET UNICODE CASESPECIFIC
+        , GageHeight2 DOUBLE PRECISION
+        , Flow DOUBLE PRECISION
+        , site_no BIGINT
+        , datetime VARCHAR(16) CHARACTER SET UNICODE CASESPECIFIC
+        , Precipitation DOUBLE PRECISION
+        , GageHeight DOUBLE PRECISION
+        )
+        USING (
+        LOCATION ('/S3/YOUR-BUCKET.s3.amazonaws.com/PARQUETDATA')
+        STOREDAS ('PARQUET')
+        ) NO PRIMARY INDEX
+        PARTITION BY COLUMN ;
+
+  - id: create_error_table
+    name: CREATE ERROR TABLE
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/ZcvETGeAOUM9~r5dU3zmSQ
+    tier: medium
+    probes:
+      - id: named
+        sql: "CREATE ERROR TABLE e FOR t;"
+      - id: default_name
+        sql: "CREATE ERROR TABLE FOR t;"
+      - id: qualified
+        sql: "CREATE ERROR TABLE db1.e FOR db2.t;"
+      - id: no_rls
+        sql: "CREATE ERROR TABLE e FOR t NO RLS;"
+    examples:
+      - "CREATE ERROR TABLE e FOR t;"
+      - |-
+        CREATE ERROR TABLE err_table_1 FOR table_1_RLS_constraints
+          NO RLS;
+      - "CREATE ERROR TABLE FOR t;"
+
+  - id: alter_foreign_table
+    name: ALTER FOREIGN TABLE
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/yGYq~dv9cWSv_NPuaHMnrQ
+    tier: medium
+    probes:
+      - id: update_location
+        sql: "ALTER FOREIGN TABLE t UPDATE LOCATION ('/S3/s3.amazonaws.com/bucket/data/');"
+      - id: update_pathpattern
+        sql: "ALTER FOREIGN TABLE t UPDATE PATHPATTERN ('$var1/$year_b/$month_b/$var4');"
+      - id: refresh_snapshot
+        sql: "ALTER FOREIGN TABLE t REFRESH SNAPSHOT_LOCATION;"
+      - id: add_column
+        sql: "ALTER FOREIGN TABLE t ADD c INTEGER;"
+      - id: drop_column
+        sql: "ALTER FOREIGN TABLE t DROP c;"
+      - id: rename_column
+        sql: "ALTER FOREIGN TABLE t RENAME c TO d;"
+      - id: modify_partition_by
+        sql: "ALTER FOREIGN TABLE t MODIFY PARTITION BY (COLUMN, year_a INTEGER);"
+      - id: external_security
+        sql: "ALTER FOREIGN TABLE t, EXTERNAL SECURITY DEFINER TRUSTED auth;"
+    examples:
+      - "ALTER FOREIGN TABLE t2 UPDATE LOCATION ('/S3/s3.amazonaws.com/nos-opt-csv/PartitionBy/year_a=2021/');"
+      - "ALTER FOREIGN TABLE t2 UPDATE PATHPATTERN ('$var1/$year_b/$month_b/$var4');"
+      - "ALTER FOREIGN TABLE test_sales REFRESH SNAPSHOT_LOCATION;"
+
+  - id: alter_table_to_current
+    name: ALTER TABLE TO CURRENT
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/y6M_00UH4SsSzOd68SDy3Q
+    tier: medium
+    probes:
+      - id: basic
+        sql: "ALTER TABLE t TO CURRENT;"
+      - id: with_insert_into
+        sql: "ALTER TABLE t TO CURRENT WITH INSERT INTO save_t;"
+      - id: with_insert
+        sql: "ALTER TABLE t TO CURRENT WITH INSERT save_t;"
+      - id: with_delete
+        sql: "ALTER TABLE t TO CURRENT WITH DELETE;"
+      - id: join_index
+        sql: "ALTER TABLE j_sales TO CURRENT;"
+    examples:
+      - "ALTER TABLE sales TO CURRENT;"
+      - "ALTER TABLE j_sales TO CURRENT;"

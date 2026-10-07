@@ -1,0 +1,85 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: iterate
+    name: ITERATE statement
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/control-flow/iterate-stmt
+    tier: high
+    probes:
+      - id: iterate_in_loop
+        sql: |-
+          BEGIN
+            lbl: LOOP
+              ITERATE lbl;
+            END LOOP lbl;
+          END;
+        note: ITERATE label is only valid inside a labeled looping statement
+      - id: iterate_in_while
+        sql: |-
+          BEGIN
+            DECLARE n INT DEFAULT 0;
+            lbl: WHILE n < 10 DO
+              SET n = n + 1;
+              ITERATE lbl;
+            END WHILE lbl;
+          END;
+        note: label identifies a looping statement that contains ITERATE directly or indirectly
+    examples:
+      - |-
+        BEGIN
+          DECLARE sum INT DEFAULT 0;
+          DECLARE num INT DEFAULT 0;
+          sumNumbers: LOOP
+            SET num = num + 1;
+            IF num > 10 THEN
+              LEAVE sumNumbers;
+            END IF;
+            IF num % 2 = 0 THEN
+              ITERATE sumNumbers;
+            END IF;
+            SET sum = sum + num;
+          END LOOP sumNumbers;
+          VALUES (sum);
+        END;
+
+  - id: leave
+    name: LEAVE statement
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/control-flow/leave-stmt
+    tier: high
+    probes:
+      - id: leave_in_loop
+        sql: |-
+          BEGIN
+            lbl: LOOP
+              LEAVE lbl;
+            END LOOP lbl;
+          END;
+        note: LEAVE label is only valid inside a labeled statement that contains it
+      - id: leave_compound
+        sql: |-
+          BEGIN
+            lbl: BEGIN
+              LEAVE lbl;
+            END lbl;
+          END;
+        note: label identifies a statement (including a labeled compound statement) that directly or indirectly contains LEAVE
+    examples:
+      - |-
+        BEGIN
+          DECLARE sum INT DEFAULT 0;
+          DECLARE num INT DEFAULT 0;
+          sumNumbers: LOOP
+            SET num = num + 1;
+            IF num > 10 THEN
+              LEAVE sumNumbers;
+            END IF;
+            IF num % 2 = 0 THEN
+              ITERATE sumNumbers;
+            END IF;
+            SET sum = sum + num;
+          END LOOP sumNumbers;
+          VALUES (sum);
+        END;

@@ -1,0 +1,124 @@
+dialect: spark
+engine: Apache Spark SQL
+version: "4.x (docs/latest)"
+source: https://spark.apache.org/docs/latest/sql-ref-syntax.html
+
+statements:
+  - id: pipe_syntax
+    name: Pipe syntax
+    doc: https://spark.apache.org/docs/latest/sql-pipe-syntax.html
+    tier: high
+    probes:
+      - { id: from_table, sql: "FROM t;" }
+      - { id: table_source, sql: "TABLE t;" }
+      - { id: select, sql: "FROM t |> SELECT a, b AS c;" }
+      - { id: select_distinct, sql: "FROM t |> SELECT DISTINCT a;" }
+      - { id: select_star, sql: "FROM t |> SELECT *;" }
+      - { id: select_window, sql: "FROM t |> SELECT a, SUM(b) OVER (PARTITION BY a) AS s;" }
+      - { id: extend, sql: "FROM t |> EXTEND a * 2 AS d;" }
+      - { id: set, sql: "FROM t |> SET a = a * 2, b = b + 1;" }
+      - { id: drop, sql: "FROM t |> DROP a, b;" }
+      - { id: as_alias, sql: "FROM t |> AS x |> SELECT x.a;" }
+      - { id: where, sql: "FROM t |> WHERE a > 1;" }
+      - { id: limit, sql: "FROM t |> LIMIT 10;" }
+      - { id: limit_offset, sql: "FROM t |> LIMIT 10 OFFSET 5;" }
+      - { id: offset_only, sql: "FROM t |> OFFSET 5;" }
+      - { id: aggregate_full, sql: "FROM t |> AGGREGATE COUNT(a) AS cnt, SUM(b);" }
+      - { id: aggregate_group_by, sql: "FROM t |> AGGREGATE COUNT(b) AS cnt GROUP BY a;" }
+      - { id: aggregate_group_alias, sql: "FROM t |> AGGREGATE SUM(b) GROUP BY a + 1 AS k;" }
+      - { id: aggregate_group_ordinal, sql: "FROM t |> AGGREGATE COUNT(*) GROUP BY 2;" }
+      - { id: aggregate_group_only, sql: "FROM t |> AGGREGATE GROUP BY a;" }
+      - { id: join_on, sql: "FROM t |> JOIN u ON t.a = u.a;" }
+      - { id: join_using, sql: "FROM t |> JOIN u USING (a);" }
+      - { id: left_join, sql: "FROM t |> LEFT JOIN u ON t.a = u.a;" }
+      - { id: right_join, sql: "FROM t |> RIGHT JOIN u ON t.a = u.a;" }
+      - { id: full_join, sql: "FROM t |> FULL JOIN u ON t.a = u.a;" }
+      - { id: cross_join, sql: "FROM t |> CROSS JOIN u;" }
+      - { id: semi_join, sql: "FROM t |> SEMI JOIN u ON t.a = u.a;" }
+      - { id: anti_join, sql: "FROM t |> ANTI JOIN u ON t.a = u.a;" }
+      - { id: natural_join, sql: "FROM t |> NATURAL JOIN u;" }
+      - { id: lateral_join, sql: "FROM t |> LATERAL JOIN (SELECT t.a + 1 AS b) AS l;" }
+      - { id: join_subquery, sql: "FROM t |> AS lhs |> JOIN (SELECT 1 AS a) AS rhs ON lhs.a = rhs.a;" }
+      - { id: order_by, sql: "FROM t |> ORDER BY a DESC, b ASC NULLS LAST;" }
+      - { id: union_all, sql: "FROM t |> UNION ALL (SELECT 1, 2);" }
+      - { id: union_distinct, sql: "FROM t |> UNION DISTINCT (SELECT 1, 2);" }
+      - { id: intersect_all, sql: "FROM t |> INTERSECT ALL (SELECT 1, 2);" }
+      - { id: intersect_distinct, sql: "FROM t |> INTERSECT DISTINCT (SELECT 1, 2);" }
+      - { id: except_all, sql: "FROM t |> EXCEPT ALL (SELECT 1, 2);" }
+      - { id: except_distinct, sql: "FROM t |> EXCEPT DISTINCT (SELECT 1, 2);" }
+      - { id: union_values_no_parens, sql: "VALUES (0), (1) tab(a, b) |> UNION ALL VALUES (2), (3) tab(c, d);", note: "Doc example form: set operator followed by an unparenthesised query" }
+      - { id: tablesample_rows, sql: "FROM t |> TABLESAMPLE (1 ROWS);" }
+      - { id: tablesample_percent, sql: "FROM t |> TABLESAMPLE (100 PERCENT);" }
+      - { id: pivot, sql: "FROM t |> PIVOT (SUM(earnings) FOR course IN ('dotNET', 'Java'));" }
+      - { id: unpivot, sql: "FROM t |> UNPIVOT (earnings FOR year IN (`2012`, `2013`));" }
+      - { id: chained, sql: "FROM t |> WHERE a > 1 |> AGGREGATE COUNT(*) AS c GROUP BY b |> ORDER BY c DESC |> LIMIT 5;" }
+      - { id: suffix_on_select, sql: "SELECT a, b FROM t |> WHERE a > 1;" }
+      - { id: suffix_on_values, sql: "VALUES (0), (1) tab(col) |> EXTEND col * 2 AS result;" }
+      - { id: in_subquery, sql: "SELECT * FROM (FROM t |> WHERE a > 1) AS s;" }
+      - { id: in_ctas, sql: "CREATE TABLE t2 AS FROM t |> WHERE a > 1;" }
+      - { id: in_cte, sql: "WITH c AS (FROM t |> SELECT a) FROM c |> WHERE a > 0;" }
+    examples:
+      - |-
+        FROM customer
+        |> LEFT OUTER JOIN orders ON c_custkey = o_custkey AND o_comment NOT LIKE '%unusual%packages%'
+        |> AGGREGATE COUNT(o_orderkey) c_count GROUP BY c_custkey
+        |> AGGREGATE COUNT(*) AS custdist GROUP BY c_count
+        |> ORDER BY custdist DESC, c_count DESC;
+      - "VALUES (0), (1) tab(col) |> SET col = col * 2;"
+      - "VALUES (0), (1) tab(col) |> AGGREGATE COUNT(col) AS count;"
+
+  - id: alter_table
+    name: ALTER TABLE
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-alter-table.html
+    tier: high
+    probes:
+      - { id: rename_to, sql: "ALTER TABLE t RENAME TO t2;" }
+      - { id: rename_to_qualified, sql: "ALTER TABLE db.t RENAME TO db.t2;" }
+      - { id: rename_partition, sql: "ALTER TABLE t PARTITION (age = '10') RENAME TO PARTITION (age = '15');" }
+      - { id: rename_partition_typed_literal, sql: "ALTER TABLE t PARTITION (d = date'2019-01-02') RENAME TO PARTITION (d = date'2019-01-03');" }
+      - { id: add_columns, sql: "ALTER TABLE t ADD COLUMNS (c1 string, c2 timestamp);" }
+      - { id: add_columns_comment, sql: "ALTER TABLE t ADD COLUMNS (c1 string COMMENT 'note');" }
+      - { id: drop_column, sql: "ALTER TABLE t DROP COLUMN c1;" }
+      - { id: drop_columns_paren, sql: "ALTER TABLE t DROP COLUMNS (c1, c2);" }
+      - { id: drop_columns_list, sql: "ALTER TABLE t DROP COLUMNS c1, c2;" }
+      - { id: rename_column, sql: "ALTER TABLE t RENAME COLUMN c1 TO c2;" }
+      - { id: alter_column_comment, sql: "ALTER TABLE t ALTER COLUMN c1 COMMENT 'new comment';" }
+      - { id: alter_column_type, sql: "ALTER TABLE t ALTER COLUMN c1 TYPE bigint;" }
+      - { id: alter_column_position_first, sql: "ALTER TABLE t ALTER COLUMN c1 FIRST;" }
+      - { id: alter_column_position_after, sql: "ALTER TABLE t ALTER COLUMN c1 AFTER c2;" }
+      - { id: alter_column_set_not_null, sql: "ALTER TABLE t ALTER COLUMN c1 SET NOT NULL;" }
+      - { id: alter_column_drop_not_null, sql: "ALTER TABLE t ALTER COLUMN c1 DROP NOT NULL;" }
+      - { id: alter_column_set_default, sql: "ALTER TABLE t ALTER COLUMN c1 SET DEFAULT 0;" }
+      - { id: alter_column_drop_default, sql: "ALTER TABLE t ALTER COLUMN c1 DROP DEFAULT;" }
+      - { id: change_column_comment, sql: "ALTER TABLE t CHANGE COLUMN c1 COMMENT 'new comment';" }
+      - { id: change_without_column_keyword, sql: "ALTER TABLE t CHANGE c1 TYPE bigint;" }
+      - { id: replace_columns, sql: "ALTER TABLE t REPLACE COLUMNS (name string, id int COMMENT 'new comment');" }
+      - { id: replace_columns_no_parens, sql: "ALTER TABLE t REPLACE COLUMNS name string, id int;" }
+      - { id: replace_columns_position, sql: "ALTER TABLE t REPLACE COLUMNS (id int FIRST, name string AFTER id);" }
+      - { id: replace_columns_partition, sql: "ALTER TABLE t PARTITION (p = 1) REPLACE COLUMNS (name string);" }
+      - { id: add_partition, sql: "ALTER TABLE t ADD PARTITION (age = 18);" }
+      - { id: add_partition_if_not_exists_multi, sql: "ALTER TABLE t ADD IF NOT EXISTS PARTITION (age = 18) PARTITION (age = 20);" }
+      - { id: add_partition_location, sql: "ALTER TABLE t ADD PARTITION (age = 18) LOCATION '/path';", note: "Spark grammar accepts an optional LOCATION per partition; not in the doc syntax block" }
+      - { id: drop_partition, sql: "ALTER TABLE t DROP PARTITION (age = 18);" }
+      - { id: drop_partition_if_exists, sql: "ALTER TABLE t DROP IF EXISTS PARTITION (age = 18);" }
+      - { id: drop_partition_multi, sql: "ALTER TABLE t DROP PARTITION (age = 18), PARTITION (age = 20);" }
+      - { id: drop_partition_purge, sql: "ALTER TABLE t DROP PARTITION (age = 18) PURGE;" }
+      - { id: cluster_by, sql: "ALTER TABLE t CLUSTER BY (gender, country);" }
+      - { id: cluster_by_none, sql: "ALTER TABLE t CLUSTER BY NONE;" }
+      - { id: set_tblproperties, sql: "ALTER TABLE t SET TBLPROPERTIES ('key1' = 'val1', 'key2' = 'val2');" }
+      - { id: unset_tblproperties, sql: "ALTER TABLE t UNSET TBLPROPERTIES ('key1', 'key2');" }
+      - { id: unset_tblproperties_if_exists, sql: "ALTER TABLE t UNSET TBLPROPERTIES IF EXISTS ('key1');" }
+      - { id: set_serdeproperties, sql: "ALTER TABLE t SET SERDEPROPERTIES ('key1' = 'val1');" }
+      - { id: set_serdeproperties_partition, sql: "ALTER TABLE t PARTITION (p = 1) SET SERDEPROPERTIES ('key1' = 'val1');" }
+      - { id: set_serde, sql: "ALTER TABLE t SET SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe';" }
+      - { id: set_serde_with_properties, sql: "ALTER TABLE t SET SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe' WITH SERDEPROPERTIES ('key1' = 'val1');" }
+      - { id: set_serde_partition, sql: "ALTER TABLE t PARTITION (p = 1) SET SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe';" }
+      - { id: set_fileformat, sql: "ALTER TABLE t SET FILEFORMAT PARQUET;" }
+      - { id: set_fileformat_partition, sql: "ALTER TABLE t PARTITION (p = 1) SET FILEFORMAT ORC;" }
+      - { id: set_location, sql: "ALTER TABLE t SET LOCATION '/new/location';" }
+      - { id: set_location_partition, sql: "ALTER TABLE t PARTITION (p = 1) SET LOCATION '/new/location';" }
+      - { id: recover_partitions, sql: "ALTER TABLE t RECOVER PARTITIONS;" }
+    examples:
+      - "ALTER TABLE Student RENAME TO StudentInfo;"
+      - "ALTER TABLE StudentInfo ADD columns (LastName string, DOB timestamp);"
+      - "ALTER TABLE StudentInfo ADD IF NOT EXISTS PARTITION (age=18) PARTITION (age=20);"

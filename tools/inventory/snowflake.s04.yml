@@ -1,0 +1,164 @@
+dialect: snowflake
+engine: Snowflake
+version: "current (docs read 2026-10-04)"
+source: https://docs.snowflake.com/en/sql-reference/sql-all
+
+statements:
+  - id: undrop_table
+    name: UNDROP TABLE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/undrop-table
+    tier: high
+    probes:
+      - id: basic
+        sql: "UNDROP TABLE t;"
+      - id: qualified_name
+        sql: "UNDROP TABLE db1.s1.t;"
+      - id: identifier_by_id
+        sql: "UNDROP TABLE IDENTIFIER(408578);"
+        note: The IDENTIFIER keyword with the system-generated table ID, per the usage notes and the UNDROP by ID example.
+    examples:
+      - "UNDROP TABLE t2;"
+      - "UNDROP TABLE IDENTIFIER(408578);"
+
+  - id: alter_alert
+    name: ALTER ALERT
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-alert
+    tier: medium
+    probes:
+      - id: resume
+        sql: "ALTER ALERT IF EXISTS a RESUME;"
+      - id: suspend
+        sql: "ALTER ALERT a SUSPEND;"
+      - id: set_properties
+        sql: "ALTER ALERT a SET WAREHOUSE = w SCHEDULE = '5 MINUTE' COMMENT = 'c' SUSPEND_ALERT_AFTER_NUM_FAILURES = 3;"
+      - id: set_schedule_cron
+        sql: "ALTER ALERT a SET SCHEDULE = 'USING CRON 0 * * * * UTC';"
+      - id: set_config_runbook
+        sql: "ALTER ALERT a SET CONFIG = '{\"threshold\": 25}' RUNBOOK = 'https://example.com/runbook';"
+      - id: from_template
+        sql: "ALTER ALERT a FROM TEMPLATE tmpl SET TEMPLATE_PARAMS = '{\"X\": 1}';"
+      - id: set_tag
+        sql: "ALTER ALERT a SET TAG t1 = 'v1', t2 = 'v2';"
+      - id: unset_properties
+        sql: "ALTER ALERT IF EXISTS a UNSET WAREHOUSE COMMENT;"
+      - id: unset_tag
+        sql: "ALTER ALERT a UNSET TAG t1, t2;"
+      - id: modify_condition
+        sql: "ALTER ALERT a MODIFY CONDITION EXISTS (SELECT 1 FROM t WHERE c > 5);"
+      - id: modify_action
+        sql: "ALTER ALERT a MODIFY ACTION CALL send_notification();"
+    examples:
+      - |-
+        ALTER ALERT my_alert SET CONFIG = $${
+          "enabled": true,
+          "threshold": 25,
+          "notify": "oncall"
+        }$$;
+      - "ALTER ALERT my_alert UNSET CONFIG;"
+      - "ALTER ALERT my_alert SET RUNBOOK = 'https://www.snowflake.com/alerts/my-alert-runbook';"
+
+  - id: alter_api_integration
+    name: ALTER API INTEGRATION
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-api-integration
+    tier: medium
+    probes:
+      - id: set_enabled
+        sql: "ALTER API INTEGRATION i SET ENABLED = TRUE;"
+      - id: set_optional_api_keyword_omitted
+        sql: "ALTER INTEGRATION IF EXISTS i SET API_KEY = 'k' COMMENT = 'c';"
+        note: The syntax block writes [ API ], so the keyword is optional.
+      - id: set_aws_role
+        sql: "ALTER API INTEGRATION i SET API_AWS_ROLE_ARN = 'arn:aws:iam::123456789012:role/r';"
+      - id: set_azure_app
+        sql: "ALTER API INTEGRATION i SET AZURE_AD_APPLICATION_ID = 'app-id';"
+      - id: set_prefixes
+        sql: "ALTER API INTEGRATION i SET API_ALLOWED_PREFIXES = ('https://x.example.com/prod/') API_BLOCKED_PREFIXES = ('https://x.example.com/prod/admin/');"
+      - id: set_allowed_secrets
+        sql: "ALTER API INTEGRATION i SET ALLOWED_AUTHENTICATION_SECRETS = (s1, s2);"
+      - id: set_allowed_secrets_all
+        sql: "ALTER API INTEGRATION i SET ALLOWED_AUTHENTICATION_SECRETS = all;"
+      - id: set_tag
+        sql: "ALTER API INTEGRATION i SET TAG t1 = 'v1', t2 = 'v2';"
+      - id: unset_tag
+        sql: "ALTER API INTEGRATION i UNSET TAG t1, t2;"
+      - id: unset_properties
+        sql: "ALTER API INTEGRATION IF EXISTS i UNSET API_KEY, ENABLED;"
+    examples:
+      - "ALTER API INTEGRATION myint SET ENABLED = TRUE;"
+
+  - id: alter_database_role
+    name: ALTER DATABASE ROLE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-database-role
+    tier: medium
+    probes:
+      - id: rename_to
+        sql: "ALTER DATABASE ROLE IF EXISTS d1.dr1 RENAME TO d1.dr2;"
+      - id: set_comment
+        sql: "ALTER DATABASE ROLE dr1 SET COMMENT = 'c';"
+      - id: unset_comment
+        sql: "ALTER DATABASE ROLE dr1 UNSET COMMENT;"
+      - id: set_tag
+        sql: "ALTER DATABASE ROLE dr1 SET TAG t1 = 'v1', t2 = 'v2';"
+      - id: unset_tag
+        sql: "ALTER DATABASE ROLE dr1 UNSET TAG t1, t2;"
+      - id: unset_dcm_project
+        sql: "ALTER DATABASE ROLE dr1 UNSET DCM PROJECT;"
+    examples:
+      - "ALTER DATABASE ROLE d1.dr1 RENAME TO d1.dbr2;"
+      - "ALTER DATABASE ROLE d1.dbr2 SET COMMENT = 'New comment for database role';"
+
+  - id: alter_external_access_integration
+    name: ALTER EXTERNAL ACCESS INTEGRATION
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-external-access-integration
+    tier: medium
+    probes:
+      - id: set_allowed_network_rules
+        sql: "ALTER EXTERNAL ACCESS INTEGRATION IF EXISTS i SET ALLOWED_NETWORK_RULES = (r1, r2);"
+      - id: set_allowed_api_auth_integrations
+        sql: "ALTER EXTERNAL ACCESS INTEGRATION i SET ALLOWED_API_AUTHENTICATION_INTEGRATIONS = (a1, a2);"
+      - id: set_allowed_api_auth_integrations_none
+        sql: "ALTER EXTERNAL ACCESS INTEGRATION i SET ALLOWED_API_AUTHENTICATION_INTEGRATIONS = none;"
+      - id: set_allowed_secrets
+        sql: "ALTER EXTERNAL ACCESS INTEGRATION i SET ALLOWED_AUTHENTICATION_SECRETS = (s1, s2);"
+      - id: set_allowed_secrets_all
+        sql: "ALTER EXTERNAL ACCESS INTEGRATION i SET ALLOWED_AUTHENTICATION_SECRETS = all;"
+      - id: set_enabled_comment
+        sql: "ALTER EXTERNAL ACCESS INTEGRATION i SET ENABLED = FALSE COMMENT = 'c';"
+      - id: set_tag
+        sql: "ALTER EXTERNAL ACCESS INTEGRATION i SET TAG t1 = 'v1', t2 = 'v2';"
+      - id: unset_properties
+        sql: "ALTER EXTERNAL ACCESS INTEGRATION IF EXISTS i UNSET ALLOWED_NETWORK_RULES, COMMENT;"
+      - id: unset_tag
+        sql: "ALTER EXTERNAL ACCESS INTEGRATION i UNSET TAG t1;"
+    examples:
+      - "ALTER EXTERNAL ACCESS INTEGRATION IF EXISTS dev_integration SET ALLOWED_AUTHENTICATION_SECRETS = (my_new_secret);"
+      - "ALTER EXTERNAL ACCESS INTEGRATION IF EXISTS dev_integration_disabled SET ENABLED = FALSE;"
+      - "ALTER EXTERNAL ACCESS INTEGRATION IF EXISTS dev_integration_disabled SET COMMENT = 'Disabled until the end of the Q1.';"
+
+  - id: alter_file_format
+    name: ALTER FILE FORMAT
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-file-format
+    tier: medium
+    probes:
+      - id: rename_to
+        sql: "ALTER FILE FORMAT IF EXISTS ff RENAME TO ff2;"
+      - id: rename_to_qualified
+        sql: "ALTER FILE FORMAT ff RENAME TO db1.s1.ff2;"
+      - id: set_comment
+        sql: "ALTER FILE FORMAT ff SET COMMENT = 'c';"
+      - id: set_csv_options
+        sql: "ALTER FILE FORMAT ff SET COMPRESSION = GZIP FIELD_DELIMITER = ',' RECORD_DELIMITER = '\\n' SKIP_HEADER = 1 FIELD_OPTIONALLY_ENCLOSED_BY = '\"' NULL_IF = ('NULL', '') ERROR_ON_COLUMN_COUNT_MISMATCH = FALSE;"
+      - id: set_csv_none_values
+        sql: "ALTER FILE FORMAT ff SET ESCAPE = NONE FIELD_DELIMITER = NONE DATE_FORMAT = AUTO BINARY_FORMAT = HEX ENCODING = UTF8;"
+      - id: set_json_options
+        sql: "ALTER FILE FORMAT ff SET STRIP_OUTER_ARRAY = TRUE ALLOW_DUPLICATE = FALSE ENABLE_OCTAL = FALSE STRIP_NULL_VALUES = TRUE;"
+      - id: set_parquet_options
+        sql: "ALTER FILE FORMAT ff SET COMPRESSION = SNAPPY BINARY_AS_TEXT = FALSE USE_LOGICAL_TYPE = TRUE;"
+      - id: set_xml_options
+        sql: "ALTER FILE FORMAT ff SET PRESERVE_SPACE = TRUE STRIP_OUTER_ELEMENT = TRUE DISABLE_AUTO_CONVERT = FALSE;"
+      - id: set_options_with_comma_separators
+        sql: "ALTER FILE FORMAT ff SET TRIM_SPACE = TRUE, REPLACE_INVALID_CHARACTERS = TRUE, COMMENT = 'c';"
+        note: The Format type options text says options may be separated by blank spaces, commas, or new lines.
+    examples:
+      - "ALTER FILE FORMAT IF EXISTS my_format RENAME TO my_new_format;"
+      - "ALTER FILE FORMAT my_format SET FIELD_DELIMITER = ',';"

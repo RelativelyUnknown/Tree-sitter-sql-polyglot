@@ -1,0 +1,194 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "12.1"
+source: https://www.ibm.com/docs/en/db2/12.1.x?topic=reference-statements
+
+statements:
+  - id: create_tablespace
+    name: CREATE TABLESPACE
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-create-tablespace
+    tier: medium
+    probes:
+      - id: automatic_storage
+        sql: "CREATE TABLESPACE ts MANAGED BY AUTOMATIC STORAGE;"
+      - id: large_pagesize_bufferpool
+        sql: "CREATE LARGE TABLESPACE ts PAGESIZE 8 K MANAGED BY AUTOMATIC STORAGE BUFFERPOOL bp1;"
+      - id: autoresize_sizes
+        sql: "CREATE TABLESPACE ts MANAGED BY AUTOMATIC STORAGE USING STOGROUP sg1 AUTORESIZE YES INITIALSIZE 100 M INCREASESIZE 10 PERCENT MAXSIZE NONE;"
+      - id: managed_by_system
+        sql: "CREATE REGULAR TABLESPACE ts MANAGED BY SYSTEM USING ('/tbsp/c1', '/tbsp/c2') EXTENTSIZE 64 PREFETCHSIZE 32;"
+      - id: managed_by_database
+        sql: "CREATE TABLESPACE ts MANAGED BY DATABASE USING (FILE 'f1' 5000, DEVICE '/dev/rhdisk6' 10000) OVERHEAD 12.67 TRANSFERRATE 0.18;"
+      - id: temporary_in_partition_group
+        sql: "CREATE SYSTEM TEMPORARY TABLESPACE ts IN DATABASE PARTITION GROUP g1 MANAGED BY SYSTEM USING ('c1') ON DBPARTITIONNUMS (1 TO 3);"
+      - id: caching_tag_dropped_recovery
+        sql: "CREATE TABLESPACE ts MANAGED BY AUTOMATIC STORAGE NO FILE SYSTEM CACHING DATA TAG 5 DROPPED TABLE RECOVERY OFF;"
+    examples:
+      - "CREATE TABLESPACE ACCOUNTING MANAGED BY SYSTEM USING ('/tbsp/acc1', '/tbsp/acc2', '/tbsp/acc3') EXTENTSIZE 64 PREFETCHSIZE 32;"
+      - "CREATE TEMPORARY TABLESPACE TEMPSPACE2 MANAGED BY DATABASE USING ( FILE 'dbtmp/tempspace2.f1' 50000, FILE 'dbtmp/tempspace2.f2' 50000) EXTENTSIZE 256;"
+
+  - id: create_trigger
+    name: CREATE TRIGGER
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-create-trigger
+    tier: medium
+    probes:
+      - id: after_insert_row
+        sql: "CREATE TRIGGER trg AFTER INSERT ON t FOR EACH ROW UPDATE s SET n = n + 1;"
+      - id: or_replace_after_update_of
+        sql: "CREATE OR REPLACE TRIGGER trg AFTER UPDATE OF c1, c2 ON t FOR EACH ROW UPDATE s SET n = n + 1;"
+      - id: before_no_cascade_referencing
+        sql: "CREATE TRIGGER trg NO CASCADE BEFORE INSERT ON t REFERENCING NEW AS n FOR EACH ROW SET n.c = 1;"
+      - id: statement_level_transition_tables
+        sql: "CREATE TRIGGER trg AFTER DELETE ON t REFERENCING OLD TABLE AS o FOR EACH STATEMENT INSERT INTO audit SELECT * FROM o;"
+      - id: instead_of_view
+        sql: "CREATE TRIGGER trg INSTEAD OF INSERT ON v REFERENCING NEW AS n FOR EACH ROW INSERT INTO t VALUES (n.c);"
+      - id: multiple_events_when
+        sql: "CREATE TRIGGER trg AFTER INSERT OR DELETE ON t FOR EACH ROW WHEN (1 = 1) INSERT INTO s VALUES (1);"
+      - id: secured_compound_body
+        sql: "CREATE TRIGGER trg AFTER INSERT ON t FOR EACH ROW SECURED BEGIN ATOMIC INSERT INTO s VALUES (1); INSERT INTO s VALUES (2); END;"
+      - id: labeled_body
+        sql: "CREATE TRIGGER trg AFTER INSERT ON t FOR EACH ROW lbl: BEGIN ATOMIC INSERT INTO s VALUES (1); END lbl;"
+    examples:
+      - "CREATE TRIGGER NEW_HIRED AFTER INSERT ON EMPLOYEE FOR EACH ROW UPDATE COMPANY_STATS SET NBEMP = NBEMP + 1;"
+      - "CREATE TRIGGER FORMER_EMP AFTER DELETE ON EMPLOYEE FOR EACH ROW UPDATE COMPANY_STATS SET NBEMP = NBEMP - 1;"
+
+  - id: create_type_array
+    name: CREATE TYPE (array)
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-create-type-array
+    tier: medium
+    probes:
+      - id: ordinary_array_max
+        sql: "CREATE TYPE nums AS INTEGER ARRAY[50];"
+      - id: ordinary_array_default_max
+        sql: "CREATE TYPE nums AS DECFLOAT(34) ARRAY[];"
+      - id: associative_array
+        sql: "CREATE TYPE phones AS DECIMAL(16, 0) ARRAY[VARCHAR(8)];"
+      - id: or_replace_anchored
+        sql: "CREATE OR REPLACE TYPE nums AS ANCHOR DATA TYPE TO t.c ARRAY[10];"
+    examples:
+      - "CREATE TYPE PHONENUMBERS AS DECIMAL (10,0) ARRAY[ 50 ];"
+      - "CREATE TYPE GENERIC.NUMBERS AS DECFLOAT( 34 ) ARRAY[];"
+      - "CREATE TYPE PERSONALPHONENUMBERS AS DECIMAL( 16, 0 ) ARRAY[VARCHAR( 8 )];"
+
+  - id: create_type_cursor
+    name: CREATE TYPE (cursor)
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-create-type-cursor
+    tier: medium
+    probes:
+      - id: untyped_cursor
+        sql: "CREATE TYPE curtype AS CURSOR;"
+      - id: row_type_cursor
+        sql: "CREATE TYPE curtype AS rowtype CURSOR;"
+      - id: or_replace_anchored_row
+        sql: "CREATE OR REPLACE TYPE curtype AS ANCHOR DATA TYPE TO ROW OF t CURSOR;"
+    examples:
+      - "CREATE TYPE EMPCURSOR AS CURSOR;"
+      - "CREATE TYPE DEPTCURSOR AS DEPTROW CURSOR;"
+
+  - id: create_type_distinct
+    name: CREATE TYPE (distinct)
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-create-type-distinct
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE TYPE shoesize AS INTEGER;"
+      - id: with_strong_type_rules
+        sql: "CREATE TYPE miles AS DOUBLE WITH STRONG TYPE RULES;"
+      - id: weak_with_check
+        sql: "CREATE TYPE bonus AS INTEGER WITH WEAK TYPE RULES CHECK (VALUE >= 0 AND VALUE <= 100);"
+      - id: not_null
+        sql: "CREATE TYPE code AS VARCHAR(10) NOT NULL;"
+    examples:
+      - "CREATE TYPE SHOESIZE AS INTEGER;"
+      - "CREATE TYPE MILES AS DOUBLE;"
+      - "CREATE TYPE BONUS AS INTEGER WITH WEAK TYPE RULES CHECK( VALUE >= 0 AND VALUE <= 100 );"
+
+  - id: create_type_row
+    name: CREATE TYPE (row)
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-create-type-row
+    tier: medium
+    probes:
+      - id: field_list
+        sql: "CREATE TYPE rowt AS ROW (a INTEGER, b VARCHAR(10));"
+      - id: or_replace
+        sql: "CREATE OR REPLACE TYPE rowt AS ROW (a INTEGER, b DECIMAL(9, 2));"
+      - id: anchored_row
+        sql: "CREATE TYPE rowt AS ROW ANCHOR DATA TYPE TO ROW OF t;"
+      - id: anchored_field
+        sql: "CREATE TYPE rowt AS ROW (a ANCHOR DATA TYPE TO t.c, b INTEGER);"
+    examples:
+      - "CREATE TYPE DEPTROW AS ROW (DEPTNO VARCHAR(3), DEPTNAME VARCHAR(29), MGRNO CHAR(6), ADMRDEPT CHAR(3), LOCATION CHAR(16));"
+
+  - id: create_type_structured
+    name: CREATE TYPE (structured)
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-create-type-structured
+    tier: medium
+    probes:
+      - id: ref_using_mode
+        sql: "CREATE TYPE dept AS (dept_name VARCHAR(20), max_emps INT) REF USING INT MODE DB2SQL;"
+      - id: under_supertype
+        sql: "CREATE TYPE mgr UNDER emp AS (bonus DECIMAL(10, 2)) MODE DB2SQL;"
+      - id: not_final_instantiable_options
+        sql: "CREATE TYPE addr AS (street VARCHAR(30)) NOT FINAL INSTANTIABLE INLINE LENGTH 100 WITHOUT COMPARISONS MODE DB2SQL;"
+      - id: with_function_access
+        sql: "CREATE TYPE addr AS (street VARCHAR(30)) NOT FINAL MODE DB2SQL WITH FUNCTION ACCESS;"
+      - id: method_specification
+        sql: "CREATE TYPE addr AS (zip CHAR(5)) NOT FINAL MODE DB2SQL METHOD samezip (a addr) RETURNS INTEGER LANGUAGE SQL DETERMINISTIC CONTAINS SQL NO EXTERNAL ACTION;"
+    examples:
+      - "CREATE TYPE DEPT AS (DEPT_NAME VARCHAR(20), MAX_EMPS INT) REF USING INT MODE DB2SQL;"
+      - "CREATE TYPE MGR UNDER EMP AS (BONUS DECIMAL (10,2)) MODE DB2SQL;"
+
+  - id: create_variable
+    name: CREATE VARIABLE
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-create-variable
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE VARIABLE v INTEGER;"
+      - id: default_constant
+        sql: "CREATE VARIABLE s.v VARCHAR(30) DEFAULT 'Default printer';"
+      - id: or_replace_default_expression
+        sql: "CREATE OR REPLACE VARIABLE v INTEGER DEFAULT (1 + 1);"
+      - id: constant_value
+        sql: "CREATE VARIABLE v INTEGER CONSTANT (5);"
+      - id: default_null
+        sql: "CREATE VARIABLE v INTEGER DEFAULT NULL;"
+      - id: cursor_constant
+        sql: "CREATE VARIABLE vc CURSOR CONSTANT (CURSOR (p CHAR(5)) FOR SELECT name FROM staff WHERE job = p);"
+      - id: xml_type
+        sql: "CREATE VARIABLE v XML;"
+    examples:
+      - "CREATE VARIABLE MYSCHEMA.MYJOB_PRINTER VARCHAR (30) DEFAULT 'Default printer';"
+      - "CREATE VARIABLE SCHEMA1.GV_DEPTNO INTEGER DEFAULT (( SELECT DEPTNO FROM HR.EMPLOYEES WHERE EMPUSER = SESSION_USER ));"
+      - "CREATE VARIABLE MYSCHEMA.CUSTOMER_HISTORY_VAR XML;"
+
+  - id: declare_global_temporary_table
+    name: DECLARE GLOBAL TEMPORARY TABLE
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-declare-global-temporary-table
+    tier: medium
+    probes:
+      - id: column_definitions
+        sql: "DECLARE GLOBAL TEMPORARY TABLE session.t (c1 CHAR(6) NOT NULL, c2 DECIMAL(9, 2)) ON COMMIT PRESERVE ROWS;"
+      - id: like_table
+        sql: "DECLARE GLOBAL TEMPORARY TABLE t LIKE base INCLUDING IDENTITY ON COMMIT DELETE ROWS;"
+      - id: as_fullselect_with_data
+        sql: "DECLARE GLOBAL TEMPORARY TABLE t AS (SELECT * FROM base) WITH DATA;"
+      - id: as_fullselect_no_data
+        sql: "DECLARE GLOBAL TEMPORARY TABLE t AS (SELECT * FROM base) WITH NO DATA;"
+      - id: not_logged_on_rollback
+        sql: "DECLARE GLOBAL TEMPORARY TABLE t (c INT) NOT LOGGED ON ROLLBACK PRESERVE ROWS;"
+      - id: with_replace_in_tablespace
+        sql: "DECLARE GLOBAL TEMPORARY TABLE t (c INT) WITH REPLACE IN usertemp1;"
+      - id: organize_by
+        sql: "DECLARE GLOBAL TEMPORARY TABLE t (c INT) ORGANIZE BY ROW;"
+    examples:
+      - "DECLARE GLOBAL TEMPORARY TABLE SESSION.TEMP_EMP (EMPNO CHAR(6) NOT NULL , SALARY DECIMAL(9, 2), BONUS DECIMAL(9, 2), COMM DECIMAL(9, 2)) ON COMMIT PRESERVE ROWS;"
+      - "DECLARE GLOBAL TEMPORARY TABLE TEMPTAB1 LIKE USER1.EMPTAB INCLUDING IDENTITY ON COMMIT PRESERVE ROWS;"
+
+  - id: describe_input
+    name: DESCRIBE INPUT
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-describe-input
+    tier: medium
+    probes:
+      - id: into_descriptor
+        sql: "DESCRIBE INPUT stmt1 INTO sqlda;"

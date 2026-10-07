@@ -1,0 +1,86 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: create_table_like
+    name: CREATE TABLE LIKE
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE TABLE t LIKE s;"
+      - id: if_not_exists_qualified
+        sql: "CREATE TABLE IF NOT EXISTS db.t LIKE db.s;"
+      - id: temporary
+        sql: "CREATE TEMPORARY TABLE t LIKE s;"
+      - id: external
+        sql: "CREATE EXTERNAL TABLE t LIKE s;"
+      - id: like_view
+        sql: "CREATE TABLE t LIKE v;"
+        note: existing_table_or_view_name; Hive 0.8.0+ adopts the view schema
+      - id: location
+        sql: "CREATE TABLE t LIKE s LOCATION '/user/hive/t';"
+      - id: tblproperties
+        sql: "CREATE TABLE t LIKE s TBLPROPERTIES ('k'='v');"
+        note: from the page's CREATE TABLE LIKE example
+      - id: external_location
+        sql: "CREATE EXTERNAL TABLE IF NOT EXISTS t LIKE s LOCATION '/data/t';"
+
+  - id: create_external_table
+    name: CREATE EXTERNAL TABLE
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE EXTERNAL TABLE t (c INT);"
+      - id: if_not_exists_qualified
+        sql: "CREATE EXTERNAL TABLE IF NOT EXISTS db.t (c INT);"
+      - id: location
+        sql: "CREATE EXTERNAL TABLE t (c INT) LOCATION '/data/t';"
+      - id: temporary
+        sql: "CREATE TEMPORARY EXTERNAL TABLE t (c INT);"
+      - id: column_comment
+        sql: "CREATE EXTERNAL TABLE t (c INT COMMENT 'cc') COMMENT 'tc';"
+      - id: partitioned_by
+        sql: "CREATE EXTERNAL TABLE t (c INT) PARTITIONED BY (dt STRING COMMENT 'd', country STRING);"
+      - id: clustered_by
+        sql: "CREATE EXTERNAL TABLE t (c INT, d INT) CLUSTERED BY (c) INTO 32 BUCKETS;"
+      - id: clustered_sorted_by
+        sql: "CREATE EXTERNAL TABLE t (c INT, d INT) CLUSTERED BY (c) SORTED BY (d DESC) INTO 32 BUCKETS;"
+      - id: skewed_by
+        sql: "CREATE EXTERNAL TABLE t (c INT, d INT) SKEWED BY (c) ON ((1), (2));"
+      - id: skewed_stored_as_directories
+        sql: "CREATE EXTERNAL TABLE t (c INT, d INT) SKEWED BY (c, d) ON ((1, 2), (3, 4)) STORED AS DIRECTORIES;"
+      - id: row_format_delimited
+        sql: "CREATE EXTERNAL TABLE t (c INT) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' ESCAPED BY '\\\\' COLLECTION ITEMS TERMINATED BY '|' MAP KEYS TERMINATED BY ':' LINES TERMINATED BY '\\n' NULL DEFINED AS 'NULL';"
+      - id: row_format_serde
+        sql: "CREATE EXTERNAL TABLE t (c INT) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde' WITH SERDEPROPERTIES ('separatorChar'=',');"
+      - id: stored_as_textfile
+        sql: "CREATE EXTERNAL TABLE t (c INT) STORED AS TEXTFILE;"
+      - id: stored_as_orc
+        sql: "CREATE EXTERNAL TABLE t (c INT) STORED AS ORC LOCATION '/data/t';"
+      - id: stored_as_parquet
+        sql: "CREATE EXTERNAL TABLE t (c INT) STORED AS PARQUET;"
+      - id: stored_as_avro
+        sql: "CREATE EXTERNAL TABLE t (c INT) STORED AS AVRO;"
+      - id: stored_as_jsonfile
+        sql: "CREATE EXTERNAL TABLE t (c INT) STORED AS JSONFILE;"
+      - id: stored_as_inputformat
+        sql: "CREATE EXTERNAL TABLE t (c INT) STORED AS INPUTFORMAT 'org.apache.hadoop.mapred.TextInputFormat' OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat';"
+      - id: row_format_stored_as
+        sql: "CREATE EXTERNAL TABLE t (c INT) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE LOCATION '/data/t';"
+      - id: stored_by
+        sql: "CREATE EXTERNAL TABLE t (c INT) STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler' WITH SERDEPROPERTIES ('hbase.columns.mapping'=':key,cf:c') TBLPROPERTIES ('hbase.table.name'='t');"
+      - id: tblproperties
+        sql: "CREATE EXTERNAL TABLE t (c INT) TBLPROPERTIES ('external.table.purge'='true');"
+      - id: complex_types
+        sql: "CREATE EXTERNAL TABLE t (a ARRAY<INT>, m MAP<STRING, INT>, s STRUCT<x:INT COMMENT 'cx', y:STRING>, u UNIONTYPE<INT, STRING>);"
+      - id: column_constraints
+        sql: "CREATE EXTERNAL TABLE t (c INT PRIMARY KEY DISABLE NOVALIDATE RELY, d INT NOT NULL ENABLE, e STRING DEFAULT 'x');"
+        note: column_constraint_specification in the CREATE TABLE syntax block (PRIMARY KEY/NOT NULL/DEFAULT with ENABLE|DISABLE NOVALIDATE RELY)
+      - id: table_constraints
+        sql: "CREATE EXTERNAL TABLE t (c INT, d INT, PRIMARY KEY (c) DISABLE NOVALIDATE RELY);"
+      - id: full_clause_order
+        sql: "CREATE EXTERNAL TABLE IF NOT EXISTS db.t (c INT, d INT) COMMENT 'tc' PARTITIONED BY (dt STRING) CLUSTERED BY (c) SORTED BY (d) INTO 4 BUCKETS ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE LOCATION '/data/t' TBLPROPERTIES ('k'='v');"

@@ -59,68 +59,93 @@ declare const binding: {
 
 export default binding;
 
+/**
+ * A dialect grammar, loaded lazily on first access to `language`. Pass the
+ * object itself to `parser.setLanguage(postgres)`, like the default export.
+ */
+type Dialect = {
+  /** The grammar name, e.g. `"postgres_sql"`. */
+  name: string;
+
+  /**
+   * The inner language object.
+   * @private
+   */
+  language: unknown;
+
+  /** The content of this dialect's `node-types.json` file. */
+  nodeTypeInfo: NodeInfo[];
+
+  /**
+   * The syntax highlighting query for this dialect: the base highlights plus
+   * the dialect's own, minus any pattern this dialect's grammar can't compile.
+   * The base `HIGHLIGHTS_QUERY` does not compile against a dialect.
+   */
+  HIGHLIGHTS_QUERY?: string;
+};
+
 /** The tree-sitter language object for the spark_sql dialect. */
-export declare const spark: { name: string; language: unknown };
+export declare const spark: Dialect;
 
 /** The tree-sitter language object for the postgres_sql dialect. */
-export declare const postgres: { name: string; language: unknown };
+export declare const postgres: Dialect;
 
 /** The tree-sitter language object for the mysql_sql dialect. */
-export declare const mysql: { name: string; language: unknown };
+export declare const mysql: Dialect;
 
 /** The tree-sitter language object for the databricks_sql dialect. */
-export declare const databricks: { name: string; language: unknown };
+export declare const databricks: Dialect;
 
 /** The tree-sitter language object for the snowflake_sql dialect. */
-export declare const snowflake: { name: string; language: unknown };
+export declare const snowflake: Dialect;
 
 /** The tree-sitter language object for the bigquery_sql dialect. */
-export declare const bigquery: { name: string; language: unknown };
+export declare const bigquery: Dialect;
 
 /** The tree-sitter language object for the mariadb_sql dialect. */
-export declare const mariadb: { name: string; language: unknown };
+export declare const mariadb: Dialect;
 
 /** The tree-sitter language object for the sqlite_sql dialect. */
-export declare const sqlite: { name: string; language: unknown };
+export declare const sqlite: Dialect;
 
 /** The tree-sitter language object for the hive_sql dialect. */
-export declare const hive: { name: string; language: unknown };
+export declare const hive: Dialect;
 
 /** The tree-sitter language object for the oracle_sql dialect. */
-export declare const oracle: { name: string; language: unknown };
+export declare const oracle: Dialect;
 
 /** The tree-sitter language object for the db2_sql dialect. */
-export declare const db2: { name: string; language: unknown };
+export declare const db2: Dialect;
 
 /** The tree-sitter language object for the tsql dialect. */
-export declare const tsql: { name: string; language: unknown };
+export declare const tsql: Dialect;
 
 /** The tree-sitter language object for the duckdb_sql dialect. */
-export declare const duckdb: { name: string; language: unknown };
+export declare const duckdb: Dialect;
 
 /** The tree-sitter language object for the trino_sql dialect. */
-export declare const trino: { name: string; language: unknown };
+export declare const trino: Dialect;
 
 /** The tree-sitter language object for the athena_sql dialect. */
-export declare const athena: { name: string; language: unknown };
+export declare const athena: Dialect;
 
 /** The tree-sitter language object for the redshift_sql dialect. */
-export declare const redshift: { name: string; language: unknown };
+export declare const redshift: Dialect;
 
 /** The tree-sitter language object for the clickhouse_sql dialect. */
-export declare const clickhouse: { name: string; language: unknown };
+export declare const clickhouse: Dialect;
 
 /** The tree-sitter language object for the flink_sql dialect. */
-export declare const flink: { name: string; language: unknown };
+export declare const flink: Dialect;
 
 /** The tree-sitter language object for the cockroachdb_sql dialect. */
-export declare const cockroachdb: { name: string; language: unknown };
+export declare const cockroachdb: Dialect;
 
 /** The tree-sitter language object for the spanner_sql dialect. */
-export declare const spanner: { name: string; language: unknown };
+export declare const spanner: Dialect;
 
 /** The tree-sitter language object for the teradata_sql dialect. */
-export declare const teradata: { name: string; language: unknown };
+export declare const teradata: Dialect;
 
 /** The tree-sitter language object for the hana_sql dialect. */
-export declare const hana: { name: string; language: unknown };
+export declare const hana: Dialect;

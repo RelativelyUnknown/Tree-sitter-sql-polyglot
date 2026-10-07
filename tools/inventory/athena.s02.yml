@@ -1,0 +1,47 @@
+dialect: athena
+engine: Amazon Athena
+version: "engine version 3 (Trino-based DML, Hive-style DDL)"
+source: https://docs.aws.amazon.com/athena/latest/ug/ddl-reference.html ; https://docs.aws.amazon.com/athena/latest/ug/dml-queries-functions-operators.html
+
+statements:
+  - id: alter_table_change_column
+    name: ALTER TABLE CHANGE COLUMN
+    doc: https://docs.aws.amazon.com/athena/latest/ug/alter-table-change-column.html
+    tier: high
+    probes:
+      - id: change
+        sql: "ALTER TABLE t CHANGE c c_new int;"
+      - id: change_column_keyword
+        sql: "ALTER TABLE t CHANGE COLUMN c c_new int;"
+      - id: qualified_table
+        sql: "ALTER TABLE db.t CHANGE COLUMN c c_new int;"
+      - id: comment
+        sql: "ALTER TABLE t CHANGE COLUMN c c int COMMENT 'note';"
+      - id: first
+        sql: "ALTER TABLE t CHANGE COLUMN c c_new int FIRST;"
+      - id: after
+        sql: "ALTER TABLE t CHANGE COLUMN c c_new int AFTER id;"
+      - id: comment_after
+        sql: "ALTER TABLE t CHANGE COLUMN c c_new int COMMENT 'note' AFTER id;"
+    examples:
+      - "ALTER TABLE example_table CHANGE COLUMN area zip int AFTER id;"
+      - "ALTER TABLE example_table CHANGE COLUMN zip zip int COMMENT 'USA zipcode';"
+
+  - id: alter_table_drop_partition
+    name: ALTER TABLE DROP PARTITION
+    doc: https://docs.aws.amazon.com/athena/latest/ug/alter-table-drop-partition.html
+    tier: high
+    probes:
+      - id: drop_partition
+        sql: "ALTER TABLE t DROP PARTITION (dt = '2014-05-14');"
+      - id: if_exists
+        sql: "ALTER TABLE t DROP IF EXISTS PARTITION (dt = '2014-05-14');"
+      - id: multi_column_spec
+        sql: "ALTER TABLE t DROP PARTITION (dt = '2014-05-14', country = 'IN');"
+      - id: multiple_partitions
+        sql: "ALTER TABLE t DROP PARTITION (dt = '2014-05-14'), PARTITION (dt = '2014-05-15');"
+      - id: if_exists_multiple
+        sql: "ALTER TABLE t DROP IF EXISTS PARTITION (dt = '2014-05-14', country = 'IN'), PARTITION (dt = '2014-05-15', country = 'IN');"
+    examples:
+      - "ALTER TABLE orders DROP PARTITION (dt = '2014-05-14', country = 'IN');"
+      - "ALTER TABLE orders DROP PARTITION (dt = '2014-05-14', country = 'IN'), PARTITION (dt = '2014-05-15', country = 'IN');"

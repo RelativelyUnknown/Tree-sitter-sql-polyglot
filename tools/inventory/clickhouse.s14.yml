@@ -1,0 +1,66 @@
+dialect: clickhouse
+engine: ClickHouse
+version: "current docs (2026)"
+source: https://clickhouse.com/docs/sql-reference/statements/
+
+statements:
+  - id: alter_table_modify_query
+    name: ALTER TABLE ... MODIFY QUERY / MODIFY REFRESH
+    doc: https://clickhouse.com/docs/sql-reference/statements/alter/view
+    tier: high
+    probes:
+      - id: modify_query
+        sql: "ALTER TABLE mv MODIFY QUERY SELECT a FROM src_table;"
+      - id: modify_query_db_qualified
+        sql: "ALTER TABLE db.mv MODIFY QUERY SELECT a, count() AS cnt FROM src_table GROUP BY a;"
+      - id: modify_query_on_cluster
+        sql: "ALTER TABLE mv ON CLUSTER c MODIFY QUERY SELECT a FROM src_table;"
+        note: ON CLUSTER is mentioned on the page; general ALTER ... ON CLUSTER form
+      - id: modify_refresh_every
+        sql: "ALTER TABLE rmv MODIFY REFRESH EVERY 30 MINUTE;"
+      - id: modify_refresh_after
+        sql: "ALTER TABLE rmv MODIFY REFRESH AFTER 1 HOUR;"
+      - id: modify_refresh_randomize_for
+        sql: "ALTER TABLE rmv MODIFY REFRESH EVERY 1 HOUR RANDOMIZE FOR 10 MINUTE;"
+      - id: modify_refresh_depends_on
+        sql: "ALTER TABLE rmv MODIFY REFRESH EVERY 6 HOUR DEPENDS ON other_rmv;"
+      - id: modify_refresh_settings
+        sql: "ALTER TABLE rmv MODIFY REFRESH EVERY 30 MINUTE SETTINGS refresh_retries = 5;"
+      - id: modify_refresh_all_clauses
+        sql: "ALTER TABLE db.rmv MODIFY REFRESH EVERY 1 DAY RANDOMIZE FOR 1 HOUR DEPENDS ON db.other_rmv SETTINGS refresh_retries = 3;"
+    examples:
+      - |-
+        ALTER TABLE mv MODIFY QUERY
+          SELECT toStartOfDay(ts) ts, event_type, browser,
+          count() events_cnt,
+          sum(cost) cost
+          FROM events
+          GROUP BY ts, event_type, browser;
+      - "ALTER TABLE mv MODIFY QUERY SELECT a * 2 as a FROM src_table;"
+      - "ALTER TABLE rmv MODIFY REFRESH EVERY 30 MINUTE;"
+
+  - id: drop_table
+    name: DROP TABLE
+    doc: https://clickhouse.com/docs/sql-reference/statements/drop
+    tier: high
+    probes:
+      - id: basic
+        sql: "DROP TABLE t;"
+      - id: temporary
+        sql: "DROP TEMPORARY TABLE t;"
+      - id: if_exists
+        sql: "DROP TABLE IF EXISTS t;"
+      - id: if_empty
+        sql: "DROP TABLE IF EMPTY t;"
+      - id: if_exists_if_empty
+        sql: "DROP TABLE IF EXISTS IF EMPTY t;"
+      - id: qualified
+        sql: "DROP TABLE db1.t;"
+      - id: multiple
+        sql: "DROP TABLE db1.t1, db2.t2;"
+      - id: on_cluster
+        sql: "DROP TABLE t ON CLUSTER c;"
+      - id: sync
+        sql: "DROP TABLE t SYNC;"
+      - id: all_clauses
+        sql: "DROP TEMPORARY TABLE IF EXISTS IF EMPTY db1.t1, db2.t2 ON CLUSTER c SYNC;"

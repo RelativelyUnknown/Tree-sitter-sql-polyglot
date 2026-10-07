@@ -1,0 +1,26 @@
+dialect: duckdb
+engine: DuckDB
+version: "1.5"
+source: https://duckdb.org/docs/stable/sql/statements/overview
+
+statements:
+  - id: filter
+    name: FILTER clause
+    doc: https://duckdb.org/docs/current/sql/query_syntax/filter
+    tier: high
+    probes:
+      - { id: filter_basic, sql: "SELECT count(*) FILTER (i <= 5) FROM t;", note: "aggregate_function ( args ) FILTER ( condition ), as in the page examples" }
+      - { id: filter_where, sql: "SELECT count(*) FILTER (WHERE i <= 5) FROM t;", note: "optional WHERE keyword inside FILTER ( ... ), shown in the aggregate function syntax diagram" }
+      - { id: filter_with_arg, sql: "SELECT sum(i) FILTER (i <= 5) AS s FROM t;" }
+      - { id: filter_multiple_aggregates, sql: "SELECT count(*) AS total_rows, count(*) FILTER (i <= 5) AS lte_five, count(*) FILTER (i % 2 = 1) AS odds FROM t;" }
+      - { id: filter_compound_condition, sql: "SELECT median(i) FILTER (i % 2 = 1 AND i <= 5) FROM t;" }
+      - { id: filter_is_null, sql: "SELECT count(i) FILTER (year IS NULL) AS \"NULLs\" FROM t;" }
+      - { id: filter_first, sql: "SELECT first(i) FILTER (year = 2022) AS \"2022\" FROM t;" }
+      - { id: filter_distinct, sql: "SELECT count(DISTINCT i) FILTER (i > 1) FROM t;", note: "aggregate syntax diagram: DISTINCT inside the call, FILTER after" }
+      - { id: filter_order_by_in_call, sql: "SELECT list(i ORDER BY i DESC) FILTER (i > 1) FROM t;", note: "aggregate syntax diagram: ORDER BY inside the call, FILTER after" }
+      - { id: filter_over_window, sql: "SELECT sum(i) FILTER (i > 1) OVER (PARTITION BY g) FROM t;", note: "aggregate syntax diagram: FILTER may precede an OVER window" }
+      - { id: filter_group_by, sql: "SELECT g, count(*) FILTER (WHERE i > 1) FROM t GROUP BY g;" }
+    examples:
+      - "SELECT count() AS total_rows, count() FILTER (i <= 5) AS lte_five, count() FILTER (i % 2 = 1) AS odds FROM generate_series(1, 10) tbl(i);"
+      - "SELECT sum(i) FILTER (i <= 5) AS lte_five_sum, median(i) FILTER (i % 2 = 1) AS odds_median, median(i) FILTER (i % 2 = 1 AND i <= 5) AS odds_lte_five_median FROM generate_series(1, 10) tbl(i);"
+      - "SELECT first(i) FILTER (year = 2022) AS \"2022\", first(i) FILTER (year = 2023) AS \"2023\", first(i) FILTER (year = 2024) AS \"2024\", first(i) FILTER (year = 2025) AS \"2025\", first(i) FILTER (year IS NULL) AS \"NULLs\" FROM stacked_data;"

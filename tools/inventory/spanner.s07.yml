@@ -1,0 +1,94 @@
+dialect: spanner
+engine: Google Cloud Spanner (GoogleSQL dialect)
+version: "current managed service (docs as of 2026-10)"
+source: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language
+
+statements:
+  - id: update
+    name: UPDATE (THEN RETURN)
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/dml-syntax#update-statement
+    tier: high
+    probes:
+      - id: basic
+        sql: "UPDATE t SET c = 1 WHERE id = 1;"
+      - id: multiple_items
+        sql: "UPDATE t SET c = 1, d = 'x' WHERE id = 1;"
+      - id: set_default
+        sql: "UPDATE t SET c = DEFAULT WHERE id = 1;"
+      - id: set_subquery
+        sql: "UPDATE t SET c = (SELECT MAX(x) FROM s) WHERE id = 1;"
+      - id: swap_columns
+        sql: "UPDATE t SET x = y, y = x WHERE true;"
+      - id: alias_as
+        sql: "UPDATE t AS a SET a.c = 1 WHERE a.id = 1;"
+      - id: alias_no_as
+        sql: "UPDATE t a SET a.c = 1 WHERE a.id = 1;"
+      - id: statement_hint
+        sql: "@{PDML_MAX_PARALLELISM=10} UPDATE t SET c = 1 WHERE true;"
+      - id: table_hint_force_index
+        sql: "UPDATE t @{FORCE_INDEX=idx} SET c = 1 WHERE id = 1;"
+      - id: table_hint_base_table
+        sql: "UPDATE t @{FORCE_INDEX=_BASE_TABLE} SET c = 1 WHERE id = 1;"
+      - id: then_return_columns
+        sql: "UPDATE t SET c = 1 WHERE id = 1 THEN RETURN id, c;"
+      - id: then_return_alias
+        sql: "UPDATE t SET c = 1 WHERE id = 1 THEN RETURN c AS new_c, d e;"
+      - id: then_return_star
+        sql: "UPDATE t SET c = 1 WHERE id = 1 THEN RETURN *;"
+      - id: then_return_table_star
+        sql: "UPDATE t SET c = 1 WHERE id = 1 THEN RETURN t.*;"
+      - id: then_return_star_except
+        sql: "UPDATE t SET c = 1 WHERE id = 1 THEN RETURN * EXCEPT (d);"
+      - id: then_return_star_replace
+        sql: "UPDATE t SET c = 1 WHERE id = 1 THEN RETURN * REPLACE (c + 1 AS c);"
+      - id: then_return_with_action
+        sql: "UPDATE t SET c = 1 WHERE id = 1 THEN RETURN WITH ACTION id;"
+      - id: then_return_with_action_alias
+        sql: "UPDATE t SET c = 1 WHERE id = 1 THEN RETURN WITH ACTION AS act id, c;"
+    examples:
+      - "UPDATE T SET col_a = 1000 WHERE id = 1;"
+      - "UPDATE Singers SET Status = 'active', LastUpdated = TIMESTAMP(\"2025-07-15 15:30:00+00\") WHERE SingerId = 10;"
+      - "UPDATE Singers SET BirthDate = '1990-10-10' WHERE FirstName = 'Russell' THEN RETURN SingerId, EXTRACT(YEAR FROM BirthDate) AS year;"
+
+  - id: delete
+    name: DELETE (THEN RETURN)
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/dml-syntax#delete-statement
+    tier: high
+    probes:
+      - id: basic
+        sql: "DELETE FROM t WHERE id = 1;"
+      - id: without_from
+        sql: "DELETE t WHERE id = 1;"
+      - id: delete_all
+        sql: "DELETE FROM t WHERE true;"
+      - id: alias_as
+        sql: "DELETE FROM t AS a WHERE a.id = 1;"
+      - id: alias_no_as
+        sql: "DELETE FROM t a WHERE a.id = 1;"
+      - id: subquery_condition
+        sql: "DELETE FROM t WHERE c NOT IN (SELECT c FROM s);"
+      - id: statement_hint
+        sql: "@{PDML_MAX_PARALLELISM=10} DELETE FROM t WHERE true;"
+      - id: table_hint_force_index
+        sql: "DELETE FROM t @{FORCE_INDEX=idx} WHERE id = 1;"
+      - id: table_hint_base_table
+        sql: "DELETE FROM t @{FORCE_INDEX=_BASE_TABLE} WHERE id = 1;"
+      - id: then_return_columns
+        sql: "DELETE FROM t WHERE id = 1 THEN RETURN id, c;"
+      - id: then_return_alias
+        sql: "DELETE FROM t WHERE id = 1 THEN RETURN c AS old_c, d e;"
+      - id: then_return_star
+        sql: "DELETE FROM t WHERE id = 1 THEN RETURN *;"
+      - id: then_return_table_star
+        sql: "DELETE FROM t WHERE id = 1 THEN RETURN t.*;"
+      - id: then_return_star_except
+        sql: "DELETE FROM t WHERE id = 1 THEN RETURN * EXCEPT (d);"
+      - id: then_return_star_replace
+        sql: "DELETE FROM t WHERE id = 1 THEN RETURN * REPLACE (c + 1 AS c);"
+      - id: then_return_with_action
+        sql: "DELETE FROM t WHERE id = 1 THEN RETURN WITH ACTION id;"
+      - id: then_return_with_action_alias
+        sql: "DELETE FROM t WHERE id = 1 THEN RETURN WITH ACTION AS act id, c;"
+    examples:
+      - "DELETE FROM Singers WHERE FirstName = 'Alice';"
+      - "DELETE FROM Singers WHERE FirstName NOT IN (SELECT FirstName from AckworthSingers);"

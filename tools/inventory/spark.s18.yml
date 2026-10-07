@@ -1,0 +1,65 @@
+dialect: spark
+engine: Apache Spark SQL
+version: "4.x (docs/latest)"
+source: https://spark.apache.org/docs/latest/sql-ref-syntax.html
+
+statements:
+  - id: pivot_clause
+    name: PIVOT Clause
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-pivot.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT * FROM t PIVOT (SUM(a) FOR c IN ('x', 'y'));"
+      - id: aggregate_alias
+        sql: "SELECT * FROM t PIVOT (SUM(a) AS s FOR c IN ('x', 'y'));"
+      - id: multiple_aggregates
+        sql: "SELECT * FROM t PIVOT (SUM(a) AS s, AVG(b) AS m FOR c IN ('x', 'y'));"
+      - id: count_distinct
+        sql: "SELECT * FROM t PIVOT (COUNT(DISTINCT a) FOR c IN ('x', 'y'));"
+      - id: value_aliases
+        sql: "SELECT * FROM t PIVOT (SUM(a) FOR c IN ('x' AS vx, 'y' AS vy));"
+      - id: column_list_in_parens
+        sql: "SELECT * FROM t PIVOT (SUM(a) FOR (c) IN ('x', 'y'));"
+      - id: multi_column_list
+        sql: "SELECT * FROM t PIVOT (SUM(a) FOR (c, d) IN (('x', 1) AS c1, ('y', 2) AS c2));"
+      - id: pivot_alias_as
+        sql: "SELECT pv.* FROM t PIVOT (SUM(a) FOR c IN ('x', 'y')) AS pv;"
+      - id: pivot_alias_no_as
+        sql: "SELECT pv.* FROM t PIVOT (SUM(a) FOR c IN ('x', 'y')) pv;"
+      - id: after_subquery
+        sql: "SELECT * FROM (SELECT a, c FROM t) PIVOT (SUM(a) FOR c IN ('x', 'y'));"
+    examples:
+      - "SELECT * FROM person PIVOT ( SUM(age) AS a, AVG(class) AS c FOR name IN ('John' AS john, 'Mike' AS mike) );"
+      - "SELECT * FROM person PIVOT ( SUM(age) AS a, AVG(class) AS c FOR (name, age) IN (('John', 30) AS c1, ('Mike', 40) AS c2) );"
+      - "SELECT pv.* FROM person PIVOT ( SUM(age) AS a FOR name IN ('John' AS john, 'Mike' AS mike) ) AS pv;"
+
+  - id: unpivot_clause
+    name: UNPIVOT Clause
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-unpivot.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT * FROM t UNPIVOT (v FOR n IN (q1, q2, q3));"
+      - id: include_nulls
+        sql: "SELECT * FROM t UNPIVOT INCLUDE NULLS (v FOR n IN (q1, q2));"
+      - id: exclude_nulls
+        sql: "SELECT * FROM t UNPIVOT EXCLUDE NULLS (v FOR n IN (q1, q2));"
+      - id: column_aliases_as
+        sql: "SELECT * FROM t UNPIVOT (v FOR n IN (q1 AS Q1, q2 AS Q2));"
+      - id: column_aliases_no_as
+        sql: "SELECT * FROM t UNPIVOT (v FOR n IN (q1 a1, q2 a2));"
+      - id: multi_value_columns
+        sql: "SELECT * FROM t UNPIVOT ((v1, v2) FOR n IN ((q1, q2), (q3, q4)));"
+      - id: multi_value_aliases
+        sql: "SELECT * FROM t UNPIVOT ((v1, v2) FOR n IN ((q1, q2) AS H1, (q3, q4) AS H2));"
+      - id: unpivot_alias_as
+        sql: "SELECT up.* FROM t UNPIVOT (v FOR n IN (q1, q2)) AS up;"
+      - id: unpivot_alias_no_as
+        sql: "SELECT up.* FROM t UNPIVOT (v FOR n IN (q1, q2)) up;"
+      - id: after_subquery
+        sql: "SELECT * FROM (SELECT * FROM t) UNPIVOT (v FOR n IN (q1, q2));"
+    examples:
+      - "SELECT * FROM sales_quarterly UNPIVOT ( sales FOR quarter IN (q1, q2, q3, q4) );"
+      - "SELECT up.* FROM sales_quarterly UNPIVOT INCLUDE NULLS ( sales FOR quarter IN (q1 AS Q1, q2 AS Q2, q3 AS Q3, q4 AS Q4) ) AS up;"
+      - "SELECT * FROM sales_quarterly UNPIVOT EXCLUDE NULLS ( (first_quarter, second_quarter) FOR half_of_the_year IN ( (q1, q2) AS H1, (q3, q4) AS H2 ) );"

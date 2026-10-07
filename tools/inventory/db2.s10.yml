@@ -1,0 +1,169 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "12.1"
+source: https://www.ibm.com/docs/en/db2/12.1.x?topic=reference-statements
+
+statements:
+  - id: create_function_sourced_or_template
+    name: CREATE FUNCTION (sourced or template)
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-create-function-sourced-template
+    tier: high
+    probes:
+      - id: source_with_signature
+        sql: "CREATE FUNCTION f (INTEGER, INTEGER) RETURNS FLOAT SOURCE s.g (INTEGER, FLOAT);"
+      - id: source_by_name_only
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS INTEGER SOURCE g;"
+      - id: source_specific
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS INTEGER SOURCE SPECIFIC s.g_spec;"
+      - id: named_parameters
+        sql: "CREATE FUNCTION f (a INTEGER, b VARCHAR(10)) RETURNS INTEGER SOURCE g (INTEGER, VARCHAR(10));"
+      - id: parameter_default
+        sql: "CREATE FUNCTION f (a INTEGER DEFAULT 0) RETURNS INTEGER SOURCE g (INTEGER);"
+      - id: specific_name
+        sql: "CREATE FUNCTION f (INTEGER) RETURNS INTEGER SPECIFIC f_spec SOURCE g (INTEGER);"
+      - id: parameter_ccsid
+        sql: "CREATE FUNCTION f (VARCHAR(10)) RETURNS VARCHAR(10) SOURCE g (VARCHAR(10)) PARAMETER CCSID UNICODE;"
+      - id: parameter_ccsid_ascii
+        sql: "CREATE FUNCTION f (VARCHAR(10)) RETURNS VARCHAR(10) SOURCE g (VARCHAR(10)) PARAMETER CCSID ASCII;"
+      - id: as_template
+        sql: "CREATE FUNCTION f (DOUBLE, DOUBLE) RETURNS DOUBLE AS TEMPLATE;"
+      - id: template_deterministic_no_external_action
+        sql: "CREATE FUNCTION f (DOUBLE, DOUBLE) RETURNS DOUBLE AS TEMPLATE DETERMINISTIC NO EXTERNAL ACTION;"
+      - id: template_not_deterministic_external_action
+        sql: "CREATE FUNCTION f () RETURNS DECIMAL(8,2) AS TEMPLATE NOT DETERMINISTIC EXTERNAL ACTION;"
+      - id: decimal_precision_scale
+        sql: "CREATE FUNCTION f (DECIMAL(10,2)) RETURNS DECIMAL(10,2) SOURCE g (DECIMAL(10,2));"
+      - id: char_for_bit_data
+        sql: "CREATE FUNCTION f (CHAR(8) FOR BIT DATA) RETURNS VARCHAR(8) FOR BIT DATA SOURCE g (CHAR(8) FOR BIT DATA);"
+      - id: lob_types
+        sql: "CREATE FUNCTION f (CLOB(1M), BLOB(2K)) RETURNS DBCLOB(1M) SOURCE g (CLOB(1M), BLOB(2K));"
+      - id: double_precision_type
+        sql: "CREATE FUNCTION f (DOUBLE PRECISION) RETURNS REAL SOURCE g (DOUBLE PRECISION);"
+      - id: char_codeunits
+        sql: "CREATE FUNCTION f (VARCHAR(10 CODEUNITS32)) RETURNS VARCHAR(10 OCTETS) SOURCE g (VARCHAR(10 CODEUNITS32));"
+      - id: graphic_types
+        sql: "CREATE FUNCTION f (GRAPHIC(5), VARGRAPHIC(10)) RETURNS GRAPHIC(5) SOURCE g (GRAPHIC(5), VARGRAPHIC(10));"
+      - id: national_types
+        sql: "CREATE FUNCTION f (NCHAR(5), NVARCHAR(10)) RETURNS NCLOB(1M) SOURCE g (NCHAR(5), NVARCHAR(10));"
+      - id: binary_types
+        sql: "CREATE FUNCTION f (BINARY(4), VARBINARY(8)) RETURNS BINARY(4) SOURCE g (BINARY(4), VARBINARY(8));"
+      - id: datetime_types
+        sql: "CREATE FUNCTION f (DATE, TIME, TIMESTAMP(6)) RETURNS DATE SOURCE g (DATE, TIME, TIMESTAMP(6));"
+      - id: decfloat_xml
+        sql: "CREATE FUNCTION f (DECFLOAT(16), XML) RETURNS DECFLOAT(34) SOURCE g (DECFLOAT(16), XML);"
+      - id: distinct_type
+        sql: "CREATE FUNCTION AVG (HATSIZE) RETURNS HATSIZE SOURCE SYSIBM.AVG (INTEGER);"
+      - id: db2securitylabel
+        sql: "CREATE FUNCTION f (SYSPROC.DB2SECURITYLABEL) RETURNS SYSPROC.DB2SECURITYLABEL SOURCE g (SYSPROC.DB2SECURITYLABEL);"
+    examples:
+      - "CREATE FUNCTION MYCENTER ( INTEGER, INTEGER ) RETURNS FLOAT SOURCE PELLOW.CENTER ( INTEGER, FLOAT );"
+      - "CREATE FUNCTION AVG (HATSIZE) RETURNS HATSIZE SOURCE SYSIBM.AVG ( INTEGER );"
+      - "CREATE FUNCTION NOVA.STATS ( DOUBLE, DOUBLE ) RETURNS DOUBLE AS TEMPLATE DETERMINISTIC NO EXTERNAL ACTION;"
+
+  - id: create_function_sql_scalar_table_or_row
+    name: CREATE FUNCTION (SQL scalar, table, or row)
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-create-function-sql-scalar-table-row
+    tier: high
+    probes:
+      - id: scalar_return
+        sql: "CREATE FUNCTION f (x DOUBLE) RETURNS DOUBLE LANGUAGE SQL RETURN x * 2;"
+      - id: scalar_no_option_list
+        sql: "CREATE FUNCTION f (x INTEGER) RETURNS INTEGER RETURN x + 1;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE FUNCTION f (x INTEGER) RETURNS INTEGER RETURN x + 1;"
+      - id: no_parameters
+        sql: "CREATE FUNCTION f () RETURNS INTEGER RETURN 1;"
+      - id: parameter_in
+        sql: "CREATE FUNCTION f (IN x INTEGER) RETURNS INTEGER BEGIN RETURN x; END;"
+      - id: parameter_out_inout
+        sql: "CREATE FUNCTION f (INOUT r INTEGER, IN d INTEGER, OUT o INTEGER) RETURNS INTEGER BEGIN SET r = r + d; SET o = r; RETURN 0; END;"
+      - id: parameter_default
+        sql: "CREATE FUNCTION f (x INTEGER DEFAULT 0) RETURNS INTEGER RETURN x;"
+      - id: parameter_default_expression
+        sql: "CREATE FUNCTION f (x INTEGER DEFAULT (1 + 2)) RETURNS INTEGER RETURN x;"
+      - id: parameter_default_special_register
+        sql: "CREATE FUNCTION f (x VARCHAR(30) DEFAULT CURRENT SCHEMA) RETURNS INTEGER RETURN 1;"
+      - id: parameter_default_null
+        sql: "CREATE FUNCTION f (x INTEGER DEFAULT NULL) RETURNS INTEGER RETURN x;"
+      - id: returns_row
+        sql: "CREATE FUNCTION f (p PERSON) RETURNS ROW (NAME VARCHAR(10), FIRSTNAME VARCHAR(10)) LANGUAGE SQL CONTAINS SQL NO EXTERNAL ACTION DETERMINISTIC RETURN VALUES (p..NAME, p..FIRSTNAME);"
+      - id: returns_table_inlined
+        sql: "CREATE FUNCTION f (d CHAR(3)) RETURNS TABLE (EMPNO CHAR(6), LASTNAME VARCHAR(15)) LANGUAGE SQL READS SQL DATA NO EXTERNAL ACTION DETERMINISTIC RETURN SELECT EMPNO, LASTNAME FROM EMPLOYEE WHERE WORKDEPT = f.d;"
+      - id: returns_table_begin_atomic
+        sql: "CREATE FUNCTION f (d CHAR(3)) RETURNS TABLE (EMPNO CHAR(6)) LANGUAGE SQL MODIFIES SQL DATA NO EXTERNAL ACTION DETERMINISTIC BEGIN ATOMIC INSERT INTO AUDIT VALUES (USER, d); RETURN SELECT EMPNO FROM EMPLOYEE; END;"
+      - id: returns_row_type_name
+        sql: "CREATE FUNCTION f (x INTEGER) RETURNS my_row_type BEGIN DECLARE r my_row_type; RETURN r; END;"
+      - id: returns_anchored_row
+        sql: "CREATE FUNCTION f (x INTEGER) RETURNS ANCHOR DATA TYPE TO ROW OF t BEGIN DECLARE r ROW OF t; RETURN r; END;"
+      - id: returns_element_of_array
+        sql: "CREATE FUNCTION f (a my_array) RETURNS ELEMENT OF my_array BEGIN RETURN a[1]; END;"
+      - id: anchored_parameter_type
+        sql: "CREATE FUNCTION f (x ANCHOR DATA TYPE TO t.c) RETURNS INTEGER BEGIN RETURN 1; END;"
+      - id: anchored_return_type
+        sql: "CREATE FUNCTION f (x INTEGER) RETURNS ANCHOR DATA TYPE TO t.c BEGIN RETURN 1; END;"
+      - id: array_parameter_type
+        sql: "CREATE FUNCTION f (a my_array) RETURNS INTEGER BEGIN RETURN CARDINALITY(a); END;"
+      - id: cursor_parameter_type
+        sql: "CREATE FUNCTION f (c CURSOR) RETURNS INTEGER BEGIN RETURN 1; END;"
+      - id: ref_type
+        sql: "CREATE FUNCTION f (r REF(my_type)) RETURNS INTEGER BEGIN RETURN 1; END;"
+      - id: boolean_vector_types
+        sql: "CREATE FUNCTION f (b BOOLEAN, v VECTOR(3, FLOAT32)) RETURNS BOOLEAN BEGIN RETURN b; END;"
+      - id: vector_int8
+        sql: "CREATE FUNCTION f (v VECTOR(3, INT8)) RETURNS INTEGER BEGIN RETURN 1; END;"
+      - id: language_sql
+        sql: "CREATE FUNCTION f (x INTEGER) RETURNS INTEGER LANGUAGE SQL RETURN x;"
+      - id: parameter_ccsid
+        sql: "CREATE FUNCTION f (x VARCHAR(10)) RETURNS VARCHAR(10) PARAMETER CCSID UNICODE RETURN x;"
+      - id: parameter_ccsid_ascii
+        sql: "CREATE FUNCTION f (x VARCHAR(10)) RETURNS VARCHAR(10) PARAMETER CCSID ASCII RETURN x;"
+      - id: specific_name
+        sql: "CREATE FUNCTION f (x INTEGER) RETURNS INTEGER SPECIFIC f_spec RETURN x;"
+      - id: not_deterministic
+        sql: "CREATE FUNCTION f (x INTEGER) RETURNS INTEGER NOT DETERMINISTIC RETURN x;"
+      - id: deterministic
+        sql: "CREATE FUNCTION f (x INTEGER) RETURNS INTEGER DETERMINISTIC RETURN x;"
+      - id: external_action
+        sql: "CREATE FUNCTION f (x INTEGER) RETURNS INTEGER EXTERNAL ACTION RETURN x;"
+      - id: no_external_action
+        sql: "CREATE FUNCTION f (x INTEGER) RETURNS INTEGER NO EXTERNAL ACTION RETURN x;"
+      - id: reads_sql_data
+        sql: "CREATE FUNCTION f (x INTEGER) RETURNS INTEGER READS SQL DATA RETURN (SELECT MAX(c) FROM t);"
+      - id: contains_sql
+        sql: "CREATE FUNCTION f (x INTEGER) RETURNS INTEGER CONTAINS SQL RETURN x;"
+      - id: modifies_sql_data
+        sql: "CREATE FUNCTION f (x INTEGER) RETURNS INTEGER MODIFIES SQL DATA BEGIN INSERT INTO t VALUES (x); RETURN x; END;"
+      - id: disallow_parallel
+        sql: "CREATE FUNCTION f (x INTEGER) RETURNS INTEGER DISALLOW PARALLEL RETURN x;"
+      - id: allow_parallel
+        sql: "CREATE FUNCTION f (x INTEGER) RETURNS INTEGER ALLOW PARALLEL RETURN x;"
+      - id: static_dispatch
+        sql: "CREATE FUNCTION f (x INTEGER) RETURNS INTEGER STATIC DISPATCH RETURN x;"
+      - id: called_on_null_input
+        sql: "CREATE FUNCTION f (x INTEGER) RETURNS INTEGER CALLED ON NULL INPUT RETURN x;"
+      - id: null_call_alternative
+        sql: "CREATE FUNCTION f (x INTEGER) RETURNS INTEGER NULL CALL RETURN x;"
+      - id: inherit_special_registers
+        sql: "CREATE FUNCTION f (x INTEGER) RETURNS INTEGER INHERIT SPECIAL REGISTERS RETURN x;"
+      - id: predicates_clause
+        sql: "CREATE FUNCTION f (x INTEGER, y INTEGER) RETURNS INTEGER PREDICATES (WHEN = 1 FILTER USING g(x, y)) RETURN x;"
+      - id: inherit_isolation_without_lock_request
+        sql: "CREATE FUNCTION f (x INTEGER) RETURNS INTEGER INHERIT ISOLATION LEVEL WITHOUT LOCK REQUEST RETURN x;"
+      - id: inherit_isolation_with_lock_request
+        sql: "CREATE FUNCTION f (x INTEGER) RETURNS INTEGER INHERIT ISOLATION LEVEL WITH LOCK REQUEST RETURN x;"
+      - id: secured
+        sql: "CREATE FUNCTION f (x INTEGER) RETURNS INTEGER SECURED RETURN x;"
+      - id: not_secured
+        sql: "CREATE FUNCTION f (x INTEGER) RETURNS INTEGER NOT SECURED RETURN x;"
+      - id: multiple_options
+        sql: "CREATE FUNCTION f (x INTEGER) RETURNS INTEGER LANGUAGE SQL SPECIFIC f_spec DETERMINISTIC NO EXTERNAL ACTION CONTAINS SQL CALLED ON NULL INPUT RETURN x;"
+      - id: compiled_body_declare_handler
+        sql: "CREATE FUNCTION f (x INTEGER) RETURNS INTEGER BEGIN DECLARE code INTEGER DEFAULT 0; DECLARE SQLCODE INTEGER; DECLARE CONTINUE HANDLER FOR SQLEXCEPTION BEGIN SET code = SQLCODE; RETURN code; END; SET x = x + 1; RETURN code; END;"
+      - id: inlined_body_while_loop
+        sql: "CREATE FUNCTION f (instr VARCHAR(4000)) RETURNS VARCHAR(4000) DETERMINISTIC NO EXTERNAL ACTION CONTAINS SQL BEGIN ATOMIC DECLARE revstr, reststr VARCHAR(4000) DEFAULT ''; DECLARE len INT; IF instr IS NULL THEN RETURN NULL; END IF; SET (reststr, len) = (instr, LENGTH(instr)); WHILE len > 0 DO SET (revstr, reststr, len) = (SUBSTR(reststr, 1, 1) CONCAT revstr, SUBSTR(reststr, 2, len - 1), len - 1); END WHILE; RETURN revstr; END;"
+      - id: returns_clause_data_types
+        sql: "CREATE FUNCTION f (a DECIMAL(10,2), b VARCHAR(20) FOR BIT DATA, c TIMESTAMP(6), d CLOB(1M)) RETURNS DECIMAL(10,2) RETURN a;"
+    examples:
+      - "CREATE FUNCTION TAN (X DOUBLE) RETURNS DOUBLE LANGUAGE SQL CONTAINS SQL NO EXTERNAL ACTION DETERMINISTIC RETURN SIN(X)/COS(X);"
+      - "CREATE FUNCTION DEPTEMPLOYEES (DEPTNO CHAR(3)) RETURNS TABLE (EMPNO CHAR(6), LASTNAME VARCHAR(15), FIRSTNAME VARCHAR(12)) LANGUAGE SQL READS SQL DATA NO EXTERNAL ACTION DETERMINISTIC RETURN SELECT EMPNO, LASTNAME, FIRSTNME FROM EMPLOYEE WHERE EMPLOYEE.WORKDEPT = DEPTEMPLOYEES.DEPTNO;"
+      - "CREATE FUNCTION get_customer_name_compiled(doc XML) RETURNS VARCHAR(25) BEGIN RETURN XMLCAST(XMLQUERY ('$d/customerinfo/name' PASSING doc AS \"d\")AS VARCHAR(25)); END;"

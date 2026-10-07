@@ -1,0 +1,175 @@
+dialect: postgres
+engine: PostgreSQL
+version: "17"
+source: https://www.postgresql.org/docs/17/sql-commands.html
+
+statements:
+  - id: lock
+    name: LOCK
+    doc: https://www.postgresql.org/docs/17/sql-lock.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "LOCK t;" }
+      - { id: table_keyword, sql: "LOCK TABLE t;" }
+      - { id: only, sql: "LOCK TABLE ONLY t;" }
+      - { id: descendants_star, sql: "LOCK TABLE t *;" }
+      - { id: multiple_tables, sql: "LOCK TABLE t1, t2;" }
+      - { id: access_share_mode, sql: "LOCK TABLE t IN ACCESS SHARE MODE;" }
+      - { id: row_share_mode, sql: "LOCK TABLE t IN ROW SHARE MODE;" }
+      - { id: row_exclusive_mode, sql: "LOCK TABLE t IN ROW EXCLUSIVE MODE;" }
+      - { id: share_update_exclusive_mode, sql: "LOCK TABLE t IN SHARE UPDATE EXCLUSIVE MODE;" }
+      - { id: share_mode, sql: "LOCK TABLE t IN SHARE MODE;" }
+      - { id: share_row_exclusive_mode, sql: "LOCK TABLE t IN SHARE ROW EXCLUSIVE MODE;" }
+      - { id: exclusive_mode, sql: "LOCK TABLE t IN EXCLUSIVE MODE;" }
+      - { id: access_exclusive_mode, sql: "LOCK TABLE t IN ACCESS EXCLUSIVE MODE;" }
+      - { id: nowait, sql: "LOCK TABLE t IN SHARE MODE NOWAIT;" }
+    examples:
+      - "LOCK TABLE films IN SHARE MODE;"
+      - "LOCK TABLE films IN SHARE ROW EXCLUSIVE MODE;"
+
+  - id: move
+    name: MOVE
+    doc: https://www.postgresql.org/docs/17/sql-move.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "MOVE c;" }
+      - { id: from_cursor, sql: "MOVE FROM c;" }
+      - { id: in_cursor, sql: "MOVE IN c;" }
+      - { id: next, sql: "MOVE NEXT FROM c;" }
+      - { id: prior, sql: "MOVE PRIOR FROM c;" }
+      - { id: first, sql: "MOVE FIRST FROM c;" }
+      - { id: last, sql: "MOVE LAST FROM c;" }
+      - { id: absolute, sql: "MOVE ABSOLUTE 5 FROM c;" }
+      - { id: relative, sql: "MOVE RELATIVE -2 FROM c;" }
+      - { id: count, sql: "MOVE 5 FROM c;" }
+      - { id: all, sql: "MOVE ALL FROM c;" }
+      - { id: forward, sql: "MOVE FORWARD FROM c;" }
+      - { id: forward_count, sql: "MOVE FORWARD 5 IN c;" }
+      - { id: forward_all, sql: "MOVE FORWARD ALL FROM c;" }
+      - { id: backward, sql: "MOVE BACKWARD FROM c;" }
+      - { id: backward_count, sql: "MOVE BACKWARD 5 FROM c;" }
+      - { id: backward_all, sql: "MOVE BACKWARD ALL FROM c;" }
+    examples:
+      - "MOVE FORWARD 5 IN liahona;"
+
+  - id: notify
+    name: NOTIFY
+    doc: https://www.postgresql.org/docs/17/sql-notify.html
+    tier: medium
+    probes:
+      - { id: channel, sql: "NOTIFY ch;" }
+      - { id: payload, sql: "NOTIFY ch, 'payload';" }
+    examples:
+      - "NOTIFY virtual;"
+      - "NOTIFY virtual, 'This is the payload';"
+
+  - id: prepare
+    name: PREPARE
+    doc: https://www.postgresql.org/docs/17/sql-prepare.html
+    tier: medium
+    probes:
+      - { id: select, sql: "PREPARE p AS SELECT 1;" }
+      - { id: with_types, sql: "PREPARE p (int, text) AS SELECT $1, $2;" }
+      - { id: insert, sql: "PREPARE p (int) AS INSERT INTO t VALUES ($1);" }
+      - { id: update, sql: "PREPARE p (int) AS UPDATE t SET c = $1;" }
+      - { id: delete, sql: "PREPARE p (int) AS DELETE FROM t WHERE c = $1;" }
+      - { id: merge, sql: "PREPARE p (int) AS MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET c = $1;" }
+      - { id: values, sql: "PREPARE p AS VALUES (1, 2);" }
+    examples:
+      - "PREPARE fooplan (int, text, bool, numeric) AS INSERT INTO foo VALUES($1, $2, $3, $4);"
+      - "PREPARE usrrptplan (int) AS SELECT * FROM users u, logs l WHERE u.usrid=$1 AND u.usrid=l.usrid AND l.date = $2;"
+
+  - id: prepare_transaction
+    name: PREPARE TRANSACTION
+    doc: https://www.postgresql.org/docs/17/sql-prepare-transaction.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "PREPARE TRANSACTION 'foobar';" }
+    examples:
+      - "PREPARE TRANSACTION 'foobar';"
+
+  - id: refresh_materialized_view
+    name: REFRESH MATERIALIZED VIEW
+    doc: https://www.postgresql.org/docs/17/sql-refreshmaterializedview.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "REFRESH MATERIALIZED VIEW mv;" }
+      - { id: concurrently, sql: "REFRESH MATERIALIZED VIEW CONCURRENTLY mv;" }
+      - { id: with_data, sql: "REFRESH MATERIALIZED VIEW mv WITH DATA;" }
+      - { id: with_no_data, sql: "REFRESH MATERIALIZED VIEW mv WITH NO DATA;" }
+      - { id: concurrently_with_data, sql: "REFRESH MATERIALIZED VIEW CONCURRENTLY s.mv WITH DATA;" }
+    examples:
+      - "REFRESH MATERIALIZED VIEW order_summary;"
+      - "REFRESH MATERIALIZED VIEW annual_statistics_basis WITH NO DATA;"
+
+  - id: reindex
+    name: REINDEX
+    doc: https://www.postgresql.org/docs/17/sql-reindex.html
+    tier: medium
+    probes:
+      - { id: index, sql: "REINDEX INDEX idx;" }
+      - { id: table, sql: "REINDEX TABLE t;" }
+      - { id: schema, sql: "REINDEX SCHEMA s;" }
+      - { id: database, sql: "REINDEX DATABASE d;" }
+      - { id: database_current, sql: "REINDEX DATABASE;" }
+      - { id: system, sql: "REINDEX SYSTEM d;" }
+      - { id: system_current, sql: "REINDEX SYSTEM;" }
+      - { id: concurrently, sql: "REINDEX TABLE CONCURRENTLY t;" }
+      - { id: option_concurrently, sql: "REINDEX (CONCURRENTLY) INDEX idx;" }
+      - { id: option_concurrently_bool, sql: "REINDEX (CONCURRENTLY true) TABLE t;" }
+      - { id: option_tablespace, sql: "REINDEX (TABLESPACE ts) INDEX idx;" }
+      - { id: option_verbose, sql: "REINDEX (VERBOSE) TABLE t;" }
+      - { id: option_verbose_bool, sql: "REINDEX (VERBOSE false) TABLE t;" }
+      - { id: multiple_options, sql: "REINDEX (VERBOSE, TABLESPACE ts) SCHEMA s;" }
+    examples:
+      - "REINDEX INDEX my_index;"
+      - "REINDEX TABLE my_table;"
+      - "REINDEX TABLE CONCURRENTLY my_broken_table;"
+
+  - id: reset
+    name: RESET
+    doc: https://www.postgresql.org/docs/17/sql-reset.html
+    tier: medium
+    probes:
+      - { id: parameter, sql: "RESET search_path;" }
+      - { id: all, sql: "RESET ALL;" }
+      - { id: qualified_parameter, sql: "RESET myext.setting;" }
+    examples:
+      - "RESET timezone;"
+
+  - id: rollback_prepared
+    name: ROLLBACK PREPARED
+    doc: https://www.postgresql.org/docs/17/sql-rollback-prepared.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "ROLLBACK PREPARED 'foobar';" }
+    examples:
+      - "ROLLBACK PREPARED 'foobar';"
+
+  - id: set
+    name: SET
+    doc: https://www.postgresql.org/docs/17/sql-set.html
+    tier: medium
+    probes:
+      - { id: to_value, sql: "SET search_path TO my_schema, public;" }
+      - { id: equals_value, sql: "SET work_mem = '64MB';" }
+      - { id: numeric_value, sql: "SET statement_timeout = 5000;" }
+      - { id: to_default, sql: "SET search_path TO DEFAULT;" }
+      - { id: equals_default, sql: "SET work_mem = DEFAULT;" }
+      - { id: session, sql: "SET SESSION work_mem = '64MB';" }
+      - { id: local, sql: "SET LOCAL work_mem TO '64MB';" }
+      - { id: string_value, sql: "SET datestyle TO 'ISO, DMY';" }
+      - { id: identifier_values, sql: "SET datestyle TO postgres, dmy;" }
+      - { id: boolean_value, sql: "SET enable_seqscan TO off;" }
+      - { id: qualified_parameter, sql: "SET myext.setting = 'x';" }
+      - { id: time_zone_string, sql: "SET TIME ZONE 'America/Los_Angeles';" }
+      - { id: time_zone_interval, sql: "SET TIME ZONE INTERVAL '-08:00' HOUR TO MINUTE;" }
+      - { id: time_zone_number, sql: "SET TIME ZONE -7;" }
+      - { id: time_zone_local, sql: "SET TIME ZONE LOCAL;" }
+      - { id: time_zone_default, sql: "SET TIME ZONE DEFAULT;" }
+      - { id: session_time_zone, sql: "SET SESSION TIME ZONE 'UTC';" }
+      - { id: local_time_zone, sql: "SET LOCAL TIME ZONE 'UTC';" }
+    examples:
+      - "SET search_path TO my_schema, public;"
+      - "SET datestyle TO postgres, dmy;"
+      - "SET TIME ZONE 'Europe/Rome';"

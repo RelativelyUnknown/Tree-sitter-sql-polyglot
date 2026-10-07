@@ -1,0 +1,180 @@
+dialect: snowflake
+engine: Snowflake
+version: "current (docs read 2026-10-04)"
+source: https://docs.snowflake.com/en/sql-reference/sql-all
+
+statements:
+  - id: create_object_clone
+    name: CREATE <object> ... CLONE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-clone
+    tier: high
+    probes:
+      - id: database
+        sql: "CREATE DATABASE db_clone CLONE db;"
+      - id: database_or_replace
+        sql: "CREATE OR REPLACE DATABASE db_clone CLONE db;"
+      - id: database_if_not_exists
+        sql: "CREATE DATABASE IF NOT EXISTS db_clone CLONE db;"
+      - id: database_at_timestamp
+        sql: "CREATE DATABASE db_clone CLONE db AT (TIMESTAMP => '2024-01-01 00:00:00'::TIMESTAMP_LTZ);"
+      - id: database_before_offset
+        sql: "CREATE DATABASE db_clone CLONE db BEFORE (OFFSET => -3600);"
+      - id: database_at_statement
+        sql: "CREATE DATABASE db_clone CLONE db AT (STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726');"
+      - id: database_ignore_insufficient_retention
+        sql: "CREATE DATABASE db_clone CLONE db IGNORE TABLES WITH INSUFFICIENT DATA RETENTION;"
+      - id: database_ignore_hybrid_tables
+        sql: "CREATE DATABASE db_clone CLONE db IGNORE HYBRID TABLES;"
+      - id: database_include_internal_stages
+        sql: "CREATE DATABASE db_clone CLONE db INCLUDE INTERNAL STAGES;"
+      - id: database_all_options
+        sql: "CREATE DATABASE IF NOT EXISTS db_clone CLONE db BEFORE (OFFSET => -60) IGNORE TABLES WITH INSUFFICIENT DATA RETENTION IGNORE HYBRID TABLES INCLUDE INTERNAL STAGES;"
+        note: all optional clauses of the databases and schemas syntax block combined
+      - id: schema
+        sql: "CREATE SCHEMA s_clone CLONE s;"
+      - id: schema_if_not_exists
+        sql: "CREATE SCHEMA IF NOT EXISTS s_clone CLONE s;"
+      - id: schema_before_timestamp
+        sql: "CREATE SCHEMA s_clone CLONE s BEFORE (TIMESTAMP => TO_TIMESTAMP(40 * 365 * 86400));"
+      - id: schema_ignore_options
+        sql: "CREATE OR REPLACE SCHEMA s_clone CLONE s IGNORE HYBRID TABLES INCLUDE INTERNAL STAGES;"
+      - id: table
+        sql: "CREATE TABLE t_clone CLONE t;"
+      - id: table_or_replace
+        sql: "CREATE OR REPLACE TABLE t_clone CLONE t;"
+      - id: table_if_not_exists
+        sql: "CREATE TABLE IF NOT EXISTS t_clone CLONE t;"
+      - id: table_at_timestamp
+        sql: "CREATE TABLE t_clone CLONE t AT (TIMESTAMP => TO_TIMESTAMP_TZ('04/05/2013 01:02:03', 'mm/dd/yyyy hh24:mi:ss'));"
+      - id: table_at_offset
+        sql: "CREATE TABLE t_clone CLONE t AT (OFFSET => -30*60);"
+      - id: table_before_statement
+        sql: "CREATE TABLE t_clone CLONE t BEFORE (STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726');"
+      - id: dynamic_table
+        sql: "CREATE DYNAMIC TABLE dt_clone CLONE dt;"
+      - id: dynamic_table_or_replace_time_travel
+        sql: "CREATE OR REPLACE DYNAMIC TABLE dt_clone CLONE dt AT (OFFSET => -300);"
+      - id: dynamic_table_target_lag_warehouse
+        sql: "CREATE DYNAMIC TABLE dt_clone CLONE dt TARGET_LAG = '5 minutes' WAREHOUSE = wh;"
+      - id: dynamic_table_target_lag_downstream
+        sql: "CREATE DYNAMIC TABLE dt_clone CLONE dt TARGET_LAG = DOWNSTREAM WAREHOUSE = wh;"
+      - id: event_table
+        sql: "CREATE EVENT TABLE et_clone CLONE et;"
+      - id: event_table_or_replace_time_travel
+        sql: "CREATE OR REPLACE EVENT TABLE et_clone CLONE et BEFORE (OFFSET => -300);"
+      - id: iceberg_table
+        sql: "CREATE ICEBERG TABLE it_clone CLONE it;"
+      - id: iceberg_table_if_not_exists_copy_grants
+        sql: "CREATE ICEBERG TABLE IF NOT EXISTS it_clone CLONE it COPY GRANTS;"
+      - id: iceberg_table_time_travel
+        sql: "CREATE OR REPLACE ICEBERG TABLE it_clone CLONE it AT (TIMESTAMP => '2024-01-01 00:00:00'::TIMESTAMP_LTZ) COPY GRANTS;"
+      - id: database_role
+        sql: "CREATE DATABASE ROLE dr_clone CLONE dr;"
+      - id: database_role_if_not_exists
+        sql: "CREATE DATABASE ROLE IF NOT EXISTS dr_clone CLONE dr;"
+      - id: alert
+        sql: "CREATE ALERT a_clone CLONE a;"
+      - id: file_format
+        sql: "CREATE FILE FORMAT ff_clone CLONE ff;"
+      - id: sequence
+        sql: "CREATE SEQUENCE seq_clone CLONE seq;"
+      - id: stage
+        sql: "CREATE STAGE stg_clone CLONE stg;"
+      - id: stream
+        sql: "CREATE STREAM strm_clone CLONE strm;"
+      - id: task
+        sql: "CREATE TASK task_clone CLONE task;"
+      - id: other_object_if_not_exists
+        sql: "CREATE STAGE IF NOT EXISTS stg_clone CLONE stg;"
+    examples:
+      - "CREATE DATABASE mytestdb_clone CLONE mytestdb;"
+      - "CREATE SCHEMA mytestschema_clone CLONE testschema;"
+      - "CREATE TABLE orders_clone CLONE orders;"
+
+  - id: create_or_alter_object
+    name: CREATE OR ALTER <object>
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-or-alter
+    tier: high
+    probes:
+      - id: table
+        sql: "CREATE OR ALTER TABLE t (a INT);"
+        note: syntax in the CREATE OR ALTER TABLE section of create-table
+      - id: table_primary_key_and_parameters
+        sql: "CREATE OR ALTER TABLE t (a INT PRIMARY KEY, b VARCHAR(200)) DATA_RETENTION_TIME_IN_DAYS = 5 DEFAULT_DDL_COLLATION = 'de';"
+      - id: table_transient
+        sql: "CREATE OR ALTER TRANSIENT TABLE t (a INT);"
+      - id: table_temporary
+        sql: "CREATE OR ALTER LOCAL TEMPORARY TABLE t (a INT);"
+      - id: table_column_options
+        sql: "CREATE OR ALTER TABLE t (a INT NOT NULL DEFAULT 0 COMMENT 'col a', b VARCHAR(20) COLLATE 'fr', c INT AUTOINCREMENT START 1 INCREMENT 1 ORDER);"
+      - id: table_out_of_line_constraint
+        sql: "CREATE OR ALTER TABLE t (a INT, b INT, CONSTRAINT pk PRIMARY KEY (a, b));"
+      - id: table_cluster_by
+        sql: "CREATE OR ALTER TABLE t (a INT, b INT) CLUSTER BY (a, b);"
+      - id: table_properties
+        sql: "CREATE OR ALTER TABLE t (a INT) ENABLE_SCHEMA_EVOLUTION = TRUE MAX_DATA_EXTENSION_TIME_IN_DAYS = 14 CHANGE_TRACKING = TRUE ERROR_LOGGING = FALSE ROW_TIMESTAMP = TRUE COMMENT = 'x';"
+      - id: view
+        sql: "CREATE OR ALTER VIEW v (one) AS SELECT a FROM t;"
+      - id: view_secure_properties
+        sql: "CREATE OR ALTER SECURE VIEW v (one) COMMENT = 'fff' CHANGE_TRACKING = TRUE AS SELECT a FROM t;"
+      - id: view_column_comment
+        sql: "CREATE OR ALTER VIEW v (one COMMENT 'bar') COMMENT = 'foo' AS SELECT a FROM t;"
+      - id: view_temporary_recursive
+        sql: "CREATE OR ALTER TEMPORARY RECURSIVE VIEW v (a) AS SELECT 1;"
+      - id: schema
+        sql: "CREATE OR ALTER SCHEMA s;"
+      - id: schema_transient_managed_access_parameters
+        sql: "CREATE OR ALTER TRANSIENT SCHEMA s WITH MANAGED ACCESS DATA_RETENTION_TIME_IN_DAYS = 5 DEFAULT_DDL_COLLATION = 'de' COMMENT = 'x';"
+      - id: database
+        sql: "CREATE OR ALTER DATABASE d;"
+      - id: database_transient_parameters
+        sql: "CREATE OR ALTER TRANSIENT DATABASE d DATA_RETENTION_TIME_IN_DAYS = 5 DEFAULT_DDL_COLLATION = 'de' COMMENT = 'x';"
+      - id: warehouse
+        sql: "CREATE OR ALTER WAREHOUSE w WAREHOUSE_SIZE = 'XSMALL' AUTO_RESUME = TRUE COMMENT = 'x';"
+      - id: warehouse_with_params
+        sql: "CREATE OR ALTER WAREHOUSE w WITH WAREHOUSE_TYPE = 'SNOWPARK-OPTIMIZED' WAREHOUSE_SIZE = 'X-LARGE' RESOURCE_CONSTRAINT = 'MEMORY_16X_x86' MAX_CONCURRENCY_LEVEL = 4;"
+      - id: role
+        sql: "CREATE OR ALTER ROLE r COMMENT = 'x';"
+      - id: task
+        sql: "CREATE OR ALTER TASK tk WAREHOUSE = wh SCHEDULE = '60 MINUTES' AS SELECT PI();"
+      - id: task_after
+        sql: "CREATE OR ALTER TASK tk WAREHOUSE = wh AFTER other_task AS SELECT 2 * PI();"
+      - id: task_cron_when
+        sql: "CREATE OR ALTER TASK tk SCHEDULE = 'USING CRON 0 9 * * * UTC' SUSPEND_TASK_AFTER_NUM_FAILURES = 3 COMMENT = 'x' WHEN SYSTEM$STREAM_HAS_DATA('strm') AS SELECT 1;"
+      - id: dynamic_table
+        sql: "CREATE OR ALTER DYNAMIC TABLE dt TARGET_LAG = DOWNSTREAM WAREHOUSE = wh AS SELECT a, b FROM t;"
+      - id: dynamic_table_options
+        sql: "CREATE OR ALTER DYNAMIC TABLE dt TARGET_LAG = '5 minutes' WAREHOUSE = wh REFRESH_MODE = INCREMENTAL INITIALIZE = ON_CREATE DATA_RETENTION_TIME_IN_DAYS = 2 CLUSTER BY (a) AS SELECT a, b FROM t;"
+      - id: function
+        sql: "CREATE OR ALTER FUNCTION multiply (a NUMBER, b NUMBER) RETURNS NUMBER AS 'a * b';"
+      - id: function_secure_comment
+        sql: "CREATE OR ALTER SECURE FUNCTION multiply (a NUMBER, b NUMBER) RETURNS NUMBER COMMENT = 'Multiply two numbers.' AS 'a * b';"
+      - id: procedure
+        sql: |-
+          CREATE OR ALTER PROCEDURE python_add1 (A NUMBER)
+            RETURNS NUMBER
+            LANGUAGE PYTHON
+            HANDLER = 'main'
+            RUNTIME_VERSION = '3.10'
+            PACKAGES = ('snowflake-snowpark-python')
+            EXECUTE AS OWNER
+            AS $$
+          def main(session, a):
+            return a + 1
+          $$;
+      - id: file_format
+        sql: "CREATE OR ALTER FILE FORMAT ff TYPE = CSV FIELD_DELIMITER = '|' SKIP_HEADER = 1 NULL_IF = ('NULL', 'null') COMMENT = 'x';"
+      - id: stage_internal
+        sql: "CREATE OR ALTER STAGE stg COMMENT = 'my_comment';"
+      - id: stage_external_directory
+        sql: "CREATE OR ALTER STAGE stg URL = 's3://load/files/' CREDENTIALS = (AWS_KEY_ID = '1a2b3c' AWS_SECRET_KEY = '4x5y6z') DIRECTORY = (ENABLE = TRUE);"
+      - id: stream
+        sql: "CREATE OR ALTER STREAM strm ON TABLE t COMMENT = 'Tracks DML changes on t';"
+      - id: tag
+        sql: "CREATE OR ALTER TAG cost_center ALLOWED_VALUES 'finance', 'engineering', 'sales' COMMENT = 'x';"
+      - id: network_policy
+        sql: "CREATE OR ALTER NETWORK POLICY np ALLOWED_NETWORK_RULE_LIST = ('allow_rule') BLOCKED_NETWORK_RULE_LIST = ('block_rule') ALLOWED_IP_LIST = ('192.168.1.0/24') BLOCKED_IP_LIST = ('10.0.0.1') COMMENT = 'x';"
+    examples:
+      - "CREATE OR ALTER TABLE my_table (a INT);"
+      - "CREATE OR ALTER VIEW v2 (one) AS SELECT a FROM my_table;"
+      - "CREATE OR ALTER SCHEMA s1 WITH MANAGED ACCESS DATA_RETENTION_TIME_IN_DAYS = 5 DEFAULT_DDL_COLLATION = 'de';"

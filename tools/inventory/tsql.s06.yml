@@ -1,0 +1,239 @@
+dialect: tsql
+engine: SQL Server 2022 / Azure SQL Database
+version: "2022"
+source: https://learn.microsoft.com/en-us/sql/t-sql/statements/statements
+
+statements:
+  - id: create_fulltext_index
+    name: CREATE FULLTEXT INDEX
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-fulltext-index-transact-sql
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE FULLTEXT INDEX ON t (c) KEY INDEX idx;" }
+      - { id: no_column_list, sql: "CREATE FULLTEXT INDEX ON t KEY INDEX idx;" }
+      - { id: column_options, sql: "CREATE FULLTEXT INDEX ON t (c1 TYPE COLUMN tc LANGUAGE 1033 STATISTICAL_SEMANTICS, c2 LANGUAGE 1033) KEY INDEX idx;" }
+      - { id: catalog, sql: "CREATE FULLTEXT INDEX ON t (c) KEY INDEX idx ON cat;" }
+      - { id: catalog_filegroup, sql: "CREATE FULLTEXT INDEX ON t (c) KEY INDEX idx ON (cat, FILEGROUP fg);" }
+      - { id: filegroup_only, sql: "CREATE FULLTEXT INDEX ON t (c) KEY INDEX idx ON (FILEGROUP fg);" }
+      - { id: change_tracking_auto, sql: "CREATE FULLTEXT INDEX ON t (c) KEY INDEX idx WITH CHANGE_TRACKING AUTO;" }
+      - { id: change_tracking_off_no_population, sql: "CREATE FULLTEXT INDEX ON t (c) KEY INDEX idx WITH (CHANGE_TRACKING = OFF, NO POPULATION);" }
+      - { id: stoplist_property_list, sql: "CREATE FULLTEXT INDEX ON t (c) KEY INDEX idx WITH (STOPLIST = SYSTEM, SEARCH PROPERTY LIST = pl);" }
+    examples:
+      - |-
+        CREATE FULLTEXT INDEX ON HumanResources.JobCandidate(Resume)
+           KEY INDEX ui_ukJobCand
+           WITH STOPLIST = SYSTEM;
+      - |-
+        CREATE FULLTEXT INDEX ON Production.ProductReview (
+            ReviewerName LANGUAGE 1033,
+            EmailAddress LANGUAGE 1033,
+            Comments LANGUAGE 1033
+        ) KEY INDEX PK_ProductReview_ProductReviewID ON production_catalog;
+      - |-
+        CREATE FULLTEXT INDEX ON Production.Document (
+            Title LANGUAGE 1033,
+            DocumentSummary LANGUAGE 1033,
+            Document TYPE COLUMN FileExtension LANGUAGE 1033
+        ) KEY INDEX PK_Document_DocumentID
+        WITH STOPLIST = SYSTEM,
+            SEARCH PROPERTY LIST = DocumentPropertyList,
+            CHANGE_TRACKING OFF,
+            NO POPULATION;
+
+  - id: create_login
+    name: CREATE LOGIN
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-login-transact-sql
+    tier: medium
+    probes:
+      - { id: password, sql: "CREATE LOGIN l WITH PASSWORD = 'pw';" }
+      - { id: password_must_change, sql: "CREATE LOGIN l WITH PASSWORD = 'pw' MUST_CHANGE, CHECK_EXPIRATION = ON, CHECK_POLICY = ON;" }
+      - { id: hashed_password, sql: "CREATE LOGIN l WITH PASSWORD = 0x0200AABB HASHED;" }
+      - { id: password_options, sql: "CREATE LOGIN l WITH PASSWORD = 'pw', SID = 0x241C11948AEEB749B0D22646DB1A19F2, DEFAULT_DATABASE = db, DEFAULT_LANGUAGE = us_english, CREDENTIAL = cred;" }
+      - { id: from_windows, sql: "CREATE LOGIN [domain\\user] FROM WINDOWS;" }
+      - { id: from_windows_options, sql: "CREATE LOGIN [domain\\user] FROM WINDOWS WITH DEFAULT_DATABASE = db, DEFAULT_LANGUAGE = us_english;" }
+      - { id: from_external_provider, sql: "CREATE LOGIN [bob@contoso.com] FROM EXTERNAL PROVIDER;" }
+      - { id: from_external_provider_object_id, sql: "CREATE LOGIN app FROM EXTERNAL PROVIDER WITH OBJECT_ID = 'aaaaaaaa-0000-1111-2222-bbbbbbbbbbbb';" }
+      - { id: from_certificate, sql: "CREATE LOGIN l FROM CERTIFICATE cert;" }
+      - { id: from_asymmetric_key, sql: "CREATE LOGIN l FROM ASYMMETRIC KEY akey;" }
+    examples:
+      - "CREATE LOGIN TestLogin WITH PASSWORD = 'SuperSecret52&&';"
+      - |-
+        CREATE LOGIN TestLogin
+        WITH PASSWORD = 'SuperSecret52&&', SID = 0x241C11948AEEB749B0D22646DB1A19F2;
+      - "CREATE LOGIN [bob@contoso.com] FROM EXTERNAL PROVIDER;"
+
+  - id: create_partition_function
+    name: CREATE PARTITION FUNCTION
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-partition-function-transact-sql
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE PARTITION FUNCTION pf (int) AS RANGE FOR VALUES (1, 100, 1000);" }
+      - { id: range_left, sql: "CREATE PARTITION FUNCTION pf (int) AS RANGE LEFT FOR VALUES (1, 100, 1000);" }
+      - { id: range_right, sql: "CREATE PARTITION FUNCTION pf (int) AS RANGE RIGHT FOR VALUES (1, 100, 1000);" }
+      - { id: empty_boundary, sql: "CREATE PARTITION FUNCTION pf (int) AS RANGE LEFT FOR VALUES ();" }
+      - { id: sized_type, sql: "CREATE PARTITION FUNCTION pf (char(20)) AS RANGE RIGHT FOR VALUES ('EX', 'RXE', 'XR');" }
+    examples:
+      - |-
+        CREATE PARTITION FUNCTION myRangePF1 (int)
+        AS RANGE LEFT FOR VALUES (1, 100, 1000);
+      - |-
+        CREATE PARTITION FUNCTION myRangePF2 (int)
+        AS RANGE RIGHT FOR VALUES (1, 100, 1000);
+      - |-
+        CREATE PARTITION FUNCTION [myDateRangePF1] (datetime)
+        AS RANGE RIGHT FOR VALUES ('20030201', '20030301', '20030401',
+                       '20030501', '20030601', '20030701', '20030801',
+                       '20030901', '20031001', '20031101', '20031201');
+
+  - id: create_partition_scheme
+    name: CREATE PARTITION SCHEME
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-partition-scheme-transact-sql
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE PARTITION SCHEME ps AS PARTITION pf TO (fg1, fg2, fg3, fg4);" }
+      - { id: primary_filegroup, sql: "CREATE PARTITION SCHEME ps AS PARTITION pf TO (fg1, [PRIMARY]);" }
+      - { id: all_to, sql: "CREATE PARTITION SCHEME ps AS PARTITION pf ALL TO (fg1);" }
+      - { id: all_to_primary, sql: "CREATE PARTITION SCHEME ps AS PARTITION pf ALL TO ([PRIMARY]);" }
+    examples:
+      - |-
+        CREATE PARTITION SCHEME myRangePS1
+        AS PARTITION myRangePF1
+        TO (test1fg, test2fg, test3fg, test4fg);
+      - |-
+        CREATE PARTITION SCHEME myRangePS3
+        AS PARTITION myRangePF3
+        ALL TO (test1fg);
+      - |-
+        CREATE PARTITION SCHEME myRangePS1
+        AS PARTITION myRangePF1
+        ALL TO ([PRIMARY]);
+
+  - id: create_role
+    name: CREATE ROLE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-role-transact-sql
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE ROLE r;" }
+      - { id: authorization, sql: "CREATE ROLE r AUTHORIZATION owner1;" }
+    examples:
+      - "CREATE ROLE buyers AUTHORIZATION BenMiller;"
+      - "CREATE ROLE auditors AUTHORIZATION db_securityadmin;"
+
+  - id: create_sequence
+    name: CREATE SEQUENCE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-sequence-transact-sql
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE SEQUENCE s;" }
+      - { id: schema_qualified, sql: "CREATE SEQUENCE dbo.s;" }
+      - { id: as_type, sql: "CREATE SEQUENCE s AS SMALLINT;" }
+      - { id: as_decimal, sql: "CREATE SEQUENCE s AS DECIMAL (3, 0);" }
+      - { id: start_increment, sql: "CREATE SEQUENCE s START WITH 1 INCREMENT BY 1;" }
+      - { id: negative_increment, sql: "CREATE SEQUENCE s START WITH 0 INCREMENT BY -1;" }
+      - { id: min_max, sql: "CREATE SEQUENCE s MINVALUE 100 MAXVALUE 200;" }
+      - { id: no_min_max, sql: "CREATE SEQUENCE s NO MINVALUE NO MAXVALUE;" }
+      - { id: cycle_cache, sql: "CREATE SEQUENCE s CYCLE CACHE 3;" }
+      - { id: no_cycle_no_cache, sql: "CREATE SEQUENCE s NO CYCLE NO CACHE;" }
+      - { id: cache_default, sql: "CREATE SEQUENCE s CACHE;" }
+    examples:
+      - |-
+        CREATE SEQUENCE Test.CountBy1
+            START WITH 1
+            INCREMENT BY 1;
+      - |-
+        CREATE SEQUENCE SmallSeq
+            AS SMALLINT;
+      - |-
+        CREATE SEQUENCE Test.DecSeq
+            AS DECIMAL (3, 0)
+            START WITH 125
+            INCREMENT BY 25
+            MINVALUE 100
+            MAXVALUE 200
+            CYCLE
+            CACHE 3;
+
+  - id: create_statistics
+    name: CREATE STATISTICS
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-statistics-transact-sql
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE STATISTICS st ON t (c);" }
+      - { id: multi_column, sql: "CREATE STATISTICS st ON dbo.t (c1, c2);" }
+      - { id: fullscan, sql: "CREATE STATISTICS st ON t (c) WITH FULLSCAN;" }
+      - { id: sample_percent, sql: "CREATE STATISTICS st ON t (c) WITH SAMPLE 5 PERCENT;" }
+      - { id: sample_rows, sql: "CREATE STATISTICS st ON t (c) WITH SAMPLE 1000 ROWS;" }
+      - { id: filtered, sql: "CREATE STATISTICS st ON t (c1, c2) WHERE c2 = 2 WITH SAMPLE 50 PERCENT;" }
+      - { id: persist_sample_percent, sql: "CREATE STATISTICS st ON t (c) WITH FULLSCAN, PERSIST_SAMPLE_PERCENT = ON;" }
+      - { id: with_options, sql: "CREATE STATISTICS st ON t (c) WITH FULLSCAN, NORECOMPUTE, INCREMENTAL = ON, MAXDOP = 2, AUTO_DROP = OFF;" }
+    examples:
+      - |-
+        CREATE STATISTICS ContactMail1
+            ON Person.Person(BusinessEntityID, EmailPromotion)
+            WITH SAMPLE 5 PERCENT;
+      - |-
+        CREATE STATISTICS NamePurchase
+            ON AdventureWorks2022.Person.Person(BusinessEntityID, EmailPromotion)
+            WITH FULLSCAN, NORECOMPUTE;
+      - |-
+        CREATE STATISTICS ContactPromotion1
+            ON Person.Person(BusinessEntityID, LastName, EmailPromotion)
+            WHERE EmailPromotion = 2
+            WITH SAMPLE 50 PERCENT;
+
+  - id: create_synonym
+    name: CREATE SYNONYM
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-synonym-transact-sql
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE SYNONYM syn FOR t;" }
+      - { id: schema_qualified, sql: "CREATE SYNONYM s1.syn FOR s2.t;" }
+      - { id: database_qualified, sql: "CREATE SYNONYM syn FOR db.s2.t;" }
+      - { id: database_default_schema, sql: "CREATE SYNONYM syn FOR db..t;" }
+      - { id: linked_server, sql: "CREATE SYNONYM syn FOR srv.db.s2.t;" }
+    examples:
+      - |-
+        CREATE SYNONYM MyProduct
+        FOR AdventureWorks2022.Production.Product;
+      - "CREATE SYNONYM MyEmployee FOR Server_Remote.AdventureWorks2022.HumanResources.Employee;"
+
+  - id: create_user
+    name: CREATE USER
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-user-transact-sql
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE USER u;" }
+      - { id: for_login, sql: "CREATE USER u FOR LOGIN l;" }
+      - { id: from_login, sql: "CREATE USER u FROM LOGIN l;" }
+      - { id: for_login_options, sql: "CREATE USER u FOR LOGIN l WITH DEFAULT_SCHEMA = sch;" }
+      - { id: limited_options, sql: "CREATE USER u WITH DEFAULT_SCHEMA = dbo, ALLOW_ENCRYPTED_VALUE_MODIFICATIONS = ON;" }
+      - { id: windows_principal, sql: "CREATE USER [Contoso\\Fritz];" }
+      - { id: windows_principal_login, sql: "CREATE USER [Contoso\\Fritz] FROM LOGIN [Contoso\\Fritz];" }
+      - { id: with_password, sql: "CREATE USER u WITH PASSWORD = 'pw', DEFAULT_LANGUAGE = [Brazilian], DEFAULT_SCHEMA = [dbo];" }
+      - { id: with_password_sid, sql: "CREATE USER u WITH PASSWORD = 'pw', SID = 0x01050000000000090300000063FF0451A9E7664BA705B10E37DDC4B7;" }
+      - { id: from_external_provider, sql: "CREATE USER [bob@contoso.com] FROM EXTERNAL PROVIDER;" }
+      - { id: from_external_provider_object_id, sql: "CREATE USER app FROM EXTERNAL PROVIDER WITH OBJECT_ID = 'aaaaaaaa-0000-1111-2222-bbbbbbbbbbbb';" }
+      - { id: entra_sid_type, sql: "CREATE USER [bob@contoso.com] WITH SID = 0x0102030405060708090A0B0C0D0E0F10, TYPE = E;" }
+      - { id: without_login, sql: "CREATE USER u WITHOUT LOGIN;" }
+      - { id: without_login_options, sql: "CREATE USER u WITHOUT LOGIN WITH DEFAULT_SCHEMA = sch;" }
+      - { id: for_certificate, sql: "CREATE USER u FOR CERTIFICATE cert;" }
+      - { id: from_asymmetric_key, sql: "CREATE USER u FROM ASYMMETRIC KEY akey;" }
+    examples:
+      - "CREATE USER AbolrousHazem FOR LOGIN AbolrousHazem;"
+      - |-
+        CREATE USER Wanida FOR LOGIN WanidaBenshoof
+            WITH DEFAULT_SCHEMA = Marketing;
+      - "CREATE USER CustomApp WITHOUT LOGIN ;"
+
+  - id: drop_external_table
+    name: DROP EXTERNAL TABLE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/drop-external-table-transact-sql
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP EXTERNAL TABLE t;" }
+      - { id: schema_qualified, sql: "DROP EXTERNAL TABLE dbo.t;" }
+      - { id: fully_qualified, sql: "DROP EXTERNAL TABLE db.dbo.t;" }
+    examples:
+      - "DROP EXTERNAL TABLE SalesPerson;"
+      - "DROP EXTERNAL TABLE dbo.SalesPerson;"
+      - "DROP EXTERNAL TABLE EasternDivision.dbo.SalesPerson;"

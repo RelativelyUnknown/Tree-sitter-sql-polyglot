@@ -1,0 +1,227 @@
+dialect: athena
+engine: Amazon Athena
+version: "engine version 3 (Trino-based DML, Hive-style DDL)"
+source: https://docs.aws.amazon.com/athena/latest/ug/ddl-reference.html ; https://docs.aws.amazon.com/athena/latest/ug/dml-queries-functions-operators.html
+
+statements: []
+
+expressions:
+  - id: a_numeric_literals
+    name: Numeric literals
+    doc: https://docs.aws.amazon.com/athena/latest/ug/data-types.html
+    tier: high
+    probes:
+      - { id: integer, sql: "SELECT 1, 42, -7;" }
+      - { id: decimal, sql: "SELECT 1.5, .5, 10.25;" }
+      - { id: scientific, sql: "SELECT 1e3, 1.5E-2, 2.5e+10;" }
+      - { id: decimal_typed, sql: "SELECT DECIMAL '1.5', DECIMAL '123456789.123456789';" }
+      - { id: double_typed, sql: "SELECT DOUBLE '1.5', REAL '1.5';" }
+      - { id: bigint_typed, sql: "SELECT BIGINT '9223372036854775807', INTEGER '5', SMALLINT '3', TINYINT '1';" }
+  - id: a_boolean_null_literals
+    name: Boolean and NULL literals
+    doc: https://docs.aws.amazon.com/athena/latest/ug/data-types.html
+    tier: high
+    probes:
+      - { id: boolean, sql: "SELECT TRUE, FALSE;" }
+      - { id: "null", sql: "SELECT NULL;" }
+  - id: a_string_literals
+    name: String and binary literals
+    doc: https://docs.aws.amazon.com/athena/latest/ug/data-types.html
+    tier: high
+    probes:
+      - { id: single_quoted, sql: "SELECT 'hello';" }
+      - { id: escaped_quote, sql: "SELECT 'it''s';" }
+      - { id: empty, sql: "SELECT '';" }
+      - { id: unicode_escape, sql: "SELECT U&'\\0041\\0042';" }
+      - { id: unicode_escape_clause, sql: "SELECT U&'!0041' UESCAPE '!';" }
+      - { id: binary_hex, sql: "SELECT X'65683F';" }
+      - { id: varchar_typed, sql: "SELECT VARCHAR 'abc', CHAR 'abc';" }
+  - id: a_date_time_literals
+    name: Date, time and timestamp literals
+    doc: https://docs.aws.amazon.com/athena/latest/ug/data-types.html
+    tier: high
+    probes:
+      - { id: date, sql: "SELECT DATE '2024-01-15';" }
+      - { id: time, sql: "SELECT TIME '12:34:56';" }
+      - { id: time_fraction, sql: "SELECT TIME '12:34:56.123';" }
+      - { id: time_with_tz, sql: "SELECT TIME '12:34:56 +01:00';" }
+      - { id: timestamp, sql: "SELECT TIMESTAMP '2024-01-15 12:34:56';" }
+      - { id: timestamp_fraction, sql: "SELECT TIMESTAMP '2024-01-15 12:34:56.123456';" }
+      - { id: timestamp_with_tz, sql: "SELECT TIMESTAMP '2024-01-15 12:34:56 America/Los_Angeles';" }
+      - { id: timestamp_offset, sql: "SELECT TIMESTAMP '2024-01-15 12:34:56 +01:00';" }
+  - id: a_interval_literals
+    name: Interval literals
+    doc: https://docs.aws.amazon.com/athena/latest/ug/data-types.html
+    tier: high
+    probes:
+      - { id: day, sql: "SELECT INTERVAL '1' DAY;" }
+      - { id: hour_plural, sql: "SELECT INTERVAL '3' HOUR;" }
+      - { id: signed, sql: "SELECT INTERVAL '-1' DAY, INTERVAL '+2' MONTH;" }
+      - { id: year_to_month, sql: "SELECT INTERVAL '1-2' YEAR TO MONTH;" }
+      - { id: day_to_second, sql: "SELECT INTERVAL '1 2:03:04.123' DAY TO SECOND;" }
+      - { id: second, sql: "SELECT INTERVAL '30' SECOND;" }
+      - { id: date_arithmetic, sql: "SELECT DATE '2024-01-15' + INTERVAL '1' MONTH;" }
+      - { id: timestamp_arithmetic, sql: "SELECT TIMESTAMP '2024-01-15 00:00:00' - INTERVAL '2' HOUR;" }
+  - id: a_array_literals
+    name: Array constructors and subscripts
+    doc: https://docs.aws.amazon.com/athena/latest/ug/data-types.html
+    tier: high
+    probes:
+      - { id: array_constructor, sql: "SELECT ARRAY[1, 2, 3];" }
+      - { id: array_strings, sql: "SELECT ARRAY['a', 'b'];" }
+      - { id: array_empty, sql: "SELECT ARRAY[];" }
+      - { id: array_nested, sql: "SELECT ARRAY[ARRAY[1, 2], ARRAY[3, 4]];" }
+      - { id: subscript, sql: "SELECT a[1] FROM t;" }
+      - { id: subscript_expr, sql: "SELECT ARRAY[1, 2, 3][2];" }
+      - { id: subscript_nested, sql: "SELECT a[1][2] FROM t;" }
+  - id: a_map_literals
+    name: Map constructors and subscripts
+    doc: https://docs.aws.amazon.com/athena/latest/ug/data-types.html
+    tier: high
+    probes:
+      - { id: map_from_arrays, sql: "SELECT MAP(ARRAY['a', 'b'], ARRAY[1, 2]);" }
+      - { id: map_empty, sql: "SELECT MAP();" }
+      - { id: map_subscript, sql: "SELECT m['key'] FROM t;" }
+      - { id: map_subscript_ctor, sql: "SELECT MAP(ARRAY[1], ARRAY['x'])[1];" }
+  - id: a_row_literals
+    name: Row (struct) constructors and field access
+    doc: https://docs.aws.amazon.com/athena/latest/ug/data-types.html
+    tier: high
+    probes:
+      - { id: row_constructor, sql: "SELECT ROW(1, 'a', TRUE);" }
+      - { id: row_implicit, sql: "SELECT (1, 'a');" }
+      - { id: row_cast_named, sql: "SELECT CAST(ROW(1, 2.0) AS ROW(x BIGINT, y DOUBLE));" }
+      - { id: field_access, sql: "SELECT r.x FROM t;" }
+      - { id: field_access_nested, sql: "SELECT t.r.x.y FROM t;" }
+      - { id: field_access_ctor, sql: "SELECT CAST(ROW(1, 2) AS ROW(a BIGINT, b BIGINT)).a;" }
+  - id: a_json_literals
+    name: JSON literals
+    doc: https://docs.aws.amazon.com/athena/latest/ug/data-types.html
+    tier: medium
+    probes:
+      - { id: json_literal, sql: "SELECT JSON '{\"a\": 1}';" }
+      - { id: json_array, sql: "SELECT JSON '[1, 2, 3]';" }
+      - { id: json_parse, sql: "SELECT json_parse('{\"a\": 1}');" }
+      - { id: cast_to_json, sql: "SELECT CAST(ARRAY[1, 2] AS JSON);" }
+      - { id: cast_from_json, sql: "SELECT CAST(JSON '[1, 2]' AS ARRAY(INTEGER));" }
+  - id: a_other_typed_literals
+    name: UUID and IPADDRESS literals
+    doc: https://docs.aws.amazon.com/athena/latest/ug/data-types.html
+    tier: low
+    probes:
+      - { id: uuid, sql: "SELECT UUID '12151fd2-7586-11e9-8f9e-2a86e4085a59';" }
+      - { id: ipaddress, sql: "SELECT IPADDRESS '10.0.0.1';" }
+  - id: a_dml_type_names
+    name: DML type names and parameterized types
+    doc: https://docs.aws.amazon.com/athena/latest/ug/data-types.html
+    tier: high
+    probes:
+      - { id: integer_types, sql: "SELECT CAST(c AS TINYINT), CAST(c AS SMALLINT), CAST(c AS INTEGER), CAST(c AS BIGINT) FROM t;" }
+      - { id: int_alias, sql: "SELECT CAST(c AS INT) FROM t;" }
+      - { id: float_types, sql: "SELECT CAST(c AS REAL), CAST(c AS DOUBLE) FROM t;" }
+      - { id: double_precision, sql: "SELECT CAST(c AS DOUBLE PRECISION) FROM t;" }
+      - { id: decimal_precision, sql: "SELECT CAST(c AS DECIMAL(10)) FROM t;" }
+      - { id: decimal_precision_scale, sql: "SELECT CAST(c AS DECIMAL(11, 5)) FROM t;" }
+      - { id: varchar, sql: "SELECT CAST(c AS VARCHAR) FROM t;" }
+      - { id: varchar_length, sql: "SELECT CAST(c AS VARCHAR(255)) FROM t;" }
+      - { id: char_length, sql: "SELECT CAST(c AS CHAR(10)) FROM t;" }
+      - { id: varbinary, sql: "SELECT CAST(c AS VARBINARY) FROM t;" }
+      - { id: boolean, sql: "SELECT CAST(c AS BOOLEAN) FROM t;" }
+      - { id: date, sql: "SELECT CAST(c AS DATE) FROM t;" }
+      - { id: time, sql: "SELECT CAST(c AS TIME) FROM t;" }
+      - { id: time_precision, sql: "SELECT CAST(c AS TIME(6)) FROM t;" }
+      - { id: time_with_tz, sql: "SELECT CAST(c AS TIME WITH TIME ZONE) FROM t;" }
+      - { id: timestamp, sql: "SELECT CAST(c AS TIMESTAMP) FROM t;" }
+      - { id: timestamp_precision, sql: "SELECT CAST(c AS TIMESTAMP(6)) FROM t;" }
+      - { id: timestamp_without_tz, sql: "SELECT CAST(c AS TIMESTAMP WITHOUT TIME ZONE) FROM t;" }
+      - { id: timestamp_with_tz, sql: "SELECT CAST(c AS TIMESTAMP WITH TIME ZONE) FROM t;" }
+      - { id: timestamp_precision_tz, sql: "SELECT CAST(c AS TIMESTAMP(3) WITH TIME ZONE) FROM t;" }
+      - { id: interval_year_to_month, sql: "SELECT CAST(c AS INTERVAL YEAR TO MONTH) FROM t;" }
+      - { id: interval_day_to_second, sql: "SELECT CAST(c AS INTERVAL DAY TO SECOND) FROM t;" }
+      - { id: array_type, sql: "SELECT CAST(c AS ARRAY(INTEGER)) FROM t;" }
+      - { id: array_nested_type, sql: "SELECT CAST(c AS ARRAY(ARRAY(VARCHAR))) FROM t;" }
+      - { id: map_type, sql: "SELECT CAST(c AS MAP(VARCHAR, INTEGER)) FROM t;" }
+      - { id: row_type, sql: "SELECT CAST(c AS ROW(a INTEGER, b VARCHAR)) FROM t;" }
+      - { id: row_unnamed_type, sql: "SELECT CAST(c AS ROW(INTEGER, VARCHAR)) FROM t;" }
+      - { id: json_type, sql: "SELECT CAST(c AS JSON) FROM t;" }
+      - { id: uuid_type, sql: "SELECT CAST(c AS UUID) FROM t;" }
+      - { id: ipaddress_type, sql: "SELECT CAST(c AS IPADDRESS) FROM t;" }
+      - { id: hyperloglog_type, sql: "SELECT CAST(c AS HyperLogLog) FROM t;" }
+      - { id: p4hyperloglog_type, sql: "SELECT CAST(c AS P4HyperLogLog) FROM t;" }
+      - { id: qdigest_type, sql: "SELECT CAST(c AS QDIGEST(DOUBLE)) FROM t;" }
+      - { id: tdigest_type, sql: "SELECT CAST(c AS TDIGEST) FROM t;" }
+      - { id: setdigest_type, sql: "SELECT CAST(c AS SetDigest) FROM t;" }
+  - id: a_casts
+    name: CAST and TRY_CAST
+    doc: https://docs.aws.amazon.com/athena/latest/ug/data-types.html
+    tier: high
+    probes:
+      - { id: cast, sql: "SELECT CAST('1' AS INTEGER);" }
+      - { id: try_cast, sql: "SELECT TRY_CAST('abc' AS INTEGER);" }
+      - { id: cast_expression, sql: "SELECT CAST(a + b AS DOUBLE) FROM t;" }
+      - { id: cast_nested, sql: "SELECT CAST(CAST(c AS VARCHAR) AS INTEGER) FROM t;" }
+      - { id: cast_null, sql: "SELECT CAST(NULL AS INTEGER);" }
+      - { id: cast_string_to_date, sql: "SELECT CAST('2024-01-15' AS DATE);" }
+      - { id: cast_in_where, sql: "SELECT c FROM t WHERE CAST(d AS DATE) > DATE '2024-01-01';" }
+  - id: a_hive_ddl_type_names
+    name: Hive DDL type names and parameterized types
+    doc: https://docs.aws.amazon.com/athena/latest/ug/data-types.html
+    tier: high
+    probes:
+      - { id: string, sql: "CREATE EXTERNAL TABLE t (c STRING) LOCATION 's3://bucket/t/';" }
+      - { id: int_types, sql: "CREATE EXTERNAL TABLE t (a TINYINT, b SMALLINT, c INT, d BIGINT) LOCATION 's3://bucket/t/';" }
+      - { id: float_double, sql: "CREATE EXTERNAL TABLE t (a FLOAT, b DOUBLE) LOCATION 's3://bucket/t/';" }
+      - { id: decimal, sql: "CREATE EXTERNAL TABLE t (a DECIMAL(11,5), b DECIMAL(15)) LOCATION 's3://bucket/t/';" }
+      - { id: char_varchar, sql: "CREATE EXTERNAL TABLE t (a CHAR(10), b VARCHAR(100)) LOCATION 's3://bucket/t/';" }
+      - { id: binary_boolean, sql: "CREATE EXTERNAL TABLE t (a BINARY, b BOOLEAN) LOCATION 's3://bucket/t/';" }
+      - { id: date_timestamp, sql: "CREATE EXTERNAL TABLE t (a DATE, b TIMESTAMP) LOCATION 's3://bucket/t/';" }
+      - { id: array_angle, sql: "CREATE EXTERNAL TABLE t (a ARRAY<STRING>) LOCATION 's3://bucket/t/';" }
+      - { id: map_angle, sql: "CREATE EXTERNAL TABLE t (m MAP<STRING, INT>) LOCATION 's3://bucket/t/';" }
+      - { id: struct_angle, sql: "CREATE EXTERNAL TABLE t (s STRUCT<a:INT, b:STRING>) LOCATION 's3://bucket/t/';" }
+      - { id: nested_angle, sql: "CREATE EXTERNAL TABLE t (s ARRAY<STRUCT<a:INT, m:MAP<STRING, ARRAY<INT>>>>) LOCATION 's3://bucket/t/';" }
+  - id: a_identifier_quoting
+    name: Identifier quoting
+    doc: https://docs.aws.amazon.com/athena/latest/ug/reserved-words.html
+    tier: high
+    probes:
+      - { id: double_quoted_column, sql: "SELECT \"end\" FROM t;" }
+      - { id: double_quoted_table, sql: "SELECT c FROM \"my table\";" }
+      - { id: double_quoted_qualified, sql: "SELECT \"itemId\".\"first\" FROM testTable LIMIT 10;" }
+      - { id: double_quote_escape, sql: "SELECT \"a\"\"b\" FROM t;" }
+      - { id: double_quoted_alias, sql: "SELECT c AS \"My Alias\" FROM t;" }
+      - { id: hidden_path_column, sql: "SELECT \"$path\" FROM t;" }
+      - { id: hidden_bucket_column, sql: "SELECT \"$file_modified_time\" FROM t;" }
+      - { id: backtick_ddl_table, sql: "CREATE EXTERNAL TABLE `partition` (`date` INT, col2 STRING) LOCATION 's3://bucket/t/';" }
+      - { id: backtick_partition, sql: "ALTER TABLE t ADD PARTITION (`date` = '2018-05-14');" }
+      - { id: backtick_drop_partition, sql: "ALTER TABLE t DROP PARTITION (`partition` = 'v');" }
+      - { id: three_part_name, sql: "SELECT c FROM awsdatacatalog.db.t;" }
+      - { id: three_part_quoted, sql: "SELECT c FROM \"awsdatacatalog\".\"db\".\"t\";" }
+  - id: a_comments
+    name: Comments
+    doc: https://docs.aws.amazon.com/athena/latest/ug/select.html
+    tier: high
+    probes:
+      - { id: line_comment, sql: "SELECT 1 -- comment\n;" }
+      - { id: line_comment_leading, sql: "-- leading\nSELECT 1;" }
+      - { id: block_comment, sql: "SELECT /* inline */ 1;" }
+      - { id: block_comment_multiline, sql: "/* multi\n line */\nSELECT 1;" }
+  - id: a_parameters
+    name: Query parameters
+    doc: https://docs.aws.amazon.com/athena/latest/ug/querying-with-prepared-statements.html
+    tier: high
+    probes:
+      - { id: where_param, sql: "SELECT c FROM t WHERE a = ?;" }
+      - { id: multiple_params, sql: "SELECT c FROM t WHERE a = ? AND b > ?;" }
+      - { id: param_in_list, sql: "SELECT c FROM t WHERE a IN (?, ?);" }
+      - { id: param_limit, sql: "SELECT c FROM t LIMIT ?;" }
+      - { id: param_select_list, sql: "SELECT ?, c FROM t;" }
+      - { id: param_insert_values, sql: "INSERT INTO t (a, b) VALUES (?, ?);" }
+      - { id: prepared_param, sql: "PREPARE stmt FROM SELECT c FROM t WHERE a = ?;" }
+      - { id: execute_using, sql: "EXECUTE stmt USING 5;" }
+      - { id: execute_using_multiple, sql: "EXECUTE stmt USING 5, 'x';" }
+  - id: a_variables
+    name: Session variables
+    doc: https://docs.aws.amazon.com/athena/latest/ug/querying-with-prepared-statements.html
+    tier: low
+    status: not-applicable
+    reason: "The page states \"Named parameters are not supported\"; parameters are positional (?) only, and Athena has no user-defined session variables or @/$ variable syntax in SQL."

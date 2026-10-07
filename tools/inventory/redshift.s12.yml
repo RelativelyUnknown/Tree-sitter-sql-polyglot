@@ -1,0 +1,67 @@
+dialect: redshift
+engine: Amazon Redshift
+version: "current"
+source: https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_commands.html
+
+statements:
+  - id: insert
+    name: INSERT
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_INSERT_30.html
+    tier: high
+    probes:
+      - id: values_single
+        sql: "INSERT INTO t VALUES (1, 'a');"
+      - id: column_list
+        sql: "INSERT INTO t (c1, c2) VALUES (1, 'a');"
+      - id: values_default_keyword
+        sql: "INSERT INTO t (c1, c2) VALUES (1, DEFAULT);"
+      - id: values_multi_row
+        sql: "INSERT INTO t (c1, c2) VALUES (1, 'a'), (2, 'b'), (3, 'c');"
+      - id: values_multi_row_default
+        sql: "INSERT INTO t VALUES (14, DEFAULT, DEFAULT, DEFAULT), (15, DEFAULT, DEFAULT, DEFAULT);"
+      - id: default_values
+        sql: "INSERT INTO t DEFAULT VALUES;"
+      - id: values_cast_expression
+        sql: "INSERT INTO t1 (col1) VALUES ('Incomplete'::char(3));"
+      - id: values_scalar_subquery
+        sql: "INSERT INTO t (c1) VALUES ((SELECT max(c1) FROM s));"
+        note: single-row INSERT VALUES may use a scalar subquery as an expression
+      - id: query
+        sql: "INSERT INTO t SELECT * FROM s;"
+      - id: query_column_list
+        sql: "INSERT INTO t (c1, c2) SELECT a, b FROM s WHERE a > 1;"
+      - id: query_parenthesized
+        sql: "INSERT INTO t (SELECT * FROM s);"
+        note: the parentheses around the query are optional
+      - id: schema_qualified_table
+        sql: "INSERT INTO sch.t (c1) VALUES (1);"
+    examples:
+      - "insert into category_stage (select * from category);"
+      - "insert into category_stage values (12, 'Concerts', 'Comedy', 'All stand-up comedy performances');"
+      - "insert into category_stage values (13, 'Concerts', 'Other', default);"
+
+  - id: merge
+    name: MERGE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_MERGE.html
+    tier: high
+    probes:
+      - id: matched_update_not_matched_insert
+        sql: "MERGE INTO target USING source ON target.id = source.id WHEN MATCHED THEN UPDATE SET id = source.id, name = source.name WHEN NOT MATCHED THEN INSERT VALUES (source.id, source.name);"
+      - id: matched_delete_not_matched_insert
+        sql: "MERGE INTO target USING source ON target.id = source.id WHEN MATCHED THEN DELETE WHEN NOT MATCHED THEN INSERT VALUES (source.id, source.name);"
+      - id: insert_column_list
+        sql: "MERGE INTO target USING source ON target.id = source.id WHEN MATCHED THEN UPDATE SET name = source.name WHEN NOT MATCHED THEN INSERT (id, name) VALUES (source.id, source.name);"
+      - id: source_alias_as
+        sql: "MERGE INTO target USING source AS s ON target.id = s.id WHEN MATCHED THEN UPDATE SET name = s.name WHEN NOT MATCHED THEN INSERT VALUES (s.id, s.name);"
+      - id: source_alias_bare
+        sql: "MERGE INTO target USING source s ON target.id = s.id WHEN MATCHED THEN UPDATE SET name = s.name WHEN NOT MATCHED THEN INSERT VALUES (s.id, s.name);"
+      - id: source_subquery
+        sql: "MERGE INTO target USING (SELECT id, name FROM source GROUP BY 1, 2) AS my_source ON target.id = my_source.id WHEN MATCHED THEN UPDATE SET id = my_source.id, name = my_source.name WHEN NOT MATCHED THEN INSERT VALUES (my_source.id, my_source.name);"
+      - id: lowercase_when_matched
+        sql: "MERGE INTO target USING source ON target.key = source.key WHEN matched THEN UPDATE SET value = source.value WHEN NOT matched THEN INSERT VALUES (source.key, source.value);"
+      - id: remove_duplicates
+        sql: "MERGE INTO target USING source ON target.id = source.id REMOVE DUPLICATES;"
+    examples:
+      - "MERGE INTO target USING source ON target.id = source.id WHEN MATCHED THEN UPDATE SET id = source.id, name = source.name WHEN NOT MATCHED THEN INSERT VALUES (source.id, source.name);"
+      - "MERGE INTO target USING source ON target.id = source.id WHEN MATCHED THEN DELETE WHEN NOT MATCHED THEN INSERT VALUES (source.id, source.name);"
+      - "MERGE INTO target USING source ON target.id = source.id REMOVE DUPLICATES;"

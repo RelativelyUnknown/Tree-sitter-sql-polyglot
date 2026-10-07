@@ -1,0 +1,240 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "12.1"
+source: https://www.ibm.com/docs/en/db2/12.1.x?topic=reference-statements
+
+statements: []
+
+expressions:
+  - id: c_aggregate_functions
+    name: Aggregate functions and DISTINCT
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=functions-aggregate
+    tier: high
+    probes:
+      - { id: count_star, sql: "SELECT COUNT(*) FROM t;" }
+      - { id: count_big_star, sql: "SELECT COUNT_BIG(*) FROM t;" }
+      - { id: count_distinct, sql: "SELECT COUNT(DISTINCT c) FROM t;" }
+      - { id: sum_all, sql: "SELECT SUM(ALL c) FROM t;" }
+      - { id: avg_distinct, sql: "SELECT AVG(DISTINCT c) FROM t;" }
+      - { id: min_max, sql: "SELECT MIN(c), MAX(c) FROM t;" }
+      - { id: stddev_variance, sql: "SELECT STDDEV(c), VARIANCE(c) FROM t;" }
+      - { id: grouped, sql: "SELECT a, SUM(c) FROM t GROUP BY a HAVING SUM(c) > 10;" }
+  - id: c_listagg
+    name: LISTAGG
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=functions-listagg
+    tier: high
+    probes:
+      - { id: basic, sql: "SELECT LISTAGG(c, ',') FROM t;" }
+      - { id: distinct, sql: "SELECT LISTAGG(DISTINCT c, ',') FROM t;" }
+      - { id: within_group, sql: "SELECT LISTAGG(c, ',') WITHIN GROUP (ORDER BY c) FROM t;" }
+      - { id: within_group_desc, sql: "SELECT LISTAGG(c, ',') WITHIN GROUP (ORDER BY a ASC, b DESC) FROM t;" }
+    examples:
+      - "SELECT LISTAGG(CAST(NAME AS VARCHAR(10000)), ',') WITHIN GROUP (ORDER BY NAME) FROM t;"
+  - id: c_array_agg
+    name: ARRAY_AGG
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=functions-array-agg
+    tier: medium
+    probes:
+      - { id: basic, sql: "SELECT ARRAY_AGG(c) FROM t;" }
+      - { id: order_by, sql: "SELECT ARRAY_AGG(c ORDER BY d) FROM t;" }
+      - { id: order_by_desc, sql: "SELECT ARRAY_AGG(c ORDER BY d DESC, e ASC) FROM t;" }
+      - { id: associative, sql: "SELECT ARRAY_AGG(k, v) FROM t;" }
+  - id: c_xml_and_json_aggregates
+    name: XML and JSON aggregate functions
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=functions-xmlagg
+    tier: low
+    probes:
+      - { id: xmlagg, sql: "SELECT XMLAGG(XMLELEMENT(NAME \"e\", c) ORDER BY c) FROM t;" }
+      - { id: json_arrayagg, sql: "SELECT JSON_ARRAYAGG(c) FROM t;" }
+      - { id: json_objectagg, sql: "SELECT JSON_OBJECTAGG(k VALUE v) FROM t;" }
+  - id: c_statistical_aggregates
+    name: Regression and correlation aggregates
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=functions-regression
+    tier: low
+    probes:
+      - { id: corr, sql: "SELECT CORRELATION(y, x), COVARIANCE(y, x) FROM t;" }
+      - { id: regr, sql: "SELECT REGR_SLOPE(y, x), REGR_INTERCEPT(y, x), REGR_R2(y, x) FROM t;" }
+      - { id: median_percentile, sql: "SELECT MEDIAN(c), PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY c) FROM t;" }
+  - id: c_olap_ranking
+    name: OLAP ranking and numbering functions
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=expressions-olap-specification
+    tier: high
+    probes:
+      - { id: rank, sql: "SELECT RANK() OVER (ORDER BY c) FROM t;" }
+      - { id: dense_rank, sql: "SELECT DENSE_RANK() OVER (PARTITION BY a ORDER BY c DESC) FROM t;" }
+      - { id: row_number, sql: "SELECT ROW_NUMBER() OVER (ORDER BY c) FROM t;" }
+      - { id: row_number_no_order, sql: "SELECT ROW_NUMBER() OVER () FROM t;" }
+      - { id: percent_rank_cume_dist, sql: "SELECT PERCENT_RANK() OVER (ORDER BY c), CUME_DIST() OVER (ORDER BY c) FROM t;" }
+      - { id: ntile, sql: "SELECT NTILE(4) OVER (ORDER BY c) FROM t;" }
+      - { id: nulls_first, sql: "SELECT RANK() OVER (ORDER BY c ASC NULLS FIRST) FROM t;" }
+      - { id: nulls_last, sql: "SELECT RANK() OVER (ORDER BY c DESC NULLS LAST) FROM t;" }
+    examples:
+      - "SELECT ROW_NUMBER() OVER (ORDER BY SALARY DESC) AS RN FROM EMPLOYEE;"
+  - id: c_olap_aggregate_window
+    name: OLAP aggregate functions and window frames
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=expressions-olap-specification
+    tier: high
+    probes:
+      - { id: sum_over_partition, sql: "SELECT SUM(c) OVER (PARTITION BY a) FROM t;" }
+      - { id: sum_over_empty, sql: "SELECT SUM(c) OVER () FROM t;" }
+      - { id: sum_over_order, sql: "SELECT SUM(c) OVER (ORDER BY d) FROM t;" }
+      - { id: rows_unbounded_preceding, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS UNBOUNDED PRECEDING) FROM t;" }
+      - { id: rows_n_preceding, sql: "SELECT AVG(c) OVER (ORDER BY d ROWS 2 PRECEDING) FROM t;" }
+      - { id: rows_current_row, sql: "SELECT AVG(c) OVER (ORDER BY d ROWS CURRENT ROW) FROM t;" }
+      - { id: rows_between_n, sql: "SELECT AVG(c) OVER (ORDER BY d ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;" }
+      - { id: rows_between_unbounded, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: rows_between_current, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS BETWEEN CURRENT ROW AND 3 FOLLOWING) FROM t;" }
+      - { id: range_unbounded_preceding, sql: "SELECT SUM(c) OVER (ORDER BY d RANGE UNBOUNDED PRECEDING) FROM t;" }
+      - { id: range_between, sql: "SELECT SUM(c) OVER (ORDER BY d RANGE BETWEEN 10 PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: count_star_over, sql: "SELECT COUNT(*) OVER (PARTITION BY a) FROM t;" }
+      - { id: multiple_partition_keys, sql: "SELECT MAX(c) OVER (PARTITION BY a, b ORDER BY d) FROM t;" }
+    examples:
+      - "SELECT SUM(SALARY) OVER (ORDER BY EMPNO ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM EMPLOYEE;"
+  - id: c_olap_value_functions
+    name: FIRST_VALUE, LAST_VALUE, NTH_VALUE, RATIO_TO_REPORT, LAG and LEAD
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=expressions-olap-specification
+    tier: medium
+    probes:
+      - { id: first_value, sql: "SELECT FIRST_VALUE(c) OVER (ORDER BY d) FROM t;" }
+      - { id: first_value_ignore_nulls, sql: "SELECT FIRST_VALUE(c, 'IGNORE NULLS') OVER (ORDER BY d) FROM t;" }
+      - { id: last_value, sql: "SELECT LAST_VALUE(c, 'RESPECT NULLS') OVER (ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: nth_value, sql: "SELECT NTH_VALUE(c, 2) OVER (ORDER BY d) FROM t;" }
+      - { id: nth_value_from_last, sql: "SELECT NTH_VALUE(c, 2) FROM LAST IGNORE NULLS OVER (ORDER BY d) FROM t;" }
+      - { id: ratio_to_report, sql: "SELECT RATIO_TO_REPORT(c) OVER (PARTITION BY a) FROM t;" }
+      - { id: lag, sql: "SELECT LAG(c, 1, 0) OVER (ORDER BY d) FROM t;" }
+      - { id: lead, sql: "SELECT LEAD(c) OVER (PARTITION BY a ORDER BY d) FROM t;" }
+  - id: c_array_constructors_access
+    name: Array constructor, element reference and array functions
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=expressions-array-constructor
+    tier: high
+    probes:
+      - { id: constructor_values, sql: "VALUES ARRAY[1, 2, 3];" }
+      - { id: constructor_empty, sql: "VALUES ARRAY[];" }
+      - { id: constructor_subquery, sql: "VALUES ARRAY(SELECT c FROM t ORDER BY c);" }
+      - { id: element_reference, sql: "SELECT a[1] FROM t;" }
+      - { id: element_reference_expr, sql: "SELECT a[i + 1] FROM t;" }
+      - { id: unnest, sql: "SELECT x.v FROM UNNEST(ARRAY[1, 2, 3]) AS x(v);" }
+      - { id: unnest_ordinality, sql: "SELECT x.v, x.i FROM UNNEST(ARRAY[1, 2, 3]) WITH ORDINALITY AS x(v, i);" }
+      - { id: cardinality, sql: "SELECT CARDINALITY(a), MAX_CARDINALITY(a) FROM t;" }
+      - { id: array_functions, sql: "SELECT ARRAY_FIRST(a), ARRAY_LAST(a), ARRAY_NEXT(a, 1), ARRAY_PRIOR(a, 2), ARRAY_EXISTS(a, 1) FROM t;" }
+      - { id: array_delete_trim, sql: "SELECT ARRAY_DELETE(a), TRIM_ARRAY(a, 1) FROM t;" }
+  - id: c_row_constructors
+    name: Row expressions and row field access
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=expressions-row-expression
+    tier: medium
+    probes:
+      - { id: row_value, sql: "SELECT * FROM t WHERE (a, b) = (1, 2);" }
+      - { id: row_in, sql: "SELECT * FROM t WHERE (a, b) IN ((1, 2), (3, 4));" }
+      - { id: row_in_subquery, sql: "SELECT * FROM t WHERE (a, b) IN (SELECT x, y FROM s);" }
+      - { id: row_constructor_function, sql: "VALUES ROW(1, 'a');" }
+  - id: c_dereference_operator
+    name: Dereference operator
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=expressions-dereference-operations
+    tier: low
+    probes:
+      - { id: deref, sql: "SELECT ref_col->name FROM t;" }
+  - id: c_json_functions
+    name: JSON functions (SQL/JSON)
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=functions-json-value
+    tier: high
+    probes:
+      - { id: json_value, sql: "SELECT JSON_VALUE(j, '$.a') FROM t;" }
+      - { id: json_value_returning, sql: "SELECT JSON_VALUE(j, '$.a' RETURNING INTEGER) FROM t;" }
+      - { id: json_value_on_error, sql: "SELECT JSON_VALUE(j, '$.a' DEFAULT 0 ON EMPTY NULL ON ERROR) FROM t;" }
+      - { id: json_query, sql: "SELECT JSON_QUERY(j, '$.a') FROM t;" }
+      - { id: json_query_wrapper, sql: "SELECT JSON_QUERY(j, '$.a' WITH ARRAY WRAPPER) FROM t;" }
+      - { id: json_exists, sql: "SELECT * FROM t WHERE JSON_EXISTS(j, '$.a');" }
+      - { id: json_object, sql: "VALUES JSON_OBJECT('a' VALUE 1, 'b' VALUE 'x');" }
+      - { id: json_object_colon, sql: "VALUES JSON_OBJECT(KEY 'a' VALUE 1 ABSENT ON NULL);" }
+      - { id: json_array, sql: "VALUES JSON_ARRAY(1, 2, 3);" }
+      - { id: json_array_subquery, sql: "VALUES JSON_ARRAY(SELECT c FROM t);" }
+      - { id: json_table, sql: "SELECT jt.a FROM t, JSON_TABLE(t.j, 'strict $' COLUMNS (a INTEGER PATH '$.a')) AS jt;" }
+      - { id: is_json, sql: "SELECT * FROM t WHERE j IS JSON;" }
+      - { id: is_not_json_object, sql: "SELECT * FROM t WHERE j IS NOT JSON OBJECT;" }
+      - { id: json_to_bson, sql: "SELECT SYSTOOLS.JSON2BSON(j), SYSTOOLS.BSON2JSON(b) FROM t;" }
+  - id: c_xml_functions
+    name: XML constructors and query functions
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=functions-xmlquery
+    tier: medium
+    probes:
+      - { id: xmlelement, sql: "VALUES XMLELEMENT(NAME \"a\", 'x');" }
+      - { id: xmlelement_attributes, sql: "VALUES XMLELEMENT(NAME \"a\", XMLATTRIBUTES(1 AS \"id\"), 'x');" }
+      - { id: xmlforest, sql: "SELECT XMLFOREST(c AS \"c\", d AS \"d\") FROM t;" }
+      - { id: xmlquery, sql: "SELECT XMLQUERY('$d/a' PASSING x AS \"d\") FROM t;" }
+      - { id: xmlexists, sql: "SELECT * FROM t WHERE XMLEXISTS('$d/a' PASSING x AS \"d\");" }
+      - { id: xmlparse, sql: "VALUES XMLPARSE(DOCUMENT '<a/>' PRESERVE WHITESPACE);" }
+      - { id: xmlserialize, sql: "SELECT XMLSERIALIZE(x AS CLOB(1M)) FROM t;" }
+      - { id: xmltable, sql: "SELECT x.a FROM t, XMLTABLE('$d/r' PASSING t.x AS \"d\" COLUMNS a INTEGER PATH 'a') AS x;" }
+      - { id: xmlcast, sql: "SELECT XMLCAST(x AS INTEGER) FROM t;" }
+  - id: c_string_functions
+    name: String function family
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=functions-scalar-function-syntax
+    tier: high
+    probes:
+      - { id: substr_length, sql: "SELECT SUBSTR(c, 1, 3), LENGTH(c), UPPER(c), LOWER(c) FROM t;" }
+      - { id: substring_codeunits, sql: "SELECT SUBSTRING(c, 2, 3, CODEUNITS32) FROM t;" }
+      - { id: locate_posstr, sql: "SELECT LOCATE('a', c), POSSTR(c, 'a'), INSTR(c, 'a') FROM t;" }
+      - { id: trim_forms, sql: "SELECT TRIM(c), TRIM(BOTH ' ' FROM c), LTRIM(c), RTRIM(c) FROM t;" }
+      - { id: replace_translate, sql: "SELECT REPLACE(c, 'a', 'b'), TRANSLATE(c, 'ab', 'xy') FROM t;" }
+      - { id: concat_function, sql: "SELECT CONCAT(a, b), a || b FROM t;" }
+      - { id: lpad_rpad, sql: "SELECT LPAD(c, 10, '0'), RPAD(c, 10) FROM t;" }
+      - { id: regexp, sql: "SELECT REGEXP_LIKE(c, 'a+'), REGEXP_REPLACE(c, 'a', 'b'), REGEXP_SUBSTR(c, 'a+') FROM t;" }
+  - id: c_numeric_functions
+    name: Numeric function family
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=functions-scalar-function-syntax
+    tier: high
+    probes:
+      - { id: abs_round, sql: "SELECT ABS(c), ROUND(c, 2), TRUNC(c, 1), CEIL(c), FLOOR(c) FROM t;" }
+      - { id: mod_power, sql: "SELECT MOD(a, b), POWER(a, 2), SQRT(a), EXP(a), LN(a) FROM t;" }
+      - { id: sign_rand, sql: "SELECT SIGN(c), RAND() FROM t;" }
+      - { id: bitwise_functions, sql: "SELECT BITAND(a, b), BITOR(a, b), BITXOR(a, b), BITNOT(a) FROM t;" }
+      - { id: greatest_least, sql: "SELECT GREATEST(a, b, c), LEAST(a, b, c) FROM t;" }
+  - id: c_datetime_functions
+    name: Date and time function family
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=functions-scalar-function-syntax
+    tier: high
+    probes:
+      - { id: current_registers, sql: "VALUES (CURRENT DATE, CURRENT TIME, CURRENT TIMESTAMP);" }
+      - { id: current_timestamp_precision, sql: "VALUES CURRENT TIMESTAMP(6);" }
+      - { id: date_parts, sql: "SELECT YEAR(d), MONTH(d), DAY(d), HOUR(ts), MINUTE(ts), SECOND(ts) FROM t;" }
+      - { id: dayofweek_etc, sql: "SELECT DAYOFWEEK(d), DAYOFYEAR(d), DAYNAME(d), MONTHNAME(d), WEEK(d) FROM t;" }
+      - { id: date_arithmetic, sql: "SELECT d + 1 DAY, d - 2 MONTHS, ts + 3 HOURS FROM t;" }
+      - { id: timestampdiff, sql: "SELECT TIMESTAMPDIFF(16, CHAR(ts1 - ts2)) FROM t;" }
+      - { id: add_months, sql: "SELECT ADD_MONTHS(d, 1), LAST_DAY(d), NEXT_DAY(d, 'MONDAY') FROM t;" }
+      - { id: to_char_to_date, sql: "SELECT TO_CHAR(ts, 'YYYY-MM-DD'), TO_DATE(c, 'YYYY-MM-DD'), TO_TIMESTAMP(c, 'YYYY-MM-DD HH24:MI:SS') FROM t;" }
+      - { id: extract, sql: "SELECT EXTRACT(YEAR FROM d) FROM t;" }
+      - { id: date_trunc, sql: "SELECT DATE_TRUNC('MONTH', ts) FROM t;" }
+  - id: c_conditional_functions
+    name: Conditional and null-handling functions
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=functions-scalar-function-syntax
+    tier: high
+    probes:
+      - { id: coalesce, sql: "SELECT COALESCE(a, b, 0) FROM t;" }
+      - { id: nullif, sql: "SELECT NULLIF(a, b) FROM t;" }
+      - { id: nvl_value, sql: "SELECT NVL(a, 0), VALUE(a, 0), IFNULL(a, 0), NVL2(a, 1, 2) FROM t;" }
+      - { id: decode, sql: "SELECT DECODE(a, 1, 'one', 2, 'two', 'other') FROM t;" }
+      - { id: case_searched, sql: "SELECT CASE WHEN a > 1 THEN 'x' ELSE 'y' END FROM t;" }
+      - { id: case_simple, sql: "SELECT CASE a WHEN 1 THEN 'x' WHEN 2 THEN 'y' END FROM t;" }
+      - { id: raise_error, sql: "SELECT CASE WHEN a < 0 THEN RAISE_ERROR('70001', 'negative') ELSE a END FROM t;" }
+  - id: c_cast_and_conversion_functions
+    name: Cast and type conversion functions
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=functions-scalar-function-syntax
+    tier: medium
+    probes:
+      - { id: cast_default, sql: "SELECT CAST(c AS VARCHAR(10)) FROM t;" }
+      - { id: cast_null, sql: "SELECT CAST(NULL AS INTEGER) FROM t;" }
+      - { id: cast_parameter_marker, sql: "SELECT CAST(? AS INTEGER) FROM t;" }
+      - { id: type_functions, sql: "SELECT INTEGER(c), BIGINT(c), DECIMAL(c, 10, 2), DOUBLE(c), VARCHAR(c), CHAR(c), DATE(c), TIMESTAMP(c) FROM t;" }
+      - { id: hex_functions, sql: "SELECT HEX(c), BLOB(c), VARBINARY(c) FROM t;" }
+      - { id: typed_literal_function, sql: "SELECT VARCHAR_FORMAT(ts, 'YYYY-MM-DD'), TIMESTAMP_FORMAT(c, 'YYYY-MM-DD') FROM t;" }
+  - id: c_hash_and_misc_functions
+    name: Hash, security, OLAP-adjacent and miscellaneous functions
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=functions-scalar-function-syntax
+    tier: low
+    probes:
+      - { id: hash_functions, sql: "SELECT HASH(c), HASH4(c), HASH8(c), HASH_MD5(c), HASH_SHA1(c) FROM t;" }
+      - { id: gen_unique, sql: "VALUES GENERATE_UNIQUE();" }
+      - { id: row_change, sql: "SELECT ROW_CHANGE TOKEN FOR t, RID_BIT(t) FROM t;" }
+      - { id: rid, sql: "SELECT RID(t) FROM t;" }
+      - { id: next_prev_value, sql: "VALUES (NEXT VALUE FOR s, PREVIOUS VALUE FOR s);" }
+      - { id: sys_function_table, sql: "SELECT * FROM TABLE(MON_GET_TABLE('', '', -2)) AS x;" }

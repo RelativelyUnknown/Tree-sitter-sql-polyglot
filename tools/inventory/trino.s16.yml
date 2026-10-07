@@ -1,0 +1,204 @@
+dialect: trino
+engine: Trino
+version: "483"
+source: https://trino.io/docs/current/sql.html
+
+statements:
+  - id: drop_schema
+    name: DROP SCHEMA
+    doc: https://trino.io/docs/current/sql/drop-schema.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP SCHEMA s;"
+      - id: if_exists
+        sql: "DROP SCHEMA IF EXISTS s;"
+      - id: cascade
+        sql: "DROP SCHEMA s CASCADE;"
+      - id: restrict
+        sql: "DROP SCHEMA s RESTRICT;"
+    examples:
+      - "DROP SCHEMA web;"
+      - "DROP SCHEMA IF EXISTS sales;"
+      - "DROP SCHEMA archive CASCADE;"
+
+  - id: explain
+    name: EXPLAIN
+    doc: https://trino.io/docs/current/sql/explain.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "EXPLAIN SELECT 1;"
+      - id: type_logical
+        sql: "EXPLAIN (TYPE LOGICAL) SELECT c FROM t;"
+      - id: type_distributed
+        sql: "EXPLAIN (TYPE DISTRIBUTED) SELECT c FROM t;"
+      - id: type_validate
+        sql: "EXPLAIN (TYPE VALIDATE) SELECT c FROM t;"
+      - id: type_io
+        sql: "EXPLAIN (TYPE IO) SELECT c FROM t;"
+      - id: format_json
+        sql: "EXPLAIN (FORMAT JSON) SELECT c FROM t;"
+      - id: format_graphviz
+        sql: "EXPLAIN (FORMAT GRAPHVIZ) SELECT c FROM t;"
+      - id: type_and_format
+        sql: "EXPLAIN (TYPE DISTRIBUTED, FORMAT JSON) SELECT c FROM t;"
+    examples:
+      - "EXPLAIN (TYPE LOGICAL) SELECT regionkey, count(*) FROM nation GROUP BY 1;"
+
+  - id: explain_analyze
+    name: EXPLAIN ANALYZE
+    doc: https://trino.io/docs/current/sql/explain-analyze.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "EXPLAIN ANALYZE SELECT c FROM t;"
+      - id: verbose
+        sql: "EXPLAIN ANALYZE VERBOSE SELECT c FROM t;"
+    examples:
+      - "EXPLAIN ANALYZE SELECT count(*), clerk FROM orders WHERE orderdate > date '1995-01-01' GROUP BY clerk;"
+
+  - id: grant_privilege
+    name: GRANT privilege
+    doc: https://trino.io/docs/current/sql/grant.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "GRANT SELECT ON t TO u;"
+      - id: multiple_privileges
+        sql: "GRANT INSERT, SELECT ON t TO u;"
+      - id: all_privileges
+        sql: "GRANT ALL PRIVILEGES ON t TO u;"
+      - id: on_table_keyword
+        sql: "GRANT SELECT ON TABLE t TO u;"
+      - id: on_schema
+        sql: "GRANT DELETE ON SCHEMA s TO u;"
+      - id: to_user
+        sql: "GRANT SELECT ON t TO USER u;"
+      - id: to_role
+        sql: "GRANT SELECT ON t TO ROLE r;"
+      - id: with_grant_option
+        sql: "GRANT SELECT ON t TO u WITH GRANT OPTION;"
+      - id: on_branch
+        sql: "GRANT INSERT ON BRANCH b IN t TO u;"
+    examples:
+      - "GRANT INSERT, SELECT ON orders TO alice;"
+      - "GRANT DELETE ON SCHEMA finance TO bob;"
+      - "GRANT SELECT ON nation TO alice WITH GRANT OPTION;"
+
+  - id: grant_role
+    name: GRANT role
+    doc: https://trino.io/docs/current/sql/grant-roles.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "GRANT r TO u;"
+      - id: to_user
+        sql: "GRANT r TO USER u;"
+      - id: to_role
+        sql: "GRANT r TO ROLE r2;"
+      - id: multiple_roles_and_grantees
+        sql: "GRANT r1, r2 TO USER u, ROLE r3;"
+      - id: granted_by_user
+        sql: "GRANT r TO u GRANTED BY USER g;"
+      - id: granted_by_current_user
+        sql: "GRANT r TO u GRANTED BY CURRENT_USER;"
+      - id: granted_by_current_role
+        sql: "GRANT r TO u GRANTED BY CURRENT_ROLE;"
+      - id: with_admin_option
+        sql: "GRANT r TO u WITH ADMIN OPTION;"
+      - id: in_catalog
+        sql: "GRANT r TO u IN c;"
+    examples:
+      - "GRANT bar TO USER foo;"
+      - "GRANT bar, foo TO USER baz, ROLE qux WITH ADMIN OPTION;"
+
+  - id: refresh_materialized_view
+    name: REFRESH MATERIALIZED VIEW
+    doc: https://trino.io/docs/current/sql/refresh-materialized-view.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "REFRESH MATERIALIZED VIEW v;"
+      - id: qualified
+        sql: "REFRESH MATERIALIZED VIEW c.s.v;"
+
+  - id: reset_session
+    name: RESET SESSION
+    doc: https://trino.io/docs/current/sql/reset-session.html
+    tier: medium
+    probes:
+      - id: name
+        sql: "RESET SESSION p;"
+      - id: catalog_name
+        sql: "RESET SESSION c.p;"
+    examples:
+      - "RESET SESSION query_max_run_time;"
+      - "RESET SESSION hive.optimized_reader_enabled;"
+
+  - id: revoke_privilege
+    name: REVOKE privilege
+    doc: https://trino.io/docs/current/sql/revoke.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "REVOKE SELECT ON t FROM u;"
+      - id: multiple_privileges
+        sql: "REVOKE INSERT, SELECT ON t FROM u;"
+      - id: all_privileges
+        sql: "REVOKE ALL PRIVILEGES ON t FROM u;"
+      - id: on_table_keyword
+        sql: "REVOKE SELECT ON TABLE t FROM u;"
+      - id: on_schema
+        sql: "REVOKE DELETE ON SCHEMA s FROM u;"
+      - id: from_user
+        sql: "REVOKE SELECT ON t FROM USER u;"
+      - id: from_role
+        sql: "REVOKE SELECT ON t FROM ROLE r;"
+      - id: grant_option_for
+        sql: "REVOKE GRANT OPTION FOR SELECT ON t FROM u;"
+      - id: on_branch
+        sql: "REVOKE INSERT ON BRANCH b IN t FROM u;"
+    examples:
+      - "REVOKE INSERT, SELECT ON orders FROM alice;"
+      - "REVOKE DELETE ON SCHEMA finance FROM bob;"
+      - "REVOKE GRANT OPTION FOR SELECT ON nation FROM ROLE PUBLIC;"
+
+  - id: revoke_role
+    name: REVOKE role
+    doc: https://trino.io/docs/current/sql/revoke-roles.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "REVOKE r FROM u;"
+      - id: from_user
+        sql: "REVOKE r FROM USER u;"
+      - id: from_role
+        sql: "REVOKE r FROM ROLE r2;"
+      - id: multiple_roles_and_grantees
+        sql: "REVOKE r1, r2 FROM USER u, ROLE r3;"
+      - id: admin_option_for
+        sql: "REVOKE ADMIN OPTION FOR r FROM u;"
+      - id: granted_by_user
+        sql: "REVOKE r FROM u GRANTED BY USER g;"
+      - id: granted_by_current_role
+        sql: "REVOKE r FROM u GRANTED BY CURRENT_ROLE;"
+      - id: in_catalog
+        sql: "REVOKE r FROM u IN c;"
+    examples:
+      - "REVOKE bar FROM USER foo;"
+      - "REVOKE ADMIN OPTION FOR bar, foo FROM USER baz, ROLE qux;"
+
+  - id: set_role
+    name: SET ROLE
+    doc: https://trino.io/docs/current/sql/set-role.html
+    tier: medium
+    probes:
+      - id: role
+        sql: "SET ROLE r;"
+      - id: all
+        sql: "SET ROLE ALL;"
+      - id: none
+        sql: "SET ROLE NONE;"
+      - id: in_catalog
+        sql: "SET ROLE r IN c;"
