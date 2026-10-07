@@ -90,9 +90,23 @@ statements:
     tier: medium
     probes:
       - id: basic
-        sql: "EXECUTE stmt1;"
+        sql: |-
+          CREATE PROCEDURE p ()
+          BEGIN
+            DECLARE sql_stmt VARCHAR(100);
+            SET sql_stmt = 'DELETE FROM t';
+            PREPARE stmt1 FROM sql_stmt;
+            EXECUTE stmt1;
+          END;
       - id: using_variables
-        sql: "EXECUTE stmt1 USING price, item;"
+        sql: |-
+          CREATE PROCEDURE p (price DECIMAL(8,2), item INTEGER)
+          BEGIN
+            DECLARE sql_stmt VARCHAR(100);
+            SET sql_stmt = 'UPDATE t SET store_price=? WHERE store_item=?;';
+            PREPARE stmt1 FROM sql_stmt;
+            EXECUTE stmt1 USING price, item;
+          END;
     examples:
       - |-
         CREATE PROCEDURE sales_update(store_table VARCHAR(10),
