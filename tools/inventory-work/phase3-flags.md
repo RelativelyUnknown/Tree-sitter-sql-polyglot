@@ -4,3 +4,4 @@
 - db2.s16 (12.1): FOR statement probes written from the legacy SQL PL page (12.1 topic id unresolvable); WITH HOLD probe unsupported by text read; verify in Phase 3.
 - db2.s27 (12.1): VALUES probes written from the Db2 VALUES grammar knowledge (page diagram is an image); verify in Phase 3.
 - db2.s24 (12.1): SELECT sub-clause probes (update, read-only, optimize-for, concurrent-access, CTE) partly from memory because the 12.1 sub-pages were unreachable; verify in Phase 3.
+- Phase 4 note: suspect probes verified valid against vendor docs (e.g. all 41 T-SQL SET suspects) mean our grammar is NOT too loose there; the report should show them as 'doc-verified' rather than as grammar looseness.
