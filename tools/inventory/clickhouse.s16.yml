@@ -18,10 +18,35 @@ statements:
 
   - id: pipe_syntax_query
     name: FROM ... |> (pipe operators)
-    doc: https://clickhouse.com/docs/sql-reference/statements/select/pipe-operators
+    doc: https://clickhouse.com/docs/reference/statements/select/pipe-operators
     tier: medium
-    status: not-applicable
-    reason: The cited page returns 404 and the SELECT docs and docs index contain no mention of a |> pipe operator; ClickHouse documents no pipe syntax.
+    probes:
+      - id: from_first
+        sql: "FROM orders;"
+      - id: from_first_where
+        sql: "FROM orders WHERE amount > 100;"
+      - id: pipe_where
+        sql: "FROM orders |> WHERE amount > 100;"
+      - id: pipe_select
+        sql: "FROM orders |> SELECT customer, amount * 2 AS doubled;"
+      - id: pipe_extend
+        sql: "FROM orders |> EXTEND amount * 10 AS big;"
+      - id: pipe_set
+        sql: "FROM orders |> SET amount = amount + 1000;"
+      - id: pipe_drop
+        sql: "FROM orders |> DROP cancelled;"
+      - id: pipe_as_join
+        sql: "FROM orders |> AGGREGATE sum(amount) AS total GROUP BY customer |> AS agg |> JOIN orders AS o ON agg.customer = o.customer;"
+      - id: pipe_aggregate_group_by
+        sql: "FROM orders |> AGGREGATE count() AS c, sum(amount) AS total GROUP BY customer;"
+      - id: pipe_distinct
+        sql: "FROM orders |> DISTINCT;"
+      - id: pipe_order_by
+        sql: "FROM orders |> ORDER BY amount DESC;"
+      - id: pipe_chain
+        sql: "FROM orders |> WHERE cancelled = 0 |> AGGREGATE sum(amount) AS total GROUP BY customer |> ORDER BY total DESC |> LIMIT 3;"
+    examples:
+      - "FROM orders |> WHERE cancelled = 0 |> AGGREGATE sum(amount) AS total GROUP BY customer |> ORDER BY total DESC |> LIMIT 3;"
 
   - id: create_database
     name: CREATE DATABASE
