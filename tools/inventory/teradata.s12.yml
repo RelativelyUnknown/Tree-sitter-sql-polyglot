@@ -1,0 +1,97 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: end_transaction
+    name: END TRANSACTION (ET)
+    doc: https://docs.teradata.com/reader/4_jiz05LXsLWBbfvKTLneg/V2m53nhig6LtilmsaifIWA
+    tier: high
+    probes:
+      - id: end_transaction
+        sql: "END TRANSACTION;"
+      - id: et_abbreviation
+        sql: "ET;"
+    examples: []
+
+  - id: insert
+    name: INSERT / INSERT ... SELECT (INS)
+    doc: https://docs.teradata.com/reader/4_jiz05LXsLWBbfvKTLneg/Ml36X0SbBvi7d0V3a30s5A
+    tier: high
+    probes:
+      - id: values_positional
+        sql: "INSERT INTO t VALUES (1, 'a');"
+      - id: values_keyword_omitted
+        sql: "INSERT INTO t (1, 'a');"
+        note: VALUES is optional in the Teradata form ({ [ VALUES ] ( expression [,...] ) }).
+      - id: values_column_list
+        sql: "INSERT INTO t (c1, c2) VALUES (1, 'a');"
+      - id: into_omitted
+        sql: "INSERT t VALUES (1, 'a');"
+        note: INTO is optional (non-ANSI).
+      - id: ins_abbreviation
+        sql: "INS INTO t (c1, c2) VALUES (1, 'a');"
+      - id: ins_into_omitted
+        sql: "INS t (c1, c2) VALUES (1, 'a');"
+      - id: values_null_default
+        sql: "INSERT INTO t (c1, c2, c3) VALUES (1, NULL, DEFAULT);"
+      - id: values_omitted_elements
+        sql: "INSERT INTO t (1,,3,);"
+        note: Commas as place markers for skipped columns (Example Insert Ordered Entries).
+      - id: select_subquery
+        sql: "INSERT INTO t SELECT * FROM s;"
+      - id: select_column_list
+        sql: "INSERT INTO t (c1, c2) SELECT a, b FROM s WHERE a > 10;"
+      - id: select_parenthesized_subquery
+        sql: "INSERT INTO t (SELECT * FROM s);"
+      - id: select_set_operator
+        sql: "INSERT INTO t SELECT a, b FROM s1 UNION SELECT a, b FROM s2;"
+      - id: select_with_cte
+        sql: "INSERT INTO t WITH cte AS (SELECT a, b FROM s) SELECT a, b FROM cte;"
+      - id: hash_by_column
+        sql: "INSERT INTO t SELECT * FROM s HASH BY c1;"
+      - id: hash_by_random
+        sql: "INSERT INTO t SELECT * FROM s HASH BY RANDOM;"
+      - id: local_order_by
+        sql: "INSERT INTO t SELECT * FROM s LOCAL ORDER BY c2;"
+      - id: hash_by_local_order_by
+        sql: "INSERT INTO t SELECT * FROM s HASH BY c1 LOCAL ORDER BY c2;"
+      - id: logging_errors
+        sql: "INSERT INTO t SELECT * FROM s LOGGING ERRORS;"
+      - id: logging_all_errors
+        sql: "INSERT INTO t SELECT * FROM s LOGGING ALL ERRORS;"
+      - id: logging_errors_no_limit
+        sql: "INSERT INTO t SELECT * FROM s LOGGING ERRORS WITH NO LIMIT;"
+      - id: logging_errors_limit
+        sql: "INSERT INTO t SELECT * FROM s LOGGING ERRORS WITH LIMIT OF 100;"
+      - id: json_string
+        sql: "INSERT INTO t JSON '{\"pkey\":10,\"val\":1234}';"
+      - id: json_parameter
+        sql: "INSERT INTO t JSON ?;"
+      - id: default_values
+        sql: "INSERT INTO t DEFAULT VALUES;"
+      - id: isolated_loading
+        sql: "INSERT WITH ISOLATED LOADING INTO t SELECT * FROM s;"
+      - id: no_isolated_loading
+        sql: "INSERT WITH NO ISOLATED LOADING INTO t SELECT * FROM s;"
+      - id: concurrent_isolated_loading
+        sql: "INSERT WITH CONCURRENT ISOLATED LOADING INTO t SELECT * FROM s;"
+      - id: no_concurrent_isolated_loading
+        sql: "INS WITH NO CONCURRENT ISOLATED LOADING INTO t VALUES (1, 2);"
+      - id: qualified_table_name
+        sql: "INSERT INTO db.t (c1) VALUES (1);"
+    examples:
+      - |-
+        INSERT INTO employee (name, empno, deptno, dob, gender, edlev)
+        VALUES ('SMITH T', 10021, 700, 460729, 'F', 16);
+      - |-
+        INSERT INTO promotion (deptnum, empname, yearsexp)
+        SELECT deptno, name, yrsexp
+        FROM employee
+        WHERE yrsexp > 10 ;
+      - |-
+        INSERT INTO t
+        SELECT *
+        FROM s
+        LOGGING ERRORS WITH NO LIMIT;

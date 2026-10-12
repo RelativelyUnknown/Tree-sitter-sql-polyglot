@@ -1,0 +1,111 @@
+dialect: athena
+engine: Amazon Athena
+version: "engine version 3 (Trino-based DML, Hive-style DDL)"
+source: https://docs.aws.amazon.com/athena/latest/ug/ddl-reference.html ; https://docs.aws.amazon.com/athena/latest/ug/dml-queries-functions-operators.html
+
+statements:
+  - id: select
+    name: SELECT
+    doc: https://docs.aws.amazon.com/athena/latest/ug/select.html
+    tier: high
+    probes:
+      - { id: basic, sql: "SELECT a, b FROM t;" }
+      - { id: select_all_quantifier, sql: "SELECT ALL a FROM t;" }
+      - { id: select_distinct, sql: "SELECT DISTINCT a FROM t;" }
+      - { id: column_alias_as, sql: "SELECT a AS x, b y FROM t;" }
+      - { id: star, sql: "SELECT * FROM t;" }
+      - { id: relation_star, sql: "SELECT t.* FROM t;" }
+      - { id: row_expression_star, sql: "SELECT r.* FROM t;" }
+      - { id: row_expression_star_alias, sql: "SELECT r.* AS (x, y) FROM t;" }
+      - { id: no_from, sql: "SELECT 1;" }
+      - { id: with_clause, sql: "WITH w AS (SELECT a FROM t) SELECT a FROM w;" }
+      - { id: with_column_names, sql: "WITH w (x, y) AS (SELECT a, b FROM t) SELECT x, y FROM w;" }
+      - { id: with_multiple, sql: "WITH w1 AS (SELECT a FROM t), w2 AS (SELECT a FROM w1) SELECT a FROM w2;" }
+      - { id: with_recursive, sql: "WITH RECURSIVE r (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r WHERE n < 5) SELECT n FROM r;" }
+      - { id: from_table_alias, sql: "SELECT x.a FROM t AS x;" }
+      - { id: from_table_alias_no_as, sql: "SELECT x.a FROM t x;" }
+      - { id: from_table_alias_columns, sql: "SELECT x, y FROM t AS u (x, y);" }
+      - { id: from_qualified_table, sql: 'SELECT a FROM "db"."t";' }
+      - { id: from_multiple, sql: "SELECT a FROM t, s;" }
+      - { id: from_subquery, sql: "SELECT a FROM (SELECT a FROM t) AS q;" }
+      - { id: join_inner, sql: "SELECT t.a FROM t INNER JOIN s ON t.a = s.a;" }
+      - { id: join_plain, sql: "SELECT t.a FROM t JOIN s ON t.a = s.a;" }
+      - { id: join_left, sql: "SELECT t.a FROM t LEFT JOIN s ON t.a = s.a;" }
+      - { id: join_left_outer, sql: "SELECT t.a FROM t LEFT OUTER JOIN s ON t.a = s.a;" }
+      - { id: join_right, sql: "SELECT t.a FROM t RIGHT JOIN s ON t.a = s.a;" }
+      - { id: join_right_outer, sql: "SELECT t.a FROM t RIGHT OUTER JOIN s ON t.a = s.a;" }
+      - { id: join_full, sql: "SELECT t.a FROM t FULL JOIN s ON t.a = s.a;" }
+      - { id: join_full_outer, sql: "SELECT t.a FROM t FULL OUTER JOIN s ON t.a = s.a;" }
+      - { id: join_cross, sql: "SELECT t.a FROM t CROSS JOIN s;" }
+      - { id: join_using, sql: "SELECT a FROM t JOIN s USING (a);" }
+      - { id: join_using_multiple, sql: "SELECT a FROM t JOIN s USING (a, b);" }
+      - { id: join_chained, sql: "SELECT t.a FROM t JOIN s ON t.a = s.a LEFT JOIN u ON s.a = u.a;" }
+      - { id: where_comparison, sql: "SELECT a FROM t WHERE a >= 1 AND b <> 2 OR c != 3;" }
+      - { id: where_between, sql: "SELECT DISTINCT processid FROM t WHERE cast(processid AS int) BETWEEN 1500 AND 1800 ORDER BY processid;" }
+      - { id: where_not_between, sql: "SELECT a FROM t WHERE a NOT BETWEEN 1 AND 10;" }
+      - { id: where_like, sql: "SELECT a FROM t WHERE a LIKE '%.org';" }
+      - { id: where_not_like, sql: "SELECT a FROM t WHERE a NOT LIKE '%.org';" }
+      - { id: where_in_list, sql: "SELECT a FROM t WHERE a IN ('x', 'y', 'z');" }
+      - { id: where_not_in_list, sql: "SELECT a FROM t WHERE a NOT IN ('x', 'y');" }
+      - { id: where_in_subquery, sql: "SELECT a FROM t WHERE a IN (SELECT a FROM s);" }
+      - { id: where_exists, sql: "SELECT a FROM t WHERE EXISTS (SELECT 1 FROM s WHERE s.a = t.a);" }
+      - { id: group_by, sql: "SELECT a, count(*) FROM t GROUP BY a;" }
+      - { id: group_by_all, sql: "SELECT a, count(*) FROM t GROUP BY ALL a;" }
+      - { id: group_by_distinct, sql: "SELECT a, count(*) FROM t GROUP BY DISTINCT a;" }
+      - { id: group_by_ordinal, sql: "SELECT a, count(*) FROM t GROUP BY 1;" }
+      - { id: group_by_multiple, sql: "SELECT a, b, sum(c) FROM t GROUP BY a, b;" }
+      - { id: group_by_grouping_sets, sql: "SELECT a, b, sum(c) FROM t GROUP BY GROUPING SETS ((a), (b), ());" }
+      - { id: group_by_cube, sql: "SELECT a, b, sum(c) FROM t GROUP BY CUBE (a, b);" }
+      - { id: group_by_rollup, sql: "SELECT a, b, sum(c) FROM t GROUP BY ROLLUP (a, b);" }
+      - { id: having, sql: "SELECT a, count(*) FROM t GROUP BY a HAVING count(*) > 1;" }
+      - { id: union, sql: "SELECT a FROM t UNION SELECT a FROM s;" }
+      - { id: union_all, sql: "SELECT a FROM t UNION ALL SELECT a FROM s;" }
+      - { id: union_distinct, sql: "SELECT a FROM t UNION DISTINCT SELECT a FROM s;" }
+      - { id: intersect, sql: "SELECT a FROM t INTERSECT SELECT a FROM s;" }
+      - { id: intersect_all, sql: "SELECT a FROM t INTERSECT ALL SELECT a FROM s;" }
+      - { id: intersect_distinct, sql: "SELECT a FROM t INTERSECT DISTINCT SELECT a FROM s;" }
+      - { id: except, sql: "SELECT a FROM t EXCEPT SELECT a FROM s;" }
+      - { id: except_all, sql: "SELECT a FROM t EXCEPT ALL SELECT a FROM s;" }
+      - { id: except_distinct, sql: "SELECT a FROM t EXCEPT DISTINCT SELECT a FROM s;" }
+      - { id: set_operation_parenthesized, sql: "(SELECT a FROM t UNION SELECT a FROM s) INTERSECT SELECT a FROM u;" }
+      - { id: order_by, sql: "SELECT a FROM t ORDER BY a;" }
+      - { id: order_by_asc_desc, sql: "SELECT a, b FROM t ORDER BY a ASC, b DESC;" }
+      - { id: order_by_nulls_first, sql: "SELECT a FROM t ORDER BY a NULLS FIRST;" }
+      - { id: order_by_nulls_last, sql: "SELECT a FROM t ORDER BY a DESC NULLS LAST;" }
+      - { id: order_by_ordinal, sql: "SELECT a, b FROM t ORDER BY 2;" }
+      - { id: offset, sql: "SELECT a FROM t ORDER BY a OFFSET 5;" }
+      - { id: offset_row, sql: "SELECT a FROM t ORDER BY a OFFSET 1 ROW;" }
+      - { id: offset_rows, sql: "SELECT a FROM t ORDER BY a OFFSET 5 ROWS;" }
+      - { id: limit, sql: "SELECT a FROM t LIMIT 10;" }
+      - { id: limit_all, sql: "SELECT a FROM t LIMIT ALL;" }
+      - { id: offset_limit, sql: "SELECT a FROM t ORDER BY a OFFSET 5 LIMIT 10;" }
+      - { id: tablesample_bernoulli, sql: "SELECT a FROM t TABLESAMPLE BERNOULLI (10);" }
+      - { id: tablesample_system, sql: "SELECT a FROM t TABLESAMPLE SYSTEM (10);" }
+      - { id: unnest, sql: "SELECT x FROM UNNEST(ARRAY[1, 2, 3]) AS u (x);" }
+      - { id: unnest_with_ordinality, sql: "SELECT x, n FROM UNNEST(ARRAY[1, 2, 3]) WITH ORDINALITY AS u (x, n);" }
+      - { id: unnest_map, sql: "SELECT k, v FROM UNNEST(MAP(ARRAY[1, 2], ARRAY['a', 'b'])) AS u (k, v);" }
+      - { id: unnest_cross_join, sql: "SELECT t.a, x FROM t CROSS JOIN UNNEST(t.arr) AS u (x);" }
+      - { id: path_pseudo_column, sql: 'SELECT "$path" FROM "my_database"."my_table" WHERE year = 2019;' }
+    examples:
+      - 'SELECT DISTINCT processid FROM "webdata"."impressions" WHERE cast(processid as int) BETWEEN 1500 and 1800 ORDER BY processid;'
+      - 'SELECT * FROM "webdata"."impressions" WHERE referrer LIKE ''%.org'';'
+      - 'SELECT "$path" FROM "my_database"."my_table" WHERE year=2019;'
+
+  - id: insert_into
+    name: INSERT INTO
+    doc: https://docs.aws.amazon.com/athena/latest/ug/insert-into.html
+    tier: high
+    probes:
+      - { id: insert_select, sql: "INSERT INTO t SELECT a FROM s;" }
+      - { id: insert_select_star, sql: "INSERT INTO t SELECT * FROM s;" }
+      - { id: insert_select_where, sql: "INSERT INTO t SELECT * FROM s WHERE d BETWEEN date '2019-07-01' AND '2019-07-31';" }
+      - { id: insert_select_columns, sql: "INSERT INTO t (c1, c2) SELECT a, b FROM s WHERE c = 'usa';" }
+      - { id: insert_values_single, sql: "INSERT INTO t VALUES (1, 'x', 'y');" }
+      - { id: insert_values_multi, sql: "INSERT INTO t VALUES (1, 'x'), (2, 'y');" }
+      - { id: insert_values_columns, sql: "INSERT INTO t (c1, c2) VALUES (1, 'x');" }
+      - { id: insert_values_columns_multi, sql: "INSERT INTO t (c1, c2) VALUES (1, 'x'), (2, 'y'), (3, 'z');" }
+      - { id: insert_qualified_table, sql: "INSERT INTO db.t SELECT a FROM s;" }
+    examples:
+      - "INSERT INTO canada_pageviews SELECT * FROM vancouver_pageviews;"
+      - "INSERT INTO canada_july_pageviews SELECT * FROM vancouver_pageviews WHERE date BETWEEN date '2019-07-01' AND '2019-07-31';"
+      - "INSERT INTO cities_usa (city,state) SELECT city,state FROM cities_world WHERE country='usa';"

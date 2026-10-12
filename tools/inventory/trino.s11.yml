@@ -1,0 +1,89 @@
+dialect: trino
+engine: Trino
+version: "483"
+source: https://trino.io/docs/current/sql.html
+
+statements:
+  - id: pivot
+    name: PIVOT
+    doc: https://trino.io/docs/current/sql/pivot.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT * FROM t PIVOT (sum(c) FOR k IN (1, 2));"
+      - id: aggregation_alias_as
+        sql: "SELECT * FROM t PIVOT (sum(c) AS total FOR k IN (1 AS a, 2 AS b));"
+      - id: aggregation_alias_no_as
+        sql: "SELECT * FROM t PIVOT (sum(c) total FOR k IN (1 a, 2 b));"
+      - id: multiple_aggregations
+        sql: "SELECT * FROM t PIVOT (sum(c) AS s, avg(c) AS a FOR k IN (1 AS x, 2 AS y));"
+      - id: aggregation_filter
+        sql: "SELECT * FROM t PIVOT (sum(c) FILTER (WHERE c > 0) AS gains FOR k IN (1 AS x));"
+      - id: aggregation_expression
+        sql: "SELECT * FROM t PIVOT (sum(c) - sum(r) AS net FOR k IN (1 AS x));"
+      - id: value_without_alias
+        sql: "SELECT * FROM t PIVOT (sum(c) FOR k IN ('a', 'b'));"
+      - id: value_alias_as
+        sql: "SELECT * FROM t PIVOT (sum(c) FOR k IN ('a' AS x, 'b' AS y));"
+      - id: multi_column_pivot
+        sql: "SELECT * FROM t PIVOT (sum(c) FOR (r, m) IN (('NA', 1) AS na_jan, ('EU', 1) AS eu_jan));"
+      - id: multi_column_tuple_no_alias
+        sql: "SELECT * FROM t PIVOT (sum(c) FOR (r, m) IN (('NA', 1), ('EU', 1)));"
+      - id: group_by
+        sql: "SELECT * FROM t PIVOT (sum(c) FOR k IN (1 AS a, 2 AS b) GROUP BY g);"
+      - id: group_by_multiple
+        sql: "SELECT * FROM t PIVOT (sum(c) FOR k IN (1 AS a) GROUP BY g, h);"
+      - id: group_by_empty
+        sql: "SELECT * FROM t PIVOT (sum(c) FOR k IN (1 AS a) GROUP BY ());"
+      - id: group_by_grouping_sets
+        sql: "SELECT * FROM t PIVOT (sum(c) FOR k IN (1 AS a) GROUP BY GROUPING SETS ((g), (h)));"
+      - id: group_by_cube
+        sql: "SELECT * FROM t PIVOT (sum(c) FOR k IN (1 AS a) GROUP BY CUBE (g, h));"
+      - id: group_by_rollup
+        sql: "SELECT * FROM t PIVOT (sum(c) FOR k IN (1 AS a) GROUP BY ROLLUP (g, h));"
+      - id: relation_alias
+        sql: "SELECT p.a FROM t PIVOT (sum(c) FOR k IN (1 AS a)) AS p;"
+      - id: relation_alias_columns
+        sql: "SELECT p.r, p.jan, p.feb FROM sales PIVOT (sum(amount) FOR month IN (1 AS jan, 2 AS feb) GROUP BY region) AS p (r, jan, feb);"
+      - id: pivot_on_subquery
+        sql: "SELECT * FROM (SELECT g, k, c FROM t) PIVOT (sum(c) FOR k IN (1 AS a));"
+      - id: nested_pivot
+        sql: "SELECT * FROM t PIVOT (sum(c) FOR k IN (1 AS a) GROUP BY g, m) PIVOT (sum(a) FOR m IN (1 AS x));"
+    examples:
+      - |-
+        SELECT * FROM sales
+        PIVOT (
+            sum(amount) AS total
+            FOR month IN (1 AS jan, 2 AS feb, 3 AS mar)
+            GROUP BY region
+        );
+      - |-
+        SELECT p.r, p.jan, p.feb
+        FROM sales
+        PIVOT (
+            sum(amount)
+            FOR month IN (1 AS jan, 2 AS feb)
+            GROUP BY region
+        ) AS p (r, jan, feb);
+
+  - id: prepare
+    name: PREPARE
+    doc: https://trino.io/docs/current/sql/prepare.html
+    tier: high
+    probes:
+      - id: select
+        sql: "PREPARE my_select FROM SELECT * FROM t;"
+      - id: with_parameters
+        sql: "PREPARE my_select FROM SELECT c FROM t WHERE a = ? AND b < ?;"
+      - id: insert
+        sql: "PREPARE my_insert FROM INSERT INTO t VALUES (1, 'x');"
+      - id: insert_parameters
+        sql: "PREPARE my_insert FROM INSERT INTO t VALUES (?, ?);"
+      - id: update
+        sql: "PREPARE my_update FROM UPDATE t SET c = ? WHERE a = ?;"
+      - id: delete
+        sql: "PREPARE my_delete FROM DELETE FROM t WHERE a = ?;"
+    examples:
+      - "PREPARE my_select1 FROM SELECT * FROM nation;"
+      - "PREPARE my_select2 FROM SELECT name FROM nation WHERE regionkey = ? AND nationkey < ?;"
+      - "PREPARE my_insert FROM INSERT INTO cities VALUES (1, 'San Francisco');"

@@ -40,3 +40,46 @@
   (keyword_analyze)
   (keyword_verbose)
 ] @keyword
+
+; ============================================================
+; Remaining duckdb keywords
+; ============================================================
+
+[
+  (keyword_call)
+  (keyword_catalog)
+  (keyword_checkpoint)
+  (keyword_conflict)
+  (keyword_copy)
+  (keyword_describe)
+  (keyword_do)
+  (keyword_export)
+  (keyword_extension)
+  (keyword_global)
+  (keyword_hash)
+  (keyword_ignore)
+  (keyword_import)
+  (keyword_include)
+  (keyword_macro)
+  (keyword_name)
+  (keyword_nothing)
+  (keyword_persistent)
+  (keyword_pivot)
+  (keyword_returning)
+  (keyword_sample)
+  (keyword_secret)
+  (keyword_unpivot)
+  (keyword_use)
+  (keyword_vacuum)
+  (keyword_variable)
+] @keyword
+
+[
+  (keyword_read_avro)
+  (keyword_read_csv)
+  (keyword_read_csv_auto)
+  (keyword_read_json)
+  (keyword_read_json_auto)
+  (keyword_read_orc)
+  (keyword_read_parquet)
+] @function.builtin

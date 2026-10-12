@@ -1,0 +1,48 @@
+dialect: redshift
+engine: Amazon Redshift
+version: "current"
+source: https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_commands.html
+
+statements:
+  - id: alter_materialized_view
+    name: ALTER MATERIALIZED VIEW
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_MATERIALIZED_VIEW.html
+    tier: high
+    probes:
+      - { id: auto_refresh_yes, sql: "ALTER MATERIALIZED VIEW mv AUTO REFRESH YES;" }
+      - { id: auto_refresh_no, sql: "ALTER MATERIALIZED VIEW mv AUTO REFRESH NO;" }
+      - { id: alter_distkey, sql: "ALTER MATERIALIZED VIEW mv ALTER DISTKEY c;" }
+      - { id: diststyle_all, sql: "ALTER MATERIALIZED VIEW mv ALTER DISTSTYLE ALL;" }
+      - { id: diststyle_even, sql: "ALTER MATERIALIZED VIEW mv ALTER DISTSTYLE EVEN;" }
+      - { id: diststyle_key, sql: "ALTER MATERIALIZED VIEW mv ALTER DISTSTYLE KEY DISTKEY c;" }
+      - { id: diststyle_auto, sql: "ALTER MATERIALIZED VIEW mv ALTER DISTSTYLE AUTO;" }
+      - { id: sortkey, sql: "ALTER MATERIALIZED VIEW mv ALTER SORTKEY (c1, c2);" }
+      - { id: compound_sortkey, sql: "ALTER MATERIALIZED VIEW mv ALTER COMPOUND SORTKEY (c1, c2);" }
+      - { id: sortkey_auto, sql: "ALTER MATERIALIZED VIEW mv ALTER SORTKEY AUTO;" }
+      - { id: sortkey_none, sql: "ALTER MATERIALIZED VIEW mv ALTER SORTKEY NONE;" }
+      - { id: rls_on, sql: "ALTER MATERIALIZED VIEW mv ROW LEVEL SECURITY ON;" }
+      - { id: rls_off, sql: "ALTER MATERIALIZED VIEW mv ROW LEVEL SECURITY OFF;" }
+      - { id: rls_conjunction_and, sql: "ALTER MATERIALIZED VIEW mv ROW LEVEL SECURITY ON CONJUNCTION TYPE AND;" }
+      - { id: rls_conjunction_or, sql: "ALTER MATERIALIZED VIEW mv ROW LEVEL SECURITY ON CONJUNCTION TYPE OR;" }
+      - { id: rls_for_datashares, sql: "ALTER MATERIALIZED VIEW mv ROW LEVEL SECURITY ON FOR DATASHARES;" }
+      - { id: rls_conjunction_for_datashares, sql: "ALTER MATERIALIZED VIEW mv ROW LEVEL SECURITY ON CONJUNCTION TYPE OR FOR DATASHARES;" }
+    examples:
+      - "ALTER MATERIALIZED VIEW tickets_mv AUTO REFRESH YES;"
+
+  - id: alter_procedure
+    name: ALTER PROCEDURE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_PROCEDURE.html
+    tier: high
+    probes:
+      - { id: rename_no_args, sql: "ALTER PROCEDURE sp RENAME TO new_name;" }
+      - { id: rename_empty_args, sql: "ALTER PROCEDURE sp() RENAME TO new_name;" }
+      - { id: rename_typed_args, sql: "ALTER PROCEDURE sp(bigint, numeric) RENAME TO new_name;" }
+      - { id: rename_named_moded_args, sql: "ALTER PROCEDURE sp(volume INOUT bigint, at_price IN numeric, result OUT int) RENAME TO new_name;" }
+      - { id: rename_schema_qualified, sql: "ALTER PROCEDURE s.sp(bigint) RENAME TO new_name;" }
+      - { id: owner_to_user, sql: "ALTER PROCEDURE sp(bigint) OWNER TO new_owner;" }
+      - { id: owner_to_current_user, sql: "ALTER PROCEDURE sp(bigint) OWNER TO CURRENT_USER;" }
+      - { id: owner_to_session_user, sql: "ALTER PROCEDURE sp(bigint) OWNER TO SESSION_USER;" }
+    examples:
+      - "ALTER PROCEDURE first_quarter_revenue(volume INOUT bigint, at_price IN numeric, result OUT int) RENAME TO quarterly_revenue;"
+      - "ALTER PROCEDURE first_quarter_revenue(bigint, numeric) RENAME TO quarterly_revenue;"
+      - "ALTER PROCEDURE quarterly_revenue(bigint, numeric) OWNER TO etl_user;"

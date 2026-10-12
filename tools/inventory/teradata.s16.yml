@@ -1,0 +1,210 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: case_statement
+    name: CASE statement
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/jBNjRWCQiVnNjHrUP0xYcw
+    tier: high
+    probes:
+      - id: simple_case
+        sql: |-
+          CREATE PROCEDURE p(IN a INTEGER)
+          BEGIN
+            CASE a
+              WHEN 0 THEN
+                INSERT INTO t VALUES (a);
+              WHEN 1 THEN
+                UPDATE t SET c = 1 WHERE k = a;
+            END CASE;
+          END;
+        note: Simple CASE syntax (Simple CASE Syntax topic); stored procedures only
+      - id: simple_case_else
+        sql: |-
+          CREATE PROCEDURE p(IN a INTEGER, OUT s CHARACTER(10))
+          BEGIN
+            CASE a
+              WHEN 0 THEN
+                INSERT INTO t VALUES (a);
+              ELSE
+                SET s = 'other';
+            END CASE;
+          END;
+      - id: simple_case_multi_statement_branch
+        sql: |-
+          CREATE PROCEDURE p(IN a INTEGER)
+          BEGIN
+            CASE a
+              WHEN 0 THEN
+                INSERT INTO t VALUES (a);
+                DELETE FROM u;
+              WHEN 1 THEN
+                SET a = 2;
+            END CASE;
+          END;
+      - id: searched_case
+        sql: |-
+          CREATE PROCEDURE p(IN a INTEGER)
+          BEGIN
+            CASE
+              WHEN a = 0 THEN
+                INSERT INTO t VALUES (a);
+              WHEN a > 1 THEN
+                SET a = 2;
+            END CASE;
+          END;
+        note: Searched CASE syntax (Searched CASE Syntax topic)
+      - id: searched_case_else
+        sql: |-
+          CREATE PROCEDURE p(IN a INTEGER, OUT s CHARACTER(10))
+          BEGIN
+            CASE
+              WHEN a = 0 THEN
+                INSERT INTO t VALUES (a);
+              ELSE
+                SET s = 'other';
+            END CASE;
+          END;
+      - id: case_nested_in_loop_with_label
+        sql: |-
+          CREATE PROCEDURE p()
+          L1: BEGIN
+            DECLARE a INTEGER DEFAULT 0;
+            WHILE a < 10 DO
+              CASE
+                WHEN a = 5 THEN
+                  LEAVE L1;
+                ELSE
+                  SET a = a + 1;
+              END CASE;
+            END WHILE;
+          END L1;
+        note: statement list grammar allows condition_statement, iteration_statement and LEAVE inside a CASE branch
+    examples:
+      - |-
+        CREATE PROCEDURE spSample(IN  pANo    INTEGER,
+                                  IN  pName   CHARACTER(30),
+                                  OUT pStatus CHARACTER(50))
+        BEGIN
+          DECLARE vNoOfAccts INTEGER DEFAULT 0;
+           SELECT COUNT(*) INTO vNoOfAccts FROM Accounts;
+             CASE vNoOfAccts
+                WHEN 0 THEN
+                    INSERT INTO Accounts (pANo, pName);
+                WHEN 1 THEN
+                    UPDATE Accounts
+                    SET aName = pName WHERE aNo = pANo;
+                ELSE
+                    SET pStatus = 'Total ' || vNoOfAccts || 'customer                                            accounts';
+            END CASE;
+        END;
+      - |-
+        CREATE PROCEDURE spSample (IN pANo INTEGER,
+                           IN pName CHARACTER(30), OUT pStatus CHARACTER(50))
+        BEGIN
+          DECLARE vNoAccts INTEGER DEFAULT 0;
+           SELECT COUNT(*) INTO vNoAccts FROM Accounts;
+           CASE
+              WHEN vNoAccts = 0 THEN
+                  INSERT INTO Accounts (pANo, pName);
+              WHEN vNoAccts = 1 THEN
+                  UPDATE Accounts
+                    SET aName = pName WHERE aNo = pANo;
+              WHEN vNoAccts > 1 THEN
+                    SET pStatus = 'Total ' || vNoAccts || ' customer                                            accounts';
+           END CASE;
+        END;
+      - |-
+        CREATE PROCEDURE spSample()
+        Label1:BEGIN
+            FOR RowPointer AS
+                c_employee CURSOR FOR
+                SELECT DeptNo AS c_DeptNo,
+                    employeeid AS c_empid FROM Employee
+            DO
+                CASE
+             WHEN RowPointer.c_DeptNo > 10 THEN
+                INSERT INTO Dept VALUES (RowPointer.c_DeptNo,
+                                        RowPointer.c_empid) ;
+             WHEN RowPointer.c_DeptNo <= 10 THEN
+                UPDATE Employee
+                   SET DeptNo = RowPointer.c_DeptNo + 10 ;
+                INSERT INTO Dept VALUES (RowPointer.c_DeptNo,
+                                        RowPointer.c_empid)
+           END CASE;
+            END FOR;
+        END Label1;
+
+  - id: declare
+    name: DECLARE (local variable)
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/e1Zaj6kJtNOnBj8iRhSvNQ
+    tier: high
+    probes:
+      - id: single_variable
+        sql: |-
+          CREATE PROCEDURE p()
+          BEGIN
+            DECLARE v INTEGER;
+          END;
+        note: DECLARE is valid only inside a BEGIN END compound statement of a stored procedure
+      - id: multiple_variables
+        sql: |-
+          CREATE PROCEDURE p()
+          BEGIN
+            DECLARE a, b INTEGER;
+          END;
+      - id: default_literal
+        sql: |-
+          CREATE PROCEDURE p()
+          BEGIN
+            DECLARE v CHARACTER(30) DEFAULT 'NO ERROR';
+          END;
+      - id: default_null
+        sql: |-
+          CREATE PROCEDURE p()
+          BEGIN
+            DECLARE v INTEGER DEFAULT NULL;
+          END;
+      - id: multiple_with_default
+        sql: |-
+          CREATE PROCEDURE p()
+          BEGIN
+            DECLARE a, b CHARACTER(30) DEFAULT 'NO ERROR';
+          END;
+      - id: udt_new_constructor
+        sql: |-
+          CREATE PROCEDURE p()
+          BEGIN
+            DECLARE c CircleUdt DEFAULT NEW circle(1,1,9);
+          END;
+      - id: udt_new_sysudtlib_constructor
+        sql: |-
+          CREATE PROCEDURE p()
+          BEGIN
+            DECLARE c CircleUdt DEFAULT NEW SYSUDTLIB.circle(1,1,9);
+          END;
+      - id: character_set_attribute
+        sql: |-
+          CREATE PROCEDURE p()
+          BEGIN
+            DECLARE v VARCHAR(30) CHARACTER SET UNICODE NOT CASESPECIFIC DEFAULT 'x';
+          END;
+        note: attribute clause (CHARACTER SET, CASESPECIFIC / NOT CASESPECIFIC) per the syntax elements
+    examples:
+      - |-
+        CREATE PROCEDURE p()
+        BEGIN
+          DECLARE hErrorMsg CHARACTER(30) DEFAULT 'NO ERROR';
+        END;
+      - |-
+        CREATE PROCEDURE p()
+        BEGIN
+          DECLARE hAccountNo, tempAccountNo INTEGER;
+        END;
+      - |-
+        CREATE PROCEDURE p()
+        BEGIN
+          DECLARE MyCircle CircleUdt DEFAULT NEW circle(1,1,9);
+        END;

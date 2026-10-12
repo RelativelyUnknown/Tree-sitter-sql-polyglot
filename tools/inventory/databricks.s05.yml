@@ -1,0 +1,78 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: group_by
+    name: GROUP BY clause
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-groupby
+    tier: high
+    probes:
+      - id: group_by_all
+        sql: "SELECT a, count(*) FROM t GROUP BY ALL;"
+        note: Databricks Runtime 12.2 LTS and above
+      - id: group_by_expression
+        sql: "SELECT a, sum(b) FROM t GROUP BY a;"
+      - id: group_by_multiple
+        sql: "SELECT a, b, sum(c) FROM t GROUP BY a, b;"
+      - id: group_by_position
+        sql: "SELECT a, sum(b) FROM t GROUP BY 1;"
+      - id: group_by_expression_op
+        sql: "SELECT a + b, sum(c) FROM t GROUP BY a + b;"
+      - id: group_by_with_rollup
+        sql: "SELECT a, b, sum(c) FROM t GROUP BY a, b WITH ROLLUP;"
+      - id: group_by_with_cube
+        sql: "SELECT a, b, sum(c) FROM t GROUP BY a, b WITH CUBE;"
+      - id: group_by_rollup
+        sql: "SELECT a, b, sum(c) FROM t GROUP BY ROLLUP (a, b);"
+      - id: group_by_cube
+        sql: "SELECT a, b, sum(c) FROM t GROUP BY CUBE (a, b);"
+      - id: group_by_grouping_sets
+        sql: "SELECT a, b, sum(c) FROM t GROUP BY GROUPING SETS ((a), (b));"
+      - id: grouping_sets_unparenthesized
+        sql: "SELECT a, b, sum(c) FROM t GROUP BY GROUPING SETS (a, b);"
+        note: When the grouping set has only one element, parentheses can be omitted
+      - id: grouping_sets_empty_set
+        sql: "SELECT a, b, sum(c) FROM t GROUP BY GROUPING SETS ((a, b), (a), ());"
+      - id: grouping_sets_hive_compat
+        sql: "SELECT a, b, c FROM t GROUP BY a, b, c GROUPING SETS (a, b);"
+        note: Hive compatibility form, GROUP BY ... GROUPING SETS (...)
+      - id: mixed_expression_and_rollup_cube
+        sql: "SELECT w, p, l, s, sum(q) FROM t GROUP BY w, ROLLUP (p), CUBE (l, s);"
+      - id: mixed_multiple_grouping_sets
+        sql: "SELECT w, p, l, s, sum(q) FROM t GROUP BY w, GROUPING SETS ((p), ()), GROUPING SETS ((l, s), (l), (s), ());"
+      - id: nested_grouping_sets
+        sql: "SELECT w, p, sum(q) FROM t GROUP BY GROUPING SETS (GROUPING SETS (w), GROUPING SETS ((w, p)));"
+      - id: grouping_sets_nested_rollup_cube
+        sql: "SELECT w, l, sum(q) FROM t GROUP BY GROUPING SETS (ROLLUP (w, l), CUBE (w, l));"
+      - id: aggregate_distinct
+        sql: "SELECT a, count(DISTINCT b) FROM t GROUP BY a;"
+      - id: aggregate_filter
+        sql: "SELECT a, sum(b) FILTER (WHERE b > 0) FROM t GROUP BY a;"
+    examples:
+      - "SELECT id, sum(quantity) FROM dealer GROUP BY id ORDER BY id;"
+      - "SELECT id, sum(quantity) FROM dealer GROUP BY 1 ORDER BY 1;"
+      - "SELECT car_model, count(DISTINCT city) AS count FROM dealer GROUP BY ALL;"
+
+  - id: having
+    name: HAVING clause
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-having
+    tier: high
+    probes:
+      - id: having_column
+        sql: "SELECT a, sum(b) AS s FROM t GROUP BY a HAVING a = 'x';"
+      - id: having_aggregate
+        sql: "SELECT a, sum(b) AS s FROM t GROUP BY a HAVING sum(b) > 15;"
+      - id: having_alias
+        sql: "SELECT a, sum(b) AS s FROM t GROUP BY a HAVING s > 15;"
+      - id: having_logical_operators
+        sql: "SELECT a, sum(b) AS s FROM t GROUP BY a HAVING sum(b) > 15 AND max(b) < 100 OR a = 'x';"
+      - id: having_constant
+        sql: "SELECT a, sum(b) AS s FROM t GROUP BY a HAVING 1 > 0 ORDER BY a;"
+      - id: having_without_group_by
+        sql: "SELECT sum(b) AS s FROM t HAVING sum(b) > 10;"
+    examples:
+      - "SELECT city, sum(quantity) AS sum FROM dealer GROUP BY city HAVING city = 'Fremont';"
+      - "SELECT city, sum(quantity) AS sum FROM dealer GROUP BY city HAVING sum(quantity) > 15;"
+      - "SELECT sum(quantity) AS sum FROM dealer HAVING sum(quantity) > 10;"

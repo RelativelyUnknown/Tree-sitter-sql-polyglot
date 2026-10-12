@@ -1,0 +1,254 @@
+dialect: redshift
+engine: Amazon Redshift
+version: "current"
+source: https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_commands.html
+
+statements:
+  - id: drop_masking_policy
+    name: DROP MASKING POLICY
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_DROP_MASKING_POLICY.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP MASKING POLICY p;"
+      - id: database_qualified
+        sql: "DROP MASKING POLICY d.p;"
+
+  - id: drop_rls_policy
+    name: DROP RLS POLICY
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_DROP_RLS_POLICY.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP RLS POLICY p;"
+      - id: if_exists
+        sql: "DROP RLS POLICY IF EXISTS p;"
+      - id: database_qualified
+        sql: "DROP RLS POLICY d.p;"
+      - id: cascade
+        sql: "DROP RLS POLICY p CASCADE;"
+      - id: restrict
+        sql: "DROP RLS POLICY p RESTRICT;"
+    examples:
+      - "DROP RLS POLICY policy_concerts;"
+
+  - id: drop_role
+    name: DROP ROLE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_DROP_ROLE.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP ROLE r;"
+      - id: force
+        sql: "DROP ROLE r FORCE;"
+      - id: restrict
+        sql: "DROP ROLE r RESTRICT;"
+    examples:
+      - "DROP ROLE sample_role FORCE;"
+
+  - id: drop_schema
+    name: DROP SCHEMA
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_DROP_SCHEMA.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP SCHEMA s;"
+      - id: if_exists
+        sql: "DROP SCHEMA IF EXISTS s;"
+      - id: multiple
+        sql: "DROP SCHEMA s1, s2;"
+      - id: drop_external_database
+        sql: "DROP SCHEMA s DROP EXTERNAL DATABASE;"
+      - id: cascade
+        sql: "DROP SCHEMA s CASCADE;"
+      - id: restrict
+        sql: "DROP SCHEMA s RESTRICT;"
+      - id: external_database_restrict
+        sql: "DROP SCHEMA s DROP EXTERNAL DATABASE RESTRICT;"
+    examples:
+      - "drop schema s_sales restrict;"
+      - "drop schema s_sales cascade;"
+      - "drop schema if exists s_sales;"
+
+  - id: drop_user
+    name: DROP USER
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_DROP_USER.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP USER u;"
+      - id: if_exists
+        sql: "DROP USER IF EXISTS u;"
+      - id: multiple
+        sql: "DROP USER u1, u2;"
+    examples:
+      - "drop user paulo;"
+      - "drop user paulo, martha;"
+      - "drop user if exists paulo;"
+
+  - id: execute
+    name: EXECUTE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_EXECUTE.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "EXECUTE p;"
+      - id: with_parameters
+        sql: "EXECUTE p (1, 'a');"
+
+  - id: explain
+    name: EXPLAIN
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_EXPLAIN.html
+    tier: medium
+    probes:
+      - id: select
+        sql: "EXPLAIN SELECT * FROM t;"
+      - id: verbose
+        sql: "EXPLAIN VERBOSE SELECT * FROM t;"
+      - id: insert
+        sql: "EXPLAIN INSERT INTO t SELECT * FROM s;"
+      - id: create_table_as
+        sql: "EXPLAIN CREATE TABLE t2 AS SELECT * FROM t;"
+      - id: update
+        sql: "EXPLAIN UPDATE t SET c = 1 WHERE d = 2;"
+      - id: delete
+        sql: "EXPLAIN DELETE FROM t WHERE c = 1;"
+    examples:
+      - "EXPLAIN SELECT D.cint FROM fact_tbl F INNER JOIN dim_tbl D ON F.k_dim = D.k WHERE F.k_dim / 10 > 0;"
+
+  - id: fetch
+    name: FETCH
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/fetch.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "FETCH FROM c;"
+      - id: next
+        sql: "FETCH NEXT FROM c;"
+      - id: all
+        sql: "FETCH ALL FROM c;"
+      - id: forward_count
+        sql: "FETCH FORWARD 5 FROM c;"
+      - id: forward_all
+        sql: "FETCH FORWARD ALL FROM c;"
+    examples:
+      - "fetch forward 5 from lollapalooza;"
+
+  - id: grant
+    name: GRANT
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_GRANT.html
+    tier: medium
+    probes:
+      - id: table_privileges
+        sql: "GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE t TO u;"
+      - id: table_all_privileges
+        sql: "GRANT ALL PRIVILEGES ON t TO u WITH GRANT OPTION;"
+      - id: table_multiple_tables
+        sql: "GRANT SELECT ON TABLE t1, t2 TO GROUP g;"
+      - id: all_tables_in_schema
+        sql: "GRANT SELECT ON ALL TABLES IN SCHEMA s TO ROLE r;"
+      - id: table_to_public
+        sql: "GRANT SELECT ON t TO PUBLIC;"
+      - id: table_extra_privileges
+        sql: "GRANT DROP, REFERENCES, ALTER, TRUNCATE ON t TO u;"
+      - id: database
+        sql: "GRANT CREATE, USAGE, TEMPORARY ON DATABASE db TO u WITH GRANT OPTION;"
+      - id: database_all
+        sql: "GRANT ALL ON DATABASE db TO GROUP g;"
+      - id: schema
+        sql: "GRANT CREATE, USAGE, ALTER, DROP ON SCHEMA s TO u;"
+      - id: function
+        sql: "GRANT EXECUTE ON FUNCTION f(int, varchar) TO u;"
+      - id: all_functions_in_schema
+        sql: "GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA s TO u;"
+      - id: procedure
+        sql: "GRANT EXECUTE ON PROCEDURE p(int) TO ROLE r;"
+      - id: all_procedures_in_schema
+        sql: "GRANT ALL PRIVILEGES ON ALL PROCEDURES IN SCHEMA s TO u;"
+      - id: language
+        sql: "GRANT USAGE ON LANGUAGE plpythonu TO u;"
+      - id: copy_job
+        sql: "GRANT ALTER, DROP ON COPY JOB j TO u;"
+      - id: template
+        sql: "GRANT USAGE ON TEMPLATE d.s.tmpl TO u;"
+      - id: column_level
+        sql: "GRANT SELECT (c1, c2), UPDATE (c3) ON TABLE t TO u;"
+      - id: column_level_all
+        sql: "GRANT ALL PRIVILEGES (c1, c2) ON t TO ROLE r;"
+      - id: assumerole
+        sql: "GRANT ASSUMEROLE ON 'arn:aws:iam::123456789012:role/r' TO u FOR ALL;"
+      - id: assumerole_default
+        sql: "GRANT ASSUMEROLE ON default TO GROUP g FOR COPY, UNLOAD;"
+      - id: spectrum_external_table_columns
+        sql: "GRANT SELECT (c1, c2) ON EXTERNAL TABLE s.t TO IAM_ROLE r WITH GRANT OPTION;"
+      - id: spectrum_external_table
+        sql: "GRANT SELECT, ALTER, DROP, DELETE, INSERT ON EXTERNAL TABLE s.t TO IAM_ROLE r;"
+      - id: spectrum_external_schema
+        sql: "GRANT CREATE, ALTER, DROP ON EXTERNAL SCHEMA s TO IAM_ROLE r;"
+      - id: datashare_alter_share
+        sql: "GRANT ALTER, SHARE ON DATASHARE ds TO u;"
+      - id: datashare_usage_namespace
+        sql: "GRANT USAGE ON DATASHARE ds TO NAMESPACE '13b8833d-17c6-4f16-8fe4-1a18a5e6c2ba';"
+      - id: datashare_usage_account
+        sql: "GRANT USAGE ON DATASHARE ds TO ACCOUNT '123456789012';"
+      - id: datashare_usage_data_catalog
+        sql: "GRANT USAGE ON DATASHARE salesshare TO ACCOUNT '123456789012' VIA DATA CATALOG;"
+      - id: shared_database_usage
+        sql: "GRANT USAGE ON DATABASE shared_db TO u;"
+      - id: shared_schema_usage
+        sql: "GRANT USAGE ON SCHEMA shared_schema TO ROLE r;"
+      - id: scoped_schemas
+        sql: "GRANT CREATE, USAGE ON SCHEMAS IN DATABASE db TO u;"
+      - id: scoped_tables_in_schema
+        sql: "GRANT SELECT ON TABLES IN SCHEMA s DATABASE db TO ROLE r;"
+      - id: scoped_tables_in_database
+        sql: "GRANT ALL PRIVILEGES ON TABLES IN DATABASE db TO u WITH GRANT OPTION;"
+      - id: scoped_functions
+        sql: "GRANT EXECUTE ON FUNCTIONS IN SCHEMA Sales_schema TO bob;"
+      - id: scoped_procedures
+        sql: "GRANT EXECUTE ON PROCEDURES IN DATABASE db TO ROLE r;"
+      - id: scoped_languages
+        sql: "GRANT USAGE ON LANGUAGES IN DATABASE db TO u;"
+      - id: scoped_copy_jobs
+        sql: "GRANT CREATE, ALTER, DROP ON COPY JOBS IN DATABASE db TO u;"
+      - id: scoped_templates
+        sql: "GRANT USAGE ON TEMPLATES IN SCHEMA s TO ROLE r;"
+      - id: create_model
+        sql: "GRANT CREATE MODEL TO u;"
+      - id: model_execute
+        sql: "GRANT EXECUTE ON MODEL m TO u;"
+      - id: role_to_user
+        sql: "GRANT ROLE r TO u WITH ADMIN OPTION;"
+      - id: role_to_role
+        sql: "GRANT ROLE r1, ROLE r2 TO ROLE r3;"
+      - id: system_permissions
+        sql: "GRANT CREATE USER, DROP USER, ALTER USER, CREATE SCHEMA, ACCESS CATALOG, VACUUM, ANALYZE TO ROLE r;"
+      - id: system_permissions_all
+        sql: "GRANT ALL PRIVILEGES TO ROLE r;"
+      - id: explain_rls
+        sql: "GRANT EXPLAIN RLS TO ROLE r;"
+      - id: explain_masking
+        sql: "GRANT EXPLAIN MASKING TO ROLE r;"
+      - id: ignore_rls
+        sql: "GRANT IGNORE RLS TO ROLE r;"
+      - id: lookup_table_rls_policy
+        sql: "GRANT SELECT ON TABLE t TO RLS POLICY p;"
+      - id: lookup_table_masking_policy
+        sql: "GRANT SELECT ON t TO MASKING POLICY p;"
+    examples:
+      - "GRANT USAGE ON DATASHARE salesshare TO ACCOUNT '123456789012' VIA DATA CATALOG;"
+      - "GRANT EXECUTE FOR FUNCTIONS IN SCHEMA Sales_schema TO bob;"
+
+  - id: insert_external_table
+    name: INSERT (external table)
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_INSERT_external_table.html
+    tier: medium
+    probes:
+      - id: select
+        sql: "INSERT INTO spectrum.t SELECT * FROM local_t;"
+      - id: select_with_partition_values
+        sql: "INSERT INTO spectrum.t SELECT a, b, 'May', 28 FROM local_t;"
+    examples:
+      - "INSERT INTO spectrum.lineitem SELECT * FROM local_lineitem;"
+      - "INSERT INTO spectrum.customer SELECT name, age, gender, 'May', 28 FROM local_customer;"
+      - "INSERT INTO spectrum.customer SELECT name, age, gender, month, day FROM local_customer;"

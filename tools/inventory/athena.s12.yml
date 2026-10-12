@@ -1,0 +1,151 @@
+dialect: athena
+engine: Amazon Athena
+version: "engine version 3 (Trino-based DML, Hive-style DDL)"
+source: https://docs.aws.amazon.com/athena/latest/ug/ddl-reference.html ; https://docs.aws.amazon.com/athena/latest/ug/dml-queries-functions-operators.html
+
+statements:
+  - id: show_partitions
+    name: SHOW PARTITIONS
+    doc: https://docs.aws.amazon.com/athena/latest/ug/show-partitions.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW PARTITIONS t;"
+    examples:
+      - "SHOW PARTITIONS flight_delays_csv;"
+
+  - id: show_tables
+    name: SHOW TABLES
+    doc: https://docs.aws.amazon.com/athena/latest/ug/show-tables.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW TABLES;"
+      - id: in_database
+        sql: "SHOW TABLES IN sampledb;"
+      - id: regex
+        sql: "SHOW TABLES '*flights*';"
+      - id: in_database_regex
+        sql: "SHOW TABLES IN sampledb '*logs';"
+    examples:
+      - "SHOW TABLES IN sampledb;"
+      - "SHOW TABLES IN sampledb '*flights*';"
+      - "SHOW TABLES IN sampledb '*logs';"
+
+  - id: show_tblproperties
+    name: SHOW TBLPROPERTIES
+    doc: https://docs.aws.amazon.com/athena/latest/ug/show-tblproperties.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW TBLPROPERTIES t;"
+      - id: property
+        sql: "SHOW TBLPROPERTIES t('comment');"
+    examples:
+      - "SHOW TBLPROPERTIES orders;"
+      - "SHOW TBLPROPERTIES orders('comment');"
+
+  - id: show_views
+    name: SHOW VIEWS
+    doc: https://docs.aws.amazon.com/athena/latest/ug/show-views.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW VIEWS;"
+      - id: in_database
+        sql: "SHOW VIEWS IN marketing_analytics;"
+      - id: like
+        sql: "SHOW VIEWS LIKE 'orders*';"
+      - id: in_database_like
+        sql: "SHOW VIEWS IN marketing_analytics LIKE 'orders*';"
+    examples:
+      - "SHOW VIEWS;"
+      - "SHOW VIEWS IN marketing_analytics LIKE 'orders*';"
+
+  - id: optimize
+    name: OPTIMIZE
+    doc: https://docs.aws.amazon.com/athena/latest/ug/optimize-statement.html
+    tier: medium
+    probes:
+      - id: rewrite_data
+        sql: "OPTIMIZE t REWRITE DATA USING BIN_PACK;"
+      - id: qualified_table
+        sql: "OPTIMIZE db.t REWRITE DATA USING BIN_PACK;"
+      - id: where
+        sql: "OPTIMIZE t REWRITE DATA USING BIN_PACK WHERE c = 1;"
+
+  - id: vacuum
+    name: VACUUM
+    doc: https://docs.aws.amazon.com/athena/latest/ug/vacuum-statement.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "VACUUM t;"
+      - id: qualified_table
+        sql: "VACUUM db.t;"
+
+  - id: explain
+    name: EXPLAIN and EXPLAIN ANALYZE
+    doc: https://docs.aws.amazon.com/athena/latest/ug/athena-explain-statement.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "EXPLAIN SELECT 1;"
+      - id: format_text
+        sql: "EXPLAIN (FORMAT TEXT) SELECT * FROM t;"
+      - id: format_graphviz
+        sql: "EXPLAIN (FORMAT GRAPHVIZ) SELECT * FROM t;"
+      - id: type_distributed
+        sql: "EXPLAIN (TYPE DISTRIBUTED) SELECT * FROM t;"
+      - id: type_io
+        sql: "EXPLAIN (TYPE IO) SELECT * FROM t;"
+      - id: format_and_type
+        sql: "EXPLAIN (FORMAT JSON, TYPE VALIDATE) SELECT * FROM t;"
+      - id: analyze
+        sql: "EXPLAIN ANALYZE SELECT * FROM t;"
+      - id: analyze_format
+        sql: "EXPLAIN ANALYZE (FORMAT JSON) SELECT * FROM t;"
+
+  - id: prepare
+    name: PREPARE
+    doc: https://docs.aws.amazon.com/athena/latest/ug/sql-prepare.html
+    tier: medium
+    probes:
+      - id: select
+        sql: "PREPARE my_select1 FROM SELECT * FROM nation;"
+      - id: select_params
+        sql: "PREPARE my_select2 FROM SELECT order FROM orders WHERE productid = ? and quantity < ?;"
+      - id: insert
+        sql: "PREPARE my_insert FROM INSERT INTO cities_usa (city, state) SELECT city, state FROM cities_world WHERE country = ?;"
+    examples:
+      - "PREPARE my_select1 FROM SELECT * FROM nation;"
+      - "PREPARE my_select2 FROM SELECT order FROM orders WHERE productid = ? and quantity < ?;"
+      - "PREPARE my_insert FROM INSERT INTO cities_usa (city, state) SELECT city, state FROM cities_world WHERE country = ?;"
+
+  - id: execute
+    name: EXECUTE
+    doc: https://docs.aws.amazon.com/athena/latest/ug/sql-execute.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "EXECUTE my_select1;"
+      - id: using_one
+        sql: "EXECUTE my_select2 USING 2012;"
+      - id: using_many
+        sql: "EXECUTE my_select3 USING 346078, 12;"
+    examples:
+      - "EXECUTE my_select1;"
+      - "EXECUTE my_select2 USING 2012;"
+      - "EXECUTE my_select3 USING 346078, 12;"
+
+  - id: execute_immediate
+    name: EXECUTE IMMEDIATE
+    doc: https://docs.aws.amazon.com/athena/latest/ug/querying-with-prepared-statements-querying.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "EXECUTE IMMEDIATE 'SELECT 1';"
+        note: The cited page is a topic index with no syntax block; form follows Athena engine v3 (Trino) EXECUTE IMMEDIATE.
+      - id: using
+        sql: "EXECUTE IMMEDIATE 'SELECT * FROM t WHERE c = ?' USING 1;"
+        note: Same as above; USING supplies parameter values.

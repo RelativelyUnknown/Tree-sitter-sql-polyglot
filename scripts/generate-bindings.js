@@ -61,8 +61,10 @@ pub const LANGUAGE_${d.upper}: LanguageFn = unsafe { LanguageFn::from_raw(${d.cS
 pub const NODE_TYPES_${d.upper}: &str = include_str!(concat!(env!("OUT_DIR"), "/${d.dir}_node-types.json"));
 
 #[cfg(feature = "${d.dir}")]
-/// The syntax highlighting query for the ${d.grammarName} dialect.
-pub const HIGHLIGHTS_QUERY_${d.upper}: &str = include_str!("../../${d.dir}/queries/highlights.scm");`).join('\n');
+/// The syntax highlighting query for the ${d.grammarName} dialect: the base
+/// highlights plus the dialect's own, minus any pattern this dialect's grammar
+/// can't compile. [\`HIGHLIGHTS_QUERY\`] does not compile against a dialect.
+pub const HIGHLIGHTS_QUERY_${d.upper}: &str = include_str!("../../${d.dir}/queries/highlights.bundled.scm");`).join('\n');
 
   const tests = DIALECTS.map((d) => `
     #[cfg(feature = "${d.dir}")]
@@ -72,6 +74,13 @@ pub const HIGHLIGHTS_QUERY_${d.upper}: &str = include_str!("../../${d.dir}/queri
         parser
             .set_language(&super::LANGUAGE_${d.upper}.into())
             .expect("Error loading ${d.grammarName} parser");
+    }
+
+    #[cfg(feature = "${d.dir}")]
+    #[test]
+    fn test_${d.ident}_highlights_query_compiles() {
+        tree_sitter::Query::new(&super::LANGUAGE_${d.upper}.into(), super::HIGHLIGHTS_QUERY_${d.upper})
+            .expect("${d.grammarName} highlights query does not compile");
     }`).join('\n');
 
   const content = `//! This crate provides Sql language support for the [tree-sitter][] parsing library,
@@ -124,6 +133,12 @@ mod tests {
             .set_language(&super::LANGUAGE.into())
             .expect("Error loading Sql parser");
     }
+
+    #[test]
+    fn test_highlights_query_compiles() {
+        tree_sitter::Query::new(&super::LANGUAGE.into(), super::HIGHLIGHTS_QUERY)
+            .expect("Sql highlights query does not compile");
+    }
 ${tests}
 }
 `;
@@ -136,6 +151,7 @@ ${tests}
   const compileCalls = [`    compile("tree-sitter-sql", "base", "src".as_ref());`]
     .concat(DIALECTS.map((d) => `    if env::var("CARGO_FEATURE_${d.upper}").is_ok() {
         compile("tree-sitter-sql-${d.ident}", "${d.dir}", "${d.dir}/src".as_ref());
+        bundle_highlights("${d.dir}");
     }`))
     .join('\n');
 
@@ -164,6 +180,26 @@ fn inflate(src_dir: &Path, ident: &str, file: &str) -> PathBuf {
     let out_path = out_dir().join(format!("{ident}_{file}"));
     fs::write(&out_path, out).unwrap_or_else(|e| panic!("failed to write {}: {e}", out_path.display()));
     out_path
+}
+
+/// lib.rs \`include_str!\`s each enabled dialect's highlights.bundled.scm. A
+/// published crate ships them; a git checkout has to build them, which takes
+/// Node (scripts/bundle-highlights.js, the same step inflate-parsers.js runs).
+fn bundle_highlights(dir: &str) {
+    let bundle = Path::new(dir).join("queries").join("highlights.bundled.scm");
+    println!("cargo:rerun-if-changed={}", bundle.display());
+    if bundle.exists() {
+        return;
+    }
+    let status = std::process::Command::new("node")
+        .args(["scripts/bundle-highlights.js", dir])
+        .status();
+    if !matches!(status, Ok(s) if s.success()) || !bundle.exists() {
+        panic!(
+            "missing {} and could not build it: run \`node scripts/inflate-parsers.js\` (needs Node)",
+            bundle.display()
+        );
+    }
 }
 
 fn compile(name: &str, ident: &str, src_dir: &Path) {
@@ -340,7 +376,7 @@ ${[baseTarget, dialectTargets].join(',\n')}
 {
   const isBunImports = DIALECTS.map((d) => `const ${d.ident}Bun = isBun ? await import(\`\${root}/prebuilds/\${process.platform}-\${process.arch}/tree_sitter_sql_${d.ident}_binding.node\`) : null;`).join('\n');
 
-  const dialectExports = DIALECTS.map((d) => `export const ${d.ident} = lazyDialect("${d.grammarName}", "tree_sitter_sql_${d.ident}_binding", () => ${d.ident}Bun);`).join('\n');
+  const dialectExports = DIALECTS.map((d) => `export const ${d.ident} = lazyDialect("${d.grammarName}", "tree_sitter_sql_${d.ident}_binding", () => ${d.ident}Bun, "${d.dir}");`).join('\n');
 
   const content = `import { existsSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
@@ -365,8 +401,42 @@ function loadTarget(targetName) {
   throw new Error(\`No native build found for "\${targetName}". Looked in:\\n  \${candidates.join("\\n  ")}\`);
 }
 
-function lazyDialect(grammarName, targetName, getBunBinding) {
+// Reads a query file on first access and caches it; undefined if it's absent.
+function lazyQuery(object, prop, path) {
+  Object.defineProperty(object, prop, {
+    configurable: true,
+    enumerable: true,
+    get() {
+      delete object[prop];
+      try {
+        object[prop] = readFileSync(path, "utf8");
+      } catch { }
+      return object[prop];
+    }
+  });
+}
+
+function lazyDialect(grammarName, targetName, getBunBinding, dir) {
   const dialect = { name: grammarName };
+  // The bundled query is the base + parent-chain + dialect highlights with
+  // whatever this dialect's grammar lacks removed (scripts/bundle-highlights.js),
+  // so it compiles against \`dialect.language\` on its own.
+  lazyQuery(dialect, "HIGHLIGHTS_QUERY", \`\${root}/\${dir}/queries/highlights.bundled.scm\`);
+  // Pass the dialect object itself to parser.setLanguage(), like the default
+  // export: node-tree-sitter caches per-language node classes on that object
+  // (built from nodeTypeInfo), which it can't do on the bare \`language\` value.
+  Object.defineProperty(dialect, "nodeTypeInfo", {
+    configurable: true,
+    enumerable: true,
+    get() {
+      let value;
+      try {
+        value = JSON.parse(readFileSync(\`\${root}/\${dir}/src/node-types.json\`, "utf8"));
+      } catch { }
+      Object.defineProperty(dialect, "nodeTypeInfo", { value, enumerable: true, configurable: true });
+      return value;
+    }
+  });
   Object.defineProperty(dialect, "language", {
     configurable: true,
     enumerable: true,
@@ -401,17 +471,7 @@ const queries = [
 ];
 
 for (const [prop, path] of queries) {
-  Object.defineProperty(binding, prop, {
-    configurable: true,
-    enumerable: true,
-    get() {
-      delete binding[prop];
-      try {
-        binding[prop] = readFileSync(path, "utf8");
-      } catch { }
-      return binding[prop];
-    }
-  });
+  lazyQuery(binding, prop, path);
 }
 
 ${dialectExports}
@@ -425,7 +485,7 @@ export default binding;
 {
   const dialectDecls = DIALECTS.map((d) => `
 /** The tree-sitter language object for the ${d.grammarName} dialect. */
-export declare const ${d.ident}: { name: string; language: unknown };`).join('\n');
+export declare const ${d.ident}: Dialect;`).join('\n');
 
   const content = `type BaseNode = {
   type: string;
@@ -487,6 +547,31 @@ declare const binding: {
 };
 
 export default binding;
+
+/**
+ * A dialect grammar, loaded lazily on first access to \`language\`. Pass the
+ * object itself to \`parser.setLanguage(postgres)\`, like the default export.
+ */
+type Dialect = {
+  /** The grammar name, e.g. \`"postgres_sql"\`. */
+  name: string;
+
+  /**
+   * The inner language object.
+   * @private
+   */
+  language: unknown;
+
+  /** The content of this dialect's \`node-types.json\` file. */
+  nodeTypeInfo: NodeInfo[];
+
+  /**
+   * The syntax highlighting query for this dialect: the base highlights plus
+   * the dialect's own, minus any pattern this dialect's grammar can't compile.
+   * The base \`HIGHLIGHTS_QUERY\` does not compile against a dialect.
+   */
+  HIGHLIGHTS_QUERY?: string;
+};
 ${dialectDecls}
 `;
   writeFileSync(`${ROOT}/bindings/node/index.d.ts`, content);
@@ -581,6 +666,7 @@ PyMODINIT_FUNC PyInit__binding_${d.ident}(void) {
 {
   const reexports = DIALECTS.map((d) => `"language_${d.ident}": "_binding_${d.ident}",`).join('\n    ');
   const allNames = DIALECTS.map((d) => `"language_${d.ident}"`).join(',\n    ');
+  const queryNames = DIALECTS.map((d) => `"HIGHLIGHTS_QUERY_${d.upper}"`).join(',\n    ');
 
   const content = `"""Tree-sitter Grammar for SQL"""
 
@@ -612,6 +698,12 @@ def __getattr__(name):
 
     if name == "HIGHLIGHTS_QUERY":
         return _get_query("HIGHLIGHTS_QUERY", "highlights.scm")
+    # A dialect's standalone highlights (see scripts/bundle-highlights.js);
+    # the base HIGHLIGHTS_QUERY does not compile against a dialect.
+    if name.startswith("HIGHLIGHTS_QUERY_"):
+        dialect = name[len("HIGHLIGHTS_QUERY_"):].lower()
+        if f"language_{dialect}" in _DIALECT_MODULES:
+            return _get_query(name, f"highlights_{dialect}.scm")
     # if name == "INJECTIONS_QUERY":
     #     return _get_query("INJECTIONS_QUERY", "injections.scm")
     # if name == "LOCALS_QUERY":
@@ -626,6 +718,7 @@ __all__ = [
     "language",
     ${allNames},
     "HIGHLIGHTS_QUERY",
+    ${queryNames},
     # "INJECTIONS_QUERY",
     # "LOCALS_QUERY",
     # "TAGS_QUERY",
@@ -646,6 +739,9 @@ def __dir__():
   const fnDecls = DIALECTS.map((d) => `
 def language_${d.ident}() -> CapsuleType:
     """The tree-sitter language function for the ${d.grammarName} dialect."""`).join('\n');
+  const queryDecls = DIALECTS.map((d) => `
+HIGHLIGHTS_QUERY_${d.upper}: Final[str]
+"""The syntax highlighting query for the ${d.grammarName} dialect."""`).join('\n');
 
   const content = `from typing import Final
 from typing_extensions import CapsuleType
@@ -661,6 +757,7 @@ LOCALS_QUERY: Final[str] | None
 
 TAGS_QUERY: Final[str] | None
 """The symbol tagging query for this grammar."""
+${queryDecls}
 
 def language() -> CapsuleType:
     """The tree-sitter language function for this grammar."""

@@ -1,0 +1,51 @@
+dialect: spark
+engine: Apache Spark SQL
+version: "4.x (docs/latest)"
+source: https://spark.apache.org/docs/latest/sql-ref-syntax.html
+
+statements:
+  - id: set_operators
+    name: Set Operators
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-setops.html
+    tier: high
+    probes:
+      - { id: except, sql: "SELECT c FROM t1 EXCEPT SELECT c FROM t2;" }
+      - { id: except_distinct, sql: "SELECT c FROM t1 EXCEPT DISTINCT SELECT c FROM t2;" }
+      - { id: except_all, sql: "SELECT c FROM t1 EXCEPT ALL SELECT c FROM t2;" }
+      - { id: minus, sql: "SELECT c FROM t1 MINUS SELECT c FROM t2;" }
+      - { id: minus_distinct, sql: "SELECT c FROM t1 MINUS DISTINCT SELECT c FROM t2;" }
+      - { id: minus_all, sql: "SELECT c FROM t1 MINUS ALL SELECT c FROM t2;" }
+      - { id: except_parenthesized_right, sql: "SELECT c FROM t1 EXCEPT ALL (SELECT c FROM t2);" }
+      - { id: except_parenthesized_both, sql: "(SELECT c FROM t1) EXCEPT (SELECT c FROM t2);" }
+      - { id: intersect, sql: "SELECT c FROM t1 INTERSECT SELECT c FROM t2;" }
+      - { id: intersect_distinct, sql: "SELECT c FROM t1 INTERSECT DISTINCT SELECT c FROM t2;" }
+      - { id: intersect_all, sql: "SELECT c FROM t1 INTERSECT ALL SELECT c FROM t2;" }
+      - { id: intersect_parenthesized, sql: "(SELECT c FROM t1) INTERSECT (SELECT c FROM t2);" }
+      - { id: union, sql: "SELECT c FROM t1 UNION SELECT c FROM t2;" }
+      - { id: union_distinct, sql: "SELECT c FROM t1 UNION DISTINCT SELECT c FROM t2;" }
+      - { id: union_all, sql: "SELECT c FROM t1 UNION ALL SELECT c FROM t2;" }
+      - { id: union_parenthesized, sql: "(SELECT c FROM t1) UNION (SELECT c FROM t2);" }
+      - { id: union_all_parenthesized_right, sql: "SELECT c FROM t1 UNION ALL (SELECT c FROM t2);" }
+    examples:
+      - "SELECT c FROM number1 EXCEPT SELECT c FROM number2;"
+      - "SELECT c FROM number1 MINUS ALL (SELECT c FROM number2);"
+      - "(SELECT c FROM number1) INTERSECT DISTINCT (SELECT c FROM number2);"
+
+  - id: sort_by_clause
+    name: SORT BY Clause
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-sortby.html
+    tier: high
+    probes:
+      - { id: sort_by, sql: "SELECT name, age FROM person SORT BY name;" }
+      - { id: sort_by_position, sql: "SELECT name, age FROM person SORT BY 1;" }
+      - { id: sort_by_asc, sql: "SELECT name, age FROM person SORT BY name ASC;" }
+      - { id: sort_by_desc, sql: "SELECT name, age FROM person SORT BY age DESC;" }
+      - { id: sort_by_nulls_first, sql: "SELECT name, age FROM person SORT BY age NULLS FIRST;" }
+      - { id: sort_by_nulls_last, sql: "SELECT name, age FROM person SORT BY age NULLS LAST;" }
+      - { id: sort_by_desc_nulls_first, sql: "SELECT name, age FROM person SORT BY age DESC NULLS FIRST;" }
+      - { id: sort_by_multiple, sql: "SELECT name, age FROM person SORT BY name ASC, age DESC;" }
+      - { id: sort_by_with_hint, sql: "SELECT /*+ REPARTITION(zip_code) */ name, age, zip_code FROM person SORT BY name;" }
+    examples:
+      - "SELECT /*+ REPARTITION(zip_code) */ name, age, zip_code FROM person SORT BY name;"
+      - "SELECT /*+ REPARTITION(zip_code) */ age, name, zip_code FROM person SORT BY age NULLS LAST;"
+      - "SELECT /*+ REPARTITION(zip_code) */ name, age, zip_code FROM person SORT BY name ASC, age DESC;"

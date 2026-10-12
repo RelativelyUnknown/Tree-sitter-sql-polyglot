@@ -1,0 +1,346 @@
+dialect: snowflake
+engine: Snowflake
+version: "current (docs read 2026-10-04)"
+source: https://docs.snowflake.com/en/sql-reference/sql-all
+
+statements:
+  - id: alter_privacy_policy
+    name: "ALTER PRIVACY POLICY"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-privacy-policy
+    tier: low
+    probes:
+      - id: rename
+        sql: "ALTER PRIVACY POLICY p RENAME TO p2;"
+      - id: set_body
+        sql: "ALTER PRIVACY POLICY p SET BODY -> CASE WHEN CURRENT_ROLE() = 'ADMIN' THEN PRIVACY_BUDGET(BUDGET_NAME => 'b') ELSE NO_PRIVACY_POLICY() END;"
+  - id: alter_projection_policy
+    name: "ALTER PROJECTION POLICY"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-projection-policy
+    tier: low
+    probes:
+      - id: rename
+        sql: "ALTER PROJECTION POLICY IF EXISTS p RENAME TO p2;"
+      - id: set_body
+        sql: "ALTER PROJECTION POLICY p SET BODY -> CASE WHEN CURRENT_ROLE() = 'ADMIN' THEN PROJECTION_CONSTRAINT(ALLOW => true) ELSE PROJECTION_CONSTRAINT(ALLOW => false) END;"
+  - id: alter_replication_group
+    name: "ALTER REPLICATION GROUP"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-replication-group
+    tier: low
+    probes:
+      - id: rename
+        sql: "ALTER REPLICATION GROUP rg RENAME TO rg2;"
+      - id: set_schedule
+        sql: "ALTER REPLICATION GROUP rg SET REPLICATION_SCHEDULE = '10 MINUTE';"
+  - id: alter_resource_monitor
+    name: "ALTER RESOURCE MONITOR"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-resource-monitor
+    tier: low
+    probes:
+      - id: set_credit_quota
+        sql: "ALTER RESOURCE MONITOR rm SET CREDIT_QUOTA = 100 FREQUENCY = MONTHLY;"
+      - id: triggers
+        sql: "ALTER RESOURCE MONITOR rm TRIGGERS ON 80 PERCENT DO NOTIFY ON 100 PERCENT DO SUSPEND;"
+  - id: alter_restricted_session_scope
+    name: "ALTER RESTRICTED SESSION SCOPE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-restricted-session-scope
+    tier: low
+    probes:
+      - id: replace_definition
+        sql: "ALTER RESTRICTED SESSION SCOPE rss AS $$\nprivileges: []\n$$;"
+      - id: set_comment
+        sql: "ALTER RSS IF EXISTS rss SET COMMENT = 'c';"
+  - id: alter_security_integration
+    name: "ALTER SECURITY INTEGRATION"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-security-integration
+    tier: low
+    probes:
+      - id: set
+        sql: "ALTER SECURITY INTEGRATION si SET ENABLED = TRUE;"
+      - id: unset
+        sql: "ALTER INTEGRATION IF EXISTS si UNSET COMMENT;"
+      - id: set_tag
+        sql: "ALTER SECURITY INTEGRATION si SET TAG t = 'v';"
+  - id: alter_security_integration_external_api_authentication
+    name: "ALTER SECURITY INTEGRATION (External API Authentication)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-security-integration-api-auth
+    tier: low
+    probes:
+      - id: client_credentials
+        sql: "ALTER SECURITY INTEGRATION si SET ENABLED = TRUE OAUTH_TOKEN_ENDPOINT = 'https://example.com/token' OAUTH_CLIENT_AUTH_METHOD = CLIENT_SECRET_POST OAUTH_CLIENT_ID = 'id' OAUTH_CLIENT_SECRET = 'secret' OAUTH_GRANT = 'CLIENT_CREDENTIALS' OAUTH_ALLOWED_SCOPES = ('s1', 's2');"
+      - id: authorization_code
+        sql: "ALTER SECURITY INTEGRATION si SET OAUTH_AUTHORIZATION_ENDPOINT = 'https://example.com/auth' OAUTH_GRANT = 'AUTHORIZATION_CODE' OAUTH_REFRESH_TOKEN_VALIDITY = 3600;"
+  - id: alter_security_integration_external_secret_provider
+    name: "ALTER SECURITY INTEGRATION (External secret provider)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-security-integration-api-auth-external-secret-provider
+    tier: low
+    probes:
+      - id: aws_secrets_manager
+        sql: "ALTER SECURITY INTEGRATION si SET ENABLED = TRUE AWS_ROLE_ARN = 'arn:aws:iam::123456789012:role/r' AWS_REGION = 'us-west-2';"
+      - id: azure_key_vault
+        sql: "ALTER SECURITY INTEGRATION si SET AZURE_TENANT_ID = 'tid' AZURE_AD_APPLICATION_ID = 'aid' AZURE_KEY_VAULT_URI = 'https://v.vault.azure.net';"
+  - id: alter_security_integration_aws_iam_authentication
+    name: "ALTER SECURITY INTEGRATION (AWS IAM Authentication)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-security-integration-aws-iam
+    tier: low
+    probes:
+      - id: set
+        sql: "ALTER SECURITY INTEGRATION IF EXISTS si SET TYPE = AWS_IAM AWS_ROLE_ARN = 'arn:aws:iam::123456789012:role/r' ENABLED = TRUE COMMENT = 'c';"
+  - id: alter_security_integration_external_oauth
+    name: "ALTER SECURITY INTEGRATION (External OAuth)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-security-integration-oauth-external
+    tier: low
+    probes:
+      - id: set
+        sql: "ALTER SECURITY INTEGRATION si SET TYPE = EXTERNAL_OAUTH ENABLED = TRUE EXTERNAL_OAUTH_TYPE = OKTA EXTERNAL_OAUTH_ISSUER = 'https://example.com' EXTERNAL_OAUTH_TOKEN_USER_MAPPING_CLAIM = 'sub' EXTERNAL_OAUTH_SNOWFLAKE_USER_MAPPING_ATTRIBUTE = 'LOGIN_NAME' EXTERNAL_OAUTH_JWS_KEYS_URL = 'https://example.com/keys';"
+      - id: unset
+        sql: "ALTER SECURITY INTEGRATION si UNSET ENABLED, EXTERNAL_OAUTH_AUDIENCE_LIST;"
+  - id: alter_security_integration_snowflake_oauth
+    name: "ALTER SECURITY INTEGRATION (Snowflake OAuth)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-security-integration-oauth-snowflake
+    tier: low
+    probes:
+      - id: partner_set
+        sql: "ALTER SECURITY INTEGRATION si SET ENABLED = TRUE OAUTH_ISSUE_REFRESH_TOKENS = TRUE OAUTH_REDIRECT_URI = 'https://example.com/cb' OAUTH_REFRESH_TOKEN_VALIDITY = 86400;"
+      - id: refresh_secret
+        sql: "ALTER SECURITY INTEGRATION si REFRESH OAUTH_CLIENT_SECRET;"
+  - id: alter_security_integration_oidc
+    name: "ALTER SECURITY INTEGRATION (OIDC)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-security-integration-oidc
+    tier: low
+    probes:
+      - id: set
+        sql: "ALTER SECURITY INTEGRATION si SET ENABLED = TRUE OIDC_SCOPES = ('openid', 'email') OIDC_SNOWFLAKE_USER_MAPPING_ATTRIBUTE = 'EMAIL_ADDRESS' ALLOWED_USER_DOMAINS = ('example.com');"
+      - id: unset
+        sql: "ALTER SECURITY INTEGRATION IF EXISTS si UNSET COMMENT, ENABLED;"
+  - id: alter_security_integration_saml2
+    name: "ALTER SECURITY INTEGRATION (SAML2)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-security-integration-saml2
+    tier: low
+    probes:
+      - id: set
+        sql: "ALTER SECURITY INTEGRATION si SET TYPE = SAML2 ENABLED = TRUE SAML2_ISSUER = 'iss' SAML2_SSO_URL = 'https://example.com/sso' SAML2_PROVIDER = 'CUSTOM' SAML2_SIGN_REQUEST = TRUE;"
+      - id: refresh
+        sql: "ALTER SECURITY INTEGRATION si REFRESH SAML2_SNOWFLAKE_PRIVATE_KEY;"
+  - id: alter_security_integration_scim
+    name: "ALTER SECURITY INTEGRATION (SCIM)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-security-integration-scim
+    tier: low
+    probes:
+      - id: set
+        sql: "ALTER SECURITY INTEGRATION si SET ENABLED = TRUE NETWORK_POLICY = 'np' SYNC_PASSWORD = FALSE;"
+      - id: unset
+        sql: "ALTER SECURITY INTEGRATION IF EXISTS si UNSET NETWORK_POLICY;"
+  - id: alter_service
+    name: "ALTER SERVICE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-service
+    tier: low
+    probes:
+      - id: suspend
+        sql: "ALTER SERVICE svc SUSPEND;"
+      - id: set
+        sql: "ALTER SERVICE IF EXISTS svc SET MIN_INSTANCES = 1 MAX_INSTANCES = 2 AUTO_RESUME = TRUE;"
+      - id: from_specification
+        sql: "ALTER SERVICE svc FROM @stg SPECIFICATION_FILE = 'spec.yaml';"
+  - id: alter_session_policy
+    name: "ALTER SESSION POLICY"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-session-policy
+    tier: low
+    probes:
+      - id: rename
+        sql: "ALTER SESSION POLICY sp RENAME TO sp2;"
+      - id: set
+        sql: "ALTER SESSION POLICY IF EXISTS sp SET SESSION_IDLE_TIMEOUT_MINS = 30 SESSION_UI_IDLE_TIMEOUT_MINS = 30 ALLOWED_SECONDARY_ROLES = ('ALL') COMMENT = 'c';"
+  - id: alter_snapshot
+    name: "ALTER SNAPSHOT"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-snapshot
+    tier: low
+    probes:
+      - id: set_comment
+        sql: "ALTER SNAPSHOT IF EXISTS s SET COMMENT = 'c';"
+  - id: alter_snapshot_policy_deprecated
+    name: "ALTER SNAPSHOT POLICY — Deprecated"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-snapshot-policy
+    tier: low
+    probes:
+      - id: rename
+        sql: "ALTER SNAPSHOT POLICY sp RENAME TO sp2;"
+      - id: set
+        sql: "ALTER SNAPSHOT POLICY sp SET COMMENT = 'c' SCHEDULE = '60 MINUTE' EXPIRE_AFTER_DAYS = 7;"
+      - id: unset
+        sql: "ALTER SNAPSHOT POLICY sp UNSET SCHEDULE;"
+  - id: alter_snapshot_set_deprecated
+    name: "ALTER SNAPSHOT SET — Deprecated"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-snapshot-set
+    tier: low
+    probes:
+      - id: add_snapshot
+        sql: "ALTER SNAPSHOT SET ss ADD SNAPSHOT;"
+      - id: apply_policy
+        sql: "ALTER SNAPSHOT SET ss APPLY SNAPSHOT POLICY sp FORCE;"
+      - id: delete_snapshot
+        sql: "ALTER SNAPSHOT SET ss DELETE SNAPSHOT IDENTIFIER 'id1';"
+  - id: alter_storage_lifecycle_policy
+    name: "ALTER STORAGE LIFECYCLE POLICY"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-storage-lifecycle-policy
+    tier: low
+    probes:
+      - id: rename
+        sql: "ALTER STORAGE LIFECYCLE POLICY slp RENAME TO slp2;"
+      - id: set
+        sql: "ALTER STORAGE LIFECYCLE POLICY IF EXISTS slp SET ARCHIVE_TIER = COLD;"
+      - id: unset
+        sql: "ALTER STORAGE LIFECYCLE POLICY slp UNSET COMMENT;"
+  - id: alter_streamlit
+    name: "ALTER STREAMLIT"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-streamlit
+    tier: low
+    probes:
+      - id: set
+        sql: "ALTER STREAMLIT IF EXISTS app SET MAIN_FILE = 'main.py' QUERY_WAREHOUSE = wh TITLE = 'My App';"
+      - id: rename
+        sql: "ALTER STREAMLIT app RENAME TO app2;"
+      - id: pull
+        sql: "ALTER STREAMLIT app PULL;"
+  - id: alter_user_add_programmatic_access_token_pat
+    name: "ALTER USER … ADD PROGRAMMATIC ACCESS TOKEN (PAT)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-user-add-programmatic-access-token
+    tier: low
+    probes:
+      - id: basic
+        sql: "ALTER USER u ADD PROGRAMMATIC ACCESS TOKEN IF NOT EXISTS tok ROLE_RESTRICTION = 'r' DAYS_TO_EXPIRY = 30 COMMENT = 'c';"
+      - id: pat_keyword
+        sql: "ALTER USER u ADD PAT tok;"
+  - id: alter_user_modify_programmatic_access_token_pat
+    name: "ALTER USER … MODIFY PROGRAMMATIC ACCESS TOKEN (PAT)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-user-modify-programmatic-access-token
+    tier: low
+    probes:
+      - id: basic
+        sql: "ALTER USER u MODIFY PAT tok SET DISABLED = TRUE COMMENT = 'c';"
+      - id: rename
+        sql: "ALTER USER u MODIFY PROGRAMMATIC ACCESS TOKEN tok RENAME TO tok2;"
+  - id: alter_user_remove_programmatic_access_token_pat
+    name: "ALTER USER … REMOVE PROGRAMMATIC ACCESS TOKEN (PAT)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-user-remove-programmatic-access-token
+    tier: low
+    probes:
+      - id: basic
+        sql: "ALTER USER u REMOVE PROGRAMMATIC ACCESS TOKEN IF EXISTS tok;"
+  - id: alter_user_rotate_programmatic_access_token_pat
+    name: "ALTER USER … ROTATE PROGRAMMATIC ACCESS TOKEN (PAT)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-user-rotate-programmatic-access-token
+    tier: low
+    probes:
+      - id: basic
+        sql: "ALTER USER u ROTATE PAT tok EXPIRE_ROTATED_TOKEN_AFTER_HOURS = 24;"
+  - id: create_account
+    name: "CREATE ACCOUNT"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-account
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE ACCOUNT a ADMIN_NAME = 'admin' ADMIN_PASSWORD = 'pw' EMAIL = 'a@example.com' EDITION = ENTERPRISE;"
+      - id: options
+        sql: "CREATE ACCOUNT a ADMIN_NAME = 'admin' ADMIN_RSA_PUBLIC_KEY = 'key' ADMIN_USER_TYPE = SERVICE FIRST_NAME = 'f' LAST_NAME = 'l' EMAIL = 'a@example.com' MUST_CHANGE_PASSWORD = TRUE EDITION = STANDARD REGION_GROUP = rg REGION = r COMMENT = 'c' POLARIS = TRUE;"
+  - id: create_agent
+    name: "CREATE AGENT"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-agent
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE OR REPLACE AGENT a COMMENT = 'c' PROFILE = '{\"display_name\": \"A\"}' FROM SPECIFICATION\n$$\nmodels:\n  orchestration: auto\n$$;"
+  - id: create_aggregation_policy
+    name: "CREATE AGGREGATION POLICY"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-aggregation-policy
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE OR REPLACE AGGREGATION POLICY ap AS () RETURNS AGGREGATION_CONSTRAINT -> AGGREGATION_CONSTRAINT(MIN_GROUP_SIZE => 5) COMMENT = 'c';"
+  - id: create_application
+    name: "CREATE APPLICATION"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-application
+    tier: low
+    probes:
+      - id: from_package
+        sql: "CREATE APPLICATION app FROM APPLICATION PACKAGE pkg USING RELEASE CHANNEL QA COMMENT = 'c' WITH TAG (t = 'v') AUTHORIZE_TELEMETRY_EVENT_SHARING = TRUE;"
+      - id: using_path
+        sql: "CREATE APPLICATION app FROM APPLICATION PACKAGE pkg USING '@stg/v1' DEBUG_MODE = TRUE;"
+  - id: create_application_package
+    name: "CREATE APPLICATION PACKAGE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-application-package
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE APPLICATION PACKAGE IF NOT EXISTS pkg DATA_RETENTION_TIME_IN_DAYS = 1 DISTRIBUTION = EXTERNAL COMMENT = 'c' ENABLE_RELEASE_CHANNELS = TRUE;"
+  - id: create_application_role
+    name: "CREATE APPLICATION ROLE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-application-role
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE APPLICATION ROLE IF NOT EXISTS ar COMMENT = 'c';"
+      - id: create_or_alter
+        sql: "CREATE OR ALTER APPLICATION ROLE ar COMMENT = 'c';"
+  - id: create_application_service
+    name: "CREATE APPLICATION SERVICE"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-application-service
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE APPLICATION SERVICE IF NOT EXISTS svc FROM ARTIFACT REPOSITORY repo PACKAGE pkg VERSION v1 QUERY_WAREHOUSE = wh AUTO_RESUME = TRUE MIN_INSTANCES = 1 MAX_INSTANCES = 2 COMMENT = 'c';"
+  - id: create_artifact_repository
+    name: "CREATE ARTIFACT REPOSITORY"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-artifact-repository
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE ARTIFACT REPOSITORY IF NOT EXISTS repo TYPE = PYPI API_INTEGRATION = 'ai' INDEX_URL = 'https://example.com/simple' AUTHENTICATION_SECRET = sec COMMENT = 'c';"
+  - id: create_authentication_policy
+    name: "CREATE AUTHENTICATION POLICY"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-authentication-policy
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE AUTHENTICATION POLICY IF NOT EXISTS ap AUTHENTICATION_METHODS = ('PASSWORD', 'SAML') CLIENT_TYPES = ('SNOWFLAKE_UI') MFA_ENROLLMENT = 'OPTIONAL' COMMENT = 'c';"
+      - id: client_policy
+        sql: "CREATE AUTHENTICATION POLICY ap CLIENT_POLICY = (JDBC = (MINIMUM_VERSION = '3.0.0'));"
+  - id: create_backup_policy
+    name: "CREATE BACKUP POLICY"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-backup-policy
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE BACKUP POLICY IF NOT EXISTS bp WITH TAG (t = 'v') WITH RETENTION LOCK SCHEDULE = '60 MINUTE' EXPIRE_AFTER_DAYS = 7 COMMENT = 'c';"
+  - id: create_backup_set
+    name: "CREATE BACKUP SET"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-backup-set
+    tier: low
+    probes:
+      - id: for_table
+        sql: "CREATE OR REPLACE BACKUP SET bs FOR TABLE t WITH BACKUP POLICY bp COMMENT = 'c';"
+      - id: for_schema
+        sql: "CREATE BACKUP SET bs FOR SCHEMA s;"
+  - id: create_catalog_integration
+    name: "CREATE CATALOG INTEGRATION"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-catalog-integration
+    tier: low
+    probes:
+      - id: glue_form
+        sql: "CREATE CATALOG INTEGRATION ci CATALOG_SOURCE = GLUE TABLE_FORMAT = ICEBERG GLUE_AWS_ROLE_ARN = 'arn:aws:iam::123456789012:role/r' GLUE_CATALOG_ID = '123456789012' ENABLED = TRUE;"
+        note: The page is an index to the per-catalog pages; probe uses the AWS Glue form it links to.
+  - id: create_catalog_integration_delta_sharing
+    name: "CREATE CATALOG INTEGRATION (Delta Sharing)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-catalog-integration-delta-sharing
+    tier: low
+    probes:
+      - id: oidc
+        sql: "CREATE CATALOG INTEGRATION IF NOT EXISTS ci CATALOG_SOURCE = DELTA_SHARING TABLE_FORMAT = DELTA REST_CONFIG = (CATALOG_URI = 'https://example.com/delta-sharing' CATALOG_NAME = 'shares/s' ACCESS_DELEGATION_MODE = VENDED_CREDENTIALS) REST_AUTHENTICATION = (TYPE = OIDC OIDC_AUDIENCE = 'aud') ENABLED = TRUE COMMENT = 'c';"
+      - id: oauth
+        sql: "CREATE CATALOG INTEGRATION ci CATALOG_SOURCE = DELTA_SHARING TABLE_FORMAT = DELTA REST_CONFIG = (CATALOG_URI = 'https://example.com/delta-sharing' CATALOG_NAME = 'shares/s' ACCESS_DELEGATION_MODE = VENDED_CREDENTIALS) REST_AUTHENTICATION = (TYPE = OAUTH OAUTH_CLIENT_ID = 'id' OAUTH_CLIENT_SECRET = 'secret' OAUTH_TOKEN_URI = 'https://example.com/token') ENABLED = TRUE;"
+  - id: create_catalog_integration_aws_glue
+    name: "CREATE CATALOG INTEGRATION (AWS Glue)"
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-catalog-integration-glue
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE OR REPLACE CATALOG INTEGRATION IF NOT EXISTS ci CATALOG_SOURCE = GLUE TABLE_FORMAT = ICEBERG GLUE_AWS_ROLE_ARN = 'arn:aws:iam::123456789012:role/r' GLUE_CATALOG_ID = '123456789012' GLUE_REGION = 'us-east-2' CATALOG_NAMESPACE = 'ns' ENABLED = TRUE REFRESH_INTERVAL_SECONDS = 60 COMMENT = 'c';"

@@ -1,4 +1,4 @@
-; inherits: spark
+; inherits: sql
 
 ; Hive-specific keywords
 [
@@ -45,4 +45,70 @@
   (keyword_views)
   (keyword_abort)
   (keyword_transactions)
+] @keyword
+
+; ============================================================
+; Remaining hive keywords
+; ============================================================
+
+[
+  (keyword_avro)
+  (keyword_bucket)
+  (keyword_buckets)
+  (keyword_cached)
+  (keyword_catalog)
+  (keyword_character)
+  (keyword_cluster)
+  (keyword_clustered)
+  (keyword_concatenate)
+  (keyword_conflict)
+  (keyword_csv)
+  (keyword_dbproperties)
+  (keyword_delimited)
+  (keyword_directory)
+  (keyword_distribute)
+  (keyword_do)
+  (keyword_duplicate)
+  (keyword_environment)
+  (keyword_escaped)
+  (keyword_export)
+  (keyword_extension)
+  (keyword_fields)
+  (keyword_format)
+  (keyword_handler)
+  (keyword_hash)
+  (keyword_ignore)
+  (keyword_import)
+  (keyword_inpath)
+  (keyword_jar)
+  (keyword_jsonfile)
+  (keyword_lines)
+  (keyword_load)
+  (keyword_location)
+  (keyword_macro)
+  (keyword_msck)
+  (keyword_nothing)
+  (keyword_oids)
+  (keyword_orc)
+  (keyword_overwrite)
+  (keyword_parameter)
+  (keyword_parquet)
+  (keyword_partitioned)
+  (keyword_partitions)
+  (keyword_rcfile)
+  (keyword_repair)
+  (keyword_replication)
+  (keyword_roles)
+  (keyword_sequencefile)
+  (keyword_sort)
+  (keyword_sorted)
+  (keyword_stored)
+  (keyword_style)
+  (keyword_sync)
+  (keyword_tblproperties)
+  (keyword_terminated)
+  (keyword_textfile)
+  (keyword_uncached)
+  (keyword_unset)
+  (keyword_use)
 ] @keyword

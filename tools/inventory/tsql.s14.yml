@@ -1,0 +1,363 @@
+dialect: tsql
+engine: SQL Server 2022 / Azure SQL Database
+version: "2022"
+source: https://learn.microsoft.com/en-us/sql/t-sql/statements/statements
+
+statements:
+  - id: alter_xml_schema_collection
+    name: ALTER XML SCHEMA COLLECTION
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-xml-schema-collection-transact-sql
+    tier: low
+    probes:
+      - id: add
+        sql: |-
+          ALTER XML SCHEMA COLLECTION sc ADD '<schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="urn:t"><element name="e" type="byte"/></schema>';
+      - id: add_qualified
+        sql: "ALTER XML SCHEMA COLLECTION dbo.sc ADD N'<schema xmlns=\"http://www.w3.org/2001/XMLSchema\"/>';"
+
+  - id: backup_certificate
+    name: BACKUP CERTIFICATE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/backup-certificate-transact-sql
+    tier: low
+    probes:
+      - { id: to_file, sql: "BACKUP CERTIFICATE c TO FILE = 'c:\\c.cer';" }
+      - id: private_key
+        sql: "BACKUP CERTIFICATE c TO FILE = 'c:\\c.cer' WITH PRIVATE KEY (FILE = 'c:\\c.pvk', ENCRYPTION BY PASSWORD = 'p1', DECRYPTION BY PASSWORD = 'p2');"
+      - id: pfx_format
+        sql: "BACKUP CERTIFICATE c TO FILE = 'c:\\c.cer' WITH FORMAT = 'PFX', PRIVATE KEY (FILE = 'c:\\c.pvk', ENCRYPTION BY PASSWORD = 'p1');"
+
+  - id: backup_master_key
+    name: BACKUP MASTER KEY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/backup-master-key-transact-sql
+    tier: low
+    probes:
+      - { id: to_file, sql: "BACKUP MASTER KEY TO FILE = 'c:\\mk' ENCRYPTION BY PASSWORD = 'p';" }
+      - { id: to_url, sql: "BACKUP MASTER KEY TO URL = 'https://acct.blob.core.windows.net/c/mk' ENCRYPTION BY PASSWORD = 'p';" }
+
+  - id: backup_service_master_key
+    name: BACKUP SERVICE MASTER KEY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/backup-service-master-key-transact-sql
+    tier: low
+    probes:
+      - { id: to_file, sql: "BACKUP SERVICE MASTER KEY TO FILE = 'c:\\smk' ENCRYPTION BY PASSWORD = 'p';" }
+
+  - id: backup_symmetric_key
+    name: BACKUP SYMMETRIC KEY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/backup-symmetric-key-transact-sql
+    tier: low
+    probes:
+      - { id: to_file, sql: "BACKUP SYMMETRIC KEY k TO FILE = 'c:\\k' ENCRYPTION BY PASSWORD = 'p';" }
+      - { id: to_url, sql: "BACKUP SYMMETRIC KEY k TO URL = 'https://acct.blob.core.windows.net/c/k' ENCRYPTION BY PASSWORD = 'p';" }
+
+  - id: restore_labelonly
+    name: RESTORE LABELONLY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/restore-statements-labelonly-transact-sql
+    tier: low
+    probes:
+      - { id: from_disk, sql: "RESTORE LABELONLY FROM DISK = 'c:\\b.bak';" }
+      - { id: from_logical_device, sql: "RESTORE LABELONLY FROM dev;" }
+      - { id: with_options, sql: "RESTORE LABELONLY FROM DISK = 'c:\\b.bak' WITH MEDIANAME = 'm', MEDIAPASSWORD = 'p', CHECKSUM, CONTINUE_AFTER_ERROR, REWIND, UNLOAD;" }
+
+  - id: restore_master_key
+    name: RESTORE MASTER KEY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/restore-master-key-transact-sql
+    tier: low
+    probes:
+      - { id: from_file, sql: "RESTORE MASTER KEY FROM FILE = 'c:\\mk' DECRYPTION BY PASSWORD = 'p1' ENCRYPTION BY PASSWORD = 'p2';" }
+      - { id: force, sql: "RESTORE MASTER KEY FROM FILE = 'c:\\mk' DECRYPTION BY PASSWORD = 'p1' ENCRYPTION BY PASSWORD = 'p2' FORCE;" }
+      - { id: from_url, sql: "RESTORE MASTER KEY FROM URL = 'https://acct.blob.core.windows.net/c/mk' DECRYPTION BY PASSWORD = 'p1' ENCRYPTION BY PASSWORD = 'p2';" }
+
+  - id: restore_service_master_key
+    name: RESTORE SERVICE MASTER KEY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/restore-service-master-key-transact-sql
+    tier: low
+    probes:
+      - { id: from_file, sql: "RESTORE SERVICE MASTER KEY FROM FILE = 'c:\\smk' DECRYPTION BY PASSWORD = 'p';" }
+      - { id: force, sql: "RESTORE SERVICE MASTER KEY FROM FILE = 'c:\\smk' DECRYPTION BY PASSWORD = 'p' FORCE;" }
+
+  - id: restore_symmetric_key
+    name: RESTORE SYMMETRIC KEY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/restore-symmetric-key-transact-sql
+    tier: low
+    probes:
+      - { id: from_file, sql: "RESTORE SYMMETRIC KEY k FROM FILE = 'c:\\k' DECRYPTION BY PASSWORD = 'p1' ENCRYPTION BY PASSWORD = 'p2';" }
+      - { id: from_url, sql: "RESTORE SYMMETRIC KEY k FROM URL = 'https://acct.blob.core.windows.net/c/k' DECRYPTION BY PASSWORD = 'p1' ENCRYPTION BY PASSWORD = 'p2';" }
+
+  - id: restore_rewindonly
+    name: RESTORE REWINDONLY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/restore-statements-rewindonly-transact-sql
+    tier: low
+    probes:
+      - { id: from_tape, sql: "RESTORE REWINDONLY FROM TAPE = '\\\\.\\tape0';" }
+      - { id: multiple_devices_with_unload, sql: "RESTORE REWINDONLY FROM dev1, dev2 WITH UNLOAD;" }
+
+  - id: create_aggregate
+    name: CREATE AGGREGATE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-aggregate-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE AGGREGATE agg (@x int) RETURNS int EXTERNAL NAME asm.cls;" }
+      - { id: schema_qualified_udt, sql: "CREATE AGGREGATE dbo.agg (@x dbo.ut, @y nvarchar(10)) RETURNS dbo.ut EXTERNAL NAME asm;" }
+
+  - id: create_application_role
+    name: CREATE APPLICATION ROLE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-application-role-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE APPLICATION ROLE r WITH PASSWORD = 'p';" }
+      - { id: default_schema, sql: "CREATE APPLICATION ROLE r WITH PASSWORD = 'p', DEFAULT_SCHEMA = s;" }
+
+  - id: create_assembly
+    name: CREATE ASSEMBLY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-assembly-transact-sql
+    tier: low
+    probes:
+      - { id: from_file, sql: "CREATE ASSEMBLY a FROM 'c:\\a.dll';" }
+      - { id: authorization_permission_set, sql: "CREATE ASSEMBLY a AUTHORIZATION u FROM 'c:\\a.dll' WITH PERMISSION_SET = SAFE;" }
+      - { id: from_bits, sql: "CREATE ASSEMBLY a FROM 0x4D5A9000 WITH PERMISSION_SET = EXTERNAL_ACCESS;" }
+
+  - id: create_asymmetric_key
+    name: CREATE ASYMMETRIC KEY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-asymmetric-key-transact-sql
+    tier: low
+    probes:
+      - { id: generate_new, sql: "CREATE ASYMMETRIC KEY k WITH ALGORITHM = RSA_2048;" }
+      - { id: from_file, sql: "CREATE ASYMMETRIC KEY k AUTHORIZATION u FROM FILE = 'c:\\k.snk';" }
+      - { id: from_provider, sql: "CREATE ASYMMETRIC KEY k FROM PROVIDER p WITH ALGORITHM = RSA_2048, PROVIDER_KEY_NAME = 'kn', CREATION_DISPOSITION = CREATE_NEW;" }
+      - { id: encryption_by_password, sql: "CREATE ASYMMETRIC KEY k WITH ALGORITHM = RSA_4096 ENCRYPTION BY PASSWORD = 'p';" }
+
+  - id: create_availability_group
+    name: CREATE AVAILABILITY GROUP
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-availability-group-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: |-
+          CREATE AVAILABILITY GROUP ag
+          FOR DATABASE d1, d2
+          REPLICA ON 'N1' WITH (ENDPOINT_URL = 'TCP://n1:5022', AVAILABILITY_MODE = SYNCHRONOUS_COMMIT, FAILOVER_MODE = AUTOMATIC),
+          'N2' WITH (ENDPOINT_URL = 'TCP://n2:5022', AVAILABILITY_MODE = ASYNCHRONOUS_COMMIT, FAILOVER_MODE = MANUAL);
+      - id: with_options_listener
+        sql: |-
+          CREATE AVAILABILITY GROUP ag
+          WITH (AUTOMATED_BACKUP_PREFERENCE = SECONDARY, FAILURE_CONDITION_LEVEL = 3, HEALTH_CHECK_TIMEOUT = 600000)
+          FOR DATABASE d
+          REPLICA ON 'N1' WITH (ENDPOINT_URL = 'TCP://n1:5022', AVAILABILITY_MODE = SYNCHRONOUS_COMMIT, FAILOVER_MODE = AUTOMATIC)
+          LISTENER 'lis' (WITH IP (('10.0.0.1', '255.255.255.0')), PORT = 1433);
+      - id: distributed
+        sql: |-
+          CREATE AVAILABILITY GROUP dag
+          WITH (DISTRIBUTED)
+          AVAILABILITY GROUP ON
+          'ag1' WITH (LISTENER_URL = 'TCP://l1:5022', AVAILABILITY_MODE = ASYNCHRONOUS_COMMIT, FAILOVER_MODE = MANUAL, SEEDING_MODE = AUTOMATIC),
+          'ag2' WITH (LISTENER_URL = 'TCP://l2:5022', AVAILABILITY_MODE = ASYNCHRONOUS_COMMIT, FAILOVER_MODE = MANUAL, SEEDING_MODE = AUTOMATIC);
+
+  - id: create_broker_priority
+    name: CREATE BROKER PRIORITY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-broker-priority-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE BROKER PRIORITY p FOR CONVERSATION;" }
+      - { id: set_options, sql: "CREATE BROKER PRIORITY p FOR CONVERSATION SET (CONTRACT_NAME = c, LOCAL_SERVICE_NAME = ANY, REMOTE_SERVICE_NAME = 'rs', PRIORITY_LEVEL = 5);" }
+
+  - id: create_certificate
+    name: CREATE CERTIFICATE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-certificate-transact-sql
+    tier: low
+    probes:
+      - { id: generate_new, sql: "CREATE CERTIFICATE c WITH SUBJECT = 's';" }
+      - { id: generate_new_full, sql: "CREATE CERTIFICATE c AUTHORIZATION u ENCRYPTION BY PASSWORD = 'p' WITH SUBJECT = 's', START_DATE = '2020-01-01', EXPIRY_DATE = '2030-01-01' ACTIVE FOR BEGIN_DIALOG = ON;" }
+      - { id: from_assembly, sql: "CREATE CERTIFICATE c FROM ASSEMBLY a;" }
+      - { id: from_file_private_key, sql: "CREATE CERTIFICATE c FROM FILE = 'c:\\c.cer' WITH PRIVATE KEY (FILE = 'c:\\c.pvk', DECRYPTION BY PASSWORD = 'p1', ENCRYPTION BY PASSWORD = 'p2');" }
+      - { id: from_binary, sql: "CREATE CERTIFICATE c FROM BINARY = 0x308201 WITH PRIVATE KEY (BINARY = 0x1EF1B5B0, DECRYPTION BY PASSWORD = 'p');" }
+
+  - id: create_column_encryption_key
+    name: CREATE COLUMN ENCRYPTION KEY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-column-encryption-key-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE COLUMN ENCRYPTION KEY k WITH VALUES (COLUMN_MASTER_KEY = cmk, ALGORITHM = 'RSA_OAEP', ENCRYPTED_VALUE = 0x016E);" }
+      - { id: two_values, sql: "CREATE COLUMN ENCRYPTION KEY k WITH VALUES (COLUMN_MASTER_KEY = cmk1, ALGORITHM = 'RSA_OAEP', ENCRYPTED_VALUE = 0x016E), (COLUMN_MASTER_KEY = cmk2, ALGORITHM = 'RSA_OAEP', ENCRYPTED_VALUE = 0x017F);" }
+
+  - id: create_column_master_key
+    name: CREATE COLUMN MASTER KEY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-column-master-key-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE COLUMN MASTER KEY k WITH (KEY_STORE_PROVIDER_NAME = 'MSSQL_CERTIFICATE_STORE', KEY_PATH = 'CurrentUser/My/abc');" }
+      - { id: enclave_computations, sql: "CREATE COLUMN MASTER KEY k WITH (KEY_STORE_PROVIDER_NAME = 'MSSQL_CERTIFICATE_STORE', KEY_PATH = 'CurrentUser/My/abc', ENCLAVE_COMPUTATIONS (SIGNATURE = 0x01AB));" }
+
+  - id: create_contract
+    name: CREATE CONTRACT
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-contract-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE CONTRACT c (m1 SENT BY INITIATOR);" }
+      - { id: authorization_multiple, sql: "CREATE CONTRACT c AUTHORIZATION u (m1 SENT BY INITIATOR, m2 SENT BY TARGET, [DEFAULT] SENT BY ANY);" }
+
+  - id: create_credential
+    name: CREATE CREDENTIAL
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-credential-transact-sql
+    tier: low
+    probes:
+      - { id: identity, sql: "CREATE CREDENTIAL c WITH IDENTITY = 'i';" }
+      - { id: secret_provider, sql: "CREATE CREDENTIAL c WITH IDENTITY = 'i', SECRET = 's' FOR CRYPTOGRAPHIC PROVIDER p;" }
+
+  - id: create_cryptographic_provider
+    name: CREATE CRYPTOGRAPHIC PROVIDER
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-cryptographic-provider-transact-sql
+    tier: low
+    probes:
+      - { id: from_file, sql: "CREATE CRYPTOGRAPHIC PROVIDER p FROM FILE = 'c:\\ekm.dll';" }
+
+  - id: create_database_audit_specification
+    name: CREATE DATABASE AUDIT SPECIFICATION
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-database-audit-specification-transact-sql
+    tier: low
+    probes:
+      - { id: for_server_audit, sql: "CREATE DATABASE AUDIT SPECIFICATION s FOR SERVER AUDIT a;" }
+      - { id: action_group_state, sql: "CREATE DATABASE AUDIT SPECIFICATION s FOR SERVER AUDIT a ADD (SCHEMA_OBJECT_ACCESS_GROUP) WITH (STATE = ON);" }
+      - { id: action_on_securable, sql: "CREATE DATABASE AUDIT SPECIFICATION s FOR SERVER AUDIT a ADD (SELECT, INSERT ON OBJECT::dbo.t BY public);" }
+
+  - id: create_database_encryption_key
+    name: CREATE DATABASE ENCRYPTION KEY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-database-encryption-key-transact-sql
+    tier: low
+    probes:
+      - { id: certificate, sql: "CREATE DATABASE ENCRYPTION KEY WITH ALGORITHM = AES_256 ENCRYPTION BY SERVER CERTIFICATE c;" }
+      - { id: asymmetric_key, sql: "CREATE DATABASE ENCRYPTION KEY WITH ALGORITHM = AES_128 ENCRYPTION BY SERVER ASYMMETRIC KEY k;" }
+
+  - id: create_database_scoped_credential
+    name: CREATE DATABASE SCOPED CREDENTIAL
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-database-scoped-credential-transact-sql
+    tier: low
+    probes:
+      - { id: identity, sql: "CREATE DATABASE SCOPED CREDENTIAL c WITH IDENTITY = 'i';" }
+      - { id: identity_secret, sql: "CREATE DATABASE SCOPED CREDENTIAL c WITH IDENTITY = 'SHARED ACCESS SIGNATURE', SECRET = 's';" }
+
+  - id: create_default
+    name: CREATE DEFAULT
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-default-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE DEFAULT d AS 'unknown';" }
+      - { id: schema_qualified, sql: "CREATE DEFAULT dbo.d AS 0;" }
+
+  - id: create_endpoint
+    name: CREATE ENDPOINT
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-endpoint-transact-sql
+    tier: low
+    probes:
+      - { id: tsql, sql: "CREATE ENDPOINT e STATE = STARTED AS TCP (LISTENER_PORT = 1433) FOR TSQL ();" }
+      - { id: service_broker, sql: "CREATE ENDPOINT e AUTHORIZATION l STATE = STARTED AS TCP (LISTENER_PORT = 4022, LISTENER_IP = ALL) FOR SERVICE_BROKER (AUTHENTICATION = WINDOWS KERBEROS, ENCRYPTION = REQUIRED ALGORITHM AES, MESSAGE_FORWARDING = ENABLED, MESSAGE_FORWARD_SIZE = 10);" }
+      - { id: database_mirroring, sql: "CREATE ENDPOINT e STATE = STARTED AS TCP (LISTENER_PORT = 5022) FOR DATABASE_MIRRORING (AUTHENTICATION = CERTIFICATE c, ENCRYPTION = REQUIRED ALGORITHM AES, ROLE = ALL);" }
+
+  - id: create_event_notification
+    name: CREATE EVENT NOTIFICATION
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-event-notification-transact-sql
+    tier: low
+    probes:
+      - { id: on_server, sql: "CREATE EVENT NOTIFICATION n ON SERVER FOR DDL_LOGIN_EVENTS TO SERVICE 'svc', 'current database';" }
+      - { id: on_queue_fan_in, sql: "CREATE EVENT NOTIFICATION n ON QUEUE q WITH FAN_IN FOR QUEUE_ACTIVATION TO SERVICE 'svc', 'current database';" }
+
+  - id: create_event_session
+    name: CREATE EVENT SESSION
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-event-session-transact-sql
+    tier: low
+    probes:
+      - { id: event_on_server, sql: "CREATE EVENT SESSION s ON SERVER ADD EVENT sqlserver.sql_statement_completed;" }
+      - id: event_action_where_target_options
+        sql: |-
+          CREATE EVENT SESSION s ON SERVER
+          ADD EVENT sqlserver.sql_statement_completed (SET collect_statement = 1 ACTION (sqlserver.sql_text) WHERE duration > 1000)
+          ADD TARGET package0.event_file (SET filename = N'c:\s.xel', max_file_size = 5)
+          WITH (MAX_MEMORY = 4096 KB, EVENT_RETENTION_MODE = ALLOW_SINGLE_EVENT_LOSS, MAX_DISPATCH_LATENCY = 30 SECONDS, STARTUP_STATE = OFF);
+      - { id: on_database, sql: "CREATE EVENT SESSION s ON DATABASE ADD EVENT sqlserver.sql_statement_completed ADD TARGET package0.ring_buffer;" }
+
+  - id: create_external_data_source
+    name: CREATE EXTERNAL DATA SOURCE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-external-data-source-transact-sql
+    tier: low
+    probes:
+      - { id: location, sql: "CREATE EXTERNAL DATA SOURCE ds WITH (LOCATION = 'sqlserver://server:1433');" }
+      - { id: location_credential, sql: "CREATE EXTERNAL DATA SOURCE ds WITH (LOCATION = 'abs://c@acct.blob.core.windows.net/', CREDENTIAL = cred);" }
+      - { id: hadoop, sql: "CREATE EXTERNAL DATA SOURCE ds WITH (LOCATION = 'hdfs://nn:8020', RESOURCE_MANAGER_LOCATION = 'rm:8050', CREDENTIAL = cred, TYPE = HADOOP);" }
+
+  - id: create_external_language
+    name: CREATE EXTERNAL LANGUAGE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-external-language-transact-sql
+    tier: low
+    probes:
+      - { id: from_content, sql: "CREATE EXTERNAL LANGUAGE l FROM (CONTENT = N'c:\\l.zip', FILE_NAME = 'ext.dll');" }
+      - { id: platform, sql: "CREATE EXTERNAL LANGUAGE l AUTHORIZATION u FROM (CONTENT = N'c:\\l.zip', FILE_NAME = 'ext.dll', PLATFORM = WINDOWS), (CONTENT = N'/l.tar.gz', FILE_NAME = 'ext.so', PLATFORM = LINUX);" }
+
+  - id: create_external_library
+    name: CREATE EXTERNAL LIBRARY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-external-library-transact-sql
+    tier: low
+    probes:
+      - { id: from_content, sql: "CREATE EXTERNAL LIBRARY lib FROM (CONTENT = 'c:\\lib.zip') WITH (LANGUAGE = 'R');" }
+      - { id: authorization_bits_platform, sql: "CREATE EXTERNAL LIBRARY lib AUTHORIZATION u FROM (CONTENT = 0x504B0304, PLATFORM = WINDOWS) WITH (LANGUAGE = 'Python');" }
+
+  - id: create_external_file_format
+    name: CREATE EXTERNAL FILE FORMAT
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-external-file-format-transact-sql
+    tier: low
+    probes:
+      - { id: delimitedtext, sql: "CREATE EXTERNAL FILE FORMAT ff WITH (FORMAT_TYPE = DELIMITEDTEXT, FORMAT_OPTIONS (FIELD_TERMINATOR = '|', STRING_DELIMITER = '\"', FIRST_ROW = 2), DATA_COMPRESSION = 'org.apache.hadoop.io.compress.GzipCodec');" }
+      - { id: parquet, sql: "CREATE EXTERNAL FILE FORMAT ff WITH (FORMAT_TYPE = PARQUET, DATA_COMPRESSION = 'org.apache.hadoop.io.compress.SnappyCodec');" }
+
+  - id: create_external_resource_pool
+    name: CREATE EXTERNAL RESOURCE POOL
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-external-resource-pool-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE EXTERNAL RESOURCE POOL p;" }
+      - { id: with_options, sql: "CREATE EXTERNAL RESOURCE POOL p WITH (MAX_CPU_PERCENT = 50, MAX_MEMORY_PERCENT = 25, MAX_PROCESSES = 5);" }
+
+  - id: create_fulltext_catalog
+    name: CREATE FULLTEXT CATALOG
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-fulltext-catalog-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE FULLTEXT CATALOG cat;" }
+      - { id: all_options, sql: "CREATE FULLTEXT CATALOG cat ON FILEGROUP fg IN PATH 'c:\\ft' WITH ACCENT_SENSITIVITY = OFF AS DEFAULT AUTHORIZATION u;" }
+
+  - id: create_fulltext_stoplist
+    name: CREATE FULLTEXT STOPLIST
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-fulltext-stoplist-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE FULLTEXT STOPLIST sl;" }
+      - { id: from_system, sql: "CREATE FULLTEXT STOPLIST sl FROM SYSTEM STOPLIST;" }
+      - { id: from_source_authorization, sql: "CREATE FULLTEXT STOPLIST sl FROM db.src AUTHORIZATION u;" }
+
+  - id: create_master_key
+    name: CREATE MASTER KEY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-master-key-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE MASTER KEY;" }
+      - { id: encryption_by_password, sql: "CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'p';" }
+
+  - id: create_message_type
+    name: CREATE MESSAGE TYPE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-message-type-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE MESSAGE TYPE mt;" }
+      - { id: validation_well_formed, sql: "CREATE MESSAGE TYPE mt AUTHORIZATION u VALIDATION = WELL_FORMED_XML;" }
+      - { id: validation_schema_collection, sql: "CREATE MESSAGE TYPE mt VALIDATION = VALID_XML WITH SCHEMA COLLECTION sc;" }
+
+  - id: create_queue
+    name: CREATE QUEUE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/create-queue-transact-sql
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE QUEUE q;" }
+      - id: with_activation
+        sql: |-
+          CREATE QUEUE dbo.q WITH STATUS = ON, RETENTION = OFF,
+          ACTIVATION (STATUS = ON, PROCEDURE_NAME = dbo.p, MAX_QUEUE_READERS = 5, EXECUTE AS SELF),
+          POISON_MESSAGE_HANDLING (STATUS = OFF)
+          ON [DEFAULT];

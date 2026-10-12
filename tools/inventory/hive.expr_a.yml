@@ -1,0 +1,176 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements: []
+
+expressions:
+  - id: a_integral_literals
+    name: Integral literals and postfixes
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-types/
+    tier: high
+    probes:
+      - { id: integer, sql: "SELECT 1, 42, -7;" }
+      - { id: tinyint_postfix, sql: "SELECT 100Y;" }
+      - { id: smallint_postfix, sql: "SELECT 100S;" }
+      - { id: bigint_postfix, sql: "SELECT 100L;" }
+      - { id: bigint_range, sql: "SELECT 9223372036854775807;" }
+  - id: a_decimal_float_literals
+    name: Decimal and floating point literals
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-types/
+    tier: high
+    probes:
+      - { id: double_default, sql: "SELECT 1.5, .5, 10.25;" }
+      - { id: decimal_postfix, sql: "SELECT 1.5BD, 18446744073709001000BD;" }
+      - { id: cast_bd, sql: "SELECT CAST(18446744073709001000BD AS DECIMAL(38,0));" }
+      - { id: double_postfix, sql: "SELECT 1.5D, 2D;" }
+      - { id: float_postfix, sql: "SELECT 1.5F;" }
+  - id: a_boolean_null_literals
+    name: Boolean and NULL literals
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-types/
+    tier: high
+    probes:
+      - { id: boolean, sql: "SELECT TRUE, FALSE;" }
+      - { id: "null", sql: "SELECT NULL;" }
+  - id: a_string_literals
+    name: String literals
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-types/
+    tier: high
+    probes:
+      - { id: single_quoted, sql: "SELECT 'abc';" }
+      - { id: double_quoted, sql: 'SELECT "abc";' }
+      - { id: backslash_escape, sql: "SELECT 'it\\'s', 'a\\nb', 'tab\\there';" }
+      - { id: double_quote_escape, sql: 'SELECT "say \"hi\"";' }
+      - { id: unicode_escape, sql: "SELECT '\\u0041';" }
+      - { id: adjacent_concatenation, sql: "SELECT 'a' 'b';", note: "Hive concatenates adjacent string literals" }
+  - id: a_date_timestamp_literals
+    name: Date and timestamp literals
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-types/
+    tier: high
+    probes:
+      - { id: date, sql: "SELECT DATE '2024-01-15';" }
+      - { id: timestamp, sql: "SELECT TIMESTAMP '2024-01-15 10:20:30';" }
+      - { id: timestamp_fraction, sql: "SELECT TIMESTAMP '2024-01-15 10:20:30.123456789';" }
+      - { id: timestamp_local_tz, sql: "SELECT TIMESTAMPLOCALTZ '2024-01-15 10:20:30 America/Los_Angeles';" }
+  - id: a_interval_literals
+    name: Interval literals
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-types/
+    tier: high
+    probes:
+      - { id: quoted_day, sql: "SELECT INTERVAL '1' DAY;" }
+      - { id: year_to_month, sql: "SELECT INTERVAL '1-2' YEAR TO MONTH;" }
+      - { id: day_to_second, sql: "SELECT INTERVAL '1 2:3:4.000005' DAY TO SECOND;" }
+      - { id: unquoted_constant, sql: "SELECT INTERVAL 1 DAY;" }
+      - { id: expression_interval, sql: "SELECT INTERVAL (1 + 2) DAY;" }
+      - { id: plural_unit, sql: "SELECT INTERVAL 2 SECONDS, INTERVAL 3 WEEKS;" }
+      - { id: date_plus_interval, sql: "SELECT DATE '2024-01-15' + INTERVAL '1' MONTH;" }
+      - { id: timestamp_minus_interval, sql: "SELECT TIMESTAMP '2024-01-15 10:00:00' - INTERVAL 1 HOUR;" }
+  - id: a_complex_type_constructors
+    name: Array, map, struct and union constructors
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-udf/
+    tier: high
+    probes:
+      - { id: array, sql: "SELECT array(1, 2, 3);" }
+      - { id: map, sql: "SELECT map('a', 1, 'b', 2);" }
+      - { id: struct, sql: "SELECT struct(1, 'a');" }
+      - { id: named_struct, sql: "SELECT named_struct('x', 1, 'y', 'a');" }
+      - { id: create_union, sql: "SELECT create_union(0, 1, 'a');" }
+      - { id: nested, sql: "SELECT array(map('k', array(1, 2)), map('k', array(3)));" }
+  - id: a_complex_type_access
+    name: Operators on complex types
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-udf/
+    tier: high
+    probes:
+      - { id: array_index, sql: "SELECT a[0] FROM t;" }
+      - { id: map_key, sql: "SELECT m['k'] FROM t;" }
+      - { id: struct_field, sql: "SELECT s.x FROM t;" }
+      - { id: chained, sql: "SELECT t.a[1].x, t.m['k'][0] FROM t;" }
+      - { id: expression_index, sql: "SELECT a[size(a) - 1] FROM t;" }
+  - id: a_json_functions
+    name: JSON access functions
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-udf/
+    tier: medium
+    probes:
+      - { id: get_json_object, sql: "SELECT get_json_object(j, '$.store.fruit[0].weight') FROM t;" }
+      - { id: json_tuple, sql: "SELECT json_tuple(j, 'a', 'b') FROM t;" }
+      - { id: json_string_literal, sql: "SELECT get_json_object('{\"a\":1}', '$.a');" }
+  - id: a_primitive_types
+    name: Primitive type names
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-types/
+    tier: high
+    probes:
+      - { id: integral, sql: "CREATE TABLE t (a TINYINT, b SMALLINT, c INT, d INTEGER, e BIGINT);" }
+      - { id: floating, sql: "CREATE TABLE t (a FLOAT, b DOUBLE, c DOUBLE PRECISION);" }
+      - { id: decimal, sql: "CREATE TABLE t (a DECIMAL, b DECIMAL(10), c DECIMAL(10,2), d NUMERIC(10,2));" }
+      - { id: string_types, sql: "CREATE TABLE t (a STRING, b VARCHAR(100), c CHAR(10));" }
+      - { id: date_time, sql: "CREATE TABLE t (a DATE, b TIMESTAMP, c TIMESTAMP WITH LOCAL TIME ZONE);" }
+      - { id: misc, sql: "CREATE TABLE t (a BOOLEAN, b BINARY);" }
+  - id: a_complex_types
+    name: Complex and parameterized type names
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-types/
+    tier: high
+    probes:
+      - { id: array_type, sql: "CREATE TABLE t (a ARRAY<INT>);" }
+      - { id: map_type, sql: "CREATE TABLE t (m MAP<STRING, INT>);" }
+      - { id: struct_type, sql: "CREATE TABLE t (s STRUCT<x:INT, y:STRING>);" }
+      - { id: struct_comment, sql: "CREATE TABLE t (s STRUCT<x:INT COMMENT 'cx', y:STRING>);" }
+      - { id: uniontype, sql: "CREATE TABLE t (u UNIONTYPE<INT, STRING>);" }
+      - { id: nested, sql: "CREATE TABLE t (n ARRAY<STRUCT<k:STRING, v:MAP<STRING, ARRAY<DECIMAL(10,2)>>>>);" }
+  - id: a_cast
+    name: CAST
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-udf/
+    tier: high
+    probes:
+      - { id: cast_int, sql: "SELECT CAST(c AS INT) FROM t;" }
+      - { id: cast_decimal, sql: "SELECT CAST(c AS DECIMAL(10,2)) FROM t;" }
+      - { id: cast_varchar, sql: "SELECT CAST(c AS VARCHAR(20)), CAST(c AS CHAR(5)) FROM t;" }
+      - { id: cast_string, sql: "SELECT CAST(c AS STRING) FROM t;" }
+      - { id: cast_date_timestamp, sql: "SELECT CAST(c AS DATE), CAST(c AS TIMESTAMP) FROM t;" }
+      - { id: cast_complex, sql: "SELECT CAST(c AS ARRAY<INT>), CAST(c AS MAP<STRING, INT>) FROM t;" }
+      - { id: cast_struct, sql: "SELECT CAST(c AS STRUCT<x:INT, y:STRING>) FROM t;" }
+      - { id: cast_format, sql: "SELECT CAST(c AS STRING FORMAT 'yyyy-MM-dd') FROM t;" }
+      - { id: cast_format_date, sql: "SELECT CAST('2024-01-15' AS DATE FORMAT 'yyyy-MM-dd');" }
+      - { id: cast_expression, sql: "SELECT CAST(a + b AS BIGINT) FROM t;" }
+  - id: a_type_conversion_functions
+    name: Type conversion functions
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-udf/
+    tier: medium
+    probes:
+      - { id: binary, sql: "SELECT binary('abc');" }
+      - { id: type_named_functions, sql: "SELECT int('1'), bigint('1'), string(1), double('1.5'), boolean('true');" }
+      - { id: date_fn, sql: "SELECT date('2024-01-15'), timestamp('2024-01-15 10:00:00');" }
+  - id: a_identifier_quoting
+    name: Identifier quoting
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-select/
+    tier: high
+    probes:
+      - { id: backtick_column, sql: "SELECT `c` FROM t;" }
+      - { id: backtick_table, sql: "SELECT `a` FROM `db`.`t`;" }
+      - { id: backtick_reserved, sql: "SELECT `select`, `from` FROM `table`;" }
+      - { id: backtick_space, sql: "SELECT `my col` FROM t;" }
+      - { id: backtick_escape, sql: "SELECT `a``b` FROM t;" }
+      - { id: backtick_alias, sql: "SELECT c AS `my alias` FROM t;" }
+      - { id: regex_column_spec, sql: "SELECT `(ds|hr)?+.+` FROM t;", note: "Regex column specification, with hive.support.quoted.identifiers=none" }
+      - { id: qualified_regex, sql: "SELECT t.`c.*` FROM t;" }
+  - id: a_comments
+    name: Comments
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - { id: line_comment, sql: "SELECT 1; -- comment" }
+      - { id: line_comment_before, sql: "-- leading comment\nSELECT 1;" }
+      - { id: block_comment, sql: "SELECT /* inline */ 1;" }
+      - { id: multiline_block, sql: "/* multi\nline */\nSELECT 1;" }
+      - { id: hint_comment, sql: "SELECT /*+ MAPJOIN(b) */ a.c FROM a JOIN b ON a.k = b.k;" }
+  - id: a_variables_parameters
+    name: Variable substitution and parameters
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-variablesubstitution/
+    tier: medium
+    probes:
+      - { id: hivevar, sql: "SELECT * FROM t WHERE c = '${hivevar:x}';" }
+      - { id: hiveconf, sql: "SELECT * FROM ${hiveconf:tbl};" }
+      - { id: env, sql: "SELECT '${env:HOME}';" }
+      - { id: system, sql: "SELECT '${system:user.name}';" }
+      - { id: bare_variable, sql: "SELECT * FROM t WHERE c = ${x};" }
+      - { id: sql_variable_in_literal, sql: "SELECT * FROM t WHERE ds = '${hivevar:ds}' AND k > ${hivevar:n};" }

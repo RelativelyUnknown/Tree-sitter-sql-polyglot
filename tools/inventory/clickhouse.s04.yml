@@ -1,0 +1,113 @@
+dialect: clickhouse
+engine: ClickHouse
+version: "current docs (2026)"
+source: https://clickhouse.com/docs/sql-reference/statements/
+
+statements:
+  - id: rollback
+    name: ROLLBACK
+    doc: https://clickhouse.com/docs/guides/developer/transactional
+    tier: high
+    probes:
+      - id: rollback
+        sql: "ROLLBACK;"
+    examples:
+      - "ROLLBACK;"
+
+  - id: create_table
+    name: CREATE TABLE
+    doc: https://clickhouse.com/docs/sql-reference/statements/create/table
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE TABLE t (c1 UInt32, c2 String) ENGINE = MergeTree ORDER BY c1;"
+      - id: if_not_exists
+        sql: "CREATE TABLE IF NOT EXISTS db.t (c1 UInt32) ENGINE = MergeTree ORDER BY c1;"
+      - id: on_cluster
+        sql: "CREATE TABLE t ON CLUSTER cl (c1 UInt32) ENGINE = MergeTree ORDER BY c1;"
+      - id: engine_memory
+        sql: "CREATE TABLE t (c1 String) ENGINE = Memory;"
+      - id: engine_params
+        sql: "CREATE TABLE t (c1 UInt32, c2 DateTime) ENGINE = ReplacingMergeTree(c2) ORDER BY c1;"
+      - id: column_null
+        sql: "CREATE TABLE t (c1 INT NULL, c2 INT NOT NULL) ENGINE = Memory;"
+      - id: column_default
+        sql: "CREATE TABLE t (c1 UInt32 DEFAULT 0, c2 Date DEFAULT toDate(c3), c3 DateTime) ENGINE = Memory;"
+      - id: column_default_inferred_type
+        sql: "CREATE TABLE t (c3 DateTime, c2 DEFAULT toDate(c3)) ENGINE = Memory;"
+      - id: column_materialized
+        sql: "CREATE TABLE t (id UInt64, updated_at DateTime MATERIALIZED now()) ENGINE = MergeTree ORDER BY id;"
+      - id: column_ephemeral
+        sql: "CREATE TABLE t (id UInt64, unhexed String EPHEMERAL, hexed FixedString(4) DEFAULT unhex(unhexed)) ENGINE = MergeTree ORDER BY id;"
+      - id: column_ephemeral_expr
+        sql: "CREATE TABLE t (id UInt64, c1 String EPHEMERAL 'abc') ENGINE = MergeTree ORDER BY id;"
+      - id: column_alias
+        sql: "CREATE TABLE t (id UInt64, size_bytes Int64, size String ALIAS formatReadableSize(size_bytes)) ENGINE = MergeTree ORDER BY id;"
+      - id: column_comment
+        sql: "CREATE TABLE t (c1 UInt32 COMMENT 'comment for column') ENGINE = Memory;"
+      - id: column_codec
+        sql: "CREATE TABLE t (dt Date CODEC(ZSTD), ts DateTime CODEC(LZ4HC), f Float32 CODEC(NONE), d Float64 CODEC(LZ4HC(9)), v Float32 CODEC(Delta, ZSTD)) ENGINE = MergeTree ORDER BY dt;"
+      - id: column_codec_comment_any_order
+        sql: "CREATE TABLE t (c1 UInt32 COMMENT 'comment for column' CODEC(ZSTD)) ENGINE = MergeTree ORDER BY c1;"
+      - id: column_ttl
+        sql: "CREATE TABLE t (d DateTime, c1 String TTL d + INTERVAL 1 MONTH) ENGINE = MergeTree ORDER BY d;"
+      - id: column_default_comment_codec_ttl
+        sql: "CREATE TABLE t (d DateTime, c1 UInt32 DEFAULT 0 COMMENT 'c' CODEC(ZSTD) TTL d + INTERVAL 1 DAY) ENGINE = MergeTree ORDER BY d;"
+      - id: column_statistics
+        sql: "CREATE TABLE t (c1 UInt32 STATISTICS(tdigest)) ENGINE = MergeTree ORDER BY c1;"
+      - id: column_collate
+        sql: "CREATE TABLE t (c1 String COLLATE 'en') ENGINE = MergeTree ORDER BY c1;"
+      - id: column_primary_key
+        sql: "CREATE TABLE t (c1 UInt32 PRIMARY KEY, c2 String) ENGINE = MergeTree;"
+      - id: column_settings
+        sql: "CREATE TABLE t (c1 String SETTINGS (max_compress_block_size = 8192)) ENGINE = MergeTree ORDER BY c1;"
+      - id: primary_key_inside
+        sql: "CREATE TABLE t (c1 UInt32, c2 String, PRIMARY KEY (c1, c2)) ENGINE = MergeTree;"
+      - id: primary_key_outside
+        sql: "CREATE TABLE t (c1 UInt32, c2 String) ENGINE = MergeTree PRIMARY KEY (c1, c2);"
+      - id: constraint_check
+        sql: "CREATE TABLE t (c1 UInt32, CONSTRAINT c_pos CHECK c1 > 0) ENGINE = MergeTree ORDER BY c1;"
+      - id: constraint_assume
+        sql: "CREATE TABLE users_a (uid Int16, name String, age Int16, name_len UInt8 MATERIALIZED length(name), CONSTRAINT c1 ASSUME length(name) = name_len) ENGINE = MergeTree ORDER BY (name_len, name);"
+      - id: index_definition
+        sql: "CREATE TABLE t (c1 UInt32, c2 String, INDEX idx c2 TYPE bloom_filter GRANULARITY 4) ENGINE = MergeTree ORDER BY c1;"
+      - id: projection
+        sql: "CREATE TABLE t (c1 UInt32, c2 String, PROJECTION p (SELECT c2, count() GROUP BY c2)) ENGINE = MergeTree ORDER BY c1;"
+      - id: engine_partition_by
+        sql: "CREATE TABLE t (d Date, c1 UInt32) ENGINE = MergeTree PARTITION BY toYYYYMM(d) ORDER BY c1;"
+      - id: engine_order_by_tuple
+        sql: "CREATE TABLE t (c1 UInt32) ENGINE = MergeTree ORDER BY tuple();"
+      - id: engine_sample_by
+        sql: "CREATE TABLE t (c1 UInt32, h UInt64) ENGINE = MergeTree ORDER BY (c1, h) SAMPLE BY h;"
+      - id: engine_ttl
+        sql: "CREATE TABLE t (d DateTime, c1 UInt32) ENGINE = MergeTree ORDER BY d TTL d + INTERVAL 1 MONTH;"
+      - id: engine_settings
+        sql: "CREATE TABLE t (c1 UInt32) ENGINE = MergeTree ORDER BY c1 SETTINGS index_granularity = 8192;"
+      - id: table_comment
+        sql: "CREATE TABLE t (x String) ENGINE = Memory COMMENT 'The temporary table';"
+      - id: table_comment_after_storage_clauses
+        sql: "CREATE TABLE t (c1 UInt32) ENGINE = MergeTree ORDER BY c1 SETTINGS index_granularity = 8192 COMMENT 'Comment';"
+      - id: table_comment_then_query_settings
+        sql: "CREATE TABLE t (c1 UInt32) ENGINE = MergeTree ORDER BY c1 COMMENT 'Comment' SETTINGS max_threads = 1;"
+      - id: as_table
+        sql: "CREATE TABLE t_clone AS t;"
+      - id: as_table_qualified_engine
+        sql: "CREATE TABLE IF NOT EXISTS db2.t_clone AS db.t ENGINE = Memory;"
+      - id: clone_as
+        sql: "CREATE TABLE t_clone CLONE AS t;"
+      - id: clone_as_engine
+        sql: "CREATE TABLE IF NOT EXISTS db2.t_clone CLONE AS db.t ENGINE = MergeTree;"
+      - id: as_table_function
+        sql: "CREATE TABLE t AS numbers(10);"
+      - id: as_select
+        sql: "CREATE TABLE t ENGINE = Memory AS SELECT 1;"
+      - id: as_select_columns
+        sql: "CREATE TABLE t (c1 UInt32, c2 String) ENGINE = MergeTree ORDER BY c1 AS SELECT 1, 'a';"
+      - id: temporary
+        sql: "CREATE TEMPORARY TABLE t (c1 UInt32) ENGINE = Memory;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE TABLE t (id UInt64, updated_at DateTime DEFAULT now()) ENGINE = MergeTree ORDER BY id;"
+    examples:
+      - "CREATE TABLE t1 (x String) ENGINE = Memory AS SELECT 1;"
+      - "CREATE TABLE t1 (x String) ENGINE = Memory COMMENT 'The temporary table';"
+      - "CREATE TABLE users_a (uid Int16, name String, age Int16, name_len UInt8 MATERIALIZED length(name), CONSTRAINT c1 ASSUME length(name) = name_len) ENGINE = MergeTree ORDER BY (name_len, name);"

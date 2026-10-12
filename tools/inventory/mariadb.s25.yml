@@ -1,0 +1,65 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements:
+  - id: declare_handler
+    name: DECLARE HANDLER
+    doc: https://mariadb.com/docs/server/reference/sql-statements/programmatic-compound-statements/declare-handler
+    tier: high
+    probes:
+      - { id: continue_sqlstate_value, sql: "CREATE PROCEDURE p() BEGIN DECLARE CONTINUE HANDLER FOR SQLSTATE VALUE '23000' SET @x = 1; SELECT 1; END;" }
+      - { id: continue_sqlstate, sql: "CREATE PROCEDURE p() BEGIN DECLARE CONTINUE HANDLER FOR SQLSTATE '23000' SET @x = 1; SELECT 1; END;" }
+      - { id: exit_handler, sql: "CREATE PROCEDURE p() BEGIN DECLARE EXIT HANDLER FOR SQLSTATE '42S01' SET @x = 1; SELECT 1; END;" }
+      - { id: condition_name, sql: "CREATE PROCEDURE p() BEGIN DECLARE c CONDITION FOR SQLSTATE '45000'; DECLARE CONTINUE HANDLER FOR c SET @x = 1; SELECT 1; END;" }
+      - { id: sqlwarning, sql: "CREATE PROCEDURE p() BEGIN DECLARE CONTINUE HANDLER FOR SQLWARNING SET @x = 1; SELECT 1; END;" }
+      - { id: not_found, sql: "CREATE PROCEDURE p() BEGIN DECLARE done INT DEFAULT 0; DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1; SELECT 1; END;" }
+      - { id: sqlexception, sql: "CREATE PROCEDURE p() BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION SET @x = 1; SELECT 1; END;" }
+      - { id: mariadb_error_code, sql: "CREATE PROCEDURE p() BEGIN DECLARE CONTINUE HANDLER FOR 1050 SET @x = 1; SELECT 1; END;" }
+      - { id: multiple_conditions, sql: "CREATE PROCEDURE p() BEGIN DECLARE EXIT HANDLER FOR SQLWARNING, NOT FOUND, 1062, SQLSTATE '23000' SET @x = 1; SELECT 1; END;" }
+      - { id: compound_statement_body, sql: "CREATE PROCEDURE p() BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN ROLLBACK; SET @x = 1; END; SELECT 1; END;" }
+    examples:
+      - |-
+        CREATE PROCEDURE handlerdemo ( )
+        BEGIN
+          DECLARE CONTINUE HANDLER FOR SQLSTATE '23000' SET @x2 = 1;
+          SET @x = 1;
+          INSERT INTO test.t VALUES (1);
+          SET @x = 2;
+          INSERT INTO test.t VALUES (1);
+          SET @x = 3;
+        END;
+
+  - id: declare_cursor
+    name: DECLARE CURSOR
+    doc: https://mariadb.com/docs/server/reference/sql-statements/programmatic-compound-statements/programmatic-compound-statements-cursors/declare-cursor
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE PROCEDURE p() BEGIN DECLARE c CURSOR FOR SELECT a FROM t; OPEN c; CLOSE c; END;" }
+      - { id: with_parameter, sql: "CREATE PROCEDURE p() BEGIN DECLARE c CURSOR (min_id INT) FOR SELECT a FROM t WHERE id > min_id; OPEN c(1); CLOSE c; END;" }
+      - { id: in_parameter, sql: "CREATE PROCEDURE p() BEGIN DECLARE c CURSOR (IN min_id INT) FOR SELECT a FROM t WHERE id > min_id; OPEN c(1); CLOSE c; END;", note: "IN qualifier supported from MariaDB 10.8" }
+      - { id: multiple_parameters_collate, sql: "CREATE PROCEDURE p() BEGIN DECLARE c CURSOR (IN lo INT, nm VARCHAR(10) COLLATE utf8mb4_bin) FOR SELECT a FROM t WHERE id > lo AND name = nm; OPEN c(1, 'x'); CLOSE c; END;" }
+      - { id: prepared_statement_name, sql: "CREATE PROCEDURE p() BEGIN DECLARE c CURSOR FOR s1; PREPARE s1 FROM 'SELECT a FROM t'; OPEN c; CLOSE c; END;", note: "Cursor bound to a prepared statement name, documented as available starting with MariaDB 12.3" }
+    examples:
+      - |-
+        CREATE OR REPLACE PROCEDURE p1(tab VARCHAR(64), min_id INTEGER)
+        BEGIN
+          DECLARE v_id INT;
+          DECLARE v_c1 VARCHAR(100);
+          DECLARE no_data BOOL DEFAULT FALSE;
+          -- 1. Declare cursor for the statement name 's1'
+          DECLARE c1 CURSOR FOR s1;
+          DECLARE CONTINUE HANDLER FOR NOT FOUND SET no_data = TRUE;
+          -- 2. Prepare the statement dynamically
+          PREPARE s1 FROM CONCAT('SELECT id, c1 FROM ', tab, ' WHERE id >= ?');
+          -- 3. Open cursor and bind parameters
+          OPEN c1 USING min_id;
+          fetch_loop: LOOP
+            FETCH c1 INTO v_id, v_c1;
+            IF no_data THEN LEAVE fetch_loop; END IF;
+            SELECT v_id, v_c1;
+          END LOOP;
+          CLOSE c1;
+          DEALLOCATE PREPARE s1;
+        END;

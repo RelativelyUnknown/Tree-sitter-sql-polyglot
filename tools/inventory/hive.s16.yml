@@ -1,0 +1,45 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: alter_table_storage
+    name: ALTER TABLE CLUSTERED BY / SKEWED / NOT SKEWED
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: clustered_by
+        sql: "ALTER TABLE t CLUSTERED BY (a, b) INTO 4 BUCKETS;"
+      - id: clustered_by_sorted
+        sql: "ALTER TABLE t CLUSTERED BY (a, b) SORTED BY (a, b) INTO 4 BUCKETS;"
+      - id: skewed_by
+        sql: "ALTER TABLE t SKEWED BY (a, b) ON ((1, 2), (3, 4));"
+      - id: skewed_by_stored_as_directories
+        sql: "ALTER TABLE t SKEWED BY (a, b) ON ((1, 2), (3, 4)) STORED AS DIRECTORIES;"
+      - id: not_skewed
+        sql: "ALTER TABLE t NOT SKEWED;"
+      - id: not_stored_as_directories
+        sql: "ALTER TABLE t NOT STORED AS DIRECTORIES;"
+      - id: set_skewed_location
+        sql: "ALTER TABLE t SET SKEWED LOCATION (a='/user/hive/a', b='/user/hive/b');"
+
+  - id: alter_table_constraint
+    name: ALTER TABLE ADD/DROP CONSTRAINT
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: add_primary_key
+        sql: "ALTER TABLE t ADD CONSTRAINT pk PRIMARY KEY (a, b) DISABLE NOVALIDATE;"
+      - id: add_foreign_key
+        sql: "ALTER TABLE t ADD CONSTRAINT fk FOREIGN KEY (a, b) REFERENCES r(a, b) DISABLE NOVALIDATE RELY;"
+      - id: add_unique
+        sql: "ALTER TABLE t ADD CONSTRAINT uq UNIQUE (a, b) DISABLE NOVALIDATE;"
+      - id: change_column_not_null
+        sql: "ALTER TABLE t CHANGE COLUMN c c int CONSTRAINT nn NOT NULL ENABLE;"
+      - id: change_column_default
+        sql: "ALTER TABLE t CHANGE COLUMN c c int CONSTRAINT df DEFAULT 5 ENABLE;"
+      - id: change_column_check
+        sql: "ALTER TABLE t CHANGE COLUMN c c int CONSTRAINT ck CHECK (c > 0) ENABLE;"
+      - id: drop_constraint
+        sql: "ALTER TABLE t DROP CONSTRAINT pk;"

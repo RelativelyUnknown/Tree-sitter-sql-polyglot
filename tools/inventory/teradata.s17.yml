@@ -1,0 +1,77 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: for
+    name: FOR
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/H~G7t1uKjuTewXfnkhWxCA
+    tier: high
+    probes:
+      - id: basic
+        sql: "FOR r AS SELECT a FROM t DO SET x = r.a; END FOR;"
+      - id: labeled
+        sql: "L1: FOR r AS SELECT a FROM t DO SET x = r.a; END FOR L1;"
+      - id: named_cursor
+        sql: "FOR r AS c CURSOR FOR SELECT a FROM t DO SET x = r.a; END FOR;"
+      - id: select_alias_and_expression
+        sql: "FOR r AS c CURSOR FOR SELECT a AS n, b m, (a + 1) k FROM t DO SET x = r.n; END FOR;"
+      - id: select_star
+        sql: "FOR r AS SELECT * FROM t DO SET x = r.a; END FOR;"
+      - id: join_cursor
+        sql: "FOR r AS SELECT t1.a FROM t1 INNER JOIN t2 ON t1.a = t2.a DO SET x = r.a; END FOR;"
+      - id: left_outer_join_cursor
+        sql: "FOR r AS SELECT t1.a FROM t1 LEFT OUTER JOIN t2 ON t1.a = t2.a DO SET x = r.a; END FOR;"
+      - id: set_operator_cursor
+        sql: "FOR r AS SELECT a FROM t1 UNION SELECT a FROM t2 DO SET x = r.a; END FOR;"
+      - id: multiple_statements
+        sql: "FOR r AS SELECT a FROM t DO SET x = r.a; INSERT INTO t2 VALUES (x); END FOR;"
+      - id: where_current_of
+        sql: "FOR r AS c CURSOR FOR SELECT a FROM t DO DELETE FROM t WHERE CURRENT OF c; END FOR;"
+      - id: leave_iterate
+        sql: "L1: FOR r AS SELECT a FROM t DO IF r.a > 1 THEN ITERATE L1; END IF; LEAVE L1; END FOR L1;"
+    examples:
+      - |-
+        L1:
+        FOR CustCursor AS c_customer CURSOR FOR
+          SELECT CustomerNumber AS Number
+                ,CustomerName AS Name
+                ,(Amount + 10000) a
+            FROM customer
+        DO
+          SET hCustNbr = CustCursor.Number;
+          SET hCustName = CustCursor.Name;
+          SET hAmount = CustCursor.a + CustCursor.a * 0.20;
+          INSERT INTO Cust_temp VALUES (hCustNbr, hCustName);
+        END FOR L1;
+      - |-
+        FOR CustCursor AS c_customer CURSOR FOR
+          SELECT CustomerNumber
+                ,CustomerName
+            FROM Customer
+        DO
+          SET hCustNbr = CustCursor.CustomerNumber;
+          SET hCustName = CustCursor.CustomerName;
+          DELETE FROM Customer WHERE CURRENT OF c_customer;
+        END FOR;
+
+  - id: if
+    name: IF
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/5iraaf5tRnV1TjIaztUf4w
+    tier: high
+    probes:
+      - id: if_then
+        sql: "IF x > 1 THEN SET y = 1; END IF;"
+      - id: if_then_else
+        sql: "IF x > 1 THEN SET y = 1; ELSE SET y = 2; END IF;"
+      - id: if_then_elseif
+        sql: "IF x > 1 THEN SET y = 1; ELSEIF x > 0 THEN SET y = 2; END IF;"
+      - id: if_then_elseif_else
+        sql: "IF x > 1 THEN SET y = 1; ELSEIF x > 0 THEN SET y = 2; ELSE SET y = 3; END IF;"
+      - id: multiple_elseif
+        sql: "IF x > 2 THEN SET y = 1; ELSEIF x > 1 THEN SET y = 2; ELSEIF x > 0 THEN SET y = 3; END IF;"
+      - id: multiple_statements
+        sql: "IF x > 1 THEN SET y = 1; SET z = 2; END IF;"
+      - id: compound_condition
+        sql: "IF x > 1 AND y IS NOT NULL THEN SET z = 1; END IF;"

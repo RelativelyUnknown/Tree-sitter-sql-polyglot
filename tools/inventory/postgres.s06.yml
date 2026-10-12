@@ -1,0 +1,197 @@
+dialect: postgres
+engine: PostgreSQL
+version: "17"
+source: https://www.postgresql.org/docs/17/sql-commands.html
+
+statements:
+  - id: create_trigger
+    name: CREATE TRIGGER
+    doc: https://www.postgresql.org/docs/17/sql-createtrigger.html
+    tier: medium
+    probes:
+      - id: before_insert_row
+        sql: "CREATE TRIGGER trg BEFORE INSERT ON t FOR EACH ROW EXECUTE FUNCTION f();"
+      - id: after_update_of_columns
+        sql: "CREATE TRIGGER trg AFTER UPDATE OF a, b ON t FOR EACH ROW EXECUTE FUNCTION f();"
+      - id: multiple_events_statement
+        sql: "CREATE TRIGGER trg AFTER INSERT OR UPDATE OR DELETE OR TRUNCATE ON t FOR EACH STATEMENT EXECUTE FUNCTION f();"
+      - id: instead_of
+        sql: "CREATE TRIGGER trg INSTEAD OF INSERT ON v FOR EACH ROW EXECUTE FUNCTION f();"
+      - id: or_replace
+        sql: "CREATE OR REPLACE TRIGGER trg BEFORE UPDATE ON t FOR EACH ROW EXECUTE FUNCTION f();"
+      - id: when_condition
+        sql: "CREATE TRIGGER trg BEFORE UPDATE ON t FOR EACH ROW WHEN (OLD.a IS DISTINCT FROM NEW.a) EXECUTE FUNCTION f();"
+      - id: referencing_transition_tables
+        sql: "CREATE TRIGGER trg AFTER UPDATE ON t REFERENCING OLD TABLE AS oldtab NEW TABLE AS newtab FOR EACH STATEMENT EXECUTE FUNCTION f();"
+      - id: constraint_deferrable
+        sql: "CREATE CONSTRAINT TRIGGER trg AFTER INSERT ON t FROM s DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION f();"
+      - id: not_deferrable
+        sql: "CREATE CONSTRAINT TRIGGER trg AFTER INSERT ON t NOT DEFERRABLE FOR EACH ROW EXECUTE FUNCTION f();"
+      - id: execute_procedure_args
+        sql: "CREATE TRIGGER trg BEFORE INSERT ON t FOR ROW EXECUTE PROCEDURE f('a', 1);"
+    examples:
+      - "CREATE TRIGGER check_update BEFORE UPDATE ON accounts FOR EACH ROW EXECUTE FUNCTION check_account_update();"
+      - "CREATE OR REPLACE TRIGGER check_update BEFORE UPDATE OF balance ON accounts FOR EACH ROW EXECUTE FUNCTION check_account_update();"
+      - "CREATE TRIGGER paired_items_update AFTER UPDATE ON paired_items REFERENCING NEW TABLE AS newtab OLD TABLE AS oldtab FOR EACH ROW EXECUTE FUNCTION check_matching_pairs();"
+
+  - id: create_type
+    name: CREATE TYPE
+    doc: https://www.postgresql.org/docs/17/sql-createtype.html
+    tier: medium
+    probes:
+      - id: composite
+        sql: "CREATE TYPE t AS (f1 int, f2 text);"
+      - id: composite_collate
+        sql: "CREATE TYPE t AS (f1 text COLLATE \"C\", f2 int);"
+      - id: enum
+        sql: "CREATE TYPE t AS ENUM ('new', 'open', 'closed');"
+      - id: enum_empty
+        sql: "CREATE TYPE t AS ENUM ();"
+      - id: range
+        sql: "CREATE TYPE t AS RANGE (subtype = float8, subtype_diff = float8mi);"
+      - id: range_all_options
+        sql: "CREATE TYPE t AS RANGE (SUBTYPE = int4, SUBTYPE_OPCLASS = int4_ops, COLLATION = \"C\", CANONICAL = f, SUBTYPE_DIFF = g, MULTIRANGE_TYPE_NAME = tmulti);"
+      - id: base_type
+        sql: "CREATE TYPE t (INTERNALLENGTH = 16, INPUT = f_in, OUTPUT = f_out);"
+      - id: base_type_variable_options
+        sql: "CREATE TYPE t (INPUT = f_in, OUTPUT = f_out, RECEIVE = f_recv, SEND = f_send, INTERNALLENGTH = VARIABLE, PASSEDBYVALUE, ALIGNMENT = int4, STORAGE = extended, CATEGORY = 'U', PREFERRED = true, DEFAULT = 'x', ELEMENT = int4, DELIMITER = ',', COLLATABLE = true);"
+      - id: shell_type
+        sql: "CREATE TYPE t;"
+    examples:
+      - "CREATE TYPE compfoo AS (f1 int, f2 text);"
+      - "CREATE TYPE bug_status AS ENUM ('new', 'open', 'closed');"
+      - "CREATE TYPE float8_range AS RANGE (subtype = float8, subtype_diff = float8mi);"
+
+  - id: create_user
+    name: CREATE USER
+    doc: https://www.postgresql.org/docs/17/sql-createuser.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE USER u;"
+      - id: with_password
+        sql: "CREATE USER u WITH PASSWORD 'secret';"
+      - id: encrypted_password
+        sql: "CREATE USER u WITH ENCRYPTED PASSWORD 'secret';"
+      - id: password_null
+        sql: "CREATE USER u PASSWORD NULL;"
+      - id: attribute_flags
+        sql: "CREATE USER u SUPERUSER CREATEDB CREATEROLE INHERIT LOGIN REPLICATION BYPASSRLS;"
+      - id: negated_flags
+        sql: "CREATE USER u NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOLOGIN NOREPLICATION NOBYPASSRLS;"
+      - id: connection_limit_valid_until
+        sql: "CREATE USER u WITH CONNECTION LIMIT 5 VALID UNTIL '2030-01-01';"
+      - id: role_membership
+        sql: "CREATE USER u IN ROLE r1, r2 ROLE r3 ADMIN r4 USER r5;"
+      - id: in_group_sysid
+        sql: "CREATE USER u IN GROUP g SYSID 100;"
+
+  - id: deallocate
+    name: DEALLOCATE
+    doc: https://www.postgresql.org/docs/17/sql-deallocate.html
+    tier: medium
+    probes:
+      - id: name
+        sql: "DEALLOCATE stmt;"
+      - id: prepare_name
+        sql: "DEALLOCATE PREPARE stmt;"
+      - id: all
+        sql: "DEALLOCATE ALL;"
+      - id: prepare_all
+        sql: "DEALLOCATE PREPARE ALL;"
+
+  - id: declare
+    name: DECLARE
+    doc: https://www.postgresql.org/docs/17/sql-declare.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DECLARE c CURSOR FOR SELECT * FROM t;"
+      - id: binary
+        sql: "DECLARE c BINARY CURSOR FOR SELECT * FROM t;"
+      - id: insensitive
+        sql: "DECLARE c INSENSITIVE CURSOR FOR SELECT * FROM t;"
+      - id: asensitive_scroll
+        sql: "DECLARE c ASENSITIVE SCROLL CURSOR FOR SELECT * FROM t;"
+      - id: no_scroll
+        sql: "DECLARE c NO SCROLL CURSOR FOR SELECT * FROM t;"
+      - id: with_hold
+        sql: "DECLARE c CURSOR WITH HOLD FOR SELECT * FROM t;"
+      - id: without_hold
+        sql: "DECLARE c CURSOR WITHOUT HOLD FOR SELECT * FROM t;"
+    examples:
+      - "DECLARE liahona CURSOR FOR SELECT * FROM films;"
+
+  - id: discard
+    name: DISCARD
+    doc: https://www.postgresql.org/docs/17/sql-discard.html
+    tier: medium
+    probes:
+      - id: all
+        sql: "DISCARD ALL;"
+      - id: plans
+        sql: "DISCARD PLANS;"
+      - id: sequences
+        sql: "DISCARD SEQUENCES;"
+      - id: temporary
+        sql: "DISCARD TEMPORARY;"
+      - id: temp
+        sql: "DISCARD TEMP;"
+
+  - id: drop_domain
+    name: DROP DOMAIN
+    doc: https://www.postgresql.org/docs/17/sql-dropdomain.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP DOMAIN d;"
+      - id: if_exists_multiple
+        sql: "DROP DOMAIN IF EXISTS d1, d2;"
+      - id: cascade
+        sql: "DROP DOMAIN d CASCADE;"
+      - id: restrict
+        sql: "DROP DOMAIN d RESTRICT;"
+    examples:
+      - "DROP DOMAIN box;"
+
+  - id: drop_extension
+    name: DROP EXTENSION
+    doc: https://www.postgresql.org/docs/17/sql-dropextension.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP EXTENSION e;"
+      - id: if_exists_multiple
+        sql: "DROP EXTENSION IF EXISTS e1, e2;"
+      - id: cascade
+        sql: "DROP EXTENSION e CASCADE;"
+      - id: restrict
+        sql: "DROP EXTENSION e RESTRICT;"
+    examples:
+      - "DROP EXTENSION hstore;"
+
+  - id: drop_foreign_table
+    name: DROP FOREIGN TABLE
+    doc: https://www.postgresql.org/docs/17/sql-dropforeigntable.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP FOREIGN TABLE ft;"
+      - id: if_exists_multiple
+        sql: "DROP FOREIGN TABLE IF EXISTS ft1, ft2;"
+      - id: cascade
+        sql: "DROP FOREIGN TABLE ft CASCADE;"
+      - id: restrict
+        sql: "DROP FOREIGN TABLE ft RESTRICT;"
+    examples:
+      - "DROP FOREIGN TABLE films, distributors;"
+
+  - id: drop_group
+    name: DROP GROUP
+    doc: https://www.postgresql.org/docs/17/sql-dropgroup.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP GROUP g;"
+      - id: if_exists_multiple
+        sql: "DROP GROUP IF EXISTS g1, g2;"

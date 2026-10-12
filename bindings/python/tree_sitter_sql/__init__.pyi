@@ -13,6 +13,72 @@ LOCALS_QUERY: Final[str] | None
 TAGS_QUERY: Final[str] | None
 """The symbol tagging query for this grammar."""
 
+HIGHLIGHTS_QUERY_SPARK: Final[str]
+"""The syntax highlighting query for the spark_sql dialect."""
+
+HIGHLIGHTS_QUERY_POSTGRES: Final[str]
+"""The syntax highlighting query for the postgres_sql dialect."""
+
+HIGHLIGHTS_QUERY_MYSQL: Final[str]
+"""The syntax highlighting query for the mysql_sql dialect."""
+
+HIGHLIGHTS_QUERY_DATABRICKS: Final[str]
+"""The syntax highlighting query for the databricks_sql dialect."""
+
+HIGHLIGHTS_QUERY_SNOWFLAKE: Final[str]
+"""The syntax highlighting query for the snowflake_sql dialect."""
+
+HIGHLIGHTS_QUERY_BIGQUERY: Final[str]
+"""The syntax highlighting query for the bigquery_sql dialect."""
+
+HIGHLIGHTS_QUERY_MARIADB: Final[str]
+"""The syntax highlighting query for the mariadb_sql dialect."""
+
+HIGHLIGHTS_QUERY_SQLITE: Final[str]
+"""The syntax highlighting query for the sqlite_sql dialect."""
+
+HIGHLIGHTS_QUERY_HIVE: Final[str]
+"""The syntax highlighting query for the hive_sql dialect."""
+
+HIGHLIGHTS_QUERY_ORACLE: Final[str]
+"""The syntax highlighting query for the oracle_sql dialect."""
+
+HIGHLIGHTS_QUERY_DB2: Final[str]
+"""The syntax highlighting query for the db2_sql dialect."""
+
+HIGHLIGHTS_QUERY_TSQL: Final[str]
+"""The syntax highlighting query for the tsql dialect."""
+
+HIGHLIGHTS_QUERY_DUCKDB: Final[str]
+"""The syntax highlighting query for the duckdb_sql dialect."""
+
+HIGHLIGHTS_QUERY_TRINO: Final[str]
+"""The syntax highlighting query for the trino_sql dialect."""
+
+HIGHLIGHTS_QUERY_ATHENA: Final[str]
+"""The syntax highlighting query for the athena_sql dialect."""
+
+HIGHLIGHTS_QUERY_REDSHIFT: Final[str]
+"""The syntax highlighting query for the redshift_sql dialect."""
+
+HIGHLIGHTS_QUERY_CLICKHOUSE: Final[str]
+"""The syntax highlighting query for the clickhouse_sql dialect."""
+
+HIGHLIGHTS_QUERY_FLINK: Final[str]
+"""The syntax highlighting query for the flink_sql dialect."""
+
+HIGHLIGHTS_QUERY_COCKROACHDB: Final[str]
+"""The syntax highlighting query for the cockroachdb_sql dialect."""
+
+HIGHLIGHTS_QUERY_SPANNER: Final[str]
+"""The syntax highlighting query for the spanner_sql dialect."""
+
+HIGHLIGHTS_QUERY_TERADATA: Final[str]
+"""The syntax highlighting query for the teradata_sql dialect."""
+
+HIGHLIGHTS_QUERY_HANA: Final[str]
+"""The syntax highlighting query for the hana_sql dialect."""
+
 def language() -> CapsuleType:
     """The tree-sitter language function for this grammar."""
 

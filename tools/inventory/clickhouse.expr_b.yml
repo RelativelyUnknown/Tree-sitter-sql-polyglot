@@ -1,0 +1,277 @@
+dialect: clickhouse
+engine: ClickHouse
+version: "current docs (2026)"
+source: https://clickhouse.com/docs/sql-reference/statements/
+
+statements: []
+
+expressions:
+  - id: b_access_operators
+    name: Access operators (array subscript, tuple element)
+    doc: https://clickhouse.com/docs/sql-reference/operators
+    tier: high
+    probes:
+      - { id: array_subscript, sql: "SELECT a[1] FROM t;" }
+      - { id: array_subscript_array, sql: "SELECT a[[1, 2]] FROM t;" }
+      - { id: tuple_element, sql: "SELECT a.1 FROM t;" }
+      - { id: tuple_element_nested, sql: "SELECT a.1.2 FROM t;" }
+
+  - id: b_arithmetic_operators
+    name: Arithmetic operators
+    doc: https://clickhouse.com/docs/sql-reference/operators
+    tier: high
+    probes:
+      - { id: negation, sql: "SELECT -a FROM t;" }
+      - { id: multiply_divide_modulo, sql: "SELECT a * b, a / b, a % b FROM t;" }
+      - { id: add_subtract, sql: "SELECT a + b, a - b FROM t;" }
+      - { id: chained_left_assoc, sql: "SELECT 1 + 2 + 3;" }
+      - { id: concatenation, sql: "SELECT s1 || s2 FROM t;" }
+
+  - id: b_comparison_operators
+    name: Comparison operators
+    doc: https://clickhouse.com/docs/sql-reference/operators
+    tier: high
+    probes:
+      - { id: equals, sql: "SELECT a = b, a == b FROM t;" }
+      - { id: not_equals, sql: "SELECT a != b, a <> b FROM t;" }
+      - { id: ordering, sql: "SELECT a < b, a > b, a <= b, a >= b FROM t;" }
+      - { id: null_safe_equals, sql: "SELECT a <=> b FROM t;" }
+      - { id: chained_comparison, sql: "SELECT 4 > 2 > 3;" }
+
+  - id: b_logical_operators
+    name: Logical operators
+    doc: https://clickhouse.com/docs/sql-reference/operators
+    tier: high
+    probes:
+      - { id: and, sql: "SELECT a AND b FROM t;" }
+      - { id: or, sql: "SELECT a OR b FROM t;" }
+      - { id: not, sql: "SELECT NOT a FROM t;" }
+      - { id: mixed, sql: "SELECT * FROM t WHERE a AND NOT b OR c;" }
+
+  - id: b_conditional_operator
+    name: Conditional (ternary) operator
+    doc: https://clickhouse.com/docs/sql-reference/operators
+    tier: high
+    probes:
+      - { id: ternary, sql: "SELECT a ? b : c FROM t;" }
+      - { id: ternary_nested, sql: "SELECT a ? b : c ? d : e FROM t;" }
+
+  - id: b_lambda_and_constructors
+    name: Lambda, array and tuple creation operators
+    doc: https://clickhouse.com/docs/sql-reference/operators
+    tier: high
+    probes:
+      - { id: lambda_single, sql: "SELECT arrayMap(x -> x * 2, [1, 2, 3]);" }
+      - { id: lambda_tuple_params, sql: "SELECT arrayMap((x, y) -> x + y, [1, 2], [3, 4]);" }
+      - { id: array_literal, sql: "SELECT [1, 2, 3];" }
+      - { id: tuple_literal, sql: "SELECT (1, 'a', 3.5);" }
+
+  - id: b_like_predicates
+    name: LIKE, ILIKE and pattern matching predicates
+    doc: https://clickhouse.com/docs/sql-reference/operators
+    tier: high
+    probes:
+      - { id: like, sql: "SELECT a LIKE 'x%' FROM t;" }
+      - { id: not_like, sql: "SELECT a NOT LIKE 'x%' FROM t;" }
+      - { id: ilike, sql: "SELECT a ILIKE 'x%' FROM t;" }
+      - { id: not_ilike, sql: "SELECT a NOT ILIKE 'x%' FROM t;" }
+      - { id: like_escape, sql: "SELECT a LIKE 'x#%' ESCAPE '#' FROM t;" }
+      - { id: regexp, sql: "SELECT a REGEXP '^x' FROM t;" }
+      - { id: tilde_match, sql: "SELECT a ~ '^x' FROM t;" }
+      - { id: not_tilde_match, sql: "SELECT a !~ '^x' FROM t;" }
+      - { id: tilde_match_ci, sql: "SELECT a ~* '^x' FROM t;" }
+      - { id: not_tilde_match_ci, sql: "SELECT a !~* '^x' FROM t;" }
+      - { id: similar_to, sql: "SELECT 'ClickHouse' SIMILAR TO 'Cl_ck[hH]ouse' AS matches;" }
+      - { id: not_similar_to, sql: "SELECT 'ClickHouse' NOT SIMILAR TO 'Cl%ck[0-9]ouse' AS does_not_match;" }
+      - { id: similar_to_escape, sql: "SELECT 'a%b' SIMILAR TO 'a#%b' ESCAPE '#';" }
+    examples:
+      - "SELECT 'ClickHouse' SIMILAR TO 'Cl_ck[hH]ouse' AS matches, 'ClickHouse' NOT SIMILAR TO 'Cl%ck[0-9]ouse' AS does_not_match;"
+      - "SELECT 'a%b' SIMILAR TO 'a#%b' ESCAPE '#';"
+      - "SELECT 'axb' SIMILAR TO 'a#%b' ESCAPE '#';"
+
+  - id: b_between_predicate
+    name: BETWEEN predicate
+    doc: https://clickhouse.com/docs/sql-reference/operators
+    tier: high
+    probes:
+      - { id: between, sql: "SELECT a BETWEEN 1 AND 10 FROM t;" }
+      - { id: not_between, sql: "SELECT a NOT BETWEEN 1 AND 10 FROM t;" }
+
+  - id: b_in_predicates
+    name: IN, NOT IN, GLOBAL IN predicates
+    doc: https://clickhouse.com/docs/sql-reference/operators/in
+    tier: high
+    probes:
+      - { id: in_list, sql: "SELECT UserID IN (123, 456) FROM t;" }
+      - { id: not_in_list, sql: "SELECT a NOT IN (1, 2) FROM t;" }
+      - { id: in_tuple_list, sql: "SELECT (CounterID, UserID) IN ((34, 123), (101500, 456)) FROM t;" }
+      - { id: in_subquery, sql: "SELECT (CounterID, UserID) IN (SELECT CounterID, UserID FROM s) FROM t;" }
+      - { id: in_table_name, sql: "SELECT a FROM t WHERE a IN s;" }
+      - { id: global_in, sql: "SELECT a FROM t WHERE a GLOBAL IN (SELECT a FROM s);" }
+      - { id: global_not_in, sql: "SELECT a FROM t WHERE a GLOBAL NOT IN (SELECT a FROM s);" }
+      - { id: in_tuple_function, sql: "SELECT 1 IN (tuple(1, 2)) AS one_in_tuple;" }
+    examples:
+      - "SELECT UserID IN (123, 456) FROM t;"
+      - "SELECT 1 IN (tuple(1, 2)) AS one_in_tuple, 2 IN (tuple(1, 2)) AS two_in_tuple, 3 IN (tuple(1, 2)) AS three_in_tuple;"
+      - "SELECT tuple(1, 2) IN (tuple(1, 2)) AS tuple_in_tuple;"
+
+  - id: b_subquery_quantifiers
+    name: ANY / ALL / SOME quantified comparisons
+    doc: https://clickhouse.com/docs/sql-reference/operators
+    tier: high
+    probes:
+      - { id: eq_any_subquery, sql: "SELECT a FROM t WHERE a = ANY (SELECT b FROM s);" }
+      - { id: ne_any_subquery, sql: "SELECT a FROM t WHERE a != ANY (SELECT b FROM s);" }
+      - { id: eq_all_subquery, sql: "SELECT a FROM t WHERE a = ALL (SELECT b FROM s);" }
+      - { id: ne_all_subquery, sql: "SELECT a FROM t WHERE a != ALL (SELECT b FROM s);" }
+      - { id: gt_all_subquery, sql: "SELECT number AS a FROM numbers(10) WHERE a > ALL (SELECT number FROM numbers(3, 3));" }
+      - { id: gt_any_subquery, sql: "SELECT number AS a FROM numbers(10) WHERE a > ANY (SELECT number FROM numbers(3, 3));" }
+      - { id: eq_some_array, sql: "SELECT 3 = SOME([1, 2, 3, 4]) AS in_array;" }
+      - { id: lt_some_array, sql: "SELECT 5 < SOME([1, 2, 6]) AS less_than_some;" }
+      - { id: gt_all_array, sql: "SELECT 5 > ALL([1, 2, 3]) AS greater_than_all;" }
+      - { id: like_some_array, sql: "SELECT 'abc' LIKE SOME(['a%', 'z%']) AS like_some;" }
+      - { id: not_like_all_array, sql: "SELECT 'abc' NOT LIKE ALL(['x%', 'y%']);" }
+      - { id: similar_to_some_escape, sql: "SELECT 'a%b' SIMILAR TO SOME(['a#%b', 'z%']) ESCAPE '#';" }
+      - { id: is_distinct_from_some, sql: "SELECT 1 IS DISTINCT FROM SOME([1, 2]);" }
+    examples:
+      - "SELECT number AS a FROM numbers(10) WHERE a > ALL (SELECT number FROM numbers(3, 3));"
+      - "SELECT number AS a FROM numbers(10) WHERE a > ANY (SELECT number FROM numbers(3, 3));"
+      - "SELECT 3 = SOME([1, 2, 3, 4]) AS in_array, 5 < SOME([1, 2, 6]) AS less_than_some, 5 > ALL([1, 2, 3]) AS greater_than_all, 'abc' LIKE SOME(['a%', 'z%']) AS like_some;"
+
+  - id: b_exists_predicate
+    name: EXISTS predicate
+    doc: https://clickhouse.com/docs/sql-reference/operators/exists
+    tier: high
+    probes:
+      - { id: exists, sql: "SELECT EXISTS (SELECT * FROM numbers(10) WHERE number > 8);" }
+      - { id: exists_where, sql: "SELECT a FROM t WHERE EXISTS (SELECT 1 FROM s WHERE s.a = t.a);" }
+      - { id: not_exists, sql: "SELECT a FROM t WHERE NOT EXISTS (SELECT 1 FROM s WHERE s.a = t.a);" }
+    examples:
+      - "SELECT EXISTS (SELECT * FROM numbers(10) WHERE number > 8), EXISTS (SELECT * FROM numbers(10) WHERE number > 11);"
+
+  - id: b_is_predicates
+    name: IS NULL, IS TRUE / FALSE / UNKNOWN and IS DISTINCT FROM
+    doc: https://clickhouse.com/docs/sql-reference/operators
+    tier: high
+    probes:
+      - { id: is_null, sql: "SELECT x FROM t WHERE y IS NULL;" }
+      - { id: is_not_null, sql: "SELECT * FROM t WHERE y IS NOT NULL;" }
+      - { id: is_true, sql: "SELECT x IS TRUE FROM t;" }
+      - { id: is_false, sql: "SELECT x IS FALSE FROM t;" }
+      - { id: is_unknown, sql: "SELECT x IS UNKNOWN FROM t;" }
+      - { id: is_not_true, sql: "SELECT x IS NOT TRUE FROM t;" }
+      - { id: is_not_false, sql: "SELECT x IS NOT FALSE FROM t;" }
+      - { id: is_not_unknown, sql: "SELECT x IS NOT UNKNOWN FROM t;" }
+      - { id: is_distinct_from, sql: "SELECT a IS DISTINCT FROM b FROM t;" }
+      - { id: is_not_distinct_from, sql: "SELECT a IS NOT DISTINCT FROM b FROM t;" }
+    examples:
+      - "SELECT x + 100 FROM t_null WHERE y IS NULL;"
+      - "SELECT * FROM t_null WHERE y IS NOT NULL;"
+      - "SELECT x, x IS TRUE, x IS FALSE, x IS UNKNOWN, x IS NOT TRUE, x IS NOT FALSE, x IS NOT UNKNOWN FROM t_bool;"
+
+  - id: b_case_expression
+    name: CASE expression
+    doc: https://clickhouse.com/docs/sql-reference/operators
+    tier: high
+    probes:
+      - { id: simple_case, sql: "SELECT CASE x WHEN 1 THEN 'a' WHEN 2 THEN 'b' ELSE 'c' END FROM t;" }
+      - { id: simple_case_no_else, sql: "SELECT CASE x WHEN 1 THEN 'a' END FROM t;" }
+      - { id: searched_case, sql: "SELECT CASE WHEN x > 1 THEN 'a' WHEN x > 0 THEN 'b' ELSE 'c' END FROM t;" }
+      - { id: case_in_where, sql: "SELECT * FROM t WHERE CASE WHEN a THEN b ELSE c END;" }
+
+  - id: b_interval_operator
+    name: INTERVAL operator
+    doc: https://clickhouse.com/docs/sql-reference/operators
+    tier: high
+    probes:
+      - { id: interval_unit, sql: "SELECT now() + INTERVAL 4 DAY;" }
+      - { id: interval_string_unit, sql: "SELECT now() + INTERVAL '4 day';" }
+      - { id: interval_string_value_unit, sql: "SELECT now() + INTERVAL '4' day;" }
+      - { id: interval_chained, sql: "SELECT now() AS current_date_time, current_date_time + INTERVAL 4 DAY + INTERVAL 3 HOUR;" }
+      - { id: interval_subtract, sql: "SELECT now() - INTERVAL 1 WEEK;" }
+      - { id: interval_month_quarter_year, sql: "SELECT INTERVAL 1 MONTH, INTERVAL 1 QUARTER, INTERVAL 1 YEAR;" }
+    examples:
+      - "SELECT now() AS current_date_time, current_date_time + INTERVAL 4 DAY + INTERVAL 3 HOUR;"
+      - "SELECT now() AS current_date_time, current_date_time + INTERVAL '4 day' + INTERVAL '3 hour';"
+      - "SELECT now() AS current_date_time, current_date_time + INTERVAL '4' day + INTERVAL '3' hour;"
+
+  - id: b_at_time_zone
+    name: AT TIME ZONE and AT LOCAL
+    doc: https://clickhouse.com/docs/sql-reference/operators
+    tier: medium
+    probes:
+      - { id: at_time_zone, sql: "SELECT TIMESTAMP '2001-02-16 20:38:40' AT TIME ZONE 'America/Denver';" }
+      - { id: at_local, sql: "SELECT TIMESTAMP '2001-02-16 20:38:40' AT LOCAL;" }
+      - { id: at_time_zone_parens, sql: "SELECT (TIMESTAMP '2001-02-16 20:38:40' + INTERVAL 1 HOUR) AT TIME ZONE 'America/Denver';" }
+    examples:
+      - "SELECT TIMESTAMP '2001-02-16 20:38:40' AT TIME ZONE 'America/Denver';"
+      - "SELECT TIMESTAMP '2001-02-16 20:38:40' AT LOCAL;"
+
+  - id: b_extract
+    name: EXTRACT(part FROM date)
+    doc: https://clickhouse.com/docs/sql-reference/operators
+    tier: high
+    probes:
+      - { id: extract_day, sql: "SELECT EXTRACT(DAY FROM toDate('2017-06-15'));" }
+      - { id: extract_month, sql: "SELECT EXTRACT(MONTH FROM d) FROM t;" }
+      - { id: extract_year, sql: "SELECT EXTRACT(YEAR FROM d) FROM t;" }
+      - { id: extract_epoch, sql: "SELECT EXTRACT(EPOCH FROM toDateTime('2024-01-15 12:30:45', 'UTC'));" }
+      - { id: extract_dow, sql: "SELECT EXTRACT(DOW FROM toDate('2024-01-15'));" }
+      - { id: extract_timezone_hour, sql: "SELECT EXTRACT(TIMEZONE_HOUR FROM toDateTime('2024-01-15 12:00:00', 'Asia/Kolkata'));" }
+      - { id: extract_from_interval, sql: "SELECT EXTRACT(DAY FROM INTERVAL 40 DAY);" }
+    examples:
+      - "SELECT EXTRACT(DAY FROM toDate('2017-06-15'));"
+      - "SELECT EXTRACT(MONTH FROM toDate('2017-06-15'));"
+      - "SELECT EXTRACT(YEAR FROM toDate('2017-06-15'));"
+
+  - id: b_overlay
+    name: OVERLAY(string PLACING replacement FROM offset [FOR length])
+    doc: https://clickhouse.com/docs/sql-reference/operators
+    tier: medium
+    probes:
+      - { id: overlay_from, sql: "SELECT OVERLAY('Hello' PLACING 'J' FROM 1);" }
+      - { id: overlay_from_for, sql: "SELECT OVERLAY('Hello' PLACING 'J' FROM 1 FOR 1);" }
+      - { id: overlayutf8_from, sql: "SELECT OVERLAYUTF8('Hello' PLACING 'J' FROM 1);" }
+      - { id: overlayutf8_from_for, sql: "SELECT OVERLAYUTF8('Hello' PLACING 'J' FROM 1 FOR 1);" }
+
+  - id: b_position_in
+    name: POSITION(needle IN haystack)
+    doc: https://clickhouse.com/docs/sql-reference/functions/string-search-functions
+    tier: medium
+    probes:
+      - { id: position_in, sql: "SELECT position('/' IN s) FROM t;" }
+    examples:
+      - "SELECT 6 = position('/' IN s) FROM (SELECT 'Hello/World' AS s);"
+
+  - id: b_substring_from_for
+    name: SUBSTRING(string FROM offset [FOR length])
+    doc: https://clickhouse.com/docs/sql-reference/functions/string-functions
+    tier: medium
+    probes:
+      - { id: substring_comma, sql: "SELECT substring(s, 5, 1) FROM t;" }
+      - { id: substring_from, sql: "SELECT SUBSTRING(s FROM 5) FROM t;", note: "ClickHouse parser accepts the SQL-standard keyword form; the current function page documents only substring(s, offset[, length])" }
+      - { id: substring_from_for, sql: "SELECT SUBSTRING(s FROM 5 FOR 1) FROM t;", note: "same as substring_from" }
+
+  - id: b_trim
+    name: TRIM([BOTH | LEADING | TRAILING] chars FROM string)
+    doc: https://clickhouse.com/docs/sql-reference/functions/string-functions
+    tier: medium
+    probes:
+      - { id: trim_function, sql: "SELECT trimLeft('ClickHouse', 'Click');" }
+      - { id: trim_plain, sql: "SELECT TRIM(s) FROM t;", note: "ClickHouse parser accepts the SQL-standard TRIM form; the current function page documents trimLeft/trimRight/trimBoth only" }
+      - { id: trim_both_from, sql: "SELECT TRIM(BOTH ' ' FROM s) FROM t;", note: "SQL-standard keyword form accepted by the ClickHouse parser" }
+      - { id: trim_leading_from, sql: "SELECT TRIM(LEADING 'x' FROM s) FROM t;", note: "SQL-standard keyword form accepted by the ClickHouse parser" }
+      - { id: trim_trailing_from, sql: "SELECT TRIM(TRAILING 'x' FROM s) FROM t;", note: "SQL-standard keyword form accepted by the ClickHouse parser" }
+
+  - id: b_cast_forms
+    name: "CAST and :: operator"
+    doc: https://clickhouse.com/docs/sql-reference/functions/type-conversion-functions
+    tier: high
+    probes:
+      - { id: cast_comma, sql: "SELECT CAST(x, 'String') FROM t;" }
+      - { id: cast_as, sql: "SELECT CAST(x AS String) FROM t;" }
+      - { id: cast_as_parameterized, sql: "SELECT CAST(0.1 AS Decimal256(76));" }
+      - { id: double_colon, sql: "SELECT x::UInt32 FROM t;" }
+    examples:
+      - "SELECT CAST('2025-01-01' AS Date);"
+      - "SELECT CAST(0.1 AS Decimal256(76));"

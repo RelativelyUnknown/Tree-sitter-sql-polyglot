@@ -1,0 +1,246 @@
+dialect: redshift
+engine: Amazon Redshift
+version: "current"
+source: https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_commands.html
+
+statements: []
+
+expressions:
+  - id: b_math_operators
+    name: Mathematical operator symbols
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_OPERATOR_SYMBOLS.html
+    tier: high
+    probes:
+      - { id: add_sub, sql: "SELECT 2 + 3, 2 - 3;" }
+      - { id: mul_div_mod, sql: "SELECT 2 * 3, 4 / 2, 5 % 4;" }
+      - { id: exponent, sql: "SELECT 2.0 ^ 3.0;" }
+      - { id: square_root, sql: "SELECT |/ 25.0;" }
+      - { id: cube_root, sql: "SELECT ||/ 27.0;" }
+      - { id: absolute, sql: "SELECT @ -5.0;" }
+      - { id: shift_left, sql: "SELECT 1 << 4;" }
+      - { id: shift_right, sql: "SELECT 8 >> 2;" }
+      - { id: bitwise_and, sql: "SELECT 8 & 2;" }
+      - { id: unary_minus, sql: "SELECT -c, +c FROM t;" }
+      - { id: precedence_parens, sql: "SELECT (c + 2.00) * 3 AS comm FROM t;" }
+    examples:
+      - "SELECT commission, (commission + 2.00) AS comm FROM sales WHERE salesid = 10000;"
+      - "SELECT pricepaid, (pricepaid * .20) as twentypct FROM sales WHERE salesid=10000;"
+
+  - id: b_string_concat
+    name: String concatenation operator
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_concat_op.html
+    tier: high
+    probes:
+      - { id: concat, sql: "SELECT 'a' || 'b' || c FROM t;" }
+
+  - id: b_comparison
+    name: Comparison condition
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_comparison_condition.html
+    tier: high
+    probes:
+      - { id: less_greater, sql: "SELECT a < b, a > b FROM t;" }
+      - { id: less_greater_eq, sql: "SELECT a <= b, a >= b FROM t;" }
+      - { id: equal, sql: "SELECT a = b FROM t;" }
+      - { id: not_equal_angle, sql: "SELECT a <> b FROM t;" }
+      - { id: not_equal_bang, sql: "SELECT a != b FROM t;" }
+      - { id: aggregate_comparison, sql: "SELECT c FROM t GROUP BY c HAVING min(x) >= 5;" }
+      - { id: any_subquery, sql: "SELECT * FROM sales WHERE qtysold = ANY (SELECT qtysold FROM sales WHERE dateid = 1882);" }
+      - { id: some_subquery, sql: "SELECT * FROM sales WHERE qtysold = SOME (SELECT qtysold FROM sales WHERE dateid = 1882);" }
+      - { id: all_not_equal_subquery, sql: "SELECT * FROM t WHERE a <> ALL (SELECT a FROM s);" }
+      - { id: all_bang_equal_subquery, sql: "SELECT * FROM t WHERE a != ALL (SELECT a FROM s);" }
+      - { id: is_true, sql: "SELECT userid FROM users WHERE likerock IS TRUE;" }
+      - { id: is_false, sql: "SELECT userid FROM users WHERE likerock IS FALSE;" }
+      - { id: is_unknown, sql: "SELECT firstname, lastname, likerock FROM users WHERE likerock IS UNKNOWN;" }
+      - { id: is_not_true, sql: "SELECT userid FROM users WHERE likerock IS NOT TRUE;" }
+    examples:
+      - "select venueid, venuename, venueseats from venue where venueseats > 10000 order by venueseats desc;"
+      - "select userid from users where likerock = 't' order by 1 limit 5;"
+      - "select firstname, lastname, likerock from users where likerock is unknown order by userid limit 10;"
+
+  - id: b_logical
+    name: Logical conditions
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_logical_condition.html
+    tier: high
+    probes:
+      - { id: and, sql: "SELECT userid, username FROM users WHERE likevegas = 1 AND likesports = 1;" }
+      - { id: or, sql: "SELECT userid, username FROM users WHERE likevegas = 1 OR likesports = 1;" }
+      - { id: not, sql: "SELECT * FROM t WHERE NOT a = 1;" }
+      - { id: combined_parens, sql: "SELECT * FROM t WHERE NOT a = 1 AND (b = 2 OR c = 3);" }
+    examples:
+      - "select userid, username from users where likevegas = 1 and likesports = 1 order by userid;"
+      - "select userid, username from users where likevegas = 1 or likesports = 1 order by userid;"
+
+  - id: b_like
+    name: LIKE and ILIKE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_patternmatching_condition_like.html
+    tier: high
+    probes:
+      - { id: like, sql: "SELECT * FROM t WHERE c LIKE 'E%';" }
+      - { id: not_like, sql: "SELECT * FROM t WHERE c NOT LIKE '%ten%';" }
+      - { id: ilike, sql: "SELECT * FROM t WHERE c ILIKE '__EA%';" }
+      - { id: not_ilike, sql: "SELECT * FROM t WHERE c NOT ILIKE '__EA%';" }
+      - { id: like_escape, sql: "SELECT * FROM t WHERE c LIKE '%start\\_%' ESCAPE '\\';" }
+      - { id: ilike_escape, sql: "SELECT * FROM t WHERE c ILIKE '%start#_%' ESCAPE '#';" }
+      - { id: like_operator, sql: "SELECT * FROM t WHERE c ~~ 'E%';" }
+      - { id: ilike_operator, sql: "SELECT * FROM t WHERE c ~~* 'E%';" }
+      - { id: not_like_operator, sql: "SELECT * FROM t WHERE c !~~ 'E%';" }
+      - { id: not_ilike_operator, sql: "SELECT * FROM t WHERE c !~~* 'E%';" }
+    examples:
+      - "select distinct city from users where city like 'E%' order by city;"
+      - "select distinct lastname from users where lastname like '%ten%' order by lastname;"
+      - "select distinct city from users where city ilike '__EA%' order by city;"
+
+  - id: b_similar_to
+    name: SIMILAR TO
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/pattern-matching-conditions-similar-to.html
+    tier: high
+    probes:
+      - { id: similar_to, sql: "SELECT count(*) FROM event WHERE eventname SIMILAR TO '%(Ring|Die)%';" }
+      - { id: not_similar_to, sql: "SELECT count(*) FROM event WHERE eventname NOT SIMILAR TO '%(Ring|Die)%';" }
+      - { id: similar_to_escape, sql: "SELECT * FROM t WHERE c SIMILAR TO '%start\\_%' ESCAPE '\\';" }
+    examples:
+      - "select count(*) from event where eventname SIMILAR TO '%(Ring|Die)%';"
+
+  - id: b_posix
+    name: POSIX operators
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/pattern-matching-conditions-posix.html
+    tier: high
+    probes:
+      - { id: match, sql: "SELECT count(*) FROM event WHERE eventname ~ '.*(Ring|Die).*';" }
+      - { id: not_match, sql: "SELECT count(*) FROM event WHERE eventname !~ '.*(Ring|Die).*';" }
+    examples:
+      - "select count(*) from event where eventname ~ '.*(Ring|Die).*';"
+
+  - id: b_between
+    name: BETWEEN range condition
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_range_condition.html
+    tier: high
+    probes:
+      - { id: between, sql: "SELECT count(*) FROM sales WHERE qtysold BETWEEN 2 AND 4;" }
+      - { id: not_between, sql: "SELECT count(*) FROM sales WHERE qtysold NOT BETWEEN 4 AND 2;" }
+      - { id: between_dates, sql: "SELECT * FROM sales WHERE saletime BETWEEN '2008-01-01' AND '2008-01-03';" }
+      - { id: between_expressions, sql: "SELECT * FROM t WHERE c + 1 BETWEEN a * 2 AND b - 1;" }
+    examples:
+      - "select count(*) from sales where qtysold between 2 and 4;"
+      - "select min(dateid), max(dateid) from sales where dateid between 1900 and 1910;"
+      - "select count(*) from sales where qtysold not between 4 and 2;"
+
+  - id: b_null_condition
+    name: Null condition
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_null_condition.html
+    tier: high
+    probes:
+      - { id: is_null, sql: "SELECT count(*) FROM sales WHERE qtysold IS NULL;" }
+      - { id: is_not_null, sql: "SELECT count(*) FROM sales WHERE qtysold IS NOT NULL;" }
+    examples:
+      - "select count(*) from sales where qtysold is null;"
+
+  - id: b_exists
+    name: EXISTS condition
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_exists_condition.html
+    tier: high
+    probes:
+      - { id: exists, sql: "SELECT dateid FROM date WHERE EXISTS (SELECT 1 FROM sales WHERE date.dateid = sales.dateid);" }
+      - { id: not_exists, sql: "SELECT dateid FROM date WHERE NOT EXISTS (SELECT 1 FROM sales WHERE date.dateid = sales.dateid);" }
+    examples:
+      - "select dateid from date where exists ( select 1 from sales where date.dateid = sales.dateid ) order by dateid;"
+
+  - id: b_in_condition
+    name: IN condition
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_in_condition.html
+    tier: high
+    probes:
+      - { id: in_list, sql: "SELECT * FROM t WHERE qtysold IN (2, 4, 5);" }
+      - { id: in_strings, sql: "SELECT * FROM date WHERE day IN ('Mon', 'Tues');" }
+      - { id: not_in_list, sql: "SELECT * FROM date WHERE month NOT IN ('Oct', 'Nov', 'Dec');" }
+      - { id: in_subquery, sql: "SELECT * FROM t WHERE a IN (SELECT a FROM s);" }
+      - { id: not_in_subquery, sql: "SELECT * FROM t WHERE a NOT IN (SELECT a FROM s);" }
+      - { id: in_row_lists, sql: "SELECT * FROM t WHERE (a, b) IN ((1, 2), (3, 4));" }
+
+  - id: b_case
+    name: CASE conditional expression
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_CASE_function.html
+    tier: high
+    probes:
+      - { id: simple_case, sql: "SELECT CASE c WHEN 1 THEN 'one' WHEN 2 THEN 'two' ELSE 'other' END FROM t;" }
+      - { id: simple_case_no_else, sql: "SELECT CASE c WHEN 1 THEN 'one' END FROM t;" }
+      - { id: searched_case, sql: "SELECT CASE WHEN c < 10 THEN 'small' WHEN c < 100 THEN 'medium' ELSE 'large' END FROM t;" }
+      - { id: searched_case_no_else, sql: "SELECT CASE WHEN c < 10 THEN 'small' END FROM t;" }
+      - { id: nested_case, sql: "SELECT CASE WHEN a = 1 THEN CASE WHEN b = 2 THEN 'x' ELSE 'y' END ELSE 'z' END FROM t;" }
+      - { id: case_in_aggregate, sql: "SELECT sum(CASE WHEN c = 1 THEN 1 ELSE 0 END) FROM t;" }
+      - { id: case_in_where, sql: "SELECT * FROM t WHERE CASE WHEN a > 0 THEN b ELSE c END = 1;" }
+
+  - id: b_extract
+    name: EXTRACT function
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_EXTRACT_function.html
+    tier: high
+    probes:
+      - { id: extract_column, sql: "SELECT extract(week FROM saletime) AS weeknum FROM sales;" }
+      - { id: extract_timestamp_literal, sql: "SELECT extract(minute FROM timestamp '2009-09-09 12:08:43');" }
+      - { id: extract_abbreviation, sql: "SELECT extract(ms FROM timestamp '2009-09-09 12:08:43.101');" }
+      - { id: extract_year, sql: "SELECT extract(year FROM c) FROM t;" }
+      - { id: extract_epoch, sql: "SELECT extract(epoch FROM c) FROM t;" }
+      - { id: extract_timestamptz, sql: "SELECT extract(year FROM timestamptz '2008-09-09 12:08:43 +02');" }
+      - { id: extract_time, sql: "SELECT extract(hour FROM time '12:08:43');" }
+      - { id: extract_interval, sql: "SELECT extract(month FROM interval '23 months');" }
+    examples:
+      - "select salesid, extract(week from saletime) as weeknum from sales where pricepaid > 9999 order by 2;"
+      - "select extract(minute from timestamp '2009-09-09 12:08:43');"
+      - "select extract(ms from timestamp '2009-09-09 12:08:43.101');"
+
+  - id: b_substring
+    name: SUBSTRING function
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_SUBSTRING.html
+    tier: high
+    probes:
+      - { id: from, sql: "SELECT substring('caterpillar' FROM 4);" }
+      - { id: from_for, sql: "SELECT substring('caterpillar' FROM 4 FOR 3);" }
+      - { id: from_negative, sql: "SELECT substring('caterpillar' FROM -2 FOR 6);" }
+      - { id: comma_form, sql: "SELECT substring('caterpillar', 4, 3);" }
+      - { id: comma_form_column, sql: "SELECT substring(c, 1, 5) FROM t;" }
+      - { id: binary_comma_three, sql: "SELECT substring('abc'::varbyte, 2, 1);" }
+      - { id: binary_comma_two, sql: "SELECT substring('abc'::varbyte, 2);" }
+
+  - id: b_trim
+    name: TRIM function
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_TRIM.html
+    tier: high
+    probes:
+      - { id: plain, sql: "SELECT TRIM('  dog  ');" }
+      - { id: both_from, sql: "SELECT TRIM(BOTH FROM '  dog  ');" }
+      - { id: leading_chars_from, sql: "SELECT TRIM(LEADING '\"' FROM '\"dog\"');" }
+      - { id: trailing_chars_from, sql: "SELECT TRIM(TRAILING '\"' FROM '\"dog\"');" }
+      - { id: both_chars_from, sql: "SELECT TRIM(BOTH 'x' FROM 'xxdogxx');" }
+      - { id: chars_from_no_position, sql: "SELECT TRIM('x' FROM 'xxdogxx');" }
+      - { id: leading_from_no_chars, sql: "SELECT TRIM(LEADING FROM '  dog');" }
+      - { id: trailing_from_no_chars, sql: "SELECT TRIM(TRAILING FROM 'dog  ');" }
+    examples:
+      - "SELECT TRIM('  dog  ');"
+      - "SELECT TRIM(BOTH FROM '  dog  ');"
+      - "SELECT TRIM(LEADING '\"' FROM'\"dog\"');"
+
+  - id: b_position
+    name: POSITION function
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_POSITION.html
+    tier: high
+    probes:
+      - { id: position_in, sql: "SELECT POSITION('fish' IN 'dogfish');" }
+      - { id: position_column, sql: "SELECT POSITION('.' IN commission) FROM sales;" }
+    examples:
+      - "SELECT POSITION('fish' IN 'dog');"
+      - "SELECT POSITION('fish' IN 'dogfish');"
+
+  - id: b_cast
+    name: "CAST function and :: operator"
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_CAST_function.html
+    tier: high
+    probes:
+      - { id: cast_as, sql: "SELECT CAST(pricepaid AS integer) FROM sales;" }
+      - { id: double_colon, sql: "SELECT pricepaid::integer FROM sales;" }
+      - { id: cast_parameterized, sql: "SELECT CAST(c AS decimal(10, 2)) FROM t;" }
+      - { id: double_colon_parameterized, sql: "SELECT c::varchar(20) FROM t;" }
+      - { id: cast_literal_to_date, sql: "SELECT CAST('2008-01-01' AS date);" }
+      - { id: double_colon_chain, sql: "SELECT c::varchar::integer FROM t;" }
+    examples:
+      - "select cast(pricepaid as integer) from sales where salesid=100;"
+      - "select pricepaid::integer from sales where salesid=100;"

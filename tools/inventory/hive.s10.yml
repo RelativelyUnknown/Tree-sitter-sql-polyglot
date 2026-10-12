@@ -1,0 +1,198 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: create_table
+    name: CREATE TABLE
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE TABLE t (c INT);"
+      - id: if_not_exists
+        sql: "CREATE TABLE IF NOT EXISTS t (c INT);"
+      - id: qualified_name
+        sql: "CREATE TABLE db.t (c INT);"
+      - id: temporary
+        sql: "CREATE TEMPORARY TABLE t (c INT);"
+      - id: external
+        sql: "CREATE EXTERNAL TABLE t (c INT);"
+      - id: temporary_external
+        sql: "CREATE TEMPORARY EXTERNAL TABLE IF NOT EXISTS t (c INT);"
+      - id: transactional
+        sql: "CREATE TRANSACTIONAL TABLE t (c STRING) PARTITIONED BY (ds STRING) STORED AS ORC;"
+        note: Hive 4.0 transactional tables (HIVE-18453), from the Transactional Tables section
+      - id: column_comment
+        sql: "CREATE TABLE t (c INT COMMENT 'col comment');"
+      - id: table_comment
+        sql: "CREATE TABLE t (c INT) COMMENT 'table comment';"
+      - id: partitioned_by
+        sql: "CREATE TABLE t (c INT) PARTITIONED BY (dt STRING, country STRING);"
+      - id: partitioned_by_comment
+        sql: "CREATE TABLE t (c INT) PARTITIONED BY (dt STRING COMMENT 'partition col');"
+      - id: clustered_by
+        sql: "CREATE TABLE t (c INT, d INT) CLUSTERED BY (c) INTO 32 BUCKETS;"
+      - id: clustered_by_sorted_by
+        sql: "CREATE TABLE t (c INT, d INT) CLUSTERED BY (c, d) SORTED BY (d ASC, c DESC) INTO 32 BUCKETS;"
+      - id: skewed_by
+        sql: "CREATE TABLE t (k STRING, v STRING) SKEWED BY (k) ON (1, 5, 6);"
+      - id: skewed_by_multi_stored_as_directories
+        sql: "CREATE TABLE t (c1 STRING, c2 INT) SKEWED BY (c1, c2) ON (('s1', 1), ('s3', 3)) STORED AS DIRECTORIES;"
+      - id: row_format_delimited
+        sql: "CREATE TABLE t (c INT) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',';"
+      - id: row_format_delimited_full
+        sql: "CREATE TABLE t (c INT) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' ESCAPED BY '\\\\' COLLECTION ITEMS TERMINATED BY '|' MAP KEYS TERMINATED BY ':' LINES TERMINATED BY '\\n' NULL DEFINED AS 'NULL';"
+      - id: row_format_serde
+        sql: "CREATE TABLE t (c INT) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde';"
+      - id: row_format_serde_properties
+        sql: "CREATE TABLE t (c INT) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.OpenCSVSerde' WITH SERDEPROPERTIES ('separatorChar' = ',', 'quoteChar' = '\"');"
+      - id: stored_as_sequencefile
+        sql: "CREATE TABLE t (c INT) STORED AS SEQUENCEFILE;"
+      - id: stored_as_textfile
+        sql: "CREATE TABLE t (c INT) STORED AS TEXTFILE;"
+      - id: stored_as_rcfile
+        sql: "CREATE TABLE t (c INT) STORED AS RCFILE;"
+      - id: stored_as_orc
+        sql: "CREATE TABLE t (c INT) STORED AS ORC;"
+      - id: stored_as_parquet
+        sql: "CREATE TABLE t (c INT) STORED AS PARQUET;"
+      - id: stored_as_avro
+        sql: "CREATE TABLE t (c INT) STORED AS AVRO;"
+      - id: stored_as_jsonfile
+        sql: "CREATE TABLE t (c INT) STORED AS JSONFILE;"
+      - id: stored_as_inputformat_outputformat
+        sql: "CREATE TABLE t (c INT) STORED AS INPUTFORMAT 'org.apache.hadoop.mapred.TextInputFormat' OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat';"
+      - id: row_format_and_stored_as
+        sql: "CREATE TABLE t (c INT) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE;"
+      - id: stored_by
+        sql: "CREATE TABLE t (c INT) STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler';"
+      - id: stored_by_serdeproperties
+        sql: "CREATE TABLE t (key INT, value STRING) STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler' WITH SERDEPROPERTIES ('hbase.columns.mapping' = ':key,cf:val');"
+      - id: location
+        sql: "CREATE EXTERNAL TABLE t (c INT) LOCATION '/user/hive/t';"
+      - id: tblproperties
+        sql: "CREATE TABLE t (c INT) TBLPROPERTIES ('creator' = 'me', 'created_at' = '2020-01-01');"
+      - id: all_clauses
+        sql: "CREATE EXTERNAL TABLE IF NOT EXISTS db.t (c INT COMMENT 'c', d STRING) COMMENT 'tbl' PARTITIONED BY (dt STRING) CLUSTERED BY (c) SORTED BY (c) INTO 4 BUCKETS ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE LOCATION '/data/t' TBLPROPERTIES ('k' = 'v');"
+      - id: like
+        sql: "CREATE TABLE t LIKE existing_table;"
+      - id: like_temporary_external_if_not_exists
+        sql: "CREATE TEMPORARY EXTERNAL TABLE IF NOT EXISTS db.t LIKE db.existing_table;"
+      - id: like_location
+        sql: "CREATE EXTERNAL TABLE t LIKE existing_table LOCATION '/user/hive/t';"
+      - id: like_tblproperties
+        sql: "CREATE TABLE t LIKE existing_table TBLPROPERTIES ('k' = 'v');"
+      - id: type_tinyint_smallint_bigint_boolean
+        sql: "CREATE TABLE t (a TINYINT, b SMALLINT, c BIGINT, d BOOLEAN);"
+      - id: type_float_double
+        sql: "CREATE TABLE t (a FLOAT, b DOUBLE, c DOUBLE PRECISION);"
+      - id: type_string_binary
+        sql: "CREATE TABLE t (a STRING, b BINARY);"
+      - id: type_timestamp_date
+        sql: "CREATE TABLE t (a TIMESTAMP, b DATE);"
+      - id: type_decimal
+        sql: "CREATE TABLE t (a DECIMAL, b DECIMAL(10, 2));"
+      - id: type_varchar_char
+        sql: "CREATE TABLE t (a VARCHAR(20), b CHAR(5));"
+      - id: type_array
+        sql: "CREATE TABLE t (a ARRAY<STRING>);"
+      - id: type_map
+        sql: "CREATE TABLE t (a MAP<STRING, INT>);"
+      - id: type_struct
+        sql: "CREATE TABLE t (a STRUCT<x: INT, y: STRING>);"
+      - id: type_struct_field_comment
+        sql: "CREATE TABLE t (a STRUCT<x: INT COMMENT 'x coord', y: STRING>);"
+      - id: type_uniontype
+        sql: "CREATE TABLE t (a UNIONTYPE<INT, STRING>);"
+      - id: type_nested
+        sql: "CREATE TABLE t (a ARRAY<MAP<STRING, STRUCT<x: INT, y: ARRAY<STRING>>>>);"
+      - id: column_primary_key
+        sql: "CREATE TABLE t (c INT PRIMARY KEY DISABLE NOVALIDATE);"
+      - id: column_unique
+        sql: "CREATE TABLE t (c INT UNIQUE DISABLE NOVALIDATE);"
+      - id: column_not_null
+        sql: "CREATE TABLE t (c INT NOT NULL);"
+      - id: column_default_literal
+        sql: "CREATE TABLE t (c INT DEFAULT 0);"
+      - id: column_default_current_user
+        sql: "CREATE TABLE t (c STRING DEFAULT CURRENT_USER());"
+      - id: column_default_current_timestamp
+        sql: "CREATE TABLE t (c TIMESTAMP DEFAULT CURRENT_TIMESTAMP());"
+      - id: column_default_null
+        sql: "CREATE TABLE t (c INT DEFAULT NULL);"
+      - id: column_check
+        sql: "CREATE TABLE t (price DOUBLE CHECK (price > 0 AND price <= 1000));"
+      - id: column_check_enable_novalidate_rely
+        sql: "CREATE TABLE t (price DOUBLE CHECK (price > 0) ENABLE NOVALIDATE RELY);"
+      - id: column_constraint_disable_norely
+        sql: "CREATE TABLE t (c INT UNIQUE DISABLE NOVALIDATE NORELY);"
+      - id: table_primary_key
+        sql: "CREATE TABLE t (id1 INT, id2 INT, PRIMARY KEY (id1, id2) DISABLE NOVALIDATE);"
+      - id: table_primary_key_rely
+        sql: "CREATE TABLE t (id1 INT, id2 INT, PRIMARY KEY (id1, id2) DISABLE NOVALIDATE RELY);"
+      - id: table_foreign_key
+        sql: "CREATE TABLE t (id1 INT, id2 INT, CONSTRAINT c1 FOREIGN KEY (id1, id2) REFERENCES pk (id2, id1) DISABLE NOVALIDATE);"
+      - id: table_unique
+        sql: "CREATE TABLE t (id1 INT, id2 INT, CONSTRAINT c1_unique UNIQUE (id1) DISABLE NOVALIDATE);"
+      - id: table_unique_rely
+        sql: "CREATE TABLE t (id1 INT, id2 INT, CONSTRAINT c1_unique UNIQUE (id1, id2) DISABLE NOVALIDATE RELY);"
+      - id: table_check
+        sql: "CREATE TABLE t (id1 INT, id2 INT, CONSTRAINT c1_check CHECK (id1 + id2 > 0));"
+      - id: table_check_enable_novalidate
+        sql: "CREATE TABLE t (id1 INT, id2 INT, CONSTRAINT c1_check CHECK (id1 + id2 > 0) ENABLE NOVALIDATE);"
+      - id: backtick_identifiers
+        sql: "CREATE TABLE `t` (`select` INT, `my col` STRING);"
+    examples:
+      - |-
+        CREATE TABLE page_view(viewTime INT, userid BIGINT, page_url STRING, referrer_url STRING, ip STRING COMMENT 'IP Address of the User') COMMENT 'This is the page view table' PARTITIONED BY(dt STRING, country STRING) CLUSTERED BY(userid) SORTED BY(viewTime) INTO 32 BUCKETS ROW FORMAT DELIMITED FIELDS TERMINATED BY '\001' COLLECTION ITEMS TERMINATED BY '\002' MAP KEYS TERMINATED BY '\003' STORED AS SEQUENCEFILE;
+      - "CREATE TABLE empty_key_value_store LIKE key_value_store;"
+      - "create table constraints1(id1 integer UNIQUE disable novalidate, id2 integer NOT NULL, usr string DEFAULT current_user(), price double CHECK (price > 0 AND price <= 1000));"
+
+  - id: create_table_as_select
+    name: CREATE TABLE AS SELECT (CTAS)
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE TABLE t AS SELECT a, b FROM s;"
+      - id: if_not_exists
+        sql: "CREATE TABLE IF NOT EXISTS t AS SELECT a FROM s;"
+      - id: qualified_name
+        sql: "CREATE TABLE db.t AS SELECT a FROM db.s;"
+      - id: temporary
+        sql: "CREATE TEMPORARY TABLE t AS SELECT a FROM s;"
+      - id: row_format_serde_stored_as
+        sql: "CREATE TABLE t ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.columnar.ColumnarSerDe' STORED AS RCFILE AS SELECT a FROM s;"
+      - id: row_format_delimited
+        sql: "CREATE TABLE t ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE AS SELECT a FROM s;"
+      - id: stored_as_orc
+        sql: "CREATE TABLE t STORED AS ORC AS SELECT a FROM s;"
+      - id: stored_by
+        sql: "CREATE TABLE t STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler' AS SELECT a FROM s;"
+      - id: location
+        sql: "CREATE TABLE t STORED AS ORC LOCATION '/user/hive/t' AS SELECT a FROM s;"
+      - id: tblproperties
+        sql: "CREATE TABLE t TBLPROPERTIES ('k' = 'v') AS SELECT a FROM s;"
+      - id: table_comment
+        sql: "CREATE TABLE t COMMENT 'ctas table' AS SELECT a FROM s;"
+      - id: partitioned_by
+        sql: "CREATE TABLE t PARTITIONED BY (dt) AS SELECT a, dt FROM s;"
+        note: Hive 3.2.0 and later; CTAS can define a partitioning specification (HIVE-20241)
+      - id: clustered_by_buckets
+        sql: "CREATE TABLE t CLUSTERED BY (a) SORTED BY (a) INTO 4 BUCKETS AS SELECT a FROM s;"
+      - id: with_cte
+        sql: "CREATE TABLE t AS WITH x AS (SELECT a FROM s) SELECT a FROM x;"
+        note: Since Hive 0.13.0 the SELECT part can include CTEs
+      - id: select_with_clauses
+        sql: "CREATE TABLE t AS SELECT a, count(*) AS n FROM s WHERE a > 0 GROUP BY a HAVING count(*) > 1 ORDER BY a LIMIT 10;"
+      - id: select_union
+        sql: "CREATE TABLE t AS SELECT a FROM s1 UNION ALL SELECT a FROM s2;"
+      - id: select_sort_by
+        sql: "CREATE TABLE t AS SELECT (key % 1024) new_key, concat(key, value) key_value_pair FROM s SORT BY new_key, key_value_pair;"
+      - id: transactional
+        sql: "CREATE TRANSACTIONAL TABLE t STORED AS ORC AS SELECT a FROM s;"
+    examples:
+      - |-
+        CREATE TABLE new_key_value_store ROW FORMAT SERDE "org.apache.hadoop.hive.serde2.columnar.ColumnarSerDe" STORED AS RCFile AS SELECT (key % 1024) new_key, concat(key, value) key_value_pair FROM key_value_store SORT BY new_key, key_value_pair;

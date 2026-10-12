@@ -1,0 +1,186 @@
+dialect: hana
+engine: SAP HANA Platform
+version: "2.0 SPS 08 (2.0.08)"
+source: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/3bc1a0d4611d40c4a6e3fc7c8e80395d.html?version=2.0.08
+
+statements: []
+
+expressions:
+  - id: a_number_constants
+    name: "Number constants"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767
+    tier: high
+    probes:
+      - { id: integer, sql: "SELECT 123 FROM DUMMY;" }
+      - { id: decimal, sql: "SELECT 123.4 FROM DUMMY;" }
+      - { id: scientific, sql: "SELECT 1.234e2 FROM DUMMY;" }
+      - { id: hexadecimal, sql: "SELECT 0x0abc FROM DUMMY;" }
+      - { id: negative, sql: "SELECT -123, -1.5 FROM DUMMY;" }
+    examples:
+      - "SELECT 123 \"integer\", 123.4 \"decimal1\", 1.234e2 \"decimal2\", 0x0abc \"hexadecimal\" FROM DUMMY;"
+  - id: a_string_constants
+    name: "Character string and Unicode string constants"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767
+    tier: high
+    probes:
+      - { id: simple, sql: "SELECT 'Brian' FROM DUMMY;" }
+      - { id: doubled_quote, sql: "SELECT 'it''s' FROM DUMMY;" }
+      - { id: empty, sql: "SELECT '' FROM DUMMY;" }
+      - { id: unicode_n_prefix, sql: "SELECT N'abc' FROM DUMMY;" }
+    examples:
+      - "SELECT 'Brian' \"character string 1\", '100' \"character string 2\", N'abc' \"unicode string\" FROM DUMMY;"
+  - id: a_binary_constants
+    name: "Binary string constants"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767
+    tier: medium
+    probes:
+      - { id: upper_x, sql: "SELECT X'00abcd' FROM DUMMY;" }
+      - { id: lower_x, sql: "SELECT x'dcba00' FROM DUMMY;" }
+    examples:
+      - "SELECT X'00abcd' \"binary string 1\", x'dcba00' \"binary string 2\" FROM DUMMY;"
+  - id: a_datetime_constants
+    name: "Date, Time and Timestamp constants"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767
+    tier: high
+    probes:
+      - { id: date, sql: "SELECT date'2010-01-01' FROM DUMMY;" }
+      - { id: time, sql: "SELECT time'11:00:00.001' FROM DUMMY;" }
+      - { id: timestamp, sql: "SELECT timestamp'2011-12-31 23:59:59' FROM DUMMY;" }
+      - { id: date_in_predicate, sql: "SELECT * FROM t WHERE d > date'2010-01-01';" }
+      - { id: string_to_date_function, sql: "SELECT TO_DATE('2010-01-01', 'YYYY-MM-DD') FROM DUMMY;" }
+    examples:
+      - "SELECT date'2010-01-01' \"date\", time'11:00:00.001' \"time\", timestamp'2011-12-31 23:59:59' \"timestamp\" FROM DUMMY;"
+  - id: a_boolean_null_constants
+    name: "Boolean and NULL constants"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767
+    tier: high
+    probes:
+      - { id: true_false, sql: "SELECT * FROM t WHERE a = TRUE OR a = FALSE;" }
+      - { id: unknown, sql: "INSERT INTO t VALUES (UNKNOWN);" }
+      - { id: null_value, sql: "SELECT NULL FROM DUMMY;" }
+    examples:
+      - "SELECT A \"boolean\" FROM TEST WHERE A = TRUE;"
+  - id: a_json_object_expression
+    name: "JSON object expressions"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767
+    tier: low
+    probes:
+      - { id: object_insert, sql: "INSERT INTO c VALUES ({ \"firstname\":'John', \"lastname\":'Smith', \"age\":45 });" }
+      - { id: nested_object, sql: "INSERT INTO c VALUES ({ \"firstname\":'John', \"address\": { 'street': 'Main', 'city': 'Heidelberg' } });" }
+      - { id: array_value, sql: "INSERT INTO c VALUES ({ \"tags\": [ 'a', 'b', 1, NULL, TRUE ] });" }
+    note: JSON object expressions are only allowed with JSON collection tables.
+  - id: a_data_types_numeric
+    name: "Numeric data types"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767
+    tier: high
+    probes:
+      - { id: integer_types, sql: "CREATE TABLE t (a TINYINT, b SMALLINT, c INTEGER, d BIGINT);" }
+      - { id: int_synonym, sql: "CREATE TABLE t (a INT);" }
+      - { id: decimal_precision_scale, sql: "CREATE TABLE t (a DECIMAL(5, 4));" }
+      - { id: decimal_precision_only, sql: "CREATE TABLE t (a DECIMAL(10));" }
+      - { id: decimal_no_params, sql: "CREATE TABLE t (a DECIMAL);" }
+      - { id: dec_synonym, sql: "CREATE TABLE t (a DEC(9, 2));" }
+      - { id: smalldecimal, sql: "CREATE TABLE t (a SMALLDECIMAL);" }
+      - { id: floating, sql: "CREATE TABLE t (a REAL, b DOUBLE);" }
+      - { id: float_n, sql: "CREATE TABLE t (a FLOAT(24), b FLOAT);" }
+  - id: a_data_types_character
+    name: "Character string and binary data types"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767
+    tier: high
+    probes:
+      - { id: varchar, sql: "CREATE TABLE t (a VARCHAR(100));" }
+      - { id: varchar_no_length, sql: "CREATE TABLE t (a VARCHAR);" }
+      - { id: nvarchar, sql: "CREATE TABLE t (a NVARCHAR(100));" }
+      - { id: alphanum, sql: "CREATE TABLE t (a ALPHANUM(10));" }
+      - { id: shorttext, sql: "CREATE COLUMN TABLE t (a SHORTTEXT(100));" }
+      - { id: varbinary, sql: "CREATE TABLE t (a VARBINARY(100));" }
+      - { id: legacy_char, sql: "CREATE TABLE t (a CHAR(10), b NCHAR(10));" }
+  - id: a_data_types_datetime_boolean
+    name: "Datetime and boolean data types"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767
+    tier: high
+    probes:
+      - { id: datetime_types, sql: "CREATE TABLE t (a DATE, b TIME, c SECONDDATE, d TIMESTAMP);" }
+      - { id: daydate_synonym, sql: "CREATE TABLE t (a DAYDATE);" }
+      - { id: longdate_synonym, sql: "CREATE TABLE t (a LONGDATE);" }
+      - { id: boolean, sql: "CREATE TABLE t (a BOOLEAN);" }
+  - id: a_data_types_lob_text
+    name: "LOB and text data types"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767
+    tier: medium
+    probes:
+      - { id: lob_types, sql: "CREATE TABLE t (a BLOB, b CLOB, c NCLOB);" }
+      - { id: text, sql: "CREATE COLUMN TABLE t (a TEXT);" }
+      - { id: bintext, sql: "CREATE COLUMN TABLE t (a BINTEXT);" }
+  - id: a_data_types_spatial
+    name: "Spatial data types"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767
+    tier: low
+    probes:
+      - { id: st_point, sql: "CREATE COLUMN TABLE t (a ST_POINT);" }
+      - { id: st_geometry, sql: "CREATE COLUMN TABLE t (a ST_GEOMETRY);" }
+      - { id: st_geometry_srid, sql: "CREATE COLUMN TABLE t (a ST_GEOMETRY(4326));" }
+  - id: a_data_types_array
+    name: "ARRAY data type and array expressions"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767
+    tier: medium
+    probes:
+      - { id: array_column, sql: "CREATE COLUMN TABLE t (a INTEGER ARRAY);" }
+      - { id: array_column_sized, sql: "CREATE COLUMN TABLE t (a VARCHAR(10) ARRAY);" }
+      - { id: array_constructor, sql: "SELECT ARRAY(1, 2, 3) FROM DUMMY;" }
+      - { id: array_element_access, sql: "DO BEGIN DECLARE arr INTEGER ARRAY = ARRAY(1, 2, 3); SELECT :arr[1] FROM DUMMY; END;" }
+      - { id: array_concat, sql: "DO BEGIN DECLARE a INTEGER ARRAY = ARRAY(1); DECLARE b INTEGER ARRAY = ARRAY(2); SELECT CARDINALITY(:a || :b) FROM DUMMY; END;" }
+      - { id: member_of, sql: "SELECT 1 FROM DUMMY WHERE 2 MEMBER OF ARRAY(1, 2, 3);" }
+    note: Array expressions are documented as SQLScript constructs; ARRAY(...) constructor syntax is from the SQLScript reference, not in the pages read.
+  - id: a_cast
+    name: "CAST and type conversion functions"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767
+    tier: high
+    probes:
+      - { id: cast_integer, sql: "SELECT CAST('123' AS INTEGER) FROM DUMMY;" }
+      - { id: cast_varchar_length, sql: "SELECT CAST(a AS VARCHAR(10)) FROM t;" }
+      - { id: cast_nvarchar, sql: "SELECT CAST(a AS NVARCHAR(10)) FROM t;" }
+      - { id: cast_decimal, sql: "SELECT CAST(a AS DECIMAL(10, 2)) FROM t;" }
+      - { id: cast_date, sql: "SELECT CAST('2010-01-01' AS DATE) FROM DUMMY;" }
+      - { id: cast_timestamp, sql: "SELECT CAST(a AS TIMESTAMP) FROM t;" }
+      - { id: to_conversion_function, sql: "SELECT TO_VARCHAR(a), TO_NVARCHAR(a), TO_INTEGER(a), TO_DOUBLE(a), TO_DATE(a), TO_TIMESTAMP(a), TO_DECIMAL(a, 10, 2) FROM t;" }
+      - { id: to_varchar_format, sql: "SELECT TO_VARCHAR(TO_DATE('2010-01-01'), 'DD/MM/YYYY') FROM DUMMY;" }
+    examples:
+      - "SELECT TO_DOUBLE(0.1) + TO_DOUBLE(4.6) AS DOUBLE_SUM FROM DUMMY;"
+  - id: a_identifier_quoting
+    name: "Identifiers and quotation marks"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767
+    tier: high
+    probes:
+      - { id: undelimited, sql: "SELECT MyCol FROM MyTab;" }
+      - { id: delimited, sql: "SELECT \"MyCol\" FROM \"MyTab\";" }
+      - { id: delimited_special_chars, sql: "SELECT \"AB$%CD\" FROM t;" }
+      - { id: doubled_double_quote, sql: "SELECT \"a\"\"b\" FROM t;" }
+      - { id: qualified, sql: "SELECT \"S\".\"T\".\"C\" FROM \"S\".\"T\";" }
+      - { id: create_delimited, sql: "CREATE COLUMN TABLE \"MyTab\" (\"MyCol\" INTEGER);" }
+      - { id: alias_delimited, sql: "SELECT 1 \"alias with space\" FROM DUMMY;" }
+  - id: a_comments
+    name: "Comments"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767
+    tier: high
+    probes:
+      - { id: line_comment, sql: "SELECT 1 FROM DUMMY; -- trailing comment" }
+      - { id: line_comment_before, sql: "-- leading comment\nSELECT 1 FROM DUMMY;" }
+      - { id: block_comment, sql: "SELECT /* inline */ 1 FROM DUMMY;" }
+      - { id: multiline_block_comment, sql: "/* multi\nline */\nSELECT 1 FROM DUMMY;" }
+  - id: a_variables_parameters
+    name: "Variables, parameters and session variables"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767
+    tier: high
+    probes:
+      - { id: prepared_placeholder, sql: "SELECT * FROM t WHERE a = ?;" }
+      - { id: placeholder_insert, sql: "INSERT INTO t VALUES (?, ?);" }
+      - { id: colon_variable, sql: "DO BEGIN DECLARE v INTEGER = 1; SELECT * FROM t WHERE a = :v; END;" }
+      - { id: colon_table_variable, sql: "DO BEGIN tv = SELECT * FROM t; SELECT * FROM :tv; END;" }
+      - { id: set_session_variable, sql: "SET 'TIMESTAMP_FORMAT' = 'DD/MM/YYYY HH:MI:SS';" }
+      - { id: set_session_variable_key, sql: "SET 'APPLICATION' = 'myapp';" }
+      - { id: session_context, sql: "SELECT SESSION_CONTEXT('APPLICATION') FROM DUMMY;" }
+      - { id: view_placeholder_parameter, sql: "SELECT * FROM v (PLACEHOLDER.\"$$IP_A$$\" => 'x');" }
+    note: Colon variable references and PLACEHOLDER parameters come from SQLScript and view-parameter docs, not the pages read.
+    examples:
+      - "SET 'TIMESTAMP_FORMAT' = 'DD/MM/YYYY HH:MI:SS';"

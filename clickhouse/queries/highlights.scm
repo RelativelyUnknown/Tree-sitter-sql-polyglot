@@ -1,3 +1,5 @@
+; inherits: sql
+
 ; ClickHouse dialect keyword highlights
 (keyword_alias) @keyword
 (keyword_attach) @keyword
@@ -100,4 +102,48 @@
   (keyword_explain)
   (keyword_analyze)
   (keyword_verbose)
+] @keyword
+
+; ============================================================
+; Remaining clickhouse keywords
+; ============================================================
+
+[
+  (keyword_apply)
+  (keyword_async)
+  (keyword_catalog)
+  (keyword_changeable_in_readonly)
+  (keyword_cleanup)
+  (keyword_collection)
+  (keyword_const)
+  (keyword_describe)
+  (keyword_dry)
+  (keyword_global)
+  (keyword_hash)
+  (keyword_host)
+  (keyword_identified)
+  (keyword_include)
+  (keyword_ip)
+  (keyword_keyed)
+  (keyword_kill)
+  (keyword_masking)
+  (keyword_move)
+  (keyword_mutation)
+  (keyword_named)
+  (keyword_overridable)
+  (keyword_part)
+  (keyword_parts)
+  (keyword_permissive)
+  (keyword_policy)
+  (keyword_profile)
+  (keyword_query)
+  (keyword_quota)
+  (keyword_readonly)
+  (keyword_restrictive)
+  (keyword_returning)
+  (keyword_run)
+  (keyword_test)
+  (keyword_undrop)
+  (keyword_use)
+  (keyword_writable)
 ] @keyword

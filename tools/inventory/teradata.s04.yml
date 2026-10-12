@@ -1,0 +1,143 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: create_index
+    name: CREATE INDEX
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/VJQMwrRe5qGJBjyIXMWU~w
+    tier: high
+    probes:
+      - { id: unnamed_nusi, sql: "CREATE INDEX (c) ON t;" }
+      - { id: named_index, sql: "CREATE INDEX idx (c) ON t;" }
+      - { id: unique_index, sql: "CREATE UNIQUE INDEX idx (c1, c2) ON t;" }
+      - { id: qualified_table, sql: "CREATE INDEX idx (c) ON db.t;" }
+      - { id: temporary_table, sql: "CREATE INDEX idx (c) ON TEMPORARY t;" }
+      - { id: on_join_index, sql: "CREATE INDEX idx (c) ON db.ji;" }
+      - { id: index_all, sql: "CREATE INDEX idx ALL (c) ON t;" }
+      - { id: multiple_indexes, sql: "CREATE INDEX idx1 (c1), UNIQUE INDEX idx2 (c2) ON t;" }
+      - { id: order_by_values, sql: "CREATE INDEX idx (c1, c2) ORDER BY VALUES (c1) ON t;" }
+      - { id: order_by_hash, sql: "CREATE INDEX idx (c1, c2) ORDER BY HASH (c1) ON t;" }
+      - { id: order_by_default, sql: "CREATE INDEX idx (c1) ORDER BY ON t;" }
+      - { id: with_load_identity, sql: "CREATE INDEX (c) WITH LOAD IDENTITY ON t;" }
+      - { id: with_no_load_identity, sql: "CREATE INDEX (c) WITH NO LOAD IDENTITY ON t;" }
+    examples:
+      - "CREATE UNIQUE INDEX ident (name, ssn) ON employee;"
+      - "CREATE UNIQUE INDEX index_1 (column_1, column_2) ON table_1;"
+      - "CREATE INDEX(dept_no) WITH LOAD IDENTITY ON employee;"
+
+  - id: create_join_index
+    name: CREATE JOIN INDEX
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/L0jXvRzJF0jMiSbEmJW6Pg
+    tier: high
+    probes:
+      - id: simple
+        sql: "CREATE JOIN INDEX ji AS SELECT a, b FROM t;"
+      - id: qualified_name
+        sql: "CREATE JOIN INDEX db.ji AS SELECT a, b FROM db.t;"
+      - id: join_two_tables
+        sql: "CREATE JOIN INDEX ji AS SELECT t1.a, t2.b FROM t1, t2 WHERE t1.a = t2.a;"
+      - id: inner_join
+        sql: "CREATE JOIN INDEX ji AS SELECT t1.a, t2.b FROM t1 INNER JOIN t2 ON t1.a = t2.a;"
+      - id: left_outer_join
+        sql: "CREATE JOIN INDEX ji AS SELECT t1.a, t2.b FROM t1 LEFT OUTER JOIN t2 ON t1.a = t2.a;"
+      - id: right_join_alias
+        sql: "CREATE JOIN INDEX ji AS SELECT x.a, y.b FROM t1 AS x RIGHT JOIN t2 y ON x.a = y.a;"
+      - id: where_clause
+        sql: "CREATE JOIN INDEX ji AS SELECT a, b FROM t WHERE a > 10;"
+      - id: rowid_selection
+        sql: "CREATE JOIN INDEX ji AS SELECT a, ROWID FROM t;"
+      - id: aggregate
+        sql: "CREATE JOIN INDEX ji AS SELECT a, SUM(b) AS sb, COUNT(c) AS cc, MIN(d) AS mn, MAX(d) AS mx FROM t GROUP BY a;"
+      - id: aggregate_order_by
+        sql: "CREATE JOIN INDEX ji AS SELECT a, SUM(b) AS sb FROM t GROUP BY a ORDER BY a;"
+      - id: group_by_position
+        sql: "CREATE JOIN INDEX ji AS SELECT a, SUM(b) FROM t GROUP BY 1 ORDER BY 1;"
+      - id: extract_year
+        sql: "CREATE JOIN INDEX ji AS SELECT a, SUM(b) AS sb, EXTRACT(YEAR FROM d) AS y FROM t GROUP BY a, y ORDER BY y;"
+      - id: extract_month
+        sql: "CREATE JOIN INDEX ji AS SELECT a, EXTRACT(MONTH FROM d) AS m FROM t GROUP BY a, m;"
+      - id: fallback
+        sql: "CREATE JOIN INDEX ji, FALLBACK AS SELECT a, b FROM t;"
+      - id: no_fallback_protection
+        sql: "CREATE JOIN INDEX ji, NO FALLBACK PROTECTION AS SELECT a, b FROM t;"
+      - id: checksum
+        sql: "CREATE JOIN INDEX ji, CHECKSUM = DEFAULT AS SELECT a, b FROM t;"
+      - id: blockcompression
+        sql: "CREATE JOIN INDEX ji, BLOCKCOMPRESSION = MANUAL AS SELECT a, b FROM t;"
+      - id: map
+        sql: "CREATE JOIN INDEX ji, MAP = TD_MAP1 AS SELECT a, b FROM t;"
+      - id: map_colocate
+        sql: "CREATE JOIN INDEX ji, MAP = TD_MAP1 COLOCATE USING col1 AS SELECT a, b FROM t;"
+      - id: multiple_table_options
+        sql: "CREATE JOIN INDEX ji, FALLBACK, CHECKSUM = ALL AS SELECT a, b FROM t;"
+      - id: row_compression
+        sql: "CREATE JOIN INDEX ji AS SELECT (a, b), (c, d) FROM t;"
+      - id: row_keyword
+        sql: "CREATE JOIN INDEX ji AS SELECT ROW (a, b) FROM t;"
+      - id: column_keyword_auto_compress
+        sql: "CREATE JOIN INDEX ji AS SELECT COLUMN (a, b) AUTO COMPRESS FROM t;"
+      - id: no_auto_compress
+        sql: "CREATE JOIN INDEX ji AS SELECT ROW (a, b) NO AUTO COMPRESS FROM t;"
+      - id: primary_index
+        sql: "CREATE JOIN INDEX ji AS SELECT a, b FROM t PRIMARY INDEX (a);"
+      - id: unique_primary_index
+        sql: "CREATE JOIN INDEX ji AS SELECT a, b FROM t UNIQUE PRIMARY INDEX (a);"
+      - id: named_primary_index
+        sql: "CREATE JOIN INDEX ji AS SELECT a, b FROM t PRIMARY INDEX pi_name (a, b);"
+      - id: no_primary_index
+        sql: "CREATE JOIN INDEX ji AS SELECT a, b FROM t NO PRIMARY INDEX;"
+      - id: primary_amp
+        sql: "CREATE JOIN INDEX ji AS SELECT a, b FROM t PRIMARY AMP (a);"
+      - id: primary_amp_index_named
+        sql: "CREATE JOIN INDEX ji AS SELECT a, b FROM t PRIMARY AMP INDEX amp_name (a, b);"
+      - id: partition_by_range_n
+        sql: "CREATE JOIN INDEX ji AS SELECT a, d FROM t PRIMARY INDEX (a) PARTITION BY RANGE_N(d BETWEEN DATE '2020-01-01' AND DATE '2020-12-31' EACH INTERVAL '1' MONTH);"
+      - id: partition_by_multilevel
+        sql: "CREATE JOIN INDEX ji AS SELECT a, b, d FROM t PRIMARY INDEX (a) PARTITION BY (RANGE_N(b BETWEEN 1 AND 100 EACH 10), CASE_N(d < 10, d < 100, NO CASE));"
+      - id: partition_by_add
+        sql: "CREATE JOIN INDEX ji AS SELECT a, b FROM t PRIMARY INDEX (a) PARTITION BY RANGE_N(b BETWEEN 1 AND 100 EACH 10) ADD 5;"
+      - id: partition_by_column
+        sql: "CREATE JOIN INDEX ji AS SELECT ROWID AS rw, a, b FROM t WHERE a < 10 PARTITION BY COLUMN (rw NO AUTO COMPRESS, ROW(a, b));"
+      - id: no_primary_index_partition_by_column
+        sql: "CREATE JOIN INDEX ji AS SELECT ROWID AS rw, a, b FROM t WHERE a < 10 NO PRIMARY INDEX PARTITION BY COLUMN (COLUMN rw NO AUTO COMPRESS, ROW(a, b));"
+      - id: no_primary_index_comma_partition
+        sql: "CREATE JOIN INDEX ji AS SELECT ROWID AS rw, a, b FROM t WHERE a < 10 NO PRIMARY INDEX, PARTITION BY COLUMN (rw NO AUTO COMPRESS, ROW(a, b));"
+      - id: partition_column_all_but
+        sql: "CREATE JOIN INDEX ji AS SELECT ROWID AS rw, a, b FROM t NO PRIMARY INDEX PARTITION BY COLUMN ALL BUT (a);"
+      - id: secondary_index
+        sql: "CREATE JOIN INDEX ji AS SELECT a, b FROM t PRIMARY INDEX (a) INDEX (b);"
+      - id: secondary_index_named
+        sql: "CREATE JOIN INDEX ji AS SELECT a, b FROM t PRIMARY INDEX (a) INDEX si (b);"
+      - id: secondary_index_all_order_by_values
+        sql: "CREATE JOIN INDEX ji AS SELECT a, b FROM t PRIMARY INDEX (a) INDEX ALL (b) ORDER BY VALUES (b);"
+      - id: secondary_index_order_by_hash
+        sql: "CREATE JOIN INDEX ji AS SELECT a, b, c FROM t PRIMARY INDEX (a) INDEX (b, c) ORDER BY HASH (b);"
+      - id: multiple_indexes_comma
+        sql: "CREATE JOIN INDEX ji AS SELECT a, b, c FROM t PRIMARY INDEX (a), INDEX (b), INDEX (c);"
+      - id: sparse_with_table_options_and_pi
+        sql: "CREATE JOIN INDEX ji, FALLBACK AS SELECT a, b FROM t WHERE a > 0 PRIMARY INDEX (a);"
+    examples:
+      - |-
+        CREATE JOIN INDEX ord_cust_idx_2 AS
+        SELECT c_nationkey, SUM(o_totalprice(FLOAT)) AS price,
+               EXTRACT(YEAR FROM o_orderdate) AS o_year
+        FROM orders, customer
+        WHERE o_custkey = c_custkey
+        GROUP BY c_nationkey, o_year
+        ORDER BY o_year;
+      - |-
+        CREATE JOIN INDEX ordJI1 AS
+          SELECT o_custkey, o_totalprice
+          FROM orders
+        PRIMARY INDEX (o_custkey)
+        PARTITION BY RANGE_N(CAST(o_totalprice AS INTEGER)
+                     BETWEEN  0
+                     AND 999999
+                     EACH   100, NO RANGE);
+      - |-
+        CREATE JOIN INDEX ord_cust_idx, MAP=SmallTableMap AS
+        SELECT (o_custkey, c_name), (o_status, o_date, o_comment)
+        FROM orders, customer
+        WHERE o_custkey = c_custkey;

@@ -1,0 +1,110 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements:
+  - id: insert
+    name: INSERT
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-manipulation/inserting-loading-data/insert
+    tier: high
+    probes:
+      - id: values_basic
+        sql: "INSERT INTO t VALUES (1, 'a');"
+      - id: value_keyword
+        sql: "INSERT INTO t VALUE (1, 'a');"
+      - id: column_list
+        sql: "INSERT INTO t (a, b) VALUES (1, 'a');"
+      - id: multi_row
+        sql: "INSERT INTO t VALUES (1, 'a'), (2, 'b');"
+      - id: default_value
+        sql: "INSERT INTO t (a, b) VALUES (DEFAULT, 'a');"
+      - id: without_into
+        sql: "INSERT t VALUES (1, 'a');"
+      - id: low_priority
+        sql: "INSERT LOW_PRIORITY INTO t VALUES (1, 'a');"
+      - id: delayed
+        sql: "INSERT DELAYED INTO t VALUES (1, 'a');"
+      - id: high_priority
+        sql: "INSERT HIGH_PRIORITY INTO t VALUES (1, 'a');"
+      - id: ignore
+        sql: "INSERT IGNORE INTO t VALUES (1, 'a');"
+      - id: qualified_table
+        sql: "INSERT INTO db.t VALUES (1, 'a');"
+      - id: partition
+        sql: "INSERT INTO t PARTITION (p0, p1) VALUES (1, 'a');"
+      - id: partition_column_list
+        sql: "INSERT INTO t PARTITION (p0) (a, b) VALUES (1, 'a');"
+      - id: on_duplicate_key_update
+        sql: "INSERT INTO t (a, b) VALUES (1, 'a') ON DUPLICATE KEY UPDATE b = 'b';"
+      - id: on_duplicate_key_update_multi
+        sql: "INSERT INTO t (a, b, c) VALUES (1, 'a', 2) ON DUPLICATE KEY UPDATE b = 'b', c = c + 1;"
+      - id: on_duplicate_key_update_values_fn
+        sql: "INSERT INTO t (a, b) VALUES (1, 'a') ON DUPLICATE KEY UPDATE b = VALUES(b);"
+      - id: returning
+        sql: "INSERT INTO t (a, b) VALUES (1, 'a') RETURNING a, b;"
+      - id: returning_star
+        sql: "INSERT INTO t (a, b) VALUES (1, 'a') RETURNING *;"
+      - id: returning_expressions
+        sql: "INSERT INTO t VALUES (1, 'a'), (2, 'b') RETURNING a + a AS s, a & a, UPPER(b);"
+      - id: on_duplicate_returning
+        sql: "INSERT INTO t (a, b) VALUES (1, 'a') ON DUPLICATE KEY UPDATE b = 'b' RETURNING a;"
+      - id: set_form
+        sql: "INSERT INTO t SET a = 1, b = 'a';"
+      - id: set_default
+        sql: "INSERT INTO t SET a = DEFAULT, b = 'a';"
+      - id: set_modifiers_partition
+        sql: "INSERT LOW_PRIORITY IGNORE INTO t PARTITION (p0) SET a = 1, b = 'a';"
+      - id: set_on_duplicate_returning
+        sql: "INSERT INTO t SET a = 1, b = 'a' ON DUPLICATE KEY UPDATE b = 'b' RETURNING a, b;"
+      - id: select_form
+        sql: "INSERT INTO t SELECT * FROM s;"
+      - id: select_column_list
+        sql: "INSERT INTO t (a, b) SELECT a, b FROM s WHERE c = 1;"
+      - id: select_modifiers_partition
+        sql: "INSERT HIGH_PRIORITY IGNORE INTO t PARTITION (p0) (a, b) SELECT a, b FROM s;"
+      - id: select_on_duplicate
+        sql: "INSERT INTO t (a, b) SELECT a, b FROM s ON DUPLICATE KEY UPDATE b = 'b';"
+      - id: select_returning
+        sql: "INSERT INTO t (a, b) SELECT a, b FROM s RETURNING a, b;"
+    examples:
+      - "INSERT INTO person (first_name, last_name) VALUES ('John', 'Doe');"
+      - "INSERT INTO person SET first_name = 'John', last_name = 'Doe';"
+      - "INSERT INTO contractor SELECT * FROM person WHERE status = 'c';"
+
+  - id: insert_select
+    name: INSERT ... SELECT
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-manipulation/inserting-loading-data/insert-select
+    tier: high
+    probes:
+      - id: basic
+        sql: "INSERT INTO t SELECT * FROM s;"
+      - id: column_list
+        sql: "INSERT INTO t (a, b) SELECT a, b FROM s;"
+      - id: without_into
+        sql: "INSERT t SELECT * FROM s;"
+      - id: low_priority
+        sql: "INSERT LOW_PRIORITY INTO t SELECT * FROM s;"
+      - id: high_priority
+        sql: "INSERT HIGH_PRIORITY INTO t SELECT * FROM s;"
+      - id: ignore
+        sql: "INSERT IGNORE INTO t SELECT * FROM s;"
+      - id: priority_ignore
+        sql: "INSERT LOW_PRIORITY IGNORE INTO t (a, b) SELECT a, b FROM s;"
+      - id: qualified_tables
+        sql: "INSERT INTO db1.t (a) SELECT a FROM db2.s;"
+      - id: where_clause
+        sql: "INSERT INTO t (a) SELECT a FROM s WHERE a > 100;"
+      - id: join_select
+        sql: "INSERT INTO t (a, b) SELECT s1.a, s2.b FROM s1 JOIN s2 ON s1.id = s2.id;"
+      - id: group_by_select
+        sql: "INSERT INTO t (a, n) SELECT a, COUNT(*) FROM s GROUP BY a;"
+      - id: on_duplicate_key_update
+        sql: "INSERT INTO t (a, b) SELECT a, b FROM s ON DUPLICATE KEY UPDATE b = 'b';"
+      - id: on_duplicate_key_update_multi
+        sql: "INSERT INTO t (a, b, c) SELECT a, b, c FROM s ON DUPLICATE KEY UPDATE b = 'b', c = c + 1;"
+    examples:
+      - |-
+        INSERT INTO tbl_temp2 (fld_id)
+          SELECT tbl_temp1.fld_order_id
+          FROM tbl_temp1 WHERE tbl_temp1.fld_order_id > 100;

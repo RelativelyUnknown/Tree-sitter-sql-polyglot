@@ -1,0 +1,225 @@
+dialect: cockroachdb
+engine: CockroachDB
+version: "v26.3 (stable)"
+source: https://www.cockroachlabs.com/docs/stable/sql-statements
+
+statements:
+  - id: create_schedule_for_changefeed
+    name: CREATE SCHEDULE FOR CHANGEFEED
+    doc: https://www.cockroachlabs.com/docs/stable/create-schedule-for-changefeed
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE SCHEDULE IF NOT EXISTS sched FOR CHANGEFEED t INTO 'kafka://localhost:9092' WITH updated RECURRING '@daily' WITH SCHEDULE OPTIONS on_execution_failure = 'retry';"
+      - id: cdc_query
+        sql: "CREATE SCHEDULE sched FOR CHANGEFEED INTO 'kafka://localhost:9092' WITH schema_change_policy = 'stop' AS SELECT c FROM t WHERE c > 1 RECURRING '@hourly';"
+
+  - id: experimental_changefeed_for
+    name: EXPERIMENTAL CHANGEFEED FOR
+    doc: https://www.cockroachlabs.com/docs/stable/changefeed-for
+    tier: low
+    probes:
+      - id: basic
+        sql: "EXPERIMENTAL CHANGEFEED FOR t;"
+      - id: with_options
+        sql: "EXPERIMENTAL CHANGEFEED FOR t, u WITH updated, resolved = '10s';"
+
+  - id: alter_changefeed
+    name: ALTER CHANGEFEED
+    doc: https://www.cockroachlabs.com/docs/stable/alter-changefeed
+    tier: low
+    probes:
+      - id: add_target
+        sql: "ALTER CHANGEFEED 1 ADD t WITH initial_scan;"
+      - id: drop_target
+        sql: "ALTER CHANGEFEED 1 DROP t;"
+      - id: set_unset
+        sql: "ALTER CHANGEFEED 1 SET resolved = '10s' UNSET diff;"
+
+  - id: create_external_connection
+    name: CREATE EXTERNAL CONNECTION
+    doc: https://www.cockroachlabs.com/docs/stable/create-external-connection
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE EXTERNAL CONNECTION conn AS 's3://bucket?AUTH=implicit';"
+
+  - id: show_create_external_connection
+    name: SHOW CREATE EXTERNAL CONNECTION
+    doc: https://www.cockroachlabs.com/docs/stable/show-create-external-connection
+    tier: low
+    probes:
+      - id: named
+        sql: "SHOW CREATE EXTERNAL CONNECTION conn;"
+      - id: all
+        sql: "SHOW CREATE ALL EXTERNAL CONNECTIONS;"
+
+  - id: drop_external_connection
+    name: DROP EXTERNAL CONNECTION
+    doc: https://www.cockroachlabs.com/docs/stable/drop-external-connection
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP EXTERNAL CONNECTION conn;"
+
+  - id: alter_job
+    name: ALTER JOB
+    doc: https://www.cockroachlabs.com/docs/stable/alter-job
+    tier: low
+    probes:
+      - id: owner_to
+        sql: "ALTER JOB 1 OWNER TO r;"
+
+  - id: alter_virtual_cluster
+    name: ALTER VIRTUAL CLUSTER
+    doc: https://www.cockroachlabs.com/docs/stable/alter-virtual-cluster
+    tier: low
+    probes:
+      - id: complete_replication
+        sql: "ALTER VIRTUAL CLUSTER main COMPLETE REPLICATION TO LATEST;"
+      - id: start_replication
+        sql: "ALTER VIRTUAL CLUSTER main START REPLICATION OF other ON 'postgresql://host:26257';"
+      - id: start_service
+        sql: "ALTER VIRTUAL CLUSTER main START SERVICE SHARED;"
+      - id: stop_service
+        sql: "ALTER VIRTUAL CLUSTER main STOP SERVICE;"
+
+  - id: check_external_connection
+    name: CHECK EXTERNAL CONNECTION
+    doc: https://www.cockroachlabs.com/docs/stable/check-external-connection
+    tier: low
+    probes:
+      - id: basic
+        sql: "CHECK EXTERNAL CONNECTION 's3://bucket?AUTH=implicit';"
+      - id: with_options
+        sql: "CHECK EXTERNAL CONNECTION 's3://bucket?AUTH=implicit' WITH TRANSFER = '1MiB', CONCURRENTLY = 3;"
+
+  - id: create_logical_replication_stream
+    name: CREATE LOGICAL REPLICATION STREAM
+    doc: https://www.cockroachlabs.com/docs/stable/create-logical-replication-stream
+    tier: low
+    probes:
+      - id: single_table
+        sql: "CREATE LOGICAL REPLICATION STREAM FROM TABLE t ON 'external://source' INTO TABLE u;"
+      - id: multiple_tables
+        sql: "CREATE LOGICAL REPLICATION STREAM FROM TABLES (t, t2) ON 'external://source' INTO TABLES (u, u2);"
+      - id: with_options
+        sql: "CREATE LOGICAL REPLICATION STREAM FROM TABLE t ON 'external://source' INTO TABLE u WITH discard = 'ttl-deletes';"
+
+  - id: create_logically_replicated
+    name: CREATE LOGICALLY REPLICATED
+    doc: https://www.cockroachlabs.com/docs/stable/create-logically-replicated
+    tier: low
+    probes:
+      - id: unidirectional
+        sql: "CREATE LOGICALLY REPLICATED TABLE u FROM TABLE t ON 'external://source' WITH unidirectional;"
+      - id: bidirectional
+        sql: "CREATE LOGICALLY REPLICATED TABLE u FROM TABLE t ON 'external://source' WITH bidirectional ON 'external://destination';"
+      - id: multiple_tables
+        sql: "CREATE LOGICALLY REPLICATED TABLES (u, u2) FROM TABLES (t, t2) ON 'external://source' WITH unidirectional;"
+
+  - id: create_virtual_cluster
+    name: CREATE VIRTUAL CLUSTER
+    doc: https://www.cockroachlabs.com/docs/stable/create-virtual-cluster
+    tier: low
+    probes:
+      - id: from_replication
+        sql: "CREATE VIRTUAL CLUSTER main FROM REPLICATION OF main ON 'postgresql://host:26257';"
+      - id: read_virtual_cluster
+        sql: "CREATE VIRTUAL CLUSTER main FROM REPLICATION OF main ON 'postgresql://host:26257' WITH READ VIRTUAL CLUSTER;"
+
+  - id: drop_virtual_cluster
+    name: DROP VIRTUAL CLUSTER
+    doc: https://www.cockroachlabs.com/docs/stable/drop-virtual-cluster
+    tier: low
+    probes:
+      - id: if_exists
+        sql: "DROP VIRTUAL CLUSTER IF EXISTS main;"
+      - id: immediate
+        sql: "DROP VIRTUAL CLUSTER IF EXISTS main IMMEDIATE;"
+
+  - id: show_create_schedule
+    name: SHOW CREATE SCHEDULE
+    doc: https://www.cockroachlabs.com/docs/stable/show-create-schedule
+    tier: low
+    probes:
+      - id: by_id
+        sql: "SHOW CREATE SCHEDULE 1;"
+      - id: all
+        sql: "SHOW CREATE ALL SCHEDULES;"
+
+  - id: show_external_connection
+    name: SHOW EXTERNAL CONNECTION
+    doc: https://www.cockroachlabs.com/docs/stable/show-external-connection
+    tier: low
+    probes:
+      - id: all
+        sql: "SHOW EXTERNAL CONNECTIONS;"
+      - id: named
+        sql: "SHOW EXTERNAL CONNECTION conn;"
+
+  - id: show_logical_replication_jobs
+    name: SHOW LOGICAL REPLICATION JOBS
+    doc: https://www.cockroachlabs.com/docs/stable/show-logical-replication-jobs
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW LOGICAL REPLICATION JOBS;"
+      - id: with_details
+        sql: "SHOW LOGICAL REPLICATION JOBS WITH details;"
+
+  - id: show_savepoint_status
+    name: SHOW SAVEPOINT STATUS
+    doc: https://www.cockroachlabs.com/docs/stable/show-savepoint-status
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW SAVEPOINT STATUS;"
+
+  - id: show_statements
+    name: SHOW STATEMENTS
+    doc: https://www.cockroachlabs.com/docs/stable/show-statements
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW STATEMENTS;"
+      - id: cluster
+        sql: "SHOW CLUSTER STATEMENTS;"
+      - id: all_local
+        sql: "SHOW ALL LOCAL QUERIES;"
+
+  - id: show_system_grants
+    name: SHOW SYSTEM GRANTS
+    doc: https://www.cockroachlabs.com/docs/stable/show-system-grants
+    tier: low
+    probes:
+      - id: all
+        sql: "SHOW SYSTEM GRANTS;"
+      - id: for_user
+        sql: "SHOW SYSTEM GRANTS FOR max;"
+
+  - id: show_virtual_cluster
+    name: SHOW VIRTUAL CLUSTER
+    doc: https://www.cockroachlabs.com/docs/stable/show-virtual-cluster
+    tier: low
+    probes:
+      - id: all
+        sql: "SHOW VIRTUAL CLUSTERS;"
+      - id: named
+        sql: "SHOW VIRTUAL CLUSTER main;"
+      - id: replication_status
+        sql: "SHOW VIRTUAL CLUSTER main WITH REPLICATION STATUS;"
+
+  - id: alter_configure_zone
+    name: ALTER ... CONFIGURE ZONE
+    doc: https://www.cockroachlabs.com/docs/stable/configure-replication-zones
+    tier: low
+    probes:
+      - id: table_using
+        sql: "ALTER TABLE t CONFIGURE ZONE USING num_replicas = 5, gc.ttlseconds = 100000;"
+      - id: database_using
+        sql: "ALTER DATABASE d CONFIGURE ZONE USING num_replicas = 3;"
+      - id: range_using
+        sql: "ALTER RANGE default CONFIGURE ZONE USING num_replicas = 3;"
+      - id: discard
+        sql: "ALTER TABLE t CONFIGURE ZONE DISCARD;"

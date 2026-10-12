@@ -19,3 +19,12 @@
   (keyword_analyze)
   (keyword_verbose)
 ] @keyword
+
+; ============================================================
+; Remaining mariadb keywords
+; ============================================================
+
+[
+  (keyword_returning)
+  (keyword_system_time)
+] @keyword

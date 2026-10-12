@@ -1,0 +1,55 @@
+dialect: clickhouse
+engine: ClickHouse
+version: "current docs (2026)"
+source: https://clickhouse.com/docs/sql-reference/statements/
+
+statements:
+  - id: alter_table_skipping_index
+    name: ALTER TABLE ... INDEX
+    doc: https://clickhouse.com/docs/sql-reference/statements/alter/skipping-index
+    tier: high
+    probes:
+      - id: add_index
+        sql: "ALTER TABLE t ADD INDEX idx c TYPE minmax GRANULARITY 1;"
+      - id: add_index_if_not_exists
+        sql: "ALTER TABLE db.t ADD INDEX IF NOT EXISTS idx c TYPE minmax;"
+      - id: add_index_on_cluster
+        sql: "ALTER TABLE t ON CLUSTER cl ADD INDEX idx c TYPE set(100) GRANULARITY 2;"
+      - id: add_index_expression
+        sql: "ALTER TABLE t ADD INDEX idx lower(c) TYPE bloom_filter(0.01) GRANULARITY 4;"
+      - id: add_index_first
+        sql: "ALTER TABLE t ADD INDEX idx c TYPE minmax GRANULARITY 1 FIRST;"
+      - id: add_index_after
+        sql: "ALTER TABLE t ADD INDEX idx c TYPE minmax GRANULARITY 1 AFTER other_idx;"
+      - id: drop_index
+        sql: "ALTER TABLE t DROP INDEX idx;"
+      - id: drop_index_if_exists
+        sql: "ALTER TABLE db.t ON CLUSTER cl DROP INDEX IF EXISTS idx;"
+      - id: materialize_index
+        sql: "ALTER TABLE t MATERIALIZE INDEX idx;"
+      - id: materialize_index_if_exists_in_partition
+        sql: "ALTER TABLE t ON CLUSTER cl MATERIALIZE INDEX IF EXISTS idx IN PARTITION p;"
+      - id: clear_index
+        sql: "ALTER TABLE t CLEAR INDEX idx;"
+      - id: clear_index_if_exists_in_partition
+        sql: "ALTER TABLE t ON CLUSTER cl CLEAR INDEX IF EXISTS idx IN PARTITION p;"
+
+  - id: alter_table_constraint
+    name: ALTER TABLE ... CONSTRAINT
+    doc: https://clickhouse.com/docs/sql-reference/statements/alter/constraint
+    tier: high
+    probes:
+      - id: add_constraint_check
+        sql: "ALTER TABLE t ADD CONSTRAINT c1 CHECK x > 0;"
+      - id: add_constraint_assume
+        sql: "ALTER TABLE t ADD CONSTRAINT c1 ASSUME x > 0;"
+      - id: add_constraint_if_not_exists_on_cluster
+        sql: "ALTER TABLE db.t ON CLUSTER cl ADD CONSTRAINT IF NOT EXISTS c1 CHECK x > 0;"
+      - id: modify_constraint
+        sql: "ALTER TABLE t MODIFY CONSTRAINT c1 ASSUME x > 1;"
+      - id: modify_constraint_if_exists
+        sql: "ALTER TABLE db.t ON CLUSTER cl MODIFY CONSTRAINT IF EXISTS c1 CHECK x > 1;"
+      - id: drop_constraint
+        sql: "ALTER TABLE t DROP CONSTRAINT c1;"
+      - id: drop_constraint_if_exists
+        sql: "ALTER TABLE db.t ON CLUSTER cl DROP CONSTRAINT IF EXISTS c1;"

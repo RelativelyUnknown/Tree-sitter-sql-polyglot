@@ -1,0 +1,154 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: describe_function
+    name: DESCRIBE FUNCTION
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-udf/
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DESCRIBE FUNCTION f;"
+      - id: extended
+        sql: "DESCRIBE FUNCTION EXTENDED f;"
+    examples:
+      - "DESCRIBE FUNCTION EXTENDED upper;"
+
+  - id: describe_partition
+    name: DESCRIBE partition
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: medium
+    probes:
+      - id: partition
+        sql: "DESCRIBE t PARTITION (d='abc');"
+      - id: extended
+        sql: "DESCRIBE EXTENDED db.t PARTITION (d='abc');"
+      - id: formatted
+        sql: "DESCRIBE FORMATTED db.t PARTITION (d='abc');"
+      - id: partition_column
+        sql: "DESCRIBE FORMATTED db.t PARTITION (part_col = 100) c;"
+    examples:
+      - "DESCRIBE FORMATTED default.src_table PARTITION (part_col = 100) columnA;"
+
+  - id: show_databases
+    name: SHOW DATABASES / SCHEMAS
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: medium
+    probes:
+      - id: databases
+        sql: "SHOW DATABASES;"
+      - id: schemas
+        sql: "SHOW SCHEMAS;"
+      - id: like
+        sql: "SHOW DATABASES LIKE 'emp%';"
+
+  - id: show_connectors
+    name: SHOW CONNECTORS
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW CONNECTORS;"
+
+  - id: show_tables
+    name: SHOW TABLES
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW TABLES;"
+      - id: in_database
+        sql: "SHOW TABLES IN db;"
+      - id: pattern
+        sql: "SHOW TABLES 'page_v*';"
+      - id: in_database_pattern
+        sql: "SHOW TABLES IN db 'page_v*';"
+
+  - id: show_views
+    name: SHOW VIEWS
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW VIEWS;"
+      - id: in_database
+        sql: "SHOW VIEWS IN db;"
+      - id: from_database
+        sql: "SHOW VIEWS FROM db;"
+      - id: like
+        sql: "SHOW VIEWS LIKE 'test_view1|test_view2';"
+      - id: in_database_pattern
+        sql: "SHOW VIEWS IN test1 \"test_*\";"
+    examples:
+      - "SHOW VIEWS;"
+      - "SHOW VIEWS LIKE 'test_view1|test_view2';"
+      - "SHOW VIEWS FROM test1;"
+
+  - id: show_materialized_views
+    name: SHOW MATERIALIZED VIEWS
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW MATERIALIZED VIEWS;"
+      - id: in_database
+        sql: "SHOW MATERIALIZED VIEWS IN db;"
+      - id: from_database
+        sql: "SHOW MATERIALIZED VIEWS FROM db;"
+      - id: like
+        sql: "SHOW MATERIALIZED VIEWS LIKE 'mv*';"
+
+  - id: show_partitions
+    name: SHOW PARTITIONS
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW PARTITIONS t;"
+      - id: qualified
+        sql: "SHOW PARTITIONS db.t;"
+      - id: partition_spec
+        sql: "SHOW PARTITIONS t PARTITION(ds='2010-03-03', hr='12');"
+      - id: where
+        sql: "SHOW PARTITIONS db.t WHERE hr >= 10;"
+      - id: order_by
+        sql: "SHOW PARTITIONS db.t ORDER BY hr DESC;"
+      - id: limit
+        sql: "SHOW PARTITIONS db.t LIMIT 10;"
+      - id: all_clauses
+        sql: "SHOW PARTITIONS db.t PARTITION(ds='2010-03-03') WHERE hr >= 10 ORDER BY hr DESC LIMIT 10;"
+    examples:
+      - "SHOW PARTITIONS table_name PARTITION(ds='2010-03-03', hr='12');"
+      - "SHOW PARTITIONS databaseFoo.tableBar PARTITION(ds='2010-03-03') ORDER BY hr DESC LIMIT 10;"
+      - "SHOW PARTITIONS databaseFoo.tableBar WHERE hr >= 10 AND ds='2010-03-03' ORDER BY hr DESC LIMIT 10;"
+
+  - id: show_table_extended
+    name: SHOW TABLE EXTENDED
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: medium
+    probes:
+      - id: like
+        sql: "SHOW TABLE EXTENDED LIKE 'part_table';"
+      - id: in_database
+        sql: "SHOW TABLE EXTENDED IN db LIKE 'part*';"
+      - id: from_database
+        sql: "SHOW TABLE EXTENDED FROM db LIKE 'part*';"
+      - id: partition
+        sql: "SHOW TABLE EXTENDED LIKE 't' PARTITION(d='abc');"
+    examples:
+      - "show table extended like part_table;"
+
+  - id: show_tblproperties
+    name: SHOW TBLPROPERTIES
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: medium
+    probes:
+      - id: all
+        sql: "SHOW TBLPROPERTIES t;"
+      - id: single_property
+        sql: "SHOW TBLPROPERTIES t(\"foo\");"
+    examples:
+      - "SHOW TBLPROPERTIES tblname;"
+      - "SHOW TBLPROPERTIES tblname(\"foo\");"

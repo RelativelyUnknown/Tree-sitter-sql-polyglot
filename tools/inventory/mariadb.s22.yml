@@ -1,0 +1,62 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements:
+  - id: for
+    name: FOR
+    doc: https://mariadb.com/docs/server/reference/sql-statements/programmatic-compound-statements/for
+    tier: high
+    probes:
+      - id: integer_range
+        sql: "FOR i IN 1..3 DO INSERT INTO t VALUES (i); END FOR;"
+      - id: integer_range_reverse
+        sql: "FOR i IN REVERSE 4..12 DO INSERT INTO t VALUES (i); END FOR;"
+      - id: integer_range_labels
+        sql: "lbl: FOR i IN 1..3 DO INSERT INTO t VALUES (i); END FOR lbl;"
+      - id: explicit_cursor_do
+        sql: "FOR rec IN cur DO SELECT rec.a; END FOR;"
+        note: Explicit cursor FOR loop; cursor_name with no actual parameter list.
+      - id: explicit_cursor_do_params
+        sql: "FOR rec IN cur(10) DO SELECT rec.a, rec.b; END FOR;"
+        note: Explicit cursor FOR loop with cursor_actual_parameter_list.
+      - id: explicit_cursor_oracle_loop
+        sql: "FOR rec IN cur(10) LOOP SELECT rec.a, rec.b; END LOOP;"
+        note: Explicit cursor FOR loop (Oracle mode) syntax, LOOP ... END LOOP.
+      - id: implicit_cursor
+        sql: "FOR rec IN (SELECT a, b FROM t) DO SELECT rec.a, rec.b; END FOR;"
+        note: Implicit cursor FOR loop with begin_label omitted.
+      - id: implicit_cursor_labels
+        sql: "lbl: FOR rec IN (SELECT a, b FROM t) DO SELECT rec.a; END FOR lbl;"
+      - id: in_procedure
+        sql: "CREATE PROCEDURE p() BEGIN FOR i IN 1..3 DO INSERT INTO t VALUES (i); END FOR; END;"
+    examples:
+      - "FOR i IN 1..3 DO INSERT INTO t1 VALUES (i); END FOR;"
+      - "FOR i IN REVERSE 4..12 DO INSERT INTO t1 VALUES (i); END FOR;"
+
+  - id: iterate
+    name: ITERATE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/programmatic-compound-statements/iterate
+    tier: high
+    probes:
+      - id: iterate_label
+        sql: "CREATE PROCEDURE p() BEGIN label1: LOOP ITERATE label1; END LOOP label1; END;"
+        note: ITERATE label; valid only inside a labeled LOOP, REPEAT or WHILE.
+      - id: iterate_in_repeat
+        sql: "CREATE PROCEDURE p() BEGIN label1: REPEAT ITERATE label1; UNTIL 1 END REPEAT label1; END;"
+      - id: iterate_in_while
+        sql: "CREATE PROCEDURE p() BEGIN label1: WHILE 1 DO ITERATE label1; END WHILE label1; END;"
+    examples:
+      - |-
+        CREATE PROCEDURE doiterate(p1 INT)
+        BEGIN
+         label1: LOOP
+          SET p1 = p1 + 1;
+          IF p1 < 10 THEN
+           ITERATE label1;
+          END IF;
+          LEAVE label1;
+         END LOOP label1;
+         SET @x = p1;
+        END;

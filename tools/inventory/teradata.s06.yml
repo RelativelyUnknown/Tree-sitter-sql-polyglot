@@ -1,0 +1,177 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: create_procedure
+    name: CREATE PROCEDURE / REPLACE PROCEDURE (SQL Form)
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/zwfoDjeMEiecK4Dn~Fjyig
+    tier: high
+    probes:
+      - id: create_basic
+        sql: "CREATE PROCEDURE p () CONTAINS SQL SET x = 1;"
+      - id: replace_basic
+        sql: "REPLACE PROCEDURE p () CONTAINS SQL SET x = 1;"
+      - id: qualified_name
+        sql: "CREATE PROCEDURE db.p () CONTAINS SQL SET x = 1;"
+      - id: params_in_out_inout
+        sql: "CREATE PROCEDURE p (IN a INTEGER, OUT b INTEGER, INOUT c INTEGER) CONTAINS SQL SET b = a + c;"
+      - id: param_default_mode
+        sql: "CREATE PROCEDURE p (a INTEGER, b VARCHAR(20)) CONTAINS SQL SET a = 1;"
+      - id: data_access_modifies
+        sql: "CREATE PROCEDURE p () MODIFIES SQL DATA SET x = 1;"
+      - id: data_access_reads
+        sql: "CREATE PROCEDURE p () READS SQL DATA SET x = 1;"
+      - id: dynamic_result_sets
+        sql: "CREATE PROCEDURE p () READS SQL DATA DYNAMIC RESULT SETS 2 SET x = 1;"
+      - id: sql_security_creator
+        sql: "CREATE PROCEDURE p () CONTAINS SQL SQL SECURITY CREATOR SET x = 1;"
+      - id: sql_security_definer
+        sql: "CREATE PROCEDURE p () CONTAINS SQL SQL SECURITY DEFINER SET x = 1;"
+      - id: sql_security_invoker
+        sql: "CREATE PROCEDURE p () CONTAINS SQL SQL SECURITY INVOKER SET x = 1;"
+      - id: sql_security_owner
+        sql: "CREATE PROCEDURE p () CONTAINS SQL SQL SECURITY OWNER SET x = 1;"
+      - id: all_options
+        sql: "CREATE PROCEDURE p (IN a INTEGER) MODIFIES SQL DATA DYNAMIC RESULT SETS 1 SQL SECURITY DEFINER SET x = a;"
+      - id: param_types
+        sql: "CREATE PROCEDURE p (IN a DECIMAL(10,2), IN b TIMESTAMP(3) WITH TIME ZONE, IN c PERIOD(DATE), IN d CLOB(1M), IN e JSON(1K)) CONTAINS SQL SET x = 1;"
+      - id: body_compound
+        sql: "CREATE PROCEDURE p () CONTAINS SQL BEGIN SET x = 1; END;"
+      - id: body_labeled_compound
+        sql: "CREATE PROCEDURE p () CONTAINS SQL l1: BEGIN SET x = 1; END l1;"
+      - id: body_begin_request
+        sql: "CREATE PROCEDURE p () MODIFIES SQL DATA BEGIN INSERT INTO t VALUES (1); INSERT INTO t VALUES (2); END REQUEST;"
+      - id: body_single_sql_statement
+        sql: "CREATE PROCEDURE p () MODIFIES SQL DATA INSERT INTO t VALUES (1);"
+      - id: declare_variable
+        sql: "CREATE PROCEDURE p () CONTAINS SQL BEGIN DECLARE v1, v2 INTEGER DEFAULT 10; DECLARE v3 VARCHAR(10) DEFAULT NULL; SET v1 = v2; END;"
+      - id: declare_condition
+        sql: "CREATE PROCEDURE p () CONTAINS SQL BEGIN DECLARE cn CONDITION FOR '42000'; SET x = 1; END;"
+      - id: declare_cursor
+        sql: "CREATE PROCEDURE p () READS SQL DATA BEGIN DECLARE c1 CURSOR FOR SELECT a FROM t; OPEN c1; CLOSE c1; END;"
+      - id: declare_cursor_options
+        sql: "CREATE PROCEDURE p () READS SQL DATA BEGIN DECLARE c1 SCROLL CURSOR WITH RETURN ONLY TO CALLER FOR SELECT a FROM t FOR READ ONLY; OPEN c1; END;"
+      - id: declare_cursor_without_return_update
+        sql: "CREATE PROCEDURE p () MODIFIES SQL DATA BEGIN DECLARE c1 NO SCROLL CURSOR WITHOUT RETURN FOR SELECT a FROM t FOR UPDATE; OPEN c1; END;"
+      - id: declare_cursor_prepare
+        sql: "CREATE PROCEDURE p (IN s VARCHAR(100)) READS SQL DATA BEGIN DECLARE c1 CURSOR FOR st1; PREPARE st1 FROM s; OPEN c1; END;"
+      - id: open_using
+        sql: "CREATE PROCEDURE p (IN a INTEGER) READS SQL DATA BEGIN DECLARE c1 CURSOR FOR st1; PREPARE st1 FROM 'SELECT * FROM t WHERE a = ?'; OPEN c1 USING a; END;"
+      - id: fetch_into
+        sql: "CREATE PROCEDURE p () READS SQL DATA BEGIN DECLARE v INTEGER; DECLARE c1 CURSOR FOR SELECT a FROM t; OPEN c1; FETCH NEXT FROM c1 INTO v; END;"
+      - id: fetch_first
+        sql: "CREATE PROCEDURE p () READS SQL DATA BEGIN DECLARE v INTEGER; DECLARE c1 SCROLL CURSOR FOR SELECT a FROM t; OPEN c1; FETCH FIRST FROM c1 INTO v; END;"
+      - id: fetch_no_direction
+        sql: "CREATE PROCEDURE p () READS SQL DATA BEGIN DECLARE v INTEGER; DECLARE c1 CURSOR FOR SELECT a FROM t; OPEN c1; FETCH c1 INTO v; END;"
+      - id: handler_continue_sqlexception
+        sql: "CREATE PROCEDURE p () CONTAINS SQL BEGIN DECLARE CONTINUE HANDLER FOR SQLEXCEPTION SET x = 1; SET y = 2; END;"
+      - id: handler_exit_sqlstate
+        sql: "CREATE PROCEDURE p () CONTAINS SQL BEGIN DECLARE EXIT HANDLER FOR SQLSTATE '42000' BEGIN SET x = 1; END; SET y = 2; END;"
+      - id: handler_sqlstate_value
+        sql: "CREATE PROCEDURE p () CONTAINS SQL BEGIN DECLARE CONTINUE HANDLER FOR SQLSTATE VALUE '23505' SET x = 1; SET y = 2; END;"
+      - id: handler_sqlwarning
+        sql: "CREATE PROCEDURE p () CONTAINS SQL BEGIN DECLARE CONTINUE HANDLER FOR SQLWARNING SET x = 1; SET y = 2; END;"
+      - id: handler_not_found
+        sql: "CREATE PROCEDURE p () CONTAINS SQL BEGIN DECLARE CONTINUE HANDLER FOR NOT FOUND SET x = 1; SET y = 2; END;"
+      - id: handler_multiple_conditions
+        sql: "CREATE PROCEDURE p () CONTAINS SQL BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION, SQLWARNING SET x = 1; SET y = 2; END;"
+      - id: handler_named_condition
+        sql: "CREATE PROCEDURE p () CONTAINS SQL BEGIN DECLARE cn CONDITION FOR '42000'; DECLARE EXIT HANDLER FOR cn SET x = 1; SET y = 2; END;"
+      - id: assignment
+        sql: "CREATE PROCEDURE p (IN a INTEGER, OUT b INTEGER) CONTAINS SQL SET b = a * 2 + 1;"
+      - id: if_elseif_else
+        sql: "CREATE PROCEDURE p (IN a INTEGER, OUT b INTEGER) CONTAINS SQL BEGIN IF a > 0 THEN SET b = 1; ELSEIF a < 0 THEN SET b = -1; ELSE SET b = 0; END IF; END;"
+      - id: case_simple
+        sql: "CREATE PROCEDURE p (IN a INTEGER, OUT b INTEGER) CONTAINS SQL BEGIN CASE a WHEN 1 THEN SET b = 10; WHEN 2 THEN SET b = 20; ELSE SET b = 0; END CASE; END;"
+      - id: case_searched
+        sql: "CREATE PROCEDURE p (IN a INTEGER, OUT b INTEGER) CONTAINS SQL BEGIN CASE WHEN a > 1 THEN SET b = 10; WHEN a > 0 THEN SET b = 5; END CASE; END;"
+      - id: while_loop
+        sql: "CREATE PROCEDURE p (IN a INTEGER, OUT b INTEGER) CONTAINS SQL BEGIN WHILE a < 20 DO SET a = a + 1; END WHILE; SET b = a; END;"
+      - id: while_labeled
+        sql: "CREATE PROCEDURE p (IN a INTEGER) CONTAINS SQL BEGIN w1: WHILE a < 20 DO SET a = a + 1; END WHILE w1; END;"
+      - id: loop_leave
+        sql: "CREATE PROCEDURE p (IN a INTEGER) CONTAINS SQL BEGIN l1: LOOP SET a = a + 1; IF a > 10 THEN LEAVE l1; END IF; END LOOP l1; END;"
+      - id: repeat_until
+        sql: "CREATE PROCEDURE p (IN a INTEGER) CONTAINS SQL BEGIN REPEAT SET a = a + 1; UNTIL a > 10 END REPEAT; END;"
+      - id: for_loop
+        sql: "CREATE PROCEDURE p () MODIFIES SQL DATA BEGIN FOR r AS SELECT a, b FROM t WHERE a > 0 DO INSERT INTO u VALUES (r.a, r.b); END FOR; END;"
+      - id: for_loop_named_cursor
+        sql: "CREATE PROCEDURE p () MODIFIES SQL DATA BEGIN FOR r AS c1 CURSOR FOR SELECT a FROM t DO INSERT INTO u VALUES (r.a); END FOR; END;"
+      - id: iterate
+        sql: "CREATE PROCEDURE p (IN a INTEGER) CONTAINS SQL BEGIN l1: WHILE a < 20 DO SET a = a + 1; IF a < 5 THEN ITERATE l1; END IF; END WHILE l1; END;"
+      - id: signal_condition
+        sql: "CREATE PROCEDURE p () CONTAINS SQL BEGIN DECLARE cn CONDITION FOR '70001'; SIGNAL cn; END;"
+      - id: signal_sqlstate_set
+        sql: "CREATE PROCEDURE p () CONTAINS SQL BEGIN SIGNAL SQLSTATE VALUE '70002' SET MESSAGE_TEXT = 'failed'; END;"
+      - id: resignal
+        sql: "CREATE PROCEDURE p () CONTAINS SQL BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION RESIGNAL; SET x = 1; END;"
+      - id: get_diagnostics
+        sql: "CREATE PROCEDURE p () CONTAINS SQL BEGIN DECLARE n INTEGER; GET DIAGNOSTICS n = ROW_COUNT; END;"
+      - id: get_diagnostics_exception
+        sql: "CREATE PROCEDURE p () CONTAINS SQL BEGIN DECLARE m VARCHAR(100); GET DIAGNOSTICS EXCEPTION 1 m = MESSAGE_TEXT; END;"
+      - id: select_into
+        sql: "CREATE PROCEDURE p (IN ip INTEGER, OUT op INTEGER) READS SQL DATA BEGIN DECLARE v INTEGER; SELECT c1 INTO v FROM t WHERE c2 = ip; SET op = v * 10; END;"
+      - id: nested_compound
+        sql: "CREATE PROCEDURE p () CONTAINS SQL BEGIN DECLARE a INTEGER DEFAULT 1; BEGIN DECLARE b INTEGER DEFAULT 2; SET a = b; END; END;"
+      - id: replace_with_body
+        sql: "REPLACE PROCEDURE db.p (IN a INTEGER, OUT b INTEGER) MODIFIES SQL DATA SQL SECURITY INVOKER BEGIN SET b = a; INSERT INTO t VALUES (b); END;"
+    examples:
+      - |-
+        CREATE PROCEDURE sp_sample4a (IN  in_param  INTEGER,
+                                      OUT out_param INTEGER)
+             SET out_param = in_param + 1;
+      - |-
+        CREATE PROCEDURE sp_sample4b (IN  in_param  INTEGER,
+                                      OUT out_param INTEGER)
+        WHILE (in_param < 20)
+            SET out_param = in_param + 1;
+        END WHILE;
+      - |-
+        CREATE PROCEDURE sp_sample1(   ip INTEGER,
+                                   OUT op INTEGER)
+        BEGIN DECLARE var1 INTEGER;
+          SELECT col1 INTO var1
+             FROM tab1
+             WHERE col2 = ip;
+          SET op = var1 * 10;
+        END;
+
+  - id: alter_procedure
+    name: ALTER PROCEDURE (SQL Form)
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/rr_tvDeh8UxwRZ4gLoQjUg
+    tier: high
+    probes:
+      - id: compile
+        sql: "ALTER PROCEDURE p COMPILE;"
+      - id: qualified_name
+        sql: "ALTER PROCEDURE db.p COMPILE;"
+      - id: language_sql
+        sql: "ALTER PROCEDURE p LANGUAGE SQL COMPILE;"
+      - id: with_spl
+        sql: "ALTER PROCEDURE p COMPILE WITH SPL;"
+      - id: with_no_spl
+        sql: "ALTER PROCEDURE p COMPILE WITH NO SPL;"
+      - id: with_warning
+        sql: "ALTER PROCEDURE p COMPILE WITH WARNING;"
+      - id: with_no_warning
+        sql: "ALTER PROCEDURE p COMPILE WITH NO WARNING;"
+      - id: with_list
+        sql: "ALTER PROCEDURE p COMPILE WITH NO SPL, WARNING;"
+      - id: at_time_zone_local
+        sql: "ALTER PROCEDURE p COMPILE AT TIME ZONE LOCAL;"
+      - id: at_time_zone_string
+        sql: "ALTER PROCEDURE p COMPILE AT TIME ZONE 'gmt';"
+      - id: at_time_zone_signed
+        sql: "ALTER PROCEDURE p COMPILE AT TIME ZONE -'08:00';"
+      - id: all_options
+        sql: "ALTER PROCEDURE db.p LANGUAGE SQL COMPILE WITH SPL, NO WARNING AT TIME ZONE LOCAL;"
+    examples:
+      - |-
+        ALTER PROCEDURE spa_tz
+        COMPILE AT TIME ZONE LOCAL;
+      - |-
+        ALTER PROCEDURE spa_tz
+        LANGUAGE SQL
+        COMPILE AT TIME ZONE 'gmt';

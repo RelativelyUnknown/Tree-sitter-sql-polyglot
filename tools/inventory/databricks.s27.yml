@@ -1,0 +1,137 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: while_statement
+    name: WHILE statement
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/control-flow/while-stmt
+    tier: high
+    probes:
+      - id: while_basic
+        sql: |-
+          BEGIN
+            DECLARE n INT DEFAULT 0;
+            WHILE n < 10 DO
+              SET n = n + 1;
+            END WHILE;
+          END;
+      - id: while_labeled
+        sql: |-
+          BEGIN
+            DECLARE n INT DEFAULT 0;
+            lbl: WHILE n < 10 DO
+              SET n = n + 1;
+            END WHILE lbl;
+          END;
+        note: optional label before WHILE and optional label after END WHILE
+      - id: while_label_leave_iterate
+        sql: |-
+          BEGIN
+            DECLARE n INT DEFAULT 0;
+            lbl: WHILE n < 10 DO
+              SET n = n + 1;
+              IF n = 5 THEN
+                LEAVE lbl;
+              END IF;
+              ITERATE lbl;
+            END WHILE lbl;
+          END;
+        note: the label can be used to LEAVE or ITERATE the loop
+      - id: while_multiple_statements
+        sql: |-
+          BEGIN
+            DECLARE n INT DEFAULT 0;
+            DECLARE total INT DEFAULT 0;
+            WHILE n < 10 DO
+              SET n = n + 1;
+              SET total = total + n;
+              VALUES (total);
+            END WHILE;
+          END;
+        note: the body is a list of one or more statements, each terminated by a semicolon
+    examples:
+      - |-
+        BEGIN
+          DECLARE sum INT DEFAULT 0;
+          DECLARE num INT DEFAULT 0;
+          sumNumbers: WHILE num < 10 DO
+            SET num = num + 1;
+            IF num % 2 = 0 THEN
+              ITERATE sumNumbers;
+            END IF;
+            SET sum = sum + num;
+          END WHILE sumNumbers;
+          VALUES (sum);
+        END;
+      - "SELECT sum(num) FROM range(1, 10) AS t(num) WHERE num % 2 = 1;"
+
+  - id: open_cursor
+    name: OPEN statement
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/control-flow/open-stmt
+    tier: high
+    probes:
+      - id: open_basic
+        sql: |-
+          BEGIN
+            DECLARE c CURSOR FOR SELECT 1;
+            OPEN c;
+          END;
+      - id: open_using_positional
+        sql: |-
+          BEGIN
+            DECLARE c CURSOR FOR SELECT id FROM range(100) WHERE id BETWEEN ? AND ?;
+            OPEN c USING 10, 20;
+          END;
+        note: unnamed parameter markers are bound by position
+      - id: open_using_named
+        sql: |-
+          BEGIN
+            DECLARE c CURSOR FOR SELECT id FROM range(100) WHERE id >= :threshold;
+            OPEN c USING 25 AS threshold;
+          END;
+        note: AS param_name binds a named parameter marker
+      - id: open_using_multiple_named
+        sql: |-
+          BEGIN
+            DECLARE c CURSOR FOR SELECT id FROM range(100) WHERE id BETWEEN :lo AND :hi;
+            OPEN c USING 10 AS lo, 20 AS hi;
+          END;
+      - id: open_label_qualified_cursor
+        sql: |-
+          outer_label: BEGIN
+            DECLARE c CURSOR FOR SELECT 1;
+            BEGIN
+              OPEN outer_label.c;
+            END;
+          END;
+        note: the cursor can be qualified with a compound statement label to reference a cursor from an outer scope
+    examples:
+      - |-
+        BEGIN
+          DECLARE total INT;
+          DECLARE my_cursor CURSOR FOR SELECT sum(id) FROM range(10);
+          OPEN my_cursor;
+          FETCH my_cursor INTO total;
+          VALUES (total);
+          CLOSE my_cursor;
+        END;
+      - |-
+        BEGIN
+          DECLARE total INT;
+          DECLARE param_cursor CURSOR FOR SELECT sum(id) FROM range(100) WHERE id BETWEEN ? AND ?;
+          OPEN param_cursor USING 10, 20;
+          FETCH param_cursor INTO total;
+          VALUES (total);
+          CLOSE param_cursor;
+        END;
+      - |-
+        BEGIN
+          DECLARE min_val INT;
+          DECLARE named_cursor CURSOR FOR SELECT min(id) FROM range(100) WHERE id >= :threshold;
+          OPEN named_cursor USING 25 AS threshold;
+          FETCH named_cursor INTO min_val;
+          VALUES (min_val);
+          CLOSE named_cursor;
+        END;

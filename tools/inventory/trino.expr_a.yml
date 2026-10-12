@@ -1,0 +1,230 @@
+dialect: trino
+engine: Trino
+version: "483"
+source: https://trino.io/docs/current/sql.html
+
+statements: []
+
+expressions:
+  - id: a_integer_literals
+    name: Integer literals
+    doc: https://trino.io/docs/current/language/types.html
+    tier: high
+    probes:
+      - { id: decimal, sql: "SELECT 0, 3, -7;" }
+      - { id: hex, sql: "SELECT 0x0A, 0x11;" }
+      - { id: octal, sql: "SELECT 0o40, 0o11;" }
+      - { id: binary, sql: "SELECT 0b1001, 0b101010;" }
+      - { id: underscore, sql: "SELECT 123_456;" }
+  - id: a_decimal_float_literals
+    name: Decimal and floating-point literals
+    doc: https://trino.io/docs/current/language/types.html
+    tier: high
+    probes:
+      - { id: decimal, sql: "SELECT 1.1, 000123.456, DECIMAL '10.3', DECIMAL '1234567890';" }
+      - { id: decimal_underscore, sql: "SELECT 123_456.789_123;" }
+      - { id: double_scientific, sql: "SELECT 10.3e0, 1.03e1, DOUBLE '10.3', DOUBLE '1.03e1';" }
+      - { id: scientific_underscore, sql: "SELECT 123_456.789e4;" }
+      - { id: real, sql: "SELECT REAL '10.3', REAL '10.3e0', REAL '1.03e1';" }
+      - { id: number, sql: "SELECT NUMBER '10.3', NUMBER '1e3';" }
+      - { id: number_special, sql: "SELECT NUMBER 'Infinity', NUMBER '-Infinity', NUMBER 'NaN';" }
+  - id: a_boolean_null_literals
+    name: Boolean and NULL literals
+    doc: https://trino.io/docs/current/language/types.html
+    tier: high
+    probes:
+      - { id: boolean, sql: "SELECT true, false;" }
+      - { id: "null", sql: "SELECT NULL;" }
+  - id: a_string_literals
+    name: String literals
+    doc: https://trino.io/docs/current/language/types.html
+    tier: high
+    probes:
+      - { id: simple, sql: "SELECT 'Hello winter !';" }
+      - { id: escaped_quote, sql: "SELECT 'I am big, it''s the pictures that got small!';" }
+      - { id: empty, sql: "SELECT '';" }
+      - { id: unicode_default_escape, sql: "SELECT U&'Hello winter \\2603 !';" }
+      - { id: unicode_custom_escape, sql: "SELECT U&'Hello winter #2603 !' UESCAPE '#';" }
+      - { id: unicode_long_code, sql: "SELECT U&'\\+01F600';" }
+  - id: a_binary_literals
+    name: Binary literals
+    doc: https://trino.io/docs/current/language/types.html
+    tier: medium
+    probes:
+      - { id: upper_x, sql: "SELECT X'65683F';" }
+      - { id: lower_x, sql: "SELECT from_utf8(x'65683F');" }
+      - { id: whitespace, sql: "SELECT X'FFFF 0FFF 3FFF FFFF';" }
+  - id: a_date_time_literals
+    name: Date, time and timestamp literals
+    doc: https://trino.io/docs/current/language/types.html
+    tier: high
+    probes:
+      - { id: date, sql: "SELECT DATE '2001-08-22';" }
+      - { id: time, sql: "SELECT TIME '01:02:03.456';" }
+      - { id: time_with_zone, sql: "SELECT TIME '01:02:03.456 -08:00';" }
+      - { id: timestamp, sql: "SELECT TIMESTAMP '2020-06-10 15:55:23';" }
+      - { id: timestamp_fraction, sql: "SELECT TIMESTAMP '2020-06-10 15:55:23.383345';" }
+      - { id: timestamp_utc, sql: "SELECT TIMESTAMP '2001-08-22 03:04:05.321 UTC';" }
+      - { id: timestamp_offset, sql: "SELECT TIMESTAMP '2001-08-22 03:04:05.321 -08:30';" }
+      - { id: timestamp_gmt_offset, sql: "SELECT TIMESTAMP '2001-08-22 03:04:05.321 GMT-08:30';" }
+      - { id: timestamp_iana_zone, sql: "SELECT TIMESTAMP '2001-08-22 03:04:05.321 America/New_York';" }
+  - id: a_interval_literals
+    name: Interval literals
+    doc: https://trino.io/docs/current/language/types.html
+    tier: high
+    probes:
+      - { id: month, sql: "SELECT INTERVAL '3' MONTH;" }
+      - { id: day, sql: "SELECT INTERVAL '2' DAY;" }
+      - { id: year, sql: "SELECT INTERVAL '1' YEAR;" }
+      - { id: hour_minute_second, sql: "SELECT INTERVAL '4' HOUR, INTERVAL '5' MINUTE, INTERVAL '6' SECOND;" }
+      - { id: signed, sql: "SELECT INTERVAL '-3' MONTH, INTERVAL + '2' DAY;" }
+      - { id: year_to_month, sql: "SELECT INTERVAL '1-2' YEAR TO MONTH;" }
+      - { id: day_to_second, sql: "SELECT INTERVAL '3 04:05:06.789' DAY TO SECOND;" }
+      - { id: date_arithmetic, sql: "SELECT DATE '2020-01-01' + INTERVAL '7' DAY;" }
+  - id: a_array_literals
+    name: ARRAY constructors
+    doc: https://trino.io/docs/current/functions/array.html
+    tier: high
+    probes:
+      - { id: integers, sql: "SELECT ARRAY[1, 2, 4];" }
+      - { id: strings, sql: "SELECT ARRAY['foo', 'bar', 'bazz'];" }
+      - { id: nulls, sql: "SELECT ARRAY[1, 2, NULL, -4, NULL];" }
+      - { id: empty, sql: "SELECT ARRAY[];" }
+      - { id: nested, sql: "SELECT ARRAY[ARRAY[1, 23], ARRAY[456]];" }
+      - { id: subscript, sql: "SELECT ARRAY[1, 1.2, 4][2];" }
+      - { id: concat, sql: "SELECT ARRAY[1] || ARRAY[2], ARRAY[1] || 2, 2 || ARRAY[1];" }
+  - id: a_map_literals
+    name: MAP constructors
+    doc: https://trino.io/docs/current/language/types.html
+    tier: high
+    probes:
+      - { id: from_arrays, sql: "SELECT MAP(ARRAY['foo', 'bar'], ARRAY[1, 2]);" }
+      - { id: empty, sql: "SELECT MAP();" }
+      - { id: subscript, sql: "SELECT MAP(ARRAY['a'], ARRAY[1])['a'];" }
+  - id: a_row_literals
+    name: ROW constructors and field access
+    doc: https://trino.io/docs/current/language/types.html
+    tier: high
+    probes:
+      - { id: row_constructor, sql: "SELECT ROW(1, 2.0, 'a');" }
+      - { id: implicit_row, sql: "SELECT (1, 2.0, 'a');" }
+      - { id: positional_subscript, sql: "SELECT ROW(1, 2.0)[1];" }
+      - { id: cast_named_fields, sql: "SELECT CAST(ROW(1, 2e0) AS ROW(x BIGINT, y DOUBLE));" }
+      - { id: field_reference, sql: "SELECT CAST(ROW(1, 2.0) AS ROW(x BIGINT, y DOUBLE)).x;" }
+  - id: a_json_literals
+    name: JSON literals
+    doc: https://trino.io/docs/current/functions/json.html
+    tier: high
+    probes:
+      - { id: scalar, sql: "SELECT JSON '1', JSON '\"abc\"', JSON 'true', JSON 'null';" }
+      - { id: array, sql: "SELECT JSON '[1,23,456]';" }
+      - { id: object, sql: "SELECT JSON '{\"a\": 1, \"b\": [true, null]}';" }
+      - { id: cast_to_json, sql: "SELECT CAST(ARRAY[1, 23, 456] AS JSON);" }
+      - { id: cast_from_json, sql: "SELECT CAST(JSON '[1,23,456]' AS ARRAY(INTEGER));" }
+      - { id: cast_json_to_variant, sql: "SELECT CAST(JSON '{\"a\": 1}' AS VARIANT);" }
+  - id: a_uuid_ipaddress_literals
+    name: UUID and IPADDRESS literals
+    doc: https://trino.io/docs/current/language/types.html
+    tier: medium
+    probes:
+      - { id: uuid, sql: "SELECT UUID '12151fd2-7586-11e9-8f9e-2a86e4085a59';" }
+      - { id: ipaddress_v4, sql: "SELECT IPADDRESS '10.0.0.1';" }
+      - { id: ipaddress_v6, sql: "SELECT IPADDRESS '2001:db8::1';" }
+  - id: a_scalar_type_names
+    name: Scalar type names
+    doc: https://trino.io/docs/current/language/types.html
+    tier: high
+    probes:
+      - { id: integers, sql: "SELECT CAST(c AS TINYINT), CAST(c AS SMALLINT), CAST(c AS INTEGER), CAST(c AS INT), CAST(c AS BIGINT) FROM t;" }
+      - { id: floating, sql: "SELECT CAST(c AS REAL), CAST(c AS DOUBLE), CAST(c AS NUMBER) FROM t;" }
+      - { id: boolean, sql: "SELECT CAST(c AS BOOLEAN) FROM t;" }
+      - { id: decimal, sql: "SELECT CAST(c AS DECIMAL), CAST(c AS DECIMAL(20)), CAST(c AS DECIMAL(10,3)) FROM t;" }
+      - { id: varchar, sql: "SELECT CAST(c AS VARCHAR), CAST(c AS VARCHAR(20)) FROM t;" }
+      - { id: char, sql: "SELECT CAST(c AS CHAR), CAST(c AS CHAR(10)) FROM t;" }
+      - { id: varbinary, sql: "SELECT CAST(c AS VARBINARY) FROM t;" }
+      - { id: json_variant, sql: "SELECT CAST(c AS JSON), CAST(c AS VARIANT) FROM t;" }
+      - { id: uuid_ipaddress, sql: "SELECT CAST(c AS UUID), CAST(c AS IPADDRESS) FROM t;" }
+      - { id: sketches, sql: "SELECT CAST(c AS HyperLogLog), CAST(c AS P4HyperLogLog), CAST(c AS SetDigest), CAST(c AS QDigest(BIGINT)), CAST(c AS TDigest) FROM t;" }
+  - id: a_datetime_type_names
+    name: Date and time type names
+    doc: https://trino.io/docs/current/language/types.html
+    tier: high
+    probes:
+      - { id: date, sql: "SELECT CAST(c AS DATE) FROM t;" }
+      - { id: time, sql: "SELECT CAST(c AS TIME), CAST(c AS TIME(6)) FROM t;" }
+      - { id: time_with_tz, sql: "SELECT CAST(c AS TIME WITH TIME ZONE), CAST(c AS TIME(3) WITH TIME ZONE) FROM t;" }
+      - { id: timestamp, sql: "SELECT CAST(c AS TIMESTAMP), CAST(c AS TIMESTAMP(1)), CAST(c AS TIMESTAMP(12)) FROM t;" }
+      - { id: timestamp_without_tz, sql: "SELECT CAST(c AS TIMESTAMP(3) WITHOUT TIME ZONE) FROM t;" }
+      - { id: timestamp_with_tz, sql: "SELECT CAST(c AS TIMESTAMP WITH TIME ZONE), CAST(c AS TIMESTAMP(6) WITH TIME ZONE) FROM t;" }
+      - { id: interval_year_to_month, sql: "SELECT CAST(c AS INTERVAL YEAR TO MONTH) FROM t;" }
+      - { id: interval_day_to_second, sql: "SELECT CAST(c AS INTERVAL DAY TO SECOND) FROM t;" }
+  - id: a_structural_type_names
+    name: Parameterized structural types
+    doc: https://trino.io/docs/current/language/types.html
+    tier: high
+    probes:
+      - { id: array, sql: "SELECT CAST(c AS ARRAY(INTEGER)) FROM t;" }
+      - { id: map, sql: "SELECT CAST(c AS MAP(VARCHAR, BIGINT)) FROM t;" }
+      - { id: row_named, sql: "SELECT CAST(c AS ROW(x BIGINT, y DOUBLE)) FROM t;" }
+      - { id: row_unnamed, sql: "SELECT CAST(c AS ROW(BIGINT, DOUBLE)) FROM t;" }
+      - { id: nested, sql: "SELECT CAST(c AS ARRAY(MAP(VARCHAR, ROW(a INTEGER, b ARRAY(DOUBLE))))) FROM t;" }
+      - { id: row_quoted_field, sql: "SELECT CAST(c AS ROW(\"a b\" INTEGER)) FROM t;" }
+  - id: a_cast
+    name: CAST and TRY_CAST
+    doc: https://trino.io/docs/current/functions/conversion.html
+    tier: high
+    probes:
+      - { id: cast, sql: "SELECT CAST(c AS BIGINT) FROM t;" }
+      - { id: try_cast, sql: "SELECT TRY_CAST(c AS DATE) FROM t;" }
+      - { id: cast_literal, sql: "SELECT CAST('2020-01-01' AS DATE), CAST(1 AS VARCHAR);" }
+      - { id: nested_cast, sql: "SELECT CAST(CAST(c AS VARCHAR) AS INTEGER) FROM t;" }
+      - { id: typed_literal_cast, sql: "SELECT cast(TIMESTAMP '2020-06-10 15:55:23.383345' as TIMESTAMP(1));" }
+  - id: a_identifier_quoting
+    name: Identifiers and quoting
+    doc: https://trino.io/docs/current/language/reserved.html
+    tier: high
+    probes:
+      - { id: plain, sql: "SELECT SchemaName.tablename.c FROM t;" }
+      - { id: qualified, sql: "SELECT * FROM example_catalog.a_schema.t;" }
+      - { id: quoted_special, sql: "SELECT * FROM \"table$partitions\";" }
+      - { id: quoted_escaped_quote, sql: "SELECT \"identifierWith\"\"double\"\"quotes\" FROM t;" }
+      - { id: quoted_reserved, sql: "SELECT \"select\", \"from\" FROM \"table\";" }
+      - { id: quoted_column_alias, sql: "SELECT c AS \"my alias\" FROM t;" }
+      - { id: quoted_all_parts, sql: "SELECT \"c\".\"x\" FROM \"cat\".\"sch\".\"t\" AS \"c\";" }
+  - id: a_comments
+    name: Comments
+    doc: https://trino.io/docs/current/language/comments.html
+    tier: high
+    probes:
+      - { id: line_comment, sql: "-- This is a comment.\nSELECT 1;" }
+      - { id: trailing_line_comment, sql: "SELECT * FROM t; -- This comment is ignored." }
+      - { id: block_comment, sql: "/* This is a block comment\n   that spans multiple lines\n   until it is closed. */\nSELECT 1;" }
+      - { id: inline_block_comment, sql: "SELECT /* inline */ 1 /* another */ FROM t;" }
+    examples:
+      - |-
+        -- This is a comment.
+        SELECT * FROM t; -- This comment is ignored.
+        /* This is a block comment
+           that spans multiple lines
+           until it is closed. */
+  - id: a_parameters
+    name: Parameters (prepared statements)
+    doc: https://trino.io/docs/current/sql/prepare.html
+    tier: high
+    probes:
+      - { id: where_params, sql: "PREPARE my_select2 FROM SELECT name FROM nation WHERE regionkey = ? AND nationkey < ?;" }
+      - { id: values_params, sql: "PREPARE my_insert FROM INSERT INTO cities VALUES (?, ?);" }
+      - { id: limit_param, sql: "PREPARE p FROM SELECT * FROM t LIMIT ?;" }
+      - { id: select_param, sql: "PREPARE p FROM SELECT ? + 1, CAST(? AS VARCHAR) FROM t;" }
+      - { id: execute_using, sql: "EXECUTE my_select2 USING 1, 24;" }
+      - { id: execute_immediate_using, sql: "EXECUTE IMMEDIATE 'SELECT name FROM nation WHERE regionkey = ?' USING 1;" }
+    examples:
+      - "PREPARE my_select2 FROM SELECT name FROM nation WHERE regionkey = ? AND nationkey < ?;"
+  - id: a_session_context_values
+    name: Session and context special values
+    doc: https://trino.io/docs/current/language/reserved.html
+    tier: medium
+    probes:
+      - { id: current_user, sql: "SELECT CURRENT_USER, CURRENT_CATALOG, CURRENT_SCHEMA, CURRENT_PATH;" }
+      - { id: current_date_time, sql: "SELECT CURRENT_DATE, CURRENT_TIME, CURRENT_TIMESTAMP, LOCALTIME, LOCALTIMESTAMP;" }
+      - { id: current_time_precision, sql: "SELECT CURRENT_TIMESTAMP(3), LOCALTIMESTAMP(6);" }

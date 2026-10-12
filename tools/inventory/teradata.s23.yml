@@ -1,0 +1,88 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: get_diagnostics
+    name: GET DIAGNOSTICS
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/YfrT~MgD4uWCtJPGwjNHUw
+    tier: high
+    probes:
+      - id: statement_item
+        sql: "GET DIAGNOSTICS rowcount = ROW_COUNT;"
+      - id: multiple_items
+        sql: "GET DIAGNOSTICS rc = ROW_COUNT, nb = NUMBER;"
+      - id: command_function
+        sql: "GET DIAGNOSTICS stmt = COMMAND_FUNCTION;"
+      - id: transaction_active
+        sql: "GET DIAGNOSTICS active = TRANSACTION_ACTIVE;"
+      - id: exception_condition
+        sql: "GET DIAGNOSTICS EXCEPTION 1 sqlstate1 = RETURNED_SQLSTATE;"
+      - id: exception_variable_number
+        sql: "GET DIAGNOSTICS EXCEPTION pcondno sqlstate1 = RETURNED_SQLSTATE;"
+    examples:
+      - |-
+        CREATE PROCEDURE getdiag1 (OUT   OParam   INTEGER,
+                                   INOUT rowcount INTEGER)
+        BEGIN
+           SELECT c1 INTO OParam FROM tab1; -- Returns warning  NODATA FOUND
+           GET DIAGNOSTICS rowcount = ROW_COUNT;
+           IF (rowcount = 0) THEN
+              SET OParam = 0;
+           END IF;
+        END;
+      - |-
+        CREATE PROCEDURE getdiag5 (OUT   OParam1   INTEGER,
+                                   INOUT pcondno   INTEGER,
+                                   OUT   sqlstate1 CHARACTER(5))
+        cs1 :BEGIN
+            DECLARE nodata CONDITION FOR SQLSTATE '02000';
+            DECLARE CONTINUE HANDLER FOR SQLSTATE '02000'
+                GET DIAGNOSTICS EXCEPTION pcondno
+                    sqlstate1 = RETURNED_SQLSTATE;
+            cs2: BEGIN
+               SET OParam1 = 0;
+               SELECT c1 INTO OParam1 FROM tab1;
+               -- Returns warning  NO DATA FOUND
+            END cs2;
+        END cs1;
+
+  - id: declare_cursor
+    name: DECLARE CURSOR
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/1J1HcMiz2JrpDQ00WvzWTA
+    tier: high
+    probes:
+      - id: basic
+        sql: "DECLARE c1 CURSOR FOR SELECT a FROM t;"
+      - id: scroll
+        sql: "DECLARE c1 SCROLL CURSOR FOR SELECT a FROM t;"
+      - id: no_scroll
+        sql: "DECLARE c1 NO SCROLL CURSOR FOR SELECT a FROM t;"
+      - id: without_return
+        sql: "DECLARE c1 CURSOR WITHOUT RETURN FOR SELECT a FROM t;"
+      - id: with_return
+        sql: "DECLARE c1 CURSOR WITH RETURN FOR SELECT a FROM t;"
+      - id: with_return_to_caller
+        sql: "DECLARE c1 CURSOR WITH RETURN TO CALLER FOR SELECT a FROM t;"
+      - id: with_return_to_client
+        sql: "DECLARE c1 CURSOR WITH RETURN TO CLIENT FOR SELECT a FROM t;"
+      - id: with_return_only
+        sql: "DECLARE c1 CURSOR WITH RETURN ONLY FOR SELECT a FROM t;"
+      - id: with_return_only_to_caller
+        sql: "DECLARE c1 CURSOR WITH RETURN ONLY TO CALLER FOR SELECT a FROM t;"
+      - id: with_return_only_to_client
+        sql: "DECLARE c1 CURSOR WITH RETURN ONLY TO CLIENT FOR SELECT a FROM t;"
+      - id: for_read_only
+        sql: "DECLARE c1 CURSOR FOR SELECT a FROM t FOR READ ONLY;"
+      - id: for_update
+        sql: "DECLARE c1 CURSOR WITH RETURN ONLY FOR SELECT a FROM t FOR UPDATE;"
+        note: FOR UPDATE requires a WITH RETURN ONLY / TO CLIENT clause per the syntax elements.
+      - id: statement_name
+        sql: "DECLARE c1 CURSOR FOR s1;"
+    examples:
+      - |-
+        DECLARE results1 CURSOR WITH RETURN ONLY TO CLIENT FOR
+               SELECT store, item, on_hand
+               FROM inventory
+               ORDER BY store, item;

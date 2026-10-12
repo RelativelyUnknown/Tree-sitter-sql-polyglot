@@ -1,0 +1,279 @@
+dialect: postgres
+engine: PostgreSQL
+version: "17"
+source: https://www.postgresql.org/docs/17/sql-commands.html
+
+statements:
+  - id: comment
+    name: COMMENT
+    doc: https://www.postgresql.org/docs/17/sql-comment.html
+    tier: medium
+    probes:
+      - id: on_table
+        sql: "COMMENT ON TABLE t IS 'text';"
+      - id: on_table_null
+        sql: "COMMENT ON TABLE t IS NULL;"
+      - id: on_column
+        sql: "COMMENT ON COLUMN s.t.c IS 'text';"
+      - id: on_function_args
+        sql: "COMMENT ON FUNCTION f(IN a integer, text) IS 'text';"
+      - id: on_aggregate
+        sql: "COMMENT ON AGGREGATE agg(integer) IS 'text';"
+      - id: on_constraint_on_table
+        sql: "COMMENT ON CONSTRAINT con ON t IS 'text';"
+      - id: on_constraint_on_domain
+        sql: "COMMENT ON CONSTRAINT con ON DOMAIN d IS 'text';"
+      - id: on_trigger
+        sql: "COMMENT ON TRIGGER trg ON t IS 'text';"
+      - id: on_policy
+        sql: "COMMENT ON POLICY pol ON t IS 'text';"
+      - id: on_schema_view_index
+        sql: "COMMENT ON SCHEMA s IS 'text';"
+    examples:
+      - "COMMENT ON TABLE mytable IS 'This is my table.';"
+      - "COMMENT ON TABLE mytable IS NULL;"
+      - "COMMENT ON COLUMN my_table.my_column IS 'Employee ID number';"
+
+  - id: commit_prepared
+    name: COMMIT PREPARED
+    doc: https://www.postgresql.org/docs/17/sql-commit-prepared.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "COMMIT PREPARED 'foobar';"
+    examples:
+      - "COMMIT PREPARED 'foobar';"
+
+  - id: create_domain
+    name: CREATE DOMAIN
+    doc: https://www.postgresql.org/docs/17/sql-createdomain.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE DOMAIN d AS integer;"
+      - id: without_as
+        sql: "CREATE DOMAIN d integer;"
+      - id: collate
+        sql: "CREATE DOMAIN d AS text COLLATE \"C\";"
+      - id: default
+        sql: "CREATE DOMAIN d AS integer DEFAULT 0;"
+      - id: not_null
+        sql: "CREATE DOMAIN d AS integer NOT NULL;"
+      - id: null_constraint
+        sql: "CREATE DOMAIN d AS integer NULL;"
+      - id: check
+        sql: "CREATE DOMAIN d AS integer CHECK (VALUE > 0);"
+      - id: named_constraint
+        sql: "CREATE DOMAIN d AS integer CONSTRAINT pos CHECK (VALUE > 0);"
+      - id: multiple_constraints
+        sql: "CREATE DOMAIN d AS integer DEFAULT 1 CONSTRAINT nn NOT NULL CONSTRAINT pos CHECK (VALUE > 0);"
+    examples:
+      - |-
+        CREATE DOMAIN us_postal_code AS TEXT
+        CHECK(
+           VALUE ~ '^\d{5}$'
+        OR VALUE ~ '^\d{5}-\d{4}$'
+        );
+
+  - id: create_extension
+    name: CREATE EXTENSION
+    doc: https://www.postgresql.org/docs/17/sql-createextension.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE EXTENSION hstore;"
+      - id: if_not_exists
+        sql: "CREATE EXTENSION IF NOT EXISTS hstore;"
+      - id: with_schema
+        sql: "CREATE EXTENSION hstore WITH SCHEMA addons;"
+      - id: version
+        sql: "CREATE EXTENSION hstore VERSION '1.0';"
+      - id: cascade
+        sql: "CREATE EXTENSION hstore CASCADE;"
+      - id: all_options
+        sql: "CREATE EXTENSION IF NOT EXISTS hstore WITH SCHEMA addons VERSION '1.0' CASCADE;"
+    examples:
+      - "CREATE EXTENSION hstore SCHEMA addons;"
+
+  - id: create_foreign_table
+    name: CREATE FOREIGN TABLE
+    doc: https://www.postgresql.org/docs/17/sql-createforeigntable.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE FOREIGN TABLE t (c integer) SERVER srv;"
+      - id: if_not_exists
+        sql: "CREATE FOREIGN TABLE IF NOT EXISTS t (c integer) SERVER srv;"
+      - id: column_options
+        sql: "CREATE FOREIGN TABLE t (c integer OPTIONS (column_name 'x')) SERVER srv;"
+      - id: column_collate_constraints
+        sql: "CREATE FOREIGN TABLE t (c text COLLATE \"C\" NOT NULL DEFAULT 'a') SERVER srv;"
+      - id: check_no_inherit
+        sql: "CREATE FOREIGN TABLE t (c integer CHECK (c > 0) NO INHERIT) SERVER srv;"
+      - id: generated_stored
+        sql: "CREATE FOREIGN TABLE t (a integer, b integer GENERATED ALWAYS AS (a * 2) STORED) SERVER srv;"
+      - id: table_constraint
+        sql: "CREATE FOREIGN TABLE t (c integer, CONSTRAINT pos CHECK (c > 0)) SERVER srv;"
+      - id: inherits
+        sql: "CREATE FOREIGN TABLE t (c integer) INHERITS (p) SERVER srv;"
+      - id: table_options
+        sql: "CREATE FOREIGN TABLE t (c integer) SERVER srv OPTIONS (schema_name 's', table_name 'x');"
+      - id: partition_of_range
+        sql: "CREATE FOREIGN TABLE t PARTITION OF p FOR VALUES FROM ('2016-07-01') TO ('2016-08-01') SERVER srv;"
+      - id: partition_of_in
+        sql: "CREATE FOREIGN TABLE t PARTITION OF p FOR VALUES IN (1, 2) SERVER srv;"
+      - id: partition_of_minvalue_maxvalue
+        sql: "CREATE FOREIGN TABLE t PARTITION OF p FOR VALUES FROM (MINVALUE) TO (MAXVALUE) SERVER srv;"
+      - id: partition_of_hash
+        sql: "CREATE FOREIGN TABLE t PARTITION OF p FOR VALUES WITH (MODULUS 4, REMAINDER 1) SERVER srv;"
+      - id: partition_of_default
+        sql: "CREATE FOREIGN TABLE t PARTITION OF p DEFAULT SERVER srv;"
+      - id: partition_of_column_list
+        sql: "CREATE FOREIGN TABLE t PARTITION OF p (c WITH OPTIONS NOT NULL) DEFAULT SERVER srv;"
+    examples:
+      - |-
+        CREATE FOREIGN TABLE films (
+            code        char(5) NOT NULL,
+            title       varchar(40) NOT NULL,
+            did         integer NOT NULL,
+            date_prod   date,
+            kind        varchar(10),
+            len         interval hour to minute
+        )
+        SERVER film_server;
+      - |-
+        CREATE FOREIGN TABLE measurement_y2016m07
+            PARTITION OF measurement FOR VALUES FROM ('2016-07-01') TO ('2016-08-01')
+            SERVER server_07;
+
+  - id: create_group
+    name: CREATE GROUP
+    doc: https://www.postgresql.org/docs/17/sql-creategroup.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE GROUP g;"
+      - id: with_options
+        sql: "CREATE GROUP g WITH CREATEDB NOLOGIN;"
+      - id: password
+        sql: "CREATE GROUP g PASSWORD 'secret' VALID UNTIL '2030-01-01';"
+      - id: connection_limit
+        sql: "CREATE GROUP g CONNECTION LIMIT 5;"
+      - id: membership
+        sql: "CREATE GROUP g IN ROLE r1, r2 ROLE r3 ADMIN r4 USER r5;"
+      - id: in_group
+        sql: "CREATE GROUP g IN GROUP r1;"
+
+  - id: create_policy
+    name: CREATE POLICY
+    doc: https://www.postgresql.org/docs/17/sql-createpolicy.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE POLICY p ON t;"
+      - id: as_permissive
+        sql: "CREATE POLICY p ON t AS PERMISSIVE;"
+      - id: as_restrictive
+        sql: "CREATE POLICY p ON t AS RESTRICTIVE;"
+      - id: for_command
+        sql: "CREATE POLICY p ON t FOR SELECT;"
+      - id: to_roles
+        sql: "CREATE POLICY p ON t TO r1, PUBLIC, CURRENT_USER;"
+      - id: using
+        sql: "CREATE POLICY p ON t USING (owner = CURRENT_USER);"
+      - id: with_check
+        sql: "CREATE POLICY p ON t WITH CHECK (c > 0);"
+      - id: all_clauses
+        sql: "CREATE POLICY p ON t AS PERMISSIVE FOR UPDATE TO r USING (c > 0) WITH CHECK (c > 0);"
+
+  - id: create_role
+    name: CREATE ROLE
+    doc: https://www.postgresql.org/docs/17/sql-createrole.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE ROLE r;"
+      - id: with_login
+        sql: "CREATE ROLE r WITH LOGIN;"
+      - id: privilege_options
+        sql: "CREATE ROLE r SUPERUSER CREATEDB CREATEROLE REPLICATION BYPASSRLS;"
+      - id: negated_options
+        sql: "CREATE ROLE r NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOLOGIN NOREPLICATION NOBYPASSRLS;"
+      - id: connection_limit
+        sql: "CREATE ROLE r CONNECTION LIMIT 10;"
+      - id: encrypted_password
+        sql: "CREATE ROLE r ENCRYPTED PASSWORD 'secret';"
+      - id: password_null
+        sql: "CREATE ROLE r PASSWORD NULL;"
+      - id: valid_until
+        sql: "CREATE ROLE r VALID UNTIL '2030-01-01';"
+      - id: in_role
+        sql: "CREATE ROLE r IN ROLE a, b;"
+      - id: role_and_admin
+        sql: "CREATE ROLE r ROLE a ADMIN b;"
+      - id: sysid
+        sql: "CREATE ROLE r SYSID 100;"
+    examples:
+      - "CREATE ROLE jonathan LOGIN;"
+      - "CREATE USER davide WITH PASSWORD 'jw8s0F4';"
+      - "CREATE ROLE miriam WITH LOGIN PASSWORD 'jw8s0F4' VALID UNTIL '2005-01-01';"
+
+  - id: create_rule
+    name: CREATE RULE
+    doc: https://www.postgresql.org/docs/17/sql-createrule.html
+    tier: medium
+    probes:
+      - id: do_nothing
+        sql: "CREATE RULE r AS ON INSERT TO t DO NOTHING;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE RULE r AS ON UPDATE TO t DO INSTEAD NOTHING;"
+      - id: where_condition
+        sql: "CREATE RULE r AS ON DELETE TO t WHERE old.c > 0 DO INSTEAD NOTHING;"
+      - id: also_command
+        sql: "CREATE RULE r AS ON UPDATE TO t DO ALSO INSERT INTO log VALUES (old.c, new.c);"
+      - id: instead_command
+        sql: "CREATE RULE r AS ON SELECT TO t DO INSTEAD SELECT * FROM v;"
+      - id: multiple_commands
+        sql: "CREATE RULE r AS ON INSERT TO t DO ALSO (INSERT INTO log1 VALUES (new.c); INSERT INTO log2 VALUES (new.c));"
+
+  - id: create_sequence
+    name: CREATE SEQUENCE
+    doc: https://www.postgresql.org/docs/17/sql-createsequence.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE SEQUENCE s;"
+      - id: temporary
+        sql: "CREATE TEMPORARY SEQUENCE s;"
+      - id: temp
+        sql: "CREATE TEMP SEQUENCE s;"
+      - id: unlogged
+        sql: "CREATE UNLOGGED SEQUENCE s;"
+      - id: if_not_exists
+        sql: "CREATE SEQUENCE IF NOT EXISTS s;"
+      - id: as_data_type
+        sql: "CREATE SEQUENCE s AS bigint;"
+      - id: increment_by
+        sql: "CREATE SEQUENCE s INCREMENT BY 2;"
+      - id: increment
+        sql: "CREATE SEQUENCE s INCREMENT 2;"
+      - id: min_max_value
+        sql: "CREATE SEQUENCE s MINVALUE 1 MAXVALUE 100;"
+      - id: no_min_max_value
+        sql: "CREATE SEQUENCE s NO MINVALUE NO MAXVALUE;"
+      - id: start_with
+        sql: "CREATE SEQUENCE s START WITH 101;"
+      - id: start
+        sql: "CREATE SEQUENCE s START 101;"
+      - id: cache
+        sql: "CREATE SEQUENCE s CACHE 10;"
+      - id: cycle
+        sql: "CREATE SEQUENCE s CYCLE;"
+      - id: no_cycle
+        sql: "CREATE SEQUENCE s NO CYCLE;"
+      - id: owned_by_column
+        sql: "CREATE SEQUENCE s OWNED BY t.c;"
+      - id: owned_by_none
+        sql: "CREATE SEQUENCE s OWNED BY NONE;"
+    examples:
+      - "CREATE SEQUENCE serial START 101;"

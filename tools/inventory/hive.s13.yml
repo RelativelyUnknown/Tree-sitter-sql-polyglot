@@ -1,0 +1,49 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: create_table_stored_by
+    name: CREATE TABLE ... STORED BY (storage handler)
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: stored_by
+        sql: "CREATE TABLE t (id INT) STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler';"
+      - id: external_stored_by
+        sql: "CREATE EXTERNAL TABLE t (id INT) STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler';"
+      - id: if_not_exists_qualified
+        sql: "CREATE TABLE IF NOT EXISTS db.t (id INT) STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler';"
+      - id: with_serdeproperties
+        sql: "CREATE TABLE t (key INT, value STRING) STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler' WITH SERDEPROPERTIES ('hbase.columns.mapping' = ':key,cf:val');"
+      - id: with_comment_partitioned
+        sql: "CREATE TABLE t (id INT) COMMENT 'c' PARTITIONED BY (p STRING) STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler';"
+      - id: with_location
+        sql: "CREATE EXTERNAL TABLE t (id INT) STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler' LOCATION '/user/hive/t';"
+      - id: with_tblproperties
+        sql: "CREATE TABLE t (key INT, value STRING) STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler' TBLPROPERTIES ('hbase.table.name' = 'xyz');"
+      - id: serdeproperties_location_tblproperties
+        sql: "CREATE EXTERNAL TABLE t (key INT, value STRING) STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler' WITH SERDEPROPERTIES ('hbase.columns.mapping' = ':key,cf:val') LOCATION '/user/hive/t' TBLPROPERTIES ('hbase.table.name' = 'xyz');"
+      - id: as_select
+        sql: "CREATE TABLE t STORED BY 'org.apache.hadoop.hive.druid.DruidStorageHandler' AS SELECT 1 AS c;"
+      - id: clustered_by
+        sql: "CREATE TABLE t (id INT) CLUSTERED BY (id) INTO 4 BUCKETS STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler';"
+      - id: temporary_stored_by
+        sql: "CREATE TEMPORARY TABLE t (id INT) STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler';"
+
+  - id: drop_table
+    name: DROP TABLE
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: basic
+        sql: "DROP TABLE t;"
+      - id: qualified
+        sql: "DROP TABLE db.t;"
+      - id: if_exists
+        sql: "DROP TABLE IF EXISTS t;"
+      - id: purge
+        sql: "DROP TABLE t PURGE;"
+      - id: if_exists_purge
+        sql: "DROP TABLE IF EXISTS db.t PURGE;"

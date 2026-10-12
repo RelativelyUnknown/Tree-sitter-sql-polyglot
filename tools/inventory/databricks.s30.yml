@@ -1,0 +1,91 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: create_table_hive_format
+    name: CREATE TABLE with Hive format
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-table-hiveformat
+    tier: high
+    probes:
+      - id: stored_as
+        sql: "CREATE TABLE t (c1 INT, c2 STRING) STORED AS ORC;"
+      - id: external_location
+        sql: "CREATE EXTERNAL TABLE t (c1 INT) STORED AS PARQUET LOCATION '/tmp/t/';"
+      - id: if_not_exists
+        sql: "CREATE TABLE IF NOT EXISTS t (c1 INT) STORED AS ORC;"
+      - id: column_comment
+        sql: "CREATE TABLE t (c1 INT COMMENT 'col comment') STORED AS ORC;"
+      - id: table_comment
+        sql: "CREATE TABLE t (c1 INT) COMMENT 'table comment' STORED AS ORC;"
+      - id: partitioned_by_typed
+        sql: "CREATE TABLE t (c1 INT) PARTITIONED BY (p1 INT COMMENT 'part comment') STORED AS ORC;"
+      - id: partitioned_by_names
+        sql: "CREATE TABLE t (c1 INT, p1 INT) PARTITIONED BY (p1) STORED AS ORC;"
+      - id: tblproperties
+        sql: "CREATE TABLE t (c1 INT) STORED AS ORC TBLPROPERTIES ('k1' = 'v1', 'k2' = 'v2');"
+      - id: clauses_any_order
+        sql: "CREATE TABLE t (c1 INT) TBLPROPERTIES ('k' = 'v') COMMENT 'c' PARTITIONED BY (p1 INT) STORED AS ORC;"
+      - id: as_select
+        sql: "CREATE TABLE t2 STORED AS ORC AS SELECT * FROM t;"
+      - id: row_format_serde
+        sql: "CREATE TABLE t (c1 INT) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.avro.AvroSerDe' STORED AS ORC;"
+      - id: row_format_serde_properties
+        sql: "CREATE TABLE t (c1 INT) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.avro.AvroSerDe' WITH SERDEPROPERTIES ('k1' = 'v1') STORED AS ORC;"
+      - id: row_format_delimited_fields
+        sql: "CREATE TABLE t (c1 INT) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE;"
+      - id: row_format_delimited_escaped
+        sql: "CREATE TABLE t (c1 INT) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' ESCAPED BY '\\\\' STORED AS TEXTFILE;"
+      - id: row_format_delimited_collection
+        sql: "CREATE TABLE t (c1 ARRAY<STRING>) ROW FORMAT DELIMITED COLLECTION ITEMS TERMINATED BY '_' STORED AS TEXTFILE;"
+      - id: row_format_delimited_map_keys
+        sql: "CREATE TABLE t (c1 MAP<STRING, INT>) ROW FORMAT DELIMITED MAP KEYS TERMINATED BY ':' STORED AS TEXTFILE;"
+      - id: row_format_delimited_lines
+        sql: "CREATE TABLE t (c1 INT) ROW FORMAT DELIMITED LINES TERMINATED BY '\\n' STORED AS TEXTFILE;"
+      - id: row_format_delimited_null
+        sql: "CREATE TABLE t (c1 INT) ROW FORMAT DELIMITED NULL DEFINED AS 'foonull' STORED AS TEXTFILE;"
+      - id: stored_as_inputformat_outputformat
+        sql: "CREATE TABLE t ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.avro.AvroSerDe' STORED AS INPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat' OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat';"
+      - id: complex_column_types
+        sql: "CREATE EXTERNAL TABLE t (name STRING, friends ARRAY<STRING>, children MAP<STRING, INT>, address STRUCT<street: STRING, city: STRING>) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE LOCATION '/tmp/t/';"
+      - id: column_colon_separator
+        sql: "CREATE TABLE t (c1: INT, c2: STRING) STORED AS ORC;"
+        note: "Syntax block shows an optional colon between col_name and col_type"
+    examples:
+      - "CREATE TABLE student (id INT, name STRING, age INT) STORED AS ORC;"
+      - "CREATE TABLE student_copy STORED AS ORC AS SELECT * FROM student;"
+      - "CREATE TABLE student (id INT, name STRING, age INT) COMMENT 'this is a comment' STORED AS ORC TBLPROPERTIES ('foo' = 'bar');"
+
+  - id: create_table_like
+    name: CREATE TABLE LIKE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-table-like
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE TABLE t LIKE s;"
+      - id: if_not_exists
+        sql: "CREATE TABLE IF NOT EXISTS t LIKE s;"
+      - id: using
+        sql: "CREATE TABLE t LIKE s USING CSV;"
+      - id: location
+        sql: "CREATE TABLE t LIKE s LOCATION '/path/to/data_files';"
+      - id: tblproperties
+        sql: "CREATE TABLE t LIKE s TBLPROPERTIES ('k1' = 'v1', k2 = 'v2');"
+      - id: tblproperties_dotted_key
+        sql: "CREATE TABLE t LIKE s TBLPROPERTIES (a.b.c = 'v');"
+      - id: row_format_serde
+        sql: "CREATE TABLE t LIKE s ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.avro.AvroSerDe';"
+      - id: row_format_serde_properties
+        sql: "CREATE TABLE t LIKE s ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.avro.AvroSerDe' WITH SERDEPROPERTIES ('k1' = 'v1');"
+      - id: row_format_delimited
+        sql: "CREATE TABLE t LIKE s ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' ESCAPED BY '\\\\' COLLECTION ITEMS TERMINATED BY '_' MAP KEYS TERMINATED BY ':' LINES TERMINATED BY '\\n' NULL DEFINED AS 'foonull';"
+      - id: stored_as
+        sql: "CREATE TABLE t LIKE s STORED AS PARQUET;"
+      - id: qualified_names
+        sql: "CREATE TABLE c.s1.t LIKE c.s1.s;"
+      - id: multiple_clauses
+        sql: "CREATE TABLE t LIKE s USING CSV LOCATION '/path/to/csv_files' TBLPROPERTIES ('k' = 'v');"
+    examples:
+      - "CREATE TABLE Student_Dupli LIKE Student LOCATION '/path/to/data_files';"
+      - "CREATE TABLE Student_Dupli LIKE Student USING CSV LOCATION '/path/to/csv_files';"

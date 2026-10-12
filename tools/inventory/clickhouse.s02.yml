@@ -1,0 +1,48 @@
+dialect: clickhouse
+engine: ClickHouse
+version: "current docs (2026)"
+source: https://clickhouse.com/docs/sql-reference/statements/
+
+statements:
+  - id: delete
+    name: DELETE FROM (lightweight delete)
+    doc: https://clickhouse.com/docs/sql-reference/statements/delete
+    tier: high
+    probes:
+      - id: basic
+        sql: "DELETE FROM t WHERE c = 1;"
+      - id: db_qualified
+        sql: "DELETE FROM db.t WHERE c = 1;"
+      - id: on_cluster
+        sql: "DELETE FROM t ON CLUSTER cl WHERE c = 1;"
+      - id: in_partition
+        sql: "DELETE FROM t IN PARTITION 202301 WHERE c = 1;"
+      - id: in_partition_multiple
+        sql: "DELETE FROM t IN PARTITION 202301, 202302 WHERE c = 1;"
+      - id: on_cluster_in_partition
+        sql: "DELETE FROM t ON CLUSTER cl IN PARTITION 202301 WHERE c = 1;"
+    examples:
+      - "DELETE FROM hits WHERE Title LIKE '%hello%';"
+
+  - id: update
+    name: UPDATE (lightweight update)
+    doc: https://clickhouse.com/docs/sql-reference/statements/update
+    tier: high
+    probes:
+      - id: basic
+        sql: "UPDATE t SET c = 1 WHERE d = 2;"
+      - id: db_qualified
+        sql: "UPDATE db.t SET c = 1 WHERE d = 2;"
+      - id: multiple_columns
+        sql: "UPDATE t SET c1 = 1, c2 = 2 WHERE d = 2;"
+      - id: on_cluster
+        sql: "UPDATE t ON CLUSTER cl SET c = 1 WHERE d = 2;"
+      - id: in_partition
+        sql: "UPDATE t SET c = 1 IN PARTITION 202301 WHERE d = 2;"
+      - id: in_partition_multiple
+        sql: "UPDATE t SET c = 1 IN PARTITION 202301, 202302 WHERE d = 2;"
+      - id: on_cluster_in_partition
+        sql: "UPDATE t ON CLUSTER cl SET c = c + 1 IN PARTITION 202301 WHERE d = 2;"
+    examples:
+      - "UPDATE hits SET Title = 'Updated Title' WHERE EventDate = today();"
+      - "UPDATE wikistat SET hits = hits + 1, time = now() WHERE path = 'ClickHouse';"

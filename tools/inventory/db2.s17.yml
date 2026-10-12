@@ -1,0 +1,68 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "12.1"
+source: https://www.ibm.com/docs/en/db2/12.1.x?topic=reference-statements
+
+statements:
+  - id: goto
+    name: GOTO
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-goto
+    tier: high
+    probes:
+      - id: goto_label
+        sql: "CREATE PROCEDURE p () LANGUAGE SQL BEGIN GOTO fin; SET x = 1; fin: SET x = 2; END;"
+        note: GOTO is only valid embedded in an SQL procedure; syntax is GOTO label
+    examples:
+      - |-
+        CREATE PROCEDURE adjust_salary (IN v_empno CHAR(6), IN rating INTEGER, OUT return_parm DECIMAL (8,2) )
+        MODIFIES SQL DATA
+        LANGUAGE SQL
+        BEGIN
+          DECLARE new_salary DECIMAL (9,2);
+          DECLARE service DECIMAL (8,2);
+          SELECT SALARY, CURRENT_DATE - HIREDATE INTO new_salary, service FROM EMPLOYEE WHERE EMPNO = v_empno;
+          IF service < 600 THEN
+            GOTO EXIT;
+          END IF ;
+          IF rating = 1 THEN
+            SET new_salary = new_salary + (new_salary * .10);
+          ELSEIF rating = 2 THEN
+            SET new_salary = new_salary + (new_salary * .05);
+          END IF ;
+          UPDATE EMPLOYEE SET SALARY = new_salary WHERE EMPNO = v_empno;
+          EXIT: SET return_parm = service;
+        END;
+
+  - id: if
+    name: IF
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-if
+    tier: high
+    probes:
+      - id: if_then
+        sql: "CREATE PROCEDURE p () LANGUAGE SQL BEGIN IF x = 1 THEN SET y = 2; END IF; END;"
+      - id: if_else
+        sql: "CREATE PROCEDURE p () LANGUAGE SQL BEGIN IF x = 1 THEN SET y = 2; ELSE SET y = 3; END IF; END;"
+      - id: if_elseif
+        sql: "CREATE PROCEDURE p () LANGUAGE SQL BEGIN IF x = 1 THEN SET y = 2; ELSEIF x = 2 THEN SET y = 3; END IF; END;"
+      - id: if_elseif_else
+        sql: "CREATE PROCEDURE p () LANGUAGE SQL BEGIN IF x = 1 THEN SET y = 2; ELSEIF x = 2 THEN SET y = 3; ELSEIF x = 3 THEN SET y = 4; ELSE SET y = 5; END IF; END;"
+      - id: if_multiple_statements
+        sql: "CREATE PROCEDURE p () LANGUAGE SQL BEGIN IF x = 1 THEN SET y = 2; SET z = 3; END IF; END;"
+      - id: if_in_inlined_trigger
+        sql: "CREATE TRIGGER trg BEFORE INSERT ON t REFERENCING NEW AS n FOR EACH ROW BEGIN ATOMIC IF n.c IS NULL THEN SET n.c = 0; END IF; END;"
+        note: SQL-function-statement form, valid in inlined compound statements and triggers
+    examples:
+      - |-
+        CREATE PROCEDURE UPDATE_SALARY_IF (IN employee_number CHAR(6), INOUT rating SMALLINT)
+        LANGUAGE SQL
+        BEGIN
+          DECLARE not_found CONDITION FOR SQLSTATE '02000';
+          DECLARE EXIT HANDLER FOR not_found SET rating = -1;
+          IF rating = 1 THEN
+            UPDATE employee SET salary = salary * 1.10, bonus = 1000 WHERE empno = employee_number;
+          ELSEIF rating = 2 THEN
+            UPDATE employee SET salary = salary * 1.05, bonus = 500 WHERE empno = employee_number;
+          ELSE
+            UPDATE employee SET salary = salary * 1.03, bonus = 0 WHERE empno = employee_number;
+          END IF ;
+        END;

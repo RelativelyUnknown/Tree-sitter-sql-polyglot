@@ -1,0 +1,127 @@
+dialect: trino
+engine: Trino
+version: "483"
+source: https://trino.io/docs/current/sql.html
+
+statements:
+  - id: alter_schema
+    name: ALTER SCHEMA
+    doc: https://trino.io/docs/current/sql/alter-schema.html
+    tier: medium
+    probes:
+      - { id: rename_to, sql: "ALTER SCHEMA s RENAME TO s2;" }
+      - { id: set_authorization_user, sql: "ALTER SCHEMA s SET AUTHORIZATION alice;" }
+      - { id: set_authorization_user_kw, sql: "ALTER SCHEMA s SET AUTHORIZATION USER alice;" }
+      - { id: set_authorization_role, sql: "ALTER SCHEMA s SET AUTHORIZATION ROLE PUBLIC;" }
+    examples:
+      - "ALTER SCHEMA web RENAME TO traffic;"
+      - "ALTER SCHEMA web SET AUTHORIZATION alice;"
+      - "ALTER SCHEMA web SET AUTHORIZATION ROLE PUBLIC;"
+
+  - id: analyze
+    name: ANALYZE
+    doc: https://trino.io/docs/current/sql/analyze.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "ANALYZE t;" }
+      - { id: qualified, sql: "ANALYZE hive.default.t;" }
+      - { id: with_properties, sql: "ANALYZE t WITH (partitions = ARRAY[ARRAY['1992-01-01'], ARRAY['1992-01-02']]);" }
+      - { id: with_multiple_properties, sql: "ANALYZE t WITH (partitions = ARRAY[ARRAY['1992-01-01']], columns = ARRAY['c1', 'c2']);" }
+    examples:
+      - "ANALYZE web;"
+      - "ANALYZE hive.default.stores;"
+      - "ANALYZE hive.default.sales WITH (partitions = ARRAY[ARRAY['1992-01-01'], ARRAY['1992-01-02']]);"
+
+  - id: comment
+    name: COMMENT
+    doc: https://trino.io/docs/current/sql/comment.html
+    tier: medium
+    probes:
+      - { id: on_table, sql: "COMMENT ON TABLE t IS 'master table';" }
+      - { id: on_view, sql: "COMMENT ON VIEW v IS 'master view';" }
+      - { id: on_column, sql: "COMMENT ON COLUMN t.c IS 'full name';" }
+    examples:
+      - "COMMENT ON TABLE users IS 'master table';"
+      - "COMMENT ON VIEW users IS 'master view';"
+      - "COMMENT ON COLUMN users.name IS 'full name';"
+
+  - id: create_role
+    name: CREATE ROLE
+    doc: https://trino.io/docs/current/sql/create-role.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE ROLE r;" }
+      - { id: with_admin_user, sql: "CREATE ROLE r WITH ADMIN USER bob;" }
+      - { id: with_admin_name, sql: "CREATE ROLE r WITH ADMIN bob;" }
+      - { id: with_admin_role, sql: "CREATE ROLE r WITH ADMIN ROLE admin;" }
+      - { id: with_admin_current_user, sql: "CREATE ROLE r WITH ADMIN CURRENT_USER;" }
+      - { id: with_admin_current_role, sql: "CREATE ROLE r WITH ADMIN CURRENT_ROLE;" }
+      - { id: in_catalog, sql: "CREATE ROLE r IN hive;" }
+    examples:
+      - "CREATE ROLE admin;"
+      - "CREATE ROLE moderator WITH ADMIN USER bob;"
+
+  - id: create_schema
+    name: CREATE SCHEMA
+    doc: https://trino.io/docs/current/sql/create-schema.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE SCHEMA s;" }
+      - { id: qualified, sql: "CREATE SCHEMA hive.s;" }
+      - { id: if_not_exists, sql: "CREATE SCHEMA IF NOT EXISTS s;" }
+      - { id: authorization_user, sql: "CREATE SCHEMA s AUTHORIZATION alice;" }
+      - { id: authorization_role, sql: "CREATE SCHEMA s AUTHORIZATION ROLE PUBLIC;" }
+      - { id: with_properties, sql: "CREATE SCHEMA s WITH (LOCATION = '/hive/data/web');" }
+      - { id: authorization_with_properties, sql: "CREATE SCHEMA s AUTHORIZATION alice WITH (LOCATION = '/hive/data/web');" }
+    examples:
+      - "CREATE SCHEMA hive.sales;"
+      - "CREATE SCHEMA IF NOT EXISTS traffic;"
+      - "CREATE SCHEMA web AUTHORIZATION alice WITH (LOCATION = '/hive/data/web');"
+
+  - id: deallocate_prepare
+    name: DEALLOCATE PREPARE
+    doc: https://trino.io/docs/current/sql/deallocate-prepare.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "DEALLOCATE PREPARE my_query;" }
+    examples:
+      - "DEALLOCATE PREPARE my_query;"
+
+  - id: describe
+    name: DESCRIBE
+    doc: https://trino.io/docs/current/sql/describe.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "DESCRIBE t;" }
+      - { id: qualified, sql: "DESCRIBE hive.default.t;" }
+
+  - id: describe_input
+    name: DESCRIBE INPUT
+    doc: https://trino.io/docs/current/sql/describe-input.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "DESCRIBE INPUT my_select1;" }
+    examples:
+      - "DESCRIBE INPUT my_select1;"
+
+  - id: describe_output
+    name: DESCRIBE OUTPUT
+    doc: https://trino.io/docs/current/sql/describe-output.html
+    tier: medium
+    probes:
+      - { id: statement_name, sql: "DESCRIBE OUTPUT my_select1;" }
+      - { id: query, sql: "DESCRIBE OUTPUT (SELECT * FROM nation);" }
+    examples:
+      - "DESCRIBE OUTPUT my_select1;"
+      - "DESCRIBE OUTPUT my_select2;"
+
+  - id: drop_role
+    name: DROP ROLE
+    doc: https://trino.io/docs/current/sql/drop-role.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP ROLE r;" }
+      - { id: if_exists, sql: "DROP ROLE IF EXISTS r;" }
+      - { id: in_catalog, sql: "DROP ROLE r IN hive;" }
+    examples:
+      - "DROP ROLE admin;"

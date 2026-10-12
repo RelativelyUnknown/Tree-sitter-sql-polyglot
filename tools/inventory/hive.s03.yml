@@ -1,0 +1,69 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: select_join
+    name: JOIN
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-joins/
+    tier: high
+    probes:
+      - { id: join, sql: "SELECT a.val, b.val FROM a JOIN b ON (a.key = b.key);" }
+      - { id: inner_join, sql: "SELECT a.val, b.val FROM a INNER JOIN b ON (a.key = b.key);" }
+      - { id: join_no_condition, sql: "SELECT a.val, b.val FROM a JOIN b;" }
+      - { id: left_join, sql: "SELECT a.val, b.val FROM a LEFT JOIN b ON (a.key = b.key);" }
+      - { id: left_outer_join, sql: "SELECT a.val, b.val FROM a LEFT OUTER JOIN b ON (a.key = b.key);" }
+      - { id: right_join, sql: "SELECT a.val, b.val FROM a RIGHT JOIN b ON (a.key = b.key);" }
+      - { id: right_outer_join, sql: "SELECT a.val, b.val FROM a RIGHT OUTER JOIN b ON (a.key = b.key);" }
+      - { id: full_join, sql: "SELECT a.val, b.val FROM a FULL JOIN b ON (a.key = b.key);" }
+      - { id: full_outer_join, sql: "SELECT a.val, b.val FROM a FULL OUTER JOIN b ON (a.key = b.key);" }
+      - { id: left_semi_join, sql: "SELECT a.key, a.val FROM a LEFT SEMI JOIN b ON (a.key = b.key);" }
+      - { id: cross_join, sql: "SELECT a.val, b.val FROM a CROSS JOIN b;" }
+      - { id: cross_join_on, sql: "SELECT a.val, b.val FROM a CROSS JOIN b ON (a.key = b.key);" }
+      - { id: implicit_join, sql: "SELECT * FROM table1 t1, table2 t2, table3 t3 WHERE t1.id = t2.id AND t2.id = t3.id;" }
+      - { id: table_alias, sql: "SELECT x.val FROM a x JOIN b y ON (x.key = y.key);" }
+      - { id: subquery_factor, sql: "SELECT a.val FROM a JOIN (SELECT key FROM b) sub ON (a.key = sub.key);" }
+      - { id: parenthesized_tables, sql: "SELECT a.val FROM (a JOIN b ON (a.key = b.key)) JOIN c ON (c.key = b.key);" }
+      - { id: unqualified_columns, sql: "SELECT k1, v1, k2, v2 FROM a JOIN b ON k1 = k2;" }
+      - { id: complex_on_and, sql: "SELECT a.* FROM a JOIN b ON (a.id = b.id AND a.department = b.department);" }
+      - { id: complex_on_inequality, sql: "SELECT a.* FROM a LEFT OUTER JOIN b ON (a.id <> b.id);" }
+      - { id: multi_join, sql: "SELECT a.val, b.val, c.val FROM a JOIN b ON (a.key = b.key1) JOIN c ON (c.key = b.key2);" }
+      - { id: streamtable_hint, sql: "SELECT /*+ STREAMTABLE(a) */ a.val, b.val, c.val FROM a JOIN b ON (a.key = b.key1) JOIN c ON (c.key = b.key1);" }
+      - { id: mapjoin_hint, sql: "SELECT /*+ MAPJOIN(b) */ a.key, a.value FROM a JOIN b ON a.key = b.key;" }
+      - { id: outer_join_where, sql: "SELECT a.val, b.val FROM a LEFT OUTER JOIN b ON (a.key = b.key) WHERE a.ds = '2009-07-07' AND b.ds = '2009-07-07';" }
+    examples:
+      - "SELECT * FROM table1 t1, table2 t2, table3 t3 WHERE t1.id = t2.id AND t2.id = t3.id AND t1.zipcode = '02535';"
+      - "SELECT k1, v1, k2, v2 FROM a JOIN b ON k1 = k2;"
+      - "SELECT a.val, b.val, c.val FROM a JOIN b ON (a.key = b.key1) JOIN c ON (c.key = b.key2);"
+
+  - id: select_union
+    name: UNION / INTERSECT / EXCEPT
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-union/
+    tier: high
+    probes:
+      - { id: union, sql: "SELECT key FROM src UNION SELECT key FROM src1;" }
+      - { id: union_all, sql: "SELECT key FROM src UNION ALL SELECT key FROM src1;" }
+      - { id: union_distinct, sql: "SELECT key FROM src UNION DISTINCT SELECT key FROM src1;" }
+      - { id: union_chained, sql: "SELECT key FROM a UNION ALL SELECT key FROM b UNION DISTINCT SELECT key FROM c;" }
+      - { id: union_in_from, sql: "SELECT * FROM (SELECT key FROM a UNION ALL SELECT key FROM b) unionResult;" }
+      - { id: union_in_from_join, sql: "SELECT u.id, actions.date FROM (SELECT av.uid AS uid FROM action_video av WHERE av.date = '2008-06-03' UNION ALL SELECT ac.uid AS uid FROM action_comment ac WHERE ac.date = '2008-06-03') actions JOIN users u ON (u.id = actions.uid);" }
+      - { id: union_in_view, sql: "CREATE VIEW v AS SELECT key FROM a UNION ALL SELECT key FROM b;" }
+      - { id: union_in_insert, sql: "INSERT OVERWRITE TABLE t SELECT key FROM a UNION ALL SELECT key FROM b;" }
+      - { id: union_in_ctas, sql: "CREATE TABLE t AS SELECT key FROM a UNION ALL SELECT key FROM b;" }
+      - { id: subquery_order_limit, sql: "SELECT key FROM (SELECT key FROM src ORDER BY key LIMIT 10) subq1 UNION SELECT key FROM (SELECT key FROM src1 ORDER BY key LIMIT 10) subq2;" }
+      - { id: order_by_limit, sql: "SELECT key FROM src UNION SELECT key FROM src1 ORDER BY key LIMIT 10;" }
+      - { id: sort_by, sql: "SELECT key FROM src UNION ALL SELECT key FROM src1 SORT BY key;" }
+      - { id: cluster_by, sql: "SELECT key FROM src UNION ALL SELECT key FROM src1 CLUSTER BY key;" }
+      - { id: distribute_by, sql: "SELECT key FROM src UNION ALL SELECT key FROM src1 DISTRIBUTE BY key;" }
+      - { id: parenthesized_operands, sql: "(SELECT key FROM src ORDER BY key LIMIT 10) UNION ALL (SELECT key FROM src1 ORDER BY key LIMIT 10);" }
+      - { id: intersect, sql: "SELECT key FROM src INTERSECT SELECT key FROM src1;", note: "Not on the Union page; INTERSECT is supported since Hive 2.2 (HIVE-12764)." }
+      - { id: intersect_all, sql: "SELECT key FROM src INTERSECT ALL SELECT key FROM src1;", note: "Not on the Union page; Hive 2.2+ (HIVE-12764)." }
+      - { id: intersect_distinct, sql: "SELECT key FROM src INTERSECT DISTINCT SELECT key FROM src1;", note: "Not on the Union page; Hive 2.2+ (HIVE-12764)." }
+      - { id: except, sql: "SELECT key FROM src EXCEPT SELECT key FROM src1;", note: "Not on the Union page; EXCEPT is supported since Hive 2.2 (HIVE-12764)." }
+      - { id: except_all, sql: "SELECT key FROM src EXCEPT ALL SELECT key FROM src1;", note: "Not on the Union page; Hive 2.2+ (HIVE-12764)." }
+      - { id: minus, sql: "SELECT key FROM src MINUS SELECT key FROM src1;", note: "Not on the Union page; MINUS is a synonym of EXCEPT in Hive 2.2+ (HIVE-12764)." }
+    examples:
+      - "SELECT key FROM (SELECT key FROM src ORDER BY key LIMIT 10)subq1 UNION SELECT key FROM (SELECT key FROM src1 ORDER BY key LIMIT 10)subq2;"
+      - "SELECT key FROM src UNION SELECT key FROM src1 ORDER BY key LIMIT 10;"
+      - "SELECT name, id, cast('2001-01-01' as date) d FROM source_table_1 UNION ALL SELECT name, id, hiredate as d FROM source_table_2;"

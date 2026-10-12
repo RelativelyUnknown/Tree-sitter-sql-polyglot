@@ -1,0 +1,75 @@
+dialect: cockroachdb
+engine: CockroachDB
+version: "v26.3 (stable)"
+source: https://www.cockroachlabs.com/docs/stable/sql-statements
+
+statements:
+  - id: alter_function
+    name: ALTER FUNCTION
+    doc: https://www.cockroachlabs.com/docs/stable/alter-function
+    tier: high
+    probes:
+      - { id: owner_to, sql: "ALTER FUNCTION f OWNER TO u;" }
+      - { id: owner_to_current_user, sql: "ALTER FUNCTION f OWNER TO CURRENT_USER;" }
+      - { id: rename_to, sql: "ALTER FUNCTION f RENAME TO g;" }
+      - { id: set_schema, sql: "ALTER FUNCTION f SET SCHEMA s;" }
+      - { id: with_argtypes_rename, sql: "ALTER FUNCTION f (a INT, b INT) RENAME TO g;" }
+      - { id: with_argtypes_owner, sql: "ALTER FUNCTION f (INT, STRING) OWNER TO u;" }
+      - { id: with_argtypes_set_schema, sql: "ALTER FUNCTION f (a INT) SET SCHEMA s;" }
+      - { id: qualified_name, sql: "ALTER FUNCTION public.f SET SCHEMA s;" }
+      - { id: called_on_null_input, sql: "ALTER FUNCTION f CALLED ON NULL INPUT;" }
+      - { id: returns_null_on_null_input, sql: "ALTER FUNCTION f RETURNS NULL ON NULL INPUT;" }
+      - { id: strict, sql: "ALTER FUNCTION f STRICT;" }
+      - { id: immutable, sql: "ALTER FUNCTION f IMMUTABLE;" }
+      - { id: stable, sql: "ALTER FUNCTION f STABLE;" }
+      - { id: volatile, sql: "ALTER FUNCTION f VOLATILE;" }
+      - { id: security_definer, sql: "ALTER FUNCTION f SECURITY DEFINER;" }
+      - { id: external_security_invoker, sql: "ALTER FUNCTION f EXTERNAL SECURITY INVOKER;" }
+      - { id: leakproof, sql: "ALTER FUNCTION f LEAKPROOF;" }
+      - { id: not_leakproof, sql: "ALTER FUNCTION f NOT LEAKPROOF;" }
+      - { id: option_restrict, sql: "ALTER FUNCTION f IMMUTABLE RESTRICT;" }
+      - { id: multiple_options, sql: "ALTER FUNCTION f (a INT) STABLE STRICT SECURITY DEFINER;" }
+      - { id: depends_on_extension, sql: "ALTER FUNCTION f DEPENDS ON EXTENSION e;" }
+      - { id: no_depends_on_extension, sql: "ALTER FUNCTION f NO DEPENDS ON EXTENSION e;" }
+    examples:
+      - "ALTER FUNCTION sq OWNER TO max;"
+      - "ALTER FUNCTION add (a INT , b INT ) RENAME TO sum;"
+      - "ALTER FUNCTION public.sum SET SCHEMA cockroach_labs;"
+
+  - id: alter_index
+    name: ALTER INDEX
+    doc: https://www.cockroachlabs.com/docs/stable/alter-index
+    tier: high
+    probes:
+      - { id: rename_to, sql: "ALTER INDEX t@idx RENAME TO idx2;" }
+      - { id: rename_if_exists, sql: "ALTER INDEX IF EXISTS t@idx RENAME TO idx2;" }
+      - { id: rename_unqualified, sql: "ALTER INDEX idx RENAME TO idx2;" }
+      - { id: configure_zone_using, sql: "ALTER INDEX t@idx CONFIGURE ZONE USING num_replicas = 5, gc.ttlseconds = 100000;" }
+      - { id: configure_zone_copy_from_parent, sql: "ALTER INDEX t@idx CONFIGURE ZONE USING num_replicas = COPY FROM PARENT, gc.ttlseconds = 100000;" }
+      - { id: configure_zone_discard, sql: "ALTER INDEX t@idx CONFIGURE ZONE DISCARD;" }
+      - { id: configure_zone_copy_from_parent_only, sql: "ALTER INDEX t@idx CONFIGURE ZONE USING COPY FROM PARENT;" }
+      - { id: partition_by_list, sql: "ALTER INDEX t@idx PARTITION BY LIST (country) (PARTITION north_america VALUES IN ('CA', 'US'), PARTITION DEFAULT VALUES IN (default));" }
+      - { id: partition_by_range, sql: "ALTER INDEX t@idx PARTITION BY RANGE (d) (PARTITION graduated VALUES FROM (MINVALUE) TO ('2017-08-15'), PARTITION current VALUES FROM ('2017-08-15') TO (MAXVALUE));" }
+      - { id: partition_by_subpartition, sql: "ALTER INDEX t@idx PARTITION BY LIST (country) (PARTITION australia VALUES IN ('AU', 'NZ') PARTITION BY RANGE (d) (PARTITION p1 VALUES FROM (MINVALUE) TO ('2017-08-15'), PARTITION p2 VALUES FROM ('2017-08-15') TO (MAXVALUE)));" }
+      - { id: partition_by_nothing, sql: "ALTER INDEX t@idx PARTITION BY NOTHING;" }
+      - { id: partition_by_if_exists, sql: "ALTER INDEX IF EXISTS t@idx PARTITION BY NOTHING;" }
+      - { id: scatter, sql: "ALTER INDEX t@idx SCATTER;" }
+      - { id: set_storage_parameter, sql: "ALTER INDEX idx SET (skip_unique_checks = true);" }
+      - { id: set_storage_parameter_qualified, sql: "ALTER INDEX t@idx SET (skip_unique_checks = true);" }
+      - { id: reset_storage_parameter, sql: "ALTER INDEX idx RESET (skip_unique_checks);" }
+      - { id: reset_storage_parameter_qualified, sql: "ALTER INDEX t@idx RESET (skip_unique_checks);" }
+      - { id: split_at_values, sql: "ALTER INDEX t@idx SPLIT AT VALUES (25.00), (50.00), (75.00);" }
+      - { id: split_at_select, sql: "ALTER INDEX t@idx SPLIT AT SELECT 1;" }
+      - { id: split_at_with_expiration, sql: "ALTER INDEX t@idx SPLIT AT VALUES (25.00) WITH EXPIRATION '2030-01-01 00:00:00';" }
+      - { id: unsplit_at_values, sql: "ALTER INDEX t@idx UNSPLIT AT VALUES (25.00), (50.00), (75.00);" }
+      - { id: unsplit_at_select, sql: "ALTER INDEX t@idx UNSPLIT AT SELECT 1;" }
+      - { id: unsplit_all, sql: "ALTER INDEX t@idx UNSPLIT ALL;" }
+      - { id: not_visible, sql: "ALTER INDEX t@idx NOT VISIBLE;" }
+      - { id: invisible, sql: "ALTER INDEX t@idx INVISIBLE;" }
+      - { id: visible, sql: "ALTER INDEX t@idx VISIBLE;" }
+      - { id: visibility_fraction, sql: "ALTER INDEX t@idx VISIBILITY 0.5;" }
+      - { id: not_visible_if_exists, sql: "ALTER INDEX IF EXISTS t@idx NOT VISIBLE;" }
+    examples:
+      - "ALTER INDEX students@name_idx PARTITION BY NOTHING;"
+      - "ALTER INDEX rides@revenue_idx SPLIT AT VALUES (25.00), (50.00), (75.00);"
+      - "ALTER INDEX users_email_key SET (skip_unique_checks = true);"

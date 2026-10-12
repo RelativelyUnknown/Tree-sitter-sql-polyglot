@@ -1,0 +1,53 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: begin_transaction
+    name: BEGIN TRANSACTION
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-txn-begin
+    tier: high
+    probes:
+      - id: begin_transaction
+        sql: "BEGIN TRANSACTION;"
+      - id: begin_work
+        sql: "BEGIN WORK;"
+    examples:
+      - "BEGIN TRANSACTION;"
+
+  - id: begin_atomic
+    name: BEGIN ATOMIC
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-txn-begin-atomic
+    tier: high
+    probes:
+      - id: atomic_block
+        sql: "BEGIN ATOMIC UPDATE t SET c = 1; INSERT INTO t VALUES (1); END;"
+      - id: atomic_nested
+        sql: "BEGIN ATOMIC UPDATE t SET c = 1; BEGIN ATOMIC INSERT INTO t VALUES (1); END; END;"
+        note: BEGIN ATOMIC blocks can be nested within other atomic blocks.
+      - id: atomic_control_flow
+        sql: "BEGIN ATOMIC IF (SELECT COUNT(*) FROM t) > 0 THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'bad'; END IF; END;"
+        note: The page says the block can contain control-of-flow statements.
+    examples:
+      - |-
+        BEGIN ATOMIC
+          UPDATE accounts SET balance = balance - 100 WHERE id = 1;
+          UPDATE accounts SET balance = balance + 100 WHERE id = 2;
+          INSERT INTO audit_log VALUES (1, 2, 100, current_timestamp());
+        END;
+      - |-
+        BEGIN ATOMIC
+          INSERT INTO staging_customers
+          SELECT * FROM external_source WHERE ingest_date = current_date();
+
+          IF (SELECT COUNT(*) FROM staging_customers WHERE email NOT LIKE '%@%') > 0 THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Invalid email addresses found';
+          END IF;
+
+          MERGE INTO customers AS target
+          USING staging_customers AS source
+          ON target.customer_id = source.customer_id
+          WHEN MATCHED THEN UPDATE SET *
+          WHEN NOT MATCHED THEN INSERT *;
+        END;

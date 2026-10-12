@@ -1,0 +1,56 @@
+dialect: base
+engine: ISO SQL
+version: "SQL:2016"
+source: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html
+
+statements:
+  - id: drop_view
+    name: DROP VIEW
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_33_drop_view_statement
+    tier: high
+    probes:
+      - { id: cascade, sql: "DROP VIEW v CASCADE;" }
+      - { id: restrict, sql: "DROP VIEW v RESTRICT;" }
+      - { id: qualified_name, sql: "DROP VIEW s.v CASCADE;" }
+
+  - id: create_routine
+    name: CREATE FUNCTION / PROCEDURE (SQL-invoked routine)
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_60_sql_invoked_routine
+    tier: high
+    probes:
+      - { id: procedure_basic, sql: "CREATE PROCEDURE p () MODIFIES SQL DATA DELETE FROM t;" }
+      - { id: procedure_params, sql: "CREATE PROCEDURE p (IN a INTEGER, OUT b INTEGER, INOUT c INTEGER) SET b = a;" }
+      - { id: procedure_qualified_name, sql: "CREATE PROCEDURE s.p () MODIFIES SQL DATA DELETE FROM t;" }
+      - { id: procedure_unnamed_param, sql: "CREATE PROCEDURE p (INTEGER) CONTAINS SQL CALL q();" }
+      - { id: procedure_param_default, sql: "CREATE PROCEDURE p (a INTEGER DEFAULT 0) CONTAINS SQL CALL q(a);" }
+      - { id: procedure_dynamic_result_sets, sql: "CREATE PROCEDURE p () DYNAMIC RESULT SETS 1 READS SQL DATA BEGIN DECLARE c CURSOR WITH RETURN FOR SELECT a FROM t; OPEN c; END;" }
+      - { id: procedure_savepoint_level, sql: "CREATE PROCEDURE p () NEW SAVEPOINT LEVEL MODIFIES SQL DATA DELETE FROM t;" }
+      - { id: procedure_old_savepoint_level, sql: "CREATE PROCEDURE p () OLD SAVEPOINT LEVEL MODIFIES SQL DATA DELETE FROM t;" }
+      - { id: function_basic, sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER RETURN a + 1;" }
+      - { id: function_qualified_name, sql: "CREATE FUNCTION s.f (a INTEGER) RETURNS INTEGER RETURN a + 1;" }
+      - { id: function_no_params, sql: "CREATE FUNCTION f () RETURNS INTEGER RETURN 1;" }
+      - { id: function_deterministic, sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER DETERMINISTIC RETURN a;" }
+      - { id: function_not_deterministic, sql: "CREATE FUNCTION f () RETURNS INTEGER NOT DETERMINISTIC RETURN 1;" }
+      - { id: function_language_sql, sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE SQL RETURN a;" }
+      - { id: function_specific_name, sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER SPECIFIC f_int RETURN a;" }
+      - { id: function_data_access_no_sql, sql: "CREATE FUNCTION f () RETURNS INTEGER NO SQL RETURN 1;" }
+      - { id: function_data_access_contains_sql, sql: "CREATE FUNCTION f () RETURNS INTEGER CONTAINS SQL RETURN 1;" }
+      - { id: function_data_access_reads, sql: "CREATE FUNCTION f () RETURNS INTEGER READS SQL DATA RETURN (SELECT MAX(a) FROM t);" }
+      - { id: function_data_access_modifies, sql: "CREATE FUNCTION f () RETURNS INTEGER MODIFIES SQL DATA BEGIN ATOMIC DELETE FROM t; RETURN 1; END;" }
+      - { id: function_returns_null_on_null, sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER RETURNS NULL ON NULL INPUT RETURN a;" }
+      - { id: function_called_on_null, sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER CALLED ON NULL INPUT RETURN COALESCE(a, 0);" }
+      - { id: function_parameter_style, sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER PARAMETER STYLE SQL RETURN a;" }
+      - { id: function_static_dispatch, sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER STATIC DISPATCH RETURN a;" }
+      - { id: function_result_cast, sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER CAST FROM VARCHAR(10) RETURN CAST(a AS VARCHAR(10));" }
+      - { id: function_returns_table, sql: "CREATE FUNCTION f () RETURNS TABLE (a INTEGER, b VARCHAR(10)) READS SQL DATA RETURN TABLE (SELECT a, b FROM t);" }
+      - { id: function_locator_param, sql: "CREATE FUNCTION f (a BLOB AS LOCATOR) RETURNS INTEGER RETURN 1;" }
+      - { id: function_sql_security_invoker, sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER SQL SECURITY INVOKER RETURN a;" }
+      - { id: function_sql_security_definer, sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER SQL SECURITY DEFINER RETURN a;" }
+      - { id: function_compound_body, sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER BEGIN DECLARE x INTEGER; SET x = a * 2; RETURN x; END;" }
+      - { id: function_external, sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE C EXTERNAL;" }
+      - { id: function_external_name, sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE C EXTERNAL NAME 'libf' PARAMETER STYLE GENERAL;" }
+      - { id: function_external_security_definer, sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE C EXTERNAL NAME 'libf' EXTERNAL SECURITY DEFINER;" }
+      - { id: function_external_transform_group, sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE C EXTERNAL NAME 'libf' TRANSFORM GROUP g;" }
+      - { id: procedure_external, sql: "CREATE PROCEDURE p (IN a INTEGER) LANGUAGE C EXTERNAL NAME 'libp' PARAMETER STYLE GENERAL;" }
+      - { id: function_ptf_table_param, sql: "CREATE FUNCTION f (x TABLE WITH ROW SEMANTICS) RETURNS ONLY PASS THROUGH FULFILL WITH f_fulfill;", note: "polymorphic table function: TABLE parameter type, ONLY PASS THROUGH returns type, FULFILL WITH body" }
+      - { id: function_method_instance, sql: "CREATE INSTANCE METHOD m (a INTEGER) RETURNS INTEGER FOR person_type RETURN a;", note: "method specification designator" }

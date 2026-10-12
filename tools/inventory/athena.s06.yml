@@ -1,0 +1,61 @@
+dialect: athena
+engine: Amazon Athena
+version: "engine version 3 (Trino-based DML, Hive-style DDL)"
+source: https://docs.aws.amazon.com/athena/latest/ug/ddl-reference.html ; https://docs.aws.amazon.com/athena/latest/ug/dml-queries-functions-operators.html
+
+statements:
+  - id: create_table_as
+    name: CREATE TABLE AS
+    doc: https://docs.aws.amazon.com/athena/latest/ug/create-table-as.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE TABLE t AS SELECT a, b FROM s;"
+      - id: with_properties
+        sql: "CREATE TABLE t WITH (format = 'PARQUET') AS SELECT * FROM s;"
+      - id: with_multiple_properties
+        sql: "CREATE TABLE t WITH (format = 'PARQUET', external_location = 's3://bucket/tables/t/', is_external = true) AS SELECT * FROM s;"
+      - id: with_data
+        sql: "CREATE TABLE t AS SELECT * FROM s WITH DATA;"
+      - id: with_no_data
+        sql: "CREATE TABLE t AS SELECT * FROM s WITH NO DATA;"
+      - id: properties_with_no_data
+        sql: "CREATE TABLE t WITH (format = 'ORC') AS SELECT * FROM s WITH NO DATA;"
+      - id: partitioned_by_array
+        sql: "CREATE TABLE t WITH (partitioned_by = ARRAY['c1', 'c2']) AS SELECT a, c1, c2 FROM s;"
+      - id: bucketed_by_array
+        sql: "CREATE TABLE t WITH (bucketed_by = ARRAY['a'], bucket_count = 30, format = 'PARQUET') AS SELECT * FROM s;"
+      - id: iceberg_table
+        sql: "CREATE TABLE t WITH (table_type = 'ICEBERG', is_external = false, location = 's3://bucket/tables/iceberg_table/', format = 'PARQUET') AS SELECT * FROM s;"
+      - id: iceberg_partitioning_transforms
+        sql: "CREATE TABLE t WITH (table_type = 'ICEBERG', is_external = false, location = 's3://bucket/t/', partitioning = ARRAY['month(order_date)', 'bucket(account_number, 10)', 'country']) AS SELECT * FROM s;"
+      - id: iceberg_optimize_property
+        sql: "CREATE TABLE t WITH (table_type = 'ICEBERG', is_external = false, location = 's3://bucket/t/', optimize_rewrite_min_data_file_size_bytes = 402653184) AS SELECT * FROM s;"
+      - id: field_delimiter
+        sql: "CREATE TABLE t WITH (format = 'TEXTFILE', field_delimiter = ',') AS SELECT * FROM s;"
+      - id: cte_query
+        sql: "CREATE TABLE t AS WITH x AS (SELECT a FROM s) SELECT a FROM x;"
+    examples:
+      - "CREATE TABLE bucketed_table WITH ( bucketed_by = ARRAY[ column_name ], bucket_count = 30, format = 'PARQUET', external_location ='s3://amzn-s3-demo-bucket/tables/parquet_table/' ) AS SELECT * FROM table_name;"
+
+  - id: create_view
+    name: CREATE VIEW
+    doc: https://docs.aws.amazon.com/athena/latest/ug/create-view.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE VIEW v AS SELECT a, b FROM t;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE VIEW v AS SELECT a, b FROM t;"
+      - id: aggregate_query
+        sql: "CREATE VIEW v AS SELECT a, sum(b) AS total FROM t GROUP BY a;"
+      - id: protected_multi_dialect
+        sql: "CREATE PROTECTED MULTI DIALECT VIEW v SECURITY DEFINER AS SELECT a FROM t;"
+      - id: protected_multi_dialect_or_replace
+        sql: "CREATE OR REPLACE PROTECTED MULTI DIALECT VIEW v SECURITY DEFINER AS SELECT a FROM t;"
+      - id: protected_multi_dialect_show_view_json
+        sql: "CREATE PROTECTED MULTI DIALECT VIEW v SECURITY DEFINER SHOW VIEW JSON AS SELECT a FROM t;"
+    examples:
+      - "CREATE VIEW test AS SELECT orderkey, orderstatus, totalprice / 2 AS half FROM orders;"
+      - "CREATE VIEW orders_by_date AS SELECT orderdate, sum(totalprice) AS price FROM orders GROUP BY orderdate;"
+      - "CREATE OR REPLACE VIEW test AS SELECT orderkey, orderstatus, totalprice / 4 AS quarter FROM orders;"

@@ -1,0 +1,155 @@
+dialect: hana
+engine: SAP HANA Platform
+version: "2.0 SPS 08 (2.0.08)"
+source: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/3bc1a0d4611d40c4a6e3fc7c8e80395d.html?version=2.0.08
+
+statements:
+  - id: savepoint
+    name: SAVEPOINT
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/cd4172aead1e47e99f6599656887f343.html?version=2.0.08
+    tier: high
+    probes:
+      - { id: basic, sql: "SAVEPOINT sp;" }
+    examples:
+      - "SAVEPOINT savepoint1;"
+
+  - id: select
+    name: SELECT
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20fcf24075191014a89e9dc7b8408b26.html?version=2.0.08
+    tier: high
+    probes:
+      - { id: basic, sql: "SELECT a, b FROM t;" }
+      - { id: star, sql: "SELECT * FROM t;" }
+      - { id: qualified_star, sql: "SELECT t.* FROM s.t;" }
+      - { id: alias, sql: "SELECT a AS x, b + 1 AS y FROM t;" }
+      - { id: top, sql: "SELECT TOP 10 a FROM t;" }
+      - { id: top_distinct, sql: "SELECT TOP 10 DISTINCT a FROM t;" }
+      - { id: distinct, sql: "SELECT DISTINCT a FROM t;" }
+      - { id: all, sql: "SELECT ALL a FROM t;" }
+      - { id: from_dummy, sql: "SELECT 1 FROM DUMMY;" }
+      - { id: with_clause, sql: "WITH q1 AS (SELECT * FROM t) SELECT * FROM q1;" }
+      - { id: with_column_list, sql: "WITH q1(c1, c2) AS (SELECT a, b FROM t) SELECT * FROM q1;" }
+      - { id: with_multiple, sql: "WITH q1(c1) AS (SELECT a FROM t), q2(c2) AS (SELECT MAX(c1) FROM q1) SELECT c1 FROM q1 UNION ALL SELECT c2 FROM q2;" }
+      - { id: where, sql: "SELECT a FROM t WHERE a > 1 AND b IS NOT NULL;" }
+      - { id: group_by, sql: "SELECT a, COUNT(*) FROM t GROUP BY a;" }
+      - { id: having, sql: "SELECT a, COUNT(*) FROM t GROUP BY a HAVING COUNT(*) > 1;" }
+      - { id: grouping_sets, sql: "SELECT a, b, SUM(c) FROM t GROUP BY GROUPING SETS ((a, b), (a));" }
+      - { id: grouping_sets_mixed, sql: "SELECT a, b, c, SUM(d) FROM t GROUP BY a, GROUPING SETS ((b), (c));" }
+      - { id: rollup, sql: "SELECT a, b, SUM(c) FROM t GROUP BY ROLLUP (a, b);" }
+      - { id: cube, sql: "SELECT a, b, SUM(c) FROM t GROUP BY CUBE (a, b);" }
+      - { id: grouping_best, sql: "SELECT a, b, SUM(c) FROM t GROUP BY ROLLUP BEST 2 (a, b);" }
+      - { id: grouping_limit_offset, sql: "SELECT a, b, SUM(c) FROM t GROUP BY ROLLUP LIMIT 5 OFFSET 1 (a, b);" }
+      - { id: grouping_with_subtotal, sql: "SELECT a, b, SUM(c) FROM t GROUP BY ROLLUP WITH SUBTOTAL (a, b);" }
+      - { id: grouping_with_balance, sql: "SELECT a, b, SUM(c) FROM t GROUP BY GROUPING SETS WITH BALANCE ((a), (b));" }
+      - { id: grouping_with_total, sql: "SELECT a, b, SUM(c) FROM t GROUP BY CUBE WITH TOTAL (a, b);" }
+      - { id: grouping_text_filter, sql: "SELECT a, b, SUM(c) FROM t GROUP BY GROUPING SETS TEXT_FILTER 'foo' ((a), (b));" }
+      - { id: grouping_text_filter_fill_up, sql: "SELECT a, b, SUM(c) FROM t GROUP BY GROUPING SETS TEXT_FILTER 'foo' FILL UP SORT MATCHES TO TOP ((a), (b));" }
+      - { id: grouping_structured_result, sql: "SELECT a, b, SUM(c) FROM t GROUP BY GROUPING SETS STRUCTURED RESULT WITH OVERVIEW PREFIX p ((a), (b));" }
+      - { id: grouping_multiple_resultsets, sql: "SELECT a, b, SUM(c) FROM t GROUP BY GROUPING SETS MULTIPLE RESULTSETS ((a), (b));" }
+      - { id: union, sql: "SELECT a FROM t UNION SELECT a FROM u;" }
+      - { id: union_all, sql: "SELECT a FROM t UNION ALL SELECT a FROM u;" }
+      - { id: union_distinct, sql: "SELECT a FROM t UNION DISTINCT SELECT a FROM u;" }
+      - { id: intersect, sql: "SELECT a FROM t INTERSECT SELECT a FROM u;" }
+      - { id: intersect_distinct, sql: "SELECT a FROM t INTERSECT DISTINCT SELECT a FROM u;" }
+      - { id: except, sql: "SELECT a FROM t EXCEPT SELECT a FROM u;" }
+      - { id: except_distinct, sql: "SELECT a FROM t EXCEPT DISTINCT SELECT a FROM u;" }
+      - { id: minus, sql: "SELECT a FROM t MINUS SELECT a FROM u;", note: "MINUS is accepted as a synonym for EXCEPT per the set_operator description" }
+      - { id: order_by, sql: "SELECT a FROM t ORDER BY a DESC, b ASC;" }
+      - { id: order_by_position, sql: "SELECT a, b FROM t ORDER BY 2 DESC;" }
+      - { id: order_by_nulls, sql: "SELECT a FROM t ORDER BY a NULLS FIRST, b DESC NULLS LAST;" }
+      - { id: order_by_collate, sql: "SELECT a FROM t ORDER BY a COLLATE ENGLISH;" }
+      - { id: limit, sql: "SELECT a FROM t ORDER BY a LIMIT 10;" }
+      - { id: limit_offset, sql: "SELECT a FROM t ORDER BY a LIMIT 10 OFFSET 5;" }
+      - { id: limit_total_rowcount, sql: "SELECT a FROM t ORDER BY a LIMIT 10 TOTAL ROWCOUNT;" }
+      - { id: total_rowcount, sql: "SELECT a FROM t TOTAL ROWCOUNT;", note: "TOTAL ROWCOUNT is the trailing optional element of select_statement" }
+      - { id: for_update, sql: "SELECT * FROM t WHERE a = 1 FOR UPDATE;" }
+      - { id: for_update_of, sql: "SELECT * FROM t WHERE a = 1 FOR UPDATE OF t.a;" }
+      - { id: for_update_of_list, sql: "SELECT * FROM t WHERE a = 1 FOR UPDATE OF (a, b);" }
+      - { id: for_update_wait, sql: "SELECT * FROM t WHERE a = 1 FOR UPDATE WAIT 1;" }
+      - { id: for_update_nowait, sql: "SELECT * FROM t WHERE a = 1 FOR UPDATE NOWAIT;" }
+      - { id: for_update_ignore_locked, sql: "SELECT * FROM t WHERE a = 1 FOR UPDATE IGNORE LOCKED;" }
+      - { id: for_share_lock, sql: "SELECT * FROM t WHERE a = 1 FOR SHARE LOCK;" }
+      - { id: for_share_lock_of_nowait, sql: "SELECT * FROM t WHERE a = 1 FOR SHARE LOCK OF (a) NOWAIT;" }
+      - { id: for_share_lock_ignore_locked, sql: "SELECT * FROM t WHERE a = 1 FOR SHARE LOCK IGNORE LOCKED;" }
+      - { id: as_of_commit_id, sql: "SELECT * FROM t AS OF COMMIT ID 20;", note: "Time travel form as written in the page's TIME TRAVEL examples" }
+      - { id: as_of_utctimestamp, sql: "SELECT * FROM t AS OF UTCTIMESTAMP '2012-01-02 02:00:00';" }
+      - { id: for_system_time_as_of, sql: "SELECT * FROM t FOR SYSTEM_TIME AS OF '2020-01-01 00:00:00';" }
+      - { id: for_system_time_from_to, sql: "SELECT * FROM t FOR SYSTEM_TIME FROM '2020-01-01 00:00:00' TO '2020-02-01 00:00:00';" }
+      - { id: for_system_time_between, sql: "SELECT * FROM t FOR SYSTEM_TIME BETWEEN '2020-01-01 00:00:00' AND '2020-02-01 00:00:00';" }
+      - { id: for_application_time, sql: "SELECT * FROM t FOR APPLICATION_TIME AS OF '2020-01-01';" }
+      - { id: for_json, sql: "SELECT id, name FROM t FOR JSON;" }
+      - { id: for_json_options, sql: "SELECT id, name FROM t FOR JSON ('format'='yes', 'omitnull'='no');" }
+      - { id: for_json_returns, sql: "SELECT id, name FROM t FOR JSON RETURNS NVARCHAR(5000);" }
+      - { id: for_json_returns_clob, sql: "SELECT id, name FROM t FOR JSON ('arraywrap'='no') RETURNS CLOB;" }
+      - { id: for_xml, sql: "SELECT c1, c2 FROM t FOR XML;" }
+      - { id: for_xml_options, sql: "SELECT c1, c2 FROM t FOR XML ('nullstyle'='omit');" }
+      - { id: for_xml_returns, sql: "SELECT c1, c2 FROM t FOR XML RETURNS VARCHAR(1000);" }
+      - { id: with_collation, sql: "SELECT * FROM t ORDER BY a, b WITH COLLATION ENGLISH;" }
+      - { id: with_hint, sql: "SELECT * FROM t WITH HINT (USE_OLAP_PLAN);" }
+      - { id: with_hint_multiple, sql: "SELECT * FROM t WITH HINT (IGNORE_PLAN_CACHE, NO_USE_OLAP_PLAN);" }
+      - { id: hint_route_to, sql: "SELECT * FROM t WITH HINT (ROUTE_TO(1));" }
+      - { id: hint_no_route_to, sql: "SELECT * FROM t WITH HINT (NO_ROUTE_TO(2, 3));" }
+      - { id: hint_route_by, sql: "SELECT * FROM t WITH HINT (ROUTE_BY(u));" }
+      - { id: hint_route_by_cardinality, sql: "SELECT * FROM t WITH HINT (ROUTE_BY_CARDINALITY(t, u, v));" }
+      - { id: hint_data_transfer_cost, sql: "SELECT * FROM t WITH HINT (DATA_TRANSFER_COST(0));" }
+      - { id: subquery_hint, sql: "SELECT t2.* FROM (SELECT MAX(c) FROM t1 GROUP BY c WITH HINT (NO_USE_OLAP_PLAN)) t2 WITH HINT (USE_OLAP_PLAN);" }
+      - { id: parenthesized_subquery, sql: "(SELECT a FROM t) FOR UPDATE;" }
+      - { id: parenthesized_with, sql: "WITH q AS (SELECT a FROM t) (SELECT a FROM q) FOR UPDATE;" }
+      - { id: into_variables, sql: "SELECT a, b INTO x, y FROM t;" }
+      - { id: into_table, sql: "SELECT a, b INTO s.r FROM t;" }
+      - { id: into_table_columns, sql: "SELECT a, b INTO r (c1, c2) FROM t;" }
+      - { id: into_indexed_variables, sql: "SELECT a, b INTO arr[1], arr2[1] FROM t;" }
+      - { id: into_default, sql: "SELECT a INTO x DEFAULT 0 FROM t;", note: "variable_name alternative DEFAULT <const_value>" }
+      - { id: table_alias, sql: "SELECT x.a FROM t AS x;" }
+      - { id: table_alias_no_as, sql: "SELECT x.a FROM t x;" }
+      - { id: schema_qualified, sql: "SELECT a FROM s.t;" }
+      - { id: partition, sql: "SELECT * FROM t PARTITION (1, 3, 4);" }
+      - { id: tablesample, sql: "SELECT COUNT(*) FROM t TABLESAMPLE (10);" }
+      - { id: tablesample_system, sql: "SELECT COUNT(*) FROM t TABLESAMPLE SYSTEM (1) WHERE type = 'manager';" }
+      - { id: tablesample_bernoulli, sql: "SELECT COUNT(*) FROM t TABLESAMPLE BERNOULLI (5);" }
+      - { id: subquery_from, sql: "SELECT x.a FROM (SELECT a FROM t) AS x;" }
+      - { id: subquery_from_no_as, sql: "SELECT x.a FROM (SELECT a FROM t) x;" }
+      - { id: inner_join, sql: "SELECT * FROM t INNER JOIN u ON t.a = u.a;" }
+      - { id: join, sql: "SELECT * FROM t JOIN u ON t.a = u.a;" }
+      - { id: left_join, sql: "SELECT * FROM t LEFT JOIN u ON t.a = u.a;" }
+      - { id: left_outer_join, sql: "SELECT * FROM t LEFT OUTER JOIN u ON t.a = u.a;" }
+      - { id: right_join, sql: "SELECT * FROM t RIGHT OUTER JOIN u ON t.a = u.a;" }
+      - { id: full_join, sql: "SELECT * FROM t FULL OUTER JOIN u ON t.a = u.a;" }
+      - { id: cross_join, sql: "SELECT * FROM t CROSS JOIN u;" }
+      - { id: comma_join, sql: "SELECT * FROM t, u WHERE t.a = u.a;" }
+      - { id: join_many_to_many, sql: "SELECT * FROM t MANY TO MANY JOIN u ON t.a = u.a;" }
+      - { id: join_many_to_one, sql: "SELECT * FROM t LEFT OUTER MANY TO ONE JOIN u ON t.a = u.a;" }
+      - { id: join_many_to_exact_one, sql: "SELECT * FROM t MANY TO EXACT ONE JOIN u ON t.a = u.a;" }
+      - { id: join_one_to_many, sql: "SELECT * FROM t ONE TO MANY JOIN u ON t.a = u.a;" }
+      - { id: join_exact_one_to_many, sql: "SELECT * FROM t EXACT ONE TO MANY JOIN u ON t.a = u.a;" }
+      - { id: join_one_to_one, sql: "SELECT * FROM t ONE TO ONE JOIN u ON t.a = u.a;" }
+      - { id: join_exact_one_to_exact_one, sql: "SELECT * FROM t EXACT ONE TO EXACT ONE JOIN u ON t.a = u.a;" }
+      - { id: join_one_to_exact_one, sql: "SELECT * FROM t ONE TO EXACT ONE JOIN u ON t.a = u.a;" }
+      - { id: join_exact_one_to_one_only, sql: "SELECT * FROM t EXACT ONE TO ONE JOIN u ON t.a = u.a;" }
+      - { id: case_join, sql: "SELECT t1.branch, case_join.c1 FROM t1 LEFT OUTER MANY TO ONE CASE JOIN WHEN t1.branch = 1 THEN RETURN (c1, c2) FROM t2 ON t1.id = t2.id WHEN t1.branch = 2 THEN RETURN (c1, c2) FROM t3 ON t1.id = t3.id END AS case_join;" }
+      - { id: case_join_else, sql: "SELECT t1.branch, case_join.c1 FROM t1 LEFT OUTER MANY TO ONE CASE JOIN WHEN t1.branch = 1 THEN RETURN (c1, c2) FROM t2 ON t1.id = t2.id ELSE RETURN (c1, c2) FROM t3 ON t1.id = t3.id END AS case_join;" }
+      - { id: unnest, sql: "SELECT * FROM UNNEST(ARRAY(1, 2, 3)) AS x;" }
+      - { id: unnest_ordinality, sql: "SELECT * FROM UNNEST(ARRAY(1, 2, 3)) WITH ORDINALITY AS x (v, n);" }
+      - { id: unnest_multiple, sql: "SELECT * FROM UNNEST(ARRAY(1, 2), ARRAY(3, 4)) AS x (a, b);" }
+      - { id: unnest_column, sql: "SELECT * FROM t, UNNEST(ARRAY(t.arr)) AS x (v);", note: "collection_value_expression ARRAY ( <column_name> ); may reference earlier FROM element" }
+      - { id: table_function, sql: "SELECT * FROM f(1, 2);" }
+      - { id: table_function_schema, sql: "SELECT * FROM s.f(1, 2) AS x;" }
+      - { id: table_function_named_params, sql: "SELECT * FROM f(p1 => 1, p2 => 2);", note: "opt_parameter_key_value_list" }
+      - { id: table_variable, sql: "SELECT * FROM :tv;", note: "<table_expression> alternative : <table_variable>, valid in SQLScript" }
+      - { id: association, sql: "SELECT * FROM EMPLOYEES:CITY.STATE;" }
+      - { id: association_filter, sql: "SELECT * FROM EMPLOYEES[ID<5]:CITY.STATE[ID<2];" }
+      - { id: association_cardinality, sql: "SELECT * FROM EMPLOYEES:CITY[ID<5 USING MANY TO ONE JOIN];" }
+      - { id: association_select_item, sql: "SELECT CITY.NAME FROM EMPLOYEES;", note: "association_expression as a select_item" }
+      - { id: association_select_item_filter, sql: "SELECT CITY[ID<2].NAME FROM EMPLOYEES;" }
+      - { id: parameterized_view, sql: "SELECT * FROM v(1, 2);" }
+      - { id: parameterized_view_named, sql: "SELECT * FROM v(p1 => 1, p2 => 2);" }
+      - { id: select_array_constructor, sql: "SELECT ARRAY(1, 2, 3, 4) FROM DUMMY;" }
+      - { id: select_array_query, sql: "SELECT ARRAY(SELECT c1 FROM t0) FROM DUMMY;" }
+      - { id: scalar_subquery, sql: "SELECT (SELECT MAX(a) FROM u) FROM t;" }
+      - { id: scalar_subquery_for_json, sql: "SELECT (SELECT c FROM t FOR JSON) FROM s;" }
+      - { id: in_subquery, sql: "SELECT a FROM t WHERE a IN (SELECT a FROM u);" }
+      - { id: exists, sql: "SELECT a FROM t WHERE EXISTS (SELECT 1 FROM u WHERE u.a = t.a);" }
+    examples:
+      - "WITH q1(c1) AS (SELECT a+b FROM t1), q2(c2) AS (SELECT MAX(c1) FROM q1) SELECT c1 FROM q1 UNION ALL SELECT c2 FROM q2;"
+      - "SELECT * FROM T0 PARTITION (1, 3, 4);"
+      - "SELECT T2.* FROM ( SELECT MAX(COL) FROM T1 GROUP BY COL WITH HINT( NO_USE_OLAP_PLAN )) T2 WITH HINT( USE_OLAP_PLAN );"

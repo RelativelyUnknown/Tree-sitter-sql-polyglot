@@ -1,0 +1,135 @@
+dialect: cockroachdb
+engine: CockroachDB
+version: "v26.3 (stable)"
+source: https://www.cockroachlabs.com/docs/stable/sql-statements
+
+statements:
+  - id: alter_view
+    name: ALTER VIEW
+    doc: https://www.cockroachlabs.com/docs/stable/alter-view
+    tier: high
+    probes:
+      - id: rename_to
+        sql: "ALTER VIEW v RENAME TO v2;"
+      - id: rename_if_exists
+        sql: "ALTER VIEW IF EXISTS v RENAME TO v2;"
+      - id: materialized_rename
+        sql: "ALTER MATERIALIZED VIEW v RENAME TO v2;"
+      - id: materialized_if_exists_rename
+        sql: "ALTER MATERIALIZED VIEW IF EXISTS v RENAME TO v2;"
+      - id: set_schema
+        sql: "ALTER VIEW v SET SCHEMA s;"
+      - id: owner_to
+        sql: "ALTER VIEW v OWNER TO u;"
+      - id: set_security_invoker
+        sql: "ALTER VIEW v SET (security_invoker);"
+      - id: set_security_invoker_value
+        sql: "ALTER VIEW v SET (security_invoker = true);"
+      - id: reset_security_invoker
+        sql: "ALTER VIEW v RESET (security_invoker);"
+    examples:
+      - "ALTER VIEW money_rides RENAME TO expensive_rides;"
+      - "ALTER VIEW expensive_rides SET SCHEMA cockroach_labs;"
+      - "ALTER VIEW user_accounts SET (security_invoker = true);"
+
+  - id: create_function
+    name: CREATE FUNCTION
+    doc: https://www.cockroachlabs.com/docs/stable/create-function
+    tier: high
+    probes:
+      - id: basic_sql_body
+        sql: "CREATE FUNCTION f(a INT) RETURNS INT AS 'SELECT a*a' LANGUAGE SQL;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE FUNCTION f(a INT) RETURNS INT AS 'SELECT a*a' LANGUAGE SQL;"
+      - id: no_params
+        sql: "CREATE FUNCTION f() RETURNS INT LANGUAGE SQL AS 'SELECT 1';"
+      - id: multiple_params
+        sql: "CREATE FUNCTION f(a INT, b TEXT) RETURNS INT LANGUAGE SQL AS 'SELECT a';"
+      - id: in_param_mode
+        sql: "CREATE FUNCTION f(IN a INT) RETURNS INT LANGUAGE SQL AS 'SELECT a';"
+      - id: out_inout_params
+        sql: |-
+          CREATE FUNCTION f(INOUT a INT, OUT b INT) AS $$
+          BEGIN
+            a := a * 2;
+            b := a * 3;
+          END;
+          $$ LANGUAGE PLpgSQL;
+      - id: param_default
+        sql: "CREATE FUNCTION f(a INT DEFAULT 1) RETURNS INT LANGUAGE SQL AS 'SELECT a';"
+      - id: returns_setof
+        sql: "CREATE FUNCTION f() RETURNS SETOF t LANGUAGE SQL AS $$ SELECT * FROM t $$;"
+      - id: returns_table
+        sql: "CREATE FUNCTION f(x INT) RETURNS TABLE (id INT, name VARCHAR) LANGUAGE SQL AS $$ SELECT id, name FROM t LIMIT x $$;"
+      - id: returns_record
+        sql: "CREATE FUNCTION f() RETURNS RECORD LANGUAGE SQL AS $$ SELECT * FROM t $$;"
+      - id: returns_void
+        sql: "CREATE FUNCTION f() RETURNS VOID LANGUAGE SQL AS $$ SELECT 1 $$;"
+      - id: returns_trigger
+        sql: |-
+          CREATE FUNCTION f() RETURNS TRIGGER AS $$
+          BEGIN
+            RETURN NEW;
+          END;
+          $$ LANGUAGE PLpgSQL;
+      - id: language_plpgsql_body
+        sql: |-
+          CREATE FUNCTION f(n INT) RETURNS INT AS $$
+          DECLARE
+            tmp INT;
+          BEGIN
+            RETURN n;
+          END
+          $$ LANGUAGE PLpgSQL;
+      - id: language_before_body
+        sql: "CREATE FUNCTION f() RETURNS INT LANGUAGE SQL AS $$ SELECT 1 $$;"
+      - id: called_on_null_input
+        sql: "CREATE FUNCTION f(a INT) RETURNS INT CALLED ON NULL INPUT LANGUAGE SQL AS 'SELECT a';"
+      - id: returns_null_on_null_input
+        sql: "CREATE FUNCTION f(a INT) RETURNS INT RETURNS NULL ON NULL INPUT LANGUAGE SQL AS 'SELECT a';"
+      - id: strict
+        sql: "CREATE FUNCTION f(a INT) RETURNS INT STRICT LANGUAGE SQL AS 'SELECT a';"
+      - id: immutable
+        sql: "CREATE FUNCTION f(a INT) RETURNS INT IMMUTABLE LANGUAGE SQL AS 'SELECT a';"
+      - id: stable
+        sql: "CREATE FUNCTION f(a INT) RETURNS INT STABLE LANGUAGE SQL AS 'SELECT a';"
+      - id: volatile
+        sql: "CREATE FUNCTION f(a INT) RETURNS INT VOLATILE LANGUAGE SQL AS 'SELECT a';"
+      - id: security_definer
+        sql: "CREATE FUNCTION f() RETURNS SETOF RECORD LANGUAGE SQL SECURITY DEFINER AS $$ SELECT * FROM t; $$;"
+      - id: security_invoker
+        sql: "CREATE FUNCTION f() RETURNS INT LANGUAGE SQL SECURITY INVOKER AS 'SELECT 1';"
+      - id: external_security_definer
+        sql: "CREATE FUNCTION f() RETURNS INT LANGUAGE SQL EXTERNAL SECURITY DEFINER AS 'SELECT 1';"
+      - id: external_security_invoker
+        sql: "CREATE FUNCTION f() RETURNS INT LANGUAGE SQL EXTERNAL SECURITY INVOKER AS 'SELECT 1';"
+      - id: leakproof
+        sql: "CREATE FUNCTION f(a INT) RETURNS INT IMMUTABLE LEAKPROOF LANGUAGE SQL AS 'SELECT a';"
+      - id: not_leakproof
+        sql: "CREATE FUNCTION f(a INT) RETURNS INT NOT LEAKPROOF LANGUAGE SQL AS 'SELECT a';"
+      - id: schema_qualified_name
+        sql: "CREATE FUNCTION s.f(a INT) RETURNS INT LANGUAGE SQL AS 'SELECT a';"
+    examples:
+      - "CREATE OR REPLACE FUNCTION sq (a INT) RETURNS INT AS 'SELECT a*a' LANGUAGE SQL;"
+      - |-
+        CREATE OR REPLACE FUNCTION last_x_riders (x INT)
+          RETURNS TABLE (id UUID, name VARCHAR, city VARCHAR, end_time TIMESTAMP)
+          LANGUAGE SQL
+          AS $$
+          WITH recent_rides AS (
+            SELECT rider_id, end_time FROM rides ORDER BY end_time DESC
+          )
+          SELECT u.id, u.name, u.city, r.end_time
+          FROM users u, recent_rides r
+          WHERE u.id = r.rider_id
+          ORDER BY r.end_time DESC
+          LIMIT x
+          $$;
+      - |-
+        CREATE OR REPLACE FUNCTION double_triple(INOUT double INT, OUT triple INT) AS
+          $$
+          BEGIN
+            double := double * 2;
+            triple := double * 3;
+          END;
+          $$ LANGUAGE PLpgSQL;

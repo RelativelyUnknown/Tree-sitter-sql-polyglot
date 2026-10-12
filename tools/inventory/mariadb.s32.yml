@@ -1,0 +1,283 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements:
+  - id: create_user
+    name: CREATE USER
+    doc: https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/create-user
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE USER u;"
+      - id: or_replace_if_not_exists
+        sql: "CREATE OR REPLACE USER u;"
+      - id: if_not_exists
+        sql: "CREATE USER IF NOT EXISTS u@localhost;"
+      - id: identified_by
+        sql: "CREATE USER u@localhost IDENTIFIED BY 'pw';"
+      - id: identified_by_password_hash
+        sql: "CREATE USER u@localhost IDENTIFIED BY PASSWORD '*54958E764CE10E50764C2EECBB71D01F08549980';"
+      - id: identified_via_plugin
+        sql: "CREATE USER u@localhost IDENTIFIED VIA pam;"
+      - id: identified_via_using
+        sql: "CREATE USER u@localhost IDENTIFIED VIA pam USING 'mariadb';"
+      - id: identified_via_using_password_or
+        sql: "CREATE USER u@localhost IDENTIFIED VIA ed25519 USING PASSWORD('secret') OR unix_socket;"
+      - id: identified_with_as
+        sql: "CREATE USER u@localhost IDENTIFIED WITH mysql_native_password AS '*54958E764CE10E50764C2EECBB71D01F08549980';"
+      - id: multiple_users
+        sql: "CREATE USER u1 IDENTIFIED BY 'a', u2@localhost IDENTIFIED BY 'b';"
+      - id: require_ssl
+        sql: "CREATE USER u REQUIRE SSL;"
+      - id: require_tls_options
+        sql: "CREATE USER u REQUIRE ISSUER 'issuer' AND SUBJECT 'subject' AND CIPHER 'cipher';"
+      - id: require_none
+        sql: "CREATE USER u REQUIRE NONE;"
+      - id: with_resource_options
+        sql: "CREATE USER u WITH MAX_QUERIES_PER_HOUR 20 MAX_UPDATES_PER_HOUR 10 MAX_CONNECTIONS_PER_HOUR 5 MAX_USER_CONNECTIONS 2 MAX_STATEMENT_TIME 2.5;"
+      - id: account_lock
+        sql: "CREATE USER u ACCOUNT LOCK;"
+      - id: account_unlock
+        sql: "CREATE USER u ACCOUNT UNLOCK;"
+      - id: password_expire
+        sql: "CREATE USER u PASSWORD EXPIRE;"
+      - id: password_expire_default
+        sql: "CREATE USER u PASSWORD EXPIRE DEFAULT;"
+      - id: password_expire_never
+        sql: "CREATE USER u PASSWORD EXPIRE NEVER;"
+      - id: password_expire_interval
+        sql: "CREATE USER u PASSWORD EXPIRE INTERVAL 120 DAY;"
+    examples:
+      - "CREATE USER foo2@test IDENTIFIED BY 'password';"
+      - "CREATE USER safe@'%' IDENTIFIED VIA ed25519 USING PASSWORD('secret') OR unix_socket;"
+      - "CREATE USER 'monty'@'localhost' PASSWORD EXPIRE INTERVAL 120 DAY;"
+
+  - id: alter_user
+    name: ALTER USER
+    doc: https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/alter-user
+    tier: medium
+    probes:
+      - id: if_exists
+        sql: "ALTER USER IF EXISTS u@localhost PASSWORD EXPIRE;"
+      - id: identified_by
+        sql: "ALTER USER u@localhost IDENTIFIED BY 'pw';"
+      - id: identified_by_password_hash
+        sql: "ALTER USER u@localhost IDENTIFIED BY PASSWORD '*54958E764CE10E50764C2EECBB71D01F08549980';"
+      - id: identified_via_using_password
+        sql: "ALTER USER u@localhost IDENTIFIED VIA mysql_native_password USING PASSWORD('pwd2');"
+      - id: identified_via_or
+        sql: "ALTER USER u@localhost IDENTIFIED VIA pam USING 'mariadb' OR unix_socket;"
+      - id: identified_with_as
+        sql: "ALTER USER u@localhost IDENTIFIED WITH mysql_native_password AS '*54958E764CE10E50764C2EECBB71D01F08549980';"
+      - id: multiple_users
+        sql: "ALTER USER u1 IDENTIFIED BY 'a', u2@localhost IDENTIFIED BY 'b';"
+      - id: require_ssl
+        sql: "ALTER USER u REQUIRE SSL;"
+      - id: require_x509_subject
+        sql: "ALTER USER u REQUIRE X509 AND SUBJECT 'subject';"
+      - id: require_none
+        sql: "ALTER USER u REQUIRE NONE;"
+      - id: with_resource_options
+        sql: "ALTER USER u WITH MAX_QUERIES_PER_HOUR 20 MAX_UPDATES_PER_HOUR 10 MAX_CONNECTIONS_PER_HOUR 5 MAX_USER_CONNECTIONS 2 MAX_STATEMENT_TIME 2.5;"
+      - id: account_lock
+        sql: "ALTER USER u ACCOUNT LOCK;"
+      - id: account_unlock
+        sql: "ALTER USER u ACCOUNT UNLOCK;"
+      - id: password_expire_interval
+        sql: "ALTER USER u PASSWORD EXPIRE INTERVAL 120 DAY;"
+      - id: password_expire_never
+        sql: "ALTER USER u PASSWORD EXPIRE NEVER;"
+    examples:
+      - "ALTER USER 'bob'@'localhost' IDENTIFIED VIA mysql_native_password USING PASSWORD('pwd2');"
+      - "ALTER USER foo2@test IDENTIFIED VIA pam USING 'mariadb';"
+      - "ALTER USER 'monty'@'localhost' PASSWORD EXPIRE INTERVAL 120 DAY;"
+
+  - id: drop_user
+    name: DROP USER
+    doc: https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/drop-user
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP USER u;"
+      - id: if_exists
+        sql: "DROP USER IF EXISTS u@localhost;"
+      - id: multiple
+        sql: "DROP USER foo2@localhost, foo2@'127.%';"
+    examples:
+      - "DROP USER bob;"
+      - "DROP USER foo2@localhost,foo2@'127.%';"
+      - "DROP USER IF EXISTS bob;"
+
+  - id: rename_user
+    name: RENAME USER
+    doc: https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/rename-user
+    tier: medium
+    probes:
+      - id: basic
+        sql: "RENAME USER 'a' TO 'b';"
+      - id: with_hosts
+        sql: "RENAME USER 'foo'@'1.2.3.4' TO 'foo'@'10.20.30.40';"
+      - id: multiple
+        sql: "RENAME USER 'donald' TO 'duck'@'localhost', 'mickey' TO 'mouse'@'localhost';"
+    examples:
+      - "CREATE USER 'donald', 'mickey';"
+      - "RENAME USER 'donald' TO 'duck'@'localhost', 'mickey' TO 'mouse'@'localhost';"
+      - "RENAME USER 'foo'@'1.2.3.4' TO 'foo'@'10.20.30.40';"
+
+  - id: create_role
+    name: CREATE ROLE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/create-role
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE ROLE r;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE ROLE r;"
+      - id: if_not_exists
+        sql: "CREATE ROLE IF NOT EXISTS r;"
+      - id: with_admin_user
+        sql: "CREATE ROLE r WITH ADMIN u@localhost;"
+      - id: with_admin_current_user
+        sql: "CREATE ROLE r WITH ADMIN CURRENT_USER;"
+      - id: with_admin_current_role
+        sql: "CREATE ROLE r WITH ADMIN CURRENT_ROLE;"
+      - id: with_admin_role
+        sql: "CREATE ROLE r WITH ADMIN other_role;"
+    examples:
+      - "CREATE ROLE journalist;"
+      - "CREATE ROLE developer WITH ADMIN lorinda@localhost;"
+
+  - id: drop_role
+    name: DROP ROLE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/drop-role
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP ROLE r;"
+      - id: if_exists
+        sql: "DROP ROLE IF EXISTS r;"
+      - id: multiple
+        sql: "DROP ROLE r1, r2;"
+    examples:
+      - "DROP ROLE journalist;"
+      - "DROP ROLE IF EXISTS journalist;"
+
+  - id: grant
+    name: GRANT
+    doc: https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/grant
+    tier: medium
+    probes:
+      - id: table_privilege
+        sql: "GRANT SELECT ON db.t TO u@localhost;"
+      - id: multiple_privileges_db
+        sql: "GRANT SELECT, INSERT, DELETE ON db.* TO u@localhost;"
+      - id: global_all_privileges
+        sql: "GRANT ALL PRIVILEGES ON *.* TO 'dba'@'%';"
+      - id: usage_identified_by
+        sql: "GRANT USAGE ON *.* TO u@localhost IDENTIFIED BY 'pw';"
+      - id: usage_identified_via
+        sql: "GRANT USAGE ON *.* TO u@localhost IDENTIFIED VIA pam USING 'mariadb';"
+      - id: column_privileges
+        sql: "GRANT SELECT (c1, c2), UPDATE (c1) ON t TO u@localhost;"
+      - id: multiword_privilege
+        sql: "GRANT BINLOG ADMIN, CREATE TEMPORARY TABLES, REPLICATION SLAVE ADMIN ON *.* TO u;"
+      - id: object_type_procedure
+        sql: "GRANT EXECUTE ON PROCEDURE db.p TO u;"
+      - id: object_type_function
+        sql: "GRANT EXECUTE ON FUNCTION db.f TO u;"
+      - id: object_type_package
+        sql: "GRANT EXECUTE ON PACKAGE db.pkg TO u;"
+      - id: object_type_package_body
+        sql: "GRANT EXECUTE ON PACKAGE BODY db.pkg TO u;"
+      - id: object_type_table
+        sql: "GRANT SELECT ON TABLE db.t TO u;"
+      - id: default_db_level
+        sql: "GRANT SELECT ON * TO u;"
+      - id: require_ssl
+        sql: "GRANT USAGE ON *.* TO u REQUIRE SSL;"
+      - id: with_grant_option
+        sql: "GRANT ALL PRIVILEGES ON *.* TO u@localhost WITH GRANT OPTION;"
+      - id: with_resource_options
+        sql: "GRANT USAGE ON *.* TO u@localhost WITH MAX_USER_CONNECTIONS 0 MAX_QUERIES_PER_HOUR 200;"
+      - id: to_public
+        sql: "GRANT ALL ON db.* TO PUBLIC;"
+      - id: to_multiple_grantees
+        sql: "GRANT SELECT ON t TO u1, r1, CURRENT_USER;"
+      - id: to_current_role
+        sql: "GRANT SELECT ON t TO CURRENT_ROLE();"
+      - id: proxy
+        sql: "GRANT PROXY ON 'dba'@'localhost' TO 'bob'@'localhost';"
+      - id: proxy_with_grant_option
+        sql: "GRANT PROXY ON ''@'%' TO 'root'@'localhost' WITH GRANT OPTION;"
+      - id: role_to_user
+        sql: "GRANT r TO u@localhost;"
+      - id: roles_with_admin_option
+        sql: "GRANT r1, r2 TO u WITH ADMIN OPTION;"
+    examples:
+      - "GRANT SELECT ON db.* TO foo@'%';"
+      - "GRANT SELECT (name, position) ON Employee TO 'jeffrey'@'localhost';"
+      - "GRANT PROXY ON 'dba'@'localhost' TO 'bob'@'localhost';"
+
+  - id: revoke
+    name: REVOKE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/revoke
+    tier: medium
+    probes:
+      - id: privilege
+        sql: "REVOKE SUPER ON *.* FROM 'myuser'@'localhost';"
+      - id: table_privilege
+        sql: "REVOKE SELECT, INSERT ON db.t FROM u;"
+      - id: column_privileges
+        sql: "REVOKE SELECT (c1, c2) ON t FROM u;"
+      - id: all_on_global
+        sql: "REVOKE ALL ON *.* FROM 'myuser'@'localhost';"
+      - id: object_type_procedure
+        sql: "REVOKE EXECUTE ON PROCEDURE db.p FROM u;"
+      - id: from_multiple_and_public
+        sql: "REVOKE SELECT ON t FROM u1, PUBLIC, CURRENT_ROLE;"
+      - id: all_privileges_grant_option
+        sql: "REVOKE ALL PRIVILEGES, GRANT OPTION FROM 'myuser'@'localhost';"
+      - id: all_grant_option
+        sql: "REVOKE ALL, GRANT OPTION FROM u1, u2;"
+      - id: proxy
+        sql: "REVOKE PROXY ON 'dba_user'@'localhost' FROM 'app_user'@'localhost';"
+      - id: role
+        sql: "REVOKE r1, r2 FROM u@localhost;"
+      - id: admin_option_for_role
+        sql: "REVOKE ADMIN OPTION FOR r FROM u;"
+    examples:
+      - "REVOKE SUPER ON *.* FROM 'myuser'@'localhost';"
+      - "REVOKE ALL, GRANT OPTION FROM 'myuser'@'localhost';"
+      - "REVOKE PROXY ON 'dba_user'@'localhost' FROM 'app_user'@'localhost';"
+
+  - id: set_role
+    name: SET ROLE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/set-role
+    tier: medium
+    probes:
+      - id: role
+        sql: "SET ROLE staff;"
+      - id: none
+        sql: "SET ROLE NONE;"
+    examples:
+      - "SET ROLE staff;"
+
+  - id: set_default_role
+    name: SET DEFAULT ROLE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/set-default-role
+    tier: medium
+    probes:
+      - id: role
+        sql: "SET DEFAULT ROLE journalist;"
+      - id: none
+        sql: "SET DEFAULT ROLE NONE;"
+      - id: role_for_user
+        sql: "SET DEFAULT ROLE journalist FOR taniel;"
+      - id: none_for_user_host
+        sql: "SET DEFAULT ROLE NONE FOR taniel@localhost;"
+    examples:
+      - "SET DEFAULT ROLE journalist;"
+      - "SET DEFAULT ROLE NONE;"
+      - "SET DEFAULT ROLE journalist FOR taniel;"

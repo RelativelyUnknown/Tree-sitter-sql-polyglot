@@ -1,0 +1,246 @@
+dialect: oracle
+engine: Oracle AI Database
+version: "26ai"
+source: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/toc.htm
+
+statements:
+  - id: create_type_body
+    name: CREATE TYPE BODY
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-TYPE-BODY.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: |-
+          CREATE TYPE BODY t AS
+            MEMBER FUNCTION f RETURN NUMBER IS
+            BEGIN
+              RETURN 1;
+            END;
+          END;
+      - id: or_replace_editionable
+        sql: |-
+          CREATE OR REPLACE EDITIONABLE TYPE BODY t AS
+            MEMBER PROCEDURE p IS
+            BEGIN
+              NULL;
+            END;
+          END;
+      - id: noneditionable_if_not_exists
+        sql: |-
+          CREATE NONEDITIONABLE TYPE BODY IF NOT EXISTS s.t AS
+            STATIC FUNCTION f RETURN NUMBER IS
+            BEGIN
+              RETURN 1;
+            END;
+          END;
+
+  - id: create_user
+    name: CREATE USER
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-USER.html
+    tier: medium
+    probes:
+      - id: identified_by
+        sql: "CREATE USER u IDENTIFIED BY p;"
+      - id: if_not_exists
+        sql: "CREATE USER IF NOT EXISTS u IDENTIFIED BY p;"
+      - id: identified_by_http_digest
+        sql: "CREATE USER u IDENTIFIED BY p HTTP DIGEST ENABLE;"
+      - id: identified_by_and_factor
+        sql: "CREATE USER u IDENTIFIED BY p AND FACTOR 'auth_method' AS 'external_name';"
+      - id: identified_externally
+        sql: "CREATE USER u IDENTIFIED EXTERNALLY;"
+      - id: identified_externally_as_dn
+        sql: "CREATE USER u IDENTIFIED EXTERNALLY AS 'CN=u,O=example';"
+      - id: identified_globally
+        sql: "CREATE USER u IDENTIFIED GLOBALLY;"
+      - id: identified_globally_as_dn
+        sql: "CREATE USER u IDENTIFIED GLOBALLY AS 'CN=u,O=example';"
+      - id: identified_globally_azure
+        sql: "CREATE USER u IDENTIFIED GLOBALLY AS 'AZURE_USER=u@example.com';"
+      - id: identified_globally_iam
+        sql: "CREATE USER u IDENTIFIED GLOBALLY AS 'IAM_GROUP_NAME=g';"
+      - id: no_authentication
+        sql: "CREATE USER u NO AUTHENTICATION;"
+      - id: default_collation
+        sql: "CREATE USER u IDENTIFIED BY p DEFAULT COLLATION BINARY_CI;"
+      - id: default_tablespace
+        sql: "CREATE USER u IDENTIFIED BY p DEFAULT TABLESPACE ts;"
+      - id: temporary_tablespace
+        sql: "CREATE USER u IDENTIFIED BY p TEMPORARY TABLESPACE temp;"
+      - id: local_temporary_tablespace
+        sql: "CREATE USER u IDENTIFIED BY p LOCAL TEMPORARY TABLESPACE temp;"
+      - id: quota
+        sql: "CREATE USER u IDENTIFIED BY p QUOTA 10M ON ts QUOTA UNLIMITED ON ts2;"
+      - id: profile_password_expire
+        sql: "CREATE USER u IDENTIFIED BY p PROFILE prof PASSWORD EXPIRE;"
+      - id: account_lock
+        sql: "CREATE USER u IDENTIFIED BY p ACCOUNT LOCK;"
+      - id: account_unlock
+        sql: "CREATE USER u IDENTIFIED BY p ACCOUNT UNLOCK;"
+      - id: enable_editions
+        sql: "CREATE USER u IDENTIFIED BY p ENABLE EDITIONS;"
+      - id: container_all
+        sql: "CREATE USER c##u IDENTIFIED BY p CONTAINER = ALL;"
+      - id: read_only
+        sql: "CREATE USER u IDENTIFIED BY p READ ONLY;"
+    examples:
+      - |-
+        CREATE USER sidney
+            IDENTIFIED BY out_standing1
+            DEFAULT TABLESPACE example
+            QUOTA 10M ON example
+            TEMPORARY TABLESPACE temp
+            QUOTA 5M ON system
+            PROFILE app_user
+            PASSWORD EXPIRE;
+      - |-
+        CREATE USER app_user1 IDENTIFIED EXTERNALLY
+            DEFAULT TABLESPACE example
+            QUOTA 5M ON example
+            PROFILE app_user;
+      - |-
+        CREATE USER global_user
+            IDENTIFIED GLOBALLY AS 'CN=analyst, OU=division1, O=oracle, C=US'
+            DEFAULT TABLESPACE example
+            QUOTA 5M ON example;
+
+  - id: create_vector_index
+    name: CREATE VECTOR INDEX
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-vector-index.html
+    tier: medium
+    probes:
+      - id: hnsw_inmemory_neighbor_graph
+        sql: "CREATE VECTOR INDEX idx ON t (c) ORGANIZATION INMEMORY NEIGHBOR GRAPH;"
+      - id: ivf_neighbor_partitions
+        sql: "CREATE VECTOR INDEX idx ON t (c) ORGANIZATION NEIGHBOR PARTITIONS;"
+      - id: distance_and_target_accuracy
+        sql: "CREATE VECTOR INDEX idx ON t (c) ORGANIZATION INMEMORY NEIGHBOR GRAPH DISTANCE COSINE WITH TARGET ACCURACY 95;"
+      - id: hnsw_parameters
+        sql: "CREATE VECTOR INDEX idx ON t (c) ORGANIZATION INMEMORY NEIGHBOR GRAPH DISTANCE EUCLIDEAN WITH TARGET ACCURACY 90 PARAMETERS (TYPE HNSW, NEIGHBORS 40, EFCONSTRUCTION 500);"
+      - id: ivf_parameters
+        sql: "CREATE VECTOR INDEX idx ON t (c) ORGANIZATION NEIGHBOR PARTITIONS DISTANCE DOT WITH TARGET ACCURACY 90 PARAMETERS (TYPE IVF, NEIGHBOR PARTITIONS 10, SAMPLES_PER_PARTITION 5, MIN_VECTORS_PER_PARTITION 2);"
+      - id: ivf_partition_grouping
+        sql: "CREATE VECTOR INDEX idx ON t (c) ORGANIZATION NEIGHBOR PARTITIONS PARAMETERS (TYPE IVF, NEIGHBOR PARTITION GROUPING ON);"
+      - id: include_columns
+        sql: "CREATE VECTOR INDEX idx ON t (c) INCLUDE (c1, c2) ORGANIZATION NEIGHBOR PARTITIONS;"
+      - id: replication_duplicate_all
+        sql: "CREATE VECTOR INDEX idx ON t (c) ORGANIZATION INMEMORY NEIGHBOR GRAPH DUPLICATE ALL;"
+      - id: replication_distribute_by_partition
+        sql: "CREATE VECTOR INDEX idx ON t (c) ORGANIZATION INMEMORY NEIGHBOR GRAPH DISTRIBUTE BY PARTITION;"
+      - id: parallel_online_local
+        sql: "CREATE VECTOR INDEX idx ON t (c) ORGANIZATION NEIGHBOR PARTITIONS PARALLEL 4 ONLINE LOCAL;"
+    examples:
+      - |-
+        CREATE VECTOR INDEX galaxies_hnsw_idx ON galaxies (embedding)
+        ORGANIZATION INMEMORY NEIGHBOR GRAPH
+        DISTANCE COSINE
+        WITH TARGET ACCURACY 95;
+      - |-
+        CREATE VECTOR INDEX galaxies_hnsw_idx ON galaxies (embedding)
+        ORGANIZATION INMEMORY NEIGHBOR GRAPH
+        DISTANCE COSINE
+        WITH TARGET ACCURACY 90
+        PARAMETERS (type HNSW, neighbors 40, efconstruction 500);
+      - |-
+        CREATE VECTOR INDEX galaxies_ivf_idx ON galaxies (embedding)
+        ORGANIZATION NEIGHBOR PARTITIONS
+        DISTANCE COSINE
+        WITH TARGET ACCURACY 90
+        PARAMETERS (type IVF, neighbor partitions 10);
+
+  - id: drop_context
+    name: DROP CONTEXT
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/DROP-CONTEXT.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP CONTEXT ns;"
+    examples:
+      - "DROP CONTEXT hr_context;"
+
+  - id: drop_database_link
+    name: DROP DATABASE LINK
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/DROP-DATABASE-LINK.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP DATABASE LINK dblink;"
+      - id: public
+        sql: "DROP PUBLIC DATABASE LINK dblink;"
+      - id: if_exists
+        sql: "DROP DATABASE LINK IF EXISTS dblink;"
+    examples:
+      - "DROP PUBLIC DATABASE LINK remote;"
+
+  - id: drop_directory
+    name: DROP DIRECTORY
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/DROP-DIRECTORY.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP DIRECTORY d;"
+      - id: if_exists
+        sql: "DROP DIRECTORY IF EXISTS d;"
+    examples:
+      - "DROP DIRECTORY bfile_dir;"
+
+  - id: drop_domain
+    name: DROP DOMAIN
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/drop-domain.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP DOMAIN d;"
+      - id: usecase_schema_if_exists
+        sql: "DROP USECASE DOMAIN IF EXISTS s.d;"
+      - id: force
+        sql: "DROP DOMAIN d FORCE;"
+      - id: force_preserve
+        sql: "DROP DOMAIN d FORCE PRESERVE;"
+    examples:
+      - "DROP DOMAIN email;"
+
+  - id: drop_iceberg_table
+    name: DROP ICEBERG TABLE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/drop-iceberg-table.html
+    tier: medium
+    probes:
+      - id: within_catalog
+        sql: "DROP ICEBERG TABLE s.t WITHIN CATALOG c;"
+      - id: purge
+        sql: "DROP ICEBERG TABLE s.t WITHIN CATALOG c PURGE;"
+
+  - id: drop_materialized_view_log
+    name: DROP MATERIALIZED VIEW LOG
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/DROP-MATERIALIZED-VIEW-LOG.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP MATERIALIZED VIEW LOG ON t;"
+      - id: schema_qualified
+        sql: "DROP MATERIALIZED VIEW LOG ON s.t;"
+      - id: if_exists
+        sql: "DROP MATERIALIZED VIEW LOG IF EXISTS ON t;"
+      - id: snapshot_keyword
+        sql: "DROP SNAPSHOT LOG ON t;"
+        note: The page says SNAPSHOT is supported in place of MATERIALIZED VIEW for backward compatibility.
+    examples:
+      - "DROP MATERIALIZED VIEW LOG ON customers;"
+
+  - id: drop_package
+    name: DROP PACKAGE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/DROP-PACKAGE.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP PACKAGE p;"
+      - id: schema_qualified
+        sql: "DROP PACKAGE s.p;"
+      - id: if_exists
+        sql: "DROP PACKAGE IF EXISTS p;"
+      - id: body
+        sql: "DROP PACKAGE BODY p;"
+      - id: if_exists_body_schema
+        sql: "DROP PACKAGE IF EXISTS BODY s.p;"
+    examples:
+      - "DROP PACKAGE emp_mgmt;"

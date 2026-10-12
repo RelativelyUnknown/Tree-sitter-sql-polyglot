@@ -1,0 +1,243 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: help_index
+    name: HELP INDEX
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/80jjbFTf9GyXpO3b_UEYMA
+    tier: medium
+    probes:
+      - id: table
+        sql: "HELP INDEX t;"
+      - id: qualified_table
+        sql: "HELP INDEX db1.t;"
+      - id: temporary
+        sql: "HELP INDEX TEMPORARY t;"
+      - id: join_index
+        sql: "HELP INDEX db1.ji1;"
+      - id: column_list
+        sql: "HELP INDEX t (c1, c2);"
+    examples:
+      - "HELP INDEX tname (cname_1, cname_2, cname_3);"
+      - "HELP INDEX Personnel.Department;"
+
+  - id: create_procedure_external
+    name: CREATE PROCEDURE / REPLACE PROCEDURE (External Form)
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/ZxgyIIDXWWCTsa9kAt4myA
+    tier: medium
+    probes:
+      - id: create_c
+        sql: "CREATE PROCEDURE p (INOUT region VARCHAR(64)) LANGUAGE C NO SQL EXTERNAL NAME 'CS!getregion!xspsrc/getregion.c!F!xsp_getregion' PARAMETER STYLE TD_GENERAL;"
+      - id: replace
+        sql: "REPLACE PROCEDURE p (IN a INTEGER, OUT b INTEGER) LANGUAGE C NO SQL PARAMETER STYLE SQL EXTERNAL NAME 'CS!p!p.c!F!p';"
+      - id: qualified_name
+        sql: "CREATE PROCEDURE db1.p (IN a INTEGER) LANGUAGE C NO SQL PARAMETER STYLE SQL EXTERNAL NAME 'CS!p!p.c!F!p';"
+      - id: dynamic_result_sets
+        sql: "CREATE PROCEDURE p (IN a INTEGER) DYNAMIC RESULT SETS 2 LANGUAGE C MODIFIES SQL DATA PARAMETER STYLE SQL EXTERNAL NAME 'CS!p!p.c!F!p';"
+      - id: sql_security_definer
+        sql: "CREATE PROCEDURE p (IN a INTEGER) LANGUAGE C NO SQL PARAMETER STYLE SQL SQL SECURITY DEFINER EXTERNAL NAME 'CS!p!p.c!F!p';"
+      - id: external_security_invoker
+        sql: "CREATE PROCEDURE p (IN a INTEGER) LANGUAGE C NO SQL PARAMETER STYLE SQL EXTERNAL NAME 'CS!p!p.c!F!p' EXTERNAL SECURITY INVOKER;"
+      - id: external_security_definer
+        sql: "CREATE PROCEDURE p (IN a INTEGER) LANGUAGE C NO SQL PARAMETER STYLE SQL EXTERNAL NAME 'CS!p!p.c!F!p' EXTERNAL SECURITY DEFINER auth1;"
+      - id: java_jar_id
+        sql: "CREATE PROCEDURE p (IN a INTEGER) LANGUAGE JAVA NO SQL PARAMETER STYLE JAVA EXTERNAL NAME 'jar1:Cls.method';"
+      - id: parameter_style_after_external
+        sql: "CREATE PROCEDURE p (IN a INTEGER) LANGUAGE C NO SQL EXTERNAL NAME 'CS!p!p.c!F!p' PARAMETER STYLE SQL;"
+      - id: external_without_name
+        sql: "CREATE PROCEDURE p (IN a INTEGER) LANGUAGE C NO SQL PARAMETER STYLE SQL EXTERNAL;"
+    examples:
+      - |-
+        CREATE PROCEDURE GetRegionXSP
+          (INOUT region VARCHAR(64))
+        LANGUAGE C
+        NO SQL
+        EXTERNAL NAME 'CS!getregion!xspsrc/getregion.c!F!xsp_getregion'
+        PARAMETER STYLE TD_GENERAL;
+      - |-
+        CREATE PROCEDURE xsp_abc(IN  param1  INTEGER,
+                                 OUT result1 INTEGER)
+        LANGUAGE C
+        MODIFIES SQL DATA
+        PARAMETER STYLE SQL
+        EXTERNAL NAME 'SP!CLI!CS!xsp_abc!xsp_abc.c';
+
+  - id: rename_procedure
+    name: RENAME PROCEDURE
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/_KiR9Y6ENiLwCqnjfjmNcQ
+    tier: medium
+    probes:
+      - id: to
+        sql: "RENAME PROCEDURE p1 TO p2;"
+      - id: as
+        sql: "RENAME PROCEDURE p1 AS p2;"
+      - id: qualified
+        sql: "RENAME PROCEDURE db1.p1 TO db2.p2;"
+
+  - id: help_procedure
+    name: HELP PROCEDURE
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/vHUMMfgxz3qGbsD7lDY8kQ
+    tier: medium
+    probes:
+      - id: basic
+        sql: "HELP PROCEDURE p;"
+      - id: qualified
+        sql: "HELP PROCEDURE db1.p;"
+      - id: attributes
+        sql: "HELP PROCEDURE p ATTRIBUTES;"
+      - id: attr
+        sql: "HELP PROCEDURE db1.p ATTR;"
+      - id: attrs
+        sql: "HELP PROCEDURE p ATTRS;"
+
+  - id: create_macro
+    name: CREATE MACRO / REPLACE MACRO
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/LTSJAW~XkzGCIxhHiUcJTQ
+    tier: medium
+    probes:
+      - id: create
+        sql: "CREATE MACRO m AS (SELECT * FROM t;);"
+      - id: replace
+        sql: "REPLACE MACRO m AS (SELECT * FROM t;);"
+      - id: cm_abbreviation
+        sql: "CM m AS (SELECT * FROM t;);"
+      - id: qualified_name
+        sql: "CREATE MACRO db1.m AS (SELECT * FROM t;);"
+      - id: parameters
+        sql: "CREATE MACRO m (a INTEGER, b VARCHAR(12)) AS (INSERT INTO t (c, d) VALUES (:a, :b););"
+      - id: parameter_default_attributes
+        sql: "CREATE MACRO m (a INTEGER NOT NULL, d INTEGER DEFAULT 900, dob DATE FORMAT 'YYYY-MM-DD') AS (SELECT :a;);"
+      - id: multiple_statements
+        sql: "CREATE MACRO m (a INTEGER) AS (INSERT INTO t (c) VALUES (:a); UPDATE u SET n = n + 1 WHERE k = :a;);"
+      - id: locking_modifier
+        sql: "CREATE MACRO m AS (LOCKING TABLE t FOR ACCESS SELECT * FROM t;);"
+      - id: using_modifier
+        sql: "CREATE MACRO m AS (USING (a INTEGER) SELECT :a;);"
+    examples:
+      - |-
+        REPLACE MACRO new_employee(name VARCHAR(12) NOT NULL,
+         street CHARACTER(30),
+         city   CHARACTER(20),
+         number INTEGER NOT NULL,
+         dept   SMALLINT DEFAULT 999) AS
+        (INSERT INTO employee (name, street, city, empno, deptno)
+          VALUES (:name, :street, :city, :number, :dept);
+        UPDATE department
+        SET empcount = empcount + 1
+        WHERE deptno = :dept ;);
+
+  - id: rename_macro
+    name: RENAME MACRO
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/fsKv0Sfszhij~R712uo6BQ
+    tier: medium
+    probes:
+      - id: to
+        sql: "RENAME MACRO m1 TO m2;"
+      - id: as
+        sql: "RENAME MACRO m1 AS m2;"
+      - id: qualified
+        sql: "RENAME MACRO db1.m1 TO db2.m2;"
+    examples:
+      - "RENAME MACRO new_empl TO new_employee;"
+
+  - id: drop_macro
+    name: DROP MACRO
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/mygvMieZdGouz0PzwB~lIg
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP MACRO m;"
+      - id: qualified
+        sql: "DROP MACRO db1.m;"
+
+  - id: help_macro
+    name: HELP MACRO
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/t8xydqVIyJzD7FnzRiPeGw
+    tier: medium
+    probes:
+      - id: basic
+        sql: "HELP MACRO m;"
+      - id: qualified
+        sql: "HELP MACRO db1.m;"
+
+  - id: create_function_table
+    name: CREATE FUNCTION / REPLACE FUNCTION (Table Form)
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/lgytcWlQy83iV1nV6ybjsA
+    tier: medium
+    probes:
+      - id: create
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS TABLE (c1 INTEGER, c2 VARCHAR(10)) LANGUAGE C NO SQL PARAMETER STYLE SQL EXTERNAL NAME 'CS!f!f.c!F!f';"
+      - id: replace
+        sql: "REPLACE FUNCTION f (a INTEGER) RETURNS TABLE (c1 INTEGER) LANGUAGE C NO SQL PARAMETER STYLE SQL EXTERNAL NAME 'CS!f!f.c!F!f';"
+      - id: qualified_name
+        sql: "CREATE FUNCTION db1.f (a INTEGER) RETURNS TABLE (c1 INTEGER) LANGUAGE C NO SQL EXTERNAL NAME 'CS!f!f.c!F!f';"
+      - id: named_parameters
+        sql: "CREATE FUNCTION f (p1 INTEGER, p2 VARCHAR(10)) RETURNS TABLE (c1 INTEGER) LANGUAGE C NO SQL EXTERNAL NAME 'CS!f!f.c!F!f';"
+      - id: varying_columns
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS TABLE VARYING COLUMNS (10) LANGUAGE C NO SQL PARAMETER STYLE SQLTABLE EXTERNAL NAME 'CS!f!f.c!F!f';"
+      - id: varying_using_function
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS TABLE VARYING USING FUNCTION db1.g LANGUAGE C NO SQL PARAMETER STYLE SQLTABLE EXTERNAL NAME 'CS!f!f.c!F!f';"
+      - id: sql_data_access_first
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS TABLE (c1 INTEGER) NO SQL LANGUAGE C EXTERNAL NAME 'CS!f!f.c!F!f';"
+      - id: function_attributes
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS TABLE (c1 INTEGER) LANGUAGE C NO SQL SPECIFIC f_spec DETERMINISTIC CALLED ON NULL INPUT EXTERNAL NAME 'CS!f!f.c!F!f';"
+      - id: not_deterministic
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS TABLE (c1 INTEGER) LANGUAGE C NO SQL NOT DETERMINISTIC EXTERNAL NAME 'CS!f!f.c!F!f';"
+      - id: external_security_invoker
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS TABLE (c1 INTEGER) LANGUAGE C NO SQL EXTERNAL NAME 'CS!f!f.c!F!f' EXTERNAL SECURITY INVOKER;"
+      - id: execute_map
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS TABLE (c1 INTEGER) LANGUAGE C NO SQL EXTERNAL NAME 'CS!f!f.c!F!f' EXECUTE MAP = m1 COLOCATE USING colo1;"
+      - id: java_jar_id
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS TABLE (c1 INTEGER) LANGUAGE JAVA NO SQL PARAMETER STYLE JAVA EXTERNAL NAME 'jar1:Cls.method';"
+      - id: no_parameters
+        sql: "CREATE FUNCTION f () RETURNS TABLE (c1 INTEGER) LANGUAGE C NO SQL EXTERNAL NAME 'CS!f!f.c!F!f';"
+
+  - id: create_function_external
+    name: CREATE FUNCTION / REPLACE FUNCTION (External Form)
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/P7lZAnItE1wHIfkVbqEOZQ
+    tier: medium
+    probes:
+      - id: create
+        sql: "CREATE FUNCTION f (a INTEGER, b INTEGER) RETURNS INTEGER LANGUAGE C NO SQL PARAMETER STYLE SQL EXTERNAL NAME 'CS!f!f.c!F!f';"
+      - id: replace
+        sql: "REPLACE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE C NO SQL PARAMETER STYLE SQL EXTERNAL NAME 'CS!f!f.c!F!f';"
+      - id: qualified_name
+        sql: "CREATE FUNCTION db1.f (a INTEGER) RETURNS INTEGER LANGUAGE C NO SQL EXTERNAL NAME 'CS!f!f.c!F!f';"
+      - id: returns_cast_from
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS VARCHAR(10) CAST FROM INTEGER LANGUAGE C NO SQL EXTERNAL NAME 'CS!f!f.c!F!f';"
+      - id: unnamed_parameters
+        sql: "CREATE FUNCTION f (INTEGER, VARCHAR(10)) RETURNS INTEGER LANGUAGE C NO SQL EXTERNAL NAME 'CS!f!f.c!F!f';"
+      - id: sql_data_access_first
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER NO SQL LANGUAGE C EXTERNAL NAME 'CS!f!f.c!F!f';"
+      - id: deterministic
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE C NO SQL DETERMINISTIC EXTERNAL NAME 'CS!f!f.c!F!f';"
+      - id: not_deterministic_called_on_null
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE C NO SQL NOT DETERMINISTIC CALLED ON NULL INPUT EXTERNAL NAME 'CS!f!f.c!F!f';"
+      - id: returns_null_on_null
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE C NO SQL RETURNS NULL ON NULL INPUT EXTERNAL NAME 'CS!f!f.c!F!f';"
+      - id: specific_name
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE C NO SQL SPECIFIC db1.f_int EXTERNAL NAME 'CS!f!f.c!F!f';"
+      - id: aggregate_class
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER CLASS AGGREGATE (64) LANGUAGE C NO SQL EXTERNAL NAME 'CS!f!f.c!F!f';"
+      - id: aggregate_class_ag
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER CLASS AG LANGUAGE C NO SQL EXTERNAL NAME 'CS!f!f.c!F!f';"
+      - id: parameter_style_td_general
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE C NO SQL PARAMETER STYLE TD_GENERAL EXTERNAL NAME 'CS!f!f.c!F!f';"
+      - id: external_name_only
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE C NO SQL EXTERNAL NAME f_entry;"
+      - id: external_without_name
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE C NO SQL PARAMETER STYLE SQL EXTERNAL;"
+      - id: parameter_style_after_external
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE C NO SQL EXTERNAL NAME 'CS!f!f.c!F!f' PARAMETER STYLE SQL;"
+      - id: for_compress
+        sql: "CREATE FUNCTION f (a VARCHAR(10)) RETURNS VARCHAR(10) LANGUAGE C NO SQL EXTERNAL NAME 'CS!f!f.c!F!f' FOR COMPRESS;"
+      - id: for_decompress
+        sql: "CREATE FUNCTION f (a VARCHAR(10)) RETURNS VARCHAR(10) LANGUAGE C NO SQL EXTERNAL NAME 'CS!f!f.c!F!f' FOR DECOMPRESS;"
+      - id: external_security_definer
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE C NO SQL EXTERNAL NAME 'CS!f!f.c!F!f' EXTERNAL SECURITY DEFINER auth1;"
+      - id: external_security_invoker
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE C NO SQL EXTERNAL NAME 'CS!f!f.c!F!f' EXTERNAL SECURITY INVOKER;"
+      - id: java_jar_id
+        sql: "CREATE FUNCTION f (a INTEGER) RETURNS INTEGER LANGUAGE JAVA NO SQL PARAMETER STYLE JAVA EXTERNAL NAME 'jar1:Cls.method';"

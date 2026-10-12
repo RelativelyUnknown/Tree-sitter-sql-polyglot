@@ -1,0 +1,118 @@
+dialect: flink
+engine: Apache Flink SQL
+version: "2.3"
+source: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/
+
+statements:
+  - id: select
+    name: SELECT
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/queries/overview/
+    tier: high
+    probes:
+      - { id: basic, sql: "SELECT a, b FROM t;" }
+      - { id: select_star, sql: "SELECT * FROM t;" }
+      - { id: select_all, sql: "SELECT ALL a FROM t;" }
+      - { id: distinct, sql: "SELECT DISTINCT a, b FROM t;" }
+      - { id: without_from, sql: "SELECT 1 + 1;" }
+      - { id: column_alias, sql: "SELECT a AS x, b y FROM t;" }
+      - { id: table_alias_star, sql: "SELECT t.* FROM t;" }
+      - { id: qualified_table_path, sql: "SELECT a FROM cat.db.t;" }
+      - { id: table_keyword, sql: "SELECT a FROM TABLE t;" }
+      - { id: table_alias_columns, sql: "SELECT x, y FROM t AS tt (x, y);" }
+      - { id: where, sql: "SELECT a FROM t WHERE a > 1 AND b LIKE '%x%';" }
+      - { id: group_by, sql: "SELECT a, COUNT(*) FROM t GROUP BY a;" }
+      - { id: group_by_empty, sql: "SELECT COUNT(*) FROM t GROUP BY ();" }
+      - { id: group_by_rollup, sql: "SELECT a, b, SUM(c) FROM t GROUP BY ROLLUP (a, b);" }
+      - { id: group_by_cube, sql: "SELECT a, b, SUM(c) FROM t GROUP BY CUBE (a, b);" }
+      - { id: group_by_grouping_sets, sql: "SELECT a, b, SUM(c) FROM t GROUP BY GROUPING SETS ((a, b), (a), ());" }
+      - { id: having, sql: "SELECT a, COUNT(*) FROM t GROUP BY a HAVING COUNT(*) > 1;" }
+      - { id: window_clause, sql: "SELECT SUM(a) OVER w FROM t WINDOW w AS (PARTITION BY b ORDER BY ts);" }
+      - { id: over_rows_preceding, sql: "SELECT SUM(a) OVER (PARTITION BY b ORDER BY ts ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: over_range_interval, sql: "SELECT SUM(a) OVER (PARTITION BY b ORDER BY ts RANGE BETWEEN INTERVAL '1' HOUR PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: with_cte, sql: "WITH c AS (SELECT a FROM t) SELECT a FROM c;" }
+      - { id: with_cte_columns, sql: "WITH c (x) AS (SELECT a FROM t) SELECT x FROM c;" }
+      - { id: with_multiple_ctes, sql: "WITH c1 AS (SELECT a FROM t), c2 AS (SELECT a FROM c1) SELECT a FROM c2;" }
+      - { id: values, sql: "VALUES (1, 'a'), (2, 'b');" }
+      - { id: values_derived_table, sql: "SELECT x, y FROM (VALUES (1, 'a'), (2, 'b')) AS v (x, y);" }
+      - { id: union, sql: "SELECT a FROM t UNION SELECT a FROM s;" }
+      - { id: union_all, sql: "SELECT a FROM t UNION ALL SELECT a FROM s;" }
+      - { id: except, sql: "SELECT a FROM t EXCEPT SELECT a FROM s;" }
+      - { id: intersect, sql: "SELECT a FROM t INTERSECT SELECT a FROM s;" }
+      - { id: order_by, sql: "SELECT a FROM t ORDER BY a DESC, b ASC;" }
+      - { id: limit, sql: "SELECT a FROM t ORDER BY a LIMIT 10;" }
+      - { id: limit_all, sql: "SELECT a FROM t LIMIT ALL;" }
+      - { id: offset_rows, sql: "SELECT a FROM t ORDER BY a OFFSET 5 ROWS;" }
+      - { id: limit_offset, sql: "SELECT a FROM t ORDER BY a LIMIT 10 OFFSET 5 ROWS;" }
+      - { id: fetch_first, sql: "SELECT a FROM t ORDER BY a FETCH FIRST 3 ROWS ONLY;" }
+      - { id: offset_fetch_next, sql: "SELECT a FROM t ORDER BY a OFFSET 2 ROWS FETCH NEXT 3 ROWS ONLY;" }
+      - { id: comma_join, sql: "SELECT t.a, s.b FROM t, s WHERE t.id = s.id;" }
+      - { id: inner_join_on, sql: "SELECT t.a, s.b FROM t JOIN s ON t.id = s.id;" }
+      - { id: join_using, sql: "SELECT a FROM t JOIN s USING (id);" }
+      - { id: left_join, sql: "SELECT t.a FROM t LEFT JOIN s ON t.id = s.id;" }
+      - { id: right_join, sql: "SELECT t.a FROM t RIGHT JOIN s ON t.id = s.id;" }
+      - { id: full_outer_join, sql: "SELECT t.a FROM t FULL OUTER JOIN s ON t.id = s.id;" }
+      - { id: natural_join, sql: "SELECT a FROM t NATURAL JOIN s;" }
+      - { id: subquery_in_from, sql: "SELECT a FROM (SELECT a FROM t) AS d;" }
+      - { id: lateral_subquery, sql: "SELECT t.a, d.x FROM t, LATERAL (SELECT x FROM s WHERE s.id = t.id) AS d;" }
+      - { id: lateral_table_function, sql: "SELECT t.a, f.x FROM t, LATERAL TABLE(my_udtf(t.a)) AS f (x);" }
+      - { id: left_join_lateral_table, sql: "SELECT t.a, f.x FROM t LEFT JOIN LATERAL TABLE(my_udtf(t.a)) AS f (x) ON TRUE;" }
+      - { id: unnest, sql: "SELECT a, e FROM t CROSS JOIN UNNEST(arr) AS u (e);" }
+      - { id: unnest_with_ordinality, sql: "SELECT a, e, n FROM t CROSS JOIN UNNEST(arr) WITH ORDINALITY AS u (e, n);" }
+      - { id: dynamic_table_options, sql: "SELECT a FROM t /*+ OPTIONS('scan.startup.mode'='earliest-offset') */;" }
+      - { id: dynamic_table_options_alias, sql: "SELECT a FROM t /*+ OPTIONS('k1'='v1', 'k2'='v2') */ AS tt;" }
+      - { id: time_travel, sql: "SELECT a FROM t FOR SYSTEM_TIME AS OF TIMESTAMP '2024-01-01 00:00:00';" }
+      - { id: temporal_join, sql: "SELECT o.a, r.rate FROM orders AS o JOIN rates FOR SYSTEM_TIME AS OF o.order_time AS r ON o.currency = r.currency;" }
+      - { id: lookup_join_proctime, sql: "SELECT o.a, d.name FROM orders AS o JOIN dim FOR SYSTEM_TIME AS OF o.proc_time AS d ON o.id = d.id;" }
+      - { id: window_tvf_tumble, sql: "SELECT window_start, window_end, SUM(price) FROM TABLE(TUMBLE(TABLE bid, DESCRIPTOR(bidtime), INTERVAL '10' MINUTES)) GROUP BY window_start, window_end;" }
+      - { id: window_tvf_hop, sql: "SELECT window_start, window_end, SUM(price) FROM TABLE(HOP(TABLE bid, DESCRIPTOR(bidtime), INTERVAL '5' MINUTES, INTERVAL '10' MINUTES)) GROUP BY window_start, window_end;" }
+      - { id: window_tvf_cumulate, sql: "SELECT window_start, window_end, SUM(price) FROM TABLE(CUMULATE(TABLE bid, DESCRIPTOR(bidtime), INTERVAL '2' MINUTES, INTERVAL '10' MINUTES)) GROUP BY window_start, window_end;" }
+      - { id: window_tvf_session, sql: "SELECT window_start, window_end, SUM(price) FROM TABLE(SESSION(TABLE bid PARTITION BY item, DESCRIPTOR(bidtime), INTERVAL '5' MINUTES)) GROUP BY window_start, window_end, item;" }
+      - { id: window_tvf_named_params, sql: "SELECT * FROM TABLE(TUMBLE(DATA => TABLE bid, TIMECOL => DESCRIPTOR(bidtime), SIZE => INTERVAL '10' MINUTES));" }
+      - { id: window_tvf_offset, sql: "SELECT * FROM TABLE(TUMBLE(TABLE bid, DESCRIPTOR(bidtime), INTERVAL '10' MINUTES, INTERVAL '1' MINUTES));" }
+      - { id: window_join, sql: "SELECT L.window_start, L.window_end, L.num, R.num FROM (SELECT * FROM TABLE(TUMBLE(TABLE l, DESCRIPTOR(rowtime), INTERVAL '5' MINUTES))) L JOIN (SELECT * FROM TABLE(TUMBLE(TABLE r, DESCRIPTOR(rowtime), INTERVAL '5' MINUTES))) R ON L.num = R.num AND L.window_start = R.window_start AND L.window_end = R.window_end;" }
+      - { id: window_aggregation_grouping_sets, sql: "SELECT window_start, window_end, supplier_id, SUM(price) FROM TABLE(TUMBLE(TABLE bid, DESCRIPTOR(bidtime), INTERVAL '10' MINUTES)) GROUP BY window_start, window_end, GROUPING SETS ((supplier_id), ());" }
+      - { id: group_window_tumble, sql: "SELECT TUMBLE_START(ts, INTERVAL '1' DAY), SUM(a) FROM t GROUP BY TUMBLE(ts, INTERVAL '1' DAY);" }
+      - { id: over_aggregation_named_window, sql: "SELECT order_id, SUM(amount) OVER w, MIN(amount) OVER w FROM orders WINDOW w AS (PARTITION BY product ORDER BY order_time RANGE BETWEEN INTERVAL '1' HOUR PRECEDING AND CURRENT ROW);" }
+      - { id: top_n, sql: "SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY category ORDER BY sales DESC) AS row_num FROM ShopSales) WHERE row_num <= 5;" }
+      - { id: window_top_n, sql: "SELECT * FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY window_start, window_end ORDER BY price DESC) AS rownum FROM (SELECT window_start, window_end, supplier_id, SUM(price) AS price FROM TABLE(TUMBLE(TABLE bid, DESCRIPTOR(bidtime), INTERVAL '10' MINUTES)) GROUP BY window_start, window_end, supplier_id)) WHERE rownum <= 3;" }
+      - { id: deduplication, sql: "SELECT order_id, user, product FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY proctime ASC) AS row_num FROM Orders) WHERE row_num = 1;" }
+      - { id: match_recognize_basic, sql: "SELECT * FROM Ticker MATCH_RECOGNIZE (PARTITION BY symbol ORDER BY rowtime MEASURES START_ROW.rowtime AS start_tstamp, LAST(PRICE_DOWN.rowtime) AS bottom_tstamp ONE ROW PER MATCH AFTER MATCH SKIP PAST LAST ROW PATTERN (START_ROW PRICE_DOWN+ PRICE_UP) DEFINE PRICE_DOWN AS price < LAST(PRICE_DOWN.price, 1), PRICE_UP AS price > LAST(PRICE_DOWN.price, 1)) MR;" }
+      - { id: match_recognize_skip_to_next_row, sql: "SELECT * FROM Ticker MATCH_RECOGNIZE (PARTITION BY symbol ORDER BY rowtime MEASURES A.price AS p AFTER MATCH SKIP TO NEXT ROW PATTERN (A B) DEFINE B AS B.price > A.price) AS MR;" }
+      - { id: match_recognize_skip_to_first, sql: "SELECT * FROM Ticker MATCH_RECOGNIZE (PARTITION BY symbol ORDER BY rowtime MEASURES A.price AS p AFTER MATCH SKIP TO FIRST B PATTERN (A B+) DEFINE B AS B.price > A.price) AS MR;" }
+      - { id: match_recognize_skip_to_last, sql: "SELECT * FROM Ticker MATCH_RECOGNIZE (PARTITION BY symbol ORDER BY rowtime MEASURES A.price AS p AFTER MATCH SKIP TO LAST B PATTERN (A B+) DEFINE B AS B.price > A.price) AS MR;" }
+      - { id: match_recognize_quantifiers, sql: "SELECT * FROM Ticker MATCH_RECOGNIZE (ORDER BY rowtime MEASURES A.price AS p PATTERN (A* B+? C? D?? E{2,3} F{2} G{,4}? H{1,}) DEFINE B AS B.price > 1) AS MR;" }
+      - { id: match_recognize_alternation, sql: "SELECT * FROM Ticker MATCH_RECOGNIZE (ORDER BY rowtime MEASURES A.price AS p PATTERN (A | B) DEFINE A AS A.price > 1, B AS B.price < 1) AS MR;" }
+      - { id: match_recognize_within, sql: "SELECT * FROM Ticker MATCH_RECOGNIZE (PARTITION BY symbol ORDER BY rowtime MEASURES A.price AS p PATTERN (A B) WITHIN INTERVAL '1' HOUR DEFINE B AS B.price > A.price) AS MR;" }
+      - { id: match_recognize_one_row_per_match, sql: "SELECT * FROM Ticker MATCH_RECOGNIZE (ORDER BY rowtime MEASURES FIRST(A.price) AS p ONE ROW PER MATCH PATTERN (A+) DEFINE A AS A.price > 0) AS MR;" }
+    examples:
+      - "SELECT 'Hello World', 'It''s me';"
+      - "SELECT U&'#263A' UESCAPE '#';"
+      - "SELECT e'\\u0061\\x61\\141' AS c;"
+
+  - id: insert
+    name: INSERT INTO / INSERT OVERWRITE
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/dml/insert/#insert-from-select-queries
+    tier: high
+    probes:
+      - { id: insert_into_select, sql: "INSERT INTO t SELECT a, b FROM s;" }
+      - { id: insert_overwrite_select, sql: "INSERT OVERWRITE t SELECT a, b FROM s;" }
+      - { id: insert_qualified_table, sql: "INSERT INTO cat.db.t SELECT a, b FROM s;" }
+      - { id: insert_static_partition, sql: "INSERT INTO t PARTITION (d = '2019-8-30', c = 'China') SELECT a, b FROM s;" }
+      - { id: insert_dynamic_partition, sql: "INSERT INTO t PARTITION (d = '2019-8-30') SELECT a, b, c FROM s;" }
+      - { id: insert_overwrite_partition, sql: "INSERT OVERWRITE t PARTITION (d = '2019-8-30', c = 'China') SELECT a, b FROM s;" }
+      - { id: insert_column_list, sql: "INSERT INTO t (c, b) SELECT x, y FROM s;" }
+      - { id: insert_partition_column_list, sql: "INSERT INTO t PARTITION (d = '2019-8-30', c = 'China') (a) SELECT a FROM s;" }
+      - { id: execute_insert, sql: "EXECUTE INSERT INTO t SELECT a, b FROM s;" }
+      - { id: execute_insert_overwrite, sql: "EXECUTE INSERT OVERWRITE t SELECT a, b FROM s;" }
+      - { id: insert_with_cte, sql: "INSERT INTO t WITH c AS (SELECT a, b FROM s) SELECT a, b FROM c;" }
+      - { id: insert_values, sql: "INSERT INTO t VALUES (1, 'a'), (2, 'b');" }
+      - { id: insert_overwrite_values, sql: "INSERT OVERWRITE t VALUES (1, 'a'), (2, 'b');" }
+      - { id: execute_insert_values, sql: "EXECUTE INSERT INTO t VALUES (1, 'a');" }
+      - { id: on_conflict_do_error, sql: "INSERT INTO t SELECT a, b FROM s ON CONFLICT DO ERROR;" }
+      - { id: on_conflict_do_nothing, sql: "INSERT INTO t SELECT a, b FROM s ON CONFLICT DO NOTHING;" }
+      - { id: on_conflict_do_deduplicate, sql: "INSERT INTO t SELECT a, b FROM s ON CONFLICT DO DEDUPLICATE;" }
+      - { id: execute_insert_on_conflict, sql: "EXECUTE INSERT INTO t SELECT a, b FROM s ON CONFLICT DO NOTHING;" }
+    examples:
+      - "INSERT INTO country_page_view PARTITION (date = '2019-8-30', country = 'China') SELECT user, cnt FROM page_view_source;"
+      - "INSERT OVERWRITE country_page_view PARTITION (date = '2019-8-30') SELECT user, cnt, country FROM page_view_source;"
+      - "INSERT INTO students VALUES ('fred flintstone', 35, 1.28), ('barney rubble', 32, 2.32);"

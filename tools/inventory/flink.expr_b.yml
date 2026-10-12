@@ -1,0 +1,167 @@
+dialect: flink
+engine: Apache Flink SQL
+version: "2.3"
+source: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/
+
+statements: []
+
+expressions:
+  - id: b_arithmetic_operators
+    name: Arithmetic operators
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: unary_plus_minus, sql: "SELECT +1, -c FROM t;" }
+      - { id: add_sub, sql: "SELECT a + b, a - b FROM t;" }
+      - { id: mul_div, sql: "SELECT a * b, a / b FROM t;" }
+      - { id: modulo, sql: "SELECT a % b FROM t;" }
+      - { id: precedence_parens, sql: "SELECT (a + b) * c - d / 2 FROM t;" }
+  - id: b_comparison_operators
+    name: Comparison operators
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: equal_not_equal, sql: "SELECT a = b, a <> b FROM t;" }
+      - { id: order_comparisons, sql: "SELECT a > b, a >= b, a < b, a <= b FROM t;" }
+      - { id: is_distinct_from, sql: "SELECT a IS DISTINCT FROM b FROM t;" }
+      - { id: is_not_distinct_from, sql: "SELECT a IS NOT DISTINCT FROM b FROM t;" }
+  - id: b_logical_operators
+    name: Logical operators
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: and_or, sql: "SELECT a OR b, a AND b FROM t;" }
+      - { id: not, sql: "SELECT NOT a FROM t;" }
+      - { id: is_true_false, sql: "SELECT a IS TRUE, a IS NOT TRUE, a IS FALSE, a IS NOT FALSE FROM t;" }
+      - { id: is_unknown, sql: "SELECT a IS UNKNOWN, a IS NOT UNKNOWN FROM t;" }
+  - id: b_string_concat_operator
+    name: String concatenation operator
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: concat, sql: "SELECT s1 || s2 FROM t;" }
+  - id: b_is_null_predicate
+    name: IS NULL predicate
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: is_null, sql: "SELECT * FROM t WHERE c IS NULL;" }
+      - { id: is_not_null, sql: "SELECT * FROM t WHERE c IS NOT NULL;" }
+  - id: b_between_predicate
+    name: BETWEEN predicate
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: between, sql: "SELECT * FROM t WHERE c BETWEEN 1 AND 10;" }
+      - { id: not_between, sql: "SELECT * FROM t WHERE c NOT BETWEEN 1 AND 10;" }
+      - { id: between_asymmetric, sql: "SELECT * FROM t WHERE c BETWEEN ASYMMETRIC 1 AND 10;" }
+      - { id: between_symmetric, sql: "SELECT * FROM t WHERE c BETWEEN SYMMETRIC 10 AND 1;" }
+      - { id: not_between_symmetric, sql: "SELECT * FROM t WHERE c NOT BETWEEN SYMMETRIC 10 AND 1;" }
+  - id: b_like_predicate
+    name: LIKE and SIMILAR TO predicates
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: like, sql: "SELECT * FROM t WHERE s LIKE 'a%';" }
+      - { id: not_like, sql: "SELECT * FROM t WHERE s NOT LIKE 'a%';" }
+      - { id: like_escape, sql: "SELECT * FROM t WHERE s LIKE 'a\\%%' ESCAPE '\\';" }
+      - { id: similar_to, sql: "SELECT * FROM t WHERE s SIMILAR TO '(a|b)%';" }
+      - { id: not_similar_to, sql: "SELECT * FROM t WHERE s NOT SIMILAR TO '(a|b)%';" }
+      - { id: similar_to_escape, sql: "SELECT * FROM t WHERE s SIMILAR TO 'a#%' ESCAPE '#';" }
+  - id: b_in_predicate
+    name: IN predicate
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: in_list, sql: "SELECT * FROM t WHERE c IN (1, 2, 3);" }
+      - { id: not_in_list, sql: "SELECT * FROM t WHERE c NOT IN (1, 2, 3);" }
+      - { id: in_subquery, sql: "SELECT * FROM t WHERE c IN (SELECT d FROM u);" }
+      - { id: not_in_subquery, sql: "SELECT * FROM t WHERE c NOT IN (SELECT d FROM u);" }
+  - id: b_exists_predicate
+    name: EXISTS predicate
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: exists, sql: "SELECT * FROM t WHERE EXISTS (SELECT 1 FROM u WHERE u.id = t.id);" }
+      - { id: not_exists, sql: "SELECT * FROM t WHERE NOT EXISTS (SELECT 1 FROM u WHERE u.id = t.id);" }
+  - id: b_is_json_predicate
+    name: IS JSON predicate
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: medium
+    probes:
+      - { id: is_json, sql: "SELECT s IS JSON FROM t;" }
+      - { id: is_json_value, sql: "SELECT s IS JSON VALUE FROM t;" }
+      - { id: is_json_scalar, sql: "SELECT s IS JSON SCALAR FROM t;" }
+      - { id: is_json_array, sql: "SELECT s IS JSON ARRAY FROM t;" }
+      - { id: is_json_object, sql: "SELECT s IS JSON OBJECT FROM t;" }
+  - id: b_case_expression
+    name: CASE expression
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: searched_case, sql: "SELECT CASE WHEN a > 1 THEN 'x' WHEN a > 0 THEN 'y' ELSE 'z' END FROM t;" }
+      - { id: searched_case_no_else, sql: "SELECT CASE WHEN a > 1 THEN 'x' END FROM t;" }
+      - { id: simple_case, sql: "SELECT CASE a WHEN 1 THEN 'x' WHEN 2 THEN 'y' ELSE 'z' END FROM t;" }
+      - { id: simple_case_multi_value, sql: "SELECT CASE a WHEN 1, 2 THEN 'x' ELSE 'z' END FROM t;" }
+  - id: b_extract
+    name: EXTRACT
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: extract_day, sql: "SELECT EXTRACT(DAY FROM DATE '2006-06-05');" }
+      - { id: extract_year_ts, sql: "SELECT EXTRACT(YEAR FROM ts) FROM t;" }
+      - { id: extract_quarter, sql: "SELECT EXTRACT(QUARTER FROM ts) FROM t;" }
+      - { id: extract_epoch, sql: "SELECT EXTRACT(EPOCH FROM ts) FROM t;" }
+  - id: b_floor_ceil_to_unit
+    name: FLOOR and CEIL to time unit
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: medium
+    probes:
+      - { id: floor_to, sql: "SELECT FLOOR(TIME '12:44:31' TO MINUTE);" }
+      - { id: ceil_to, sql: "SELECT CEIL(TIME '12:44:31' TO MINUTE);" }
+      - { id: floor_ts_to_day, sql: "SELECT FLOOR(ts TO DAY) FROM t;" }
+  - id: b_substring
+    name: SUBSTRING
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: substring_from, sql: "SELECT SUBSTRING(s FROM 2) FROM t;" }
+      - { id: substring_from_for, sql: "SELECT SUBSTRING(s FROM 2 FOR 3) FROM t;" }
+      - { id: substring_comma, sql: "SELECT SUBSTRING(s, 2, 3) FROM t;" }
+  - id: b_trim
+    name: TRIM
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: trim_both, sql: "SELECT TRIM(BOTH ' ' FROM s) FROM t;" }
+      - { id: trim_leading, sql: "SELECT TRIM(LEADING 'x' FROM s) FROM t;" }
+      - { id: trim_trailing, sql: "SELECT TRIM(TRAILING 'x' FROM s) FROM t;" }
+  - id: b_position
+    name: POSITION
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: position_in, sql: "SELECT POSITION('a' IN s) FROM t;" }
+  - id: b_overlay
+    name: OVERLAY
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: medium
+    probes:
+      - { id: overlay_from, sql: "SELECT OVERLAY('xxxxxxxxx' PLACING 'abc' FROM 4);" }
+      - { id: overlay_from_for, sql: "SELECT OVERLAY(s1 PLACING s2 FROM 4 FOR 2) FROM t;" }
+  - id: b_cast
+    name: CAST and TRY_CAST
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: high
+    probes:
+      - { id: cast, sql: "SELECT CAST(c AS INT) FROM t;" }
+      - { id: cast_string, sql: "SELECT CAST('42' AS STRING);" }
+      - { id: try_cast, sql: "SELECT TRY_CAST(c AS INT) FROM t;" }
+      - { id: cast_parameterized, sql: "SELECT CAST(c AS DECIMAL(10, 2)) FROM t;" }
+  - id: b_timestampadd_diff
+    name: TIMESTAMPADD and TIMESTAMPDIFF
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/functions/built-in-functions/
+    tier: medium
+    probes:
+      - { id: timestampadd, sql: "SELECT TIMESTAMPADD(WEEK, 1, TIMESTAMP '2020-01-01 00:00:00');" }
+      - { id: timestampdiff, sql: "SELECT TIMESTAMPDIFF(DAY, TIMESTAMP '2003-01-02 10:00:00', TIMESTAMP '2003-01-03 10:00:00');" }

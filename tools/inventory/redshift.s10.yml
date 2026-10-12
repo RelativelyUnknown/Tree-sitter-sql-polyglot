@@ -1,0 +1,47 @@
+dialect: redshift
+engine: Amazon Redshift
+version: "current"
+source: https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_commands.html
+
+statements:
+  - id: drop_procedure
+    name: DROP PROCEDURE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_DROP_PROCEDURE.html
+    tier: high
+    probes:
+      - id: no_args
+        sql: "DROP PROCEDURE sp();"
+      - id: argtype_only
+        sql: "DROP PROCEDURE sp(int, varchar);"
+      - id: argmode_argtype
+        sql: "DROP PROCEDURE sp(IN int, OUT bigint, INOUT numeric);"
+      - id: argname_argmode_argtype
+        sql: "DROP PROCEDURE sp(a IN int, b OUT bigint, c INOUT numeric);"
+      - id: argname_argtype
+        sql: "DROP PROCEDURE sp(a int, b varchar);"
+      - id: schema_qualified
+        sql: "DROP PROCEDURE s.sp(int);"
+    examples:
+      - "DROP PROCEDURE quarterly_revenue(volume INOUT bigint, at_price IN numeric,result OUT int);"
+
+  - id: drop_table
+    name: DROP TABLE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_DROP_TABLE.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "DROP TABLE t;"
+      - id: if_exists
+        sql: "DROP TABLE IF EXISTS t;"
+      - id: multiple
+        sql: "DROP TABLE t1, t2;"
+      - id: cascade
+        sql: "DROP TABLE t CASCADE;"
+      - id: restrict
+        sql: "DROP TABLE t RESTRICT;"
+      - id: if_exists_multiple_cascade
+        sql: "DROP TABLE IF EXISTS s.t1, s.t2 CASCADE;"
+    examples:
+      - "drop table feedback;"
+      - "drop table feedback, buyers;"
+      - "drop table feedback cascade;"

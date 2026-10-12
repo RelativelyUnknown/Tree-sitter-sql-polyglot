@@ -1,0 +1,44 @@
+dialect: flink
+engine: Apache Flink SQL
+version: "2.3"
+source: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/
+
+statements:
+  - id: create_view
+    name: CREATE VIEW
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/ddl/create/#create-view
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE VIEW v AS SELECT a, b FROM t;" }
+      - { id: temporary, sql: "CREATE TEMPORARY VIEW v AS SELECT a FROM t;" }
+      - { id: if_not_exists, sql: "CREATE VIEW IF NOT EXISTS v AS SELECT a FROM t;" }
+      - { id: temporary_if_not_exists, sql: "CREATE TEMPORARY VIEW IF NOT EXISTS v AS SELECT a FROM t;" }
+      - { id: qualified_name, sql: "CREATE VIEW cat.db.v AS SELECT a FROM t;" }
+      - { id: db_qualified_name, sql: "CREATE VIEW db.v AS SELECT a FROM t;" }
+      - { id: column_list, sql: "CREATE VIEW v (x, y) AS SELECT a, b FROM t;" }
+      - { id: comment, sql: "CREATE VIEW v COMMENT 'a view' AS SELECT a FROM t;" }
+      - { id: column_list_comment, sql: "CREATE VIEW v (x, y) COMMENT 'a view' AS SELECT a, b FROM t;" }
+      - { id: all_clauses, sql: "CREATE TEMPORARY VIEW IF NOT EXISTS cat.db.v (x) COMMENT 'a view' AS SELECT a FROM t;" }
+      - { id: query_with_cte, sql: "CREATE VIEW v AS WITH c AS (SELECT a FROM t) SELECT a FROM c;" }
+      - { id: query_set_operation, sql: "CREATE VIEW v AS SELECT a FROM t UNION ALL SELECT a FROM u;" }
+
+  - id: create_function
+    name: CREATE FUNCTION
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/ddl/create/#create-function
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE FUNCTION f AS 'com.example.MyUdf';" }
+      - { id: temporary, sql: "CREATE TEMPORARY FUNCTION f AS 'com.example.MyUdf';" }
+      - { id: temporary_system, sql: "CREATE TEMPORARY SYSTEM FUNCTION f AS 'com.example.MyUdf';" }
+      - { id: if_not_exists, sql: "CREATE FUNCTION IF NOT EXISTS f AS 'com.example.MyUdf';" }
+      - { id: temporary_if_not_exists, sql: "CREATE TEMPORARY FUNCTION IF NOT EXISTS f AS 'com.example.MyUdf';" }
+      - { id: qualified_name, sql: "CREATE FUNCTION cat.db.f AS 'com.example.MyUdf';" }
+      - { id: db_qualified_name, sql: "CREATE FUNCTION db.f AS 'com.example.MyUdf';" }
+      - { id: language_java, sql: "CREATE FUNCTION f AS 'com.example.MyUdf' LANGUAGE JAVA;" }
+      - { id: language_scala, sql: "CREATE FUNCTION f AS 'com.example.MyUdf' LANGUAGE SCALA;" }
+      - { id: language_python, sql: "CREATE FUNCTION f AS 'pyflink.table.tests.test_udf.add' LANGUAGE PYTHON;" }
+      - { id: using_jar, sql: "CREATE FUNCTION f AS 'com.example.MyUdf' USING JAR 'hdfs:///path/udf.jar';" }
+      - { id: using_artifact, sql: "CREATE FUNCTION f AS 'com.example.MyUdf' USING ARTIFACT 'hdfs:///path/udf.jar';" }
+      - { id: using_multiple_jars, sql: "CREATE FUNCTION f AS 'com.example.MyUdf' USING JAR 'a.jar', JAR 'b.jar';" }
+      - { id: with_options, sql: "CREATE FUNCTION f AS 'com.example.MyUdf' WITH ('k1' = 'v1', 'k2' = 'v2');" }
+      - { id: all_clauses, sql: "CREATE TEMPORARY FUNCTION IF NOT EXISTS cat.db.f AS 'com.example.MyUdf' LANGUAGE JAVA USING JAR 'a.jar' WITH ('k1' = 'v1');" }

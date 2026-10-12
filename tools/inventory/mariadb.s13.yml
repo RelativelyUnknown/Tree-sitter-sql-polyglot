@@ -1,0 +1,117 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements:
+  - id: drop_index
+    name: DROP INDEX
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-definition/drop/drop-index
+    tier: high
+    probes:
+      - id: basic
+        sql: "DROP INDEX idx ON t;"
+      - id: if_exists
+        sql: "DROP INDEX IF EXISTS idx ON t;"
+      - id: primary
+        sql: "DROP INDEX `PRIMARY` ON t;"
+        note: The page says PRIMARY must be quoted because it is a keyword.
+      - id: wait
+        sql: "DROP INDEX idx ON t WAIT 10;"
+      - id: nowait
+        sql: "DROP INDEX idx ON t NOWAIT;"
+      - id: if_exists_wait
+        sql: "DROP INDEX IF EXISTS idx ON db.t WAIT 5;"
+
+  - id: create_function
+    name: CREATE FUNCTION
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-definition/create/create-function
+    tier: high
+    probes:
+      - id: basic_return
+        sql: "CREATE FUNCTION f (a INT) RETURNS INT RETURN a + 1;"
+      - id: no_params
+        sql: "CREATE FUNCTION f () RETURNS INT RETURN 1;"
+      - id: begin_end_body
+        sql: |-
+          CREATE FUNCTION f (a INT) RETURNS INT
+          BEGIN
+            RETURN a + 1;
+          END;
+      - id: or_replace
+        sql: "CREATE OR REPLACE FUNCTION f (a INT) RETURNS INT RETURN a;"
+      - id: if_not_exists
+        sql: "CREATE FUNCTION IF NOT EXISTS f (a INT) RETURNS INT RETURN a;"
+      - id: or_replace_if_not_exists
+        sql: "CREATE OR REPLACE FUNCTION IF NOT EXISTS f (a INT) RETURNS INT RETURN a;"
+      - id: definer_user
+        sql: "CREATE DEFINER = 'admin'@'localhost' FUNCTION f (a INT) RETURNS INT RETURN a;"
+      - id: definer_current_user
+        sql: "CREATE DEFINER = CURRENT_USER FUNCTION f (a INT) RETURNS INT RETURN a;"
+      - id: definer_role
+        sql: "CREATE DEFINER = r FUNCTION f (a INT) RETURNS INT RETURN a;"
+      - id: definer_current_role
+        sql: "CREATE DEFINER = CURRENT_ROLE FUNCTION f (a INT) RETURNS INT RETURN a;"
+      - id: aggregate
+        sql: |-
+          CREATE AGGREGATE FUNCTION f (a INT) RETURNS INT
+          BEGIN
+            DECLARE x INT DEFAULT 0;
+            DECLARE CONTINUE HANDLER FOR NOT FOUND RETURN x;
+            LOOP
+              FETCH GROUP NEXT ROW;
+              SET x = x + a;
+            END LOOP;
+          END;
+      - id: param_in
+        sql: "CREATE FUNCTION f (IN a INT) RETURNS INT RETURN a;"
+      - id: param_out
+        sql: "CREATE FUNCTION f (a INT, OUT b INT) RETURNS INT RETURN a;"
+      - id: param_inout
+        sql: "CREATE FUNCTION f (INOUT a INT) RETURNS INT RETURN a;"
+      - id: param_in_out
+        sql: "CREATE FUNCTION f (IN OUT a INT) RETURNS INT RETURN a;"
+      - id: param_default
+        sql: "CREATE FUNCTION f (a INT DEFAULT 5, b INT DEFAULT 1 + 1) RETURNS INT RETURN a + b;"
+      - id: multiple_params
+        sql: "CREATE FUNCTION f (a INT, b VARCHAR(10), c DECIMAL(10,2)) RETURNS INT RETURN a;"
+      - id: returns_charset_collate
+        sql: "CREATE FUNCTION f (s CHAR(20)) RETURNS CHAR(50) CHARACTER SET 'utf8' COLLATE 'utf8_bin' RETURN s;"
+      - id: language_sql
+        sql: "CREATE FUNCTION f () RETURNS INT LANGUAGE SQL RETURN 1;"
+      - id: deterministic
+        sql: "CREATE FUNCTION f () RETURNS INT DETERMINISTIC RETURN 1;"
+      - id: not_deterministic
+        sql: "CREATE FUNCTION f () RETURNS INT NOT DETERMINISTIC RETURN 1;"
+      - id: contains_sql
+        sql: "CREATE FUNCTION f () RETURNS INT CONTAINS SQL RETURN 1;"
+      - id: no_sql
+        sql: "CREATE FUNCTION f () RETURNS INT NO SQL RETURN 1;"
+      - id: reads_sql_data
+        sql: "CREATE FUNCTION f () RETURNS INT READS SQL DATA RETURN 1;"
+      - id: modifies_sql_data
+        sql: "CREATE FUNCTION f () RETURNS INT MODIFIES SQL DATA RETURN 1;"
+      - id: sql_security_definer
+        sql: "CREATE FUNCTION f () RETURNS INT SQL SECURITY DEFINER RETURN 1;"
+      - id: sql_security_invoker
+        sql: "CREATE FUNCTION f () RETURNS INT SQL SECURITY INVOKER RETURN 1;"
+      - id: comment
+        sql: "CREATE FUNCTION f () RETURNS INT COMMENT 'returns one' RETURN 1;"
+      - id: multiple_characteristics
+        sql: "CREATE FUNCTION f () RETURNS INT LANGUAGE SQL NOT DETERMINISTIC READS SQL DATA SQL SECURITY INVOKER COMMENT 'c' RETURN 1;"
+      - id: qualified_name
+        sql: "CREATE FUNCTION db.f (a INT) RETURNS INT RETURN a;"
+      - id: select_body
+        sql: "CREATE FUNCTION f (d TINYTEXT) RETURNS INT RETURN (SELECT MAX(salary) FROM employees WHERE employees.dept = d);"
+    examples:
+      - |-
+        CREATE FUNCTION hello (s CHAR(20))
+            RETURNS CHAR(50) DETERMINISTIC
+            RETURN CONCAT('Hello, ',s,'!');
+      - |-
+        CREATE FUNCTION max_salary (dept TINYTEXT) RETURNS INT RETURN
+          (SELECT MAX(salary) FROM employees WHERE employees.dept = dept);
+      - |-
+        CREATE FUNCTION hello2 (s CHAR(20))
+          RETURNS CHAR(50) CHARACTER SET 'utf8' COLLATE 'utf8_bin' DETERMINISTIC
+          RETURN CONCAT('Hello, ',s,'!');

@@ -1,3 +1,5 @@
+; inherits: sql
+
 ; Redshift-specific keywords
 (keyword_prepare) @keyword
 (keyword_deallocate) @keyword
@@ -55,4 +57,68 @@
   (keyword_explain)
   (keyword_analyze)
   (keyword_verbose)
+] @keyword
+
+; ============================================================
+; Remaining redshift keywords
+; ============================================================
+
+[
+  (keyword_abort)
+  (keyword_access)
+  (keyword_account)
+  (keyword_append)
+  (keyword_attach)
+  (keyword_backup)
+  (keyword_call)
+  (keyword_cancel)
+  (keyword_catalog)
+  (keyword_close)
+  (keyword_columns)
+  (keyword_conjunction)
+  (keyword_databases)
+  (keyword_datashare)
+  (keyword_datashares)
+  (keyword_definition)
+  (keyword_delimited)
+  (keyword_detach)
+  (keyword_exported)
+  (keyword_extension)
+  (keyword_fields)
+  (keyword_forward)
+  (keyword_grants)
+  (keyword_identity)
+  (keyword_inerror)
+  (keyword_integration)
+  (keyword_keys)
+  (keyword_lambda)
+  (keyword_library)
+  (keyword_lock)
+  (keyword_masking)
+  (keyword_model)
+  (keyword_namespace)
+  (keyword_nocreatedb)
+  (keyword_nocreateuser)
+  (keyword_off)
+  (keyword_parameters)
+  (keyword_partitioned)
+  (keyword_policies)
+  (keyword_policy)
+  (keyword_predicate)
+  (keyword_priority)
+  (keyword_provider)
+  (keyword_remove)
+  (keyword_rls)
+  (keyword_schemas)
+  (keyword_settings)
+  (keyword_show)
+  (keyword_syslog)
+  (keyword_target)
+  (keyword_template)
+  (keyword_templates)
+  (keyword_terminated)
+  (keyword_timeout)
+  (keyword_unlimited)
+  (keyword_unrestricted)
+  (keyword_yes)
 ] @keyword

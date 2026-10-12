@@ -1,0 +1,145 @@
+dialect: base
+engine: ISO SQL
+version: "SQL:2016"
+source: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html
+
+statements:
+  - id: set_time_zone
+    name: SET TIME ZONE
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_19_4_set_local_time_zone_statement
+    tier: medium
+    probes:
+      - id: interval
+        sql: "SET TIME ZONE INTERVAL '+01:00' HOUR TO MINUTE;"
+      - id: local
+        sql: "SET TIME ZONE LOCAL;"
+
+  - id: set_catalog
+    name: SET CATALOG
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_19_5_set_catalog_statement
+    tier: medium
+    probes:
+      - id: literal
+        sql: "SET CATALOG 'c';"
+
+  - id: set_schema
+    name: SET SCHEMA
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_19_6_set_schema_statement
+    tier: medium
+    probes:
+      - id: literal
+        sql: "SET SCHEMA 's';"
+
+  - id: prepare
+    name: PREPARE
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_20_7_prepare_statement
+    tier: medium
+    probes:
+      - id: from_literal
+        sql: "PREPARE stmt FROM 'SELECT 1';"
+      - id: attributes
+        sql: "PREPARE stmt ATTRIBUTES 'WITH HOLD' FROM 'SELECT 1';"
+
+  - id: deallocate_prepare
+    name: DEALLOCATE PREPARE
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_20_9_deallocate_prepared_statement
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DEALLOCATE PREPARE stmt;"
+
+  - id: execute
+    name: EXECUTE
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_20_13_execute_statement
+    tier: medium
+    probes:
+      - id: basic
+        sql: "EXECUTE stmt;"
+      - id: using_arguments
+        sql: "EXECUTE stmt USING 1, 'a';"
+      - id: into_using
+        sql: "EXECUTE stmt INTO x USING 1;"
+
+  - id: execute_immediate
+    name: EXECUTE IMMEDIATE
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_20_14_execute_immediate_statement
+    tier: medium
+    probes:
+      - id: literal
+        sql: "EXECUTE IMMEDIATE 'DELETE FROM t';"
+
+  - id: get_diagnostics
+    name: GET DIAGNOSTICS
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_23_1_get_diagnostics_statement
+    tier: medium
+    probes:
+      - id: statement_information
+        sql: "GET DIAGNOSTICS n = ROW_COUNT;"
+      - id: statement_information_list
+        sql: "GET DIAGNOSTICS n = NUMBER, m = MORE;"
+      - id: condition_information
+        sql: "GET DIAGNOSTICS CONDITION 1 msg = MESSAGE_TEXT;"
+      - id: condition_information_list
+        sql: "GET DIAGNOSTICS CONDITION 1 state = RETURNED_SQLSTATE, msg = MESSAGE_TEXT;"
+
+  - id: create_character_set
+    name: CREATE CHARACTER SET
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_41_character_set_definition
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE CHARACTER SET cs AS GET latin1;"
+      - id: collate
+        sql: "CREATE CHARACTER SET cs GET latin1 COLLATE c;"
+
+  - id: drop_character_set
+    name: DROP CHARACTER SET
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_42_drop_character_set_statement
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP CHARACTER SET cs;"
+
+  - id: create_collation
+    name: CREATE COLLATION
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_43_collation_definition
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE COLLATION c FOR cs FROM other_c;"
+      - id: pad
+        sql: "CREATE COLLATION c FOR cs FROM other_c NO PAD;"
+
+  - id: drop_collation
+    name: DROP COLLATION
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_44_drop_collation_statement
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP COLLATION c CASCADE;"
+
+  - id: create_transliteration
+    name: CREATE TRANSLATION
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_45_transliteration_definition
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE TRANSLATION tr FOR cs1 TO cs2 FROM other_tr;"
+
+  - id: drop_transliteration
+    name: DROP TRANSLATION
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_46_drop_transliteration_statement
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP TRANSLATION tr;"
+
+  - id: create_assertion
+    name: CREATE ASSERTION
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_47_assertion_definition
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE ASSERTION a CHECK (1 = 1);"
+      - id: deferrable
+        sql: "CREATE ASSERTION a CHECK (1 = 1) INITIALLY DEFERRED;"

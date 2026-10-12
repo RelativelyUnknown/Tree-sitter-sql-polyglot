@@ -1,0 +1,331 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: sql_scripting
+    name: SQL scripting
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-scripting
+    tier: high
+    probes:
+      - id: script_with_variables
+        sql: |-
+          BEGIN
+            DECLARE x INT DEFAULT 1;
+            SET x = x + 1;
+            VALUES (x);
+          END;
+        note: A script is a compound statement block with local variables, SET and a result-returning query.
+      - id: script_dml_ddl
+        sql: |-
+          BEGIN
+            CREATE TABLE t (c INT);
+            INSERT INTO t VALUES (1);
+            UPDATE t SET c = 2 WHERE c = 1;
+            DELETE FROM t WHERE c = 2;
+            DROP TABLE t;
+          END;
+        note: Overview lists DDL and DML statements as compound statement body content.
+      - id: script_flow_if_while
+        sql: |-
+          BEGIN
+            DECLARE i INT DEFAULT 0;
+            WHILE i < 3 DO
+              IF i = 1 THEN
+                SET i = i + 2;
+              ELSE
+                SET i = i + 1;
+              END IF;
+            END WHILE;
+          END;
+      - id: script_flow_for_leave_iterate
+        sql: |-
+          BEGIN
+            lbl: FOR r AS SELECT id FROM t DO
+              IF r.id = 1 THEN
+                ITERATE lbl;
+              END IF;
+              LEAVE lbl;
+            END FOR lbl;
+          END;
+      - id: script_flow_case
+        sql: |-
+          BEGIN
+            DECLARE x INT DEFAULT 1;
+            CASE x
+              WHEN 1 THEN VALUES ('one');
+              ELSE VALUES ('other');
+            END CASE;
+          END;
+      - id: script_execute_immediate
+        sql: |-
+          BEGIN
+            EXECUTE IMMEDIATE 'SELECT 1';
+          END;
+      - id: script_nested_compound
+        sql: |-
+          BEGIN
+            DECLARE x INT DEFAULT 1;
+            inner_blk: BEGIN
+              DECLARE x INT DEFAULT 2;
+              VALUES (inner_blk.x);
+            END inner_blk;
+          END;
+        note: Nested compound statements with labels disambiguate duplicate variable names.
+      - id: script_handler_named_condition
+        sql: |-
+          BEGIN
+            DECLARE EXIT HANDLER FOR DIVIDE_BY_ZERO
+              VALUES ('divide by zero');
+            VALUES (1 / 0);
+          END;
+      - id: script_handler_sqlstate
+        sql: |-
+          BEGIN
+            DECLARE EXIT HANDLER FOR SQLSTATE '22012'
+              VALUES ('error');
+            VALUES (1 / 0);
+          END;
+      - id: script_handler_sqlexception
+        sql: |-
+          BEGIN
+            DECLARE EXIT HANDLER FOR SQLEXCEPTION
+              VALUES ('error');
+            VALUES (1 / 0);
+          END;
+      - id: script_handler_not_found_continue
+        sql: |-
+          BEGIN
+            DECLARE CONTINUE HANDLER FOR NOT FOUND
+              VALUES ('no more rows');
+            VALUES (1);
+          END;
+        note: CONTINUE handlers and NOT FOUND require Databricks Runtime 18.1 and above.
+      - id: script_user_condition_signal
+        sql: |-
+          BEGIN
+            DECLARE my_cond CONDITION FOR SQLSTATE '45001';
+            DECLARE EXIT HANDLER FOR my_cond
+              RESIGNAL;
+            SIGNAL my_cond;
+          END;
+      - id: script_cursor
+        sql: |-
+          BEGIN
+            DECLARE v INT;
+            DECLARE cur CURSOR FOR SELECT id FROM t;
+            OPEN cur;
+            FETCH cur INTO v;
+            CLOSE cur;
+          END;
+        note: Cursor processing requires Databricks Runtime 18.1 and above.
+
+  - id: compound_statement
+    name: BEGIN END compound statement
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/control-flow/compound-stmt
+    tier: high
+    probes:
+      - id: basic_block
+        sql: |-
+          BEGIN
+            VALUES (1);
+          END;
+      - id: labeled_nested_block
+        sql: |-
+          BEGIN
+            lbl: BEGIN
+              VALUES (1);
+            END lbl;
+          END;
+      - id: labeled_block_no_end_label
+        sql: |-
+          BEGIN
+            lbl: BEGIN
+              VALUES (1);
+            END;
+          END;
+      - id: atomic_block
+        sql: |-
+          BEGIN ATOMIC
+            INSERT INTO t VALUES (1);
+          END;
+      - id: not_atomic_block
+        sql: |-
+          BEGIN NOT ATOMIC
+            INSERT INTO t VALUES (1);
+          END;
+      - id: empty_block
+        sql: |-
+          BEGIN
+          END;
+      - id: declare_variable
+        sql: |-
+          BEGIN
+            DECLARE a INT;
+            VALUES (a);
+          END;
+      - id: declare_variable_default
+        sql: |-
+          BEGIN
+            DECLARE a INT DEFAULT 1;
+            VALUES (a);
+          END;
+      - id: declare_variable_default_equals
+        sql: |-
+          BEGIN
+            DECLARE a INT = 1;
+            VALUES (a);
+          END;
+      - id: declare_variable_no_type
+        sql: |-
+          BEGIN
+            DECLARE a DEFAULT 1;
+            VALUES (a);
+          END;
+        note: If data_type is omitted, DEFAULT is required and the type is derived from it.
+      - id: declare_multiple_variables
+        sql: |-
+          BEGIN
+            DECLARE a, b INT DEFAULT 1;
+            VALUES (a, b);
+          END;
+        note: Declaring several variables at once requires Databricks Runtime 17.2 and above.
+      - id: declare_condition
+        sql: |-
+          BEGIN
+            DECLARE my_cond CONDITION;
+            VALUES (1);
+          END;
+      - id: declare_condition_sqlstate
+        sql: |-
+          BEGIN
+            DECLARE my_cond CONDITION FOR SQLSTATE '45001';
+            VALUES (1);
+          END;
+      - id: declare_condition_sqlstate_value
+        sql: |-
+          BEGIN
+            DECLARE my_cond CONDITION FOR SQLSTATE VALUE '45001';
+            VALUES (1);
+          END;
+      - id: declare_cursor
+        sql: |-
+          BEGIN
+            DECLARE cur CURSOR FOR SELECT id FROM t;
+            VALUES (1);
+          END;
+        note: Cursors require Databricks Runtime 18.1 and above.
+      - id: declare_cursor_asensitive
+        sql: |-
+          BEGIN
+            DECLARE cur ASENSITIVE CURSOR FOR SELECT id FROM t;
+            VALUES (1);
+          END;
+      - id: declare_cursor_insensitive
+        sql: |-
+          BEGIN
+            DECLARE cur INSENSITIVE CURSOR FOR SELECT id FROM t;
+            VALUES (1);
+          END;
+      - id: declare_cursor_read_only
+        sql: |-
+          BEGIN
+            DECLARE cur CURSOR FOR SELECT id FROM t FOR READ ONLY;
+            VALUES (1);
+          END;
+      - id: handler_exit_named_condition
+        sql: |-
+          BEGIN
+            DECLARE EXIT HANDLER FOR DIVIDE_BY_ZERO VALUES (1);
+            VALUES (1 / 0);
+          END;
+      - id: handler_exit_sqlstate
+        sql: |-
+          BEGIN
+            DECLARE EXIT HANDLER FOR SQLSTATE '22012' VALUES (1);
+            VALUES (1 / 0);
+          END;
+      - id: handler_exit_sqlstate_value
+        sql: |-
+          BEGIN
+            DECLARE EXIT HANDLER FOR SQLSTATE VALUE '22012' VALUES (1);
+            VALUES (1 / 0);
+          END;
+      - id: handler_exit_sqlexception
+        sql: |-
+          BEGIN
+            DECLARE EXIT HANDLER FOR SQLEXCEPTION VALUES (1);
+            VALUES (1 / 0);
+          END;
+      - id: handler_exit_not_found
+        sql: |-
+          BEGIN
+            DECLARE EXIT HANDLER FOR NOT FOUND VALUES (1);
+            VALUES (1);
+          END;
+      - id: handler_continue
+        sql: |-
+          BEGIN
+            DECLARE CONTINUE HANDLER FOR SQLEXCEPTION VALUES (1);
+            VALUES (1 / 0);
+          END;
+        note: CONTINUE handlers require Databricks Runtime 18.1 and above.
+      - id: handler_multiple_condition_values
+        sql: |-
+          BEGIN
+            DECLARE EXIT HANDLER FOR SQLSTATE '22012', SQLSTATE '22003' VALUES (1);
+            VALUES (1 / 0);
+          END;
+      - id: handler_multiple_sqlexception_not_found
+        sql: |-
+          BEGIN
+            DECLARE EXIT HANDLER FOR SQLEXCEPTION, NOT FOUND VALUES (1);
+            VALUES (1);
+          END;
+      - id: handler_nested_compound_action
+        sql: |-
+          BEGIN
+            DECLARE EXIT HANDLER FOR SQLEXCEPTION
+              BEGIN
+                VALUES (1);
+                VALUES (2);
+              END;
+            VALUES (1 / 0);
+          END;
+        note: To run multiple statements in a handler, use a nested compound statement.
+      - id: full_declaration_order
+        sql: |-
+          BEGIN
+            DECLARE a INT DEFAULT 1;
+            DECLARE my_cond CONDITION FOR SQLSTATE '45001';
+            DECLARE cur CURSOR FOR SELECT id FROM t;
+            DECLARE EXIT HANDLER FOR my_cond VALUES (1);
+            VALUES (a);
+          END;
+    examples:
+      - |-
+        BEGIN
+          DECLARE a INT DEFAULT 1;
+          DECLARE b INT DEFAULT 5;
+          DECLARE EXIT HANDLER FOR DIVIDE_BY_ZERO
+            div0: BEGIN
+              VALUES (15);
+            END div0;
+          SET a = 10;
+          SET a = b / 0;
+          VALUES (a);
+        END;
+      - |-
+        BEGIN ATOMIC
+          INSERT INTO accounts VALUES (1, 'Alice', 1000);
+          INSERT INTO accounts VALUES (2, 'Bob', 2000);
+          UPDATE accounts SET balance = balance + 100 WHERE id = 1;
+        END;
+      - |-
+        BEGIN ATOMIC
+          DECLARE total_amount DECIMAL(10, 2);
+          INSERT INTO sales VALUES (301, 150.00, current_date());
+          SET total_amount = (SELECT SUM(amount) FROM sales WHERE sale_date = current_date());
+          UPDATE daily_summary SET total = total_amount WHERE summary_date = current_date();
+        END;

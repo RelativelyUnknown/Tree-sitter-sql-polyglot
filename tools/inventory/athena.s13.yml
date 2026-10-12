@@ -1,0 +1,35 @@
+dialect: athena
+engine: Amazon Athena
+version: "engine version 3 (Trino-based DML, Hive-style DDL)"
+source: https://docs.aws.amazon.com/athena/latest/ug/ddl-reference.html ; https://docs.aws.amazon.com/athena/latest/ug/dml-queries-functions-operators.html
+
+statements:
+  - id: deallocate_prepare
+    name: DEALLOCATE PREPARE
+    doc: https://docs.aws.amazon.com/athena/latest/ug/sql-deallocate-prepare.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DEALLOCATE PREPARE s;"
+    examples:
+      - "DEALLOCATE PREPARE my_select1;"
+
+  - id: unload
+    name: UNLOAD
+    doc: https://docs.aws.amazon.com/athena/latest/ug/unload.html
+    tier: medium
+    probes:
+      - id: format
+        sql: "UNLOAD (SELECT c FROM t) TO 's3://bucket/folder/' WITH (format = 'JSON');"
+      - id: compression
+        sql: "UNLOAD (SELECT c FROM t) TO 's3://bucket/' WITH (format = 'PARQUET', compression = 'SNAPPY');"
+      - id: compression_level
+        sql: "UNLOAD (SELECT c FROM t) TO 's3://bucket/' WITH (format = 'PARQUET', compression = 'ZSTD', compression_level = 4);"
+      - id: field_delimiter
+        sql: "UNLOAD (SELECT c FROM t) TO 's3://bucket/' WITH (format = 'TEXTFILE', field_delimiter = ',');"
+      - id: partitioned_by
+        sql: "UNLOAD (SELECT a, b FROM t) TO 's3://bucket/partitioned/' WITH (format = 'TEXTFILE', partitioned_by = ARRAY['b']);"
+    examples:
+      - "UNLOAD (SELECT * FROM old_table) TO 's3://amzn-s3-demo-bucket/unload_test_1/' WITH (format = 'JSON');"
+      - "UNLOAD (SELECT * FROM old_table) TO 's3://amzn-s3-demo-bucket/' WITH (format = 'PARQUET',compression = 'SNAPPY');"
+      - "UNLOAD (SELECT name1, address1, comment1, key1 FROM table1) TO 's3://amzn-s3-demo-bucket/partitioned/' WITH (format = 'TEXTFILE', partitioned_by = ARRAY['key1']);"

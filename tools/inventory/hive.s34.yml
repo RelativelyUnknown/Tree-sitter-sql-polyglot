@@ -1,0 +1,184 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: revoke_privilege
+    name: REVOKE privilege
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-authorization/
+    tier: medium
+    probes:
+      - { id: on_table, sql: "REVOKE SELECT ON TABLE t FROM USER u;" }
+      - { id: multiple_privileges, sql: "REVOKE SELECT, INSERT ON t FROM ROLE r;" }
+      - { id: grant_option_for, sql: "REVOKE GRANT OPTION FOR SELECT ON TABLE t FROM USER u;" }
+      - { id: all_privileges, sql: "REVOKE ALL PRIVILEGES ON TABLE t FROM USER u;" }
+      - { id: from_group, sql: "REVOKE DELETE ON TABLE t FROM GROUP g;" }
+
+  - id: grant_role
+    name: GRANT role
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-authorization/
+    tier: medium
+    probes:
+      - { id: to_user, sql: "GRANT r TO USER u;" }
+      - { id: to_role, sql: "GRANT r1, r2 TO ROLE r3;" }
+      - { id: with_admin_option, sql: "GRANT r TO USER u WITH ADMIN OPTION;" }
+
+  - id: revoke_role
+    name: REVOKE role
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-authorization/
+    tier: medium
+    probes:
+      - { id: from_user, sql: "REVOKE r FROM USER u;" }
+      - { id: from_role, sql: "REVOKE r1, r2 FROM ROLE r3;" }
+      - { id: admin_option_for, sql: "REVOKE ADMIN OPTION FOR r FROM USER u;" }
+
+  - id: set_role
+    name: SET ROLE
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-authorization/
+    tier: medium
+    probes:
+      - { id: role_name, sql: "SET ROLE r;" }
+      - { id: all, sql: "SET ROLE ALL;" }
+      - { id: none, sql: "SET ROLE NONE;" }
+      - { id: admin, sql: "SET ROLE ADMIN;" }
+
+  - id: set_variable
+    name: SET [key[=value]]
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-commands/
+    tier: medium
+    probes:
+      - { id: key_value, sql: "SET hive.exec.dynamic.partition=true;" }
+      - { id: show_key, sql: "SET hive.exec.dynamic.partition;" }
+      - { id: list_all, sql: "SET;" }
+      - { id: list_all_verbose, sql: "SET -v;" }
+      - { id: hiveconf_prefix, sql: "SET hiveconf:hive.cli.print.header=true;" }
+      - { id: hivevar_prefix, sql: "SET hivevar:tbl=t;" }
+
+  - id: reset
+    name: RESET
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-commands/
+    tier: medium
+    probes:
+      - { id: reset_all, sql: "RESET;" }
+      - { id: reset_key, sql: "RESET hive.exec.dynamic.partition;" }
+
+  - id: alter_table_touch
+    name: ALTER TABLE/PARTITION TOUCH
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: low
+    probes:
+      - { id: table, sql: "ALTER TABLE t TOUCH;" }
+      - { id: partition, sql: "ALTER TABLE t TOUCH PARTITION (ds='2008-04-08');" }
+
+  - id: alter_table_protections
+    name: ALTER TABLE/PARTITION ENABLE/DISABLE NO_DROP / OFFLINE
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: low
+    probes:
+      - { id: enable_no_drop, sql: "ALTER TABLE t ENABLE NO_DROP;" }
+      - { id: disable_offline_partition, sql: "ALTER TABLE t PARTITION (ds='2008-04-08') DISABLE OFFLINE;" }
+      - { id: no_drop_cascade, sql: "ALTER TABLE t ENABLE NO_DROP CASCADE;" }
+
+  - id: alter_table_archive
+    name: ALTER TABLE ARCHIVE / UNARCHIVE PARTITION
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-archiving/
+    tier: low
+    probes:
+      - { id: archive, sql: "ALTER TABLE srcpart ARCHIVE PARTITION (ds='2008-04-08', hr='12');" }
+      - { id: unarchive, sql: "ALTER TABLE srcpart UNARCHIVE PARTITION (ds='2008-04-08', hr='12');" }
+
+  - id: alter_table_update_columns
+    name: ALTER TABLE/PARTITION UPDATE COLUMNS
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: low
+    probes:
+      - { id: table, sql: "ALTER TABLE t UPDATE COLUMNS;" }
+      - { id: partition, sql: "ALTER TABLE t PARTITION (ds='2008-04-08') UPDATE COLUMNS;" }
+
+  - id: alter_table_discover_partitions
+    name: ALTER TABLE SET TBLPROPERTIES discover.partitions / partition retention
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: low
+    probes:
+      - { id: discover_partitions, sql: "ALTER TABLE t SET TBLPROPERTIES ('discover.partitions'='true');" }
+      - { id: partition_retention, sql: "ALTER TABLE t SET TBLPROPERTIES ('partition.retention.period'='7d');" }
+
+  - id: alter_table_execute
+    name: "ALTER TABLE ... EXECUTE (Iceberg: expire_snapshots, rollback)"
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: low
+    probes:
+      - { id: expire_snapshots, sql: "ALTER TABLE t EXECUTE EXPIRE_SNAPSHOTS('2021-12-09 05:39:18.689000000');" }
+      - { id: rollback, sql: "ALTER TABLE t EXECUTE ROLLBACK(3456789);" }
+
+  - id: alter_table_set_owner
+    name: ALTER TABLE SET OWNER
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: low
+    probes:
+      - { id: user, sql: "ALTER TABLE t SET OWNER USER u;" }
+      - { id: role, sql: "ALTER TABLE t SET OWNER ROLE r;" }
+
+  - id: alter_table_set_partition_spec
+    name: ALTER TABLE SET PARTITION SPEC (Iceberg)
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: low
+    probes:
+      - { id: transform, sql: "ALTER TABLE t SET PARTITION SPEC (month(ts));" }
+
+  - id: alter_table_create_branch_tag
+    name: ALTER TABLE CREATE/DROP BRANCH/TAG (Iceberg)
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: low
+    probes:
+      - { id: create_branch, sql: "ALTER TABLE t CREATE BRANCH b;" }
+      - { id: create_tag, sql: "ALTER TABLE t CREATE TAG tg;" }
+      - { id: drop_branch, sql: "ALTER TABLE t DROP BRANCH b;" }
+      - { id: drop_tag, sql: "ALTER TABLE t DROP TAG tg;" }
+
+  - id: show_indexes
+    name: SHOW INDEXES
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: low
+    probes:
+      - { id: on_table, sql: "SHOW INDEXES ON t;" }
+      - { id: formatted_from_db, sql: "SHOW FORMATTED INDEXES ON t FROM db;" }
+
+  - id: show_locks
+    name: SHOW LOCKS
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: low
+    probes:
+      - { id: table, sql: "SHOW LOCKS t;" }
+      - { id: partition_extended, sql: "SHOW LOCKS t PARTITION (ds='2008-04-08') EXTENDED;" }
+      - { id: database, sql: "SHOW LOCKS DATABASE db;" }
+
+  - id: show_conf
+    name: SHOW CONF
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: low
+    probes:
+      - { id: conf, sql: "SHOW CONF hive.exec.dynamic.partition;" }
+
+  - id: show_transactions
+    name: SHOW TRANSACTIONS
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: low
+    probes:
+      - { id: basic, sql: "SHOW TRANSACTIONS;" }
+
+  - id: show_compactions
+    name: SHOW COMPACTIONS
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: low
+    probes:
+      - { id: basic, sql: "SHOW COMPACTIONS;" }
+      - { id: filtered, sql: "SHOW COMPACTIONS db.t PARTITION (ds='2008-04-08') POOL_NAME 'p' TYPE 'MAJOR' STATE 'initiated' ORDER BY start DESC LIMIT 10;" }
+
+  - id: abort_transactions
+    name: ABORT TRANSACTIONS
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: low
+    probes:
+      - { id: ids, sql: "ABORT TRANSACTIONS 0000007 0000008 0000010 0000015;" }

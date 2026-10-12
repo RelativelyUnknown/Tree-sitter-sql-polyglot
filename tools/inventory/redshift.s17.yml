@@ -1,0 +1,175 @@
+dialect: redshift
+engine: Amazon Redshift
+version: "current"
+source: https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_commands.html
+
+statements:
+  - id: alter_masking_policy
+    name: ALTER MASKING POLICY
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_MASKING_POLICY.html
+    tier: medium
+    probes:
+      - id: using
+        sql: "ALTER MASKING POLICY p USING (CAST('x' AS VARCHAR(10)));"
+      - id: database_qualified
+        sql: "ALTER MASKING POLICY db.p USING (sha2(col, 256));"
+
+  - id: alter_rls_policy
+    name: ALTER RLS POLICY
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_RLS_POLICY.html
+    tier: medium
+    probes:
+      - id: using
+        sql: "ALTER RLS POLICY p USING (catgroup = 'piano concerts');"
+      - id: database_qualified
+        sql: "ALTER RLS POLICY db.p USING (current_user = 'joe' AND price > 10);"
+    examples:
+      - "ALTER RLS POLICY policy_concerts USING (catgroup = 'piano concerts');"
+
+  - id: alter_role
+    name: ALTER ROLE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_ROLE.html
+    tier: medium
+    probes:
+      - id: rename_to
+        sql: "ALTER ROLE r RENAME TO r2;"
+      - id: with_owner_to
+        sql: "ALTER ROLE r WITH OWNER TO u;"
+      - id: externalid_to
+        sql: "ALTER ROLE r EXTERNALID TO \"XYZ456\";"
+    examples:
+      - "ALTER ROLE sample_role1 RENAME TO sample_role2;"
+      - "ALTER ROLE sample_role1 EXTERNALID TO \"XYZ456\";"
+
+  - id: alter_schema
+    name: ALTER SCHEMA
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_SCHEMA.html
+    tier: medium
+    probes:
+      - id: rename_to
+        sql: "ALTER SCHEMA s RENAME TO s2;"
+      - id: owner_to
+        sql: "ALTER SCHEMA s OWNER TO u;"
+      - id: quota
+        sql: "ALTER SCHEMA s QUOTA 300 GB;"
+      - id: quota_unlimited
+        sql: "ALTER SCHEMA s QUOTA UNLIMITED;"
+    examples:
+      - "alter schema sales rename to us_sales;"
+      - "alter schema us_sales owner to dwuser;"
+      - "alter schema us_sales QUOTA 300 GB;"
+
+  - id: alter_table_append
+    name: ALTER TABLE APPEND
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_TABLE_APPEND.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "ALTER TABLE t APPEND FROM s;"
+      - id: ignoreextra
+        sql: "ALTER TABLE t APPEND FROM s IGNOREEXTRA;"
+      - id: filltarget
+        sql: "ALTER TABLE sch.t APPEND FROM sch.s FILLTARGET;"
+
+  - id: alter_user
+    name: ALTER USER
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_USER.html
+    tier: medium
+    probes:
+      - id: createdb
+        sql: "ALTER USER u WITH CREATEDB;"
+      - id: createuser
+        sql: "ALTER USER u NOCREATEUSER;"
+      - id: syslog_access
+        sql: "ALTER USER u SYSLOG ACCESS UNRESTRICTED;"
+      - id: password_valid_until
+        sql: "ALTER USER u PASSWORD 'adminPass9' VALID UNTIL '2017-12-31 23:59';"
+      - id: password_disable
+        sql: "ALTER USER u PASSWORD DISABLE;"
+      - id: rename_to
+        sql: "ALTER USER u RENAME TO u2;"
+      - id: connection_limit
+        sql: "ALTER USER u CONNECTION LIMIT UNLIMITED;"
+      - id: session_timeout
+        sql: "ALTER USER u SESSION TIMEOUT 300;"
+      - id: reset_session_timeout
+        sql: "ALTER USER u RESET SESSION TIMEOUT;"
+      - id: set_parameter
+        sql: "ALTER USER u SET TIMEZONE TO 'Europe/Zurich';"
+      - id: reset_parameter
+        sql: "ALTER USER u RESET TIMEZONE;"
+      - id: externalid
+        sql: "ALTER USER myco_aad:bob EXTERNALID \"ABC123\" PASSWORD DISABLE;"
+      - id: nologin
+        sql: "ALTER USER u NOLOGIN;"
+      - id: login_password
+        sql: "ALTER USER u LOGIN PASSWORD 'newPass9';"
+    examples:
+      - "alter user admin createdb;"
+      - "alter user admin password 'adminPass9' valid until '2017-12-31 23:59';"
+      - "alter user admin rename to sysadmin;"
+
+  - id: analyze
+    name: ANALYZE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_ANALYZE.html
+    tier: medium
+    probes:
+      - id: bare
+        sql: "ANALYZE;"
+      - id: verbose
+        sql: "ANALYZE VERBOSE;"
+      - id: table
+        sql: "ANALYZE t;"
+      - id: columns
+        sql: "ANALYZE t (a, b);"
+      - id: predicate_columns
+        sql: "ANALYZE t PREDICATE COLUMNS;"
+      - id: all_columns
+        sql: "ANALYZE VERBOSE s.t ALL COLUMNS;"
+    examples:
+      - "analyze verbose;"
+      - "analyze listing;"
+      - "analyze venue(venueid, venuename);"
+      - "analyze venue predicate columns;"
+
+  - id: attach_masking_policy
+    name: ATTACH MASKING POLICY
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_ATTACH_MASKING_POLICY.html
+    tier: medium
+    probes:
+      - id: to_user
+        sql: "ATTACH MASKING POLICY p ON t (c) TO u;"
+      - id: using_to_role_priority
+        sql: "ATTACH MASKING POLICY p ON t (c) USING (c2) TO ROLE r PRIORITY 10;"
+      - id: to_public
+        sql: "ATTACH MASKING POLICY p ON t (c) TO PUBLIC;"
+      - id: database_qualified
+        sql: "ATTACH MASKING POLICY db.p ON db.s.t (c) TO u;"
+      - id: super_path
+        sql: "ATTACH MASKING POLICY p ON t (person.name.first_name) TO PUBLIC;"
+
+  - id: attach_rls_policy
+    name: ATTACH RLS POLICY
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_ATTACH_RLS_POLICY.html
+    tier: medium
+    probes:
+      - id: to_user
+        sql: "ATTACH RLS POLICY p ON t TO u;"
+      - id: on_table_to_role
+        sql: "ATTACH RLS POLICY p ON TABLE t TO ROLE r;"
+      - id: multiple
+        sql: "ATTACH RLS POLICY p ON t1, t2 TO u, ROLE r, PUBLIC;"
+      - id: database_qualified
+        sql: "ATTACH RLS POLICY db.p ON TABLE db.s.t TO PUBLIC;"
+    examples:
+      - "ATTACH RLS POLICY policy_concerts ON tickit_category_redshift TO ROLE analyst, ROLE dbadmin;"
+
+  - id: close
+    name: CLOSE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/close.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CLOSE c;"
+    examples:
+      - "close movie_cursor;"

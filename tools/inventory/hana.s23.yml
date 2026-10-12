@@ -1,0 +1,121 @@
+dialect: hana
+engine: SAP HANA Platform
+version: "2.0 SPS 08 (2.0.08)"
+source: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/3bc1a0d4611d40c4a6e3fc7c8e80395d.html?version=2.0.08
+
+statements:
+  - id: refresh_statistics
+    name: REFRESH STATISTICS
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20fae6d975191014849d91781fd50986.html?version=2.0.08
+    tier: medium
+    probes:
+      - { id: by_name, sql: "REFRESH STATISTICS s1;" }
+      - { id: by_name_list, sql: "REFRESH STATISTICS sch.s1, s2;" }
+      - { id: on_table, sql: "REFRESH STATISTICS ON t;" }
+      - { id: on_columns, sql: "REFRESH STATISTICS ON t (a, b);" }
+      - { id: on_columns_exact, sql: "REFRESH STATISTICS ON t (a, b) EXACT;" }
+      - { id: on_columns_cascade, sql: "REFRESH STATISTICS ON t (a) CASCADE;" }
+      - { id: having_type, sql: "REFRESH STATISTICS ON t (a) HAVING TYPE HISTOGRAM;" }
+      - { id: refresh_type, sql: "REFRESH STATISTICS ON t REFRESH TYPE AUTO;" }
+
+  - id: refresh_view
+    name: REFRESH VIEW
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/81e15837ac7249938e05e346c391ead5.html?version=2.0.08
+    tier: medium
+    probes:
+      - { id: anonymization, sql: "REFRESH VIEW v ANONYMIZATION;" }
+      - { id: anonymization_qualified, sql: "REFRESH VIEW s.v ANONYMIZATION;" }
+    examples:
+      - "REFRESH VIEW Illness_K_Anon ANONYMIZATION;"
+
+  - id: rename_column
+    name: RENAME COLUMN
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20fb2b8b7519101499d2c6bd37c81b32.html?version=2.0.08
+    tier: medium
+    probes:
+      - { id: basic, sql: "RENAME COLUMN t.a TO c;" }
+      - { id: quoted, sql: 'RENAME COLUMN "t"."a" TO "c";' }
+    examples:
+      - "RENAME COLUMN tab.A TO C;"
+
+  - id: rename_index
+    name: RENAME INDEX
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20fb6e10751910148b45cefcb6294342.html?version=2.0.08
+    tier: medium
+    probes:
+      - { id: basic, sql: "RENAME INDEX idx TO new_idx;" }
+      - { id: schema_qualified, sql: "RENAME INDEX s.idx TO new_idx;" }
+    examples:
+      - "RENAME INDEX idx TO new_idx;"
+
+  - id: rename_schema
+    name: RENAME SCHEMA
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/a52198083ad642f79851b8f501aad7f5.html?version=2.0.08
+    tier: medium
+    probes:
+      - { id: basic, sql: "RENAME SCHEMA s1 TO s2;" }
+    examples:
+      - "RENAME SCHEMA schema1 TO schema2;"
+
+  - id: rename_table
+    name: RENAME TABLE
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20fbadb2751910148b24d8d93aff01d4.html?version=2.0.08
+    tier: medium
+    probes:
+      - { id: basic, sql: "RENAME TABLE a TO b;" }
+      - { id: source_schema, sql: "RENAME TABLE s.a TO b;" }
+      - { id: change_schema, sql: "RENAME TABLE s1.a TO s2.a;" }
+      - { id: change_schema_and_name, sql: "RENAME TABLE s1.a TO s2.b;" }
+    examples:
+      - "RENAME TABLE A TO B;"
+      - "RENAME TABLE USER2.C TO D;"
+      - "RENAME TABLE USER2.D TO USER1.E;"
+
+  - id: revoke
+    name: REVOKE
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20fc91cb75191014ac15eb4d6f2d7dde.html?version=2.0.08
+    tier: medium
+    probes:
+      - { id: system_privilege, sql: "REVOKE TRACE ADMIN FROM u;" }
+      - { id: system_privileges_list, sql: "REVOKE CATALOG READ, TRACE ADMIN FROM u;" }
+      - { id: source_privilege, sql: "REVOKE LINKED DATABASE ON REMOTE SOURCE rs FROM u;" }
+      - { id: schema_privilege, sql: "REVOKE SELECT ON SCHEMA s FROM u;" }
+      - { id: object_privilege, sql: "REVOKE INSERT, UPDATE ON s.t FROM u;" }
+      - { id: column_key_privilege, sql: "REVOKE USAGE ON CLIENTSIDE ENCRYPTION COLUMN KEY k FROM u;" }
+      - { id: role, sql: "REVOKE r FROM u;" }
+      - { id: role_granted_by, sql: "REVOKE r FROM u GRANTED BY g;" }
+      - { id: structured_privilege, sql: "REVOKE STRUCTURED PRIVILEGE p FROM u;" }
+    examples:
+      - "REVOKE SELECT ON SCHEMA my_schema FROM role_for_work_on_my_schema;"
+      - "REVOKE TRACE ADMIN FROM worker;"
+      - "REVOKE LINKED DATABASE ON REMOTE SOURCE myremotesys FROM myuser1;"
+
+  - id: set_schema
+    name: SET SCHEMA
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20fd550375191014b886a338afb4cd5f.html?version=2.0.08
+    tier: medium
+    probes:
+      - { id: basic, sql: "SET SCHEMA s;" }
+      - { id: quoted, sql: 'SET SCHEMA "MY_SCHEMA";' }
+    examples:
+      - "SET SCHEMA MY_SCHEMA;"
+
+  - id: set_session
+    name: SET [SESSION]
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20fd82b675191014b22c8af08d0b319c.html?version=2.0.08
+    tier: medium
+    probes:
+      - { id: basic, sql: "SET 'MY_VAR' = 'abc';" }
+      - { id: with_session, sql: "SET SESSION 'MY_VAR' = 'abc';" }
+    examples:
+      - "SET 'MY_VAR' = 'abc';"
+
+  - id: set_transaction_autocommit_ddl
+    name: SET TRANSACTION AUTOCOMMIT DDL
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/d538d11053bd4f3f847ec5ce817a3d4c.html?version=2.0.08
+    tier: medium
+    probes:
+      - { id: "on", sql: "SET TRANSACTION AUTOCOMMIT DDL ON;" }
+      - { id: "off", sql: "SET TRANSACTION AUTOCOMMIT DDL OFF;" }
+    examples:
+      - "SET TRANSACTION AUTOCOMMIT DDL OFF;"

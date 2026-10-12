@@ -1,0 +1,242 @@
+dialect: tsql
+engine: SQL Server 2022 / Azure SQL Database
+version: "2022"
+source: https://learn.microsoft.com/en-us/sql/t-sql/statements/statements
+
+statements:
+  - id: deny_symmetric_key_permissions
+    name: DENY Symmetric Key Permissions
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/deny-symmetric-key-permissions-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "DENY VIEW DEFINITION ON SYMMETRIC KEY::k TO u;"
+      - id: cascade_as
+        sql: "DENY ALTER, CONTROL ON SYMMETRIC KEY::k TO u1, u2 CASCADE AS r;"
+
+  - id: deny_system_object_permissions
+    name: DENY System Object Permissions
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/deny-system-object-permissions-transact-sql
+    tier: low
+    probes:
+      - id: select_sys
+        sql: "DENY SELECT ON sys.sysobjects TO u;"
+      - id: execute
+        sql: "DENY EXECUTE ON sys.sp_helpdb TO u;"
+
+  - id: deny_type_permissions
+    name: DENY Type Permissions
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/deny-type-permissions-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "DENY EXECUTE ON TYPE::dbo.t TO u;"
+      - id: cascade_as
+        sql: "DENY CONTROL, VIEW DEFINITION ON TYPE::t TO u1, u2 CASCADE AS r;"
+
+  - id: deny_xml_schema_collection_permissions
+    name: DENY XML Schema Collection Permissions
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/deny-xml-schema-collection-permissions-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "DENY EXECUTE ON XML SCHEMA COLLECTION::dbo.c TO u;"
+      - id: cascade_as
+        sql: "DENY ALTER, REFERENCES ON XML SCHEMA COLLECTION::c TO u1, u2 CASCADE AS r;"
+
+  - id: execute_as_clause
+    name: EXECUTE AS Clause
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/execute-as-clause-transact-sql
+    tier: low
+    probes:
+      - id: procedure_owner
+        sql: "CREATE PROCEDURE p WITH EXECUTE AS OWNER AS SELECT 1;"
+        note: "{ EXEC | EXECUTE } AS { CALLER | SELF | OWNER | 'user_name' } on procedures, functions and DML triggers"
+      - id: procedure_user_name
+        sql: "CREATE PROCEDURE p WITH EXEC AS 'u' AS SELECT 1;"
+      - id: trigger_caller
+        sql: "CREATE TRIGGER tr ON t WITH EXECUTE AS CALLER AFTER INSERT AS SELECT 1;"
+      - id: queue_self
+        sql: "CREATE QUEUE q WITH ACTIVATION (STATUS = ON, PROCEDURE_NAME = p, MAX_QUEUE_READERS = 1, EXECUTE AS SELF);"
+        note: "Queues accept { SELF | OWNER | 'user_name' }"
+
+  - id: open_master_key
+    name: OPEN MASTER KEY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/open-master-key-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "OPEN MASTER KEY DECRYPTION BY PASSWORD = 'password';"
+
+  - id: open_symmetric_key
+    name: OPEN SYMMETRIC KEY
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/open-symmetric-key-transact-sql
+    tier: low
+    probes:
+      - id: certificate
+        sql: "OPEN SYMMETRIC KEY k DECRYPTION BY CERTIFICATE c;"
+      - id: certificate_password
+        sql: "OPEN SYMMETRIC KEY k DECRYPTION BY CERTIFICATE c WITH PASSWORD = 'password';"
+      - id: asymmetric_key
+        sql: "OPEN SYMMETRIC KEY k DECRYPTION BY ASYMMETRIC KEY a;"
+      - id: symmetric_key
+        sql: "OPEN SYMMETRIC KEY k DECRYPTION BY SYMMETRIC KEY k2;"
+      - id: password
+        sql: "OPEN SYMMETRIC KEY k DECRYPTION BY PASSWORD = 'password';"
+
+  - id: setuser
+    name: SETUSER
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/setuser-transact-sql
+    tier: low
+    probes:
+      - id: username
+        sql: "SETUSER 'u';"
+      - id: with_noreset
+        sql: "SETUSER 'u' WITH NORESET;"
+      - id: reset
+        sql: "SETUSER;"
+
+  - id: begin_conversation_timer
+    name: BEGIN CONVERSATION TIMER
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/begin-conversation-timer-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "BEGIN CONVERSATION TIMER (@handle) TIMEOUT = 60;"
+
+  - id: begin_dialog_conversation
+    name: BEGIN DIALOG CONVERSATION
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/begin-dialog-conversation-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "BEGIN DIALOG CONVERSATION @h FROM SERVICE s1 TO SERVICE 's2';"
+      - id: full
+        sql: "BEGIN DIALOG @h FROM SERVICE s1 TO SERVICE 's2', 'CURRENT DATABASE' ON CONTRACT c WITH RELATED_CONVERSATION = @r, LIFETIME = 600, ENCRYPTION = OFF;"
+
+  - id: end_conversation
+    name: END CONVERSATION
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/end-conversation-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "END CONVERSATION @h;"
+      - id: with_error
+        sql: "END CONVERSATION @h WITH ERROR = 1 DESCRIPTION = 'failed';"
+      - id: with_cleanup
+        sql: "END CONVERSATION @h WITH CLEANUP;"
+
+  - id: get_conversation_group
+    name: GET CONVERSATION GROUP
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/get-conversation-group-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "GET CONVERSATION GROUP @g FROM q;"
+      - id: waitfor_timeout
+        sql: "WAITFOR (GET CONVERSATION GROUP @g FROM dbo.q), TIMEOUT 5000;"
+
+  - id: move_conversation
+    name: MOVE CONVERSATION
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/move-conversation-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "MOVE CONVERSATION @h TO @g;"
+
+  - id: receive
+    name: RECEIVE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/receive-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "RECEIVE * FROM q;"
+      - id: top_columns_where
+        sql: "RECEIVE TOP (1) conversation_handle, message_type_name, message_body AS body FROM dbo.q WHERE conversation_handle = @h;"
+      - id: into_waitfor
+        sql: "WAITFOR (RECEIVE * FROM db.dbo.q INTO @tv), TIMEOUT 1000;"
+
+  - id: send
+    name: SEND
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/send-transact-sql
+    tier: low
+    probes:
+      - id: basic
+        sql: "SEND ON CONVERSATION @h;"
+      - id: message_type_body
+        sql: "SEND ON CONVERSATION @h MESSAGE TYPE mt (@body);"
+      - id: multiple_handles
+        sql: "SEND ON CONVERSATION (@h1, @h2) MESSAGE TYPE mt (@body);"
+
+  - id: set_context_info
+    name: SET CONTEXT_INFO
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/set-context-info-transact-sql
+    tier: low
+    probes:
+      - id: binary_literal
+        sql: "SET CONTEXT_INFO 0x1256698456;"
+      - id: variable
+        sql: "SET CONTEXT_INFO @v;"
+
+  - id: set_fips_flagger
+    name: SET FIPS_FLAGGER
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/set-fips-flagger-transact-sql
+    tier: low
+    probes:
+      - id: level
+        sql: "SET FIPS_FLAGGER 'ENTRY';"
+      - id: parenthesized
+        sql: "SET FIPS_FLAGGER ('FULL');"
+      - id: "off"
+        sql: "SET FIPS_FLAGGER OFF;"
+
+  - id: set_forceplan
+    name: SET FORCEPLAN
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/set-forceplan-transact-sql
+    tier: low
+    probes:
+      - id: "on"
+        sql: "SET FORCEPLAN ON;"
+      - id: "off"
+        sql: "SET FORCEPLAN OFF;"
+
+  - id: set_offsets
+    name: SET OFFSETS
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/set-offsets-transact-sql
+    tier: low
+    probes:
+      - id: "on"
+        sql: "SET OFFSETS SELECT, FROM ON;"
+        note: "Syntax is SET OFFSETS keyword_list { ON | OFF }; the page documents it as unsupported from SQL Server 2005 on, but the statement is still in the index"
+
+  - id: set_query_governor_cost_limit
+    name: SET QUERY_GOVERNOR_COST_LIMIT
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/set-query-governor-cost-limit-transact-sql
+    tier: low
+    probes:
+      - id: value
+        sql: "SET QUERY_GOVERNOR_COST_LIMIT 120;"
+
+  - id: set_recommendations
+    name: SET RECOMMENDATIONS
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/set-recommendations-sql
+    tier: low
+    status: not-applicable
+    reason: "The page applies only to Azure Synapse dedicated SQL pools (monikerRange azure-sqldw-latest; 'Applies to Azure Synapse Analytics (dedicated SQL pools only)'), not SQL Server or Azure SQL Database."
+
+  - id: set_remote_proc_transactions
+    name: SET REMOTE_PROC_TRANSACTIONS
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/set-remote-proc-transactions-transact-sql
+    tier: low
+    probes:
+      - id: "on"
+        sql: "SET REMOTE_PROC_TRANSACTIONS ON;"
+      - id: "off"
+        sql: "SET REMOTE_PROC_TRANSACTIONS OFF;"
+
+  - id: set_result_set_caching
+    name: SET RESULT SET CACHING
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/set-result-set-caching-transact-sql
+    tier: low
+    status: not-applicable
+    reason: "The page applies only to Azure Synapse Analytics dedicated SQL pools (monikerRange azure-sqldw-latest; 'Applies to Azure Synapse Analytics'), not SQL Server or Azure SQL Database."

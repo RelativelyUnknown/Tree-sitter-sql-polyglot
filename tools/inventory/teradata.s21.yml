@@ -1,0 +1,51 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: declare_condition
+    name: DECLARE CONDITION
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/xzcY9P2aQlpaZBHZdxgBOQ
+    tier: high
+    probes:
+      - id: user_defined
+        sql: "DECLARE c1 CONDITION;"
+      - id: for_sqlstate
+        sql: "DECLARE c1 CONDITION FOR SQLSTATE '22012';"
+      - id: for_sqlstate_value
+        sql: "DECLARE c1 CONDITION FOR SQLSTATE VALUE '22012';"
+    examples:
+      - "DECLARE divide_by_zero CONDITION FOR SQLSTATE VALUE '22012';"
+      - "DECLARE IOParam1 CONDITION;"
+      - "DECLARE divide_by_zero CONDITION FOR SQLSTATE '22012';"
+
+  - id: declare_handler
+    name: DECLARE HANDLER
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/P251SRG7Xgkq3S2cM0A1cQ
+    tier: high
+    probes:
+      - id: continue_sqlexception
+        sql: "DECLARE CONTINUE HANDLER FOR SQLEXCEPTION SET v = 1;"
+      - id: exit_sqlexception
+        sql: "DECLARE EXIT HANDLER FOR SQLEXCEPTION SET v = 1;"
+      - id: continue_sqlwarning
+        sql: "DECLARE CONTINUE HANDLER FOR SQLWARNING SET v = 1;"
+      - id: exit_not_found
+        sql: "DECLARE EXIT HANDLER FOR NOT FOUND SET v = 1;"
+      - id: generic_list
+        sql: "DECLARE EXIT HANDLER FOR SQLEXCEPTION, SQLWARNING, NOT FOUND SET v = 1;"
+      - id: sqlstate
+        sql: "DECLARE EXIT HANDLER FOR SQLSTATE '22012' SET v = 1;"
+      - id: sqlstate_value_list
+        sql: "DECLARE CONTINUE HANDLER FOR SQLSTATE VALUE '22012', SQLSTATE VALUE '42000' SET v = 1;"
+      - id: condition_name
+        sql: "DECLARE EXIT HANDLER FOR c1 SET v = 1;"
+      - id: condition_name_list
+        sql: "DECLARE EXIT HANDLER FOR c1, c2 SET v = 1;"
+      - id: compound_action
+        sql: |-
+          DECLARE EXIT HANDLER FOR SQLEXCEPTION
+          BEGIN
+            SET v = 1;
+          END;

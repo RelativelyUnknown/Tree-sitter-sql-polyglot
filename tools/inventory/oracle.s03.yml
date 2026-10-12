@@ -1,0 +1,472 @@
+dialect: oracle
+engine: Oracle AI Database
+version: "26ai"
+source: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/toc.htm
+
+statements:
+  - id: alter_profile
+    name: ALTER PROFILE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-PROFILE.html
+    tier: medium
+    probes:
+      - id: resource_limit
+        sql: "ALTER PROFILE p LIMIT SESSIONS_PER_USER 5;"
+      - id: resource_limit_unlimited
+        sql: "ALTER PROFILE p LIMIT CPU_PER_SESSION UNLIMITED CONNECT_TIME DEFAULT;"
+      - id: private_sga
+        sql: "ALTER PROFILE p LIMIT PRIVATE_SGA 10M;"
+      - id: password_params
+        sql: "ALTER PROFILE p LIMIT FAILED_LOGIN_ATTEMPTS 5 PASSWORD_LOCK_TIME 1;"
+      - id: password_verify_function
+        sql: "ALTER PROFILE p LIMIT PASSWORD_VERIFY_FUNCTION ora12c_verify_function;"
+      - id: password_verify_null
+        sql: "ALTER PROFILE p LIMIT PASSWORD_VERIFY_FUNCTION NULL;"
+      - id: password_rollover_time
+        sql: "ALTER PROFILE p LIMIT PASSWORD_ROLLOVER_TIME 2;"
+      - id: container_all
+        sql: "ALTER PROFILE p LIMIT IDLE_TIME 10 CONTAINER = ALL;"
+      - id: container_current
+        sql: "ALTER PROFILE p LIMIT IDLE_TIME 10 CONTAINER = CURRENT;"
+    examples:
+      - "ALTER PROFILE new_profile LIMIT PASSWORD_REUSE_TIME 90 PASSWORD_REUSE_MAX UNLIMITED;"
+      - "ALTER PROFILE app_user LIMIT PASSWORD_REUSE_TIME DEFAULT PASSWORD_REUSE_MAX UNLIMITED;"
+      - "ALTER PROFILE app_user LIMIT FAILED_LOGIN_ATTEMPTS 5 PASSWORD_LOCK_TIME 1;"
+
+  - id: alter_property_graph
+    name: ALTER PROPERTY GRAPH
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/alter-property-graph.html
+    tier: medium
+    probes:
+      - id: compile
+        sql: "ALTER PROPERTY GRAPH g COMPILE;"
+      - id: compile_schema_qualified
+        sql: "ALTER PROPERTY GRAPH s.g COMPILE;"
+      - id: if_exists
+        sql: "ALTER PROPERTY GRAPH IF EXISTS g COMPILE;"
+    examples:
+      - "alter property graph g compile;"
+
+  - id: alter_role
+    name: ALTER ROLE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-ROLE.html
+    tier: medium
+    probes:
+      - id: not_identified
+        sql: "ALTER ROLE r NOT IDENTIFIED;"
+      - id: identified_by
+        sql: "ALTER ROLE r IDENTIFIED BY pwd;"
+      - id: identified_using
+        sql: "ALTER ROLE r IDENTIFIED USING pkg;"
+      - id: identified_using_schema
+        sql: "ALTER ROLE r IDENTIFIED USING s.pkg;"
+      - id: identified_externally
+        sql: "ALTER ROLE r IDENTIFIED EXTERNALLY;"
+      - id: identified_globally
+        sql: "ALTER ROLE r IDENTIFIED GLOBALLY AS 'CN=dirgroup,O=example,C=US';"
+      - id: if_exists
+        sql: "ALTER ROLE IF EXISTS r NOT IDENTIFIED;"
+      - id: container
+        sql: "ALTER ROLE r NOT IDENTIFIED CONTAINER = ALL;"
+    examples:
+      - "ALTER ROLE warehouse_user NOT IDENTIFIED;"
+      - "ALTER ROLE dw_manager IDENTIFIED BY data;"
+      - "ALTER ROLE dw_manager IDENTIFIED USING hr.admin;"
+
+  - id: alter_sequence
+    name: ALTER SEQUENCE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-SEQUENCE.html
+    tier: medium
+    probes:
+      - id: increment_by
+        sql: "ALTER SEQUENCE s INCREMENT BY 2;"
+      - id: maxvalue
+        sql: "ALTER SEQUENCE s MAXVALUE 1500;"
+      - id: nomaxvalue_minvalue
+        sql: "ALTER SEQUENCE s NOMAXVALUE MINVALUE 1;"
+      - id: nominvalue
+        sql: "ALTER SEQUENCE s NOMINVALUE;"
+      - id: restart
+        sql: "ALTER SEQUENCE s RESTART;"
+      - id: restart_start_with
+        sql: "ALTER SEQUENCE s RESTART START WITH 100;"
+      - id: cycle_cache
+        sql: "ALTER SEQUENCE s CYCLE CACHE 5;"
+      - id: nocycle_nocache
+        sql: "ALTER SEQUENCE s NOCYCLE NOCACHE;"
+      - id: order
+        sql: "ALTER SEQUENCE s ORDER;"
+      - id: noorder
+        sql: "ALTER SEQUENCE s NOORDER;"
+      - id: keep
+        sql: "ALTER SEQUENCE s KEEP;"
+      - id: nokeep
+        sql: "ALTER SEQUENCE s NOKEEP;"
+      - id: scale_extend
+        sql: "ALTER SEQUENCE s SCALE EXTEND;"
+      - id: scale_noextend
+        sql: "ALTER SEQUENCE s SCALE NOEXTEND;"
+      - id: noscale
+        sql: "ALTER SEQUENCE s NOSCALE;"
+      - id: shard_extend
+        sql: "ALTER SEQUENCE s SHARD EXTEND;"
+      - id: noshard
+        sql: "ALTER SEQUENCE s NOSHARD;"
+      - id: session
+        sql: "ALTER SEQUENCE s SESSION;"
+      - id: global
+        sql: "ALTER SEQUENCE s GLOBAL;"
+      - id: if_exists_schema
+        sql: "ALTER SEQUENCE IF EXISTS hr.s INCREMENT BY 1;"
+    examples:
+      - "ALTER SEQUENCE customers_seq MAXVALUE 1500;"
+      - "ALTER SEQUENCE customers_seq CYCLE CACHE 5;"
+
+  - id: alter_session
+    name: ALTER SESSION
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-SESSION.html
+    tier: medium
+    probes:
+      - id: advise_commit
+        sql: "ALTER SESSION ADVISE COMMIT;"
+      - id: advise_rollback
+        sql: "ALTER SESSION ADVISE ROLLBACK;"
+      - id: advise_nothing
+        sql: "ALTER SESSION ADVISE NOTHING;"
+      - id: close_database_link
+        sql: "ALTER SESSION CLOSE DATABASE LINK remote;"
+      - id: enable_commit_in_procedure
+        sql: "ALTER SESSION ENABLE COMMIT IN PROCEDURE;"
+      - id: disable_commit_in_procedure
+        sql: "ALTER SESSION DISABLE COMMIT IN PROCEDURE;"
+      - id: enable_guard
+        sql: "ALTER SESSION ENABLE GUARD;"
+      - id: disable_guard
+        sql: "ALTER SESSION DISABLE GUARD;"
+      - id: enable_parallel_dml
+        sql: "ALTER SESSION ENABLE PARALLEL DML;"
+      - id: force_parallel_query_degree
+        sql: "ALTER SESSION FORCE PARALLEL QUERY PARALLEL 4;"
+      - id: disable_parallel_ddl
+        sql: "ALTER SESSION DISABLE PARALLEL DDL;"
+      - id: enable_resumable
+        sql: "ALTER SESSION ENABLE RESUMABLE;"
+      - id: enable_resumable_timeout_name
+        sql: "ALTER SESSION ENABLE RESUMABLE TIMEOUT 3600 NAME 'job1';"
+      - id: disable_resumable
+        sql: "ALTER SESSION DISABLE RESUMABLE;"
+      - id: enable_shard_ddl
+        sql: "ALTER SESSION ENABLE SHARD DDL;"
+      - id: disable_shard_ddl
+        sql: "ALTER SESSION DISABLE SHARD DDL;"
+      - id: sync_with_primary
+        sql: "ALTER SESSION SYNC WITH PRIMARY;"
+      - id: set_parameter_string
+        sql: "ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY MM DD HH24:MI:SS';"
+      - id: set_parameter_keyword
+        sql: "ALTER SESSION SET NLS_DATE_LANGUAGE = French;"
+      - id: set_parameter_boolean
+        sql: "ALTER SESSION SET QUERY_REWRITE_ENABLED = TRUE;"
+      - id: set_multiple_parameters
+        sql: "ALTER SESSION SET NLS_LANGUAGE = FRENCH NLS_TERRITORY = FRANCE;"
+      - id: set_edition
+        sql: "ALTER SESSION SET EDITION = e1;"
+      - id: set_container
+        sql: "ALTER SESSION SET CONTAINER = pdb1;"
+      - id: set_container_service
+        sql: "ALTER SESSION SET CONTAINER = pdb1 SERVICE = svc1;"
+      - id: set_row_archival_visibility_active
+        sql: "ALTER SESSION SET ROW ARCHIVAL VISIBILITY = ACTIVE;"
+      - id: set_row_archival_visibility_all
+        sql: "ALTER SESSION SET ROW ARCHIVAL VISIBILITY = ALL;"
+      - id: set_default_collation
+        sql: "ALTER SESSION SET DEFAULT_COLLATION = binary_ci;"
+      - id: set_default_collation_none
+        sql: "ALTER SESSION SET DEFAULT_COLLATION = NONE;"
+    examples:
+      - "ALTER SESSION ENABLE PARALLEL DML;"
+      - "ALTER SESSION CLOSE DATABASE LINK local;"
+      - "ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY MM DD HH24:MI:SS';"
+
+  - id: alter_synonym
+    name: ALTER SYNONYM
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-SYNONYM.html
+    tier: medium
+    probes:
+      - id: compile
+        sql: "ALTER SYNONYM syn COMPILE;"
+      - id: compile_public
+        sql: "ALTER PUBLIC SYNONYM syn COMPILE;"
+      - id: compile_schema_qualified
+        sql: "ALTER SYNONYM hr.syn COMPILE;"
+      - id: if_exists
+        sql: "ALTER SYNONYM IF EXISTS syn COMPILE;"
+      - id: editionable
+        sql: "ALTER SYNONYM syn EDITIONABLE;"
+      - id: noneditionable
+        sql: "ALTER SYNONYM syn NONEDITIONABLE;"
+    examples:
+      - "ALTER SYNONYM offices COMPILE;"
+      - "ALTER PUBLIC SYNONYM emp_table COMPILE;"
+      - "ALTER SYNONYM offices NONEDITIONABLE;"
+
+  - id: alter_tablespace
+    name: ALTER TABLESPACE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-TABLESPACE.html
+    tier: medium
+    probes:
+      - id: minimum_extent
+        sql: "ALTER TABLESPACE ts MINIMUM EXTENT 1M;"
+      - id: resize
+        sql: "ALTER TABLESPACE ts RESIZE 100M;"
+      - id: coalesce
+        sql: "ALTER TABLESPACE ts COALESCE;"
+      - id: shrink_space
+        sql: "ALTER TABLESPACE ts SHRINK SPACE;"
+      - id: shrink_space_keep
+        sql: "ALTER TABLESPACE ts SHRINK SPACE KEEP 10M;"
+      - id: rename_to
+        sql: "ALTER TABLESPACE ts RENAME TO ts2;"
+      - id: begin_backup
+        sql: "ALTER TABLESPACE ts BEGIN BACKUP;"
+      - id: end_backup
+        sql: "ALTER TABLESPACE ts END BACKUP;"
+      - id: add_datafile
+        sql: "ALTER TABLESPACE ts ADD DATAFILE 'f1.dbf' SIZE 100K AUTOEXTEND ON NEXT 10K MAXSIZE 100K;"
+      - id: add_datafile_omf
+        sql: "ALTER TABLESPACE ts ADD DATAFILE;"
+      - id: add_tempfile
+        sql: "ALTER TABLESPACE ts ADD TEMPFILE 'temp1.dbf' SIZE 5M AUTOEXTEND ON;"
+      - id: drop_datafile
+        sql: "ALTER TABLESPACE ts DROP DATAFILE 'f1.dbf';"
+      - id: drop_tempfile
+        sql: "ALTER TABLESPACE ts DROP TEMPFILE 'temp1.dbf';"
+      - id: shrink_tempfile
+        sql: "ALTER TABLESPACE ts SHRINK TEMPFILE 'temp1.dbf' KEEP 10M;"
+      - id: rename_datafile
+        sql: "ALTER TABLESPACE ts RENAME DATAFILE 'a.dbf' TO 'b.dbf';"
+      - id: datafile_offline
+        sql: "ALTER TABLESPACE ts DATAFILE 'f1.dbf' OFFLINE;"
+      - id: tempfile_online
+        sql: "ALTER TABLESPACE ts TEMPFILE 'temp1.dbf' ONLINE;"
+      - id: logging
+        sql: "ALTER TABLESPACE ts LOGGING;"
+      - id: nologging
+        sql: "ALTER TABLESPACE ts NOLOGGING;"
+      - id: force_logging
+        sql: "ALTER TABLESPACE ts FORCE LOGGING;"
+      - id: no_force_logging
+        sql: "ALTER TABLESPACE ts NO FORCE LOGGING;"
+      - id: tablespace_group
+        sql: "ALTER TABLESPACE ts TABLESPACE GROUP tbs_grp_01;"
+      - id: tablespace_group_empty
+        sql: "ALTER TABLESPACE ts TABLESPACE GROUP '';"
+      - id: online
+        sql: "ALTER TABLESPACE ts ONLINE;"
+      - id: offline_normal
+        sql: "ALTER TABLESPACE ts OFFLINE NORMAL;"
+      - id: offline_immediate
+        sql: "ALTER TABLESPACE ts OFFLINE IMMEDIATE;"
+      - id: read_only
+        sql: "ALTER TABLESPACE ts READ ONLY;"
+      - id: read_write
+        sql: "ALTER TABLESPACE ts READ WRITE;"
+      - id: permanent
+        sql: "ALTER TABLESPACE ts PERMANENT;"
+      - id: temporary
+        sql: "ALTER TABLESPACE ts TEMPORARY;"
+      - id: flashback_on
+        sql: "ALTER TABLESPACE ts FLASHBACK ON;"
+      - id: flashback_off
+        sql: "ALTER TABLESPACE ts FLASHBACK OFF;"
+      - id: retention_guarantee
+        sql: "ALTER TABLESPACE ts RETENTION GUARANTEE;"
+      - id: retention_noguarantee
+        sql: "ALTER TABLESPACE ts RETENTION NOGUARANTEE;"
+      - id: enable_lost_write_protection
+        sql: "ALTER TABLESPACE ts ENABLE LOST WRITE PROTECTION;"
+      - id: suspend_lost_write_protection
+        sql: "ALTER TABLESPACE ts SUSPEND LOST WRITE PROTECTION;"
+      - id: remove_lost_write_protection
+        sql: "ALTER TABLESPACE ts REMOVE LOST WRITE PROTECTION;"
+      - id: if_exists
+        sql: "ALTER TABLESPACE IF EXISTS ts ONLINE;"
+    examples:
+      - "ALTER TABLESPACE tbs_01 BEGIN BACKUP;"
+      - "ALTER TABLESPACE tbs_03 ADD DATAFILE 'tbs_f04.dbf' SIZE 100K AUTOEXTEND ON NEXT 10K MAXSIZE 100K;"
+      - "ALTER TABLESPACE undots1 RETENTION GUARANTEE;"
+
+  - id: alter_trigger
+    name: ALTER TRIGGER
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-TRIGGER.html
+    tier: medium
+    probes:
+      - id: enable
+        sql: "ALTER TRIGGER trg ENABLE;"
+      - id: disable
+        sql: "ALTER TRIGGER trg DISABLE;"
+      - id: schema_qualified
+        sql: "ALTER TRIGGER hr.trg DISABLE;"
+      - id: if_exists
+        sql: "ALTER TRIGGER IF EXISTS trg ENABLE;"
+      - id: rename_to
+        sql: "ALTER TRIGGER trg RENAME TO trg2;"
+      - id: editionable
+        sql: "ALTER TRIGGER trg EDITIONABLE;"
+      - id: noneditionable
+        sql: "ALTER TRIGGER trg NONEDITIONABLE;"
+      - id: compile
+        sql: "ALTER TRIGGER trg COMPILE;"
+      - id: compile_debug_reuse_settings
+        sql: "ALTER TRIGGER trg COMPILE DEBUG REUSE SETTINGS;"
+      - id: compile_parameter
+        sql: "ALTER TRIGGER trg COMPILE PLSQL_OPTIMIZE_LEVEL = 2;"
+    examples:
+      - "ALTER TRIGGER update_job_history DISABLE;"
+      - "ALTER TRIGGER update_job_history ENABLE;"
+
+  - id: alter_type
+    name: ALTER TYPE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-TYPE.html
+    tier: medium
+    probes:
+      - id: compile
+        sql: "ALTER TYPE t COMPILE;"
+      - id: compile_specification
+        sql: "ALTER TYPE t COMPILE SPECIFICATION;"
+      - id: compile_body
+        sql: "ALTER TYPE t COMPILE BODY;"
+      - id: compile_debug_reuse_settings
+        sql: "ALTER TYPE t COMPILE DEBUG REUSE SETTINGS;"
+      - id: replace_as_object
+        sql: "ALTER TYPE t REPLACE AS OBJECT (a NUMBER, b VARCHAR2(10));"
+      - id: replace_authid
+        sql: "ALTER TYPE t REPLACE AUTHID DEFINER AS OBJECT (a NUMBER);"
+      - id: reset
+        sql: "ALTER TYPE t RESET;"
+      - id: not_instantiable
+        sql: "ALTER TYPE t NOT INSTANTIABLE;"
+      - id: final
+        sql: "ALTER TYPE t FINAL;"
+      - id: add_attribute
+        sql: "ALTER TYPE t ADD ATTRIBUTE (a2 NUMBER) CASCADE;"
+      - id: add_attribute_single
+        sql: "ALTER TYPE t ADD ATTRIBUTE a2 NUMBER INVALIDATE;"
+      - id: modify_attribute
+        sql: "ALTER TYPE t MODIFY ATTRIBUTE (a1 NUMBER(10)) CASCADE;"
+      - id: drop_attribute
+        sql: "ALTER TYPE t DROP ATTRIBUTE (a2) INVALIDATE;"
+      - id: add_member_function
+        sql: "ALTER TYPE t ADD MEMBER FUNCTION f RETURN NUMBER CASCADE;"
+      - id: drop_member_function
+        sql: "ALTER TYPE t DROP MEMBER FUNCTION f RETURN NUMBER CASCADE;"
+      - id: modify_limit
+        sql: "ALTER TYPE t MODIFY LIMIT 100 CASCADE;"
+      - id: modify_element_type
+        sql: "ALTER TYPE t MODIFY ELEMENT TYPE VARCHAR2(100) CASCADE;"
+      - id: cascade_including_table_data
+        sql: "ALTER TYPE t ADD ATTRIBUTE (a2 NUMBER) CASCADE INCLUDING TABLE DATA;"
+      - id: cascade_not_including_table_data
+        sql: "ALTER TYPE t ADD ATTRIBUTE (a2 NUMBER) CASCADE NOT INCLUDING TABLE DATA;"
+      - id: cascade_convert_to_substitutable
+        sql: "ALTER TYPE t NOT FINAL CASCADE CONVERT TO SUBSTITUTABLE;"
+      - id: cascade_force_exceptions
+        sql: "ALTER TYPE t ADD ATTRIBUTE (a2 NUMBER) CASCADE FORCE EXCEPTIONS INTO err_tab;"
+      - id: if_exists
+        sql: "ALTER TYPE IF EXISTS s.t COMPILE;"
+      - id: editionable
+        sql: "ALTER TYPE t EDITIONABLE;"
+      - id: noneditionable
+        sql: "ALTER TYPE t NONEDITIONABLE;"
+    examples: []
+
+  - id: alter_user
+    name: ALTER USER
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-USER.html
+    tier: medium
+    probes:
+      - id: identified_by
+        sql: "ALTER USER u IDENTIFIED BY pwd;"
+      - id: identified_by_replace
+        sql: "ALTER USER u IDENTIFIED BY p3 REPLACE p1;"
+      - id: identified_externally
+        sql: "ALTER USER u IDENTIFIED EXTERNALLY;"
+      - id: identified_externally_as
+        sql: "ALTER USER u IDENTIFIED EXTERNALLY AS 'kerberos_principal';"
+      - id: identified_globally_as
+        sql: "ALTER USER u IDENTIFIED GLOBALLY AS 'CN=tom,O=oracle,C=US';"
+      - id: no_authentication
+        sql: "ALTER USER u NO AUTHENTICATION;"
+      - id: add_factor
+        sql: "ALTER USER u ADD FACTOR 'auth_method' AS 'external_name';"
+      - id: drop_factor
+        sql: "ALTER USER u DROP FACTOR 'auth_method';"
+      - id: default_collation
+        sql: "ALTER USER u DEFAULT COLLATION binary_ci;"
+      - id: default_tablespace
+        sql: "ALTER USER u DEFAULT TABLESPACE ts;"
+      - id: temporary_tablespace
+        sql: "ALTER USER u TEMPORARY TABLESPACE tbs_grp_01;"
+      - id: local_temporary_tablespace
+        sql: "ALTER USER u LOCAL TEMPORARY TABLESPACE ts;"
+      - id: quota
+        sql: "ALTER USER u QUOTA 100M ON ts;"
+      - id: quota_unlimited
+        sql: "ALTER USER u QUOTA UNLIMITED ON ts;"
+      - id: profile
+        sql: "ALTER USER u PROFILE p;"
+      - id: default_role_list
+        sql: "ALTER USER u DEFAULT ROLE r1, r2;"
+      - id: default_role_all_except
+        sql: "ALTER USER u DEFAULT ROLE ALL EXCEPT r1;"
+      - id: default_role_none
+        sql: "ALTER USER u DEFAULT ROLE NONE;"
+      - id: password_expire
+        sql: "ALTER USER u PASSWORD EXPIRE;"
+      - id: account_lock
+        sql: "ALTER USER u ACCOUNT LOCK;"
+      - id: account_unlock
+        sql: "ALTER USER u ACCOUNT UNLOCK;"
+      - id: enable_editions
+        sql: "ALTER USER u ENABLE EDITIONS;"
+      - id: enable_editions_for_force
+        sql: "ALTER USER u ENABLE EDITIONS FOR VIEW, SYNONYM FORCE;"
+      - id: http_digest_enable
+        sql: "ALTER USER u HTTP DIGEST ENABLE;"
+      - id: container
+        sql: "ALTER USER u CONTAINER = ALL;"
+      - id: enable_dictionary_protection
+        sql: "ALTER USER u ENABLE DICTIONARY PROTECTION;"
+      - id: disable_dictionary_protection
+        sql: "ALTER USER u DISABLE DICTIONARY PROTECTION;"
+      - id: read_only
+        sql: "ALTER USER u READ ONLY;"
+      - id: read_write
+        sql: "ALTER USER u READ WRITE;"
+      - id: container_data_set_all
+        sql: "ALTER USER u SET CONTAINER_DATA = ALL CONTAINER = CURRENT;"
+      - id: container_data_set_list_for
+        sql: "ALTER USER u SET CONTAINER_DATA = (cdb$root, pdb1) FOR s.v CONTAINER = CURRENT;"
+      - id: container_data_add
+        sql: "ALTER USER u ADD CONTAINER_DATA = (pdb1) CONTAINER = CURRENT;"
+      - id: container_data_remove
+        sql: "ALTER USER u REMOVE CONTAINER_DATA = (pdb1) CONTAINER = CURRENT;"
+      - id: multiple_clauses
+        sql: "ALTER USER u IDENTIFIED BY pwd DEFAULT TABLESPACE ts QUOTA UNLIMITED ON ts;"
+      - id: if_exists
+        sql: "ALTER USER IF EXISTS u ACCOUNT LOCK;"
+      - id: proxy_grant_connect_through
+        sql: "ALTER USER u GRANT CONNECT THROUGH sh;"
+      - id: proxy_grant_with_role
+        sql: "ALTER USER u GRANT CONNECT THROUGH sh WITH ROLE r1;"
+      - id: proxy_grant_enterprise_users
+        sql: "ALTER USER u GRANT CONNECT THROUGH ENTERPRISE USERS;"
+      - id: proxy_revoke
+        sql: "ALTER USER u REVOKE CONNECT THROUGH sh;"
+      - id: proxy_revoke_enterprise_users
+        sql: "ALTER USER u REVOKE CONNECT THROUGH ENTERPRISE USERS;"
+      - id: proxy_multiple_users
+        sql: "ALTER USER u1, u2 GRANT CONNECT THROUGH sh;"
+    examples:
+      - "ALTER USER sh PROFILE new_profile;"
+      - "ALTER USER sh DEFAULT ROLE ALL EXCEPT dw_manager;"
+      - "ALTER USER app_user1 GRANT CONNECT THROUGH sh WITH ROLE warehouse_user;"

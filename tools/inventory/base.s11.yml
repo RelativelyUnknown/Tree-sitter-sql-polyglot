@@ -1,0 +1,155 @@
+dialect: base
+engine: ISO SQL
+version: "SQL:2016"
+source: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html
+
+statements:
+  - id: truncate_table
+    name: TRUNCATE TABLE
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_14_10_truncate_table_statement
+    tier: medium
+    probes:
+      - id: basic
+        sql: "TRUNCATE TABLE t;"
+      - id: continue_identity
+        sql: "TRUNCATE TABLE t CONTINUE IDENTITY;"
+      - id: restart_identity
+        sql: "TRUNCATE TABLE t RESTART IDENTITY;"
+
+  - id: create_schema
+    name: CREATE SCHEMA
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_1_schema_definition
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE SCHEMA s;"
+      - id: authorization
+        sql: "CREATE SCHEMA AUTHORIZATION u;"
+      - id: name_authorization
+        sql: "CREATE SCHEMA s AUTHORIZATION u;"
+      - id: default_character_set
+        sql: "CREATE SCHEMA s DEFAULT CHARACTER SET utf8;"
+      - id: schema_element_table
+        sql: "CREATE SCHEMA s CREATE TABLE t (c INTEGER);"
+      - id: schema_element_view
+        sql: "CREATE SCHEMA s CREATE TABLE t (c INTEGER) CREATE VIEW v AS SELECT c FROM t;"
+
+  - id: drop_schema
+    name: DROP SCHEMA
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_2_drop_schema_statement
+    tier: medium
+    probes:
+      - id: cascade
+        sql: "DROP SCHEMA s CASCADE;"
+      - id: restrict
+        sql: "DROP SCHEMA s RESTRICT;"
+
+  - id: create_domain
+    name: CREATE DOMAIN
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_34_domain_definition
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE DOMAIN d AS INTEGER;"
+      - id: without_as
+        sql: "CREATE DOMAIN d INTEGER;"
+      - id: default
+        sql: "CREATE DOMAIN d AS INTEGER DEFAULT 0;"
+      - id: check_constraint
+        sql: "CREATE DOMAIN d AS INTEGER CHECK (VALUE > 0);"
+      - id: named_constraint
+        sql: "CREATE DOMAIN d AS INTEGER CONSTRAINT pos CHECK (VALUE > 0) NOT DEFERRABLE;"
+      - id: collate
+        sql: "CREATE DOMAIN d AS VARCHAR(10) COLLATE c;"
+
+  - id: alter_domain
+    name: ALTER DOMAIN
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_35_alter_domain_statement
+    tier: medium
+    probes:
+      - id: set_default
+        sql: "ALTER DOMAIN d SET DEFAULT 0;"
+      - id: drop_default
+        sql: "ALTER DOMAIN d DROP DEFAULT;"
+      - id: add_constraint
+        sql: "ALTER DOMAIN d ADD CONSTRAINT pos CHECK (VALUE > 0);"
+      - id: drop_constraint
+        sql: "ALTER DOMAIN d DROP CONSTRAINT pos;"
+
+  - id: drop_domain
+    name: DROP DOMAIN
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_40_drop_domain_statement
+    tier: medium
+    probes:
+      - id: cascade
+        sql: "DROP DOMAIN d CASCADE;"
+      - id: restrict
+        sql: "DROP DOMAIN d RESTRICT;"
+
+  - id: create_trigger
+    name: CREATE TRIGGER
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_49_trigger_definition
+    tier: medium
+    probes:
+      - id: before_insert
+        sql: "CREATE TRIGGER trg BEFORE INSERT ON t DELETE FROM u;"
+      - id: after_delete_for_each_row
+        sql: "CREATE TRIGGER trg AFTER DELETE ON t FOR EACH ROW DELETE FROM u;"
+      - id: instead_of_update
+        sql: "CREATE TRIGGER trg INSTEAD OF UPDATE ON v FOR EACH STATEMENT DELETE FROM u;"
+      - id: update_of_columns
+        sql: "CREATE TRIGGER trg AFTER UPDATE OF a, b ON t FOR EACH ROW DELETE FROM u;"
+      - id: referencing_row
+        sql: "CREATE TRIGGER trg AFTER UPDATE ON t REFERENCING OLD ROW AS o NEW ROW AS n FOR EACH ROW DELETE FROM u WHERE x = o.x;"
+      - id: referencing_table
+        sql: "CREATE TRIGGER trg AFTER INSERT ON t REFERENCING NEW TABLE AS nt FOR EACH STATEMENT DELETE FROM u;"
+      - id: when_clause
+        sql: "CREATE TRIGGER trg AFTER INSERT ON t FOR EACH ROW WHEN (1 = 1) DELETE FROM u;"
+      - id: begin_atomic
+        sql: "CREATE TRIGGER trg AFTER INSERT ON t FOR EACH ROW BEGIN ATOMIC DELETE FROM u; DELETE FROM w; END;"
+
+  - id: drop_trigger
+    name: DROP TRIGGER
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_50_drop_trigger_statement
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP TRIGGER trg;"
+      - id: schema_qualified
+        sql: "DROP TRIGGER s.trg;"
+
+  - id: create_type
+    name: CREATE TYPE (user-defined type)
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_51_user_defined_type_definition
+    tier: medium
+    probes:
+      - id: distinct_predefined
+        sql: "CREATE TYPE ty AS INTEGER FINAL;"
+      - id: structured_attributes
+        sql: "CREATE TYPE ty AS (a INTEGER, b VARCHAR(10)) NOT FINAL;"
+      - id: under_supertype
+        sql: "CREATE TYPE ty UNDER sup AS (a INTEGER) NOT FINAL;"
+      - id: instantiable
+        sql: "CREATE TYPE ty AS (a INTEGER) INSTANTIABLE NOT FINAL;"
+      - id: not_instantiable
+        sql: "CREATE TYPE ty AS (a INTEGER) NOT INSTANTIABLE NOT FINAL;"
+      - id: ref_using
+        sql: "CREATE TYPE ty AS (a INTEGER) NOT FINAL REF USING INTEGER;"
+      - id: ref_system_generated
+        sql: "CREATE TYPE ty AS (a INTEGER) NOT FINAL REF IS SYSTEM GENERATED;"
+      - id: collection_representation
+        sql: "CREATE TYPE ty AS INTEGER ARRAY[10] FINAL;"
+
+  - id: alter_type
+    name: ALTER TYPE
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_53_alter_type_statement
+    tier: medium
+    probes:
+      - id: add_attribute
+        sql: "ALTER TYPE ty ADD ATTRIBUTE a INTEGER;"
+      - id: drop_attribute
+        sql: "ALTER TYPE ty DROP ATTRIBUTE a RESTRICT;"
+      - id: add_method
+        sql: "ALTER TYPE ty ADD METHOD m (x INTEGER) RETURNS INTEGER;"
+      - id: drop_method
+        sql: "ALTER TYPE ty DROP METHOD m (INTEGER) RESTRICT;"

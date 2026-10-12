@@ -1,0 +1,51 @@
+dialect: clickhouse
+engine: ClickHouse
+version: "current docs (2026)"
+source: https://clickhouse.com/docs/sql-reference/statements/
+
+statements:
+  - id: alter_table_update
+    name: ALTER TABLE ... UPDATE
+    doc: https://clickhouse.com/docs/sql-reference/statements/alter/update
+    tier: high
+    probes:
+      - id: basic
+        sql: "ALTER TABLE t UPDATE c = 1 WHERE id = 2;"
+      - id: qualified_table
+        sql: "ALTER TABLE db.t UPDATE c = 1 WHERE id = 2;"
+      - id: on_cluster
+        sql: "ALTER TABLE t ON CLUSTER cl UPDATE c = 1 WHERE id = 2;"
+      - id: multiple_assignments
+        sql: "ALTER TABLE t UPDATE c1 = 1, c2 = c2 + 1 WHERE id = 2;"
+      - id: in_partition
+        sql: "ALTER TABLE t UPDATE c = 1 IN PARTITION 202401 WHERE id = 2;"
+      - id: in_multiple_partitions
+        sql: "ALTER TABLE t UPDATE c = 1 IN PARTITION 202401, 202402 WHERE id = 2;"
+      - id: on_cluster_in_partition
+        sql: "ALTER TABLE db.t ON CLUSTER cl UPDATE c1 = 1, c2 = 'x' IN PARTITION 1 WHERE id > 0;"
+      - id: multiple_commands
+        sql: "ALTER TABLE t UPDATE c = 1 WHERE id = 2, UPDATE d = 3 WHERE id = 4;"
+        note: "Page says one query can contain several commands separated by commas."
+    examples:
+      - "ALTER TABLE test UPDATE x = 2 WHERE 1;"
+
+  - id: alter_table_delete
+    name: ALTER TABLE ... DELETE
+    doc: https://clickhouse.com/docs/sql-reference/statements/alter/delete
+    tier: high
+    probes:
+      - id: basic
+        sql: "ALTER TABLE t DELETE WHERE id = 2;"
+      - id: qualified_table
+        sql: "ALTER TABLE db.t DELETE WHERE id = 2;"
+      - id: on_cluster
+        sql: "ALTER TABLE t ON CLUSTER cl DELETE WHERE id = 2;"
+      - id: in_partition
+        sql: "ALTER TABLE t DELETE IN PARTITION 202401 WHERE id = 2;"
+      - id: in_multiple_partitions
+        sql: "ALTER TABLE t DELETE IN PARTITION 202401, 202402 WHERE id = 2;"
+      - id: on_cluster_in_partition
+        sql: "ALTER TABLE db.t ON CLUSTER cl DELETE IN PARTITION 1 WHERE id > 0;"
+      - id: multiple_commands
+        sql: "ALTER TABLE t DELETE WHERE id = 2, DELETE WHERE id = 4;"
+        note: "Page says one query can contain several commands separated by commas."

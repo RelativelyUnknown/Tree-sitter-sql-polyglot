@@ -1,0 +1,86 @@
+dialect: tsql
+engine: SQL Server 2022 / Azure SQL Database
+version: "2022"
+source: https://learn.microsoft.com/en-us/sql/t-sql/statements/statements
+
+statements:
+  - id: execute
+    name: EXECUTE
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/language-elements/execute-transact-sql
+    tier: high
+    probes:
+      - { id: exec_proc, sql: "EXEC p;" }
+      - { id: execute_proc, sql: "EXECUTE dbo.p;" }
+      - id: keyword_omitted
+        sql: "dbo.p 1;"
+        note: EXEC is optional when the call is the first statement in a batch
+      - { id: linked_server_proc, sql: "EXEC srv.db.dbo.p;" }
+      - { id: return_status, sql: "EXEC @rc = dbo.p;" }
+      - { id: group_number, sql: "EXEC dbo.p;2 1;" }
+      - { id: module_name_var, sql: "EXEC @proc_name;" }
+      - { id: module_name_var_return_status, sql: "EXEC @rc = @proc_name @a = 1;" }
+      - { id: positional_params, sql: "EXEC p 1, 'a', @v;" }
+      - { id: named_params, sql: "EXEC p @a = 1, @b = 'x', @c = @v;" }
+      - { id: output_param, sql: "EXEC p @a = @v OUTPUT;" }
+      - { id: output_positional, sql: "EXEC p 1, @v OUTPUT;" }
+      - { id: default_param, sql: "EXEC p DEFAULT, @b = DEFAULT;" }
+      - { id: with_recompile, sql: "EXEC p @a = 1 WITH RECOMPILE;" }
+      - { id: result_sets_undefined, sql: "EXEC p WITH RESULT SETS UNDEFINED;" }
+      - { id: result_sets_none, sql: "EXEC p WITH RESULT SETS NONE;" }
+      - { id: result_sets_columns, sql: "EXEC p WITH RESULT SETS ((c1 INT, c2 VARCHAR(10) COLLATE Latin1_General_CI_AS NOT NULL, c3 DATE NULL));" }
+      - { id: result_sets_multiple, sql: "EXEC p WITH RESULT SETS ((c1 INT), (c2 INT, c3 INT));" }
+      - { id: result_sets_as_object, sql: "EXEC p WITH RESULT SETS (AS OBJECT dbo.t);" }
+      - { id: result_sets_as_object_qualified, sql: "EXEC p WITH RESULT SETS (AS OBJECT db.dbo.v);" }
+      - { id: result_sets_as_type, sql: "EXEC p WITH RESULT SETS (AS TYPE dbo.table_type);" }
+      - { id: result_sets_as_for_xml, sql: "EXEC p WITH RESULT SETS (AS FOR XML);" }
+      - { id: multiple_options, sql: "EXEC p WITH RECOMPILE, RESULT SETS NONE;" }
+      - { id: string_literal, sql: "EXEC ('SELECT 1');" }
+      - { id: string_unicode_literal, sql: "EXECUTE (N'SELECT 1');" }
+      - { id: string_variable, sql: "EXEC (@sql);" }
+      - { id: string_concat, sql: "EXEC ('SELECT * FROM ' + @tbl + ' WHERE c = 1');" }
+      - { id: string_as_login, sql: "EXEC ('SELECT 1') AS LOGIN = 'login1';" }
+      - { id: string_as_user, sql: "EXEC (@sql) AS USER = 'user1';" }
+      - { id: pass_through_at, sql: "EXEC ('SELECT 1') AT srv;" }
+      - { id: pass_through_params, sql: "EXEC ('SELECT * FROM t WHERE c = ? AND d = ?', 1, @v OUTPUT) AT srv;" }
+      - { id: pass_through_as_user_at, sql: "EXEC ('SELECT 1') AS USER = 'user1' AT srv;" }
+      - { id: pass_through_at_data_source, sql: "EXEC ('SELECT 1') AT DATA_SOURCE ds;" }
+    examples:
+      - "EXECUTE dbo.uspGetEmployeeManagers @EmployeeID = 6;"
+      - "EXECUTE dbo.ProcTestDefaults DEFAULT, 'H', DEFAULT;"
+      - |-
+        EXECUTE ('CREATE TABLE AdventureWorks2022.dbo.SalesTbl
+        (SalesID INT, SalesName VARCHAR(10)); ') AT SeattleSales;
+
+  - id: alter_trigger
+    name: ALTER TRIGGER
+    doc: https://learn.microsoft.com/en-us/sql/t-sql/statements/alter-trigger-transact-sql
+    tier: high
+    probes:
+      - { id: dml_after_insert, sql: "ALTER TRIGGER dbo.trg ON dbo.t AFTER INSERT AS SELECT 1;" }
+      - { id: dml_for, sql: "ALTER TRIGGER dbo.trg ON dbo.t FOR UPDATE AS SELECT 1;" }
+      - { id: dml_instead_of, sql: "ALTER TRIGGER dbo.trg ON dbo.v INSTEAD OF DELETE AS SELECT 1;" }
+      - { id: dml_multiple_events, sql: "ALTER TRIGGER dbo.trg ON dbo.t AFTER INSERT, UPDATE, DELETE AS SELECT 1;" }
+      - { id: dml_with_encryption, sql: "ALTER TRIGGER dbo.trg ON dbo.t WITH ENCRYPTION AFTER INSERT AS SELECT 1;" }
+      - { id: dml_with_execute_as, sql: "ALTER TRIGGER dbo.trg ON dbo.t WITH EXECUTE AS OWNER AFTER INSERT AS SELECT 1;" }
+      - { id: dml_with_multiple_options, sql: "ALTER TRIGGER dbo.trg ON dbo.t WITH ENCRYPTION, EXECUTE AS 'user1' AFTER INSERT AS SELECT 1;" }
+      - { id: dml_not_for_replication, sql: "ALTER TRIGGER dbo.trg ON dbo.t AFTER INSERT NOT FOR REPLICATION AS SELECT 1;" }
+      - { id: dml_multiple_statements, sql: "ALTER TRIGGER dbo.trg ON dbo.t AFTER INSERT AS SELECT 1; SELECT 2;" }
+      - { id: dml_begin_end_body, sql: "ALTER TRIGGER dbo.trg ON dbo.t AFTER INSERT AS BEGIN SET NOCOUNT ON; SELECT 1; END;" }
+      - { id: dml_external_name, sql: "ALTER TRIGGER dbo.trg ON dbo.t AFTER INSERT AS EXTERNAL NAME asm.cls.meth;" }
+      - { id: dml_native_compilation, sql: "ALTER TRIGGER dbo.trg ON dbo.t WITH NATIVE_COMPILATION, SCHEMABINDING, EXECUTE AS OWNER AFTER INSERT AS BEGIN ATOMIC WITH (TRANSACTION ISOLATION LEVEL = SNAPSHOT, LANGUAGE = N'us_english') SELECT 1; END;" }
+      - { id: ddl_database, sql: "ALTER TRIGGER trg ON DATABASE FOR DROP_TABLE AS PRINT 'x';" }
+      - { id: ddl_database_after_multiple_events, sql: "ALTER TRIGGER trg ON DATABASE AFTER CREATE_TABLE, ALTER_TABLE AS PRINT 'x';" }
+      - { id: ddl_event_group, sql: "ALTER TRIGGER trg ON DATABASE FOR DDL_DATABASE_LEVEL_EVENTS AS PRINT 'x';" }
+      - { id: ddl_all_server, sql: "ALTER TRIGGER trg ON ALL SERVER FOR CREATE_LOGIN AS PRINT 'x';" }
+      - { id: ddl_with_encryption, sql: "ALTER TRIGGER trg ON DATABASE WITH ENCRYPTION FOR DROP_TABLE AS PRINT 'x';" }
+      - { id: ddl_with_execute_as, sql: "ALTER TRIGGER trg ON ALL SERVER WITH EXECUTE AS 'login1' FOR DROP_LOGIN AS PRINT 'x';" }
+      - { id: ddl_external_name, sql: "ALTER TRIGGER trg ON DATABASE FOR DROP_TABLE AS EXTERNAL NAME asm.cls.meth;" }
+      - { id: logon, sql: "ALTER TRIGGER trg ON ALL SERVER FOR LOGON AS PRINT 'x';" }
+      - { id: logon_after_with_options, sql: "ALTER TRIGGER trg ON ALL SERVER WITH ENCRYPTION, EXECUTE AS 'login1' AFTER LOGON AS PRINT 'x';" }
+      - { id: logon_external_name, sql: "ALTER TRIGGER trg ON ALL SERVER FOR LOGON AS EXTERNAL NAME asm.cls.meth;" }
+    examples:
+      - |-
+        ALTER TRIGGER Sales.bonus_reminder
+        ON Sales.SalesPersonQuotaHistory
+        AFTER INSERT
+        AS RAISERROR ('Notify Compensation', 16, 10);

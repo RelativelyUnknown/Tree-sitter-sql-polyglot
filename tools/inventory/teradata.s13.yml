@@ -1,0 +1,110 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: locking_modifier
+    name: LOCKING Request Modifier
+    doc: https://docs.teradata.com/reader/4_jiz05LXsLWBbfvKTLneg/SRslr0obKtn9d76jUq5ayQ
+    tier: high
+    probes:
+      - { id: database_access, sql: "LOCKING DATABASE d FOR ACCESS SELECT * FROM t;" }
+      - { id: database_no_keyword, sql: "LOCKING d FOR ACCESS SELECT * FROM t;" }
+      - { id: table_access, sql: "LOCKING TABLE t FOR ACCESS SELECT * FROM t;" }
+      - { id: view_access, sql: "LOCKING VIEW v FOR ACCESS SELECT * FROM v;" }
+      - { id: row_write, sql: "LOCKING ROW FOR WRITE SELECT * FROM t WHERE c = 1;" }
+      - { id: in_keyword, sql: "LOCKING TABLE t IN ACCESS MODE SELECT * FROM t;" }
+      - { id: exclusive, sql: "LOCKING TABLE t FOR EXCLUSIVE SELECT * FROM t;" }
+      - { id: excl_abbrev, sql: "LOCKING TABLE t FOR EXCL SELECT * FROM t;" }
+      - { id: read, sql: "LOCKING TABLE t FOR READ SELECT * FROM t;" }
+      - { id: read_override, sql: "LOCKING TABLE t FOR READ OVERRIDE SELECT * FROM t;" }
+      - { id: share, sql: "LOCKING TABLE t FOR SHARE SELECT * FROM t;" }
+      - { id: write, sql: "LOCKING TABLE t FOR WRITE UPDATE t SET c = 1;" }
+      - { id: checksum, sql: "LOCKING TABLE t FOR CHECKSUM SELECT * FROM t;" }
+      - { id: load_committed, sql: "LOCKING TABLE t FOR LOAD COMMITTED SELECT * FROM t;" }
+      - { id: nowait, sql: "LOCKING TABLE t FOR ACCESS NOWAIT SELECT * FROM t;" }
+      - { id: mode_nowait, sql: "LOCKING TABLE t FOR WRITE MODE NOWAIT SELECT * FROM t;" }
+      - { id: multiple_specs, sql: "LOCKING TABLE t FOR READ, LOCKING ROW FOR WRITE SELECT * FROM t;" }
+      - { id: with_insert, sql: "LOCKING TABLE t FOR WRITE INSERT INTO t VALUES (1);" }
+      - { id: with_delete, sql: "LOCKING TABLE t FOR WRITE DELETE FROM t WHERE c = 1;" }
+      - { id: lock_only, sql: "LOCKING TABLE t FOR EXCLUSIVE;" }
+      - { id: create_view, sql: "LOCKING TABLE t FOR ACCESS CREATE VIEW v AS SELECT * FROM t;" }
+    examples:
+      - |-
+        LOCKING TABLE personnel.employee FOR ACCESS
+        SELECT name, salary
+        FROM employee
+        WHERE salary < 25000 ;
+      - |-
+        LOCKING TABLE accnt_rec FOR ACCESS
+        SELECT accnt_no, qualify_accnt
+        FROM accnt_rec
+        WHERE qualify_accnt = 1587;
+      - |-
+        LOCKING ROW EXCLUSIVE
+        SELECT phone
+        FROM customer
+        WHERE cust_id=12345;
+
+  - id: merge
+    name: MERGE
+    doc: https://docs.teradata.com/reader/4_jiz05LXsLWBbfvKTLneg/9QJnyqklQ9iDaiBOvml_AQ
+    tier: high
+    probes:
+      - { id: update_insert, sql: "MERGE INTO t USING s ON t.a = s.a WHEN MATCHED THEN UPDATE SET b = s.b WHEN NOT MATCHED THEN INSERT (a, b) VALUES (s.a, s.b);" }
+      - { id: without_into, sql: "MERGE t USING s ON t.a = s.a WHEN MATCHED THEN UPDATE SET b = s.b;" }
+      - { id: target_alias, sql: "MERGE INTO t AS tgt USING s ON tgt.a = s.a WHEN MATCHED THEN UPDATE SET b = s.b;" }
+      - { id: target_alias_no_as, sql: "MERGE INTO t tgt USING s ON tgt.a = s.a WHEN MATCHED THEN UPDATE SET b = s.b;" }
+      - { id: upd_abbrev, sql: "MERGE INTO t USING s ON t.a = s.a WHEN MATCHED THEN UPD SET b = s.b;" }
+      - { id: ins_abbrev, sql: "MERGE INTO t USING s ON t.a = s.a WHEN NOT MATCHED THEN INS (a, b) VALUES (s.a, s.b);" }
+      - { id: matched_delete, sql: "MERGE INTO t USING s ON t.a = s.a WHEN MATCHED THEN DELETE;" }
+      - { id: delete_with_not_matched, sql: "MERGE INTO t USING s ON t.a = s.a WHEN MATCHED THEN DELETE WHEN NOT MATCHED THEN INSERT (a, b) VALUES (s.a, s.b);" }
+      - { id: not_matched_only, sql: "MERGE INTO t USING s ON t.a = s.a WHEN NOT MATCHED THEN INSERT (a, b) VALUES (s.a, s.b);" }
+      - { id: reverse_order, sql: "MERGE INTO t USING s ON t.a = s.a WHEN NOT MATCHED THEN INSERT (a, b) VALUES (s.a, s.b) WHEN MATCHED THEN UPDATE SET b = s.b;" }
+      - { id: insert_values_only, sql: "MERGE INTO t USING s ON t.a = s.a WHEN NOT MATCHED THEN INSERT VALUES (s.a, s.b);" }
+      - { id: update_multiple_columns, sql: "MERGE INTO t USING s ON t.a = s.a WHEN MATCHED THEN UPDATE SET b = s.b, c = s.c;" }
+      - { id: using_values, sql: "MERGE INTO t USING VALUES (1, 'x') AS s (a, b) ON t.a = s.a WHEN MATCHED THEN UPDATE SET b = s.b WHEN NOT MATCHED THEN INSERT (a, b) VALUES (s.a, s.b);" }
+      - { id: using_values_no_as, sql: "MERGE INTO t USING VALUES (1, 'x') s (a, b) ON t.a = s.a WHEN MATCHED THEN UPDATE SET b = s.b;" }
+      - { id: using_subquery, sql: "MERGE INTO t USING (SELECT a, b FROM src WHERE a = 1) AS s ON t.a = s.a WHEN MATCHED THEN UPDATE SET b = s.b WHEN NOT MATCHED THEN INSERT (a, b) VALUES (s.a, s.b);" }
+      - { id: using_subquery_column_list, sql: "MERGE INTO t USING (SELECT x, y FROM src WHERE x = 1) AS s (a, b) ON t.a = s.a WHEN MATCHED THEN UPDATE SET b = s.b;" }
+      - { id: source_alias, sql: "MERGE INTO t USING src AS s ON t.a = s.a WHEN MATCHED THEN UPDATE SET b = s.b;" }
+      - { id: source_column_list, sql: "MERGE INTO t USING src AS s (a, b) ON t.a = s.a WHEN MATCHED THEN UPDATE SET b = s.b;" }
+      - { id: logging_errors, sql: "MERGE INTO t USING s ON t.a = s.a WHEN MATCHED THEN UPDATE SET b = s.b LOGGING ERRORS;" }
+      - { id: logging_all_errors, sql: "MERGE INTO t USING s ON t.a = s.a WHEN MATCHED THEN UPDATE SET b = s.b LOGGING ALL ERRORS;" }
+      - { id: logging_errors_no_limit, sql: "MERGE INTO t USING s ON t.a = s.a WHEN MATCHED THEN UPDATE SET b = s.b LOGGING ERRORS WITH NO LIMIT;" }
+      - { id: logging_errors_limit, sql: "MERGE INTO t USING s ON t.a = s.a WHEN MATCHED THEN UPDATE SET b = s.b LOGGING ERRORS WITH LIMIT OF 100;" }
+      - { id: isolated_loading, sql: "MERGE WITH ISOLATED LOADING INTO t USING s ON t.a = s.a WHEN MATCHED THEN UPDATE SET b = s.b;" }
+      - { id: no_isolated_loading, sql: "MERGE WITH NO ISOLATED LOADING INTO t USING s ON t.a = s.a WHEN MATCHED THEN UPDATE SET b = s.b;" }
+      - { id: concurrent_isolated_loading, sql: "MERGE WITH CONCURRENT ISOLATED LOADING INTO t USING s ON t.a = s.a WHEN MATCHED THEN UPDATE SET b = s.b;" }
+      - { id: no_concurrent_isolated_loading, sql: "MERGE WITH NO CONCURRENT ISOLATED LOADING INTO t USING s ON t.a = s.a WHEN MATCHED THEN UPDATE SET b = s.b;" }
+      - { id: update_default, sql: "MERGE INTO t USING s ON t.a = s.a WHEN MATCHED THEN UPDATE SET b = DEFAULT;" }
+    examples:
+      - |-
+        MERGE INTO emp
+        USING VALUES (100, 'cc', 200, 3333) AS emp1 (empnum, name,
+                                                     deptno, sal)
+          ON emp1.empnum=emp.s_no
+        WHEN MATCHED THEN
+          UPDATE SET sal=DEFAULT
+        WHEN NOT MATCHED THEN
+          INSERT VALUES (emp1.empnum, emp1.name, emp1.deptno, emp1.sal);
+      - |-
+        MERGE INTO tgttbl AS t1
+        USING  (SELECT c1,c2,c3
+                FROM srctbl) AS t2
+          ON t1.c1=t2.c1
+        WHEN MATCHED THEN
+          UPDATE SET t1.c2=t2.c2 + t1.c2,  t1.c3=t2.c3
+        WHEN NOT MATCHED THEN
+          INSERT INTO t1 VALUES (t2.c1, t2.c2, t2.c3)
+        LOGGING ERRORS WITH LIMIT OF 100;
+      - |-
+        MERGE INTO t1
+             USING t2
+             ON a1=a2
+             WHEN MATCHED THEN
+                 UPDATE
+                 SET b1=b2
+             WHEN NOT MATCHED THEN
+                 INSERT (a2, b2, c2);

@@ -1,0 +1,60 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: iterate
+    name: ITERATE
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/Oh_lAfVLxv2NqpxEZQbDPw
+    tier: high
+    probes:
+      - id: basic
+        sql: "ITERATE l1;"
+      - id: in_while
+        sql: "L1: WHILE c > 0 DO IF c >= m THEN ITERATE L1; END IF; SET c = c - 1; END WHILE L1;"
+      - id: in_loop
+        sql: "L1: LOOP SET c = c - 1; ITERATE L1; END LOOP L1;"
+    examples:
+      - |-
+        L1:
+        WHILE hCounter > 0
+        DO
+           INSERT INTO transaction (trans_num, account_num)
+             VALUES (hCounter, hAccountNum);
+           SET hCounter = hCounter - 1;
+           IF hCounter >= hminNum THEN
+              ITERATE L1;
+           END IF;
+           -- The following two statements perform only when
+           -- hCounter < hminNum
+           UPDATE limit SET minNum = hCounter;
+           SET hminNum = hCounter;
+        END WHILE L1;
+  - id: leave
+    name: LEAVE
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/mX33lFo0KgSXD8_WrUNQjw
+    tier: high
+    probes:
+      - id: basic
+        sql: "LEAVE l1;"
+      - id: in_while
+        sql: "L1: WHILE i < 10 DO IF ACTIVITY_COUNT > 1 THEN LEAVE L1; END IF; SET i = i + 1; END WHILE L1;"
+      - id: compound_label
+        sql: "CREATE PROCEDURE p() SPLABEL: BEGIN DECLARE v INTEGER DEFAULT 0; IF v = 0 THEN LEAVE SPLABEL; END IF; END;"
+    examples:
+      - |-
+        CREATE PROCEDURE spSample()
+        SPLABEL:
+        BEGIN
+           DECLARE vCount INTEGER DEFAULT 0;
+           WHILE vCount <= 10
+           DO
+              UPDATE table_1
+               SET table_1.column_1 = vCount
+               WHERE table_1.column_2 > 10;
+              IF ACTIVITY_COUNT = 0 THEN
+                LEAVE SPLABEL;
+           END IF;
+         END WHILE;
+        END;

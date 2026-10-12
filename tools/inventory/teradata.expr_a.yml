@@ -1,0 +1,524 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements: []
+
+expressions:
+  - id: a_integer_literals
+    name: Integer literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/_AEtGvWw9taKjoSE9IEjmg
+    tier: high
+    probes:
+      - { id: unsigned, sql: "SELECT 127, 32767, 2147483647;" }
+      - { id: signed, sql: "SELECT -128, +36, -2147483648;" }
+    examples:
+      - |-
+        SELECT ProdID
+        FROM PartsTbl
+        WHERE CustID = CAST(9876543210 AS NUMBER);
+
+  - id: a_hex_integer_literals
+    name: Hexadecimal integer literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/tjgBpU1Z~vZvl7qVhrc9bg
+    tier: medium
+    probes:
+      - { id: default_x, sql: "SELECT '1F'X;" }
+      - { id: xi, sql: "SELECT '1F'XI;" }
+      - { id: x1, sql: "SELECT '7F'X1;" }
+      - { id: x2, sql: "SELECT 'FFFF'X2;" }
+      - { id: x4, sql: "SELECT '7FFFFFFF'X4;" }
+      - { id: x8, sql: "SELECT '7FFFFFFFFFFFFFFF'X8;" }
+    # Syntax block lists the suffix as X [ | [1|2|4|8] ]; XI, XI1, XI2, XI4, XI8 appear in the table on the same page.
+  - id: a_decimal_literals
+    name: Decimal literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/NirVysg~lrdbt4kmK6ddYQ
+    tier: high
+    probes:
+      - { id: n_dot_n, sql: "SELECT 3.14159, -88.234, +0.5;" }
+      - { id: trailing_point, sql: "SELECT 253.;" }
+      - { id: leading_point, sql: "SELECT .29;" }
+      - { id: large_integer, sql: "SELECT 2147483650;" }
+
+  - id: a_float_literals
+    name: Floating point literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/KqSqSmNLjf4HTX4kt9WDmA
+    tier: high
+    probes:
+      - { id: ne, sql: "SELECT 1E1, 18E-3;" }
+      - { id: n_dot_ne, sql: "SELECT 1.4E6, -2.5E+3;" }
+      - { id: n_dot_e, sql: "SELECT 5.E2;" }
+      - { id: dot_ne, sql: "SELECT .5E2;" }
+
+  - id: a_hex_byte_literals
+    name: Hexadecimal byte literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/NBniLybWQuLx8U~C7k37YQ
+    tier: medium
+    probes:
+      - { id: xb, sql: "SELECT '7879'XB;" }
+      - { id: xbf, sql: "SELECT '7879'XBF;" }
+      - { id: xbv, sql: "SELECT '7879'XBV;" }
+      - { id: in_where, sql: "SELECT IDVal FROM bvalues WHERE CodeVal = '7879'XB;" }
+    examples:
+      - "INSERT bvalues (112193, '7879'XB) ;"
+      - "SELECT IDVal FROM bvalues WHERE CodeVal = '7879'XB ;"
+
+  - id: a_character_literals
+    name: Character string literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/mYj2tdKe05hEag~9xfvLxA
+    tier: high
+    probes:
+      - { id: plain, sql: "SELECT 'abc';" }
+      - { id: empty, sql: "SELECT '';" }
+      - { id: embedded_apostrophe, sql: "SELECT 'it''s';" }
+      - { id: multiline, sql: "SELECT 'line one\nline two';" }
+      - { id: adjacent_concatenated, sql: "SELECT 'abc' 'def';" }
+      - { id: latin, sql: "SELECT _Latin 'abc';" }
+      - { id: unicode, sql: "SELECT _Unicode 'abc';" }
+      - { id: kanjisjis, sql: "SELECT _KanjiSJIS 'abc';" }
+      - { id: graphic, sql: "SELECT _Graphic 'abc';" }
+
+  - id: a_unicode_delimited_literals
+    name: Unicode delimited character literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/rnCpkbcA9hINCo0NolDsfQ
+    tier: medium
+    probes:
+      - { id: u_amp, sql: "SELECT U&'abc \\0041' UESCAPE '\\';" }
+      - { id: u_amp_plus, sql: "SELECT U&'abc \\+000041' UESCAPE '\\';" }
+      - { id: with_charset_prefix, sql: "SELECT _Unicode U&'abc \\0041' UESCAPE '\\';" }
+      - { id: custom_escape, sql: "SELECT U&'abc !0041' UESCAPE '!';" }
+      - { id: multiple_bodies, sql: "SELECT U&'abc' 'def' UESCAPE '\\';" }
+
+  - id: a_hex_character_literals
+    name: Hexadecimal character literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/sl8hHPiTz0mKIsynRbgzKg
+    tier: medium
+    probes:
+      - { id: xc, sql: "SELECT '41424344'XC;" }
+      - { id: xcv, sql: "SELECT '41424344'XCV;" }
+      - { id: xcf, sql: "SELECT '41424344'XCF;" }
+      - { id: latin_prefix, sql: "SELECT _Latin '41424344'XC;" }
+      - { id: unicode_prefix, sql: "SELECT _Unicode '00410042'XCV;" }
+
+  - id: a_date_literals
+    name: DATE literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/s5ccvSDFqSYM44fk6g3w2g
+    tier: high
+    probes:
+      - { id: date, sql: "SELECT DATE '1998-01-06';" }
+      - { id: in_where, sql: "SELECT * FROM t WHERE startdate = DATE '1998-01-06';" }
+    examples:
+      - "SELECT * FROM CLASSES WHERE startdate = DATE '1998-01-06';"
+
+  - id: a_time_literals
+    name: TIME literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/ykr_whqxUklmDAuF5cOkeg
+    tier: high
+    probes:
+      - { id: hh_mi_ss, sql: "SELECT TIME '15:00:00';" }
+      - { id: with_zone, sql: "SELECT TIME '15:00:00-08:00';" }
+      - { id: fractional, sql: "SELECT TIME '15:00:00.123456';" }
+      - { id: fractional_zone, sql: "SELECT TIME '15:00:00.123456+05:30';" }
+
+  - id: a_timestamp_literals
+    name: TIMESTAMP literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/KnqgEoLjGBBMAj~7Qfll9w
+    tier: high
+    probes:
+      - { id: plain, sql: "SELECT TIMESTAMP '1999-07-01 15:00:00';" }
+      - { id: with_zone, sql: "SELECT TIMESTAMP '1999-07-01 15:00:00-08:00';" }
+      - { id: fractional, sql: "SELECT TIMESTAMP '1999-07-01 15:00:00.123456';" }
+      - { id: fractional_zone, sql: "SELECT TIMESTAMP '1999-07-01 15:00:00.123456+01:00';" }
+    examples:
+      - "SELECT TIMESTAMP '1999-07-01 15:00:00-08:00';"
+
+  - id: a_interval_literals
+    name: INTERVAL literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/jvYWH7wa0op34PmORYY4~A
+    tier: high
+    probes:
+      - { id: year, sql: "SELECT INTERVAL '2' YEAR;" }
+      - { id: year_negative, sql: "SELECT INTERVAL -'2' YEAR;" }
+      - { id: year_to_month, sql: "SELECT INTERVAL '2-06' YEAR TO MONTH;" }
+      - { id: month, sql: "SELECT INTERVAL '18' MONTH;" }
+      - { id: day, sql: "SELECT INTERVAL '30' DAY;" }
+      - { id: day_to_hour, sql: "SELECT INTERVAL '30 12' DAY TO HOUR;" }
+      - { id: day_to_minute, sql: "SELECT INTERVAL '30 12:30' DAY TO MINUTE;" }
+      - { id: day_to_second, sql: "SELECT INTERVAL '30 12:30:30.5' DAY TO SECOND;" }
+      - { id: hour, sql: "SELECT INTERVAL '12' HOUR;" }
+      - { id: hour_to_minute, sql: "SELECT INTERVAL '12:30' HOUR TO MINUTE;" }
+      - { id: hour_to_second, sql: "SELECT INTERVAL '12:30:30' HOUR TO SECOND;" }
+      - { id: minute, sql: "SELECT INTERVAL '30' MINUTE;" }
+      - { id: minute_to_second, sql: "SELECT INTERVAL '30:30.5' MINUTE TO SECOND;" }
+      - { id: second, sql: "SELECT INTERVAL '30.5' SECOND;" }
+      - { id: arithmetic, sql: "SELECT CURRENT_DATE + INTERVAL '1' DAY;" }
+    examples:
+      - "SELECT INTERVAL -'2' YEAR + CURRENT_DATE;"
+      - "SELECT INTERVAL '30 12:30:30.5' DAY TO SECOND + CURRENT_TIMESTAMP;"
+
+  - id: a_period_literals
+    name: PERIOD literals
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/_aPoANwkAW6La0yYkXMiAw
+    tier: medium
+    probes:
+      - { id: date_comma, sql: "SELECT PERIOD '(2005-02-03, 2006-02-04)';" }
+      - { id: date_hyphen, sql: "SELECT PERIOD '(2005-02-03 - 2006-02-04)';" }
+      - { id: date_until_changed, sql: "SELECT PERIOD '(2009-10-01, UNTIL_CHANGED)';" }
+      - { id: date_until_closed, sql: "SELECT PERIOD '(2009-10-01, UNTIL_CLOSED)';" }
+      - { id: time, sql: "SELECT PERIOD '(08:00:00, 15:40:00)';" }
+      - { id: time_zone, sql: "SELECT PERIOD '(08:00:00-08:00 - 15:40:00-05:00)';" }
+      - { id: timestamp, sql: "SELECT PERIOD '(2005-02-03 08:00:00, 2006-02-04 15:40:00)';" }
+    examples:
+      - |-
+        INSERT INTO Policy
+           (Policy_ID, Customer_ID, Policy_Type, Policy_Details, Validity)
+           VALUES (497201, 304779902, 'AU', 'STD-CH-524-WXY-00',
+                   PERIOD '(2005-02-03, 2006-02-04)');
+      - |-
+        INSERT INTO Policy
+           (Policy_ID, Customer_ID, Policy_Type, Policy_Details, Validity)
+           VALUES (541008, 246824626, 'AU', 'STD-CH-345-NXY-00',
+                   PERIOD '(2009-10-01, UNTIL_CHANGED)');
+      - |-
+        UPDATE schedule
+           SET flight_period = PERIOD '(08:00:00-08:00 - 15:40:00-05:00)'
+           WHERE flight_no = 243;
+
+  - id: a_null_literal
+    name: NULL keyword as a literal
+    doc: https://docs.teradata.com/reader/nBhFLNd2S0RbP2RWE_eByw/qZwPrXdbvNS9IdqfU7DIxA
+    tier: high
+    probes:
+      - { id: select_item, sql: "SELECT NULL;" }
+      - { id: cast_operand, sql: "SELECT CAST (NULL AS DATE);" }
+      - { id: case_result, sql: "SELECT CASE WHEN orders = 10 THEN NULL END FROM sales_tbl;" }
+      - { id: function_operand, sql: "SELECT TYPE(NULL);" }
+    examples:
+      - "SELECT CAST (NULL AS DATE);"
+      - "SELECT CASE WHEN orders = 10 THEN NULL END FROM sales_tbl;"
+      - "SELECT TYPE(NULL);"
+
+  - id: a_array_constructor
+    name: ARRAY constructor expression
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/C1v3ON~b6xZTXzBpfx1Kpw
+    tier: medium
+    probes:
+      - { id: with_new, sql: "SELECT NEW phonenumbers_ary('5551234567', '8585551234');" }
+      - { id: without_new, sql: "SELECT phonenumbers_ary('5551234567', '8585551234');" }
+      - { id: empty, sql: "SELECT NEW phonenumbers_ary();" }
+
+  - id: a_array_element_reference
+    name: ARRAY element reference
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/xMjD0L~sZaTyOXCaxxVvNg
+    tier: medium
+    probes:
+      - { id: one_dim, sql: "SELECT ephone[1] FROM my_table;" }
+      - { id: n_dim, sql: "SELECT m[1][2] FROM t;" }
+      - { id: negative_index, sql: "SELECT m[-1][2] FROM t;" }
+
+  - id: a_json_constructor
+    name: NEW JSON constructor
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/nwjrAhuUwBN63bN~xqJTlQ
+    tier: medium
+    probes:
+      - { id: default, sql: "SELECT NEW JSON();" }
+      - { id: text, sql: "SELECT NEW JSON ('{\"name\" : \"cameron\", \"age\" : 24}');" }
+      - { id: text_latin, sql: "SELECT NEW JSON ('{\"name\" : \"cameron\", \"age\" : 24}', LATIN);" }
+      - { id: text_unicode, sql: "SELECT NEW JSON ('{\"a\" : 1}', UNICODE);" }
+      - { id: binary_bson, sql: "SELECT NEW JSON ('160000000268656C6C6F0006000000776F726C640000'xb, BSON);" }
+      - { id: binary_ubjson, sql: "SELECT NEW JSON ('160000000268656C6C6F0006000000776F726C640000'xb, UBJSON);" }
+    examples:
+      - "SELECT NEW JSON ('160000000268656C6C6F0006000000776F726C640000'xb, BSON);"
+
+  - id: a_json_dot_notation
+    name: JSON dot notation (entity reference)
+    doc: https://docs.teradata.com/reader/4BqY_HUMYnuRAUaL6SMEAA/nLFlKQmkvL8caz3nDiAwzg
+    tier: medium
+    probes:
+      - { id: object_member, sql: "SELECT j.name FROM t;" }
+      - { id: nested_member, sql: "SELECT j.a.b FROM t;" }
+      - { id: recursive_descent, sql: "SELECT j..name FROM t;" }
+      - { id: array_element, sql: "SELECT j.items[0] FROM t;" }
+      - { id: array_wildcard, sql: "SELECT j.items[*] FROM t;" }
+      - { id: member_wildcard, sql: "SELECT j.* FROM t;" }
+      - { id: index_list, sql: "SELECT j[0, 2] FROM t;" }
+      - { id: slice, sql: "SELECT j.items[1:3] FROM t;" }
+      - { id: quoted_name, sql: "SELECT j.\"first name\" FROM t;" }
+
+  - id: a_numeric_types
+    name: Numeric data types
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/F66bbpeZMXsLRV5cmK63TQ
+    tier: high
+    probes:
+      - { id: byteint, sql: "SELECT CAST(x AS BYTEINT);" }
+      - { id: smallint, sql: "SELECT CAST(x AS SMALLINT);" }
+      - { id: integer, sql: "SELECT CAST(x AS INTEGER);" }
+      - { id: int, sql: "SELECT CAST(x AS INT);" }
+      - { id: bigint, sql: "SELECT CAST(x AS BIGINT);" }
+      - { id: decimal, sql: "SELECT CAST(x AS DECIMAL);" }
+      - { id: decimal_p, sql: "SELECT CAST(x AS DECIMAL(10));" }
+      - { id: decimal_ps, sql: "SELECT CAST(x AS DECIMAL(10, 2));" }
+      - { id: dec, sql: "SELECT CAST(x AS DEC(10, 2));" }
+      - { id: numeric_ps, sql: "SELECT CAST(x AS NUMERIC(10, 2));" }
+      - { id: float, sql: "SELECT CAST(x AS FLOAT);" }
+      - { id: real, sql: "SELECT CAST(x AS REAL);" }
+      - { id: double_precision, sql: "SELECT CAST(x AS DOUBLE PRECISION);" }
+      - { id: number, sql: "SELECT CAST(x AS NUMBER);" }
+      - { id: number_p, sql: "SELECT CAST(x AS NUMBER(10));" }
+      - { id: number_ps, sql: "SELECT CAST(x AS NUMBER(10, 2));" }
+      - { id: number_star, sql: "SELECT CAST(x AS NUMBER(*));" }
+      - { id: number_star_scale, sql: "SELECT CAST(x AS NUMBER(*, 2));" }
+
+  - id: a_character_types
+    name: Character and CLOB data types
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/PMU9c6ReBXJ2jqLF9Nibzg
+    tier: high
+    probes:
+      - { id: char, sql: "SELECT CAST(x AS CHAR);" }
+      - { id: char_n, sql: "SELECT CAST(x AS CHAR(10));" }
+      - { id: character_n, sql: "SELECT CAST(x AS CHARACTER(10));" }
+      - { id: char_set_latin, sql: "SELECT CAST(x AS CHAR(10) CHARACTER SET LATIN);" }
+      - { id: char_set_unicode, sql: "SELECT CAST(x AS CHAR(10) CHARACTER SET UNICODE);" }
+      - { id: char_set_graphic, sql: "SELECT CAST(x AS CHAR(10) CHARACTER SET GRAPHIC);" }
+      - { id: char_set_kanjisjis, sql: "SELECT CAST(x AS CHAR(10) CHARACTER SET KANJISJIS);" }
+      - { id: graphic_n, sql: "SELECT CAST(x AS GRAPHIC(10));" }
+      - { id: varchar_n, sql: "SELECT CAST(x AS VARCHAR(100));" }
+      - { id: varchar_char_set, sql: "SELECT CAST(x AS VARCHAR(100) CHARACTER SET UNICODE);" }
+      - { id: char_varying, sql: "SELECT CAST(x AS CHAR VARYING(100));" }
+      - { id: character_varying, sql: "SELECT CAST(x AS CHARACTER VARYING(100));" }
+      - { id: long_varchar, sql: "SELECT CAST(x AS LONG VARCHAR);" }
+      - { id: vargraphic_n, sql: "SELECT CAST(x AS VARGRAPHIC(10));" }
+      - { id: long_vargraphic, sql: "SELECT CAST(x AS LONG VARGRAPHIC);" }
+      - { id: clob, sql: "SELECT CAST(x AS CLOB);" }
+      - { id: character_large_object, sql: "SELECT CAST(x AS CHARACTER LARGE OBJECT);" }
+      - { id: clob_size_k, sql: "SELECT CAST(x AS CLOB(10K));" }
+      - { id: clob_size_m, sql: "SELECT CAST(x AS CLOB(2M));" }
+      - { id: clob_size_g, sql: "SELECT CAST(x AS CLOB(1G));" }
+      - { id: clob_char_set, sql: "SELECT CAST(x AS CLOB(2M) CHARACTER SET UNICODE);" }
+      - { id: casespecific, sql: "SELECT CAST(x AS VARCHAR(10) CASESPECIFIC);" }
+      - { id: not_casespecific, sql: "SELECT CAST(x AS VARCHAR(10) NOT CASESPECIFIC);" }
+      - { id: uppercase, sql: "SELECT CAST(x AS VARCHAR(10) UPPERCASE);" }
+
+  - id: a_byte_types
+    name: Byte and BLOB data types
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/2N9XiPcqKG7cYLIeGfZBbA
+    tier: medium
+    probes:
+      - { id: byte, sql: "SELECT CAST(x AS BYTE);" }
+      - { id: byte_n, sql: "SELECT CAST(x AS BYTE(16));" }
+      - { id: varbyte_n, sql: "SELECT CAST(x AS VARBYTE(16));" }
+      - { id: blob, sql: "SELECT CAST(x AS BLOB);" }
+      - { id: binary_large_object, sql: "SELECT CAST(x AS BINARY LARGE OBJECT);" }
+      - { id: blob_size, sql: "SELECT CAST(x AS BLOB(2M));" }
+
+  - id: a_datetime_types
+    name: DATE, TIME and TIMESTAMP data types
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/GjWcdXlnrhx7ZM6VAfs~ww
+    tier: high
+    probes:
+      - { id: date, sql: "SELECT CAST(x AS DATE);" }
+      - { id: time, sql: "SELECT CAST(x AS TIME);" }
+      - { id: time_n, sql: "SELECT CAST(x AS TIME(3));" }
+      - { id: timestamp, sql: "SELECT CAST(x AS TIMESTAMP);" }
+      - { id: timestamp_n, sql: "SELECT CAST(x AS TIMESTAMP(6));" }
+      - { id: time_with_time_zone, sql: "SELECT CAST(x AS TIME WITH TIME ZONE);" }
+      - { id: time_n_with_time_zone, sql: "SELECT CAST(x AS TIME(3) WITH TIME ZONE);" }
+      - { id: timestamp_with_time_zone, sql: "SELECT CAST(x AS TIMESTAMP WITH TIME ZONE);" }
+      - { id: timestamp_n_with_time_zone, sql: "SELECT CAST(x AS TIMESTAMP(6) WITH TIME ZONE);" }
+
+  - id: a_interval_types
+    name: INTERVAL data types
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/GjWcdXlnrhx7ZM6VAfs~ww
+    tier: medium
+    probes:
+      - { id: year, sql: "SELECT CAST(x AS INTERVAL YEAR);" }
+      - { id: year_p, sql: "SELECT CAST(x AS INTERVAL YEAR(4));" }
+      - { id: year_to_month, sql: "SELECT CAST(x AS INTERVAL YEAR TO MONTH);" }
+      - { id: year_p_to_month, sql: "SELECT CAST(x AS INTERVAL YEAR(4) TO MONTH);" }
+      - { id: month, sql: "SELECT CAST(x AS INTERVAL MONTH);" }
+      - { id: day, sql: "SELECT CAST(x AS INTERVAL DAY);" }
+      - { id: day_to_hour, sql: "SELECT CAST(x AS INTERVAL DAY TO HOUR);" }
+      - { id: day_to_minute, sql: "SELECT CAST(x AS INTERVAL DAY(3) TO MINUTE);" }
+      - { id: day_to_second, sql: "SELECT CAST(x AS INTERVAL DAY TO SECOND);" }
+      - { id: day_to_second_p, sql: "SELECT CAST(x AS INTERVAL DAY(3) TO SECOND(3));" }
+      - { id: hour, sql: "SELECT CAST(x AS INTERVAL HOUR);" }
+      - { id: hour_to_minute, sql: "SELECT CAST(x AS INTERVAL HOUR TO MINUTE);" }
+      - { id: hour_to_second, sql: "SELECT CAST(x AS INTERVAL HOUR(3) TO SECOND(3));" }
+      - { id: minute, sql: "SELECT CAST(x AS INTERVAL MINUTE);" }
+      - { id: minute_to_second, sql: "SELECT CAST(x AS INTERVAL MINUTE TO SECOND(3));" }
+      - { id: second, sql: "SELECT CAST(x AS INTERVAL SECOND);" }
+      - { id: second_p_f, sql: "SELECT CAST(x AS INTERVAL SECOND(4, 3));" }
+
+  - id: a_period_types
+    name: PERIOD data types
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/bJEBIkRg8zrLRTUAi3tr~A
+    tier: medium
+    probes:
+      - { id: period_date, sql: "SELECT CAST(x AS PERIOD(DATE));" }
+      - { id: period_time, sql: "SELECT CAST(x AS PERIOD(TIME));" }
+      - { id: period_time_n, sql: "SELECT CAST(x AS PERIOD(TIME(3)));" }
+      - { id: period_time_tz, sql: "SELECT CAST(x AS PERIOD(TIME(3) WITH TIME ZONE));" }
+      - { id: period_timestamp, sql: "SELECT CAST(x AS PERIOD(TIMESTAMP));" }
+      - { id: period_timestamp_n, sql: "SELECT CAST(x AS PERIOD(TIMESTAMP(6)));" }
+      - { id: period_timestamp_tz, sql: "SELECT CAST(x AS PERIOD(TIMESTAMP(6) WITH TIME ZONE));" }
+
+  - id: a_json_type
+    name: JSON data type
+    doc: https://docs.teradata.com/reader/4BqY_HUMYnuRAUaL6SMEAA/fNhLUQY2BR2xY7~jKh7XaA
+    tier: medium
+    probes:
+      - { id: json, sql: "SELECT CAST(x AS JSON);" }
+      - { id: maxlength, sql: "SELECT CAST(x AS JSON(1000));" }
+      - { id: maxlength_multiplier, sql: "SELECT CAST(x AS JSON(16M));" }
+      - { id: inline_length, sql: "SELECT CAST(x AS JSON(1000) INLINE LENGTH 100);" }
+      - { id: char_set_latin, sql: "SELECT CAST(x AS JSON CHARACTER SET LATIN);" }
+      - { id: char_set_unicode, sql: "SELECT CAST(x AS JSON(1000) CHARACTER SET UNICODE);" }
+      - { id: storage_bson, sql: "SELECT CAST(x AS JSON STORAGE FORMAT BSON);" }
+      - { id: storage_ubjson, sql: "SELECT CAST(x AS JSON STORAGE FORMAT UBJSON);" }
+
+  - id: a_udt_and_array_types
+    name: UDT and ARRAY type names
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/BahEbF8qS4r2QsLz7phuQQ
+    tier: medium
+    probes:
+      - { id: udt_name, sql: "SELECT CAST(x AS my_udt);" }
+      - { id: udt_sysudtlib, sql: "SELECT CAST(x AS SYSUDTLIB.my_udt);" }
+      - { id: array_type_name, sql: "SELECT CAST(x AS phonenumbers_ary);" }
+      - { id: array_type_sysudtlib, sql: "SELECT CAST(x AS SYSUDTLIB.phonenumbers_ary);" }
+      - { id: udt_column_attribute, sql: "CREATE TABLE t (c my_udt NOT NULL);" }
+
+  - id: a_cast
+    name: CAST
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/Wj~PjqhYyCZ_EKgtDR9lkQ
+    tier: high
+    probes:
+      - { id: basic, sql: "SELECT CAST(c AS INTEGER) FROM t;" }
+      - { id: spaced, sql: "SELECT CAST (c AS VARCHAR(10)) FROM t;" }
+      - { id: literal, sql: "SELECT CAST('2020-01-01' AS DATE);" }
+      - { id: expression, sql: "SELECT CAST(a + b AS DECIMAL(10, 2)) FROM t;" }
+      - { id: nested, sql: "SELECT CAST(CAST(c AS CHAR(5)) AS INTEGER) FROM t;" }
+      - { id: format_attribute, sql: "SELECT CAST(c AS DATE FORMAT 'YYYY-MM-DD') FROM t;" }
+      - { id: char_with_format, sql: "SELECT CAST(d AS CHAR(10) FORMAT 'YYYY-MM-DD') FROM t;" }
+      - { id: char_set_attribute, sql: "SELECT CAST(c AS VARCHAR(10) CHARACTER SET UNICODE) FROM t;" }
+      - { id: named_attribute, sql: "SELECT CAST(c AS INTEGER NAMED n) FROM t;" }
+      - { id: title_attribute, sql: "SELECT CAST(c AS INTEGER TITLE 'My Col') FROM t;" }
+      - { id: attribute_only_format, sql: "SELECT CAST(c AS FORMAT '99999') FROM t;" }
+      - { id: bigint_literal, sql: "SELECT ProdID FROM PartsTbl WHERE CustID = CAST(9876543210 AS BIGINT);" }
+    examples:
+      - "SELECT CAST (NULL AS DATE);"
+
+  - id: a_teradata_conversion_syntax
+    name: Teradata conversion syntax
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/fZHid8rQSAck7XFxHosWdw
+    tier: high
+    probes:
+      - { id: type, sql: "SELECT c (INTEGER) FROM t;" }
+      - { id: char_type, sql: "SELECT c (CHAR(10)) FROM t;" }
+      - { id: date_type, sql: "SELECT c (DATE) FROM t;" }
+      - { id: decimal_type, sql: "SELECT c (DECIMAL(10, 2)) FROM t;" }
+      - { id: format_only, sql: "SELECT c (FORMAT 'YYYY-MM-DD') FROM t;" }
+      - { id: date_format, sql: "SELECT c (DATE, FORMAT 'YYYY-MM-DD') FROM t;" }
+      - { id: format_then_type, sql: "SELECT c (FORMAT 'X(10)', CHAR(10)) FROM t;" }
+      - { id: char_set, sql: "SELECT c (CHARACTER SET UNICODE) FROM t;" }
+      - { id: char_type_char_set, sql: "SELECT c (VARCHAR(10), CHARACTER SET LATIN) FROM t;" }
+      - { id: named, sql: "SELECT c (NAMED n) FROM t;" }
+      - { id: title, sql: "SELECT c (TITLE 'My Column') FROM t;" }
+      - { id: type_named_title, sql: "SELECT c (INTEGER, NAMED n, TITLE 'x') FROM t;" }
+      - { id: chained, sql: "SELECT c (FORMAT '99') (NAMED y) FROM t;" }
+      - { id: on_literal, sql: "SELECT '2020-01-01' (DATE, FORMAT 'YYYY-MM-DD');" }
+      - { id: on_expression, sql: "SELECT (a + b) (FLOAT) FROM t;" }
+      - { id: byte_to_byte, sql: "SELECT b (BYTE(4)) FROM t;" }
+
+  - id: a_data_attribute_phrases
+    name: FORMAT, NAMED, TITLE and AS attributes
+    doc: https://docs.teradata.com/reader/lRnURD5njdYWi5Bs8dw7og/Brwil4yuHU0iR3E670DM7A
+    tier: medium
+    probes:
+      - { id: select_format, sql: "SELECT c (FORMAT 'ZZ9') FROM t;" }
+      - { id: select_title, sql: "SELECT c (TITLE 'Column Heading') FROM t;" }
+      - { id: select_named, sql: "SELECT c (NAMED alias_name) FROM t;" }
+      - { id: select_as, sql: "SELECT c AS alias_name FROM t;" }
+      - { id: select_as_no_keyword, sql: "SELECT c alias_name FROM t;" }
+      - { id: column_format, sql: "CREATE TABLE t (c DATE FORMAT 'YYYY-MM-DD');" }
+      - { id: column_title, sql: "CREATE TABLE t (c INTEGER TITLE 'My Col');" }
+      - { id: column_named, sql: "CREATE TABLE t (c INTEGER NAMED n);" }
+      - { id: default_value, sql: "CREATE TABLE t (c INTEGER DEFAULT 0);" }
+      - { id: default_user, sql: "CREATE TABLE t (c VARCHAR(30) DEFAULT USER);" }
+      - { id: default_date, sql: "CREATE TABLE t (c DATE DEFAULT DATE);" }
+      - { id: default_time, sql: "CREATE TABLE t (c TIME DEFAULT TIME);" }
+      - { id: default_null, sql: "CREATE TABLE t (c INTEGER DEFAULT NULL);" }
+      - { id: with_default, sql: "CREATE TABLE t (c INTEGER WITH DEFAULT);" }
+      - { id: not_null, sql: "CREATE TABLE t (c INTEGER NOT NULL);" }
+      - { id: format_pattern_cast, sql: "SELECT CAST(n AS FORMAT '$$$,$$9.99') FROM t;" }
+
+  - id: a_quoted_identifiers
+    name: Quoted object names
+    doc: https://docs.teradata.com/reader/nBhFLNd2S0RbP2RWE_eByw/4D~2C0Z1QvQYv0r3R8M66Q
+    tier: high
+    probes:
+      - { id: quoted_column, sql: "SELECT \"my col\" FROM t;" }
+      - { id: quoted_table, sql: "SELECT c FROM \"my table\";" }
+      - { id: quoted_qualified, sql: "SELECT \"my db\".\"my table\".\"my col\" FROM \"my db\".\"my table\";" }
+      - { id: embedded_quote, sql: "SELECT \"a\"\"b\" FROM t;" }
+      - { id: quoted_alias, sql: "SELECT c AS \"My Alias\" FROM t;" }
+      - { id: reserved_word_quoted, sql: "SELECT \"select\" FROM \"table\";" }
+      - { id: mixed_qualified, sql: "SELECT db.\"my table\".c FROM db.\"my table\";" }
+      - { id: dollar_hash_chars, sql: "SELECT c#1, c$2, _c FROM t;" }
+
+  - id: a_unicode_delimited_identifiers
+    name: Unicode delimited identifiers
+    doc: https://docs.teradata.com/reader/nBhFLNd2S0RbP2RWE_eByw/KStRl63f0Ga1jU6ZiGEIvw
+    tier: low
+    probes:
+      - { id: u_amp_uescape, sql: "SELECT * FROM U&\"table_\\4E00_name\" UESCAPE '\\';" }
+      - { id: column, sql: "SELECT U&\"c_\\4E00\" UESCAPE '\\' FROM t;" }
+    examples:
+      - |-
+        Drop Table U&"table_\4E00_name" UEscape '\';
+
+  - id: a_hex_name_literals
+    name: Hexadecimal name literals
+    doc: https://docs.teradata.com/reader/nBhFLNd2S0RbP2RWE_eByw/13ZD0ynAxlOUsagQAEYkMw
+    tier: low
+    probes:
+      - { id: table, sql: "SELECT * FROM '0E42E342C142C242F10F'XN;" }
+    examples:
+      - "SELECT * FROM '0E42E342C142C242F10F'XN;"
+      - "SELECT * FROM '8273826082618250'XN;"
+
+  - id: a_comments
+    name: Comments
+    doc: https://docs.teradata.com/reader/nBhFLNd2S0RbP2RWE_eByw/MKtc40EKe4_1KJxv9W8eoQ
+    tier: high
+    probes:
+      - { id: simple_end_of_line, sql: "SELECT c FROM t -- trailing comment\n;" }
+      - { id: simple_own_line, sql: "SELECT c FROM t\n-- own line comment\nORDER BY c;" }
+      - { id: simple_before_statement, sql: "-- leading comment\nSELECT c FROM t;" }
+      - { id: bracketed_inline, sql: "SELECT c FROM /* in the middle */ t;" }
+      - { id: bracketed_multiline, sql: "SELECT c FROM t /* spans\n   several lines */\nORDER BY c;" }
+      - { id: bracketed_before_statement, sql: "/* leading\n   comment */\nSELECT c FROM t;" }
+    examples:
+      - |-
+        SELECT EmpNo, Name FROM Payroll_Test
+        ORDER BY Name -- Simple comment at the end of a line
+        ;
+      - |-
+        SELECT EmpNo, Name
+        FROM  /* This comment is in the middle of a line. */ Payroll_Test
+        ORDER BY Name;
+
+  - id: a_using_parameters
+    name: USING request modifier variables
+    doc: https://docs.teradata.com/reader/4_jiz05LXsLWBbfvKTLneg/jSJKGogypwrpbLvhXpsXJg
+    tier: medium
+    probes:
+      - { id: single, sql: "USING (a INTEGER) SELECT :a FROM t;" }
+      - { id: multiple, sql: "USING (emp_name CHARACTER(40), emp_number INTEGER) INSERT INTO employee (name, empno) VALUES (:emp_name, :emp_number);" }
+      - { id: top_n, sql: "USING (a INTEGER) SELECT TOP :a * FROM employee;" }
+      - { id: in_where, sql: "USING (v CHARACTER) UPDATE t SET c2 = c1 + 1 WHERE c1 = :v;" }
+      - { id: attribute_casespecific, sql: "USING (v VARCHAR(10) CASESPECIFIC) SELECT * FROM t WHERE c = :v;" }
+      - { id: deferred, sql: "USING (v BLOB(1M) AS DEFERRED) INSERT INTO t VALUES (:v);" }
+      - { id: deferred_by_name, sql: "USING (v BLOB(1M) AS DEFERRED BY NAME) INSERT INTO t VALUES (:v);" }
+      - { id: locator, sql: "USING (v CLOB(1M) AS LOCATOR) INSERT INTO t VALUES (:v);" }
+      - { id: json_dot_notation, sql: "USING (j JSON) SELECT :j.name;" }

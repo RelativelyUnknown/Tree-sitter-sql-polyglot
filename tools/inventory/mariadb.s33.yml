@@ -1,0 +1,244 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements:
+  - id: set_password
+    name: SET PASSWORD
+    doc: https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/set-password
+    tier: medium
+    probes:
+      - id: password_function
+        sql: "SET PASSWORD = PASSWORD('some password');"
+      - id: old_password_function
+        sql: "SET PASSWORD = OLD_PASSWORD('some password');"
+      - id: encrypted_password
+        sql: "SET PASSWORD = '*2470C0C06DEE42FD1618BB99005ADCA2EC9D1E19';"
+      - id: for_user
+        sql: "SET PASSWORD FOR 'bob'@'%.loc.gov' = PASSWORD('newpass');"
+      - id: for_user_unquoted_host
+        sql: "SET PASSWORD FOR 'bob'@localhost = PASSWORD('');"
+    examples:
+      - "SET PASSWORD FOR 'bob'@'%.loc.gov' = PASSWORD('newpass');"
+      - "SET PASSWORD FOR 'bob'@localhost = PASSWORD(\"\");"
+
+  - id: set_variable
+    name: SET (variable assignment)
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/set-commands/set
+    tier: medium
+    probes:
+      - id: system_var
+        sql: "SET max_error_count = 128;"
+      - id: user_var
+        sql: "SET @v = 1;"
+      - id: global_scope
+        sql: "SET GLOBAL max_error_count = 256;"
+      - id: session_scope
+        sql: "SET SESSION max_error_count = 256;"
+      - id: at_at_prefix
+        sql: "SET @@max_error_count = 128;"
+      - id: at_at_global_prefix
+        sql: "SET @@global.max_error_count = 256;"
+      - id: at_at_session_prefix
+        sql: "SET @@session.max_error_count = 256;"
+      - id: multiple_assignments
+        sql: "SET @a = 1, @b = 2, max_error_count = 64;"
+      - id: user_var_colon_assign
+        sql: "SET @v := 1;"
+        note: "Page: 'user_var_name:= expr' is also accepted as an assignment operator."
+    examples:
+      - "SET max_error_count=128;"
+      - "SET skip_parallel_replication=ON;"
+      - "SET GLOBAL max_error_count=256;"
+
+  - id: set_statement
+    name: SET STATEMENT ... FOR
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/set-commands/set-statement
+    tier: medium
+    probes:
+      - id: single_variable
+        sql: "SET STATEMENT max_statement_time = 1000 FOR SELECT 1;"
+      - id: string_value
+        sql: "SET STATEMENT optimizer_switch='materialization=off' FOR SELECT 1;"
+      - id: multiple_variables
+        sql: "SET STATEMENT join_cache_level=6, optimizer_switch='mrr=on' FOR SELECT * FROM t;"
+      - id: for_update
+        sql: "SET STATEMENT sql_mode = 'ansi' FOR UPDATE t SET c = 1;"
+    examples:
+      - "SET STATEMENT sort_buffer_size = 100000 FOR SET SESSION sort_buffer_size = 200000;"
+
+  - id: set_names
+    name: SET NAMES
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/set-commands/set-names
+    tier: medium
+    note: The cited URL in the assignment (under data-types/.../character-sets/) returns 404; the page lives under set-commands.
+    probes:
+      - id: charset_quoted
+        sql: "SET NAMES 'utf8mb4';"
+      - id: charset_unquoted
+        sql: "SET NAMES utf8mb4;"
+      - id: with_collate
+        sql: "SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';"
+      - id: default
+        sql: "SET NAMES DEFAULT;"
+    examples:
+      - "SET NAMES DEFAULT;"
+      - "SET NAMES utf8mb4;"
+
+  - id: set_character_set
+    name: SET CHARACTER SET
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/set-commands/set-character-set
+    tier: medium
+    probes:
+      - id: character_set
+        sql: "SET CHARACTER SET utf8mb4;"
+      - id: charset_keyword
+        sql: "SET CHARSET utf8mb4;"
+      - id: default
+        sql: "SET CHARACTER SET DEFAULT;"
+      - id: charset_default
+        sql: "SET CHARSET DEFAULT;"
+    examples:
+      - "SET CHARACTER SET utf8mb4;"
+
+  - id: explain
+    name: EXPLAIN
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/analyze-and-explain-statements/explain
+    tier: medium
+    probes:
+      - id: table_name
+        sql: "EXPLAIN t;"
+      - id: table_column
+        sql: "EXPLAIN t c;"
+      - id: table_column_wildcard
+        sql: "EXPLAIN t 'c%';"
+      - id: select
+        sql: "EXPLAIN SELECT * FROM t WHERE c = 1;"
+      - id: extended
+        sql: "EXPLAIN EXTENDED SELECT * FROM t;"
+      - id: partitions
+        sql: "EXPLAIN PARTITIONS SELECT * FROM t;"
+      - id: format_json
+        sql: "EXPLAIN FORMAT=JSON SELECT * FROM t;"
+      - id: update
+        sql: "EXPLAIN UPDATE t SET c = 1 WHERE d = 2;"
+      - id: delete
+        sql: "EXPLAIN DELETE FROM t WHERE c = 1;"
+      - id: for_connection
+        sql: "EXPLAIN FOR CONNECTION 5;"
+      - id: format_json_for_connection
+        sql: "EXPLAIN FORMAT=JSON FOR CONNECTION 5;"
+    examples:
+      - "EXPLAIN SELECT t0.a, t1.b FROM t0, t1 WHERE t0.a = t1.a;"
+      - "EXPLAIN SELECT * FROM employees_example WHERE id=1;"
+      - "EXPLAIN SELECT * FROM employees_example WHERE home_phone='326-555-3492';"
+
+  - id: analyze_statement
+    name: ANALYZE (statement)
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/analyze-and-explain-statements/analyze-statement
+    tier: medium
+    probes:
+      - id: select
+        sql: "ANALYZE SELECT * FROM t WHERE c = 1;"
+      - id: format_json
+        sql: "ANALYZE FORMAT=JSON SELECT * FROM t WHERE c = 1;"
+      - id: update
+        sql: "ANALYZE UPDATE t SET c = 1 WHERE d = 2;"
+      - id: delete
+        sql: "ANALYZE DELETE FROM t WHERE c = 1;"
+    examples:
+      - |-
+        ANALYZE SELECT * 
+        FROM orders, customer 
+        WHERE
+          customer.c_custkey=orders.o_custkey AND
+          customer.c_acctbal < 0 AND 
+          customer.c_comment LIKE '%foo%' AND
+          orders.o_totalprice > 200*1000;
+
+  - id: describe
+    name: DESCRIBE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/describe
+    tier: medium
+    probes:
+      - id: describe_table
+        sql: "DESCRIBE t;"
+      - id: desc_table
+        sql: "DESC t;"
+      - id: column
+        sql: "DESCRIBE t c;"
+      - id: wildcard
+        sql: "DESCRIBE t 'c%';"
+    examples:
+      - "DESCRIBE city;"
+
+  - id: flush
+    name: FLUSH
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/flush-commands/flush
+    tier: medium
+    probes:
+      - id: privileges
+        sql: "FLUSH PRIVILEGES;"
+      - id: no_write_to_binlog
+        sql: "FLUSH NO_WRITE_TO_BINLOG PRIVILEGES;"
+      - id: local
+        sql: "FLUSH LOCAL PRIVILEGES;"
+      - id: multiple_options
+        sql: "FLUSH HOSTS, PRIVILEGES, QUERY CACHE;"
+      - id: logs
+        sql: "FLUSH LOGS;"
+      - id: typed_logs
+        sql: "FLUSH ERROR LOGS;"
+      - id: relay_logs_connection
+        sql: "FLUSH RELAY LOGS 'connection_name';"
+      - id: relay_logs_for_channel
+        sql: "FLUSH RELAY LOGS FOR CHANNEL 'connection_name';"
+      - id: binary_logs
+        sql: "FLUSH BINARY LOGS;"
+      - id: binary_logs_delete_domain_id
+        sql: "FLUSH BINARY LOGS DELETE_DOMAIN_ID = (1, 2);"
+      - id: status
+        sql: "FLUSH STATUS;"
+      - id: global_status
+        sql: "FLUSH GLOBAL STATUS;"
+      - id: session_status
+        sql: "FLUSH SESSION STATUS;"
+      - id: statistics
+        sql: "FLUSH TABLE_STATISTICS, INDEX_STATISTICS, USER_STATISTICS, CLIENT_STATISTICS;"
+      - id: query_response_time
+        sql: "FLUSH QUERY_RESPONSE_TIME;"
+      - id: ssl
+        sql: "FLUSH SSL;"
+      - id: tables
+        sql: "FLUSH TABLES;"
+      - id: table_list
+        sql: "FLUSH TABLES t1, t2;"
+      - id: tables_with_read_lock
+        sql: "FLUSH TABLES WITH READ LOCK;"
+      - id: table_list_with_read_lock
+        sql: "FLUSH TABLES t1, t2 WITH READ LOCK;"
+      - id: table_list_for_export
+        sql: "FLUSH TABLES t1, t2 FOR EXPORT;"
+    examples:
+      - |-
+        FLUSH LOCAL HOSTS,
+           QUERY CACHE, 
+           TABLE_STATISTICS, 
+           INDEX_STATISTICS, 
+           USER_STATISTICS;
+      - "FLUSH RELAY LOGS FOR CHANNEL 'connection_name';"
+
+  - id: show_character_set
+    name: SHOW CHARACTER SET
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/show/show-character-set
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW CHARACTER SET;"
+      - id: like
+        sql: "SHOW CHARACTER SET LIKE 'latin%';"
+      - id: where
+        sql: "SHOW CHARACTER SET WHERE Maxlen = 1;"
+    examples:
+      - "SHOW CHARACTER SET LIKE 'latin%';"

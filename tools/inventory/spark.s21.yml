@@ -1,0 +1,260 @@
+dialect: spark
+engine: Apache Spark SQL
+version: "4.x (docs/latest)"
+source: https://spark.apache.org/docs/latest/sql-ref-syntax.html
+
+statements:
+  - id: case_statement
+    name: CASE statement
+    doc: https://spark.apache.org/docs/latest/control-flow/case-stmt.html
+    tier: high
+    probes:
+      - id: simple_case
+        sql: |-
+          BEGIN
+            CASE 1 WHEN 1 THEN VALUES (1); END CASE;
+          END;
+      - id: simple_case_multiple_when
+        sql: |-
+          BEGIN
+            CASE 1 WHEN 1 THEN VALUES (1); WHEN 2 THEN VALUES (2); END CASE;
+          END;
+      - id: simple_case_else
+        sql: |-
+          BEGIN
+            CASE 1 WHEN 1 THEN VALUES (1); ELSE VALUES (0); END CASE;
+          END;
+      - id: searched_case
+        sql: |-
+          BEGIN
+            CASE WHEN 1 < 2 THEN VALUES (1); END CASE;
+          END;
+      - id: searched_case_multiple_when
+        sql: |-
+          BEGIN
+            CASE WHEN 1 < 2 THEN VALUES (1); WHEN 1 < 3 THEN VALUES (2); END CASE;
+          END;
+      - id: searched_case_else
+        sql: |-
+          BEGIN
+            CASE WHEN 1 < 2 THEN VALUES (1); ELSE VALUES (0); END CASE;
+          END;
+      - id: multiple_then_statements
+        sql: |-
+          BEGIN
+            DECLARE a INT DEFAULT 0;
+            CASE WHEN a = 0 THEN SET a = 1; VALUES (a); ELSE SET a = 2; VALUES (a); END CASE;
+          END;
+    examples:
+      - |-
+        BEGIN
+          DECLARE choice INT DEFAULT 3;
+          DECLARE result STRING;
+          CASE choice
+            WHEN 1 THEN
+              VALUES ('one fish');
+            WHEN 2 THEN
+              VALUES ('two fish');
+            WHEN 3 THEN
+              VALUES ('red fish');
+            WHEN 4 THEN
+              VALUES ('blue fish');
+            ELSE
+              VALUES ('no fish');
+          END CASE;
+        END;
+      - |-
+        BEGIN
+          DECLARE choice DOUBLE DEFAULT 3.9;
+          DECLARE result STRING;
+          CASE
+            WHEN choice < 2 THEN
+              VALUES ('one fish');
+            WHEN choice < 3 THEN
+              VALUES ('two fish');
+            WHEN choice < 4 THEN
+              VALUES ('red fish');
+            WHEN choice < 5 OR choice IS NULL THEN
+              VALUES ('blue fish');
+            ELSE
+              VALUES ('no fish');
+          END CASE;
+        END;
+
+  - id: begin_end_compound_statement
+    name: BEGIN END compound statement
+    doc: https://spark.apache.org/docs/latest/control-flow/compound-stmt.html
+    tier: high
+    probes:
+      - id: empty_compound
+        sql: "BEGIN END;"
+      - id: statements_only
+        sql: |-
+          BEGIN
+            VALUES (1);
+          END;
+      - id: declare_variable
+        sql: |-
+          BEGIN
+            DECLARE a INT;
+            VALUES (a);
+          END;
+      - id: declare_variable_default
+        sql: |-
+          BEGIN
+            DECLARE a INT DEFAULT 1;
+            VALUES (a);
+          END;
+      - id: declare_variable_default_equals
+        sql: |-
+          BEGIN
+            DECLARE a INT = 1;
+            VALUES (a);
+          END;
+      - id: declare_variable_no_type
+        sql: |-
+          BEGIN
+            DECLARE a DEFAULT 1;
+            VALUES (a);
+          END;
+      - id: declare_multiple_variables
+        sql: |-
+          BEGIN
+            DECLARE a, b INT DEFAULT 1;
+            VALUES (a, b);
+          END;
+      - id: declare_condition
+        sql: |-
+          BEGIN
+            DECLARE my_cond CONDITION;
+            VALUES (1);
+          END;
+      - id: declare_condition_sqlstate
+        sql: |-
+          BEGIN
+            DECLARE my_cond CONDITION FOR SQLSTATE '12345';
+            VALUES (1);
+          END;
+      - id: declare_condition_sqlstate_value
+        sql: |-
+          BEGIN
+            DECLARE my_cond CONDITION FOR SQLSTATE VALUE '12345';
+            VALUES (1);
+          END;
+      - id: declare_cursor
+        sql: |-
+          BEGIN
+            DECLARE c CURSOR FOR SELECT 1;
+            VALUES (1);
+          END;
+      - id: declare_cursor_asensitive
+        sql: |-
+          BEGIN
+            DECLARE c ASENSITIVE CURSOR FOR SELECT 1;
+            VALUES (1);
+          END;
+      - id: declare_cursor_insensitive
+        sql: |-
+          BEGIN
+            DECLARE c INSENSITIVE CURSOR FOR SELECT 1;
+            VALUES (1);
+          END;
+      - id: declare_exit_handler_sqlstate
+        sql: |-
+          BEGIN
+            DECLARE EXIT HANDLER FOR SQLSTATE '22012' SET x = 1;
+            VALUES (1);
+          END;
+      - id: declare_continue_handler_sqlstate_value
+        sql: |-
+          BEGIN
+            DECLARE CONTINUE HANDLER FOR SQLSTATE VALUE '22012' SET x = 1;
+            VALUES (1);
+          END;
+      - id: declare_handler_condition_name
+        sql: |-
+          BEGIN
+            DECLARE EXIT HANDLER FOR DIVIDE_BY_ZERO SET x = 1;
+            VALUES (1);
+          END;
+      - id: declare_handler_sqlexception
+        sql: |-
+          BEGIN
+            DECLARE EXIT HANDLER FOR SQLEXCEPTION SET x = 1;
+            VALUES (1);
+          END;
+      - id: declare_handler_not_found
+        sql: |-
+          BEGIN
+            DECLARE CONTINUE HANDLER FOR NOT FOUND SET x = 1;
+            VALUES (1);
+          END;
+      - id: declare_handler_multiple_values
+        sql: |-
+          BEGIN
+            DECLARE EXIT HANDLER FOR SQLSTATE '22012', DIVIDE_BY_ZERO SET x = 1;
+            VALUES (1);
+          END;
+      - id: declare_handler_nested_compound
+        sql: |-
+          BEGIN
+            DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN VALUES (1); VALUES (2); END;
+            VALUES (3);
+          END;
+      - id: labeled_compound
+        sql: |-
+          lbl: BEGIN
+            VALUES (1);
+          END;
+      - id: labeled_compound_end_label
+        sql: |-
+          lbl: BEGIN
+            VALUES (1);
+          END lbl;
+      - id: nested_compound
+        sql: |-
+          BEGIN
+            BEGIN
+              VALUES (1);
+            END;
+          END;
+      - id: all_sections_in_order
+        sql: |-
+          BEGIN
+            DECLARE a INT DEFAULT 1;
+            DECLARE cond CONDITION;
+            DECLARE c CURSOR FOR SELECT 1;
+            DECLARE EXIT HANDLER FOR SQLEXCEPTION SET a = 2;
+            VALUES (a);
+          END;
+    examples:
+      - |-
+        BEGIN
+          DECLARE a INT DEFAULT 1;
+          DECLARE b INT DEFAULT 5;
+          DECLARE EXIT HANDLER FOR DIVIDE_BY_ZERO
+            div0: BEGIN
+              VALUES (15);
+            END div0;
+          SET a = 10;
+          SET a = b / 0;
+          VALUES (a);
+        END;
+      - |-
+        BEGIN
+          DECLARE x INT;
+          DECLARE done BOOLEAN DEFAULT false;
+          DECLARE total INT DEFAULT 0;
+          DECLARE my_cursor CURSOR FOR SELECT id FROM range(5);
+          DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = true;
+          OPEN my_cursor;
+          REPEAT
+            FETCH my_cursor INTO x;
+            IF NOT done THEN
+              SET total = total + x;
+            END IF;
+          UNTIL done
+          END REPEAT;
+          CLOSE my_cursor;
+          VALUES (total);
+        END;

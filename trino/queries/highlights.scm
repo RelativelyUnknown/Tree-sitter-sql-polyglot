@@ -49,3 +49,24 @@
   (keyword_analyze)
   (keyword_verbose)
 ] @keyword
+
+; ============================================================
+; Remaining trino keywords
+; ============================================================
+
+[
+  (keyword_catalogs)
+  (keyword_columns)
+  (keyword_deny)
+  (keyword_describe)
+  (keyword_extended)
+  (keyword_functions)
+  (keyword_grants)
+  (keyword_match)
+  (keyword_path)
+  (keyword_properties)
+  (keyword_roles)
+  (keyword_schemas)
+  (keyword_show)
+  (keyword_text)
+] @keyword

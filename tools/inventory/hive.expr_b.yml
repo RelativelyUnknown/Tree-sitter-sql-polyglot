@@ -1,0 +1,201 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements: []
+
+expressions:
+  - id: b_relational_operators
+    name: Relational operators
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-udf/
+    tier: high
+    probes:
+      - { id: eq, sql: "SELECT a = b FROM t;" }
+      - { id: eq_double, sql: "SELECT a == b FROM t;" }
+      - { id: null_safe_eq, sql: "SELECT a <=> b FROM t;" }
+      - { id: ne_angle, sql: "SELECT a <> b FROM t;" }
+      - { id: ne_bang, sql: "SELECT a != b FROM t;" }
+      - { id: lt, sql: "SELECT a < b FROM t;" }
+      - { id: le, sql: "SELECT a <= b FROM t;" }
+      - { id: gt, sql: "SELECT a > b FROM t;" }
+      - { id: ge, sql: "SELECT a >= b FROM t;" }
+    examples:
+      - "SELECT * FROM t WHERE a <=> b;"
+
+  - id: b_arithmetic_operators
+    name: Arithmetic and bitwise operators
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-udf/
+    tier: high
+    probes:
+      - { id: add, sql: "SELECT a + b FROM t;" }
+      - { id: sub, sql: "SELECT a - b FROM t;" }
+      - { id: mul, sql: "SELECT a * b FROM t;" }
+      - { id: div, sql: "SELECT a / b FROM t;" }
+      - { id: int_div, sql: "SELECT a DIV b FROM t;" }
+      - { id: mod, sql: "SELECT a % b FROM t;" }
+      - { id: bit_and, sql: "SELECT a & b FROM t;" }
+      - { id: bit_or, sql: "SELECT a | b FROM t;" }
+      - { id: bit_xor, sql: "SELECT a ^ b FROM t;" }
+      - { id: bit_not, sql: "SELECT ~a FROM t;" }
+      - { id: unary_minus, sql: "SELECT -a FROM t;" }
+      - { id: unary_plus, sql: "SELECT +a FROM t;" }
+      - { id: precedence, sql: "SELECT (a + b) * c - d / e % f FROM t;" }
+    examples:
+      - "SELECT 17 DIV 3;"
+
+  - id: b_logical_operators
+    name: Logical operators
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-udf/
+    tier: high
+    probes:
+      - { id: and, sql: "SELECT * FROM t WHERE a AND b;" }
+      - { id: or, sql: "SELECT * FROM t WHERE a OR b;" }
+      - { id: not, sql: "SELECT * FROM t WHERE NOT a;" }
+      - { id: bang, sql: "SELECT * FROM t WHERE ! a;" }
+      - { id: combined, sql: "SELECT * FROM t WHERE (a AND b) OR NOT (c OR d);" }
+
+  - id: b_string_concat_operator
+    name: String concatenation operator
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-udf/
+    tier: medium
+    probes:
+      - { id: concat_bars, sql: "SELECT a || b FROM t;" }
+      - { id: concat_chain, sql: "SELECT a || ' ' || b FROM t;" }
+
+  - id: b_like_rlike_regexp
+    name: LIKE, RLIKE and REGEXP predicates
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-udf/
+    tier: high
+    probes:
+      - { id: like, sql: "SELECT * FROM t WHERE a LIKE 'foo%';" }
+      - { id: not_like, sql: "SELECT * FROM t WHERE a NOT LIKE 'foo_';" }
+      - { id: rlike, sql: "SELECT * FROM t WHERE a RLIKE '^f.*r$';" }
+      - { id: not_rlike, sql: "SELECT * FROM t WHERE a NOT RLIKE '^f';" }
+      - { id: regexp, sql: "SELECT * FROM t WHERE a REGEXP 'foo';" }
+      - { id: not_regexp, sql: "SELECT * FROM t WHERE a NOT REGEXP 'foo';" }
+    examples:
+      - "SELECT 'foobar' RLIKE '^f.*r$';"
+
+  - id: b_between
+    name: BETWEEN predicate
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-udf/
+    tier: high
+    probes:
+      - { id: between, sql: "SELECT * FROM t WHERE a BETWEEN 1 AND 10;" }
+      - { id: not_between, sql: "SELECT * FROM t WHERE a NOT BETWEEN 1 AND 10;" }
+
+  - id: b_in_predicate
+    name: IN and NOT IN predicates
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-udf/
+    tier: high
+    probes:
+      - { id: in_list, sql: "SELECT * FROM t WHERE a IN (1, 2, 3);" }
+      - { id: not_in_list, sql: "SELECT * FROM t WHERE a NOT IN (1, 2, 3);" }
+      - { id: in_subquery, sql: "SELECT * FROM t WHERE a IN (SELECT foo FROM b);" }
+      - { id: not_in_subquery, sql: "SELECT * FROM t WHERE a NOT IN (SELECT foo FROM b);" }
+    examples:
+      - "SELECT * FROM A WHERE A.a IN (SELECT foo FROM B);"
+
+  - id: b_is_predicates
+    name: IS NULL and IS TRUE/FALSE predicates
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-udf/
+    tier: high
+    probes:
+      - { id: is_null, sql: "SELECT * FROM t WHERE a IS NULL;" }
+      - { id: is_not_null, sql: "SELECT * FROM t WHERE a IS NOT NULL;" }
+      - { id: is_true, sql: "SELECT * FROM t WHERE a IS TRUE;" }
+      - { id: is_not_true, sql: "SELECT * FROM t WHERE a IS NOT TRUE;" }
+      - { id: is_false, sql: "SELECT * FROM t WHERE a IS FALSE;" }
+      - { id: is_not_false, sql: "SELECT * FROM t WHERE a IS NOT FALSE;" }
+
+  - id: b_exists_predicate
+    name: EXISTS subquery predicate
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-subqueries/
+    tier: high
+    probes:
+      - { id: exists, sql: "SELECT a FROM t1 WHERE EXISTS (SELECT b FROM t2 WHERE t1.x = t2.y);" }
+      - { id: not_exists, sql: "SELECT a FROM t1 WHERE NOT EXISTS (SELECT b FROM t2 WHERE t1.x = t2.y);" }
+    examples:
+      - "SELECT A FROM T1 WHERE EXISTS (SELECT B FROM T2 WHERE T1.X = T2.Y);"
+
+  - id: b_case_expression
+    name: CASE expression
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-udf/
+    tier: high
+    probes:
+      - { id: simple_case, sql: "SELECT CASE a WHEN 1 THEN 'x' WHEN 2 THEN 'y' ELSE 'z' END FROM t;" }
+      - { id: simple_case_no_else, sql: "SELECT CASE a WHEN 1 THEN 'x' END FROM t;" }
+      - { id: searched_case, sql: "SELECT CASE WHEN a > 1 THEN 'x' WHEN a < 0 THEN 'y' ELSE 'z' END FROM t;" }
+      - { id: searched_case_no_else, sql: "SELECT CASE WHEN a > 1 THEN 'x' END FROM t;" }
+      - { id: nested_case, sql: "SELECT CASE WHEN a THEN CASE WHEN b THEN 1 ELSE 2 END ELSE 3 END FROM t;" }
+
+  - id: b_conditional_functions
+    name: Conditional functions
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-udf/
+    tier: medium
+    probes:
+      - { id: if, sql: "SELECT if(a > 1, 'x', 'y') FROM t;" }
+      - { id: coalesce, sql: "SELECT COALESCE(a, b, 0) FROM t;" }
+      - { id: nvl, sql: "SELECT nvl(a, 0) FROM t;" }
+      - { id: nullif, sql: "SELECT nullif(a, b) FROM t;" }
+      - { id: isnull, sql: "SELECT isnull(a), isnotnull(a) FROM t;" }
+
+  - id: b_complex_type_access
+    name: Complex type element access operators
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-udf/
+    tier: high
+    probes:
+      - { id: array_index, sql: "SELECT a[0] FROM t;" }
+      - { id: map_key, sql: "SELECT m['all'] FROM t;" }
+      - { id: struct_field, sql: "SELECT s.x FROM t;" }
+      - { id: nested_access, sql: "SELECT a[0]['k'].f FROM t;" }
+
+  - id: b_extract
+    name: EXTRACT(field FROM source)
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-udf/
+    tier: high
+    probes:
+      - { id: extract_month, sql: "SELECT extract(month FROM c) FROM t;" }
+      - { id: extract_year, sql: "SELECT extract(year FROM c) FROM t;" }
+      - { id: extract_dayofweek, sql: "SELECT extract(dayofweek FROM c) FROM t;" }
+      - { id: extract_hour, sql: "SELECT extract(hour FROM c) FROM t;" }
+      - { id: extract_interval, sql: "SELECT extract(month FROM interval '1-3' year to month);" }
+    examples:
+      - "select extract(month from \"2016-10-20\");"
+      - "select extract(hour from \"2016-10-20 05:06:07\");"
+      - "select extract(dayofweek from \"2016-10-20 05:06:07\");"
+
+  - id: b_cast
+    name: CAST
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-types/
+    tier: high
+    probes:
+      - { id: cast_basic, sql: "SELECT CAST(a AS BIGINT) FROM t;" }
+      - { id: cast_string, sql: "SELECT CAST(a AS STRING) FROM t;" }
+      - { id: cast_decimal, sql: "SELECT CAST(a AS DECIMAL(10, 2)) FROM t;" }
+      - { id: cast_varchar, sql: "SELECT CAST(a AS VARCHAR(20)) FROM t;" }
+      - { id: cast_complex, sql: "SELECT CAST(a AS ARRAY<INT>) FROM t;" }
+    examples:
+      - "SELECT cast('1' as BIGINT);"
+
+  - id: b_cast_format
+    name: CAST ... FORMAT with SQL:2016 datetime formats
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-types/
+    tier: medium
+    probes:
+      - { id: ts_to_string, sql: "SELECT CAST(ts AS STRING FORMAT 'yyyy-MM-dd') FROM t;" }
+      - { id: ts_to_varchar, sql: "SELECT CAST(ts AS VARCHAR(30) FORMAT 'yyyy-MM-dd HH24:MI:SS') FROM t;" }
+      - { id: string_to_date, sql: "SELECT CAST(s AS DATE FORMAT 'yyyy-MM-dd') FROM t;" }
+      - { id: string_to_timestamp, sql: "SELECT CAST(s AS TIMESTAMP FORMAT 'yyyy-MM-dd HH24:MI:SS') FROM t;" }
+
+  - id: b_substring_trim_functions
+    name: String functions (substr, substring, trim, instr)
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-udf/
+    tier: medium
+    probes:
+      - { id: substr, sql: "SELECT substr(a, 4), substr(a, 4, 1) FROM t;" }
+      - { id: substring, sql: "SELECT substring(a, 4), substring(a, 4, 1) FROM t;" }
+      - { id: trim_fn, sql: "SELECT trim(a), ltrim(a), rtrim(a) FROM t;" }
+      - { id: instr, sql: "SELECT instr(a, 'x') FROM t;" }
+      - { id: locate, sql: "SELECT locate('x', a, 2) FROM t;" }

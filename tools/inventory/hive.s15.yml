@@ -1,0 +1,46 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: alter_table_properties
+    name: ALTER TABLE SET TBLPROPERTIES
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: set_tblproperties
+        sql: "ALTER TABLE t SET TBLPROPERTIES ('k' = 'v');"
+      - id: set_tblproperties_multiple
+        sql: "ALTER TABLE t SET TBLPROPERTIES ('k1' = 'v1', 'k2' = 'v2');"
+      - id: set_comment
+        sql: "ALTER TABLE t SET TBLPROPERTIES ('comment' = 'new comment');"
+      - id: qualified_table
+        sql: "ALTER TABLE db.t SET TBLPROPERTIES ('k' = 'v');"
+
+  - id: alter_table_serde
+    name: ALTER TABLE SET SERDE / SERDEPROPERTIES
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: set_serde
+        sql: "ALTER TABLE t SET SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe';"
+      - id: set_serde_with_serdeproperties
+        sql: "ALTER TABLE t SET SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe' WITH SERDEPROPERTIES ('field.delim' = ',');"
+      - id: set_serdeproperties
+        sql: "ALTER TABLE t SET SERDEPROPERTIES ('field.delim' = ',');"
+      - id: partition_set_serde
+        sql: "ALTER TABLE t PARTITION (ds = '2020-01-01') SET SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe';"
+      - id: partition_set_serde_with_serdeproperties
+        sql: "ALTER TABLE t PARTITION (ds = '2020-01-01') SET SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe' WITH SERDEPROPERTIES ('field.delim' = ',');"
+      - id: partition_set_serdeproperties
+        sql: "ALTER TABLE t PARTITION (ds = '2020-01-01') SET SERDEPROPERTIES ('field.delim' = ',');"
+      - id: unset_serdeproperties
+        sql: "ALTER TABLE t UNSET SERDEPROPERTIES ('field.delim');"
+        note: Hive 4.0.0 (HIVE-21952)
+      - id: partition_unset_serdeproperties
+        sql: "ALTER TABLE t PARTITION (ds = '2020-01-01') UNSET SERDEPROPERTIES ('field.delim');"
+        note: Hive 4.0.0 (HIVE-21952)
+    examples:
+      - "ALTER TABLE table_name SET SERDEPROPERTIES ('field.delim' = ',');"
+      - "ALTER TABLE table_name UNSET SERDEPROPERTIES ('field.delim');"

@@ -1,0 +1,111 @@
+dialect: redshift
+engine: Amazon Redshift
+version: "current"
+source: https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_commands.html
+
+statements:
+  - id: update
+    name: UPDATE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_UPDATE.html
+    tier: high
+    probes:
+      - { id: basic, sql: "UPDATE t SET c = 1;" }
+      - { id: set_default, sql: "UPDATE t SET c = DEFAULT;" }
+      - { id: multiple_columns, sql: "UPDATE t SET c = 1, d = DEFAULT, e = 'x';" }
+      - { id: where, sql: "UPDATE t SET c = 1 WHERE d > 5;" }
+      - { id: alias, sql: "UPDATE t AS a SET c = 1 WHERE d = 2;" }
+      - { id: alias_no_as, sql: "UPDATE t a SET c = 1;" }
+      - { id: from_clause, sql: "UPDATE t SET c = s.c FROM s WHERE t.id = s.id;" }
+      - { id: from_alias, sql: "UPDATE t SET c = x.c FROM t2 AS x WHERE t.id = x.id;" }
+      - { id: where_subquery, sql: "UPDATE t SET c = 1 WHERE id IN (SELECT id FROM s);" }
+      - { id: with_cte, sql: "WITH w AS (SELECT id FROM s) UPDATE t SET c = 1 FROM w WHERE t.id = w.id;" }
+      - { id: with_recursive, sql: "WITH RECURSIVE w(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM w WHERE n < 3) UPDATE t SET c = 1 FROM w WHERE t.id = w.n;" }
+      - { id: with_multiple_ctes, sql: "WITH a AS (SELECT 1 AS id), b AS (SELECT 2 AS id) UPDATE t SET c = 1 WHERE id IN (SELECT id FROM a UNION ALL SELECT id FROM b);" }
+    examples:
+      - "UPDATE category SET catgroup='Theatre' WHERE catid BETWEEN 6 AND 8;"
+      - "UPDATE category SET catdesc=default, catname='Shows' WHERE catgroup='Theatre';"
+
+  - id: alter_database
+    name: ALTER DATABASE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_DATABASE.html
+    tier: medium
+    probes:
+      - { id: rename_to, sql: "ALTER DATABASE d RENAME TO d2;" }
+      - { id: owner_to, sql: "ALTER DATABASE d OWNER TO u;" }
+      - { id: connection_limit, sql: "ALTER DATABASE d CONNECTION LIMIT 10;" }
+      - { id: connection_limit_unlimited, sql: "ALTER DATABASE d CONNECTION LIMIT UNLIMITED;" }
+      - { id: collate, sql: "ALTER DATABASE d COLLATE CASE_INSENSITIVE;" }
+      - { id: isolation_level, sql: "ALTER DATABASE d ISOLATION LEVEL SNAPSHOT;" }
+      - { id: integration_refresh_table, sql: "ALTER DATABASE d INTEGRATION REFRESH TABLE s.t1, s.t2;" }
+      - { id: integration_refresh_all_tables_in_schema, sql: "ALTER DATABASE d INTEGRATION REFRESH INERROR TABLES IN SCHEMA s;" }
+      - { id: integration_set_refresh_interval, sql: "ALTER DATABASE d INTEGRATION SET REFRESH_INTERVAL 600;" }
+      - { id: integration_set_history_mode, sql: "ALTER DATABASE d INTEGRATION SET HISTORY_MODE = TRUE FOR TABLE s.t;" }
+    examples:
+      - "alter database tickit_sandbox rename to tickit_test;"
+      - "ALTER DATABASE sampledb ISOLATION LEVEL SNAPSHOT;"
+      - "ALTER DATABASE sample_integration_db INTEGRATION SET REFRESH_INTERVAL 600;"
+
+  - id: alter_datashare
+    name: ALTER DATASHARE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_DATASHARE.html
+    tier: medium
+    probes:
+      - { id: add_table, sql: "ALTER DATASHARE ds ADD TABLE s.t;" }
+      - { id: add_schema, sql: "ALTER DATASHARE ds ADD SCHEMA s;" }
+      - { id: add_function, sql: "ALTER DATASHARE ds ADD FUNCTION s.f(integer, varchar);" }
+      - { id: add_all_tables, sql: "ALTER DATASHARE ds ADD ALL TABLES IN SCHEMA s;" }
+      - { id: remove_table, sql: "ALTER DATASHARE ds REMOVE TABLE s.t;" }
+      - { id: remove_all_functions, sql: "ALTER DATASHARE ds REMOVE ALL FUNCTIONS IN SCHEMA s;" }
+      - { id: set_publicaccessible, sql: "ALTER DATASHARE ds SET PUBLICACCESSIBLE = TRUE;" }
+      - { id: set_includenew, sql: "ALTER DATASHARE ds SET INCLUDENEW = TRUE FOR SCHEMA s;" }
+    examples:
+      - "ALTER DATASHARE salesshare ADD SCHEMA public;"
+      - "ALTER DATASHARE salesshare ADD ALL TABLES IN SCHEMA PUBLIC;"
+      - "ALTER DATASHARE salesshare REMOVE TABLE public.tickit_sales_redshift;"
+
+  - id: alter_default_privileges
+    name: ALTER DEFAULT PRIVILEGES
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_DEFAULT_PRIVILEGES.html
+    tier: medium
+    probes:
+      - { id: grant_tables, sql: "ALTER DEFAULT PRIVILEGES GRANT SELECT, INSERT ON TABLES TO u;" }
+      - { id: for_user_in_schema, sql: "ALTER DEFAULT PRIVILEGES FOR USER u1, u2 IN SCHEMA s GRANT ALL PRIVILEGES ON TABLES TO GROUP g;" }
+      - { id: grant_to_role_with_grant_option, sql: "ALTER DEFAULT PRIVILEGES GRANT SELECT ON TABLES TO u WITH GRANT OPTION, ROLE r;" }
+      - { id: grant_functions, sql: "ALTER DEFAULT PRIVILEGES GRANT EXECUTE ON FUNCTIONS TO PUBLIC;" }
+      - { id: grant_procedures, sql: "ALTER DEFAULT PRIVILEGES GRANT EXECUTE ON PROCEDURES TO GROUP g;" }
+      - { id: revoke_tables, sql: "ALTER DEFAULT PRIVILEGES REVOKE GRANT OPTION FOR SELECT ON TABLES FROM u RESTRICT;" }
+      - { id: revoke_tables_group, sql: "ALTER DEFAULT PRIVILEGES IN SCHEMA s REVOKE INSERT ON TABLES FROM GROUP g;" }
+      - { id: revoke_functions, sql: "ALTER DEFAULT PRIVILEGES REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC;" }
+    examples:
+      - "alter default privileges for user report_admin grant select on tables to group report_readers;"
+      - "alter default privileges in schema sales grant insert on tables to group sales_admin;"
+      - "alter default privileges revoke execute on functions from public;"
+
+  - id: alter_external_schema
+    name: ALTER EXTERNAL SCHEMA
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_EXTERNAL_SCHEMA.html
+    tier: medium
+    probes:
+      - { id: iam_role_arn, sql: "ALTER EXTERNAL SCHEMA s IAM_ROLE 'arn:aws:iam::123456789012:role/myRole';" }
+      - { id: iam_role_default, sql: "ALTER EXTERNAL SCHEMA s IAM_ROLE default;" }
+      - { id: authentication_mtls, sql: "ALTER EXTERNAL SCHEMA s AUTHENTICATION mtls AUTHENTICATION_ARN 'arn:aws:acm:us-east-1:444455556666:certificate/certificate_ID';" }
+      - { id: authentication_secret, sql: "ALTER EXTERNAL SCHEMA s AUTHENTICATION mtls SECRET_ARN 'arn:aws:secretsmanager:us-east-1:012345678910:secret:myMTLSSecret';" }
+      - { id: uri, sql: "ALTER EXTERNAL SCHEMA s URI 'broker.example.com:9098';" }
+    examples:
+      - "ALTER EXTERNAL SCHEMA schema_name AUTHENTICATION mtls AUTHENTICATION_ARN 'arn:aws:acm:us-east-1:444455556666:certificate/certificate_ID';"
+      - "ALTER EXTERNAL SCHEMA schema_name AUTHENTICATION mtls SECRET_ARN 'arn:aws:secretsmanager:us-east-1:012345678910:secret:myMTLSSecret';"
+
+  - id: alter_group
+    name: ALTER GROUP
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_GROUP.html
+    tier: medium
+    probes:
+      - { id: add_user, sql: "ALTER GROUP g ADD USER u;" }
+      - { id: add_users, sql: "ALTER GROUP g ADD USER u1, u2;" }
+      - { id: drop_user, sql: "ALTER GROUP g DROP USER u;" }
+      - { id: drop_users, sql: "ALTER GROUP g DROP USER u1, u2;" }
+      - { id: rename_to, sql: "ALTER GROUP g RENAME TO g2;" }
+    examples:
+      - "ALTER GROUP admin_group ADD USER dwuser;"
+      - "ALTER GROUP admin_group RENAME TO administrators;"
+      - "ALTER GROUP admin_group DROP USER u1, u2;"

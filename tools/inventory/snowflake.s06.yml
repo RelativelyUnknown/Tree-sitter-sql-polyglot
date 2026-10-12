@@ -1,0 +1,298 @@
+dialect: snowflake
+engine: Snowflake
+version: "current (docs read 2026-10-04)"
+source: https://docs.snowflake.com/en/sql-reference/sql-all
+
+statements:
+  - id: alter_stage
+    name: ALTER STAGE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-stage
+    tier: medium
+    probes:
+      - id: rename_to
+        sql: "ALTER STAGE IF EXISTS s RENAME TO s2;"
+      - id: set_tag
+        sql: "ALTER STAGE s SET TAG t1 = 'v1', t2 = 'v2';"
+      - id: unset_tag
+        sql: "ALTER STAGE s UNSET TAG t1, t2;"
+      - id: unset_dcm_project
+        sql: "ALTER STAGE IF EXISTS s UNSET DCM PROJECT;"
+      - id: set_internal_file_format_name
+        sql: "ALTER STAGE s SET FILE_FORMAT = (FORMAT_NAME = 'ff') COMMENT = 'c';"
+      - id: set_internal_file_format_type
+        sql: "ALTER STAGE s SET FILE_FORMAT = (TYPE = CSV FIELD_DELIMITER = '|' SKIP_HEADER = 1 NULL_IF = ('NULL', '') COMPRESSION = GZIP);"
+      - id: set_external_s3_url_credentials
+        sql: "ALTER STAGE s SET URL = 's3://bucket/path/' CREDENTIALS = (AWS_KEY_ID = 'k' AWS_SECRET_KEY = 's' AWS_TOKEN = 't');"
+      - id: set_external_s3_storage_integration
+        sql: "ALTER STAGE s SET STORAGE_INTEGRATION = myint;"
+      - id: set_external_s3_encryption
+        sql: "ALTER STAGE s SET ENCRYPTION = (TYPE = 'AWS_SSE_KMS' KMS_KEY_ID = 'id');"
+      - id: set_external_gcs
+        sql: "ALTER STAGE s SET URL = 'gcs://bucket/path/' STORAGE_INTEGRATION = myint ENCRYPTION = (TYPE = 'GCS_SSE_KMS' KMS_KEY_ID = 'id');"
+      - id: set_external_azure
+        sql: "ALTER STAGE s SET URL = 'azure://acct.blob.core.windows.net/container/path/' CREDENTIALS = (AZURE_SAS_TOKEN = 'tok') ENCRYPTION = (TYPE = 'NONE');"
+      - id: set_directory
+        sql: "ALTER STAGE s SET DIRECTORY = (ENABLE = TRUE);"
+      - id: refresh
+        sql: "ALTER STAGE IF EXISTS s REFRESH;"
+      - id: refresh_subpath
+        sql: "ALTER STAGE s REFRESH SUBPATH = 'data';"
+    examples:
+      - "ALTER STAGE my_int_stage RENAME TO new_int_stage;"
+      - "ALTER STAGE my_ext_stage SET URL = 's3://loading/files/new/' COPY_OPTIONS = (ON_ERROR = 'skip_file');"
+      - "ALTER STAGE mystage REFRESH SUBPATH = 'data';"
+
+  - id: alter_storage_integration
+    name: ALTER STORAGE INTEGRATION
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-storage-integration
+    tier: medium
+    probes:
+      - id: set_enabled
+        sql: "ALTER STORAGE INTEGRATION IF EXISTS i SET ENABLED = TRUE;"
+      - id: set_s3_params
+        sql: "ALTER STORAGE INTEGRATION i SET STORAGE_AWS_ROLE_ARN = 'arn:aws:iam::001234567890:role/r' STORAGE_AWS_OBJECT_ACL = 'bucket-owner-full-control' STORAGE_AWS_EXTERNAL_ID = 'x' USE_PRIVATELINK_ENDPOINT = TRUE;"
+      - id: set_azure_tenant
+        sql: "ALTER STORAGE INTEGRATION i SET AZURE_TENANT_ID = 'tenant' USE_PRIVATELINK_ENDPOINT = FALSE;"
+      - id: set_allowed_blocked_locations
+        sql: "ALTER STORAGE INTEGRATION i SET STORAGE_ALLOWED_LOCATIONS = ('s3://b1/p/', 's3://b2/p/') STORAGE_BLOCKED_LOCATIONS = ('s3://b3/p/') COMMENT = 'c';"
+      - id: alter_integration_without_storage
+        sql: "ALTER INTEGRATION i SET ENABLED = FALSE;"
+      - id: set_tag
+        sql: "ALTER STORAGE INTEGRATION i SET TAG t1 = 'v1', t2 = 'v2';"
+      - id: unset_tag
+        sql: "ALTER STORAGE INTEGRATION i UNSET TAG t1, t2;"
+      - id: unset_properties
+        sql: "ALTER STORAGE INTEGRATION IF EXISTS i UNSET ENABLED, STORAGE_BLOCKED_LOCATIONS, COMMENT;"
+    examples:
+      - "ALTER STORAGE INTEGRATION myint SET ENABLED = TRUE;"
+
+  - id: alter_stream
+    name: ALTER STREAM
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-stream
+    tier: medium
+    probes:
+      - id: set_comment
+        sql: "ALTER STREAM IF EXISTS s SET COMMENT = 'c';"
+      - id: set_tag
+        sql: "ALTER STREAM s SET TAG t1 = 'v1', t2 = 'v2';"
+      - id: unset_tag
+        sql: "ALTER STREAM s UNSET TAG t1, t2;"
+      - id: unset_comment
+        sql: "ALTER STREAM IF EXISTS s UNSET COMMENT;"
+    examples:
+      - "ALTER STREAM mystream SET COMMENT = 'New comment for stream';"
+
+  - id: alter_tag
+    name: ALTER TAG
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-tag
+    tier: medium
+    probes:
+      - id: rename_to
+        sql: "ALTER TAG IF EXISTS t RENAME TO t2;"
+      - id: add_allowed_values
+        sql: "ALTER TAG t ADD ALLOWED_VALUES 'a', 'b';"
+      - id: drop_allowed_values
+        sql: "ALTER TAG IF EXISTS t DROP ALLOWED_VALUES 'a', 'b';"
+      - id: set_allowed_values
+        sql: "ALTER TAG t SET ALLOWED_VALUES 'a', 'b';"
+      - id: set_multi_value
+        sql: "ALTER TAG t SET MULTI_VALUE = TRUE;"
+      - id: set_propagate_on_conflict
+        sql: "ALTER TAG t SET PROPAGATE = ON_DEPENDENCY_AND_DATA_MOVEMENT ON_CONFLICT = 'x' COMMENT = 'c';"
+      - id: set_propagate_on_conflict_keyword
+        sql: "ALTER TAG t SET PROPAGATE = ON_DEPENDENCY ON_CONFLICT = ALLOWED_VALUES_SEQUENCE;"
+      - id: unset_properties
+        sql: "ALTER TAG IF EXISTS t UNSET ALLOWED_VALUES;"
+      - id: set_data_movement_policy
+        sql: "ALTER TAG t SET DATA MOVEMENT POLICY p FORCE;"
+      - id: unset_data_movement_policy
+        sql: "ALTER TAG t UNSET DATA MOVEMENT POLICY;"
+      - id: set_masking_policy
+        sql: "ALTER TAG t SET MASKING POLICY p1, MASKING POLICY p2 FORCE;"
+      - id: unset_masking_policy
+        sql: "ALTER TAG t UNSET MASKING POLICY p1, MASKING POLICY p2;"
+      - id: unset_dcm_project
+        sql: "ALTER TAG IF EXISTS t UNSET DCM PROJECT;"
+    examples:
+      - "ALTER TAG cost_center RENAME TO cost_center_na;"
+
+  - id: alter_task
+    name: ALTER TASK
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-task
+    tier: medium
+    probes:
+      - id: resume
+        sql: "ALTER TASK IF EXISTS t RESUME;"
+      - id: suspend
+        sql: "ALTER TASK t SUSPEND;"
+      - id: remove_after
+        sql: "ALTER TASK t REMOVE AFTER p1, p2;"
+      - id: add_after
+        sql: "ALTER TASK t ADD AFTER p3;"
+      - id: set_warehouse_schedule
+        sql: "ALTER TASK t SET WAREHOUSE = wh SCHEDULE = '5 MINUTES';"
+      - id: set_schedule_cron
+        sql: "ALTER TASK t SET SCHEDULE = 'USING CRON */3 * * * * UTC';"
+      - id: set_serverless_initial_size
+        sql: "ALTER TASK t SET USER_TASK_MANAGED_INITIAL_WAREHOUSE_SIZE = 'XSMALL';"
+      - id: set_config
+        sql: "ALTER TASK t SET CONFIG = $${\"k\": \"v\"}$$;"
+      - id: set_overlap_policy_and_limits
+        sql: "ALTER TASK t SET OVERLAP_POLICY = NO_OVERLAP USER_TASK_TIMEOUT_MS = 60000 SUSPEND_TASK_AFTER_NUM_FAILURES = 3 TASK_AUTO_RETRY_ATTEMPTS = 2;"
+      - id: set_integrations_and_log_level
+        sql: "ALTER TASK t SET ERROR_INTEGRATION = ei SUCCESS_INTEGRATION = si LOG_LEVEL = 'INFO' COMMENT = 'c';"
+      - id: set_session_parameters
+        sql: "ALTER TASK t SET TIMEZONE = 'America/Los_Angeles', CLIENT_TIMESTAMP_TYPE_MAPPING = TIMESTAMP_LTZ;"
+      - id: set_target_completion_interval
+        sql: "ALTER TASK t SET TARGET_COMPLETION_INTERVAL = '10 MINUTES' SERVERLESS_TASK_MIN_STATEMENT_SIZE = 'XSMALL' SERVERLESS_TASK_MAX_STATEMENT_SIZE = 'LARGE';"
+      - id: set_contact
+        sql: "ALTER TASK t SET CONTACT purpose1 = c1, purpose2 = c2;"
+      - id: set_execute_as_user
+        sql: "ALTER TASK t SET EXECUTE AS USER u;"
+      - id: unset_properties
+        sql: "ALTER TASK IF EXISTS t UNSET WAREHOUSE, SCHEDULE;"
+      - id: unset_properties_list
+        sql: "ALTER TASK t UNSET WAREHOUSE SCHEDULE CONFIG COMMENT EXECUTE AS USER DCM PROJECT;"
+      - id: set_tag
+        sql: "ALTER TASK t SET TAG t1 = 'v1', t2 = 'v2';"
+      - id: unset_tag
+        sql: "ALTER TASK t UNSET TAG t1, t2;"
+      - id: set_finalize
+        sql: "ALTER TASK t SET FINALIZE = root_task;"
+      - id: unset_finalize
+        sql: "ALTER TASK t UNSET FINALIZE;"
+      - id: modify_as
+        sql: "ALTER TASK t MODIFY AS SELECT CURRENT_VERSION();"
+      - id: modify_when
+        sql: "ALTER TASK t MODIFY WHEN SYSTEM$STREAM_HAS_DATA('MYSTREAM');"
+      - id: remove_when
+        sql: "ALTER TASK t REMOVE WHEN;"
+    examples:
+      - "ALTER TASK mytask RESUME;"
+      - "ALTER TASK mytask SET TIMEZONE = 'America/Los_Angeles', CLIENT_TIMESTAMP_TYPE_MAPPING = TIMESTAMP_LTZ;"
+      - "ALTER TASK task_with_config SET CONFIG = $${\"output_directory\": \"/temp/prod_directory/\", \"environment\": \"prod\"}$$;"
+
+  - id: alter_type
+    name: ALTER TYPE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-type
+    tier: medium
+    probes:
+      - id: set_comment
+        sql: "ALTER TYPE IF EXISTS ty SET COMMENT = 'c';"
+      - id: unset_comment
+        sql: "ALTER TYPE IF EXISTS ty UNSET COMMENT;"
+    examples:
+      - "ALTER TYPE age SET COMMENT = 'User-defined type for storing age values';"
+      - "ALTER TYPE age UNSET COMMENT;"
+
+  - id: alter_user
+    name: ALTER USER
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-user
+    tier: medium
+    probes:
+      - id: rename_to
+        sql: "ALTER USER IF EXISTS u RENAME TO u2;"
+      - id: reset_password
+        sql: "ALTER USER u RESET PASSWORD;"
+      - id: abort_all_queries
+        sql: "ALTER USER u ABORT ALL QUERIES;"
+      - id: add_delegated_authorization
+        sql: "ALTER USER u ADD DELEGATED AUTHORIZATION OF ROLE r TO SECURITY INTEGRATION si;"
+      - id: remove_delegated_authorization
+        sql: "ALTER USER u REMOVE DELEGATED AUTHORIZATION OF ROLE r FROM SECURITY INTEGRATION si;"
+      - id: remove_delegated_authorizations
+        sql: "ALTER USER u REMOVE DELEGATED AUTHORIZATIONS FROM SECURITY INTEGRATION si;"
+      - id: remove_delegated_authorizations_any_role
+        sql: "ALTER USER u REMOVE DELEGATED AUTHORIZATIONS OF ANY ROLE FROM SECURITY INTEGRATION si;"
+      - id: omitted_name_current_user
+        sql: "ALTER USER SET PASSWORD = 'p';"
+      - id: mfa_enroll
+        sql: "ALTER USER u ENROLL MFA;"
+      - id: mfa_set_default_method
+        sql: "ALTER USER u SET DEFAULT_MFA_METHOD = TOTP;"
+      - id: mfa_remove_method
+        sql: "ALTER USER u REMOVE MFA METHOD m;"
+      - id: mfa_modify_method
+        sql: "ALTER USER u MODIFY MFA METHOD m SET COMMENT = 'c';"
+      - id: mfa_add_otp
+        sql: "ALTER USER u ADD MFA METHOD OTP COUNT = 3;"
+      - id: set_policy
+        sql: "ALTER USER u SET AUTHENTICATION POLICY p FORCE;"
+      - id: unset_policy
+        sql: "ALTER USER u UNSET SESSION POLICY;"
+      - id: set_tag
+        sql: "ALTER USER u SET TAG t1 = 'v1', t2 = 'v2';"
+      - id: unset_tag
+        sql: "ALTER USER u UNSET TAG t1, t2;"
+      - id: set_password_properties
+        sql: "ALTER USER u SET PASSWORD = 'p' MUST_CHANGE_PASSWORD = TRUE;"
+      - id: set_identity_properties
+        sql: "ALTER USER u SET LOGIN_NAME = 'ln' DISPLAY_NAME = 'dn' FIRST_NAME = 'f' MIDDLE_NAME = 'm' LAST_NAME = 'l' EMAIL = 'e@x.com' COMMENT = 'c';"
+      - id: set_default_properties
+        sql: "ALTER USER u SET DEFAULT_WAREHOUSE = wh DEFAULT_NAMESPACE = db.sch DEFAULT_ROLE = r DEFAULT_SECONDARY_ROLES = ('ALL');"
+      - id: set_default_secondary_roles_empty
+        sql: "ALTER USER u SET DEFAULT_SECONDARY_ROLES = ();"
+      - id: set_disabled_and_expiry
+        sql: "ALTER USER u SET DISABLED = FALSE DAYS_TO_EXPIRY = 30 MINS_TO_UNLOCK = 15 MINS_TO_BYPASS_MFA = 10 DISABLE_MFA = TRUE;"
+      - id: set_rsa_public_key
+        sql: "ALTER USER u SET RSA_PUBLIC_KEY = 'MIIB' RSA_PUBLIC_KEY_2 = 'MIIC';"
+      - id: set_type
+        sql: "ALTER USER u SET TYPE = SERVICE;"
+      - id: set_allowed_interfaces
+        sql: "ALTER USER u SET ALLOWED_INTERFACES = ('SNOWFLAKE_UI');"
+      - id: set_workload_identity
+        sql: "ALTER USER u SET WORKLOAD_IDENTITY = (TYPE = AWS ARN = 'arn:aws:iam::123456789012:role/r');"
+      - id: set_object_params
+        sql: "ALTER USER u SET NETWORK_POLICY = np ENABLE_UNREDACTED_QUERY_SYNTAX_ERROR = TRUE PREVENT_UNLOAD_TO_INLINE_URL = TRUE;"
+      - id: set_session_params
+        sql: "ALTER USER u SET AUTOCOMMIT = FALSE TIMEZONE = 'UTC' QUERY_TAG = 'q' STATEMENT_TIMEOUT_IN_SECONDS = 300;"
+      - id: unset_properties
+        sql: "ALTER USER u UNSET COMMENT, DEFAULT_ROLE, TIMEZONE;"
+    examples:
+      - "ALTER USER user1 RENAME TO user2;"
+      - "ALTER USER user1 SET TYPE = SERVICE;"
+      - "ALTER USER user1 SET DEFAULT_SECONDARY_ROLES = ('ALL');"
+
+  - id: alter_user_add_key_pair
+    name: ALTER USER … ADD KEY PAIR
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-user-add-key-pair
+    tier: medium
+    probes:
+      - id: basic
+        sql: "ALTER USER IF EXISTS u ADD KEY PAIR k PUBLIC_KEY = 'MIIB';"
+      - id: current_user
+        sql: "ALTER USER ADD KEY PAIR k PUBLIC_KEY = 'MIIB';"
+      - id: with_options
+        sql: "ALTER USER u ADD KEY PAIR k PUBLIC_KEY = 'MIIB' ROLE_RESTRICTION = 'r' DAYS_TO_EXPIRY = 90 COMMENT = 'c';"
+    examples:
+      - "ALTER USER IF EXISTS example_user ADD KEY PAIR scoped_key PUBLIC_KEY = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgK...' ROLE_RESTRICTION = 'example_role' DAYS_TO_EXPIRY = 90;"
+
+  - id: alter_user_modify_key_pair
+    name: ALTER USER … MODIFY KEY PAIR
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-user-modify-key-pair
+    tier: medium
+    probes:
+      - id: rename_to
+        sql: "ALTER USER IF EXISTS u MODIFY KEY PAIR k RENAME TO k2;"
+      - id: set_disabled
+        sql: "ALTER USER u MODIFY KEY PAIR k SET DISABLED = TRUE;"
+      - id: set_comment
+        sql: "ALTER USER u MODIFY KEY PAIR k SET DISABLED = FALSE COMMENT = 'c';"
+      - id: unset
+        sql: "ALTER USER u MODIFY KEY PAIR k UNSET DISABLED, COMMENT;"
+    examples:
+      - "ALTER USER IF EXISTS example_user MODIFY KEY PAIR old_key_name RENAME TO new_key_name;"
+      - "ALTER USER IF EXISTS example_user MODIFY KEY PAIR my_key SET DISABLED = TRUE;"
+      - "ALTER USER IF EXISTS example_user MODIFY KEY PAIR my_key SET COMMENT = 'updated key description';"
+
+  - id: alter_user_remove_key_pair
+    name: ALTER USER … REMOVE KEY PAIR
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-user-remove-key-pair
+    tier: medium
+    probes:
+      - id: basic
+        sql: "ALTER USER IF EXISTS u REMOVE KEY PAIR k;"
+      - id: current_user
+        sql: "ALTER USER REMOVE KEY PAIR k;"
+    examples:
+      - "ALTER USER IF EXISTS example_user REMOVE KEY PAIR my_key;"

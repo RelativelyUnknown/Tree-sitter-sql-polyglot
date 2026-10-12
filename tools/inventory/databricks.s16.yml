@@ -1,0 +1,132 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: pipe_syntax
+    name: SQL pipeline syntax (|>)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-pipeline
+    tier: high
+    probes:
+      - id: from_pipe
+        sql: "FROM t |> WHERE a > 1;"
+      - id: table_pipe
+        sql: "TABLE t |> SELECT a;"
+      - id: chained
+        sql: "FROM t |> WHERE a > 1 |> SELECT a, b |> ORDER BY a;"
+      - id: schema_qualified_relation
+        sql: "FROM s.t |> SELECT a;"
+      - id: any_query_starts_pipeline
+        sql: "SELECT a, b FROM t |> WHERE a > 1;"
+      - id: values_starts_pipeline
+        sql: "VALUES (0), (1) tab (col) |> WHERE col = 1;"
+      - id: bare_pipe_token
+        sql: "FROM t | WHERE a < 2 | SELECT a;"
+        note: "Databricks Runtime 18.0 and above allow | in place of |>"
+    examples:
+      - |-
+        SELECT c_count, COUNT(*) AS custdist
+          FROM (SELECT c_custkey, COUNT(o_orderkey) c_count
+                  FROM customer LEFT OUTER JOIN orders ON c_custkey = o_custkey
+                                                      AND o_comment NOT LIKE '%unusual%packages%'
+                  GROUP BY c_custkey
+               ) AS c_orders
+          GROUP BY c_count
+          ORDER BY custdist DESC, c_count DESC;
+      - |-
+        FROM customer
+          |> LEFT OUTER JOIN orders ON c_custkey = o_custkey
+               AND o_comment NOT LIKE '%unusual%packages%'
+          |> AGGREGATE COUNT(o_orderkey) c_count
+               GROUP BY c_custkey
+          |> AGGREGATE COUNT(*) AS custdist
+               GROUP BY c_count
+          |> ORDER BY custdist DESC, c_count DESC;
+
+  - id: pipe_operators
+    name: Pipe operators
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-pipeop
+    tier: high
+    probes:
+      - id: select
+        sql: "FROM t |> SELECT a, b * 2 AS c;"
+      - id: select_distinct
+        sql: "FROM t |> SELECT DISTINCT a;"
+      - id: select_group_by
+        sql: "FROM t |> SELECT a, SUM(b) AS total GROUP BY a;"
+        note: "Aggregates in SELECT with GROUP BY require Databricks Runtime 18.0 or above"
+      - id: select_group_by_alias
+        sql: "FROM t |> SELECT a, SUM(b) AS total GROUP BY a AS g;"
+        note: "Syntax block: GROUP BY grouping_expr [ AS column_alias ]"
+      - id: extend
+        sql: "FROM t |> EXTEND a * 2 AS result;"
+      - id: extend_multiple
+        sql: "FROM t |> EXTEND a * 2 AS x, b + 1 y, a + b;"
+      - id: set
+        sql: "FROM t |> SET a = a * 2;"
+      - id: set_multiple
+        sql: "FROM t |> SET a = a * 2, b = a + 1;"
+      - id: drop
+        sql: "FROM t |> DROP a;"
+      - id: drop_multiple
+        sql: "FROM t |> DROP a, b;"
+      - id: as_table_alias
+        sql: "FROM t |> AS new_tab |> SELECT new_tab.a;"
+      - id: where
+        sql: "FROM t |> WHERE a = 1 AND b > 2;"
+      - id: limit
+        sql: "FROM t |> LIMIT 10;"
+      - id: offset
+        sql: "FROM t |> OFFSET 5;"
+      - id: limit_offset
+        sql: "FROM t |> LIMIT 10 OFFSET 5;"
+      - id: aggregate
+        sql: "FROM t |> AGGREGATE COUNT(a);"
+      - id: aggregate_alias
+        sql: "FROM t |> AGGREGATE COUNT(a) AS cnt, SUM(b) total;"
+      - id: aggregate_group_by
+        sql: "FROM t |> AGGREGATE COUNT(b) AS cnt GROUP BY a;"
+      - id: aggregate_group_by_alias
+        sql: "FROM t |> AGGREGATE COUNT(b) AS cnt GROUP BY a AS g, b;"
+      - id: aggregate_group_by_ordinal
+        sql: "FROM t |> AGGREGATE COUNT(b) AS cnt GROUP BY 1;"
+        note: "An integral numeric value in GROUP BY identifies a column of the input query"
+      - id: join_inner
+        sql: "FROM t |> JOIN u ON t.a = u.a;"
+      - id: join_left
+        sql: "FROM t |> LEFT JOIN u ON t.a = u.a;"
+      - id: join_using
+        sql: "FROM t |> LEFT JOIN u USING (a);"
+      - id: join_subquery
+        sql: "FROM t |> AS lhs |> JOIN (SELECT 0 AS a, 1 AS b) AS rhs ON lhs.a = rhs.a;"
+      - id: join_values
+        sql: "SELECT 0 AS a, 1 AS b |> AS lhs |> JOIN VALUES (0, 2) rhs (a, b) ON (lhs.a = rhs.a);"
+      - id: order_by
+        sql: "FROM t |> ORDER BY a DESC, b;"
+      - id: set_operator_union_all
+        sql: "FROM t |> UNION ALL VALUES (2), (3) tab (c);"
+      - id: set_operator_except
+        sql: "FROM t |> EXCEPT SELECT a FROM u;"
+      - id: set_operator_intersect
+        sql: "FROM t |> INTERSECT SELECT a FROM u;"
+      - id: tablesample_rows
+        sql: "FROM t |> TABLESAMPLE (1 ROWS);"
+      - id: tablesample_percent
+        sql: "FROM t |> TABLESAMPLE (100 PERCENT);"
+      - id: pivot
+        sql: "FROM t |> PIVOT (SUM(earnings) FOR course IN ('dotNET', 'Java'));"
+      - id: unpivot
+        sql: "FROM t |> UNPIVOT (earnings FOR year IN (`2012`, `2013`));"
+    examples:
+      - |-
+        FROM customer
+          |> LEFT OUTER JOIN orders ON c_custkey = o_custkey
+               AND o_comment NOT LIKE '%unusual%packages%'
+          |> AGGREGATE COUNT(o_orderkey) c_count
+               GROUP BY c_custkey
+          |> AGGREGATE COUNT(*) AS custdist
+               GROUP BY c_count
+          |> ORDER BY custdist DESC, c_count DESC;
+      - "VALUES (0), (1) tab(col) |> EXTEND col * 2 AS result;"
+      - "VALUES (0, 1) tab(col1, col2) |> DROP col1;"

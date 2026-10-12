@@ -1,0 +1,227 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: get_diagnostics
+    name: GET DIAGNOSTICS
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/control-flow/get-diagnostics-stmt
+    tier: high
+    probes:
+      - id: condition_message_text
+        sql: |-
+          BEGIN
+            DECLARE EXIT HANDLER FOR DIVIDE_BY_ZERO
+            BEGIN
+              DECLARE msg STRING;
+              GET DIAGNOSTICS CONDITION 1 msg = MESSAGE_TEXT;
+            END;
+            SELECT 1 / 0;
+          END;
+      - id: condition_returned_sqlstate
+        sql: |-
+          BEGIN
+            DECLARE EXIT HANDLER FOR SQLEXCEPTION
+            BEGIN
+              DECLARE state STRING;
+              GET DIAGNOSTICS CONDITION 1 state = RETURNED_SQLSTATE;
+            END;
+            SELECT 1 / 0;
+          END;
+      - id: condition_message_arguments
+        sql: |-
+          BEGIN
+            DECLARE EXIT HANDLER FOR DIVIDE_BY_ZERO
+            BEGIN
+              DECLARE args MAP<STRING, STRING>;
+              GET DIAGNOSTICS CONDITION 1 args = MESSAGE_ARGUMENTS;
+            END;
+            SELECT 1 / 0;
+          END;
+      - id: condition_condition_identifier
+        sql: |-
+          BEGIN
+            DECLARE EXIT HANDLER FOR DIVIDE_BY_ZERO
+            BEGIN
+              DECLARE cond STRING;
+              GET DIAGNOSTICS CONDITION 1 cond = CONDITION_IDENTIFIER;
+            END;
+            SELECT 1 / 0;
+          END;
+      - id: condition_line_number
+        sql: |-
+          BEGIN
+            DECLARE EXIT HANDLER FOR DIVIDE_BY_ZERO
+            BEGIN
+              DECLARE line BIGINT;
+              GET DIAGNOSTICS CONDITION 1 line = LINE_NUMBER;
+            END;
+            SELECT 1 / 0;
+          END;
+      - id: condition_multiple_items
+        sql: |-
+          BEGIN
+            DECLARE EXIT HANDLER FOR DIVIDE_BY_ZERO
+            BEGIN
+              DECLARE cond STRING;
+              DECLARE msg STRING;
+              DECLARE state STRING;
+              GET DIAGNOSTICS CONDITION 1 cond = CONDITION_IDENTIFIER, msg = MESSAGE_TEXT, state = RETURNED_SQLSTATE;
+            END;
+            SELECT 1 / 0;
+          END;
+      - id: condition_session_variable
+        sql: |-
+          BEGIN
+            DECLARE EXIT HANDLER FOR DIVIDE_BY_ZERO
+            BEGIN
+              GET DIAGNOSTICS CONDITION 1 session.msg = MESSAGE_TEXT;
+            END;
+            SELECT 1 / 0;
+          END;
+        note: variable_name may be a local variable or a session variable, per the Parameters section; session variables are qualified with the session schema
+      - id: transaction_active_standalone
+        sql: "GET DIAGNOSTICS tx = TRANSACTION_ACTIVE;"
+        note: the TRANSACTION_ACTIVE form may be used as a standalone statement (Databricks Runtime 18.2 and above)
+      - id: transaction_active_in_atomic
+        sql: |-
+          BEGIN ATOMIC
+            DECLARE tx INT;
+            GET DIAGNOSTICS tx = TRANSACTION_ACTIVE;
+          END;
+      - id: row_count
+        sql: |-
+          BEGIN
+            DECLARE rc BIGINT;
+            DELETE FROM t WHERE c > 1;
+            GET DIAGNOSTICS rc = ROW_COUNT;
+          END;
+      - id: row_count_and_transaction_active
+        sql: |-
+          BEGIN
+            DECLARE rc BIGINT;
+            DECLARE tx INT;
+            DELETE FROM t WHERE c > 1;
+            GET DIAGNOSTICS rc = ROW_COUNT, tx = TRANSACTION_ACTIVE;
+          END;
+        note: ROW_COUNT can be combined with TRANSACTION_ACTIVE by adding more assignments to the same statement
+    examples:
+      - |-
+        BEGIN
+          DECLARE EXIT HANDLER FOR DIVIDE_BY_ZERO
+          BEGIN
+            DECLARE cond STRING;
+            DECLARE message STRING;
+            DECLARE state STRING;
+            DECLARE args MAP<STRING, STRING>;
+            DECLARE line BIGINT;
+            DECLARE argstr STRING;
+            DECLARE log STRING;
+            GET DIAGNOSTICS CONDITION 1
+              cond = CONDITION_IDENTIFIER,
+              message = MESSAGE_TEXT,
+              state = RETURNED_SQLSTATE,
+              args = MESSAGE_ARGUMENTS,
+              line = LINE_NUMBER;
+            SET argstr = array_join(transform(map_entries(args), t -> concat_ws(' ', 'Param:', t.key, 'Val:', t.value)), ' ');
+            SET log = 'Condition: ' || cond || ' Message: ' || message || ' SQLSTATE: ' || state || ' Args: ' || argstr || ' Line: ' || line;
+            VALUES (log);
+          END;
+          SELECT 10 / 0;
+        END;
+      - |-
+        BEGIN ATOMIC
+          DECLARE tx INT;
+          GET DIAGNOSTICS tx = TRANSACTION_ACTIVE;
+          SELECT tx;
+        END;
+      - |-
+        BEGIN
+          DECLARE rc BIGINT;
+          INSERT INTO emp VALUES ('Alice', 100.00), ('Bob', 200.00), ('Carol', 300.00);
+          GET DIAGNOSTICS rc = ROW_COUNT;
+          VALUES ('Inserted ' || rc || ' rows.');
+          DELETE FROM emp WHERE salary >= 200.00;
+          GET DIAGNOSTICS rc = ROW_COUNT;
+          VALUES ('Deleted ' || rc || ' rows.');
+        END;
+
+  - id: if_statement
+    name: IF THEN ELSE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/control-flow/if-stmt
+    tier: high
+    probes:
+      - id: if_then
+        sql: |-
+          BEGIN
+            IF c < 2 THEN
+              VALUES ('one');
+            END IF;
+          END;
+      - id: if_then_multiple_statements
+        sql: |-
+          BEGIN
+            DECLARE x INT DEFAULT 0;
+            IF x < 2 THEN
+              SET x = 1;
+              VALUES (x);
+            END IF;
+          END;
+      - id: if_else
+        sql: |-
+          BEGIN
+            IF c < 2 THEN
+              VALUES ('one');
+            ELSE
+              VALUES ('other');
+            END IF;
+          END;
+      - id: if_elseif
+        sql: |-
+          BEGIN
+            IF c < 2 THEN
+              VALUES ('one');
+            ELSEIF c < 3 THEN
+              VALUES ('two');
+            END IF;
+          END;
+      - id: if_multiple_elseif_else
+        sql: |-
+          BEGIN
+            IF c < 2 THEN
+              VALUES ('one');
+            ELSEIF c < 3 THEN
+              VALUES ('two');
+            ELSEIF c < 4 THEN
+              VALUES ('three');
+            ELSE
+              VALUES ('many');
+            END IF;
+          END;
+      - id: if_nested
+        sql: |-
+          BEGIN
+            IF c < 2 THEN
+              IF d IS NULL THEN
+                VALUES ('null');
+              END IF;
+            END IF;
+          END;
+    examples:
+      - |-
+        BEGIN
+          DECLARE choice DOUBLE DEFAULT 3.9;
+          DECLARE result STRING;
+          IF choice < 2 THEN
+            VALUES ('one fish');
+          ELSEIF choice < 3 THEN
+            VALUES ('two fish');
+          ELSEIF choice < 4 THEN
+            VALUES ('red fish');
+          ELSEIF choice < 5 OR choice IS NULL THEN
+            VALUES ('blue fish');
+          ELSE
+            VALUES ('no fish');
+          END IF;
+        END;

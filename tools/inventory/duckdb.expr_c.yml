@@ -1,0 +1,463 @@
+dialect: duckdb
+engine: DuckDB
+version: "1.5"
+source: https://duckdb.org/docs/stable/sql/statements/overview
+
+statements: []
+
+expressions:
+  - id: c_aggregate_syntax
+    name: Aggregate function syntax (DISTINCT, ORDER BY, FILTER, WITHIN GROUP)
+    doc: https://duckdb.org/docs/stable/sql/functions/aggregates
+    tier: high
+    probes:
+      - { id: count_star, sql: "SELECT count(*) FROM t;" }
+      - { id: distinct, sql: "SELECT count(DISTINCT region) FROM sales;" }
+      - { id: distinct_list, sql: "SELECT list(DISTINCT region) FROM sales;" }
+      - { id: filter, sql: "SELECT sum(amount), sum(amount) FILTER (region != 'north') FROM sales;" }
+      - id: filter_where
+        sql: "SELECT count(*) FILTER (WHERE i % 2 = 1) FROM t;"
+        note: "FILTER (WHERE ...) is the SQL-standard spelling; the FILTER page shows the form without WHERE"
+      - { id: filter_count_star, sql: "SELECT count(*) AS total_rows, count(*) FILTER (i <= 5) AS lte_five FROM t;" }
+      - { id: filter_distinct, sql: "SELECT count(DISTINCT a) FILTER (a > 0) FROM t;" }
+      - { id: filter_multiple, sql: "SELECT sum(x) FILTER (cat = 'a') AS a_sum, sum(x) FILTER (cat = 'b') AS b_sum FROM t;" }
+      - { id: order_by_list, sql: "SELECT list(region ORDER BY amount DESC) FROM sales;" }
+      - { id: order_by_first, sql: "SELECT first(amount ORDER BY date ASC) FROM sales;" }
+      - { id: order_by_string_agg, sql: "SELECT string_agg(s, ', ' ORDER BY s DESC) AS countdown FROM tbl;" }
+      - { id: order_by_multiple, sql: "SELECT list(a ORDER BY b ASC, c DESC) FROM t;" }
+      - { id: order_by_nulls, sql: "SELECT list(a ORDER BY b DESC NULLS LAST) FROM t;" }
+      - { id: distinct_order_by, sql: "SELECT list(DISTINCT a ORDER BY a) FROM t;" }
+      - { id: order_by_filter, sql: "SELECT list(a ORDER BY b) FILTER (a IS NOT NULL) FROM t;" }
+      - { id: within_group_mode, sql: "SELECT mode() WITHIN GROUP (ORDER BY c) FROM t;" }
+      - { id: within_group_percentile_cont, sql: "SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY c) FROM t;" }
+      - { id: within_group_percentile_cont_list, sql: "SELECT percentile_cont([0.25, 0.5, 0.75]) WITHIN GROUP (ORDER BY c DESC) FROM t;" }
+      - { id: within_group_percentile_disc, sql: "SELECT percentile_disc(0.5) WITHIN GROUP (ORDER BY c ASC) FROM t;" }
+      - { id: within_group_percentile_disc_list, sql: "SELECT percentile_disc([0.25, 0.5, 0.75]) WITHIN GROUP (ORDER BY c) FROM t;" }
+      - { id: ordered_set_equivalent, sql: "SELECT quantile_cont(c, 0.5 ORDER BY c) FROM t;" }
+      - { id: grouping, sql: "SELECT a, b, grouping(a, b) FROM t GROUP BY ROLLUP (a, b);" }
+      - { id: grouping_id, sql: "SELECT a, grouping_id(a) FROM t GROUP BY GROUPING SETS ((a), ());" }
+    examples:
+      - "SELECT count(DISTINCT region)\nFROM sales;"
+      - "SELECT sum(amount), sum(amount) FILTER (region != 'north')\nFROM sales;"
+      - "SELECT list(region ORDER BY amount DESC)\nFROM sales;"
+
+  - id: c_aggregate_functions
+    name: Aggregate function families
+    doc: https://duckdb.org/docs/stable/sql/functions/aggregates
+    tier: medium
+    probes:
+      - { id: general, sql: "SELECT sum(x), avg(x), min(x), max(x), product(x), any_value(x), arbitrary(x) FROM t;" }
+      - { id: arg_max, sql: "SELECT arg_max(a, b), arg_min(a, b), max_by(a, b), min_by(a, b) FROM t;" }
+      - { id: arg_max_n, sql: "SELECT arg_max(a, b, 2), max(a, 3), min(a, 3) FROM t;" }
+      - { id: list_agg, sql: "SELECT list(a), array_agg(a), first(a), last(a) FROM t;" }
+      - { id: string_agg, sql: "SELECT string_agg(s, ','), group_concat(s, ';'), listagg(s) FROM t;" }
+      - { id: boolean_bit, sql: "SELECT bool_and(a), bool_or(a), bit_and(x), bit_or(x), bit_xor(x), bitstring_agg(x) FROM t;" }
+      - { id: statistics, sql: "SELECT stddev(x), stddev_pop(x), var_samp(x), var_pop(x), kurtosis(x), skewness(x), entropy(x), mad(x) FROM t;" }
+      - { id: bivariate, sql: "SELECT corr(y, x), covar_pop(y, x), regr_slope(y, x), regr_intercept(y, x), regr_r2(y, x) FROM t;" }
+      - { id: quantiles, sql: "SELECT median(x), mode(x), quantile_cont(x, 0.5), quantile_disc(x, [0.25, 0.75]), approx_quantile(x, 0.5), reservoir_quantile(x, 0.5, 1024) FROM t;" }
+      - { id: approximate, sql: "SELECT approx_count_distinct(x), approx_top_k(x, 5) FROM t;" }
+      - { id: histogram, sql: "SELECT histogram(x), histogram(x, [0, 1, 10]) FROM t;" }
+      - { id: count_if, sql: "SELECT count_if(x > 0), countif(x < 0) FROM t;" }
+      - { id: float_sum, sql: "SELECT fsum(x), favg(x), geomean(x), sem(x) FROM t;" }
+
+  - id: c_window_syntax
+    name: Window functions (OVER, frames, named windows)
+    doc: https://duckdb.org/docs/stable/sql/functions/window_functions
+    tier: high
+    probes:
+      - { id: over_empty, sql: "SELECT row_number() OVER () FROM sales;" }
+      - { id: over_order_by, sql: "SELECT row_number() OVER (ORDER BY time) FROM sales;" }
+      - { id: over_partition_order, sql: "SELECT row_number() OVER (PARTITION BY region ORDER BY time) FROM sales;" }
+      - { id: over_partition_only, sql: "SELECT amount / sum(amount) OVER (PARTITION BY region) FROM sales;" }
+      - { id: over_order_desc_nulls, sql: "SELECT rank() OVER (PARTITION BY a, b ORDER BY c DESC NULLS LAST, d) FROM t;" }
+      - { id: lag_in_expression, sql: "SELECT amount - lag(amount) OVER (ORDER BY time) FROM sales;" }
+      - { id: named_window, sql: "SELECT min(\"MWh\") OVER seven AS lo, avg(\"MWh\") OVER seven AS av FROM gen WINDOW seven AS (PARTITION BY \"Plant\" ORDER BY \"Date\" ASC RANGE BETWEEN INTERVAL 3 DAYS PRECEDING AND INTERVAL 3 DAYS FOLLOWING);" }
+      - { id: named_windows_multiple, sql: "SELECT min(x) OVER seven, min(x) OVER three FROM t WINDOW seven AS (ORDER BY d ROWS BETWEEN 3 PRECEDING AND 3 FOLLOWING), three AS (ORDER BY d ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING);" }
+      - { id: named_window_ordered_args, sql: "SELECT first_value(time ORDER BY time ASC) OVER w AS record_time FROM meet_results WINDOW w AS (PARTITION BY event ORDER BY datetime);" }
+      - { id: rows_between, sql: "SELECT sum(points) OVER (ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS we FROM t;" }
+      - { id: rows_unbounded_current, sql: "SELECT sum(x) OVER (ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: rows_current_unbounded_following, sql: "SELECT sum(x) OVER (ORDER BY d ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: rows_preceding_following, sql: "SELECT sum(x) OVER (ORDER BY d ROWS BETWEEN 2 PRECEDING AND 1 FOLLOWING) FROM t;" }
+      - { id: rows_following_following, sql: "SELECT sum(x) OVER (ORDER BY d ROWS BETWEEN 1 FOLLOWING AND 3 FOLLOWING) FROM t;" }
+      - { id: rows_start_only, sql: "SELECT sum(x) OVER (ORDER BY d ROWS 2 PRECEDING) FROM t;" }
+      - { id: rows_unbounded_start_only, sql: "SELECT sum(x) OVER (ORDER BY d ROWS UNBOUNDED PRECEDING) FROM t;" }
+      - { id: range_interval, sql: "SELECT avg(\"MWh\") OVER (PARTITION BY \"Plant\" ORDER BY \"Date\" ASC RANGE BETWEEN INTERVAL 3 DAYS PRECEDING AND INTERVAL 3 DAYS FOLLOWING) FROM gen;" }
+      - { id: range_unbounded, sql: "SELECT sum(x) OVER (ORDER BY d RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: range_numeric_offset, sql: "SELECT sum(x) OVER (ORDER BY n RANGE BETWEEN 10 PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: groups_between, sql: "SELECT avg(\"MWh\") OVER (ORDER BY \"Date\" ASC GROUPS BETWEEN 3 PRECEDING AND 3 FOLLOWING) FROM gen;" }
+      - { id: exclude_current_row, sql: "SELECT avg(time) OVER (PARTITION BY event ORDER BY date RANGE BETWEEN INTERVAL 10 DAYS PRECEDING AND INTERVAL 10 DAYS FOLLOWING EXCLUDE CURRENT ROW) FROM results;" }
+      - { id: exclude_group, sql: "SELECT sum(x) OVER (ORDER BY d ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING EXCLUDE GROUP) FROM t;" }
+      - { id: exclude_ties, sql: "SELECT sum(x) OVER (ORDER BY d ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING EXCLUDE TIES) FROM t;" }
+      - { id: exclude_no_others, sql: "SELECT sum(x) OVER (ORDER BY d ROWS BETWEEN 2 PRECEDING AND 2 FOLLOWING EXCLUDE NO OTHERS) FROM t;" }
+      - { id: aggregate_filter_over, sql: "SELECT sum(x) FILTER (WHERE x > 0) OVER (ORDER BY d) FROM t;" }
+      - { id: aggregate_distinct_over, sql: "SELECT count(DISTINCT name) OVER (ORDER BY time) FROM sales;" }
+      - { id: aggregate_list_distinct_over, sql: "SELECT list(DISTINCT name) OVER (ORDER BY time) FROM sales;" }
+      - { id: aggregate_order_by_over, sql: "SELECT mode(value ORDER BY time DESC) OVER (ORDER BY time) FROM sales;" }
+      - { id: ignore_nulls, sql: "SELECT last_value(x IGNORE NULLS) OVER (ORDER BY d) FROM t;" }
+      - { id: respect_nulls, sql: "SELECT first_value(x RESPECT NULLS) OVER (ORDER BY d) FROM t;" }
+      - { id: lag_ignore_nulls, sql: "SELECT lag(x, 1, 0 IGNORE NULLS) OVER (ORDER BY d) FROM t;" }
+      - { id: lead_offset_default, sql: "SELECT lead(x, 2, -1) OVER (PARTITION BY a ORDER BY d) FROM t;" }
+      - { id: nth_value_ignore_nulls, sql: "SELECT nth_value(x, 2 IGNORE NULLS) OVER (ORDER BY d) FROM t;" }
+      - { id: argument_order_by, sql: "SELECT first_value(athlete ORDER BY time ASC) OVER (PARTITION BY event ORDER BY datetime) FROM meet_results;" }
+      - { id: rank_functions, sql: "SELECT rank() OVER w, dense_rank() OVER w, percent_rank() OVER w, cume_dist() OVER w, ntile(4) OVER w FROM t WINDOW w AS (ORDER BY x);" }
+      - { id: rank_argument_order_by, sql: "SELECT rank(ORDER BY y) OVER (ORDER BY x), row_number(ORDER BY y) OVER (ORDER BY x) FROM t;" }
+      - { id: fill, sql: "SELECT fill(x) OVER (ORDER BY d) FROM t;" }
+      - { id: multiple_over, sql: "SELECT row_number() OVER (ORDER BY a), sum(b) OVER (PARTITION BY c), lag(b) OVER (ORDER BY a) FROM t;" }
+    examples:
+      - "SELECT row_number() OVER ()\nFROM sales;"
+      - "SELECT row_number() OVER (PARTITION BY region ORDER BY time)\nFROM sales;"
+      - "SELECT amount - lag(amount) OVER (ORDER BY time)\nFROM sales;"
+
+  - id: c_lambda
+    name: Lambda functions
+    doc: https://duckdb.org/docs/stable/sql/functions/lambda
+    tier: high
+    probes:
+      - { id: transform, sql: "SELECT list_transform([1, 2, 3], lambda x : x + 1);" }
+      - { id: filter, sql: "SELECT list_filter([3, 4, 5], lambda x : x > 4);" }
+      - { id: reduce, sql: "SELECT list_reduce([1, 2, 3], lambda x, y : x + y);" }
+      - { id: reduce_initial_value, sql: "SELECT list_reduce(['a', 'b', 'c', 'd'], lambda x, y, i : x || ' - ' || CAST(i AS VARCHAR) || ' - ' || y, 'INITIAL');" }
+      - { id: index_parameter, sql: "SELECT list_filter([1, 3, 1, 5], lambda x, i : x > i);" }
+      - { id: function_in_body, sql: "SELECT list_transform(['Duck', 'Goose', 'Sparrow'], lambda s : concat(s, 'DB'));" }
+      - { id: nested, sql: "SELECT list_transform(list_filter([0, 1, 2, 3, 4, 5], lambda x : x % 2 = 0), lambda y : y * y);" }
+      - { id: nested_inside_body, sql: "SELECT list_transform([1, 2, 3], lambda x : list_reduce([4, 5, 6], lambda a, b : a + b) + x);" }
+      - { id: scoping_column_reference, sql: "SELECT list_apply([1, 2], lambda x : list_apply([4], lambda x : x + tbl.x)[1] + x) FROM tbl;" }
+      - { id: positional_reference, sql: "SELECT list_filter([1, 2, 3, 4], lambda x : x > #1) FROM range(4);" }
+      - { id: alias_apply, sql: "SELECT apply([1, 2, 3], lambda x : x * 2), array_transform([1, 2], lambda x : x), array_apply([1, 2], lambda x : x), list_apply([1, 2], lambda x : x);" }
+      - { id: alias_filter, sql: "SELECT filter([1, 2, 3], lambda x : x > 1), array_filter([1, 2, 3], lambda x : x > 1);" }
+      - { id: alias_reduce, sql: "SELECT reduce([1, 2, 3], lambda x, y : x + y), array_reduce([1, 2, 3], lambda x, y : x + y);" }
+      - { id: column_reference, sql: "SELECT list_transform(l, lambda x : x + 1) FROM t;" }
+      - { id: lambda_no_space, sql: "SELECT list_transform([1, 2, 3], lambda x: x + 1);" }
+      - id: single_arrow
+        sql: "SELECT list_transform([1, 2, 3], x -> x + 1);"
+        note: "Deprecated since 1.3; the lambda page says 1.5 is the last release accepting it without lambda_syntax = 'ENABLE_SINGLE_ARROW'"
+      - id: single_arrow_two_params
+        sql: "SELECT list_reduce([1, 2, 3], (x, y) -> x + y);"
+        note: "Deprecated single-arrow syntax, still enabled by default in 1.5"
+    examples:
+      - "SELECT list_transform([1, 2, NULL, 3], lambda x : x + 1);"
+      - "SELECT list_filter([5, -6, NULL, 7], lambda x : x > 0);"
+      - "SELECT list_reduce([1, 2, 3, 4], lambda acc, x : acc + x);"
+
+  - id: c_list_comprehension
+    name: List comprehension
+    doc: https://duckdb.org/docs/stable/sql/functions/list
+    tier: medium
+    probes:
+      - { id: map, sql: "SELECT [lower(x) FOR x IN strings] AS strings FROM (VALUES (['Hello', '', 'World'])) t(strings);" }
+      - { id: filter, sql: "SELECT [upper(x) FOR x IN strings IF len(x) > 0] AS strings FROM (VALUES (['Hello', '', 'World'])) t(strings);" }
+      - { id: with_index, sql: "SELECT [4, 5, 6] AS l, [x FOR x, i IN l IF i != 2] AS filtered;" }
+      - { id: literal_source, sql: "SELECT [x * 2 FOR x IN [1, 2, 3]];" }
+    examples:
+      - "SELECT [lower(x) FOR x IN strings] AS strings\nFROM (VALUES (['Hello', '', 'World'])) t(strings);"
+      - "SELECT [upper(x) FOR x IN strings IF len(x) > 0] AS strings\nFROM (VALUES (['Hello', '', 'World'])) t(strings);"
+      - "SELECT [4, 5, 6] AS l, [x FOR x, i IN l IF i != 2] AS filtered;"
+
+  - id: c_list_syntax
+    name: LIST constructors, indexing, slicing and operators
+    doc: https://duckdb.org/docs/stable/sql/data_types/list
+    tier: high
+    probes:
+      - { id: literal, sql: "SELECT [1, 2, 3];" }
+      - { id: literal_nulls, sql: "SELECT ['duck', 'goose', NULL, 'heron'];" }
+      - { id: literal_nested, sql: "SELECT [['duck', 'goose', 'heron'], NULL, ['frog', 'toad'], []];" }
+      - { id: literal_empty, sql: "SELECT [];" }
+      - { id: literal_expressions, sql: "SELECT [a, b + 1, lower(c)] FROM t;" }
+      - { id: list_value, sql: "SELECT list_value(1, 2, 3);" }
+      - { id: index, sql: "SELECT ['a', 'b', 'c'][3];" }
+      - { id: index_negative, sql: "SELECT ['a', 'b', 'c'][-1];" }
+      - { id: index_expression, sql: "SELECT ['a', 'b', 'c'][2 + 1];" }
+      - { id: index_column, sql: "SELECT l[1], l[i] FROM t;" }
+      - { id: index_chained, sql: "SELECT l[1][2] FROM t;" }
+      - { id: list_extract, sql: "SELECT list_extract(['a', 'b', 'c'], 3);" }
+      - { id: slice, sql: "SELECT ['a', 'b', 'c'][1:2];" }
+      - { id: slice_no_begin, sql: "SELECT ['a', 'b', 'c'][:2];" }
+      - { id: slice_negative_begin, sql: "SELECT ['a', 'b', 'c'][-2:];" }
+      - { id: slice_step, sql: "SELECT [1, 2, 3, 4, 5][1:5:2];" }
+      - { id: slice_function, sql: "SELECT list_slice(['a', 'b', 'c'], 2, 3);" }
+      - { id: slice_function_step, sql: "SELECT list_slice([4, 5, 6], 1, 3, 2);" }
+      - { id: slice_on_column, sql: "SELECT l[2:] FROM t;" }
+      - { id: slice_on_function_result, sql: "SELECT string_split(s, ',')[1:2] FROM t;" }
+      - { id: concat_operator, sql: "SELECT [1, 2] || [3, 4];" }
+      - { id: overlap_operator, sql: "SELECT [1, 2, 3] && [3, 4];" }
+      - { id: contains_all_operator, sql: "SELECT [1, 2, 3] @> [1, 2];" }
+      - { id: contained_by_operator, sql: "SELECT [1, 2] <@ [1, 2, 3];" }
+      - { id: cosine_distance_operator, sql: "SELECT [1, 2, 3] <=> [1, 2, 5];" }
+      - { id: distance_operator, sql: "SELECT [1, 2, 3] <-> [1, 2, 5];" }
+      - { id: comparison, sql: "SELECT [1, 2] < [1, 3] AS result;" }
+      - { id: comparison_nested, sql: "SELECT [[1], [2, 4, 5]] < [[2]] AS result;" }
+      - { id: comparison_empty, sql: "SELECT [] < [1] AS result;" }
+      - { id: cast_to_list_type, sql: "SELECT [1, 2, 3]::BIGINT[];" }
+      - { id: column_list_type, sql: "CREATE TABLE list_table (int_list INTEGER[], varchar_list VARCHAR[]);" }
+      - { id: nested_list_type, sql: "SELECT CAST(x AS INTEGER[][]) FROM t;" }
+      - { id: unnest, sql: "SELECT unnest([1, 2, 3]);" }
+      - { id: unnest_recursive, sql: "SELECT unnest([[1, 2], [3]], recursive := true);" }
+      - { id: list_functions, sql: "SELECT list_sort(l), list_reverse_sort(l), list_distinct(l), list_contains(l, 1), list_position(l, 1), list_concat(l, m), list_append(l, 1), list_has_any(l, m), flatten(ll) FROM t;" }
+      - { id: list_aggregate, sql: "SELECT list_aggregate([1, 2, NULL], 'min'), list_sum(l), list_avg(l), list_min(l), list_max(l) FROM t;" }
+      - { id: range_functions, sql: "SELECT range(5), range(2, 5), range(2, 5, 3), generate_series(5), generate_series(2, 5, 3);" }
+      - { id: generate_subscripts, sql: "SELECT generate_subscripts([4, 5, 6], 1) AS i;" }
+      - { id: array_to_string, sql: "SELECT array_to_string([1, 2, 3], '-');" }
+    examples:
+      - "SELECT [1, 2, 3];"
+      - "SELECT ['duck', 'goose', NULL, 'heron'];"
+      - "SELECT [['duck', 'goose', 'heron'], NULL, ['frog', 'toad'], []];"
+
+  - id: c_array_syntax
+    name: ARRAY (fixed-size) constructors and access
+    doc: https://duckdb.org/docs/stable/sql/data_types/array
+    tier: medium
+    probes:
+      - { id: array_value, sql: "SELECT array_value(1, 2, 3);" }
+      - { id: array_value_index, sql: "SELECT array_value(1, 2, 3)[2];" }
+      - { id: array_value_nested, sql: "SELECT array_value(array_value(1, 2), array_value(3, 4), array_value(5, 6));" }
+      - { id: array_value_struct, sql: "SELECT array_value({'a': 1, 'b': 2}, {'a': 3, 'b': 4});" }
+      - { id: cast_to_array, sql: "SELECT [3, 2, 1]::INTEGER[3];" }
+      - { id: column_array_type, sql: "CREATE TABLE array_table (id INTEGER, arr INTEGER[3]);" }
+      - { id: nested_array_type, sql: "CREATE TABLE t (m FLOAT[3][3]);" }
+      - { id: insert_list_literal, sql: "INSERT INTO array_table VALUES (10, [1, 2, 3]), (20, [4, 5, 6]);" }
+      - { id: index, sql: "SELECT id, arr[1] AS element FROM array_table;" }
+      - { id: array_extract, sql: "SELECT id, array_extract(arr, 1) AS element FROM array_table;" }
+      - { id: slice, sql: "SELECT id, arr[1:2] AS elements FROM array_table;" }
+      - { id: array_functions, sql: "SELECT array_cross_product(x.v, y.v), array_cosine_similarity(x.v, y.v), array_distance(x.v, y.v), array_inner_product(x.v, y.v) FROM x, y;" }
+    examples:
+      - "SELECT array_value(1, 2, 3);"
+      - "SELECT array_value(1, 2, 3)[2];"
+      - "SELECT [3, 2, 1]::INTEGER[3];"
+
+  - id: c_struct_syntax
+    name: STRUCT constructors and field access
+    doc: https://duckdb.org/docs/stable/sql/data_types/struct
+    tier: high
+    probes:
+      - { id: brace_literal, sql: "SELECT {'x': 1, 'y': 2, 'z': 3} AS s;" }
+      - { id: brace_literal_null, sql: "SELECT {'yes': 'duck', 'maybe': 'goose', 'huh': NULL, 'no': 'heron'} AS s;" }
+      - { id: brace_literal_mixed, sql: "SELECT {'key1': 'string', 'key2': 1, 'key3': 12.345} AS s;" }
+      - { id: brace_literal_nested, sql: "SELECT {'birds': {'yes': 'duck', 'maybe': 'goose'}, 'amphibians': {'yes': 'frog', 'maybe': 'salamander'}} AS s;" }
+      - { id: brace_literal_list_value, sql: "SELECT {'k1': [0, 1], 'k2': 'x'};" }
+      - { id: brace_literal_expressions, sql: "SELECT {'a': x + 1, 'b': lower(y)} FROM t;" }
+      - { id: brace_literal_unquoted_key, sql: "SELECT to_json({duck: 42});" }
+      - { id: struct_pack, sql: "SELECT struct_pack(key1 := 'value1', key2 := 42) AS s;" }
+      - { id: row_variable, sql: "SELECT d AS s FROM (SELECT 'value1' AS key1, 42 AS key2) d;" }
+      - { id: row_function, sql: "SELECT row(x, x + 1, y) FROM (SELECT 1 AS x, 'a' AS y) AS s;" }
+      - { id: tuple, sql: "SELECT (x, x + 1, y) AS s FROM (SELECT 1 AS x, 'a' AS y);" }
+      - { id: dot_access, sql: "SELECT a.x FROM (SELECT {'x': 1, 'y': 2, 'z': 3} AS a);" }
+      - { id: dot_access_quoted, sql: "SELECT a.\"x space\" FROM (SELECT {'x space': 1, 'y': 2, 'z': 3} AS a);" }
+      - { id: dot_access_nested, sql: "SELECT s.a.b.c FROM t;" }
+      - { id: dot_access_on_literal, sql: "SELECT ({'i': 3, 's': 'string'}).i;" }
+      - { id: bracket_access, sql: "SELECT a['x space'] FROM (SELECT {'x space': 1, 'y': 2, 'z': 3} AS a);" }
+      - { id: bracket_access_literal, sql: "SELECT ({'i': 3, 's': 'string'})['i'];" }
+      - { id: bracket_index_tuple, sql: "SELECT (row(42, 84))[1];" }
+      - { id: struct_extract, sql: "SELECT struct_extract({'x space': 1, 'y': 2, 'z': 3}, 'x space');" }
+      - { id: struct_extract_index, sql: "SELECT struct_extract(row(42, 84), 1);" }
+      - { id: unnest_struct, sql: "SELECT unnest(a) FROM (SELECT {'x': 1, 'y': 2, 'z': 3} AS a);" }
+      - { id: star_expansion, sql: "SELECT a.* FROM (SELECT {'x': 1, 'y': 2, 'z': 3} AS a);" }
+      - { id: star_expansion_exclude, sql: "SELECT a.* EXCLUDE ('y') FROM (SELECT {'x': 1, 'y': 2, 'z': 3} AS a);" }
+      - { id: struct_update, sql: "SELECT struct_update({'a': 1, 'b': 2}, b := 3, c := 4) AS s;" }
+      - { id: struct_insert, sql: "SELECT struct_insert({'a': 1}, b := 2);" }
+      - { id: struct_concat, sql: "SELECT struct_concat(struct_pack(i := 4), struct_pack(s := 'string'));" }
+      - { id: column_struct_type, sql: "CREATE TABLE t1 (s STRUCT(v VARCHAR, i INTEGER));" }
+      - { id: insert_row, sql: "INSERT INTO t1 VALUES (row('a', 42));" }
+      - { id: cast_row_to_struct, sql: "SELECT row('a', 42)::STRUCT(v VARCHAR, i INTEGER);" }
+      - { id: cast_struct_to_struct, sql: "SELECT a::STRUCT(y INTEGER) AS b FROM (SELECT {'x': 42} AS a);" }
+      - { id: nested_struct_type, sql: "SELECT CAST(x AS STRUCT(a INTEGER, b STRUCT(c VARCHAR, d DOUBLE[]))) FROM t;" }
+      - { id: comparison, sql: "SELECT {'k1': 0, 'k2': 0} < {'k1': 1, 'k2': 0};" }
+      - { id: struct_position, sql: "SELECT struct_position({'a': 1, 'b': 2}, 'b'), struct_contains({'a': 1}, 'a'), struct_values({'a': 1});" }
+    examples:
+      - "SELECT struct_pack(key1 := 'value1', key2 := 42) AS s;"
+      - "SELECT {'key1': 'value1', 'key2': 42} AS s;"
+      - "SELECT {'x': 1, 'y': 2, 'z': 3} AS s;"
+
+  - id: c_map_syntax
+    name: MAP constructors and access
+    doc: https://duckdb.org/docs/stable/sql/data_types/map
+    tier: high
+    probes:
+      - { id: literal, sql: "SELECT MAP {'key1': 10, 'key2': 20, 'key3': 30};" }
+      - { id: literal_integer_keys, sql: "SELECT MAP {1: 42.001, 5: -32.1};" }
+      - { id: literal_list_keys, sql: "SELECT MAP {['a', 'b']: [1.1, 2.2], ['c', 'd']: [3.3, 4.4]};" }
+      - { id: literal_empty, sql: "SELECT MAP {};" }
+      - { id: literal_expressions, sql: "SELECT MAP {a: b + 1} FROM t;" }
+      - { id: map_two_lists, sql: "SELECT MAP(['key1', 'key2', 'key3'], [10, 20, 30]);" }
+      - { id: map_empty_function, sql: "SELECT map();" }
+      - { id: map_from_entries, sql: "SELECT map_from_entries([('key1', 10), ('key2', 20), ('key3', 30)]);" }
+      - { id: bracket_access, sql: "SELECT MAP {'key1': 5, 'key2': 43}['key1'];" }
+      - { id: bracket_access_missing, sql: "SELECT MAP {'key1': 5, 'key2': 43}['key3'];" }
+      - { id: bracket_access_column, sql: "SELECT m['k'] FROM t;" }
+      - { id: map_extract, sql: "SELECT map_extract(MAP {'key1': 5, 'key2': 43}, 'key1');" }
+      - { id: map_extract_value, sql: "SELECT map_extract_value(m, 'k'), element_at(m, 'k') FROM t;" }
+      - { id: column_map_type, sql: "CREATE TABLE tbl (col MAP(INTEGER, DOUBLE));" }
+      - { id: cast_map_type, sql: "SELECT CAST(x AS MAP(VARCHAR, INTEGER[])) FROM t;" }
+      - { id: map_functions, sql: "SELECT map_keys(m), map_values(m), map_entries(m), map_concat(m, n), map_contains(m, 'k'), cardinality(m) FROM t;" }
+    examples:
+      - "SELECT MAP {'key1': 10, 'key2': 20, 'key3': 30};"
+      - "SELECT map_from_entries([('key1', 10), ('key2', 20), ('key3', 30)]);"
+      - "SELECT MAP(['key1', 'key2', 'key3'], [10, 20, 30]);"
+
+  - id: c_union_syntax
+    name: UNION type constructors and access
+    doc: https://duckdb.org/docs/stable/sql/data_types/union
+    tier: medium
+    probes:
+      - { id: union_type_column, sql: "CREATE TABLE tbl1 (u UNION(num INTEGER, str VARCHAR));" }
+      - { id: union_value, sql: "INSERT INTO tbl1 VALUES (1), ('two'), (union_value(str := 'three'));" }
+      - { id: union_extract, sql: "SELECT union_extract(u, 'str') AS str FROM tbl1;" }
+      - { id: union_dot_access, sql: "SELECT u.str FROM tbl1;" }
+      - { id: union_dot_access_literal, sql: "SELECT (union_value(k := 'hello')).k;" }
+      - { id: union_tag, sql: "SELECT union_tag(u) AS t FROM tbl1;" }
+      - { id: cast_to_union, sql: "SELECT 1::UNION(num INTEGER, str VARCHAR);" }
+    examples:
+      - "CREATE TABLE tbl1 (u UNION(num INTEGER, str VARCHAR));"
+      - "INSERT INTO tbl1 VALUES (1), ('two'), (union_value(str := 'three'));"
+      - "SELECT union_extract(u, 'str') AS str\nFROM tbl1;"
+
+  - id: c_json_operators
+    name: JSON extraction operators and literals
+    doc: https://duckdb.org/docs/stable/data/json/json_functions
+    tier: high
+    probes:
+      - { id: arrow, sql: "SELECT j -> '$.family' FROM example;" }
+      - { id: arrow_text, sql: "SELECT j ->> '$.family' FROM example;" }
+      - { id: arrow_array_path, sql: "SELECT j -> '$.species[0]' FROM example;" }
+      - { id: arrow_wildcard_path, sql: "SELECT j -> '$.species[*]' FROM example;" }
+      - { id: arrow_text_array_path, sql: "SELECT j ->> '$.species[0]' FROM example;" }
+      - { id: arrow_chained, sql: "SELECT j -> '$.species' -> 0 FROM example;" }
+      - { id: arrow_integer_index, sql: "SELECT j -> 'species' ->> 0 FROM example;" }
+      - { id: arrow_list_of_paths, sql: "SELECT j -> 'species' -> ['/0', '/1'] FROM example;" }
+      - { id: arrow_text_list_of_paths, sql: "SELECT j -> 'species' ->> ['/0', '/1'] FROM example;" }
+      - { id: arrow_parenthesized_comparison, sql: "SELECT ((JSON '{\"field\": 42}') -> 'field') = 42;" }
+      - { id: arrow_text_in_where, sql: "SELECT count(*) FROM (VALUES ('{}'::JSON)) t(j) WHERE (j ->> 'field') IS NOT NULL;" }
+      - { id: json_literal, sql: "SELECT JSON '{\"duck\": [1, 2, 3]}';" }
+      - { id: cast_to_json, sql: "SELECT '{\"duck\": 42}'::JSON;" }
+      - { id: json_column_type, sql: "CREATE TABLE example (j JSON);" }
+      - { id: dot_access, sql: "SELECT j.family FROM example;" }
+      - { id: dot_access_index, sql: "SELECT j.species[0] FROM example;" }
+    examples:
+      - "SELECT j -> '$.family' FROM example;"
+      - "SELECT j ->> '$.family' FROM example;"
+      - "SELECT j -> '$.species[0]' FROM example;"
+
+  - id: c_json_functions
+    name: JSON function families
+    doc: https://duckdb.org/docs/stable/data/json/json_functions
+    tier: medium
+    probes:
+      - { id: extract, sql: "SELECT json_extract(j, '$.family') FROM example;" }
+      - { id: extract_path_pointer, sql: "SELECT json_extract('{\"duck\": [1, 2, 3]}', '/duck/0');" }
+      - { id: extract_array_path_negative, sql: "SELECT json_extract('{\"duck\": [1, 2, 3]}', '$.duck[#-1]');" }
+      - { id: extract_path_list, sql: "SELECT json_extract(j, ['family', 'species']) AS extracted_list FROM example;" }
+      - { id: extract_string, sql: "SELECT json_extract_string(j, '$.family') FROM example;" }
+      - { id: json_value_exists, sql: "SELECT json_value(j, '$.family'), json_exists(j, '$.family') FROM example;" }
+      - { id: json_array_length, sql: "SELECT json_array_length('[\"duck\", \"goose\", \"swan\", null]'), json_array_length(j, 'species') FROM example;" }
+      - { id: json_type_keys, sql: "SELECT json_type(j), json_keys(j), json_structure(j), json_valid(j), json(j) FROM example;" }
+      - { id: json_contains, sql: "SELECT json_contains('{\"key\": \"value\"}', '\"value\"');" }
+      - { id: json_transform, sql: "SELECT json_transform(j, '{\"family\": \"VARCHAR\", \"coolness\": \"DOUBLE\"}') FROM example;" }
+      - { id: json_create, sql: "SELECT to_json('duck'), to_json([1, 2, 3]), to_json({duck: 42}), to_json(MAP(['duck'], [42])) FROM t;" }
+      - { id: json_array_object, sql: "SELECT json_array('duck', 42, 'goose', 123), json_object('duck', 42, 'goose', 123), json_merge_patch('{\"duck\": 42}', '{\"goose\": 123}');" }
+      - { id: json_group_aggregates, sql: "SELECT json_group_array(v), json_group_object(k, v), json_group_structure(j) FROM example1;" }
+      - { id: json_each, sql: "SELECT je.*, je.rowid FROM example AS e, json_each(e.j) AS je;" }
+      - { id: json_tree, sql: "SELECT * FROM json_tree('{\"a\": [1, 2]}');" }
+    examples:
+      - "SELECT json_extract(j, '$.family') FROM example;"
+      - "SELECT json_extract_string(j, '$.family') FROM example;"
+      - "SELECT json_group_array(v) FROM example1;"
+
+  - id: c_numeric_operators_functions
+    name: Numeric operators and functions
+    doc: https://duckdb.org/docs/stable/sql/functions/numeric
+    tier: high
+    probes:
+      - { id: arithmetic, sql: "SELECT 2 + 3, 2 - 3, 2 * 3, 5 / 2, 5 // 2, 5 % 4;" }
+      - { id: exponent, sql: "SELECT 3 ** 4, 3 ^ 4;" }
+      - { id: bitwise, sql: "SELECT 91 & 15, 32 | 3, 1 << 4, 8 >> 2, ~15, xor(5, 3);" }
+      - { id: unary, sql: "SELECT -x, +x, @x, x! FROM t;" }
+      - { id: rounding, sql: "SELECT round(x, 2), floor(x), ceil(x), ceiling(x), trunc(x) FROM t;" }
+      - { id: powers_logs, sql: "SELECT sqrt(x), cbrt(x), pow(x, 2), power(x, 2), exp(x), ln(x), log(x), log2(x), log10(x) FROM t;" }
+      - { id: trigonometry, sql: "SELECT sin(x), cos(x), tan(x), asin(x), acos(x), atan(x), atan2(y, x), degrees(x), radians(x), pi() FROM t;" }
+      - { id: sign_abs, sql: "SELECT abs(x), sign(x), even(x), factorial(x), gcd(x, y), lcm(x, y), greatest(x, y, 3), least(x, y, 3) FROM t;" }
+      - { id: float_checks, sql: "SELECT isnan(x), isfinite(x), isinf(x), nextafter(x, y), fdiv(x, y), fmod(x, y) FROM t;" }
+      - { id: random, sql: "SELECT random(), setseed(0.5);" }
+
+  - id: c_string_functions
+    name: String functions and operators
+    doc: https://duckdb.org/docs/stable/sql/functions/text
+    tier: high
+    probes:
+      - { id: concat_operator, sql: "SELECT 'Duck' || 'DB';" }
+      - { id: concat_functions, sql: "SELECT concat(a, b, c), concat_ws(',', a, b) FROM t;" }
+      - { id: index, sql: "SELECT s[1] FROM t;" }
+      - { id: slice, sql: "SELECT s[2:4], s[:3], s[-3:] FROM t;" }
+      - { id: prefix_operator, sql: "SELECT s ^@ 'abc' FROM t;" }
+      - { id: case_trim, sql: "SELECT upper(s), lower(s), ucase(s), lcase(s), trim(s), ltrim(s), rtrim(s), trim(s, 'xy') FROM t;" }
+      - { id: substring, sql: "SELECT substring(s, 2, 3), substr(s, 2), left(s, 2), right(s, 2) FROM t;" }
+      - { id: pad_repeat, sql: "SELECT lpad(s, 10, '*'), rpad(s, 10, '*'), repeat(s, 3), reverse(s) FROM t;" }
+      - { id: search_replace, sql: "SELECT replace(s, 'a', 'b'), translate(s, 'abc', 'xyz'), contains(s, 'a'), starts_with(s, 'a'), ends_with(s, 'a'), instr(s, 'a') FROM t;" }
+      - { id: split, sql: "SELECT string_split(s, ','), str_split(s, ','), split_part(s, ',', 1), string_to_array(s, ',') FROM t;" }
+      - { id: length_functions, sql: "SELECT length(s), len(s), char_length(s), bit_length(s), octet_length(s), strlen(s) FROM t;" }
+      - { id: codepoints, sql: "SELECT ascii(s), chr(65), ord(s), unicode(s) FROM t;" }
+      - { id: distance, sql: "SELECT levenshtein(a, b), hamming(a, b), jaccard(a, b), damerau_levenshtein(a, b) FROM t;" }
+      - { id: formatting, sql: "SELECT format('{}: {}', a, b), printf('%s=%d', a, b), format_bytes(1024) FROM t;" }
+      - { id: hashing_encoding, sql: "SELECT md5(s), sha256(s), hash(s), hex(s), unhex(s), to_base(10, 2), strip_accents(s), nfc_normalize(s) FROM t;" }
+      - { id: like_escape_functions, sql: "SELECT like_escape(s, 'a$%c', '$'), not_like_escape(s, 'a%', '$'), ilike_escape(s, 'a%', '$') FROM t;" }
+
+  - id: c_regexp_functions
+    name: Regular expression functions
+    doc: https://duckdb.org/docs/stable/sql/functions/regular_expressions
+    tier: medium
+    probes:
+      - { id: matches, sql: "SELECT regexp_matches('anabanana', 'an'), regexp_full_match('anabanana', '(an)*');" }
+      - { id: matches_options, sql: "SELECT regexp_matches('ABC', 'abc', 'i');" }
+      - { id: extract, sql: "SELECT regexp_extract('abc', '([a-z])(b)', 1);" }
+      - { id: extract_names, sql: "SELECT regexp_extract('2023-04-15', '(\\d+)-(\\d+)-(\\d+)', ['y', 'm', 'd']);" }
+      - { id: extract_all, sql: "SELECT regexp_extract_all('Peter: 33, Paul:14', '(\\w+):\\s*(\\d+)', 2);" }
+      - { id: replace, sql: "SELECT regexp_replace('hello', 'l', 'L', 'g');" }
+      - { id: split, sql: "SELECT regexp_split_to_array('a b c', ' '), regexp_escape('a.b');" }
+      - { id: split_to_table, sql: "SELECT regexp_split_to_table('a b c', ' ');" }
+      - { id: matches_in_where, sql: "SELECT * FROM t WHERE regexp_matches(s, '^a.*z$');" }
+
+  - id: c_datetime_functions
+    name: Date, time, timestamp and interval functions and operators
+    doc: https://duckdb.org/docs/stable/sql/functions/timestamp
+    tier: high
+    probes:
+      - { id: date_arithmetic, sql: "SELECT DATE '1992-03-22' + 5, DATE '1992-03-22' + INTERVAL 5 DAY, DATE '1992-03-27' - DATE '1992-03-22', DATE '1992-03-27' - INTERVAL 5 DAY;" }
+      - { id: variable_interval, sql: "SELECT DATE '1992-03-22' + INTERVAL (d.days) DAY FROM (VALUES (5), (11)) d(days);" }
+      - { id: timestamp_arithmetic, sql: "SELECT TIMESTAMP '1992-03-22 01:02:03' + INTERVAL 5 DAY, TIMESTAMP '1992-03-27' - TIMESTAMP '1992-03-22';" }
+      - { id: interval_arithmetic, sql: "SELECT INTERVAL 1 HOUR + INTERVAL 30 MINUTE, INTERVAL 2 DAY * 3, INTERVAL 6 HOUR / 2;" }
+      - { id: date_part_functions, sql: "SELECT date_part('minute', TIMESTAMP '1992-09-20 20:38:40'), datepart('year', d), date_trunc('month', d), dayname(d), monthname(d), last_day(d) FROM t;" }
+      - { id: date_part_list, sql: "SELECT date_part(['year', 'month', 'day'], d) FROM t;" }
+      - { id: date_diff_sub, sql: "SELECT date_diff('month', d1, d2), datediff('day', d1, d2), date_sub('hour', d1, d2), datesub('day', d1, d2), date_add(d, INTERVAL 1 DAY) FROM t;" }
+      - { id: age, sql: "SELECT age(TIMESTAMP '2001-04-10', TIMESTAMP '1992-09-20'), age(ts) FROM t;" }
+      - { id: constructors, sql: "SELECT make_date(2020, 1, 1), make_time(1, 2, 3.5), make_timestamp(2020, 1, 1, 0, 0, 0), make_timestamptz(2020, 1, 1, 0, 0, 0, 'UTC') FROM t;" }
+      - { id: current_values, sql: "SELECT current_date, current_time, current_timestamp, now(), today(), get_current_timestamp(), transaction_timestamp();" }
+      - { id: epoch_functions, sql: "SELECT epoch(ts), epoch_ms(ts), epoch_us(ts), epoch_ns(ts), to_timestamp(1284352323.5) FROM t;" }
+      - { id: time_bucket, sql: "SELECT time_bucket(INTERVAL '2 days', ts), time_bucket(INTERVAL '2 days', ts, TIMESTAMP '2000-01-01') FROM t;" }
+      - { id: strftime_strptime, sql: "SELECT strftime(ts, '%Y-%m-%d'), strptime('2020-01-01', '%Y-%m-%d'), try_strptime(s, '%Y-%m-%d') FROM t;" }
+      - { id: infinity_checks, sql: "SELECT isfinite(d), isinf(d), greatest(d1, d2), least(d1, d2) FROM t;" }
+      - { id: timezone_function, sql: "SELECT timezone('America/Denver', TIMESTAMP '2001-02-16 20:38:40');" }
+      - { id: interval_functions, sql: "SELECT to_days(5), to_hours(2), to_minutes(30), to_months(3), to_years(1), to_seconds(1.5), epoch(INTERVAL 1 HOUR) FROM t;" }
+      - { id: time_functions, sql: "SELECT date_part('minute', TIME '14:21:13'), date_diff('hour', TIME '01:02:03', TIME '06:01:03'), TIME '14:21:13' + INTERVAL 1 HOUR;" }
+      - { id: generate_series_timestamps, sql: "SELECT generate_series(TIMESTAMP '2001-04-10', TIMESTAMP '2001-04-11', INTERVAL 30 MINUTE);" }
+
+  - id: c_blob_bit_functions
+    name: Blob and bitstring functions
+    doc: https://duckdb.org/docs/stable/sql/functions/blob
+    tier: low
+    probes:
+      - { id: blob_functions, sql: "SELECT encode(s), decode(b), base64(b), from_base64(s), hex(b), unhex(s), octet_length(b), md5(b), sha1(b), sha256(b), repeat(b, 3) FROM t;" }
+      - { id: blob_concat, sql: "SELECT '\\xAA'::BLOB || '\\xBB'::BLOB;" }
+      - { id: bitstring_operators, sql: "SELECT '101'::BITSTRING & '001'::BITSTRING, '101'::BITSTRING | '001'::BITSTRING, xor('101'::BITSTRING, '001'::BITSTRING), ~'101'::BITSTRING, '101'::BITSTRING << 1;" }
+      - { id: bitstring_functions, sql: "SELECT bit_count('1101011'::BITSTRING), bit_length(b), bit_position('010'::BITSTRING, b), bitstring(b, 8), get_bit(b, 0), set_bit(b, 1, 0) FROM t;" }
+
+  - id: c_enum_utility_functions
+    name: Enum and utility functions
+    doc: https://duckdb.org/docs/stable/sql/functions/utility
+    tier: medium
+    probes:
+      - { id: enum_functions, sql: "SELECT enum_first(NULL::mood), enum_last(NULL::mood), enum_range(NULL::mood), enum_code('happy'::mood), enum_range_boundary(NULL, 'happy'::mood);" }
+      - { id: null_handling, sql: "SELECT coalesce(a, b, 0), ifnull(a, 0), nullif(a, 0), constant_or_null(a, b) FROM t;" }
+      - { id: typeof_alias, sql: "SELECT typeof(a), alias(a), current_setting('threads'), version(), current_database(), current_schema() FROM t;" }
+      - { id: uuid_hash, sql: "SELECT uuid(), gen_random_uuid(), hash(a, b), md5(a) FROM t;" }
+      - { id: error_function, sql: "SELECT CASE WHEN a < 0 THEN error('negative') ELSE a END FROM t;" }
+      - { id: sequence_functions, sql: "SELECT nextval('seq'), currval('seq');" }
+      - { id: getvariable_function, sql: "SELECT getvariable('my_var');" }
+      - { id: cast_check_functions, sql: "SELECT can_cast_implicitly(1::INTEGER, 1::BIGINT), try_cast(a AS INTEGER), cast_to_type(a, NULL::INTEGER) FROM t;" }

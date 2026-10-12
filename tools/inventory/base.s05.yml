@@ -1,0 +1,32 @@
+dialect: base
+engine: ISO SQL
+version: "SQL:2016"
+source: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html
+
+statements:
+  - id: drop_table
+    name: DROP TABLE
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_31_drop_table_statement
+    tier: high
+    probes:
+      - { id: cascade, sql: "DROP TABLE t CASCADE;" }
+      - { id: restrict, sql: "DROP TABLE t RESTRICT;" }
+      - { id: qualified_name, sql: "DROP TABLE s.t CASCADE;" }
+
+  - id: create_view
+    name: CREATE VIEW
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_32_view_definition
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE VIEW v AS SELECT a, b FROM t;" }
+      - { id: qualified_name, sql: "CREATE VIEW s.v AS SELECT a FROM t;" }
+      - { id: column_list, sql: "CREATE VIEW v (x, y) AS SELECT a, b FROM t;" }
+      - { id: recursive, sql: "CREATE RECURSIVE VIEW v (n) AS SELECT 1 UNION ALL SELECT n + 1 FROM v WHERE n < 10;" }
+      - { id: with_check_option, sql: "CREATE VIEW v AS SELECT a FROM t WITH CHECK OPTION;" }
+      - { id: with_cascaded_check_option, sql: "CREATE VIEW v AS SELECT a FROM t WITH CASCADED CHECK OPTION;" }
+      - { id: with_local_check_option, sql: "CREATE VIEW v AS SELECT a FROM t WITH LOCAL CHECK OPTION;" }
+      - { id: column_list_check_option, sql: "CREATE VIEW v (x) AS SELECT a FROM t WITH LOCAL CHECK OPTION;" }
+      - { id: of_type, sql: "CREATE VIEW v OF person_type AS SELECT a FROM t;", note: "referenceable view specification: OF <path-resolved UDT name>" }
+      - { id: of_type_under, sql: "CREATE VIEW v OF person_type UNDER pv AS SELECT a FROM t;", note: "subview clause: UNDER <table name>" }
+      - { id: of_type_self_ref, sql: "CREATE VIEW v OF person_type (REF IS id USER GENERATED) AS SELECT a FROM t;", note: "view element: self-referencing column specification" }
+      - { id: of_type_column_option, sql: "CREATE VIEW v OF person_type (c WITH OPTIONS SCOPE t2) AS SELECT a FROM t;", note: "view element: view column option" }

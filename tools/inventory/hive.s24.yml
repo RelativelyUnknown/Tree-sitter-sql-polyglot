@@ -1,0 +1,53 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: create_materialized_view
+    name: CREATE MATERIALIZED VIEW
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE MATERIALIZED VIEW mv AS SELECT a, b FROM t;"
+      - id: if_not_exists
+        sql: "CREATE MATERIALIZED VIEW IF NOT EXISTS mv AS SELECT a FROM t;"
+      - id: qualified_name
+        sql: "CREATE MATERIALIZED VIEW db.mv AS SELECT a FROM t;"
+      - id: disable_rewrite
+        sql: "CREATE MATERIALIZED VIEW mv DISABLE REWRITE AS SELECT a FROM t;"
+      - id: comment
+        sql: "CREATE MATERIALIZED VIEW mv COMMENT 'summary' AS SELECT a FROM t;"
+      - id: partitioned_on
+        sql: "CREATE MATERIALIZED VIEW mv PARTITIONED ON (a) AS SELECT a, b FROM t;"
+      - id: clustered_on
+        sql: "CREATE MATERIALIZED VIEW mv CLUSTERED ON (a) AS SELECT a, b FROM t;"
+      - id: distributed_sorted_on
+        sql: "CREATE MATERIALIZED VIEW mv DISTRIBUTED ON (a) SORTED ON (b) AS SELECT a, b FROM t;"
+      - id: row_format
+        sql: "CREATE MATERIALIZED VIEW mv ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' AS SELECT a FROM t;"
+      - id: stored_as
+        sql: "CREATE MATERIALIZED VIEW mv STORED AS ORC AS SELECT a FROM t;"
+      - id: row_format_stored_as
+        sql: "CREATE MATERIALIZED VIEW mv ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE AS SELECT a FROM t;"
+      - id: stored_by
+        sql: "CREATE MATERIALIZED VIEW mv STORED BY 'org.apache.hadoop.hive.druid.DruidStorageHandler' AS SELECT a FROM t;"
+      - id: stored_by_serdeproperties
+        sql: "CREATE MATERIALIZED VIEW mv STORED BY 'org.apache.hadoop.hive.druid.DruidStorageHandler' WITH SERDEPROPERTIES ('k'='v') AS SELECT a FROM t;"
+      - id: location
+        sql: "CREATE MATERIALIZED VIEW mv LOCATION '/user/hive/mv' AS SELECT a FROM t;"
+      - id: tblproperties
+        sql: "CREATE MATERIALIZED VIEW mv TBLPROPERTIES ('k'='v') AS SELECT a FROM t;"
+      - id: all_clauses
+        sql: "CREATE MATERIALIZED VIEW IF NOT EXISTS db.mv DISABLE REWRITE COMMENT 'c' PARTITIONED ON (a) CLUSTERED ON (b) STORED AS ORC LOCATION '/user/hive/mv' TBLPROPERTIES ('k'='v') AS SELECT a, b FROM t;"
+
+  - id: drop_materialized_view
+    name: DROP MATERIALIZED VIEW
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: basic
+        sql: "DROP MATERIALIZED VIEW mv;"
+      - id: qualified_name
+        sql: "DROP MATERIALIZED VIEW db.mv;"

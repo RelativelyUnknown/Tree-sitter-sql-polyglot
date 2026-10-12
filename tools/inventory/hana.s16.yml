@@ -1,0 +1,90 @@
+dialect: hana
+engine: SAP HANA Platform
+version: "2.0 SPS 08 (2.0.08)"
+source: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/3bc1a0d4611d40c4a6e3fc7c8e80395d.html?version=2.0.08
+
+statements:
+  - id: update
+    name: UPDATE
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20ff268675191014964add3d17700909.html?version=2.0.08
+    tier: high
+    probes:
+      - id: basic
+        sql: "UPDATE t SET c = 1;"
+      - id: where
+        sql: "UPDATE t SET c = c + 1 WHERE k = 1;"
+      - id: multiple_columns
+        sql: "UPDATE t SET c = 1, d = 'x' WHERE k = 1;"
+      - id: schema_qualified
+        sql: "UPDATE s.t SET c = 1;"
+      - id: database_schema_qualified
+        sql: "UPDATE db.s.t SET c = 1;"
+      - id: top_clause
+        sql: "UPDATE TOP 1000 t SET c = 1 WHERE k > 0;"
+      - id: alias
+        sql: "UPDATE t AS a SET c = 1 WHERE a.k = 1;"
+      - id: alias_no_as
+        sql: "UPDATE t a SET c = 1 WHERE a.k = 1;"
+      - id: for_portion_of_application_time
+        sql: "UPDATE t FOR PORTION OF APPLICATION_TIME FROM '2020-01-01' TO '2021-01-01' SET c = 1;"
+      - id: partition_restriction
+        sql: "UPDATE t PARTITION (1) SET c = 1 WHERE k = 1;"
+      - id: from_clause
+        sql: "UPDATE t SET c = t2.d FROM t, t2 WHERE t.k = t2.k;"
+      - id: from_clause_alias
+        sql: "UPDATE t a SET c = b.d FROM t a, t2 b WHERE a.k = b.k;"
+      - id: set_subquery
+        sql: "UPDATE t SET (c) = (SELECT MAX(d) FROM t2 WHERE t2.k = t.k);"
+        note: "SET { <column_name> = <expression> | ( <with_clause> <subquery> ) },..."
+      - id: set_with_clause_subquery
+        sql: "UPDATE t SET (c) = (WITH w AS (SELECT 1 AS x FROM DUMMY) SELECT x FROM w);"
+        note: "SET ( <with_clause> <subquery> ); the with_clause is used with column names"
+      - id: where_current_of
+        sql: "UPDATE t SET c = 1 WHERE CURRENT OF cur;"
+      - id: where_compound_condition
+        sql: "UPDATE t SET c = 1 WHERE NOT (k = 1 OR k = 2) AND d IS NOT NULL;"
+      - id: hint_clause
+        sql: "UPDATE t SET c = 1 WHERE k = 1 WITH HINT (NO_CS_JOIN);"
+        note: "<hint_clause> refers to the HINT clause of SELECT"
+    examples:
+      - "UPDATE T SET VAL = VAL + 1 WHERE KEY = 1;"
+      - "UPDATE T SET VAL = KEY + 10;"
+      - "UPDATE T SET VAL = T2.VAR FROM T, T2 WHERE T.KEY = T2.KEY;"
+
+  - id: upsert
+    name: UPSERT
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/ea8b6773be584203bcd99da76844c5ed.html?version=2.0.08
+    tier: high
+    probes:
+      - id: values
+        sql: "UPSERT t VALUES (1, 1);"
+      - id: schema_qualified
+        sql: "UPSERT s.t VALUES (1, 1);"
+      - id: database_schema_qualified
+        sql: "UPSERT db.s.t VALUES (1, 1);"
+      - id: column_list
+        sql: "UPSERT t (k, v) VALUES (1, 1);"
+      - id: values_where
+        sql: "UPSERT t VALUES (2, 2) WHERE k = 2;"
+      - id: values_with_primary_key
+        sql: "UPSERT t VALUES (1, 8) WITH PRIMARY KEY;"
+      - id: column_list_with_primary_key
+        sql: "UPSERT t (k, v) VALUES (1, 8) WITH PRIMARY KEY;"
+      - id: partition_restriction
+        sql: "UPSERT t PARTITION (1) VALUES (1, 20);"
+      - id: partition_restriction_subquery
+        sql: "UPSERT t2 PARTITION (1) SELECT * FROM t;"
+      - id: subquery
+        sql: "UPSERT t SELECT k + 2, v FROM t;"
+      - id: column_list_subquery
+        sql: "UPSERT t (k, v) SELECT k, v FROM t2;"
+      - id: array_enumeration
+        sql: "UPSERT t1 VALUES (1, ARRAY (21, 22, 23, 24)) WHERE id = 1;"
+      - id: array_query
+        sql: "UPSERT t1 VALUES (1, ARRAY (SELECT c1 FROM t0)) WHERE id = 1;"
+      - id: where_compound_condition
+        sql: "UPSERT t VALUES (1, 1) WHERE NOT (k = 1 OR k = 2) AND v IS NOT NULL;"
+    examples:
+      - "UPSERT T VALUES (1, 1);"
+      - "UPSERT T VALUES (2, 2) WHERE KEY = 2;"
+      - "UPSERT T VALUES (1, 8) WITH PRIMARY KEY;"

@@ -1,0 +1,81 @@
+dialect: trino
+engine: Trino
+version: "483"
+source: https://trino.io/docs/current/sql.html
+
+statements:
+  - id: create_materialized_view
+    name: CREATE MATERIALIZED VIEW
+    doc: https://trino.io/docs/current/sql/create-materialized-view.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE MATERIALIZED VIEW v AS SELECT a, b FROM t;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE MATERIALIZED VIEW v AS SELECT a FROM t;"
+      - id: if_not_exists
+        sql: "CREATE MATERIALIZED VIEW IF NOT EXISTS v AS SELECT a FROM t;"
+      - id: grace_period
+        sql: "CREATE MATERIALIZED VIEW v GRACE PERIOD INTERVAL '1' HOUR AS SELECT a FROM t;"
+      - id: when_stale_inline
+        sql: "CREATE MATERIALIZED VIEW v WHEN STALE INLINE AS SELECT a FROM t;"
+      - id: when_stale_fail
+        sql: "CREATE MATERIALIZED VIEW v WHEN STALE FAIL AS SELECT a FROM t;"
+      - id: comment
+        sql: "CREATE MATERIALIZED VIEW v COMMENT 'some view' AS SELECT a FROM t;"
+      - id: with_properties
+        sql: "CREATE MATERIALIZED VIEW v WITH (format = 'ORC', partitioning = ARRAY['a']) AS SELECT a FROM t;"
+      - id: all_clauses
+        sql: "CREATE OR REPLACE MATERIALIZED VIEW s.v GRACE PERIOD INTERVAL '1' HOUR WHEN STALE FAIL COMMENT 'c' WITH (format = 'ORC') AS SELECT a FROM t;"
+    examples:
+      - "CREATE MATERIALIZED VIEW cancelled_orders AS SELECT orderkey, totalprice FROM orders WHERE orderstatus = 3;"
+      - "CREATE OR REPLACE MATERIALIZED VIEW order_totals_by_date AS SELECT orderdate, sum(totalprice) AS price FROM orders GROUP BY orderdate;"
+      - "CREATE MATERIALIZED VIEW orders_summary GRACE PERIOD INTERVAL '1' HOUR WHEN STALE FAIL AS SELECT orderdate, sum(totalprice) AS price FROM orders GROUP BY orderdate;"
+
+  - id: create_table
+    name: CREATE TABLE
+    doc: https://trino.io/docs/current/sql/create-table.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE TABLE t (a bigint, b varchar);"
+      - id: or_replace
+        sql: "CREATE OR REPLACE TABLE t (a bigint);"
+      - id: if_not_exists
+        sql: "CREATE TABLE IF NOT EXISTS t (a bigint);"
+      - id: qualified_name
+        sql: "CREATE TABLE c.s.t (a bigint);"
+      - id: column_default
+        sql: "CREATE TABLE t (a varchar DEFAULT 'created');"
+      - id: column_not_null
+        sql: "CREATE TABLE t (a bigint NOT NULL);"
+      - id: column_comment
+        sql: "CREATE TABLE t (a bigint COMMENT 'Price in cents.');"
+      - id: column_with_properties
+        sql: "CREATE TABLE t (a bigint WITH (p = 'x'));"
+      - id: column_all_options
+        sql: "CREATE TABLE t (a varchar DEFAULT 'x' NOT NULL COMMENT 'c' WITH (p = 'x', q = 1));"
+      - id: like
+        sql: "CREATE TABLE t (LIKE u);"
+      - id: like_including_properties
+        sql: "CREATE TABLE t (LIKE u INCLUDING PROPERTIES);"
+      - id: like_excluding_properties
+        sql: "CREATE TABLE t (LIKE u EXCLUDING PROPERTIES);"
+      - id: like_mixed_with_columns
+        sql: "CREATE TABLE t (a bigint, LIKE u, b date);"
+      - id: multiple_like
+        sql: "CREATE TABLE t (LIKE u, LIKE v);"
+      - id: table_comment
+        sql: "CREATE TABLE t (a bigint) COMMENT 'A table.';"
+      - id: table_with_properties
+        sql: "CREATE TABLE t (a bigint) WITH (format = 'ORC');"
+      - id: table_with_array_property
+        sql: "CREATE TABLE t (a bigint, b date) WITH (format = 'ORC', partitioned_by = ARRAY['b']);"
+      - id: comment_and_with
+        sql: "CREATE TABLE t (a bigint) COMMENT 'c' WITH (format = 'ORC');"
+      - id: complex_types
+        sql: "CREATE TABLE t (a array(bigint), b map(varchar, double), c row(x int, y varchar));"
+    examples:
+      - "CREATE TABLE orders (orderkey bigint, orderstatus varchar, totalprice double, orderdate date) WITH (format = 'ORC');"
+      - "CREATE TABLE IF NOT EXISTS orders (orderkey bigint, orderstatus varchar, totalprice double COMMENT 'Price in cents.', orderdate date, status varchar DEFAULT 'created') COMMENT 'A table to keep track of orders.';"
+      - "CREATE TABLE bigger_orders (another_orderkey bigint, LIKE orders, another_orderdate date);"

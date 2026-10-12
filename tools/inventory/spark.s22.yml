@@ -1,0 +1,138 @@
+dialect: spark
+engine: Apache Spark SQL
+version: "4.x (docs/latest)"
+source: https://spark.apache.org/docs/latest/sql-ref-syntax.html
+
+statements:
+  - id: for
+    name: FOR
+    doc: https://spark.apache.org/docs/latest/control-flow/for-stmt.html
+    tier: high
+    probes:
+      - id: basic
+        sql: |-
+          BEGIN
+            FOR SELECT c FROM t DO
+              SELECT 1;
+            END FOR;
+          END;
+        note: FOR is only valid inside a compound statement
+      - id: variable_name
+        sql: |-
+          BEGIN
+            FOR r AS SELECT c FROM t DO
+              SELECT r.c;
+            END FOR;
+          END;
+      - id: label
+        sql: |-
+          BEGIN
+            lbl: FOR SELECT c FROM t DO
+              SELECT 1;
+            END FOR;
+          END;
+      - id: label_end_label
+        sql: |-
+          BEGIN
+            lbl: FOR r AS SELECT c FROM t DO
+              SELECT 1;
+            END FOR lbl;
+          END;
+      - id: multiple_stmts
+        sql: |-
+          BEGIN
+            FOR r AS SELECT c FROM t DO
+              SELECT 1;
+              SELECT 2;
+            END FOR;
+          END;
+      - id: leave_iterate
+        sql: |-
+          BEGIN
+            lbl: FOR r AS SELECT c FROM t DO
+              IF r.c > 10 THEN LEAVE lbl; ELSEIF r.c = 0 THEN ITERATE lbl; END IF;
+            END FOR lbl;
+          END;
+    examples:
+      - |-
+        BEGIN
+          DECLARE sum INT DEFAULT 0;
+          sumNumbers: FOR row AS SELECT num FROM range(1, 20) AS t(num) DO
+            IF num > 10 THEN
+              LEAVE sumNumbers;
+            ELSEIF num % 2 = 0 THEN
+              ITERATE sumNumbers;
+            END IF;
+            SET sum = sum + row.num;
+          END FOR sumNumbers;
+          VALUES (sum);
+        END;
+
+  - id: if
+    name: IF
+    doc: https://spark.apache.org/docs/latest/control-flow/if-stmt.html
+    tier: high
+    probes:
+      - id: if_then
+        sql: |-
+          BEGIN
+            IF c > 1 THEN
+              SELECT 1;
+            END IF;
+          END;
+        note: IF is only valid inside a compound statement
+      - id: if_else
+        sql: |-
+          BEGIN
+            IF c > 1 THEN
+              SELECT 1;
+            ELSE
+              SELECT 2;
+            END IF;
+          END;
+      - id: if_elseif
+        sql: |-
+          BEGIN
+            IF c > 1 THEN
+              SELECT 1;
+            ELSEIF c > 0 THEN
+              SELECT 2;
+            END IF;
+          END;
+      - id: if_elseif_else
+        sql: |-
+          BEGIN
+            IF c > 1 THEN
+              SELECT 1;
+            ELSEIF c > 0 THEN
+              SELECT 2;
+            ELSEIF c IS NULL THEN
+              SELECT 3;
+            ELSE
+              SELECT 4;
+            END IF;
+          END;
+      - id: multiple_stmts
+        sql: |-
+          BEGIN
+            IF c > 1 THEN
+              SELECT 1;
+              SELECT 2;
+            END IF;
+          END;
+    examples:
+      - |-
+        BEGIN
+          DECLARE choice DOUBLE DEFAULT 3.9;
+          IF choice < 2 THEN
+            VALUES ('one fish');
+          ELSEIF choice < 3 THEN
+            VALUES ('two fish');
+          ELSEIF choice < 4 THEN
+            VALUES ('red fish');
+          ELSEIF choice < 5 OR choice IS NULL THEN
+            VALUES ('blue fish');
+          ELSE
+            VALUES ('no fish');
+          END IF;
+        END;

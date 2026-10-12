@@ -1,0 +1,55 @@
+dialect: cockroachdb
+engine: CockroachDB
+version: "v26.3 (stable)"
+source: https://www.cockroachlabs.com/docs/stable/sql-statements
+
+statements:
+  - id: select_for_update
+    name: SELECT FOR UPDATE
+    doc: https://www.cockroachlabs.com/docs/stable/select-for-update
+    tier: high
+    probes:
+      - id: for_update
+        sql: "SELECT * FROM t WHERE c = 1 FOR UPDATE;"
+      - id: for_share
+        sql: "SELECT * FROM t WHERE c = 1 FOR SHARE;"
+      - id: for_no_key_update
+        sql: "SELECT * FROM t FOR NO KEY UPDATE;"
+        note: Documented alias for FOR UPDATE.
+      - id: for_key_share
+        sql: "SELECT * FROM t FOR KEY SHARE;"
+        note: Documented alias for FOR SHARE.
+      - id: for_update_of
+        sql: "SELECT * FROM t JOIN s ON t.c = s.c FOR UPDATE OF t;"
+      - id: for_update_skip_locked
+        sql: "SELECT * FROM t FOR UPDATE SKIP LOCKED;"
+      - id: for_update_nowait
+        sql: "SELECT * FROM t FOR UPDATE NOWAIT;"
+      - id: for_share_skip_locked
+        sql: "SELECT * FROM t FOR SHARE SKIP LOCKED;"
+      - id: for_share_nowait
+        sql: "SELECT * FROM t FOR SHARE NOWAIT;"
+      - id: after_order_limit
+        sql: "SELECT * FROM t ORDER BY c LIMIT 1 FOR UPDATE;"
+    examples:
+      - "SELECT * FROM kv WHERE k = 1 FOR UPDATE;"
+
+  - id: table
+    name: TABLE
+    doc: https://www.cockroachlabs.com/docs/stable/selection-queries#table-clause
+    tier: high
+    probes:
+      - id: table_clause
+        sql: "TABLE t;"
+      - id: create_table_as_table
+        sql: "CREATE TABLE t2 AS TABLE t;"
+      - id: insert_table
+        sql: "INSERT INTO t2 TABLE t;"
+      - id: table_in_set_operation
+        sql: "TABLE t UNION TABLE s;"
+      - id: table_order_limit
+        sql: "TABLE t ORDER BY c LIMIT 1;"
+    examples:
+      - "CREATE TABLE employee_copy AS TABLE employee;"
+      - "TABLE employee;"
+      - "INSERT INTO employee_copy TABLE employee;"

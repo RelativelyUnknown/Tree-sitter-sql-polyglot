@@ -1,0 +1,205 @@
+dialect: snowflake
+engine: Snowflake
+version: "current (docs read 2026-10-04)"
+source: https://docs.snowflake.com/en/sql-reference/sql-all
+
+statements:
+  - id: drop_warehouse
+    name: DROP WAREHOUSE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/drop-warehouse
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP WAREHOUSE w;"
+      - id: if_exists
+        sql: "DROP WAREHOUSE IF EXISTS w;"
+
+  - id: execute_alert
+    name: EXECUTE ALERT
+    doc: https://docs.snowflake.com/en/sql-reference/sql/execute-alert
+    tier: medium
+    probes:
+      - id: basic
+        sql: "EXECUTE ALERT a;"
+      - id: qualified_name
+        sql: "EXECUTE ALERT db.sch.a;"
+    examples:
+      - "EXECUTE ALERT myalert;"
+
+  - id: execute_immediate_from
+    name: EXECUTE IMMEDIATE FROM
+    doc: https://docs.snowflake.com/en/sql-reference/sql/execute-immediate-from
+    tier: medium
+    probes:
+      - id: absolute_path
+        sql: "EXECUTE IMMEDIATE FROM @s/path/file.sql;"
+      - id: absolute_path_namespace
+        sql: "EXECUTE IMMEDIATE FROM @db.sch.s/path/file.sql;"
+      - id: relative_path
+        sql: "EXECUTE IMMEDIATE FROM './file.sql';"
+      - id: using
+        sql: "EXECUTE IMMEDIATE FROM @s/file.sql USING (k1 => 'v1', k2 => 2);"
+      - id: dry_run
+        sql: "EXECUTE IMMEDIATE FROM @s/file.sql DRY_RUN = TRUE;"
+      - id: using_dry_run
+        sql: "EXECUTE IMMEDIATE FROM @s/file.sql USING (k1 => 'v1') DRY_RUN = FALSE;"
+    examples:
+      - "EXECUTE IMMEDIATE FROM './insert-inventory.sql';"
+      - "EXECUTE IMMEDIATE FROM @my_stage/scripts/create-inventory.sql;"
+
+  - id: execute_task
+    name: EXECUTE TASK
+    doc: https://docs.snowflake.com/en/sql-reference/sql/execute-task
+    tier: medium
+    probes:
+      - id: basic
+        sql: "EXECUTE TASK t;"
+      - id: using_config
+        sql: |-
+          EXECUTE TASK t USING CONFIG = $${"k": 1}$$;
+      - id: retry_last
+        sql: "EXECUTE TASK t RETRY LAST;"
+      - id: retry_graph_run_group
+        sql: "EXECUTE TASK t RETRY GRAPH RUN GROUP '33af30ab-f960-4ba0-a5c8-d132e5623468';"
+    examples:
+      - "EXECUTE TASK mytask;"
+      - "EXECUTE TASK mytask RETRY GRAPH RUN GROUP '33af30ab-f960-4ba0-a5c8-d132e5623468';"
+
+  - id: get
+    name: GET
+    doc: https://docs.snowflake.com/en/sql-reference/sql/get
+    tier: medium
+    probes:
+      - id: named_stage
+        sql: "GET @s file:///tmp/data/;"
+      - id: named_stage_namespace_path
+        sql: "GET @db.sch.s/path file:///tmp/data/;"
+      - id: table_stage
+        sql: "GET @%t file:///tmp/data/;"
+      - id: user_stage
+        sql: "GET @~/path file:///tmp/data/;"
+      - id: parallel
+        sql: "GET @s file:///tmp/data/ PARALLEL = 10;"
+      - id: pattern
+        sql: "GET @s file:///tmp/data/ PATTERN = '.*data_0.*';"
+    examples:
+      - "GET @%mytable file:///tmp/data/;"
+      - "GET @~/myfiles file:///tmp/data/;"
+
+  - id: list
+    name: LIST
+    doc: https://docs.snowflake.com/en/sql-reference/sql/list
+    tier: medium
+    probes:
+      - id: named_stage
+        sql: "LIST @s;"
+      - id: named_stage_path
+        sql: "LIST @s/path1;"
+      - id: table_stage
+        sql: "LIST @%t;"
+      - id: user_stage
+        sql: "LIST @~;"
+      - id: pattern
+        sql: "LIST @s PATTERN = '.*data_0.*';"
+      - id: repository_clone
+        sql: "LIST @db.sch.repo/branches/main/;"
+      - id: ls_abbreviation
+        sql: "LS @~;"
+        note: Docs call LS the abbreviated form of the command.
+    examples:
+      - "LIST @%mytable;"
+      - "LIST @mystage/path1;"
+      - "LIST @%mytable PATTERN = '.*data_0.*';"
+
+  - id: put
+    name: PUT
+    doc: https://docs.snowflake.com/en/sql-reference/sql/put
+    tier: medium
+    probes:
+      - id: named_stage
+        sql: "PUT file:///tmp/data/mydata.csv @s;"
+      - id: table_stage
+        sql: "PUT file:///tmp/data/mydata.csv @%t;"
+      - id: user_stage
+        sql: "PUT file:///tmp/data/mydata.csv @~;"
+      - id: quoted_path
+        sql: "PUT 'file:///tmp/data/my data.csv' @s;"
+      - id: parallel
+        sql: "PUT file:///tmp/data/mydata.csv @s PARALLEL = 4;"
+      - id: auto_compress
+        sql: "PUT file:///tmp/data/mydata.csv @s AUTO_COMPRESS = FALSE;"
+      - id: source_compression
+        sql: "PUT file:///tmp/data/mydata.csv @s SOURCE_COMPRESSION = GZIP;"
+      - id: overwrite
+        sql: "PUT file:///tmp/data/mydata.csv @s OVERWRITE = TRUE;"
+    examples:
+      - "PUT file:///tmp/data/mydata.csv @my_int_stage;"
+      - "PUT file:///tmp/data/orders_001.csv @%orderstiny_ext AUTO_COMPRESS = FALSE;"
+      - "PUT file:///tmp/data/orders_*01.csv @my_int_stage AUTO_COMPRESS = FALSE;"
+
+  - id: remove
+    name: REMOVE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/remove
+    tier: medium
+    probes:
+      - id: named_stage
+        sql: "REMOVE @s;"
+      - id: named_stage_path
+        sql: "REMOVE @db.sch.s/path1/subpath2;"
+      - id: table_stage
+        sql: "REMOVE @%t;"
+      - id: user_stage
+        sql: "REMOVE @~;"
+      - id: pattern
+        sql: "REMOVE @s PATTERN = '.*jun.*';"
+      - id: rm_abbreviation
+        sql: "RM @~;"
+        note: Docs call RM the abbreviated form of the command.
+    examples:
+      - "REMOVE @mystage/path1/subpath2;"
+      - "REMOVE @%orders;"
+      - "RM @~ pattern = '.*jun.*';"
+
+  - id: set
+    name: SET
+    doc: https://docs.snowflake.com/en/sql-reference/sql/set
+    tier: medium
+    probes:
+      - id: single
+        sql: "SET v = 10;"
+      - id: expression
+        sql: "SET v = 1 + 2 * 3;"
+      - id: subquery
+        sql: "SET v = (SELECT COUNT(*) / 2 FROM t);"
+      - id: multiple
+        sql: "SET (v1, v2) = (10, 'example');"
+    examples:
+      - "SET V1 = 10;"
+      - "SET V2 = 'example';"
+      - "SET (V1, V2) = (10, 'example');"
+
+  - id: show_alerts
+    name: SHOW ALERTS
+    doc: https://docs.snowflake.com/en/sql-reference/sql/show-alerts
+    tier: medium
+    probes:
+      - id: basic
+        sql: "SHOW ALERTS;"
+      - id: terse
+        sql: "SHOW TERSE ALERTS;"
+      - id: like
+        sql: "SHOW ALERTS LIKE '%testing%';"
+      - id: in_account
+        sql: "SHOW ALERTS IN ACCOUNT;"
+      - id: in_database
+        sql: "SHOW ALERTS IN DATABASE d;"
+      - id: in_schema
+        sql: "SHOW ALERTS IN SCHEMA d.s;"
+      - id: in_application
+        sql: "SHOW ALERTS IN s APPLICATION app;"
+      - id: in_application_package
+        sql: "SHOW ALERTS IN APPLICATION PACKAGE pkg;"
+      - id: starts_with
+        sql: "SHOW ALERTS STARTS WITH 'a';"
+      - id: limit_from
+        sql: "SHOW ALERTS LIMIT 10 FROM 'a';"

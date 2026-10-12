@@ -1,0 +1,85 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: create_temporary_table
+    name: CREATE TEMPORARY TABLE
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE TEMPORARY TABLE t (c1 STRING, c2 INT);"
+      - id: if_not_exists
+        sql: "CREATE TEMPORARY TABLE IF NOT EXISTS db.t (c1 STRING);"
+      - id: temporary_external
+        sql: "CREATE TEMPORARY EXTERNAL TABLE t (c1 STRING) LOCATION '/tmp/t';"
+      - id: column_comment
+        sql: "CREATE TEMPORARY TABLE t (c1 STRING COMMENT 'first', c2 INT COMMENT 'second');"
+      - id: table_comment
+        sql: "CREATE TEMPORARY TABLE t (c1 STRING) COMMENT 'scratch data';"
+      - id: constraint
+        sql: "CREATE TEMPORARY TABLE t (c1 INT, c2 STRING, PRIMARY KEY (c1) DISABLE NOVALIDATE);"
+      - id: clustered_by
+        sql: "CREATE TEMPORARY TABLE t (c1 INT, c2 STRING) CLUSTERED BY (c1) INTO 4 BUCKETS;"
+      - id: clustered_sorted_by
+        sql: "CREATE TEMPORARY TABLE t (c1 INT, c2 STRING) CLUSTERED BY (c1) SORTED BY (c2 DESC) INTO 4 BUCKETS;"
+      - id: skewed_by
+        sql: "CREATE TEMPORARY TABLE t (c1 STRING, c2 INT) SKEWED BY (c1) ON ('a', 'b');"
+      - id: skewed_stored_as_directories
+        sql: "CREATE TEMPORARY TABLE t (c1 STRING, c2 INT) SKEWED BY (c1) ON ('a', 'b') STORED AS DIRECTORIES;"
+      - id: row_format_delimited
+        sql: "CREATE TEMPORARY TABLE t (c1 STRING) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\\n';"
+      - id: row_format_serde
+        sql: "CREATE TEMPORARY TABLE t (c1 STRING) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe' WITH SERDEPROPERTIES ('field.delim' = ',');"
+      - id: stored_as
+        sql: "CREATE TEMPORARY TABLE t (c1 STRING) STORED AS ORC;"
+      - id: stored_by
+        sql: "CREATE TEMPORARY TABLE t (c1 STRING) STORED BY 'org.apache.hadoop.hive.hbase.HBaseStorageHandler' WITH SERDEPROPERTIES ('hbase.columns.mapping' = ':key,cf:val');"
+      - id: location
+        sql: "CREATE TEMPORARY TABLE t (c1 STRING) LOCATION '/tmp/t';"
+      - id: tblproperties
+        sql: "CREATE TEMPORARY TABLE t (c1 STRING) TBLPROPERTIES ('k' = 'v');"
+      - id: as_select
+        sql: "CREATE TEMPORARY TABLE t AS SELECT c1, c2 FROM s;"
+      - id: like
+        sql: "CREATE TEMPORARY TABLE t LIKE s;"
+      - id: like_location
+        sql: "CREATE TEMPORARY TABLE t LIKE s LOCATION '/tmp/t';"
+    examples:
+      - "CREATE TEMPORARY TABLE list_bucket_multiple (col1 STRING, col2 int, col3 STRING);"
+
+  - id: create_transactional_table
+    name: CREATE TRANSACTIONAL TABLE
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE TRANSACTIONAL TABLE t (c1 STRING, c2 INT);"
+      - id: if_not_exists
+        sql: "CREATE TRANSACTIONAL TABLE IF NOT EXISTS db.t (c1 STRING);"
+      - id: column_comment
+        sql: "CREATE TRANSACTIONAL TABLE t (c1 STRING COMMENT 'first');"
+      - id: table_comment
+        sql: "CREATE TRANSACTIONAL TABLE t (c1 STRING) COMMENT 'acid table';"
+      - id: constraint
+        sql: "CREATE TRANSACTIONAL TABLE t (c1 INT, c2 STRING, PRIMARY KEY (c1) DISABLE NOVALIDATE);"
+      - id: partitioned_by
+        sql: "CREATE TRANSACTIONAL TABLE t (c1 STRING) PARTITIONED BY (ds STRING);"
+      - id: partitioned_stored_as
+        sql: "CREATE TRANSACTIONAL TABLE t (key STRING, value STRING) PARTITIONED BY (ds STRING) STORED AS ORC;"
+      - id: clustered_by
+        sql: "CREATE TRANSACTIONAL TABLE t (c1 INT, c2 STRING) CLUSTERED BY (c1) INTO 4 BUCKETS STORED AS ORC;"
+      - id: row_format_delimited
+        sql: "CREATE TRANSACTIONAL TABLE t (c1 STRING) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',';"
+      - id: location
+        sql: "CREATE TRANSACTIONAL TABLE t (c1 STRING) STORED AS ORC LOCATION '/warehouse/t';"
+      - id: tblproperties
+        sql: "CREATE TRANSACTIONAL TABLE t (c1 STRING) STORED AS ORC TBLPROPERTIES ('k' = 'v');"
+      - id: as_select
+        sql: "CREATE TRANSACTIONAL TABLE t AS SELECT c1, c2 FROM s;"
+      - id: like
+        sql: "CREATE TRANSACTIONAL TABLE t LIKE s;"
+    examples:
+      - "CREATE TRANSACTIONAL TABLE transactional_table_test(key string, value string) PARTITIONED BY(ds string) STORED AS ORC;"

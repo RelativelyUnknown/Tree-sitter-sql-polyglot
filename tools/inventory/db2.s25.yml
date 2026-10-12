@@ -1,0 +1,127 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "12.1"
+source: https://www.ibm.com/docs/en/db2/12.1.x?topic=reference-statements
+
+statements:
+  - id: select_into
+    name: SELECT INTO
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-select-into
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT c INTO v FROM t;"
+      - id: multiple_targets
+        sql: "SELECT c1, c2 INTO v1, v2 FROM t;"
+      - id: aggregate
+        sql: "SELECT MAX(c) INTO v FROM t;"
+      - id: host_variable
+        sql: "SELECT c INTO :h FROM t;"
+      - id: global_variable
+        sql: "SELECT MAX(c) INTO gv FROM t;"
+      - id: array_element_target
+        sql: "SELECT c INTO arr[1] FROM t;"
+      - id: field_reference_target
+        sql: "SELECT c INTO r.f FROM t;"
+      - id: transition_variable_target
+        sql: "SELECT c INTO n.c FROM t;"
+      - id: with_cte
+        sql: "WITH cte AS (SELECT c FROM t) SELECT c INTO v FROM cte;"
+      - id: where
+        sql: "SELECT c INTO v FROM t WHERE id = 1;"
+      - id: group_by_having
+        sql: "SELECT c INTO v FROM t GROUP BY c HAVING COUNT(*) > 1;"
+      - id: order_by_fetch_first
+        sql: "SELECT c INTO v FROM t ORDER BY c FETCH FIRST 1 ROW ONLY;"
+      - id: offset_fetch
+        sql: "SELECT c INTO v FROM t ORDER BY c OFFSET 1 ROW FETCH FIRST 1 ROW ONLY;"
+      - id: for_read_only
+        sql: "SELECT c INTO v FROM t FOR READ ONLY;"
+      - id: for_fetch_only
+        sql: "SELECT c INTO v FROM t FOR FETCH ONLY;"
+      - id: for_update
+        sql: "SELECT c INTO v FROM t WHERE id = 1 FOR UPDATE;"
+      - id: for_update_of
+        sql: "SELECT c INTO v FROM t WHERE id = 1 FOR UPDATE OF c;"
+      - id: isolation_clause
+        sql: "SELECT c INTO v FROM t WHERE id = 1 WITH UR;"
+      - id: isolation_rs_lock_request
+        sql: "SELECT c INTO v FROM t WHERE id = 1 WITH RS USE AND KEEP EXCLUSIVE LOCKS;"
+
+  - id: set_variable
+    name: SET variable
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-set-variable
+    tier: high
+    probes:
+      - id: single
+        sql: "SET v = 1;"
+      - id: expression
+        sql: "SET v = v + (v * .10);"
+      - id: null_value
+        sql: "SET v = NULL;"
+      - id: default_value
+        sql: "SET v = DEFAULT;"
+      - id: transition_variable
+        sql: "SET n.c = 5;"
+      - id: multiple_assignments
+        sql: "SET v1 = 1, v2 = 2;"
+      - id: parenthesized_single
+        sql: "SET (v) = (1);"
+      - id: parenthesized_list
+        sql: "SET (v1, v2) = (1, 2);"
+      - id: parenthesized_null_default
+        sql: "SET (v1, v2) = (NULL, DEFAULT);"
+      - id: row_fullselect
+        sql: "SET (v1, v2) = (SELECT AVG(a), AVG(b) FROM t WHERE t.k = 1);"
+      - id: scalar_subquery
+        sql: "SET v = (SELECT MAX(c) FROM t);"
+      - id: host_variable
+        sql: "SET :h = 1;"
+      - id: parameter_marker
+        sql: "SET ? = 1;"
+      - id: global_variable_qualified
+        sql: "SET s.gv = CURRENT TIMESTAMP;"
+      - id: field_reference
+        sql: "SET r.f = 1;"
+      - id: boolean_search_condition
+        sql: "SET b = (a > 1 AND c < 2);"
+      - id: boolean_true
+        sql: "SET b = TRUE;"
+      - id: boolean_false
+        sql: "SET b = FALSE;"
+      - id: boolean_null
+        sql: "SET b = NULL;"
+      - id: array_element
+        sql: "SET arr[1] = 2.71828183;"
+      - id: array_element_null
+        sql: "SET arr[1] = NULL;"
+      - id: associative_array_element
+        sql: "SET arr['Alberta'] = 'Edmonton';"
+      - id: cursor_variable_from_name
+        sql: "SET cv = cur;"
+      - id: cursor_variable_null
+        sql: "SET cv = NULL;"
+      - id: cursor_constructor
+        sql: "SET cv = CURSOR FOR SELECT c FROM t;"
+      - id: cursor_constructor_asensitive_hold
+        sql: "SET cv = ASENSITIVE CURSOR WITH HOLD FOR SELECT c FROM t;"
+      - id: cursor_constructor_insensitive_without_hold
+        sql: "SET cv = INSENSITIVE CURSOR WITHOUT HOLD FOR SELECT c FROM t;"
+      - id: cursor_constructor_statement_name
+        sql: "SET cv = CURSOR FOR stmt;"
+      - id: cursor_constructor_parameters
+        sql: "SET cv = CURSOR (p INTEGER) FOR SELECT c FROM t WHERE c = p;"
+      - id: cursor_constructor_anchored_parameter
+        sql: "SET cv = CURSOR (p ANCHOR DATA TYPE TO t.c) FOR SELECT c FROM t WHERE c = p;"
+      - id: row_variable_expressions
+        sql: "SET rv = (1, 'a');"
+      - id: row_variable_null
+        sql: "SET rv = NULL;"
+      - id: row_variable_fullselect
+        sql: "SET rv = (SELECT a, b FROM t FETCH FIRST 1 ROW ONLY);"
+      - id: row_variable_row_expression
+        sql: "SET rv = ROW(1, 'a');"
+    examples:
+      - "SET NEW_VAR.SALARY = 50000;"
+      - "SET NEW_VAR.SALARY = 50000 , NEW_VAR.COMM = 8000;"
+      - "SET (NEW_VAR.SALARY , NEW_VAR.COMM) = ( SELECT AVG (SALARY), AVG (COMM) FROM EMPLOYEE E WHERE E.WORKDEPT = NEW_VAR.WORKDEPT);"

@@ -1,0 +1,122 @@
+dialect: spanner
+engine: Google Cloud Spanner (GoogleSQL dialect)
+version: "current managed service (docs as of 2026-10)"
+source: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language
+
+statements:
+  - id: pipe_query
+    name: Pipe syntax query (FROM ... |> ...)
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/pipe-syntax
+    tier: high
+    probes:
+      - { id: from_only, sql: "FROM t;" }
+      - { id: select_op, sql: "FROM t |> SELECT a, b AS c;" }
+      - { id: select_distinct, sql: "FROM t |> SELECT DISTINCT a;" }
+      - { id: select_as_struct, sql: "FROM t |> SELECT AS STRUCT a, b;" }
+      - { id: extend_op, sql: "FROM t |> EXTEND a + 1 AS a1, b c;" }
+      - { id: set_op, sql: "FROM t |> SET a = a * 2, b = 3;" }
+      - { id: drop_op, sql: "FROM t |> DROP a, b;" }
+      - { id: rename_op, sql: "FROM t |> RENAME a AS x, b y;" }
+      - { id: as_op, sql: "FROM t |> AS t1 |> SELECT t1.a;" }
+      - { id: where_op, sql: "FROM t |> WHERE a > 1 AND b IS NOT NULL;" }
+      - { id: aggregate_full, sql: "FROM t |> AGGREGATE COUNT(*) AS cnt, SUM(a) total;" }
+      - { id: aggregate_group_by, sql: "FROM t |> AGGREGATE SUM(a) AS total GROUP BY b, c AS cc;" }
+      - { id: aggregate_group_and_order_by, sql: "FROM t |> AGGREGATE SUM(a) AS total GROUP AND ORDER BY b DESC, c;" }
+      - { id: aggregate_order_suffix, sql: "FROM t |> AGGREGATE SUM(a) AS total DESC GROUP BY b ASC;" }
+      - { id: join_on, sql: "FROM t |> JOIN u ON t.id = u.id;" }
+      - { id: join_left_alias, sql: "FROM t |> LEFT JOIN u AS u1 ON t.id = u1.id;" }
+      - { id: join_using, sql: "FROM t |> INNER JOIN u USING (id);" }
+      - { id: join_cross, sql: "FROM t |> CROSS JOIN u;" }
+      - { id: join_subquery, sql: "FROM t |> FULL OUTER JOIN (SELECT 1 AS id) AS s ON t.id = s.id;" }
+      - { id: join_unnest, sql: "FROM t |> CROSS JOIN UNNEST(t.arr) AS elem;" }
+      - { id: order_by_op, sql: "FROM t |> ORDER BY a DESC, b ASC NULLS LAST;" }
+      - { id: limit_op, sql: "FROM t |> LIMIT 10;" }
+      - { id: limit_offset_op, sql: "FROM t |> LIMIT 10 OFFSET 5;" }
+      - { id: union_all_op, sql: "FROM t |> UNION ALL (SELECT 1), (SELECT 2);" }
+      - { id: union_distinct_op, sql: "FROM t |> UNION DISTINCT (FROM u);" }
+      - { id: intersect_op, sql: "FROM t |> INTERSECT DISTINCT (FROM u);" }
+      - { id: except_op, sql: "FROM t |> EXCEPT ALL (FROM u);" }
+      - { id: tablesample_percent, sql: "FROM t |> TABLESAMPLE BERNOULLI (10 PERCENT);" }
+      - { id: tablesample_rows, sql: "FROM t |> TABLESAMPLE RESERVOIR (100 ROWS);" }
+      - { id: from_subquery_alias, sql: "FROM (SELECT 1 AS x) AS s |> SELECT x;" }
+      - { id: chained_ops, sql: "FROM t |> WHERE a > 1 |> AGGREGATE COUNT(*) AS c GROUP BY b |> ORDER BY c DESC |> LIMIT 5;" }
+      - { id: select_query_then_pipe, sql: "SELECT a, b FROM t |> WHERE a > 1;" }
+      - { id: with_cte_pipe, sql: "WITH c AS (SELECT 1 AS x) FROM c |> SELECT x;" }
+    examples:
+      - |-
+        FROM (SELECT 'apples' AS item, 2 AS sales)
+        |> SELECT item AS fruit_name;
+      - |-
+        (
+          SELECT 'apples' AS item, 2 AS sales
+          UNION ALL
+          SELECT 'bananas' AS item, 8 AS sales
+        )
+        |> EXTEND item IN ('bananas', 'lemons') AS is_yellow;
+      - |-
+        (
+          SELECT 'apples' AS item, 2 AS sales
+          UNION ALL
+          SELECT 'bananas' AS item, 5 AS sales
+        )
+        |> AS produce_sales
+        |> LEFT JOIN
+             (
+               SELECT "apples" AS item, 123 AS id
+             ) AS produce_data
+           ON produce_sales.item = produce_data.item
+        |> SELECT produce_sales.item, sales, id;
+
+  - id: insert
+    name: INSERT (OR IGNORE/OR UPDATE, ON CONFLICT, THEN RETURN)
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/dml-syntax#insert-statement
+    tier: high
+    probes:
+      - { id: values, sql: "INSERT INTO t (a, b) VALUES (1, 'x');" }
+      - { id: without_into, sql: "INSERT t (a, b) VALUES (1, 'x');" }
+      - { id: multi_row_values, sql: "INSERT INTO t (a, b) VALUES (1, 'x'), (2, 'y');" }
+      - { id: values_default, sql: "INSERT INTO t (a, b) VALUES (1, DEFAULT);" }
+      - { id: values_subquery, sql: "INSERT INTO t (a, b) VALUES (1, (SELECT b FROM u WHERE a = 1));" }
+      - { id: select_input, sql: "INSERT INTO t (a, b) SELECT a, b FROM u;" }
+      - { id: select_input_parenthesized, sql: "INSERT INTO t (a, b) (SELECT a, b FROM u);" }
+      - { id: select_unnest_input, sql: "INSERT INTO t (a, b) SELECT * FROM UNNEST([(1, 'x'), (2, 'y')]);" }
+      - { id: or_ignore, sql: "INSERT OR IGNORE INTO t (a, b) VALUES (1, 'x');" }
+      - { id: ignore_without_or, sql: "INSERT IGNORE INTO t (a, b) VALUES (1, 'x');" }
+      - { id: or_update, sql: "INSERT OR UPDATE INTO t (a, b) VALUES (1, 'x');" }
+      - { id: update_without_or, sql: "INSERT UPDATE t (a, b) VALUES (1, 'x');" }
+      - { id: or_update_without_into, sql: "INSERT OR UPDATE t (a, b) VALUES (1, 'x');" }
+      - { id: assert_rows_modified, sql: "INSERT INTO t (a, b) VALUES (1, 'x') ASSERT_ROWS_MODIFIED 1;" }
+      - { id: then_return_columns, sql: "INSERT INTO t (a, b) VALUES (1, 'x') THEN RETURN a, b;" }
+      - { id: then_return_expr_alias, sql: "INSERT INTO t (a, b) VALUES (1, 'x') THEN RETURN a, b || ' ' || c AS full_name;" }
+      - { id: then_return_star, sql: "INSERT INTO t (a, b) VALUES (1, 'x') THEN RETURN *;" }
+      - { id: then_return_table_star, sql: "INSERT INTO t (a, b) VALUES (1, 'x') THEN RETURN t.*;" }
+      - { id: then_return_star_except, sql: "INSERT INTO t (a, b) VALUES (1, 'x') THEN RETURN * EXCEPT (b);" }
+      - { id: then_return_star_replace, sql: "INSERT INTO t (a, b) VALUES (1, 'x') THEN RETURN * REPLACE (a + 1 AS a);" }
+      - { id: then_return_with_action, sql: "INSERT OR UPDATE t (a, b) VALUES (1, 'x') THEN RETURN WITH ACTION a;" }
+      - { id: then_return_with_action_alias, sql: "INSERT OR UPDATE t (a, b) VALUES (1, 'x') THEN RETURN WITH ACTION AS act a, b;" }
+      - { id: assert_then_return, sql: "INSERT INTO t (a, b) VALUES (1, 'x') ASSERT_ROWS_MODIFIED 1 THEN RETURN a;" }
+      - { id: on_conflict_do_nothing, sql: "INSERT INTO t (a, b) VALUES (1, 'x') ON CONFLICT DO NOTHING;" }
+      - { id: on_conflict_target_do_nothing, sql: "INSERT INTO t (a, b) VALUES (1, 'x') ON CONFLICT (a) DO NOTHING;" }
+      - { id: on_conflict_unique_constraint, sql: "INSERT INTO t (a, b) VALUES (1, 'x') ON CONFLICT ON UNIQUE CONSTRAINT uq_idx DO NOTHING;" }
+      - { id: on_conflict_do_update, sql: "INSERT INTO t (a, b) VALUES (1, 'x') ON CONFLICT (a) DO UPDATE SET b = excluded.b;" }
+      - { id: on_conflict_do_update_where, sql: "INSERT INTO t (a, b) VALUES (1, 'x') ON CONFLICT (a, b) DO UPDATE SET a = excluded.a WHERE t.b <> 'y';" }
+      - { id: on_conflict_do_update_default, sql: "INSERT INTO t (a, b) VALUES (1, 'x') ON CONFLICT (a) DO UPDATE SET b = DEFAULT;" }
+      - { id: on_conflict_table_alias, sql: "INSERT INTO t AS tt (a, b) VALUES (1, 'x') ON CONFLICT (a) DO UPDATE SET b = tt.b || excluded.b;" }
+      - { id: on_conflict_select_input, sql: "INSERT INTO t (a, b) (SELECT a, b FROM u) ON CONFLICT (a) DO NOTHING;" }
+      - { id: on_conflict_then_return, sql: "INSERT INTO t (a, b) VALUES (1, 'x') ON CONFLICT (a) DO UPDATE SET b = excluded.b THEN RETURN a, b;" }
+      - { id: on_conflict_assert_then_return, sql: "INSERT INTO t (a, b) VALUES (1, 'x') ON CONFLICT DO NOTHING ASSERT_ROWS_MODIFIED 1 THEN RETURN WITH ACTION a;" }
+    examples:
+      - |-
+        INSERT INTO Singers (SingerId, FirstName, LastName, SingerInfo)
+        VALUES (1, 'Marc', 'Richards', "nationality: 'USA'"),
+               (2, 'Catalina', 'Smith', "nationality: 'Brazil'"),
+               (3, "Andrew", "Duneskipper", NULL);
+      - |-
+        INSERT INTO Singers (SingerId, FirstName, LastName)
+        SELECT SingerId, FirstName, LastName
+        FROM AckworthSingers;
+      - |-
+        INSERT INTO Singers (SingerId, FirstName, LastName)
+        VALUES (7, 'Melissa', 'Garcia'),
+               (8, 'Russell', 'Morales')
+        THEN RETURN SingerId, FirstName || ' ' || LastName AS FullName;

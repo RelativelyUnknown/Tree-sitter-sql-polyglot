@@ -1,0 +1,77 @@
+dialect: cockroachdb
+engine: CockroachDB
+version: "v26.3 (stable)"
+source: https://www.cockroachlabs.com/docs/stable/sql-statements
+
+statements:
+  - id: truncate
+    name: TRUNCATE
+    doc: https://www.cockroachlabs.com/docs/stable/truncate
+    tier: high
+    probes:
+      - id: basic
+        sql: "TRUNCATE t;"
+      - id: table_keyword
+        sql: "TRUNCATE TABLE t;"
+      - id: multiple_tables
+        sql: "TRUNCATE t, s;"
+      - id: cascade
+        sql: "TRUNCATE t CASCADE;"
+      - id: restrict
+        sql: "TRUNCATE t RESTRICT;"
+    examples:
+      - "TRUNCATE t1;"
+      - "TRUNCATE customers CASCADE;"
+      - "TRUNCATE customers, orders;"
+
+  - id: update
+    name: UPDATE
+    doc: https://www.cockroachlabs.com/docs/stable/update
+    tier: high
+    probes:
+      - id: basic
+        sql: "UPDATE t SET c = 1;"
+      - id: where
+        sql: "UPDATE t SET c = 1 WHERE id = 2;"
+      - id: multiple_columns
+        sql: "UPDATE t SET c = 1, d = 2 WHERE id = 2;"
+      - id: column_list_tuple
+        sql: "UPDATE t SET (c, d) = (1, 2) WHERE id = 2;"
+      - id: column_list_select
+        sql: "UPDATE t SET (c, d) = (SELECT c, d FROM s WHERE id = 1) WHERE id = 2;"
+      - id: set_default
+        sql: "UPDATE t SET c = DEFAULT WHERE id = 2;"
+      - id: alias
+        sql: "UPDATE t AS x SET c = 1 WHERE x.id = 2;"
+      - id: only
+        sql: "UPDATE ONLY t SET c = 1;"
+      - id: only_star
+        sql: "UPDATE ONLY t * SET c = 1;"
+      - id: from
+        sql: "UPDATE t SET c = s.c FROM s WHERE t.id = s.id;"
+      - id: from_multiple
+        sql: "UPDATE t SET c = 1 FROM s, u WHERE t.id = s.id AND s.id = u.id;"
+      - id: with_cte
+        sql: "WITH x AS (SELECT id FROM s) UPDATE t SET c = 1 WHERE id IN (SELECT id FROM x);"
+      - id: order_by
+        sql: "UPDATE t SET c = 1 ORDER BY id;"
+      - id: limit
+        sql: "UPDATE t SET c = 1 LIMIT 10;"
+      - id: order_by_limit
+        sql: "UPDATE t SET c = 1 ORDER BY id DESC LIMIT 10;"
+      - id: returning
+        sql: "UPDATE t SET c = 1 WHERE id = 2 RETURNING id;"
+      - id: returning_star
+        sql: "UPDATE t SET c = 1 RETURNING *;"
+      - id: returning_expr_alias
+        sql: "UPDATE t SET c = 1 RETURNING c + 1 AS n;"
+      - id: returning_nothing
+        sql: "UPDATE t SET c = 1 RETURNING NOTHING;"
+      - id: index_hint
+        sql: "UPDATE t@idx SET c = 1 WHERE d = 2;"
+      - id: index_hint_force
+        sql: "UPDATE t@{FORCE_INDEX = idx} SET c = 1 WHERE d = 2;"
+    examples:
+      - "UPDATE users SET address = '201 E Randolph St' WHERE id = '851eb851-eb85-4000-8000-00000000001a';"
+      - "UPDATE rides SET (end_address, revenue) = ('201 E Randolph St', 25.00) WHERE id = '851eb851-eb85-4000-8000-000000000104';"
+      - "UPDATE rides SET revenue = NULL FROM vehicles WHERE rides.rider_id = vehicles.owner_id AND rides.vehicle_id = vehicles.id;"

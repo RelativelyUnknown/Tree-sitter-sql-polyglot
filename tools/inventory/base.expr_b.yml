@@ -1,0 +1,343 @@
+dialect: base
+engine: ISO SQL
+version: "SQL:2016"
+source: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html
+
+statements: []
+
+expressions:
+  - id: b_arithmetic_operators
+    name: Numeric value expression operators
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#numeric-value-expression
+    tier: high
+    probes:
+      - { id: add_sub, sql: "SELECT a + b, a - b FROM t;" }
+      - { id: mul_div, sql: "SELECT a * b, a / b FROM t;" }
+      - { id: unary_sign, sql: "SELECT -a, +a FROM t;" }
+      - { id: precedence_parens, sql: "SELECT (a + b) * c - d / e FROM t;" }
+  - id: b_string_concat
+    name: Character concatenation
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#character-value-expression
+    tier: high
+    probes:
+      - { id: concat, sql: "SELECT a || b || 'x' FROM t;" }
+  - id: b_comparison_operators
+    name: Comparison predicate
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#comparison-predicate
+    tier: high
+    probes:
+      - { id: eq_ne, sql: "SELECT * FROM t WHERE a = 1 OR a <> 2;" }
+      - { id: lt_gt, sql: "SELECT * FROM t WHERE a < 1 OR a > 2;" }
+      - { id: le_ge, sql: "SELECT * FROM t WHERE a <= 1 AND a >= 0;" }
+      - { id: row_comparison, sql: "SELECT * FROM t WHERE (a, b) = (1, 2);" }
+      - { id: row_value_ordering, sql: "SELECT * FROM t WHERE (a, b) < (1, 2);" }
+  - id: b_boolean_operators
+    name: Boolean value expression (AND, OR, NOT, IS truth value)
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#boolean-value-expression
+    tier: high
+    probes:
+      - { id: and_or, sql: "SELECT * FROM t WHERE a = 1 AND b = 2 OR c = 3;" }
+      - { id: not, sql: "SELECT * FROM t WHERE NOT a = 1;" }
+      - { id: is_true, sql: "SELECT * FROM t WHERE (a > 1) IS TRUE;" }
+      - { id: is_not_false, sql: "SELECT * FROM t WHERE (a > 1) IS NOT FALSE;" }
+      - { id: is_unknown, sql: "SELECT * FROM t WHERE (a > 1) IS UNKNOWN;" }
+      - { id: is_not_unknown, sql: "SELECT * FROM t WHERE (a > 1) IS NOT UNKNOWN;" }
+  - id: b_like_predicate
+    name: LIKE predicate
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#like-predicate
+    tier: high
+    probes:
+      - { id: like, sql: "SELECT * FROM t WHERE a LIKE 'x%';" }
+      - { id: not_like, sql: "SELECT * FROM t WHERE a NOT LIKE 'x%';" }
+      - { id: like_escape, sql: "SELECT * FROM t WHERE a LIKE 'x!%%' ESCAPE '!';" }
+      - { id: not_like_escape, sql: "SELECT * FROM t WHERE a NOT LIKE 'x!_%' ESCAPE '!';" }
+  - id: b_similar_predicate
+    name: SIMILAR predicate
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#similar-predicate
+    tier: low
+    probes:
+      - { id: similar_to, sql: "SELECT * FROM t WHERE a SIMILAR TO '(ab|cd)%';" }
+      - { id: not_similar_escape, sql: "SELECT * FROM t WHERE a NOT SIMILAR TO 'x!%' ESCAPE '!';" }
+  - id: b_like_regex_predicate
+    name: LIKE_REGEX predicate
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#regex-like-predicate
+    tier: low
+    probes:
+      - { id: like_regex, sql: "SELECT * FROM t WHERE a LIKE_REGEX '^ab+$';" }
+      - { id: like_regex_flag, sql: "SELECT * FROM t WHERE a LIKE_REGEX 'ab' FLAG 'i';" }
+  - id: b_between_predicate
+    name: BETWEEN predicate
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#between-predicate
+    tier: high
+    probes:
+      - { id: between, sql: "SELECT * FROM t WHERE a BETWEEN 1 AND 10;" }
+      - { id: not_between, sql: "SELECT * FROM t WHERE a NOT BETWEEN 1 AND 10;" }
+      - { id: between_symmetric, sql: "SELECT * FROM t WHERE a BETWEEN SYMMETRIC 10 AND 1;" }
+      - { id: between_asymmetric, sql: "SELECT * FROM t WHERE a BETWEEN ASYMMETRIC 1 AND 10;" }
+  - id: b_in_predicate
+    name: IN predicate
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#in-predicate
+    tier: high
+    probes:
+      - { id: in_list, sql: "SELECT * FROM t WHERE a IN (1, 2, 3);" }
+      - { id: not_in_list, sql: "SELECT * FROM t WHERE a NOT IN (1, 2, 3);" }
+      - { id: in_subquery, sql: "SELECT * FROM t WHERE a IN (SELECT b FROM s);" }
+      - { id: not_in_subquery, sql: "SELECT * FROM t WHERE a NOT IN (SELECT b FROM s);" }
+      - { id: row_in_subquery, sql: "SELECT * FROM t WHERE (a, b) IN (SELECT c, d FROM s);" }
+      - { id: row_in_list, sql: "SELECT * FROM t WHERE (a, b) IN ((1, 2), (3, 4));" }
+  - id: b_null_predicate
+    name: NULL predicate
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#null-predicate
+    tier: high
+    probes:
+      - { id: is_null, sql: "SELECT * FROM t WHERE a IS NULL;" }
+      - { id: is_not_null, sql: "SELECT * FROM t WHERE a IS NOT NULL;" }
+      - { id: row_is_null, sql: "SELECT * FROM t WHERE (a, b) IS NULL;" }
+  - id: b_distinct_predicate
+    name: DISTINCT predicate
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#distinct-predicate
+    tier: medium
+    probes:
+      - { id: is_distinct_from, sql: "SELECT * FROM t WHERE a IS DISTINCT FROM b;" }
+      - { id: is_not_distinct_from, sql: "SELECT * FROM t WHERE a IS NOT DISTINCT FROM b;" }
+  - id: b_exists_predicate
+    name: EXISTS predicate
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#exists-predicate
+    tier: high
+    probes:
+      - { id: exists, sql: "SELECT * FROM t WHERE EXISTS (SELECT 1 FROM s WHERE s.a = t.a);" }
+      - { id: not_exists, sql: "SELECT * FROM t WHERE NOT EXISTS (SELECT 1 FROM s WHERE s.a = t.a);" }
+  - id: b_unique_predicate
+    name: UNIQUE predicate
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#unique-predicate
+    tier: low
+    probes:
+      - { id: unique, sql: "SELECT * FROM t WHERE UNIQUE (SELECT a FROM s);" }
+  - id: b_quantified_comparison
+    name: Quantified comparison predicate (ALL, ANY, SOME)
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#quantified-comparison-predicate
+    tier: high
+    probes:
+      - { id: all, sql: "SELECT * FROM t WHERE a > ALL (SELECT b FROM s);" }
+      - { id: any, sql: "SELECT * FROM t WHERE a = ANY (SELECT b FROM s);" }
+      - { id: some, sql: "SELECT * FROM t WHERE a <> SOME (SELECT b FROM s);" }
+      - { id: row_any, sql: "SELECT * FROM t WHERE (a, b) = ANY (SELECT c, d FROM s);" }
+  - id: b_scalar_subquery
+    name: Scalar subquery
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#scalar-subquery
+    tier: high
+    probes:
+      - { id: in_select_list, sql: "SELECT (SELECT MAX(b) FROM s) FROM t;" }
+      - { id: in_where, sql: "SELECT * FROM t WHERE a = (SELECT MAX(b) FROM s);" }
+  - id: b_overlaps_predicate
+    name: OVERLAPS predicate
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#overlaps-predicate
+    tier: low
+    probes:
+      - { id: overlaps, sql: "SELECT * FROM t WHERE (a, b) OVERLAPS (c, d);" }
+  - id: b_match_predicate
+    name: MATCH predicate
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#match-predicate
+    tier: low
+    probes:
+      - { id: match, sql: "SELECT * FROM t WHERE (a, b) MATCH (SELECT c, d FROM s);" }
+      - { id: match_unique_full, sql: "SELECT * FROM t WHERE (a, b) MATCH UNIQUE FULL (SELECT c, d FROM s);" }
+  - id: b_member_submultiset_predicates
+    name: MEMBER OF, SUBMULTISET OF and IS A SET predicates
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#member-predicate
+    tier: low
+    probes:
+      - { id: member_of, sql: "SELECT * FROM t WHERE a MEMBER OF m;" }
+      - { id: submultiset_of, sql: "SELECT * FROM t WHERE m1 SUBMULTISET OF m2;" }
+      - { id: is_a_set, sql: "SELECT * FROM t WHERE m IS A SET;" }
+  - id: b_normalized_predicate
+    name: Normalized predicate
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#normalized-predicate
+    tier: low
+    probes:
+      - { id: is_normalized, sql: "SELECT * FROM t WHERE a IS NORMALIZED;" }
+      - { id: is_nfc_normalized, sql: "SELECT * FROM t WHERE a IS NOT NFC NORMALIZED;" }
+  - id: b_case_expression
+    name: CASE expression
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#case-expression
+    tier: high
+    probes:
+      - { id: searched_case, sql: "SELECT CASE WHEN a > 1 THEN 'x' WHEN a > 0 THEN 'y' ELSE 'z' END FROM t;" }
+      - { id: searched_case_no_else, sql: "SELECT CASE WHEN a > 1 THEN 'x' END FROM t;" }
+      - { id: simple_case, sql: "SELECT CASE a WHEN 1 THEN 'x' WHEN 2 THEN 'y' ELSE 'z' END FROM t;" }
+      - { id: simple_case_multi_operand, sql: "SELECT CASE a WHEN 1, 2 THEN 'x' ELSE 'z' END FROM t;" }
+      - { id: nested_case, sql: "SELECT CASE WHEN a > 1 THEN CASE WHEN b > 1 THEN 1 ELSE 2 END ELSE 3 END FROM t;" }
+      - { id: case_in_where, sql: "SELECT * FROM t WHERE CASE WHEN a > 1 THEN b ELSE c END = 1;" }
+  - id: b_nullif_coalesce
+    name: NULLIF and COALESCE
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#case-abbreviation
+    tier: high
+    probes:
+      - { id: nullif, sql: "SELECT NULLIF(a, 0) FROM t;" }
+      - { id: coalesce, sql: "SELECT COALESCE(a, b, 0) FROM t;" }
+  - id: b_extract
+    name: EXTRACT
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#extract-expression
+    tier: high
+    probes:
+      - { id: year, sql: "SELECT EXTRACT(YEAR FROM d) FROM t;" }
+      - { id: month, sql: "SELECT EXTRACT(MONTH FROM d) FROM t;" }
+      - { id: day, sql: "SELECT EXTRACT(DAY FROM d) FROM t;" }
+      - { id: hour, sql: "SELECT EXTRACT(HOUR FROM ts) FROM t;" }
+      - { id: minute, sql: "SELECT EXTRACT(MINUTE FROM ts) FROM t;" }
+      - { id: second, sql: "SELECT EXTRACT(SECOND FROM ts) FROM t;" }
+      - { id: timezone_hour, sql: "SELECT EXTRACT(TIMEZONE_HOUR FROM ts) FROM t;" }
+      - { id: timezone_minute, sql: "SELECT EXTRACT(TIMEZONE_MINUTE FROM ts) FROM t;" }
+      - { id: from_interval, sql: "SELECT EXTRACT(DAY FROM INTERVAL '3' DAY) FROM t;" }
+  - id: b_substring
+    name: SUBSTRING
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#character-substring-function
+    tier: high
+    probes:
+      - { id: from, sql: "SELECT SUBSTRING(a FROM 2) FROM t;" }
+      - { id: from_for, sql: "SELECT SUBSTRING(a FROM 2 FOR 3) FROM t;" }
+      - { id: from_for_using, sql: "SELECT SUBSTRING(a FROM 2 FOR 3 USING CHARACTERS) FROM t;" }
+      - { id: from_for_using_octets, sql: "SELECT SUBSTRING(a FROM 2 FOR 3 USING OCTETS) FROM t;" }
+      - { id: binary_from_for, sql: "SELECT SUBSTRING(b FROM 2 FOR 3) FROM t;" }
+  - id: b_substring_regex
+    name: SUBSTRING_REGEX and TRANSLATE_REGEX
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#regex-substring-function
+    tier: low
+    probes:
+      - { id: substring_regex, sql: "SELECT SUBSTRING_REGEX('a+' IN a) FROM t;" }
+      - { id: substring_regex_full, sql: "SELECT SUBSTRING_REGEX('a+' FLAG 'i' IN a FROM 2 USING CHARACTERS OCCURRENCE 1 GROUP 1) FROM t;" }
+      - { id: translate_regex, sql: "SELECT TRANSLATE_REGEX('a+' IN a WITH 'b') FROM t;" }
+  - id: b_trim
+    name: TRIM
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#trim-function
+    tier: high
+    probes:
+      - { id: plain, sql: "SELECT TRIM(a) FROM t;" }
+      - { id: from, sql: "SELECT TRIM(' ' FROM a) FROM t;" }
+      - { id: leading, sql: "SELECT TRIM(LEADING FROM a) FROM t;" }
+      - { id: leading_char, sql: "SELECT TRIM(LEADING 'x' FROM a) FROM t;" }
+      - { id: trailing_char, sql: "SELECT TRIM(TRAILING 'x' FROM a) FROM t;" }
+      - { id: both_char, sql: "SELECT TRIM(BOTH 'x' FROM a) FROM t;" }
+      - { id: both_no_char, sql: "SELECT TRIM(BOTH FROM a) FROM t;" }
+  - id: b_trim_array
+    name: TRIM_ARRAY
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#trim-array-function
+    tier: low
+    probes:
+      - { id: trim_array, sql: "SELECT TRIM_ARRAY(arr, 2) FROM t;" }
+  - id: b_position
+    name: POSITION
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#position-expression
+    tier: high
+    probes:
+      - { id: position_in, sql: "SELECT POSITION('x' IN a) FROM t;" }
+      - { id: position_using_characters, sql: "SELECT POSITION('x' IN a USING CHARACTERS) FROM t;" }
+      - { id: position_using_octets, sql: "SELECT POSITION('x' IN a USING OCTETS) FROM t;" }
+  - id: b_position_regex
+    name: POSITION_REGEX
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#regex-position-expression
+    tier: low
+    probes:
+      - { id: position_regex, sql: "SELECT POSITION_REGEX('a+' IN a) FROM t;" }
+      - { id: position_regex_start, sql: "SELECT POSITION_REGEX(START 'a+' FLAG 'i' IN a FROM 2 USING CHARACTERS OCCURRENCE 1 GROUP 1) FROM t;" }
+      - { id: position_regex_after, sql: "SELECT POSITION_REGEX(AFTER 'a+' IN a) FROM t;" }
+  - id: b_overlay
+    name: OVERLAY
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#character-overlay-function
+    tier: medium
+    probes:
+      - { id: from, sql: "SELECT OVERLAY(a PLACING 'xyz' FROM 2) FROM t;" }
+      - { id: from_for, sql: "SELECT OVERLAY(a PLACING 'xyz' FROM 2 FOR 3) FROM t;" }
+      - { id: from_for_using, sql: "SELECT OVERLAY(a PLACING 'xyz' FROM 2 FOR 3 USING CHARACTERS) FROM t;" }
+  - id: b_string_functions
+    name: Character and binary string functions (UPPER, LOWER, lengths, NORMALIZE, TRANSLATE, CONVERT)
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#fold
+    tier: high
+    probes:
+      - { id: upper_lower, sql: "SELECT UPPER(a), LOWER(a) FROM t;" }
+      - { id: char_length, sql: "SELECT CHAR_LENGTH(a), CHARACTER_LENGTH(a) FROM t;" }
+      - { id: char_length_using, sql: "SELECT CHAR_LENGTH(a USING CHARACTERS) FROM t;" }
+      - { id: octet_length, sql: "SELECT OCTET_LENGTH(a) FROM t;" }
+      - { id: normalize, sql: "SELECT NORMALIZE(a) FROM t;" }
+      - { id: normalize_form, sql: "SELECT NORMALIZE(a, NFC) FROM t;" }
+      - { id: translate, sql: "SELECT TRANSLATE(a USING trans_name) FROM t;" }
+      - { id: convert, sql: "SELECT CONVERT(a USING conv_name) FROM t;" }
+  - id: b_numeric_functions
+    name: Numeric value functions
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#numeric-value-function
+    tier: high
+    probes:
+      - { id: abs_mod, sql: "SELECT ABS(a), MOD(a, 3) FROM t;" }
+      - { id: ln_exp, sql: "SELECT LN(a), EXP(a) FROM t;" }
+      - { id: power_sqrt, sql: "SELECT POWER(a, 2), SQRT(a) FROM t;" }
+      - { id: floor_ceil, sql: "SELECT FLOOR(a), CEIL(a), CEILING(a) FROM t;" }
+      - { id: width_bucket, sql: "SELECT WIDTH_BUCKET(a, 0, 10, 5) FROM t;" }
+      - { id: log, sql: "SELECT LOG10(a), LOG(2, a) FROM t;" }
+      - { id: trig, sql: "SELECT SIN(a), COS(a), TAN(a), ASIN(a), ACOS(a), ATAN(a), SINH(a), COSH(a), TANH(a) FROM t;" }
+  - id: b_datetime_value_functions
+    name: Datetime value functions
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#datetime-value-function
+    tier: high
+    probes:
+      - { id: current_date, sql: "SELECT CURRENT_DATE FROM t;" }
+      - { id: current_time, sql: "SELECT CURRENT_TIME, CURRENT_TIME(3) FROM t;" }
+      - { id: current_timestamp, sql: "SELECT CURRENT_TIMESTAMP, CURRENT_TIMESTAMP(3) FROM t;" }
+      - { id: localtime, sql: "SELECT LOCALTIME, LOCALTIME(3) FROM t;" }
+      - { id: localtimestamp, sql: "SELECT LOCALTIMESTAMP, LOCALTIMESTAMP(3) FROM t;" }
+  - id: b_datetime_arithmetic_zone
+    name: Datetime and interval arithmetic, AT TIME ZONE
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#datetime-value-expression
+    tier: medium
+    probes:
+      - { id: ts_plus_interval, sql: "SELECT ts + INTERVAL '1' DAY FROM t;" }
+      - { id: ts_minus_interval, sql: "SELECT ts - INTERVAL '1' HOUR FROM t;" }
+      - { id: ts_difference, sql: "SELECT (ts1 - ts2) DAY TO SECOND FROM t;" }
+      - { id: interval_multiply, sql: "SELECT INTERVAL '1' DAY * 2 FROM t;" }
+      - { id: at_time_zone, sql: "SELECT ts AT TIME ZONE 'UTC' FROM t;" }
+      - { id: at_local, sql: "SELECT ts AT LOCAL FROM t;" }
+  - id: b_cast
+    name: CAST specification
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#cast-specification
+    tier: high
+    probes:
+      - { id: cast_int, sql: "SELECT CAST(a AS INTEGER) FROM t;" }
+      - { id: cast_varchar, sql: "SELECT CAST(a AS VARCHAR(10)) FROM t;" }
+      - { id: cast_decimal, sql: "SELECT CAST(a AS DECIMAL(10, 2)) FROM t;" }
+      - { id: cast_date, sql: "SELECT CAST('2020-01-01' AS DATE) FROM t;" }
+      - { id: cast_timestamp_tz, sql: "SELECT CAST(a AS TIMESTAMP(3) WITH TIME ZONE) FROM t;" }
+      - { id: cast_null, sql: "SELECT CAST(NULL AS INTEGER) FROM t;" }
+      - { id: cast_interval, sql: "SELECT CAST(a AS INTERVAL DAY TO SECOND) FROM t;" }
+      - { id: cast_array, sql: "SELECT CAST(a AS INTEGER ARRAY[3]) FROM t;" }
+      - { id: cast_row, sql: "SELECT CAST(a AS ROW(x INTEGER, y VARCHAR(5))) FROM t;" }
+      - { id: cast_multiset, sql: "SELECT CAST(a AS INTEGER MULTISET) FROM t;" }
+      - { id: cast_domain, sql: "SELECT CAST(a AS my_domain) FROM t;" }
+  - id: b_cast_format
+    name: CAST ... FORMAT
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#cast-specification
+    tier: low
+    note: "FORMAT in CAST is a SQL:2023 addition; the SQL:2016 page lists CAST without FORMAT."
+    probes:
+      - { id: string_to_date, sql: "SELECT CAST('2020-01-31' AS DATE FORMAT 'YYYY-MM-DD') FROM t;" }
+      - { id: date_to_string, sql: "SELECT CAST(d AS VARCHAR(20) FORMAT 'YYYY-MM-DD') FROM t;" }
+  - id: b_cast_other_conversions
+    name: Other value specifications and conversions (TREAT, row/array/multiset constructors)
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#value-expression-primary
+    tier: medium
+    probes:
+      - { id: row_constructor, sql: "SELECT ROW(1, 'a') FROM t;" }
+      - { id: implicit_row, sql: "SELECT (1, 'a') FROM t;" }
+      - { id: array_constructor, sql: "SELECT ARRAY[1, 2, 3] FROM t;" }
+      - { id: array_query_constructor, sql: "SELECT ARRAY(SELECT a FROM s) FROM t;" }
+      - { id: array_element, sql: "SELECT arr[1] FROM t;" }
+      - { id: multiset_constructor, sql: "SELECT MULTISET[1, 2, 3] FROM t;" }
+      - { id: multiset_union, sql: "SELECT m1 MULTISET UNION DISTINCT m2 FROM t;" }
+      - { id: array_concat, sql: "SELECT arr1 || arr2 FROM t;" }
+  - id: b_current_user_functions
+    name: Session value functions
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#general-value-specification
+    tier: medium
+    probes:
+      - { id: current_user, sql: "SELECT CURRENT_USER, SESSION_USER, SYSTEM_USER, USER FROM t;" }
+      - { id: current_role, sql: "SELECT CURRENT_ROLE FROM t;" }
+      - { id: current_path, sql: "SELECT CURRENT_PATH FROM t;" }
+      - { id: current_catalog_schema, sql: "SELECT CURRENT_CATALOG, CURRENT_SCHEMA FROM t;" }

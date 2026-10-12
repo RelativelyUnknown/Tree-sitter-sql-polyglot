@@ -1,0 +1,62 @@
+dialect: base
+engine: ISO SQL
+version: "SQL:2016"
+source: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html
+
+statements:
+  - id: delete_searched
+    name: DELETE (searched)
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_14_9_delete_statement_searched
+    tier: high
+    probes:
+      - id: basic
+        sql: "DELETE FROM t;"
+      - id: where
+        sql: "DELETE FROM t WHERE c = 1;"
+      - id: alias
+        sql: "DELETE FROM t x WHERE x.c = 1;"
+      - id: alias_as
+        sql: "DELETE FROM t AS x WHERE x.c = 1;"
+      - id: for_portion_of
+        sql: "DELETE FROM t FOR PORTION OF p FROM DATE '2020-01-01' TO DATE '2021-01-01' WHERE c = 1;"
+        note: "<delete statement: searched> FOR PORTION OF (feature T181, application-time period tables)"
+      - id: for_portion_of_alias
+        sql: "DELETE FROM t FOR PORTION OF p FROM DATE '2020-01-01' TO DATE '2021-01-01' AS x WHERE x.c = 1;"
+      - id: where_subquery
+        sql: "DELETE FROM t WHERE c IN (SELECT c FROM s);"
+    examples: []
+
+  - id: merge
+    name: MERGE
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_14_12_merge_statement
+    tier: high
+    probes:
+      - id: matched_update
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET c = s.c;"
+      - id: matched_delete
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN DELETE;"
+      - id: not_matched_insert
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED THEN INSERT VALUES (s.id, s.c);"
+      - id: insert_column_list
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED THEN INSERT (id, c) VALUES (s.id, s.c);"
+      - id: insert_default_value
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED THEN INSERT (id, c) VALUES (s.id, DEFAULT);"
+      - id: insert_overriding_system
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED THEN INSERT (id, c) OVERRIDING SYSTEM VALUE VALUES (s.id, s.c);"
+      - id: insert_overriding_user
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED THEN INSERT (id, c) OVERRIDING USER VALUE VALUES (s.id, s.c);"
+      - id: target_alias
+        sql: "MERGE INTO t x USING s ON x.id = s.id WHEN MATCHED THEN DELETE;"
+      - id: target_alias_as
+        sql: "MERGE INTO t AS x USING s ON x.id = s.id WHEN MATCHED THEN DELETE;"
+      - id: using_subquery
+        sql: "MERGE INTO t USING (SELECT id, c FROM s) AS q ON t.id = q.id WHEN MATCHED THEN UPDATE SET c = q.c;"
+      - id: matched_and_condition
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED AND s.c > 0 THEN UPDATE SET c = s.c;"
+      - id: not_matched_and_condition
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED AND s.c > 0 THEN INSERT VALUES (s.id, s.c);"
+      - id: multiple_when_clauses
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED AND s.c = 0 THEN DELETE WHEN MATCHED THEN UPDATE SET c = s.c WHEN NOT MATCHED THEN INSERT VALUES (s.id, s.c);"
+      - id: update_multiple_set
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET c = s.c, d = s.d;"
+    examples: []

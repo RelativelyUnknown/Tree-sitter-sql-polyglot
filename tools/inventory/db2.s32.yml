@@ -1,0 +1,227 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "12.1"
+source: https://www.ibm.com/docs/en/db2/12.1.x?topic=reference-statements
+
+statements:
+  - id: describe_output
+    name: DESCRIBE OUTPUT
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-describe-output
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DESCRIBE OUTPUT stmt1 INTO sqlda1;"
+
+  - id: disconnect
+    name: DISCONNECT
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-disconnect
+    tier: medium
+    probes:
+      - id: server_name
+        sql: "DISCONNECT sample;"
+      - id: host_variable
+        sql: "DISCONNECT :hv;"
+      - id: current
+        sql: "DISCONNECT CURRENT;"
+      - id: all
+        sql: "DISCONNECT ALL;"
+      - id: all_sql
+        sql: "DISCONNECT ALL SQL;"
+    examples:
+      - "DISCONNECT ALL;"
+
+  - id: execute
+    name: EXECUTE
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-execute
+    tier: medium
+    probes:
+      - id: basic
+        sql: "EXECUTE s1;"
+      - id: into
+        sql: "EXECUTE s1 INTO v1, v2;"
+      - id: into_descriptor
+        sql: "EXECUTE s1 INTO DESCRIPTOR d1;"
+      - id: using_variables
+        sql: "EXECUTE s1 USING :a, :b;"
+      - id: using_expressions
+        sql: "EXECUTE s1 USING 1, 'x';"
+        note: Expressions other than host variables are allowed only inside compound SQL (compiled)
+      - id: using_descriptor
+        sql: "EXECUTE s1 USING DESCRIPTOR d2;"
+      - id: into_using
+        sql: "EXECUTE s1 INTO v1 USING :a;"
+      - id: for_rows
+        sql: "EXECUTE s1 USING :a FOR 10 ROWS;"
+
+  - id: execute_immediate
+    name: EXECUTE IMMEDIATE
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-execute-immediate
+    tier: medium
+    probes:
+      - id: host_variable
+        sql: "EXECUTE IMMEDIATE :qstring;"
+      - id: string_expression
+        sql: "EXECUTE IMMEDIATE 'DELETE FROM t';"
+      - id: concat_expression
+        sql: "EXECUTE IMMEDIATE 'DROP TABLE ' || tabname;"
+
+  - id: explain
+    name: EXPLAIN
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-explain
+    tier: medium
+    probes:
+      - id: plan_selection
+        sql: "EXPLAIN PLAN SELECTION FOR SELECT c1 FROM t1;"
+      - id: all
+        sql: "EXPLAIN ALL FOR SELECT c1 FROM t1;"
+      - id: plan
+        sql: "EXPLAIN PLAN FOR SELECT c1 FROM t1;"
+      - id: for_snapshot
+        sql: "EXPLAIN FOR SNAPSHOT FOR SELECT c1 FROM t1;"
+      - id: with_snapshot
+        sql: "EXPLAIN PLAN SELECTION WITH SNAPSHOT FOR SELECT c1 FROM t1;"
+      - id: with_reopt_once
+        sql: "EXPLAIN ALL WITH REOPT ONCE FOR SELECT c1 FROM t1 WHERE c1 = 1;"
+      - id: set_queryno
+        sql: "EXPLAIN PLAN SET QUERYNO = 13 FOR SELECT c1 FROM t1;"
+      - id: set_querytag
+        sql: "EXPLAIN PLAN SELECTION SET QUERYTAG = 'TEST13' FOR SELECT c1 FROM t1;"
+      - id: queryno_and_querytag
+        sql: "EXPLAIN PLAN SELECTION SET QUERYNO = 13 SET QUERYTAG = 'TEST13' FOR SELECT c1 FROM t1;"
+      - id: explain_dml
+        sql: "EXPLAIN PLAN FOR INSERT INTO t1 VALUES (1);"
+      - id: xquery
+        sql: "EXPLAIN PLAN SELECTION FOR XQUERY 'db2-fn:xmlcolumn (\"BUSINESS.CUSTOMER.INFO\")';"
+    examples:
+      - "EXPLAIN PLAN SET QUERYNO = 13 FOR SELECT C1 FROM T1;"
+      - "EXPLAIN PLAN SELECTION SET QUERYTAG = 'TEST13' FOR SELECT C1 FROM T1;"
+      - "EXPLAIN PLAN SELECTION SET QUERYNO = 13 SET QUERYTAG = 'TEST13' FOR SELECT C1 FROM T1;"
+
+  - id: free_locator
+    name: FREE LOCATOR
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-free-locator
+    tier: medium
+    probes:
+      - id: single
+        sql: "FREE LOCATOR :loc1;"
+      - id: list
+        sql: "FREE LOCATOR :loc1, :loc2, :loc3;"
+
+  - id: grant_database_authorities
+    name: GRANT (database authorities)
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-grant-database-authorities
+    tier: medium
+    probes:
+      - id: connect_user
+        sql: "GRANT CONNECT ON DATABASE TO USER winken;"
+      - id: multiple_authorities
+        sql: "GRANT BINDADD, CREATETAB, IMPLICIT_SCHEMA ON DATABASE TO GROUP g1;"
+      - id: role_grantee
+        sql: "GRANT LOAD ON DATABASE TO ROLE r1;"
+      - id: public
+        sql: "GRANT CONNECT ON DATABASE TO PUBLIC;"
+      - id: dbadm
+        sql: "GRANT DBADM ON DATABASE TO USER u1;"
+      - id: dbadm_with_dataaccess
+        sql: "GRANT DBADM WITH DATAACCESS WITH ACCESSCTRL ON DATABASE TO USER u1;"
+      - id: dbadm_without
+        sql: "GRANT DBADM WITHOUT DATAACCESS WITHOUT ACCESSCTRL ON DATABASE TO USER u1;"
+      - id: admin_authorities
+        sql: "GRANT SECADM, SQLADM, WLMADM, EXPLAIN, QUIESCE_CONNECT ON DATABASE TO USER u1;"
+      - id: routine_authorities
+        sql: "GRANT CREATE_EXTERNAL_ROUTINE, CREATE_NOT_FENCED_ROUTINE, CREATE_SECURE_OBJECT ON DATABASE TO USER u1;"
+      - id: access_control
+        sql: "GRANT ACCESSCTRL, DATAACCESS ON DATABASE TO USER u1;"
+      - id: multiple_grantees
+        sql: "GRANT CONNECT ON DATABASE TO USER u1, GROUP g1, ROLE r1;"
+    examples:
+      - "GRANT CONNECT ON DATABASE TO USER WINKEN, USER BLINKEN, USER NOD;"
+      - "GRANT BINDADD ON DATABASE TO GROUP D024;"
+      - "GRANT SECADM ON DATABASE TO USER Walid;"
+
+  - id: grant_role
+    name: GRANT (role)
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-grant-role
+    tier: medium
+    probes:
+      - id: basic
+        sql: "GRANT ROLE r1 TO USER u1;"
+      - id: role_list
+        sql: "GRANT ROLE r1, r2 TO USER u1;"
+      - id: to_group
+        sql: "GRANT ROLE r1 TO GROUP g1;"
+      - id: to_role
+        sql: "GRANT ROLE r1 TO ROLE r2;"
+      - id: to_public
+        sql: "GRANT ROLE r1 TO PUBLIC;"
+      - id: with_admin_option
+        sql: "GRANT ROLE r1 TO USER u1 WITH ADMIN OPTION;"
+      - id: mixed_grantees
+        sql: "GRANT ROLE r1 TO USER u1, GROUP g1, u2;"
+    examples:
+      - "GRANT ROLE INTERN TO ROLE DOCTOR;"
+      - "GRANT ROLE INTERN TO PUBLIC;"
+      - "GRANT ROLE SPECIALIST TO USER BOB, GROUP TORONTO;"
+
+  - id: grant_routine_privileges
+    name: GRANT (routine privileges)
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-grant-routine-privileges
+    tier: medium
+    probes:
+      - id: function
+        sql: "GRANT EXECUTE ON FUNCTION f TO u1;"
+      - id: function_schema_all
+        sql: "GRANT EXECUTE ON FUNCTION s.* TO u1;"
+      - id: function_with_types
+        sql: "GRANT EXECUTE ON FUNCTION s.f (INTEGER, CHAR(10)) TO u1;"
+      - id: specific_function
+        sql: "GRANT EXECUTE ON SPECIFIC FUNCTION s.f1 TO u1;"
+      - id: method
+        sql: "GRANT EXECUTE ON METHOD m FOR typ TO u1;"
+      - id: method_all
+        sql: "GRANT EXECUTE ON METHOD * FOR s.typ TO u1;"
+      - id: specific_method
+        sql: "GRANT EXECUTE ON SPECIFIC METHOD m1 TO u1;"
+      - id: procedure
+        sql: "GRANT EXECUTE ON PROCEDURE p TO PUBLIC;"
+      - id: procedure_schema_all
+        sql: "GRANT EXECUTE ON PROCEDURE s.* TO u1;"
+      - id: specific_procedure
+        sql: "GRANT EXECUTE ON SPECIFIC PROCEDURE p1 TO u1;"
+      - id: with_grant_option
+        sql: "GRANT EXECUTE ON PROCEDURE p TO USER u1, GROUP g1, ROLE r1 WITH GRANT OPTION;"
+    examples:
+      - "GRANT EXECUTE ON FUNCTION CALC_SALARY TO JONES;"
+      - "GRANT EXECUTE ON PROCEDURE VACATION_ACCR TO PUBLIC;"
+      - "GRANT EXECUTE ON SPECIFIC FUNCTION DEPT85_TOT TO ADMIN_A WITH GRANT OPTION;"
+
+  - id: grant_schema_privileges_and_authorities
+    name: GRANT (schema privileges and authorities)
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-grant-schema-privileges-authorities
+    tier: medium
+    probes:
+      - id: single_privilege
+        sql: "GRANT CREATEIN ON SCHEMA s TO u1;"
+      - id: privilege_list
+        sql: "GRANT CREATEIN, DROPIN ON SCHEMA s TO u1;"
+      - id: all_privileges
+        sql: "GRANT ALL PRIVILEGES ON SCHEMA s TO u1;"
+      - id: all
+        sql: "GRANT ALL ON SCHEMA s TO u1;"
+      - id: dml_privileges
+        sql: "GRANT SELECTIN, INSERTIN, UPDATEIN, DELETEIN, ALTERIN, EXECUTEIN ON SCHEMA s TO u1;"
+      - id: authorities
+        sql: "GRANT ACCESSCTRL, DATAACCESS, SCHEMAADM, LOAD ON SCHEMA s TO u1;"
+      - id: logical_backup_restore
+        sql: "GRANT LOGICAL BACKUP AND RESTORE OF RCAC PROTECTED DATA ON SCHEMA s TO u1;"
+      - id: current_schema
+        sql: "GRANT SELECTIN ON CURRENT SCHEMA TO u1;"
+      - id: grantee_kinds
+        sql: "GRANT SELECTIN ON SCHEMA s TO USER u1, GROUP g1, ROLE r1;"
+      - id: public
+        sql: "GRANT SELECTIN ON SCHEMA s TO PUBLIC;"
+      - id: with_grant_option
+        sql: "GRANT SELECTIN ON SCHEMA s TO u1 WITH GRANT OPTION;"
+    examples:
+      - "GRANT CREATEIN ON SCHEMA CORPDATA TO JSINGLETON;"
+      - "GRANT CREATEIN, DROPIN ON SCHEMA CORPDATA TO IHAKES;"

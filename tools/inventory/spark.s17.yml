@@ -1,0 +1,65 @@
+dialect: spark
+engine: Apache Spark SQL
+version: "4.x (docs/latest)"
+source: https://spark.apache.org/docs/latest/sql-ref-syntax.html
+
+statements:
+  - id: window_function
+    name: Window Function
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-window.html
+    tier: high
+    probes:
+      - { id: ranking_over_partition_order, sql: "SELECT name, RANK() OVER (PARTITION BY dept ORDER BY salary) AS rank FROM employees;" }
+      - { id: row_number, sql: "SELECT ROW_NUMBER() OVER (PARTITION BY dept ORDER BY salary) FROM employees;" }
+      - { id: dense_rank, sql: "SELECT DENSE_RANK() OVER (ORDER BY salary) FROM employees;" }
+      - { id: percent_rank, sql: "SELECT PERCENT_RANK() OVER (ORDER BY salary) FROM employees;" }
+      - { id: ntile, sql: "SELECT NTILE(4) OVER (ORDER BY salary) FROM employees;" }
+      - { id: cume_dist, sql: "SELECT CUME_DIST() OVER (PARTITION BY dept ORDER BY age) FROM employees;" }
+      - { id: lag_lead, sql: "SELECT LAG(salary, 1) OVER (ORDER BY age), LEAD(salary, 1) OVER (ORDER BY age) FROM employees;" }
+      - { id: nth_value, sql: "SELECT NTH_VALUE(salary, 2) OVER (ORDER BY age) FROM employees;" }
+      - { id: first_last_value, sql: "SELECT FIRST_VALUE(salary) OVER (ORDER BY age), LAST_VALUE(salary) OVER (ORDER BY age) FROM employees;" }
+      - { id: aggregate_over, sql: "SELECT SUM(salary) OVER (PARTITION BY dept) FROM employees;" }
+      - { id: aggregate_over_empty, sql: "SELECT AVG(salary) OVER () FROM employees;" }
+      - { id: partition_multiple_cols, sql: "SELECT MAX(salary) OVER (PARTITION BY dept, age ORDER BY name) FROM employees;" }
+      - { id: distribute_by, sql: "SELECT SUM(salary) OVER (DISTRIBUTE BY dept ORDER BY age) FROM employees;" }
+      - { id: sort_by, sql: "SELECT SUM(salary) OVER (PARTITION BY dept SORT BY age) FROM employees;" }
+      - { id: distribute_sort_by, sql: "SELECT SUM(salary) OVER (DISTRIBUTE BY dept SORT BY age) FROM employees;" }
+      - { id: order_desc, sql: "SELECT RANK() OVER (ORDER BY salary DESC) FROM employees;" }
+      - { id: order_asc, sql: "SELECT RANK() OVER (ORDER BY salary ASC) FROM employees;" }
+      - { id: order_nulls_first, sql: "SELECT RANK() OVER (ORDER BY salary NULLS FIRST) FROM employees;" }
+      - { id: order_nulls_last, sql: "SELECT RANK() OVER (ORDER BY salary DESC NULLS LAST) FROM employees;" }
+      - { id: order_multiple_keys, sql: "SELECT RANK() OVER (ORDER BY dept ASC, salary DESC) FROM employees;" }
+      - { id: ignore_nulls, sql: "SELECT LAG(salary) IGNORE NULLS OVER (ORDER BY age) FROM employees;" }
+      - { id: respect_nulls, sql: "SELECT FIRST_VALUE(salary) RESPECT NULLS OVER (ORDER BY age) FROM employees;" }
+      - { id: frame_rows_between_unbounded, sql: "SELECT SUM(salary) OVER (PARTITION BY dept ORDER BY salary ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM employees;" }
+      - { id: frame_range_between_unbounded, sql: "SELECT SUM(age) OVER (PARTITION BY dept ORDER BY age RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM employees;" }
+      - { id: frame_rows_offset_preceding_following, sql: "SELECT AVG(salary) OVER (ORDER BY age ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM employees;" }
+      - { id: frame_range_offset, sql: "SELECT SUM(salary) OVER (ORDER BY age RANGE BETWEEN 5 PRECEDING AND 5 FOLLOWING) FROM employees;" }
+      - { id: frame_current_row_to_unbounded_following, sql: "SELECT SUM(salary) OVER (ORDER BY age ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM employees;" }
+      - { id: frame_unbounded_both, sql: "SELECT SUM(salary) OVER (ORDER BY age ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM employees;" }
+      - { id: frame_offset_following_to_following, sql: "SELECT SUM(salary) OVER (ORDER BY age ROWS BETWEEN 1 FOLLOWING AND 3 FOLLOWING) FROM employees;" }
+      - { id: frame_start_only_unbounded_preceding, sql: "SELECT SUM(salary) OVER (ORDER BY age ROWS UNBOUNDED PRECEDING) FROM employees;" }
+      - { id: frame_start_only_offset_preceding, sql: "SELECT SUM(salary) OVER (ORDER BY age ROWS 2 PRECEDING) FROM employees;" }
+      - { id: frame_start_only_current_row, sql: "SELECT SUM(salary) OVER (ORDER BY age RANGE CURRENT ROW) FROM employees;" }
+    examples:
+      - "SELECT name, dept, salary, RANK() OVER (PARTITION BY dept ORDER BY salary) AS rank FROM employees;"
+      - "SELECT name, dept, salary, DENSE_RANK() OVER (PARTITION BY dept ORDER BY salary ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS dense_rank FROM employees;"
+      - "SELECT name, dept, age, CUME_DIST() OVER (PARTITION BY dept ORDER BY age RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS cume_dist FROM employees;"
+
+  - id: case_clause
+    name: CASE Clause
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-select-case.html
+    tier: high
+    probes:
+      - { id: searched_case, sql: "SELECT CASE WHEN id > 200 THEN 'bigger' END FROM person;" }
+      - { id: searched_case_else, sql: "SELECT CASE WHEN id > 200 THEN 'bigger' ELSE 'small' END FROM person;" }
+      - { id: searched_case_multiple_when, sql: "SELECT CASE WHEN id > 300 THEN 'big' WHEN id > 100 THEN 'mid' ELSE 'small' END FROM person;" }
+      - { id: simple_case, sql: "SELECT CASE id WHEN 100 THEN 'a' END FROM person;" }
+      - { id: simple_case_else, sql: "SELECT CASE id WHEN 100 THEN 'a' WHEN 200 THEN 'b' ELSE 'c' END FROM person;" }
+      - { id: when_combined_conditions, sql: "SELECT CASE WHEN id > 100 AND age < 50 OR name = 'Dan' THEN 1 ELSE 0 END FROM person;" }
+      - { id: case_in_where, sql: "SELECT * FROM person WHERE CASE 1 = 1 WHEN 100 THEN 'big' ELSE 'small' END = 'small';" }
+      - { id: nested_case, sql: "SELECT CASE WHEN id > 100 THEN CASE WHEN age > 40 THEN 'a' ELSE 'b' END ELSE 'c' END FROM person;" }
+    examples:
+      - "SELECT id, CASE WHEN id > 200 THEN 'bigger' ELSE 'small' END FROM person;"
+      - "SELECT id, CASE id WHEN 100 then 'bigger' WHEN id > 300 THEN '300' ELSE 'small' END FROM person;"
+      - "SELECT * FROM person WHERE CASE 1 = 1 WHEN 100 THEN 'big' WHEN 200 THEN 'bigger' WHEN 300 THEN 'biggest' ELSE 'small' END = 'small';"

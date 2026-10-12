@@ -1,0 +1,345 @@
+dialect: oracle
+engine: Oracle AI Database
+version: "26ai"
+source: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/toc.htm
+
+statements:
+  - id: flashback_table
+    name: FLASHBACK TABLE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/FLASHBACK-TABLE.html
+    tier: medium
+    probes:
+      - id: to_scn
+        sql: "FLASHBACK TABLE t TO SCN 1234567;"
+      - id: to_timestamp
+        sql: "FLASHBACK TABLE t TO TIMESTAMP (SYSTIMESTAMP - INTERVAL '1' MINUTE);"
+      - id: to_restore_point
+        sql: "FLASHBACK TABLE t TO RESTORE POINT rp;"
+      - id: to_before_drop
+        sql: "FLASHBACK TABLE t TO BEFORE DROP;"
+      - id: before_drop_rename
+        sql: "FLASHBACK TABLE t TO BEFORE DROP RENAME TO t_old;"
+      - id: multiple_tables_schema_qualified
+        sql: "FLASHBACK TABLE s.t1, s.t2 TO SCN 1234567;"
+      - id: enable_triggers
+        sql: "FLASHBACK TABLE t TO SCN 1234567 ENABLE TRIGGERS;"
+      - id: disable_triggers
+        sql: "FLASHBACK TABLE t TO TIMESTAMP SYSTIMESTAMP - 1 DISABLE TRIGGERS;"
+    examples:
+      - "FLASHBACK TABLE employees_test TO TIMESTAMP (SYSTIMESTAMP - INTERVAL '1' minute);"
+      - "FLASHBACK TABLE print_media TO BEFORE DROP;"
+      - "FLASHBACK TABLE print_media TO BEFORE DROP RENAME TO print_media_old;"
+
+  - id: purge
+    name: PURGE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/PURGE.html
+    tier: medium
+    probes:
+      - id: table
+        sql: "PURGE TABLE t;"
+      - id: index
+        sql: "PURGE INDEX idx;"
+      - id: tablespace
+        sql: "PURGE TABLESPACE ts;"
+      - id: tablespace_user
+        sql: "PURGE TABLESPACE ts USER u;"
+      - id: tablespace_set
+        sql: "PURGE TABLESPACE SET tss;"
+      - id: tablespace_set_user
+        sql: "PURGE TABLESPACE SET tss USER u;"
+      - id: recyclebin
+        sql: "PURGE RECYCLEBIN;"
+      - id: dba_recyclebin
+        sql: "PURGE DBA_RECYCLEBIN;"
+    examples:
+      - "PURGE TABLE test;"
+      - "PURGE TABLE RB$$33750$TABLE$0;"
+      - "PURGE RECYCLEBIN;"
+
+  - id: rename
+    name: RENAME
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/RENAME.html
+    tier: medium
+    probes:
+      - id: rename_object
+        sql: "RENAME t TO t2;"
+    examples:
+      - "RENAME departments_new TO emp_departments;"
+      - "RENAME temporary TO job_history;"
+
+  - id: set_role
+    name: SET ROLE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/SET-ROLE.html
+    tier: medium
+    probes:
+      - id: single_role
+        sql: "SET ROLE r;"
+      - id: role_identified_by
+        sql: "SET ROLE r IDENTIFIED BY pw;"
+      - id: multiple_roles
+        sql: "SET ROLE r1, r2 IDENTIFIED BY pw;"
+      - id: all
+        sql: "SET ROLE ALL;"
+      - id: all_except
+        sql: "SET ROLE ALL EXCEPT r1, r2;"
+      - id: none
+        sql: "SET ROLE NONE;"
+    examples:
+      - "SET ROLE dw_manager IDENTIFIED BY password;"
+      - "SET ROLE ALL;"
+      - "SET ROLE ALL EXCEPT dw_manager;"
+
+  - id: administer_key_management
+    name: ADMINISTER KEY MANAGEMENT
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ADMINISTER-KEY-MANAGEMENT.html
+    tier: low
+    probes:
+      - id: create_keystore
+        sql: "ADMINISTER KEY MANAGEMENT CREATE KEYSTORE '/etc/ORACLE/WALLETS/orcl' IDENTIFIED BY pw;"
+      - id: open_keystore
+        sql: "ADMINISTER KEY MANAGEMENT SET KEYSTORE OPEN IDENTIFIED BY pw;"
+
+  - id: alter_analytic_view
+    name: ALTER ANALYTIC VIEW
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-ANALYTIC-VIEW.html
+    tier: low
+    probes:
+      - id: rename
+        sql: "ALTER ANALYTIC VIEW IF EXISTS s.av RENAME TO av2;"
+      - id: compile
+        sql: "ALTER ANALYTIC VIEW av COMPILE;"
+
+  - id: alter_assertion
+    name: ALTER ASSERTION
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/alter-assertion.html
+    tier: low
+    probes:
+      - id: enable_novalidate
+        sql: "ALTER ASSERTION IF EXISTS o.a ENABLE NOVALIDATE;"
+      - id: disable
+        sql: "ALTER ASSERTION a DISABLE;"
+
+  - id: alter_attribute_dimension
+    name: ALTER ATTRIBUTE DIMENSION
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-ATTRIBUTE-DIMENSION.html
+    tier: low
+    probes:
+      - id: rename
+        sql: "ALTER ATTRIBUTE DIMENSION IF EXISTS s.ad RENAME TO ad2;"
+      - id: compile
+        sql: "ALTER ATTRIBUTE DIMENSION ad COMPILE;"
+
+  - id: alter_audit_policy_unified
+    name: ALTER AUDIT POLICY (Unified Auditing)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-AUDIT-POLICY-Unified-Auditing.html
+    tier: low
+    probes:
+      - id: add_privileges
+        sql: "ALTER AUDIT POLICY p ADD PRIVILEGES CREATE ANY TABLE;"
+      - id: drop_actions_toplevel
+        sql: "ALTER AUDIT POLICY p DROP ACTIONS DELETE ON hr.employees ONLY TOPLEVEL;"
+      - id: condition
+        sql: "ALTER AUDIT POLICY p CONDITION 'UID != 5' EVALUATE PER STATEMENT;"
+      - id: condition_drop
+        sql: "ALTER AUDIT POLICY p CONDITION DROP;"
+
+  - id: alter_cluster
+    name: ALTER CLUSTER
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-CLUSTER.html
+    tier: low
+    probes:
+      - id: size
+        sql: "ALTER CLUSTER IF EXISTS s.c SIZE 512;"
+      - id: allocate_extent
+        sql: "ALTER CLUSTER c ALLOCATE EXTENT (SIZE 5M);"
+      - id: cache_parallel
+        sql: "ALTER CLUSTER c CACHE PARALLEL 4;"
+
+  - id: alter_database_dictionary
+    name: ALTER DATABASE DICTIONARY
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-DATABASE-DICTIONARY.html
+    tier: low
+    probes:
+      - id: encrypt_credentials
+        sql: "ALTER DATABASE DICTIONARY ENCRYPT CREDENTIALS;"
+      - id: rekey_credentials
+        sql: "ALTER DATABASE DICTIONARY REKEY CREDENTIALS;"
+      - id: delete_credentials_key
+        sql: "ALTER DATABASE DICTIONARY DELETE CREDENTIALS KEY;"
+
+  - id: alter_dimension
+    name: ALTER DIMENSION
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-DIMENSION.html
+    tier: low
+    probes:
+      - id: add_level
+        sql: "ALTER DIMENSION d ADD LEVEL l IS t.c;"
+      - id: drop_attribute
+        sql: "ALTER DIMENSION d DROP ATTRIBUTE a;"
+      - id: compile
+        sql: "ALTER DIMENSION d COMPILE;"
+
+  - id: alter_directive_validate
+    name: ALTER DIRECTIVE (VALIDATE)
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/alter-directive-validate.html
+    tier: low
+    probes:
+      - id: enable
+        sql: "ALTER DIRECTIVE d ENABLE;"
+      - id: disable
+        sql: "ALTER DIRECTIVE d DISABLE;"
+
+  - id: alter_diskgroup
+    name: ALTER DISKGROUP
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-DISKGROUP.html
+    tier: low
+    probes:
+      - id: add_disk
+        sql: "ALTER DISKGROUP dg ADD DISK '/devices/diska1';"
+      - id: undrop_disks_all
+        sql: "ALTER DISKGROUP ALL UNDROP DISKS;"
+
+  - id: alter_end_user
+    name: ALTER END USER
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/alter-end-user.html
+    tier: low
+    probes:
+      - id: identified_by_replace
+        sql: "ALTER END USER IF EXISTS eu IDENTIFIED BY newpw REPLACE oldpw;"
+      - id: account_lock
+        sql: "ALTER END USER eu ACCOUNT LOCK;"
+
+  - id: alter_flashback_archive
+    name: ALTER FLASHBACK ARCHIVE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-FLASHBACK-ARCHIVE.html
+    tier: low
+    probes:
+      - id: set_default
+        sql: "ALTER FLASHBACK ARCHIVE fla SET DEFAULT;"
+      - id: modify_retention
+        sql: "ALTER FLASHBACK ARCHIVE fla MODIFY RETENTION 2 YEAR;"
+      - id: purge_all
+        sql: "ALTER FLASHBACK ARCHIVE fla PURGE ALL;"
+
+  - id: alter_hierarchy
+    name: ALTER HIERARCHY
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-HIERARCHY.html
+    tier: low
+    probes:
+      - id: rename
+        sql: "ALTER HIERARCHY IF EXISTS s.h RENAME TO h2;"
+      - id: compile
+        sql: "ALTER HIERARCHY h COMPILE;"
+
+  - id: alter_indextype
+    name: ALTER INDEXTYPE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-INDEXTYPE.html
+    tier: low
+    probes:
+      - id: add_operator
+        sql: "ALTER INDEXTYPE it ADD op(NUMBER, NUMBER);"
+      - id: compile
+        sql: "ALTER INDEXTYPE it COMPILE;"
+
+  - id: alter_inmemory_join_group
+    name: ALTER INMEMORY JOIN GROUP
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-INMEMORY-JOIN-GROUP.html
+    tier: low
+    probes:
+      - id: add
+        sql: "ALTER INMEMORY JOIN GROUP IF EXISTS s.jg ADD (t(c));"
+      - id: remove
+        sql: "ALTER INMEMORY JOIN GROUP jg REMOVE (t(c));"
+
+  - id: alter_java
+    name: ALTER JAVA
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-JAVA.html
+    tier: low
+    probes:
+      - id: source_compile
+        sql: "ALTER JAVA SOURCE s COMPILE;"
+      - id: class_resolver_resolve
+        sql: |-
+          ALTER JAVA CLASS "Agent" RESOLVER (("/usr/bin/bfile_dir/*" pm)(* public)) RESOLVE;
+
+  - id: alter_library
+    name: ALTER LIBRARY
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-LIBRARY.html
+    tier: low
+    probes:
+      - id: compile
+        sql: "ALTER LIBRARY IF EXISTS s.lib COMPILE;"
+      - id: editionable
+        sql: "ALTER LIBRARY lib EDITIONABLE;"
+
+  - id: alter_lockdown_profile
+    name: ALTER LOCKDOWN PROFILE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-LOCKDOWN-PROFILE.html
+    tier: low
+    probes:
+      - id: disable_feature
+        sql: "ALTER LOCKDOWN PROFILE hr_prof DISABLE FEATURE = ('NETWORK_ACCESS');"
+      - id: enable_option_all
+        sql: "ALTER LOCKDOWN PROFILE hr_prof ENABLE OPTION ALL;"
+      - id: disable_statement
+        sql: "ALTER LOCKDOWN PROFILE hr_prof DISABLE STATEMENT = ('ALTER SESSION') CLAUSE = ('SET') OPTION = ('COMMIT_WAIT', 'CURSOR_SHARING');"
+
+  - id: alter_materialized_zonemap
+    name: ALTER MATERIALIZED ZONEMAP
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-MATERIALIZED-ZONEMAP.html
+    tier: low
+    probes:
+      - id: attributes
+        sql: "ALTER MATERIALIZED ZONEMAP IF EXISTS s.zm PCTFREE 20 PCTUSED 50 NOCACHE;"
+      - id: refresh
+        sql: "ALTER MATERIALIZED ZONEMAP zm REFRESH FAST ON COMMIT;"
+      - id: disable_pruning
+        sql: "ALTER MATERIALIZED ZONEMAP zm DISABLE PRUNING;"
+      - id: rebuild
+        sql: "ALTER MATERIALIZED ZONEMAP zm REBUILD;"
+
+  - id: alter_mle_env
+    name: ALTER MLE ENV
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/alter-mle-env.html
+    tier: low
+    probes:
+      - id: add_imports
+        sql: "ALTER MLE ENV IF EXISTS s.env ADD IMPORTS ('imp' MODULE s.m);"
+      - id: drop_imports
+        sql: "ALTER MLE ENV env DROP IMPORTS ('imp');"
+      - id: set_language_options
+        sql: "ALTER MLE ENV env SET LANGUAGE OPTIONS 'js.strict=true';"
+      - id: compile
+        sql: "ALTER MLE ENV env COMPILE;"
+
+  - id: alter_mle_module
+    name: ALTER MLE MODULE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/alter-mle-module.html
+    tier: low
+    probes:
+      - id: set_metadata
+        sql: "ALTER MLE MODULE IF EXISTS s.m SET METADATA USING CLOB (SELECT 'v1.0');"
+
+  - id: alter_operator
+    name: ALTER OPERATOR
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-OPERATOR.html
+    tier: low
+    probes:
+      - id: compile
+        sql: "ALTER OPERATOR eq_op COMPILE;"
+      - id: add_binding
+        sql: "ALTER OPERATOR eq_op ADD BINDING (NUMBER, NUMBER) RETURN (NUMBER) USING f;"
+      - id: drop_binding
+        sql: "ALTER OPERATOR eq_op DROP BINDING (NUMBER, NUMBER);"
+
+  - id: alter_outline
+    name: ALTER OUTLINE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/ALTER-OUTLINE.html
+    tier: low
+    probes:
+      - id: rebuild
+        sql: "ALTER OUTLINE o REBUILD;"
+      - id: rename_private
+        sql: "ALTER OUTLINE PRIVATE o RENAME TO o2;"
+      - id: change_category
+        sql: "ALTER OUTLINE PUBLIC o CHANGE CATEGORY TO cat;"

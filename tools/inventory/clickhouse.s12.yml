@@ -1,0 +1,47 @@
+dialect: clickhouse
+engine: ClickHouse
+version: "current docs (2026)"
+source: https://clickhouse.com/docs/sql-reference/statements/
+
+statements:
+  - id: alter_table_setting
+    name: ALTER TABLE ... MODIFY/RESET SETTING
+    doc: https://clickhouse.com/docs/sql-reference/statements/alter/setting
+    tier: high
+    probes:
+      - id: modify_setting
+        sql: "ALTER TABLE t MODIFY SETTING max_part_loading_threads=8;"
+      - id: modify_setting_multiple
+        sql: "ALTER TABLE t MODIFY SETTING max_part_loading_threads=8, max_parts_in_total=50000;"
+      - id: modify_setting_qualified
+        sql: "ALTER TABLE db.t MODIFY SETTING max_part_loading_threads=8;"
+      - id: modify_setting_on_cluster
+        sql: "ALTER TABLE db.t ON CLUSTER c MODIFY SETTING max_part_loading_threads=8;"
+      - id: reset_setting
+        sql: "ALTER TABLE t RESET SETTING max_part_loading_threads;"
+      - id: reset_setting_multiple
+        sql: "ALTER TABLE t RESET SETTING max_part_loading_threads, max_parts_in_total;"
+      - id: reset_setting_on_cluster
+        sql: "ALTER TABLE db.t ON CLUSTER c RESET SETTING max_part_loading_threads;"
+    examples:
+      - "ALTER TABLE example_table MODIFY SETTING max_part_loading_threads=8, max_parts_in_total=50000;"
+      - "ALTER TABLE example_table RESET SETTING max_part_loading_threads;"
+
+  - id: alter_table_order_by
+    name: ALTER TABLE ... MODIFY ORDER BY
+    doc: https://clickhouse.com/docs/sql-reference/statements/alter/order-by
+    tier: high
+    probes:
+      - id: modify_order_by
+        sql: "ALTER TABLE t MODIFY ORDER BY c;"
+      - id: modify_order_by_tuple
+        sql: "ALTER TABLE t MODIFY ORDER BY (a, b);"
+      - id: modify_order_by_expression
+        sql: "ALTER TABLE t MODIFY ORDER BY (a, toDate(b));"
+      - id: modify_order_by_qualified
+        sql: "ALTER TABLE db.t MODIFY ORDER BY c;"
+      - id: modify_order_by_on_cluster
+        sql: "ALTER TABLE db.t ON CLUSTER c MODIFY ORDER BY c;"
+      - id: modify_order_by_add_column
+        sql: "ALTER TABLE t ADD COLUMN d UInt32, MODIFY ORDER BY (a, d);"
+        note: Doc says new sorting key may use columns added by ADD COLUMN in the same ALTER query.

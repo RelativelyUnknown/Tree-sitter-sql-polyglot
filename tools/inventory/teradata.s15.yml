@@ -1,0 +1,123 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: update_upsert
+    name: UPDATE (Upsert Form)
+    doc: https://docs.teradata.com/reader/4_jiz05LXsLWBbfvKTLneg/xstuks8N55pMONzC4sYXlQ
+    tier: high
+    probes:
+      - id: basic_values
+        sql: "UPDATE t SET c = c + 1 WHERE k = 1 ELSE INSERT INTO t VALUES (1, 1);"
+      - id: abbreviations
+        sql: "UPD t SET c = 1 WHERE k = 1 ELSE INS INTO t VALUES (1, 1);"
+      - id: insert_without_into
+        sql: "UPDATE t SET c = 1 WHERE k = 1 ELSE INSERT t (1, 1);"
+      - id: values_keyword_omitted
+        sql: "UPDATE t SET c = 1 WHERE k = 1 ELSE INSERT INTO t (1, 1);"
+      - id: correlation_name
+        sql: "UPDATE t AS a SET c = 1 WHERE a.k = 1 ELSE INSERT INTO t VALUES (1, 1);"
+      - id: correlation_name_no_as
+        sql: "UPDATE t a SET c = 1 WHERE a.k = 1 ELSE INSERT INTO t VALUES (1, 1);"
+      - id: multiple_set_specs
+        sql: "UPDATE t SET c = 1, d = 'x' WHERE k = 1 ELSE INSERT INTO t VALUES (1, 1, 'x');"
+      - id: insert_column_list
+        sql: "UPDATE t SET c = 1 WHERE k = 1 ELSE INSERT INTO t (k, c) VALUES (1, 1);"
+      - id: insert_column_list_no_values
+        sql: "UPDATE t SET c = 1 WHERE k = 1 ELSE INSERT INTO t (k, c) (1, 1);"
+      - id: insert_default_values
+        sql: "UPDATE t SET c = 1 WHERE k = 1 ELSE INSERT INTO t DEFAULT VALUES;"
+      - id: with_isolated_loading
+        sql: "UPDATE WITH ISOLATED LOADING t SET c = 1 WHERE k = 1 ELSE INSERT INTO t VALUES (1, 1);"
+      - id: with_no_concurrent_isolated_loading
+        sql: "UPDATE WITH NO CONCURRENT ISOLATED LOADING t SET c = 1 WHERE k = 1 ELSE INSERT INTO t VALUES (1, 1);"
+      - id: mutator_set_clause
+        sql: "UPDATE t SET c.mutator_m = 1 WHERE k = 1 ELSE INSERT INTO t VALUES (1, NULL);"
+      - id: default_function_in_set
+        sql: "UPDATE t SET c = DEFAULT(c) WHERE k = 1 ELSE INSERT INTO t VALUES (1, 1);"
+      - id: terminating_semicolon_none
+        sql: "UPDATE t SET c = 1 WHERE k = 1 ELSE INSERT INTO t VALUES (1, 1)"
+    examples:
+      - |-
+        UPDATE sales
+        SET itemcount = item_count + 1
+        WHERE (item_nbr = 10
+        AND    sale_date = '05/30/2000')
+        ELSE INSERT
+        INTO sales (10, '05/30/2000', 1);
+
+  - id: begin_end
+    name: BEGIN ... END (compound statement)
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/rGLXSMB7uVJCKJimzxmAAg
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE PROCEDURE p() BEGIN SELECT 1; END;"
+      - id: labeled
+        sql: "CREATE PROCEDURE p() L1: BEGIN SELECT 1; END;"
+      - id: labeled_with_end_label
+        sql: "CREATE PROCEDURE p() L1: BEGIN SELECT 1; END L1;"
+      - id: local_variable_declaration
+        sql: "CREATE PROCEDURE p() BEGIN DECLARE i INTEGER DEFAULT 0; SET i = 1; END;"
+      - id: condition_declaration
+        sql: "CREATE PROCEDURE p() BEGIN DECLARE cond CONDITION FOR SQLSTATE '23505'; SELECT 1; END;"
+      - id: cursor_declaration
+        sql: "CREATE PROCEDURE p() BEGIN DECLARE cur CURSOR FOR SELECT c FROM t; OPEN cur; CLOSE cur; END;"
+      - id: condition_handler
+        sql: "CREATE PROCEDURE p() BEGIN DECLARE CONTINUE HANDLER FOR SQLEXCEPTION SET x = 1; SELECT 1; END;"
+      - id: declarations_in_order
+        sql: |-
+          CREATE PROCEDURE p()
+          BEGIN
+            DECLARE i INTEGER;
+            DECLARE cur CURSOR FOR SELECT c FROM t;
+            DECLARE EXIT HANDLER FOR SQLSTATE '42000' SET i = 1;
+            SELECT 1;
+          END;
+      - id: nested_compound
+        sql: "CREATE PROCEDURE p() L1: BEGIN L2: BEGIN SELECT 1; END L2; END L1;"
+      - id: leave_label
+        sql: "CREATE PROCEDURE p() L1: BEGIN INSERT INTO t VALUES (1); IF SQLCODE <> 0 THEN LEAVE L1; END IF; END L1;"
+      - id: qualified_variable
+        sql: "CREATE PROCEDURE p(INOUT a INTEGER) L1: BEGIN DECLARE k INTEGER DEFAULT 10; L2: BEGIN DECLARE k INTEGER DEFAULT 20; SET a = L1.k; END L2; END L1;"
+      - id: handler_with_compound_action
+        sql: "CREATE PROCEDURE p(OUT m CHARACTER(30)) BEGIN DECLARE EXIT HANDLER FOR SQLSTATE '42000' BEGIN SET m = 'x'; END; SELECT 1; END;"
+      - id: empty_body
+        sql: "CREATE PROCEDURE p() BEGIN END;"
+    examples:
+      - |-
+        CREATE PROCEDURE spAccount(OUT p1 CHARACTER(30))
+        L1: BEGIN
+              DECLARE i INTEGER;
+             DECLARE DeptCursor CURSOR FOR
+              SELECT DeptName from Department;
+             DECLARE CONTINUE HANDLER FOR SQLSTATE VALUE '23505'
+                  L2: BEGIN
+               SET p1='Failed To Insert Row';
+                    END L2;
+          L3: BEGIN
+        INSERT INTO table_1 VALUES(1,10);
+        IF SQLCODE <> 0 THEN LEAVE L1;
+        END L3;
+         INSERT INTO table_2 VALUES(2,20);
+        END L1;
+      - |-
+        CREATE PROCEDURE spSample3(OUT p1 CHARACTER(80))
+        BEGIN
+           DECLARE i INTEGER DEFAULT 20;
+           DECLARE EXIT HANDLER
+              FOR SQLSTATE '42000'
+              BEGIN
+                 DECLARE i INTEGER DEFAULT 10;
+                 DECLARE CONTINUE HANDLER
+                    FOR SQLEXCEPTION
+                       SET p1 = 'Table does not exist';
+                 DROP TABLE table1;
+                 CREATE TABLE table1 (c1 INTEGER);
+                 INSERT INTO table1 (i);
+              END;
+           INSERT INTO table1 VALUES(1000,'aaa');
+           /* table1 does not exist */
+        END;

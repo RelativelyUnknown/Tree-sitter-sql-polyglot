@@ -1,0 +1,160 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: abort_compactions
+    name: ABORT COMPACTIONS
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: low
+    probes:
+      - id: basic
+        sql: "ABORT COMPACTIONS 1 2;"
+        note: ABORT COMPACTIONS compactionId [compactionId ...]; Hive 4.0.0 (HIVE-25235), same shape as ABORT TRANSACTIONS
+
+  - id: lock_table
+    name: LOCK TABLE / UNLOCK TABLE
+    doc: https://cwiki.apache.org/confluence/display/Hive/Locking
+    tier: low
+    probes:
+      - id: lock_shared
+        sql: "LOCK TABLE t SHARED;"
+      - id: lock_partition_exclusive
+        sql: "LOCK TABLE t PARTITION (ds='2008-04-08') EXCLUSIVE;"
+      - id: unlock
+        sql: "UNLOCK TABLE t;"
+
+  - id: lock_database
+    name: LOCK DATABASE / UNLOCK DATABASE
+    doc: https://cwiki.apache.org/confluence/display/Hive/Locking
+    tier: low
+    probes:
+      - id: lock_exclusive
+        sql: "LOCK DATABASE d EXCLUSIVE;"
+      - id: unlock
+        sql: "UNLOCK DATABASE d;"
+
+  - id: add_resource
+    name: ADD FILE / JAR / ARCHIVE
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-commands/
+    tier: low
+    probes:
+      - id: add_jar
+        sql: "ADD JAR /tmp/udf.jar;"
+      - id: add_files
+        sql: "ADD FILES /tmp/a.txt /tmp/b.txt;"
+      - id: add_archive_ivy
+        sql: "ADD ARCHIVE ivy://group:module:1.0;"
+
+  - id: list_resource
+    name: LIST FILE / JAR / ARCHIVE
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-commands/
+    tier: low
+    probes:
+      - id: list_jars
+        sql: "LIST JARS;"
+      - id: list_file_check
+        sql: "LIST FILE /tmp/a.txt;"
+
+  - id: delete_resource
+    name: DELETE FILE / JAR / ARCHIVE
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-commands/
+    tier: low
+    probes:
+      - id: delete_jar
+        sql: "DELETE JAR /tmp/udf.jar;"
+      - id: delete_archive_ivy
+        sql: "DELETE ARCHIVE ivy://group:module:1.0;"
+
+  - id: compile
+    name: COMPILE (inline Groovy UDF)
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-commands/
+    tier: low
+    probes:
+      - id: groovy
+        sql: |-
+          COMPILE `import org.apache.hadoop.hive.ql.exec.UDF
+          public class Pyth extends UDF { public double evaluate(double a) { return a; } }` AS GROOVY NAMED Pyth.groovy;
+
+  - id: dfs
+    name: dfs command
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-commands/
+    tier: low
+    probes:
+      - id: ls
+        sql: "dfs -ls /user/hive/warehouse;"
+
+  - id: source
+    name: source file
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-commands/
+    tier: low
+    probes:
+      - id: source_file
+        sql: "source FILE /tmp/script.sql;"
+
+  - id: shell
+    name: "! shell command"
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-commands/
+    tier: low
+    probes:
+      - id: bang
+        sql: "!ls /tmp;"
+
+  - id: create_resource_plan
+    name: CREATE / ALTER / DROP / ENABLE / DISABLE RESOURCE PLAN
+    doc: https://cwiki.apache.org/confluence/display/Hive/Workload+Management
+    tier: low
+    probes:
+      - id: create
+        sql: "CREATE RESOURCE PLAN plan_1 WITH QUERY_PARALLELISM=4;"
+      - id: alter_validate
+        sql: "ALTER RESOURCE PLAN plan_1 VALIDATE;"
+      - id: alter_activate
+        sql: "ALTER RESOURCE PLAN plan_1 ACTIVATE;"
+      - id: enable
+        sql: "ALTER RESOURCE PLAN plan_1 ENABLE;"
+      - id: disable
+        sql: "ALTER RESOURCE PLAN plan_1 DISABLE;"
+      - id: drop
+        sql: "DROP RESOURCE PLAN plan_1;"
+
+  - id: create_pool_trigger_mapping
+    name: CREATE POOL / TRIGGER / MAPPING (workload management)
+    doc: https://cwiki.apache.org/confluence/display/Hive/Workload+Management
+    tier: low
+    probes:
+      - id: create_pool
+        sql: "CREATE POOL plan_1.pool_1 WITH ALLOC_FRACTION=0.5, QUERY_PARALLELISM=5;"
+      - id: create_trigger
+        sql: "CREATE TRIGGER plan_1.trigger_1 WHEN ELAPSED_TIME > 10000 DO KILL;"
+      - id: create_user_mapping
+        sql: "CREATE USER MAPPING 'joe' IN plan_1 TO pool_1;"
+
+  - id: scheduled_query
+    name: CREATE / ALTER / DROP SCHEDULED QUERY
+    doc: https://cwiki.apache.org/confluence/display/Hive/Scheduled+Queries
+    tier: low
+    probes:
+      - id: create_every
+        sql: "CREATE SCHEDULED QUERY sq EVERY 10 MINUTES AS SELECT 1;"
+      - id: create_cron
+        sql: "CREATE SCHEDULED QUERY sq CRON '0 */10 * * * ? *' EXECUTED AS 'user' DISABLED DEFINED AS SELECT 1;"
+      - id: alter_execute
+        sql: "ALTER SCHEDULED QUERY sq EXECUTE;"
+      - id: drop
+        sql: "DROP SCHEDULED QUERY sq;"
+
+  - id: replication_dump_load
+    name: REPL DUMP / REPL LOAD / REPL STATUS
+    doc: https://cwiki.apache.org/confluence/display/Hive/HiveReplicationv2Development
+    tier: low
+    probes:
+      - id: dump
+        sql: "REPL DUMP sales;"
+      - id: dump_from_to_limit_with
+        sql: "REPL DUMP sales FROM 200 TO 1400 LIMIT 100 WITH ('hive.repl.rootdir'='/tmp/r');"
+      - id: load
+        sql: "REPL LOAD sales FROM 'hdfs://nn/dump' WITH ('k'='v');"
+      - id: status
+        sql: "REPL STATUS sales;"

@@ -1,0 +1,233 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements: []
+
+expressions:
+  - id: b_arithmetic_operators
+    name: Arithmetic operators and precedence
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/11PgRZZvBEqGXmlK4rR8KA
+    tier: high
+    probes:
+      - { id: unary, sql: "SELECT +a, -a FROM t;" }
+      - { id: add_sub, sql: "SELECT a + b, a - b FROM t;" }
+      - { id: mul_div, sql: "SELECT a * b, a / b FROM t;" }
+      - { id: exponent, sql: "SELECT a ** 2 FROM t;" }
+      - { id: mod_operator, sql: "SELECT a MOD b FROM t;" }
+      - { id: precedence_parens, sql: "SELECT (a + b) * c - d / e ** 2 FROM t;" }
+  - id: b_concatenation
+    name: Concatenation operator
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/xVHTbjxLkvgsQdnPg1Nzog
+    tier: high
+    probes:
+      - { id: concat, sql: "SELECT first_name || ' ' || last_name FROM t;" }
+    examples:
+      - |-
+        SELECT prodID, CASE prodSTATUS
+                         WHEN 1
+                         THEN 'SENT'
+                         ELSE 'BACK ORDER'
+                         END || ' STATUS'
+        FROM t1;
+  - id: b_comparison_operators
+    name: Comparison operators
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/~vXDhmqvee2P3dnydoeSuw
+    tier: high
+    probes:
+      - { id: symbolic, sql: "SELECT * FROM t WHERE a = 1 AND b <> 2 AND c < 3 AND d <= 4 AND e > 5 AND f >= 6;" }
+      - { id: mnemonic, sql: "SELECT * FROM t WHERE a EQ 1 AND b NE 2 AND c LT 3 AND d LE 4 AND e GT 5 AND f GE 6;" }
+      - { id: ne_extensions, sql: "SELECT * FROM t WHERE a ^= 1 OR b NOT= 2;" }
+      - { id: quantified_literals, sql: "SELECT * FROM t WHERE a = ANY (1, 2, 3);" }
+      - { id: quantified_subquery, sql: "SELECT * FROM t WHERE a > ALL (SELECT x FROM s);" }
+      - { id: row_subquery, sql: "SELECT * FROM t WHERE (a, b) = ANY (SELECT x, y FROM s);" }
+      - { id: scalar_subquery, sql: "SELECT * FROM t WHERE a = (SELECT MAX(x) FROM s);" }
+  - id: b_logical_operators
+    name: Logical operators
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/11PgRZZvBEqGXmlK4rR8KA
+    tier: high
+    probes:
+      - { id: and_or_not, sql: "SELECT * FROM t WHERE NOT (a = 1 AND b = 2) OR c = 3;" }
+  - id: b_between
+    name: BETWEEN / NOT BETWEEN
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/t4Ohxm7l8zPTFS16UqWwJQ
+    tier: high
+    probes:
+      - { id: between, sql: "SELECT * FROM t WHERE a BETWEEN 1 AND 10;" }
+      - { id: not_between, sql: "SELECT * FROM t WHERE a NOT BETWEEN 1 AND 10;" }
+      - { id: between_expr, sql: "SELECT * FROM t WHERE a + 1 BETWEEN b AND c * 2;" }
+  - id: b_like
+    name: LIKE / NOT LIKE
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/FmkTPQODltNF3HufSxx97w
+    tier: high
+    probes:
+      - { id: like, sql: "SELECT * FROM t WHERE a LIKE 'abc%';" }
+      - { id: not_like, sql: "SELECT * FROM t WHERE a NOT LIKE '_bc';" }
+      - { id: like_escape, sql: "SELECT * FROM t WHERE a LIKE '%95Z%%' ESCAPE 'Z';" }
+      - { id: like_any, sql: "SELECT * FROM t WHERE a LIKE ANY ('a%', 'b%');" }
+      - { id: like_all, sql: "SELECT * FROM t WHERE a LIKE ALL ('a%', '%z');" }
+      - { id: like_some, sql: "SELECT * FROM t WHERE a LIKE SOME ('a%', 'b%');" }
+      - { id: not_like_any, sql: "SELECT * FROM t WHERE a NOT LIKE ANY ('a%', 'b%');" }
+      - { id: like_subquery, sql: "SELECT * FROM t WHERE a LIKE ANY (SELECT pat FROM s);" }
+      - { id: like_expr_list, sql: "SELECT * FROM t WHERE (a, b) LIKE ANY (SELECT p, q FROM s);" }
+    examples:
+      - "SELECT * FROM t WHERE Result LIKE '%95Z%%' ESCAPE 'Z';"
+  - id: b_in
+    name: IN / NOT IN
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/dDJZ9lcTbSw6~cU0JMho3w
+    tier: high
+    probes:
+      - { id: in_list, sql: "SELECT * FROM t WHERE a IN (1, 2, 3);" }
+      - { id: not_in_list, sql: "SELECT * FROM t WHERE a NOT IN (1, 2, 3);" }
+      - { id: in_subquery, sql: "SELECT * FROM t WHERE a IN (SELECT x FROM s);" }
+      - { id: in_multi_column, sql: "SELECT * FROM t WHERE (a, b) IN (SELECT x, y FROM s);" }
+      - { id: in_any, sql: "SELECT * FROM t WHERE a IN ANY (1, 2);" }
+      - { id: in_some, sql: "SELECT * FROM t WHERE a NOT IN SOME (1, 2);" }
+      - { id: in_all, sql: "SELECT * FROM t WHERE a NOT IN ALL (1, 2);" }
+      - { id: in_range, sql: "SELECT * FROM t WHERE a IN (3 TO 5);" }
+      - { id: in_mixed_range, sql: "SELECT * FROM t WHERE a IN (1, 2 TO 4, 5);" }
+      - { id: in_or_separated, sql: "SELECT * FROM t WHERE a IN (1 OR 2 OR 3);" }
+    examples:
+      - "SELECT * FROM t WHERE x IN (1,2);"
+      - "SELECT * FROM t WHERE x NOT IN ALL (1,2);"
+      - "SELECT * FROM t WHERE x IN (1, 2 TO 4, 5);"
+  - id: b_is_null
+    name: IS NULL / IS NOT NULL
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/NMm90GRO8jOp_fqOfRgnZA
+    tier: high
+    probes:
+      - { id: is_null, sql: "SELECT * FROM t WHERE a IS NULL;" }
+      - { id: is_not_null, sql: "SELECT * FROM t WHERE a IS NOT NULL;" }
+    examples:
+      - |-
+        SELECT Name, JobTitle
+        FROM Employee
+        WHERE (JobTitle NOT IN ('Manager' OR 'Vice Pres'))
+        OR (JobTitle IS NULL) ;
+  - id: b_exists
+    name: EXISTS / NOT EXISTS
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/dLU4Ru8XHS69XCrQKAfD3A
+    tier: high
+    probes:
+      - { id: exists, sql: "SELECT * FROM t WHERE EXISTS (SELECT 1 FROM s WHERE s.a = t.a);" }
+      - { id: not_exists, sql: "SELECT * FROM t WHERE NOT EXISTS (SELECT 1 FROM s WHERE s.a = t.a);" }
+    examples:
+      - |-
+        SELECT SName, SNo
+        FROM student s
+        WHERE EXISTS
+         (SELECT *
+          FROM department d
+          WHERE EXISTS
+           (SELECT *
+            FROM course c, registration r, class cl
+            WHERE c.Dept=d.Dept
+            AND c.CNo=r.CNo
+            AND s.SNo=r.SNo
+            AND r.CNo=cl.CNo
+            AND r.Sec=cl.Sec));
+  - id: b_quantified_predicates
+    name: ANY / ALL / SOME quantified predicates
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/yAK84tp5q1Q_uFxg~yZ1Pw
+    tier: medium
+    probes:
+      - { id: eq_any_subquery, sql: "SELECT * FROM t WHERE a = ANY (SELECT x FROM s);" }
+      - { id: lt_some_subquery, sql: "SELECT * FROM t WHERE a < SOME (SELECT x FROM s);" }
+      - { id: ne_all_literals, sql: "SELECT * FROM t WHERE a <> ALL (1, 2, 3);" }
+      - { id: not_in_any, sql: "SELECT * FROM t WHERE a NOT IN ANY (SELECT x FROM s);" }
+      - { id: row_quantified, sql: "SELECT * FROM t WHERE (a, b) = ANY (SELECT x, y FROM s);" }
+    examples:
+      - "SELECT EmpNo, Name, DeptNo FROM Employee WHERE DeptNo = ANY (100,300,500) ;"
+  - id: b_overlaps
+    name: OVERLAPS
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/jQgJWgXB3j3x9izCZAz~3A
+    tier: low
+    probes:
+      - { id: period_overlaps, sql: "SELECT * FROM t WHERE PERIOD(DATE '2020-01-01', DATE '2020-12-31') OVERLAPS PERIOD(DATE '2020-06-01', DATE '2021-06-01');" }
+      - { id: datetime_overlaps, sql: "SELECT * FROM t WHERE (DATE '2020-01-01', DATE '2020-12-31') OVERLAPS (DATE '2020-06-01', DATE '2021-06-01');" }
+  - id: b_valued_case
+    name: Valued CASE expression
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/iSsvATACX8lObH048FZ8PA
+    tier: high
+    probes:
+      - { id: valued_case, sql: "SELECT CASE a WHEN 1 THEN 'one' WHEN 2 THEN 'two' END FROM t;" }
+      - { id: valued_case_else, sql: "SELECT CASE a WHEN 1 THEN 'one' ELSE 'other' END FROM t;" }
+  - id: b_searched_case
+    name: Searched CASE expression
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/vaUK87xeuU9wX03ILA6hjQ
+    tier: high
+    probes:
+      - { id: searched_case, sql: "SELECT CASE WHEN a > 1 THEN 'big' WHEN a < 0 THEN 'neg' END FROM t;" }
+      - { id: searched_case_else, sql: "SELECT CASE WHEN a IS NULL THEN 0 ELSE a END FROM t;" }
+      - { id: nested_case, sql: "SELECT CASE WHEN a > 1 THEN CASE WHEN b > 1 THEN 1 ELSE 2 END ELSE 3 END FROM t;" }
+  - id: b_case_shorthands
+    name: COALESCE and NULLIF expressions
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/Z~ROU8KJS~x3s8SaIGW4Jw
+    tier: high
+    probes:
+      - { id: coalesce, sql: "SELECT COALESCE(a, b, 0) FROM t;" }
+      - { id: nullif, sql: "SELECT NULLIF(a, 0) FROM t;" }
+  - id: b_substring
+    name: SUBSTRING / SUBSTR
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/68LbSL7AzoP_FCvHdMVkug
+    tier: high
+    probes:
+      - { id: ansi_from, sql: "SELECT SUBSTRING(a FROM 2) FROM t;" }
+      - { id: ansi_from_for, sql: "SELECT SUBSTRING(a FROM 2 FOR 3) FROM t;" }
+      - { id: teradata_comma, sql: "SELECT SUBSTRING(a, 2, 3) FROM t;" }
+      - { id: teradata_comma_no_length, sql: "SELECT SUBSTRING(a, 2) FROM t;" }
+      - { id: substr, sql: "SELECT SUBSTR(a, 2, 3) FROM t;" }
+  - id: b_trim
+    name: TRIM
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/egEZxkHohU3~BesRmYoX9Q
+    tier: high
+    probes:
+      - { id: trim_plain, sql: "SELECT TRIM(a) FROM t;" }
+      - { id: trim_both, sql: "SELECT TRIM(BOTH FROM a) FROM t;" }
+      - { id: trim_leading, sql: "SELECT TRIM(LEADING FROM a) FROM t;" }
+      - { id: trim_trailing, sql: "SELECT TRIM(TRAILING FROM a) FROM t;" }
+      - { id: trim_char, sql: "SELECT TRIM(BOTH 'x' FROM a) FROM t;" }
+      - { id: trim_leading_char, sql: "SELECT TRIM(LEADING '0' FROM a) FROM t;" }
+      - { id: trim_trailing_char, sql: "SELECT TRIM(TRAILING 'x' FROM a) FROM t;" }
+      - { id: trim_character_set, sql: "SELECT TRIM(BOTH FROM _Unicode a) FROM t;" }
+  - id: b_position
+    name: POSITION
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/wjkjVxBLRbYwaa~koLHvbg
+    tier: high
+    probes:
+      - { id: position_in, sql: "SELECT POSITION('b' IN a) FROM t;" }
+  - id: b_extract
+    name: EXTRACT
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/6UwQbGLgHgRoU5JhYnr4sg
+    tier: high
+    note: EXTRACT is documented in the separate SQL Date and Time Functions manual, which td-doc.py does not expose; the forms are the ANSI fields it lists.
+    probes:
+      - { id: extract_year, sql: "SELECT EXTRACT(YEAR FROM d) FROM t;" }
+      - { id: extract_month, sql: "SELECT EXTRACT(MONTH FROM d) FROM t;" }
+      - { id: extract_day, sql: "SELECT EXTRACT(DAY FROM d) FROM t;" }
+      - { id: extract_hour, sql: "SELECT EXTRACT(HOUR FROM ts) FROM t;" }
+      - { id: extract_minute, sql: "SELECT EXTRACT(MINUTE FROM ts) FROM t;" }
+      - { id: extract_second, sql: "SELECT EXTRACT(SECOND FROM ts) FROM t;" }
+      - { id: extract_timezone_hour, sql: "SELECT EXTRACT(TIMEZONE_HOUR FROM ts) FROM t;" }
+      - { id: extract_timezone_minute, sql: "SELECT EXTRACT(TIMEZONE_MINUTE FROM ts) FROM t;" }
+      - { id: extract_expr, sql: "SELECT EXTRACT(YEAR FROM CURRENT_DATE) FROM t;" }
+  - id: b_cast
+    name: CAST and FORMAT phrase
+    doc: https://docs.teradata.com/reader/ka4q4xtYpyQGplkKwXaNBQ/6UwQbGLgHgRoU5JhYnr4sg
+    tier: high
+    note: CAST and the FORMAT phrase are documented in the SQL Data Types and Literals and SQL Functions (data type conversion) manuals, which td-doc.py does not expose.
+    probes:
+      - { id: cast_basic, sql: "SELECT CAST(a AS INTEGER) FROM t;" }
+      - { id: cast_varchar, sql: "SELECT CAST(a AS VARCHAR(20)) FROM t;" }
+      - { id: cast_decimal, sql: "SELECT CAST(a AS DECIMAL(10,2)) FROM t;" }
+      - { id: cast_format_date, sql: "SELECT CAST(a AS DATE FORMAT 'YYYY-MM-DD') FROM t;" }
+      - { id: cast_format_char, sql: "SELECT CAST(d AS CHAR(10) FORMAT 'YYYY-MM-DD') FROM t;" }
+      - { id: cast_char_set, sql: "SELECT CAST(a AS VARCHAR(10) CHARACTER SET UNICODE) FROM t;" }
+      - { id: cast_attributes, sql: "SELECT CAST(a AS VARCHAR(10) NOT CASESPECIFIC) FROM t;" }
+      - { id: cast_timestamp, sql: "SELECT CAST(a AS TIMESTAMP(0) FORMAT 'YYYY-MM-DDBHH:MI:SS') FROM t;" }
+      - { id: format_phrase, sql: "SELECT a (FORMAT '$$$,$$9.99') FROM t;" }
+      - { id: format_phrase_date, sql: "SELECT d (FORMAT 'YYYY-MM-DD') FROM t;" }
+      - { id: type_phrase, sql: "SELECT a (DATE) FROM t;" }
+      - { id: type_phrase_format, sql: "SELECT a (DATE, FORMAT 'YYYYMMDD') FROM t;" }
+      - { id: type_phrase_char, sql: "SELECT a (CHAR(10)) FROM t;" }

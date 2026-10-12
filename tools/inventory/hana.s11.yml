@@ -1,0 +1,115 @@
+dialect: hana
+engine: SAP HANA Platform
+version: "2.0 SPS 08 (2.0.08)"
+source: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/3bc1a0d4611d40c4a6e3fc7c8e80395d.html?version=2.0.08
+
+statements:
+  - id: insert
+    name: INSERT
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20f7f70975191014a76da70c9181720e.html?version=2.0.08
+    tier: high
+    probes:
+      - id: values
+        sql: "INSERT INTO t VALUES (1, 2);"
+      - id: schema_qualified
+        sql: "INSERT INTO s.t VALUES (1, 2);"
+      - id: database_schema_qualified
+        sql: "INSERT INTO db.s.t VALUES (1, 2);"
+      - id: column_list
+        sql: "INSERT INTO t (a, b) VALUES (1, 2);"
+      - id: column_list_table_qualified
+        sql: "INSERT INTO t (t.a, t.b) VALUES (1, 2);"
+      - id: partition
+        sql: "INSERT INTO t PARTITION 1 VALUES (1, 2);"
+      - id: partition_column_list
+        sql: "INSERT INTO t PARTITION (1) (a, b) VALUES (1, 2);"
+        note: documented form is PARTITION <num>; parenthesised number used in the MERGE example syntax for PARTITION(1), and the INSERT examples use PARTITION(1)
+      - id: alias_as
+        sql: "INSERT INTO t AS x (x.a, b) VALUES (1, 2);"
+      - id: alias_no_as
+        sql: "INSERT INTO t x (x.a, x.b) VALUES (1, 2);"
+      - id: values_alias
+        sql: "INSERT INTO t (a, b) VALUES (1, 2) AS v;"
+      - id: expressions
+        sql: "INSERT INTO t (a, b) VALUES (1 + 2, UPPER('x'));"
+      - id: array_constructor
+        sql: "INSERT INTO t VALUES (1, ARRAY(1, 2, 3, 4));"
+      - id: array_subquery
+        sql: "INSERT INTO t VALUES (2, ARRAY(SELECT c1 FROM t0));"
+      - id: subquery
+        sql: "INSERT INTO t SELECT 3, 3, 'x' FROM DUMMY;"
+      - id: subquery_column_list
+        sql: "INSERT INTO t (a, b) SELECT a, b FROM u;"
+      - id: subquery_parenthesised
+        sql: "INSERT INTO t (SELECT a, b FROM u);"
+      - id: overriding_system_value
+        sql: "INSERT INTO t (a, b) OVERRIDING SYSTEM VALUE SELECT a, b FROM u;"
+      - id: overriding_user_value
+        sql: "INSERT INTO t (a, b) OVERRIDING USER VALUE SELECT a, b FROM u;"
+      - id: with_clause
+        sql: "INSERT INTO t WITH alias AS (SELECT * FROM t) SELECT * FROM alias;"
+      - id: with_clause_column_list
+        sql: "INSERT INTO t (a, b) WITH w AS (SELECT a, b FROM u) SELECT a, b FROM w;"
+      - id: hint_clause
+        sql: "INSERT INTO t VALUES (1, 2) WITH HINT (NO_USE_HEX_PLAN);"
+      - id: subquery_hint
+        sql: "INSERT INTO t SELECT a, b FROM u WITH HINT (USE_OLAP_PLAN);"
+      - id: with_nowait
+        sql: "INSERT INTO t VALUES (1, 10) WITH NOWAIT;"
+    examples:
+      - "INSERT INTO T VALUES (1, 1, 'The first');"
+      - "INSERT INTO T (KEY, VAL2) VALUES (2,3);"
+      - "INSERT INTO T SELECT 3, 3, 'The third' FROM DUMMY;"
+
+  - id: merge_into
+    name: MERGE INTO
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/3226201f95764a57810dd256c9524d56.html?version=2.0.08
+    tier: high
+    probes:
+      - id: matched_update
+        sql: "MERGE INTO t USING u ON t.a = u.a WHEN MATCHED THEN UPDATE SET t.b = u.b;"
+      - id: matched_delete
+        sql: "MERGE INTO t USING u ON t.a = u.a WHEN MATCHED THEN DELETE;"
+      - id: not_matched_insert
+        sql: "MERGE INTO t USING u ON t.a = u.a WHEN NOT MATCHED THEN INSERT VALUES (u.a, u.b);"
+      - id: not_matched_insert_columns
+        sql: "MERGE INTO t USING u ON t.a = u.a WHEN NOT MATCHED THEN INSERT (a, b) VALUES (u.a, u.b);"
+      - id: matched_and_not_matched
+        sql: "MERGE INTO t USING u ON t.a = u.a WHEN MATCHED THEN UPDATE SET t.b = u.b WHEN NOT MATCHED THEN INSERT VALUES (u.a, u.b);"
+      - id: matched_delete_not_matched_insert
+        sql: "MERGE INTO t USING u ON t.a = u.a WHEN MATCHED THEN DELETE WHEN NOT MATCHED THEN INSERT VALUES (u.a, u.b);"
+      - id: matched_and_condition
+        sql: "MERGE INTO t USING u ON t.a = u.a WHEN MATCHED AND t.a > 1 THEN UPDATE SET b = u.b;"
+      - id: not_matched_and_condition
+        sql: "MERGE INTO t USING u ON t.a = u.a WHEN NOT MATCHED AND u.a > 3 THEN INSERT VALUES (u.a, u.b);"
+      - id: both_with_conditions
+        sql: "MERGE INTO t USING u ON t.a = u.a WHEN MATCHED AND t.a > 1 THEN UPDATE SET b = u.b WHEN NOT MATCHED AND u.a > 3 THEN INSERT VALUES (u.a, u.b);"
+      - id: set_multiple_columns
+        sql: "MERGE INTO t USING u ON t.a = u.a WHEN MATCHED THEN UPDATE SET b = u.b, c = u.c;"
+      - id: schema_qualified_target
+        sql: "MERGE INTO s.t USING s.u ON s.t.a = s.u.a WHEN MATCHED THEN UPDATE SET s.t.b = s.u.b;"
+      - id: target_alias_as
+        sql: "MERGE INTO t AS x USING u ON x.a = u.a WHEN MATCHED THEN UPDATE SET b = u.b;"
+      - id: target_alias_no_as
+        sql: "MERGE INTO t x USING u ON x.a = u.a WHEN MATCHED THEN UPDATE SET b = u.b;"
+      - id: partition_restriction
+        sql: "MERGE INTO t PARTITION(1) USING u ON t.b = u.b WHEN MATCHED THEN UPDATE SET t.b = 2 WHEN NOT MATCHED THEN INSERT VALUES (10, 1);"
+      - id: using_subquery
+        sql: "MERGE INTO t USING (SELECT a, b FROM u) AS src ON t.a = src.a WHEN MATCHED THEN UPDATE SET b = src.b;"
+      - id: using_alias
+        sql: "MERGE INTO t USING u AS s ON t.a = s.a WHEN NOT MATCHED THEN INSERT VALUES (s.a, s.b);"
+      - id: insert_expression_values
+        sql: "MERGE INTO t USING u ON t.a = u.a WHEN NOT MATCHED THEN INSERT (a, b) VALUES (u.a + 1, DEFAULT);"
+        note: contextually_typed_value_specification (DEFAULT / NULL) is allowed as an insert value element
+    examples:
+      - |-
+        MERGE INTO "my_schema".t1 USING "my_schema".t2 ON "my_schema".t1.a = "my_schema".t2.a
+         WHEN MATCHED THEN UPDATE SET "my_schema".t1.b = "my_schema".t2.b
+         WHEN NOT MATCHED THEN INSERT VALUES("my_schema".t2.a, "my_schema".t2.b);
+      - |-
+        MERGE INTO T1 USING T2 ON T1.A = T2.A
+         WHEN MATCHED THEN DELETE;
+      - |-
+        MERGE INTO T1 USING T2 ON T1.A = T2.A
+         WHEN MATCHED AND T1.A > 1 THEN UPDATE SET B = T2.B
+         WHEN NOT MATCHED AND T2.A > 3 THEN INSERT VALUES (T2.A, T2.B);

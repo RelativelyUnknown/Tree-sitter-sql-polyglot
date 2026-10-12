@@ -1,0 +1,130 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: star_clause
+    name: "* (star) clause"
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-star
+    tier: high
+    probes:
+      - id: star
+        sql: "SELECT * FROM t;"
+      - id: star_qualified
+        sql: "SELECT t.* FROM t;"
+      - id: star_struct_column
+        sql: "SELECT c1.* FROM t;"
+        note: "Syntax: [ name . ] * where name may be a STRUCT column or field name"
+      - id: star_except_columns
+        sql: "SELECT * EXCEPT (c1, c2) FROM t;"
+      - id: star_except_single
+        sql: "SELECT * EXCEPT (c1) FROM t;"
+      - id: star_qualified_except
+        sql: "SELECT t.* EXCEPT (c1) FROM t;"
+      - id: star_except_field
+        sql: "SELECT * EXCEPT (c1.x) FROM t;"
+        note: "except_clause: EXCEPT ( { column_name | field_name } [, ...] )"
+      - id: star_qualified_except_field
+        sql: "SELECT t.* EXCEPT (c1.x, c2) FROM t;"
+      - id: star_in_function_argument
+        sql: "SELECT coalesce(t.*) FROM t;"
+        note: "Documented example; star as a function argument (Databricks Runtime 15.0 and above)"
+      - id: star_multiple_tables
+        sql: "SELECT * FROM t1, t2;"
+      - id: star_qualified_multiple_tables
+        sql: "SELECT t1.*, t2.* FROM t1, t2;"
+    examples:
+      - "SELECT * FROM VALUES (1, 2) AS TA(c1, c2), VALUES ('a', 'b') AS TB(ca, cb);"
+      - "SELECT TA.* FROM VALUES (1, 2) AS TA(c1, c2), VALUES ('a', 'b') AS TB(ca, cb);"
+      - "SELECT * EXCEPT (c1, cb) FROM VALUES (1, 2) AS TA(c1, c2), VALUES ('a', 'b') AS TB(ca, cb);"
+
+  - id: table_reference
+    name: table reference
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-table-reference
+    tier: high
+    probes:
+      - id: table_name
+        sql: "SELECT * FROM t;"
+      - id: table_name_qualified
+        sql: "SELECT * FROM cat.sch.t;"
+      - id: table_alias_as
+        sql: "SELECT * FROM t AS a;"
+      - id: table_alias_no_as
+        sql: "SELECT * FROM t a;"
+      - id: table_alias_columns
+        sql: "SELECT * FROM t AS a(c1, c2);"
+        note: "table_alias may include column_identifiers"
+      - id: table_tablesample
+        sql: "SELECT * FROM t TABLESAMPLE (50 PERCENT);"
+      - id: table_tablesample_alias
+        sql: "SELECT * FROM t TABLESAMPLE (10 ROWS) AS a;"
+      - id: table_time_travel_timestamp
+        sql: "SELECT * FROM t TIMESTAMP AS OF '2018-10-18T22:15:12.013Z';"
+      - id: table_time_travel_timestamp_expr
+        sql: "SELECT * FROM t TIMESTAMP AS OF current_timestamp() - INTERVAL 12 HOURS;"
+      - id: table_time_travel_timestamp_function
+        sql: "SELECT * FROM t TIMESTAMP AS OF date_sub(current_date(), 1);"
+      - id: table_time_travel_timestamp_cast
+        sql: "SELECT * FROM t TIMESTAMP AS OF cast('2018-10-18 13:36:32 CEST' AS timestamp);"
+      - id: table_time_travel_version
+        sql: "SELECT * FROM t VERSION AS OF 123;"
+      - id: table_time_travel_alias
+        sql: "SELECT * FROM t VERSION AS OF 123 AS a;"
+      - id: table_time_travel_join
+        sql: "SELECT * FROM t1 VERSION AS OF 1 AS a JOIN t2 TIMESTAMP AS OF '2018-10-18' AS b ON a.id = b.id;"
+      - id: table_at_version
+        sql: "SELECT * FROM t@v123;"
+        note: "@ syntax: table name followed by @v<version>"
+      - id: table_at_timestamp
+        sql: "SELECT * FROM t@20190101000000000;"
+        note: "@ syntax: timestamp in yyyyMMddHHmmssSSS format"
+      - id: table_with_options
+        sql: "SELECT * FROM t WITH (fetchSize = 0);"
+        note: "table_name may include an options specification (Databricks Runtime 16.0 and above); documented example uses jdbcTable"
+      - id: table_with_credential
+        sql: "SELECT * FROM `csv`.`spreadsheets/data.csv` WITH (CREDENTIAL some_credential);"
+      - id: stream_table
+        sql: "SELECT * FROM STREAM t;"
+      - id: stream_table_alias
+        sql: "SELECT * FROM STREAM t AS a;"
+      - id: stream_table_parenthesized
+        sql: "SELECT * FROM STREAM(t);"
+      - id: stream_table_parenthesized_alias
+        sql: "SELECT * FROM STREAM(t) AS a;"
+      - id: view_name_alias
+        sql: "SELECT * FROM v AS a;"
+      - id: table_join
+        sql: "SELECT * FROM t1 JOIN t2 ON t1.id = t2.id;"
+      - id: table_pivot
+        sql: "SELECT * FROM t PIVOT (sum(x) FOR c IN ('a', 'b'));"
+      - id: table_unpivot
+        sql: "SELECT * FROM t UNPIVOT (v FOR c IN (c1, c2));"
+      - id: table_valued_function
+        sql: "SELECT * FROM range(10);"
+      - id: table_valued_function_alias
+        sql: "SELECT * FROM range(10) AS r(n);"
+      - id: stream_table_valued_function
+        sql: "SELECT * FROM STREAM read_files('/path', format => 'csv');"
+      - id: lateral_table_valued_function
+        sql: "SELECT * FROM t, LATERAL explode(t.arr) AS e(x);"
+      - id: values_clause
+        sql: "SELECT * FROM VALUES (1, 2) AS t1(c1, c2), VALUES (3, 4) AS t2(c3, c4);"
+      - id: subquery
+        sql: "SELECT * FROM (SELECT c FROM t);"
+      - id: subquery_alias
+        sql: "SELECT * FROM (SELECT c FROM t) AS s;"
+      - id: subquery_alias_columns
+        sql: "SELECT * FROM (SELECT c1, c2 FROM t) AS s(a, b);"
+      - id: subquery_tablesample
+        sql: "SELECT * FROM (SELECT c FROM t) TABLESAMPLE (10 PERCENT) AS s;"
+      - id: lateral_subquery
+        sql: "SELECT * FROM t1, LATERAL (SELECT * FROM t2 WHERE t2.id = t1.id) AS s;"
+      - id: lateral_subquery_no_alias
+        sql: "SELECT * FROM t1, LATERAL (SELECT * FROM t2 WHERE t2.id = t1.id);"
+      - id: multiple_table_references
+        sql: "SELECT * FROM t1, t2;"
+    examples:
+      - "SELECT * FROM `csv`.`spreadsheets/data.csv` WITH (CREDENTIAL some_credential);"
+      - "SELECT * FROM jdbcTable WITH (fetchSize = 0);"
+      - "SELECT * FROM VALUES (1, 2) AS t1(c1, c2), VALUES (3, 4) AS t2(c3, c4);"

@@ -1,0 +1,548 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements: []
+
+expressions:
+  - id: c_aggregate_basic
+    name: Aggregate functions (COUNT, SUM, AVG, MIN, MAX, DISTINCT)
+    doc: https://mariadb.com/docs/server/reference/sql-functions/aggregate-functions/count
+    tier: high
+    probes:
+      - { id: count_star, sql: "SELECT COUNT(*) FROM t;" }
+      - { id: count_expr, sql: "SELECT COUNT(c) FROM t;" }
+      - { id: count_distinct, sql: "SELECT COUNT(DISTINCT c) FROM t;" }
+      - { id: count_distinct_multi, sql: "SELECT COUNT(DISTINCT c1, c2) FROM t;" }
+      - { id: count_distinct_parenthesized, sql: "SELECT COUNT(DISTINCT (c)) FROM t;" }
+      - { id: sum_expr, sql: "SELECT SUM(c) FROM t;" }
+      - { id: sum_distinct, sql: "SELECT SUM(DISTINCT c) FROM t;" }
+      - { id: avg_distinct, sql: "SELECT AVG(DISTINCT c) FROM t;" }
+      - { id: min_max, sql: "SELECT MIN(c), MAX(c) FROM t;" }
+      - { id: min_max_distinct, sql: "SELECT MIN(DISTINCT c), MAX(DISTINCT c) FROM t;" }
+      - { id: bit_aggregates, sql: "SELECT BIT_AND(c), BIT_OR(c), BIT_XOR(c) FROM t;" }
+      - { id: std_family, sql: "SELECT STD(c), STDDEV(c), STDDEV_POP(c), STDDEV_SAMP(c) FROM t;" }
+      - { id: variance_family, sql: "SELECT VAR_POP(c), VAR_SAMP(c), VARIANCE(c) FROM t;" }
+      - { id: group_by_having, sql: "SELECT a, COUNT(*) FROM t GROUP BY a HAVING COUNT(*) > 1;" }
+    examples:
+      - "SELECT COUNT(DISTINCT (name)) FROM student;"
+
+  - id: c_group_concat
+    name: GROUP_CONCAT
+    doc: https://mariadb.com/docs/server/reference/sql-functions/aggregate-functions/group_concat
+    tier: high
+    probes:
+      - { id: basic, sql: "SELECT GROUP_CONCAT(c) FROM t;" }
+      - { id: distinct, sql: "SELECT GROUP_CONCAT(DISTINCT c) FROM t;" }
+      - { id: multiple_exprs, sql: "SELECT GROUP_CONCAT(a, b) FROM t;" }
+      - { id: order_by, sql: "SELECT GROUP_CONCAT(c ORDER BY c) FROM t;" }
+      - { id: order_by_desc, sql: "SELECT GROUP_CONCAT(c ORDER BY d DESC) FROM t;" }
+      - { id: order_by_multi, sql: "SELECT GROUP_CONCAT(c ORDER BY d DESC, e ASC) FROM t;" }
+      - { id: order_by_position, sql: "SELECT GROUP_CONCAT(c ORDER BY 1) FROM t;" }
+      - { id: separator, sql: "SELECT GROUP_CONCAT(c SEPARATOR ';') FROM t;" }
+      - { id: empty_separator, sql: "SELECT GROUP_CONCAT(c SEPARATOR '') FROM t;" }
+      - { id: order_by_separator, sql: "SELECT GROUP_CONCAT(c ORDER BY c SEPARATOR ', ') FROM t;" }
+      - { id: distinct_order_by_separator, sql: "SELECT GROUP_CONCAT(DISTINCT c ORDER BY c SEPARATOR ', ') FROM t;" }
+      - { id: limit, sql: "SELECT GROUP_CONCAT(c ORDER BY c LIMIT 1) FROM t;" }
+      - { id: limit_offset_comma, sql: "SELECT GROUP_CONCAT(c ORDER BY c LIMIT 1, 2) FROM t;" }
+      - { id: limit_offset_keyword, sql: "SELECT GROUP_CONCAT(c ORDER BY c LIMIT 2 OFFSET 1) FROM t;" }
+      - { id: separator_limit, sql: "SELECT GROUP_CONCAT(c ORDER BY c SEPARATOR ',' LIMIT 3) FROM t;" }
+      - { id: nested_in_function, sql: "SELECT SUBSTRING_INDEX(GROUP_CONCAT(CONCAT_WS(':', dd, cc) ORDER BY cc DESC), ',', 1) FROM d;" }
+    examples:
+      - |-
+        SELECT GROUP_CONCAT(DISTINCT User ORDER BY User SEPARATOR '\n')
+           FROM mysql.user;
+      - |-
+        SELECT User, GROUP_CONCAT(Host ORDER BY Host SEPARATOR ', ') 
+           FROM mysql.user GROUP BY User ORDER BY User;
+      - |-
+        SELECT GROUP_CONCAT(CONCAT_WS(":",dd,cc) ORDER BY cc DESC LIMIT 1) FROM d;
+
+  - id: c_json_aggregates
+    name: JSON_ARRAYAGG and JSON_OBJECTAGG
+    doc: https://mariadb.com/docs/server/reference/sql-functions/aggregate-functions/json_arrayagg
+    tier: medium
+    probes:
+      - { id: arrayagg, sql: "SELECT JSON_ARRAYAGG(a) FROM t;" }
+      - { id: arrayagg_group_by, sql: "SELECT JSON_ARRAYAGG(a) FROM t GROUP BY b;" }
+      - { id: objectagg, sql: "SELECT JSON_OBJECTAGG(k, v) FROM t;" }
+      - { id: objectagg_group_by, sql: "SELECT JSON_OBJECTAGG(k, v) FROM t GROUP BY g;" }
+    examples:
+      - "SELECT JSON_ARRAYAGG(a), JSON_ARRAYAGG(b) FROM t1;"
+      - "SELECT JSON_ARRAYAGG(a), JSON_ARRAYAGG(b) FROM t1 GROUP BY b;"
+
+  - id: c_aggregate_over
+    name: Aggregate functions as window functions
+    doc: https://mariadb.com/docs/server/reference/sql-functions/special-functions/window-functions/window-functions-overview
+    tier: high
+    probes:
+      - { id: count_star_over_order, sql: "SELECT COUNT(*) OVER (ORDER BY c) FROM t;" }
+      - { id: count_over_partition, sql: "SELECT COUNT(c) OVER (PARTITION BY d) FROM t;" }
+      - { id: sum_over_empty, sql: "SELECT SUM(c) OVER () FROM t;" }
+      - { id: avg_over_partition, sql: "SELECT AVG(c) OVER (PARTITION BY d) AS avg_by_d FROM t;" }
+      - { id: min_max_over, sql: "SELECT MIN(c) OVER (PARTITION BY d), MAX(c) OVER (PARTITION BY d) FROM t;" }
+      - { id: bit_and_over, sql: "SELECT BIT_AND(c) OVER (PARTITION BY d) FROM t;" }
+      - { id: bit_or_over, sql: "SELECT BIT_OR(c) OVER (ORDER BY d) FROM t;" }
+      - { id: bit_xor_over, sql: "SELECT BIT_XOR(c) OVER (PARTITION BY d ORDER BY e) FROM t;" }
+      - { id: std_stddev_over, sql: "SELECT STD(c) OVER (PARTITION BY d), STDDEV(c) OVER (PARTITION BY d), STDDEV_POP(c) OVER (PARTITION BY d), STDDEV_SAMP(c) OVER (PARTITION BY d) FROM t;" }
+      - { id: variance_over, sql: "SELECT VAR_POP(c) OVER (PARTITION BY d), VAR_SAMP(c) OVER (PARTITION BY d), VARIANCE(c) OVER (PARTITION BY d) FROM t;" }
+    examples:
+      - "SELECT COUNT(*) OVER (ORDER BY column) FROM table;"
+
+  - id: c_window_over
+    name: Window specification (OVER, PARTITION BY, ORDER BY)
+    doc: https://mariadb.com/docs/server/reference/sql-functions/special-functions/window-functions/window-functions-overview
+    tier: high
+    probes:
+      - { id: over_empty, sql: "SELECT SUM(score) OVER () AS total_score FROM t;" }
+      - { id: over_partition, sql: "SELECT AVG(score) OVER (PARTITION BY test) AS avg_by_test FROM t;" }
+      - { id: over_partition_multi, sql: "SELECT AVG(score) OVER (PARTITION BY a, b) FROM t;" }
+      - { id: over_order, sql: "SELECT SUM(score) OVER (ORDER BY score) AS total_score FROM t;" }
+      - { id: over_order_desc, sql: "SELECT SUM(score) OVER (ORDER BY score DESC) FROM t;" }
+      - { id: over_order_multi, sql: "SELECT SUM(score) OVER (ORDER BY a ASC, b DESC) FROM t;" }
+      - { id: over_partition_order, sql: "SELECT SUM(score) OVER (PARTITION BY test ORDER BY score) FROM t;" }
+      - { id: over_expression_partition, sql: "SELECT SUM(score) OVER (PARTITION BY a + b ORDER BY c * 2) FROM t;" }
+      - { id: multiple_over_clauses, sql: "SELECT SUM(c) OVER (PARTITION BY a), AVG(c) OVER (PARTITION BY b ORDER BY d) FROM t;" }
+      - { id: window_in_order_by, sql: "SELECT name, test, score FROM t ORDER BY SUM(score) OVER (PARTITION BY name);" }
+      - { id: window_in_subquery, sql: "SELECT * FROM (SELECT score, ROW_NUMBER() OVER (ORDER BY score) AS rn FROM t) AS x WHERE rn = 1;" }
+    examples:
+      - |-
+        SELECT name, test, score, SUM(score) 
+          OVER () AS total_score 
+          FROM student_test;
+      - |-
+        SELECT name, test, score, SUM(score) 
+          OVER (ORDER BY score) AS total_score 
+          FROM student_test ORDER BY score;
+
+  - id: c_window_frames
+    name: Window frames (ROWS and RANGE)
+    doc: https://mariadb.com/docs/server/reference/sql-functions/special-functions/window-functions/window-frames
+    tier: high
+    probes:
+      - { id: rows_unbounded_preceding, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS UNBOUNDED PRECEDING) FROM t;" }
+      - { id: rows_current_row, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS CURRENT ROW) FROM t;" }
+      - { id: rows_n_preceding, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS 2 PRECEDING) FROM t;" }
+      - { id: rows_between_unbounded_current, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: rows_between_current_unbounded, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: rows_between_unbounded_both, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: rows_between_n_preceding_following, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;" }
+      - { id: rows_between_n_preceding_current, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: rows_between_current_n_following, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS BETWEEN CURRENT ROW AND 2 FOLLOWING) FROM t;" }
+      - { id: rows_between_n_preceding_m_following, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS BETWEEN 6 PRECEDING AND 3 FOLLOWING) FROM t;" }
+      - { id: range_unbounded_preceding, sql: "SELECT SUM(c) OVER (ORDER BY d RANGE UNBOUNDED PRECEDING) FROM t;" }
+      - { id: range_between_unbounded_current, sql: "SELECT SUM(c) OVER (ORDER BY d RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: range_between_current_unbounded, sql: "SELECT SUM(c) OVER (ORDER BY d RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: range_between_n_preceding_current, sql: "SELECT SUM(c) OVER (ORDER BY d RANGE BETWEEN 6 PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: range_between_current_n_following, sql: "SELECT SUM(c) OVER (ORDER BY d RANGE BETWEEN CURRENT ROW AND 2 FOLLOWING) FROM t;" }
+      - { id: range_between_n_preceding_m_following, sql: "SELECT SUM(c) OVER (ORDER BY d RANGE BETWEEN 6 PRECEDING AND 3 FOLLOWING) FROM t;" }
+      - { id: frame_with_partition, sql: "SELECT AVG(c) OVER (PARTITION BY a ORDER BY d ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: rows_and_range_together, sql: "SELECT score, SUM(score) OVER (ORDER BY score ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS rows_sum, SUM(score) OVER (ORDER BY score RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS range_sum FROM t;" }
+    examples:
+      - |-
+        SELECT name, test, score, SUM(score) 
+          OVER (ORDER BY score RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS total_score 
+          FROM student_test ORDER BY score;
+      - |-
+        SELECT name, test, score, SUM(score) 
+          OVER (ORDER BY score RANGE BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) AS total_score 
+          FROM student_test ORDER BY score;
+
+  - id: c_named_windows
+    name: Named windows (WINDOW clause)
+    doc: https://mariadb.com/docs/server/reference/sql-functions/special-functions/window-functions/window-functions-overview
+    tier: high
+    probes:
+      - { id: window_clause, sql: "SELECT SUM(score) OVER w AS running_total FROM student WINDOW w AS (ORDER BY score);" }
+      - { id: window_clause_frame, sql: "SELECT SUM(score) OVER w AS running_total, AVG(score) OVER w AS running_avg FROM student WINDOW w AS (ORDER BY score ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW);" }
+      - { id: window_clause_partition, sql: "SELECT SUM(score) OVER w FROM student WINDOW w AS (PARTITION BY test);" }
+      - { id: window_clause_empty, sql: "SELECT SUM(score) OVER w FROM student WINDOW w AS ();" }
+      - { id: over_parenthesized_name, sql: "SELECT SUM(score) OVER (w) FROM student WINDOW w AS (PARTITION BY test ORDER BY score);" }
+      - { id: over_name_with_order, sql: "SELECT SUM(score) OVER (w ORDER BY score) FROM student WINDOW w AS (PARTITION BY test);" }
+      - { id: multiple_named_windows, sql: "SELECT SUM(c) OVER w1, AVG(c) OVER w2 FROM t WINDOW w1 AS (PARTITION BY a), w2 AS (ORDER BY b);" }
+      - { id: window_references_window, sql: "SELECT SUM(c) OVER w2 FROM t WINDOW w1 AS (PARTITION BY a), w2 AS (w1 ORDER BY b);" }
+      - { id: window_with_group_by, sql: "SELECT a, SUM(c) OVER w FROM t GROUP BY a, c WINDOW w AS (PARTITION BY a);" }
+    examples:
+      - |-
+        SELECT
+          SUM(score) OVER w AS running_total,
+          AVG(score) OVER w AS running_avg
+        FROM student
+        WINDOW w AS (
+          ORDER BY score
+          ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        );
+
+  - id: c_window_ranking
+    name: Ranking window functions (ROW_NUMBER, RANK, DENSE_RANK, PERCENT_RANK, CUME_DIST, NTILE)
+    doc: https://mariadb.com/docs/server/reference/sql-functions/special-functions/window-functions/rank
+    tier: high
+    probes:
+      - { id: row_number, sql: "SELECT ROW_NUMBER() OVER (ORDER BY c) FROM t;" }
+      - { id: row_number_partition, sql: "SELECT ROW_NUMBER() OVER (PARTITION BY a ORDER BY c) FROM t;" }
+      - { id: row_number_empty_over, sql: "SELECT ROW_NUMBER() OVER () FROM t;" }
+      - { id: rank, sql: "SELECT RANK() OVER (ORDER BY c) FROM t;" }
+      - { id: rank_partition, sql: "SELECT RANK() OVER (PARTITION BY a ORDER BY c DESC) FROM t;" }
+      - { id: dense_rank, sql: "SELECT DENSE_RANK() OVER (ORDER BY c) FROM t;" }
+      - { id: dense_rank_partition, sql: "SELECT DENSE_RANK() OVER (PARTITION BY a ORDER BY c) FROM t;" }
+      - { id: percent_rank, sql: "SELECT PERCENT_RANK() OVER (ORDER BY c) FROM t;" }
+      - { id: percent_rank_partition, sql: "SELECT PERCENT_RANK() OVER (PARTITION BY a ORDER BY c) FROM t;" }
+      - { id: cume_dist, sql: "SELECT CUME_DIST() OVER (ORDER BY c) FROM t;" }
+      - { id: cume_dist_partition, sql: "SELECT CUME_DIST() OVER (PARTITION BY a ORDER BY c) FROM t;" }
+      - { id: ntile, sql: "SELECT NTILE(4) OVER (ORDER BY c) FROM t;" }
+      - { id: ntile_partition, sql: "SELECT NTILE(2) OVER (PARTITION BY a ORDER BY c) FROM t;" }
+      - { id: ranking_in_cte, sql: "WITH r AS (SELECT c, RANK() OVER (PARTITION BY a ORDER BY c) AS rk FROM t) SELECT * FROM r WHERE rk = 1;" }
+
+  - id: c_window_value
+    name: Value window functions (FIRST_VALUE, LAST_VALUE, NTH_VALUE, LAG, LEAD)
+    doc: https://mariadb.com/docs/server/reference/sql-functions/special-functions/window-functions/lag
+    tier: high
+    probes:
+      - { id: first_value, sql: "SELECT FIRST_VALUE(c) OVER (ORDER BY d) FROM t;" }
+      - { id: first_value_partition, sql: "SELECT FIRST_VALUE(c) OVER (PARTITION BY a ORDER BY d) FROM t;" }
+      - { id: first_value_no_order, sql: "SELECT FIRST_VALUE(c) OVER (PARTITION BY a) FROM t;" }
+      - { id: last_value, sql: "SELECT LAST_VALUE(c) OVER (PARTITION BY a ORDER BY d) FROM t;" }
+      - { id: nth_value, sql: "SELECT NTH_VALUE(c, 2) OVER (PARTITION BY a ORDER BY d) FROM t;" }
+      - { id: nth_value_no_row, sql: "SELECT NTH_VALUE(c) OVER (ORDER BY d) FROM t;" }
+      - { id: lag, sql: "SELECT LAG(c) OVER (ORDER BY d) FROM t;" }
+      - { id: lag_offset, sql: "SELECT LAG(c, 2) OVER (PARTITION BY a ORDER BY d) FROM t;" }
+      - { id: lead, sql: "SELECT LEAD(c) OVER (ORDER BY d) FROM t;" }
+      - { id: lead_offset, sql: "SELECT LEAD(c, 2) OVER (PARTITION BY a ORDER BY d) FROM t;" }
+      - { id: first_value_with_frame, sql: "SELECT FIRST_VALUE(c) OVER (PARTITION BY a ORDER BY d ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;" }
+
+  - id: c_window_percentile
+    name: PERCENTILE_CONT, PERCENTILE_DISC and MEDIAN
+    doc: https://mariadb.com/docs/server/reference/sql-functions/special-functions/window-functions/percentile_cont
+    tier: medium
+    probes:
+      - { id: percentile_cont, sql: "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY star_rating) OVER (PARTITION BY name) AS pc FROM book_rating;" }
+      - { id: percentile_cont_over_empty, sql: "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY c) OVER () FROM t;" }
+      - { id: percentile_disc, sql: "SELECT PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY star_rating) OVER (PARTITION BY name) AS pc FROM book_rating;" }
+      - { id: percentile_disc_over_empty, sql: "SELECT PERCENTILE_DISC(0.25) WITHIN GROUP (ORDER BY c) OVER () FROM t;" }
+      - { id: median, sql: "SELECT MEDIAN(c) OVER (PARTITION BY a) FROM t;" }
+      - { id: median_over_empty, sql: "SELECT MEDIAN(c) OVER () FROM t;" }
+    examples:
+      - |-
+        SELECT name, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY star_rating) 
+          OVER (PARTITION BY name) AS pc 
+          FROM book_rating;
+      - |-
+        SELECT name, PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY star_rating)
+          OVER (PARTITION BY name) AS pc FROM book_rating;
+
+  - id: c_json_constructors
+    name: JSON constructors (JSON_ARRAY, JSON_OBJECT, JSON_QUOTE)
+    doc: https://mariadb.com/docs/server/reference/sql-functions/special-functions/json-functions/json_object
+    tier: high
+    probes:
+      - { id: json_array_empty, sql: "SELECT JSON_ARRAY();" }
+      - { id: json_array_values, sql: "SELECT JSON_ARRAY(56, 3.1416, 'My name is \"Foo\"', NULL);" }
+      - { id: json_array_nested, sql: "SELECT JSON_ARRAY(1, JSON_ARRAY(2, 3), JSON_OBJECT('a', 1));" }
+      - { id: json_array_columns, sql: "SELECT JSON_ARRAY(a, b) FROM t;" }
+      - { id: json_object_empty, sql: "SELECT JSON_OBJECT();" }
+      - { id: json_object_pairs, sql: "SELECT JSON_OBJECT('id', 87, 'name', 'carrot');" }
+      - { id: json_object_nested, sql: "SELECT JSON_OBJECT('a', JSON_ARRAY(1, 2), 'b', JSON_OBJECT('c', 3));" }
+      - { id: json_object_columns, sql: "SELECT JSON_OBJECT('id', id, 'name', name) FROM t;" }
+      - { id: json_quote, sql: "SELECT JSON_QUOTE('gnu');" }
+      - { id: json_unquote_quote, sql: "SELECT JSON_UNQUOTE(JSON_QUOTE('gnu'));" }
+      - { id: json_in_insert, sql: "INSERT INTO t (j) VALUES (JSON_OBJECT('a', 1));" }
+      - { id: json_in_where, sql: "SELECT * FROM t WHERE JSON_EXTRACT(j, '$.a') = 1;" }
+
+  - id: c_json_access
+    name: JSON access and inspection functions
+    doc: https://mariadb.com/docs/server/reference/sql-functions/special-functions/json-functions/json_extract
+    tier: high
+    probes:
+      - { id: json_extract, sql: "SELECT JSON_EXTRACT('[1, 2, [3, 4]]', '$[1]');" }
+      - { id: json_extract_multi_path, sql: "SELECT JSON_EXTRACT(j, '$.a', '$.b') FROM t;" }
+      - { id: json_extract_nested_index, sql: "SELECT JSON_EXTRACT('[1, 2, [3, 4]]', '$[2][1]');" }
+      - { id: json_extract_wildcard, sql: "SELECT JSON_EXTRACT(j, '$.a[*].b') FROM t;" }
+      - { id: json_value, sql: "SELECT JSON_VALUE('{\"key1\":123}', '$.key1');" }
+      - { id: json_value_column, sql: "SELECT JSON_VALUE(j, '$.name') FROM t;" }
+      - { id: json_query, sql: "SELECT JSON_QUERY('{\"key1\":{\"a\":1, \"b\":[1,2]}}', '$.key1');" }
+      - { id: json_unquote, sql: "SELECT JSON_UNQUOTE(JSON_EXTRACT(j, '$.name')) FROM t;" }
+      - { id: json_exists, sql: "SELECT JSON_EXISTS('{\"key1\":\"xxxx\", \"key2\":[1, 2, 3]}', '$.key2');" }
+      - { id: json_exists_where, sql: "SELECT * FROM t WHERE JSON_EXISTS(j, '$.a');" }
+      - { id: json_contains, sql: "SELECT JSON_CONTAINS('{\"A\": 0, \"B\": {\"C\": 1}, \"D\": 2}', '2', '$.A');" }
+      - { id: json_contains_no_path, sql: "SELECT JSON_CONTAINS(j, '1') FROM t;" }
+      - { id: json_search, sql: "SELECT JSON_SEARCH('[\"A\", [{\"B\": \"1\"}], {\"C\":\"AB\"}, {\"D\":\"BC\"}]', 'one', 'AB');" }
+      - { id: json_search_all_escape_path, sql: "SELECT JSON_SEARCH(j, 'all', 'a%', NULL, '$.x') FROM t;" }
+      - { id: json_type, sql: "SELECT JSON_TYPE('{\"A\": 1, \"B\": 2, \"C\": 3}');" }
+      - { id: json_length, sql: "SELECT JSON_LENGTH('[1, 2, {\"a\": 3}]'), JSON_LENGTH(j, '$.a') FROM t;" }
+      - { id: json_depth, sql: "SELECT JSON_DEPTH('[10, {\"a\": 20}]');" }
+      - { id: json_keys, sql: "SELECT JSON_KEYS('{\"A\": 1, \"B\": {\"C\": 2}}'), JSON_KEYS(j, '$.B') FROM t;" }
+      - { id: json_overlaps, sql: "SELECT JSON_OVERLAPS('{\"A\": 1, \"B\": {\"C\":2}}', '{\"A\": 2, \"B\": {\"C\":2}}') AS is_overlap;" }
+    examples:
+      - "SELECT JSON_EXTRACT('{\"id\":\"1\", \"name\":\"Name\"}', '$.name') `name`;"
+      - "SELECT JSON_EXISTS('{\"key1\":\"xxxx\", \"key2\":[1, 2, 3]}', \"$.key2\");"
+      - "SELECT json_query('{\"key1\":{\"a\":1, \"b\":[1,2]}}', '$.key1');"
+
+  - id: c_json_modify
+    name: JSON modification functions
+    doc: https://mariadb.com/docs/server/reference/sql-functions/special-functions/json-functions/json_set
+    tier: medium
+    probes:
+      - { id: json_set, sql: "SELECT JSON_SET('{\"a\": 1}', '$.b', 2);" }
+      - { id: json_set_multi, sql: "SELECT JSON_SET(j, '$.a', 10, '$.b', 20) FROM t;" }
+      - { id: json_insert, sql: "SELECT JSON_INSERT('{\"a\": 1}', '$.b', 2);" }
+      - { id: json_insert_multi, sql: "SELECT JSON_INSERT(j, '$.a', 1, '$.b', 2) FROM t;" }
+      - { id: json_replace, sql: "SELECT JSON_REPLACE('{\"a\": 1}', '$.a', 2);" }
+      - { id: json_replace_multi, sql: "SELECT JSON_REPLACE(j, '$.a', 1, '$.b', 2) FROM t;" }
+      - { id: json_remove, sql: "SELECT JSON_REMOVE('{\"a\": 1, \"b\": 2}', '$.b');" }
+      - { id: json_remove_multi, sql: "SELECT JSON_REMOVE(j, '$.a', '$.b') FROM t;" }
+      - { id: json_array_append, sql: "SELECT JSON_ARRAY_APPEND('[1, 2]', '$', 3);" }
+      - { id: json_array_append_multi, sql: "SELECT JSON_ARRAY_APPEND(j, '$[0]', 1, '$[1]', 2) FROM t;" }
+      - { id: json_array_insert, sql: "SELECT JSON_ARRAY_INSERT('[1, 2]', '$[0]', 0);" }
+      - { id: json_array_insert_multi, sql: "SELECT JSON_ARRAY_INSERT(j, '$[0]', 1, '$[1]', 2) FROM t;" }
+      - { id: json_merge_patch, sql: "SELECT JSON_MERGE_PATCH('{\"a\": 1}', '{\"b\": 2}');" }
+      - { id: json_merge_patch_three, sql: "SELECT JSON_MERGE_PATCH(j1, j2, j3) FROM t;" }
+      - { id: update_with_json_set, sql: "UPDATE t SET j = JSON_SET(j, '$.a', 1) WHERE id = 1;" }
+
+  - id: c_json_utility
+    name: JSON utility functions (VALID, NORMALIZE, DETAILED, SCHEMA_VALID, array and object helpers)
+    doc: https://mariadb.com/docs/server/reference/sql-functions/special-functions/json-functions/json_valid
+    tier: medium
+    probes:
+      - { id: json_valid, sql: "SELECT JSON_VALID('{\"a\": 1}');" }
+      - { id: json_valid_where, sql: "SELECT * FROM t WHERE JSON_VALID(j);" }
+      - { id: json_compact, sql: "SELECT JSON_COMPACT('{ \"A\": 1, \"B\": [2, 3] }');" }
+      - { id: json_loose, sql: "SELECT JSON_LOOSE('{ \"A\": 1, \"B\": [2, 3] }');" }
+      - { id: json_detailed, sql: "SELECT JSON_DETAILED('{\"A\":1, \"B\":[2,3]}');" }
+      - { id: json_detailed_tab_size, sql: "SELECT JSON_DETAILED('{\"A\":1, \"B\":[2,3]}', 2);" }
+      - { id: json_pretty, sql: "SELECT JSON_PRETTY('{\"A\":1, \"B\":[2,3]}');" }
+      - { id: json_normalize, sql: "SELECT JSON_NORMALIZE('{\"b\": 1, \"a\": 2}');" }
+      - { id: json_equals, sql: "SELECT JSON_EQUALS('{\"a\": 1, \"b\": 2}', '{\"b\": 2, \"a\": 1}');" }
+      - { id: json_schema_valid, sql: "SELECT JSON_SCHEMA_VALID('{\"type\": \"number\"}', '5');" }
+      - { id: json_schema_valid_check, sql: "CREATE TABLE t (j JSON CHECK (JSON_SCHEMA_VALID('{\"type\": \"object\"}', j)));" }
+      - { id: json_array_intersect, sql: "SELECT JSON_ARRAY_INTERSECT('[1,2,3]', '[1,2,4]');" }
+      - { id: json_object_filter_keys, sql: "SELECT JSON_OBJECT_FILTER_KEYS('{\"a\": 1, \"b\": 2}', '[\"a\"]');" }
+      - { id: json_object_to_array, sql: "SELECT JSON_OBJECT_TO_ARRAY('{\"a\": [1, 2, 3], \"b\": {\"key1\":\"val1\"}}');" }
+    examples:
+      - "SELECT JSON_OVERLAPS('false', 'false');"
+      - "SELECT JSON_TYPE('{\"A\": 1, \"B\": 2, \"C\": 3}');"
+
+  - id: c_json_table
+    name: JSON_TABLE
+    doc: https://mariadb.com/docs/server/reference/sql-functions/special-functions/json-functions/json_table
+    tier: high
+    probes:
+      - { id: basic, sql: "SELECT * FROM JSON_TABLE('[{\"a\":1},{\"a\":2}]', '$[*]' COLUMNS (a INT PATH '$.a')) AS jt;" }
+      - { id: without_as, sql: "SELECT * FROM JSON_TABLE('[1,2]', '$[*]' COLUMNS (a INT PATH '$')) jt;" }
+      - { id: multiple_columns, sql: "SELECT * FROM JSON_TABLE('[{\"a\":1,\"b\":\"x\"}]', '$[*]' COLUMNS (a INT PATH '$.a', b VARCHAR(10) PATH '$.b')) AS jt;" }
+      - { id: for_ordinality, sql: "SELECT * FROM JSON_TABLE('[{\"a\":1},{\"a\":2}]', '$[*]' COLUMNS (id FOR ORDINALITY, a INT PATH '$.a')) AS jt;" }
+      - { id: format_json, sql: "SELECT * FROM JSON_TABLE('[{\"sizes\":[1,2]}]', '$[*]' COLUMNS (sizes VARCHAR(100) FORMAT JSON PATH '$.sizes')) AS jt;" }
+      - { id: exists_path, sql: "SELECT * FROM JSON_TABLE('[{\"a\":1},{\"b\":2}]', '$[*]' COLUMNS (has_a INT EXISTS PATH '$.a')) AS jt;" }
+      - { id: nested_path, sql: "SELECT * FROM JSON_TABLE('[{\"name\":\"Jeans\",\"sizes\":[32,34]}]', '$[*]' COLUMNS (name VARCHAR(10) PATH '$.name', NESTED PATH '$.sizes[*]' COLUMNS (size INT PATH '$'))) AS jt;" }
+      - { id: nested_path_sibling, sql: "SELECT * FROM JSON_TABLE('[{\"a\":[1],\"b\":[2]}]', '$[*]' COLUMNS (NESTED PATH '$.a[*]' COLUMNS (x INT PATH '$'), NESTED PATH '$.b[*]' COLUMNS (y INT PATH '$'))) AS jt;" }
+      - { id: on_empty_null, sql: "SELECT * FROM JSON_TABLE('[{\"a\":1}]', '$[*]' COLUMNS (b INT PATH '$.b' NULL ON EMPTY)) AS jt;" }
+      - { id: on_empty_default, sql: "SELECT * FROM JSON_TABLE('[{\"a\":1}]', '$[*]' COLUMNS (b INT PATH '$.b' DEFAULT '0' ON EMPTY)) AS jt;" }
+      - { id: on_empty_error, sql: "SELECT * FROM JSON_TABLE('[{\"a\":1}]', '$[*]' COLUMNS (b INT PATH '$.b' ERROR ON EMPTY)) AS jt;" }
+      - { id: on_error_null, sql: "SELECT * FROM JSON_TABLE('[{\"a\":\"x\"}]', '$[*]' COLUMNS (a INT PATH '$.a' NULL ON ERROR)) AS jt;" }
+      - { id: on_error_default, sql: "SELECT * FROM JSON_TABLE('[{\"a\":\"x\"}]', '$[*]' COLUMNS (a INT PATH '$.a' DEFAULT '0' ON ERROR)) AS jt;" }
+      - { id: on_error_error, sql: "SELECT * FROM JSON_TABLE('[{\"a\":\"x\"}]', '$[*]' COLUMNS (a INT PATH '$.a' ERROR ON ERROR)) AS jt;" }
+      - { id: on_empty_and_on_error, sql: "SELECT * FROM JSON_TABLE('[{\"a\":1}]', '$[*]' COLUMNS (b INT PATH '$.b' DEFAULT '0' ON EMPTY ERROR ON ERROR)) AS jt;" }
+      - { id: user_variable_doc, sql: "SELECT * FROM JSON_TABLE(@json, '$[*]' COLUMNS (name VARCHAR(10) PATH '$.name', sizes VARCHAR(100) FORMAT JSON PATH '$.sizes')) AS jt;" }
+      - { id: correlated_column, sql: "SELECT jt.a FROM t, JSON_TABLE(t.j, '$[*]' COLUMNS (a INT PATH '$.a')) AS jt;" }
+      - { id: join_with_table, sql: "SELECT t.id, jt.a FROM t JOIN JSON_TABLE(t.j, '$[*]' COLUMNS (a INT PATH '$.a')) AS jt ON jt.a = t.id;" }
+    examples:
+      - "SELECT * FROM JSON_TABLE('{\"foo\": [1,2,3,4]}','$' columns( jscol json path '$.foo') ) AS T;"
+
+  - id: c_dynamic_columns
+    name: Dynamic columns functions (COLUMN_CREATE, COLUMN_GET, COLUMN_ADD, ...)
+    doc: https://mariadb.com/docs/server/reference/sql-functions/special-functions/dynamic-columns-functions
+    tier: medium
+    probes:
+      - { id: column_create_name, sql: "SELECT COLUMN_CREATE('column_name', 'value');" }
+      - { id: column_create_number, sql: "SELECT COLUMN_CREATE(1, 'value');" }
+      - { id: column_create_typed, sql: "SELECT COLUMN_CREATE('a', 10 AS INTEGER, 'b', 'x' AS CHAR);" }
+      - { id: column_create_insert, sql: "INSERT INTO t SET dyncol_blob = COLUMN_CREATE('column_name', 'value');" }
+      - { id: column_get_name, sql: "SELECT COLUMN_GET(dyncol_blob, 'a' AS CHAR) FROM t;" }
+      - { id: column_get_number, sql: "SELECT COLUMN_GET(dyncol_blob, 1 AS INTEGER) FROM t;" }
+      - { id: column_get_decimal, sql: "SELECT COLUMN_GET(dyncol_blob, 'a' AS DECIMAL(10,2)) FROM t;" }
+      - { id: column_add, sql: "UPDATE t SET dyncol_blob = COLUMN_ADD(dyncol_blob, 'c', 'v' AS CHAR);" }
+      - { id: column_add_multi, sql: "SELECT COLUMN_ADD(dyncol_blob, 'a', 1, 'b', 2) FROM t;" }
+      - { id: column_delete, sql: "UPDATE t SET dyncol_blob = COLUMN_DELETE(dyncol_blob, 'a', 'b');" }
+      - { id: column_exists, sql: "SELECT COLUMN_EXISTS(dyncol_blob, 'a') FROM t;" }
+      - { id: column_list, sql: "SELECT COLUMN_LIST(dyncol_blob) FROM t;" }
+      - { id: column_json, sql: "SELECT COLUMN_JSON(dyncol_blob) FROM t;" }
+      - { id: column_check, sql: "SELECT COLUMN_CHECK(dyncol_blob) FROM t;" }
+    examples:
+      - "INSERT INTO tbl SET dyncol_blob=COLUMN_CREATE(\"column_name\", \"value\");"
+
+  - id: c_vector_functions
+    name: Vector functions
+    doc: https://mariadb.com/docs/server/reference/sql-functions/vector-functions
+    tier: medium
+    probes:
+      - { id: vec_fromtext, sql: "SELECT VEC_FromText('[1,2,3]');" }
+      - { id: vec_totext, sql: "SELECT VEC_ToText(v) FROM t;" }
+      - { id: vec_distance_euclidean, sql: "SELECT VEC_DISTANCE_EUCLIDEAN(v, VEC_FromText('[1,2,3]')) FROM t;" }
+      - { id: vec_distance_cosine, sql: "SELECT VEC_DISTANCE_COSINE(v, VEC_FromText('[1,2,3]')) FROM t;" }
+      - { id: vec_distance, sql: "SELECT VEC_DISTANCE(v, VEC_FromText('[1,2,3]')) FROM t;" }
+      - { id: nearest_neighbour, sql: "SELECT id FROM t ORDER BY VEC_DISTANCE_EUCLIDEAN(v, VEC_FromText('[1,2,3]')) LIMIT 10;" }
+
+  - id: c_string_functions
+    name: String functions (one probe per family)
+    doc: https://mariadb.com/docs/server/reference/sql-functions/string-functions
+    tier: high
+    probes:
+      - { id: concat, sql: "SELECT CONCAT('a', 'b', c) FROM t;" }
+      - { id: concat_ws, sql: "SELECT CONCAT_WS(',', a, b, c) FROM t;" }
+      - { id: length_family, sql: "SELECT LENGTH(c), CHAR_LENGTH(c), CHARACTER_LENGTH(c), BIT_LENGTH(c), OCTET_LENGTH(c) FROM t;" }
+      - { id: case_functions, sql: "SELECT UPPER(c), LOWER(c), UCASE(c), LCASE(c) FROM t;" }
+      - { id: substr_family, sql: "SELECT SUBSTR(c, 2, 3), SUBSTRING(c, 2), MID(c, 2, 3), LEFT(c, 2), RIGHT(c, 2) FROM t;" }
+      - { id: substring_index, sql: "SELECT SUBSTRING_INDEX(c, '.', 2) FROM t;" }
+      - { id: replace_function, sql: "SELECT REPLACE(c, 'a', 'b') FROM t;" }
+      - { id: pad_functions, sql: "SELECT LPAD(c, 10, '0'), RPAD(c, 10, ' ') FROM t;" }
+      - { id: trim_functions, sql: "SELECT LTRIM(c), RTRIM(c) FROM t;" }
+      - { id: search_functions, sql: "SELECT INSTR(c, 'a'), LOCATE('a', c), LOCATE('a', c, 3), FIND_IN_SET('a', c), FIELD(c, 'a', 'b'), ELT(2, 'a', 'b') FROM t;" }
+      - { id: repeat_reverse_space, sql: "SELECT REPEAT(c, 3), REVERSE(c), SPACE(5) FROM t;" }
+      - { id: insert_function, sql: "SELECT INSERT(c, 2, 3, 'xyz') FROM t;" }
+      - { id: char_ascii_ord, sql: "SELECT ASCII(c), ORD(c), CHAR(77, 97, 114), CHR(65) FROM t;" }
+      - { id: hex_unhex_base64, sql: "SELECT HEX(c), UNHEX(c), TO_BASE64(c), FROM_BASE64(c), BIN(5) FROM t;" }
+      - { id: format_function, sql: "SELECT FORMAT(12332.123456, 4), FORMAT(12332.2, 2, 'de_DE') FROM t;" }
+      - { id: quote_soundex, sql: "SELECT QUOTE(c), SOUNDEX(c), STRCMP(a, b) FROM t;" }
+      - { id: make_export_set, sql: "SELECT MAKE_SET(1 | 4, 'a', 'b', 'c'), EXPORT_SET(5, 'Y', 'N', ',', 4) FROM t;" }
+      - { id: sformat_to_char, sql: "SELECT SFORMAT('{} {}', a, b), TO_CHAR(d, 'YYYY-MM-DD') FROM t;" }
+      - { id: natural_sort_key, sql: "SELECT NATURAL_SORT_KEY(c) FROM t;" }
+      - { id: regexp_functions, sql: "SELECT REGEXP_REPLACE(c, '[0-9]+', '#'), REGEXP_INSTR(c, 'a+'), REGEXP_SUBSTR(c, '[a-z]+') FROM t;" }
+      - { id: xml_functions, sql: "SELECT EXTRACTVALUE('<a><b>x</b></a>', '/a/b'), UPDATEXML('<a><b>x</b></a>', '/a/b', '<b>y</b>') FROM t;" }
+      - { id: load_file_weight, sql: "SELECT LOAD_FILE('/tmp/f'), WEIGHT_STRING(c) FROM t;" }
+
+  - id: c_numeric_functions
+    name: Numeric functions (one probe per family)
+    doc: https://mariadb.com/docs/server/reference/sql-functions/numeric-functions
+    tier: high
+    probes:
+      - { id: abs_sign, sql: "SELECT ABS(c), SIGN(c) FROM t;" }
+      - { id: rounding, sql: "SELECT CEIL(c), CEILING(c), FLOOR(c), ROUND(c), ROUND(c, 2), TRUNCATE(c, 2) FROM t;" }
+      - { id: mod_function, sql: "SELECT MOD(a, b), MOD(10, 3) FROM t;" }
+      - { id: power_sqrt, sql: "SELECT POW(a, 2), POWER(a, 2), SQRT(a), EXP(a) FROM t;" }
+      - { id: log_family, sql: "SELECT LN(a), LOG(a), LOG(2, a), LOG2(a), LOG10(a) FROM t;" }
+      - { id: trigonometry, sql: "SELECT SIN(a), COS(a), TAN(a), COT(a), ASIN(a), ACOS(a), ATAN(a), ATAN(a, b), ATAN2(a, b) FROM t;" }
+      - { id: degrees_radians_pi, sql: "SELECT DEGREES(a), RADIANS(a), PI() FROM t;" }
+      - { id: rand, sql: "SELECT RAND(), RAND(5) FROM t;" }
+      - { id: conv_oct, sql: "SELECT CONV(a, 10, 2), OCT(a) FROM t;" }
+      - { id: crc32, sql: "SELECT CRC32(c), CRC32C(c) FROM t;" }
+      - { id: to_number, sql: "SELECT TO_NUMBER(c) FROM t;" }
+      - { id: integer_division_operator, sql: "SELECT a DIV b, a MOD b, a % b FROM t;" }
+
+  - id: c_date_time_functions
+    name: Date and time functions (one probe per family)
+    doc: https://mariadb.com/docs/server/reference/sql-functions/date-time-functions
+    tier: high
+    probes:
+      - { id: current_values, sql: "SELECT CURDATE(), CURRENT_DATE, CURRENT_DATE(), CURTIME(), CURRENT_TIME, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP(3), NOW(), NOW(6), LOCALTIME, LOCALTIMESTAMP, SYSDATE();" }
+      - { id: utc_values, sql: "SELECT UTC_DATE, UTC_DATE(), UTC_TIME, UTC_TIME(), UTC_TIMESTAMP, UTC_TIMESTAMP(6);" }
+      - { id: date_add_sub, sql: "SELECT DATE_ADD(d, INTERVAL 1 DAY), DATE_SUB(d, INTERVAL 1 MONTH) FROM t;" }
+      - { id: adddate_subdate, sql: "SELECT ADDDATE(d, INTERVAL 31 DAY), ADDDATE(d, 31), SUBDATE(d, INTERVAL 31 DAY), SUBDATE(d, 31) FROM t;" }
+      - { id: addtime_subtime, sql: "SELECT ADDTIME(d, '1:1:1.000002'), SUBTIME(d, '1:1:1.000002') FROM t;" }
+      - { id: add_months, sql: "SELECT ADD_MONTHS(d, 2) FROM t;" }
+      - { id: datediff_timediff, sql: "SELECT DATEDIFF(a, b), TIMEDIFF(a, b), MONTHS_BETWEEN(a, b) FROM t;" }
+      - { id: timestampadd_diff, sql: "SELECT TIMESTAMPADD(MINUTE, 1, d), TIMESTAMPDIFF(MONTH, a, b) FROM t;" }
+      - { id: date_format, sql: "SELECT DATE_FORMAT(d, '%W %M %Y'), TIME_FORMAT(d, '%H:%i:%s'), DATE_FORMAT(d, '%W %M %Y', 'de_DE') FROM t;" }
+      - { id: str_to_date, sql: "SELECT STR_TO_DATE('01,5,2013', '%d,%m,%Y'), TO_DATE('2013-05-01', 'YYYY-MM-DD') FROM t;" }
+      - { id: component_extractors, sql: "SELECT YEAR(d), QUARTER(d), MONTH(d), WEEK(d), WEEK(d, 3), DAY(d), DAYOFMONTH(d), HOUR(d), MINUTE(d), SECOND(d), MICROSECOND(d) FROM t;" }
+      - { id: day_names, sql: "SELECT DAYNAME(d), MONTHNAME(d), DAYOFWEEK(d), DAYOFYEAR(d), WEEKDAY(d), WEEKOFYEAR(d), YEARWEEK(d), YEARWEEK(d, 1) FROM t;" }
+      - { id: date_time_constructors, sql: "SELECT DATE(d), TIME(d), TIMESTAMP(d), TIMESTAMP(d, '12:00:00'), MAKEDATE(2011, 31), MAKETIME(12, 15, 30) FROM t;" }
+      - { id: unix_functions, sql: "SELECT UNIX_TIMESTAMP(), UNIX_TIMESTAMP(d), FROM_UNIXTIME(1196440219), FROM_UNIXTIME(1196440219, '%Y %D %M') FROM t;" }
+      - { id: day_conversion, sql: "SELECT TO_DAYS(d), FROM_DAYS(730669), TO_SECONDS(d), SEC_TO_TIME(2378), TIME_TO_SEC(d) FROM t;" }
+      - { id: last_day_trunc, sql: "SELECT LAST_DAY(d), TRUNC(d, 'MONTH') FROM t;" }
+      - { id: period_functions, sql: "SELECT PERIOD_ADD(200801, 2), PERIOD_DIFF(200802, 200703) FROM t;" }
+      - { id: convert_tz_get_format, sql: "SELECT CONVERT_TZ(d, 'GMT', 'MET'), GET_FORMAT(DATE, 'EUR') FROM t;" }
+      - { id: format_pico_time, sql: "SELECT FORMAT_PICO_TIME(5000) FROM t;" }
+
+  - id: c_control_flow_functions
+    name: Control flow functions (IF, IFNULL, NULLIF, NVL, NVL2, DECODE_ORACLE)
+    doc: https://mariadb.com/docs/server/reference/sql-functions/control-flow-functions
+    tier: high
+    probes:
+      - { id: if_function, sql: "SELECT IF(a > 1, 'yes', 'no') FROM t;" }
+      - { id: ifnull, sql: "SELECT IFNULL(a, 0) FROM t;" }
+      - { id: nullif, sql: "SELECT NULLIF(a, b) FROM t;" }
+      - { id: nvl, sql: "SELECT NVL(a, 0) FROM t;" }
+      - { id: nvl2, sql: "SELECT NVL2(a, 'set', 'unset') FROM t;" }
+      - { id: decode_oracle, sql: "SELECT DECODE_ORACLE(a, 1, 'one', 2, 'two', 'other') FROM t;" }
+
+  - id: c_encryption_hash_functions
+    name: Encryption, hashing and compression functions
+    doc: https://mariadb.com/docs/server/reference/sql-functions/secondary-functions/encryption-hashing-and-compression-functions
+    tier: medium
+    probes:
+      - { id: md5_sha, sql: "SELECT MD5(c), SHA1(c), SHA(c), SHA2(c, 256) FROM t;" }
+      - { id: aes, sql: "SELECT AES_ENCRYPT(c, 'key'), AES_DECRYPT(c, 'key') FROM t;" }
+      - { id: compress, sql: "SELECT COMPRESS(c), UNCOMPRESS(c), UNCOMPRESSED_LENGTH(c) FROM t;" }
+      - { id: password_random_bytes, sql: "SELECT PASSWORD(c), RANDOM_BYTES(16) FROM t;" }
+      - { id: kdf, sql: "SELECT KDF('secret', 'salt', 1000, 'hkdf') FROM t;" }
+
+  - id: c_information_functions
+    name: Information functions
+    doc: https://mariadb.com/docs/server/reference/sql-functions/secondary-functions/information-functions
+    tier: medium
+    probes:
+      - { id: session_info, sql: "SELECT DATABASE(), SCHEMA(), USER(), CURRENT_USER(), CURRENT_USER, SESSION_USER(), SYSTEM_USER(), CURRENT_ROLE(), CONNECTION_ID(), VERSION();" }
+      - { id: row_counts, sql: "SELECT LAST_INSERT_ID(), LAST_INSERT_ID(5), FOUND_ROWS(), ROW_COUNT();" }
+      - { id: charset_collation, sql: "SELECT CHARSET(c), COLLATION(c), COERCIBILITY(c) FROM t;" }
+      - { id: benchmark, sql: "SELECT BENCHMARK(1000000, MD5('a'));" }
+      - { id: default_function, sql: "SELECT DEFAULT(c) FROM t;" }
+      - { id: rownum, sql: "SELECT ROWNUM() FROM t;" }
+      - { id: last_value_function, sql: "SELECT LAST_VALUE(a, b, c) FROM t;" }
+
+  - id: c_miscellaneous_functions
+    name: Miscellaneous functions (UUID, INET, locks, sleep)
+    doc: https://mariadb.com/docs/server/reference/sql-functions/secondary-functions/miscellaneous-functions
+    tier: medium
+    probes:
+      - { id: uuid_functions, sql: "SELECT UUID(), UUID_SHORT(), SYS_GUID();" }
+      - { id: inet_functions, sql: "SELECT INET_ATON('192.168.1.1'), INET_NTOA(3232235777), INET6_ATON('::1'), INET6_NTOA(c) FROM t;" }
+      - { id: ip_predicates, sql: "SELECT IS_IPV4(c), IS_IPV6(c), IS_IPV4_COMPAT(c), IS_IPV4_MAPPED(c) FROM t;" }
+      - { id: lock_functions, sql: "SELECT GET_LOCK('lock1', 10), IS_FREE_LOCK('lock1'), IS_USED_LOCK('lock1'), RELEASE_LOCK('lock1'), RELEASE_ALL_LOCKS();" }
+      - { id: sleep, sql: "SELECT SLEEP(1);" }
+      - { id: name_const, sql: "SELECT NAME_CONST('myname', 14);" }
+      - { id: format_bytes, sql: "SELECT FORMAT_BYTES(a) FROM t;" }
+      - { id: master_pos_wait, sql: "SELECT MASTER_POS_WAIT('master-bin.000001', 4, 10), MASTER_GTID_WAIT('0-1-100', 10);" }
+      - { id: old_value, sql: "INSERT INTO t (a) VALUES (1) ON DUPLICATE KEY UPDATE a = OLD_VALUE(a) + 1;" }
+
+  - id: c_bit_functions
+    name: Bit functions and operators
+    doc: https://mariadb.com/docs/server/reference/sql-functions/secondary-functions/bit-functions-and-operators
+    tier: medium
+    probes:
+      - { id: bit_count, sql: "SELECT BIT_COUNT(a) FROM t;" }
+      - { id: bitwise_operators, sql: "SELECT a & b, a | b, a ^ b, ~a FROM t;" }
+      - { id: shift_operators, sql: "SELECT a << 2, a >> 2 FROM t;" }
+      - { id: bitwise_mixed, sql: "SELECT (a & 4) = 4, 1 << 3 | 1 FROM t;" }
+
+  - id: c_geographic_functions
+    name: Geographic (spatial) functions
+    doc: https://mariadb.com/docs/server/reference/sql-functions/special-functions/geographic-functions
+    tier: medium
+    probes:
+      - { id: geom_from_text, sql: "SELECT ST_GeomFromText('POINT(1 1)');" }
+      - { id: geom_from_text_srid, sql: "SELECT ST_GeomFromText('POINT(1 1)', 4326);" }
+      - { id: constructors, sql: "SELECT Point(1, 2), ST_PointFromText('POINT(1 2)'), ST_LineFromText('LINESTRING(0 0, 1 1)'), ST_PolyFromText('POLYGON((0 0, 1 0, 1 1, 0 0))');" }
+      - { id: as_text, sql: "SELECT ST_AsText(g), ST_AsWKT(g), ST_AsBinary(g), ST_AsGeoJSON(g) FROM t;" }
+      - { id: accessors, sql: "SELECT ST_X(g), ST_Y(g), ST_SRID(g), ST_GeometryType(g), ST_NumPoints(g) FROM t;" }
+      - { id: relations, sql: "SELECT ST_Contains(a, b), ST_Intersects(a, b), ST_Within(a, b), ST_Disjoint(a, b), ST_Touches(a, b), ST_Equals(a, b) FROM t;" }
+      - { id: measures, sql: "SELECT ST_Distance(a, b), ST_Area(g), ST_Length(g) FROM t;" }
+      - { id: operations, sql: "SELECT ST_Buffer(g, 1), ST_Envelope(g), ST_Centroid(g), ST_Union(a, b), ST_Intersection(a, b) FROM t;" }
+      - { id: mbr_functions, sql: "SELECT MBRContains(a, b), MBRIntersects(a, b), MBRWithin(a, b) FROM t;" }
+      - { id: geometry_literal_where, sql: "SELECT * FROM t WHERE MBRContains(ST_GeomFromText('POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))'), g);" }
+
+  - id: c_galera_functions
+    name: Galera functions
+    doc: https://mariadb.com/docs/server/reference/sql-functions/special-functions/galera-functions
+    tier: low
+    probes:
+      - { id: wsrep_last_seen_gtid, sql: "SELECT WSREP_LAST_SEEN_GTID();" }
+      - { id: wsrep_last_written_gtid, sql: "SELECT WSREP_LAST_WRITTEN_GTID();" }
+      - { id: wsrep_sync_wait_upto_gtid, sql: "SELECT WSREP_SYNC_WAIT_UPTO_GTID('1-1-1', 10);" }
+
+  - id: c_pseudo_columns
+    name: Pseudo columns (_rowid)
+    doc: https://mariadb.com/docs/server/reference/sql-functions/pseudo-columns
+    tier: low
+    probes:
+      - { id: rowid_select, sql: "SELECT _rowid FROM t;" }
+      - { id: rowid_where, sql: "SELECT * FROM t WHERE _rowid = 1;" }

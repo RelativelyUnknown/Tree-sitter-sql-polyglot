@@ -1,0 +1,37 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: delete
+    name: DELETE
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-dml/
+    tier: high
+    probes:
+      - id: basic
+        sql: "DELETE FROM t;"
+      - id: where
+        sql: "DELETE FROM t WHERE c = 1;"
+
+  - id: merge
+    name: MERGE
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-dml/
+    tier: high
+    probes:
+      - id: update_insert
+        sql: "MERGE INTO t AS T USING s AS S ON T.id = S.id WHEN MATCHED THEN UPDATE SET c = S.c WHEN NOT MATCHED THEN INSERT VALUES (S.id, S.c);"
+      - id: matched_and_update
+        sql: "MERGE INTO t AS T USING s AS S ON T.id = S.id WHEN MATCHED AND S.c > 0 THEN UPDATE SET c = S.c;"
+      - id: matched_delete
+        sql: "MERGE INTO t AS T USING s AS S ON T.id = S.id WHEN MATCHED THEN DELETE;"
+      - id: matched_and_delete
+        sql: "MERGE INTO t AS T USING s AS S ON T.id = S.id WHEN MATCHED AND S.c IS NULL THEN DELETE;"
+      - id: update_and_delete
+        sql: "MERGE INTO t AS T USING s AS S ON T.id = S.id WHEN MATCHED AND S.c > 0 THEN UPDATE SET c = S.c WHEN MATCHED THEN DELETE;"
+      - id: not_matched_and_insert
+        sql: "MERGE INTO t AS T USING s AS S ON T.id = S.id WHEN NOT MATCHED AND S.c > 0 THEN INSERT VALUES (S.id, S.c);"
+      - id: source_subquery
+        sql: "MERGE INTO t AS T USING (SELECT id, c FROM s) AS S ON T.id = S.id WHEN MATCHED THEN UPDATE SET c = S.c;"
+      - id: all_three
+        sql: "MERGE INTO t AS T USING s AS S ON T.id = S.id WHEN MATCHED AND S.c > 0 THEN UPDATE SET c = S.c WHEN MATCHED THEN DELETE WHEN NOT MATCHED THEN INSERT VALUES (S.id, S.c);"

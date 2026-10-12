@@ -1,0 +1,144 @@
+dialect: cockroachdb
+engine: CockroachDB
+version: "v26.3 (stable)"
+source: https://www.cockroachlabs.com/docs/stable/sql-statements
+
+statements: []
+
+expressions:
+  - id: c_aggregate_syntax
+    name: Aggregate function syntax
+    doc: https://www.cockroachlabs.com/docs/stable/functions-and-operators
+    tier: high
+    probes:
+      - { id: count_star, sql: "SELECT count(*) FROM t;" }
+      - { id: distinct, sql: "SELECT count(DISTINCT c), sum(DISTINCT c) FROM t;" }
+      - { id: filter, sql: "SELECT count(*) FILTER (WHERE c > 1) FROM t;" }
+      - { id: filter_distinct, sql: "SELECT count(DISTINCT c) FILTER (WHERE d IS NOT NULL) FROM t;" }
+      - { id: ordered_array_agg, sql: "SELECT array_agg(c ORDER BY d DESC) FROM t;" }
+      - { id: ordered_string_agg, sql: "SELECT string_agg(c, ',' ORDER BY c) FROM t;" }
+      - { id: ordered_json_agg, sql: "SELECT jsonb_agg(c ORDER BY d) FROM t;" }
+      - { id: within_group_cont, sql: "SELECT percentile_cont(0.5) WITHIN GROUP (ORDER BY c) FROM t;" }
+      - { id: within_group_disc, sql: "SELECT percentile_disc(0.9) WITHIN GROUP (ORDER BY c DESC) FROM t;" }
+      - { id: within_group_array, sql: "SELECT percentile_cont(ARRAY[0.25, 0.75]) WITHIN GROUP (ORDER BY c) FROM t;" }
+      - { id: group_by_aggregates, sql: "SELECT g, bool_and(b), bool_or(b), max(c), min(c), avg(c), stddev(c), variance(c) FROM t GROUP BY g;" }
+      - { id: filter_over, sql: "SELECT sum(c) FILTER (WHERE c > 0) OVER (PARTITION BY g) FROM t;" }
+  - id: c_window_syntax
+    name: Window function syntax
+    doc: https://www.cockroachlabs.com/docs/stable/window-functions
+    tier: high
+    probes:
+      - { id: over_empty, sql: "SELECT sum(c) OVER () FROM t;" }
+      - { id: partition_by, sql: "SELECT sum(c) OVER (PARTITION BY g) FROM t;" }
+      - { id: order_by, sql: "SELECT row_number() OVER (ORDER BY c DESC) FROM t;" }
+      - { id: partition_order, sql: "SELECT rank() OVER (PARTITION BY g ORDER BY c) FROM t;" }
+      - { id: rows_unbounded, sql: "SELECT sum(c) OVER (ORDER BY d ROWS UNBOUNDED PRECEDING) FROM t;" }
+      - { id: rows_between, sql: "SELECT avg(c) OVER (ORDER BY d ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;" }
+      - { id: rows_current_row, sql: "SELECT sum(c) OVER (ORDER BY d ROWS BETWEEN CURRENT ROW AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: range_between, sql: "SELECT sum(c) OVER (ORDER BY d RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: range_offset, sql: "SELECT sum(c) OVER (ORDER BY d RANGE BETWEEN 10 PRECEDING AND 10 FOLLOWING) FROM t;" }
+      - { id: groups_between, sql: "SELECT sum(c) OVER (ORDER BY d GROUPS BETWEEN 1 PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: exclude_current_row, sql: "SELECT sum(c) OVER (ORDER BY d ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING EXCLUDE CURRENT ROW) FROM t;" }
+      - { id: exclude_group, sql: "SELECT sum(c) OVER (ORDER BY d ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING EXCLUDE GROUP) FROM t;" }
+      - { id: exclude_ties, sql: "SELECT sum(c) OVER (ORDER BY d ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING EXCLUDE TIES) FROM t;" }
+      - { id: exclude_no_others, sql: "SELECT sum(c) OVER (ORDER BY d ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING EXCLUDE NO OTHERS) FROM t;" }
+      - { id: named_window, sql: "SELECT sum(c) OVER w FROM t WINDOW w AS (PARTITION BY g ORDER BY d);" }
+      - { id: named_window_ref, sql: "SELECT sum(c) OVER (w ROWS UNBOUNDED PRECEDING) FROM t WINDOW w AS (PARTITION BY g ORDER BY d);" }
+      - { id: multiple_named_windows, sql: "SELECT sum(c) OVER w1, avg(c) OVER w2 FROM t WINDOW w1 AS (PARTITION BY g), w2 AS (w1 ORDER BY d);" }
+      - { id: ranking_functions, sql: "SELECT row_number() OVER w, rank() OVER w, dense_rank() OVER w, percent_rank() OVER w, cume_dist() OVER w, ntile(4) OVER w FROM t WINDOW w AS (ORDER BY c);" }
+      - { id: value_functions, sql: "SELECT lag(c) OVER w, lag(c, 2, 0) OVER w, lead(c) OVER w, first_value(c) OVER w, last_value(c) OVER w, nth_value(c, 2) OVER w FROM t WINDOW w AS (ORDER BY d);" }
+  - id: c_json_access
+    name: JSON access operators
+    doc: https://www.cockroachlabs.com/docs/stable/jsonb
+    tier: high
+    probes:
+      - { id: arrow_key, sql: "SELECT j -> 'a' FROM t;" }
+      - { id: arrow_index, sql: "SELECT j -> 0 FROM t;" }
+      - { id: arrow_negative_index, sql: "SELECT j -> -1 FROM t;" }
+      - { id: arrow_text, sql: "SELECT j ->> 'a', j ->> 1 FROM t;" }
+      - { id: chained_arrows, sql: "SELECT j -> 'a' -> 'b' ->> 'c' FROM t;" }
+      - { id: path_json, sql: "SELECT j #> '{a,b}' FROM t;" }
+      - { id: path_text, sql: "SELECT j #>> '{a,b}' FROM t;" }
+      - { id: contains, sql: "SELECT j @> '{\"a\": 1}'::JSONB FROM t;" }
+      - { id: contained_by, sql: "SELECT '{\"a\": 1}'::JSONB <@ j FROM t;" }
+      - { id: key_exists, sql: "SELECT j ? 'a' FROM t;" }
+      - { id: any_key_exists, sql: "SELECT j ?| ARRAY['a', 'b'] FROM t;" }
+      - { id: all_keys_exist, sql: "SELECT j ?& ARRAY['a', 'b'] FROM t;" }
+      - { id: concat, sql: "SELECT j || '{\"b\": 2}'::JSONB FROM t;" }
+      - { id: delete_key, sql: "SELECT j - 'a' FROM t;" }
+      - { id: delete_index, sql: "SELECT j - 1 FROM t;" }
+      - { id: delete_path, sql: "SELECT j #- '{a,b}' FROM t;" }
+      - { id: where_arrow, sql: "SELECT * FROM t WHERE j ->> 'a' = 'x' AND j @> '{\"b\": true}';" }
+  - id: c_json_constructors
+    name: JSON literals and constructors
+    doc: https://www.cockroachlabs.com/docs/stable/jsonb
+    tier: high
+    probes:
+      - { id: json_cast_literal, sql: "SELECT '{\"a\": [1, 2, {\"b\": null}]}'::JSONB;" }
+      - { id: json_typed_literal, sql: "SELECT JSONB '{\"a\": 1}';" }
+      - { id: json_scalars, sql: "SELECT '1'::JSON, '\"x\"'::JSONB, 'true'::JSONB, 'null'::JSONB;" }
+      - { id: build_object, sql: "SELECT jsonb_build_object('a', 1, 'b', c) FROM t;" }
+      - { id: build_array, sql: "SELECT jsonb_build_array(1, 'two', c) FROM t;" }
+      - { id: json_object, sql: "SELECT json_object('{a, 1, b, 2}');" }
+      - { id: to_jsonb, sql: "SELECT to_jsonb(t.*), row_to_json(t) FROM t;" }
+      - { id: json_agg, sql: "SELECT json_agg(c), jsonb_object_agg(k, v) FROM t;" }
+      - { id: json_functions, sql: "SELECT jsonb_set(j, '{a}', '1'), jsonb_pretty(j), jsonb_typeof(j), jsonb_array_length(j), jsonb_extract_path(j, 'a', 'b'), jsonb_strip_nulls(j) FROM t;" }
+      - { id: json_srf, sql: "SELECT * FROM t, jsonb_array_elements(t.j), jsonb_each(t.j);", note: "Set-returning JSONB functions in FROM" }
+      - { id: json_path_query, sql: "SELECT jsonb_path_query(j, '$.a[*] ? (@ > 1)') FROM t;" }
+  - id: c_array_expressions
+    name: Array constructors and access
+    doc: https://www.cockroachlabs.com/docs/stable/array
+    tier: high
+    probes:
+      - { id: array_constructor, sql: "SELECT ARRAY[1, 2, 3];" }
+      - { id: array_empty_typed, sql: "SELECT ARRAY[]::INT[];" }
+      - { id: array_string_literal, sql: "SELECT '{1,2,3}'::INT[];" }
+      - { id: array_nested, sql: "SELECT ARRAY[ARRAY[1, 2], ARRAY[3, 4]];" }
+      - { id: array_subscript, sql: "SELECT a[1] FROM t;" }
+      - { id: array_subscript_expr, sql: "SELECT a[i + 1], ARRAY[10, 20, 30][2] FROM t;" }
+      - { id: array_slice, sql: "SELECT a[1:2], a[2:], a[:2] FROM t;" }
+      - { id: array_multidim_subscript, sql: "SELECT a[1][2] FROM t;" }
+      - { id: array_concat_operator, sql: "SELECT a || ARRAY[4], 0 || a, a || 5 FROM t;" }
+      - { id: array_contains, sql: "SELECT a @> ARRAY[1], a <@ ARRAY[1, 2, 3], a && ARRAY[2] FROM t;" }
+      - { id: any_all, sql: "SELECT * FROM t WHERE c = ANY(ARRAY[1, 2, 3]) AND d > ALL(ARRAY[0, 1]);" }
+      - { id: any_subquery, sql: "SELECT * FROM t WHERE c = ANY (SELECT d FROM u);" }
+      - { id: array_subquery, sql: "SELECT ARRAY(SELECT c FROM t ORDER BY c);" }
+      - { id: array_functions, sql: "SELECT array_append(a, 1), array_prepend(0, a), array_cat(a, b), array_remove(a, 1), array_replace(a, 1, 2), array_position(a, 1), array_length(a, 1), array_to_string(a, ','), string_to_array('a,b', ','), unnest(a) FROM t;" }
+      - { id: array_type_column_cast, sql: "SELECT c::TEXT[], c::INT ARRAY, c::INT ARRAY[3] FROM t;" }
+  - id: c_tuple_expressions
+    name: Tuple and row constructors
+    doc: https://www.cockroachlabs.com/docs/stable/scalar-expressions
+    tier: medium
+    probes:
+      - { id: paren_tuple, sql: "SELECT (1, 'a', true);" }
+      - { id: row_keyword, sql: "SELECT ROW(1, 'a', true);" }
+      - { id: tuple_comparison, sql: "SELECT * FROM t WHERE (a, b) > (1, 2);" }
+      - { id: tuple_in, sql: "SELECT * FROM t WHERE (a, b) IN ((1, 2), (3, 4));" }
+      - { id: tuple_label_access, sql: "SELECT (x).b FROM (SELECT ((1, 2, 3) AS a, b, c) AS x) AS s;", note: "Labeled tuple access per scalar-expressions page" }
+      - { id: tuple_index_access, sql: "SELECT (t.*).a, (ROW(1, 2)).*;" }
+      - { id: tuple_labeled, sql: "SELECT ((1, 'a') AS x, y);" }
+  - id: c_ordinary_function_families
+    name: Ordinary function families
+    doc: https://www.cockroachlabs.com/docs/stable/functions-and-operators
+    tier: medium
+    probes:
+      - { id: string_functions, sql: "SELECT lower(s), upper(s), length(s), substr(s, 1, 2), replace(s, 'a', 'b'), concat(s, 'x'), split_part(s, ',', 1), lpad(s, 5, '0'), reverse(s), md5(s) FROM t;" }
+      - { id: regexp_functions, sql: "SELECT regexp_replace(s, 'a+', 'b', 'g'), regexp_extract(s, '[0-9]+'), regexp_match(s, '(a)(b)') FROM t;" }
+      - { id: regex_operators, sql: "SELECT s ~ 'a', s ~* 'a', s !~ 'a', s !~* 'a', s SIMILAR TO 'a%', s LIKE 'a%', s ILIKE 'a%' FROM t;" }
+      - { id: math_functions, sql: "SELECT abs(n), ceil(n), floor(n), round(n, 2), power(n, 2), sqrt(n), mod(n, 3), ln(n), log(n), sign(n), random() FROM t;" }
+      - { id: math_operators, sql: "SELECT 1 + 2, 3 - 1, 2 * 3, 7 / 2, 7 // 2, 7 % 3, 2 ^ 3, 5 & 3, 5 | 3, 5 # 3, ~5, 1 << 2, 8 >> 1;" }
+      - { id: datetime_functions, sql: "SELECT now(), current_timestamp, current_date, date_trunc('day', ts), age(ts), to_char(ts, 'YYYY-MM-DD'), to_timestamp(0), make_date(2020, 1, 2), extract_duration(hour FROM i) FROM t;" }
+      - { id: interval_arithmetic, sql: "SELECT ts + INTERVAL '1 day', ts - INTERVAL '1 hour', ts - ts2, '2020-01-01'::DATE + 1 FROM t;" }
+      - { id: aggregate_family, sql: "SELECT sum(c), avg(c), min(c), max(c), count(c), string_agg(s, ','), array_agg(c), bool_and(b), xor_agg(c), sum_int(c), corr(y, x), regr_slope(y, x) FROM t;" }
+      - { id: uuid_functions, sql: "SELECT gen_random_uuid(), uuid_generate_v4(), uuid_v4();" }
+      - { id: series_functions, sql: "SELECT * FROM generate_series(1, 10), generate_series(1, 10, 2);" }
+      - { id: system_info_functions, sql: "SELECT version(), current_database(), current_user, current_schema(), session_user, current_setting('application_name');" }
+      - { id: sequence_functions, sql: "SELECT nextval('seq'), currval('seq'), setval('seq', 10), lastval();" }
+      - { id: comparison_functions, sql: "SELECT greatest(1, 2, 3), least(1, 2, 3), coalesce(a, b, 0), nullif(a, 0), ifnull(a, 0), if(a > 0, 1, 2), ifnull(a, b);" }
+      - { id: bytes_encoding_functions, sql: "SELECT encode('abc', 'hex'), decode('616263', 'hex'), sha256(s), fnv32(s), crc32c(s), gen_random_bytes(8);" }
+      - { id: inet_functions, sql: "SELECT host(i), masklen(i), broadcast(i), family(i), i << '10.0.0.0/8'::INET, i >>= '10.0.0.1'::INET FROM t;" }
+      - { id: spatial_functions, sql: "SELECT ST_AsText(g), ST_Distance(g, g2), ST_Contains(g, g2), ST_MakePoint(1, 2), ST_GeomFromText('POINT(1 2)'), ST_SetSRID(g, 4326) FROM t;" }
+      - { id: crdb_internal_functions, sql: "SELECT crdb_internal.cluster_id(), crdb_internal.node_id(), experimental_strftime(ts, '%Y');", note: "crdb_internal builtins and experimental_ builtins from the functions page" }
+      - { id: user_defined_function_call, sql: "SELECT my_schema.f(1, 'a', c => 2) FROM t;", note: "Named argument call of a UDF" }
+      - { id: case_expression, sql: "SELECT CASE WHEN a > 0 THEN 'pos' WHEN a < 0 THEN 'neg' ELSE 'zero' END, CASE a WHEN 1 THEN 'one' ELSE 'other' END FROM t;" }
+      - { id: collate_expression, sql: "SELECT s COLLATE en_US FROM t ORDER BY s COLLATE \"C\";" }

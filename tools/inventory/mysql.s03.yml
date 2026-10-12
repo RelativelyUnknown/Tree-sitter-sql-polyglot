@@ -1,0 +1,276 @@
+dialect: mysql
+engine: MySQL
+version: "8.4"
+source: https://dev.mysql.com/doc/refman/8.4/en/sql-statements.html
+
+statements:
+  - id: execute
+    name: EXECUTE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/execute.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "EXECUTE stmt1;"
+      - id: using_variables
+        sql: "EXECUTE stmt1 USING @a, @b;"
+
+  - id: deallocate_prepare
+    name: DEALLOCATE PREPARE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/deallocate-prepare.html
+    tier: medium
+    probes:
+      - id: deallocate
+        sql: "DEALLOCATE PREPARE stmt1;"
+      - id: drop_prepare
+        sql: "DROP PREPARE stmt1;"
+
+  - id: alter_user
+    name: ALTER USER
+    doc: https://dev.mysql.com/doc/refman/8.4/en/alter-user.html
+    tier: medium
+    probes:
+      - id: identified_by
+        sql: "ALTER USER 'u'@'localhost' IDENTIFIED BY 'pw';"
+      - id: if_exists_multiple_users
+        sql: "ALTER USER IF EXISTS 'u1'@'localhost' IDENTIFIED BY 'pw', 'u2'@'%' ACCOUNT LOCK;"
+      - id: identified_by_replace_retain
+        sql: "ALTER USER 'u'@'localhost' IDENTIFIED BY 'new' REPLACE 'old' RETAIN CURRENT PASSWORD;"
+      - id: identified_by_random_password
+        sql: "ALTER USER 'u'@'localhost' IDENTIFIED BY RANDOM PASSWORD;"
+      - id: identified_with_plugin_by
+        sql: "ALTER USER 'u'@'localhost' IDENTIFIED WITH caching_sha2_password BY 'pw';"
+      - id: identified_with_plugin_as
+        sql: "ALTER USER 'u'@'localhost' IDENTIFIED WITH mysql_native_password AS '*6C8989366EAF75BB670AD8EA7A7FC1176A95CEF4';"
+      - id: discard_old_password
+        sql: "ALTER USER 'u'@'localhost' DISCARD OLD PASSWORD;"
+      - id: user_function_identified_by
+        sql: "ALTER USER USER() IDENTIFIED BY 'pw';"
+        note: user_func_auth_option form of the syntax block
+      - id: add_factor
+        sql: "ALTER USER 'u'@'localhost' ADD 2 FACTOR IDENTIFIED WITH authentication_ldap_sasl AS 'uid=u,ou=People,dc=example,dc=com';"
+      - id: modify_factor
+        sql: "ALTER USER 'u'@'localhost' MODIFY 2 FACTOR IDENTIFIED BY 'pw';"
+      - id: drop_factor
+        sql: "ALTER USER 'u'@'localhost' DROP 2 FACTOR DROP 3 FACTOR;"
+      - id: registration_initiate
+        sql: "ALTER USER 'u'@'localhost' 2 FACTOR INITIATE REGISTRATION;"
+      - id: registration_finish
+        sql: "ALTER USER 'u'@'localhost' 2 FACTOR FINISH REGISTRATION SET CHALLENGE_RESPONSE AS 'auth';"
+      - id: registration_unregister
+        sql: "ALTER USER 'u'@'localhost' 3 FACTOR UNREGISTER;"
+      - id: user_function_registration
+        sql: "ALTER USER USER() 2 FACTOR UNREGISTER;"
+      - id: default_role
+        sql: "ALTER USER 'u'@'localhost' DEFAULT ROLE ALL;"
+      - id: default_role_list
+        sql: "ALTER USER 'u'@'localhost' DEFAULT ROLE 'admin', 'developer';"
+      - id: default_role_none
+        sql: "ALTER USER 'u'@'localhost' DEFAULT ROLE NONE;"
+      - id: require_none
+        sql: "ALTER USER 'u'@'localhost' REQUIRE NONE;"
+      - id: require_ssl
+        sql: "ALTER USER 'u'@'localhost' REQUIRE SSL;"
+      - id: require_tls_options
+        sql: "ALTER USER 'u'@'localhost' REQUIRE ISSUER 'issuer' AND SUBJECT 'subject' AND CIPHER 'EDH-RSA-DES-CBC3-SHA';"
+      - id: with_resource_options
+        sql: "ALTER USER 'u'@'localhost' WITH MAX_QUERIES_PER_HOUR 500 MAX_UPDATES_PER_HOUR 100 MAX_CONNECTIONS_PER_HOUR 10 MAX_USER_CONNECTIONS 5;"
+      - id: password_expire
+        sql: "ALTER USER 'u'@'localhost' PASSWORD EXPIRE;"
+      - id: password_expire_interval
+        sql: "ALTER USER 'u'@'localhost' PASSWORD EXPIRE INTERVAL 180 DAY;"
+      - id: password_expire_never
+        sql: "ALTER USER 'u'@'localhost' PASSWORD EXPIRE NEVER;"
+      - id: password_history
+        sql: "ALTER USER 'u'@'localhost' PASSWORD HISTORY 6;"
+      - id: password_reuse_interval
+        sql: "ALTER USER 'u'@'localhost' PASSWORD REUSE INTERVAL 360 DAY;"
+      - id: password_require_current
+        sql: "ALTER USER 'u'@'localhost' PASSWORD REQUIRE CURRENT OPTIONAL;"
+      - id: failed_login_attempts
+        sql: "ALTER USER 'u'@'localhost' FAILED_LOGIN_ATTEMPTS 4 PASSWORD_LOCK_TIME 2;"
+      - id: password_lock_time_unbounded
+        sql: "ALTER USER 'u'@'localhost' PASSWORD_LOCK_TIME UNBOUNDED;"
+      - id: account_lock
+        sql: "ALTER USER 'u'@'localhost' ACCOUNT LOCK;"
+      - id: account_unlock
+        sql: "ALTER USER 'u'@'localhost' ACCOUNT UNLOCK;"
+      - id: comment
+        sql: "ALTER USER 'u'@'localhost' COMMENT 'Something about the user';"
+      - id: attribute
+        sql: "ALTER USER 'u'@'localhost' ATTRIBUTE '{\"foo\": \"bar\"}';"
+    examples:
+      - "ALTER USER 'jeffrey'@'localhost' ACCOUNT LOCK;"
+      - "ALTER USER 'jeffrey'@'localhost' REQUIRE SSL WITH MAX_CONNECTIONS_PER_HOUR 20;"
+      - "ALTER USER 'jeffrey'@'localhost' PASSWORD EXPIRE INTERVAL 180 DAY;"
+
+  - id: create_role
+    name: CREATE ROLE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-role.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE ROLE 'admin';"
+      - id: if_not_exists
+        sql: "CREATE ROLE IF NOT EXISTS 'admin';"
+      - id: multiple_roles
+        sql: "CREATE ROLE 'admin', 'developer';"
+      - id: role_with_host
+        sql: "CREATE ROLE 'webapp'@'localhost';"
+    examples:
+      - "CREATE ROLE 'admin', 'developer';"
+      - "CREATE ROLE 'webapp'@'localhost';"
+
+  - id: create_user
+    name: CREATE USER
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-user.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE USER 'u'@'localhost';"
+      - id: identified_by
+        sql: "CREATE USER 'u'@'localhost' IDENTIFIED BY 'pw';"
+      - id: if_not_exists_multiple
+        sql: "CREATE USER IF NOT EXISTS 'u1'@'localhost' IDENTIFIED BY 'pw', 'u2'@'%';"
+      - id: identified_by_random_password
+        sql: "CREATE USER 'u'@'localhost' IDENTIFIED BY RANDOM PASSWORD;"
+      - id: identified_with_plugin
+        sql: "CREATE USER 'u'@'localhost' IDENTIFIED WITH mysql_native_password;"
+      - id: identified_with_plugin_by
+        sql: "CREATE USER 'u'@'localhost' IDENTIFIED WITH caching_sha2_password BY 'pw';"
+      - id: identified_with_plugin_by_random
+        sql: "CREATE USER 'u'@'localhost' IDENTIFIED WITH caching_sha2_password BY RANDOM PASSWORD;"
+      - id: identified_with_plugin_as
+        sql: "CREATE USER 'u'@'localhost' IDENTIFIED WITH mysql_native_password AS '*6C8989366EAF75BB670AD8EA7A7FC1176A95CEF4';"
+      - id: two_factor
+        sql: "CREATE USER 'u1'@'localhost' IDENTIFIED WITH caching_sha2_password BY 'pw' AND IDENTIFIED WITH authentication_ldap_sasl AS 'uid=u1_ldap,ou=People,dc=example,dc=com';"
+      - id: three_factor
+        sql: "CREATE USER 'u1'@'localhost' IDENTIFIED BY 'pw' AND IDENTIFIED WITH authentication_ldap_sasl AS 'uid=u1_ldap,ou=People,dc=example,dc=com' AND IDENTIFIED WITH authentication_fido;"
+      - id: initial_authentication_random
+        sql: "CREATE USER 'u'@'localhost' IDENTIFIED WITH authentication_webauthn INITIAL AUTHENTICATION IDENTIFIED BY RANDOM PASSWORD;"
+      - id: initial_authentication_string
+        sql: "CREATE USER 'u'@'localhost' IDENTIFIED WITH authentication_webauthn INITIAL AUTHENTICATION IDENTIFIED BY 'pw';"
+      - id: initial_authentication_with_plugin_as
+        sql: "CREATE USER 'u'@'localhost' IDENTIFIED WITH authentication_webauthn INITIAL AUTHENTICATION IDENTIFIED WITH caching_sha2_password AS '$A$005$hash';"
+      - id: default_role
+        sql: "CREATE USER 'u'@'localhost' DEFAULT ROLE 'admin', 'developer';"
+      - id: require_none
+        sql: "CREATE USER 'u'@'localhost' REQUIRE NONE;"
+      - id: require_ssl
+        sql: "CREATE USER 'u'@'localhost' REQUIRE SSL;"
+      - id: require_x509
+        sql: "CREATE USER 'u'@'localhost' REQUIRE X509;"
+      - id: require_tls_options
+        sql: "CREATE USER 'u'@'localhost' REQUIRE ISSUER 'issuer' AND SUBJECT 'subject' AND CIPHER 'EDH-RSA-DES-CBC3-SHA';"
+      - id: with_resource_options
+        sql: "CREATE USER 'u'@'localhost' WITH MAX_QUERIES_PER_HOUR 500 MAX_UPDATES_PER_HOUR 100 MAX_CONNECTIONS_PER_HOUR 10 MAX_USER_CONNECTIONS 5;"
+      - id: password_expire
+        sql: "CREATE USER 'u'@'localhost' PASSWORD EXPIRE;"
+      - id: password_expire_default
+        sql: "CREATE USER 'u'@'localhost' PASSWORD EXPIRE DEFAULT;"
+      - id: password_expire_never
+        sql: "CREATE USER 'u'@'localhost' PASSWORD EXPIRE NEVER;"
+      - id: password_expire_interval
+        sql: "CREATE USER 'u'@'localhost' PASSWORD EXPIRE INTERVAL 180 DAY;"
+      - id: password_history
+        sql: "CREATE USER 'u'@'localhost' PASSWORD HISTORY 6;"
+      - id: password_history_default
+        sql: "CREATE USER 'u'@'localhost' PASSWORD HISTORY DEFAULT;"
+      - id: password_reuse_interval
+        sql: "CREATE USER 'u'@'localhost' PASSWORD REUSE INTERVAL 360 DAY;"
+      - id: password_require_current
+        sql: "CREATE USER 'u'@'localhost' PASSWORD REQUIRE CURRENT OPTIONAL;"
+      - id: failed_login_attempts
+        sql: "CREATE USER 'u'@'localhost' FAILED_LOGIN_ATTEMPTS 4 PASSWORD_LOCK_TIME 2;"
+      - id: password_lock_time_unbounded
+        sql: "CREATE USER 'u'@'localhost' PASSWORD_LOCK_TIME UNBOUNDED;"
+      - id: account_lock
+        sql: "CREATE USER 'u'@'localhost' ACCOUNT LOCK;"
+      - id: account_unlock
+        sql: "CREATE USER 'u'@'localhost' ACCOUNT UNLOCK;"
+      - id: comment
+        sql: "CREATE USER 'u'@'localhost' COMMENT 'Some information about the user';"
+      - id: attribute
+        sql: "CREATE USER 'u'@'localhost' ATTRIBUTE '{\"fname\": \"James\", \"lname\": \"Scott\"}';"
+    examples:
+      - "CREATE USER 'jeffrey'@'localhost' REQUIRE SSL;"
+      - "CREATE USER 'jeffrey'@'localhost' WITH MAX_QUERIES_PER_HOUR 500 MAX_UPDATES_PER_HOUR 100;"
+      - "CREATE USER 'jon'@'localhost' COMMENT 'Some information about Jon';"
+
+  - id: drop_role
+    name: DROP ROLE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/drop-role.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP ROLE 'admin';"
+      - id: if_exists
+        sql: "DROP ROLE IF EXISTS 'admin';"
+      - id: multiple_roles
+        sql: "DROP ROLE 'admin', 'developer';"
+      - id: role_with_host
+        sql: "DROP ROLE 'webapp'@'localhost';"
+    examples:
+      - "DROP ROLE 'admin', 'developer';"
+      - "DROP ROLE 'webapp'@'localhost';"
+
+  - id: drop_user
+    name: DROP USER
+    doc: https://dev.mysql.com/doc/refman/8.4/en/drop-user.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP USER 'u'@'localhost';"
+      - id: if_exists
+        sql: "DROP USER IF EXISTS 'u'@'localhost';"
+      - id: multiple_users
+        sql: "DROP USER 'u1'@'localhost', 'u2'@'%';"
+      - id: bare_user_name
+        sql: "DROP USER u;"
+    examples:
+      - "DROP USER 'jeffrey'@'localhost';"
+
+  - id: rename_user
+    name: RENAME USER
+    doc: https://dev.mysql.com/doc/refman/8.4/en/rename-user.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "RENAME USER 'old'@'localhost' TO 'new'@'localhost';"
+      - id: multiple_pairs
+        sql: "RENAME USER 'u1'@'localhost' TO 'n1'@'localhost', 'u2'@'%' TO 'n2'@'%';"
+    examples:
+      - "RENAME USER 'jeffrey'@'localhost' TO 'jeff'@'127.0.0.1';"
+
+  - id: set_default_role
+    name: SET DEFAULT ROLE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/set-default-role.html
+    tier: medium
+    probes:
+      - id: roles_to_user
+        sql: "SET DEFAULT ROLE 'admin', 'developer' TO 'joe'@'10.0.0.1';"
+      - id: all
+        sql: "SET DEFAULT ROLE ALL TO 'joe'@'10.0.0.1';"
+      - id: none
+        sql: "SET DEFAULT ROLE NONE TO 'joe'@'10.0.0.1';"
+      - id: multiple_users
+        sql: "SET DEFAULT ROLE 'admin' TO 'joe'@'10.0.0.1', 'sam'@'%';"
+    examples:
+      - "SET DEFAULT ROLE 'admin', 'developer' TO 'joe'@'10.0.0.1';"
+
+  - id: set_password
+    name: SET PASSWORD
+    doc: https://dev.mysql.com/doc/refman/8.4/en/set-password.html
+    tier: medium
+    probes:
+      - id: current_user
+        sql: "SET PASSWORD = 'pw';"
+      - id: for_user
+        sql: "SET PASSWORD FOR 'jeffrey'@'localhost' = 'pw';"
+      - id: to_random
+        sql: "SET PASSWORD FOR 'jeffrey'@'localhost' TO RANDOM;"
+      - id: replace_current
+        sql: "SET PASSWORD FOR 'jeffrey'@'localhost' = 'new' REPLACE 'old';"
+      - id: retain_current_password
+        sql: "SET PASSWORD FOR 'jeffrey'@'localhost' = 'new' RETAIN CURRENT PASSWORD;"
+      - id: to_random_replace_retain
+        sql: "SET PASSWORD TO RANDOM REPLACE 'old' RETAIN CURRENT PASSWORD;"

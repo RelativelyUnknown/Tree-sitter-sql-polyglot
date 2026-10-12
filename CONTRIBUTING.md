@@ -5,8 +5,8 @@
 Clone the repository and install dependencies.
 
 ```
-git clone https://github.com/relativelyunknown/tree-sitter-sql-polyglot.git
-cd tree-sitter-sql-polyglot
+git clone https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot.git
+cd Tree-sitter-sql-polyglot
 npm install
 ```
 
@@ -35,15 +35,15 @@ architecture and the parent/child dependency chains.
 
 ### 2. Regenerate the parser
 
-`npm run generate[:<dialect>|:all|:force]` — see [AGENTS.md](AGENTS.md#dev-workflow) for the full
-command list and the hash-caching behind it. A change to the base grammar ripples to all 22 parsers, so
-regenerate and test all of them. Changing a dialect requires regenerating its child too (`databricks`
-after `spark`/`hive`; `mariadb` after `mysql`).
+`npm run generate[:<dialect>|:all|:force]`. [AGENTS.md](AGENTS.md#dev-workflow) has the full command
+list and explains the hash cache. A base grammar change affects all 22 parsers, so regenerate and test
+all of them. After changing a dialect, regenerate its children too (`databricks` after `spark` or
+`hive`, `mariadb` after `mysql`).
 
 ### 3. Run the tests
 
-`npm run test:corpus[:<dialect>]` and `npm run test:keywords` — see
-[AGENTS.md](AGENTS.md#dev-workflow) for the per-dialect list. Also:
+`npm run test:corpus[:<dialect>]` and `npm run test:keywords`. The per-dialect list is in
+[AGENTS.md](AGENTS.md#dev-workflow). Also:
 
 ```bash
 npm run test:node    # Node.js binding test
@@ -128,9 +128,9 @@ BREAKING CHANGE: The `(foo_node)` node has been renamed to `(bar_node)`
 
 ## Releasing a New Version
 
-Releases don't route through `main` — `main` never carries a version-bump commit. Instead,
-each minor line gets its own `release/x.y` branch, cut from `main` once, that receives the
-version bump and any later hotfixes for that line.
+Releases don't go through `main`, so `main` never gets a version-bump commit. Each minor line
+gets its own `release/x.y` branch, cut from `main` once, which receives the version bump and any
+later hotfixes for that line.
 
 ### First release of a line (e.g. 0.1.0)
 
@@ -172,9 +172,9 @@ version bump) into `main`, so it isn't lost once the next minor line branches of
 ## Docs site (local preview)
 
 The docs site (`docs/`) is a [VitePress](https://vitepress.dev/) site, deployed to GitHub Pages by
-`.github/workflows/pages.yml` on every push to `main`. Only `docs/index.md`, `docs/changelog.md`, and
-`docs/.vitepress/*` are hand-written; `docs/coverage.md` and `docs/downloads.md` are generated
-(gitignored, never commit them).
+`.github/workflows/pages.yml` on every push to `main`. `docs/index.md`, `docs/usage.md`,
+`docs/changelog.md` and `docs/.vitepress/*` are written by hand. `docs/coverage.md` and
+`docs/downloads.md` are generated and gitignored, so don't commit them.
 
 ```bash
 npm install

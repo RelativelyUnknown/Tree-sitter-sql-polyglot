@@ -1,0 +1,61 @@
+dialect: spark
+engine: Apache Spark SQL
+version: "4.x (docs/latest)"
+source: https://spark.apache.org/docs/latest/sql-ref-syntax.html
+
+statements:
+  - id: execute_immediate
+    name: EXECUTE IMMEDIATE
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-aux-exec-imm.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "EXECUTE IMMEDIATE 'SELECT 1';"
+      - id: variable_string
+        sql: "EXECUTE IMMEDIATE sql_str;"
+      - id: into
+        sql: "EXECUTE IMMEDIATE 'SELECT 1' INTO v;"
+      - id: into_multiple
+        sql: "EXECUTE IMMEDIATE 'SELECT 1, 2' INTO v1, v2;"
+      - id: using
+        sql: "EXECUTE IMMEDIATE 'SELECT ?' USING 5;"
+      - id: using_multiple
+        sql: "EXECUTE IMMEDIATE 'SELECT ?, ?' USING 5, 6;"
+      - id: using_alias
+        sql: "EXECUTE IMMEDIATE 'SELECT :a' USING 5 AS a;"
+      - id: using_alias_no_as
+        sql: "EXECUTE IMMEDIATE 'SELECT :a' USING 5 a;"
+      - id: using_parenthesized
+        sql: "EXECUTE IMMEDIATE 'SELECT :a, :b' USING (5 AS a, 6 AS b);"
+      - id: into_using
+        sql: "EXECUTE IMMEDIATE 'SELECT ?' INTO v USING 5;"
+      - id: constant_expression_string
+        sql: "EXECUTE IMMEDIATE 'SELECT ' || foo || '(c1) FROM t' USING 5 + 6;"
+    examples:
+      - "EXECUTE IMMEDIATE 'SELECT SUM(c1) FROM VALUES(?), (?) AS t(c1)' USING 5, 6;"
+      - "EXECUTE IMMEDIATE sqlStr INTO sum USING arg1, arg2;"
+      - "EXECUTE IMMEDIATE 'SELECT \"5\" :tens \"9\"::DECIMAL(:p, :s) AS IDENTIFIER(:col)' USING '8' AS tens, 10 AS p, 4 AS s, 'result_col' AS col;"
+
+  - id: set_var
+    name: SET VAR
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-aux-set-var.html
+    tier: high
+    probes:
+      - id: set_var
+        sql: "SET VAR v = 5;"
+      - id: set_variable
+        sql: "SET VARIABLE v = 5;"
+      - id: default
+        sql: "SET VAR v = DEFAULT;"
+      - id: multiple_assignments
+        sql: "SET VAR v1 = 1, v2 = 2;"
+      - id: scalar_subquery
+        sql: "SET VARIABLE v = (SELECT max(c1) FROM t);"
+      - id: multi_variable_query
+        sql: "SET VAR (v1, v2) = (SELECT 1, 2);"
+      - id: multi_variable_query_from
+        sql: "SET VARIABLE (v1, v2) = (SELECT max(c1), min(c1) FROM t);"
+    examples:
+      - "SET VAR var1 = 5;"
+      - "SET VARIABLE var1 = (SELECT max(c1) FROM VALUES (1), (2) AS t(c1));"
+      - "SET VAR (var1, var2) = (SELECT max(c1), CAST(min(c1) AS STRING) FROM VALUES (1), (2) AS t(c1));"

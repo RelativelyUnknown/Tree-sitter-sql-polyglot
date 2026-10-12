@@ -1,0 +1,376 @@
+dialect: clickhouse
+engine: ClickHouse
+version: "current docs (2026)"
+source: https://clickhouse.com/docs/sql-reference/statements/
+
+statements: []
+
+expressions:
+  - id: a_numeric_literals
+    name: "Numeric literals"
+    doc: https://clickhouse.com/docs/sql-reference/syntax
+    tier: high
+    probes:
+      - { id: integer, sql: "SELECT 1, 10_000_000, 18446744073709551615, 01;" }
+      - { id: decimal, sql: "SELECT 0.1, 123.456;" }
+      - { id: exponent, sql: "SELECT 1e100, -1e-100;" }
+      - { id: inf_nan, sql: "SELECT inf, nan;" }
+      - { id: hex, sql: "SELECT 0xc0fe;" }
+      - { id: hex_string, sql: "SELECT x'c0fe';" }
+      - { id: binary, sql: "SELECT 0b1101;" }
+      - { id: binary_string, sql: "SELECT b'1101';" }
+      - { id: negative, sql: "SELECT -1, -0.5;" }
+      - { id: wide_int_cast, sql: "SELECT 340282366920938463463374607431768211455::UInt128;" }
+      - { id: wide_neg_int_cast, sql: "SELECT -170141183460469231731687303715884105728::Int128;" }
+  - id: a_string_literals
+    name: "String literals and escapes"
+    doc: https://clickhouse.com/docs/sql-reference/syntax
+    tier: high
+    probes:
+      - { id: simple, sql: "SELECT 'Hello, world';" }
+      - { id: doubled_quote, sql: "SELECT 'it''s';" }
+      - { id: backslash_quote, sql: "SELECT 'it\\'s';" }
+      - { id: escape_sequences, sql: "SELECT 'a\\tb\\nc\\\\d\\0e';" }
+      - { id: hex_escape, sql: "SELECT '\\x41\\x42';" }
+      - { id: empty, sql: "SELECT '';" }
+      - { id: unicode, sql: "SELECT 'h\u00e9llo w\u00f6rld';" }
+    examples:
+      - "SELECT 'a\\Nb';"
+  - id: a_heredoc_literals
+    name: "Heredoc string literals"
+    doc: https://clickhouse.com/docs/sql-reference/syntax
+    tier: medium
+    probes:
+      - { id: heredoc, sql: "SELECT $$some text$$;" }
+      - { id: tagged_heredoc, sql: "SELECT $heredoc$SHOW CREATE VIEW my_view$heredoc$;" }
+    examples:
+      - "SELECT $heredoc$SHOW CREATE VIEW my_view$heredoc$;"
+  - id: a_null_literal
+    name: "NULL literal"
+    doc: https://clickhouse.com/docs/sql-reference/syntax
+    tier: high
+    probes:
+      - { id: null_value, sql: "SELECT NULL;" }
+      - { id: is_null, sql: "SELECT x IS NULL, x IS NOT NULL FROM t;" }
+      - { id: null_in_array, sql: "SELECT [1, NULL, 3];" }
+  - id: a_date_time_literals
+    name: "Date and time literals"
+    doc: https://clickhouse.com/docs/sql-reference/operators/
+    tier: high
+    probes:
+      - { id: date_string, sql: "SELECT DATE '2020-01-01';" }
+      - { id: timestamp_string, sql: "SELECT TIMESTAMP '2001-02-16 20:38:40';" }
+      - { id: date_function, sql: "SELECT toDate('2020-01-01'), toDateTime('2020-01-01 10:00:00', 'UTC');" }
+      - { id: datetime64_function, sql: "SELECT toDateTime64('2025-01-01 00:00:00.000', 3);" }
+      - { id: time_string, sql: "SELECT TIME '10:20:30';" }
+      - { id: at_time_zone, sql: "SELECT TIMESTAMP '2001-02-16 20:38:40' AT TIME ZONE 'America/Denver';" }
+      - { id: at_local, sql: "SELECT TIMESTAMP '2001-02-16 20:38:40' AT LOCAL;" }
+    examples:
+      - "SET session_timezone = 'UTC';"
+      - "SELECT TIMESTAMP '2001-02-16 20:38:40' AT TIME ZONE 'America/Denver';"
+      - "SELECT TIMESTAMP '2001-02-16 20:38:40' AT LOCAL;"
+  - id: a_interval_literals
+    name: "INTERVAL literals"
+    doc: https://clickhouse.com/docs/sql-reference/data-types/special-data-types/interval
+    tier: high
+    probes:
+      - { id: interval_day, sql: "SELECT INTERVAL 4 DAY;" }
+      - { id: interval_string_unit, sql: "SELECT INTERVAL '4' DAY;" }
+      - { id: interval_plural, sql: "SELECT INTERVAL 4 DAYS;" }
+      - { id: interval_add, sql: "SELECT now() + INTERVAL 4 DAY;" }
+      - { id: interval_expr, sql: "SELECT now() + INTERVAL (1 + 2) HOUR;" }
+      - { id: interval_sum, sql: "SELECT now() AS current_date_time, current_date_time + (INTERVAL 4 DAY + INTERVAL 3 HOUR);" }
+      - { id: interval_nanosecond, sql: "SELECT INTERVAL 1 NANOSECOND, INTERVAL 1 MICROSECOND, INTERVAL 1 MILLISECOND;" }
+      - { id: interval_quarter, sql: "SELECT INTERVAL 1 QUARTER, INTERVAL 1 YEAR, INTERVAL 1 WEEK, INTERVAL 1 MONTH;" }
+      - { id: interval_year_to_month, sql: "SELECT INTERVAL '2-6' YEAR TO MONTH;" }
+      - { id: interval_day_to_second, sql: "SELECT INTERVAL '5 12:30:45' DAY TO SECOND;" }
+      - { id: interval_hour_to_minute, sql: "SELECT INTERVAL '1:30' HOUR TO MINUTE;" }
+      - { id: interval_signed_range, sql: "SELECT INTERVAL '+1:30' HOUR TO MINUTE;" }
+      - { id: to_interval_fn, sql: "SELECT toIntervalMinute(3), toIntervalMicrosecond(179999999) < toIntervalMinute(3);" }
+      - { id: interval_in_where, sql: "SELECT * FROM t WHERE ts > now() - INTERVAL 1 DAY;" }
+    examples:
+      - "SELECT toTypeName(INTERVAL 4 DAY);"
+      - "SELECT now() AS current_date_time, current_date_time + INTERVAL 4 DAY;"
+      - "SELECT INTERVAL '1:30' HOUR TO MINUTE;"
+  - id: a_array_literals
+    name: "Array literals and subscripts"
+    doc: https://clickhouse.com/docs/sql-reference/data-types/array
+    tier: high
+    probes:
+      - { id: bracket, sql: "SELECT [1, 2, 3];" }
+      - { id: array_fn, sql: "SELECT array(1, 2);" }
+      - { id: strings, sql: "SELECT ['a', 'b'];" }
+      - { id: nested, sql: "SELECT [[1, 2], [3]];" }
+      - { id: empty, sql: "SELECT [];" }
+      - { id: subscript, sql: "SELECT arr[1] FROM t;" }
+      - { id: negative_subscript, sql: "SELECT arr[-1] FROM t;" }
+      - { id: subscript_array_of_indices, sql: "SELECT arr[[1, 2]] FROM t;" }
+      - { id: chained_subscript, sql: "SELECT arr[1][2] FROM t;" }
+      - { id: array_cast, sql: "SELECT CAST([1, 2, 3] AS Array(UInt8));" }
+    examples:
+      - "SELECT array(1, 2) AS x, toTypeName(x);"
+      - "SELECT [1, 2] AS x, toTypeName(x);"
+  - id: a_tuple_literals
+    name: "Tuple literals and element access"
+    doc: https://clickhouse.com/docs/sql-reference/data-types/tuple
+    tier: high
+    probes:
+      - { id: tuple_paren, sql: "SELECT (1, 'a');" }
+      - { id: tuple_fn, sql: "SELECT tuple(1, 'a');" }
+      - { id: single_element_tuple, sql: "SELECT tuple('a');" }
+      - { id: element_by_index, sql: "SELECT t.1 FROM tbl AS t;" }
+      - { id: nested_index, sql: "SELECT x.1.2 FROM t;" }
+      - { id: element_by_name, sql: "SELECT x.a FROM t;" }
+      - { id: named_tuple, sql: "SELECT CAST((1, 'a') AS Tuple(a UInt8, b String));" }
+      - { id: tuple_element_fn, sql: "SELECT tupleElement((1, 'a'), 2);" }
+      - { id: tuple_in, sql: "SELECT (1, 2) IN ((1, 2), (3, 4));" }
+    examples:
+      - "SELECT tuple(1, 'a') AS x, toTypeName(x);"
+      - "SELECT (1, 'a') AS x, (today(), rand(), 'someString') AS y, ('a') AS not_a_tuple;"
+  - id: a_map_literals
+    name: "Map literals and subscripts"
+    doc: https://clickhouse.com/docs/sql-reference/data-types/map
+    tier: high
+    probes:
+      - { id: map_fn, sql: "SELECT map('key1', 1, 'key2', 2);" }
+      - { id: brace_literal, sql: "SELECT {'key1': 1, 'key2': 2};" }
+      - { id: empty_brace_literal, sql: "SELECT {};" }
+      - { id: subscript, sql: "SELECT m['key1'] FROM t;" }
+      - { id: nested_value, sql: "SELECT map('a', [1, 2], 'b', [3]);" }
+      - { id: map_cast, sql: "SELECT CAST(map('a', 1) AS Map(String, UInt8));" }
+      - { id: subcolumn_keys, sql: "SELECT m.keys, m.values FROM t;" }
+  - id: a_json_literals
+    name: "JSON values and path access"
+    doc: https://clickhouse.com/docs/sql-reference/data-types/newjson
+    tier: high
+    probes:
+      - { id: string_cast_json, sql: "SELECT '{\"a\" : {\"b\" : 42}, \"c\" : [1, 2, 3]}'::JSON AS json;" }
+      - { id: cast_function, sql: "SELECT CAST('{\"a\": 1}' AS JSON);" }
+      - { id: path_subcolumn, sql: "SELECT json.a.b, json.c FROM t;" }
+      - { id: dynamic_subcolumn, sql: "SELECT json.a.g.:Float64, json.d.:Date FROM t;" }
+      - { id: nested_object_subcolumn, sql: "SELECT json.^a.b FROM t;" }
+      - { id: get_subcolumn, sql: "SELECT getSubcolumn(json, 'a.b') FROM t;" }
+      - { id: quoted_path_segment, sql: "SELECT json.`a.b`.c FROM t;" }
+      - { id: json_array_path, sql: "SELECT json.c[1] FROM t;" }
+    examples:
+      - "SELECT '{\"a\" : {\"b\" : 42},\"c\" : [1, 2, 3], \"d\" : \"Hello, World!\"}'::JSON AS json;"
+  - id: a_cast_expressions
+    name: "CAST forms"
+    doc: https://clickhouse.com/docs/sql-reference/functions/type-conversion-functions
+    tier: high
+    probes:
+      - { id: cast_comma, sql: "SELECT CAST(42, 'String');" }
+      - { id: cast_as, sql: "SELECT CAST('2025-01-01' AS Date);" }
+      - { id: double_colon, sql: "SELECT '123'::UInt32;" }
+      - { id: double_colon_param_type, sql: "SELECT x::Decimal(10, 2) FROM t;" }
+      - { id: chained_double_colon, sql: "SELECT '1'::UInt8::String;" }
+      - { id: cast_decimal256, sql: "SELECT CAST(0.1 AS Decimal256(76));" }
+      - { id: cast_nullable, sql: "SELECT CAST(x AS Nullable(String)) FROM t;" }
+      - { id: cast_low_cardinality, sql: "SELECT CAST(x AS LowCardinality(String)) FROM t;" }
+      - { id: cast_datetime_tz, sql: "SELECT CAST(x AS DateTime('UTC')) FROM t;" }
+      - { id: cast_array_type, sql: "SELECT CAST(x AS Array(Nullable(UInt32))) FROM t;" }
+      - { id: accurate_cast, sql: "SELECT accurateCast(42, 'UInt16');" }
+      - { id: accurate_cast_or_null, sql: "SELECT accurateCastOrNull(x, 'UInt8') FROM t;" }
+      - { id: to_type_functions, sql: "SELECT toInt32('1'), toUInt8OrZero('x'), toFloat64OrNull('1.5'), toString(1), toDecimal32('1.15', 2);" }
+      - { id: to_datetime64_scale, sql: "SELECT toDateTime64('2025-01-01 00:00:00.000', 3);" }
+      - { id: parse_datetime, sql: "SELECT parseDateTime('2025-01-04+23:00:00', '%Y-%m-%d+%H:%i:%s');" }
+      - { id: date_alias_fn, sql: "SELECT DATE('2023-01-01');" }
+      - { id: type_as_function_arg, sql: "SELECT CAST(x AS Tuple(UInt8, String)) FROM t;" }
+      - { id: cast_enum, sql: "SELECT CAST('hello' AS Enum8('hello' = 1, 'world' = 2));" }
+    examples:
+      - "SELECT CAST(42, 'String');"
+      - "SELECT CAST('2025-01-01' AS Date);"
+      - "SELECT '123'::UInt32;"
+  - id: a_numeric_types
+    name: "Numeric type names"
+    doc: https://clickhouse.com/docs/sql-reference/data-types/index
+    tier: high
+    probes:
+      - { id: signed_ints, sql: "SELECT CAST(1 AS Int8), CAST(1 AS Int16), CAST(1 AS Int32), CAST(1 AS Int64), CAST(1 AS Int128), CAST(1 AS Int256);" }
+      - { id: unsigned_ints, sql: "SELECT CAST(1 AS UInt8), CAST(1 AS UInt16), CAST(1 AS UInt32), CAST(1 AS UInt64), CAST(1 AS UInt128), CAST(1 AS UInt256);" }
+      - { id: floats, sql: "SELECT CAST(1 AS Float32), CAST(1 AS Float64), CAST(1 AS BFloat16);" }
+      - { id: decimal_p_s, sql: "SELECT CAST(1 AS Decimal(10, 2));" }
+      - { id: decimal_p, sql: "SELECT CAST(1 AS Decimal(10));" }
+      - { id: decimal_bare, sql: "SELECT CAST(1 AS Decimal);" }
+      - { id: decimal_sized, sql: "SELECT CAST(1 AS Decimal32(4)), CAST(1 AS Decimal64(4)), CAST(1 AS Decimal128(4)), CAST(1 AS Decimal256(4));" }
+      - { id: bool, sql: "SELECT CAST(1 AS Bool);" }
+      - { id: column_numeric_types, sql: "CREATE TABLE t (a Int8, b UInt64, c Float32, d Decimal(18, 4), e Bool) ENGINE = Memory;" }
+      - { id: sql_aliases, sql: "CREATE TABLE t (a INT, b BIGINT, c SMALLINT, d TINYINT, e FLOAT, f DOUBLE, g BOOLEAN, h INTEGER UNSIGNED) ENGINE = Memory;" }
+  - id: a_string_types
+    name: "String type names"
+    doc: https://clickhouse.com/docs/sql-reference/data-types/fixedstring
+    tier: high
+    probes:
+      - { id: string, sql: "CREATE TABLE t (a String) ENGINE = Memory;" }
+      - { id: fixedstring, sql: "CREATE TABLE t (a FixedString(16)) ENGINE = Memory;" }
+      - { id: sql_aliases, sql: "CREATE TABLE t (a VARCHAR(255), b TEXT, c CHAR(4), d BLOB) ENGINE = Memory;" }
+      - { id: uuid, sql: "CREATE TABLE t (a UUID) ENGINE = Memory;" }
+      - { id: ipv4_ipv6, sql: "CREATE TABLE t (a IPv4, b IPv6) ENGINE = Memory;" }
+      - { id: fixedstring_cast, sql: "SELECT CAST(x AS FixedString(2)) FROM t;" }
+  - id: a_date_time_types
+    name: "Date and time type names"
+    doc: https://clickhouse.com/docs/sql-reference/data-types/datetime64
+    tier: high
+    probes:
+      - { id: date, sql: "CREATE TABLE t (a Date, b Date32) ENGINE = Memory;" }
+      - { id: datetime, sql: "CREATE TABLE t (a DateTime) ENGINE = Memory;" }
+      - { id: datetime_tz, sql: "CREATE TABLE t (a DateTime('Asia/Istanbul')) ENGINE = Memory;" }
+      - { id: datetime64_precision, sql: "CREATE TABLE t (a DateTime64(3)) ENGINE = Memory;" }
+      - { id: datetime64_tz, sql: "CREATE TABLE t (a DateTime64(3, 'Asia/Istanbul')) ENGINE = Memory;" }
+      - { id: time, sql: "CREATE TABLE t (a Time) ENGINE = Memory;" }
+      - { id: time64, sql: "CREATE TABLE t (a Time64(3)) ENGINE = Memory;" }
+      - { id: timestamp_alias, sql: "CREATE TABLE t (a TIMESTAMP) ENGINE = Memory;" }
+      - { id: interval_types, sql: "SELECT CAST(1 AS IntervalDay), CAST(1 AS IntervalHour);" }
+    examples:
+      - "CREATE TABLE dt64 (`timestamp` DateTime64(3, 'Asia/Istanbul'), `event_id` UInt8) ENGINE = MergeTree;"
+  - id: a_composite_types
+    name: "Composite type names"
+    doc: https://clickhouse.com/docs/sql-reference/data-types/array
+    tier: high
+    probes:
+      - { id: array, sql: "CREATE TABLE t (a Array(UInt8)) ENGINE = Memory;" }
+      - { id: nested_array, sql: "CREATE TABLE t (a Array(Array(String))) ENGINE = Memory;" }
+      - { id: tuple, sql: "CREATE TABLE t (a Tuple(UInt8, String)) ENGINE = Memory;" }
+      - { id: named_tuple, sql: "CREATE TABLE t (a Tuple(x UInt8, y String)) ENGINE = Memory;" }
+      - { id: map, sql: "CREATE TABLE t (a Map(String, UInt64)) ENGINE = Memory;" }
+      - { id: map_of_array, sql: "CREATE TABLE t (a Map(String, Array(UInt8))) ENGINE = Memory;" }
+      - { id: nested, sql: "CREATE TABLE t (a Nested(id UInt32, name String)) ENGINE = Memory;" }
+      - { id: nested_lowercase, sql: "CREATE TABLE t (n Nested(a UInt8, b String)) ENGINE = Memory;" }
+      - { id: geo_types, sql: "CREATE TABLE t (p Point, r Ring, pg Polygon, mp MultiPolygon, ls LineString, mls MultiLineString) ENGINE = Memory;" }
+  - id: a_wrapper_types
+    name: "Nullable, LowCardinality and wrapper types"
+    doc: https://clickhouse.com/docs/sql-reference/data-types/lowcardinality
+    tier: high
+    probes:
+      - { id: nullable, sql: "CREATE TABLE t (a Nullable(UInt32)) ENGINE = Memory;" }
+      - { id: low_cardinality, sql: "CREATE TABLE t (a LowCardinality(String)) ENGINE = Memory;" }
+      - { id: low_cardinality_nullable, sql: "CREATE TABLE t (a LowCardinality(Nullable(String))) ENGINE = Memory;" }
+      - { id: array_nullable, sql: "CREATE TABLE t (a Array(Nullable(Int8))) ENGINE = Memory;" }
+      - { id: null_subcolumn, sql: "SELECT n.null FROM t;" }
+    examples:
+      - "CREATE TABLE lc_t (`id` UInt16, `strings` LowCardinality(String)) ENGINE = MergeTree() ORDER BY id;"
+  - id: a_enum_types
+    name: "Enum types"
+    doc: https://clickhouse.com/docs/sql-reference/data-types/enum
+    tier: medium
+    probes:
+      - { id: enum_values, sql: "CREATE TABLE t (x Enum('hello' = 1, 'world' = 2)) ENGINE = TinyLog;" }
+      - { id: enum_auto_numbers, sql: "CREATE TABLE t (x Enum('hello', 'world')) ENGINE = TinyLog;" }
+      - { id: enum_first_number, sql: "CREATE TABLE t (x Enum('hello' = 1, 'world')) ENGINE = TinyLog;" }
+      - { id: enum8, sql: "CREATE TABLE t (x Enum8('hello' = -128, 'world')) ENGINE = TinyLog;" }
+      - { id: enum16, sql: "CREATE TABLE t (x Enum16('hello' = 1000, 'world' = 2000)) ENGINE = TinyLog;" }
+    examples:
+      - "CREATE TABLE t_enum (x Enum('hello' = 1, 'world' = 2)) ENGINE = TinyLog;"
+      - "CREATE TABLE t_enum (x Enum('hello', 'world')) ENGINE = TinyLog;"
+  - id: a_semi_structured_types
+    name: "Variant, Dynamic and JSON types"
+    doc: https://clickhouse.com/docs/sql-reference/data-types/variant
+    tier: high
+    probes:
+      - { id: variant, sql: "CREATE TABLE t (v Variant(UInt64, String, Array(UInt64))) ENGINE = Memory;" }
+      - { id: dynamic, sql: "CREATE TABLE t (d Dynamic) ENGINE = Memory;" }
+      - { id: dynamic_max_types, sql: "CREATE TABLE t (d Dynamic(max_types = 10)) ENGINE = Memory;" }
+      - { id: json, sql: "CREATE TABLE t (j JSON) ENGINE = Memory;" }
+      - { id: json_params, sql: "CREATE TABLE t (j JSON(max_dynamic_paths = 10, max_dynamic_types = 4)) ENGINE = Memory;" }
+      - { id: json_typed_path, sql: "CREATE TABLE t (j JSON(a.b UInt32, a.c String)) ENGINE = Memory;" }
+      - { id: json_skip, sql: "CREATE TABLE t (j JSON(SKIP a.b, SKIP REGEXP 'x.*')) ENGINE = Memory;" }
+      - { id: variant_cast, sql: "SELECT 'Hello, World!'::Variant(String, UInt64);" }
+      - { id: dynamic_cast, sql: "SELECT 'Hello, World!'::Dynamic AS d;" }
+      - { id: variant_element, sql: "SELECT v.String, v.UInt64 FROM t;" }
+      - { id: variant_element_fn, sql: "SELECT variantElement(v, 'String') FROM t;" }
+    examples:
+      - "CREATE TABLE test (v Variant(UInt64, String, Array(UInt64))) ENGINE = Memory;"
+      - "CREATE TABLE test (d Dynamic) ENGINE = Memory;"
+  - id: a_aggregate_function_types
+    name: "AggregateFunction types"
+    doc: https://clickhouse.com/docs/sql-reference/data-types/aggregatefunction
+    tier: medium
+    probes:
+      - { id: aggregate_function, sql: "CREATE TABLE t (c AggregateFunction(uniq, UInt64)) ENGINE = AggregatingMergeTree ORDER BY tuple();" }
+      - { id: aggregate_function_multi_arg, sql: "CREATE TABLE t (c AggregateFunction(anyIf, String, UInt8)) ENGINE = AggregatingMergeTree ORDER BY tuple();" }
+      - { id: aggregate_function_parametric, sql: "CREATE TABLE t (c AggregateFunction(quantiles(0.5, 0.9), UInt64)) ENGINE = AggregatingMergeTree ORDER BY tuple();" }
+      - { id: simple_aggregate_function, sql: "CREATE TABLE t (c SimpleAggregateFunction(sum, UInt64)) ENGINE = AggregatingMergeTree ORDER BY tuple();" }
+      - { id: state_combinator, sql: "SELECT uniqState(UserID), quantilesState(0.5, 0.9)(SendTiming) FROM t;" }
+      - { id: merge_combinator, sql: "SELECT uniqMerge(c) FROM t;" }
+    examples:
+      - "CREATE TABLE t (column1 AggregateFunction(uniq, UInt64), column2 AggregateFunction(anyIf, String, UInt8), column3 AggregateFunction(quantiles(0.5, 0.9), UInt64)) ENGINE = AggregatingMergeTree ORDER BY tuple();"
+  - id: a_specialized_types
+    name: "QBit, domain and other specialised types"
+    doc: https://clickhouse.com/docs/sql-reference/data-types/qbit
+    tier: low
+    probes:
+      - { id: qbit, sql: "CREATE TABLE t (id UInt32, vec QBit(Float32, 8)) ENGINE = Memory;" }
+      - { id: qbit_stride, sql: "CREATE TABLE t (vec QBit(Float32, 16, 8)) ENGINE = Memory;" }
+  - id: a_identifier_quoting
+    name: "Identifier quoting"
+    doc: https://clickhouse.com/docs/sql-reference/syntax
+    tier: high
+    probes:
+      - { id: double_quoted, sql: "SELECT \"FROM\" FROM table_name;" }
+      - { id: backtick, sql: "SELECT `id` FROM `table`;" }
+      - { id: double_quoted_table_alias, sql: "SELECT \"table t\".column_name FROM table_name AS \"table t\";" }
+      - { id: qualified_quoted, sql: "SELECT `db`.`tbl`.`col` FROM `db`.`tbl`;" }
+      - { id: underscore_leading, sql: "SELECT _internal, Id_with_underscores_123_ FROM t;" }
+      - { id: quoted_with_dot, sql: "SELECT `a.b` FROM t;" }
+      - { id: quoted_special_chars, sql: "SELECT `tom@gmail.com`, `1x` FROM t;" }
+      - { id: backtick_escaped, sql: "SELECT `we``ird` FROM t;" }
+      - { id: keyword_as_identifier, sql: "SELECT \"select\", `from` FROM t;" }
+      - { id: column_alias, sql: "SELECT x * 2 AS double FROM t;" }
+      - { id: alias_without_as, sql: "SELECT x y FROM t z;" }
+      - { id: alias_in_expression, sql: "SELECT (1 AS n) + 2, n;" }
+      - { id: quoted_alias, sql: "SELECT 1 AS \"my alias\", 2 AS `other alias`;" }
+  - id: a_comments
+    name: "Comments"
+    doc: https://clickhouse.com/docs/sql-reference/syntax
+    tier: high
+    probes:
+      - { id: dash_dash, sql: "SELECT 1; -- comment" }
+      - { id: dash_dash_no_space, sql: "SELECT 1 --comment\n;" }
+      - { id: hash, sql: "SELECT 1 # comment\n;" }
+      - { id: hash_bang, sql: "SELECT 1 #! comment\n;" }
+      - { id: block, sql: "SELECT /* comment */ 1;" }
+      - { id: multiline_block, sql: "SELECT /* multi\nline */ 1;" }
+      - { id: nested_block, sql: "SELECT /* outer /* inner */ outer */ 1;" }
+      - { id: double_slash, sql: "SELECT 1 // comment\n;" }
+      - { id: many_slashes, sql: "SELECT 1 /////////// comment\n;" }
+      - { id: leading_comment, sql: "-- leading\nSELECT 1;" }
+    examples:
+      - "/* * Compute the number of days between two dates. * /* Returns NULL if either argument is NULL */ */\nSELECT dateDiff('day', toDate('2024-01-01'), toDate('2024-12-31')) AS days_in_year, -- 365\ndateDiff('day', toDate('2020-01-01'), today()) AS days_since #! since 2020\n/////////////////////////////////////////////////////////////////// # TODO: add hour / minute variants\n;"
+  - id: a_query_parameters
+    name: "Query parameters"
+    doc: https://clickhouse.com/docs/sql-reference/syntax
+    tier: high
+    probes:
+      - { id: param_scalar, sql: "SELECT {a: UInt32};" }
+      - { id: param_string, sql: "SELECT {b: String};" }
+      - { id: param_datetime, sql: "SELECT {c: DateTime};" }
+      - { id: param_map_type, sql: "SELECT {d: Map(String, Array(UInt8))};" }
+      - { id: param_identifier, sql: "SELECT * FROM {mytablename:Identifier};" }
+      - { id: param_in_where, sql: "SELECT * FROM t WHERE id = {id: UInt64};" }
+      - { id: param_no_space, sql: "SELECT {message:String};" }
+      - { id: param_nullable, sql: "SELECT {x: Nullable(String)};" }
+      - { id: param_in_insert, sql: "INSERT INTO t VALUES ({a: UInt32}, {b: String});" }
+      - { id: param_in_limit, sql: "SELECT * FROM t LIMIT {n: UInt32};" }
+      - { id: param_in_ddl, sql: "CREATE VIEW v AS SELECT * FROM t WHERE x = {x: String};" }
+      - { id: set_param_scalar, sql: "SET param_a = 13;" }
+      - { id: set_param_string, sql: "SET param_b = 'str';" }
+      - { id: set_param_map, sql: "SET param_d = {'10': [11, 12], '13': [14, 15]};" }
+      - { id: set_param_identifier, sql: "SET param_mytablename = \"uk_price_paid\";" }
+    examples:
+      - "SET param_a = 13;"
+      - "SET param_b = 'str';"
+      - "SET param_c = '2022-08-04 18:30:53';"
+  - id: a_parameterized_view_args
+    name: "Parameterized view calls"
+    doc: https://clickhouse.com/docs/sql-reference/syntax
+    tier: medium
+    probes:
+      - { id: view_call_param, sql: "SELECT * FROM v(a = 1);" }
+      - { id: view_call_two_params, sql: "SELECT * FROM v(a = 1, b = 'x');" }
+  - id: a_settings_variables
+    name: "Session settings as expressions"
+    doc: https://clickhouse.com/docs/sql-reference/syntax
+    tier: low
+    probes:
+      - { id: set_setting, sql: "SET max_threads = 4;" }
+      - { id: set_setting_string, sql: "SET session_timezone = 'UTC';" }

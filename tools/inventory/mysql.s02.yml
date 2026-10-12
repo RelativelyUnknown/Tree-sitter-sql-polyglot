@@ -1,0 +1,247 @@
+dialect: mysql
+engine: MySQL
+version: "8.4"
+source: https://dev.mysql.com/doc/refman/8.4/en/sql-statements.html
+
+statements:
+  - id: alter_event
+    name: ALTER EVENT
+    doc: https://dev.mysql.com/doc/refman/8.4/en/alter-event.html
+    tier: medium
+    probes:
+      - id: on_schedule_every
+        sql: "ALTER EVENT ev ON SCHEDULE EVERY 1 DAY;"
+      - id: on_schedule_at
+        sql: "ALTER EVENT ev ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 1 HOUR;"
+      - id: definer
+        sql: "ALTER DEFINER = 'admin'@'localhost' EVENT ev DISABLE;"
+      - id: on_completion_preserve
+        sql: "ALTER EVENT ev ON COMPLETION PRESERVE;"
+      - id: on_completion_not_preserve
+        sql: "ALTER EVENT ev ON COMPLETION NOT PRESERVE;"
+      - id: rename_to
+        sql: "ALTER EVENT ev RENAME TO ev2;"
+      - id: enable
+        sql: "ALTER EVENT ev ENABLE;"
+      - id: disable_on_replica
+        sql: "ALTER EVENT ev DISABLE ON REPLICA;"
+      - id: comment
+        sql: "ALTER EVENT ev COMMENT 'new comment';"
+      - id: do_body
+        sql: "ALTER EVENT ev DO UPDATE t SET c = c + 1;"
+    examples:
+      - "ALTER EVENT myevent ON SCHEDULE EVERY 12 HOUR STARTS CURRENT_TIMESTAMP + INTERVAL 4 HOUR;"
+      - "ALTER EVENT myevent ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 1 DAY DO TRUNCATE TABLE myschema.mytable;"
+      - "ALTER EVENT myevent DISABLE;"
+
+  - id: create_event
+    name: CREATE EVENT
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-event.html
+    tier: medium
+    probes:
+      - id: at_timestamp
+        sql: "CREATE EVENT ev ON SCHEDULE AT CURRENT_TIMESTAMP DO UPDATE t SET c = c + 1;"
+      - id: at_interval
+        sql: "CREATE EVENT ev ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 1 HOUR DO DELETE FROM t;"
+      - id: every_interval
+        sql: "CREATE EVENT ev ON SCHEDULE EVERY 1 DAY DO DELETE FROM t;"
+      - id: every_starts_ends
+        sql: "CREATE EVENT ev ON SCHEDULE EVERY 1 WEEK STARTS CURRENT_TIMESTAMP + INTERVAL 1 DAY ENDS CURRENT_TIMESTAMP + INTERVAL 1 MONTH DO DELETE FROM t;"
+      - id: compound_interval_unit
+        sql: "CREATE EVENT ev ON SCHEDULE EVERY 2 DAY_HOUR DO DELETE FROM t;"
+      - id: if_not_exists
+        sql: "CREATE EVENT IF NOT EXISTS ev ON SCHEDULE EVERY 1 HOUR DO DELETE FROM t;"
+      - id: definer
+        sql: "CREATE DEFINER = 'admin'@'localhost' EVENT ev ON SCHEDULE EVERY 1 HOUR DO DELETE FROM t;"
+      - id: on_completion_preserve
+        sql: "CREATE EVENT ev ON SCHEDULE AT CURRENT_TIMESTAMP ON COMPLETION PRESERVE DO DELETE FROM t;"
+      - id: on_completion_not_preserve
+        sql: "CREATE EVENT ev ON SCHEDULE AT CURRENT_TIMESTAMP ON COMPLETION NOT PRESERVE DO DELETE FROM t;"
+      - id: enable_disable
+        sql: "CREATE EVENT ev ON SCHEDULE EVERY 1 HOUR DISABLE DO DELETE FROM t;"
+      - id: disable_on_replica
+        sql: "CREATE EVENT ev ON SCHEDULE EVERY 1 HOUR DISABLE ON REPLICA DO DELETE FROM t;"
+      - id: comment
+        sql: "CREATE EVENT ev ON SCHEDULE EVERY 1 HOUR COMMENT 'cleanup' DO DELETE FROM t;"
+      - id: do_begin_end
+        sql: "CREATE EVENT ev ON SCHEDULE EVERY 1 DAY DO BEGIN DECLARE v INT; SET v = 1; DELETE FROM t WHERE c = v; END;"
+      - id: do_call
+        sql: "CREATE EVENT ev ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 1 DAY DO CALL myproc(5, 27);"
+    examples:
+      - "CREATE EVENT myevent ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 1 HOUR DO UPDATE myschema.mytable SET mycol = mycol + 1;"
+      - "CREATE EVENT e_hourly ON SCHEDULE EVERY 1 HOUR COMMENT 'Clears out sessions table each hour.' DO DELETE FROM site_activity.sessions;"
+      - "CREATE EVENT e_call_myproc ON SCHEDULE AT CURRENT_TIMESTAMP + INTERVAL 1 DAY DO CALL myproc(5, 27);"
+
+  - id: create_trigger
+    name: CREATE TRIGGER
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-trigger.html
+    tier: medium
+    probes:
+      - id: before_insert
+        sql: "CREATE TRIGGER trg BEFORE INSERT ON t FOR EACH ROW SET NEW.c = 1;"
+      - id: after_update
+        sql: "CREATE TRIGGER trg AFTER UPDATE ON t FOR EACH ROW SET @x = OLD.c;"
+      - id: after_delete
+        sql: "CREATE TRIGGER trg AFTER DELETE ON t FOR EACH ROW INSERT INTO log VALUES (OLD.c);"
+      - id: begin_end_body
+        sql: "CREATE TRIGGER trg BEFORE UPDATE ON t FOR EACH ROW BEGIN IF NEW.c < 0 THEN SET NEW.c = 0; END IF; END;"
+      - id: if_not_exists
+        sql: "CREATE TRIGGER IF NOT EXISTS trg BEFORE INSERT ON t FOR EACH ROW SET NEW.c = 1;"
+      - id: definer
+        sql: "CREATE DEFINER = 'admin'@'localhost' TRIGGER trg BEFORE INSERT ON t FOR EACH ROW SET NEW.c = 1;"
+      - id: schema_qualified_names
+        sql: "CREATE TRIGGER s.trg BEFORE INSERT ON s.t FOR EACH ROW SET NEW.c = 1;"
+      - id: follows
+        sql: "CREATE TRIGGER trg2 BEFORE INSERT ON t FOR EACH ROW FOLLOWS trg1 SET NEW.c = 1;"
+      - id: precedes
+        sql: "CREATE TRIGGER trg2 BEFORE INSERT ON t FOR EACH ROW PRECEDES trg1 SET NEW.c = 1;"
+
+  - id: drop_event
+    name: DROP EVENT
+    doc: https://dev.mysql.com/doc/refman/8.4/en/drop-event.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP EVENT ev;"
+      - id: if_exists
+        sql: "DROP EVENT IF EXISTS ev;"
+      - id: schema_qualified
+        sql: "DROP EVENT s.ev;"
+        note: event_name may be schema-qualified in the server grammar although the syntax block shows only event_name
+
+  - id: drop_trigger
+    name: DROP TRIGGER
+    doc: https://dev.mysql.com/doc/refman/8.4/en/drop-trigger.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP TRIGGER trg;"
+      - id: if_exists
+        sql: "DROP TRIGGER IF EXISTS trg;"
+      - id: schema_qualified
+        sql: "DROP TRIGGER s.trg;"
+      - id: if_exists_schema_qualified
+        sql: "DROP TRIGGER IF EXISTS s.trg;"
+
+  - id: do
+    name: DO
+    doc: https://dev.mysql.com/doc/refman/8.4/en/do.html
+    tier: medium
+    probes:
+      - id: single_expr
+        sql: "DO SLEEP(5);"
+      - id: multiple_exprs
+        sql: "DO RELEASE_LOCK('a'), 1 + 1;"
+      - id: user_variable
+        sql: "DO @x := 1;"
+    examples:
+      - "DO SLEEP(5);"
+
+  - id: load_data
+    name: LOAD DATA
+    doc: https://dev.mysql.com/doc/refman/8.4/en/load-data.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "LOAD DATA INFILE 'data.txt' INTO TABLE t;"
+      - id: low_priority_local
+        sql: "LOAD DATA LOW_PRIORITY LOCAL INFILE 'data.txt' INTO TABLE t;"
+      - id: concurrent
+        sql: "LOAD DATA CONCURRENT INFILE 'data.txt' INTO TABLE t;"
+      - id: replace
+        sql: "LOAD DATA INFILE 'data.txt' REPLACE INTO TABLE t;"
+      - id: ignore
+        sql: "LOAD DATA INFILE 'data.txt' IGNORE INTO TABLE t;"
+      - id: partition
+        sql: "LOAD DATA INFILE 'data.txt' INTO TABLE t PARTITION (p0, p1);"
+      - id: character_set
+        sql: "LOAD DATA INFILE 'data.txt' INTO TABLE t CHARACTER SET utf8mb4;"
+      - id: fields_terminated_enclosed_escaped
+        sql: |-
+          LOAD DATA INFILE 'data.txt' INTO TABLE t FIELDS TERMINATED BY ',' OPTIONALLY ENCLOSED BY '"' ESCAPED BY '\\';
+      - id: columns_enclosed
+        sql: "LOAD DATA INFILE 'data.txt' INTO TABLE t COLUMNS TERMINATED BY '\\t' ENCLOSED BY '''';"
+      - id: lines_starting_terminated
+        sql: "LOAD DATA INFILE 'data.txt' INTO TABLE t LINES STARTING BY 'xxx' TERMINATED BY '\\n';"
+      - id: ignore_lines
+        sql: "LOAD DATA INFILE 'data.txt' INTO TABLE t IGNORE 1 LINES;"
+      - id: ignore_rows
+        sql: "LOAD DATA INFILE 'data.txt' INTO TABLE t IGNORE 1 ROWS;"
+      - id: column_list_user_var
+        sql: "LOAD DATA INFILE 'data.txt' INTO TABLE t (c1, @v1, c2);"
+      - id: set_assignments
+        sql: "LOAD DATA INFILE 'data.txt' INTO TABLE t (c1, @v1) SET c2 = @v1 / 100, c3 = DEFAULT;"
+    examples:
+      - "LOAD DATA INFILE 'data.txt' INTO TABLE db2.my_table;"
+      - "LOAD DATA INFILE '/tmp/test.txt' INTO TABLE test FIELDS TERMINATED BY ',' LINES STARTING BY 'xxx';"
+      - "LOAD DATA INFILE 'file.txt' INTO TABLE t1 (column1, @var1) SET column2 = @var1/100;"
+
+  - id: load_xml
+    name: LOAD XML
+    doc: https://dev.mysql.com/doc/refman/8.4/en/load-xml.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "LOAD XML INFILE 'data.xml' INTO TABLE t;"
+      - id: low_priority_local
+        sql: "LOAD XML LOW_PRIORITY LOCAL INFILE 'data.xml' INTO TABLE t;"
+      - id: concurrent
+        sql: "LOAD XML CONCURRENT INFILE 'data.xml' INTO TABLE t;"
+      - id: replace
+        sql: "LOAD XML INFILE 'data.xml' REPLACE INTO TABLE t;"
+      - id: ignore
+        sql: "LOAD XML INFILE 'data.xml' IGNORE INTO TABLE t;"
+      - id: schema_qualified_table
+        sql: "LOAD XML INFILE 'data.xml' INTO TABLE s.t;"
+      - id: character_set
+        sql: "LOAD XML INFILE 'data.xml' INTO TABLE t CHARACTER SET utf8mb4;"
+      - id: rows_identified_by
+        sql: "LOAD XML INFILE 'data.xml' INTO TABLE t ROWS IDENTIFIED BY '<person>';"
+      - id: ignore_lines
+        sql: "LOAD XML INFILE 'data.xml' INTO TABLE t IGNORE 1 LINES;"
+      - id: ignore_rows
+        sql: "LOAD XML INFILE 'data.xml' INTO TABLE t IGNORE 1 ROWS;"
+      - id: field_list_set
+        sql: "LOAD XML INFILE 'data.xml' INTO TABLE t (@f1, @f2) SET c1 = @f1, c2 = @f2;"
+    examples:
+      - "LOAD XML INFILE '../bin/person-dump.xml' INTO TABLE test.individual;"
+
+  - id: lock_tables
+    name: LOCK TABLES / UNLOCK TABLES
+    doc: https://dev.mysql.com/doc/refman/8.4/en/lock-tables.html
+    tier: medium
+    probes:
+      - id: lock_read
+        sql: "LOCK TABLES t READ;"
+      - id: lock_write
+        sql: "LOCK TABLES t WRITE;"
+      - id: lock_read_local
+        sql: "LOCK TABLES t READ LOCAL;"
+      - id: lock_table_synonym
+        sql: "LOCK TABLE t READ;"
+      - id: lock_alias
+        sql: "LOCK TABLES t AS a READ;"
+      - id: lock_alias_no_as
+        sql: "LOCK TABLES t a WRITE;"
+      - id: lock_multiple
+        sql: "LOCK TABLES t1 WRITE, t2 READ, t3 AS a READ LOCAL;"
+      - id: unlock_tables
+        sql: "UNLOCK TABLES;"
+      - id: unlock_table_synonym
+        sql: "UNLOCK TABLE;"
+    examples:
+      - "LOCK TABLES trans READ, customer WRITE;"
+      - "UNLOCK TABLES;"
+
+  - id: prepare
+    name: PREPARE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/prepare.html
+    tier: medium
+    probes:
+      - id: from_string_literal
+        sql: "PREPARE stmt FROM 'SELECT * FROM t WHERE c = ?';"
+      - id: from_user_variable
+        sql: "PREPARE stmt FROM @s;"
+      - id: from_double_quoted_string
+        sql: "PREPARE stmt FROM \"SELECT 1\";"
+        note: double-quoted string literal is valid unless ANSI_QUOTES SQL mode is set

@@ -1,0 +1,190 @@
+dialect: spanner
+engine: Google Cloud Spanner (GoogleSQL dialect)
+version: "current managed service (docs as of 2026-10)"
+source: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language
+
+statements:
+  - id: drop_view
+    name: DROP VIEW
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#drop-view
+    tier: high
+    probes:
+      - id: basic
+        sql: "DROP VIEW v;"
+      - id: if_exists
+        sql: "DROP VIEW IF EXISTS v;"
+
+  - id: select
+    name: Query statement (SELECT, WITH, set operations, FOR UPDATE)
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/query-syntax#sql_syntax
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT c FROM t;"
+      - id: select_all
+        sql: "SELECT ALL c FROM t;"
+      - id: select_distinct
+        sql: "SELECT DISTINCT c FROM t;"
+      - id: select_as_struct
+        sql: "SELECT AS STRUCT c, d FROM t;"
+      - id: select_as_value
+        sql: "SELECT AS VALUE STRUCT(c AS a, d AS b) FROM t;"
+      - id: select_as_typename
+        sql: "SELECT AS my_type c, d FROM t;"
+      - id: select_no_from
+        sql: "SELECT 1;"
+      - id: select_star
+        sql: "SELECT * FROM t;"
+      - id: select_star_except
+        sql: "SELECT * EXCEPT (c) FROM t;"
+      - id: select_star_replace
+        sql: "SELECT * REPLACE (c / 2 AS c) FROM t;"
+      - id: select_star_except_replace
+        sql: "SELECT * EXCEPT (c) REPLACE (d + 1 AS d) FROM t;"
+      - id: select_expression_dot_star
+        sql: "SELECT g.* FROM t AS g;"
+      - id: select_expression_dot_star_except
+        sql: "SELECT g.* EXCEPT (c) FROM t AS g;"
+      - id: select_alias
+        sql: "SELECT c AS x, d y FROM t;"
+      - id: from_table_alias
+        sql: "SELECT x.c FROM t AS x;"
+      - id: from_table_implicit_alias
+        sql: "SELECT x.c FROM t x;"
+      - id: from_subquery
+        sql: "SELECT x.c FROM (SELECT c FROM t) AS x;"
+      - id: from_comma_join
+        sql: "SELECT t1.c FROM t1, t2;"
+      - id: from_field_path
+        sql: "SELECT * FROM T1 t1, t1.array_column;"
+      - id: from_unnest
+        sql: "SELECT * FROM UNNEST([10, 20, 30]) AS numbers;"
+      - id: from_unnest_with_offset
+        sql: "SELECT * FROM UNNEST([10, 20, 30]) AS numbers WITH OFFSET;"
+      - id: from_unnest_with_offset_alias
+        sql: "SELECT * FROM UNNEST([10, 20, 30]) AS numbers WITH OFFSET AS pos;"
+      - id: from_unnest_array_path
+        sql: "SELECT * FROM T1 t1, UNNEST(t1.array_column) AS a;"
+      - id: from_unnest_hint
+        sql: "SELECT * FROM UNNEST([1, 2]) AS n @{FORCE_INDEX=_BASE_TABLE};"
+      - id: table_hint
+        sql: "SELECT c FROM t @{FORCE_INDEX=idx};"
+      - id: table_hint_alias
+        sql: "SELECT x.c FROM t @{FORCE_INDEX=idx} AS x;"
+      - id: subquery_hint
+        sql: "SELECT x.c FROM (SELECT c FROM t) @{FORCE_INDEX=_BASE_TABLE} AS x;"
+      - id: statement_hint
+        sql: "@{USE_ADDITIONAL_PARALLELISM=TRUE} SELECT c FROM t;"
+      - id: statement_hint_multiple
+        sql: "@{OPTIMIZER_VERSION=latest_version, USE_ADDITIONAL_PARALLELISM=TRUE} SELECT c FROM t;"
+      - id: cte_ref_hint
+        sql: "WITH q AS (SELECT c FROM t) SELECT c FROM q @{FORCE_INDEX=_BASE_TABLE} AS x;"
+      - id: inner_join_on
+        sql: "SELECT t1.c FROM t1 INNER JOIN t2 ON t1.id = t2.id;"
+      - id: join_on
+        sql: "SELECT t1.c FROM t1 JOIN t2 ON t1.id = t2.id;"
+      - id: join_using
+        sql: "SELECT c FROM t1 JOIN t2 USING (id);"
+      - id: cross_join
+        sql: "SELECT t1.c FROM t1 CROSS JOIN t2;"
+      - id: left_join
+        sql: "SELECT t1.c FROM t1 LEFT JOIN t2 ON t1.id = t2.id;"
+      - id: left_outer_join
+        sql: "SELECT t1.c FROM t1 LEFT OUTER JOIN t2 ON t1.id = t2.id;"
+      - id: right_join
+        sql: "SELECT t1.c FROM t1 RIGHT JOIN t2 ON t1.id = t2.id;"
+      - id: right_outer_join
+        sql: "SELECT t1.c FROM t1 RIGHT OUTER JOIN t2 ON t1.id = t2.id;"
+      - id: full_join
+        sql: "SELECT t1.c FROM t1 FULL JOIN t2 ON t1.id = t2.id;"
+      - id: full_outer_join
+        sql: "SELECT t1.c FROM t1 FULL OUTER JOIN t2 ON t1.id = t2.id;"
+      - id: hash_join
+        sql: "SELECT t1.c FROM t1 INNER HASH JOIN t2 ON t1.id = t2.id;"
+      - id: left_hash_join
+        sql: "SELECT t1.c FROM t1 LEFT HASH JOIN t2 ON t1.id = t2.id;"
+      - id: join_hint
+        sql: "SELECT t1.c FROM t1 JOIN @{JOIN_METHOD=HASH_JOIN} t2 ON t1.id = t2.id;"
+      - id: cross_join_hint
+        sql: "SELECT t1.c FROM t1 CROSS JOIN @{FORCE_JOIN_ORDER=TRUE} t2;"
+      - id: parenthesized_join
+        sql: "SELECT t1.c FROM (t1 JOIN t2 ON t1.id = t2.id);"
+      - id: multiple_from_items
+        sql: "SELECT t1.c FROM t1 JOIN t2 ON t1.id = t2.id JOIN t3 ON t2.id = t3.id;"
+      - id: tablesample_bernoulli
+        sql: "SELECT c FROM t TABLESAMPLE BERNOULLI (10 PERCENT);"
+      - id: tablesample_reservoir
+        sql: "SELECT c FROM t TABLESAMPLE RESERVOIR (100 ROWS);"
+      - id: where
+        sql: "SELECT c FROM t WHERE c > 1;"
+      - id: group_by
+        sql: "SELECT c, COUNT(*) FROM t GROUP BY c;"
+      - id: group_by_ordinal
+        sql: "SELECT c, COUNT(*) FROM t GROUP BY 1;"
+      - id: group_by_alias
+        sql: "SELECT c AS x, COUNT(*) FROM t GROUP BY x;"
+      - id: group_by_multiple
+        sql: "SELECT c, d, COUNT(*) FROM t GROUP BY c, d;"
+      - id: group_by_hint
+        sql: "SELECT c, COUNT(*) FROM t GROUP @{GROUP_METHOD=HASH_GROUP} BY c;"
+      - id: having
+        sql: "SELECT c, COUNT(*) FROM t GROUP BY c HAVING COUNT(*) > 1;"
+      - id: order_by
+        sql: "SELECT c FROM t ORDER BY c;"
+      - id: order_by_desc
+        sql: "SELECT c FROM t ORDER BY c DESC;"
+      - id: order_by_asc_multiple
+        sql: "SELECT c, d FROM t ORDER BY c ASC, d DESC;"
+      - id: order_by_collate
+        sql: "SELECT c FROM t ORDER BY c COLLATE 'und:ci';"
+      - id: order_by_collate_desc
+        sql: "SELECT c FROM t ORDER BY c COLLATE 'und:ci' DESC;"
+      - id: limit
+        sql: "SELECT c FROM t LIMIT 10;"
+      - id: limit_offset
+        sql: "SELECT c FROM t LIMIT 10 OFFSET 5;"
+      - id: order_by_limit_offset
+        sql: "SELECT c FROM t ORDER BY c LIMIT 10 OFFSET 5;"
+      - id: for_update
+        sql: "SELECT c FROM t WHERE id = 1 FOR UPDATE;"
+      - id: for_update_order_limit
+        sql: "SELECT c FROM t ORDER BY c LIMIT 10 FOR UPDATE;"
+      - id: with_cte
+        sql: "WITH q AS (SELECT c FROM t) SELECT c FROM q;"
+      - id: with_multiple_ctes
+        sql: "WITH q1 AS (SELECT c FROM t), q2 AS (SELECT c FROM q1) SELECT c FROM q2;"
+      - id: with_cte_for_update
+        sql: "WITH t1 AS (SELECT col1, col2 FROM t FOR UPDATE) SELECT * FROM t1;"
+      - id: with_cte_set_operation
+        sql: "WITH q1 AS (SELECT 1 AS c), q2 AS (SELECT 2 AS c) SELECT c FROM q1 UNION ALL SELECT c FROM q2;"
+      - id: union_all
+        sql: "SELECT c FROM t1 UNION ALL SELECT c FROM t2;"
+      - id: union_distinct
+        sql: "SELECT c FROM t1 UNION DISTINCT SELECT c FROM t2;"
+      - id: intersect_all
+        sql: "SELECT c FROM t1 INTERSECT ALL SELECT c FROM t2;"
+      - id: intersect_distinct
+        sql: "SELECT c FROM t1 INTERSECT DISTINCT SELECT c FROM t2;"
+      - id: except_all
+        sql: "SELECT c FROM t1 EXCEPT ALL SELECT c FROM t2;"
+      - id: except_distinct
+        sql: "SELECT c FROM t1 EXCEPT DISTINCT SELECT c FROM t2;"
+      - id: set_operation_chain
+        sql: "SELECT c FROM t1 UNION ALL SELECT c FROM t2 UNION ALL SELECT c FROM t3;"
+      - id: set_operation_order_limit
+        sql: "SELECT c FROM t1 UNION ALL SELECT c FROM t2 ORDER BY c LIMIT 5;"
+      - id: parenthesized_query
+        sql: "(SELECT c FROM t);"
+      - id: parenthesized_set_operands
+        sql: "(SELECT c FROM t1 ORDER BY c LIMIT 1) UNION ALL (SELECT c FROM t2 ORDER BY c LIMIT 1);"
+      - id: scalar_subquery
+        sql: "SELECT (SELECT MAX(c) FROM t2) AS m FROM t1;"
+      - id: array_subquery
+        sql: "SELECT ARRAY(SELECT c FROM t2) AS a FROM t1;"
+      - id: graph_table
+        sql: "SELECT * FROM GRAPH_TABLE(g MATCH (n:Person) RETURN n.name AS name);"
+        note: GRAPH_TABLE operator is listed in the from_item syntax and documented in the GQL reference.
+    examples:
+      - "SELECT * FROM Roster;"
+      - "SELECT MarketingBudget FROM Albums WHERE SingerId = 1 and AlbumId = 1 FOR UPDATE;"
+      - "SELECT * FROM UNNEST ( [ 10 , 20 , 30 ] ) as numbers WITH OFFSET;"

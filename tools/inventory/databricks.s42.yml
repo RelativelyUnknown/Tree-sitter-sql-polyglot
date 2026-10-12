@@ -1,0 +1,241 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: alter_external_location
+    name: ALTER EXTERNAL LOCATION
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-alter-location
+    tier: medium
+    probes:
+      - id: rename_to
+        sql: "ALTER EXTERNAL LOCATION loc RENAME TO loc2;"
+      - id: set_url
+        sql: "ALTER EXTERNAL LOCATION loc SET URL 's3://bucket/path';"
+      - id: set_url_force
+        sql: "ALTER EXTERNAL LOCATION loc SET URL 's3://bucket/path' FORCE;"
+      - id: set_storage_credential
+        sql: "ALTER EXTERNAL LOCATION loc SET STORAGE CREDENTIAL cred;"
+      - id: owner_to
+        sql: "ALTER EXTERNAL LOCATION loc OWNER TO `alf@melmak.et`;"
+      - id: set_owner_to
+        sql: "ALTER EXTERNAL LOCATION loc SET OWNER TO `alf@melmak.et`;"
+    examples:
+      - "ALTER EXTERNAL LOCATION descend_loc RENAME TO decent_loc;"
+      - "ALTER EXTERNAL LOCATION best_loc SET URL 's3://us-east-1-prod/best_location' FORCE;"
+      - "ALTER EXTERNAL LOCATION best_loc SET STORAGE CREDENTIAL street_cred;"
+
+  - id: drop_external_location
+    name: DROP EXTERNAL LOCATION
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-drop-location
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP EXTERNAL LOCATION loc;"
+      - id: if_exists
+        sql: "DROP EXTERNAL LOCATION IF EXISTS loc;"
+    examples:
+      - "DROP EXTERNAL LOCATION some_location;"
+
+  - id: alter_credential
+    name: ALTER CREDENTIAL
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-alter-credential
+    tier: medium
+    probes:
+      - id: rename_to
+        sql: "ALTER CREDENTIAL cred RENAME TO cred2;"
+      - id: owner_to
+        sql: "ALTER CREDENTIAL cred OWNER TO `alf@melmak.et`;"
+      - id: set_owner_to
+        sql: "ALTER CREDENTIAL cred SET OWNER TO `alf@melmak.et`;"
+      - id: storage_keyword
+        sql: "ALTER STORAGE CREDENTIAL cred RENAME TO cred2;"
+      - id: service_keyword
+        sql: "ALTER SERVICE CREDENTIAL cred OWNER TO `alf@melmak.et`;"
+    examples:
+      - "ALTER CREDENTIAL street_cred RENAME TO good_cred;"
+      - "ALTER CREDENTIAL street_cred OWNER TO `alf@melmak.et`;"
+
+  - id: drop_credential
+    name: DROP CREDENTIAL
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-drop-credential
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP CREDENTIAL cred;"
+      - id: if_exists
+        sql: "DROP CREDENTIAL IF EXISTS cred;"
+      - id: force
+        sql: "DROP CREDENTIAL cred FORCE;"
+      - id: storage_keyword
+        sql: "DROP STORAGE CREDENTIAL IF EXISTS cred FORCE;"
+      - id: service_keyword
+        sql: "DROP SERVICE CREDENTIAL cred;"
+    examples:
+      - "DROP CREDENTIAL street_cred;"
+      - "DROP STORAGE CREDENTIAL street_cred FORCE;"
+
+  - id: ldp_create_flow
+    name: CREATE FLOW (pipelines)
+    doc: https://docs.databricks.com/aws/en/ldp/developer/ldp-sql-ref-create-flow
+    tier: medium
+    probes:
+      - id: insert_into_by_name
+        sql: "CREATE FLOW f AS INSERT INTO t BY NAME SELECT * FROM STREAM(src);"
+      - id: insert_once_into
+        sql: "CREATE FLOW f AS INSERT ONCE INTO t BY NAME SELECT * FROM src;"
+      - id: comment
+        sql: "CREATE FLOW f COMMENT 'my flow' AS INSERT INTO t BY NAME SELECT * FROM STREAM(src);"
+      - id: insert_replace_using
+        sql: "CREATE FLOW f AS INSERT INTO t BY NAME REPLACE USING (id) SEQUENCE BY ts SELECT id, ts FROM STREAM(src);"
+      - id: auto_cdc_into
+        sql: "CREATE FLOW f AS AUTO CDC INTO t FROM STREAM(src) KEYS (id) SEQUENCE BY seq;"
+      - id: auto_cdc_once_into
+        sql: "CREATE FLOW f AS AUTO CDC ONCE INTO t FROM STREAM(src) KEYS (id) SEQUENCE BY seq;"
+      - id: auto_cdc_from_snapshot
+        sql: "CREATE FLOW f AS AUTO CDC INTO t FROM SNAPSHOT (SELECT * FROM src) KEYS (id);"
+      - id: auto_cdc_from_snapshot_with_version
+        sql: "CREATE FLOW f AS AUTO CDC INTO t FROM SNAPSHOT (SELECT * FROM src) WITH VERSION (SELECT 1 AS version) KEYS (id) STORED AS SCD TYPE 2;"
+      - id: auto_cdc_from_snapshot_track_history
+        sql: "CREATE FLOW f AS AUTO CDC INTO t FROM SNAPSHOT (SELECT * FROM src) KEYS (id) STORED AS SCD TYPE 2 TRACK HISTORY ON * EXCEPT (city);"
+    examples:
+      - "CREATE OR REFRESH STREAMING TABLE users;"
+      - "CREATE FLOW users_flow AS INSERT INTO users BY NAME SELECT * FROM stream(raw_data.users);"
+      - "CREATE FLOW backfill_users AS INSERT ONCE INTO users BY NAME SELECT * FROM user_backfill_table;"
+
+  - id: ldp_auto_cdc_into
+    name: AUTO CDC INTO / APPLY CHANGES INTO (pipelines)
+    doc: https://docs.databricks.com/aws/en/ldp/developer/ldp-sql-ref-apply-changes-into
+    tier: medium
+    probes:
+      - id: target_streaming_table
+        sql: "CREATE OR REFRESH STREAMING TABLE t;"
+      - id: basic
+        sql: "CREATE FLOW f AS AUTO CDC INTO t FROM STREAM(src) KEYS (id) SEQUENCE BY seq;"
+      - id: once
+        sql: "CREATE FLOW f AS AUTO CDC ONCE INTO t FROM STREAM(src) KEYS (id) SEQUENCE BY seq;"
+      - id: ignore_null_updates
+        sql: "CREATE FLOW f AS AUTO CDC INTO t FROM STREAM(src) KEYS (id) IGNORE NULL UPDATES SEQUENCE BY seq;"
+      - id: ignore_null_updates_on_columns
+        sql: "CREATE FLOW f AS AUTO CDC INTO t FROM STREAM(src) KEYS (id) IGNORE NULL UPDATES ON (a, b) SEQUENCE BY seq;"
+      - id: ignore_null_updates_on_except
+        sql: "CREATE FLOW f AS AUTO CDC INTO t FROM STREAM(src) KEYS (id) IGNORE NULL UPDATES ON * EXCEPT (op) SEQUENCE BY seq;"
+      - id: apply_as_delete_when
+        sql: "CREATE FLOW f AS AUTO CDC INTO t FROM STREAM(src) KEYS (id) APPLY AS DELETE WHEN op = 'DELETE' SEQUENCE BY seq;"
+      - id: apply_as_truncate_when
+        sql: "CREATE FLOW f AS AUTO CDC INTO t FROM STREAM(src) KEYS (id) APPLY AS TRUNCATE WHEN op = 'TRUNCATE' SEQUENCE BY seq;"
+      - id: system_sequence_by
+        sql: "CREATE FLOW f AS AUTO CDC INTO t FROM STREAM(src) KEYS (id) SEQUENCE BY seq SYSTEM SEQUENCE BY sys_seq;"
+      - id: columns_except
+        sql: "CREATE FLOW f AS AUTO CDC INTO t FROM STREAM(src) KEYS (id) SEQUENCE BY seq COLUMNS * EXCEPT (op, seq);"
+      - id: columns_list
+        sql: "CREATE FLOW f AS AUTO CDC INTO t FROM STREAM(src) KEYS (id) SEQUENCE BY seq COLUMNS a, b;"
+      - id: stored_as_scd1
+        sql: "CREATE FLOW f AS AUTO CDC INTO t FROM STREAM(src) KEYS (id) SEQUENCE BY seq STORED AS SCD TYPE 1;"
+      - id: stored_as_scd2
+        sql: "CREATE FLOW f AS AUTO CDC INTO t FROM STREAM(src) KEYS (id) SEQUENCE BY seq STORED AS SCD TYPE 2;"
+      - id: stored_as_bitemporal
+        sql: "CREATE FLOW f AS AUTO CDC INTO t FROM STREAM(src) KEYS (id) SEQUENCE BY seq STORED AS BITEMPORAL;"
+      - id: track_history_on_except
+        sql: "CREATE FLOW f AS AUTO CDC INTO t FROM STREAM(src) KEYS (id) SEQUENCE BY seq STORED AS SCD TYPE 2 TRACK HISTORY ON * EXCEPT (city);"
+      - id: track_history_on_columns
+        sql: "CREATE FLOW f AS AUTO CDC INTO t FROM STREAM(src) KEYS (id) SEQUENCE BY seq STORED AS SCD TYPE 2 TRACK HISTORY ON (a, b);"
+      - id: columns_to_update
+        sql: "CREATE FLOW f AS AUTO CDC INTO t FROM STREAM(src) KEYS (id) SEQUENCE BY seq COLUMNS TO UPDATE a;"
+    examples:
+      - "CREATE OR REFRESH STREAMING TABLE target;"
+      - |-
+        CREATE FLOW flow AS AUTO CDC INTO target
+        FROM stream(cdc_data.users)
+        KEYS (userId)
+        APPLY AS DELETE WHEN operation = "DELETE"
+        SEQUENCE BY sequenceNum
+        COLUMNS * EXCEPT (operation, sequenceNum)
+        STORED AS SCD TYPE 2
+        TRACK HISTORY ON * EXCEPT (city);
+
+  - id: optimize
+    name: OPTIMIZE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/delta-optimize
+    tier: medium
+    probes:
+      - id: basic
+        sql: "OPTIMIZE t;"
+      - id: full
+        sql: "OPTIMIZE t FULL;"
+      - id: where
+        sql: "OPTIMIZE t WHERE c >= '2017-01-01';"
+      - id: zorder_by
+        sql: "OPTIMIZE t ZORDER BY (c);"
+      - id: zorder_by_multiple
+        sql: "OPTIMIZE t ZORDER BY (c1, c2);"
+      - id: full_where
+        sql: "OPTIMIZE t FULL WHERE c >= '2025-01-01';"
+      - id: where_zorder_by
+        sql: "OPTIMIZE t WHERE c >= '2017-01-01' ZORDER BY (c2);"
+    examples:
+      - "OPTIMIZE events;"
+      - "OPTIMIZE events FULL;"
+      - "OPTIMIZE events WHERE date >= '2017-01-01';"
+
+  - id: vacuum
+    name: VACUUM
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/delta-vacuum
+    tier: medium
+    probes:
+      - id: basic
+        sql: "VACUUM t;"
+      - id: full
+        sql: "VACUUM t FULL;"
+      - id: lite
+        sql: "VACUUM t LITE;"
+      - id: dry_run
+        sql: "VACUUM t DRY RUN;"
+      - id: lite_dry_run
+        sql: "VACUUM t LITE DRY RUN;"
+      - id: path
+        sql: "VACUUM '/path/to/table';"
+        note: Page says table_name identifies a table by name or path.
+
+  - id: restore
+    name: RESTORE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/delta-restore
+    tier: medium
+    probes:
+      - id: timestamp_as_of
+        sql: "RESTORE TABLE t TO TIMESTAMP AS OF '2022-08-02 00:00:00';"
+      - id: version_as_of
+        sql: "RESTORE TABLE t TO VERSION AS OF 1;"
+      - id: without_table_keyword
+        sql: "RESTORE t VERSION AS OF 1;"
+      - id: timestamp_expression
+        sql: "RESTORE TABLE t TO TIMESTAMP AS OF current_timestamp() - INTERVAL '1' HOUR;"
+      - id: qualified_name
+        sql: "RESTORE TABLE c.s.t TO VERSION AS OF 3;"
+    examples:
+      - "RESTORE TABLE employee TO TIMESTAMP AS OF '2022-08-02 00:00:00';"
+      - "RESTORE TABLE employee TO VERSION AS OF 1;"
+      - "RESTORE TABLE employee TO TIMESTAMP AS OF current_timestamp() - INTERVAL '1' HOUR;"
+
+  - id: convert_to_delta
+    name: CONVERT TO DELTA
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/delta-convert-to-delta
+    tier: medium
+    probes:
+      - id: table_name
+        sql: "CONVERT TO DELTA t;"
+      - id: qualified_name
+        sql: "CONVERT TO DELTA db.t;"
+      - id: no_statistics
+        sql: "CONVERT TO DELTA t NO STATISTICS;"
+      - id: parquet_path_partitioned_by
+        sql: "CONVERT TO DELTA parquet.`s3://my-bucket/path/to/table` PARTITIONED BY (date DATE);"
+      - id: iceberg_path
+        sql: "CONVERT TO DELTA iceberg.`s3://my-bucket/path/to/table`;"
+      - id: no_statistics_partitioned_by
+        sql: "CONVERT TO DELTA t NO STATISTICS PARTITIONED BY (date DATE);"
+    examples:
+      - "CONVERT TO DELTA database_name.table_name;"
+      - "CONVERT TO DELTA parquet.`s3://my-bucket/path/to/table` PARTITIONED BY (date DATE);"
+      - "CONVERT TO DELTA iceberg.`s3://my-bucket/path/to/table`;"

@@ -1,0 +1,222 @@
+dialect: hana
+engine: SAP HANA Platform
+version: "2.0 SPS 08 (2.0.08)"
+source: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/3bc1a0d4611d40c4a6e3fc7c8e80395d.html?version=2.0.08
+
+statements:
+  - id: create_fulltext_index
+    name: CREATE FULLTEXT INDEX
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d4117e75191014ba5aaab91b3f087d.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE FULLTEXT INDEX idx ON t (c);"
+      - id: schema_qualified
+        sql: "CREATE FULLTEXT INDEX s.idx ON s.t (c);"
+      - id: language_column
+        sql: "CREATE FULLTEXT INDEX idx ON t (c) LANGUAGE COLUMN lang MIME TYPE COLUMN mt;"
+      - id: language_detection_sync
+        sql: "CREATE FULLTEXT INDEX idx ON t (c) FUZZY SEARCH INDEX OFF SYNC LANGUAGE DETECTION ('EN','DE');"
+      - id: async_flush_queue
+        sql: "CREATE FULLTEXT INDEX idx ON t (c) ASYNCHRONOUS FLUSH QUEUE EVERY 10 MINUTES OR AFTER 100 DOCUMENTS;"
+      - id: phrase_index_ratio
+        sql: "CREATE FULLTEXT INDEX idx ON t (c) PHRASE INDEX RATIO 0.5 SEARCH ONLY ON FAST PREPROCESS OFF;"
+      - id: text_analysis
+        sql: "CREATE FULLTEXT INDEX idx ON t (c) CONFIGURATION 'LINGANALYSIS_FULL' TEXT ANALYSIS ON TOKEN SEPARATORS '/;,.:-_()[]<>!?*@+{}=\"&';"
+      - id: text_mining
+        sql: "CREATE FULLTEXT INDEX idx ON t (c) MIME TYPE 'text/html' TEXT MINING ON TEXT MINING CONFIGURATION 'cfg' TEXT MINING CONFIGURATION OVERLAY 'ovl';"
+    examples:
+      - "CREATE COLUMN TABLE A (A VARCHAR(10) PRIMARY KEY, B VARCHAR(10));"
+      - |-
+        CREATE FULLTEXT INDEX i ON A(A) FUZZY SEARCH INDEX OFF
+        SYNC LANGUAGE DETECTION ('EN','DE','KR');
+
+  - id: create_role
+    name: CREATE ROLE
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d4a23b75191014a182b123906d5b16.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE ROLE r;"
+      - id: schema_local
+        sql: "CREATE ROLE s.r;"
+      - id: ldap_group
+        sql: "CREATE ROLE r LDAP GROUP 'cn=grp,OU=Groups,o=example.com';"
+      - id: no_grant_to_creator
+        sql: "CREATE ROLE r NO GRANT TO CREATOR;"
+    examples:
+      - "CREATE ROLE role_for_work_on_my_schema NO GRANT TO CREATOR;"
+      - |-
+        CREATE ROLE Securities_DBA
+        LDAP GROUP 'cn=Securities_DBA,OU=Application,OU=Groups,ou=DatabaseAdmins,cn=Users,o=largebank.com';
+
+  - id: create_scheduler_job
+    name: CREATE SCHEDULER JOB
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/d7d43d818366460dae1328aab5d5df4f.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE SCHEDULER JOB j CRON '* * * * * * 30' PROCEDURE p;"
+      - id: schema_qualified_enable
+        sql: "CREATE SCHEDULER JOB s.j CRON '* * * mon,tue,wed,thu,fri 1 23 45' ENABLE PROCEDURE s.p;"
+      - id: disable
+        sql: "CREATE SCHEDULER JOB j CRON '* * * * 0 0 0' DISABLE PROCEDURE p;"
+      - id: parameters
+        sql: "CREATE SCHEDULER JOB j CRON '* * * * 1 0 0' ENABLE PROCEDURE p PARAMETERS DAYS=14, NAME='x';"
+      - id: recurrence_range
+        sql: "CREATE SCHEDULER JOB j CRON '* * * * 1 0 0' FROM '2030-01-01 00:00:00' UNTIL '2030-12-31 00:00:00' PROCEDURE p;"
+        note: "syntax block: [ <job_recurrence_range> ] ::= FROM <start_time> UNTIL <end_time>; timestamp literal format not shown on the page"
+    examples: []
+
+  - id: create_schema
+    name: CREATE SCHEMA
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d4ecad7519101497d192700ce5f3df.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE SCHEMA s;"
+      - id: owned_by
+        sql: "CREATE SCHEMA s OWNED BY u;"
+    examples:
+      - "CREATE SCHEMA my_schema OWNED BY system;"
+
+  - id: create_schema_synonym
+    name: CREATE SCHEMA SYNONYM
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/1b54e1f64cfc401bb3adbe7c143bc323.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE SCHEMA SYNONYM syn FOR s;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE SCHEMA SYNONYM syn FOR s;"
+    examples:
+      - "CREATE SCHEMA SYNONYM TEST_SCHEMA_SYN FOR SYSTEM;"
+
+  - id: create_sequence
+    name: CREATE SEQUENCE
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d509277519101489029c064d468c5d.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE SEQUENCE seq;"
+      - id: start_increment
+        sql: "CREATE SEQUENCE s.seq START WITH 1000 INCREMENT BY 1;"
+      - id: min_max_cycle
+        sql: "CREATE SEQUENCE seq MINVALUE 1 MAXVALUE 100 CYCLE;"
+      - id: no_min_max_cycle
+        sql: "CREATE SEQUENCE seq NO MINVALUE NO MAXVALUE NO CYCLE;"
+      - id: cache
+        sql: "CREATE SEQUENCE seq CACHE 10;"
+      - id: no_cache
+        sql: "CREATE SEQUENCE seq NO CACHE;"
+      - id: reset_by
+        sql: "CREATE SEQUENCE seq START WITH 1 RESET BY (SELECT IFNULL(MAX(id), 0) + 1 FROM t);"
+    examples:
+      - "CREATE SEQUENCE mySequence START WITH 1000 INCREMENT BY 1;"
+
+  - id: create_statistics
+    name: CREATE STATISTICS
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d5252d7519101493f5e662a6cda4d4.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE STATISTICS ON s.t (x);"
+      - id: named
+        sql: "CREATE STATISTICS s.st ON s.t (x, y) TYPE SKETCH REFRESH TYPE MANUAL;"
+      - id: type_histogram_buckets
+        sql: "CREATE STATISTICS ON s.t (x) TYPE HISTOGRAM BUCKETS 100;"
+      - id: type_record_count
+        sql: "CREATE STATISTICS ON s.t TYPE RECORD COUNT;"
+      - id: type_sample_size
+        sql: "CREATE STATISTICS ON s.t TYPE SAMPLE SAMPLE SIZE 10000;"
+      - id: properties_enable_off_no_initial_refresh
+        sql: "CREATE STATISTICS ON s.t (x) TYPE SIMPLE ENABLE OFF, PERSISTENT ON NO INITIAL REFRESH;"
+      - id: valid_for
+        sql: "CREATE STATISTICS ON s.t (a) TYPE SIMPLE VALID FOR DATA DEPENDENCY;"
+    examples:
+      - "CREATE STATISTICS ON MYSYSTEM.T(X) TYPE HISTOGRAM BUCKETS 100;"
+      - "CREATE STATISTICS MYSYSTEM.SKETCH_T_XY ON MYSYSTEM.T(X,Y) TYPE SKETCH REFRESH TYPE MANUAL;"
+      - "CREATE STATISTICS ON REMOTE1.MYSYSTEM.T(A) TYPE TOPK BUCKETS 1500;"
+
+  - id: create_structured_privilege
+    name: CREATE STRUCTURED PRIVILEGE
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/622b2dfdce81455a949fb2bb3be014d2.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: static_filter
+        sql: "CREATE STRUCTURED PRIVILEGE sp FOR SELECT ON v WHERE c = 1;"
+      - id: multiple_views_schema
+        sql: "CREATE STRUCTURED PRIVILEGE s.sp FOR SELECT ON s.v1, s.v2 WHERE c IN (SELECT c FROM t2);"
+      - id: dynamic_filter
+        sql: "CREATE STRUCTURED PRIVILEGE sp FOR SELECT ON v CONDITION PROVIDER s.p;"
+    examples: []
+
+  - id: create_synonym
+    name: CREATE SYNONYM
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d5412b75191014bc7ec7e133ce5bf5.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE SYNONYM syn FOR t;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE SYNONYM s.syn FOR s.t;"
+      - id: public
+        sql: "CREATE PUBLIC SYNONYM syn FOR s.t;"
+      - id: cross_database
+        sql: "CREATE SYNONYM syn FOR db.s.t;"
+    examples:
+      - "CREATE ROW TABLE A (A INT PRIMARY KEY, B INT);"
+      - "CREATE SYNONYM a_synonym FOR A;"
+
+  - id: create_trigger
+    name: CREATE TRIGGER
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d5a65575191014946db96aaedbef5b.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE TRIGGER trg AFTER INSERT ON t BEGIN INSERT INTO log VALUES (1); END;"
+      - id: or_replace_before_for_each_row
+        sql: "CREATE OR REPLACE TRIGGER s.trg BEFORE UPDATE ON t FOR EACH ROW BEGIN INSERT INTO log VALUES (1); END;"
+      - id: event_list_update_of
+        sql: "CREATE TRIGGER trg AFTER INSERT OR DELETE OR UPDATE OF a, b ON t BEGIN INSERT INTO log VALUES (1); END;"
+      - id: update_except_of
+        sql: "CREATE TRIGGER trg AFTER UPDATE EXCEPT OF b ON t BEGIN INSERT INTO log VALUES (1); END;"
+      - id: instead_of_view
+        sql: "CREATE TRIGGER trg INSTEAD OF INSERT ON v BEGIN INSERT INTO t VALUES (1); END;"
+      - id: referencing_row
+        sql: "CREATE TRIGGER trg AFTER UPDATE ON t REFERENCING OLD ROW o, NEW ROW AS n FOR EACH ROW BEGIN INSERT INTO log VALUES (:o.a, :n.a); END;"
+      - id: referencing_table_statement
+        sql: "CREATE TRIGGER trg AFTER INSERT ON t REFERENCING NEW TABLE AS nt FOR EACH STATEMENT BEGIN INSERT INTO log SELECT a FROM :nt; END;"
+      - id: follows_precedes_online
+        sql: "CREATE TRIGGER trg AFTER INSERT ON t FOR EACH ROW FOLLOWS t1, t2 ONLINE BEGIN INSERT INTO log VALUES (1); END;"
+      - id: declare_and_body
+        sql: |-
+          CREATE TRIGGER trg AFTER INSERT ON t FOR EACH ROW
+          BEGIN
+            DECLARE cnt INT;
+            SELECT COUNT(*) INTO cnt FROM log;
+            IF :cnt = 0 THEN
+              INSERT INTO log VALUES (5);
+            END IF;
+          END;
+    examples:
+      - |-
+        CREATE TRIGGER TEST_TRIGGER
+        AFTER INSERT ON TARGET FOR EACH ROW
+        BEGIN
+         DECLARE SAMPLE_COUNT INT;
+         SELECT COUNT(*) INTO SAMPLE_COUNT FROM SAMPLE;
+         IF :SAMPLE_COUNT = 0
+         THEN
+         INSERT INTO SAMPLE VALUES(5);
+         ELSEIF :SAMPLE_COUNT = 1
+         THEN
+         INSERT INTO SAMPLE VALUES(6);
+         END IF;
+        END;
+      - |-
+        CREATE TRIGGER TEST_TRIGGER_UPDATE_COLUMN_LIST
+        AFTER UPDATE OF B ON TARGET
+        BEGIN
+         INSERT INTO SAMPLE VALUES(1);
+        END;

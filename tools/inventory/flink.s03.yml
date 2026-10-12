@@ -1,0 +1,134 @@
+dialect: flink
+engine: Apache Flink SQL
+version: "2.3"
+source: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/
+
+statements:
+  - id: delete
+    name: DELETE
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/dml/delete/#delete-rows
+    tier: high
+    probes:
+      - id: delete_all
+        sql: "DELETE FROM t;"
+      - id: delete_where
+        sql: "DELETE FROM t WHERE c = 1;"
+      - id: delete_db_qualified
+        sql: "DELETE FROM db.t WHERE c = 1;"
+      - id: delete_fully_qualified
+        sql: "DELETE FROM cat.db.t WHERE c = 1;"
+    examples:
+      - "DELETE FROM Orders WHERE `user` = 'Lili';"
+      - "DELETE FROM Orders;"
+
+  - id: create_table
+    name: CREATE TABLE
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/ddl/create/#create-table
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE TABLE t (c INT) WITH ('connector' = 'x');"
+      - id: if_not_exists
+        sql: "CREATE TABLE IF NOT EXISTS t (c INT) WITH ('connector' = 'x');"
+      - id: db_qualified
+        sql: "CREATE TABLE db.t (c INT) WITH ('connector' = 'x');"
+      - id: fully_qualified
+        sql: "CREATE TABLE cat.db.t (c INT) WITH ('connector' = 'x');"
+      - id: with_multiple_options
+        sql: "CREATE TABLE t (c INT) WITH ('connector' = 'kafka', 'topic' = 'x', 'format' = 'json');"
+      - id: column_comment
+        sql: "CREATE TABLE t (c INT COMMENT 'col') WITH ('connector' = 'x');"
+      - id: column_primary_key
+        sql: "CREATE TABLE t (c INT PRIMARY KEY NOT ENFORCED) WITH ('connector' = 'x');"
+      - id: column_constraint_named
+        sql: "CREATE TABLE t (c INT CONSTRAINT pk PRIMARY KEY NOT ENFORCED) WITH ('connector' = 'x');"
+      - id: column_not_null
+        sql: "CREATE TABLE t (c INT NOT NULL) WITH ('connector' = 'x');"
+      - id: table_primary_key
+        sql: "CREATE TABLE t (a INT NOT NULL, b INT NOT NULL, PRIMARY KEY (a, b) NOT ENFORCED) WITH ('connector' = 'x');"
+      - id: table_primary_key_named
+        sql: "CREATE TABLE t (a INT NOT NULL, CONSTRAINT pk PRIMARY KEY (a) NOT ENFORCED) WITH ('connector' = 'x');"
+      - id: metadata_column
+        sql: "CREATE TABLE t (c BIGINT METADATA) WITH ('connector' = 'x');"
+      - id: metadata_column_from
+        sql: "CREATE TABLE t (rt TIMESTAMP_LTZ(3) METADATA FROM 'timestamp') WITH ('connector' = 'x');"
+      - id: metadata_column_virtual
+        sql: "CREATE TABLE t (o BIGINT METADATA VIRTUAL) WITH ('connector' = 'x');"
+      - id: metadata_column_from_virtual
+        sql: "CREATE TABLE t (o BIGINT METADATA FROM 'offset' VIRTUAL) WITH ('connector' = 'x');"
+      - id: computed_column
+        sql: "CREATE TABLE t (p DOUBLE, q DOUBLE, cost AS p * q) WITH ('connector' = 'x');"
+      - id: computed_column_comment
+        sql: "CREATE TABLE t (p DOUBLE, q DOUBLE, cost AS p * q COMMENT 'cost') WITH ('connector' = 'x');"
+      - id: computed_proctime
+        sql: "CREATE TABLE t (c INT, proc AS PROCTIME()) WITH ('connector' = 'x');"
+      - id: watermark
+        sql: "CREATE TABLE t (c INT, ts TIMESTAMP(3), WATERMARK FOR ts AS ts - INTERVAL '5' SECOND) WITH ('connector' = 'x');"
+      - id: watermark_strictly_ascending
+        sql: "CREATE TABLE t (c INT, ts TIMESTAMP(3), WATERMARK FOR ts AS ts) WITH ('connector' = 'x');"
+      - id: watermark_with_primary_key
+        sql: "CREATE TABLE t (c INT NOT NULL, ts TIMESTAMP(3), WATERMARK FOR ts AS ts - INTERVAL '5' SECOND, PRIMARY KEY (c) NOT ENFORCED) WITH ('connector' = 'x');"
+      - id: table_comment
+        sql: "CREATE TABLE t (c INT) COMMENT 'my table' WITH ('connector' = 'x');"
+      - id: partitioned_by
+        sql: "CREATE TABLE t (a INT, b INT) PARTITIONED BY (a, b) WITH ('connector' = 'x');"
+      - id: distributed_by_hash_into_buckets
+        sql: "CREATE TABLE t (uid BIGINT, name STRING) DISTRIBUTED BY HASH (uid) INTO 4 BUCKETS;"
+      - id: distributed_by_range
+        sql: "CREATE TABLE t (uid BIGINT, name STRING) DISTRIBUTED BY RANGE (uid) INTO 4 BUCKETS;"
+      - id: distributed_by_columns_into_buckets
+        sql: "CREATE TABLE t (uid BIGINT, name STRING) DISTRIBUTED BY (uid) INTO 4 BUCKETS;"
+      - id: distributed_by_columns
+        sql: "CREATE TABLE t (uid BIGINT, name STRING) DISTRIBUTED BY (uid);"
+      - id: distributed_into_buckets
+        sql: "CREATE TABLE t (uid BIGINT, name STRING) DISTRIBUTED INTO 4 BUCKETS;"
+      - id: distributed_with_options
+        sql: "CREATE TABLE t (uid BIGINT, name STRING) DISTRIBUTED BY HASH (uid) INTO 4 BUCKETS WITH ('connector' = 'x');"
+      - id: comment_distributed_partitioned_with
+        sql: "CREATE TABLE t (a INT, b INT) COMMENT 'c' DISTRIBUTED BY (a) INTO 2 BUCKETS PARTITIONED BY (b) WITH ('connector' = 'x');"
+      - id: like
+        sql: "CREATE TABLE t2 (WATERMARK FOR ts AS ts - INTERVAL '5' SECOND) WITH ('scan.startup.mode' = 'latest-offset') LIKE t;"
+      - id: like_qualified_source
+        sql: "CREATE TABLE t2 (c INT) WITH ('connector' = 'x') LIKE cat.db.t;"
+      - id: like_excluding_all_including_generated
+        sql: "CREATE TABLE t2 (c INT) WITH ('connector' = 'x') LIKE t (EXCLUDING ALL INCLUDING GENERATED);"
+      - id: like_including_constraints_distribution_partitions
+        sql: "CREATE TABLE t2 (c INT) WITH ('connector' = 'x') LIKE t (INCLUDING CONSTRAINTS, EXCLUDING DISTRIBUTION, INCLUDING PARTITIONS);"
+      - id: like_overwriting_options_watermarks
+        sql: "CREATE TABLE t2 (c INT) WITH ('connector' = 'x') LIKE t (OVERWRITING OPTIONS, OVERWRITING WATERMARKS, EXCLUDING GENERATED);"
+      - id: like_no_with
+        sql: "CREATE TABLE t2 (c INT) LIKE t;"
+      - id: ctas
+        sql: "CREATE TABLE t2 WITH ('connector' = 'kafka') AS SELECT id, name, age FROM src WHERE mod(id, 10) = 0;"
+      - id: ctas_with_columns
+        sql: "CREATE TABLE t2 (d STRING, quantity DOUBLE, cost AS price * quantity, WATERMARK FOR order_time AS order_time - INTERVAL '5' SECOND) WITH ('connector' = 'kafka') AS SELECT id, price, quantity, order_time FROM src;"
+      - id: ctas_primary_key_distributed
+        sql: "CREATE TABLE t2 (PRIMARY KEY (id) NOT ENFORCED) DISTRIBUTED BY (id) INTO 4 BUCKETS AS SELECT id, name FROM src;"
+      - id: ctas_column_reorder
+        sql: "CREATE TABLE t2 (name, id) WITH ('connector' = 'kafka') AS SELECT id, name FROM src;"
+      - id: ctas_if_not_exists
+        sql: "CREATE TABLE IF NOT EXISTS t2 WITH ('connector' = 'kafka') AS SELECT id FROM src;"
+      - id: ctas_comment_partitioned
+        sql: "CREATE TABLE t2 COMMENT 'c' PARTITIONED BY (id) WITH ('connector' = 'filesystem') AS SELECT id, name FROM src;"
+    examples:
+      - |-
+        CREATE TABLE MyTable (
+          `user_id` BIGINT,
+          `name` STRING,
+          `record_time` TIMESTAMP_LTZ(3) METADATA FROM 'timestamp'
+        ) WITH (
+          'connector' = 'kafka'
+        );
+      - |-
+        CREATE TABLE Orders_with_watermark (
+            WATERMARK FOR order_time AS order_time - INTERVAL '5' SECOND
+        ) WITH (
+            'scan.startup.mode' = 'latest-offset'
+        )
+        LIKE Orders;
+      - |-
+        CREATE TABLE my_ctas_table (
+            PRIMARY KEY (id) NOT ENFORCED
+        )
+        DISTRIBUTED BY (id) INTO 4 buckets
+        AS SELECT id, name FROM source_table;

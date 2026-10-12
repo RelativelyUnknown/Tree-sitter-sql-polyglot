@@ -329,6 +329,14 @@ def ours_parses(dialect: str, probes: dict) -> dict:
             cmd, cwd=dialect_dir(dialect), capture_output=True, text=True, timeout=600,
         )
         failed_output = proc.stdout + proc.stderr
+        # tree-sitter stops at the first file when it can't load the grammar
+        # (e.g. src/grammar.json not generated), naming only that file; every
+        # other probe would then look like it parsed.
+        if "Failed to load language" in failed_output:
+            raise RuntimeError(
+                f"tree-sitter could not load the {dialect} grammar "
+                f"(run `tree-sitter generate --no-parser` in {dialect_dir(dialect)}):\n"
+                + failed_output[:2000])
         for path, fid in files.items():
             rel = str(Path(path).relative_to(dialect_dir(dialect)))
             results[fid] = path not in failed_output and rel not in failed_output

@@ -1,0 +1,376 @@
+dialect: snowflake
+engine: Snowflake
+version: "current (docs read 2026-10-04)"
+source: https://docs.snowflake.com/en/sql-reference/sql-all
+
+statements:
+  - id: alter_account
+    name: ALTER ACCOUNT
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-account
+    tier: low
+    probes:
+      - id: set_param
+        sql: "ALTER ACCOUNT SET ALLOW_ID_TOKEN = TRUE;"
+      - id: set_authentication_policy
+        sql: "ALTER ACCOUNT SET AUTHENTICATION POLICY p FOR ALL PERSON USERS FORCE;"
+
+  - id: alter_agent
+    name: ALTER AGENT
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-agent
+    tier: low
+    probes:
+      - id: set_properties
+        sql: "ALTER AGENT a SET COMMENT = 'c' SECURE = TRUE;"
+      - id: set_tag
+        sql: "ALTER AGENT a SET TAG t = 'v';"
+
+  - id: alter_aggregation_policy
+    name: ALTER AGGREGATION POLICY
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-aggregation-policy
+    tier: low
+    probes:
+      - id: set_body
+        sql: "ALTER AGGREGATION POLICY IF EXISTS p SET BODY -> AGGREGATION_CONSTRAINT(MIN_GROUP_SIZE => 5);"
+      - id: rename
+        sql: "ALTER AGGREGATION POLICY p RENAME TO p2;"
+
+  - id: alter_application
+    name: ALTER APPLICATION
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-application
+    tier: low
+    probes:
+      - id: set
+        sql: "ALTER APPLICATION IF EXISTS a SET COMMENT = 'c' DEBUG_MODE = TRUE;"
+      - id: upgrade_using_version
+        sql: "ALTER APPLICATION a UPGRADE USING VERSION v1 PATCH 2;"
+
+  - id: alter_application_drop_specification
+    name: ALTER APPLICATION DROP SPECIFICATION
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-application-drop-app-spec
+    tier: low
+    probes:
+      - id: basic
+        sql: "ALTER APPLICATION DROP SPECIFICATION s;"
+
+  - id: alter_application_drop_configuration_definition
+    name: ALTER APPLICATION DROP CONFIGURATION DEFINITION
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-application-drop-configuration-definition
+    tier: low
+    probes:
+      - id: basic
+        sql: "ALTER APPLICATION DROP CONFIGURATION DEFINITION cfg;"
+
+  - id: alter_application_package
+    name: ALTER APPLICATION PACKAGE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-application-package
+    tier: low
+    probes:
+      - id: set
+        sql: "ALTER APPLICATION PACKAGE IF EXISTS p SET DATA_RETENTION_TIME_IN_DAYS = 1 COMMENT = 'c';"
+      - id: unset_tag
+        sql: "ALTER APPLICATION PACKAGE p UNSET TAG t;"
+
+  - id: alter_application_package_modify_release_channel
+    name: ALTER APPLICATION PACKAGE … MODIFY RELEASE CHANNEL
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-application-package-release-channel
+    tier: low
+    probes:
+      - id: add_version
+        sql: "ALTER APPLICATION PACKAGE p MODIFY RELEASE CHANNEL rc ADD VERSION v1;"
+      - id: add_accounts
+        sql: "ALTER APPLICATION PACKAGE p MODIFY RELEASE CHANNEL rc ADD ACCOUNTS = (org.acct);"
+
+  - id: alter_application_package_release_directive_legacy
+    name: ALTER APPLICATION PACKAGE … RELEASE DIRECTIVE (Legacy)
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-application-package-release-directive
+    tier: low
+    probes:
+      - id: modify_release_directive
+        sql: "ALTER APPLICATION PACKAGE p MODIFY RELEASE DIRECTIVE rd VERSION = v1 PATCH = 1;"
+      - id: set_default_release_directive
+        sql: "ALTER APPLICATION PACKAGE p SET DEFAULT RELEASE DIRECTIVE VERSION = v1 PATCH = 1;"
+
+  - id: alter_application_package_version
+    name: ALTER APPLICATION PACKAGE … VERSION
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-application-package-version
+    tier: low
+    probes:
+      - id: add_version
+        sql: "ALTER APPLICATION PACKAGE p ADD VERSION v1 USING '@db.sch.stage/dir' LABEL = 'l';"
+      - id: drop_version
+        sql: "ALTER APPLICATION PACKAGE p DROP VERSION v1;"
+
+  - id: alter_application_role
+    name: ALTER APPLICATION ROLE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-application-role
+    tier: low
+    probes:
+      - id: rename
+        sql: "ALTER APPLICATION ROLE IF EXISTS r RENAME TO r2;"
+      - id: set_comment
+        sql: "ALTER APPLICATION ROLE r SET COMMENT = 'c';"
+
+  - id: alter_application_approve_decline_specification
+    name: ALTER APPLICATION … { APPROVE | DECLINE} SPECIFICATION
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-application-sequence-number
+    tier: low
+    probes:
+      - id: approve
+        sql: "ALTER APPLICATION a APPROVE SPECIFICATION s SEQUENCE_NUMBER = 1;"
+      - id: decline
+        sql: "ALTER APPLICATION a DECLINE SPECIFICATION s SEQUENCE_NUMBER = 1;"
+
+  - id: alter_application_service
+    name: ALTER APPLICATION SERVICE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-application-service
+    tier: low
+    probes:
+      - id: suspend
+        sql: "ALTER APPLICATION SERVICE IF EXISTS s SUSPEND;"
+      - id: set
+        sql: "ALTER APPLICATION SERVICE s SET AUTO_RESUME = TRUE MIN_INSTANCES = 1 MAX_INSTANCES = 2;"
+
+  - id: alter_application_set_specification
+    name: ALTER APPLICATION SET SPECIFICATION
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-application-set-app-spec
+    tier: low
+    probes:
+      - id: external_access
+        sql: "ALTER APPLICATION SET SPECIFICATION s TYPE = EXTERNAL_ACCESS LABEL = 'l' DESCRIPTION = 'd' HOST_PORTS = ('example.com:443');"
+
+  - id: alter_application_set_configuration_definition
+    name: ALTER APPLICATION SET CONFIGURATION DEFINITION
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-application-set-configuration-definition
+    tier: low
+    probes:
+      - id: string_type
+        sql: "ALTER APPLICATION SET CONFIGURATION DEFINITION cfg TYPE = STRING LABEL = 'l' DESCRIPTION = 'd' APPLICATION_ROLES = (r1, r2) SENSITIVE = FALSE;"
+
+  - id: alter_application_set_configuration_value
+    name: ALTER APPLICATION SET CONFIGURATION VALUE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-application-set-configuration-value
+    tier: low
+    probes:
+      - id: basic
+        sql: "ALTER APPLICATION a SET CONFIGURATION cfg VALUE = 'v';"
+
+  - id: alter_application_unset_configuration
+    name: ALTER APPLICATION UNSET CONFIGURATION
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-application-unset-configuration
+    tier: low
+    probes:
+      - id: basic
+        sql: "ALTER APPLICATION a UNSET CONFIGURATION cfg;"
+
+  - id: alter_artifact_repository
+    name: ALTER ARTIFACT REPOSITORY
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-artifact-repository
+    tier: low
+    probes:
+      - id: set
+        sql: "ALTER ARTIFACT REPOSITORY IF EXISTS r SET COMMENT = 'c' INDEX_URL = 'https://example.com/simple';"
+      - id: unset
+        sql: "ALTER ARTIFACT REPOSITORY r UNSET COMMENT;"
+
+  - id: alter_authentication_policy
+    name: ALTER AUTHENTICATION POLICY
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-authentication-policy
+    tier: low
+    probes:
+      - id: set
+        sql: "ALTER AUTHENTICATION POLICY IF EXISTS p SET AUTHENTICATION_METHODS = ('PASSWORD', 'SAML') MFA_ENROLLMENT = 'REQUIRED';"
+      - id: rename
+        sql: "ALTER AUTHENTICATION POLICY p RENAME TO p2;"
+
+  - id: alter_backup_policy
+    name: ALTER BACKUP POLICY
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-backup-policy
+    tier: low
+    probes:
+      - id: set
+        sql: "ALTER BACKUP POLICY p SET SCHEDULE = '60 MINUTE' EXPIRE_AFTER_DAYS = 7 COMMENT = 'c';"
+      - id: unset
+        sql: "ALTER BACKUP POLICY p UNSET SCHEDULE;"
+
+  - id: alter_backup_set
+    name: ALTER BACKUP SET
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-backup-set
+    tier: low
+    probes:
+      - id: add_backup
+        sql: "ALTER BACKUP SET b ADD BACKUP;"
+      - id: apply_policy
+        sql: "ALTER BACKUP SET b APPLY BACKUP POLICY p FORCE;"
+
+  - id: alter_catalog_integration
+    name: ALTER CATALOG INTEGRATION
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-catalog-integration
+    tier: low
+    probes:
+      - id: set_rest_authentication
+        sql: "ALTER CATALOG INTEGRATION IF EXISTS ci SET REST_AUTHENTICATION = (OAUTH_CLIENT_SECRET = 's') REFRESH_INTERVAL_SECONDS = 60 COMMENT = 'c';"
+
+  - id: alter_compute_pool
+    name: ALTER COMPUTE POOL
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-compute-pool
+    tier: low
+    probes:
+      - id: suspend
+        sql: "ALTER COMPUTE POOL IF EXISTS cp SUSPEND;"
+      - id: set
+        sql: "ALTER COMPUTE POOL cp SET MIN_NODES = 1 MAX_NODES = 2 AUTO_RESUME = TRUE;"
+
+  - id: alter_connection
+    name: ALTER CONNECTION
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-connection
+    tier: low
+    probes:
+      - id: enable_failover
+        sql: "ALTER CONNECTION IF EXISTS c ENABLE FAILOVER TO ACCOUNTS org.acct;"
+      - id: primary
+        sql: "ALTER CONNECTION c PRIMARY;"
+
+  - id: alter_contact
+    name: ALTER CONTACT
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-contact
+    tier: low
+    probes:
+      - id: set
+        sql: "ALTER CONTACT IF EXISTS c SET EMAIL_DISTRIBUTION_LIST = 'a@example.com' COMMENT = 'c';"
+      - id: rename
+        sql: "ALTER CONTACT c RENAME TO c2;"
+
+  - id: alter_cortex_search_service
+    name: ALTER CORTEX SEARCH SERVICE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-cortex-search
+    tier: low
+    probes:
+      - id: suspend
+        sql: "ALTER CORTEX SEARCH SERVICE IF EXISTS s SUSPEND INDEXING;"
+      - id: set
+        sql: "ALTER CORTEX SEARCH SERVICE s SET TARGET_LAG = '1 hours' WAREHOUSE = wh;"
+
+  - id: alter_data_movement_policy
+    name: ALTER DATA MOVEMENT POLICY
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-data-movement-policy
+    tier: low
+    probes:
+      - id: set_enforce_rules
+        sql: "ALTER DATA MOVEMENT POLICY IF EXISTS p SET ENFORCE_RULES = (r1, r2);"
+      - id: rename
+        sql: "ALTER DATA MOVEMENT POLICY p RENAME TO p2;"
+
+  - id: alter_data_movement_rule
+    name: ALTER DATA MOVEMENT RULE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-data-movement-rule
+    tier: low
+    probes:
+      - id: set_max_rows
+        sql: "ALTER DATA MOVEMENT RULE IF EXISTS r SET MAX_ROWS AS () RETURNS INTEGER -> (1000);"
+      - id: set_comment
+        sql: "ALTER DATA MOVEMENT RULE r SET COMMENT = 'c';"
+
+  - id: alter_dataset
+    name: ALTER DATASET
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-dataset
+    tier: low
+    probes:
+      - id: add_version
+        sql: "ALTER DATASET ds ADD VERSION 'v1' FROM (SELECT 1 AS id FROM t);"
+        note: The page is an overview listing the two variants (ADD VERSION and DROP VERSION), which have their own entries.
+
+  - id: alter_dataset_add_version
+    name: ALTER DATASET … ADD VERSION
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-dataset-add-version
+    tier: low
+    probes:
+      - id: with_options
+        sql: "ALTER DATASET ds ADD VERSION 'v1' FROM (SELECT id, part FROM t) PARTITION BY part COMMENT = 'c' METADATA = '{\"k\":\"v\"}';"
+
+  - id: alter_dataset_drop_version
+    name: ALTER DATASET … DROP VERSION
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-dataset-drop-version
+    tier: low
+    probes:
+      - id: basic
+        sql: "ALTER DATASET IF EXISTS ds DROP VERSION 'v1';"
+
+  - id: alter_dbt_project
+    name: ALTER DBT PROJECT
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-dbt-project
+    tier: low
+    probes:
+      - id: deploy_from
+        sql: "ALTER DBT PROJECT p DEPLOY FROM '@db.sch.stage/dir';"
+      - id: set
+        sql: "ALTER DBT PROJECT IF EXISTS p SET DBT_VERSION = '1.9.4' DEFAULT_TARGET = 'dev' AUTO_COMPILE = TRUE;"
+
+  - id: alter_dcm_project
+    name: ALTER DCM PROJECT
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-dcm-project
+    tier: low
+    probes:
+      - id: set
+        sql: "ALTER DCM PROJECT IF EXISTS p SET COMMENT = 'c';"
+      - id: drop_deployment
+        sql: "ALTER DCM PROJECT p DROP DEPLOYMENT d;"
+
+  - id: alter_experiment
+    name: ALTER EXPERIMENT
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-experiment
+    tier: low
+    probes:
+      - id: add_run
+        sql: "ALTER EXPERIMENT e ADD RUN r;"
+      - id: commit_run
+        sql: "ALTER EXPERIMENT e COMMIT RUN r;"
+
+  - id: alter_external_agent
+    name: ALTER EXTERNAL AGENT
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-external-agent
+    tier: low
+    probes:
+      - id: set_comment
+        sql: "ALTER EXTERNAL AGENT IF EXISTS a SET COMMENT = 'c';"
+      - id: add_version
+        sql: "ALTER EXTERNAL AGENT a ADD VERSION v1;"
+
+  - id: alter_external_consumer
+    name: ALTER EXTERNAL CONSUMER
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-external-consumer
+    tier: low
+    probes:
+      - id: set
+        sql: "ALTER EXTERNAL CONSUMER IF EXISTS c SET COMMENT = 'c' EMAIL = 'a@example.com';"
+      - id: rename
+        sql: "ALTER EXTERNAL CONSUMER c RENAME TO c2;"
+
+  - id: alter_external_consumer_add_programmatic_access_token_pat
+    name: ALTER EXTERNAL CONSUMER … ADD PROGRAMMATIC ACCESS TOKEN (PAT)
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-external-consumer-add-programmatic-access-token
+    tier: low
+    probes:
+      - id: add_pat
+        sql: "ALTER EXTERNAL CONSUMER c ADD PROGRAMMATIC ACCESS TOKEN IF NOT EXISTS tok DAYS_TO_EXPIRY = 30 COMMENT = 'c';"
+      - id: add_pat_short
+        sql: "ALTER EXTERNAL CONSUMER c ADD PAT tok;"
+
+  - id: alter_external_consumer_modify_programmatic_access_token_pat
+    name: ALTER EXTERNAL CONSUMER … MODIFY PROGRAMMATIC ACCESS TOKEN (PAT)
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-external-consumer-modify-programmatic-access-token
+    tier: low
+    probes:
+      - id: modify_pat_set
+        sql: "ALTER EXTERNAL CONSUMER c MODIFY PROGRAMMATIC ACCESS TOKEN IF EXISTS tok SET DAYS_TO_EXPIRY = 60 COMMENT = 'c';"
+      - id: modify_pat_unset
+        sql: "ALTER EXTERNAL CONSUMER c MODIFY PAT tok UNSET COMMENT;"
+
+  - id: alter_external_consumer_remove_programmatic_access_token_pat
+    name: ALTER EXTERNAL CONSUMER … REMOVE PROGRAMMATIC ACCESS TOKEN (PAT)
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-external-consumer-remove-programmatic-access-token
+    tier: low
+    probes:
+      - id: remove_pat
+        sql: "ALTER EXTERNAL CONSUMER IF EXISTS c REMOVE PROGRAMMATIC ACCESS TOKEN IF EXISTS tok;"
+      - id: remove_pat_short
+        sql: "ALTER EXTERNAL CONSUMER c REMOVE PAT tok;"

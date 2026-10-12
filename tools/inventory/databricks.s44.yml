@@ -1,0 +1,217 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: describe_query
+    name: DESCRIBE QUERY
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-describe-query
+    tier: medium
+    probes:
+      - id: describe_query_select
+        sql: "DESCRIBE QUERY SELECT c FROM t;"
+      - id: describe_no_query_keyword
+        sql: "DESCRIBE SELECT c FROM t;"
+        note: "Syntax: { DESC | DESCRIBE } [ QUERY ] input_statement; QUERY is optional"
+      - id: desc_query
+        sql: "DESC QUERY SELECT c FROM t;"
+      - id: describe_query_cte
+        sql: "DESCRIBE QUERY WITH cte AS (SELECT c FROM t) SELECT * FROM cte;"
+      - id: describe_query_values
+        sql: "DESCRIBE QUERY VALUES (100, 'John') AS employee(id, name);"
+      - id: describe_query_table
+        sql: "DESCRIBE QUERY TABLE t;"
+    examples:
+      - "DESCRIBE QUERY SELECT age, sum(age) FROM person GROUP BY age;"
+      - "DESCRIBE QUERY WITH all_names_cte AS (SELECT name FROM person) SELECT * FROM all_names_cte;"
+      - "DESCRIBE QUERY TABLE person;"
+
+  - id: describe_schema
+    name: DESCRIBE SCHEMA
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-describe-schema
+    tier: medium
+    probes:
+      - id: describe_schema
+        sql: "DESCRIBE SCHEMA s;"
+      - id: desc_schema
+        sql: "DESC SCHEMA s;"
+      - id: describe_schema_extended
+        sql: "DESCRIBE SCHEMA EXTENDED s;"
+      - id: describe_schema_qualified
+        sql: "DESCRIBE SCHEMA cat.s;"
+      - id: describe_database
+        sql: "DESCRIBE DATABASE s;"
+        note: "Page: usage of SCHEMA and DATABASE is interchangeable"
+    examples:
+      - "DESCRIBE SCHEMA employees;"
+      - "DESCRIBE SCHEMA EXTENDED employees;"
+
+  - id: describe_table
+    name: DESCRIBE TABLE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-describe-table
+    tier: medium
+    probes:
+      - id: describe_table
+        sql: "DESCRIBE TABLE t;"
+      - id: describe_no_table_keyword
+        sql: "DESCRIBE t;"
+      - id: desc_table
+        sql: "DESC TABLE t;"
+      - id: describe_table_qualified
+        sql: "DESCRIBE TABLE s.t;"
+      - id: describe_table_extended
+        sql: "DESCRIBE TABLE EXTENDED t;"
+      - id: describe_table_formatted
+        sql: "DESCRIBE TABLE FORMATTED t;"
+        note: "For compatibility FORMATTED can be specified as a synonym for EXTENDED"
+      - id: describe_table_partition
+        sql: "DESCRIBE TABLE t PARTITION (state = 'AR');"
+      - id: describe_table_extended_partition
+        sql: "DESCRIBE TABLE EXTENDED t PARTITION (state = 'AR');"
+      - id: describe_table_column
+        sql: "DESCRIBE TABLE t c;"
+      - id: describe_table_extended_column
+        sql: "DESCRIBE TABLE EXTENDED t c;"
+      - id: describe_table_as_json
+        sql: "DESCRIBE TABLE EXTENDED t AS JSON;"
+        note: "AS JSON: Databricks Runtime 16.2 and above; only supported with EXTENDED"
+    examples:
+      - "DESCRIBE TABLE customer;"
+      - "DESCRIBE TABLE EXTENDED customer;"
+      - "DESCRIBE TABLE EXTENDED customer PARTITION (state = 'AR');"
+
+  - id: show_catalogs
+    name: SHOW CATALOGS
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-catalogs
+    tier: medium
+    probes:
+      - id: show_catalogs
+        sql: "SHOW CATALOGS;"
+      - id: show_catalogs_pattern
+        sql: "SHOW CATALOGS 'pay*';"
+        note: "Syntax: SHOW CATALOGS [ [ LIKE ] regex_pattern ]; LIKE is optional"
+      - id: show_catalogs_like
+        sql: "SHOW CATALOGS LIKE 'pay*';"
+    examples:
+      - "SHOW CATALOGS;"
+      - "SHOW CATALOGS LIKE 'pay*';"
+
+  - id: show_columns
+    name: SHOW COLUMNS
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-columns
+    tier: medium
+    probes:
+      - id: show_columns_in
+        sql: "SHOW COLUMNS IN t;"
+      - id: show_columns_from
+        sql: "SHOW COLUMNS FROM t;"
+      - id: show_columns_in_qualified
+        sql: "SHOW COLUMNS IN s.t;"
+      - id: show_columns_in_schema
+        sql: "SHOW COLUMNS IN t IN s;"
+      - id: show_columns_from_schema
+        sql: "SHOW COLUMNS FROM t FROM s;"
+    examples:
+      - "SHOW COLUMNS IN customer;"
+      - "SHOW COLUMNS IN salessc.customer;"
+      - "SHOW COLUMNS IN customer IN salessc;"
+
+  - id: show_create_table
+    name: SHOW CREATE TABLE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-create-table
+    tier: medium
+    probes:
+      - id: show_create_table
+        sql: "SHOW CREATE TABLE t;"
+      - id: show_create_table_qualified
+        sql: "SHOW CREATE TABLE cat.s.t;"
+      - id: show_create_table_view
+        sql: "SHOW CREATE TABLE v;"
+        note: "Syntax: SHOW CREATE TABLE { table_name | view_name }"
+    examples:
+      - "SHOW CREATE TABLE test;"
+
+  - id: show_databases
+    name: SHOW DATABASES
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-databases
+    tier: medium
+    probes:
+      - id: show_databases
+        sql: "SHOW DATABASES;"
+      - id: show_databases_from_catalog
+        sql: "SHOW DATABASES FROM cat;"
+        note: "Page: alias for SHOW SCHEMAS, whose syntax is SHOW SCHEMAS [ { FROM | IN } catalog_name ] [ [ LIKE ] regex_pattern ]"
+      - id: show_databases_in_catalog
+        sql: "SHOW DATABASES IN cat;"
+      - id: show_databases_like
+        sql: "SHOW DATABASES LIKE 'sales*';"
+      - id: show_databases_pattern
+        sql: "SHOW DATABASES 'sales*';"
+      - id: show_databases_from_like
+        sql: "SHOW DATABASES FROM cat LIKE 'sales*';"
+
+  - id: show_functions
+    name: SHOW FUNCTIONS
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-functions
+    tier: medium
+    probes:
+      - id: show_functions
+        sql: "SHOW FUNCTIONS;"
+      - id: show_functions_name
+        sql: "SHOW FUNCTIONS trim;"
+      - id: show_functions_like_pattern
+        sql: "SHOW FUNCTIONS LIKE 't*';"
+      - id: show_user_functions
+        sql: "SHOW USER FUNCTIONS;"
+      - id: show_system_functions
+        sql: "SHOW SYSTEM FUNCTIONS;"
+      - id: show_all_functions
+        sql: "SHOW ALL FUNCTIONS;"
+      - id: show_functions_in_schema
+        sql: "SHOW FUNCTIONS IN s;"
+      - id: show_functions_from_schema
+        sql: "SHOW FUNCTIONS FROM s;"
+      - id: show_system_functions_in_schema_name
+        sql: "SHOW SYSTEM FUNCTIONS IN s max;"
+      - id: show_functions_qualified_name
+        sql: "SHOW FUNCTIONS s.f;"
+        note: "If schema_name is not provided the function name may be qualified with a schema name"
+    examples:
+      - "SHOW FUNCTIONS trim;"
+      - "SHOW SYSTEM FUNCTIONS concat;"
+      - "SHOW SYSTEM FUNCTIONS IN salesdb max;"
+
+  - id: show_partitions
+    name: SHOW PARTITIONS
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-partitions
+    tier: medium
+    probes:
+      - id: show_partitions
+        sql: "SHOW PARTITIONS t;"
+      - id: show_partitions_qualified
+        sql: "SHOW PARTITIONS s.t;"
+      - id: show_partitions_full_spec
+        sql: "SHOW PARTITIONS t PARTITION (state = 'CA', city = 'Fremont');"
+      - id: show_partitions_partial_spec
+        sql: "SHOW PARTITIONS t PARTITION (state = 'CA');"
+    examples:
+      - "SHOW PARTITIONS customer;"
+      - "SHOW PARTITIONS salesdb.customer;"
+      - "SHOW PARTITIONS customer PARTITION (state = 'CA', city = 'Fremont');"
+
+  - id: show_procedures
+    name: SHOW PROCEDURES
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-show-procedures
+    tier: medium
+    probes:
+      - id: show_procedures
+        sql: "SHOW PROCEDURES;"
+      - id: show_procedures_in_schema
+        sql: "SHOW PROCEDURES IN s;"
+      - id: show_procedures_from_schema
+        sql: "SHOW PROCEDURES FROM s;"
+      - id: show_procedures_from_catalog_schema
+        sql: "SHOW PROCEDURES FROM cat.s;"
+    examples:
+      - "SHOW PROCEDURES;"

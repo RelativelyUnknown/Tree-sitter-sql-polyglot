@@ -1,0 +1,244 @@
+dialect: cockroachdb
+engine: CockroachDB
+version: "v26.3 (stable)"
+source: https://www.cockroachlabs.com/docs/stable/sql-statements
+
+statements: []
+
+expressions:
+  - id: b_arithmetic_operators
+    name: Arithmetic operators
+    doc: https://www.cockroachlabs.com/docs/stable/functions-and-operators
+    tier: high
+    probes:
+      - { id: add_sub_mul, sql: "SELECT a + b, a - b, a * b FROM t;" }
+      - { id: div_floor_mod, sql: "SELECT a / b, a // b, a % b FROM t;" }
+      - { id: power, sql: "SELECT a ^ b FROM t;" }
+      - { id: unary_minus_plus, sql: "SELECT -a, +a FROM t;" }
+      - { id: sqrt_cbrt, sql: "SELECT |/ a, ||/ a FROM t;" }
+      - { id: interval_arith, sql: "SELECT now() + INTERVAL '1 day', now() - INTERVAL '1 hour';" }
+  - id: b_bitwise_operators
+    name: Bitwise operators
+    doc: https://www.cockroachlabs.com/docs/stable/functions-and-operators
+    tier: medium
+    probes:
+      - { id: and_or_xor, sql: "SELECT a & b, a | b, a # b FROM t;" }
+      - { id: not, sql: "SELECT ~ a FROM t;" }
+      - { id: shifts, sql: "SELECT a << 2, a >> 2 FROM t;" }
+  - id: b_comparison_operators
+    name: Comparison operators
+    doc: https://www.cockroachlabs.com/docs/stable/scalar-expressions
+    tier: high
+    probes:
+      - { id: relational, sql: "SELECT a < b, a > b, a <= b, a >= b FROM t;" }
+      - { id: equality, sql: "SELECT a = b, a <> b, a != b FROM t;" }
+      - { id: is_not_distinct_from, sql: "SELECT a IS NOT DISTINCT FROM b FROM t;" }
+      - { id: is_distinct_from, sql: "SELECT a IS DISTINCT FROM b FROM t;" }
+  - id: b_logical_operators
+    name: Logical operators
+    doc: https://www.cockroachlabs.com/docs/stable/scalar-expressions
+    tier: high
+    probes:
+      - { id: and_or_not, sql: "SELECT a AND b, a OR b, NOT a FROM t;" }
+  - id: b_string_operators
+    name: String and concatenation operators
+    doc: https://www.cockroachlabs.com/docs/stable/functions-and-operators
+    tier: high
+    probes:
+      - { id: concat, sql: "SELECT a || b FROM t;" }
+      - { id: array_concat, sql: "SELECT ARRAY[1, 2] || ARRAY[3];" }
+      - { id: collate, sql: "SELECT 'a' COLLATE de;" }
+  - id: b_json_operators
+    name: JSONB operators
+    doc: https://www.cockroachlabs.com/docs/stable/functions-and-operators
+    tier: high
+    probes:
+      - { id: arrow, sql: "SELECT j -> 'a', j -> 0, j ->> 'a', j ->> 0 FROM t;" }
+      - { id: path, sql: "SELECT j #> '{a,b}', j #>> '{a,b}' FROM t;" }
+      - { id: contains, sql: "SELECT j @> '{\"a\": 1}', j <@ '{\"a\": 1}' FROM t;" }
+      - { id: exists, sql: "SELECT j ? 'a', j ?| ARRAY['a', 'b'], j ?& ARRAY['a', 'b'] FROM t;" }
+      - { id: delete_key, sql: "SELECT j - 'a', j - 1, j - ARRAY['a'] FROM t;" }
+      - { id: subscript, sql: "SELECT j['a']['b'] FROM t;" }
+  - id: b_array_operators
+    name: Array operators and subscripts
+    doc: https://www.cockroachlabs.com/docs/stable/scalar-expressions
+    tier: medium
+    probes:
+      - { id: subscript, sql: "SELECT a[3] FROM t;" }
+      - { id: slice, sql: "SELECT a[1:2] FROM t;" }
+      - { id: overlap, sql: "SELECT a && b FROM t;" }
+      - { id: contains, sql: "SELECT a @> b, a <@ b FROM t;" }
+  - id: b_network_operators
+    name: INET operators
+    doc: https://www.cockroachlabs.com/docs/stable/functions-and-operators
+    tier: low
+    probes:
+      - { id: contained_by, sql: "SELECT i << '192.168.0.0/16'::INET, i <<= '192.168.0.0/16'::INET FROM t;" }
+  - id: b_text_search_vector_operators
+    name: Full-text search and vector operators
+    doc: https://www.cockroachlabs.com/docs/stable/functions-and-operators
+    tier: low
+    probes:
+      - { id: ts_match, sql: "SELECT v @@ q FROM t;" }
+      - { id: vector_l2, sql: "SELECT v <-> '[1,2,3]' FROM t;" }
+      - { id: vector_ip, sql: "SELECT v <#> '[1,2,3]' FROM t;" }
+      - { id: vector_cosine, sql: "SELECT v <=> '[1,2,3]' FROM t;" }
+  - id: b_like_predicates
+    name: LIKE, ILIKE and pattern matching
+    doc: https://www.cockroachlabs.com/docs/stable/scalar-expressions
+    tier: high
+    probes:
+      - { id: like, sql: "SELECT 'monday' LIKE '%day', 'monday' NOT LIKE '%day';" }
+      - { id: ilike, sql: "SELECT 'wednesday' ILIKE 'W%', 'wednesday' NOT ILIKE 'W%';" }
+      - { id: like_escape, sql: "SELECT a LIKE '5\\%%' ESCAPE '\\' FROM t;" }
+      - { id: posix_regex, sql: "SELECT a ~ 'onday', a ~* 'W.*y', a !~ 'x', a !~* 'x' FROM t;" }
+      - { id: similar_to, sql: "SELECT a SIMILAR TO '_onday', a NOT SIMILAR TO '_onday' FROM t;" }
+    examples:
+      - "SELECT 'monday' LIKE '%day' AS a, 'tuesday' LIKE 'tue_day' AS b, 'wednesday' ILIKE 'W%' AS c;"
+      - "SELECT 'monday' ~ 'onday' AS a, 'tuEsday' ~ 't[uU][eE]sday' AS b, 'wednesday' ~* 'W.*y' AS c;"
+      - "SELECT 'monday' SIMILAR TO '_onday' AS a, 'tuEsday' SIMILAR TO 't[uU][eE]sday' AS b, 'wednesday' SIMILAR TO 'w%y' AS c;"
+  - id: b_between_predicate
+    name: BETWEEN
+    doc: https://www.cockroachlabs.com/docs/stable/scalar-expressions
+    tier: high
+    probes:
+      - { id: between, sql: "SELECT a FROM t WHERE a BETWEEN 1 AND 10;" }
+      - { id: not_between, sql: "SELECT a FROM t WHERE a NOT BETWEEN 1 AND 10;" }
+      - { id: between_symmetric, sql: "SELECT a FROM t WHERE a BETWEEN SYMMETRIC 10 AND 1;" }
+      - { id: not_between_symmetric, sql: "SELECT a FROM t WHERE a NOT BETWEEN SYMMETRIC 10 AND 1;" }
+      - { id: between_asymmetric, sql: "SELECT a FROM t WHERE a BETWEEN ASYMMETRIC 1 AND 10;" }
+  - id: b_in_predicate
+    name: IN and NOT IN
+    doc: https://www.cockroachlabs.com/docs/stable/scalar-expressions
+    tier: high
+    probes:
+      - { id: in_list, sql: "SELECT a IN (1, 2, 3) FROM t;" }
+      - { id: not_in_list, sql: "SELECT a NOT IN (1, 2, 3) FROM t;" }
+      - { id: in_subquery, sql: "SELECT a IN (SELECT x FROM s) FROM t;" }
+      - { id: not_in_subquery, sql: "SELECT a NOT IN (SELECT x FROM s) FROM t;" }
+      - { id: in_tuple, sql: "SELECT ('x', 123) IN (SELECT * FROM s);" }
+    examples:
+      - "SELECT a IN (1, 2, 3) FROM sometable;"
+      - "SELECT a IN (SELECT * FROM allowedvalues) FROM sometable;"
+      - "SELECT ('x', 123) IN (SELECT * FROM rows);"
+  - id: b_is_predicates
+    name: IS predicates
+    doc: https://www.cockroachlabs.com/docs/stable/scalar-expressions
+    tier: high
+    probes:
+      - { id: is_null, sql: "SELECT a IS NULL, a IS NOT NULL FROM t;" }
+      - { id: isnull_notnull, sql: "SELECT a ISNULL, a NOTNULL FROM t;" }
+      - { id: is_true_false, sql: "SELECT a IS TRUE, a IS NOT TRUE, a IS FALSE, a IS NOT FALSE FROM t;" }
+      - { id: is_unknown, sql: "SELECT a IS UNKNOWN, a IS NOT UNKNOWN FROM t;" }
+      - { id: is_nan, sql: "SELECT f IS NAN, f IS NOT NAN FROM t;" }
+      - { id: is_expr, sql: "SELECT a IS b, a IS NOT b FROM t;" }
+  - id: b_subquery_predicates
+    name: EXISTS and quantified comparison predicates
+    doc: https://www.cockroachlabs.com/docs/stable/scalar-expressions
+    tier: high
+    probes:
+      - { id: exists, sql: "SELECT EXISTS (SELECT 1 FROM s WHERE s.a = t.a) FROM t;" }
+      - { id: not_exists, sql: "SELECT a FROM t WHERE NOT EXISTS (SELECT 1 FROM s WHERE s.a = t.a);" }
+      - { id: any_subquery, sql: "SELECT a FROM t WHERE a = ANY (SELECT x FROM s);" }
+      - { id: some_subquery, sql: "SELECT a FROM t WHERE a > SOME (SELECT x FROM s);" }
+      - { id: all_subquery, sql: "SELECT a FROM t WHERE a <= ALL (SELECT x FROM s);" }
+      - { id: any_tuple, sql: "SELECT 12 = ANY (10, 12, 13);" }
+      - { id: all_tuple, sql: "SELECT 12 = ALL (10, 12, 13);" }
+      - { id: any_array, sql: "SELECT 1 = ANY ARRAY[2, 3, 1];" }
+      - { id: like_any, sql: "SELECT a LIKE ANY (ARRAY['a%', 'b%']) FROM t;" }
+      - { id: scalar_subquery, sql: "SELECT (SELECT max(x) FROM s) FROM t;" }
+      - { id: array_subquery, sql: "SELECT ARRAY(SELECT x FROM s);" }
+    examples:
+      - "SELECT 12 = ANY (10, 12, 13);"
+      - "SELECT 12 = ALL (10, 12, 13);"
+      - "SELECT 1 = ANY ARRAY[2, 3, 1];"
+  - id: b_case_expressions
+    name: CASE and conditional expressions
+    doc: https://www.cockroachlabs.com/docs/stable/scalar-expressions
+    tier: high
+    probes:
+      - { id: searched_case, sql: "SELECT CASE WHEN a > 0 THEN 'pos' WHEN a < 0 THEN 'neg' ELSE 'zero' END FROM t;" }
+      - { id: simple_case, sql: "SELECT CASE a WHEN 1 THEN 'one' WHEN 2 THEN 'two' ELSE 'many' END FROM t;" }
+      - { id: case_no_else, sql: "SELECT CASE WHEN a > 0 THEN 1 END FROM t;" }
+      - { id: if, sql: "SELECT IF(a = 0, 0, x / a) FROM t;" }
+      - { id: nullif, sql: "SELECT NULLIF(a, b) FROM t;" }
+      - { id: coalesce, sql: "SELECT COALESCE(a, b, c) FROM t;" }
+      - { id: ifnull, sql: "SELECT IFNULL(a, b) FROM t;" }
+  - id: b_extract
+    name: EXTRACT and EXTRACT_DURATION
+    doc: https://www.cockroachlabs.com/docs/stable/functions-and-operators
+    tier: high
+    probes:
+      - { id: extract_year, sql: "SELECT EXTRACT(YEAR FROM d) FROM t;" }
+      - { id: extract_epoch, sql: "SELECT EXTRACT(EPOCH FROM ts) FROM t;" }
+      - { id: extract_string_part, sql: "SELECT EXTRACT('month' FROM d) FROM t;" }
+      - { id: extract_duration, sql: "SELECT EXTRACT_DURATION(HOUR FROM i) FROM t;" }
+  - id: b_substring
+    name: SUBSTRING
+    doc: https://www.cockroachlabs.com/docs/stable/functions-and-operators
+    tier: high
+    probes:
+      - { id: from, sql: "SELECT SUBSTRING(s FROM 2) FROM t;" }
+      - { id: from_for, sql: "SELECT SUBSTRING(s FROM 2 FOR 3) FROM t;" }
+      - { id: for, sql: "SELECT SUBSTRING(s FOR 3) FROM t;" }
+      - { id: for_from, sql: "SELECT SUBSTRING(s FOR 3 FROM 2) FROM t;" }
+      - { id: comma_args, sql: "SELECT SUBSTRING(s, 2, 3) FROM t;" }
+  - id: b_trim
+    name: TRIM
+    doc: https://www.cockroachlabs.com/docs/stable/functions-and-operators
+    tier: high
+    probes:
+      - { id: chars_from, sql: "SELECT TRIM('x' FROM s) FROM t;" }
+      - { id: from_only, sql: "SELECT TRIM(FROM s) FROM t;" }
+      - { id: leading_chars, sql: "SELECT TRIM(LEADING 'x' FROM s) FROM t;" }
+      - { id: leading_from, sql: "SELECT TRIM(LEADING FROM s) FROM t;" }
+      - { id: trailing_chars, sql: "SELECT TRIM(TRAILING 'x' FROM s) FROM t;" }
+      - { id: trailing_from, sql: "SELECT TRIM(TRAILING FROM s) FROM t;" }
+      - { id: both_chars, sql: "SELECT TRIM(BOTH 'x' FROM s) FROM t;" }
+      - { id: comma_args, sql: "SELECT TRIM(s, 'x') FROM t;" }
+  - id: b_position
+    name: POSITION
+    doc: https://www.cockroachlabs.com/docs/stable/functions-and-operators
+    tier: medium
+    probes:
+      - { id: position_in, sql: "SELECT POSITION('b' IN s) FROM t;" }
+  - id: b_overlay
+    name: OVERLAY
+    doc: https://www.cockroachlabs.com/docs/stable/functions-and-operators
+    tier: medium
+    probes:
+      - { id: placing_from, sql: "SELECT OVERLAY(s PLACING 'xx' FROM 2) FROM t;" }
+      - { id: placing_from_for, sql: "SELECT OVERLAY(s PLACING 'xx' FROM 2 FOR 3) FROM t;" }
+  - id: b_cast_and_annotation
+    name: Casts and type annotations
+    doc: https://www.cockroachlabs.com/docs/stable/scalar-expressions
+    tier: high
+    probes:
+      - { id: cast, sql: "SELECT CAST(now() AS DATE);" }
+      - { id: double_colon, sql: "SELECT a::INT FROM t;" }
+      - { id: cast_array_type, sql: "SELECT '{1,2}'::INT[];" }
+      - { id: type_annotation, sql: "SELECT 1:::FLOAT;" }
+      - { id: annotate_type, sql: "SELECT ANNOTATE_TYPE(1, FLOAT);" }
+      - { id: typed_literal, sql: "SELECT DATE '2024-01-01', TIMESTAMP '2024-01-01 00:00:00', INTERVAL '1 day';" }
+      - { id: cast_collated, sql: "SELECT CAST('a' AS STRING COLLATE en);" }
+  - id: b_datetime_special_forms
+    name: Date and time special forms
+    doc: https://www.cockroachlabs.com/docs/stable/functions-and-operators
+    tier: high
+    probes:
+      - { id: at_time_zone, sql: "SELECT ts AT TIME ZONE 'UTC' FROM t;" }
+      - { id: current_forms, sql: "SELECT CURRENT_DATE, CURRENT_TIME, CURRENT_TIMESTAMP;" }
+      - { id: current_precision, sql: "SELECT CURRENT_TIMESTAMP(3), CURRENT_TIME(3);" }
+      - { id: current_identity, sql: "SELECT CURRENT_USER, CURRENT_ROLE, SESSION_USER, USER;" }
+      - { id: current_catalog_schema, sql: "SELECT CURRENT_CATALOG, CURRENT_SCHEMA;" }
+      - { id: collation_for, sql: "SELECT COLLATION FOR (s) FROM t;" }
+  - id: b_constructors
+    name: Array and tuple constructors
+    doc: https://www.cockroachlabs.com/docs/stable/scalar-expressions
+    tier: medium
+    probes:
+      - { id: array_literal, sql: "SELECT ARRAY[1, 2, 3];" }
+      - { id: empty_array, sql: "SELECT ARRAY[]::INT[];" }
+      - { id: tuple, sql: "SELECT ('x', 123, 12.3);" }
+      - { id: row, sql: "SELECT ROW('x', 123);" }
+      - { id: tuple_access, sql: "SELECT (t.*).a FROM t;" }

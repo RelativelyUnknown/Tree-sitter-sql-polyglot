@@ -1,0 +1,98 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements:
+  - id: create_view
+    name: CREATE VIEW
+    doc: https://mariadb.com/docs/server/server-usage/views/create-view
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE VIEW v AS SELECT a FROM t;"
+      - id: qualified_name
+        sql: "CREATE VIEW test.v AS SELECT a FROM t;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE VIEW v AS SELECT a FROM t;"
+      - id: if_not_exists
+        sql: "CREATE VIEW IF NOT EXISTS v AS SELECT a FROM t;"
+      - id: or_replace_if_not_exists
+        sql: "CREATE OR REPLACE VIEW IF NOT EXISTS v AS SELECT a FROM t;"
+      - id: column_list
+        sql: "CREATE VIEW v (c1, c2) AS SELECT a, b FROM t;"
+      - id: algorithm_undefined
+        sql: "CREATE ALGORITHM = UNDEFINED VIEW v AS SELECT a FROM t;"
+      - id: algorithm_merge
+        sql: "CREATE ALGORITHM = MERGE VIEW v AS SELECT a FROM t;"
+      - id: algorithm_temptable
+        sql: "CREATE ALGORITHM = TEMPTABLE VIEW v AS SELECT a FROM t;"
+      - id: definer_user
+        sql: "CREATE DEFINER = 'admin'@'localhost' VIEW v AS SELECT a FROM t;"
+      - id: definer_current_user
+        sql: "CREATE DEFINER = CURRENT_USER VIEW v AS SELECT a FROM t;"
+      - id: definer_current_user_parens
+        sql: "CREATE DEFINER = CURRENT_USER() VIEW v AS SELECT a FROM t;"
+      - id: definer_role
+        sql: "CREATE DEFINER = r1 VIEW v AS SELECT a FROM t;"
+      - id: definer_current_role
+        sql: "CREATE DEFINER = CURRENT_ROLE VIEW v AS SELECT a FROM t;"
+        note: "Syntax block: DEFINER = { user | CURRENT_USER | role | CURRENT_ROLE }"
+      - id: sql_security_definer
+        sql: "CREATE SQL SECURITY DEFINER VIEW v AS SELECT a FROM t;"
+      - id: sql_security_invoker
+        sql: "CREATE SQL SECURITY INVOKER VIEW v AS SELECT a FROM t;"
+      - id: with_check_option
+        sql: "CREATE VIEW v AS SELECT a FROM t WITH CHECK OPTION;"
+      - id: with_cascaded_check_option
+        sql: "CREATE VIEW v AS SELECT a FROM t WITH CASCADED CHECK OPTION;"
+      - id: with_local_check_option
+        sql: "CREATE VIEW v AS SELECT a FROM t WITH LOCAL CHECK OPTION;"
+      - id: all_clauses
+        sql: "CREATE OR REPLACE ALGORITHM = MERGE DEFINER = CURRENT_USER SQL SECURITY INVOKER VIEW IF NOT EXISTS db.v (c1, c2) AS SELECT a, b FROM t WITH CASCADED CHECK OPTION;"
+      - id: select_expression_columns
+        sql: "CREATE VIEW v AS SELECT qty, price, qty*price AS value FROM t;"
+      - id: select_join
+        sql: "CREATE VIEW v AS SELECT t1.a, t2.b FROM t1 JOIN t2 ON t1.id = t2.id WHERE t1.a > 1;"
+      - id: select_union
+        sql: "CREATE VIEW v AS SELECT a FROM t1 UNION SELECT a FROM t2;"
+    examples:
+      - "CREATE VIEW test.v AS SELECT * FROM t;"
+      - "CREATE VIEW v AS SELECT qty, price, qty*price AS value FROM t;"
+      - "CREATE VIEW v (mycol) AS SELECT 'abc';"
+
+  - id: alter_view
+    name: ALTER VIEW
+    doc: https://mariadb.com/docs/server/server-usage/views/alter-view
+    tier: high
+    probes:
+      - id: basic
+        sql: "ALTER VIEW v AS SELECT a FROM t;"
+      - id: qualified_name
+        sql: "ALTER VIEW test.v AS SELECT a FROM t;"
+      - id: column_list
+        sql: "ALTER VIEW v (c1, c2) AS SELECT a, b FROM t;"
+      - id: algorithm_undefined
+        sql: "ALTER ALGORITHM = UNDEFINED VIEW v AS SELECT a FROM t;"
+      - id: algorithm_merge
+        sql: "ALTER ALGORITHM = MERGE VIEW v AS SELECT a FROM t;"
+      - id: algorithm_temptable
+        sql: "ALTER ALGORITHM = TEMPTABLE VIEW v AS SELECT a FROM t;"
+      - id: definer_user
+        sql: "ALTER DEFINER = 'admin'@'localhost' VIEW v AS SELECT a FROM t;"
+      - id: definer_current_user
+        sql: "ALTER DEFINER = CURRENT_USER VIEW v AS SELECT a FROM t;"
+      - id: sql_security_definer
+        sql: "ALTER SQL SECURITY DEFINER VIEW v AS SELECT a FROM t;"
+      - id: sql_security_invoker
+        sql: "ALTER SQL SECURITY INVOKER VIEW v AS SELECT a FROM t;"
+      - id: with_check_option
+        sql: "ALTER VIEW v AS SELECT a FROM t WITH CHECK OPTION;"
+      - id: with_cascaded_check_option
+        sql: "ALTER VIEW v AS SELECT a FROM t WITH CASCADED CHECK OPTION;"
+      - id: with_local_check_option
+        sql: "ALTER VIEW v AS SELECT a FROM t WITH LOCAL CHECK OPTION;"
+      - id: all_clauses
+        sql: "ALTER ALGORITHM = MERGE DEFINER = CURRENT_USER SQL SECURITY INVOKER VIEW db.v (c1, c2) AS SELECT a, b FROM t WITH LOCAL CHECK OPTION;"
+    examples:
+      - "ALTER VIEW v AS SELECT a, a * 3 AS a2 FROM t;"

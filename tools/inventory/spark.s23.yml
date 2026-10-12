@@ -1,0 +1,57 @@
+dialect: spark
+engine: Apache Spark SQL
+version: "4.x (docs/latest)"
+source: https://spark.apache.org/docs/latest/sql-ref-syntax.html
+
+statements:
+  - id: iterate
+    name: ITERATE
+    doc: https://spark.apache.org/docs/latest/control-flow/iterate-stmt.html
+    tier: high
+    probes:
+      - id: iterate_label
+        sql: "BEGIN lbl: LOOP ITERATE lbl; END LOOP lbl; END;"
+        note: "Syntax block: ITERATE label; the label must name an enclosing looping statement."
+    examples:
+      - |-
+        BEGIN
+          DECLARE sum INT DEFAULT 0;
+          DECLARE num INT DEFAULT 0;
+          sumNumbers: LOOP
+            SET num = num + 1;
+            IF num > 10 THEN
+              LEAVE sumNumbers;
+            END IF;
+            IF num % 2 = 0 THEN
+              ITERATE sumNumbers;
+            END IF;
+            SET sum = sum + num;
+          END LOOP sumNumbers;
+          VALUES (sum);
+        END;
+
+  - id: leave
+    name: LEAVE
+    doc: https://spark.apache.org/docs/latest/control-flow/leave-stmt.html
+    tier: high
+    probes:
+      - id: leave_label
+        sql: "BEGIN lbl: LOOP LEAVE lbl; END LOOP lbl; END;"
+        note: "The page's syntax block misprints the keyword as ITERATE; the parameter text describes LEAVE label, a statement that directly or indirectly contains it."
+    examples:
+      - |-
+        BEGIN
+          DECLARE sum INT DEFAULT 0;
+          DECLARE num INT DEFAULT 0;
+          sumNumbers: LOOP
+            SET num = num + 1;
+            IF num > 10 THEN
+              LEAVE sumNumbers;
+            END IF;
+            IF num % 2 = 0 THEN
+              ITERATE sumNumbers;
+            END IF;
+            SET sum = sum + num;
+          END LOOP sumNumbers;
+          VALUES (sum);
+        END;

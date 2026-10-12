@@ -1,0 +1,231 @@
+dialect: athena
+engine: Amazon Athena
+version: "engine version 3 (Trino-based DML, Hive-style DDL)"
+source: https://docs.aws.amazon.com/athena/latest/ug/ddl-reference.html ; https://docs.aws.amazon.com/athena/latest/ug/dml-queries-functions-operators.html
+
+statements: []
+
+expressions:
+  - id: b_comparison_operators
+    name: Comparison operators
+    doc: https://docs.aws.amazon.com/athena/latest/ug/comparison-operators.html
+    tier: high
+    probes:
+      - { id: less_greater, sql: "SELECT a < b, a > b, a <= b, a >= b FROM t;" }
+      - { id: equal, sql: "SELECT a = b FROM t;" }
+      - { id: not_equal_bang, sql: "SELECT a != b FROM t;" }
+      - { id: not_equal_angle, sql: "SELECT a <> b FROM t;" }
+      - { id: row_comparison, sql: "SELECT (a, b) = (1, 2) FROM t;" }
+      - { id: where_comparison, sql: "SELECT c FROM t WHERE a >= 1 AND b <> 2;" }
+  - id: b_distinct_from
+    name: IS DISTINCT FROM / IS NOT DISTINCT FROM
+    doc: https://docs.aws.amazon.com/athena/latest/ug/comparison-operators.html
+    tier: medium
+    probes:
+      - { id: is_distinct_from, sql: "SELECT a IS DISTINCT FROM b FROM t;" }
+      - { id: is_not_distinct_from, sql: "SELECT a IS NOT DISTINCT FROM b FROM t;" }
+  - id: b_logical_operators
+    name: Logical operators
+    doc: https://docs.aws.amazon.com/athena/latest/ug/logical-operators.html
+    tier: high
+    probes:
+      - { id: and_or, sql: "SELECT c FROM t WHERE a = 1 AND b = 2 OR d = 3;" }
+      - { id: not, sql: "SELECT c FROM t WHERE NOT a = 1;" }
+      - { id: parenthesized, sql: "SELECT c FROM t WHERE NOT (a = 1 OR b = 2) AND d IS NULL;" }
+  - id: b_arithmetic_operators
+    name: Arithmetic operators
+    doc: https://docs.aws.amazon.com/athena/latest/ug/mathematical-operators.html
+    tier: high
+    probes:
+      - { id: add_sub, sql: "SELECT a + b, a - b FROM t;" }
+      - { id: mul_div_mod, sql: "SELECT a * b, a / b, a % b FROM t;" }
+      - { id: unary, sql: "SELECT -a, +a FROM t;" }
+      - { id: precedence, sql: "SELECT (a + b) * c - d / 2 FROM t;" }
+  - id: b_concat_operator
+    name: String concatenation operator
+    doc: https://docs.aws.amazon.com/athena/latest/ug/string-functions.html
+    tier: high
+    probes:
+      - { id: concat, sql: "SELECT a || b || 'x' FROM t;" }
+  - id: b_array_subscript_operator
+    name: Subscript operator
+    doc: https://docs.aws.amazon.com/athena/latest/ug/array-functions.html
+    tier: medium
+    probes:
+      - { id: array_subscript, sql: "SELECT arr[1] FROM t;" }
+      - { id: map_subscript, sql: "SELECT m['k'] FROM t;" }
+      - { id: nested_subscript, sql: "SELECT arr[1][2] FROM t;" }
+  - id: b_row_field_access
+    name: Row field dereference
+    doc: https://docs.aws.amazon.com/athena/latest/ug/rows.html
+    tier: medium
+    probes:
+      - { id: dot_field, sql: "SELECT r.f FROM t;" }
+      - { id: nested_dot_field, sql: "SELECT r.f.g FROM t;" }
+  - id: b_at_time_zone
+    name: AT TIME ZONE
+    doc: https://docs.aws.amazon.com/athena/latest/ug/datetime-functions.html
+    tier: medium
+    probes:
+      - { id: at_time_zone_name, sql: "SELECT ts AT TIME ZONE 'America/Los_Angeles' FROM t;" }
+      - { id: at_time_zone_offset, sql: "SELECT ts AT TIME ZONE '+08:00' FROM t;" }
+      - { id: at_time_zone_literal, sql: "SELECT TIMESTAMP '2012-10-31 01:00 UTC' AT TIME ZONE 'America/Los_Angeles';" }
+  - id: b_interval_arithmetic
+    name: Interval arithmetic
+    doc: https://docs.aws.amazon.com/athena/latest/ug/datetime-functions.html
+    tier: medium
+    probes:
+      - { id: add_interval, sql: "SELECT ts + INTERVAL '1' DAY FROM t;" }
+      - { id: sub_interval, sql: "SELECT ts - INTERVAL '2' HOUR FROM t;" }
+      - { id: interval_year_month, sql: "SELECT d + INTERVAL '1' YEAR + INTERVAL '3' MONTH FROM t;" }
+  - id: b_like_predicate
+    name: LIKE predicate
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-operators-reference-section.html
+    tier: high
+    probes:
+      - { id: like, sql: "SELECT c FROM t WHERE c LIKE 'a%';" }
+      - { id: not_like, sql: "SELECT c FROM t WHERE c NOT LIKE 'a_c';" }
+      - { id: like_escape, sql: "SELECT c FROM t WHERE c LIKE 'a\\%' ESCAPE '\\';" }
+      - { id: not_like_escape, sql: "SELECT c FROM t WHERE c NOT LIKE 'a#%%' ESCAPE '#';" }
+  - id: b_between_predicate
+    name: BETWEEN predicate
+    doc: https://docs.aws.amazon.com/athena/latest/ug/comparison-operators.html
+    tier: high
+    probes:
+      - { id: between, sql: "SELECT c FROM t WHERE a BETWEEN 1 AND 10;" }
+      - { id: not_between, sql: "SELECT c FROM t WHERE a NOT BETWEEN 1 AND 10;" }
+      - { id: between_expr, sql: "SELECT c FROM t WHERE a + 1 BETWEEN b AND b * 2;" }
+  - id: b_in_predicate
+    name: IN predicate
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-operators-reference-section.html
+    tier: high
+    probes:
+      - { id: in_list, sql: "SELECT c FROM t WHERE a IN (1, 2, 3);" }
+      - { id: not_in_list, sql: "SELECT c FROM t WHERE a NOT IN (1, 2, 3);" }
+      - { id: in_subquery, sql: "SELECT c FROM t WHERE a IN (SELECT x FROM u);" }
+      - { id: not_in_subquery, sql: "SELECT c FROM t WHERE a NOT IN (SELECT x FROM u);" }
+      - { id: row_in, sql: "SELECT c FROM t WHERE (a, b) IN ((1, 2), (3, 4));" }
+  - id: b_is_predicates
+    name: IS NULL / IS NOT NULL
+    doc: https://docs.aws.amazon.com/athena/latest/ug/comparison-operators.html
+    tier: high
+    probes:
+      - { id: is_null, sql: "SELECT c FROM t WHERE a IS NULL;" }
+      - { id: is_not_null, sql: "SELECT c FROM t WHERE a IS NOT NULL;" }
+  - id: b_exists_predicate
+    name: EXISTS predicate
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-operators-reference-section.html
+    tier: high
+    probes:
+      - { id: exists, sql: "SELECT c FROM t WHERE EXISTS (SELECT 1 FROM u WHERE u.x = t.a);" }
+      - { id: not_exists, sql: "SELECT c FROM t WHERE NOT EXISTS (SELECT 1 FROM u WHERE u.x = t.a);" }
+  - id: b_quantified_comparison
+    name: Quantified comparison (ALL, ANY, SOME)
+    doc: https://docs.aws.amazon.com/athena/latest/ug/comparison-operators.html
+    tier: medium
+    probes:
+      - { id: all, sql: "SELECT c FROM t WHERE a > ALL (SELECT x FROM u);" }
+      - { id: any, sql: "SELECT c FROM t WHERE a = ANY (SELECT x FROM u);" }
+      - { id: some, sql: "SELECT c FROM t WHERE a < SOME (SELECT x FROM u);" }
+      - { id: all_not_equal, sql: "SELECT c FROM t WHERE a <> ALL (SELECT x FROM u);" }
+  - id: b_scalar_subquery
+    name: Scalar subquery
+    doc: https://docs.aws.amazon.com/athena/latest/ug/functions-operators-reference-section.html
+    tier: high
+    probes:
+      - { id: select_list, sql: "SELECT (SELECT max(x) FROM u) FROM t;" }
+      - { id: where_compare, sql: "SELECT c FROM t WHERE a = (SELECT max(x) FROM u);" }
+  - id: b_case_expression
+    name: CASE expression
+    doc: https://docs.aws.amazon.com/athena/latest/ug/conditional-expressions.html
+    tier: high
+    probes:
+      - { id: simple_case, sql: "SELECT CASE a WHEN 1 THEN 'one' WHEN 2 THEN 'two' ELSE 'many' END FROM t;" }
+      - { id: simple_case_no_else, sql: "SELECT CASE a WHEN 1 THEN 'one' END FROM t;" }
+      - { id: searched_case, sql: "SELECT CASE WHEN a < 0 THEN 'neg' WHEN a = 0 THEN 'zero' ELSE 'pos' END FROM t;" }
+      - { id: searched_case_no_else, sql: "SELECT CASE WHEN a < 0 THEN 'neg' END FROM t;" }
+      - { id: nested_case, sql: "SELECT CASE WHEN a > 0 THEN CASE WHEN b > 0 THEN 1 ELSE 2 END ELSE 3 END FROM t;" }
+    examples:
+      - "SELECT CASE 1 WHEN 1 THEN 'one' WHEN 2 THEN 'two' ELSE 'many' END;"
+  - id: b_if_function
+    name: IF conditional
+    doc: https://docs.aws.amazon.com/athena/latest/ug/conditional-expressions.html
+    tier: medium
+    probes:
+      - { id: if_two_args, sql: "SELECT IF(a > 0, 'pos') FROM t;" }
+      - { id: if_three_args, sql: "SELECT IF(a > 0, 'pos', 'neg') FROM t;" }
+  - id: b_coalesce_nullif_try
+    name: COALESCE, NULLIF, TRY
+    doc: https://docs.aws.amazon.com/athena/latest/ug/conditional-expressions.html
+    tier: medium
+    probes:
+      - { id: coalesce, sql: "SELECT COALESCE(a, b, 0) FROM t;" }
+      - { id: nullif, sql: "SELECT NULLIF(a, 0) FROM t;" }
+      - { id: try, sql: "SELECT TRY(a / b) FROM t;" }
+  - id: b_cast_expression
+    name: CAST and TRY_CAST
+    doc: https://docs.aws.amazon.com/athena/latest/ug/data-types.html
+    tier: high
+    probes:
+      - { id: cast, sql: "SELECT CAST(a AS bigint) FROM t;" }
+      - { id: cast_varchar_len, sql: "SELECT CAST(a AS varchar(10)) FROM t;" }
+      - { id: cast_decimal, sql: "SELECT CAST(a AS decimal(10, 2)) FROM t;" }
+      - { id: cast_timestamp, sql: "SELECT CAST('2020-01-01 00:00:00' AS timestamp) FROM t;" }
+      - { id: cast_array, sql: "SELECT CAST(a AS array(integer)) FROM t;" }
+      - { id: cast_row, sql: "SELECT CAST(ROW(1, 2.0) AS ROW(x bigint, y double));" }
+      - { id: try_cast, sql: "SELECT TRY_CAST(a AS integer) FROM t;" }
+  - id: b_extract
+    name: EXTRACT
+    doc: https://docs.aws.amazon.com/athena/latest/ug/datetime-functions.html
+    tier: high
+    probes:
+      - { id: extract_year, sql: "SELECT EXTRACT(YEAR FROM ts) FROM t;" }
+      - { id: extract_month, sql: "SELECT EXTRACT(MONTH FROM ts) FROM t;" }
+      - { id: extract_day, sql: "SELECT EXTRACT(DAY FROM d) FROM t;" }
+      - { id: extract_hour, sql: "SELECT EXTRACT(HOUR FROM ts) FROM t;" }
+      - { id: extract_dow, sql: "SELECT EXTRACT(DOW FROM ts) FROM t;" }
+      - { id: extract_quarter, sql: "SELECT EXTRACT(QUARTER FROM d) FROM t;" }
+      - { id: extract_timezone_hour, sql: "SELECT EXTRACT(TIMEZONE_HOUR FROM ts) FROM t;" }
+  - id: b_substring
+    name: SUBSTRING ... FROM ... FOR
+    doc: https://docs.aws.amazon.com/athena/latest/ug/string-functions.html
+    tier: medium
+    probes:
+      - { id: substring_from, sql: "SELECT SUBSTRING(s FROM 2) FROM t;" }
+      - { id: substring_from_for, sql: "SELECT SUBSTRING(s FROM 2 FOR 3) FROM t;" }
+      - { id: substring_comma, sql: "SELECT SUBSTRING(s, 2, 3) FROM t;" }
+  - id: b_trim
+    name: TRIM
+    doc: https://docs.aws.amazon.com/athena/latest/ug/string-functions.html
+    tier: medium
+    probes:
+      - { id: trim_plain, sql: "SELECT TRIM(s) FROM t;" }
+      - { id: trim_both_from, sql: "SELECT TRIM(BOTH ' ' FROM s) FROM t;" }
+      - { id: trim_leading_from, sql: "SELECT TRIM(LEADING 'x' FROM s) FROM t;" }
+      - { id: trim_trailing_from, sql: "SELECT TRIM(TRAILING 'x' FROM s) FROM t;" }
+      - { id: trim_both_no_chars, sql: "SELECT TRIM(BOTH FROM s) FROM t;" }
+  - id: b_position
+    name: POSITION
+    doc: https://docs.aws.amazon.com/athena/latest/ug/string-functions.html
+    tier: medium
+    probes:
+      - { id: position_in, sql: "SELECT POSITION('b' IN s) FROM t;" }
+      - { id: strpos, sql: "SELECT STRPOS(s, 'b') FROM t;" }
+  - id: b_normalize
+    name: NORMALIZE
+    doc: https://docs.aws.amazon.com/athena/latest/ug/string-functions.html
+    tier: low
+    probes:
+      - { id: normalize_default, sql: "SELECT NORMALIZE(s) FROM t;" }
+      - { id: normalize_form, sql: "SELECT NORMALIZE(s, NFKC) FROM t;" }
+  - id: b_current_datetime_forms
+    name: Special datetime value forms
+    doc: https://docs.aws.amazon.com/athena/latest/ug/datetime-functions.html
+    tier: medium
+    probes:
+      - { id: current_date, sql: "SELECT CURRENT_DATE;" }
+      - { id: current_time, sql: "SELECT CURRENT_TIME;" }
+      - { id: current_timestamp, sql: "SELECT CURRENT_TIMESTAMP;" }
+      - { id: current_timestamp_precision, sql: "SELECT CURRENT_TIMESTAMP(3);" }
+      - { id: localtimestamp, sql: "SELECT LOCALTIMESTAMP;" }
+      - { id: localtime, sql: "SELECT LOCALTIME;" }

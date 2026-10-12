@@ -1,0 +1,394 @@
+dialect: snowflake
+engine: Snowflake
+version: "current (docs read 2026-10-04)"
+source: https://docs.snowflake.com/en/sql-reference/sql-all
+
+statements: []
+
+expressions:
+  - id: a_numeric_literals
+    name: "Numeric constants"
+    doc: https://docs.snowflake.com/en/sql-reference/data-types-numeric
+    tier: high
+    probes:
+      - { id: integer, sql: "SELECT 15;" }
+      - { id: signed_decimal, sql: "SELECT +1.34, -1, 0.2;" }
+      - { id: exponent, sql: "SELECT 15e-03, 1.234E2, 1.234E+2;" }
+    examples: []
+
+  - id: a_string_literals
+    name: "String constants and escape sequences"
+    doc: https://docs.snowflake.com/en/sql-reference/data-types-text
+    tier: high
+    probes:
+      - { id: single_quoted, sql: "SELECT 'This is a string';" }
+      - { id: doubled_quote, sql: "SELECT 'Today''s sales projections', '-''''-';" }
+      - { id: escape_quote, sql: "SELECT 'string with a \\' character';" }
+      - { id: escape_simple, sql: "SELECT 'Hello\\tWorld', 'Hello\\nWorld', 'C:\\\\user';" }
+      - { id: escape_octal_hex_unicode, sql: "SELECT '-\\041-', '-\\x21-', '-\\u26c4-';" }
+      - { id: escape_unrecognized, sql: "SELECT '\\z';" }
+      - { id: dollar_quoted, sql: "SELECT $$string with a ' character$$;" }
+      - { id: dollar_quoted_backslashes, sql: "SELECT $$regular expression with \\ characters: \\d{2}-\\d{3}-\\d{4}$$;" }
+      - id: dollar_quoted_newline
+        sql: |-
+          SELECT $$string with a newline
+          character$$;
+    examples:
+      - "SELECT ' Today '' s sales projections ' , ' - '''' - ' ;"
+      - "SELECT $1, $2 FROM VALUES ('Tab', 'Hello\\tWorld'), ('Newline', 'Hello\\nWorld'), ('Backslash', 'C:\\\\user'), ('Octal', '-\\041-'), ('Hexadecimal', '-\\x21-'), ('Unicode', '-\\u26c4-'), ('Not an escape sequence', '\\z');"
+
+  - id: a_boolean_null_literals
+    name: "Boolean and NULL constants"
+    doc: https://docs.snowflake.com/en/sql-reference/data-types-logical
+    tier: medium
+    probes:
+      - { id: boolean_constants, sql: "SELECT TRUE, FALSE;" }
+      - { id: null_constant, sql: "SELECT NULL;" }
+
+  - id: a_datetime_literals
+    name: "Date, time and timestamp constants"
+    doc: https://docs.snowflake.com/en/sql-reference/data-types-datetime
+    tier: high
+    probes:
+      - { id: date_constant, sql: "SELECT DATE '2024-08-14';" }
+      - { id: time_constant, sql: "SELECT TIME '10:03:56';" }
+      - { id: timestamp_constant, sql: "SELECT TIMESTAMP '2024-08-15 10:59:43';" }
+      - { id: insert_date_constant, sql: "INSERT INTO t1 (d1) VALUES (DATE '2024-08-15');" }
+    examples:
+      - "INSERT INTO t1 ( d1 ) VALUES ( DATE ' 2024-08-15 ' );"
+
+  - id: a_interval_constants
+    name: "Interval constants"
+    doc: https://docs.snowflake.com/en/sql-reference/data-types-datetime
+    tier: high
+    probes:
+      - { id: single_part, sql: "SELECT TO_DATE('2023-04-15') + INTERVAL '1 year';" }
+      - { id: multiple_parts, sql: "SELECT TO_DATE('2023-04-15') + INTERVAL '4 years, 5 months, 3 hours';" }
+      - { id: subtract, sql: "SELECT TO_DATE('2023-04-15') - INTERVAL '1 day';" }
+      - { id: signed_interval, sql: "SELECT TO_DATE('2023-04-15') + -INTERVAL '1 month';" }
+      - { id: default_unit_seconds, sql: "SELECT TO_TIMESTAMP('2023-04-15 10:00:00') + INTERVAL '2';" }
+      - { id: plural_abbreviated_parts, sql: "SELECT TO_TIMESTAMP('2023-04-15 10:00:00') + INTERVAL '2 hrs, 30 mins, 5 secs';" }
+      - { id: millisecond_part, sql: "SELECT TO_TIMESTAMP('2023-04-15 10:00:00') + INTERVAL '250 milliseconds';" }
+    examples:
+      - "SELECT TO_DATE ( ' 2019-02-28 ' ) + INTERVAL ' 1 day, 1 year ' ;"
+      - "SELECT TO_DATE ( ' 2019-02-28 ' ) + INTERVAL ' 1 year, 1 day ' ;"
+
+  - id: a_interval_literals
+    name: "Interval literals (interval data types)"
+    doc: https://docs.snowflake.com/en/sql-reference/data-types-datetime
+    tier: high
+    probes:
+      - { id: year_precision, sql: "SELECT INTERVAL '5' YEAR(2);" }
+      - { id: year_to_month, sql: "SELECT INTERVAL '1-08' YEAR(3) TO MONTH;" }
+      - { id: month_negative, sql: "SELECT INTERVAL '-5' MONTH(2);" }
+      - { id: day_plural_qualifier, sql: "SELECT '2026-04-01'::DATE + INTERVAL '3' DAYS;" }
+      - { id: day_to_minute, sql: "SELECT INTERVAL '11 10:09' DAY(2) TO MINUTE;" }
+      - { id: day_to_second, sql: "SELECT INTERVAL '02 23:08:23.275' DAY(2) TO SECOND(3);" }
+      - { id: day_to_hour, sql: "SELECT INTERVAL '3 04' DAY TO HOUR;" }
+      - { id: hour_to_minute, sql: "SELECT INTERVAL '04:05' HOUR TO MINUTE;" }
+      - { id: hour_to_second, sql: "SELECT INTERVAL '04:05:06.5' HOUR TO SECOND;" }
+      - { id: minute_to_second, sql: "SELECT INTERVAL '05:06.5' MINUTE TO SECOND;" }
+      - { id: second_two_precisions, sql: "SELECT INTERVAL '4.3' SECOND(5, 6);" }
+      - { id: signed_literal_string, sql: "SELECT INTERVAL '+5' YEAR;" }
+    examples:
+      - "SELECT ' 2026-04-01 ' ::DATE + INTERVAL ' 3 ' DAYS ;"
+      - "SELECT TO_DATE ( ' 2024-01-01 ' ) + INTERVAL ' 1-1 ' YEAR TO MONTH AS date_plus_one_year_one_month ;"
+      - "SELECT TO_TIMESTAMP ( ' 2024-01-01 08:08:08.99 ' ) + INTERVAL ' 1 01:01:01.7878 ' DAY TO SECOND AS date_plus_period_of_time ;"
+
+  - id: a_array_constants
+    name: "ARRAY constants"
+    doc: https://docs.snowflake.com/en/sql-reference/data-types-semistructured
+    tier: high
+    probes:
+      - { id: empty, sql: "SELECT [];" }
+      - { id: literals, sql: "SELECT [1, 'value1'];" }
+      - { id: expressions, sql: "SELECT [c1 + 1, c1 + 2] FROM t;" }
+      - { id: nested, sql: "SELECT [[1, 2], [3, 4]];" }
+      - { id: with_null, sql: "SELECT [12, 'twelve', NULL];" }
+      - { id: session_variable_elements, sql: "SELECT [$my_variable + 1, $my_variable + 2];" }
+      - { id: insert_select, sql: "INSERT INTO array_example (array_column) SELECT [12, 'twelve', NULL];" }
+      - { id: update_set, sql: "UPDATE my_table SET my_array = [1, 2];" }
+      - { id: index_access, sql: "SELECT my_array_column[2] FROM my_table;" }
+      - { id: nested_index_access, sql: "SELECT my_array_column[0][0] FROM my_table;" }
+    examples:
+      - "INSERT INTO array_example ( array_column ) SELECT [ 12 , ' twelve ' , NULL ];"
+      - "UPDATE my_table SET my_array = [ 1 , 2 ];"
+      - "SELECT [ ' Alberta ' , ' Manitoba ' ] AS province ;"
+
+  - id: a_object_constants
+    name: "OBJECT constants"
+    doc: https://docs.snowflake.com/en/sql-reference/data-types-semistructured
+    tier: high
+    probes:
+      - { id: empty, sql: "SELECT {};" }
+      - { id: key_values, sql: "SELECT {'key1': 'value1', 'key2': 'value2'};" }
+      - { id: expression_values, sql: "SELECT {'key1': c1 + 1, 'key2': c1 + 2} FROM t;" }
+      - { id: nested_object_array, sql: "SELECT {'a': {'b': [1, 2]}, 'c': [{'d': 1}]};" }
+      - { id: wildcard, sql: "SELECT {*} FROM t;" }
+      - { id: qualified_wildcard, sql: "SELECT {t1.*} FROM t1 INNER JOIN t2 ON t2.col1 = t1.col1;" }
+      - { id: wildcard_ilike, sql: "SELECT {* ILIKE 'col1%'} FROM t;" }
+      - { id: wildcard_exclude, sql: "SELECT {* EXCLUDE col1} FROM t;" }
+      - { id: wildcard_exclude_list, sql: "SELECT {* EXCLUDE (col1, col2)} FROM t;" }
+    examples:
+      - "SELECT {* ILIKE ' col1% ' } FROM my_table ;"
+      - "SELECT {* EXCLUDE ( col1 , col2 )} FROM my_table ;"
+
+  - id: a_json_literals
+    name: "JSON values (PARSE_JSON, VARIANT)"
+    doc: https://docs.snowflake.com/en/sql-reference/data-types-semistructured
+    tier: medium
+    probes:
+      - { id: parse_json, sql: "SELECT PARSE_JSON('{\"key3\": \"value3\", \"key4\": \"value4\"}');" }
+      - { id: parse_json_insert, sql: "INSERT INTO variant_insert (v) SELECT PARSE_JSON('{\"key3\": \"value3\", \"key4\": \"value4\"}');" }
+      - { id: cast_to_variant, sql: "SELECT 1.23::VARIANT, '{\"a\": 1}'::VARIANT;" }
+      - { id: json_null, sql: "SELECT PARSE_JSON('null');" }
+    examples:
+      - "INSERT INTO variant_insert ( v ) SELECT PARSE_JSON ( ' {\"key3\": \"value3\", \"key4\": \"value4\"} ' );"
+
+  - id: a_period_literals
+    name: "PERIOD typed literal"
+    doc: https://docs.snowflake.com/en/sql-reference/data-types-period
+    tier: low
+    probes:
+      - { id: typed_literal, sql: "SELECT PERIOD(DATE) '[2024-01-01, 2024-12-31)';" }
+      - { id: cast_from_text, sql: "SELECT '[2024-01-01, 2024-12-31)'::PERIOD(DATE);" }
+
+  - id: a_uuid_literal
+    name: "UUID values"
+    doc: https://docs.snowflake.com/en/sql-reference/data-types-uuid
+    tier: low
+    probes:
+      - { id: cast_uuid, sql: "SELECT 'c73d9175-0a1d-48c6-8d30-df165461328b'::UUID;" }
+
+  - id: a_numeric_types
+    name: "Numeric type names"
+    doc: https://docs.snowflake.com/en/sql-reference/data-types-numeric
+    tier: high
+    probes:
+      - { id: number_default, sql: "SELECT 1::NUMBER;" }
+      - { id: number_precision, sql: "SELECT 1::NUMBER(10);" }
+      - { id: number_precision_scale, sql: "SELECT 1::NUMBER(38, 4);" }
+      - { id: decimal_numeric, sql: "SELECT 1::DECIMAL(10, 2), 1::DEC(10, 2), 1::NUMERIC(10, 2);" }
+      - { id: integer_synonyms, sql: "SELECT 1::INT, 1::INTEGER, 1::BIGINT, 1::SMALLINT, 1::TINYINT, 1::BYTEINT;" }
+      - { id: float_synonyms, sql: "SELECT 1::FLOAT, 1::FLOAT4, 1::FLOAT8, 1::DOUBLE, 1::REAL;" }
+      - { id: double_precision, sql: "SELECT 1::DOUBLE PRECISION;" }
+      - { id: decfloat, sql: "SELECT 1::DECFLOAT;" }
+      - { id: create_table_columns, sql: "CREATE TABLE test_float (double1 DOUBLE, float1 FLOAT, dp1 DOUBLE PRECISION, real1 REAL);" }
+
+  - id: a_string_binary_types
+    name: "String and binary type names"
+    doc: https://docs.snowflake.com/en/sql-reference/data-types-text
+    tier: high
+    probes:
+      - { id: varchar, sql: "SELECT 'a'::VARCHAR;" }
+      - { id: varchar_length, sql: "SELECT 'a'::VARCHAR(50);" }
+      - { id: char_character, sql: "SELECT 'a'::CHAR, 'a'::CHAR(10), 'a'::CHARACTER, 'a'::NCHAR;" }
+      - { id: string_text, sql: "SELECT 'a'::STRING, 'a'::STRING(20), 'a'::TEXT, 'a'::TEXT(30);" }
+      - { id: varchar2_nvarchar, sql: "SELECT 'a'::VARCHAR2, 'a'::NVARCHAR, 'a'::NVARCHAR2;" }
+      - { id: char_varying, sql: "SELECT 'a'::CHAR VARYING, 'a'::NCHAR VARYING;" }
+      - { id: binary, sql: "SELECT TO_BINARY('AB')::BINARY, TO_BINARY('AB')::BINARY(100), TO_BINARY('AB')::VARBINARY;" }
+      - { id: create_table_columns, sql: "CREATE TABLE test_text (vm VARCHAR(134217728), cd CHAR, s20 STRING(20), t30 TEXT(30));" }
+      - { id: create_table_binary, sql: "CREATE TABLE test_binary (bd BINARY, b100 BINARY(100), vbd VARBINARY);" }
+    examples:
+      - "CREATE TABLE t1 ( v VARCHAR ( 134217728 ));"
+      - "CREATE TABLE b1 ( b BINARY ( 33554432 ));"
+
+  - id: a_logical_datetime_types
+    name: "Boolean and date/time type names"
+    doc: https://docs.snowflake.com/en/sql-reference/data-types-datetime
+    tier: high
+    probes:
+      - { id: boolean, sql: "SELECT 'true'::BOOLEAN;" }
+      - { id: date, sql: "SELECT '2024-01-01'::DATE;" }
+      - { id: datetime, sql: "SELECT '2024-01-01'::DATETIME;" }
+      - { id: time, sql: "SELECT '10:00:00'::TIME;" }
+      - { id: time_precision, sql: "SELECT '10:00:00'::TIME(3);" }
+      - { id: timestamp, sql: "SELECT '2024-01-01'::TIMESTAMP;" }
+      - { id: timestamp_ltz_ntz_tz, sql: "SELECT '2024-01-01'::TIMESTAMP_LTZ, '2024-01-01'::TIMESTAMP_NTZ, '2024-01-01'::TIMESTAMP_TZ;" }
+      - { id: timestamp_precision, sql: "SELECT '2024-01-01'::TIMESTAMP_NTZ(9), '2024-01-01'::TIMESTAMP(3);" }
+      - { id: timestamp_no_underscore, sql: "SELECT '2024-01-01'::TIMESTAMPLTZ, '2024-01-01'::TIMESTAMPNTZ, '2024-01-01'::TIMESTAMPTZ;" }
+      - { id: timestamp_with_time_zone, sql: "SELECT '2024-01-01'::TIMESTAMP WITH TIME ZONE, '2024-01-01'::TIMESTAMP WITHOUT TIME ZONE, '2024-01-01'::TIMESTAMP WITH LOCAL TIME ZONE;" }
+      - { id: create_table_columns, sql: "CREATE TABLE timestamp_demo_table (tstmp TIMESTAMP, tstmp_tz TIMESTAMP_TZ, tstmp_ntz TIMESTAMP_NTZ, tstmp_ltz TIMESTAMP_LTZ);" }
+    examples:
+      - "CREATE OR REPLACE TABLE timestamp_demo_table ( tstmp TIMESTAMP , tstmp_tz TIMESTAMP_TZ , tstmp_ntz TIMESTAMP_NTZ , tstmp_ltz TIMESTAMP_LTZ );"
+
+  - id: a_interval_types
+    name: "Interval data type names"
+    doc: https://docs.snowflake.com/en/sql-reference/data-types-datetime
+    tier: medium
+    probes:
+      - { id: year_to_month_column, sql: "CREATE TABLE candidates (name_first VARCHAR, duration_of_experience INTERVAL YEAR(2) TO MONTH);" }
+      - { id: year, sql: "SELECT '5'::INTERVAL YEAR;" }
+      - { id: month_precision, sql: "SELECT '14'::INTERVAL MONTH(2);" }
+      - { id: day_to_hour, sql: "SELECT '3 04'::INTERVAL DAY TO HOUR;" }
+      - { id: day_to_second, sql: "SELECT '1 01:01:01.78'::INTERVAL DAY(2) TO SECOND(2);" }
+      - { id: hour_to_minute, sql: "SELECT '04:05'::INTERVAL HOUR TO MINUTE;" }
+      - { id: hour_to_second, sql: "SELECT '04:05:06.5'::INTERVAL HOUR TO SECOND(3);" }
+      - { id: minute_to_second, sql: "SELECT '05:06.5'::INTERVAL MINUTE TO SECOND;" }
+      - { id: second_two_precisions, sql: "SELECT '4.3'::INTERVAL SECOND(5, 6);" }
+    examples:
+      - "CREATE OR REPLACE TEMPORARY TABLE sample_table_with_interval ( id VARCHAR , duration INTERVAL YEAR ( 2 ) TO MONTH );"
+      - "SELECT ( TO_TIMESTAMP ( ' 2025-10-05 01:02:03 ' ) - TO_TIMESTAMP ( ' 2025-09-15 11:36:22 ' )):: INTERVAL DAY ( 2 ) TO SECOND ( 2 ):: VARCHAR AS interval_format_result ;"
+
+  - id: a_semistructured_types
+    name: "Semi-structured type names"
+    doc: https://docs.snowflake.com/en/sql-reference/data-types-semistructured
+    tier: high
+    probes:
+      - { id: variant, sql: "SELECT 1::VARIANT;" }
+      - { id: array, sql: "SELECT [1, 2]::ARRAY;" }
+      - { id: object, sql: "SELECT {'a': 1}::OBJECT;" }
+      - { id: create_table_columns, sql: "CREATE TABLE semi (v VARIANT, a ARRAY, o OBJECT);" }
+
+  - id: a_structured_types
+    name: "Structured type names (ARRAY, OBJECT, MAP)"
+    doc: https://docs.snowflake.com/en/sql-reference/data-types-structured
+    tier: high
+    probes:
+      - { id: structured_array, sql: "SELECT [1, 2, 3]::ARRAY(NUMBER);" }
+      - { id: structured_array_not_null, sql: "SELECT [1, 2, 3]::ARRAY(NUMBER NOT NULL);" }
+      - { id: nested_structured_array, sql: "SELECT [[1], [2]]::ARRAY(ARRAY(NUMBER));" }
+      - { id: structured_object, sql: "SELECT {'city': 'San Mateo', 'state': 'CA'}::OBJECT(city VARCHAR, state VARCHAR);" }
+      - { id: structured_object_not_null, sql: "SELECT {'str': 'a', 'num': 1}::OBJECT(str VARCHAR NOT NULL, num NUMBER(38, 0));" }
+      - { id: structured_object_empty, sql: "SELECT {}::OBJECT();" }
+      - { id: map, sql: "SELECT {'key123': 'value123'}::MAP(VARCHAR, VARCHAR);" }
+      - { id: map_not_null, sql: "SELECT {'-10': 'CA', '-20': 'OR'}::MAP(NUMBER, VARCHAR NOT NULL);" }
+      - { id: map_value_object, sql: "SELECT {'k': {'a': 1}}::MAP(VARCHAR, OBJECT(a NUMBER));" }
+      - { id: create_table_structured, sql: "CREATE TABLE t (a ARRAY(NUMBER), o OBJECT(city VARCHAR, zip NUMBER), m MAP(VARCHAR, VARCHAR));" }
+    examples:
+      - "SELECT { ' key123 ' : ' value123 ' }:: MAP ( VARCHAR , VARCHAR );"
+      - "SELECT { ' oname ' : ' abc ' , ' created_date ' : ' 2020-01-18 ' ::DATE }:: OBJECT ( oname VARCHAR , created_date DATE );"
+      - "SELECT { ' -10 ' : ' CA ' , ' -20 ' : ' OR ' }:: MAP ( NUMBER , VARCHAR );"
+
+  - id: a_vector_type
+    name: "VECTOR type"
+    doc: https://docs.snowflake.com/en/sql-reference/data-types-vector
+    tier: medium
+    probes:
+      - { id: vector_float, sql: "SELECT [1.5, 2.5, 3.5]::VECTOR(FLOAT, 3);" }
+      - { id: vector_int, sql: "SELECT [1, 2, 3]::VECTOR(INT, 3);" }
+      - { id: vector_column, sql: "CREATE TABLE vectors (v VECTOR(FLOAT, 256), w VECTOR(INT, 16));" }
+
+  - id: a_geospatial_types
+    name: "GEOGRAPHY and GEOMETRY types"
+    doc: https://docs.snowflake.com/en/sql-reference/data-types-geospatial
+    tier: medium
+    probes:
+      - { id: geography_cast, sql: "SELECT 'POINT(-122.35 37.55)'::GEOGRAPHY;" }
+      - { id: geometry_cast, sql: "SELECT 'POINT(1820.12 890.56)'::GEOMETRY;" }
+      - { id: geo_columns, sql: "CREATE TABLE geo (g1 GEOGRAPHY, g2 GEOMETRY);" }
+
+  - id: a_other_types
+    name: "UUID, FILE and PERIOD type names"
+    doc: https://docs.snowflake.com/en/sql-reference/data-types-period
+    tier: low
+    probes:
+      - { id: period_date, sql: "SELECT '[2024-01-01, 2024-12-31)'::PERIOD(DATE);" }
+      - { id: period_time_scale, sql: "SELECT '[10:00:00, 11:00:00)'::PERIOD(TIME(0));" }
+      - { id: period_timestamp_scale, sql: "SELECT '[2024-01-01, 2024-12-31)'::PERIOD(TIMESTAMP_NTZ(9));" }
+      - { id: period_column, sql: "CREATE TABLE employment_windows (active_period PERIOD(DATE));" }
+      - { id: uuid_column, sql: "CREATE TABLE sample_uuid_table (uuid_col UUID);" }
+      - { id: file_column, sql: "CREATE TABLE images_table (img FILE);" }
+
+  - id: a_casts
+    name: "CAST, :: and TRY_CAST"
+    doc: https://docs.snowflake.com/en/sql-reference/functions/cast
+    tier: high
+    probes:
+      - { id: cast_as, sql: "SELECT CAST(c AS NUMBER(5, 2)) FROM t;" }
+      - { id: double_colon, sql: "SELECT c::NUMBER(6, 5) FROM t;" }
+      - { id: double_colon_literal, sql: "SELECT '2024-01-01'::DATE;" }
+      - { id: chained_double_colon, sql: "SELECT c::VARCHAR::NUMBER FROM t;" }
+      - { id: cast_expression_source, sql: "SELECT CAST(a + b AS VARCHAR(9)) FROM t;" }
+      - { id: cast_collate, sql: "SELECT CAST(c AS VARCHAR) COLLATE 'en-ai' FROM t;" }
+      - { id: cast_rename_fields, sql: "SELECT CAST({'city': 'San Mateo', 'state': 'CA'}::OBJECT(city VARCHAR, state VARCHAR) AS OBJECT(city_name VARCHAR, state_name VARCHAR) RENAME FIELDS);" }
+      - { id: cast_add_fields, sql: "SELECT CAST({'city': 'San Mateo', 'state': 'CA'}::OBJECT(city VARCHAR, state VARCHAR) AS OBJECT(city VARCHAR, state VARCHAR, zipcode NUMBER) ADD FIELDS);" }
+      - { id: cast_to_structured_array, sql: "SELECT CAST([1, 2, 3] AS ARRAY(VARCHAR));" }
+      - { id: try_cast, sql: "SELECT TRY_CAST('05-Mar-2016' AS TIMESTAMP);" }
+      - { id: try_cast_period, sql: "SELECT TRY_CAST('[2024-01-01, 2024-12-31)' AS PERIOD(DATE));" }
+      - { id: try_cast_interval, sql: "SELECT TRY_CAST('1-2' AS INTERVAL YEAR TO MONTH);" }
+    examples:
+      - "SELECT CAST ( varchar_value AS NUMBER ( 5 , 2 )) AS varchar_to_number1 , SYSTEM$TYPEOF ( varchar_to_number1 ) AS data_type FROM test_data_type_conversion ;"
+      - "SELECT varchar_value ::NUMBER ( 6 , 5 ) AS varchar_to_number2 , SYSTEM$TYPEOF ( varchar_to_number2 ) AS data_type FROM test_data_type_conversion ;"
+      - "SELECT CAST ({ ' city ' : ' San Mateo ' , ' state ' : ' CA ' }:: OBJECT ( city VARCHAR , state VARCHAR ) AS OBJECT ( city_name VARCHAR , state_name VARCHAR ) RENAME FIELDS ) AS object_value_key_names ;"
+
+  - id: a_identifier_quoting
+    name: "Object identifiers and double-quote quoting"
+    doc: https://docs.snowflake.com/en/sql-reference/identifiers-syntax
+    tier: high
+    probes:
+      - { id: unquoted, sql: "SELECT myidentifier, MyIdentifier1, My$identifier, _my_identifier FROM t;" }
+      - { id: quoted_mixed_case, sql: "SELECT \"MyIdentifier\" FROM t;" }
+      - { id: quoted_with_dot, sql: "SELECT \"my.identifier\" FROM t;" }
+      - { id: quoted_with_space, sql: "SELECT \"my identifier\", \"My 'Identifier'\" FROM t;" }
+      - { id: quoted_leading_digit_symbol, sql: "SELECT \"3rd_identifier\", \"$Identifier\" FROM t;" }
+      - { id: quoted_non_ascii, sql: "SELECT \"идентификатор\" FROM t;" }
+      - { id: escaped_double_quote, sql: "CREATE TABLE \"quote\"\"andunquote\"\"\" (c INT);" }
+      - { id: fully_qualified_quoted, sql: "SELECT * FROM \"My.DB\".\"My.Schema\".\"Table.1\";" }
+      - { id: qualified_unquoted, sql: "SELECT db.sch.t.c FROM db.sch.t;" }
+      - { id: quoted_alias, sql: "SELECT c AS \"My Alias\" FROM t;" }
+
+  - id: a_identifier_function
+    name: "IDENTIFIER() and TABLE() with string, variable or bind"
+    doc: https://docs.snowflake.com/en/sql-reference/identifier-literal
+    tier: medium
+    probes:
+      - { id: string_literal, sql: "CREATE OR REPLACE DATABASE IDENTIFIER('my_db');" }
+      - { id: qualified_string, sql: "CREATE OR REPLACE TABLE IDENTIFIER('my_db.my_schema.my_table') (c1 NUMBER);" }
+      - { id: session_variable, sql: "SELECT * FROM IDENTIFIER($my_table_name);" }
+      - { id: dollar_string, sql: "SELECT * FROM IDENTIFIER($my_db.my_schema.my_table);" }
+      - { id: bind_question, sql: "SELECT * FROM IDENTIFIER(?);" }
+      - { id: bind_named, sql: "SELECT * FROM IDENTIFIER(:tablename);" }
+      - { id: table_variable, sql: "SELECT * FROM TABLE($my_table_name);" }
+      - { id: column_reference, sql: "SELECT IDENTIFIER('c1') FROM t;" }
+      - { id: insert_into, sql: "INSERT INTO IDENTIFIER($my_table_name) (i) VALUES (42);" }
+      - { id: drop_table, sql: "DROP TABLE IDENTIFIER($my_table_name);" }
+    examples:
+      - "CREATE OR REPLACE DATABASE IDENTIFIER ( ' my_db ' );"
+      - "CREATE OR REPLACE TABLE IDENTIFIER ( ' my_db.my_schema.my_table ' ) ( c1 number );"
+      - "SELECT * FROM IDENTIFIER ( $my_table_name );"
+
+  - id: a_comments
+    name: "SQL comments"
+    doc: https://docs.snowflake.com/en/sql-reference/sql-all
+    tier: high
+    note: Snowflake documents no dedicated page for comment syntax; the three forms (-- line, // line, /* block */) are the ones its SQL accepts.
+    probes:
+      - { id: dash_dash_line, sql: "SELECT 1; -- trailing comment" }
+      - { id: slash_slash_line, sql: "SELECT 1; // trailing comment" }
+      - id: block_comment
+        sql: |-
+          /* leading block comment */
+          SELECT 1;
+      - id: block_comment_inline
+        sql: "SELECT /* inline */ 1 /* another */ + 2;"
+      - id: multiline_block
+        sql: |-
+          SELECT 1 /* spans
+          several
+          lines */ + 2;
+      - id: line_comment_between_clauses
+        sql: |-
+          SELECT c -- column
+          FROM t // table
+          WHERE c > 0;
+
+  - id: a_variables_parameters
+    name: "Session variables, bind variables and positional columns"
+    doc: https://docs.snowflake.com/en/sql-reference/session-variables
+    tier: high
+    probes:
+      - { id: use_variable, sql: "SELECT $min;" }
+      - { id: variable_in_where, sql: "SELECT AVG(salary) FROM emp WHERE age BETWEEN $min AND $max;" }
+      - { id: variable_arithmetic, sql: "SELECT $my_variable + 1;" }
+      - { id: variable_in_insert, sql: "INSERT INTO t (c) VALUES ($v);" }
+      - { id: positional_column, sql: "SELECT $1, $2 FROM t;" }
+      - { id: positional_column_values, sql: "SELECT $1, $2 FROM VALUES ('a', 1), ('b', 2);" }
+      - { id: bind_question_mark, sql: "INSERT INTO t (c1, c2) VALUES (?, ?);" }
+      - { id: bind_named_colon, sql: "INSERT INTO t (c1) VALUES (:variable1);" }
+      - { id: bind_numbered, sql: "INSERT INTO t (c1, c2) VALUES (:1, :2);" }
+      - { id: bind_in_where, sql: "SELECT id FROM invoices WHERE price > ? AND price < ?;" }
+    examples:
+      - "SELECT $min ;"
+      - "SELECT AVG ( salary ) FROM emp WHERE age BETWEEN $min AND $max ;"
+      - "INSERT INTO t ( c1 , c2 ) VALUES (?, ?);"

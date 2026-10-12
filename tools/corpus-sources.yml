@@ -1,0 +1,64 @@
+# Real-world SQL for tools/corpus_audit.py, pinned so the measured parse rate
+# only moves when our grammar does. Each source is sparse-cloned into
+# tools/corpus-cache/<name> (gitignored). Every adapter keeps only statements
+# the source itself marks as valid; see the adapter docstrings in
+# tools/corpus_audit.py.
+
+sources:
+  sqlfluff:
+    repo: https://github.com/sqlfluff/sqlfluff
+    commit: 0facc196e90c1a74f372d2a0547f8e9c298e9b8b
+    paths: ["/test/fixtures/dialects/"]
+    license: MIT
+  sqlglot:
+    repo: https://github.com/tobymao/sqlglot
+    commit: bffcdefc16b01527ee252ad2bf322b0bbff33bc8
+    paths: ["/tests/dialects/"]
+    license: MIT
+  postgres:
+    repo: https://github.com/postgres/postgres
+    commit: 19ef4c8411556687180b7cfbff636be26fc715b5
+    paths: ["/src/test/regress/sql/"]
+    license: PostgreSQL
+  cockroach:
+    repo: https://github.com/cockroachdb/cockroach
+    commit: d30c905fff79ef825adc96bcc647f1872a90f2ff
+    paths: ["/pkg/sql/parser/testdata/"]
+    license: BSL-1.1 / CockroachDB Software License (test data read locally, not redistributed)
+  duckdb:
+    repo: https://github.com/duckdb/duckdb
+    commit: fc9d6e93409a2dc412b658cade45b963371cd033
+    paths: ["/test/sql/"]
+    license: MIT
+  clickhouse:
+    repo: https://github.com/ClickHouse/ClickHouse
+    commit: 8aa8a64f4c082ce5891ea16da61cd9c4b4fe63b3
+    paths: ["/tests/queries/0_stateless/*.sql"]
+    license: Apache-2.0
+
+# Which adapters feed which dialect. `sqlfluff:<x>` and `sqlglot:<x>` name the
+# reference tool's own dialect.
+dialects:
+  base:        []
+  postgres:    [postgres_regress, "sqlfluff:postgres", "sqlglot:postgres"]
+  cockroachdb: [cockroach_testdata]
+  mysql:       ["sqlfluff:mysql", "sqlglot:mysql"]
+  mariadb:     ["sqlfluff:mariadb"]
+  sqlite:      ["sqlfluff:sqlite", "sqlglot:sqlite"]
+  oracle:      ["sqlfluff:oracle", "sqlglot:oracle"]
+  db2:         ["sqlfluff:db2"]
+  tsql:        ["sqlfluff:tsql", "sqlglot:tsql"]
+  hana:        []
+  teradata:    ["sqlfluff:teradata", "sqlglot:teradata"]
+  bigquery:    ["sqlfluff:bigquery", "sqlglot:bigquery"]
+  spanner:     []
+  snowflake:   ["sqlfluff:snowflake", "sqlglot:snowflake"]
+  redshift:    ["sqlfluff:redshift", "sqlglot:redshift"]
+  duckdb:      [duckdb_tests, "sqlfluff:duckdb", "sqlglot:duckdb"]
+  clickhouse:  [clickhouse_tests, "sqlfluff:clickhouse", "sqlglot:clickhouse"]
+  trino:       ["sqlfluff:trino", "sqlglot:trino"]
+  athena:      ["sqlfluff:athena", "sqlglot:athena"]
+  flink:       ["sqlfluff:flink"]
+  hive:        ["sqlfluff:hive", "sqlglot:hive"]
+  spark:       ["sqlfluff:sparksql", "sqlglot:spark"]
+  databricks:  ["sqlfluff:databricks", "sqlglot:databricks"]

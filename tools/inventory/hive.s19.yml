@@ -1,0 +1,34 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: alter_table_rename_partition
+    name: ALTER TABLE PARTITION RENAME TO PARTITION
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: rename_partition
+        sql: "ALTER TABLE t PARTITION (ds='2008-04-08') RENAME TO PARTITION (ds='2008-04-09');"
+      - id: rename_partition_multi_column
+        sql: "ALTER TABLE t PARTITION (ds='2008-04-08', hr=11) RENAME TO PARTITION (ds='2008-04-09', hr=12);"
+      - id: rename_partition_qualified_table
+        sql: "ALTER TABLE db.t PARTITION (ds='2008-04-08') RENAME TO PARTITION (ds='2008-04-09');"
+    examples: []
+
+  - id: alter_table_exchange_partition
+    name: ALTER TABLE EXCHANGE PARTITION
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: high
+    probes:
+      - id: exchange_partition
+        sql: "ALTER TABLE t2 EXCHANGE PARTITION (ds='2008-04-08') WITH TABLE t1;"
+      - id: exchange_partition_multi_column
+        sql: "ALTER TABLE t2 EXCHANGE PARTITION (ds='2008-04-08', hr=11) WITH TABLE t1;"
+      - id: exchange_multiple_partitions
+        sql: "ALTER TABLE t2 EXCHANGE PARTITION (ds='2008-04-08', hr=11), PARTITION (ds='2008-04-09', hr=12) WITH TABLE t1;"
+        note: Doc syntax shows "PARTITION (partition_spec, partition_spec2, ...)" for multiple partitions (Hive 1.2.2, 1.3.0, 2.0.0+).
+      - id: exchange_partition_qualified_tables
+        sql: "ALTER TABLE db.t2 EXCHANGE PARTITION (ds='2008-04-08') WITH TABLE db.t1;"
+    examples: []

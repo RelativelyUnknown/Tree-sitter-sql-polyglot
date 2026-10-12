@@ -1,0 +1,33 @@
+dialect: athena
+engine: Amazon Athena
+version: "engine version 3 (Trino-based DML, Hive-style DDL)"
+source: https://docs.aws.amazon.com/athena/latest/ug/ddl-reference.html ; https://docs.aws.amazon.com/athena/latest/ug/dml-queries-functions-operators.html
+
+statements:
+  - id: alter_table_rename_partition
+    name: ALTER TABLE RENAME PARTITION
+    doc: https://docs.aws.amazon.com/athena/latest/ug/alter-table-rename-partition.html
+    tier: high
+    probes:
+      - id: rename_partition_single
+        sql: "ALTER TABLE t PARTITION (dt = '2014-05-14') RENAME TO PARTITION (dt = '2014-05-15');"
+      - id: rename_partition_multi
+        sql: "ALTER TABLE t PARTITION (dt = '2014-05-14', country = 'IN') RENAME TO PARTITION (dt = '2014-05-15', country = 'IN');"
+    examples:
+      - "ALTER TABLE orders PARTITION (dt = '2014-05-14', country = 'IN') RENAME TO PARTITION (dt = '2014-05-15', country = 'IN');"
+
+  - id: alter_table_replace_columns
+    name: ALTER TABLE REPLACE COLUMNS
+    doc: https://docs.aws.amazon.com/athena/latest/ug/alter-table-replace-columns.html
+    tier: high
+    probes:
+      - id: replace_columns_single
+        sql: "ALTER TABLE t REPLACE COLUMNS (c string);"
+      - id: replace_columns_multi
+        sql: "ALTER TABLE t REPLACE COLUMNS (c1 string, c2 int, c3 bigint);"
+      - id: replace_columns_partition
+        sql: "ALTER TABLE t PARTITION (dt = '2014-05-14') REPLACE COLUMNS (c1 string, c2 int);"
+      - id: replace_columns_partition_multi
+        sql: "ALTER TABLE t PARTITION (dt = '2014-05-14', country = 'IN') REPLACE COLUMNS (c1 string);"
+    examples:
+      - "ALTER TABLE names_cities REPLACE COLUMNS (first_name string, last_name string, city string);"

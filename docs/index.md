@@ -5,41 +5,38 @@ editLink: false
 
 hero:
   name: tree-sitter-sql-polyglot
-  text: A multi-dialect SQL grammar for tree-sitter
-  tagline: An ANSI SQL base plus 22 independently compiled dialect grammars, layered with tree-sitter's grammar(parent, overrides) composition.
+  text: SQL grammars for tree-sitter
+  tagline: A strict ANSI base and 22 dialects, each compiled as its own parser.
   actions:
     - theme: brand
-      text: Dialect coverage
+      text: Get started
+      link: /usage
+    - theme: alt
+      text: Coverage
       link: /coverage
     - theme: alt
-      text: View on GitHub
+      text: GitHub
       link: https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot
-    - theme: alt
-      text: Downloads
-      link: /downloads
 
 features:
-  - title: 22 dialects on a shared base
-    details: postgres, mysql, mariadb, oracle, db2, tsql, bigquery, snowflake, redshift, sqlite, duckdb, trino, athena, clickhouse, flink, hive, spark, databricks, cockroachdb, spanner, teradata, and hana. Each extends the ANSI base or a real parent dialect.
-  - title: Inheritance follows real dialects
-    details: Each dialect extends its real-world parent (mariadb -> mysql, databricks -> spark -> hive, cockroachdb -> postgres, spanner -> bigquery) rather than sitting in a flat list, so shared syntax is written once.
-  - title: Coverage checked against other parsers
-    details: Every feature probe is parsed by this grammar and by SQLGlot, ANTLR grammars-v4, pglast and sqlfluff. A feature counts as covered only when an outside parser agrees.
+  - title: 22 dialects
+    details: Postgres, MySQL, MariaDB, SQLite, Oracle, Db2, T-SQL, BigQuery, Spanner, Snowflake, Redshift, DuckDB, ClickHouse, Trino, Athena, Flink, Hive, Spark, Databricks, CockroachDB, Teradata and SAP HANA.
+  - title: Dialects inherit from their real parent
+    details: MariaDB extends MySQL, CockroachDB extends Postgres, Databricks extends Spark which extends Hive. Shared syntax is written once.
+  - title: Coverage checked by other parsers
+    details: Each feature probe is also parsed by SQLGlot, ANTLR, pglast and sqlfluff. It only counts as covered when one of them agrees.
 ---
 
-## What this is
+## Packages
 
-The grammar restructures the upstream [DerekStride/tree-sitter-sql](https://github.com/DerekStride/tree-sitter-sql)
-"permissive" grammar into a strict ANSI SQL base plus dialect extensions. Each dialect compiles to its
-own `<dialect>/src/parser.c` and can be used independently. The
-[README](https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot#readme) has the full dialect table and
-install instructions, and [AGENTS.md](https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot/blob/main/AGENTS.md)
-covers the grammar architecture.
+Published to [crates.io](https://crates.io/crates/tree-sitter-sql-polyglot),
+[npm](https://www.npmjs.com/package/@relativelyunknown/tree-sitter-sql-polyglot) and
+[PyPI](https://pypi.org/project/tree-sitter-sql-polyglot/), with Go, Swift and CMake builds straight
+from the repo. [Usage](/usage) has install and import examples for each.
 
-- [Usage](/usage), install/import snippets for Rust, Node.js, Python, Go, Swift, and CMake/C, plus how
-  per-dialect lazy loading works in each.
-- [Dialect coverage](/coverage), generated on every CI run, with per-dialect scores, the inheritance
-  tree and the full feature-by-dialect matrix.
-- [Changelog](/changelog), the release history.
-- [Downloads](/downloads), the parser build artifacts (grammar sources, bindings, queries) mirrored
-  from the latest `main`.
+## Also here
+
+- [Coverage](/coverage): per-dialect scores and the feature-by-dialect matrix, rebuilt on every push
+  to `main`.
+- [Changelog](/changelog)
+- [Downloads](/downloads): parser sources, bindings and queries from the latest `main`.

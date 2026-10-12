@@ -49,6 +49,12 @@ def __getattr__(name):
 
     if name == "HIGHLIGHTS_QUERY":
         return _get_query("HIGHLIGHTS_QUERY", "highlights.scm")
+    # A dialect's standalone highlights (see scripts/bundle-highlights.js);
+    # the base HIGHLIGHTS_QUERY does not compile against a dialect.
+    if name.startswith("HIGHLIGHTS_QUERY_"):
+        dialect = name[len("HIGHLIGHTS_QUERY_"):].lower()
+        if f"language_{dialect}" in _DIALECT_MODULES:
+            return _get_query(name, f"highlights_{dialect}.scm")
     # if name == "INJECTIONS_QUERY":
     #     return _get_query("INJECTIONS_QUERY", "injections.scm")
     # if name == "LOCALS_QUERY":
@@ -84,6 +90,28 @@ __all__ = [
     "language_teradata",
     "language_hana",
     "HIGHLIGHTS_QUERY",
+    "HIGHLIGHTS_QUERY_SPARK",
+    "HIGHLIGHTS_QUERY_POSTGRES",
+    "HIGHLIGHTS_QUERY_MYSQL",
+    "HIGHLIGHTS_QUERY_DATABRICKS",
+    "HIGHLIGHTS_QUERY_SNOWFLAKE",
+    "HIGHLIGHTS_QUERY_BIGQUERY",
+    "HIGHLIGHTS_QUERY_MARIADB",
+    "HIGHLIGHTS_QUERY_SQLITE",
+    "HIGHLIGHTS_QUERY_HIVE",
+    "HIGHLIGHTS_QUERY_ORACLE",
+    "HIGHLIGHTS_QUERY_DB2",
+    "HIGHLIGHTS_QUERY_TSQL",
+    "HIGHLIGHTS_QUERY_DUCKDB",
+    "HIGHLIGHTS_QUERY_TRINO",
+    "HIGHLIGHTS_QUERY_ATHENA",
+    "HIGHLIGHTS_QUERY_REDSHIFT",
+    "HIGHLIGHTS_QUERY_CLICKHOUSE",
+    "HIGHLIGHTS_QUERY_FLINK",
+    "HIGHLIGHTS_QUERY_COCKROACHDB",
+    "HIGHLIGHTS_QUERY_SPANNER",
+    "HIGHLIGHTS_QUERY_TERADATA",
+    "HIGHLIGHTS_QUERY_HANA",
     # "INJECTIONS_QUERY",
     # "LOCALS_QUERY",
     # "TAGS_QUERY",

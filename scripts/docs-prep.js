@@ -23,6 +23,7 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const ARTIFACTS_DIR = join(ROOT, 'docs', 'public', 'artifacts');
 const DOWNLOADS_MD = join(ROOT, 'docs', 'downloads.md');
 const COVERAGE_MD = join(ROOT, 'docs', 'coverage.md');
+const INVENTORY_MD = join(ROOT, 'docs', 'inventory.md');
 
 // Same source list the old .github/workflows/gh-pages.yml copied into
 // docs/; the base grammar's build files and manifests. Per-dialect
@@ -141,6 +142,29 @@ function writeCoverageStubIfMissing() {
   console.log(`docs-prep: wrote stub ${relative(ROOT, COVERAGE_MD)} (run tools/coverage.py for the real page)`);
 }
 
+function writeInventoryStubIfMissing() {
+  if (existsSync(INVENTORY_MD)) return;
+  writeFileSync(INVENTORY_MD, [
+    '---',
+    'title: Statement inventory',
+    'editLink: false',
+    '---',
+    '',
+    '# Statement inventory',
+    '',
+    'Not generated yet in this working copy. Run:',
+    '',
+    '```bash',
+    'npm run generate:all',
+    'pip install -r tools/requirements.txt',
+    'python tools/inventory.py --report',
+    '```',
+    '',
+  ].join('\n'));
+  console.log(`docs-prep: wrote stub ${relative(ROOT, INVENTORY_MD)} (run tools/inventory.py --report for the real page)`);
+}
+
 const copied = copyArtifacts();
 writeDownloadsPage(copied);
 writeCoverageStubIfMissing();
+writeInventoryStubIfMissing();

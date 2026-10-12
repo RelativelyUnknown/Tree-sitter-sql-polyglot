@@ -1,0 +1,179 @@
+dialect: mysql
+engine: MySQL
+version: "8.4"
+source: https://dev.mysql.com/doc/refman/8.4/en/sql-statements.html
+
+statements:
+  - id: show_table_status
+    name: SHOW TABLE STATUS
+    doc: https://dev.mysql.com/doc/refman/8.4/en/show-table-status.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "SHOW TABLE STATUS;" }
+      - { id: from_db, sql: "SHOW TABLE STATUS FROM db;" }
+      - { id: in_db, sql: "SHOW TABLE STATUS IN db;" }
+      - { id: like, sql: "SHOW TABLE STATUS LIKE 'pat%';" }
+      - { id: from_like, sql: "SHOW TABLE STATUS FROM db LIKE 'pat%';" }
+      - { id: where, sql: "SHOW TABLE STATUS WHERE Engine = 'InnoDB';" }
+
+  - id: show_tables
+    name: SHOW TABLES
+    doc: https://dev.mysql.com/doc/refman/8.4/en/show-tables.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "SHOW TABLES;" }
+      - { id: full, sql: "SHOW FULL TABLES;" }
+      - { id: extended, sql: "SHOW EXTENDED TABLES;" }
+      - { id: extended_full, sql: "SHOW EXTENDED FULL TABLES;" }
+      - { id: from_db, sql: "SHOW TABLES FROM db;" }
+      - { id: in_db, sql: "SHOW TABLES IN db;" }
+      - { id: like, sql: "SHOW TABLES LIKE 'pat%';" }
+      - { id: where, sql: "SHOW FULL TABLES FROM db WHERE Table_type = 'BASE TABLE';" }
+
+  - id: show_triggers
+    name: SHOW TRIGGERS
+    doc: https://dev.mysql.com/doc/refman/8.4/en/show-triggers.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "SHOW TRIGGERS;" }
+      - { id: from_db, sql: "SHOW TRIGGERS FROM db;" }
+      - { id: in_db, sql: "SHOW TRIGGERS IN db;" }
+      - { id: like, sql: "SHOW TRIGGERS LIKE 'acc%';" }
+      - { id: where, sql: "SHOW TRIGGERS WHERE Event = 'INSERT';" }
+
+  - id: show_variables
+    name: SHOW VARIABLES
+    doc: https://dev.mysql.com/doc/refman/8.4/en/show-variables.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "SHOW VARIABLES;" }
+      - { id: global, sql: "SHOW GLOBAL VARIABLES;" }
+      - { id: session, sql: "SHOW SESSION VARIABLES;" }
+      - { id: like, sql: "SHOW VARIABLES LIKE 'max_error_count';" }
+      - { id: where, sql: "SHOW GLOBAL VARIABLES WHERE Variable_name = 'port';" }
+    examples:
+      - "SELECT @@GLOBAL.innodb_data_file_path;"
+
+  - id: show_warnings
+    name: SHOW WARNINGS
+    doc: https://dev.mysql.com/doc/refman/8.4/en/show-warnings.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "SHOW WARNINGS;" }
+      - { id: limit, sql: "SHOW WARNINGS LIMIT 5;" }
+      - { id: limit_offset, sql: "SHOW WARNINGS LIMIT 2, 5;" }
+      - { id: count, sql: "SHOW COUNT(*) WARNINGS;" }
+    examples:
+      - "SHOW COUNT(*) WARNINGS;"
+      - "SELECT @@warning_count;"
+
+  - id: describe
+    name: DESCRIBE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/describe.html
+    tier: medium
+    probes:
+      - { id: describe, sql: "DESCRIBE t;" }
+      - { id: desc, sql: "DESC t;" }
+      - { id: explain_table, sql: "EXPLAIN t;" }
+      - { id: column, sql: "DESCRIBE t c;" }
+      - { id: wild, sql: "DESCRIBE t 'c%';" }
+      - { id: schema_qualified, sql: "DESCRIBE db.t;" }
+
+  - id: use
+    name: USE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/use.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "USE db;" }
+      - { id: quoted, sql: "USE `my db`;" }
+    examples:
+      - "USE db1;"
+
+  - id: alter_instance
+    name: ALTER INSTANCE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/alter-instance.html
+    tier: low
+    probes:
+      - { id: enable_redo_log, sql: "ALTER INSTANCE ENABLE INNODB REDO_LOG;" }
+      - { id: rotate_master_key, sql: "ALTER INSTANCE ROTATE INNODB MASTER KEY;" }
+      - { id: reload_tls, sql: "ALTER INSTANCE RELOAD TLS FOR CHANNEL mysql_main NO ROLLBACK ON ERROR;" }
+      - { id: reload_keyring, sql: "ALTER INSTANCE RELOAD KEYRING;" }
+
+  - id: alter_logfile_group
+    name: ALTER LOGFILE GROUP
+    doc: https://dev.mysql.com/doc/refman/8.4/en/alter-logfile-group.html
+    tier: low
+    probes:
+      - { id: add_undofile, sql: "ALTER LOGFILE GROUP lg ADD UNDOFILE 'undo.dat' INITIAL_SIZE = 32M WAIT ENGINE = NDBCLUSTER;" }
+
+  - id: alter_server
+    name: ALTER SERVER
+    doc: https://dev.mysql.com/doc/refman/8.4/en/alter-server.html
+    tier: low
+    probes:
+      - { id: options, sql: "ALTER SERVER s OPTIONS (USER 'sally', HOST 'h');" }
+
+  - id: alter_tablespace
+    name: ALTER TABLESPACE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/alter-tablespace.html
+    tier: low
+    probes:
+      - { id: add_datafile, sql: "ALTER TABLESPACE ts ADD DATAFILE 'f.dat' INITIAL_SIZE = 1M WAIT ENGINE = NDB;" }
+      - { id: rename_to, sql: "ALTER TABLESPACE ts RENAME TO ts2;" }
+      - { id: undo_set_inactive, sql: "ALTER UNDO TABLESPACE ts SET INACTIVE ENGINE = INNODB;" }
+
+  - id: create_logfile_group
+    name: CREATE LOGFILE GROUP
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-logfile-group.html
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE LOGFILE GROUP lg ADD UNDOFILE 'undo.dat' INITIAL_SIZE = 10M ENGINE = NDBCLUSTER;" }
+      - { id: all_options, sql: "CREATE LOGFILE GROUP lg ADD UNDOFILE 'undo.dat' INITIAL_SIZE = 10M UNDO_BUFFER_SIZE = 8M REDO_BUFFER_SIZE = 8M NODEGROUP = 0 WAIT COMMENT = 'c' ENGINE = NDBCLUSTER;" }
+
+  - id: create_server
+    name: CREATE SERVER
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-server.html
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE SERVER s FOREIGN DATA WRAPPER mysql OPTIONS (USER 'Remote', HOST '198.51.100.106', DATABASE 'test', PORT 3306);" }
+
+  - id: create_spatial_reference_system
+    name: CREATE SPATIAL REFERENCE SYSTEM
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-spatial-reference-system.html
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE SPATIAL REFERENCE SYSTEM 4120 NAME 'Greek' ORGANIZATION 'EPSG' IDENTIFIED BY 4120 DEFINITION 'GEOGCS[\"Greek\"]' DESCRIPTION 'd';" }
+      - { id: or_replace, sql: "CREATE OR REPLACE SPATIAL REFERENCE SYSTEM 4120 NAME 'Greek' DEFINITION 'GEOGCS[\"Greek\"]';" }
+      - { id: if_not_exists, sql: "CREATE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 4120 NAME 'Greek' DEFINITION 'GEOGCS[\"Greek\"]';" }
+
+  - id: create_tablespace
+    name: CREATE TABLESPACE
+    doc: https://dev.mysql.com/doc/refman/8.4/en/create-tablespace.html
+    tier: low
+    probes:
+      - { id: innodb, sql: "CREATE TABLESPACE ts ADD DATAFILE 'ts.ibd' FILE_BLOCK_SIZE = 8192 ENGINE = InnoDB;" }
+      - { id: undo, sql: "CREATE UNDO TABLESPACE undo_003 ADD DATAFILE 'undo_003.ibu';" }
+      - { id: ndb, sql: "CREATE TABLESPACE ts ADD DATAFILE 'data.dat' USE LOGFILE GROUP lg EXTENT_SIZE = 1M INITIAL_SIZE = 10M ENGINE = NDBCLUSTER;" }
+
+  - id: drop_logfile_group
+    name: DROP LOGFILE GROUP
+    doc: https://dev.mysql.com/doc/refman/8.4/en/drop-logfile-group.html
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP LOGFILE GROUP lg ENGINE = NDBCLUSTER;" }
+
+  - id: drop_server
+    name: DROP SERVER
+    doc: https://dev.mysql.com/doc/refman/8.4/en/drop-server.html
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP SERVER s;" }
+      - { id: if_exists, sql: "DROP SERVER IF EXISTS s;" }
+
+  - id: drop_spatial_reference_system
+    name: DROP SPATIAL REFERENCE SYSTEM
+    doc: https://dev.mysql.com/doc/refman/8.4/en/drop-spatial-reference-system.html
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP SPATIAL REFERENCE SYSTEM 4120;" }
+      - { id: if_exists, sql: "DROP SPATIAL REFERENCE SYSTEM IF EXISTS 4120;" }

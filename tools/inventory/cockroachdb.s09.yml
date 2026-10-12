@@ -1,0 +1,75 @@
+dialect: cockroachdb
+engine: CockroachDB
+version: "v26.3 (stable)"
+source: https://www.cockroachlabs.com/docs/stable/sql-statements
+
+statements:
+  - id: delete
+    name: DELETE
+    doc: https://www.cockroachlabs.com/docs/stable/delete
+    tier: high
+    probes:
+      - { id: basic, sql: "DELETE FROM t;" }
+      - { id: where, sql: "DELETE FROM t WHERE c = 1;" }
+      - { id: alias, sql: "DELETE FROM t AS a WHERE a.c = 1;" }
+      - { id: schema_qualified, sql: "DELETE FROM s.t WHERE c = 1;" }
+      - { id: with_cte, sql: "WITH x AS (SELECT 1 AS c) DELETE FROM t WHERE c IN (SELECT c FROM x);" }
+      - { id: using, sql: "DELETE FROM t USING u WHERE u.c = t.c;" }
+      - { id: using_multiple, sql: "DELETE FROM t USING u, v WHERE u.c = t.c AND v.c = t.c;" }
+      - { id: order_by, sql: "DELETE FROM t WHERE c > 1 ORDER BY c;" }
+      - { id: limit, sql: "DELETE FROM t WHERE c > 1 LIMIT 10;" }
+      - { id: order_by_limit, sql: "DELETE FROM t WHERE c > 1 ORDER BY c DESC LIMIT 10;" }
+      - { id: returning_star, sql: "DELETE FROM t WHERE c = 1 RETURNING *;" }
+      - { id: returning_columns, sql: "DELETE FROM t WHERE c = 1 RETURNING c, d;" }
+      - { id: returning_alias, sql: "DELETE FROM t WHERE c = 1 RETURNING c, d AS e;" }
+      - { id: returning_nothing, sql: "DELETE FROM t WHERE c = 1 RETURNING NOTHING;" }
+      - { id: index_hint, sql: "DELETE FROM t@idx WHERE c = 1;", note: "Index hint on the target table (table_name@index_name), per the page's index hints section" }
+      - { id: cte_returning, sql: "WITH a AS (DELETE FROM t WHERE c > 1 RETURNING *) SELECT * FROM a ORDER BY d;" }
+    examples:
+      - "DELETE FROM promo_codes WHERE code = 'about_stuff_city';"
+      - "DELETE FROM promo_codes WHERE creation_time > '2019-01-30 00:00:00+00:00';"
+      - "DELETE FROM promo_codes USING user_promo_codes WHERE user_promo_codes.code = promo_codes.code;"
+
+  - id: do
+    name: DO
+    doc: https://www.cockroachlabs.com/docs/stable/do
+    tier: high
+    probes:
+      - { id: basic, sql: "DO $$ BEGIN RAISE NOTICE 'hi'; END $$;" }
+      - { id: declare, sql: "DO $$ DECLARE x INT := 1; BEGIN RAISE NOTICE '%', x; END $$;" }
+      - { id: single_quoted_body, sql: "DO 'BEGIN RAISE NOTICE ''hi''; END';" }
+    examples:
+      - |-
+        DO $$
+        DECLARE
+          x INT := 10;
+          y INT := 5;
+          result INT;
+        BEGIN
+          result := x + y;
+          RAISE NOTICE 'The sum of % and % is %', x, y, result;
+        END
+        $$;
+      - |-
+        DO $$
+        DECLARE
+          counter INT := 1;
+        BEGIN
+          WHILE counter <= 5 LOOP
+            RAISE NOTICE 'Counter: %', counter;
+            counter := counter + 1;
+          END LOOP;
+        END
+        $$;
+      - |-
+        DO $$
+        DECLARE
+          sum_result INT;
+        BEGIN
+          WITH numbers AS (
+            SELECT generate_series(1, 5) AS num
+          )
+          SELECT sum(num) INTO sum_result FROM numbers;
+          RAISE NOTICE 'Sum of numbers 1-5: %', sum_result;
+        END
+        $$;

@@ -1,0 +1,369 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements: []
+
+expressions:
+  - id: b_arithmetic_operators
+    name: Arithmetic operators (+ - * / % div, unary + -)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/plussign
+    tier: high
+    probes:
+      - { id: plus, sql: "SELECT c + 1 FROM t;" }
+      - { id: minus, sql: "SELECT c - 1 FROM t;" }
+      - { id: multiply, sql: "SELECT c * 2 FROM t;" }
+      - { id: divide, sql: "SELECT c / 2 FROM t;" }
+      - { id: modulo, sql: "SELECT c % 2 FROM t;" }
+      - { id: integer_div, sql: "SELECT c div 2 FROM t;" }
+      - { id: unary_minus, sql: "SELECT -c FROM t;" }
+      - { id: unary_plus, sql: "SELECT +c FROM t;" }
+      - { id: date_plus_interval, sql: "SELECT DATE '2021-03-20' + INTERVAL '2' MONTH;" }
+      - { id: timestamp_minus_interval, sql: "SELECT TIMESTAMP '2021-03-20 12:15:29' - INTERVAL '3' SECOND;" }
+      - { id: time_minus_time, sql: "SELECT TIME '14:30:00' - TIME '10:15:00';" }
+      - { id: interval_div_interval, sql: "SELECT INTERVAL '100' HOUR div INTERVAL '1' DAY;" }
+    examples:
+      - "SELECT 1 + 2;"
+      - "SELECT DATE '2021-03-20' + INTERVAL '2' MONTH;"
+      - "SELECT 3 div 2;"
+
+  - id: b_bitwise_operators
+    name: Bitwise operators (& | ^ ~)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/ampersandsign
+    tier: high
+    probes:
+      - { id: bit_and, sql: "SELECT c1 & c2 FROM t;" }
+      - { id: bit_or, sql: "SELECT c1 | c2 FROM t;" }
+      - { id: bit_xor, sql: "SELECT c1 ^ c2 FROM t;" }
+      - { id: bit_not, sql: "SELECT ~ c FROM t;" }
+    examples:
+      - "SELECT ~ 0;"
+
+  - id: b_comparison_operators
+    name: Comparison operators (= == <> != < <= > >= <=>)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/eqsign
+    tier: high
+    probes:
+      - { id: eq, sql: "SELECT c FROM t WHERE c = 1;" }
+      - { id: double_eq, sql: "SELECT c FROM t WHERE c == 1;" }
+      - { id: lt_gt, sql: "SELECT c FROM t WHERE c <> 1;" }
+      - { id: bang_eq, sql: "SELECT c FROM t WHERE c != 1;" }
+      - { id: lt, sql: "SELECT c FROM t WHERE c < 1;" }
+      - { id: lt_eq, sql: "SELECT c FROM t WHERE c <= 1;" }
+      - { id: gt, sql: "SELECT c FROM t WHERE c > 1;" }
+      - { id: gt_eq, sql: "SELECT c FROM t WHERE c >= 1;" }
+      - { id: null_safe_eq, sql: "SELECT c1 <=> c2 FROM t;" }
+    examples:
+      - "SELECT 2 <> 2;"
+      - "SELECT 2 != 2;"
+      - "SELECT NULL <=> NULL;"
+
+  - id: b_logical_operators
+    name: Logical operators (AND, OR, NOT, !)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/and
+    tier: high
+    probes:
+      - { id: and, sql: "SELECT c FROM t WHERE a AND b;" }
+      - { id: or, sql: "SELECT c FROM t WHERE a OR b;" }
+      - { id: not, sql: "SELECT c FROM t WHERE NOT a;" }
+      - { id: bang, sql: "SELECT c FROM t WHERE !a;" }
+      - { id: mixed_precedence, sql: "SELECT c FROM t WHERE a OR b AND NOT d;" }
+    examples:
+      - "SELECT ! true;"
+
+  - id: b_string_concat_operator
+    name: String and array concatenation operator (||)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/pipepipesign
+    tier: high
+    probes:
+      - { id: string_concat, sql: "SELECT 'Spark' || 'SQL';" }
+      - { id: array_concat, sql: "SELECT array(1, 2, 3) || array(4, 5) || array(6);" }
+    examples:
+      - "SELECT 'Spark' || 'SQL';"
+      - "SELECT array(1, 2, 3) || array(4, 5) || array(6);"
+
+  - id: b_cast_operators
+    name: Cast operators (CAST, try_cast, ::)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/cast
+    tier: high
+    probes:
+      - { id: cast, sql: "SELECT cast(c AS INT) FROM t;" }
+      - { id: cast_decimal, sql: "SELECT cast(5.6 AS DECIMAL(2, 0));" }
+      - { id: try_cast, sql: "SELECT try_cast('10' AS INT);", note: "try_cast(sourceExpr AS targetType) from https://docs.databricks.com/aws/en/sql/language-manual/functions/try_cast" }
+      - { id: double_colon, sql: "SELECT '20' :: INTEGER;", note: "expr :: type from https://docs.databricks.com/aws/en/sql/language-manual/functions/coloncolonsign" }
+      - { id: double_colon_chain, sql: "SELECT c1:price::double FROM t;" }
+      - { id: cast_interval, sql: "SELECT cast(INTERVAL '1-2' YEAR TO MONTH AS INTEGER);" }
+    examples:
+      - "SELECT cast(NULL AS INT);"
+      - "SELECT cast(5.6 AS DECIMAL(2, 0));"
+      - "SELECT cast(TIMESTAMP '1970-01-01 00:00:01' AS LONG);"
+
+  - id: b_collate_expression
+    name: COLLATE expression
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/collate
+    tier: medium
+    probes:
+      - { id: collate_literal, sql: "SELECT collation('test' COLLATE UNICODE_CI);" }
+      - { id: collate_column, sql: "SELECT c COLLATE UTF8_LCASE FROM t;" }
+      - { id: collate_in_comparison, sql: "SELECT c FROM t WHERE c COLLATE UTF8_LCASE = 'abc';" }
+    examples:
+      - "SELECT collation('test' COLLATE UNICODE_CI);"
+
+  - id: b_field_and_element_access
+    name: Field, element and JSON path access operators (. [ ] :)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/bracketsign
+    tier: high
+    probes:
+      - { id: dot_field, sql: "SELECT a.b FROM t;" }
+      - { id: dot_nested_field, sql: "SELECT t.a.b.c FROM t;" }
+      - { id: bracket_array, sql: "SELECT arr[1] FROM t;" }
+      - { id: bracket_map, sql: "SELECT m['key'] FROM t;" }
+      - { id: colon_json_path, sql: "SELECT c1:price FROM t;", note: "expr : jsonPath from https://docs.databricks.com/aws/en/sql/language-manual/functions/colonsign" }
+      - { id: colon_bracket_field, sql: "SELECT c1:['price'] FROM t;" }
+      - { id: colon_array_index_field, sql: "SELECT c1:item[1].price FROM t;" }
+      - { id: colon_wildcard, sql: "SELECT c1:item[*].price FROM t;" }
+    examples:
+      - "SELECT c1:price FROM VALUES ('{ \"price\": 5 }') AS T(c1);"
+
+  - id: b_like_predicate
+    name: LIKE predicate
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/like
+    tier: high
+    probes:
+      - { id: like_infix, sql: "SELECT c FROM t WHERE c LIKE 'a%';" }
+      - { id: not_like, sql: "SELECT c FROM t WHERE c NOT LIKE 'a%';" }
+      - { id: like_function, sql: "SELECT like('Spark', '_park');" }
+      - { id: like_escape, sql: "SELECT c FROM t WHERE c LIKE '/%a%' ESCAPE '/';" }
+      - { id: like_any, sql: "SELECT c FROM t WHERE c LIKE ANY ('a%', 'b%');" }
+      - { id: like_some, sql: "SELECT c FROM t WHERE c LIKE SOME ('a%', 'b%');" }
+      - { id: like_all, sql: "SELECT c FROM t WHERE c LIKE ALL ('a%', '%b');" }
+      - { id: not_like_any, sql: "SELECT c FROM t WHERE c NOT LIKE ANY ('a%', 'b%');" }
+      - { id: like_raw_literal, sql: "SELECT r'%SystemDrive%\\Users\\John' LIKE r'%SystemDrive%\\\\Users%';" }
+    examples:
+      - "SELECT like('Spark', '_park');"
+      - "SELECT '%SystemDrive%/Users/John' LIKE '/%SystemDrive/%//Users%' ESCAPE '/';"
+      - "SELECT 'Spark' LIKE SOME ('_park', '_ock');"
+
+  - id: b_ilike_predicate
+    name: ILIKE predicate
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/ilike
+    tier: high
+    probes:
+      - { id: ilike_infix, sql: "SELECT c FROM t WHERE c ILIKE 'a%';" }
+      - { id: not_ilike, sql: "SELECT c FROM t WHERE c NOT ILIKE 'a%';" }
+      - { id: ilike_function, sql: "SELECT ilike('Spark', '_PARK');" }
+      - { id: ilike_escape, sql: "SELECT c FROM t WHERE c ILIKE '/%a%' ESCAPE '/';" }
+      - { id: ilike_any, sql: "SELECT c FROM t WHERE c ILIKE ANY ('a%', 'b%');" }
+      - { id: ilike_all, sql: "SELECT c FROM t WHERE c ILIKE ALL ('a%', '%b');" }
+    examples:
+      - "SELECT ilike('Spark', '_PARK');"
+      - "SELECT '%SystemDrive%/Users/John' ilike '/%SystemDrive/%//users%' ESCAPE '/';"
+
+  - id: b_rlike_regexp_predicate
+    name: RLIKE and REGEXP predicates
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/rlike
+    tier: high
+    probes:
+      - { id: rlike, sql: "SELECT c FROM t WHERE c RLIKE '^a';" }
+      - { id: not_rlike, sql: "SELECT c FROM t WHERE c NOT RLIKE '^a';" }
+      - { id: regexp, sql: "SELECT c FROM t WHERE c REGEXP '^a';", note: "str [NOT] regexp regex from https://docs.databricks.com/aws/en/sql/language-manual/functions/regexp" }
+      - { id: not_regexp, sql: "SELECT c FROM t WHERE c NOT REGEXP '^a';" }
+      - { id: rlike_raw_literal, sql: "SELECT 'alice@example.com' RLIKE r'^\\w+@\\w+\\.\\w+$';" }
+    examples:
+      - "SELECT 'Databricks SQL' rlike r'^Data';"
+      - "SELECT 'no digits here' NOT rlike r'\\d';"
+
+  - id: b_between_predicate
+    name: BETWEEN predicate
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/between
+    tier: high
+    probes:
+      - { id: between, sql: "SELECT c FROM t WHERE c BETWEEN 1 AND 10;" }
+      - { id: not_between, sql: "SELECT c FROM t WHERE c NOT BETWEEN 1 AND 10;" }
+      - { id: between_expressions, sql: "SELECT c FROM t WHERE c + 1 BETWEEN a * 2 AND b - 1;" }
+    examples:
+      - "SELECT 4 between 3 and 5;"
+      - "SELECT 4 not between 3 and 5;"
+      - "SELECT 4 not between NULL and 5;"
+
+  - id: b_in_predicate
+    name: IN predicate
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/in
+    tier: high
+    probes:
+      - { id: in_list, sql: "SELECT c FROM t WHERE c IN (1, 2, 3);" }
+      - { id: not_in_list, sql: "SELECT c FROM t WHERE c NOT IN (1, 2, 3);" }
+      - { id: in_subquery, sql: "SELECT c FROM t WHERE c IN (SELECT c FROM s);" }
+      - { id: not_in_subquery, sql: "SELECT c FROM t WHERE c NOT IN (SELECT c FROM s);" }
+      - { id: in_tuple, sql: "SELECT (1, 2) IN ((1, 2), (2, 3));" }
+      - { id: in_tuple_subquery, sql: "SELECT (1, 2) IN (SELECT c1, c2 FROM VALUES (1, 2), (3, 4) AS T(c1, c2));" }
+      - { id: in_function_form, sql: "SELECT in(1, 1, 2, 3);" }
+      - { id: in_named_struct, sql: "SELECT named_struct('a', 1, 'b', 2) IN (named_struct('a', 1, 'b', 1), named_struct('a', 1, 'b', 3));" }
+    examples:
+      - "SELECT 1 in (1, 2, 3);"
+      - "SELECT (1, 2) IN ((1, 2), (2, 3));"
+      - "SELECT 1 IN (SELECT * FROM VALUES (1), (2));"
+
+  - id: b_is_null_predicate
+    name: IS [NOT] NULL predicate and isnull/isnotnull
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/isnull
+    tier: high
+    probes:
+      - { id: is_null, sql: "SELECT c FROM t WHERE c IS NULL;" }
+      - { id: is_not_null, sql: "SELECT c FROM t WHERE c IS NOT NULL;" }
+      - { id: isnull_function, sql: "SELECT isnull(1);" }
+      - { id: isnotnull_function, sql: "SELECT isnotnull(1);" }
+    examples:
+      - "SELECT isnull(1);"
+      - "SELECT isnotnull(1);"
+
+  - id: b_is_boolean_predicate
+    name: IS [NOT] TRUE and IS [NOT] FALSE predicates
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/istrue
+    tier: medium
+    probes:
+      - { id: is_true, sql: "SELECT c FROM t WHERE c IS TRUE;" }
+      - { id: is_not_true, sql: "SELECT c FROM t WHERE c IS NOT TRUE;" }
+      - { id: is_false, sql: "SELECT c FROM t WHERE c IS FALSE;", note: "expr is [not] false from https://docs.databricks.com/aws/en/sql/language-manual/functions/isfalse" }
+      - { id: is_not_false, sql: "SELECT c FROM t WHERE c IS NOT FALSE;" }
+    examples:
+      - "SELECT true is true;"
+      - "SELECT NULL is not true;"
+
+  - id: b_is_distinct_from_predicate
+    name: IS [NOT] DISTINCT FROM predicate
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/isdistinct
+    tier: high
+    probes:
+      - { id: is_distinct_from, sql: "SELECT c FROM t WHERE c1 IS DISTINCT FROM c2;" }
+      - { id: is_not_distinct_from, sql: "SELECT c FROM t WHERE c1 IS NOT DISTINCT FROM c2;" }
+    examples:
+      - "SELECT NULL is distinct from NULL;"
+      - "SELECT NULL is not distinct from 5;"
+
+  - id: b_exists_predicate
+    name: EXISTS subquery predicate
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/exists
+    tier: high
+    probes:
+      - { id: exists, sql: "SELECT c FROM t WHERE EXISTS (SELECT 1 FROM s WHERE s.c = t.c);" }
+      - { id: not_exists, sql: "SELECT c FROM t WHERE NOT EXISTS (SELECT 1 FROM s WHERE s.c = t.c);" }
+      - { id: exists_array_lambda, sql: "SELECT exists(array(1, 2, 3), x -> x % 2 == 0);" }
+    examples:
+      - "SELECT exists(array(1, 2, 3), x -> x % 2 == 0);"
+      - "SELECT count(*) FROM VALUES (1) WHERE exists(SELECT * FROM VALUES (1), (2), (3) AS t(c1) WHERE c1 = 2);"
+      - "SELECT count(*) FROM VALUES (1) WHERE NOT exists(SELECT * FROM VALUES (1), (NULL), (3) AS t(c1) WHERE c1 = 2);"
+
+  - id: b_scalar_subquery
+    name: Scalar subquery expression
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-expression
+    tier: high
+    probes:
+      - { id: scalar_in_select, sql: "SELECT (SELECT max(c) FROM s) FROM t;" }
+      - { id: scalar_in_where, sql: "SELECT c FROM t WHERE c > (SELECT avg(c) FROM s);" }
+      - { id: correlated_scalar, sql: "SELECT c, (SELECT max(s.c) FROM s WHERE s.k = t.k) FROM t;" }
+      - { id: row_constructor, sql: "SELECT (1, 2, 3);" }
+
+  - id: b_case_expression
+    name: CASE expression
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/case
+    tier: high
+    probes:
+      - { id: searched_case, sql: "SELECT CASE WHEN c > 0 THEN 1 WHEN c < 0 THEN -1 ELSE 0 END FROM t;" }
+      - { id: searched_case_no_else, sql: "SELECT CASE WHEN c > 0 THEN 1 END FROM t;" }
+      - { id: simple_case, sql: "SELECT CASE c WHEN 1 THEN 'A' WHEN 2 THEN 'B' ELSE 'C' END FROM t;" }
+      - { id: simple_case_no_else, sql: "SELECT CASE 3 WHEN 1 THEN 'A' WHEN 2 THEN 'B' WHEN 3 THEN 'C' END;" }
+      - { id: nested_case, sql: "SELECT CASE WHEN a THEN CASE WHEN b THEN 1 ELSE 2 END ELSE 3 END FROM t;" }
+    examples:
+      - "SELECT CASE WHEN 1 > 0 THEN 1 WHEN 2 > 0 THEN 2.0 ELSE 1.2 END;"
+      - "SELECT CASE WHEN 1 < 0 THEN 1 WHEN 2 < 0 THEN 2.0 END;"
+      - "SELECT CASE 3 WHEN 1 THEN 'A' WHEN 2 THEN 'B' WHEN 3 THEN 'C' END;"
+
+  - id: b_extract_function
+    name: EXTRACT(field FROM source)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/extract
+    tier: high
+    probes:
+      - { id: extract_year, sql: "SELECT extract(YEAR FROM c) FROM t;" }
+      - { id: extract_yearofweek, sql: "SELECT extract(YEAROFWEEK FROM c) FROM t;" }
+      - { id: extract_quarter, sql: "SELECT extract(QUARTER FROM c) FROM t;" }
+      - { id: extract_month, sql: "SELECT extract(MONTH FROM c) FROM t;" }
+      - { id: extract_week, sql: "SELECT extract(WEEK FROM c) FROM t;" }
+      - { id: extract_day, sql: "SELECT extract(DAY FROM DATE '2019-08-12');" }
+      - { id: extract_dayofweek, sql: "SELECT extract(DAYOFWEEK FROM c) FROM t;" }
+      - { id: extract_dow_iso, sql: "SELECT extract(DOW_ISO FROM c) FROM t;" }
+      - { id: extract_doy, sql: "SELECT extract(DOY FROM c) FROM t;" }
+      - { id: extract_hour_time, sql: "SELECT extract(HOUR FROM TIME '10:30:45');" }
+      - { id: extract_second, sql: "SELECT extract(SECONDS FROM TIMESTAMP '2019-10-01 00:00:01.000001');" }
+      - { id: extract_from_interval, sql: "SELECT extract(MONTHS FROM INTERVAL '2-11' YEAR TO MONTH);" }
+      - { id: extract_from_interval_time, sql: "SELECT extract(SECONDS FROM INTERVAL '5:00:30.001' HOUR TO SECOND);" }
+    examples:
+      - "SELECT extract(YEAR FROM TIMESTAMP '2019-08-12 01:00:00.123456');"
+      - "SELECT extract(week FROM TIMESTAMP '2019-08-12 01:00:00.123456');"
+      - "SELECT extract(HOUR FROM TIME '10:30:45');"
+
+  - id: b_substring_function
+    name: SUBSTRING and SUBSTR with FROM ... FOR
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/substring
+    tier: high
+    probes:
+      - { id: substring_commas, sql: "SELECT substring('Spark SQL', 5, 1);" }
+      - { id: substring_commas_no_len, sql: "SELECT substring('Spark SQL', 5);" }
+      - { id: substring_negative_pos, sql: "SELECT substring('Spark SQL', -3);" }
+      - { id: substring_from, sql: "SELECT substring('Spark SQL' FROM 5);" }
+      - { id: substring_from_for, sql: "SELECT substring('Spark SQL' FROM 5 FOR 1);" }
+      - { id: substring_from_negative, sql: "SELECT substring('Spark SQL' FROM -10 FOR 5);" }
+      - { id: substr_from_for, sql: "SELECT substr('Spark SQL' FROM 5 FOR 1);", note: "substr(expr FROM pos[ FOR len]) from https://docs.databricks.com/aws/en/sql/language-manual/functions/substr" }
+      - { id: substr_from, sql: "SELECT substr('Spark SQL' FROM -3);" }
+    examples:
+      - "SELECT substring('Spark SQL', 5);"
+      - "SELECT substring('Spark SQL' FROM 5 FOR 1);"
+      - "SELECT substring('Spark SQL' FROM -10 FOR 5);"
+
+  - id: b_trim_function
+    name: TRIM with BOTH/LEADING/TRAILING and FROM
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/trim
+    tier: high
+    probes:
+      - { id: trim_plain, sql: "SELECT trim(' SparkSQL ');" }
+      - { id: trim_both_from, sql: "SELECT trim(BOTH FROM ' SparkSQL ');" }
+      - { id: trim_leading_from, sql: "SELECT trim(LEADING FROM ' SparkSQL ');" }
+      - { id: trim_trailing_from, sql: "SELECT trim(TRAILING FROM ' SparkSQL ');" }
+      - { id: trim_chars_from, sql: "SELECT trim('SL' FROM 'SSparkSQLS');" }
+      - { id: trim_both_chars_from, sql: "SELECT trim(BOTH 'SL' FROM 'SSparkSQLS');" }
+      - { id: trim_leading_chars_from, sql: "SELECT trim(LEADING 'SL' FROM 'SSparkSQLS');" }
+      - { id: trim_trailing_chars_from, sql: "SELECT trim(TRAILING 'SL' FROM 'SSparkSQLS');" }
+      - { id: trim_collate_chars, sql: "SELECT trim(BOTH 'sl' COLLATE UTF8_LCASE FROM 'SSparkSQLS');" }
+      - { id: ltrim_rtrim_btrim, sql: "SELECT ltrim('abc', 'acbabSparkSQL '), rtrim('ab', 'SparkSQLabcaaba'), btrim('abcaabaSparkSQLabcaaba', 'abc');" }
+    examples:
+      - "SELECT '+' || trim(' SparkSQL ') || '+';"
+      - "SELECT trim(BOTH 'SL' FROM 'SSparkSQLS');"
+      - "SELECT trim(BOTH 'sl' COLLATE UTF8_LCASE FROM 'SSparkSQLS');"
+
+  - id: b_position_function
+    name: POSITION(substr IN str)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/position
+    tier: medium
+    probes:
+      - { id: position_in, sql: "SELECT position('bar' IN 'abcbarbar');" }
+      - { id: position_commas, sql: "SELECT position('bar', 'abcbarbar');" }
+      - { id: position_commas_pos, sql: "SELECT position('bar', 'abcbarbar', 5);" }
+      - { id: position_collate, sql: "SELECT position('BAR' COLLATE UTF8_LCASE, 'abcbarbar');" }
+    examples:
+      - "SELECT position('bar', 'abcbarbar');"
+      - "SELECT position('bar' IN 'abcbarbar');"
+
+  - id: b_overlay_function
+    name: OVERLAY(input PLACING replace FROM pos FOR len)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/functions/overlay
+    tier: medium
+    probes:
+      - { id: overlay_commas, sql: "SELECT overlay('Spark SQL', 'ANSI ', 7, 0);" }
+      - { id: overlay_placing_from, sql: "SELECT overlay('Spark SQL' PLACING '_' FROM 6);" }
+      - { id: overlay_placing_from_for, sql: "SELECT overlay('Spark SQL' PLACING 'ANSI ' FROM 7 FOR 0);" }
+      - { id: overlay_binary, sql: "SELECT overlay(encode('Spark SQL', 'utf-8') PLACING encode('_', 'utf-8') FROM 6);" }
+    examples:
+      - "SELECT overlay('Spark SQL', 'ANSI ', 7, 0);"
+      - "SELECT overlay('Spark SQL' PLACING '_' FROM 6);"
+      - "SELECT overlay('Spark SQL' PLACING 'tructured' FROM 2 FOR 4);"

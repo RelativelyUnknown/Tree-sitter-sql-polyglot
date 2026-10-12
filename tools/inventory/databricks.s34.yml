@@ -1,0 +1,125 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: alter_table
+    name: ALTER TABLE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-alter-table
+    tier: high
+    probes:
+      - { id: rename_to, sql: "ALTER TABLE t RENAME TO t2;" }
+      - { id: add_column, sql: "ALTER TABLE t ADD COLUMN c INT;" }
+      - { id: add_columns_list, sql: "ALTER TABLE t ADD COLUMNS (c1 STRING, c2 TIMESTAMP);" }
+      - { id: add_column_options, sql: "ALTER TABLE t ADD COLUMN c STRING COLLATE UTF8_LCASE DEFAULT 'x' COMMENT 'cmt';" }
+      - { id: add_column_first, sql: "ALTER TABLE t ADD COLUMN c INT FIRST;" }
+      - { id: add_column_after, sql: "ALTER TABLE t ADD COLUMN c INT AFTER d;" }
+      - { id: add_column_mask, sql: "ALTER TABLE t ADD COLUMN c STRING MASK mask_fn;" }
+      - { id: add_nested_field, sql: "ALTER TABLE t ADD COLUMN s.f INT;" }
+      - { id: alter_column_comment, sql: "ALTER TABLE t ALTER COLUMN c COMMENT 'new comment';" }
+      - { id: change_column_comment, sql: "ALTER TABLE t CHANGE COLUMN c COMMENT 'new comment';" }
+      - { id: alter_column_first, sql: "ALTER TABLE t ALTER COLUMN c FIRST;" }
+      - { id: alter_column_after, sql: "ALTER TABLE t ALTER COLUMN c AFTER d;" }
+      - { id: alter_column_set_not_null, sql: "ALTER TABLE t ALTER COLUMN c SET NOT NULL;" }
+      - { id: alter_column_drop_not_null, sql: "ALTER TABLE t ALTER COLUMN c DROP NOT NULL;" }
+      - { id: alter_column_type, sql: "ALTER TABLE t ALTER COLUMN c TYPE BIGINT;" }
+      - { id: alter_column_set_default, sql: "ALTER TABLE t ALTER COLUMN c SET DEFAULT 'unknown';" }
+      - { id: alter_column_drop_default, sql: "ALTER TABLE t ALTER COLUMN c DROP DEFAULT;" }
+      - { id: alter_column_sync_identity, sql: "ALTER TABLE t ALTER COLUMN c SYNC IDENTITY;" }
+      - { id: alter_column_multiple, sql: "ALTER TABLE t ALTER COLUMN c1 COMMENT 'one', c2 AFTER c1, c3 SET DEFAULT 0;" }
+      - { id: alter_column_set_mask, sql: "ALTER TABLE t ALTER COLUMN c SET MASK mask_fn;" }
+      - { id: alter_column_set_mask_using, sql: "ALTER TABLE t ALTER COLUMN c SET MASK mask_fn USING COLUMNS (d);" }
+      - { id: alter_column_drop_mask, sql: "ALTER TABLE t ALTER COLUMN c DROP MASK;" }
+      - { id: alter_column_set_tags, sql: "ALTER TABLE t ALTER COLUMN c SET TAGS ('k1' = 'v1', 'k2' = 'v2');" }
+      - { id: alter_column_unset_tags, sql: "ALTER TABLE t ALTER COLUMN c UNSET TAGS ('k1', 'k2');" }
+      - { id: drop_column, sql: "ALTER TABLE t DROP COLUMN c;" }
+      - { id: drop_columns_if_exists, sql: "ALTER TABLE t DROP COLUMNS IF EXISTS (c1, c2);" }
+      - { id: rename_column, sql: "ALTER TABLE t RENAME COLUMN c TO c2;" }
+      - { id: default_collation, sql: "ALTER TABLE t DEFAULT COLLATION UTF8_LCASE;" }
+      - { id: add_constraint_check, sql: "ALTER TABLE t ADD CONSTRAINT chk CHECK (c > 0);" }
+      - { id: add_constraint_primary_key, sql: "ALTER TABLE t ADD CONSTRAINT pk PRIMARY KEY (a, b);" }
+      - { id: add_primary_key_timeseries, sql: "ALTER TABLE t ADD CONSTRAINT pk PRIMARY KEY (a, ts TIMESERIES);" }
+      - { id: add_primary_key_options, sql: "ALTER TABLE t ADD CONSTRAINT pk PRIMARY KEY (a) NOT ENFORCED RELY;" }
+      - { id: add_constraint_unique, sql: "ALTER TABLE t ADD CONSTRAINT uq UNIQUE (a, b);" }
+      - { id: add_constraint_foreign_key, sql: "ALTER TABLE t ADD CONSTRAINT fk FOREIGN KEY (a, b) REFERENCES p (x, y);" }
+      - { id: add_foreign_key_options, sql: "ALTER TABLE t ADD CONSTRAINT fk FOREIGN KEY (a) REFERENCES p MATCH FULL ON UPDATE NO ACTION ON DELETE NO ACTION;" }
+      - { id: drop_constraint, sql: "ALTER TABLE t DROP CONSTRAINT chk;" }
+      - { id: drop_constraint_if_exists_cascade, sql: "ALTER TABLE t DROP CONSTRAINT IF EXISTS pk CASCADE;" }
+      - { id: drop_primary_key, sql: "ALTER TABLE t DROP PRIMARY KEY IF EXISTS RESTRICT;" }
+      - { id: drop_foreign_key, sql: "ALTER TABLE t DROP FOREIGN KEY IF EXISTS (a, b);" }
+      - { id: drop_feature, sql: "ALTER TABLE t DROP FEATURE deletionVectors;" }
+      - { id: drop_feature_string_truncate_history, sql: "ALTER TABLE t DROP FEATURE 'deletionVectors' TRUNCATE HISTORY;" }
+      - { id: add_partition, sql: "ALTER TABLE t ADD IF NOT EXISTS PARTITION (age = 18);" }
+      - { id: add_partitions_multiple, sql: "ALTER TABLE t ADD PARTITION (age = 18) PARTITION (age = 20);" }
+      - { id: drop_partition, sql: "ALTER TABLE t DROP IF EXISTS PARTITION (age = 18);" }
+      - { id: partition_set_location, sql: "ALTER TABLE t PARTITION (a = '1', b = '2') SET LOCATION '/path/to/part';" }
+      - { id: rename_partition, sql: "ALTER TABLE t PARTITION (age = '10') RENAME TO PARTITION (age = '15');" }
+      - { id: recover_partitions, sql: "ALTER TABLE t RECOVER PARTITIONS;" }
+      - { id: set_row_filter, sql: "ALTER TABLE t SET ROW FILTER f ON (c, 'lit');" }
+      - { id: drop_row_filter, sql: "ALTER TABLE t DROP ROW FILTER;" }
+      - { id: set_tblproperties, sql: "ALTER TABLE t SET TBLPROPERTIES ('k' = 'v');" }
+      - { id: unset_tblproperties, sql: "ALTER TABLE t UNSET TBLPROPERTIES ('k');" }
+      - { id: set_serde, sql: "ALTER TABLE t SET SERDE 'org.apache.hadoop';" }
+      - { id: set_serde_properties, sql: "ALTER TABLE t SET SERDE 'org.apache.hadoop' WITH SERDEPROPERTIES ('k' = 'v', 'kay' = 'vee');" }
+      - { id: set_location, sql: "ALTER TABLE t SET LOCATION 's3://bucket/path';" }
+      - { id: set_external, sql: "ALTER TABLE c.s.t SET EXTERNAL;" }
+      - { id: set_external_dry_run, sql: "ALTER TABLE c.s.t SET EXTERNAL DRY RUN;" }
+      - { id: set_managed, sql: "ALTER TABLE c.s.t SET MANAGED;" }
+      - { id: set_managed_truncate_uniform_history, sql: "ALTER TABLE c.s.t SET MANAGED TRUNCATE UNIFORM HISTORY;" }
+      - { id: set_managed_move, sql: "ALTER TABLE c.s.t SET MANAGED MOVE;" }
+      - { id: set_managed_copy, sql: "ALTER TABLE c.s.t SET MANAGED COPY;" }
+      - { id: unset_managed, sql: "ALTER TABLE c.s.t UNSET MANAGED;" }
+      - { id: unset_managed_truncate_uniform_history, sql: "ALTER TABLE c.s.t UNSET MANAGED TRUNCATE UNIFORM HISTORY;" }
+      - { id: owner_to, sql: "ALTER TABLE t OWNER TO `alf@melmak.et`;" }
+      - { id: set_owner_to, sql: "ALTER TABLE t SET OWNER TO grp;" }
+      - { id: set_tags, sql: "ALTER TABLE t SET TAGS ('tag1' = 'val1', 'tag2' = 'val2');" }
+      - { id: unset_tags, sql: "ALTER TABLE t UNSET TAGS ('tag1', 'tag2');" }
+      - { id: cluster_by, sql: "ALTER TABLE t CLUSTER BY (a, b);" }
+      - { id: cluster_by_none, sql: "ALTER TABLE t CLUSTER BY NONE;" }
+      - { id: cluster_by_auto, sql: "ALTER TABLE t CLUSTER BY AUTO;" }
+      - { id: replace_partitioned_by_with_cluster_by, sql: "ALTER TABLE t REPLACE PARTITIONED BY WITH CLUSTER BY (a, b);" }
+      - { id: replace_partitioned_by_with_cluster_by_auto, sql: "ALTER TABLE t REPLACE PARTITIONED BY WITH CLUSTER BY AUTO;" }
+      - { id: replace_partitioned_by_with_cluster_by_bare, sql: "ALTER TABLE t REPLACE PARTITIONED BY WITH CLUSTER BY;" }
+      - { id: predictive_optimization_enable, sql: "ALTER TABLE t ENABLE PREDICTIVE OPTIMIZATION;" }
+      - { id: predictive_optimization_disable, sql: "ALTER TABLE t DISABLE PREDICTIVE OPTIMIZATION;" }
+      - { id: predictive_optimization_inherit, sql: "ALTER TABLE t INHERIT PREDICTIVE OPTIMIZATION;" }
+    examples:
+      - "ALTER TABLE student RENAME TO student_info;"
+      - "ALTER TABLE StudentInfo ADD columns (LastName string, DOB timestamp);"
+      - "ALTER TABLE dbx.tab1 PARTITION (a = '1', b = '2') SET LOCATION '/path/to/part/ways';"
+
+  - id: alter_view
+    name: ALTER VIEW
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-alter-view
+    tier: high
+    probes:
+      - { id: rename_to, sql: "ALTER VIEW v RENAME TO v2;" }
+      - { id: rename_to_qualified, sql: "ALTER VIEW s.v RENAME TO s.v2;" }
+      - { id: set_tblproperties, sql: "ALTER VIEW v SET TBLPROPERTIES ('k' = 'v', 'k2' = \"v2\");" }
+      - { id: unset_tblproperties, sql: "ALTER VIEW v UNSET TBLPROPERTIES (`a`.`b`.`c`, d.e);" }
+      - { id: as_query, sql: "ALTER VIEW v AS SELECT * FROM t;" }
+      - id: as_yaml_definition
+        sql: |-
+          ALTER VIEW v AS $$
+          version: 0.1
+          source: samples.tpch.orders
+          dimensions:
+            - name: month
+              expr: date_trunc('MONTH', o_orderdate)
+          measures:
+            - name: count_orders
+              expr: count(1)
+          $$;
+      - { id: schema_binding, sql: "ALTER VIEW v WITH SCHEMA BINDING;" }
+      - { id: schema_evolution, sql: "ALTER VIEW v WITH SCHEMA EVOLUTION;" }
+      - { id: schema_type_evolution, sql: "ALTER VIEW v WITH SCHEMA TYPE EVOLUTION;" }
+      - { id: schema_compensation, sql: "ALTER VIEW v WITH SCHEMA COMPENSATION;" }
+      - { id: owner_to, sql: "ALTER VIEW v OWNER TO `alf@melmak.et`;" }
+      - { id: set_owner_to, sql: "ALTER VIEW v SET OWNER TO grp;" }
+      - { id: set_tags, sql: "ALTER VIEW v SET TAGS ('tag1' = 'val1', 'tag2' = 'val2', 'tag3' = 'val3');" }
+      - { id: unset_tags, sql: "ALTER VIEW v UNSET TAGS ('tag1', 'tag2', 'tag3');" }
+    examples:
+      - "ALTER VIEW tempsc1.v1 RENAME TO tempsc1.v2;"
+      - "ALTER VIEW tempsc1.v2 SET TBLPROPERTIES ('created.by.user' = \"John\", 'created.date' = '01-01-2001');"
+      - "ALTER VIEW tempsc1.v2 AS SELECT * FROM tempsc1.v1;"

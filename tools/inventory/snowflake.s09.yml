@@ -1,0 +1,247 @@
+dialect: snowflake
+engine: Snowflake
+version: "current (docs read 2026-10-04)"
+source: https://docs.snowflake.com/en/sql-reference/sql-all
+
+statements:
+  - id: create_storage_integration_postgres_internal_storage
+    name: CREATE STORAGE INTEGRATION (Postgres Internal Storage)
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-storage-integration-postgres-internal
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE STORAGE INTEGRATION si TYPE = POSTGRES_INTERNAL_STORAGE POSTGRES_INSTANCE = 'pg1';"
+      - id: or_replace_enabled_comment
+        sql: "CREATE OR REPLACE STORAGE INTEGRATION si TYPE = POSTGRES_INTERNAL_STORAGE POSTGRES_INSTANCE = 'pg1' ENABLED = FALSE COMMENT = 'c';"
+      - id: if_not_exists
+        sql: "CREATE STORAGE INTEGRATION IF NOT EXISTS si TYPE = POSTGRES_INTERNAL_STORAGE POSTGRES_INSTANCE = 'pg1' ENABLED = TRUE;"
+    examples:
+      - "CREATE STORAGE INTEGRATION postgres_internal TYPE = POSTGRES_INTERNAL_STORAGE POSTGRES_INSTANCE = 'my_pg_instance';"
+
+  - id: create_stream
+    name: CREATE STREAM
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-stream
+    tier: medium
+    probes:
+      - id: on_table
+        sql: "CREATE STREAM s ON TABLE t;"
+      - id: or_replace_copy_grants_tag
+        sql: "CREATE OR REPLACE STREAM s WITH TAG (tg = 'v') COPY GRANTS ON TABLE t;"
+      - id: if_not_exists
+        sql: "CREATE STREAM IF NOT EXISTS s ON TABLE t;"
+      - id: table_at_timestamp
+        sql: "CREATE STREAM s ON TABLE t AT (TIMESTAMP => TO_TIMESTAMP(0));"
+      - id: table_before_statement
+        sql: "CREATE STREAM s ON TABLE t BEFORE (STATEMENT => '8e5d0ca9-005e-44e6-b858-a8f5b37c5726');"
+      - id: table_at_offset
+        sql: "CREATE STREAM s ON TABLE t AT (OFFSET => -300);"
+      - id: table_at_stream
+        sql: "CREATE STREAM s ON TABLE t AT (STREAM => 'old');"
+      - id: table_append_only_show_initial_rows_comment
+        sql: "CREATE STREAM s ON TABLE t APPEND_ONLY = TRUE SHOW_INITIAL_ROWS = FALSE COMMENT = 'c';"
+      - id: on_event_table
+        sql: "CREATE STREAM s ON EVENT TABLE t COMMENT = 'c';"
+      - id: on_external_table
+        sql: "CREATE STREAM s ON EXTERNAL TABLE t INSERT_ONLY = TRUE;"
+      - id: on_stage
+        sql: "CREATE STREAM s ON STAGE st COMMENT = 'c';"
+      - id: on_dynamic_table
+        sql: "CREATE STREAM s ON DYNAMIC TABLE t;"
+      - id: on_view
+        sql: "CREATE STREAM s ON VIEW v APPEND_ONLY = TRUE;"
+      - id: clone
+        sql: "CREATE OR REPLACE STREAM s CLONE s2 COPY GRANTS;"
+      - id: create_or_alter
+        sql: "CREATE OR ALTER STREAM s ON TABLE t COMMENT = 'c';"
+    examples:
+      - "CREATE STREAM mystream ON TABLE mytable;"
+      - "CREATE STREAM mystream ON TABLE mytable BEFORE (TIMESTAMP => TO_TIMESTAMP(40 * 365 * 86400));"
+      - "CREATE STREAM mystream ON VIEW myview;"
+
+  - id: create_tag
+    name: CREATE TAG
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-tag
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE TAG tg;"
+      - id: or_replace_comment
+        sql: "CREATE OR REPLACE TAG tg COMMENT = 'c';"
+      - id: if_not_exists_allowed_values
+        sql: "CREATE TAG IF NOT EXISTS tg ALLOWED_VALUES 'a', 'b', 'c';"
+      - id: multi_value
+        sql: "CREATE TAG tg MULTI_VALUE = TRUE;"
+      - id: propagate
+        sql: "CREATE TAG tg PROPAGATE = ON_DEPENDENCY;"
+      - id: propagate_on_conflict_string
+        sql: "CREATE TAG tg PROPAGATE = ON_DEPENDENCY_AND_DATA_MOVEMENT ON_CONFLICT = 'none';"
+      - id: propagate_on_conflict_merge
+        sql: "CREATE TAG tg PROPAGATE = ON_DATA_MOVEMENT ON_CONFLICT = MERGE COMMENT = 'c';"
+      - id: create_or_alter
+        sql: "CREATE OR ALTER TAG tg ALLOWED_VALUES 'a', 'b' COMMENT = 'c';"
+    examples:
+      - "CREATE TAG cost_center COMMENT = 'cost_center tag';"
+      - "CREATE OR ALTER TAG cost_center ALLOWED_VALUES 'finance', 'engineering', 'sales';"
+
+  - id: create_type
+    name: CREATE TYPE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-type
+    tier: medium
+    probes:
+      - id: as_number
+        sql: "CREATE TYPE age AS NUMBER(3, 0);"
+      - id: or_replace_comment
+        sql: "CREATE OR REPLACE TYPE age AS NUMBER(3, 0) COMMENT = 'c';"
+      - id: if_not_exists
+        sql: "CREATE TYPE IF NOT EXISTS name_t AS VARCHAR(100);"
+      - id: as_object
+        sql: "CREATE TYPE path AS OBJECT (relative BOOLEAN, segments ARRAY(STRING));"
+    examples:
+      - "CREATE TYPE age AS NUMBER(3, 0);"
+      - "CREATE TYPE path AS OBJECT (relative BOOLEAN, segments ARRAY(STRING));"
+
+  - id: create_task
+    name: CREATE TASK
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-task
+    tier: medium
+    probes:
+      - id: warehouse_schedule_minutes
+        sql: "CREATE TASK tk WAREHOUSE = wh SCHEDULE = '5 MINUTES' AS INSERT INTO t (c) VALUES (CURRENT_TIMESTAMP);"
+      - id: or_replace_serverless_cron
+        sql: "CREATE OR REPLACE TASK tk SCHEDULE = 'USING CRON 18 9-17 * * SUN America/Los_Angeles' USER_TASK_MANAGED_INITIAL_WAREHOUSE_SIZE = 'XSMALL' AS SELECT CURRENT_TIMESTAMP;"
+      - id: if_not_exists_tag_contact
+        sql: "CREATE TASK IF NOT EXISTS tk WITH TAG (tg = 'v') WITH CONTACT (support = ct) WAREHOUSE = wh SCHEDULE = '1 HOURS' AS SELECT 1;"
+      - id: after_predecessors
+        sql: "CREATE TASK tk AFTER t2, t3, t4 AS INSERT INTO t (ts) VALUES (CURRENT_TIMESTAMP);"
+      - id: when_condition
+        sql: "CREATE TASK tk WAREHOUSE = wh SCHEDULE = '5 MINUTES' WHEN SYSTEM$STREAM_HAS_DATA('MYSTREAM') AS INSERT INTO t1 (id) SELECT id FROM mystream;"
+      - id: session_parameter
+        sql: "CREATE TASK tk SCHEDULE = '60 MINUTES' TIMESTAMP_INPUT_FORMAT = 'YYYY-MM-DD HH24' USER_TASK_MANAGED_INITIAL_WAREHOUSE_SIZE = 'XSMALL' AS SELECT 1;"
+      - id: config_overlap_policy
+        sql: "CREATE TASK tk WAREHOUSE = wh SCHEDULE = '1 MINUTES' CONFIG = $${\"output_dir\": \"/tmp/\"}$$ OVERLAP_POLICY = NO_OVERLAP AS SELECT 1;"
+      - id: task_options
+        sql: "CREATE TASK tk WAREHOUSE = wh SCHEDULE = '1 MINUTES' USER_TASK_TIMEOUT_MS = 60000 SUSPEND_TASK_AFTER_NUM_FAILURES = 3 ERROR_INTEGRATION = ei SUCCESS_INTEGRATION = si LOG_LEVEL = 'INFO' COMMENT = 'c' TASK_AUTO_RETRY_ATTEMPTS = 2 USER_TASK_MINIMUM_TRIGGER_INTERVAL_IN_SECONDS = 30 AS SELECT 1;"
+      - id: serverless_sizes_target_completion
+        sql: "CREATE TASK tk SCHEDULE = '1 HOURS' TARGET_COMPLETION_INTERVAL = '30 MINUTES' SERVERLESS_TASK_MIN_STATEMENT_SIZE = 'XSMALL' SERVERLESS_TASK_MAX_STATEMENT_SIZE = 'LARGE' AS SELECT 1;"
+      - id: finalize
+        sql: "CREATE TASK tk WAREHOUSE = wh FINALIZE = root_task AS SELECT 1;"
+      - id: execute_as_user
+        sql: "CREATE TASK tk WAREHOUSE = wh SCHEDULE = '1 MINUTES' EXECUTE AS USER u1 AS SELECT 1;"
+      - id: as_call
+        sql: "CREATE TASK tk WAREHOUSE = wh SCHEDULE = '60 MINUTES' AS CALL my_proc();"
+      - id: as_scripting_block
+        sql: |-
+          CREATE TASK tk WAREHOUSE = wh SCHEDULE = '1 MINUTES' AS
+          BEGIN
+            INSERT INTO t (c) VALUES (1);
+          END;
+      - id: clone
+        sql: "CREATE OR REPLACE TASK tk CLONE tk2;"
+      - id: create_or_alter
+        sql: "CREATE OR ALTER TASK tk WAREHOUSE = wh SCHEDULE = '5 MINUTES' COMMENT = 'c' AS SELECT 1;"
+    examples:
+      - "CREATE TASK mytask_minute WAREHOUSE = mywh SCHEDULE = '5 MINUTES' AS INSERT INTO mytable (ts) VALUES (CURRENT_TIMESTAMP);"
+      - "CREATE TASK mytask1 WAREHOUSE = mywh SCHEDULE = '5 MINUTES' WHEN SYSTEM$STREAM_HAS_DATA('MYSTREAM') AS INSERT INTO mytable1 (id, name) SELECT id, name FROM mystream WHERE METADATA$ACTION = 'INSERT';"
+      - "CREATE TASK task5 AFTER task2, task3, task4 AS INSERT INTO t1 (ts) VALUES (CURRENT_TIMESTAMP);"
+
+  - id: create_user
+    name: CREATE USER
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-user
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE USER u;"
+      - id: or_replace_password_must_change
+        sql: "CREATE OR REPLACE USER u PASSWORD = 'abc123' MUST_CHANGE_PASSWORD = TRUE;"
+      - id: if_not_exists_names_email
+        sql: "CREATE USER IF NOT EXISTS u LOGIN_NAME = 'ln' DISPLAY_NAME = 'dn' FIRST_NAME = 'a' MIDDLE_NAME = 'b' LAST_NAME = 'c' EMAIL = 'a@example.com';"
+      - id: defaults_secondary_roles_all
+        sql: "CREATE USER u DEFAULT_WAREHOUSE = wh DEFAULT_NAMESPACE = db.sch DEFAULT_ROLE = r DEFAULT_SECONDARY_ROLES = ('ALL');"
+      - id: defaults_secondary_roles_none
+        sql: "CREATE USER u DEFAULT_SECONDARY_ROLES = ();"
+      - id: disabled_expiry_unlock
+        sql: "CREATE USER u DISABLED = FALSE DAYS_TO_EXPIRY = 30 MINS_TO_UNLOCK = 15 MINS_TO_BYPASS_MFA = 10;"
+      - id: rsa_keys
+        sql: "CREATE USER u RSA_PUBLIC_KEY = 'MIIB' RSA_PUBLIC_KEY_2 = 'MIIC';"
+      - id: type_service_allowed_interfaces
+        sql: "CREATE USER u TYPE = SERVICE ALLOWED_INTERFACES = ('SQL', 'UI');"
+      - id: workload_identity
+        sql: "CREATE USER u TYPE = SERVICE WORKLOAD_IDENTITY = (TYPE = AWS ARN = 'arn:aws:iam::123456789012:role/r');"
+      - id: object_params_network_policy
+        sql: "CREATE USER u ENABLE_UNREDACTED_QUERY_SYNTAX_ERROR = TRUE NETWORK_POLICY = np;"
+      - id: session_params
+        sql: "CREATE USER u AUTOCOMMIT = TRUE TIMEZONE = 'UTC' QUERY_TAG = 'q' STATEMENT_TIMEOUT_IN_SECONDS = 60 WEEK_START = 1;"
+      - id: comment_with_tag
+        sql: "CREATE USER u COMMENT = 'c' WITH TAG (tg = 'v');"
+    examples:
+      - "CREATE USER user1 PASSWORD = 'abc123' DEFAULT_ROLE = myrole DEFAULT_SECONDARY_ROLES = ('ALL') MUST_CHANGE_PASSWORD = TRUE;"
+
+  - id: create_warehouse
+    name: CREATE WAREHOUSE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/create-warehouse
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE WAREHOUSE wh;"
+      - id: or_replace_with_size
+        sql: "CREATE OR REPLACE WAREHOUSE wh WITH WAREHOUSE_SIZE = LARGE;"
+      - id: if_not_exists
+        sql: "CREATE WAREHOUSE IF NOT EXISTS wh WAREHOUSE_SIZE = XSMALL;"
+      - id: warehouse_type_snowpark_optimized
+        sql: "CREATE WAREHOUSE wh WITH WAREHOUSE_TYPE = 'SNOWPARK-OPTIMIZED' WAREHOUSE_SIZE = XLARGE RESOURCE_CONSTRAINT = MEMORY_16X;"
+      - id: generation
+        sql: "CREATE WAREHOUSE wh WITH WAREHOUSE_SIZE = LARGE GENERATION = '2';"
+      - id: multi_cluster_scaling
+        sql: "CREATE WAREHOUSE wh MAX_CLUSTER_COUNT = 4 MIN_CLUSTER_COUNT = 1 SCALING_POLICY = ECONOMY;"
+      - id: auto_suspend_resume
+        sql: "CREATE WAREHOUSE wh AUTO_SUSPEND = 300 AUTO_RESUME = TRUE INITIALLY_SUSPENDED = TRUE;"
+      - id: auto_suspend_null
+        sql: "CREATE WAREHOUSE wh AUTO_SUSPEND = NULL;"
+      - id: resource_monitor_comment
+        sql: "CREATE WAREHOUSE wh RESOURCE_MONITOR = rm COMMENT = 'c';"
+      - id: query_acceleration
+        sql: "CREATE WAREHOUSE wh ENABLE_QUERY_ACCELERATION = TRUE QUERY_ACCELERATION_MAX_SCALE_FACTOR = 8;"
+      - id: with_tag
+        sql: "CREATE WAREHOUSE wh WITH TAG (tg = 'v');"
+      - id: object_params
+        sql: "CREATE WAREHOUSE wh MAX_CONCURRENCY_LEVEL = 8 STATEMENT_QUEUED_TIMEOUT_IN_SECONDS = 60 STATEMENT_TIMEOUT_IN_SECONDS = 3600;"
+      - id: create_or_alter
+        sql: "CREATE OR ALTER WAREHOUSE wh WAREHOUSE_SIZE = MEDIUM AUTO_RESUME = TRUE;"
+    examples:
+      - "CREATE OR REPLACE WAREHOUSE my_wh WITH WAREHOUSE_SIZE = 'X-LARGE';"
+      - "CREATE OR REPLACE WAREHOUSE my_wh WAREHOUSE_SIZE = LARGE INITIALLY_SUSPENDED = TRUE;"
+      - "CREATE WAREHOUSE gen2_wh WITH WAREHOUSE_SIZE = LARGE GENERATION = '2';"
+
+  - id: describe_alert
+    name: DESCRIBE ALERT
+    doc: https://docs.snowflake.com/en/sql-reference/sql/desc-alert
+    tier: medium
+    probes:
+      - id: describe
+        sql: "DESCRIBE ALERT a;"
+      - id: desc
+        sql: "DESC ALERT db.sch.a;"
+
+  - id: describe_database
+    name: DESCRIBE DATABASE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/desc-database
+    tier: medium
+    probes:
+      - id: describe
+        sql: "DESCRIBE DATABASE db;"
+      - id: desc
+        sql: "DESC DATABASE db;"
+    examples:
+      - "DESCRIBE DATABASE desc_demo;"
+
+  - id: describe_file_format
+    name: DESCRIBE FILE FORMAT
+    doc: https://docs.snowflake.com/en/sql-reference/sql/desc-file-format
+    tier: medium
+    probes:
+      - id: describe
+        sql: "DESCRIBE FILE FORMAT ff;"
+      - id: desc
+        sql: "DESC FILE FORMAT db.sch.ff;"
+    examples:
+      - "DESC FILE FORMAT my_csv_format;"

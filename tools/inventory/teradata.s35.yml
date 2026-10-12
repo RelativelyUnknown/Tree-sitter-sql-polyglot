@@ -1,0 +1,207 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: drop_table_datalake
+    name: DROP TABLE (Datalake Form)
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/ByaVd_H0LNhwnGXCVkw5zg
+    tier: medium
+    probes:
+      - { id: purge_all, sql: "DROP TABLE dl.db1.t PURGE ALL;" }
+      - { id: no_purge, sql: "DROP TABLE dl.db1.t NO PURGE;" }
+
+  - id: create_database_datalake
+    name: CREATE DATABASE (Datalake Form)
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/jVmeqKuqLNAiRo7OJhlvCw
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE DATABASE dl.db1;" }
+      - { id: cd_abbrev, sql: "CD dl.db1;" }
+      - { id: dbproperties, sql: "CREATE DATABASE dl.db1 DBPROPERTIES ('k1'='v1', 'k2'='v2');" }
+      - { id: properties, sql: "CREATE DATABASE dl.db1 PROPERTIES ('k1'='v1');" }
+    examples:
+      - |-
+        CREATE DATABASE MyIceberg.MyDatabase
+          DBPROPERTIES ('create_date'='2023-10-20','owner'='Mark');
+
+  - id: drop_database_datalake
+    name: DROP DATABASE (Datalake Form)
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/QaguBdGadQWepZwmp3Uv6w
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP DATABASE dl.db1;" }
+    examples:
+      - "DROP DATABASE MyIceberg.MyDatabase;"
+
+  - id: create_datalake
+    name: CREATE DATALAKE / REPLACE DATALAKE
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/h0R7dg9P7CuNvW0INm8eUg
+    tier: medium
+    probes:
+      - id: create_basic
+        sql: |-
+          CREATE DATALAKE dl
+          EXTERNAL SECURITY INVOKER TRUSTED CATALOG cauth,
+          EXTERNAL SECURITY INVOKER TRUSTED STORAGE sauth
+          USING CATALOG_TYPE ('hive') CATALOG_LOCATION ('thrift://example.com') STORAGE_LOCATION ('s3://bucket/')
+          TABLE FORMAT ICEBERG;
+      - id: replace
+        sql: |-
+          REPLACE DATALAKE dl
+          EXTERNAL SECURITY INVOKER TRUSTED CATALOG cauth,
+          EXTERNAL SECURITY INVOKER TRUSTED STORAGE sauth
+          USING CATALOG_TYPE ('hive') STORAGE_REGION ('us-west-2')
+          TABLE FORMAT ICEBERG;
+      - id: schema_qualified_definer
+        sql: |-
+          CREATE DATALAKE TD_SERVER_DB.dl
+          EXTERNAL SECURITY DEFINER TRUSTED CATALOG cauth,
+          EXTERNAL SECURITY DEFINER TRUSTED STORAGE sauth
+          USING CATALOG_TYPE ('glue') STORAGE_REGION ('us-west-2')
+          TABLE FORMAT ICEBERG;
+      - id: unity_deltalake
+        sql: |-
+          CREATE DATALAKE dl
+          EXTERNAL SECURITY INVOKER TRUSTED CATALOG cauth,
+          EXTERNAL SECURITY INVOKER TRUSTED STORAGE sauth
+          USING CATALOG_TYPE ('UNITY') CATALOG_ENDPOINT ('https://example.com') UNITY_CATALOG_NAME ('uc') STORAGE_ACCOUNT_NAME ('acct') TENANT_ID ('tid')
+          TABLE FORMAT DELTALAKE;
+      - id: custom_clause
+        sql: |-
+          CREATE DATALAKE dl
+          EXTERNAL SECURITY TRUSTED CATALOG cauth,
+          EXTERNAL SECURITY TRUSTED STORAGE sauth
+          USING CATALOG_TYPE ('hive') my_option ('value1,value2')
+          TABLE FORMAT ICEBERG;
+    examples:
+      - |-
+        CREATE DATALAKE MyIceberg
+          EXTERNAL SECURITY INVOKER TRUSTED CATALOG catalog_auth,
+          EXTERNAL SECURITY INVOKER TRUSTED STORAGE storage_auth
+          USING
+            CATALOG_LOCATION('thrift://example.com')
+            STORAGE_LOCATION('s3://example.com')
+            CATALOG_TYPE('hive')
+            STORAGE_REGION('us-west-2')
+          TABLE FORMAT iceberg;
+      - |-
+        REPLACE DATALAKE iceberg_hive
+        EXTERNAL SECURITY INVOKER TRUSTED CATALOG ICEBERG_INVOKER_SIMPLE,
+        EXTERNAL SECURITY INVOKER TRUSTED STORAGE ICEBERG_INVOKER_SIMPLE
+        USING
+        catalog_type ('hive')
+        catalog_location ('thrift://example2.com')
+        storage_location ('s3://example2-iceberg-v1/')
+        storage_region('us-west-2')
+        TABLE FORMAT iceberg;
+      - |-
+        CREATE DATALAKE iceberg_glue
+        EXTERNAL SECURITY INVOKER TRUSTED CATALOG ICEBERG_INVOKER_SIMPLE,
+        EXTERNAL SECURITY INVOKER TRUSTED STORAGE ICEBERG_INVOKER_SIMPLE
+        USING
+        catalog_type ('glue')
+        storage_region ('us-west-2')
+        TABLE FORMAT iceberg;
+
+  - id: alter_datalake
+    name: ALTER DATALAKE
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/vBwUz9jCUVuwwCrGEJDfkQ
+    tier: medium
+    probes:
+      - id: add_clauses
+        sql: |-
+          ALTER DATALAKE dl
+          ADD CATALOG_LOCATION ('thrift://example.com') STORAGE_REGION ('us-west-3');
+      - id: drop_clauses
+        sql: "ALTER DATALAKE dl DROP STORAGE_REGION ('us-west-2');"
+      - id: auth_and_add
+        sql: |-
+          ALTER DATALAKE TD_SERVER_DB.dl
+          EXTERNAL SECURITY INVOKER TRUSTED CATALOG new_cauth,
+          EXTERNAL SECURITY INVOKER TRUSTED STORAGE new_sauth
+          ADD STORAGE_LOCATION ('s3://example.com/');
+      - id: add_custom_clause
+        sql: "ALTER DATALAKE dl ADD my_option ('value');"
+    examples:
+      - |-
+        ALTER DATALAKE MyIceberg
+          EXTERNAL SECURITY INVOKER TRUSTED CATALOG new_catalog_auth,
+          EXTERNAL SECURITY INVOKER TRUSTED STORAGE new_storage_auth
+          ADD
+            catalog_location ('thrift://192.0.2.0/24')
+            storage_location ('s3://example.com/')
+            storage_region ('us-west-3');
+
+  - id: drop_datalake
+    name: DROP DATALAKE
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/zfOlglkld0bL3luT2XG4FA
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP DATALAKE dl;" }
+      - { id: qualified, sql: "DROP DATALAKE TD_SERVER_DB.dl;" }
+    examples:
+      - "DROP DATALAKE Myiceberg;"
+
+  - id: insert_datalake
+    name: INSERT / INSERT ... SELECT (Datalake Form)
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/gYpnDYDQ7U5KHTbYdYkmVg
+    tier: medium
+    probes:
+      - { id: values, sql: "INSERT INTO dl.db1.t VALUES ('a', 1);" }
+      - { id: select_star, sql: "INSERT INTO dl.db1.t SELECT * FROM src;" }
+      - { id: select_columns_where, sql: "INSERT INTO dl.db1.t SELECT c1, c2 FROM db.src WHERE c1 > 1;" }
+      - { id: select_from_otf, sql: "INSERT INTO dl.db1.t SELECT * FROM dl.db1.t2 WHERE c1 = 1;" }
+    examples:
+      - "INSERT INTO MyIceberg.MyDatabase.T1 VALUES ('testing', 1, 'field3', 'France');"
+      - |-
+        INSERT INTO MyIceberg.MyDatabase.T1
+           SELECT * FROM MyIceberg.MyDatabase.Tab1
+           WHERE country='France';
+
+  - id: update_datalake
+    name: UPDATE (Datalake Form)
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/OglTTpItLtyHNOllhvipjQ
+    tier: medium
+    probes:
+      - { id: set_where, sql: "UPDATE dl.db1.t SET (c1 = 'x', c2 = 2) WHERE c3 = 1;" }
+      - { id: set_all, sql: "UPDATE dl.db1.t SET (c1 = 'x') ALL;" }
+      - { id: set_no_where, sql: "UPDATE dl.db1.t SET (c1 = 'x');" }
+    examples:
+      - |-
+        UPDATE MyIceberg.MyDatabase.Tab1
+          SET c1='newvalue',
+              c2='newvalue2'
+          WHERE country='France';
+
+  - id: delete_datalake
+    name: DELETE (Datalake Form)
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/pBJmy9QpuPCrpFIExQWopg
+    tier: medium
+    probes:
+      - { id: where, sql: "DELETE FROM dl.db1.t WHERE c1 = 1;" }
+      - { id: all, sql: "DELETE FROM dl.db1.t ALL;" }
+      - { id: no_where, sql: "DELETE FROM dl.db1.t;" }
+    examples:
+      - |-
+        DELETE FROM MyIceberg.MyDatabase.Tab1
+          WHERE country='France';
+      - "DELETE FROM MyIceberg.MyDatabase.Tab1 ALL;"
+
+  - id: select_as_of
+    name: SELECT ... AS OF TIMESTAMP / AS OF version_number (time travel)
+    doc: https://docs.teradata.com/reader/6rLn2rLdIynJrm3gFQo1Zg/PwFqmd8nCD_6Qjuil_Endw
+    tier: medium
+    probes:
+      - { id: as_of_timestamp, sql: "SELECT * FROM t AS OF TIMESTAMP '2022-04-01 07:59:59';" }
+      - { id: as_of_timestamp_qualified, sql: "SELECT c1, c2 FROM db.t AS OF TIMESTAMP '2022-04-01 07:59:59';" }
+      - { id: as_of_version, sql: "SELECT * FROM t AS OF 2;" }
+      - { id: as_of_version_qualified, sql: "SELECT * FROM db.t AS OF 2;" }
+    examples:
+      - |-
+        INSERT EmployeeTbl
+          SELECT * FROM EmployeeTbl AS OF TIMESTAMP '2022-04-01 07:59:59';
+      - |-
+        INSERT EmployeeTbl
+          SELECT * FROM EmployeeTbl AS OF 2;

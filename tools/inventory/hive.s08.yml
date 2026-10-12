@@ -1,0 +1,59 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: insert_directory
+    name: INSERT OVERWRITE [LOCAL] DIRECTORY
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-dml/
+    tier: high
+    probes:
+      - id: directory
+        sql: "INSERT OVERWRITE DIRECTORY '/tmp/out' SELECT a, b FROM t;"
+      - id: local_directory
+        sql: "INSERT OVERWRITE LOCAL DIRECTORY '/tmp/out' SELECT a, b FROM t;"
+      - id: row_format_delimited
+        sql: "INSERT OVERWRITE DIRECTORY '/tmp/out' ROW FORMAT DELIMITED SELECT a, b FROM t;"
+      - id: row_format_fields_terminated
+        sql: "INSERT OVERWRITE LOCAL DIRECTORY '/tmp/out' ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' SELECT a, b FROM t;"
+      - id: row_format_fields_escaped
+        sql: "INSERT OVERWRITE DIRECTORY '/tmp/out' ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' ESCAPED BY '\\\\' SELECT a, b FROM t;"
+      - id: row_format_collection_items
+        sql: "INSERT OVERWRITE DIRECTORY '/tmp/out' ROW FORMAT DELIMITED COLLECTION ITEMS TERMINATED BY ';' SELECT a, b FROM t;"
+      - id: row_format_map_keys
+        sql: "INSERT OVERWRITE DIRECTORY '/tmp/out' ROW FORMAT DELIMITED MAP KEYS TERMINATED BY ':' SELECT a, b FROM t;"
+      - id: row_format_lines_terminated
+        sql: "INSERT OVERWRITE DIRECTORY '/tmp/out' ROW FORMAT DELIMITED LINES TERMINATED BY '\\n' SELECT a, b FROM t;"
+      - id: row_format_null_defined
+        sql: "INSERT OVERWRITE DIRECTORY '/tmp/out' ROW FORMAT DELIMITED NULL DEFINED AS 'NULL' SELECT a, b FROM t;"
+      - id: row_format_all_options
+        sql: "INSERT OVERWRITE DIRECTORY '/tmp/out' ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' ESCAPED BY '\\\\' COLLECTION ITEMS TERMINATED BY ';' MAP KEYS TERMINATED BY ':' LINES TERMINATED BY '\\n' NULL DEFINED AS 'NULL' SELECT a, b FROM t;"
+      - id: stored_as
+        sql: "INSERT OVERWRITE DIRECTORY '/tmp/out' STORED AS PARQUET SELECT a, b FROM t;"
+      - id: row_format_and_stored_as
+        sql: "INSERT OVERWRITE LOCAL DIRECTORY '/tmp/out' ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE SELECT a, b FROM t;"
+      - id: full_uri
+        sql: "INSERT OVERWRITE DIRECTORY 'hdfs://namenode:8020/tmp/out' SELECT a, b FROM t;"
+      - id: multi_insert_directory
+        sql: "FROM t INSERT OVERWRITE DIRECTORY '/tmp/out1' SELECT a WHERE a > 1 INSERT OVERWRITE DIRECTORY '/tmp/out2' SELECT b WHERE b > 1;"
+      - id: multi_insert_local_directory
+        sql: "FROM t INSERT OVERWRITE LOCAL DIRECTORY '/tmp/out1' SELECT a INSERT OVERWRITE LOCAL DIRECTORY '/tmp/out2' SELECT b;"
+      - id: multi_insert_mixed_table_directory
+        sql: "FROM t INSERT OVERWRITE TABLE t2 SELECT a INSERT OVERWRITE LOCAL DIRECTORY '/tmp/out' SELECT b;"
+
+  - id: update
+    name: UPDATE
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-dml/
+    tier: high
+    probes:
+      - id: single_column
+        sql: "UPDATE t SET c = 1;"
+      - id: multiple_columns
+        sql: "UPDATE t SET c = 1, d = 'x';"
+      - id: where
+        sql: "UPDATE t SET c = 1 WHERE id = 5;"
+      - id: expression_value
+        sql: "UPDATE t SET c = c + 1, d = CAST(e AS STRING) WHERE id > 5 AND f IS NOT NULL;"
+      - id: function_value
+        sql: "UPDATE t SET c = upper(d), e = NULL WHERE id IN (1, 2, 3);"

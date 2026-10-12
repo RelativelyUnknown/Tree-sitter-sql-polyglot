@@ -1,0 +1,108 @@
+dialect: flink
+engine: Apache Flink SQL
+version: "2.3"
+source: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/
+
+statements:
+  - id: truncate_table
+    name: TRUNCATE TABLE
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/dml/truncate/
+    tier: medium
+    probes:
+      - { id: basic, sql: "TRUNCATE TABLE t;" }
+      - { id: qualified, sql: "TRUNCATE TABLE c.d.t;" }
+    examples:
+      - "TRUNCATE TABLE Orders;"
+
+  - id: create_catalog
+    name: CREATE CATALOG
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/ddl/create/
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE CATALOG c WITH ('type' = 'generic_in_memory');" }
+      - { id: if_not_exists, sql: "CREATE CATALOG IF NOT EXISTS c WITH ('type' = 'generic_in_memory');" }
+      - { id: comment, sql: "CREATE CATALOG c COMMENT 'cmt' WITH ('type' = 'generic_in_memory');" }
+
+  - id: create_database
+    name: CREATE DATABASE
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/ddl/create/
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE DATABASE d;" }
+      - { id: if_not_exists, sql: "CREATE DATABASE IF NOT EXISTS d;" }
+      - { id: qualified, sql: "CREATE DATABASE c.d;" }
+      - { id: comment, sql: "CREATE DATABASE d COMMENT 'cmt';" }
+      - { id: with_properties, sql: "CREATE DATABASE d WITH ('k1' = 'v1', 'k2' = 'v2');" }
+
+  - id: create_model
+    name: CREATE MODEL
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/ddl/create/
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE MODEL m WITH ('provider' = 'openai');" }
+      - { id: temporary, sql: "CREATE TEMPORARY MODEL m WITH ('provider' = 'openai');" }
+      - { id: if_not_exists, sql: "CREATE MODEL IF NOT EXISTS c.d.m WITH ('provider' = 'openai');" }
+      - { id: input_output, sql: "CREATE MODEL m INPUT (a STRING COMMENT 'in') OUTPUT (b STRING COMMENT 'out') WITH ('provider' = 'openai');", note: "Doc examples on the cited page use INPUT ( ... ) OUTPUT ( ... )" }
+      - { id: comment, sql: "CREATE MODEL m COMMENT 'cmt' WITH ('provider' = 'openai');" }
+      - { id: column_list, sql: "CREATE MODEL m (a STRING COMMENT 'in', b STRING COMMENT 'out') WITH ('provider' = 'openai');", note: "Syntax block shows a parenthesized input/output column list" }
+
+  - id: alter_database
+    name: ALTER DATABASE
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/ddl/alter/
+    tier: medium
+    probes:
+      - { id: set, sql: "ALTER DATABASE d SET ('k1' = 'v1', 'k2' = 'v2');" }
+      - { id: qualified, sql: "ALTER DATABASE c.d SET ('k1' = 'v1');" }
+
+  - id: alter_catalog
+    name: ALTER CATALOG
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/ddl/alter/
+    tier: medium
+    probes:
+      - { id: set, sql: "ALTER CATALOG c SET ('k1' = 'v1', 'k2' = 'v2');" }
+      - { id: reset, sql: "ALTER CATALOG c RESET ('k1', 'k2');" }
+      - { id: comment, sql: "ALTER CATALOG c COMMENT 'cmt';" }
+    examples:
+      - "ALTER CATALOG cat2 SET ('default-database' = 'db');"
+      - "ALTER CATALOG cat2 RESET ('default-database');"
+
+  - id: alter_model
+    name: ALTER MODEL
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/ddl/alter/
+    tier: medium
+    probes:
+      - { id: set, sql: "ALTER MODEL m SET ('k1' = 'v1', 'k2' = 'v2');" }
+      - { id: reset, sql: "ALTER MODEL m RESET ('k1', 'k2');" }
+      - { id: rename_to, sql: "ALTER MODEL m RENAME TO m2;" }
+      - { id: if_exists, sql: "ALTER MODEL IF EXISTS c.d.m SET ('k1' = 'v1');" }
+    examples:
+      - "ALTER MODEL MyModel SET ('model-version' = '2.0', 'batch-size' = '32');"
+      - "ALTER MODEL MyModel RESET ('model-version', 'batch-size');"
+      - "ALTER MODEL MyModel RENAME TO NewModel;"
+
+  - id: drop_catalog
+    name: DROP CATALOG
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/ddl/drop/
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP CATALOG c;" }
+      - { id: if_exists, sql: "DROP CATALOG IF EXISTS c;" }
+
+  - id: drop_database
+    name: DROP DATABASE
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/ddl/drop/
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP DATABASE d;" }
+      - { id: if_exists, sql: "DROP DATABASE IF EXISTS c.d;" }
+      - { id: restrict, sql: "DROP DATABASE d RESTRICT;" }
+      - { id: cascade, sql: "DROP DATABASE d CASCADE;" }
+
+  - id: drop_model
+    name: DROP MODEL
+    doc: https://nightlies.apache.org/flink/flink-docs-release-2.3/docs/sql/reference/ddl/drop/
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP MODEL m;" }
+      - { id: temporary, sql: "DROP TEMPORARY MODEL m;" }
+      - { id: if_exists, sql: "DROP MODEL IF EXISTS c.d.m;" }

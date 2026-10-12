@@ -1,0 +1,158 @@
+dialect: trino
+engine: Trino
+version: "483"
+source: https://trino.io/docs/current/sql.html
+
+statements:
+  - id: match_recognize
+    name: MATCH_RECOGNIZE
+    doc: https://trino.io/docs/current/sql/match-recognize.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (PATTERN (A) DEFINE A AS c > 1);"
+      - id: partition_by
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (PARTITION BY k PATTERN (A) DEFINE A AS c > 1);"
+      - id: order_by
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ORDER BY d PATTERN (A) DEFINE A AS c > 1);"
+      - id: measures
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (MEASURES A.c AS first_c, LAST(B.c) AS last_c PATTERN (A B+) DEFINE B AS c > PREV(c));"
+      - id: one_row_per_match
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ONE ROW PER MATCH PATTERN (A) DEFINE A AS c > 1);"
+      - id: all_rows_per_match
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ALL ROWS PER MATCH PATTERN (A) DEFINE A AS c > 1);"
+      - id: all_rows_show_empty
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ALL ROWS PER MATCH SHOW EMPTY MATCHES PATTERN (A) DEFINE A AS c > 1);"
+      - id: all_rows_omit_empty
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ALL ROWS PER MATCH OMIT EMPTY MATCHES PATTERN (A) DEFINE A AS c > 1);"
+      - id: all_rows_with_unmatched
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ALL ROWS PER MATCH WITH UNMATCHED ROWS PATTERN (A) DEFINE A AS c > 1);"
+      - id: skip_past_last_row
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (AFTER MATCH SKIP PAST LAST ROW PATTERN (A) DEFINE A AS c > 1);"
+      - id: skip_to_next_row
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (AFTER MATCH SKIP TO NEXT ROW PATTERN (A) DEFINE A AS c > 1);"
+      - id: skip_to_first
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (AFTER MATCH SKIP TO FIRST B PATTERN (A B) DEFINE A AS c > 1, B AS c > 2);"
+      - id: skip_to_last
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (AFTER MATCH SKIP TO LAST B PATTERN (A B) DEFINE A AS c > 1, B AS c > 2);"
+      - id: skip_to_variable
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (AFTER MATCH SKIP TO B PATTERN (A B) DEFINE A AS c > 1, B AS c > 2);"
+      - id: pattern_concatenation_quantifiers
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (PATTERN (A B+ C* D?) DEFINE A AS c > 1, B AS c > 2, C AS c > 3, D AS c > 4);"
+      - id: pattern_alternation
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (PATTERN (A | B | C) DEFINE A AS c > 1, B AS c > 2, C AS c > 3);"
+      - id: pattern_permute
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (PATTERN (PERMUTE(A, B, C)) DEFINE A AS c > 1, B AS c > 2, C AS c > 3);"
+      - id: pattern_grouping
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (PATTERN ((A B) C) DEFINE A AS c > 1, B AS c > 2, C AS c > 3);"
+      - id: pattern_anchors
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (PATTERN (^ A+ $) DEFINE A AS c > 1);"
+      - id: pattern_empty
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (PATTERN (()) DEFINE A AS c > 1);"
+      - id: pattern_exclusion
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (ALL ROWS PER MATCH PATTERN (A {- B+ C+ -} D+) DEFINE A AS c > 1, B AS c > 2, C AS c > 3, D AS c > 4);"
+      - id: quantifier_exact
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (PATTERN (A{3}) DEFINE A AS c > 1);"
+      - id: quantifier_range
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (PATTERN (A{3, 5}) DEFINE A AS c > 1);"
+      - id: quantifier_open_bounds
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (PATTERN (A{, 5} B{5, } C{,}) DEFINE A AS c > 1, B AS c > 2, C AS c > 3);"
+      - id: quantifier_reluctant
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (PATTERN (A*? B+? C?? D{3, 5}?) DEFINE A AS c > 1, B AS c > 2, C AS c > 3, D AS c > 4);"
+      - id: subset
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (MEASURES LAST(U.c) AS top PATTERN (A B) SUBSET U = (A, B) DEFINE A AS c > 1, B AS c > 2);"
+      - id: subset_multiple
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (PATTERN (A B C) SUBSET U = (A, B), V = (B, C) DEFINE A AS c > 1, B AS c > 2, C AS c > 3);"
+      - id: define_multiple
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (PATTERN (A B) DEFINE A AS c > 1, B AS c > PREV(c));"
+      - id: navigation_functions
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (MEASURES FIRST(A.c) AS f, NEXT(A.c, 2) AS n PATTERN (A+) DEFINE A AS c > PREV(c, 2) AND c < NEXT(c));"
+      - id: classifier_match_number
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (MEASURES CLASSIFIER() AS cls, MATCH_NUMBER() AS mn PATTERN (A+) DEFINE A AS c > 1);"
+      - id: running_final
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (MEASURES RUNNING LAST(A.c) AS r, FINAL LAST(A.c) AS f PATTERN (A+) DEFINE A AS c > 1);"
+      - id: aggregates_in_measures
+        sql: "SELECT * FROM t MATCH_RECOGNIZE (MEASURES sum(A.c) AS s, count(*) AS n PATTERN (A+) DEFINE A AS c > 1);"
+      - id: alias
+        sql: "SELECT m.* FROM t MATCH_RECOGNIZE (PATTERN (A) DEFINE A AS c > 1) AS m;"
+    examples:
+      - |-
+        SELECT * FROM orders MATCH_RECOGNIZE (
+             PARTITION BY custkey
+             ORDER BY orderdate
+             MEASURES
+                     A.totalprice AS starting_price,
+                     LAST(B.totalprice) AS bottom_price,
+                     LAST(U.totalprice) AS top_price
+             ONE ROW PER MATCH
+             AFTER MATCH SKIP PAST LAST ROW
+             PATTERN (A B+ C+ D+)
+             SUBSET U = (C, D)
+             DEFINE
+                     B AS totalprice < PREV(totalprice),
+                     C AS totalprice > PREV(totalprice) AND totalprice <= A.totalprice,
+                     D AS totalprice > PREV(totalprice)
+             );
+
+  - id: merge
+    name: MERGE
+    doc: https://trino.io/docs/current/sql/merge.html
+    tier: high
+    probes:
+      - id: matched_delete
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN DELETE;"
+      - id: matched_update
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET c = s.c;"
+      - id: matched_update_multiple
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED THEN UPDATE SET c = s.c, d = s.d;"
+      - id: not_matched_insert
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED THEN INSERT VALUES (s.id, s.c);"
+      - id: not_matched_insert_columns
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED THEN INSERT (id, c) VALUES (s.id, s.c);"
+      - id: matched_and_condition
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED AND s.c = 'x' THEN DELETE;"
+      - id: matched_update_and_condition
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED AND s.c > 0 THEN UPDATE SET c = s.c;"
+      - id: not_matched_and_condition
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN NOT MATCHED AND s.c > 0 THEN INSERT (id, c) VALUES (s.id, s.c);"
+      - id: multiple_when_clauses
+        sql: "MERGE INTO t USING s ON t.id = s.id WHEN MATCHED AND s.c = 'x' THEN DELETE WHEN MATCHED THEN UPDATE SET c = s.c WHEN NOT MATCHED THEN INSERT (id, c) VALUES (s.id, s.c);"
+      - id: target_alias
+        sql: "MERGE INTO t AS tgt USING s ON tgt.id = s.id WHEN MATCHED THEN DELETE;"
+      - id: target_alias_no_as
+        sql: "MERGE INTO t tgt USING s ON tgt.id = s.id WHEN MATCHED THEN DELETE;"
+      - id: source_alias
+        sql: "MERGE INTO t USING s AS src ON t.id = src.id WHEN MATCHED THEN DELETE;"
+      - id: source_query
+        sql: "MERGE INTO t USING (SELECT id, c FROM u) AS src ON t.id = src.id WHEN MATCHED THEN UPDATE SET c = src.c;"
+      - id: target_branch
+        sql: "MERGE INTO t @ audit USING s ON t.id = s.id WHEN MATCHED THEN DELETE;"
+      - id: target_branch_alias
+        sql: "MERGE INTO t @ audit AS tgt USING s ON tgt.id = s.id WHEN MATCHED THEN DELETE;"
+      - id: parenthesized_on
+        sql: "MERGE INTO t USING s ON (t.id = s.id) WHEN MATCHED THEN DELETE;"
+    examples:
+      - |-
+        MERGE INTO accounts t USING monthly_accounts_update s
+            ON t.customer = s.customer
+            WHEN MATCHED
+                THEN DELETE;
+      - |-
+        MERGE INTO accounts t USING monthly_accounts_update s
+            ON (t.customer = s.customer)
+            WHEN MATCHED
+                THEN UPDATE SET purchases = s.purchases + t.purchases
+            WHEN NOT MATCHED
+                THEN INSERT (customer, purchases, address)
+                      VALUES(s.customer, s.purchases, s.address);
+      - |-
+        MERGE INTO accounts t USING monthly_accounts_update s
+            ON (t.customer = s.customer)
+            WHEN MATCHED AND s.address = 'Centreville'
+                THEN DELETE
+            WHEN MATCHED
+                THEN UPDATE
+                    SET purchases = s.purchases + t.purchases, address = s.address
+            WHEN NOT MATCHED
+                THEN INSERT (customer, purchases, address)
+                      VALUES(s.customer, s.purchases, s.address);

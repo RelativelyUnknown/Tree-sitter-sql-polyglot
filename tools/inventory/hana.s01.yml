@@ -1,0 +1,107 @@
+dialect: hana
+engine: SAP HANA Platform
+version: "2.0 SPS 08 (2.0.08)"
+source: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/3bc1a0d4611d40c4a6e3fc7c8e80395d.html?version=2.0.08
+
+statements:
+  - id: alter_function
+    name: ALTER FUNCTION
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/1102d570f16a4925a706f20285870350.html?version=2.0.08
+    tier: high
+    probes:
+      - id: basic_body
+        sql: "ALTER FUNCTION f AS BEGIN RETURN SELECT 1 AS a FROM DUMMY; END;"
+      - id: schema_qualified
+        sql: "ALTER FUNCTION s.f AS BEGIN RETURN SELECT 1 AS a FROM DUMMY; END;"
+      - id: input_parameters
+        sql: "ALTER FUNCTION f (IN a INT, b NVARCHAR(10)) RETURNS TABLE (c INT) AS BEGIN RETURN SELECT :a AS c FROM DUMMY; END;"
+      - id: array_parameter
+        sql: "ALTER FUNCTION f (IN a INT ARRAY) RETURNS b INT AS BEGIN b = 1; END;"
+      - id: table_type_parameter
+        sql: "ALTER FUNCTION f (IN t s.tt) RETURNS TABLE (c INT) AS BEGIN RETURN SELECT c FROM :t; END;"
+      - id: table_definition_parameter
+        sql: "ALTER FUNCTION f (IN t TABLE (c INT)) RETURNS TABLE (c INT) AS BEGIN RETURN SELECT c FROM :t; END;"
+      - id: any_table_parameter
+        sql: "ALTER FUNCTION f (IN t TABLE(...)) RETURNS TABLE (c INT) AS BEGIN RETURN SELECT 1 AS c FROM DUMMY; END;"
+      - id: returns_scalar
+        sql: "ALTER FUNCTION f (IN a INT) RETURNS b INT AS BEGIN b = :a + 1; END;"
+      - id: returns_table
+        sql: "ALTER FUNCTION f RETURNS TABLE (c1 INT, c2 INT) AS BEGIN RETURN SELECT * FROM t; END;"
+      - id: language_sqlscript
+        sql: "ALTER FUNCTION f LANGUAGE SQLSCRIPT AS BEGIN RETURN SELECT 1 AS a FROM DUMMY; END;"
+      - id: sql_security_definer
+        sql: "ALTER FUNCTION f SQL SECURITY DEFINER AS BEGIN RETURN SELECT 1 AS a FROM DUMMY; END;"
+      - id: sql_security_invoker
+        sql: "ALTER FUNCTION f SQL SECURITY INVOKER AS BEGIN RETURN SELECT 1 AS a FROM DUMMY; END;"
+      - id: default_schema
+        sql: "ALTER FUNCTION f DEFAULT SCHEMA s AS BEGIN RETURN SELECT 1 AS a FROM DUMMY; END;"
+      - id: deterministic
+        sql: "ALTER FUNCTION f (IN a INT) RETURNS b INT DETERMINISTIC AS BEGIN b = :a; END;"
+      - id: with_encryption
+        sql: "ALTER FUNCTION f WITH ENCRYPTION AS BEGIN RETURN SELECT 1 AS a FROM DUMMY; END;"
+      - id: header_only_on_invalid
+        sql: "ALTER FUNCTION f RETURNS TABLE (a INT) AS HEADER ONLY ON INVALID BEGIN RETURN SELECT 1 AS a FROM DUMMY; END;"
+      - id: all_options
+        sql: "ALTER FUNCTION f (IN a INT) RETURNS TABLE (c INT) LANGUAGE SQLSCRIPT SQL SECURITY INVOKER DEFAULT SCHEMA s DETERMINISTIC WITH ENCRYPTION AS HEADER ONLY ON INVALID BEGIN RETURN SELECT :a AS c FROM DUMMY; END;"
+      - id: encryption_on
+        sql: "ALTER FUNCTION f ENCRYPTION ON;"
+      - id: add_variable_cache
+        sql: "ALTER FUNCTION f ADD VARIABLE CACHE ON v AS BEGIN RETURN SELECT 1 AS a FROM DUMMY; END;"
+        note: variable cache clause as in the syntax block, followed by the required AS BEGIN ... END
+      - id: add_variable_cache_with_mode
+        sql: "ALTER FUNCTION f ADD VARIABLE CACHE ON v ENABLE, (v1, v2) DISABLE AS BEGIN RETURN SELECT 1 AS a FROM DUMMY; END;"
+      - id: alter_variable_cache
+        sql: "ALTER FUNCTION f ALTER VARIABLE CACHE ON v ENABLE AS BEGIN RETURN SELECT 1 AS a FROM DUMMY; END;"
+      - id: drop_variable_cache
+        sql: "ALTER FUNCTION f DROP VARIABLE CACHE ON v1, v2 AS BEGIN RETURN SELECT 1 AS a FROM DUMMY; END;"
+      - id: drop_variable_cache_all
+        sql: "ALTER FUNCTION f DROP VARIABLE CACHE ALL AS BEGIN RETURN SELECT 1 AS a FROM DUMMY; END;"
+      - id: add_static_cache
+        sql: "ALTER FUNCTION f ADD STATIC CACHE RETENTION 10;"
+        note: result cache forms appear in the page description and examples, not in the syntax block
+      - id: alter_cache_retention
+        sql: "ALTER FUNCTION f ALTER CACHE RETENTION 20;"
+      - id: alter_cache_add_location
+        sql: "ALTER FUNCTION f ALTER CACHE ADD AT LOCATION 'host:31576';"
+      - id: alter_cache_drop_location
+        sql: "ALTER FUNCTION f ALTER CACHE DROP AT LOCATION 'host:31576';"
+      - id: drop_cache
+        sql: "ALTER FUNCTION f DROP CACHE;"
+    examples:
+      - "ALTER FUNCTION function_a ADD STATIC CACHE RETENTION 10;"
+      - "ALTER FUNCTION function_a ALTER CACHE ADD AT LOCATION 'lbsrv18:31576';"
+      - "ALTER FUNCTION function_a DROP CACHE;"
+
+  - id: alter_index
+    name: ALTER INDEX
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d014b575191014b66d8ef88f6a55f6.html?version=2.0.08
+    tier: high
+    probes:
+      - id: rebuild
+        sql: "ALTER INDEX idx REBUILD;"
+      - id: rebuild_schema_qualified
+        sql: "ALTER INDEX s.idx REBUILD;"
+      - id: unique_inverted_hash
+        sql: "ALTER INDEX idx UNIQUE INVERTED HASH;"
+      - id: unique_inverted_value
+        sql: "ALTER INDEX idx UNIQUE INVERTED VALUE;"
+      - id: unique_inverted_individual
+        sql: "ALTER INDEX idx UNIQUE INVERTED INDIVIDUAL;"
+      - id: column_loadable
+        sql: "ALTER INDEX idx COLUMN LOADABLE;"
+      - id: page_loadable
+        sql: "ALTER INDEX idx PAGE LOADABLE;"
+      - id: default_loadable
+        sql: "ALTER INDEX idx DEFAULT LOADABLE;"
+      - id: rebuild_online
+        sql: "ALTER INDEX idx REBUILD ONLINE;"
+      - id: rebuild_online_preferred
+        sql: "ALTER INDEX idx REBUILD ONLINE PREFERRED;"
+      - id: unique_inverted_online
+        sql: "ALTER INDEX idx UNIQUE INVERTED VALUE ONLINE;"
+      - id: loadable_online_preferred
+        sql: "ALTER INDEX idx PAGE LOADABLE ONLINE PREFERRED;"
+    examples:
+      - "ALTER INDEX INDEX_1 REBUILD;"
+      - "ALTER INDEX INDEX_1 UNIQUE INVERTED HASH;"
+      - "ALTER INDEX MYINDEX UNIQUE INVERTED VALUE ONLINE;"

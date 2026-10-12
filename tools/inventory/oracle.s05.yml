@@ -1,0 +1,339 @@
+dialect: oracle
+engine: Oracle AI Database
+version: "26ai"
+source: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/toc.htm
+
+statements:
+  - id: create_package
+    name: CREATE PACKAGE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-PACKAGE.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE PACKAGE pkg AS PROCEDURE p; END;"
+      - id: or_replace_editionable
+        sql: "CREATE OR REPLACE EDITIONABLE PACKAGE pkg IS FUNCTION f RETURN NUMBER; END pkg;"
+      - id: if_not_exists_schema
+        sql: "CREATE PACKAGE IF NOT EXISTS s.pkg AS PROCEDURE p(x IN NUMBER); END;"
+      - id: authid
+        sql: "CREATE OR REPLACE PACKAGE pkg AUTHID CURRENT_USER AS PROCEDURE p; END;"
+      - id: accessible_by
+        sql: "CREATE OR REPLACE PACKAGE pkg ACCESSIBLE BY (PACKAGE other_pkg) AS PROCEDURE p; END;"
+      - id: default_collation
+        sql: "CREATE OR REPLACE PACKAGE pkg DEFAULT COLLATION USING_NLS_COMP AS PROCEDURE p; END;"
+      - id: declarations
+        sql: "CREATE OR REPLACE PACKAGE pkg AS c CONSTANT NUMBER := 1; TYPE rec IS RECORD (a NUMBER, b VARCHAR2(10)); CURSOR cur IS SELECT a FROM t; PROCEDURE p; END;"
+        note: package item list declarations per the PL/SQL package specification (plsql_package_source)
+
+  - id: create_package_body
+    name: CREATE PACKAGE BODY
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-PACKAGE-BODY.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE PACKAGE BODY pkg AS PROCEDURE p IS BEGIN NULL; END; END;"
+      - id: or_replace_editionable
+        sql: "CREATE OR REPLACE EDITIONABLE PACKAGE BODY pkg IS FUNCTION f RETURN NUMBER IS BEGIN RETURN 1; END f; END pkg;"
+      - id: if_not_exists_schema
+        sql: "CREATE PACKAGE BODY IF NOT EXISTS s.pkg AS PROCEDURE p IS BEGIN NULL; END; END;"
+      - id: initialization_section
+        sql: "CREATE OR REPLACE PACKAGE BODY pkg AS PROCEDURE p IS BEGIN NULL; END; BEGIN NULL; END pkg;"
+      - id: private_declarations
+        sql: "CREATE OR REPLACE PACKAGE BODY pkg AS v NUMBER := 0; FUNCTION g RETURN NUMBER IS BEGIN RETURN v; END; PROCEDURE p IS BEGIN v := g; END; END;"
+
+  - id: create_profile
+    name: CREATE PROFILE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-PROFILE.html
+    tier: medium
+    probes:
+      - id: password_limits
+        sql: "CREATE PROFILE prof LIMIT PASSWORD_REUSE_MAX 10 PASSWORD_REUSE_TIME 30;"
+      - id: resource_limits
+        sql: "CREATE PROFILE prof LIMIT SESSIONS_PER_USER UNLIMITED CPU_PER_SESSION UNLIMITED CPU_PER_CALL 3000 CONNECT_TIME 45 LOGICAL_READS_PER_SESSION DEFAULT LOGICAL_READS_PER_CALL 1000 PRIVATE_SGA 15K COMPOSITE_LIMIT 5000000;"
+      - id: failed_login_and_lock
+        sql: "CREATE PROFILE prof LIMIT FAILED_LOGIN_ATTEMPTS 5 PASSWORD_LIFE_TIME 60 PASSWORD_LOCK_TIME 1/24 PASSWORD_GRACE_TIME 10 INACTIVE_ACCOUNT_TIME 30;"
+      - id: verify_function
+        sql: "CREATE PROFILE prof LIMIT PASSWORD_VERIFY_FUNCTION ora12c_verify_function;"
+      - id: verify_function_null
+        sql: "CREATE PROFILE prof LIMIT PASSWORD_VERIFY_FUNCTION NULL;"
+      - id: password_rollover
+        sql: "CREATE PROFILE prof LIMIT PASSWORD_ROLLOVER_TIME 4;"
+      - id: container_clause
+        sql: "CREATE PROFILE c##prof LIMIT SESSIONS_PER_USER 2 CONTAINER = ALL;"
+      - id: mandatory
+        sql: "CREATE MANDATORY PROFILE c##mandatory_prof LIMIT PASSWORD_VERIFY_FUNCTION my_mandatory_function CONTAINER = ALL;"
+    examples:
+      - "CREATE PROFILE new_profile LIMIT PASSWORD_REUSE_MAX 10 PASSWORD_REUSE_TIME 30;"
+      - "CREATE PROFILE app_user LIMIT SESSIONS_PER_USER UNLIMITED CPU_PER_SESSION UNLIMITED CPU_PER_CALL 3000 CONNECT_TIME 45 LOGICAL_READS_PER_SESSION DEFAULT LOGICAL_READS_PER_CALL 1000 PRIVATE_SGA 15K COMPOSITE_LIMIT 5000000;"
+      - "CREATE PROFILE app_user2 LIMIT FAILED_LOGIN_ATTEMPTS 5 PASSWORD_LIFE_TIME 60 PASSWORD_REUSE_TIME 60 PASSWORD_REUSE_MAX 5 PASSWORD_VERIFY_FUNCTION ora12c_verify_function PASSWORD_LOCK_TIME 1/24 PASSWORD_GRACE_TIME 10 INACTIVE_ACCOUNT_TIME 30;"
+
+  - id: create_property_graph
+    name: CREATE PROPERTY GRAPH
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-property-graph.html
+    tier: medium
+    probes:
+      - id: vertex_tables_only
+        sql: "CREATE PROPERTY GRAPH g VERTEX TABLES (v1);"
+      - id: or_replace_schema_alias
+        sql: "CREATE OR REPLACE PROPERTY GRAPH s.g VERTEX TABLES (s.v1 AS vt1 KEY (id));"
+      - id: if_not_exists
+        sql: "CREATE PROPERTY GRAPH IF NOT EXISTS g VERTEX TABLES (v1);"
+      - id: vertex_and_edge_tables
+        sql: "CREATE PROPERTY GRAPH g VERTEX TABLES (v1 KEY (id), v2 KEY (id)) EDGE TABLES (e1 SOURCE v1 DESTINATION v2);"
+      - id: edge_explicit_keys
+        sql: "CREATE PROPERTY GRAPH g VERTEX TABLES (v1 KEY (id)) EDGE TABLES (e1 KEY (id) SOURCE KEY (src) REFERENCES v1 (id) DESTINATION KEY (dst) REFERENCES v1 (id));"
+      - id: labels_and_properties
+        sql: "CREATE PROPERTY GRAPH g VERTEX TABLES (v1 LABEL person PROPERTIES (name, age AS years) LABEL thing NO PROPERTIES);"
+      - id: properties_all_columns_except
+        sql: "CREATE PROPERTY GRAPH g VERTEX TABLES (v1 PROPERTIES ARE ALL COLUMNS EXCEPT (c3));"
+      - id: default_label
+        sql: "CREATE PROPERTY GRAPH g VERTEX TABLES (v1 DEFAULT LABEL);"
+      - id: property_expression
+        sql: "CREATE PROPERTY GRAPH g VERTEX TABLES (v1 PROPERTIES (cx + cy * 0.15 AS px, cz AS pz));"
+      - id: options_enforced
+        sql: "CREATE PROPERTY GRAPH g VERTEX TABLES (v1) OPTIONS (ENFORCED MODE);"
+      - id: options_trusted_mixed_types
+        sql: "CREATE PROPERTY GRAPH g VERTEX TABLES (v1) OPTIONS (TRUSTED MODE, ALLOW MIXED PROPERTY TYPES);"
+    examples:
+      - |-
+        CREATE PROPERTY GRAPH "myGraph" VERTEX TABLES (my_table_1);
+      - |-
+        CREATE PROPERTY GRAPH "myGraph" VERTEX TABLES (VT1, VT2 KEY(PK2)), EDGE TABLES ( ET1 SOURCE VT1 DESTINATION VT2, ET2 SOURCE KEY(FK2) REFERENCES VT2 (PK2) DESTINATION VT1) OPTIONS(ENFORCED MODE);
+      - |-
+        CREATE PROPERTY GRAPH G VERTEX TABLES( V1 AS E KEY(K) LABEL EMPLOYEE PROPERTIES(K, NAME, AGE) ) EDGE TABLES( V1 AS MANAGER KEY(K) SOURCE KEY(K) REFERENCES E(K) DESTINATION KEY(MANAGER) REFERENCES E(K) NO PROPERTIES );
+
+  - id: create_role
+    name: CREATE ROLE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-ROLE.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE ROLE r;"
+      - id: not_identified
+        sql: "CREATE ROLE r NOT IDENTIFIED;"
+      - id: identified_by
+        sql: "CREATE ROLE r IDENTIFIED BY pw;"
+      - id: identified_using_package
+        sql: "CREATE ROLE r IDENTIFIED USING s.pkg;"
+      - id: identified_externally
+        sql: "CREATE ROLE r IDENTIFIED EXTERNALLY;"
+      - id: identified_globally
+        sql: "CREATE ROLE r IDENTIFIED GLOBALLY;"
+      - id: identified_globally_as
+        sql: "CREATE ROLE r IDENTIFIED GLOBALLY AS 'cn=r,dc=example,dc=com';"
+      - id: container_current
+        sql: "CREATE ROLE r CONTAINER = CURRENT;"
+      - id: container_all
+        sql: "CREATE ROLE c##r CONTAINER = ALL;"
+    examples:
+      - "CREATE ROLE dw_manager;"
+      - "CREATE ROLE dw_manager IDENTIFIED BY warehouse;"
+      - "CREATE ROLE warehouse_user IDENTIFIED GLOBALLY;"
+
+  - id: create_sequence
+    name: CREATE SEQUENCE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-SEQUENCE.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE SEQUENCE seq;"
+      - id: schema_if_not_exists
+        sql: "CREATE SEQUENCE IF NOT EXISTS s.seq;"
+      - id: start_increment
+        sql: "CREATE SEQUENCE seq START WITH 1000 INCREMENT BY 10;"
+      - id: min_max_cycle
+        sql: "CREATE SEQUENCE seq MINVALUE 1 MAXVALUE 9999 CYCLE;"
+      - id: nomin_nomax_nocycle
+        sql: "CREATE SEQUENCE seq NOMINVALUE NOMAXVALUE NOCYCLE;"
+      - id: cache_order
+        sql: "CREATE SEQUENCE seq CACHE 20 ORDER;"
+      - id: nocache_noorder
+        sql: "CREATE SEQUENCE seq NOCACHE NOORDER;"
+      - id: keep
+        sql: "CREATE SEQUENCE seq KEEP;"
+      - id: scale_extend
+        sql: "CREATE SEQUENCE seq SCALE EXTEND;"
+      - id: noscale
+        sql: "CREATE SEQUENCE seq NOSCALE;"
+      - id: shard
+        sql: "CREATE SEQUENCE seq SHARD EXTEND;"
+      - id: sharing
+        sql: "CREATE SEQUENCE seq SHARING = METADATA;"
+      - id: session
+        sql: "CREATE SEQUENCE seq SESSION;"
+      - id: global
+        sql: "CREATE SEQUENCE seq GLOBAL;"
+    examples:
+      - "CREATE SEQUENCE customers_seq START WITH 1000 INCREMENT BY 1 NOCACHE NOCYCLE;"
+
+  - id: create_synonym
+    name: CREATE SYNONYM
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-SYNONYM.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE SYNONYM syn FOR t;"
+      - id: schema_qualified
+        sql: "CREATE SYNONYM s1.syn FOR s2.t;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE SYNONYM syn FOR t;"
+      - id: if_not_exists
+        sql: "CREATE SYNONYM IF NOT EXISTS syn FOR t;"
+      - id: public
+        sql: "CREATE PUBLIC SYNONYM syn FOR s.t;"
+      - id: editionable
+        sql: "CREATE OR REPLACE NONEDITIONABLE SYNONYM syn FOR t;"
+      - id: sharing
+        sql: "CREATE SYNONYM syn SHARING = METADATA FOR t;"
+      - id: dblink
+        sql: "CREATE SYNONYM syn FOR s.t@remote;"
+    examples:
+      - "CREATE SYNONYM offices FOR hr.locations;"
+      - "CREATE PUBLIC SYNONYM emp_table FOR hr.employees@remote.us.example.com;"
+      - "CREATE PUBLIC SYNONYM customers FOR oe.customers;"
+
+  - id: create_tablespace
+    name: CREATE TABLESPACE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-TABLESPACE.html
+    tier: medium
+    probes:
+      - id: oracle_managed_files
+        sql: "CREATE TABLESPACE ts;"
+      - id: datafile_size
+        sql: "CREATE TABLESPACE ts DATAFILE 'f.dbf' SIZE 40M;"
+      - id: if_not_exists
+        sql: "CREATE TABLESPACE IF NOT EXISTS ts DATAFILE 'f.dbf' SIZE 10M;"
+      - id: bigfile
+        sql: "CREATE BIGFILE TABLESPACE ts DATAFILE 'f.dbf' SIZE 10M;"
+      - id: smallfile
+        sql: "CREATE SMALLFILE TABLESPACE ts DATAFILE 'f.dbf' SIZE 10M;"
+      - id: multiple_datafiles
+        sql: "CREATE TABLESPACE ts DATAFILE 'f1.dbf' SIZE 10M, 'f2.dbf' SIZE 10M;"
+      - id: reuse_autoextend
+        sql: "CREATE TABLESPACE ts DATAFILE 'f.dbf' SIZE 500K REUSE AUTOEXTEND ON NEXT 500K MAXSIZE 100M;"
+      - id: autoextend_off
+        sql: "CREATE TABLESPACE ts DATAFILE AUTOEXTEND OFF;"
+      - id: logging
+        sql: "CREATE TABLESPACE ts DATAFILE 'f.dbf' SIZE 20M LOGGING;"
+      - id: nologging
+        sql: "CREATE TABLESPACE ts DATAFILE 'f.dbf' SIZE 20M NOLOGGING;"
+      - id: force_logging
+        sql: "CREATE TABLESPACE ts DATAFILE 'f.dbf' SIZE 20M FORCE LOGGING;"
+      - id: online
+        sql: "CREATE TABLESPACE ts DATAFILE 'f.dbf' SIZE 40M ONLINE;"
+      - id: offline
+        sql: "CREATE TABLESPACE ts DATAFILE 'f.dbf' SIZE 40M OFFLINE;"
+      - id: encryption
+        sql: "CREATE TABLESPACE ts DATAFILE 'f.dbf' SIZE 1G ENCRYPTION USING 'AES256' ENCRYPT;"
+      - id: encryption_mode
+        sql: "CREATE TABLESPACE ts DATAFILE 'f.dbf' SIZE 1G ENCRYPTION USING 'AES256' 'XTS' ENCRYPT;"
+      - id: default_compression
+        sql: "CREATE TABLESPACE ts DATAFILE 'f.dbf' SIZE 10M DEFAULT ROW STORE COMPRESS ADVANCED;"
+      - id: default_storage
+        sql: "CREATE TABLESPACE ts DATAFILE 'f.dbf' SIZE 10M DEFAULT STORAGE (INITIAL 1M NEXT 1M);"
+      - id: default_inmemory
+        sql: "CREATE TABLESPACE ts DATAFILE 'f.dbf' SIZE 10M DEFAULT INMEMORY;"
+      - id: minimum_extent
+        sql: "CREATE TABLESPACE ts DATAFILE 'f.dbf' SIZE 10M MINIMUM EXTENT 1M;"
+      - id: blocksize
+        sql: "CREATE TABLESPACE ts DATAFILE 'f.dbf' SIZE 10M BLOCKSIZE 16K;"
+      - id: extent_management_local_uniform
+        sql: "CREATE TABLESPACE ts DATAFILE 'f.dbf' SIZE 10M EXTENT MANAGEMENT LOCAL UNIFORM SIZE 128K;"
+      - id: extent_management_local_autoallocate
+        sql: "CREATE TABLESPACE ts DATAFILE 'f.dbf' SIZE 100M REUSE EXTENT MANAGEMENT LOCAL AUTOALLOCATE;"
+      - id: extent_management_dictionary
+        sql: "CREATE TABLESPACE ts DATAFILE 'f.dbf' SIZE 10M EXTENT MANAGEMENT DICTIONARY;"
+      - id: segment_space_management
+        sql: "CREATE TABLESPACE ts DATAFILE 'f.dbf' SIZE 1M EXTENT MANAGEMENT LOCAL SEGMENT SPACE MANAGEMENT AUTO;"
+      - id: flashback
+        sql: "CREATE TABLESPACE ts DATAFILE 'f.dbf' SIZE 10M FLASHBACK ON;"
+      - id: temporary
+        sql: "CREATE TEMPORARY TABLESPACE temp_ts TEMPFILE 'temp01.dbf' SIZE 5M AUTOEXTEND ON;"
+      - id: temporary_oracle_managed
+        sql: "CREATE TEMPORARY TABLESPACE temp_ts;"
+      - id: temporary_tablespace_group
+        sql: "CREATE TEMPORARY TABLESPACE temp_ts TEMPFILE 'temp02.dbf' SIZE 5M AUTOEXTEND ON TABLESPACE GROUP tbs_grp_01;"
+      - id: undo
+        sql: "CREATE UNDO TABLESPACE undo_ts DATAFILE 'undotbs_1a.dbf' SIZE 10M AUTOEXTEND ON RETENTION GUARANTEE;"
+      - id: undo_retention_noguarantee
+        sql: "CREATE UNDO TABLESPACE undo_ts DATAFILE 'undotbs_1b.dbf' SIZE 10M RETENTION NOGUARANTEE;"
+    examples:
+      - "CREATE TABLESPACE tbs_02 DATAFILE 'diskb:tbs_f5.dbf' SIZE 500K REUSE AUTOEXTEND ON NEXT 500K MAXSIZE 100M;"
+      - "CREATE TABLESPACE encts2 DATAFILE 'encts2.f' SIZE 1G ENCRYPTION USING 'AES256' 'XTS' ENCRYPT;"
+      - "CREATE UNDO TABLESPACE undots1 DATAFILE 'undotbs_1a.dbf' SIZE 10M AUTOEXTEND ON RETENTION GUARANTEE;"
+
+  - id: create_trigger
+    name: CREATE TRIGGER
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-TRIGGER.html
+    tier: medium
+    probes:
+      - id: before_insert_row
+        sql: "CREATE TRIGGER trg BEFORE INSERT ON t FOR EACH ROW BEGIN :NEW.c := 1; END;"
+      - id: or_replace_editionable
+        sql: "CREATE OR REPLACE EDITIONABLE TRIGGER s.trg AFTER DELETE ON s.t FOR EACH ROW BEGIN NULL; END;"
+      - id: if_not_exists
+        sql: "CREATE TRIGGER IF NOT EXISTS trg AFTER INSERT ON t BEGIN NULL; END;"
+      - id: after_update_of_referencing_when
+        sql: "CREATE TRIGGER trg AFTER UPDATE OF c ON t REFERENCING OLD AS o NEW AS n FOR EACH ROW WHEN (n.c > 0) BEGIN NULL; END;"
+      - id: statement_level_multiple_events
+        sql: "CREATE TRIGGER trg AFTER INSERT OR UPDATE OR DELETE ON t BEGIN NULL; END;"
+      - id: instead_of_view
+        sql: "CREATE TRIGGER trg INSTEAD OF INSERT ON v FOR EACH ROW BEGIN NULL; END;"
+      - id: instead_of_nested_table
+        sql: "CREATE TRIGGER trg INSTEAD OF INSERT ON NESTED TABLE c OF v FOR EACH ROW BEGIN NULL; END;"
+      - id: compound_trigger
+        sql: "CREATE TRIGGER trg FOR UPDATE ON t COMPOUND TRIGGER BEFORE STATEMENT IS BEGIN NULL; END BEFORE STATEMENT; AFTER EACH ROW IS BEGIN NULL; END AFTER EACH ROW; END trg;"
+      - id: system_trigger_database
+        sql: "CREATE TRIGGER trg AFTER LOGON ON DATABASE BEGIN NULL; END;"
+      - id: ddl_trigger_schema
+        sql: "CREATE TRIGGER trg BEFORE CREATE ON SCHEMA BEGIN NULL; END;"
+      - id: follows_disable
+        sql: "CREATE TRIGGER trg BEFORE INSERT ON t FOR EACH ROW FOLLOWS trg0 DISABLE BEGIN NULL; END;"
+      - id: enable
+        sql: "CREATE TRIGGER trg BEFORE INSERT ON t FOR EACH ROW ENABLE BEGIN NULL; END;"
+      - id: declare_section
+        sql: "CREATE TRIGGER trg BEFORE INSERT ON t FOR EACH ROW DECLARE v NUMBER; BEGIN v := 1; END;"
+      - id: call_routine
+        sql: "CREATE TRIGGER trg BEFORE INSERT ON t FOR EACH ROW CALL p(:NEW.c)"
+        note: trigger_body CALL routine_clause form, which has no terminating END
+      - id: forward_crossedition
+        sql: "CREATE TRIGGER trg BEFORE INSERT ON t FOR EACH ROW FORWARD CROSSEDITION BEGIN NULL; END;"
+
+  - id: create_type
+    name: CREATE TYPE
+    doc: https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-TYPE.html
+    tier: medium
+    probes:
+      - id: object_type
+        sql: "CREATE TYPE typ AS OBJECT (a NUMBER, b VARCHAR2(10));"
+      - id: or_replace_editionable
+        sql: "CREATE OR REPLACE EDITIONABLE TYPE s.typ AS OBJECT (a NUMBER);"
+      - id: if_not_exists
+        sql: "CREATE TYPE IF NOT EXISTS typ AS OBJECT (a NUMBER);"
+      - id: authid_oid
+        sql: "CREATE TYPE typ AUTHID DEFINER AS OBJECT (a NUMBER);"
+      - id: object_with_member_functions
+        sql: "CREATE TYPE typ AS OBJECT (a NUMBER, MEMBER FUNCTION f RETURN NUMBER, MEMBER PROCEDURE p, STATIC FUNCTION s RETURN NUMBER);"
+      - id: map_order_methods
+        sql: "CREATE TYPE typ AS OBJECT (a NUMBER, MAP MEMBER FUNCTION m RETURN NUMBER);"
+      - id: constructor_function
+        sql: "CREATE TYPE typ AS OBJECT (a NUMBER, CONSTRUCTOR FUNCTION typ (SELF IN OUT NOCOPY typ, a NUMBER) RETURN SELF AS RESULT);"
+      - id: not_final_instantiable
+        sql: "CREATE TYPE typ AS OBJECT (a NUMBER) NOT FINAL NOT INSTANTIABLE;"
+      - id: subtype_under
+        sql: "CREATE TYPE sub_typ UNDER typ (b NUMBER) FINAL;"
+      - id: overriding_member
+        sql: "CREATE TYPE sub_typ UNDER typ (OVERRIDING MEMBER FUNCTION f RETURN NUMBER);"
+      - id: varray
+        sql: "CREATE TYPE arr AS VARRAY(10) OF NUMBER;"
+      - id: varray_not_null
+        sql: "CREATE TYPE arr AS VARRAY(10) OF VARCHAR2(20) NOT NULL;"
+      - id: nested_table
+        sql: "CREATE TYPE tab AS TABLE OF typ;"
+      - id: nested_table_scalar
+        sql: "CREATE TYPE tab AS TABLE OF VARCHAR2(30);"
+      - id: incomplete_type
+        sql: "CREATE TYPE typ;"
+      - id: sqlj_object_type
+        sql: "CREATE TYPE typ AS OBJECT EXTERNAL NAME 'Person' LANGUAGE JAVA USING SQLData (a NUMBER EXTERNAL NAME 'a');"
+        note: SQLJ object type (deprecated in 26ai); one of the sqlj_object_type forms in the syntax

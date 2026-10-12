@@ -1,0 +1,63 @@
+dialect: trino
+engine: Trino
+version: "483"
+source: https://trino.io/docs/current/sql.html
+
+statements:
+  - id: create_table_as
+    name: CREATE TABLE AS
+    doc: https://trino.io/docs/current/sql/create-table-as.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE TABLE t AS SELECT a, b FROM s;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE TABLE t AS SELECT a FROM s;"
+      - id: if_not_exists
+        sql: "CREATE TABLE IF NOT EXISTS t AS SELECT a FROM s;"
+      - id: column_aliases
+        sql: "CREATE TABLE t (x, y) AS SELECT a, b FROM s;"
+      - id: comment
+        sql: "CREATE TABLE t COMMENT 'summary' AS SELECT a FROM s;"
+      - id: with_properties
+        sql: "CREATE TABLE t WITH (format = 'ORC') AS SELECT a FROM s;"
+      - id: with_multiple_properties
+        sql: "CREATE TABLE t WITH (format = 'ORC', partitioned_by = ARRAY['a']) AS SELECT a FROM s;"
+      - id: with_data
+        sql: "CREATE TABLE t AS SELECT a FROM s WITH DATA;"
+      - id: with_no_data
+        sql: "CREATE TABLE t AS SELECT * FROM s WITH NO DATA;"
+      - id: aliases_comment_properties_no_data
+        sql: "CREATE TABLE t (x, y) COMMENT 'c' WITH (format = 'ORC') AS SELECT a, b FROM s WITH NO DATA;"
+      - id: query_with_cte
+        sql: "CREATE TABLE t AS WITH q AS (SELECT a FROM s) SELECT a FROM q;"
+      - id: query_parenthesized
+        sql: "CREATE TABLE t AS (SELECT a FROM s);"
+    examples:
+      - "CREATE TABLE orders_column_aliased (order_date, total_price) AS SELECT orderdate, totalprice FROM orders;"
+      - "CREATE TABLE orders_by_date COMMENT 'Summary of orders by date' WITH (format = 'ORC') AS SELECT orderdate, sum(totalprice) AS price FROM orders GROUP BY orderdate;"
+      - "CREATE TABLE empty_nation AS SELECT * FROM nation WITH NO DATA;"
+
+  - id: create_view
+    name: CREATE VIEW
+    doc: https://trino.io/docs/current/sql/create-view.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE VIEW v AS SELECT a FROM t;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE VIEW v AS SELECT a FROM t;"
+      - id: comment
+        sql: "CREATE VIEW v COMMENT 'a view' AS SELECT a FROM t;"
+      - id: security_definer
+        sql: "CREATE VIEW v SECURITY DEFINER AS SELECT a FROM t;"
+      - id: security_invoker
+        sql: "CREATE VIEW v SECURITY INVOKER AS SELECT a FROM t;"
+      - id: comment_and_security
+        sql: "CREATE OR REPLACE VIEW v COMMENT 'a view' SECURITY INVOKER AS SELECT a FROM t;"
+      - id: qualified_name
+        sql: "CREATE VIEW c.s.v AS SELECT a FROM t;"
+    examples:
+      - "CREATE VIEW test AS SELECT orderkey, orderstatus, totalprice / 2 AS half FROM orders;"
+      - "CREATE VIEW test_with_comment COMMENT 'A view to keep track of orders.' AS SELECT orderkey, orderstatus, totalprice FROM orders;"
+      - "CREATE OR REPLACE VIEW test AS SELECT orderkey, orderstatus, totalprice / 4 AS quarter FROM orders;"

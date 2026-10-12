@@ -1,0 +1,190 @@
+dialect: clickhouse
+engine: ClickHouse
+version: "current docs (2026)"
+source: https://clickhouse.com/docs/sql-reference/statements/
+
+statements:
+  - id: show_columns
+    name: SHOW COLUMNS
+    doc: https://clickhouse.com/docs/sql-reference/statements/show
+    tier: medium
+    probes:
+      - { id: from_table, sql: "SHOW COLUMNS FROM t;" }
+      - { id: extended_full_in_db, sql: "SHOW EXTENDED FULL COLUMNS IN t FROM db;" }
+      - { id: like, sql: "SHOW COLUMNS FROM t LIKE 'c%';" }
+      - { id: not_ilike, sql: "SHOW COLUMNS FROM t NOT ILIKE 'c%';" }
+      - { id: where_limit, sql: "SHOW COLUMNS FROM t WHERE field = 'c' LIMIT 1;" }
+      - { id: format, sql: "SHOW COLUMNS FROM t FORMAT TSV;" }
+
+  - id: show_dictionaries
+    name: SHOW DICTIONARIES
+    doc: https://clickhouse.com/docs/sql-reference/statements/show
+    tier: medium
+    probes:
+      - { id: basic, sql: "SHOW DICTIONARIES;" }
+      - { id: from_like, sql: "SHOW DICTIONARIES FROM db LIKE '%reg%' LIMIT 2;" }
+      - { id: format, sql: "SHOW DICTIONARIES FORMAT TSV;" }
+
+  - id: show_index
+    name: SHOW INDEX
+    doc: https://clickhouse.com/docs/sql-reference/statements/show
+    tier: medium
+    probes:
+      - { id: index_from, sql: "SHOW INDEX FROM t;" }
+      - { id: extended_indexes_in_db, sql: "SHOW EXTENDED INDEXES IN t FROM db;" }
+      - { id: indices, sql: "SHOW INDICES FROM t;" }
+      - { id: keys_where, sql: "SHOW KEYS FROM t WHERE key_name = 'k';" }
+    examples:
+      - "SHOW INDEX FROM 'tbl';"
+
+  - id: show_processlist
+    name: SHOW PROCESSLIST
+    doc: https://clickhouse.com/docs/sql-reference/statements/show
+    tier: medium
+    probes:
+      - { id: basic, sql: "SHOW PROCESSLIST;" }
+      - { id: format, sql: "SHOW PROCESSLIST FORMAT TSV;" }
+
+  - id: show_grants
+    name: SHOW GRANTS
+    doc: https://clickhouse.com/docs/sql-reference/statements/show
+    tier: medium
+    probes:
+      - { id: basic, sql: "SHOW GRANTS;" }
+      - { id: for_users, sql: "SHOW GRANTS FOR u1, u2;" }
+      - { id: with_implicit, sql: "SHOW GRANTS FOR u WITH IMPLICIT;" }
+      - { id: final, sql: "SHOW GRANTS FOR u WITH IMPLICIT FINAL;" }
+
+  - id: show_settings
+    name: SHOW SETTINGS / SHOW SETTING
+    doc: https://clickhouse.com/docs/sql-reference/statements/show
+    tier: medium
+    probes:
+      - { id: settings_like, sql: "SHOW SETTINGS LIKE 'max_%';" }
+      - { id: settings_ilike, sql: "SHOW SETTINGS ILIKE '%MEMORY%';" }
+      - { id: changed_settings, sql: "SHOW CHANGED SETTINGS LIKE 'max_%';" }
+      - { id: setting_name, sql: "SHOW SETTING max_threads;" }
+
+  - id: parallel_with
+    name: PARALLEL WITH
+    doc: https://clickhouse.com/docs/sql-reference/statements/parallel_with
+    tier: low
+    probes:
+      - { id: two_creates, sql: "CREATE TABLE t1 (x Int32) ENGINE = MergeTree ORDER BY tuple() PARALLEL WITH CREATE TABLE t2 (y String) ENGINE = MergeTree ORDER BY tuple();" }
+      - { id: three_drops, sql: "DROP TABLE t1 PARALLEL WITH DROP TABLE t2 PARALLEL WITH DROP TABLE t3;" }
+
+  - id: create_quota
+    name: CREATE QUOTA
+    doc: https://clickhouse.com/docs/sql-reference/statements/create/quota
+    tier: low
+    probes:
+      - { id: full, sql: "CREATE QUOTA IF NOT EXISTS q ON CLUSTER c KEYED BY user_name FOR RANDOMIZED INTERVAL 1 hour MAX queries = 100, errors = 10 TO r1, r2;" }
+      - { id: no_limits, sql: "CREATE QUOTA OR REPLACE q NOT KEYED FOR INTERVAL 1 day NO LIMITS TO ALL EXCEPT r;" }
+      - { id: tracking_only, sql: "CREATE QUOTA q KEYED BY ip_address IPV4_PREFIX_BITS 24 IPV6_PREFIX_BITS 56 FOR INTERVAL 5 minute TRACKING ONLY;" }
+
+  - id: create_settings_profile
+    name: CREATE SETTINGS PROFILE
+    doc: https://clickhouse.com/docs/sql-reference/statements/create/settings-profile
+    tier: low
+    probes:
+      - { id: full, sql: "CREATE SETTINGS PROFILE IF NOT EXISTS p ON CLUSTER c SETTINGS max_memory_usage = 100000001 MIN 90000000 MAX 110000000 READONLY TO u1, r1;" }
+      - { id: inherit, sql: "CREATE SETTINGS PROFILE OR REPLACE p1, p2 SETTINGS INHERIT 'base', max_threads = 4 CONST TO ALL EXCEPT u;" }
+
+  - id: create_masking_policy
+    name: CREATE MASKING POLICY
+    doc: https://clickhouse.com/docs/sql-reference/statements/create/masking-policy
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE MASKING POLICY m ON db.t UPDATE email = '***masked***' TO r;" }
+      - { id: where_priority, sql: "CREATE MASKING POLICY IF NOT EXISTS m ON t UPDATE email = '***', phone = '000' WHERE salary > 100 TO ALL EXCEPT r1, r2 PRIORITY 5;" }
+
+  - id: create_named_collection
+    name: CREATE NAMED COLLECTION
+    doc: https://clickhouse.com/docs/sql-reference/statements/create/named-collection
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE NAMED COLLECTION foobar AS a = '1', b = '2' OVERRIDABLE;" }
+      - { id: or_replace_on_cluster, sql: "CREATE OR REPLACE NAMED COLLECTION foobar ON CLUSTER c AS a = '2' NOT OVERRIDABLE, c = '3';" }
+      - { id: if_not_exists, sql: "CREATE NAMED COLLECTION IF NOT EXISTS foobar AS a = '1';" }
+
+  - id: create_hypothetical_index
+    name: CREATE / DROP HYPOTHETICAL INDEX
+    doc: https://clickhouse.com/docs/sql-reference/statements/hypothetical-index
+    tier: low
+    probes:
+      - { id: create, sql: "CREATE HYPOTHETICAL INDEX IF NOT EXISTS idx ON db.t (c) TYPE minmax GRANULARITY 4;" }
+      - { id: create_type_args, sql: "CREATE HYPOTHETICAL INDEX idx ON t (c) TYPE bloom_filter(0.01);" }
+      - { id: drop, sql: "DROP HYPOTHETICAL INDEX IF EXISTS idx ON db.t;" }
+
+  - id: alter_table_apply_deleted_mask
+    name: ALTER TABLE ... APPLY DELETED MASK
+    doc: https://clickhouse.com/docs/sql-reference/statements/alter/apply-deleted-mask
+    tier: low
+    probes:
+      - { id: basic, sql: "ALTER TABLE db.t ON CLUSTER c APPLY DELETED MASK;" }
+      - { id: in_partition, sql: "ALTER TABLE t APPLY DELETED MASK IN PARTITION 2024;" }
+
+  - id: alter_table_apply_patches
+    name: ALTER TABLE ... APPLY PATCHES
+    doc: https://clickhouse.com/docs/sql-reference/statements/alter/apply-patches
+    tier: low
+    probes:
+      - { id: basic, sql: "ALTER TABLE db.t ON CLUSTER c APPLY PATCHES;" }
+      - { id: in_partition, sql: "ALTER TABLE t APPLY PATCHES IN PARTITION 2024;" }
+
+  - id: alter_quota
+    name: ALTER QUOTA
+    doc: https://clickhouse.com/docs/sql-reference/statements/alter/quota
+    tier: low
+    probes:
+      - { id: full, sql: "ALTER QUOTA IF EXISTS q ON CLUSTER c KEYED BY user_name FOR RANDOMIZED INTERVAL 1 hour MAX queries = 100 TO r;" }
+      - { id: rename, sql: "ALTER QUOTA q RENAME TO q2;" }
+      - { id: no_limits, sql: "ALTER QUOTA q NOT KEYED FOR INTERVAL 1 day NO LIMITS;" }
+
+  - id: alter_settings_profile
+    name: ALTER SETTINGS PROFILE
+    doc: https://clickhouse.com/docs/sql-reference/statements/alter/settings-profile
+    tier: low
+    probes:
+      - { id: settings, sql: "ALTER SETTINGS PROFILE IF EXISTS p ON CLUSTER c SETTINGS max_memory_usage = 100000001 MIN 90000000 MAX 110000000 READONLY TO u;" }
+      - { id: rename, sql: "ALTER SETTINGS PROFILE p RENAME TO p2;" }
+      - { id: add_drop, sql: "ALTER SETTINGS PROFILE p ADD SETTINGS max_threads = 4 DROP SETTINGS max_memory_usage ADD PROFILES 'base' DROP PROFILES 'old';" }
+      - { id: drop_all, sql: "ALTER SETTINGS PROFILE p DROP ALL SETTINGS DROP ALL PROFILES;" }
+
+  - id: alter_masking_policy
+    name: ALTER MASKING POLICY
+    doc: https://clickhouse.com/docs/sql-reference/statements/alter/masking-policy
+    tier: low
+    probes:
+      - { id: update_where, sql: "ALTER MASKING POLICY IF EXISTS m ON db.t UPDATE email = '***' WHERE salary > 100 TO r PRIORITY 5;" }
+      - { id: to_only, sql: "ALTER MASKING POLICY m ON t TO ALL EXCEPT r;" }
+
+  - id: alter_named_collection
+    name: ALTER NAMED COLLECTION
+    doc: https://clickhouse.com/docs/sql-reference/statements/alter/named-collection
+    tier: low
+    probes:
+      - { id: set, sql: "ALTER NAMED COLLECTION IF EXISTS foobar ON CLUSTER c SET a = '2' OVERRIDABLE, c = '3' NOT OVERRIDABLE;" }
+      - { id: delete, sql: "ALTER NAMED COLLECTION foobar DELETE b, c;" }
+
+  - id: drop_quota
+    name: DROP QUOTA
+    doc: https://clickhouse.com/docs/sql-reference/statements/drop
+    tier: low
+    probes:
+      - { id: full, sql: "DROP QUOTA IF EXISTS q1, q2 ON CLUSTER c FROM users_xml;" }
+
+  - id: drop_settings_profile
+    name: DROP SETTINGS PROFILE
+    doc: https://clickhouse.com/docs/sql-reference/statements/drop
+    tier: low
+    probes:
+      - { id: settings_profile, sql: "DROP SETTINGS PROFILE IF EXISTS p1, p2 ON CLUSTER c FROM users_xml;" }
+      - { id: profile_short, sql: "DROP PROFILE p;" }
+
+  - id: drop_masking_policy
+    name: DROP MASKING POLICY
+    doc: https://clickhouse.com/docs/sql-reference/statements/drop
+    tier: low
+    probes:
+      - { id: full, sql: "DROP MASKING POLICY IF EXISTS m ON db.t ON CLUSTER c FROM users_xml;" }

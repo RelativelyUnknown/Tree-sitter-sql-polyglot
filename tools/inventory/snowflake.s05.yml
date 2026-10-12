@@ -1,0 +1,226 @@
+dialect: snowflake
+engine: Snowflake
+version: "current (docs read 2026-10-04)"
+source: https://docs.snowflake.com/en/sql-reference/sql-all
+
+statements:
+  - id: alter_masking_policy
+    name: ALTER MASKING POLICY
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-masking-policy
+    tier: medium
+    probes:
+      - id: rename_to
+        sql: "ALTER MASKING POLICY IF EXISTS p RENAME TO p2;"
+      - id: set_body
+        sql: "ALTER MASKING POLICY p SET BODY -> CASE WHEN current_role() IN ('ANALYST') THEN val ELSE '*****' END;"
+      - id: set_tag
+        sql: "ALTER MASKING POLICY p SET TAG t1 = 'v1', t2 = 'v2';"
+      - id: unset_tag
+        sql: "ALTER MASKING POLICY p UNSET TAG t1, t2;"
+      - id: set_comment
+        sql: "ALTER MASKING POLICY p SET COMMENT = 'c';"
+      - id: unset_comment
+        sql: "ALTER MASKING POLICY IF EXISTS p UNSET COMMENT;"
+    examples:
+      - "ALTER MASKING POLICY email_mask SET BODY -> CASE WHEN current_role() IN ('ANALYST') THEN VAL ELSE sha2(val, 512) END;"
+
+  - id: alter_network_policy
+    name: ALTER NETWORK POLICY
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-network-policy
+    tier: medium
+    probes:
+      - id: set_allowed_network_rule_list
+        sql: "ALTER NETWORK POLICY IF EXISTS p SET ALLOWED_NETWORK_RULE_LIST = ('r1', 'r2');"
+      - id: set_blocked_ip_list_comment
+        sql: "ALTER NETWORK POLICY p SET BLOCKED_IP_LIST = ('192.168.1.1') COMMENT = 'c';"
+      - id: set_allowed_ip_list
+        sql: "ALTER NETWORK POLICY p SET ALLOWED_IP_LIST = ('192.168.1.0/24', '10.0.0.1');"
+      - id: unset_comment
+        sql: "ALTER NETWORK POLICY IF EXISTS p UNSET COMMENT;"
+      - id: add_network_rule_list
+        sql: "ALTER NETWORK POLICY p ADD ALLOWED_NETWORK_RULE_LIST = ('r1');"
+      - id: remove_network_rule_list
+        sql: "ALTER NETWORK POLICY p REMOVE BLOCKED_NETWORK_RULE_LIST = ('r1', 'r2');"
+      - id: rename_to
+        sql: "ALTER NETWORK POLICY p RENAME TO p2;"
+      - id: set_tag
+        sql: "ALTER NETWORK POLICY p SET TAG t1 = 'v1';"
+      - id: unset_tag
+        sql: "ALTER NETWORK POLICY p UNSET TAG t1, t2;"
+    examples:
+      - "ALTER NETWORK POLICY IF EXISTS allow_access_policy SET BLOCKED_NETWORK_RULE_LIST = ('block_access_rule');"
+      - "ALTER NETWORK POLICY allow_access_policy RENAME TO limit_access_policy;"
+      - "ALTER NETWORK POLICY limit_access_policy SET COMMENT = 'No_Lists_See_Rules';"
+
+  - id: alter_network_rule
+    name: ALTER NETWORK RULE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-network-rule
+    tier: medium
+    probes:
+      - id: set_value_list
+        sql: "ALTER NETWORK RULE IF EXISTS r SET VALUE_LIST = ('47.88.25.32/27', '10.0.0.1');"
+      - id: set_value_list_comment
+        sql: "ALTER NETWORK RULE r SET VALUE_LIST = ('example.com:443') COMMENT = 'c';"
+      - id: unset_value_list
+        sql: "ALTER NETWORK RULE r UNSET VALUE_LIST;"
+      - id: unset_comment
+        sql: "ALTER NETWORK RULE IF EXISTS r UNSET COMMENT;"
+    examples:
+      - "ALTER NETWORK RULE cloud_network SET VALUE_LIST = ('47.88.25.32/27');"
+      - "ALTER NETWORK RULE external_access_rule SET VALUE_LIST = ('example.com', 'example.com:443');"
+      - "ALTER NETWORK RULE ipv6_network SET VALUE_LIST = ('2001:db8::/32', '2001:0db8:85a3::8a2e:370:7334');"
+
+  - id: alter_pipe
+    name: ALTER PIPE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-pipe
+    tier: medium
+    probes:
+      - id: set_pipe_execution_paused
+        sql: "ALTER PIPE IF EXISTS p SET PIPE_EXECUTION_PAUSED = TRUE;"
+      - id: set_comment
+        sql: "ALTER PIPE p SET COMMENT = 'c';"
+      - id: set_error_integration
+        sql: "ALTER PIPE p SET ERROR_INTEGRATION = 'my_integration';"
+      - id: set_tag
+        sql: "ALTER PIPE p SET TAG t1 = 'v1', t2 = 'v2';"
+      - id: unset_tag
+        sql: "ALTER PIPE p UNSET TAG t1, t2;"
+      - id: unset_comment
+        sql: "ALTER PIPE IF EXISTS p UNSET COMMENT;"
+      - id: unset_property
+        sql: "ALTER PIPE p UNSET PIPE_EXECUTION_PAUSED, COMMENT;"
+      - id: refresh
+        sql: "ALTER PIPE IF EXISTS p REFRESH;"
+      - id: refresh_prefix_modified_after
+        sql: "ALTER PIPE p REFRESH PREFIX = 'd1/' MODIFIED_AFTER = '2018-07-30T13:56:46-07:00';"
+    examples:
+      - "alter pipe mypipe SET PIPE_EXECUTION_PAUSED = true;"
+      - "ALTER PIPE mypipe REFRESH;"
+      - "ALTER PIPE mypipe REFRESH PREFIX = 'd1/' MODIFIED_AFTER = '2018-07-30T13:56:46-07:00';"
+
+  - id: alter_role
+    name: ALTER ROLE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-role
+    tier: medium
+    probes:
+      - id: rename_to
+        sql: "ALTER ROLE IF EXISTS r RENAME TO r2;"
+      - id: set_comment
+        sql: "ALTER ROLE r SET COMMENT = 'c';"
+      - id: unset_comment
+        sql: "ALTER ROLE r UNSET COMMENT;"
+      - id: set_tag
+        sql: "ALTER ROLE r SET TAG t1 = 'v1', t2 = 'v2';"
+      - id: unset_tag
+        sql: "ALTER ROLE r UNSET TAG t1, t2;"
+      - id: unset_dcm_project
+        sql: "ALTER ROLE IF EXISTS r UNSET DCM PROJECT;"
+    examples:
+      - "ALTER ROLE role1 RENAME TO role2;"
+      - "ALTER ROLE myrole SET COMMENT = 'New comment for role';"
+
+  - id: alter_row_access_policy
+    name: ALTER ROW ACCESS POLICY
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-row-access-policy
+    tier: medium
+    probes:
+      - id: rename_to
+        sql: "ALTER ROW ACCESS POLICY IF EXISTS p RENAME TO p2;"
+      - id: set_body
+        sql: "ALTER ROW ACCESS POLICY p SET BODY -> current_role() = 'ADMIN';"
+      - id: set_tag
+        sql: "ALTER ROW ACCESS POLICY p SET TAG t1 = 'v1', t2 = 'v2';"
+      - id: unset_tag
+        sql: "ALTER ROW ACCESS POLICY p UNSET TAG t1, t2;"
+      - id: set_comment
+        sql: "ALTER ROW ACCESS POLICY p SET COMMENT = 'c';"
+      - id: unset_comment
+        sql: "ALTER ROW ACCESS POLICY IF EXISTS p UNSET COMMENT;"
+    examples:
+      - "ALTER ROW ACCESS POLICY rap_table_employee_info SET BODY -> false;"
+
+  - id: alter_secret
+    name: ALTER SECRET
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-secret
+    tier: medium
+    probes:
+      - id: set_oauth_scopes
+        sql: "ALTER SECRET IF EXISTS s SET OAUTH_SCOPES = ('scope_1', 'scope_2') COMMENT = 'c';"
+      - id: set_oauth_refresh_token
+        sql: "ALTER SECRET s SET OAUTH_REFRESH_TOKEN = 'tok' OAUTH_REFRESH_TOKEN_EXPIRY_TIME = '2025-01-01 00:00:00';"
+      - id: set_api_authentication
+        sql: "ALTER SECRET s SET API_AUTHENTICATION = 'my_integration';"
+      - id: set_basic_authentication
+        sql: "ALTER SECRET s SET USERNAME = 'u' PASSWORD = 'p';"
+      - id: set_secret_string
+        sql: "ALTER SECRET s SET SECRET_STRING = 'abc' COMMENT = 'c';"
+      - id: unset_comment
+        sql: "ALTER SECRET IF EXISTS s UNSET COMMENT;"
+    examples:
+      - "ALTER SECRET service_now_creds_pw SET COMMENT = 'production secret for servicenow';"
+
+  - id: alter_sequence
+    name: ALTER SEQUENCE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-sequence
+    tier: medium
+    probes:
+      - id: rename_to
+        sql: "ALTER SEQUENCE IF EXISTS s RENAME TO s2;"
+      - id: increment
+        sql: "ALTER SEQUENCE s INCREMENT 2;"
+      - id: set_increment_by_equals
+        sql: "ALTER SEQUENCE s SET INCREMENT BY = 5;"
+      - id: set_order
+        sql: "ALTER SEQUENCE s SET ORDER;"
+      - id: set_noorder_comment
+        sql: "ALTER SEQUENCE s SET NOORDER COMMENT = 'c';"
+      - id: unset_comment
+        sql: "ALTER SEQUENCE IF EXISTS s UNSET COMMENT;"
+    examples:
+      - "ALTER SEQUENCE myseq RENAME TO newseq;"
+
+  - id: alter_session
+    name: ALTER SESSION
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-session
+    tier: medium
+    probes:
+      - id: set_boolean_param
+        sql: "ALTER SESSION SET AUTOCOMMIT = FALSE;"
+      - id: set_numeric_param
+        sql: "ALTER SESSION SET LOCK_TIMEOUT = 3600;"
+      - id: set_string_param
+        sql: "ALTER SESSION SET QUERY_TAG = 'my_tag';"
+      - id: set_multiple_params
+        sql: "ALTER SESSION SET TIMEZONE = 'America/Los_Angeles' DATE_OUTPUT_FORMAT = 'YYYY-MM-DD' USE_CACHED_RESULT = FALSE;"
+      - id: unset_param
+        sql: "ALTER SESSION UNSET LOCK_TIMEOUT;"
+      - id: unset_multiple_params
+        sql: "ALTER SESSION UNSET QUERY_TAG, TIMEZONE;"
+    examples:
+      - "ALTER SESSION SET LOCK_TIMEOUT = 3600;"
+      - "ALTER SESSION UNSET LOCK_TIMEOUT;"
+
+  - id: alter_share
+    name: ALTER SHARE
+    doc: https://docs.snowflake.com/en/sql-reference/sql/alter-share
+    tier: medium
+    probes:
+      - id: add_accounts
+        sql: "ALTER SHARE IF EXISTS s ADD ACCOUNTS = org1.consumer1, org1.consumer2;"
+      - id: add_accounts_share_restrictions
+        sql: "ALTER SHARE s ADD ACCOUNTS = org1.consumer1 SHARE_RESTRICTIONS = FALSE;"
+      - id: remove_accounts
+        sql: "ALTER SHARE s REMOVE ACCOUNTS = org1.consumer1;"
+      - id: set_accounts_comment
+        sql: "ALTER SHARE s SET ACCOUNTS = org1.consumer1 COMMENT = 'c';"
+      - id: set_comment
+        sql: "ALTER SHARE s SET COMMENT = 'c';"
+      - id: set_tag
+        sql: "ALTER SHARE IF EXISTS s SET TAG t1 = 'v1', t2 = 'v2';"
+      - id: unset_tag
+        sql: "ALTER SHARE s UNSET TAG t1, t2;"
+      - id: unset_comment
+        sql: "ALTER SHARE IF EXISTS s UNSET COMMENT;"
+    examples:
+      - "ALTER SHARE sales_s ADD ACCOUNTS = org1.consumer1, org1.consumer2;"
+      - "ALTER SHARE sales_s SET COMMENT = 'This share contains sales data for 2017';"

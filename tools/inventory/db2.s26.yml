@@ -1,0 +1,57 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "12.1"
+source: https://www.ibm.com/docs/en/db2/12.1.x?topic=reference-statements
+
+statements:
+  - id: signal
+    name: SIGNAL
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-signal
+    tier: high
+    probes:
+      - id: sqlstate_constant
+        sql: "SIGNAL SQLSTATE '70001';"
+      - id: sqlstate_value_constant
+        sql: "SIGNAL SQLSTATE VALUE '70001';"
+      - id: sqlstate_variable
+        sql: "SIGNAL SQLSTATE VALUE v_state;"
+      - id: condition_name
+        sql: "SIGNAL c;"
+      - id: message_text
+        sql: "SIGNAL SQLSTATE '70001' SET MESSAGE_TEXT = 'error occurred';"
+      - id: message_text_variable
+        sql: "SIGNAL SQLSTATE VALUE '70001' SET MESSAGE_TEXT = v_msg;"
+      - id: condition_message_text
+        sql: "SIGNAL c SET MESSAGE_TEXT = 'error occurred';"
+      - id: parenthesized_message
+        sql: "SIGNAL SQLSTATE '70001' ('error occurred');"
+        note: Parenthesized diagnostic-string-expression, only documented for CREATE TRIGGER compatibility.
+
+  - id: truncate
+    name: TRUNCATE
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-truncate
+    tier: high
+    probes:
+      - id: basic_immediate
+        sql: "TRUNCATE TABLE t IMMEDIATE;"
+      - id: basic_column_organized
+        sql: "TRUNCATE TABLE t;"
+        note: IMMEDIATE is optional only for column-organized tables.
+      - id: drop_storage
+        sql: "TRUNCATE TABLE t DROP STORAGE IMMEDIATE;"
+      - id: reuse_storage
+        sql: "TRUNCATE TABLE t REUSE STORAGE IMMEDIATE;"
+      - id: ignore_delete_triggers
+        sql: "TRUNCATE TABLE t IGNORE DELETE TRIGGERS IMMEDIATE;"
+      - id: restrict_when_delete_triggers
+        sql: "TRUNCATE TABLE t RESTRICT WHEN DELETE TRIGGERS IMMEDIATE;"
+      - id: continue_identity
+        sql: "TRUNCATE TABLE t CONTINUE IDENTITY IMMEDIATE;"
+      - id: schema_qualified
+        sql: "TRUNCATE TABLE s.t IMMEDIATE;"
+      - id: all_options
+        sql: "TRUNCATE TABLE t REUSE STORAGE RESTRICT WHEN DELETE TRIGGERS CONTINUE IDENTITY IMMEDIATE;"
+    examples:
+      - "TRUNCATE TABLE INVENTORY IGNORE DELETE TRIGGERS DROP STORAGE IMMEDIATE;"
+      - "TRUNCATE TABLE INVENTORY REUSE STORAGE IGNORE DELETE TRIGGERS IMMEDIATE;"
+      - "TRUNCATE TABLE TAB10;"

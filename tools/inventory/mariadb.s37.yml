@@ -1,0 +1,406 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements:
+  - id: alter_tablespace
+    name: ALTER TABLESPACE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-definition/alter/alter-tablespace
+    tier: low
+    status: not-applicable
+    reason: 'The page says "The ALTER TABLESPACE statement is not supported by MariaDB. It was originally inherited from MySQL NDB Cluster."'
+
+  - id: drop_tablespace
+    name: DROP TABLESPACE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-definition/drop/drop-tablespace
+    tier: low
+    status: not-applicable
+    reason: 'The page says "The DROP TABLESPACE statement is not supported by MariaDB. It was originally inherited from MySQL NDB Cluster."'
+
+  - id: create_logfile_group
+    name: CREATE LOGFILE GROUP
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-definition/create/create-logfile-group
+    tier: low
+    status: not-applicable
+    reason: 'The page says "The CREATE LOGFILE GROUP statement is not supported by MariaDB. It was originally inherited from MySQL NDB Cluster."'
+
+  - id: alter_logfile_group
+    name: ALTER LOGFILE GROUP
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-definition/alter/alter-logfile-group
+    tier: low
+    status: not-applicable
+    reason: 'The page documents NDB-only syntax (ADD UNDOFILE ... ENGINE) inherited from MySQL NDB Cluster; MariaDB does not support LOGFILE GROUP statements (see the CREATE LOGFILE GROUP and DROP LOGFILE GROUP pages: "not supported by MariaDB", MDEV-19295).'
+
+  - id: drop_logfile_group
+    name: DROP LOGFILE GROUP
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-definition/drop/drop-logfile-group
+    tier: low
+    status: not-applicable
+    reason: 'The page says "The DROP LOGFILE GROUP statement is not supported by MariaDB. It was originally inherited from MySQL NDB Cluster."'
+
+  - id: create_catalog
+    name: CREATE CATALOG
+    doc: https://mariadb.com/docs/server/security/user-account-management/catalogs/create-catalog
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE CATALOG c;"
+      - id: if_not_exists_options
+        sql: "CREATE CATALOG IF NOT EXISTS c DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci COMMENT 'x';"
+
+  - id: drop_catalog
+    name: DROP CATALOG
+    doc: https://mariadb.com/docs/server/security/user-account-management/catalogs/drop-catalog
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP CATALOG c;"
+
+  - id: use_catalog
+    name: USE CATALOG
+    doc: https://mariadb.com/docs/server/security/user-account-management/catalogs/use-catalog
+    tier: low
+    probes:
+      - id: basic
+        sql: "USE CATALOG c;"
+
+  - id: show_catalogs
+    name: SHOW CATALOGS
+    doc: https://mariadb.com/docs/server/security/user-account-management/catalogs/show-catalogs
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW CATALOGS;"
+      - id: like
+        sql: "SHOW CATALOGS LIKE 'c%';"
+      - id: where
+        sql: "SHOW CATALOGS WHERE `Catalog` = 'c';"
+
+  - id: show_create_catalog
+    name: SHOW CREATE CATALOG
+    doc: https://mariadb.com/docs/server/security/user-account-management/catalogs/show-create-catalog
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHOW CREATE CATALOG def;"
+
+  - id: check_view
+    name: CHECK VIEW
+    doc: https://mariadb.com/docs/server/reference/sql-statements/table-statements/check-view
+    tier: low
+    probes:
+      - id: basic
+        sql: "CHECK VIEW v;"
+
+  - id: checksum_table
+    name: CHECKSUM TABLE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/table-statements/checksum-table
+    tier: low
+    probes:
+      - id: basic
+        sql: "CHECKSUM TABLE t1, t2;"
+      - id: quick
+        sql: "CHECKSUM TABLE t QUICK;"
+      - id: extended
+        sql: "CHECKSUM TABLE t EXTENDED;"
+
+  - id: repair_view
+    name: REPAIR VIEW
+    doc: https://mariadb.com/docs/server/reference/sql-statements/table-statements/repair-view
+    tier: low
+    probes:
+      - id: basic
+        sql: "REPAIR VIEW v;"
+      - id: options
+        sql: "REPAIR NO_WRITE_TO_BINLOG VIEW v1, v2 FROM MYSQL;"
+
+  - id: xa
+    name: XA transactions
+    doc: https://mariadb.com/docs/server/reference/sql-statements/transactions/xa-transactions
+    tier: low
+    probes:
+      - id: start
+        sql: "XA START 'xid1';"
+      - id: begin_join
+        sql: "XA BEGIN 'xid1', 'bq', 1 JOIN;"
+      - id: end_suspend
+        sql: "XA END 'xid1' SUSPEND FOR MIGRATE;"
+      - id: prepare
+        sql: "XA PREPARE 'xid1';"
+      - id: commit_one_phase
+        sql: "XA COMMIT 'xid1' ONE PHASE;"
+      - id: rollback
+        sql: "XA ROLLBACK 'xid1';"
+      - id: recover
+        sql: "XA RECOVER FORMAT='SQL';"
+
+  - id: goto
+    name: GOTO
+    doc: https://mariadb.com/docs/server/reference/sql-statements/programmatic-compound-statements/goto
+    tier: low
+    probes:
+      - id: oracle_mode_procedure
+        sql: |-
+          CREATE OR REPLACE PROCEDURE p1 AS
+          BEGIN
+            SELECT 1;
+            GOTO label;
+            SELECT 2;
+            <<label>>
+            SELECT 3;
+          END;
+        note: GOTO is only accepted in sql_mode=ORACLE (page text); the page's own example uses it inside CREATE PROCEDURE.
+
+  - id: declare_type
+    name: DECLARE TYPE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/programmatic-compound-statements/declare-type
+    tier: low
+    probes:
+      - id: associative_array
+        sql: |-
+          CREATE OR REPLACE PROCEDURE p1 AS
+            TYPE array_t IS TABLE OF VARCHAR2(64) INDEX BY PLS_INTEGER;
+          BEGIN
+            NULL;
+          END;
+        note: DECLARE TYPE ... IS TABLE OF ... INDEX BY (MariaDB 12.0.1+, sql_mode=ORACLE).
+      - id: record
+        sql: |-
+          CREATE OR REPLACE PROCEDURE p1 AS
+            TYPE rec0_t IS RECORD (a INT, b VARCHAR(2), c INT);
+          BEGIN
+            NULL;
+          END;
+        note: TYPE ... IS RECORD (MariaDB 11.8.1+, sql_mode=ORACLE).
+
+  - id: deny
+    name: DENY
+    doc: https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/deny
+    tier: low
+    probes:
+      - id: deny
+        sql: "DENY SELECT, INSERT (c) ON db.t TO u@localhost;"
+      - id: revoke_deny
+        sql: "REVOKE DENY SELECT ON db.* FROM u@localhost;"
+
+  - id: set_session_authorization
+    name: SET SESSION AUTHORIZATION
+    doc: https://mariadb.com/docs/server/reference/sql-statements/account-management-sql-statements/set-session-authorization
+    tier: low
+    probes:
+      - id: basic
+        sql: "SET SESSION AUTHORIZATION foo@localhost;"
+        note: Available from MariaDB 12.0. The assigned URL returns 404; the page lives under account-management-sql-statements.
+
+  - id: set_sql_log_bin
+    name: SET SQL_LOG_BIN
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/set-commands/set-sql_log_bin
+    tier: low
+    probes:
+      - id: basic
+        sql: "SET sql_log_bin = 0;"
+      - id: session
+        sql: "SET SESSION sql_log_bin = 1;"
+
+  - id: set_global_sql_slave_skip_counter
+    name: SET GLOBAL SQL_SLAVE_SKIP_COUNTER
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/replication-statements/set-global-sql_slave_skip_counter
+    tier: low
+    probes:
+      - id: basic
+        sql: "SET GLOBAL sql_slave_skip_counter = 1;"
+
+  - id: set_path
+    name: SET PATH
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/set-commands/set-path
+    tier: low
+    probes:
+      - id: basic
+        sql: "SET PATH 'db1, db2';"
+
+  - id: help
+    name: HELP
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/help-command
+    tier: low
+    probes:
+      - id: basic
+        sql: "HELP 'contents';"
+
+  - id: binlog
+    name: BINLOG
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/binlog
+    tier: low
+    probes:
+      - id: basic
+        sql: "BINLOG 'SGVsbG8=';"
+
+  - id: cache_index
+    name: CACHE INDEX
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/cache-index
+    tier: low
+    probes:
+      - id: tables
+        sql: "CACHE INDEX t1, t2, t3 IN hot_cache;"
+      - id: index_list
+        sql: "CACHE INDEX t1 INDEX (idx1, idx2), t2 KEY (idx3) IN hot_cache;"
+
+  - id: kill
+    name: KILL
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/kill
+    tier: low
+    probes:
+      - id: thread
+        sql: "KILL 10;"
+      - id: hard_connection
+        sql: "KILL HARD CONNECTION 10;"
+      - id: soft_query
+        sql: "KILL SOFT QUERY 10;"
+      - id: query_id
+        sql: "KILL QUERY ID 10;"
+      - id: user
+        sql: "KILL USER u;"
+
+  - id: purge_binary_logs
+    name: PURGE BINARY LOGS
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/purge-binary-logs
+    tier: low
+    probes:
+      - id: to
+        sql: "PURGE BINARY LOGS TO 'mariadb-bin.000063';"
+      - id: before
+        sql: "PURGE BINARY LOGS BEFORE '2013-04-22 09:55:22';"
+      - id: master_synonym
+        sql: "PURGE MASTER LOGS TO 'mariadb-bin.000063';"
+
+  - id: reset
+    name: RESET
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/reset
+    tier: low
+    probes:
+      - id: query_cache
+        sql: "RESET QUERY CACHE;"
+      - id: multiple_options
+        sql: "RESET MASTER, SLAVE ALL;"
+
+  - id: shutdown
+    name: SHUTDOWN
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/shutdown
+    tier: low
+    probes:
+      - id: basic
+        sql: "SHUTDOWN;"
+      - id: wait_for_all_replicas
+        sql: "SHUTDOWN WAIT FOR ALL REPLICAS;"
+
+  - id: backup_lock
+    name: BACKUP LOCK
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/backup-commands/backup-lock
+    tier: low
+    probes:
+      - id: lock
+        sql: "BACKUP LOCK db.t;"
+      - id: unlock
+        sql: "BACKUP UNLOCK;"
+
+  - id: backup_stage
+    name: BACKUP STAGE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/backup-commands/backup-stage
+    tier: low
+    probes:
+      - id: start
+        sql: "BACKUP STAGE START;"
+      - id: block_commit
+        sql: "BACKUP STAGE BLOCK_COMMIT;"
+      - id: end
+        sql: "BACKUP STAGE END;"
+
+  - id: flush_query_cache
+    name: FLUSH QUERY CACHE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/flush-commands/flush-query-cache
+    tier: low
+    probes:
+      - id: basic
+        sql: "FLUSH QUERY CACHE;"
+
+  - id: flush_tables_for_export
+    name: FLUSH TABLES FOR EXPORT
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/flush-commands/flush-tables-for-export
+    tier: low
+    probes:
+      - id: tables
+        sql: "FLUSH TABLES t1, t2 FOR EXPORT;"
+      - id: table_singular
+        sql: "FLUSH TABLE t FOR EXPORT;"
+
+  - id: install_plugin
+    name: INSTALL PLUGIN
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/plugin-sql-statements/install-plugin
+    tier: low
+    probes:
+      - id: basic
+        sql: "INSTALL PLUGIN sphinx SONAME 'ha_sphinx.so';"
+      - id: if_not_exists
+        sql: "INSTALL PLUGIN IF NOT EXISTS sphinx SONAME 'ha_sphinx.so';"
+
+  - id: install_soname
+    name: INSTALL SONAME
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/plugin-sql-statements/install-soname
+    tier: low
+    probes:
+      - id: basic
+        sql: "INSTALL SONAME 'ha_sphinx';"
+
+  - id: uninstall_plugin
+    name: UNINSTALL PLUGIN
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/plugin-sql-statements/uninstall-plugin
+    tier: low
+    probes:
+      - id: basic
+        sql: "UNINSTALL PLUGIN sphinx;"
+      - id: if_exists
+        sql: "UNINSTALL PLUGIN IF EXISTS sphinx;"
+
+  - id: uninstall_soname
+    name: UNINSTALL SONAME
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/plugin-sql-statements/uninstall-soname
+    tier: low
+    probes:
+      - id: basic
+        sql: "UNINSTALL SONAME 'ha_sphinx';"
+      - id: if_exists
+        sql: "UNINSTALL SONAME IF EXISTS 'ha_sphinx';"
+
+  - id: change_master_to
+    name: CHANGE MASTER TO
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/replication-statements/change-master-to
+    tier: low
+    probes:
+      - id: basic
+        sql: "CHANGE MASTER TO MASTER_HOST = 'h', MASTER_USER = 'u', MASTER_PASSWORD = 'p', MASTER_PORT = 3306, MASTER_LOG_FILE = 'bin.000001', MASTER_LOG_POS = 4;"
+      - id: connection_name_gtid
+        sql: "CHANGE MASTER 'conn1' TO MASTER_HOST = 'h', MASTER_USE_GTID = slave_pos;"
+      - id: for_channel
+        sql: "CHANGE MASTER TO MASTER_CONNECT_RETRY = DEFAULT, MASTER_SSL = 1 FOR CHANNEL 'ch';"
+
+  - id: reset_master
+    name: RESET MASTER
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/replication-statements/reset-master
+    tier: low
+    probes:
+      - id: basic
+        sql: "RESET MASTER;"
+      - id: to
+        sql: "RESET MASTER TO 12;"
+
+  - id: reset_replica
+    name: RESET REPLICA
+    doc: https://mariadb.com/docs/server/reference/sql-statements/administrative-sql-statements/replication-statements/reset-replica
+    tier: low
+    probes:
+      - id: basic
+        sql: "RESET REPLICA;"
+      - id: all_connection
+        sql: "RESET REPLICA 'conn1' ALL;"
+      - id: slave_synonym
+        sql: "RESET SLAVE;"

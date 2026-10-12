@@ -1,0 +1,112 @@
+dialect: base
+engine: ISO SQL
+version: "SQL:2016"
+source: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html
+
+statements:
+  - id: select
+    name: SELECT (query specification / query expression)
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_7_17_query_expression
+    tier: high
+    probes:
+      - { id: basic, sql: "SELECT a, b FROM t;" }
+      - { id: select_star, sql: "SELECT * FROM t;" }
+      - { id: qualified_asterisk, sql: "SELECT t.* FROM t;" }
+      - { id: column_alias_as, sql: "SELECT a AS x, b + 1 AS y FROM t;" }
+      - { id: column_alias_bare, sql: "SELECT a x FROM t;" }
+      - { id: set_quantifier_all, sql: "SELECT ALL a FROM t;" }
+      - { id: set_quantifier_distinct, sql: "SELECT DISTINCT a FROM t;" }
+      - { id: where, sql: "SELECT a FROM t WHERE a > 1 AND b IS NOT NULL;" }
+      - { id: table_alias_as, sql: "SELECT x.a FROM t AS x;" }
+      - { id: table_alias_bare, sql: "SELECT x.a FROM t x;" }
+      - { id: table_alias_column_list, sql: "SELECT x.p FROM t AS x (p, q);" }
+      - { id: multiple_tables, sql: "SELECT t.a, u.b FROM t, u;" }
+      - { id: cross_join, sql: "SELECT * FROM t CROSS JOIN u;" }
+      - { id: inner_join_on, sql: "SELECT * FROM t INNER JOIN u ON t.a = u.a;" }
+      - { id: join_on, sql: "SELECT * FROM t JOIN u ON t.a = u.a;" }
+      - { id: left_join, sql: "SELECT * FROM t LEFT OUTER JOIN u ON t.a = u.a;" }
+      - { id: right_join, sql: "SELECT * FROM t RIGHT JOIN u ON t.a = u.a;" }
+      - { id: full_join, sql: "SELECT * FROM t FULL OUTER JOIN u ON t.a = u.a;" }
+      - { id: join_using, sql: "SELECT * FROM t JOIN u USING (a, b);" }
+      - { id: natural_join, sql: "SELECT * FROM t NATURAL JOIN u;" }
+      - { id: natural_left_join, sql: "SELECT * FROM t NATURAL LEFT JOIN u;" }
+      - { id: parenthesized_joined_table, sql: "SELECT * FROM (t JOIN u ON t.a = u.a);" }
+      - { id: derived_table, sql: "SELECT x.a FROM (SELECT a FROM t) AS x;" }
+      - { id: lateral_derived_table, sql: "SELECT * FROM t, LATERAL (SELECT * FROM u WHERE u.a = t.a) AS x;" }
+      - { id: unnest, sql: "SELECT * FROM UNNEST(ARRAY[1, 2, 3]) AS x (v);" }
+      - { id: unnest_with_ordinality, sql: "SELECT * FROM UNNEST(ARRAY[1, 2, 3]) WITH ORDINALITY AS x (v, n);" }
+      - { id: table_function, sql: "SELECT * FROM TABLE(f(1)) AS x;" }
+      - { id: only_spec, sql: "SELECT * FROM ONLY (t);" }
+      - { id: tablesample_bernoulli, sql: "SELECT * FROM t TABLESAMPLE BERNOULLI (10);" }
+      - { id: tablesample_system_repeatable, sql: "SELECT * FROM t TABLESAMPLE SYSTEM (10) REPEATABLE (42);" }
+      - { id: system_time_as_of, sql: "SELECT * FROM t FOR SYSTEM_TIME AS OF TIMESTAMP '2020-01-01 00:00:00';" }
+      - { id: system_time_between, sql: "SELECT * FROM t FOR SYSTEM_TIME BETWEEN TIMESTAMP '2020-01-01 00:00:00' AND TIMESTAMP '2021-01-01 00:00:00';" }
+      - { id: system_time_from_to, sql: "SELECT * FROM t FOR SYSTEM_TIME FROM TIMESTAMP '2020-01-01 00:00:00' TO TIMESTAMP '2021-01-01 00:00:00';" }
+      - { id: data_change_delta_table, sql: "SELECT * FROM FINAL TABLE (INSERT INTO t (a) VALUES (1));" }
+      - { id: json_table, sql: "SELECT * FROM JSON_TABLE('[1]', 'lax $[*]' COLUMNS (v INTEGER PATH 'lax $')) AS x;" }
+      - { id: group_by, sql: "SELECT a, COUNT(*) FROM t GROUP BY a;" }
+      - { id: group_by_distinct, sql: "SELECT a, b FROM t GROUP BY DISTINCT a, b;" }
+      - { id: group_by_rollup, sql: "SELECT a, b, SUM(c) FROM t GROUP BY ROLLUP (a, b);" }
+      - { id: group_by_cube, sql: "SELECT a, b, SUM(c) FROM t GROUP BY CUBE (a, b);" }
+      - { id: group_by_grouping_sets, sql: "SELECT a, b, SUM(c) FROM t GROUP BY GROUPING SETS ((a), (b), ());" }
+      - { id: group_by_empty_set, sql: "SELECT SUM(c) FROM t GROUP BY ();" }
+      - { id: group_by_collate, sql: "SELECT a FROM t GROUP BY a COLLATE c;" }
+      - { id: having, sql: "SELECT a, COUNT(*) FROM t GROUP BY a HAVING COUNT(*) > 1;" }
+      - { id: window_clause, sql: "SELECT SUM(a) OVER w FROM t WINDOW w AS (PARTITION BY b ORDER BY c);" }
+      - { id: window_existing_name, sql: "SELECT SUM(a) OVER (w ORDER BY c) FROM t WINDOW w AS (PARTITION BY b);" }
+      - { id: window_frame_rows, sql: "SELECT SUM(a) OVER (ORDER BY c ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: window_frame_range_unbounded, sql: "SELECT SUM(a) OVER (ORDER BY c RANGE BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: window_frame_groups, sql: "SELECT SUM(a) OVER (ORDER BY c GROUPS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;" }
+      - { id: window_frame_start_only, sql: "SELECT SUM(a) OVER (ORDER BY c ROWS UNBOUNDED PRECEDING) FROM t;" }
+      - { id: window_frame_exclusion, sql: "SELECT SUM(a) OVER (ORDER BY c ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING EXCLUDE TIES) FROM t;" }
+      - { id: order_by, sql: "SELECT a FROM t ORDER BY a;" }
+      - { id: order_by_asc_desc, sql: "SELECT a, b FROM t ORDER BY a ASC, b DESC;" }
+      - { id: order_by_nulls, sql: "SELECT a FROM t ORDER BY a DESC NULLS LAST;" }
+      - { id: order_by_collate, sql: "SELECT a FROM t ORDER BY a COLLATE c;" }
+      - { id: offset_rows, sql: "SELECT a FROM t ORDER BY a OFFSET 5 ROWS;" }
+      - { id: fetch_first_rows, sql: "SELECT a FROM t ORDER BY a FETCH FIRST 10 ROWS ONLY;" }
+      - { id: fetch_first_row_default, sql: "SELECT a FROM t FETCH FIRST ROW ONLY;" }
+      - { id: fetch_next_with_ties, sql: "SELECT a FROM t ORDER BY a FETCH NEXT 3 ROWS WITH TIES;" }
+      - { id: fetch_first_percent, sql: "SELECT a FROM t ORDER BY a FETCH FIRST 10 PERCENT ROWS ONLY;" }
+      - { id: offset_and_fetch, sql: "SELECT a FROM t ORDER BY a OFFSET 5 ROWS FETCH NEXT 10 ROWS ONLY;" }
+      - { id: union, sql: "SELECT a FROM t UNION SELECT a FROM u;" }
+      - { id: union_all, sql: "SELECT a FROM t UNION ALL SELECT a FROM u;" }
+      - { id: union_distinct, sql: "SELECT a FROM t UNION DISTINCT SELECT a FROM u;" }
+      - { id: except, sql: "SELECT a FROM t EXCEPT SELECT a FROM u;" }
+      - { id: except_all, sql: "SELECT a FROM t EXCEPT ALL SELECT a FROM u;" }
+      - { id: intersect, sql: "SELECT a FROM t INTERSECT SELECT a FROM u;" }
+      - { id: intersect_all, sql: "SELECT a FROM t INTERSECT ALL SELECT a FROM u;" }
+      - { id: corresponding, sql: "SELECT a, b FROM t UNION CORRESPONDING SELECT a, b FROM u;" }
+      - { id: corresponding_by, sql: "SELECT a, b FROM t UNION ALL CORRESPONDING BY (a) SELECT a, c FROM u;" }
+      - { id: parenthesized_query_primary, sql: "(SELECT a FROM t) UNION (SELECT a FROM u);" }
+      - { id: parenthesized_with_order_fetch, sql: "(SELECT a FROM t ORDER BY a FETCH FIRST 1 ROW ONLY) UNION ALL SELECT a FROM u;" }
+      - { id: explicit_table, sql: "TABLE t;" }
+      - { id: with_cte, sql: "WITH c AS (SELECT a FROM t) SELECT a FROM c;" }
+      - { id: with_cte_column_list, sql: "WITH c (x, y) AS (SELECT a, b FROM t) SELECT x FROM c;" }
+      - { id: with_multiple_ctes, sql: "WITH c1 AS (SELECT a FROM t), c2 AS (SELECT a FROM u) SELECT * FROM c1, c2;" }
+      - { id: with_recursive, sql: "WITH RECURSIVE r (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r WHERE n < 10) SELECT n FROM r;" }
+      - { id: with_search_depth_first, sql: "WITH RECURSIVE r (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r WHERE n < 10) SEARCH DEPTH FIRST BY n SET ord SELECT n FROM r;" }
+      - { id: with_search_breadth_first, sql: "WITH RECURSIVE r (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r WHERE n < 10) SEARCH BREADTH FIRST BY n SET ord SELECT n FROM r;" }
+      - { id: with_cycle, sql: "WITH RECURSIVE r (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM r) CYCLE n SET is_cycle TO 'Y' DEFAULT 'N' USING path SELECT n FROM r;" }
+      - { id: scalar_subquery, sql: "SELECT (SELECT MAX(a) FROM u) FROM t;" }
+      - { id: subquery_in_where, sql: "SELECT a FROM t WHERE a IN (SELECT a FROM u);" }
+      - { id: all_fields_reference, sql: "SELECT (t.r).* FROM t;" }
+      - { id: all_fields_reference_as, sql: "SELECT (t.r).* AS (x, y) FROM t;" }
+      - { id: match_recognize, sql: "SELECT * FROM t MATCH_RECOGNIZE (PARTITION BY a ORDER BY b MEASURES COUNT(*) AS cnt PATTERN (x+) DEFINE x AS x.c > 1) AS m;" }
+  - id: values
+    name: VALUES (table value constructor)
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_7_3_table_value_constructor
+    tier: high
+    probes:
+      - { id: single_row, sql: "VALUES (1, 'a');" }
+      - { id: single_scalar, sql: "VALUES 1;" }
+      - { id: multiple_rows, sql: "VALUES (1, 'a'), (2, 'b'), (3, 'c');" }
+      - { id: row_constructor, sql: "VALUES ROW (1, 'a'), ROW (2, 'b');" }
+      - { id: with_expressions, sql: "VALUES (1 + 2, UPPER('a'), CAST(NULL AS INTEGER));" }
+      - { id: in_from_clause, sql: "SELECT * FROM (VALUES (1, 'a'), (2, 'b')) AS v (n, s);" }
+      - { id: in_cte, sql: "WITH v (n) AS (VALUES (1), (2)) SELECT n FROM v;" }
+      - { id: in_set_operation, sql: "VALUES (1), (2) UNION ALL VALUES (3);" }
+      - { id: order_by, sql: "VALUES (2), (1) ORDER BY 1;" }
+      - { id: fetch_first, sql: "VALUES (1), (2), (3) FETCH FIRST 2 ROWS ONLY;" }
+      - { id: insert_source, sql: "INSERT INTO t (a, b) VALUES (1, 'a'), (2, 'b');" }
+      - { id: insert_default, sql: "INSERT INTO t (a, b) VALUES (DEFAULT, NULL);" }

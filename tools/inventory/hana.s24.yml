@@ -1,0 +1,323 @@
+dialect: hana
+engine: SAP HANA Platform
+version: "2.0 SPS 08 (2.0.08)"
+source: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/3bc1a0d4611d40c4a6e3fc7c8e80395d.html?version=2.0.08
+
+statements:
+  - id: unload
+    name: "UNLOAD"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20fe92a2751910148c38887562a97c5a.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: basic
+        sql: "UNLOAD t;"
+      - id: schema_qualified
+        sql: "UNLOAD s.t;"
+      - id: partition
+        sql: "UNLOAD t PARTITION (1, 2);"
+      - id: partition_persistent_memory
+        sql: "UNLOAD t PARTITION (1 DELETE PERSISTENT MEMORY, 2 RETAIN PERSISTENT MEMORY);"
+      - id: persistent_memory_delete
+        sql: "UNLOAD t DELETE PERSISTENT MEMORY;"
+      - id: persistent_memory_retain
+        sql: "UNLOAD t RETAIN PERSISTENT MEMORY;"
+    examples:
+      - "UNLOAD A1;"
+      - "UNLOAD A1 PARTITION (1 DELETE PERSISTENT MEMORY, 2 RETAIN PERSISTENT MEMORY);"
+      - "UNLOAD A1 DELETE PERSISTENT MEMORY;"
+  - id: unset_session
+    name: "UNSET [SESSION]"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20fec78075191014a376da819b302f43.html?version=2.0.08
+    tier: medium
+    probes:
+      - id: unset
+        sql: "UNSET 'MY_VAR';"
+      - id: unset_session
+        sql: "UNSET SESSION 'MY_VAR';"
+    examples:
+      - "UNSET 'MY_VAR';"
+  - id: alter_audit_policy
+    name: "ALTER AUDIT POLICY"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20cfb7b875191014866c930164aaf07c.html?version=2.0.08
+    tier: low
+    probes:
+      - id: enable
+        sql: "ALTER AUDIT POLICY p ENABLE;"
+      - id: set_trail_type
+        sql: "ALTER AUDIT POLICY p SET TRAIL TYPE TABLE, SYSLOG;"
+      - id: set_retention
+        sql: "ALTER AUDIT POLICY p SET RETENTION 30;"
+  - id: alter_clientside_encryption_column_key
+    name: "ALTER CLIENTSIDE ENCRYPTION COLUMN KEY"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/e621a6a8227a4eeb993c6c11c548e55c.html?version=2.0.08
+    tier: low
+    probes:
+      - id: add_keycopy
+        sql: "ALTER CLIENTSIDE ENCRYPTION COLUMN KEY s.k ADD KEYCOPY ENCRYPTED WITH KEYPAIR kp;"
+      - id: add_new_version
+        sql: "ALTER CLIENTSIDE ENCRYPTION COLUMN KEY k ADD NEW VERSION;"
+  - id: alter_clientside_encryption_keypair
+    name: "ALTER CLIENTSIDE ENCRYPTION KEYPAIR"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/e38a58bdf5c446739afa5f239c88a982.html?version=2.0.08
+    tier: low
+    probes:
+      - id: add_new_version
+        sql: "ALTER CLIENTSIDE ENCRYPTION KEYPAIR kp ADD NEW VERSION;"
+      - id: drop_old_versions
+        sql: "ALTER CLIENTSIDE ENCRYPTION KEYPAIR kp DROP OLD VERSIONS;"
+  - id: alter_credential
+    name: "ALTER CREDENTIAL"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20cfdad57519101482fcb19af478ec34.html?version=2.0.08
+    tier: low
+    probes:
+      - id: component
+        sql: "ALTER CREDENTIAL FOR COMPONENT 'APP' PURPOSE 'P' TYPE 'PASSWORD' USING 'secret';"
+      - id: for_user
+        sql: "ALTER CREDENTIAL FOR USER u COMPONENT 'APP' PURPOSE 'P' TYPE 'PASSWORD' USING 'secret';"
+  - id: alter_jwt_provider
+    name: "ALTER JWT PROVIDER"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/61863f687c3d40c5a7c76a4ab110ede5.html?version=2.0.08
+    tier: low
+    probes:
+      - id: set_issuer
+        sql: "ALTER JWT PROVIDER p SET WITH ISSUER 'https://issuer';"
+      - id: set_priority
+        sql: "ALTER JWT PROVIDER p SET PRIORITY 5;"
+      - id: case
+        sql: "ALTER JWT PROVIDER p CASE INSENSITIVE IDENTITY;"
+  - id: alter_ldap_provider
+    name: "ALTER LDAP PROVIDER"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/ae9ba28ddefc4b29809d5b926d6ee02d.html?version=2.0.08
+    tier: low
+    probes:
+      - id: user_lookup_url
+        sql: "ALTER LDAP PROVIDER p USER LOOKUP URL 'ldap://host:389/dc=example,dc=com?uid?sub?(uid=*)';"
+      - id: ssl_default
+        sql: "ALTER LDAP PROVIDER p SSL ON DEFAULT OFF;"
+      - id: enable_provider
+        sql: "ALTER LDAP PROVIDER p ENABLE PROVIDER;"
+  - id: alter_library
+    name: "ALTER LIBRARY"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/d0b979ccbbd14377983f254e85241ff4.html?version=2.0.08
+    tier: low
+    probes:
+      - id: empty_body
+        sql: "ALTER LIBRARY mylib AS BEGIN END;"
+      - id: language_body
+        sql: "ALTER LIBRARY s.lib LANGUAGE SQLSCRIPT AS BEGIN PUBLIC VARIABLE maxval CONSTANT INT = 100; END;"
+  - id: alter_pse
+    name: "ALTER PSE"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/9c22c6f22df64bc6881d1ed61be18b8d.html?version=2.0.08
+    tier: low
+    probes:
+      - id: add_certificate
+        sql: "ALTER PSE p ADD CERTIFICATE (c1, c2);"
+      - id: set_own_certificate
+        sql: "ALTER PSE p SET OWN CERTIFICATE 'pem-content';"
+      - id: add_provider
+        sql: "ALTER PSE p ADD PROVIDER prov;"
+  - id: alter_remote_source
+    name: "ALTER REMOTE SOURCE"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/f423eb496f5b1014a1a7bb3e49bcc07b.html?version=2.0.08
+    tier: low
+    probes:
+      - id: adapter
+        sql: "ALTER REMOTE SOURCE rs ADAPTER odbc CONFIGURATION 'DSN=mydsn';"
+      - id: refresh_linked
+        sql: "ALTER REMOTE SOURCE rs REFRESH LINKED OBJECTS;"
+      - id: set_property
+        sql: "ALTER REMOTE SOURCE rs SET PROPERTY prop = 'v';"
+  - id: alter_saml_provider
+    name: "ALTER SAML PROVIDER"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d04f7b751910148a98f145797d3482.html?version=2.0.08
+    tier: low
+    probes:
+      - id: set_subject_issuer
+        sql: "ALTER SAML PROVIDER p SET SUBJECT 'CN=s' ISSUER 'CN=i';"
+      - id: disable_user_creation
+        sql: "ALTER SAML PROVIDER p DISABLE USER CREATION;"
+  - id: alter_system_add_alter_remove_statement_hint
+    name: "ALTER SYSTEM {ADD | ALTER | REMOVE} STATEMENT HINT"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/1ec23ef0839b45b7991a785eff19fd2c.html?version=2.0.08
+    tier: low
+    probes:
+      - id: add
+        sql: "ALTER SYSTEM ADD STATEMENT HINT (NO_CS_JOIN, NO_CS_UNION_ALL) FOR SELECT * FROM AAA, BBB WHERE AAA.X = BBB.X;"
+      - id: alter_comment
+        sql: "ALTER SYSTEM ALTER STATEMENT HINT COMMENT 'c' FOR SELECT * FROM AAA, BBB WHERE AAA.X = BBB.X;"
+      - id: remove_all_hash
+        sql: "ALTER SYSTEM REMOVE STATEMENT HINT ALL FOR STATEMENT HASH 'abcdef';"
+  - id: alter_system_add_activate_update_drop_key_management_configuration
+    name: "ALTER SYSTEM {ADD | ACTIVATE | UPDATE | DROP} KEY MANAGEMENT CONFIGURATION"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/fbf792dd2d9a4379a79d104739a0584a.html?version=2.0.08
+    tier: low
+    probes:
+      - id: add
+        sql: "ALTER SYSTEM ADD KEY MANAGEMENT CONFIGURATION AWS_HSM PROPERTIES '{\"k\":\"v\"}';"
+      - id: activate
+        sql: "ALTER SYSTEM ACTIVATE KEY MANAGEMENT CONFIGURATION AWS_HSM;"
+  - id: alter_system_add_remove_abstract_sql_plan_filter
+    name: "ALTER SYSTEM {ADD | REMOVE} ABSTRACT SQL PLAN FILTER"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/9c6ac161c9d8492f9d55c9cff38fb17f.html?version=2.0.08
+    tier: low
+    probes:
+      - id: add
+        sql: "ALTER SYSTEM ADD ABSTRACT SQL PLAN FILTER 'f' SET 'USER NAME' = 'u';"
+      - id: remove_all
+        sql: "ALTER SYSTEM REMOVE ABSTRACT SQL PLAN FILTER ALL;"
+  - id: alter_system_alter_audit_log
+    name: "ALTER SYSTEM ALTER AUDIT LOG"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/f135e4a7883746f4b4b7c06b8605a589.html?version=2.0.08
+    tier: low
+    probes:
+      - id: page_loadable
+        sql: "ALTER SYSTEM ALTER AUDIT LOG PAGE LOADABLE;"
+  - id: alter_system_alter_datavolume_add_partition
+    name: "ALTER SYSTEM ALTER DATAVOLUME ADD PARTITION"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/b4fce971f773460088662e30b7049948.html?version=2.0.08
+    tier: low
+    probes:
+      - id: basic
+        sql: "ALTER SYSTEM ALTER DATAVOLUME ADD PARTITION;"
+      - id: path_site
+        sql: "ALTER SYSTEM ALTER DATAVOLUME ADD PARTITION PATH '/hana/data' SYSTEM REPLICATION SITE 2;"
+  - id: alter_system_alter_datavolume_drop_partition
+    name: "ALTER SYSTEM ALTER DATAVOLUME DROP PARTITION"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/e008bf01b8e74e74a354cb40619d1c35.html?version=2.0.08
+    tier: low
+    probes:
+      - id: basic
+        sql: "ALTER SYSTEM ALTER DATAVOLUME DROP PARTITION 1;"
+      - id: site
+        sql: "ALTER SYSTEM ALTER DATAVOLUME DROP PARTITION 1 SYSTEM REPLICATION SITE 'site2';"
+  - id: alter_system_alter_table_placement
+    name: "ALTER SYSTEM ALTER TABLE PLACEMENT"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/0715b97c91cd4c87982040cdd341d676.html?version=2.0.08
+    tier: low
+    probes:
+      - id: set
+        sql: "ALTER SYSTEM ALTER TABLE PLACEMENT (SCHEMA_NAME => 'S', TABLE_NAME => 'T') SET (MIN_ROWS_FOR_PARTITIONING => 1000);"
+      - id: location
+        sql: "ALTER SYSTEM ALTER TABLE PLACEMENT LOCATION loc SET (INCLUDE=>'MASTER');"
+  - id: alter_system_application_encryption
+    name: "ALTER SYSTEM APPLICATION ENCRYPTION"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/f42595956f5b1014bc6cb241d3d75fc2.html?version=2.0.08
+    tier: low
+    probes:
+      - id: create_new_key
+        sql: "ALTER SYSTEM APPLICATION ENCRYPTION CREATE NEW KEY;"
+      - id: create_root_key
+        sql: "ALTER SYSTEM APPLICATION ENCRYPTION CREATE NEW ROOT KEY WITH ALGORITHM 'AES-256-CBC' WITHOUT ACTIVATE;"
+      - id: activate_root_key
+        sql: "ALTER SYSTEM APPLICATION ENCRYPTION ACTIVATE NEW ROOT KEY;"
+  - id: alter_system_backup_encryption
+    name: "ALTER SYSTEM BACKUP ENCRYPTION"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/edf132427f0043b08769774512504858.html?version=2.0.08
+    tier: low
+    probes:
+      - id: create_root_key
+        sql: "ALTER SYSTEM BACKUP ENCRYPTION CREATE NEW ROOT KEY WITHOUT ACTIVATE;"
+      - id: encryption_on
+        sql: "ALTER SYSTEM BACKUP ENCRYPTION ON;"
+  - id: alter_system_clear_audit_log
+    name: "ALTER SYSTEM CLEAR AUDIT LOG"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/d2231bd2d2951014ad35d218ea6628c8.html?version=2.0.08
+    tier: low
+    probes:
+      - id: until
+        sql: "ALTER SYSTEM CLEAR AUDIT LOG UNTIL '2012-12-31 23:59:59';"
+      - id: policy_all
+        sql: "ALTER SYSTEM CLEAR AUDIT LOG FOR AUDIT POLICY p ALL;"
+  - id: alter_system_clear_cache
+    name: "ALTER SYSTEM CLEAR CACHE"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/141ad67a9cbe4c6c951b542aff239df4.html?version=2.0.08
+    tier: low
+    probes:
+      - id: ids_sync
+        sql: "ALTER SYSTEM CLEAR CACHE (1, 2 SYNC);"
+  - id: alter_system_clear_column_join_data_statistics
+    name: "ALTER SYSTEM CLEAR COLUMN JOIN DATA STATISTICS"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/9ac0859babf549c1a05bdfd8c9c68f11.html?version=2.0.08
+    tier: low
+    probes:
+      - id: basic
+        sql: "ALTER SYSTEM CLEAR COLUMN JOIN DATA STATISTICS;"
+  - id: alter_system_clear_inifile_content_history
+    name: "ALTER SYSTEM CLEAR INIFILE CONTENT HISTORY"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/fb097f2620c645d18064ce6b93c24a1e.html?version=2.0.08
+    tier: low
+    probes:
+      - id: basic
+        sql: "ALTER SYSTEM CLEAR INIFILE CONTENT HISTORY;"
+  - id: alter_system_clear_result_cache
+    name: "ALTER SYSTEM CLEAR RESULT CACHE"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/97dca93d321540faa947abe647ebdf6b.html?version=2.0.08
+    tier: low
+    probes:
+      - id: basic
+        sql: "ALTER SYSTEM CLEAR RESULT CACHE;"
+      - id: dynamic
+        sql: "ALTER SYSTEM CLEAR DYNAMIC RESULT CACHE;"
+  - id: alter_system_clear_timezone_cache
+    name: "ALTER SYSTEM CLEAR TIMEZONE CACHE"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/a7804953f5cb458a84f47d3045436107.html?version=2.0.08
+    tier: low
+    probes:
+      - id: sap
+        sql: "ALTER SYSTEM CLEAR TIMEZONE CACHE DATASET 'sap';"
+  - id: alter_system_clear_traces
+    name: "ALTER SYSTEM CLEAR TRACES"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d12816751910149640d1e144741069.html?version=2.0.08
+    tier: low
+    probes:
+      - id: basic
+        sql: "ALTER SYSTEM CLEAR TRACES ('ALERT', 'BACKUP');"
+      - id: until_backup
+        sql: "ALTER SYSTEM CLEAR TRACES ('*') UNTIL '2024-01-01 00:00:00' WITH BACKUP;"
+  - id: alter_system_clientpki_update_drop
+    name: "ALTER SYSTEM CLIENTPKI { UPDATE / DROP }"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/c268c6ec05e4408fb802b6a0c16c72fe.html?version=2.0.08
+    tier: low
+    probes:
+      - id: update_certificates
+        sql: "ALTER SYSTEM CLIENTPKI UPDATE CERTIFICATES;"
+      - id: update_root_ca
+        sql: "ALTER SYSTEM CLIENTPKI UPDATE ROOT CA;"
+      - id: drop_root_ca
+        sql: "ALTER SYSTEM CLIENTPKI DROP ROOT CA;"
+  - id: alter_system_create_runtimedump
+    name: "ALTER SYSTEM CREATE RUNTIMEDUMP"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/6954969bba544da190ca53c1bf367086.html?version=2.0.08
+    tier: low
+    probes:
+      - id: basic
+        sql: "ALTER SYSTEM CREATE RUNTIMEDUMP;"
+      - id: location_file
+        sql: "ALTER SYSTEM CREATE RUNTIMEDUMP AT LOCATION 'myhost:30003' INTO FILE 'dump.trc';"
+  - id: alter_system_create_waitgraph
+    name: "ALTER SYSTEM CREATE WAITGRAPH"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/078511c1125a4235bbd09e3ea6ff04a8.html?version=2.0.08
+    tier: low
+    probes:
+      - id: location_file
+        sql: "ALTER SYSTEM CREATE WAITGRAPH AT LOCATION 'myhost:30003' INTO FILE 'my_waitgraph.trc';"
+      - id: all_threads
+        sql: "ALTER SYSTEM CREATE WAITGRAPH ALL THREADS;"
+  - id: alter_system_enable_disable_remove_abstract_sql_plan
+    name: "ALTER SYSTEM {ENABLE | DISABLE | REMOVE} ABSTRACT SQL PLAN"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/031158f3b53342b095ab4d49ffd95a3e.html?version=2.0.08
+    tier: low
+    probes:
+      - id: enable_all
+        sql: "ALTER SYSTEM ENABLE ABSTRACT SQL PLAN ENTRY ALL;"
+      - id: remove_for_ids
+        sql: "ALTER SYSTEM REMOVE ABSTRACT SQL PLAN ENTRY FOR 1, 2;"
+  - id: alter_system_enable_disable_all_table_replicas
+    name: "ALTER SYSTEM {ENABLE | DISABLE} ALL [ASYNCHRONOUS | SYNCHRONOUS] TABLE REPLICAS"
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/f9486656d74b4b059f53c28f7d5f8be9.html?version=2.0.08
+    tier: low
+    probes:
+      - id: enable_sync
+        sql: "ALTER SYSTEM ENABLE ALL SYNCHRONOUS TABLE REPLICAS;"
+      - id: disable_all
+        sql: "ALTER SYSTEM DISABLE ALL TABLE REPLICAS;"

@@ -1,0 +1,148 @@
+dialect: spanner
+engine: Google Cloud Spanner (GoogleSQL dialect)
+version: "current managed service (docs as of 2026-10)"
+source: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language
+
+statements:
+  - id: create_schema
+    name: CREATE SCHEMA
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#create_schema
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE SCHEMA s;"
+
+  - id: drop_schema
+    name: DROP SCHEMA
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#drop_schema
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP SCHEMA s;"
+
+  - id: create_database
+    name: CREATE DATABASE
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#create_database
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE DATABASE db;"
+      - id: backtick_name
+        sql: "CREATE DATABASE `my-db`;"
+
+  - id: alter_database
+    name: ALTER DATABASE
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#alter-database
+    tier: medium
+    probes:
+      - id: set_options_leader
+        sql: "ALTER DATABASE db SET OPTIONS (default_leader = 'us-east1');"
+      - id: set_options_optimizer_version
+        sql: "ALTER DATABASE db SET OPTIONS (optimizer_version = 5);"
+      - id: set_options_statistics_package
+        sql: "ALTER DATABASE db SET OPTIONS (optimizer_statistics_package = 'auto_20191128');"
+      - id: set_options_retention
+        sql: "ALTER DATABASE db SET OPTIONS (version_retention_period = '7d');"
+      - id: set_options_sequence_kind
+        sql: "ALTER DATABASE db SET OPTIONS (default_sequence_kind = 'bit_reversed_positive');"
+      - id: set_options_time_zone
+        sql: "ALTER DATABASE db SET OPTIONS (default_time_zone = 'America/Los_Angeles');"
+      - id: set_options_null_multiple
+        sql: "ALTER DATABASE db SET OPTIONS (default_leader = null, optimizer_version = null);"
+
+  - id: create_search_index
+    name: CREATE SEARCH INDEX
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#create-search-index
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE SEARCH INDEX idx ON t (tokens);"
+      - id: multiple_columns
+        sql: "CREATE SEARCH INDEX idx ON t (tokens1, tokens2);"
+      - id: storing
+        sql: "CREATE SEARCH INDEX idx ON t (tokens) STORING (c);"
+      - id: partition_by
+        sql: "CREATE SEARCH INDEX idx ON t (tokens) PARTITION BY c;"
+      - id: order_by
+        sql: "CREATE SEARCH INDEX idx ON t (tokens) ORDER BY ts DESC;"
+      - id: where_not_null
+        sql: "CREATE SEARCH INDEX idx ON t (tokens) WHERE c IS NOT NULL AND d IS NOT NULL;"
+      - id: interleave
+        sql: "CREATE SEARCH INDEX idx ON t (tokens), INTERLEAVE IN p;"
+      - id: options
+        sql: "CREATE SEARCH INDEX idx ON t (tokens) OPTIONS (sort_order_sharding = true);"
+
+  - id: alter_search_index
+    name: ALTER SEARCH INDEX
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#alter-search-index
+    tier: medium
+    probes:
+      - id: add_column
+        sql: "ALTER SEARCH INDEX idx ADD COLUMN c;"
+      - id: drop_column
+        sql: "ALTER SEARCH INDEX idx DROP COLUMN c;"
+      - id: add_stored_column
+        sql: "ALTER SEARCH INDEX idx ADD STORED COLUMN c;"
+      - id: drop_stored_column
+        sql: "ALTER SEARCH INDEX idx DROP STORED COLUMN c;"
+
+  - id: drop_search_index
+    name: DROP SEARCH INDEX
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#drop-search-index
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP SEARCH INDEX idx;"
+      - id: if_exists
+        sql: "DROP SEARCH INDEX IF EXISTS idx;"
+
+  - id: create_vector_index
+    name: CREATE VECTOR INDEX
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#create_vector_index
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE VECTOR INDEX idx ON t (embedding) OPTIONS (distance_type = 'COSINE');"
+      - id: if_not_exists
+        sql: "CREATE VECTOR INDEX IF NOT EXISTS idx ON t (embedding) OPTIONS (distance_type = 'EUCLIDEAN');"
+      - id: extra_key_column
+        sql: "CREATE VECTOR INDEX idx ON t (embedding, k) OPTIONS (distance_type = 'DOT_PRODUCT');"
+      - id: storing
+        sql: "CREATE VECTOR INDEX idx ON t (embedding) STORING (c) OPTIONS (distance_type = 'COSINE');"
+      - id: where_not_null
+        sql: "CREATE VECTOR INDEX idx ON t (embedding) WHERE embedding IS NOT NULL OPTIONS (distance_type = 'COSINE');"
+      - id: tree_options
+        sql: "CREATE VECTOR INDEX idx ON t (embedding) OPTIONS (distance_type = 'COSINE', tree_depth = 3, num_branches = 1000, num_leaves = 1000000);"
+      - id: disable_search
+        sql: "CREATE VECTOR INDEX idx ON t (embedding) OPTIONS (distance_type = 'COSINE', disable_search = true);"
+    examples:
+      - "CREATE VECTOR INDEX Singer_vector_index ON Singers (embedding) STORING (genre) WHERE embedding IS NOT NULL OPTIONS (distance_type = 'COSINE');"
+      - "CREATE VECTOR INDEX Singer_vector_index ON Singers (embedding) STORING (genre) WHERE embedding IS NOT NULL OPTIONS (distance_type = 'COSINE', tree_depth = 3, num_branches = 1000, num_leaves = 1000000);"
+
+  - id: alter_vector_index
+    name: ALTER VECTOR INDEX
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#alter-vector-index
+    tier: medium
+    probes:
+      - id: add_stored_column
+        sql: "ALTER VECTOR INDEX idx ADD STORED COLUMN c;"
+      - id: drop_stored_column
+        sql: "ALTER VECTOR INDEX idx DROP STORED COLUMN c;"
+      - id: set_options
+        sql: "ALTER VECTOR INDEX idx SET OPTIONS (disable_search = true);"
+      - id: rebuild
+        sql: "ALTER VECTOR INDEX idx REBUILD;"
+    examples:
+      - "ALTER VECTOR INDEX Singer_vector_index DROP STORED COLUMN genre;"
+
+  - id: drop_vector_index
+    name: DROP VECTOR INDEX
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language#drop-vector-index
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP VECTOR INDEX idx;"
+      - id: without_vector_keyword
+        sql: "DROP INDEX idx;"
+    examples:
+      - "DROP VECTOR INDEX Singer_vector_index;"

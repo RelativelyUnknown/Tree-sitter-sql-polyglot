@@ -1,0 +1,250 @@
+dialect: cockroachdb
+engine: CockroachDB
+version: "v26.3 (stable)"
+source: https://www.cockroachlabs.com/docs/stable/sql-statements
+
+statements: []
+
+expressions:
+  - id: a_string_literals
+    name: String literals
+    doc: https://www.cockroachlabs.com/docs/stable/sql-constants
+    tier: high
+    probes:
+      - { id: standard, sql: "SELECT 'hello world';" }
+      - { id: doubled_quote, sql: "SELECT 'it''s a beautiful day';" }
+      - { id: newline_concat, sql: "SELECT 'hello'\n' world!';", note: "Adjacent literals separated by a newline concatenate" }
+      - { id: escape_prefix, sql: "SELECT e'hello\\nworld!';" }
+      - { id: escape_numeric, sql: "SELECT e'x61\\141\\u0061';" }
+      - { id: dollar_untagged, sql: "SELECT $$a 'quoted' \\ string$$;" }
+      - { id: dollar_tagged, sql: "SELECT $tag$a $$ nested $$ string$tag$;" }
+      - { id: unicode_chars, sql: "SELECT 'héllo wörld ✓';" }
+  - id: a_numeric_literals
+    name: Numeric literals
+    doc: https://www.cockroachlabs.com/docs/stable/sql-constants
+    tier: high
+    probes:
+      - { id: integer, sql: "SELECT 9999, +4269, -12;" }
+      - { id: decimal_point, sql: "SELECT 3.1415, -.001, 9999.;" }
+      - { id: exponent, sql: "SELECT 6.626e-34, 50e6, 1.5E+3;" }
+      - { id: hex, sql: "SELECT 0xcafe111, 0XAAAA;" }
+  - id: a_bit_byte_literals
+    name: Bit array and byte array literals
+    doc: https://www.cockroachlabs.com/docs/stable/sql-constants
+    tier: medium
+    probes:
+      - { id: bit_literal, sql: "SELECT B'1001010101';" }
+      - { id: empty_bit_literal, sql: "SELECT B'';" }
+      - { id: bytes_escape, sql: "SELECT b'hello,\\x32world';" }
+      - { id: bytes_octal, sql: "SELECT b'\\141\\142\\143';" }
+      - { id: bytes_hex_lower, sql: "SELECT x'636174';" }
+      - { id: bytes_hex_upper, sql: "SELECT X'636174';" }
+  - id: a_named_constants
+    name: Named constants
+    doc: https://www.cockroachlabs.com/docs/stable/sql-constants
+    tier: high
+    probes:
+      - { id: booleans, sql: "SELECT TRUE, FALSE;" }
+      - { id: null_constant, sql: "SELECT NULL;" }
+  - id: a_interpreted_literals
+    name: Interpreted literals and type annotations
+    doc: https://www.cockroachlabs.com/docs/stable/sql-constants
+    tier: high
+    probes:
+      - { id: type_prefix, sql: "SELECT DATE '2013-12-23', BOOL 'FALSE';" }
+      - { id: annotation_operator, sql: "SELECT '42.69':::INT, 'TRUE':::BOOL, '3 days':::INTERVAL;" }
+      - { id: annotate_type_function, sql: "SELECT ANNOTATE_TYPE(1, FLOAT);", note: "ANNOTATE_TYPE(expr, type) from the Scalar Expressions page" }
+      - { id: annotation_on_expr, sql: "SELECT (1 / 5):::INT;" }
+  - id: a_date_time_literals
+    name: Date, time and timestamp literals
+    doc: https://www.cockroachlabs.com/docs/stable/timestamp
+    tier: high
+    probes:
+      - { id: date, sql: "SELECT DATE '2016-01-25';" }
+      - { id: time, sql: "SELECT TIME '01:23:45.123456';" }
+      - { id: timetz, sql: "SELECT TIMETZ '01:23:45.123456-5:00';" }
+      - { id: timestamp, sql: "SELECT TIMESTAMP '2016-01-25 10:10:10';" }
+      - { id: timestamp_iso8601, sql: "SELECT TIMESTAMP '2016-01-25T10:10:10.555555';" }
+      - { id: timestamptz, sql: "SELECT TIMESTAMPTZ '2016-01-25 10:10:10-05:00';" }
+      - { id: date_annotation, sql: "SELECT '2016-01-25':::DATE, '2016-01-25 10:10:10':::TIMESTAMPTZ;" }
+      - { id: timestamp_special, sql: "SELECT TIMESTAMP 'infinity', DATE '-infinity';" }
+  - id: a_interval_literals
+    name: Interval literals
+    doc: https://www.cockroachlabs.com/docs/stable/interval
+    tier: high
+    probes:
+      - { id: sql_standard, sql: "SELECT INTERVAL '1-2 3 4:05:06';" }
+      - { id: iso8601, sql: "SELECT INTERVAL 'P1Y2M3DT4H5M6S';" }
+      - { id: postgres_traditional, sql: "SELECT INTERVAL '1 year 2 months 3 days 4 hours 5 minutes 6 seconds';" }
+      - { id: postgres_abbreviated, sql: "SELECT INTERVAL '1 yr 2 mons 3 d 4 hrs 5 mins 6 secs';" }
+      - { id: single_duration_field, sql: "SELECT INTERVAL '1 2:03:04' HOUR;" }
+      - { id: duration_field_range, sql: "SELECT INTERVAL '02:03' MINUTE TO SECOND;" }
+      - { id: interval_annotation, sql: "SELECT '2h30m30s':::INTERVAL;" }
+      - { id: interval_arithmetic, sql: "SELECT now() + INTERVAL '3 days';" }
+  - id: a_array_literals
+    name: Array constructors and literals
+    doc: https://www.cockroachlabs.com/docs/stable/array
+    tier: high
+    probes:
+      - { id: array_constructor, sql: "SELECT ARRAY['sky', 'road', 'car'];" }
+      - { id: array_of_ints, sql: "SELECT ARRAY[10, 20, 30];" }
+      - { id: empty_array_annotated, sql: "SELECT ARRAY[]:::INT[];" }
+      - { id: array_index, sql: "SELECT d[2] FROM c;" }
+      - { id: array_slice, sql: "SELECT d[1:2] FROM c;" }
+      - { id: array_string_literal, sql: "SELECT '{1,2,3}'::INT[];" }
+      - { id: array_from_subquery, sql: "SELECT ARRAY(SELECT x FROM t);" }
+      - { id: nested_array, sql: "SELECT ARRAY[ARRAY[1, 2], ARRAY[3, 4]];" }
+      - { id: array_containment, sql: "SELECT d FROM c WHERE d @> ARRAY[10] OR d <@ ARRAY[10, 20, 30];" }
+  - id: a_tuple_literals
+    name: Tuple constructors
+    doc: https://www.cockroachlabs.com/docs/stable/scalar-expressions
+    tier: medium
+    probes:
+      - { id: paren_tuple, sql: "SELECT (1, 2, 3);" }
+      - { id: row_constructor, sql: "SELECT ROW(1, 'a', true);" }
+      - { id: tuple_comparison, sql: "SELECT (a, b) = (1, 2) FROM t;" }
+      - { id: tuple_in, sql: "SELECT * FROM t WHERE (a, b) IN ((1, 2), (3, 4));" }
+  - id: a_json_literals
+    name: JSON and JSONB literals
+    doc: https://www.cockroachlabs.com/docs/stable/jsonb
+    tier: high
+    probes:
+      - { id: object, sql: "SELECT '{\"type\": \"account creation\", \"username\": \"harvestboy93\"}'::JSONB;" }
+      - { id: array, sql: "SELECT '[{\"foo\":\"bar\"}]'::JSONB;" }
+      - { id: nested, sql: "SELECT '{\"prices\" : [ { \"05/01/2022\" : 100.5 } , { \"06/01/2022\" : 101.5 } ]}'::JSONB;" }
+      - { id: typed_prefix, sql: "SELECT JSONB '{\"a\": 1}';" }
+      - { id: json_annotation, sql: "SELECT '{\"a\": null}':::JSON;" }
+  - id: a_other_value_literals
+    name: UUID, INET, vector, ltree and tsvector literals
+    doc: https://www.cockroachlabs.com/docs/stable/data-types
+    tier: medium
+    probes:
+      - { id: uuid, sql: "SELECT '7f9c24e8-3b12-4fef-91e0-56a2d5a246ec'::UUID;" }
+      - { id: uuid_prefix, sql: "SELECT UUID 'acde070d-8c4c-4f0d-9d8a-162843c10333';" }
+      - { id: inet_ipv4, sql: "SELECT INET '190.0.0.0/24';" }
+      - { id: inet_ipv6, sql: "SELECT '2001:4f8:3:ba:2e0:81ff:fe22:d1f1/120'::INET;" }
+      - { id: vector, sql: "SELECT '[1.0, 0.0, 0.0]'::VECTOR;" }
+      - { id: ltree, sql: "SELECT 'Top.Countries.Europe.France'::LTREE;" }
+      - { id: tsvector, sql: "SELECT 'a:1 b:2'::TSVECTOR;" }
+      - { id: tsquery, sql: "SELECT 'list & lexem'::TSQUERY;" }
+  - id: a_numeric_types
+    name: Numeric type names
+    doc: https://www.cockroachlabs.com/docs/stable/int
+    tier: high
+    probes:
+      - { id: int_aliases, sql: "SELECT 1::INT, 1::INTEGER, 1::INT8, 1::BIGINT, 1::INT64;" }
+      - { id: smaller_ints, sql: "SELECT 1::INT2, 1::SMALLINT, 1::INT4;" }
+      - { id: serial_in_ddl, sql: "CREATE TABLE t (a SERIAL, b SERIAL2, c SERIAL4, d SERIAL8, e BIGSERIAL, f SMALLSERIAL);" }
+      - { id: float_types, sql: "SELECT 1::FLOAT, 1::FLOAT4, 1::FLOAT8, 1::REAL, 1::DOUBLE PRECISION;" }
+      - { id: float_precision, sql: "SELECT 1::FLOAT(24), 1::FLOAT(53);" }
+      - { id: decimal_types, sql: "SELECT 1::DECIMAL, 1::DEC, 1::NUMERIC;" }
+      - { id: decimal_precision_scale, sql: "SELECT 1::DECIMAL(10, 5), 1::NUMERIC(10), 1::DEC(10, 2);" }
+      - { id: oid_types, sql: "SELECT 1::OID, 'pg_class'::REGCLASS, 'int8'::REGTYPE, 'now'::REGPROC;" }
+  - id: a_string_types
+    name: String, bit and boolean type names
+    doc: https://www.cockroachlabs.com/docs/stable/string
+    tier: high
+    probes:
+      - { id: string, sql: "SELECT 'a'::STRING, 'a'::TEXT, 'a'::VARCHAR, 'a'::CHAR;" }
+      - { id: string_length, sql: "SELECT 'a'::STRING(4), 'a'::VARCHAR(4), 'a'::CHAR(4), 'a'::CHARACTER(4);" }
+      - { id: char_varying, sql: "SELECT 'a'::CHARACTER VARYING, 'a'::CHAR VARYING(4), 'a'::CHARACTER VARYING(10);" }
+      - { id: char_quoted, sql: "SELECT 'a'::\"char\", 'a'::NAME;" }
+      - { id: citext, sql: "SELECT 'Roach'::CITEXT;" }
+      - { id: bytes, sql: "SELECT 'a'::BYTES, 'a'::BYTEA, 'a'::BLOB;" }
+      - { id: bool, sql: "SELECT 1::BOOL, 1::BOOLEAN;" }
+      - { id: bit, sql: "SELECT B'1'::BIT, B'101'::BIT(3), B'1'::VARBIT, B'1'::VARBIT(3), B'1'::BIT VARYING(3);" }
+  - id: a_datetime_types
+    name: Date, time and interval type names
+    doc: https://www.cockroachlabs.com/docs/stable/timestamp
+    tier: high
+    probes:
+      - { id: date, sql: "SELECT now()::DATE;" }
+      - { id: time_types, sql: "SELECT now()::TIME, now()::TIMETZ;" }
+      - { id: time_precision, sql: "SELECT now()::TIME(3), now()::TIMETZ(3);" }
+      - { id: timestamp_types, sql: "SELECT now()::TIMESTAMP, now()::TIMESTAMPTZ;" }
+      - { id: timestamp_precision, sql: "SELECT now()::TIMESTAMP(3), now()::TIMESTAMPTZ(0);" }
+      - { id: timestamp_with_time_zone, sql: "SELECT now()::TIMESTAMP WITH TIME ZONE, now()::TIMESTAMP WITHOUT TIME ZONE;" }
+      - { id: time_with_time_zone, sql: "SELECT now()::TIME WITH TIME ZONE, now()::TIME WITHOUT TIME ZONE;" }
+      - { id: interval_type, sql: "SELECT '1 day'::INTERVAL;" }
+      - { id: interval_field_type, sql: "SELECT '1 day'::INTERVAL DAY, '1 day'::INTERVAL HOUR TO SECOND;" }
+  - id: a_composite_types
+    name: Array, JSON, network and other type names
+    doc: https://www.cockroachlabs.com/docs/stable/data-types
+    tier: high
+    probes:
+      - { id: array_brackets, sql: "SELECT ARRAY[1]::INT[], ARRAY['a']::STRING[];" }
+      - { id: array_keyword, sql: "SELECT ARRAY[1]::INT ARRAY;" }
+      - { id: array_size_ignored, sql: "SELECT ARRAY[1]::INT[3], ARRAY[[1]]::INT[][];" }
+      - { id: json_types, sql: "SELECT '{}'::JSON, '{}'::JSONB;" }
+      - { id: uuid_inet, sql: "SELECT NULL::UUID, NULL::INET;" }
+      - { id: vector_dimensions, sql: "SELECT '[1,2,3]'::VECTOR(3);" }
+      - { id: ltree_tsvector, sql: "SELECT NULL::LTREE, NULL::TSVECTOR, NULL::TSQUERY;" }
+      - { id: spatial, sql: "SELECT NULL::GEOMETRY, NULL::GEOGRAPHY, NULL::BOX2D;" }
+      - { id: spatial_subtype, sql: "SELECT NULL::GEOMETRY(POINT, 4326), NULL::GEOGRAPHY(POLYGON);" }
+      - { id: pg_lsn, sql: "SELECT '0/0'::PG_LSN;" }
+      - { id: user_defined_qualified, sql: "SELECT 'a'::db.sc.my_enum, 'a'::sc.my_enum;" }
+      - { id: user_defined_enum, sql: "SELECT 'club'::suit;" }
+  - id: a_casts
+    name: Casts and type coercions
+    doc: https://www.cockroachlabs.com/docs/stable/scalar-expressions
+    tier: high
+    probes:
+      - { id: double_colon, sql: "SELECT NOW()::DECIMAL, VARIANCE(a + 2)::INT FROM t;" }
+      - { id: cast_function, sql: "SELECT CAST(now() AS DATE);" }
+      - { id: cast_to_bool, sql: "SELECT CAST(0 AS BOOL), CAST(123 AS BOOL);" }
+      - { id: cast_nan, sql: "SELECT CAST('NaN' AS FLOAT), '-Inf'::DECIMAL;" }
+      - { id: chained_cast, sql: "SELECT '1'::INT::FLOAT::STRING;" }
+      - { id: cast_array_type, sql: "SELECT CAST('{1,2}' AS INT[]);" }
+      - { id: cast_parameterized, sql: "SELECT CAST(a AS DECIMAL(10, 2)), CAST(b AS VARCHAR(10)) FROM t;" }
+      - { id: cast_column, sql: "SELECT a::TEXT FROM t;" }
+      - { id: type_prefix_cast, sql: "SELECT INT '123', BOOL 'true';" }
+      - { id: cast_precedence, sql: "SELECT -1::INT, 1 + 2::FLOAT;" }
+  - id: a_collation
+    name: COLLATE expressions
+    doc: https://www.cockroachlabs.com/docs/stable/collate
+    tier: medium
+    probes:
+      - { id: value_collate, sql: "SELECT 'dog' COLLATE en;" }
+      - { id: collate_locale_extension, sql: "SELECT 'a' COLLATE en_u_ks_level1;" }
+      - { id: collate_default, sql: "SELECT 'a' COLLATE \"default\";" }
+      - { id: order_by_collate, sql: "SELECT name FROM t ORDER BY name COLLATE de;" }
+      - { id: cast_collate, sql: "SELECT 'a'::STRING COLLATE en;" }
+      - { id: column_type_collate, sql: "CREATE TABLE foo (a STRING COLLATE en PRIMARY KEY);" }
+  - id: a_identifier_quoting
+    name: Identifiers and quoting
+    doc: https://www.cockroachlabs.com/docs/stable/keywords-and-identifiers
+    tier: high
+    probes:
+      - { id: plain, sql: "SELECT a, _b, c1, d$ FROM t;" }
+      - { id: double_quoted, sql: "SELECT \"Default\" FROM \"Configuration\";" }
+      - { id: quoted_keyword, sql: "SELECT \"select\" FROM \"table\";" }
+      - { id: embedded_quote, sql: "SELECT \"a\"\"b\" FROM t;" }
+      - { id: quoted_with_space, sql: "SELECT \"my col\" FROM \"my table\";" }
+      - { id: qualified_names, sql: "SELECT t.a, db.sc.t.a FROM db.sc.t;" }
+      - { id: quoted_qualified, sql: "SELECT \"s\".\"t\".\"c\" FROM \"s\".\"t\";" }
+      - { id: unicode_identifier, sql: "SELECT été FROM t;" }
+      - { id: alias_quoted, sql: "SELECT a AS \"Total Count\" FROM t;" }
+      - { id: alias_no_as, sql: "SELECT a total FROM t;" }
+      - { id: column_ordinal_ref, sql: "SELECT t.* FROM t;" }
+  - id: a_comments
+    name: Comments
+    doc: https://www.cockroachlabs.com/docs/stable/sql-grammar
+    tier: high
+    probes:
+      - { id: line_comment, sql: "SELECT 1; -- trailing comment" }
+      - { id: line_comment_before, sql: "-- leading comment\nSELECT 1;" }
+      - { id: block_comment, sql: "SELECT /* inline */ 1;" }
+      - { id: block_comment_multiline, sql: "/* multi\nline */\nSELECT 1;" }
+      - { id: block_comment_nested, sql: "SELECT /* outer /* inner */ still outer */ 1;", note: "CockroachDB follows PostgreSQL in nesting block comments" }
+  - id: a_parameters_variables
+    name: Placeholders and session variables
+    doc: https://www.cockroachlabs.com/docs/stable/scalar-expressions
+    tier: high
+    probes:
+      - { id: positional_placeholder, sql: "SELECT * FROM t WHERE a = $1;" }
+      - { id: multiple_placeholders, sql: "INSERT INTO t VALUES ($1, $2, $3);" }
+      - { id: placeholder_cast, sql: "SELECT $1::INT, $2:::STRING;" }
+      - { id: placeholder_limit, sql: "SELECT * FROM t LIMIT $1 OFFSET $2;" }
+      - { id: current_setting, sql: "SELECT current_setting('application_name');" }
+      - { id: set_config, sql: "SELECT set_config('application_name', 'app', false);" }
+      - { id: show_variable_subquery, sql: "SELECT * FROM [SHOW application_name];", note: "Statement sources in brackets are a CockroachDB extension" }

@@ -1,0 +1,64 @@
+dialect: spark
+engine: Apache Spark SQL
+version: "4.x (docs/latest)"
+source: https://spark.apache.org/docs/latest/sql-ref-syntax.html
+
+statements:
+  - id: while
+    name: WHILE
+    doc: https://spark.apache.org/docs/latest/control-flow/while-stmt.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "BEGIN DECLARE n INT DEFAULT 0; WHILE n < 3 DO SET n = n + 1; END WHILE; END;"
+      - id: labeled
+        sql: "BEGIN DECLARE n INT DEFAULT 0; lbl: WHILE n < 3 DO SET n = n + 1; END WHILE lbl; END;"
+      - id: labeled_leave
+        sql: "BEGIN DECLARE n INT DEFAULT 0; lbl: WHILE true DO SET n = n + 1; IF n > 3 THEN LEAVE lbl; END IF; END WHILE lbl; END;"
+      - id: labeled_iterate
+        sql: "BEGIN DECLARE n INT DEFAULT 0; lbl: WHILE n < 3 DO SET n = n + 1; ITERATE lbl; END WHILE lbl; END;"
+      - id: multiple_statements
+        sql: "BEGIN DECLARE n INT DEFAULT 0; WHILE n < 3 DO SET n = n + 1; SELECT n; END WHILE; END;"
+    examples:
+      - |-
+        BEGIN
+          DECLARE sum INT DEFAULT 0;
+          DECLARE num INT DEFAULT 0;
+          sumNumbers: WHILE num < 10 DO
+            SET num = num + 1;
+            IF num % 2 = 0 THEN
+              ITERATE sumNumbers;
+            END IF;
+            SET sum = sum + num;
+          END WHILE sumNumbers;
+          VALUES (sum);
+        END;
+      - "SELECT sum(num) FROM range(1, 10) AS t(num) WHERE num % 2 = 1;"
+
+  - id: cache_table
+    name: CACHE TABLE
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-aux-cache-cache-table.html
+    tier: high
+    probes:
+      - id: basic
+        sql: "CACHE TABLE t;"
+      - id: lazy
+        sql: "CACHE LAZY TABLE t;"
+      - id: qualified_name
+        sql: "CACHE TABLE db.t;"
+      - id: options_storage_level
+        sql: "CACHE TABLE t OPTIONS ('storageLevel' 'DISK_ONLY');"
+      - id: options_storage_level_equals
+        sql: "CACHE TABLE t OPTIONS ('storageLevel' = 'MEMORY_ONLY');"
+      - id: as_select
+        sql: "CACHE TABLE t AS SELECT * FROM s;"
+      - id: select_without_as
+        sql: "CACHE TABLE t SELECT * FROM s;"
+      - id: as_table_statement
+        sql: "CACHE TABLE t AS TABLE s;"
+      - id: as_from_statement
+        sql: "CACHE TABLE t AS FROM s SELECT *;"
+      - id: lazy_options_as_select
+        sql: "CACHE LAZY TABLE t OPTIONS ('storageLevel' 'MEMORY_AND_DISK') AS SELECT * FROM s;"
+    examples:
+      - "CACHE TABLE testCache OPTIONS ( 'storageLevel' 'DISK_ONLY' ) SELECT * FROM testData;"

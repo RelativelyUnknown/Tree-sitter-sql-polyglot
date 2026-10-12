@@ -1,0 +1,103 @@
+dialect: cockroachdb
+engine: CockroachDB
+version: "v26.3 (stable)"
+source: https://www.cockroachlabs.com/docs/stable/sql-statements
+
+statements:
+  - id: insert
+    name: INSERT
+    doc: https://www.cockroachlabs.com/docs/stable/insert
+    tier: high
+    probes:
+      - { id: values_basic, sql: "INSERT INTO t VALUES (1, 'a');" }
+      - { id: column_list, sql: "INSERT INTO t (a, b) VALUES (1, 'a');" }
+      - { id: multi_row, sql: "INSERT INTO t (a, b) VALUES (1, 'a'), (2, 'b');" }
+      - { id: table_alias, sql: "INSERT INTO t AS x (a, b) VALUES (1, 'a');" }
+      - { id: schema_qualified, sql: "INSERT INTO db.public.t (a) VALUES (1);" }
+      - { id: default_in_values, sql: "INSERT INTO t (id, city) VALUES (DEFAULT, 'seattle');" }
+      - { id: select_source, sql: "INSERT INTO t (a, b) SELECT a, b FROM s WHERE a > 1;" }
+      - { id: select_source_parenthesized, sql: "INSERT INTO t (a, b) (SELECT a, b FROM s);" }
+      - { id: default_values, sql: "INSERT INTO t DEFAULT VALUES;" }
+      - id: with_cte
+        sql: "WITH s AS (SELECT 1 AS a) INSERT INTO t (a) SELECT a FROM s;"
+      - id: returning_columns
+        sql: "INSERT INTO t (a, b) VALUES (1, 'a') RETURNING a, b;"
+      - { id: returning_star, sql: "INSERT INTO t (a) VALUES (1) RETURNING *;" }
+      - { id: returning_expression_alias, sql: "INSERT INTO t (a) VALUES (1) RETURNING a + 1 AS next_a;" }
+      - { id: returning_nothing, sql: "INSERT INTO t (a) VALUES (1) RETURNING NOTHING;" }
+      - { id: on_conflict_do_nothing, sql: "INSERT INTO t (a, b) VALUES (1, 'a') ON CONFLICT DO NOTHING;" }
+      - { id: on_conflict_cols_do_nothing, sql: "INSERT INTO t (a, b) VALUES (1, 'a') ON CONFLICT (a) DO NOTHING;" }
+      - id: on_conflict_do_update
+        sql: "INSERT INTO t (a, b) VALUES (1, 'a') ON CONFLICT (a) DO UPDATE SET b = excluded.b;"
+      - id: on_conflict_do_update_tuple
+        sql: "INSERT INTO t (a, b, c) VALUES (1, 'a', 2) ON CONFLICT (a) DO UPDATE SET (b, c) = (excluded.b, t.c + excluded.c);"
+      - id: on_conflict_do_update_where
+        sql: "INSERT INTO t (a, b) VALUES (1, 'a') ON CONFLICT (a) DO UPDATE SET b = excluded.b WHERE t.b <> excluded.b;"
+      - id: on_conflict_index_predicate
+        sql: "INSERT INTO t (a, b) VALUES (1, 'a') ON CONFLICT (a) WHERE b > 0 DO NOTHING;"
+        note: "Partial-index inference: ON CONFLICT (cols) WHERE predicate."
+      - id: on_conflict_on_constraint
+        sql: "INSERT INTO t (a, b) VALUES (1, 'a') ON CONFLICT ON CONSTRAINT t_pkey DO NOTHING;"
+      - id: on_conflict_on_constraint_update
+        sql: "INSERT INTO t (a, b) VALUES (1, 'a') ON CONFLICT ON CONSTRAINT t_pkey DO UPDATE SET b = excluded.b;"
+      - id: on_conflict_returning
+        sql: "INSERT INTO t (a, b) VALUES (1, 'a') ON CONFLICT (a) DO UPDATE SET b = excluded.b RETURNING a;"
+      - id: cte_distinct_on_source
+        sql: "INSERT INTO t (a, b) (SELECT DISTINCT ON (a) * FROM s ORDER BY a) ON CONFLICT (a) DO NOTHING;"
+    examples:
+      - "INSERT INTO users (id, city, name , address , credit_card) VALUES ( 'c28f5c28-f5c2-4000-8000-000000000026' , 'new york' , 'Petee' , '101 5th Ave' , '1234567890' );"
+      - "INSERT INTO drivers (id, city, name , address ) SELECT id, city, name , address FROM users WHERE name IN ( 'Anita Atkinson' , 'Devin Jordan' );"
+      - "INSERT INTO user_promo_codes (city, user_id, code, \"timestamp\" , usage_count) VALUES ( 'new york' , '147ae147-ae14-4b00-8000-000000000004' , 'promo_code' , now () , 1 ) ON CONFLICT (city, user_id, code) DO UPDATE SET usage_count = excluded.usage_count;"
+
+  - id: select
+    name: SELECT
+    doc: https://www.cockroachlabs.com/docs/stable/select-clause
+    tier: high
+    probes:
+      - { id: no_from, sql: "SELECT 1;" }
+      - { id: columns, sql: "SELECT a, b FROM t;" }
+      - { id: star, sql: "SELECT * FROM t;" }
+      - { id: table_star, sql: "SELECT t.* FROM t;" }
+      - { id: column_alias_as, sql: "SELECT a AS x, b + 1 AS y FROM t;" }
+      - { id: column_alias_bare, sql: "SELECT a x FROM t;" }
+      - { id: expression_target, sql: "SELECT a + b, lower(c) FROM t;" }
+      - { id: all, sql: "SELECT ALL a FROM t;" }
+      - { id: distinct, sql: "SELECT DISTINCT a FROM t;" }
+      - { id: distinct_on, sql: "SELECT DISTINCT ON (a) a, b FROM t;" }
+      - { id: distinct_on_multi, sql: "SELECT DISTINCT ON (a, b) a, b, c FROM t ORDER BY a, b, c;" }
+      - { id: from_multiple, sql: "SELECT t.a, s.b FROM t, s;" }
+      - { id: from_alias, sql: "SELECT x.a FROM t AS x;" }
+      - { id: from_alias_columns, sql: "SELECT x.p FROM t AS x (p, q);" }
+      - { id: from_subquery, sql: "SELECT x.a FROM (SELECT a FROM t) AS x;" }
+      - { id: from_qualified, sql: "SELECT a FROM db.public.t;" }
+      - { id: from_index_hint, sql: "SELECT a FROM t@idx;" }
+      - { id: from_index_hint_braces, sql: "SELECT a FROM t@{FORCE_INDEX=idx};" }
+      - { id: from_with_ordinality, sql: "SELECT * FROM generate_series(1, 3) WITH ORDINALITY;" }
+      - { id: from_rows_from, sql: "SELECT * FROM ROWS FROM (generate_series(1, 3), generate_series(1, 2));" }
+      - { id: from_lateral, sql: "SELECT * FROM t, LATERAL (SELECT * FROM s WHERE s.a = t.a) AS x;" }
+      - { id: from_join_inner, sql: "SELECT * FROM t INNER JOIN s ON t.a = s.a;" }
+      - { id: from_join_using, sql: "SELECT * FROM t JOIN s USING (a);" }
+      - { id: from_join_left, sql: "SELECT * FROM t LEFT OUTER JOIN s ON t.a = s.a;" }
+      - { id: from_join_cross, sql: "SELECT * FROM t CROSS JOIN s;" }
+      - { id: from_natural_join, sql: "SELECT * FROM t NATURAL JOIN s;" }
+      - { id: from_join_hint, sql: "SELECT * FROM t INNER HASH JOIN s ON t.a = s.a;" }
+      - { id: as_of_system_time, sql: "SELECT a FROM t AS OF SYSTEM TIME '-10s';" }
+      - { id: as_of_system_time_follower, sql: "SELECT a FROM t AS OF SYSTEM TIME follower_read_timestamp();" }
+      - { id: as_of_system_time_interval, sql: "SELECT a FROM t AS OF SYSTEM TIME INTERVAL '-1m';" }
+      - { id: as_of_system_time_max_staleness, sql: "SELECT a FROM t AS OF SYSTEM TIME with_max_staleness('10s');" }
+      - { id: where, sql: "SELECT a FROM t WHERE a > 1 AND b = 'x';" }
+      - { id: where_in_subquery, sql: "SELECT a FROM t WHERE a IN (SELECT a FROM s);" }
+      - { id: group_by, sql: "SELECT city, sum(revenue) FROM rides GROUP BY city;" }
+      - { id: group_by_alias, sql: "SELECT city AS c, sum(revenue) FROM rides GROUP BY c;" }
+      - { id: group_by_ordinal, sql: "SELECT city, sum(revenue) FROM rides GROUP BY 1;" }
+      - { id: group_by_multiple, sql: "SELECT a, b, count(*) FROM t GROUP BY a, b;" }
+      - { id: having, sql: "SELECT city, avg(revenue) FROM rides GROUP BY city HAVING avg(revenue) BETWEEN 50 AND 60;" }
+      - { id: ordered_aggregate, sql: "SELECT city, array_agg(name ORDER BY name) FROM users GROUP BY city;" }
+      - { id: aggregate_filter, sql: "SELECT count(*) FILTER (WHERE a > 1) FROM t;" }
+      - { id: window_named, sql: "SELECT a, rank() OVER w FROM t WINDOW w AS (PARTITION BY b ORDER BY a);" }
+      - { id: window_multiple, sql: "SELECT a, rank() OVER w1, sum(a) OVER w2 FROM t WINDOW w1 AS (PARTITION BY b), w2 AS (ORDER BY a);" }
+      - { id: window_inline, sql: "SELECT a, sum(a) OVER (PARTITION BY b ORDER BY a ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+    examples:
+      - "SELECT id, city, name FROM users LIMIT 10;"
+      - "SELECT city, AVG (revenue) as avg FROM rides GROUP BY city HAVING AVG (revenue) BETWEEN 50 AND 60;"
+      - "SELECT city, array_agg( name ORDER BY name ) AS users FROM users WHERE city IN ( 'new york' , 'chicago' , 'seattle' ) GROUP BY city;"

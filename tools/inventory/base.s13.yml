@@ -1,0 +1,101 @@
+dialect: base
+engine: ISO SQL
+version: "SQL:2016"
+source: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html
+
+statements:
+  - id: declare_cursor
+    name: DECLARE CURSOR
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_14_1_declare_cursor
+    tier: medium
+    probes:
+      - { id: basic, sql: "DECLARE c CURSOR FOR SELECT a FROM t;" }
+      - { id: sensitivity, sql: "DECLARE c INSENSITIVE CURSOR FOR SELECT a FROM t;" }
+      - { id: scroll, sql: "DECLARE c SENSITIVE SCROLL CURSOR FOR SELECT a FROM t;" }
+      - { id: no_scroll, sql: "DECLARE c ASENSITIVE NO SCROLL CURSOR FOR SELECT a FROM t;" }
+      - { id: with_hold, sql: "DECLARE c CURSOR WITH HOLD FOR SELECT a FROM t;" }
+      - { id: with_return, sql: "DECLARE c CURSOR WITHOUT HOLD WITH RETURN FOR SELECT a FROM t;" }
+      - { id: for_read_only, sql: "DECLARE c CURSOR FOR SELECT a FROM t FOR READ ONLY;" }
+      - { id: for_update_of, sql: "DECLARE c CURSOR FOR SELECT a, b FROM t FOR UPDATE OF a, b;" }
+
+  - id: open_cursor
+    name: OPEN
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_14_4_open_statement
+    tier: medium
+    probes:
+      - { id: basic, sql: "OPEN c;" }
+
+  - id: fetch
+    name: FETCH
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_14_5_fetch_statement
+    tier: medium
+    probes:
+      - { id: basic, sql: "FETCH c INTO v;" }
+      - { id: from, sql: "FETCH FROM c INTO v1, v2;" }
+      - { id: next, sql: "FETCH NEXT FROM c INTO v;" }
+      - { id: prior, sql: "FETCH PRIOR FROM c INTO v;" }
+      - { id: first, sql: "FETCH FIRST FROM c INTO v;" }
+      - { id: last, sql: "FETCH LAST FROM c INTO v;" }
+      - { id: absolute, sql: "FETCH ABSOLUTE 5 FROM c INTO v;" }
+      - { id: relative, sql: "FETCH RELATIVE -2 FROM c INTO v;" }
+
+  - id: close_cursor
+    name: CLOSE
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_14_6_close_statement
+    tier: medium
+    probes:
+      - { id: basic, sql: "CLOSE c;" }
+
+  - id: select_into
+    name: SELECT ... INTO (single row)
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_14_7_select_statement_single_row
+    tier: medium
+    probes:
+      - { id: basic, sql: "SELECT a INTO v FROM t;" }
+      - { id: multiple_targets, sql: "SELECT a, b INTO v1, v2 FROM t WHERE id = 1;" }
+      - { id: distinct, sql: "SELECT DISTINCT a INTO v FROM t;" }
+      - { id: all, sql: "SELECT ALL a INTO v FROM t;" }
+
+  - id: return
+    name: RETURN
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_16_2_return_statement
+    tier: medium
+    probes:
+      - { id: value, sql: "RETURN 1;" }
+      - { id: expression, sql: "RETURN a + 1;" }
+      - { id: "null", sql: "RETURN NULL;" }
+
+  - id: set_constraints
+    name: SET CONSTRAINTS
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_17_4_set_constraints_mode_statement
+    tier: medium
+    probes:
+      - { id: all_deferred, sql: "SET CONSTRAINTS ALL DEFERRED;" }
+      - { id: all_immediate, sql: "SET CONSTRAINTS ALL IMMEDIATE;" }
+      - { id: named, sql: "SET CONSTRAINTS c1, c2 DEFERRED;" }
+
+  - id: set_session_characteristics
+    name: SET SESSION CHARACTERISTICS
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_19_1_set_session_characteristics_statement
+    tier: medium
+    probes:
+      - { id: isolation, sql: "SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL SERIALIZABLE;" }
+      - { id: read_only, sql: "SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY;" }
+      - { id: multiple_modes, sql: "SET SESSION CHARACTERISTICS AS TRANSACTION ISOLATION LEVEL READ COMMITTED, READ WRITE;" }
+      - { id: diagnostics_size, sql: "SET SESSION CHARACTERISTICS AS TRANSACTION DIAGNOSTICS SIZE 5;" }
+
+  - id: set_session_authorization
+    name: SET SESSION AUTHORIZATION
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_19_2_set_session_user_identifier_statement
+    tier: medium
+    probes:
+      - { id: literal, sql: "SET SESSION AUTHORIZATION 'alice';" }
+      - { id: user_function, sql: "SET SESSION AUTHORIZATION CURRENT_USER;" }
+
+  - id: set_role
+    name: SET ROLE
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_19_3_set_role_statement
+    tier: medium
+    probes:
+      - { id: literal, sql: "SET ROLE 'admin';" }
+      - { id: none, sql: "SET ROLE NONE;" }

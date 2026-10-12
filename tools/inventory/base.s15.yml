@@ -1,0 +1,257 @@
+dialect: base
+engine: ISO SQL
+version: "SQL:2016"
+source: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html
+
+statements:
+  - id: drop_assertion
+    name: "DROP ASSERTION"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_48_drop_assertion_statement
+    tier: low
+    probes:
+      - id: cascade
+        sql: "DROP ASSERTION a CASCADE;"
+      - id: plain
+        sql: "DROP ASSERTION a;"
+  - id: create_cast
+    name: "CREATE CAST"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_63_user_defined_cast_definition
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE CAST (INTEGER AS VARCHAR(10)) WITH SPECIFIC FUNCTION f;"
+      - id: assignment
+        sql: "CREATE CAST (INTEGER AS VARCHAR(10)) WITH FUNCTION f(INTEGER) AS ASSIGNMENT;"
+  - id: drop_cast
+    name: "DROP CAST"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_64_drop_user_defined_cast_statement
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP CAST (INTEGER AS VARCHAR(10)) CASCADE;"
+  - id: create_ordering
+    name: "CREATE ORDERING"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_65_user_defined_ordering_definition
+    tier: low
+    probes:
+      - id: equals_relative
+        sql: "CREATE ORDERING FOR t EQUALS ONLY BY RELATIVE WITH SPECIFIC FUNCTION f;"
+      - id: full_map
+        sql: "CREATE ORDERING FOR t ORDER FULL BY MAP WITH FUNCTION f(t);"
+      - id: state
+        sql: "CREATE ORDERING FOR t EQUALS ONLY BY STATE;"
+  - id: drop_ordering
+    name: "DROP ORDERING"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_66_drop_user_defined_ordering_statement
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP ORDERING FOR t RESTRICT;"
+  - id: create_transform
+    name: "CREATE TRANSFORM"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_67_transform_definition
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE TRANSFORM FOR t g (TO SQL WITH SPECIFIC FUNCTION f1, FROM SQL WITH SPECIFIC FUNCTION f2);"
+      - id: transforms_multi
+        sql: "CREATE TRANSFORMS FOR t g1 (TO SQL WITH SPECIFIC FUNCTION f1) g2 (FROM SQL WITH SPECIFIC FUNCTION f2);"
+  - id: alter_transform
+    name: "ALTER TRANSFORM"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_68_alter_transform_statement
+    tier: low
+    probes:
+      - id: add
+        sql: "ALTER TRANSFORM FOR t g (ADD (TO SQL WITH SPECIFIC FUNCTION f1));"
+      - id: drop
+        sql: "ALTER TRANSFORM FOR t g (DROP (TO SQL CASCADE));"
+  - id: drop_transform
+    name: "DROP TRANSFORM"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_11_71_drop_transform_statement
+    tier: low
+    probes:
+      - id: group
+        sql: "DROP TRANSFORM g FOR t CASCADE;"
+      - id: all
+        sql: "DROP TRANSFORMS ALL FOR t RESTRICT;"
+  - id: delete_positioned
+    name: "DELETE (positioned)"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_14_8_delete_statement_positioned
+    tier: low
+    probes:
+      - id: basic
+        sql: "DELETE FROM t WHERE CURRENT OF c;"
+      - id: alias
+        sql: "DELETE FROM ONLY (t) AS x WHERE CURRENT OF c;"
+  - id: update_positioned
+    name: "UPDATE (positioned)"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_14_13_update_statement_positioned
+    tier: low
+    probes:
+      - id: basic
+        sql: "UPDATE t SET a = 1 WHERE CURRENT OF c;"
+      - id: alias
+        sql: "UPDATE ONLY (t) AS x SET a = 1, b = 2 WHERE CURRENT OF c;"
+  - id: declare_local_temporary_table
+    name: "DECLARE LOCAL TEMPORARY TABLE"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_14_16_temporary_table_declaration
+    tier: low
+    probes:
+      - id: basic
+        sql: "DECLARE LOCAL TEMPORARY TABLE t (a INTEGER);"
+      - id: on_commit
+        sql: "DECLARE LOCAL TEMPORARY TABLE t (a INTEGER, b VARCHAR(10)) ON COMMIT DELETE ROWS;"
+  - id: free_locator
+    name: "FREE LOCATOR"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_14_17_free_locator_statement
+    tier: low
+    probes:
+      - id: basic
+        sql: "FREE LOCATOR ?, ?;"
+  - id: hold_locator
+    name: "HOLD LOCATOR"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_14_18_hold_locator_statement
+    tier: low
+    probes:
+      - id: basic
+        sql: "HOLD LOCATOR ?, ?;"
+  - id: connect
+    name: "CONNECT TO"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_18_1_connect_statement
+    tier: low
+    probes:
+      - id: server
+        sql: "CONNECT TO 'srv' AS 'conn' USER 'u';"
+      - id: default
+        sql: "CONNECT TO DEFAULT;"
+  - id: set_connection
+    name: "SET CONNECTION"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_18_2_set_connection_statement
+    tier: low
+    probes:
+      - id: name
+        sql: "SET CONNECTION 'conn';"
+      - id: default
+        sql: "SET CONNECTION DEFAULT;"
+  - id: disconnect
+    name: "DISCONNECT"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_18_3_disconnect_statement
+    tier: low
+    probes:
+      - id: name
+        sql: "DISCONNECT 'conn';"
+      - id: all
+        sql: "DISCONNECT ALL;"
+      - id: current
+        sql: "DISCONNECT CURRENT;"
+  - id: set_names
+    name: "SET NAMES"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_19_7_set_names_statement
+    tier: low
+    probes:
+      - id: basic
+        sql: "SET NAMES 'UTF8';"
+  - id: set_path
+    name: "SET PATH"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_19_8_set_path_statement
+    tier: low
+    probes:
+      - id: basic
+        sql: "SET PATH 's1, s2';"
+  - id: set_transform_group
+    name: "SET TRANSFORM GROUP"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_19_9_set_transform_group_statement
+    tier: low
+    probes:
+      - id: default
+        sql: "SET DEFAULT TRANSFORM GROUP 'g';"
+      - id: for_type
+        sql: "SET TRANSFORM GROUP FOR TYPE t 'g';"
+  - id: set_session_collation
+    name: "SET COLLATION"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_19_10_set_session_collation_statement
+    tier: low
+    probes:
+      - id: collation
+        sql: "SET COLLATION 'c' FOR cs;"
+      - id: no_collation
+        sql: "SET NO COLLATION;"
+  - id: allocate_descriptor
+    name: "ALLOCATE DESCRIPTOR"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_20_2_allocate_descriptor_statement
+    tier: low
+    probes:
+      - id: basic
+        sql: "ALLOCATE DESCRIPTOR 'd';"
+      - id: with_max
+        sql: "ALLOCATE SQL DESCRIPTOR 'd' WITH MAX 5;"
+  - id: deallocate_descriptor
+    name: "DEALLOCATE DESCRIPTOR"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_20_3_deallocate_descriptor_statement
+    tier: low
+    probes:
+      - id: basic
+        sql: "DEALLOCATE SQL DESCRIPTOR 'd';"
+  - id: get_descriptor
+    name: "GET DESCRIPTOR"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_20_4_get_descriptor_statement
+    tier: low
+    probes:
+      - id: header
+        sql: "GET DESCRIPTOR 'd' ? = COUNT;"
+      - id: value
+        sql: "GET SQL DESCRIPTOR 'd' VALUE 1 ? = TYPE, ? = LENGTH;"
+  - id: set_descriptor
+    name: "SET DESCRIPTOR"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_20_5_set_descriptor_statement
+    tier: low
+    probes:
+      - id: header
+        sql: "SET DESCRIPTOR 'd' COUNT = 1;"
+      - id: value
+        sql: "SET SQL DESCRIPTOR 'd' VALUE 1 TYPE = 4, LENGTH = 10;"
+  - id: copy_descriptor
+    name: "COPY DESCRIPTOR"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_20_6_copy_descriptor_statement
+    tier: low
+    probes:
+      - id: whole
+        sql: "COPY 'd1' TO d2;"
+      - id: item
+        sql: "COPY 'd1' VALUE 1 (NAME, TYPE) TO d2 VALUE 2;"
+  - id: describe
+    name: "DESCRIBE INPUT / OUTPUT"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_20_10_describe_statement
+    tier: low
+    probes:
+      - id: input
+        sql: "DESCRIBE INPUT s USING SQL DESCRIPTOR 'd' WITH NESTING;"
+      - id: output
+        sql: "DESCRIBE OUTPUT s USING DESCRIPTOR 'd';"
+      - id: cursor
+        sql: "DESCRIBE CURSOR c STRUCTURE USING DESCRIPTOR 'd' WITHOUT NESTING;"
+  - id: allocate_cursor
+    name: "ALLOCATE CURSOR (extended dynamic / received)"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_20_17_allocate_extended_dynamic_cursor_statement
+    tier: low
+    probes:
+      - id: extended
+        sql: "ALLOCATE c SCROLL CURSOR FOR s;"
+      - id: received
+        sql: "ALLOCATE c CURSOR FOR PROCEDURE SPECIFIC p;"
+  - id: pipe_row
+    name: "PIPE ROW"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_20_28_pipe_row_statement
+    tier: low
+    probes:
+      - id: basic
+        sql: "PIPE ROW d;"
+  - id: create_module
+    name: "CREATE MODULE (SQL-client module)"
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_13_1_sql_client_module_definition
+    tier: low
+    probes:
+      - id: basic
+        sql: "MODULE m LANGUAGE SQL SCHEMA s;"
+      - id: authorization
+        sql: "MODULE m LANGUAGE SQL AUTHORIZATION u FOR STATIC ONLY;"

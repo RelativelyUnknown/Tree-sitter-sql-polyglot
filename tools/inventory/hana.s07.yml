@@ -1,0 +1,138 @@
+dialect: hana
+engine: SAP HANA Platform
+version: "2.0 SPS 08 (2.0.08)"
+source: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/3bc1a0d4611d40c4a6e3fc7c8e80395d.html?version=2.0.08
+
+statements:
+  - id: create_view
+    name: CREATE VIEW
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d5fa9b75191014a33eee92692f1702.html?version=2.0.08
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE VIEW v AS SELECT a, b FROM t;"
+      - id: schema_qualified
+        sql: "CREATE VIEW s.v AS SELECT a, b FROM t;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE VIEW v AS SELECT a, b FROM t;"
+      - id: comment
+        sql: "CREATE VIEW v COMMENT 'my view' AS SELECT a, b FROM t;"
+      - id: column_names
+        sql: "CREATE VIEW v (c1, c2) AS SELECT a, b FROM t;"
+      - id: parameters
+        sql: "CREATE VIEW v (IN p1 INT, IN p2 VARCHAR(10)) AS SELECT a, b FROM t WHERE a = :p1 AND b = :p2;"
+      - id: parameter_default
+        sql: "CREATE VIEW v (IN p1 INT DEFAULT 1) AS SELECT a, b FROM t WHERE a = :p1;"
+        note: parameter default value from the parameter definition description
+      - id: column_names_and_parameters
+        sql: "CREATE VIEW v (c1, c2) (IN p1 INT, IN p2 VARCHAR(10)) AS SELECT a, b FROM t WHERE a = :p1 AND b = :p2;"
+      - id: as_parenthesized_query
+        sql: "CREATE VIEW v AS (SELECT a, b FROM t);"
+      - id: with_cte_query
+        sql: "CREATE VIEW v AS WITH q AS (SELECT a, b FROM t) SELECT a, b FROM q;"
+      - id: with_associations
+        sql: "CREATE VIEW v AS SELECT a, b FROM t WITH ASSOCIATIONS (JOIN t2 AS assoc ON t.a = assoc.a);"
+        note: cardinality ordering inside the association clause not visible in the extracted page text
+      - id: with_mask
+        sql: "CREATE VIEW v AS SELECT * FROM t WITH MASK (c USING 'XXXX');"
+      - id: with_mask_default
+        sql: "CREATE VIEW v AS SELECT * FROM t WITH MASK (DEFAULT MASK (c USING 'XXXX'));"
+        note: "mask clause form is <mask_expression> ::= [ { DEFAULT | SESSION USER } ] MASK ( USING ... ); placement of the DEFAULT keyword is inferred from the elided syntax text"
+      - id: with_mask_session_user
+        sql: "CREATE VIEW v AS SELECT * FROM t WITH SESSION USER MASK (c USING 'XXXX');"
+        note: "inferred from [ { DEFAULT | SESSION USER } ] MASK; the placeholder text was stripped from the page"
+      - id: with_expression_macros
+        sql: "CREATE VIEW v AS SELECT * FROM t WITH EXPRESSION MACROS (SUM(a) AS sum_a, COUNT(a) AS count_a);"
+      - id: expression_macro_reference
+        sql: "CREATE VIEW v2 AS SELECT * FROM v1 WITH EXPRESSION MACROS (sum_x AS sum_x2, avg_y, COUNT(x) AS count_x);"
+      - id: with_annotations
+        sql: "CREATE VIEW v AS SELECT * FROM t WITH ANNOTATIONS (SET 'k1' = 'v1', 'k2' = 'v2');"
+      - id: with_annotations_column
+        sql: "CREATE VIEW v AS SELECT * FROM t WITH ANNOTATIONS (SET 'k1' = 'v1' COLUMN a SET 'c_k1' = 'c_v1');"
+      - id: with_annotations_parameter
+        sql: "CREATE VIEW v (IN p1 INT) AS SELECT * FROM t WHERE a = :p1 WITH ANNOTATIONS (PARAMETER p1 SET 'p_k1' = 'p_v1');"
+      - id: with_structured_privilege_check
+        sql: "CREATE VIEW v AS SELECT * FROM t WITH STRUCTURED PRIVILEGE CHECK;"
+      - id: with_cache
+        sql: "CREATE VIEW v AS SELECT DISTINCT a, b FROM t WITH CACHE RETENTION 10;"
+      - id: with_static_cache_retention
+        sql: "CREATE VIEW v AS SELECT DISTINCT a, b FROM t WITH STATIC CACHE RETENTION 10;"
+      - id: with_dynamic_cache
+        sql: "CREATE VIEW v AS SELECT DISTINCT a, b FROM t WITH DYNAMIC CACHE;"
+      - id: cache_name
+        sql: "CREATE VIEW v AS SELECT DISTINCT a, b FROM t WITH STATIC CACHE NAME 'c1' RETENTION 10;"
+        note: NAME option in the cache clause syntax
+      - id: cache_projection_list
+        sql: "CREATE VIEW v AS SELECT a, b FROM t WITH STATIC CACHE OF a, SUM(b);"
+      - id: cache_filter
+        sql: "CREATE VIEW v AS SELECT a, b FROM t WITH STATIC CACHE FILTER a > 0 AND b IS NOT NULL;"
+      - id: cache_location
+        sql: "CREATE VIEW v AS SELECT DISTINCT a, b FROM t WITH STATIC CACHE AT LOCATION 'myhost2:00002';"
+      - id: cache_force
+        sql: "CREATE VIEW v AS SELECT DISTINCT a, b FROM t WITH STATIC CACHE FORCE;"
+      - id: with_anonymization
+        sql: "CREATE VIEW v AS SELECT a, b FROM t WITH ANONYMIZATION (ALGORITHM 'K-ANONYMITY' PARAMETERS '{\"k\": 2}');"
+      - id: with_anonymization_column
+        sql: "CREATE VIEW v (a, b) AS SELECT a, b FROM t WITH ANONYMIZATION (ALGORITHM 'K-ANONYMITY' PARAMETERS '{\"k\": 2}' COLUMN a PARAMETERS '{\"is_sequence\": true}');"
+      - id: with_check_option
+        sql: "CREATE VIEW v AS SELECT * FROM t WHERE a > 0 WITH CHECK OPTION;"
+      - id: with_read_only
+        sql: "CREATE VIEW v AS SELECT * FROM t WITH READ ONLY;"
+      - id: with_ddl_only
+        sql: "CREATE VIEW v AS SELECT * FROM t WITH DDL ONLY;"
+      - id: with_read_only_ddl_only
+        sql: "CREATE VIEW v AS SELECT * FROM t WITH READ ONLY DDL ONLY;"
+      - id: with_hint
+        sql: "CREATE VIEW v AS SELECT * FROM t WITH HINT (NO_CS_JOIN);"
+        note: trailing hint clause; its content is elided in the extracted page text (see SELECT HINT clause)
+    examples:
+      - "CREATE VIEW myView1 (IN p1 INT, IN p2 VARCHAR(10)) AS SELECT col1, col2 FROM myTable1 WHERE col1=:p1 AND col2=:p2;"
+      - "CREATE VIEW v AS SELECT * FROM A WHERE A > 0 WITH CHECK OPTION;"
+      - "CREATE VIEW V AS SELECT DISTINCT A, B FROM A WITH STATIC CACHE RETENTION 10;"
+
+  - id: delete
+    name: DELETE
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d6169a75191014892db922f94abe41.html?version=2.0.08
+    tier: high
+    probes:
+      - id: all_rows
+        sql: "DELETE FROM t;"
+      - id: where
+        sql: "DELETE FROM t WHERE a = 1;"
+      - id: schema_qualified
+        sql: "DELETE FROM s.t WHERE a = 1;"
+      - id: where_compound
+        sql: "DELETE FROM t WHERE a = 1 AND (b > 2 OR NOT c IS NULL);"
+      - id: where_in_subquery
+        sql: "DELETE FROM t WHERE a IN (SELECT a FROM t2);"
+      - id: history
+        sql: "DELETE HISTORY FROM t WHERE a = 1;"
+      - id: partition
+        sql: "DELETE FROM t PARTITION (1);"
+      - id: partition_where
+        sql: "DELETE FROM t PARTITION (1) WHERE a = 1;"
+      - id: remote_source_table
+        sql: "DELETE FROM rs.db.s.t WHERE a = 1;"
+        note: linked-database form where the table name is qualified by remote source name
+      - id: for_portion_of_application_time
+        sql: "DELETE FROM t FOR PORTION OF APPLICATION_TIME FROM '2018-8-4' TO '2018-8-8' WHERE a = 1;"
+      - id: where_current_of
+        sql: |-
+          DO BEGIN
+            DECLARE CURSOR cur FOR SELECT a FROM t FOR UPDATE;
+            FOR r AS cur DO
+              DELETE FROM t WHERE CURRENT OF cur;
+            END FOR;
+          END;
+        note: WHERE CURRENT OF is valid only against an updatable cursor inside SQLScript
+      - id: where_member_of
+        sql: "DELETE FROM t WHERE 3 MEMBER OF c1;"
+      - id: with_hint
+        sql: "DELETE FROM t WHERE a = 1 WITH HINT (NO_CS_JOIN);"
+        note: hint clause placement after WHERE per the syntax block
+      - id: with_hint_no_where
+        sql: "DELETE FROM t WITH HINT (NO_CS_JOIN);"
+    examples:
+      - "DELETE FROM T WHERE KEY = 1;"
+      - "DELETE FROM T1 PARTITION(1);"
+      - "DELETE HISTORY FROM HIST WHERE KEY=1;"

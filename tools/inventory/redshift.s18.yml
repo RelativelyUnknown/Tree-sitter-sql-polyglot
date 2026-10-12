@@ -1,0 +1,144 @@
+dialect: redshift
+engine: Amazon Redshift
+version: "current"
+source: https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_commands.html
+
+statements:
+  - id: comment
+    name: COMMENT
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_COMMENT.html
+    tier: medium
+    probes:
+      - { id: on_table, sql: "COMMENT ON TABLE t IS 'text';" }
+      - { id: on_column, sql: "COMMENT ON COLUMN t.c IS 'text';" }
+      - { id: on_constraint, sql: "COMMENT ON CONSTRAINT con ON t IS 'text';" }
+      - { id: on_database, sql: "COMMENT ON DATABASE d IS 'text';" }
+      - { id: on_view, sql: "COMMENT ON VIEW v IS 'text';" }
+      - { id: is_null, sql: "COMMENT ON TABLE t IS NULL;" }
+    examples:
+      - "COMMENT ON TABLE sales IS 'This table stores tickets sales data';"
+      - "COMMENT ON TABLE sales IS NULL;"
+      - "COMMENT ON COLUMN sales.eventid IS 'Foreign-key reference to the EVENT table.';"
+
+  - id: create_database
+    name: CREATE DATABASE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_DATABASE.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE DATABASE d;" }
+      - { id: with_owner, sql: "CREATE DATABASE d WITH OWNER u;" }
+      - { id: connection_limit, sql: "CREATE DATABASE d CONNECTION LIMIT 100;" }
+      - { id: collate, sql: "CREATE DATABASE d COLLATE CASE_INSENSITIVE;" }
+      - { id: isolation_level, sql: "CREATE DATABASE d ISOLATION LEVEL SNAPSHOT;" }
+      - { id: from_integration, sql: "CREATE DATABASE d FROM INTEGRATION 'abc123' DATABASE 'src' SET ACCEPTINVCHARS = TRUE REFRESH_INTERVAL 600;" }
+      - { id: from_arn_glue, sql: "CREATE DATABASE d FROM ARN 'arn:aws:glue:us-east-1:123456789012:database/db' WITH DATA CATALOG SCHEMA 's' IAM_ROLE default;" }
+      - { id: from_datashare, sql: "CREATE DATABASE d FROM DATASHARE ds OF NAMESPACE '13b8833d-17c6-4f16-8fe4-1a018f5ed00d';" }
+      - { id: from_datashare_permissions, sql: "CREATE DATABASE d WITH PERMISSIONS FROM DATASHARE ds OF ACCOUNT '123456789012' NAMESPACE '13b8833d-17c6-4f16-8fe4-1a018f5ed00d';" }
+    examples:
+      - "create database tickit with owner dwuser;"
+      - "CREATE DATABASE sampledb ISOLATION LEVEL SNAPSHOT;"
+      - "CREATE DATABASE sales_db FROM DATASHARE salesshare OF NAMESPACE '13b8833d-17c6-4f16-8fe4-1a018f5ed00d';"
+
+  - id: create_datashare
+    name: CREATE DATASHARE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_DATASHARE.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE DATASHARE ds;" }
+      - { id: publicaccessible, sql: "CREATE DATASHARE ds PUBLICACCESSIBLE = TRUE;" }
+      - { id: set_publicaccessible, sql: "CREATE DATASHARE ds SET PUBLICACCESSIBLE TRUE;" }
+      - { id: managedby, sql: "CREATE DATASHARE ds SET PUBLICACCESSIBLE TRUE, MANAGEDBY ADX;" }
+    examples:
+      - "CREATE DATASHARE salesshare;"
+      - "CREATE DATASHARE demoshare SET PUBLICACCESSIBLE TRUE, MANAGEDBY ADX;"
+
+  - id: create_external_function
+    name: CREATE EXTERNAL FUNCTION
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_EXTERNAL_FUNCTION.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE EXTERNAL FUNCTION f(INT, INT) RETURNS INT VOLATILE LAMBDA 'fn' IAM_ROLE 'arn:aws:iam::123456789012:role/r';" }
+      - { id: or_replace_stable, sql: "CREATE OR REPLACE EXTERNAL FUNCTION f(VARCHAR) RETURNS VARCHAR STABLE LAMBDA 'fn' IAM_ROLE default;" }
+      - { id: retry_batch_options, sql: "CREATE EXTERNAL FUNCTION f(INT) RETURNS INT VOLATILE LAMBDA 'fn' IAM_ROLE default RETRY_TIMEOUT 5000 MAX_BATCH_ROWS 100 MAX_BATCH_SIZE 4 MB;" }
+    examples:
+      - "CREATE EXTERNAL FUNCTION exfunc_sum(INT,INT) RETURNS INT VOLATILE LAMBDA 'lambda_sum' IAM_ROLE 'arn:aws:iam::123456789012:role/Redshift-Exfunc-Test';"
+
+  - id: create_external_schema
+    name: CREATE EXTERNAL SCHEMA
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_EXTERNAL_SCHEMA.html
+    tier: medium
+    probes:
+      - { id: data_catalog, sql: "CREATE EXTERNAL SCHEMA s FROM DATA CATALOG DATABASE 'db' REGION 'us-west-2' IAM_ROLE 'arn:aws:iam::123456789012:role/r';" }
+      - { id: if_not_exists_create_db, sql: "CREATE EXTERNAL SCHEMA IF NOT EXISTS s FROM DATA CATALOG DATABASE 'db' IAM_ROLE default CREATE EXTERNAL DATABASE IF NOT EXISTS;" }
+      - { id: catalog_role_id, sql: "CREATE EXTERNAL SCHEMA s FROM DATA CATALOG DATABASE 'db' IAM_ROLE default CATALOG_ROLE 'arn:aws:iam::123456789012:role/r2' CATALOG_ID '123456789012';" }
+      - { id: hive_metastore, sql: "CREATE EXTERNAL SCHEMA s FROM HIVE METASTORE DATABASE 'db' URI '172.10.10.10' PORT 99 IAM_ROLE 'arn:aws:iam::123456789012:role/r';" }
+      - { id: postgres, sql: "CREATE EXTERNAL SCHEMA s FROM POSTGRES DATABASE 'db' SCHEMA 'sch' URI 'host' PORT 5432 IAM_ROLE 'arn:aws:iam::123456789012:role/r' SECRET_ARN 'arn:aws:secretsmanager:us-east-2:123456789012:secret:x';" }
+      - { id: mysql, sql: "CREATE EXTERNAL SCHEMA s FROM MYSQL DATABASE 'db' URI 'host' IAM_ROLE 'arn:aws:iam::123456789012:role/r' SECRET_ARN 'arn:aws:secretsmanager:us-east-2:123456789012:secret:x';" }
+      - { id: kinesis, sql: "CREATE EXTERNAL SCHEMA s FROM KINESIS IAM_ROLE default;" }
+      - { id: msk, sql: "CREATE EXTERNAL SCHEMA s FROM MSK IAM_ROLE default AUTHENTICATION iam CLUSTER_ARN 'arn:aws:kafka:us-east-1:123456789012:cluster/msk/uuid';" }
+      - { id: kafka, sql: "CREATE EXTERNAL SCHEMA s FROM KAFKA IAM_ROLE default URI 'broker:9092' AUTHENTICATION mtls AUTHENTICATION_ARN 'arn:aws:acm:us-east-1:123456789012:certificate/c';" }
+      - { id: redshift_datashare, sql: "CREATE EXTERNAL SCHEMA s FROM REDSHIFT DATABASE 'db' SCHEMA 'public';" }
+    examples:
+      - "create external schema spectrum_schema from data catalog database 'sampledb' region 'us-west-2' iam_role 'arn:aws:iam::123456789012:role/MySpectrumRole';"
+      - "create external schema spectrum_schema from data catalog database 'spectrum_db' iam_role 'arn:aws:iam::123456789012:role/MySpectrumRole' create external database if not exists;"
+      - "create external schema hive_schema from hive metastore database 'hive_db' uri '172.10.10.10' port 99 iam_role 'arn:aws:iam::123456789012:role/MySpectrumRole';"
+
+  - id: create_external_table
+    name: CREATE EXTERNAL TABLE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_EXTERNAL_TABLE.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE EXTERNAL TABLE s.t (c1 INT, c2 VARCHAR(10)) STORED AS PARQUET LOCATION 's3://bucket/folder/';" }
+      - { id: partitioned_by, sql: "CREATE EXTERNAL TABLE s.t (c1 INT) PARTITIONED BY (p DATE) STORED AS PARQUET LOCATION 's3://bucket/folder/';" }
+      - { id: row_format_delimited, sql: "CREATE EXTERNAL TABLE s.t (c1 INT) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\\n' STORED AS TEXTFILE LOCATION 's3://bucket/folder/';" }
+      - { id: row_format_serde, sql: "CREATE EXTERNAL TABLE s.t (c1 INT) ROW FORMAT SERDE 'org.openx.data.jsonserde.JsonSerDe' WITH SERDEPROPERTIES ('mapping.c1' = 'c1') STORED AS TEXTFILE LOCATION 's3://bucket/folder/';" }
+      - { id: inputformat_outputformat, sql: "CREATE EXTERNAL TABLE s.t (c1 INT) STORED AS INPUTFORMAT 'org.apache.hadoop.mapred.TextInputFormat' OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat' LOCATION 's3://bucket/folder/';" }
+      - { id: table_properties, sql: "CREATE EXTERNAL TABLE s.t (c1 INT) STORED AS TEXTFILE LOCATION 's3://bucket/folder/' TABLE PROPERTIES ('numRows'='100');" }
+      - { id: three_part_name, sql: "CREATE EXTERNAL TABLE d.s.t (c1 INT) STORED AS PARQUET LOCATION 's3://bucket/folder/';" }
+      - { id: as_select, sql: "CREATE EXTERNAL TABLE s.t STORED AS PARQUET LOCATION 's3://bucket/folder/' AS SELECT c1 FROM src;" }
+      - { id: as_select_partitioned, sql: "CREATE EXTERNAL TABLE s.t PARTITIONED BY (c1) STORED AS PARQUET LOCATION 's3://bucket/folder/' TABLE PROPERTIES ('write.parallel'='off') AS SELECT c1, c2 FROM src;" }
+    examples:
+      - "create external table spectrum_db.spectrum_schema.test (c1 int) stored as parquet location 's3://amzn-s3-demo-bucket/myfolder/';"
+
+  - id: create_group
+    name: CREATE GROUP
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_GROUP.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE GROUP g;" }
+      - { id: with_users, sql: "CREATE GROUP g WITH USER u1, u2;" }
+      - { id: user_without_with, sql: "CREATE GROUP g USER u1;" }
+    examples:
+      - "create group admin_group with user admin1, admin2;"
+
+  - id: create_masking_policy
+    name: CREATE MASKING POLICY
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_MASKING_POLICY.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE MASKING POLICY p WITH (c VARCHAR(256)) USING ('XXXXXXXXXXXXXXXX'::VARCHAR(256));" }
+      - { id: db_qualified, sql: "CREATE MASKING POLICY d.p WITH (a VARCHAR(10), b INT) USING (SUBSTRING(a, 1, 3) || 'xxx');" }
+      - { id: if_not_exists_after_name, sql: "CREATE MASKING POLICY p IF NOT EXISTS WITH (c INT) USING (0);" , note: "IF NOT EXISTS placement as written in the syntax block (after the policy name)" }
+
+  - id: create_rls_policy
+    name: CREATE RLS POLICY
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_RLS_POLICY.html
+    tier: medium
+    probes:
+      - { id: with_using, sql: "CREATE RLS POLICY p WITH (c VARCHAR(10)) USING (c = 'x');" }
+      - { id: using_only, sql: "CREATE RLS POLICY p USING (current_user = 'joe');" }
+      - { id: db_qualified, sql: "CREATE RLS POLICY d.p WITH (c INT) USING (c > 10);" }
+      - { id: with_alias, sql: "CREATE RLS POLICY p WITH (c INT) AS t USING (t.c > 10);" }
+      - { id: alias_without_as, sql: "CREATE RLS POLICY p WITH (c INT) t USING (t.c > 10);" }
+    examples:
+      - "CREATE RLS POLICY policy_concerts WITH (catgroup VARCHAR(10)) USING (catgroup = 'Concerts');"
+
+  - id: create_role
+    name: CREATE ROLE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_ROLE.html
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE ROLE r;" }
+      - { id: externalid, sql: "CREATE ROLE r EXTERNALID 'ABC123';" }
+    examples:
+      - "CREATE ROLE sample_role1;"

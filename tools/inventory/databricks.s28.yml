@@ -1,0 +1,41 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: fetch_cursor
+    name: FETCH
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/control-flow/fetch-stmt
+    tier: high
+    probes:
+      - id: basic
+        sql: "BEGIN DECLARE x INT; DECLARE c CURSOR FOR SELECT 1; OPEN c; FETCH c INTO x; END;"
+      - id: next_from
+        sql: "BEGIN DECLARE x INT; DECLARE c CURSOR FOR SELECT 1; OPEN c; FETCH NEXT FROM c INTO x; END;"
+      - id: from_only
+        sql: "BEGIN DECLARE x INT; DECLARE c CURSOR FOR SELECT 1; OPEN c; FETCH FROM c INTO x; END;"
+      - id: multiple_variables
+        sql: "BEGIN DECLARE x INT; DECLARE y STRING; DECLARE c CURSOR FOR SELECT 1, 'a'; OPEN c; FETCH c INTO x, y; END;"
+      - id: struct_variable
+        sql: "BEGIN DECLARE r STRUCT<id: INT, name: STRING>; DECLARE c CURSOR FOR SELECT 1, 'a'; OPEN c; FETCH c INTO r; END;"
+      - id: label_qualified_cursor
+        sql: "outer_label: BEGIN DECLARE x INT; DECLARE c CURSOR FOR SELECT 1; OPEN c; FETCH outer_label.c INTO x; END;"
+    examples:
+      - "BEGIN DECLARE x INT; DECLARE y STRING; DECLARE my_cursor CURSOR FOR SELECT id, 'row_' || id FROM range(3); OPEN my_cursor; FETCH my_cursor INTO x, y; VALUES (x, y); CLOSE my_cursor; END;"
+      - "BEGIN DECLARE x INT; DECLARE done BOOLEAN DEFAULT false; DECLARE total INT DEFAULT 0; DECLARE sum_cursor CURSOR FOR SELECT id FROM range(5); DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = true; OPEN sum_cursor; REPEAT FETCH sum_cursor INTO x; IF NOT done THEN SET total = total + x; END IF; UNTIL done END REPEAT; CLOSE sum_cursor; VALUES (total); END;"
+      - "BEGIN DECLARE x INT; DECLARE cursor1 CURSOR FOR SELECT id FROM range(3); OPEN cursor1; FETCH NEXT FROM cursor1 INTO x; VALUES (x); CLOSE cursor1; END;"
+
+  - id: close_cursor
+    name: CLOSE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/control-flow/close-stmt
+    tier: high
+    probes:
+      - id: basic
+        sql: "BEGIN DECLARE c CURSOR FOR SELECT 1; OPEN c; CLOSE c; END;"
+      - id: label_qualified_cursor
+        sql: "outer_label: BEGIN DECLARE c CURSOR FOR SELECT 1; OPEN c; CLOSE outer_label.c; END;"
+    examples:
+      - "BEGIN DECLARE x INT; DECLARE my_cursor CURSOR FOR SELECT id FROM range(3); OPEN my_cursor; FETCH my_cursor INTO x; VALUES (x); CLOSE my_cursor; END;"
+      - "BEGIN DECLARE x INT; DECLARE my_cursor CURSOR FOR SELECT id FROM range(2); DECLARE EXIT HANDLER FOR NOT FOUND BEGIN CLOSE my_cursor; VALUES ('Cursor closed on completion'); END; OPEN my_cursor; REPEAT FETCH my_cursor INTO x; UNTIL false END REPEAT; END;"
+      - "BEGIN DECLARE result STRING DEFAULT ''; DECLARE x INT; DECLARE param_cursor CURSOR FOR SELECT id FROM range(10) WHERE id = ?; OPEN param_cursor USING 3; FETCH param_cursor INTO x; SET result = 'First open: ' || CAST(x AS STRING); CLOSE param_cursor; OPEN param_cursor USING 7; FETCH param_cursor INTO x; SET result = result || '; Second open: ' || CAST(x AS STRING); CLOSE param_cursor; VALUES (result); END;"

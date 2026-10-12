@@ -1,0 +1,94 @@
+dialect: hana
+engine: SAP HANA Platform
+version: "2.0 SPS 08 (2.0.08)"
+source: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/3bc1a0d4611d40c4a6e3fc7c8e80395d.html?version=2.0.08
+
+statements:
+  - id: alter_view
+    name: ALTER VIEW
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/3bc89515b93d4844bd700b3492673270.html?version=2.0.08
+    tier: high
+    probes:
+      - { id: as_subquery, sql: "ALTER VIEW v AS SELECT a, b FROM t;" }
+      - { id: schema_qualified, sql: "ALTER VIEW s.v AS SELECT a FROM t;" }
+      - { id: column_list, sql: "ALTER VIEW v (x, y) AS SELECT a, b FROM t;" }
+      - { id: with_check_option, sql: "ALTER VIEW v AS SELECT a FROM t WITH CHECK OPTION;" }
+      - { id: with_no_check_option, sql: "ALTER VIEW v AS SELECT a FROM t WITH NO CHECK OPTION;" }
+      - { id: with_read_only, sql: "ALTER VIEW v AS SELECT a FROM t WITH READ ONLY;" }
+      - { id: with_no_read_only, sql: "ALTER VIEW v AS SELECT a FROM t WITH NO READ ONLY;" }
+      - { id: with_mask, sql: "ALTER VIEW v AS SELECT a FROM t WITH MASK (a USING 'xxx');" }
+      - { id: with_structured_privilege_check, sql: "ALTER VIEW v AS SELECT a FROM t WITH STRUCTURED PRIVILEGE CHECK;" }
+      - { id: with_no_structured_privilege_check, sql: "ALTER VIEW v AS SELECT a FROM t WITH NO STRUCTURED PRIVILEGE CHECK;" }
+      - { id: with_check_option_structured, sql: "ALTER VIEW v AS SELECT a FROM t WITH CHECK OPTION STRUCTURED PRIVILEGE CHECK;" }
+      - { id: with_associations, sql: "ALTER VIEW v AS SELECT a FROM t WITH ASSOCIATIONS (MANY TO ONE JOIN t2 AS x ON t.a = x.a);", note: "view_option_list references view_associations; syntax block shows <with_association_clause> ::= WITH ASSOCIATIONS ( <association_def_list> )" }
+      - { id: with_annotations_in_as, sql: "ALTER VIEW v AS SELECT a FROM t WITH ANNOTATIONS (SET 'k' = 'v');", note: "view_option_list includes <view_annotations>; <with_annotation_clause> syntax" }
+      - { id: add_cache, sql: "ALTER VIEW v ADD CACHE;" }
+      - { id: add_static_cache_retention, sql: "ALTER VIEW v ADD STATIC CACHE RETENTION 10;" }
+      - { id: add_dynamic_cache, sql: "ALTER VIEW v ADD DYNAMIC CACHE;" }
+      - { id: add_cache_of_projection, sql: "ALTER VIEW v ADD STATIC CACHE RETENTION 1000 OF a, SUM(b), AVG(c);" }
+      - { id: add_cache_filter, sql: "ALTER VIEW v ADD STATIC CACHE FILTER a = 1 AND b > 2;" }
+      - { id: add_cache_location, sql: "ALTER VIEW v ADD STATIC CACHE AT LOCATION 'myhost2:00002';" }
+      - { id: add_cache_location_short, sql: "ALTER VIEW v ADD STATIC CACHE AT 'myhost2:00002', 'myhost3:00002';" }
+      - { id: add_cache_force, sql: "ALTER VIEW v ADD STATIC CACHE RETENTION 10 FORCE;" }
+      - { id: alter_cache_retention, sql: "ALTER VIEW v ALTER STATIC CACHE RETENTION 20;" }
+      - { id: alter_cache_add_location, sql: "ALTER VIEW v ALTER STATIC CACHE ADD AT LOCATION 'myhost2:00002';" }
+      - { id: alter_cache_drop_location, sql: "ALTER VIEW v ALTER STATIC CACHE DROP AT LOCATION 'myhost2:00002';" }
+      - { id: alter_cache_add_index, sql: "ALTER VIEW v ALTER DYNAMIC CACHE ADD INDEX ON a;" }
+      - { id: alter_cache_drop_index, sql: "ALTER VIEW v ALTER DYNAMIC CACHE DROP INDEX ON a;" }
+      - { id: drop_static_cache, sql: "ALTER VIEW v DROP STATIC CACHE;" }
+      - { id: drop_dynamic_cache, sql: "ALTER VIEW v DROP DYNAMIC CACHE;" }
+      - { id: drop_cache, sql: "ALTER VIEW v DROP CACHE;" }
+      - { id: add_mask, sql: "ALTER VIEW v ADD MASK (a USING 'xxx');" }
+      - { id: alter_mask, sql: "ALTER VIEW v ALTER MASK (a USING 'yyy');" }
+      - { id: drop_mask, sql: "ALTER VIEW v DROP MASK (a, b);" }
+      - { id: add_expression_macros, sql: "ALTER VIEW v ADD EXPRESSION MACROS(AVG(a) AS avg_a);" }
+      - { id: add_expression_macros_multi, sql: "ALTER VIEW v ADD EXPRESSION MACROS(SUM(a) AS sum_a, COUNT(a) AS count_a);" }
+      - { id: drop_expression_macros, sql: "ALTER VIEW v DROP EXPRESSION MACROS(avg_a, avg2_a);" }
+      - { id: read_only, sql: "ALTER VIEW v READ ONLY;" }
+      - { id: no_read_only, sql: "ALTER VIEW v NO READ ONLY;" }
+      - { id: ddl_only, sql: "ALTER VIEW v DDL ONLY;" }
+      - { id: no_ddl_only, sql: "ALTER VIEW v NO DDL ONLY;" }
+      - { id: as_with_ddl_only, sql: "ALTER VIEW v AS SELECT * FROM t WITH DDL ONLY;" }
+      - { id: as_with_no_ddl_only, sql: "ALTER VIEW v AS SELECT * FROM t WITH NO DDL ONLY;" }
+      - { id: with_annotations_set, sql: "ALTER VIEW v WITH ANNOTATIONS (SET 'key1' = 'value1');" }
+      - { id: with_annotations_unset, sql: "ALTER VIEW v WITH ANNOTATIONS (UNSET 'key1');" }
+      - { id: with_annotations_unset_all, sql: "ALTER VIEW v WITH ANNOTATIONS (UNSET ALL);" }
+      - { id: with_annotations_column, sql: "ALTER VIEW v WITH ANNOTATIONS (COLUMN c1 UNSET 'k2' SET 'k2' = 'v2');" }
+      - { id: with_annotations_parameter, sql: "ALTER VIEW v WITH ANNOTATIONS (PARAMETER p1 SET 'k' = 'v');" }
+      - { id: with_anonymization, sql: "ALTER VIEW v WITH ANONYMIZATION (ALGORITHM 'K-ANONYMITY');" }
+      - { id: with_anonymization_params, sql: "ALTER VIEW v WITH ANONYMIZATION (ALGORITHM 'K-ANONYMITY' PARAMETERS '{\"k\": 3}' COLUMN c PARAMETERS '{\"is_sequence\": true}');" }
+    examples:
+      - "ALTER VIEW V ADD STATIC CACHE RETENTION 10;"
+      - "ALTER VIEW V_1 ADD STATIC CACHE RETENTION 1000 OF A, SUM(B), AVG(C);"
+      - "ALTER VIEW v1 DROP EXPRESSION MACROS( avg_a, avg2_a );"
+
+  - id: call
+    name: CALL
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d364c175191014b592f500ccb5510c.html?version=2.0.08
+    tier: high
+    probes:
+      - { id: no_args, sql: "CALL p();" }
+      - { id: schema_qualified, sql: "CALL s.p(1, 'a');" }
+      - { id: literal_args, sql: "CALL p(1, -2, 3.5, 'str');" }
+      - { id: expression_args, sql: "CALL p(1 + 2, UPPER('a'));" }
+      - { id: identifier_arg, sql: "CALL p(t1, t2);" }
+      - { id: tabular_out_param, sql: "CALL p(1, ?);" }
+      - { id: null_arg, sql: "CALL p(NULL);" }
+      - { id: with_hint, sql: "CALL p(1) WITH HINT (NO_CS_ESX);" }
+      - { id: with_hint_args, sql: "CALL p(1) WITH HINT (OPTIMIZE_METAMODEL, IGNORE_PLAN_CACHE);" }
+      - { id: with_hint_cascade, sql: "CALL p(1) WITH HINT (IGNORE_PLAN_CACHE CASCADE);" }
+      - { id: with_hint_route_to, sql: "CALL p(1) WITH HINT (ROUTE_TO(1, 2));" }
+      - { id: with_hint_no_route_to, sql: "CALL p(1) WITH HINT (NO_ROUTE_TO(indexserver));" }
+      - { id: with_hint_route_by, sql: "CALL p(1) WITH HINT (ROUTE_BY(t1, t2));" }
+      - { id: with_hint_route_by_cardinality, sql: "CALL p(1) WITH HINT (ROUTE_BY_CARDINALITY(t1));" }
+      - { id: with_hint_max_concurrency, sql: "CALL p(1) WITH HINT (MAX_CONCURRENCY(1));" }
+      - { id: with_hint_data_transfer_cost, sql: "CALL p(1) WITH HINT (DATA_TRANSFER_COST(0));" }
+      - { id: async, sql: "CALL p(1) ASYNC;" }
+      - { id: with_overview, sql: "CALL p(1, NULL) WITH OVERVIEW;" }
+      - { id: hint_then_with_overview, sql: "CALL p(1) WITH HINT (IGNORE_PLAN_CACHE) WITH OVERVIEW;" }
+      - { id: hint_then_async, sql: "CALL p(1) WITH HINT (IGNORE_PLAN_CACHE) ASYNC;" }
+      - { id: library_member, sql: "CALL MyLib:MemberProc(1, ?);" }
+      - { id: library_member_schema, sql: "CALL s.MyLib:MemberProc(1, ?);" }
+    examples:
+      - "CALL getOutput(1000, 'EUR', ot_publishers, NULL) WITH OVERVIEW;"
+      - "CALL MyLib:MemberProc(1, ?);"

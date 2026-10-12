@@ -1,0 +1,279 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: create_materialized_view
+    name: CREATE MATERIALIZED VIEW
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-materialized-view
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE MATERIALIZED VIEW v AS SELECT c FROM t;"
+      - id: if_not_exists
+        sql: "CREATE MATERIALIZED VIEW IF NOT EXISTS v AS SELECT c FROM t;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE MATERIALIZED VIEW v AS SELECT c FROM t;"
+      - id: qualified_name
+        sql: "CREATE MATERIALIZED VIEW cat.sch.v AS SELECT c FROM t;"
+      - id: column_list
+        sql: "CREATE MATERIALIZED VIEW v (c1 int, c2 string) AS SELECT c1, c2 FROM t;"
+      - id: column_not_null
+        sql: "CREATE MATERIALIZED VIEW v (c1 int NOT NULL, c2 string) AS SELECT c1, c2 FROM t;"
+      - id: column_comment
+        sql: "CREATE MATERIALIZED VIEW v (c1 int COMMENT 'first column', c2 string) AS SELECT c1, c2 FROM t;"
+      - id: column_constraint
+        sql: "CREATE MATERIALIZED VIEW v (c1 int CONSTRAINT c1_pk PRIMARY KEY, c2 string) AS SELECT c1, c2 FROM t;"
+      - id: column_mask
+        sql: "CREATE MATERIALIZED VIEW v (c1 int, ssn string MASK cat.sch.ssn_mask_fn) AS SELECT c1, ssn FROM t;"
+      - id: expectation
+        sql: "CREATE MATERIALIZED VIEW v (c1 int, CONSTRAINT valid_c1 EXPECT (c1 > 0)) AS SELECT c1 FROM t;"
+      - id: expectation_drop_row
+        sql: "CREATE MATERIALIZED VIEW v (c1 int, CONSTRAINT valid_c1 EXPECT (c1 > 0) ON VIOLATION DROP ROW) AS SELECT c1 FROM t;"
+      - id: expectation_fail_update
+        sql: "CREATE MATERIALIZED VIEW v (c1 int, CONSTRAINT valid_c1 EXPECT (c1 > 0) ON VIOLATION FAIL UPDATE) AS SELECT c1 FROM t;"
+      - id: table_constraint
+        sql: "CREATE MATERIALIZED VIEW v (c1 int NOT NULL, c2 string, CONSTRAINT v_pk PRIMARY KEY (c1)) AS SELECT c1, c2 FROM t;"
+      - id: using_delta
+        sql: "CREATE MATERIALIZED VIEW v USING DELTA AS SELECT c FROM t;"
+      - id: using_iceberg
+        sql: "CREATE MATERIALIZED VIEW v USING ICEBERG AS SELECT c FROM t;"
+      - id: partitioned_by
+        sql: "CREATE MATERIALIZED VIEW v PARTITIONED BY (c) AS SELECT c FROM t;"
+      - id: cluster_by
+        sql: "CREATE MATERIALIZED VIEW v CLUSTER BY (c) AS SELECT c FROM t;"
+      - id: cluster_by_auto
+        sql: "CREATE MATERIALIZED VIEW v CLUSTER BY AUTO AS SELECT c FROM t;"
+      - id: comment
+        sql: "CREATE MATERIALIZED VIEW v COMMENT 'Daily sales numbers' AS SELECT c FROM t;"
+      - id: default_collation
+        sql: "CREATE MATERIALIZED VIEW v DEFAULT COLLATION UTF8_BINARY AS SELECT c FROM t;"
+      - id: tblproperties
+        sql: "CREATE MATERIALIZED VIEW v TBLPROPERTIES ('k' = 'v') AS SELECT c FROM t;"
+      - id: schedule_every
+        sql: "CREATE MATERIALIZED VIEW v SCHEDULE EVERY 1 DAY AS SELECT c FROM t;"
+      - id: schedule_refresh_every_hours
+        sql: "CREATE MATERIALIZED VIEW v SCHEDULE REFRESH EVERY 6 HOURS AS SELECT c FROM t;"
+      - id: schedule_every_week
+        sql: "CREATE MATERIALIZED VIEW v SCHEDULE EVERY 1 WEEK AS SELECT c FROM t;"
+      - id: schedule_cron
+        sql: "CREATE MATERIALIZED VIEW v SCHEDULE CRON '0 0 0 * * ?' AS SELECT c FROM t;"
+      - id: schedule_cron_time_zone
+        sql: "CREATE MATERIALIZED VIEW v SCHEDULE CRON '0 0 0 * * ?' AT TIME ZONE 'UTC' AS SELECT c FROM t;"
+      - id: trigger_on_update
+        sql: "CREATE MATERIALIZED VIEW v TRIGGER ON UPDATE AS SELECT c FROM t;"
+      - id: trigger_on_update_at_most_every
+        sql: "CREATE MATERIALIZED VIEW v TRIGGER ON UPDATE AT MOST EVERY INTERVAL 5 MINUTES AS SELECT c FROM t;"
+      - id: row_filter
+        sql: "CREATE MATERIALIZED VIEW v WITH ROW FILTER cat.sch.us_filter_fn ON (region) AS SELECT c, region FROM t;"
+      - id: multiple_clauses
+        sql: "CREATE MATERIALIZED VIEW v (c1 int, c2 string) USING DELTA PARTITIONED BY (c1) COMMENT 'x' TBLPROPERTIES ('k' = 'v') SCHEDULE EVERY 1 DAY AS SELECT c1, c2 FROM t;"
+    examples:
+      - |-
+        CREATE MATERIALIZED VIEW daily_sales
+          COMMENT 'Daily sales numbers'
+          SCHEDULE EVERY 1 DAY
+          AS SELECT date AS date, sum(sales) AS sumOfSales
+          FROM table1
+          GROUP BY date;
+      - |-
+        CREATE MATERIALIZED VIEW daily_revenue
+          SCHEDULE CRON '0 0 0 * * ?' AT TIME ZONE 'UTC'
+          AS SELECT date AS date, sum(revenue) AS totalRevenue
+          FROM orders
+          GROUP BY date;
+      - |-
+        CREATE MATERIALIZED VIEW masked_view (
+          id int,
+          name string,
+          region string,
+          ssn string MASK catalog.schema.ssn_mask_fn
+        )
+        WITH ROW FILTER catalog.schema.us_filter_fn ON (region)
+        AS SELECT id, name, region, ssn FROM employees;
+
+  - id: create_function_sql
+    name: CREATE FUNCTION (SQL, Python, Scala, and Java)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-sql-function
+    tier: high
+    probes:
+      - id: sql_scalar_return_expr
+        sql: "CREATE FUNCTION f (x DOUBLE, y DOUBLE) RETURNS DOUBLE RETURN x * y;"
+      - id: no_params
+        sql: "CREATE FUNCTION f () RETURNS STRING RETURN 'Hello World!';"
+      - id: no_returns_clause
+        sql: "CREATE FUNCTION f (x INT) RETURN x + 1;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE FUNCTION f (x INT) RETURNS INT RETURN x + 1;"
+      - id: temporary
+        sql: "CREATE TEMPORARY FUNCTION f () RETURNS STRING RETURN 'Hello World!';"
+      - id: or_replace_temporary
+        sql: "CREATE OR REPLACE TEMPORARY FUNCTION f () RETURNS STRING RETURN 'x';"
+      - id: if_not_exists
+        sql: "CREATE FUNCTION IF NOT EXISTS f (x INT) RETURNS INT RETURN x + 1;"
+      - id: qualified_name
+        sql: "CREATE FUNCTION cat.sch.f (x INT) RETURNS INT RETURN x + 1;"
+      - id: param_default
+        sql: "CREATE FUNCTION f (n INT DEFAULT 1) RETURNS INT RETURN n;"
+      - id: param_comment
+        sql: "CREATE FUNCTION f (n INT COMMENT 'number of dice') RETURNS INT RETURN n;"
+      - id: param_default_comment
+        sql: "CREATE FUNCTION f (n INT DEFAULT 1 COMMENT 'number of dice (Default: 1)', m INT DEFAULT 6) RETURNS INT RETURN n + m;"
+      - id: return_query
+        sql: "CREATE FUNCTION f (p INT) RETURNS FLOAT RETURN SELECT AVG(score) FROM scores WHERE player = p;"
+      - id: returns_table_with_columns
+        sql: "CREATE FUNCTION f (d INT) RETURNS TABLE (name STRING, id INT) RETURN SELECT name, id FROM e WHERE e.d = f.d;"
+      - id: returns_table_column_comment
+        sql: "CREATE FUNCTION f (d INT) RETURNS TABLE (name STRING COMMENT 'employee name') RETURN SELECT name FROM e WHERE e.d = f.d;"
+      - id: returns_table_no_columns
+        sql: "CREATE FUNCTION f (d INT) RETURNS TABLE RETURN SELECT name FROM e WHERE e.d = f.d;"
+      - id: language_sql
+        sql: "CREATE FUNCTION f (x INT) RETURNS INT LANGUAGE SQL RETURN x + 1;"
+      - id: deterministic
+        sql: "CREATE FUNCTION f (x INT) RETURNS INT DETERMINISTIC RETURN x + 1;"
+      - id: not_deterministic
+        sql: "CREATE FUNCTION f () RETURNS INT NOT DETERMINISTIC RETURN (rand() * 6)::INT + 1;"
+      - id: comment
+        sql: "CREATE FUNCTION f () RETURNS INT COMMENT 'Roll a single 6 sided die' RETURN 1;"
+      - id: contains_sql
+        sql: "CREATE FUNCTION f () RETURNS INT CONTAINS SQL RETURN 1;"
+      - id: reads_sql_data
+        sql: "CREATE FUNCTION f () RETURNS INT READS SQL DATA RETURN (SELECT max(c) FROM t);"
+      - id: default_collation
+        sql: "CREATE FUNCTION f (s STRING) RETURNS STRING DEFAULT COLLATION UTF8_LCASE RETURN s;"
+      - id: multiple_characteristics
+        sql: "CREATE FUNCTION f () RETURNS INT NOT DETERMINISTIC CONTAINS SQL COMMENT 'Roll a single 6 sided die' RETURN (rand() * 6)::INT + 1;"
+      - id: python_dollar_quoted
+        sql: |-
+          CREATE FUNCTION f (s STRING)
+          RETURNS STRING
+          LANGUAGE PYTHON
+          AS $$
+          return s
+          $$;
+      - id: python_tagged_dollar_quote
+        sql: |-
+          CREATE FUNCTION f (s STRING)
+          RETURNS STRING
+          LANGUAGE PYTHON
+          AS $py$
+          return "Hello World"
+          $py$;
+      - id: python_deterministic
+        sql: |-
+          CREATE FUNCTION f (year INT)
+          RETURNS BOOLEAN
+          LANGUAGE PYTHON
+          DETERMINISTIC
+          AS $$
+          import calendar
+          return calendar.isleap(year) if year else None
+          $$;
+      - id: python_handler_with_body
+        sql: |-
+          CREATE FUNCTION f (x INT)
+          RETURNS INT
+          LANGUAGE PYTHON
+          HANDLER 'my_handler'
+          AS $$
+          def my_handler(x):
+              return x + 1
+          $$;
+      - id: python_parameter_style_pandas
+        sql: |-
+          CREATE FUNCTION f (x INT)
+          RETURNS INT
+          LANGUAGE PYTHON
+          PARAMETER STYLE PANDAS
+          HANDLER 'my_handler'
+          AS $$
+          import pandas as pd
+          from typing import Iterator
+          def my_handler(it: Iterator[pd.Series]) -> Iterator[pd.Series]:
+              for s in it:
+                  yield s + 1
+          $$;
+      - id: python_environment
+        sql: |-
+          CREATE FUNCTION f (data STRING)
+          RETURNS STRING
+          LANGUAGE PYTHON
+          ENVIRONMENT (dependencies = '["simplejson==3.19.3"]', environment_version = '6')
+          AS $$
+          import simplejson as json
+          return json.dumps(data)
+          $$;
+      - id: python_credentials
+        sql: |-
+          CREATE FUNCTION f (x INT)
+          RETURNS INT
+          LANGUAGE PYTHON
+          PARAMETER STYLE PANDAS
+          CREDENTIALS (my_cred DEFAULT, other_cred AS alias1)
+          HANDLER 'my_handler'
+          AS $$
+          def my_handler(it):
+              yield from it
+          $$;
+      - id: python_secrets
+        sql: |-
+          CREATE FUNCTION f (x INT)
+          RETURNS INT
+          LANGUAGE PYTHON
+          SECRETS (cat.sch.my_secret)
+          ENVIRONMENT (environment_version = '6')
+          AS $$
+          return x
+          $$;
+      - id: scala_handler_environment
+        sql: |-
+          CREATE OR REPLACE FUNCTION cat.sch.add_one_scala (x INT)
+          RETURNS INT
+          LANGUAGE SCALA
+          DETERMINISTIC
+          ENVIRONMENT (java_dependencies = '["/Volumes/cat/sch/udf_jars/my-udf-assembly-0.1.0.jar"]', environment_version = '4')
+          HANDLER 'com.example.ScalaUDF.addOne';
+      - id: java_handler_environment
+        sql: |-
+          CREATE OR REPLACE FUNCTION cat.sch.add_one_java (x INT)
+          RETURNS INT
+          LANGUAGE JAVA
+          DETERMINISTIC
+          ENVIRONMENT (java_dependencies = '["/Volumes/cat/sch/udf_jars/my-udf-1.0.jar"]', environment_version = '4')
+          HANDLER 'com.example.JavaUDF.addOne';
+    examples:
+      - |-
+        CREATE FUNCTION roll_dice(num_dice INT DEFAULT 1 COMMENT 'number of dice to roll (Default: 1)',
+                                  num_sides INT DEFAULT 6 COMMENT 'number of sides per die (Default: 6)')
+          RETURNS INT
+          NOT DETERMINISTIC
+          CONTAINS SQL
+          COMMENT 'Roll a number of n-sided dice'
+          RETURN aggregate(sequence(1, roll_dice.num_dice, 1),
+                           0,
+                           (acc, x) -> (rand() * roll_dice.num_sides)::int,
+                           acc -> acc + roll_dice.num_dice);
+      - |-
+        CREATE FUNCTION main.default.dump_json(data STRING)
+          RETURNS STRING
+          LANGUAGE PYTHON
+          ENVIRONMENT (
+            dependencies = '["simplejson==3.19.3", "/Volumes/my_catalog/my_schema/my_volume/packages/custom_package-1.0.0.whl", "https://my-bucket.s3.amazonaws.com/packages/special_package-2.0.0.whl?Expires=2043167927&Signature=abcd"]',
+            environment_version = '6'
+          )
+          AS $$
+            import simplejson as json
+            import custom_package
+            return json.dumps(custom_package.process(data))
+          $$;
+      - |-
+        CREATE OR REPLACE FUNCTION my_catalog.my_schema.add_one_scala(x INT)
+          RETURNS INT
+          LANGUAGE SCALA
+          DETERMINISTIC
+          ENVIRONMENT (
+            java_dependencies = '["/Volumes/my_catalog/my_schema/udf_jars/my-udf-assembly-0.1.0.jar"]',
+            environment_version = '4'
+          )
+          HANDLER 'com.example.ScalaUDF.addOne';

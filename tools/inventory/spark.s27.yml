@@ -1,0 +1,178 @@
+dialect: spark
+engine: Apache Spark SQL
+version: "4.x (docs/latest)"
+source: https://spark.apache.org/docs/latest/sql-ref-syntax.html
+
+statements:
+  - id: alter_database
+    name: ALTER DATABASE
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-alter-database.html
+    tier: medium
+    probes:
+      - id: set_dbproperties
+        sql: "ALTER DATABASE db SET DBPROPERTIES ('k' = 'v', 'k2' = 'v2');"
+      - id: set_properties_schema
+        sql: "ALTER SCHEMA db SET PROPERTIES ('k' = 'v');"
+      - id: set_properties_namespace
+        sql: "ALTER NAMESPACE db SET PROPERTIES ('k' = 'v');"
+      - id: set_location
+        sql: "ALTER DATABASE db SET LOCATION 'file:/tmp/db';"
+    examples:
+      - "ALTER DATABASE inventory SET DBPROPERTIES ('Edited-by' = 'John', 'Edit-date' = '01/01/2001');"
+      - "ALTER DATABASE inventory SET LOCATION 'file:/temp/spark-warehouse/new_inventory.db';"
+
+  - id: create_database
+    name: CREATE DATABASE
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-create-database.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE DATABASE db;"
+      - id: schema_keyword
+        sql: "CREATE SCHEMA db;"
+      - id: if_not_exists
+        sql: "CREATE DATABASE IF NOT EXISTS db;"
+      - id: comment
+        sql: "CREATE DATABASE db COMMENT 'a database';"
+      - id: location
+        sql: "CREATE DATABASE db LOCATION '/user';"
+      - id: with_dbproperties
+        sql: "CREATE DATABASE db WITH DBPROPERTIES (ID = 001, Name = 'John');"
+    examples:
+      - "CREATE DATABASE customer_db;"
+      - "CREATE DATABASE IF NOT EXISTS customer_db;"
+      - "CREATE DATABASE IF NOT EXISTS customer_db COMMENT 'This is customer database' LOCATION '/user' WITH DBPROPERTIES (ID=001, Name='John');"
+
+  - id: drop_database
+    name: DROP DATABASE
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-drop-database.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP DATABASE db;"
+      - id: schema_keyword
+        sql: "DROP SCHEMA db;"
+      - id: if_exists
+        sql: "DROP DATABASE IF EXISTS db;"
+      - id: restrict
+        sql: "DROP DATABASE db RESTRICT;"
+      - id: cascade
+        sql: "DROP DATABASE db CASCADE;"
+    examples:
+      - "DROP DATABASE inventory_db CASCADE;"
+      - "DROP DATABASE IF EXISTS inventory_db CASCADE;"
+
+  - id: drop_temporary_variable
+    name: DROP TEMPORARY VARIABLE
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-drop-variable.html
+    tier: medium
+    probes:
+      - id: variable
+        sql: "DROP TEMPORARY VARIABLE v;"
+      - id: var
+        sql: "DROP TEMPORARY VAR v;"
+      - id: if_exists
+        sql: "DROP TEMPORARY VARIABLE IF EXISTS v;"
+    examples:
+      - "DROP TEMPORARY VARIABLE var1;"
+      - "DROP TEMPORARY VARIABLE IF EXISTS var1;"
+
+  - id: repair_table
+    name: REPAIR TABLE
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-repair-table.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "REPAIR TABLE t;"
+      - id: msck
+        sql: "MSCK REPAIR TABLE t;"
+      - id: add_partitions
+        sql: "REPAIR TABLE t ADD PARTITIONS;"
+      - id: drop_partitions
+        sql: "REPAIR TABLE t DROP PARTITIONS;"
+      - id: sync_partitions
+        sql: "MSCK REPAIR TABLE t SYNC PARTITIONS;"
+    examples:
+      - "REPAIR TABLE t1;"
+
+  - id: truncate_table
+    name: TRUNCATE TABLE
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-truncate-table.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "TRUNCATE TABLE t;"
+      - id: partition
+        sql: "TRUNCATE TABLE t PARTITION (age = 10);"
+      - id: multi_column_partition
+        sql: "TRUNCATE TABLE t PARTITION (age = 10, city = 'x');"
+    examples:
+      - "TRUNCATE TABLE Student partition(age=10);"
+      - "TRUNCATE TABLE Student;"
+
+  - id: use_database
+    name: USE DATABASE
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-usedb.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "USE db;"
+    examples:
+      - "USE userdb;"
+
+  - id: insert_overwrite_directory
+    name: INSERT OVERWRITE DIRECTORY
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-dml-insert-overwrite-directory.html
+    tier: medium
+    probes:
+      - id: spark_format
+        sql: "INSERT OVERWRITE DIRECTORY '/tmp/destination' USING parquet SELECT * FROM t;"
+      - id: spark_format_options
+        sql: "INSERT OVERWRITE DIRECTORY '/tmp/destination' USING parquet OPTIONS (col1 1, col2 2, col3 'test') SELECT * FROM t;"
+      - id: no_path_options
+        sql: "INSERT OVERWRITE DIRECTORY USING parquet OPTIONS ('path' '/tmp/destination', col1 1) SELECT * FROM t;"
+      - id: hive_stored_as
+        sql: "INSERT OVERWRITE LOCAL DIRECTORY '/tmp/destination' STORED AS orc SELECT * FROM t;"
+      - id: hive_row_format
+        sql: "INSERT OVERWRITE LOCAL DIRECTORY '/tmp/destination' ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' SELECT * FROM t;"
+      - id: values
+        sql: "INSERT OVERWRITE DIRECTORY '/tmp/destination' USING parquet VALUES (1, 'a'), (2, NULL);"
+    examples:
+      - "INSERT OVERWRITE DIRECTORY '/tmp/destination' USING parquet OPTIONS (col1 1, col2 2, col3 'test') SELECT * FROM test_table;"
+      - "INSERT OVERWRITE DIRECTORY USING parquet OPTIONS ('path' '/tmp/destination', col1 1, col2 2, col3 'test') SELECT * FROM test_table;"
+      - "INSERT OVERWRITE LOCAL DIRECTORY '/tmp/destination' STORED AS orc SELECT * FROM test_table;"
+
+  - id: load
+    name: LOAD DATA
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-dml-load.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "LOAD DATA INPATH '/tmp/data' INTO TABLE t;"
+      - id: local
+        sql: "LOAD DATA LOCAL INPATH '/tmp/data' INTO TABLE t;"
+      - id: overwrite
+        sql: "LOAD DATA INPATH '/tmp/data' OVERWRITE INTO TABLE t;"
+      - id: partition
+        sql: "LOAD DATA LOCAL INPATH '/tmp/data' OVERWRITE INTO TABLE t PARTITION (c2 = 2, c3 = 3);"
+    examples:
+      - "LOAD DATA LOCAL INPATH '/user/hive/warehouse/students' OVERWRITE INTO TABLE test_load;"
+
+  - id: explain
+    name: EXPLAIN
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-qry-explain.html
+    tier: medium
+    probes:
+      - id: basic
+        sql: "EXPLAIN SELECT k, sum(v) FROM t GROUP BY k;"
+      - id: extended
+        sql: "EXPLAIN EXTENDED SELECT * FROM t;"
+      - id: codegen
+        sql: "EXPLAIN CODEGEN SELECT * FROM t;"
+      - id: cost
+        sql: "EXPLAIN COST SELECT * FROM t;"
+      - id: formatted
+        sql: "EXPLAIN FORMATTED SELECT * FROM t;"
+    examples:
+      - "EXPLAIN select k, sum(v) from values (1, 2), (1, 3) t(k, v) group by k;"
+      - "EXPLAIN EXTENDED select k, sum(v) from values (1, 2), (1, 3) t(k, v) group by k;"

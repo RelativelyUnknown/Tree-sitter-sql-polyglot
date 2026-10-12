@@ -1,0 +1,41 @@
+dialect: db2
+engine: IBM Db2 for Linux, UNIX and Windows
+version: "12.1"
+source: https://www.ibm.com/docs/en/db2/12.1.x?topic=reference-statements
+
+statements:
+  - id: return
+    name: RETURN
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-return
+    tier: high
+    probes:
+      - id: return_expression
+        sql: "CREATE FUNCTION f(a INTEGER) RETURNS INTEGER LANGUAGE SQL RETURN a + 1;"
+      - id: return_null
+        sql: "CREATE FUNCTION f(a INTEGER) RETURNS INTEGER LANGUAGE SQL RETURN NULL;"
+      - id: return_fullselect
+        sql: "CREATE FUNCTION f(a INTEGER) RETURNS INTEGER LANGUAGE SQL RETURN SELECT c FROM t WHERE k = a;"
+      - id: return_with_cte
+        sql: "CREATE FUNCTION f(a INTEGER) RETURNS TABLE (c INTEGER) LANGUAGE SQL RETURN WITH x (c) AS (SELECT c FROM t) SELECT c FROM x;"
+      - id: return_with_multiple_ctes
+        sql: "CREATE FUNCTION f(a INTEGER) RETURNS TABLE (c INTEGER) LANGUAGE SQL RETURN WITH x (c) AS (SELECT c FROM t), y (c) AS (SELECT c FROM x) SELECT c FROM y;"
+      - id: return_procedure_status
+        sql: "CREATE PROCEDURE p() LANGUAGE SQL BEGIN RETURN 0; END;"
+
+  - id: rollback
+    name: ROLLBACK
+    doc: https://www.ibm.com/docs/en/db2/12.1.x?topic=statements-rollback
+    tier: high
+    probes:
+      - id: rollback_plain
+        sql: "ROLLBACK;"
+      - id: rollback_work
+        sql: "ROLLBACK WORK;"
+      - id: rollback_to_savepoint
+        sql: "ROLLBACK TO SAVEPOINT;"
+      - id: rollback_work_to_savepoint
+        sql: "ROLLBACK WORK TO SAVEPOINT sp1;"
+      - id: rollback_to_savepoint_name
+        sql: "ROLLBACK TO SAVEPOINT sp1;"
+    examples:
+      - "ROLLBACK WORK;"

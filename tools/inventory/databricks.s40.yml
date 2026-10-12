@@ -1,0 +1,225 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: drop_catalog
+    name: DROP CATALOG
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-drop-catalog
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP CATALOG c;"
+      - id: if_exists
+        sql: "DROP CATALOG IF EXISTS c;"
+      - id: restrict
+        sql: "DROP CATALOG c RESTRICT;"
+      - id: cascade
+        sql: "DROP CATALOG c CASCADE;"
+      - id: if_exists_cascade
+        sql: "DROP CATALOG IF EXISTS c CASCADE;"
+    examples:
+      - "DROP CATALOG vaccine CASCADE;"
+      - "DROP CATALOG IF EXISTS vaccine RESTRICT;"
+
+  - id: create_volume
+    name: CREATE VOLUME
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-volume
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE VOLUME v;"
+      - id: qualified_name
+        sql: "CREATE VOLUME c.s.v;"
+      - id: if_not_exists
+        sql: "CREATE VOLUME IF NOT EXISTS v;"
+      - id: external_location
+        sql: "CREATE EXTERNAL VOLUME v LOCATION 's3://bucket/path';"
+      - id: comment
+        sql: "CREATE VOLUME v COMMENT 'my volume';"
+      - id: external_location_comment
+        sql: "CREATE EXTERNAL VOLUME IF NOT EXISTS c.s.v LOCATION 's3://bucket/path' COMMENT 'my volume';"
+    examples:
+      - "CREATE EXTERNAL VOLUME my_catalog.my_schema.my_external_volume LOCATION 's3://my-bucket/my-location/my-path' COMMENT 'This is my example external volume on S3';"
+      - "CREATE VOLUME my_catalog.my_schema.my_volume;"
+      - "CREATE VOLUME my_another_volume;"
+
+  - id: alter_volume
+    name: ALTER VOLUME
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-alter-volume
+    tier: medium
+    probes:
+      - id: rename_to
+        sql: "ALTER VOLUME v RENAME TO v2;"
+      - id: owner_to
+        sql: "ALTER VOLUME v OWNER TO `alf@melmak.et`;"
+      - id: set_owner_to
+        sql: "ALTER VOLUME v SET OWNER TO `alf@melmak.et`;"
+      - id: set_tags
+        sql: "ALTER VOLUME v SET TAGS ('tag1' = 'val1', 'tag2' = 'val2');"
+      - id: unset_tags
+        sql: "ALTER VOLUME v UNSET TAGS ('tag1', 'tag2');"
+    examples:
+      - "ALTER VOLUME my_volume RENAME TO new_name_volume;"
+      - "ALTER VOLUME my_volume SET TAGS ('tag1' = 'val1', 'tag2' = 'val2', 'tag3' = 'val3');"
+      - "ALTER VOLUME my_volume UNSET TAGS ('tag1', 'tag2', 'tag3');"
+
+  - id: drop_volume
+    name: DROP VOLUME
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-drop-volume
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP VOLUME v;"
+      - id: if_exists
+        sql: "DROP VOLUME IF EXISTS v;"
+      - id: qualified_name
+        sql: "DROP VOLUME c.s.v;"
+    examples:
+      - "DROP VOLUME my_volume;"
+      - "DROP VOLUME my_catalog.my_schema.my_volume;"
+      - "DROP VOLUME IF EXISTS my_volume;"
+
+  - id: comment_on
+    name: COMMENT ON
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-comment
+    tier: medium
+    probes:
+      - id: catalog
+        sql: "COMMENT ON CATALOG c IS 'comment';"
+      - id: column
+        sql: "COMMENT ON COLUMN t.c1 IS 'comment';"
+      - id: connection
+        sql: "COMMENT ON CONNECTION conn IS 'comment';"
+      - id: provider
+        sql: "COMMENT ON PROVIDER p IS 'comment';"
+      - id: recipient
+        sql: "COMMENT ON RECIPIENT r IS 'comment';"
+      - id: schema
+        sql: "COMMENT ON SCHEMA s IS 'comment';"
+      - id: database
+        sql: "COMMENT ON DATABASE s IS 'comment';"
+      - id: share
+        sql: "COMMENT ON SHARE sh IS 'comment';"
+      - id: table
+        sql: "COMMENT ON TABLE t IS 'comment';"
+      - id: volume
+        sql: "COMMENT ON VOLUME v IS 'comment';"
+      - id: is_null
+        sql: "COMMENT ON TABLE t IS NULL;"
+    examples:
+      - "COMMENT ON CATALOG my_catalog IS 'This is my catalog';"
+      - "COMMENT ON COLUMN my_table.c1 IS 'This is my column';"
+      - "COMMENT ON TABLE my_table IS NULL;"
+
+  - id: undrop
+    name: UNDROP
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-undrop-table
+    tier: medium
+    probes:
+      - id: table
+        sql: "UNDROP TABLE t;"
+      - id: table_qualified
+        sql: "UNDROP TABLE c.s.t;"
+      - id: table_with_id
+        sql: "UNDROP TABLE WITH ID '6ca7be55-8f58-47a7-85ee-7a59082fd17a';"
+      - id: materialized_view
+        sql: "UNDROP MATERIALIZED VIEW mv;"
+      - id: materialized_view_with_id
+        sql: "UNDROP MATERIALIZED VIEW WITH ID '6ca7be55-8f58-47a7-85ee-7a59082fd17a';"
+    examples:
+      - "UNDROP TABLE my_catalog.my_schema.my_table;"
+      - "UNDROP TABLE WITH ID '6ca7be55-8f58-47a7-85ee-7a59082fd17a';"
+
+  - id: declare_variable
+    name: DECLARE VARIABLE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-declare-variable
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DECLARE VARIABLE v INT;"
+      - id: default
+        sql: "DECLARE VARIABLE v INT DEFAULT 5;"
+      - id: equals_default
+        sql: "DECLARE VARIABLE v INT = 5;"
+      - id: or_replace
+        sql: "DECLARE OR REPLACE VARIABLE v INT DEFAULT 5;"
+      - id: no_variable_keyword
+        sql: "DECLARE v STRING DEFAULT 'a';"
+      - id: no_type
+        sql: "DECLARE v = 5;"
+      - id: multiple_names
+        sql: "DECLARE VARIABLE v1, v2 DOUBLE DEFAULT rand();"
+      - id: session_qualified
+        sql: "DECLARE VARIABLE session.v INT DEFAULT 1;"
+    examples:
+      - "DECLARE VARIABLE myvar INT DEFAULT 5;"
+      - "DECLARE myvar = 5;"
+      - "DECLARE var1, var2 DOUBLE DEFAULT rand();"
+
+  - id: drop_variable
+    name: DROP VARIABLE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-drop-variable
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP TEMPORARY VARIABLE v;"
+      - id: if_exists
+        sql: "DROP TEMPORARY VARIABLE IF EXISTS v;"
+      - id: session_qualified
+        sql: "DROP TEMPORARY VARIABLE session.v;"
+    examples:
+      - "DROP TEMPORARY VARIABLE myvar;"
+      - "DROP TEMPORARY VARIABLE IF EXISTS session.myvar;"
+
+  - id: set_variable
+    name: SET VARIABLE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-set-variable
+    tier: medium
+    probes:
+      - id: set_var_value
+        sql: "SET VAR v = 5;"
+      - id: set_variable_value
+        sql: "SET VARIABLE v = 5;"
+      - id: default
+        sql: "SET VARIABLE v = DEFAULT;"
+      - id: scalar_subquery
+        sql: "SET VARIABLE v = (SELECT max(c1) FROM VALUES (1), (2) AS T(c1));"
+      - id: multiple_assignments
+        sql: "SET VAR v1 = 11, v2 = 'hello';"
+      - id: tuple_from_query
+        sql: "SET VAR (v1, v2) = (SELECT 1, 'a');"
+      - id: tuple_from_values
+        sql: "SET VAR (v1, v2) = (VALUES (10, 'world'));"
+    examples:
+      - "SET VAR myvar1 = 5;"
+      - "SET VARIABLE myvar1 = DEFAULT;"
+      - "SET VAR (myvar1, myvar2) = (VALUES (10, 'world'));"
+
+  - id: refresh_mv_st
+    name: REFRESH (MATERIALIZED VIEW or STREAMING TABLE)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-refresh-full
+    tier: medium
+    probes:
+      - id: materialized_view
+        sql: "REFRESH MATERIALIZED VIEW mv;"
+      - id: streaming_table
+        sql: "REFRESH STREAMING TABLE st;"
+      - id: table
+        sql: "REFRESH TABLE st;"
+      - id: full
+        sql: "REFRESH STREAMING TABLE st FULL;"
+      - id: where
+        sql: "REFRESH STREAMING TABLE st WHERE id = 3;"
+      - id: sync
+        sql: "REFRESH MATERIALIZED VIEW mv SYNC;"
+      - id: async
+        sql: "REFRESH MATERIALIZED VIEW mv ASYNC;"
+      - id: full_where_async
+        sql: "REFRESH STREAMING TABLE st FULL WHERE id = 3 ASYNC;"
+    examples:
+      - "REFRESH MATERIALIZED VIEW catalog.schema.view_name;"
+      - "REFRESH STREAMING TABLE st_name;"
+      - "REFRESH STREAMING TABLE cat.db.st_name FULL;"
+      - "REFRESH STREAMING TABLE rep_st WHERE id = 3 ASYNC;"

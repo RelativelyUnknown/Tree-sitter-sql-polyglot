@@ -1,0 +1,115 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: select_transform
+    name: SELECT TRANSFORM / MAP / REDUCE
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-transform/
+    tier: high
+    probes:
+      - id: select_transform_using
+        sql: "SELECT TRANSFORM (a, b) USING 'my_script' FROM src;"
+      - id: select_transform_as_cols
+        sql: "SELECT TRANSFORM (a, b) USING 'my_script' AS c1, c2 FROM src;"
+      - id: select_transform_as_typed
+        sql: "SELECT TRANSFORM (a, b) USING 'my_script' AS (c1 INT, c2 INT) FROM src;"
+      - id: select_transform_in_row_format_delimited
+        sql: "SELECT TRANSFORM (a, b) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' USING 'my_script' FROM src;"
+      - id: select_transform_in_row_format_delimited_all
+        sql: "SELECT TRANSFORM (a, b) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' COLLECTION ITEMS TERMINATED BY '|' MAP KEYS TERMINATED BY ':' ESCAPED BY '\\\\' LINES SEPARATED BY '\\n' USING 'my_script' FROM src;"
+      - id: select_transform_in_row_format_serde
+        sql: "SELECT TRANSFORM (a, b) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe' USING 'my_script' FROM src;"
+      - id: select_transform_in_row_format_serde_props
+        sql: "SELECT TRANSFORM (a, b) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe' WITH SERDEPROPERTIES ('field.delim'=',') USING 'my_script' FROM src;"
+      - id: select_transform_out_row_format
+        sql: "SELECT TRANSFORM (a, b) USING 'my_script' AS (c1, c2) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' FROM src;"
+      - id: select_transform_out_row_format_serde
+        sql: "SELECT TRANSFORM (a, b) USING 'my_script' AS (c1, c2) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe' FROM src;"
+      - id: select_transform_record_reader
+        sql: "SELECT TRANSFORM (a, b) USING 'my_script' AS (c1, c2) RECORDREADER 'org.apache.hadoop.hive.ql.exec.TextRecordReader' FROM src;"
+      - id: select_transform_where
+        sql: "SELECT TRANSFORM (a, b) USING 'my_script' AS (c1, c2) FROM src WHERE a > 1;"
+      - id: select_transform_cluster_by
+        sql: "FROM (FROM src SELECT TRANSFORM (a, b) USING 'my_script' AS c1, c2 CLUSTER BY c1) m SELECT TRANSFORM (m.c1, m.c2) USING 'my_reduce_script' AS d1, d2;"
+      - id: select_transform_distribute_sort_by
+        sql: "FROM (FROM src SELECT TRANSFORM (a, b) USING 'my_script' AS c1, c2 DISTRIBUTE BY c1 SORT BY c1 DESC, c2) m SELECT TRANSFORM (m.c1, m.c2) USING 'my_reduce_script' AS d1, d2;"
+      - id: map_using
+        sql: "FROM src MAP a, b USING 'my_map_script' AS c1, c2;"
+      - id: map_reduce_cluster_by
+        sql: "FROM (FROM src MAP a, b USING 'my_map_script' AS c1, c2 CLUSTER BY c1) m REDUCE m.c1, m.c2 USING 'my_reduce_script' AS d1, d2;"
+      - id: map_reduce_distribute_sort_by
+        sql: "FROM (FROM src MAP a, b USING 'my_map_script' AS c1, c2 DISTRIBUTE BY c1 SORT BY c1 ASC) m REDUCE m.c1, m.c2 USING 'my_reduce_script' AS d1, d2;"
+      - id: map_row_format_record_reader
+        sql: "FROM (FROM src MAP a, b ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' USING 'my_map_script' AS c1, c2 ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' RECORDREADER 'org.apache.hadoop.hive.ql.exec.TextRecordReader' CLUSTER BY c1) m REDUCE m.c1, m.c2 USING 'my_reduce_script' AS d1, d2;"
+      - id: schemaless_cluster_by_key
+        sql: "FROM (FROM src MAP a, b USING 'my_map_script' CLUSTER BY key) m REDUCE m.key, m.value USING 'my_reduce_script' AS d1, d2;"
+      - id: transform_insert_overwrite_reduce
+        sql: "FROM (FROM src MAP a, b USING 'my_map_script' AS c1, c2 CLUSTER BY c1) m INSERT OVERWRITE TABLE dest REDUCE m.c1, m.c2 USING 'my_reduce_script' AS d1, d2;"
+      - id: transform_insert_overwrite_select_transform
+        sql: "FROM (FROM src SELECT TRANSFORM (a, b) USING 'my_script' AS c1, c2 CLUSTER BY c1) m INSERT OVERWRITE TABLE dest SELECT TRANSFORM (m.c1, m.c2) USING 'my_reduce_script' AS d1, d2;"
+    examples:
+      - "FROM ( FROM pv_users MAP pv_users.userid, pv_users.date USING 'map_script' AS dt, uid CLUSTER BY dt) map_output INSERT OVERWRITE TABLE pv_users_reduced REDUCE map_output.dt, map_output.uid USING 'reduce_script' AS date, count;"
+      - "FROM ( FROM pv_users SELECT TRANSFORM(pv_users.userid, pv_users.date) USING 'map_script' AS dt, uid CLUSTER BY dt) map_output INSERT OVERWRITE TABLE pv_users_reduced SELECT TRANSFORM(map_output.dt, map_output.uid) USING 'reduce_script' AS date, count;"
+      - "FROM ( FROM src SELECT TRANSFORM(src.key, src.value) ROW FORMAT SERDE 'org.apache.hadoop.hive.contrib.serde2.TypedBytesSerDe' USING '/bin/cat' AS (tkey, tvalue) ROW FORMAT SERDE 'org.apache.hadoop.hive.contrib.serde2.TypedBytesSerDe' RECORDREADER 'org.apache.hadoop.hive.contrib.util.typedbytes.TypedBytesRecordReader' ) tmap INSERT OVERWRITE TABLE dest1 SELECT tkey, tvalue;"
+
+  - id: insert_select
+    name: INSERT INTO/OVERWRITE TABLE ... SELECT
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-dml/
+    tier: high
+    probes:
+      - id: insert_overwrite_select
+        sql: "INSERT OVERWRITE TABLE t SELECT a, b FROM src;"
+      - id: insert_overwrite_partition_select
+        sql: "INSERT OVERWRITE TABLE t PARTITION (p1 = 'v1', p2 = 'v2') SELECT a, b FROM src;"
+      - id: insert_overwrite_partition_if_not_exists
+        sql: "INSERT OVERWRITE TABLE t PARTITION (p1 = 'v1', p2 = 'v2') IF NOT EXISTS SELECT a, b FROM src;"
+      - id: insert_into_select
+        sql: "INSERT INTO TABLE t SELECT a, b FROM src;"
+      - id: insert_into_without_table_keyword
+        sql: "INSERT INTO t SELECT a, b FROM src;"
+      - id: insert_into_partition_select
+        sql: "INSERT INTO TABLE t PARTITION (p1 = 'v1', p2 = 'v2') SELECT a, b FROM src;"
+      - id: insert_into_column_list_select
+        sql: "INSERT INTO TABLE t (a, b) SELECT a, b FROM src;"
+      - id: insert_overwrite_dynamic_partition
+        sql: "INSERT OVERWRITE TABLE t PARTITION (p1, p2) SELECT a, b, p1, p2 FROM src;"
+      - id: insert_overwrite_mixed_partition
+        sql: "INSERT OVERWRITE TABLE t PARTITION (p1 = 'v1', p2) SELECT a, b, p2 FROM src;"
+      - id: insert_into_dynamic_partition
+        sql: "INSERT INTO TABLE t PARTITION (p1, p2) SELECT a, b, p1, p2 FROM src;"
+      - id: insert_into_mixed_partition
+        sql: "INSERT INTO TABLE t PARTITION (p1 = 'v1', p2) SELECT a, b, p2 FROM src;"
+      - id: insert_overwrite_auto_partition
+        sql: "INSERT OVERWRITE TABLE t SELECT a, b, p1, p2 FROM src;"
+        note: Hive 3.0.0 (HIVE-19083) no longer requires the PARTITION clause for dynamic partition inserts
+      - id: insert_overwrite_directory_select
+        sql: "INSERT OVERWRITE DIRECTORY '/tmp/out' SELECT a, b FROM src;"
+        note: same DML page, "Writing data into the filesystem from queries"
+      - id: insert_overwrite_local_directory_select
+        sql: "INSERT OVERWRITE LOCAL DIRECTORY '/tmp/out' SELECT a, b FROM src;"
+      - id: insert_overwrite_directory_row_format_stored_as
+        sql: "INSERT OVERWRITE DIRECTORY '/tmp/out' ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE SELECT a, b FROM src;"
+      - id: multi_insert_overwrite
+        sql: "FROM src INSERT OVERWRITE TABLE t1 SELECT a, b INSERT OVERWRITE TABLE t2 SELECT a, c;"
+      - id: multi_insert_partition_if_not_exists
+        sql: "FROM src INSERT OVERWRITE TABLE t1 PARTITION (p = 'v1') IF NOT EXISTS SELECT a, b INSERT OVERWRITE TABLE t2 PARTITION (p = 'v2') IF NOT EXISTS SELECT a, c;"
+      - id: multi_insert_into
+        sql: "FROM src INSERT INTO TABLE t1 SELECT a, b INSERT INTO TABLE t2 SELECT a, c;"
+      - id: multi_insert_into_partition
+        sql: "FROM src INSERT INTO TABLE t1 PARTITION (p = 'v1') SELECT a, b INSERT INTO TABLE t2 PARTITION (p = 'v2') SELECT a, c;"
+      - id: multi_insert_mixed_overwrite_into
+        sql: "FROM src INSERT INTO TABLE t1 SELECT a, b INSERT OVERWRITE TABLE t2 SELECT a, c;"
+      - id: multi_insert_with_where
+        sql: "FROM src INSERT OVERWRITE TABLE t1 SELECT a, b WHERE a > 1 INSERT OVERWRITE TABLE t2 SELECT a, c WHERE a <= 1;"
+      - id: multi_insert_dynamic_partition
+        sql: "FROM src INSERT OVERWRITE TABLE t1 PARTITION (p1 = 'v1', p2) SELECT a, b, p2;"
+      - id: multi_insert_directory
+        sql: "FROM src INSERT OVERWRITE DIRECTORY '/tmp/out1' SELECT a, b INSERT OVERWRITE LOCAL DIRECTORY '/tmp/out2' SELECT a, c;"
+      - id: multi_insert_from_subquery
+        sql: "FROM (SELECT a, b FROM src) s INSERT OVERWRITE TABLE t1 SELECT s.a INSERT OVERWRITE TABLE t2 SELECT s.b;"
+      - id: insert_select_with_cte
+        sql: "WITH c AS (SELECT a, b FROM src) INSERT INTO TABLE t SELECT a, b FROM c;"
+    examples:
+      - "FROM page_view_stg pvs INSERT OVERWRITE TABLE page_view PARTITION(dt='2008-06-08', country) SELECT pvs.viewTime, pvs.userid, pvs.page_url, pvs.referrer_url, null, null, pvs.ip, pvs.cnt;"

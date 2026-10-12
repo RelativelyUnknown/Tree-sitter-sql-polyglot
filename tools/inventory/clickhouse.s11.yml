@@ -1,0 +1,61 @@
+dialect: clickhouse
+engine: ClickHouse
+version: "current docs (2026)"
+source: https://clickhouse.com/docs/sql-reference/statements/
+
+statements:
+  - id: alter_table_projection
+    name: ALTER TABLE ... PROJECTION
+    doc: https://clickhouse.com/docs/sql-reference/statements/alter/projection
+    tier: high
+    probes:
+      - id: add_projection_order_by
+        sql: "ALTER TABLE t ADD PROJECTION p (SELECT a, b ORDER BY b);"
+      - id: add_projection_if_not_exists_on_cluster
+        sql: "ALTER TABLE db.t ON CLUSTER c ADD PROJECTION IF NOT EXISTS p (SELECT * ORDER BY b);"
+      - id: add_projection_where
+        sql: "ALTER TABLE t ADD PROJECTION p (SELECT a, b WHERE a > 0 ORDER BY b);"
+      - id: add_projection_group_by
+        sql: "ALTER TABLE t ADD PROJECTION p (SELECT a, sum(b) GROUP BY a);"
+      - id: add_projection_group_by_where
+        sql: "ALTER TABLE t ADD PROJECTION p (SELECT a, sum(b) WHERE b > 0 GROUP BY a);"
+      - id: add_projection_with_settings
+        sql: "ALTER TABLE t ADD PROJECTION p (SELECT x ORDER BY x) WITH SETTINGS (index_granularity = 4096, index_granularity_bytes = 1048576);"
+      - id: modify_projection_with_settings
+        sql: "ALTER TABLE t MODIFY PROJECTION p (SELECT x ORDER BY x) WITH SETTINGS (index_granularity = 128);"
+      - id: modify_projection_if_exists_on_cluster
+        sql: "ALTER TABLE db.t ON CLUSTER c MODIFY PROJECTION IF EXISTS p (SELECT a, sum(b) GROUP BY a) WITH SETTINGS (index_granularity = 128);"
+      - id: modify_projection_index
+        sql: "ALTER TABLE t MODIFY PROJECTION IF EXISTS p INDEX user_id TYPE basic WITH SETTINGS (index_granularity = 128);"
+      - id: drop_projection
+        sql: "ALTER TABLE t DROP PROJECTION p;"
+      - id: drop_projection_if_exists_on_cluster
+        sql: "ALTER TABLE db.t ON CLUSTER c DROP PROJECTION IF EXISTS p;"
+      - id: materialize_projection
+        sql: "ALTER TABLE t MATERIALIZE PROJECTION p;"
+      - id: materialize_projection_if_exists_in_partition
+        sql: "ALTER TABLE db.t ON CLUSTER c MATERIALIZE PROJECTION IF EXISTS p IN PARTITION 202401;"
+      - id: clear_projection
+        sql: "ALTER TABLE t CLEAR PROJECTION p;"
+      - id: clear_projection_if_exists_in_partition
+        sql: "ALTER TABLE db.t ON CLUSTER c CLEAR PROJECTION IF EXISTS p IN PARTITION 202401;"
+    examples:
+      - "ALTER TABLE visits_order ADD PROJECTION user_name_projection (SELECT * ORDER BY user_name);"
+      - "ALTER TABLE visits_order MATERIALIZE PROJECTION user_name_projection;"
+      - "ALTER TABLE t MODIFY PROJECTION p (SELECT x ORDER BY x) WITH SETTINGS (index_granularity = 128);"
+
+  - id: alter_table_ttl
+    name: ALTER TABLE ... MODIFY/REMOVE TTL
+    doc: https://clickhouse.com/docs/sql-reference/statements/alter/ttl
+    tier: high
+    probes:
+      - id: modify_ttl
+        sql: "ALTER TABLE t MODIFY TTL d + INTERVAL 1 MONTH;"
+      - id: modify_ttl_on_cluster
+        sql: "ALTER TABLE db.t ON CLUSTER c MODIFY TTL d + INTERVAL 3 MONTH;"
+      - id: remove_ttl
+        sql: "ALTER TABLE t REMOVE TTL;"
+      - id: remove_ttl_on_cluster
+        sql: "ALTER TABLE db.t ON CLUSTER c REMOVE TTL;"
+    examples:
+      - "ALTER TABLE table_with_ttl REMOVE TTL;"

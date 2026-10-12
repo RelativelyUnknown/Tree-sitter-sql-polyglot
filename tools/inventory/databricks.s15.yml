@@ -1,0 +1,72 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: watermark
+    name: WATERMARK clause
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-watermark
+    tier: high
+    probes:
+      - id: table_column
+        sql: "SELECT * FROM t WATERMARK ts DELAY OF INTERVAL 10 SECONDS;"
+      - id: table_with_alias
+        sql: "SELECT * FROM t WATERMARK ts DELAY OF INTERVAL 10 SECONDS AS a;"
+      - id: named_expression_alias
+        sql: "SELECT * FROM t WATERMARK to_timestamp(ts_str) AS ts DELAY OF INTERVAL 10 SECONDS;"
+      - id: named_expression_alias_and_table_alias
+        sql: "SELECT * FROM t WATERMARK to_timestamp(ts_str) AS ts DELAY OF INTERVAL 10 SECONDS AS a;"
+      - id: streaming_source
+        sql: "SELECT * FROM STREAM t WATERMARK ts DELAY OF INTERVAL 10 SECONDS;"
+      - id: after_tablesample
+        sql: "SELECT * FROM t TABLESAMPLE (10 PERCENT) WATERMARK ts DELAY OF INTERVAL 10 SECONDS;"
+      - id: subquery
+        sql: "SELECT * FROM (SELECT * FROM t) WATERMARK ts DELAY OF INTERVAL 10 SECONDS;"
+      - id: lateral_subquery
+        sql: "SELECT * FROM s, LATERAL (SELECT * FROM t) WATERMARK ts DELAY OF INTERVAL 10 SECONDS AS a;"
+      - id: subquery_with_tablesample
+        sql: "SELECT * FROM (SELECT * FROM t) TABLESAMPLE (10 PERCENT) WATERMARK ts DELAY OF INTERVAL 10 SECONDS AS a;"
+      - id: join_both_sides
+        sql: "SELECT * FROM a WATERMARK ts DELAY OF INTERVAL 10 SECONDS JOIN b WATERMARK ts DELAY OF INTERVAL 5 MINUTES ON a.id = b.id;"
+      - id: windowed_aggregation
+        sql: "SELECT window(ts, '10 seconds') AS w, count(*) AS cnt FROM STREAM t WATERMARK ts DELAY OF INTERVAL 10 SECONDS GROUP BY window(ts, '10 seconds');"
+    examples:
+      - "CREATE OR REFRESH STREAMING TABLE window_agg_1 AS SELECT window(ts, '10 seconds') as w, count(*) as CNT FROM STREAM stream_source WATERMARK ts DELAY OF INTERVAL 10 SECONDS AS stream GROUP BY window(ts, '10 seconds');"
+      - "CREATE OR REFRESH STREAMING TABLE window_agg_2 AS SELECT window(ts, '10 seconds') as w, count(*) as CNT FROM STREAM stream_source WATERMARK to_timestamp(ts_str) AS ts DELAY OF INTERVAL 10 SECONDS AS stream GROUP BY window(ts, '10 seconds');"
+
+  - id: nearest_by
+    name: NEAREST BY clause
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-select-nearest-by
+    tier: high
+    probes:
+      - id: inner_approx_similarity
+        sql: "SELECT * FROM q INNER JOIN t APPROX NEAREST 3 BY SIMILARITY vector_cosine_similarity(q.embedding, t.embedding);"
+      - id: inner_exact_distance
+        sql: "SELECT * FROM q INNER JOIN t EXACT NEAREST 3 BY DISTANCE vector_l2_distance(q.embedding, t.embedding);"
+      - id: left_join
+        sql: "SELECT * FROM q LEFT JOIN t APPROX NEAREST 2 BY SIMILARITY vector_cosine_similarity(q.embedding, t.embedding);"
+      - id: left_outer_join
+        sql: "SELECT * FROM q LEFT OUTER JOIN t APPROX NEAREST 2 BY SIMILARITY vector_cosine_similarity(q.embedding, t.embedding);"
+      - id: default_join_type
+        sql: "SELECT * FROM q JOIN t APPROX NEAREST 2 BY SIMILARITY vector_cosine_similarity(q.embedding, t.embedding);"
+      - id: default_num_results
+        sql: "SELECT * FROM q INNER JOIN t EXACT NEAREST BY DISTANCE vector_l2_distance(q.embedding, t.embedding);"
+      - id: approx_distance
+        sql: "SELECT * FROM q INNER JOIN t APPROX NEAREST 5 BY DISTANCE vector_l2_distance(q.embedding, t.embedding);"
+      - id: exact_similarity
+        sql: "SELECT * FROM q INNER JOIN t EXACT NEAREST 5 BY SIMILARITY vector_inner_product(q.embedding, t.embedding);"
+      - id: target_with_alias
+        sql: "SELECT * FROM q INNER JOIN t AS x APPROX NEAREST 2 BY SIMILARITY vector_cosine_similarity(q.embedding, x.embedding);"
+      - id: target_subquery
+        sql: "SELECT * FROM q INNER JOIN (SELECT * FROM t WHERE country = 'EU') AS x APPROX NEAREST 2 BY SIMILARITY vector_cosine_similarity(q.embedding, x.embedding);"
+      - id: target_cte
+        sql: "WITH c AS (SELECT * FROM t) SELECT * FROM q INNER JOIN c APPROX NEAREST 2 BY SIMILARITY vector_cosine_similarity(q.embedding, c.embedding);"
+      - id: query_subquery
+        sql: "SELECT * FROM (SELECT ARRAY(1.0f, 0.0f, 0.0f) AS embedding) q INNER JOIN t APPROX NEAREST 3 BY SIMILARITY vector_cosine_similarity(q.embedding, t.embedding);"
+      - id: composite_ranking_expression
+        sql: "SELECT * FROM q INNER JOIN t APPROX NEAREST 3 BY DISTANCE vector_norm(zip_with(q.col, t.col, (x, y) -> x - y), 1.0f);"
+    examples:
+      - "SELECT t.product_id, t.name FROM (SELECT ARRAY(1.0f, 0.0f, 0.0f) AS embedding) q INNER JOIN products t APPROX NEAREST 3 BY SIMILARITY vector_cosine_similarity(q.embedding, t.embedding);"
+      - "SELECT q.user_id, q.name, t.product_id, t.name AS product FROM users q LEFT OUTER JOIN products t APPROX NEAREST 2 BY SIMILARITY vector_cosine_similarity(q.embedding, t.embedding);"
+      - "SELECT t.product_id, t.name FROM (SELECT ARRAY(1.0f, 0.0f, 0.0f) AS embedding) q INNER JOIN products t EXACT NEAREST 3 BY DISTANCE vector_l2_distance(q.embedding, t.embedding);"

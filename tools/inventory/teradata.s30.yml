@@ -1,0 +1,153 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: database
+    name: DATABASE
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/IIZVS42zJwdqBUUCvBk1EQ
+    tier: medium
+    probes:
+      - { id: basic, sql: "DATABASE d;" }
+      - { id: named_db, sql: "DATABASE personnel;" }
+
+  - id: drop_database
+    name: DROP DATABASE
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/PZH8a3WN0i8PBynimWQHUw
+    tier: medium
+    probes:
+      - { id: basic, sql: "DROP DATABASE d;" }
+
+  - id: help_database
+    name: HELP DATABASE
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/V0RRXwWr49ov36_r5SAiLQ
+    tier: medium
+    probes:
+      - { id: basic, sql: "HELP DATABASE d;" }
+    examples:
+      - "HELP DATABASE personnel;"
+
+  - id: create_profile
+    name: CREATE PROFILE
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/OwM6aACR1U5SmkCu6rYy_A
+    tier: medium
+    probes:
+      - { id: no_attributes, sql: "CREATE PROFILE p;" }
+      - { id: default_database, sql: "CREATE PROFILE p AS DEFAULT DATABASE = d;" }
+      - { id: spool_temporary, sql: "CREATE PROFILE p AS SPOOL = 500000 BYTES, TEMPORARY = 100000;" }
+      - { id: account_list, sql: "CREATE PROFILE p AS ACCOUNT = ('$M_acct', '$H_acct');" }
+      - { id: password_attributes, sql: "CREATE PROFILE p AS PASSWORD = (EXPIRE = 90, MAXLOGONATTEMPTS = 10);" }
+      - { id: query_band_default, sql: "CREATE PROFILE p AS QUERY_BAND = 'IMPORTANCE=batch;' (DEFAULT);" }
+      - { id: transform, sql: "CREATE PROFILE p AS TRANSFORM (XMLD_STRUCT1 = XMLD_STRUCT1INT);" }
+      - { id: default_map_override, sql: "CREATE PROFILE p AS DEFAULT MAP = m OVERRIDE NOT ON ERROR;" }
+    examples:
+      - |-
+        CREATE PROFILE human_resources AS
+          DEFAULT DATABASE = personnel;
+      - |-
+        CREATE PROFILE research_and_development AS
+          DEFAULT DATABASE = it_dev,
+          PASSWORD = (EXPIRE = 0),
+          SPOOL = 2000000*(HASHAMP()+1);
+      - |-
+        CREATE PROFILE human_resources AS
+          DEFAULT DATABASE = personnel,
+          PASSWORD =
+          (EXPIRE = 90,
+           MAXLOGONATTEMPTS = 10,
+           LOCKEDUSEREXPIRE = -1);
+
+  - id: modify_profile
+    name: MODIFY PROFILE
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/TYPnusCcdgTnHGMELtXKjA
+    tier: medium
+    probes:
+      - { id: spool, sql: "MODIFY PROFILE p AS SPOOL = 500000;" }
+      - { id: default_database_null, sql: "MODIFY PROFILE p AS DEFAULT DATABASE = NULL;" }
+      - { id: password_attributes, sql: "MODIFY PROFILE p AS PASSWORD = (EXPIRE = 90);" }
+      - { id: query_band_not_default, sql: "MODIFY PROFILE p AS QUERY_BAND = (NOT DEFAULT);" }
+      - { id: transform_remove, sql: "MODIFY PROFILE p AS TRANSFORM ();" }
+    examples:
+      - |-
+        MODIFY PROFILE DR_PROF AS TRANSFORM (XMLD_STRUCT1 = XMLD_STRUCT1INT, JSON CHARACTER SET LATIN = TD_JSON_CLOB);
+
+  - id: create_role
+    name: CREATE ROLE
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/4wLOESDeYuANBARC~zlzzA
+    tier: medium
+    probes:
+      - { id: basic, sql: "CREATE ROLE r;" }
+      - { id: external, sql: "CREATE EXTERNAL ROLE r;" }
+
+  - id: create_user
+    name: CREATE USER
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/bE3OadmVN8YVNdqgYFInEw
+    tier: medium
+    probes:
+      - { id: perm_password, sql: "CREATE USER u AS PERMANENT = 1000000, PASSWORD = temp1;" }
+      - { id: from_database, sql: "CREATE USER u FROM d AS PERM = 1000000 BYTES, PASSWORD = temp1, SPOOL = 1200000;" }
+      - { id: without_password, sql: "CREATE USER u AS PERM = 10000000, WITHOUT PASSWORD;" }
+      - { id: skew, sql: "CREATE USER u AS PERM = 1e9 SKEW = 10 PERCENT, PASSWORD = temp1;" }
+      - { id: attributes, sql: "CREATE USER u AS PERM = 1000000, PASSWORD = temp1, FALLBACK PROTECTION, DUAL AFTER JOURNAL, DEFAULT DATABASE = d, PROFILE = p, DEFAULT ROLE = ALL, DBA;" }
+      - { id: journal_table, sql: "CREATE USER u AS PERM = 1000000, PASSWORD = temp1, DEFAULT JOURNAL TABLE = d.jt;" }
+      - { id: time_zone_dateform, sql: "CREATE USER u AS PERM = 1000000, PASSWORD = temp1, TIME ZONE = LOCAL, DATEFORM = ANSIDATE;" }
+      - { id: startup_collation, sql: "CREATE USER u AS PERM = 1000000, PASSWORD = temp1, STARTUP = 'SET QUERY_BAND = ''a=b;'' FOR SESSION;', COLLATION = ASCII;" }
+      - { id: account_character_set, sql: "CREATE USER u AS PERM = 1000000, PASSWORD = temp1, ACCOUNT = ('$M_acct', '$H_acct'), DEFAULT CHARACTER SET UNICODE;" }
+    examples:
+      - |-
+        CREATE USER newuser1 AS PERM=10000000, WITHOUT PASSWORD;
+      - |-
+        CREATE USER newuser2 AS WITHOUT PASSWORD;
+      - |-
+        CREATE USER user1 AS
+          PASSWORD = (EXPIRE = 0),
+          PERM = 1e9 SKEW = 10 PERCENT;
+
+  - id: modify_user
+    name: MODIFY USER
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/m2IqH_BnTZXD1Qx8~ZIchg
+    tier: medium
+    probes:
+      - { id: permanent, sql: "MODIFY USER u AS PERMANENT = 6000000 BYTES;" }
+      - { id: default_database_password, sql: "MODIFY USER u AS DEFAULT DATABASE = d, PASSWORD = newpw;" }
+      - { id: password_for_user, sql: "MODIFY USER u AS PASSWORD = newpw FOR USER;" }
+      - { id: release_password_lock, sql: "MODIFY USER u AS RELEASE PASSWORD LOCK;" }
+      - { id: profile_null, sql: "MODIFY USER u AS PROFILE = NULL;" }
+      - { id: not_dba, sql: "MODIFY USER u AS NOT DBA;" }
+      - { id: drop_journal_table, sql: "MODIFY USER u AS DROP DEFAULT JOURNAL TABLE;" }
+      - { id: without_password, sql: "MODIFY USER u AS WITHOUT PASSWORD;" }
+    examples:
+      - |-
+        MODIFY USER peterson AS
+        PERMANENT = 6000000 BYTES;
+      - |-
+        MODIFY USER chin AS
+        DEFAULT DATABASE = personnel,
+        PASSWORD = nitram;
+
+  - id: set_role
+    name: SET ROLE
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/tjuyb~Y75tshE8hLa0f1yA
+    tier: medium
+    probes:
+      - { id: role_name, sql: "SET ROLE r;" }
+      - { id: external, sql: "SET ROLE EXTERNAL;" }
+      - { id: none_role, sql: "SET ROLE NONE;" }
+      - { id: null_role, sql: "SET ROLE NULL;" }
+      - { id: all_roles, sql: "SET ROLE ALL;" }
+    examples:
+      - "SET ROLE administration;"
+      - "SET ROLE ALL;"
+      - "SET ROLE NONE;"
+      - "SET ROLE NULL;"
+      - "SET ROLE EXTERNAL;"
+
+  - id: delete_user
+    name: DELETE USER
+    doc: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/pwYKs4O0IKCNtVtdhPYhfg
+    tier: medium
+    probes:
+      - { id: delete, sql: "DELETE USER u;" }
+      - { id: del_abbrev, sql: "DEL USER u;" }
+      - { id: delete_all, sql: "DELETE USER u ALL;" }

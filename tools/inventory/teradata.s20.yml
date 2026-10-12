@@ -1,0 +1,69 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: set_variable
+    name: SET (assignment)
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/GE759et7ku03bqSPBBr4uQ
+    tier: high
+    probes:
+      - id: set_literal
+        sql: "SET v = 1;"
+      - id: set_expression
+        sql: "SET v = v + 1;"
+      - id: set_concat
+        sql: "SET msg = 'SQLSTATE: ' || sqlstate || ', SQLCODE: ' || sqlcode;"
+      - id: set_activity_count
+        sql: "SET n = activity_count;"
+    examples:
+      - "SET hNoAccts = hNoAccts + 1;"
+      - |-
+        SET hErrorText = 'SQLSTATE: '||sqlstate||
+        ', SQLCODE: '||sqlcode||', ACTIVITY_COUNT: '
+         ||activity_count;
+
+  - id: while
+    name: WHILE
+    doc: https://docs.teradata.com/reader/W_rdgXBblWWI0~tPgRlZMw/iIg3b2nwlF~bVRZeVWhmvA
+    tier: high
+    probes:
+      - id: while_basic
+        sql: |-
+          WHILE v > 0 DO
+            SET v = v - 1;
+          END WHILE;
+      - id: while_labeled
+        sql: |-
+          lbl: WHILE v > 0 DO
+            SET v = v - 1;
+          END WHILE lbl;
+      - id: while_label_leave
+        sql: |-
+          lbl: WHILE v > 0 DO
+            IF v = 5 THEN
+              LEAVE lbl;
+            END IF;
+            SET v = v - 1;
+          END WHILE lbl;
+      - id: while_iterate
+        sql: |-
+          lbl: WHILE v > 0 DO
+            SET v = v - 1;
+            ITERATE lbl;
+          END WHILE lbl;
+      - id: while_dml_body
+        sql: |-
+          WHILE v > 0 DO
+            INSERT INTO t (a, b) VALUES (v, 1);
+            SET v = v - 1;
+          END WHILE;
+    examples:
+      - |-
+        WHILE hCounter > 0
+        DO
+           INSERT INTO transaction (trans_num, account_num)
+            VALUES (hCounter, hAccountNum);
+           SET hCounter = hCounter - 1;
+        END WHILE;

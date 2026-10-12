@@ -1,0 +1,426 @@
+dialect: hana
+engine: SAP HANA Platform
+version: "2.0 SPS 08 (2.0.08)"
+source: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/3bc1a0d4611d40c4a6e3fc7c8e80395d.html?version=2.0.08
+
+statements:
+  - id: create_index
+    name: CREATE INDEX
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d44b4175191014a940afff4b47c7ea.html?version=2.0.08
+    tier: high
+    probes:
+      - { id: basic, sql: "CREATE INDEX idx ON t (c);" }
+      - { id: unique, sql: "CREATE UNIQUE INDEX idx ON t (c);" }
+      - { id: schema_qualified, sql: "CREATE INDEX s.idx ON s.t (c);" }
+      - { id: multi_column, sql: "CREATE INDEX idx ON t (a, b);" }
+      - { id: column_order, sql: "CREATE INDEX idx ON t (a ASC, b DESC);" }
+      - { id: btree, sql: "CREATE BTREE INDEX idx ON t (c);" }
+      - { id: cpbtree, sql: "CREATE CPBTREE INDEX idx ON t (c);" }
+      - { id: unique_btree, sql: "CREATE UNIQUE BTREE INDEX idx ON t (c);" }
+      - { id: unique_cpbtree, sql: "CREATE UNIQUE CPBTREE INDEX idx ON t (a, b);" }
+      - { id: inverted_hash, sql: "CREATE UNIQUE INVERTED HASH INDEX idx ON t (a, b);" }
+      - { id: inverted_value, sql: "CREATE INVERTED VALUE INDEX idx ON t (a, b);" }
+      - { id: inverted_individual, sql: "CREATE UNIQUE INVERTED INDIVIDUAL INDEX idx ON t (a, b);" }
+      - { id: global_order_asc, sql: "CREATE INDEX idx ON t (a, b) ASC;" }
+      - { id: global_order_desc, sql: "CREATE INDEX idx ON t (a, b) DESC;" }
+      - { id: fillfactor, sql: "CREATE INDEX idx ON t (c) FILLFACTOR 80;" }
+      - { id: nowait, sql: "CREATE INDEX idx ON t (c) NOWAIT;" }
+      - { id: online, sql: "CREATE INDEX idx ON t (c) ONLINE;" }
+      - { id: column_loadable, sql: "CREATE INVERTED VALUE INDEX idx ON t (a, b) COLUMN LOADABLE;" }
+      - { id: page_loadable, sql: "CREATE INVERTED VALUE INDEX idx ON t (a, b) PAGE LOADABLE;" }
+      - { id: all_options, sql: "CREATE UNIQUE INVERTED VALUE INDEX idx ON t (a, b) DESC FILLFACTOR 90 NOWAIT ONLINE PAGE LOADABLE;" }
+    examples:
+      - "CREATE CPBTREE INDEX idx1 ON t(a, b DESC);"
+      - "CREATE INDEX idx2 ON t(a, c) DESC;"
+      - "CREATE UNIQUE INVERTED VALUE INDEX idx13 ON s(b, c) PAGE LOADABLE;"
+
+  - id: create_procedure
+    name: CREATE PROCEDURE
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d467407519101484f190f545d54b24.html?version=2.0.08
+    tier: high
+    probes:
+      - id: basic
+        sql: |-
+          CREATE PROCEDURE p AS
+          BEGIN
+            SELECT * FROM t;
+          END;
+      - id: or_replace
+        sql: |-
+          CREATE OR REPLACE PROCEDURE p AS
+          BEGIN
+            SELECT * FROM t;
+          END;
+      - id: schema_qualified
+        sql: |-
+          CREATE PROCEDURE s.p() AS
+          BEGIN
+            SELECT * FROM t;
+          END;
+      - id: scalar_parameters
+        sql: |-
+          CREATE PROCEDURE p (IN a INTEGER, OUT b NVARCHAR(10), INOUT c DECIMAL(10, 2)) AS
+          BEGIN
+            b = 'x';
+          END;
+      - id: parameter_default
+        sql: |-
+          CREATE PROCEDURE p (IN a INTEGER DEFAULT 5) AS
+          BEGIN
+            SELECT :a FROM DUMMY;
+          END;
+      - id: array_parameter
+        sql: |-
+          CREATE PROCEDURE p (IN a INTEGER ARRAY) AS
+          BEGIN
+            SELECT CARDINALITY(:a) FROM DUMMY;
+          END;
+      - id: table_type_parameter
+        sql: |-
+          CREATE PROCEDURE p (IN itab s.tt, OUT otab s.tt) AS
+          BEGIN
+            otab = SELECT * FROM :itab;
+          END;
+      - id: inline_table_type_parameter
+        sql: |-
+          CREATE PROCEDURE p (IN itab TABLE (a INT, b NVARCHAR(10)), OUT otab TABLE (a INT)) AS
+          BEGIN
+            otab = SELECT a FROM :itab;
+          END;
+      - id: any_table_parameter
+        sql: |-
+          CREATE PROCEDURE p (IN itab TABLE(...), OUT otab TABLE(...)) AS
+          BEGIN
+            otab = SELECT * FROM :itab;
+          END;
+      - id: language_sqlscript
+        sql: |-
+          CREATE PROCEDURE p LANGUAGE SQLSCRIPT AS
+          BEGIN
+            SELECT * FROM t;
+          END;
+      - id: sql_security_definer
+        sql: |-
+          CREATE PROCEDURE p LANGUAGE SQLSCRIPT SQL SECURITY DEFINER AS
+          BEGIN
+            SELECT * FROM t;
+          END;
+      - id: sql_security_invoker
+        sql: |-
+          CREATE PROCEDURE p LANGUAGE SQLSCRIPT SQL SECURITY INVOKER AS
+          BEGIN
+            SELECT * FROM t;
+          END;
+      - id: default_schema
+        sql: |-
+          CREATE PROCEDURE p DEFAULT SCHEMA s AS
+          BEGIN
+            SELECT * FROM t;
+          END;
+      - id: reads_sql_data
+        sql: |-
+          CREATE PROCEDURE p READS SQL DATA AS
+          BEGIN
+            SELECT * FROM t;
+          END;
+      - id: reads_sql_data_result_view
+        sql: |-
+          CREATE PROCEDURE p (IN id INT, OUT o1 t) LANGUAGE SQLSCRIPT READS SQL DATA WITH RESULT VIEW v AS
+          BEGIN
+            o1 = SELECT * FROM t WHERE c = :id;
+          END;
+      - id: variable_cache
+        sql: |-
+          CREATE PROCEDURE p VARIABLE CACHE ON x ENABLE AS
+          BEGIN
+            x = SELECT * FROM t;
+            SELECT * FROM :x;
+          END;
+      - id: variable_cache_list
+        sql: |-
+          CREATE PROCEDURE p VARIABLE CACHE ON (x, y) ENABLE, z DISABLE AS
+          BEGIN
+            x = SELECT * FROM t;
+            y = SELECT * FROM t;
+            z = SELECT * FROM t;
+          END;
+      - id: variable_cache_without_mode
+        sql: |-
+          CREATE PROCEDURE p VARIABLE CACHE ON x, y AS
+          BEGIN
+            x = SELECT * FROM t;
+            y = SELECT * FROM t;
+          END;
+      - id: deterministic
+        sql: |-
+          CREATE PROCEDURE p (IN a INT, OUT b INT) DETERMINISTIC AS
+          BEGIN
+            b = :a + 1;
+          END;
+      - id: with_encryption
+        sql: |-
+          CREATE PROCEDURE p WITH ENCRYPTION AS
+          BEGIN
+            SELECT * FROM t;
+          END;
+      - id: autocommit_ddl_on
+        sql: |-
+          CREATE PROCEDURE p AUTOCOMMIT DDL ON AS
+          BEGIN
+            SELECT * FROM t;
+          END;
+      - id: autocommit_ddl_off
+        sql: |-
+          CREATE PROCEDURE p AUTOCOMMIT DDL OFF AS
+          BEGIN
+            SELECT * FROM t;
+          END;
+      - id: sequential_execution
+        sql: |-
+          CREATE PROCEDURE p AS
+          BEGIN SEQUENTIAL EXECUTION
+            SELECT * FROM t;
+          END;
+      - id: header_only
+        sql: "CREATE PROCEDURE p (IN id INTEGER) AS HEADER ONLY;"
+      - id: all_options
+        sql: |-
+          CREATE OR REPLACE PROCEDURE s.p (IN a INT)
+          LANGUAGE SQLSCRIPT SQL SECURITY INVOKER DEFAULT SCHEMA s READS SQL DATA
+          DETERMINISTIC WITH ENCRYPTION AUTOCOMMIT DDL OFF AS
+          BEGIN SEQUENTIAL EXECUTION
+            SELECT :a FROM DUMMY;
+          END;
+      - id: body_using_library
+        sql: |-
+          CREATE PROCEDURE p AS
+          BEGIN
+            USING s.lib AS l;
+            SELECT * FROM t;
+          END;
+      - id: body_declare_scalar
+        sql: |-
+          CREATE PROCEDURE p AS
+          BEGIN
+            DECLARE v1, v2 INTEGER = 0;
+            DECLARE v3 CONSTANT NVARCHAR(10) DEFAULT 'x';
+            DECLARE v4 NOT NULL DEFAULT 1;
+            v1 := 5;
+          END;
+      - id: body_declare_auto
+        sql: |-
+          CREATE PROCEDURE p AS
+          BEGIN
+            DECLARE v AUTO = 1;
+          END;
+      - id: body_declare_array
+        sql: |-
+          CREATE PROCEDURE p AS
+          BEGIN
+            DECLARE arr INTEGER ARRAY = ARRAY(1, 2, 3);
+            arr[1] := 4;
+          END;
+      - id: body_declare_table_variable
+        sql: |-
+          CREATE PROCEDURE p AS
+          BEGIN
+            DECLARE tv TABLE (a INT, b NVARCHAR(10));
+            DECLARE tv2 TABLE LIKE t;
+          END;
+      - id: body_declare_row_variable
+        sql: |-
+          CREATE PROCEDURE p AS
+          BEGIN
+            DECLARE r ROW (a INT, b NVARCHAR(10));
+          END;
+      - id: body_declare_cursor
+        sql: |-
+          CREATE PROCEDURE p AS
+          BEGIN
+            DECLARE CURSOR c (p_a INT) FOR SELECT a FROM t WHERE a > :p_a;
+            DECLARE v INT;
+            OPEN c(1);
+            FETCH c INTO v;
+            CLOSE c;
+          END;
+      - id: body_declare_condition
+        sql: |-
+          CREATE PROCEDURE p AS
+          BEGIN
+            DECLARE my_err CONDITION;
+            DECLARE dup_key CONDITION FOR SQL_ERROR_CODE 301;
+          END;
+      - id: body_exit_handler
+        sql: |-
+          CREATE PROCEDURE p AS
+          BEGIN
+            DECLARE EXIT HANDLER FOR SQLEXCEPTION SELECT ::SQL_ERROR_CODE FROM DUMMY;
+            SELECT * FROM t;
+          END;
+      - id: body_continue_handler
+        sql: |-
+          CREATE PROCEDURE p AS
+          BEGIN
+            DECLARE CONTINUE HANDLER FOR SQL_ERROR_CODE 301, SQLWARNING SELECT 1 FROM DUMMY;
+            INSERT INTO t VALUES (1);
+          END;
+      - id: body_nested_block
+        sql: |-
+          CREATE PROCEDURE p AS
+          BEGIN
+            BEGIN SEQUENTIAL EXECUTION AUTONOMOUS TRANSACTION
+              INSERT INTO t VALUES (1);
+            END;
+          END;
+      - id: body_table_variable_assign
+        sql: |-
+          CREATE PROCEDURE p (OUT o t) AS
+          BEGIN
+            tv = SELECT * FROM t;
+            o = SELECT * FROM :tv WHERE a > 1;
+          END;
+      - id: body_if
+        sql: |-
+          CREATE PROCEDURE p (IN a INT) AS
+          BEGIN
+            IF :a > 1 THEN
+              SELECT 1 FROM DUMMY;
+            ELSEIF :a = 1 THEN
+              SELECT 2 FROM DUMMY;
+            ELSE
+              SELECT 3 FROM DUMMY;
+            END IF;
+          END;
+      - id: body_while
+        sql: |-
+          CREATE PROCEDURE p AS
+          BEGIN
+            DECLARE i INT = 0;
+            WHILE :i < 10 DO
+              i = :i + 1;
+            END WHILE;
+          END;
+      - id: body_for_range
+        sql: |-
+          CREATE PROCEDURE p AS
+          BEGIN
+            DECLARE s INT = 0;
+            FOR i IN 1..10 DO
+              s = :s + :i;
+            END FOR;
+          END;
+      - id: body_for_reverse
+        sql: |-
+          CREATE PROCEDURE p AS
+          BEGIN
+            FOR i IN REVERSE 1..10 DO
+              INSERT INTO t VALUES (:i);
+            END FOR;
+          END;
+      - id: body_for_cursor
+        sql: |-
+          CREATE PROCEDURE p AS
+          BEGIN
+            DECLARE CURSOR c FOR SELECT a FROM t;
+            FOR r AS c DO
+              INSERT INTO t2 VALUES (:r.a);
+            END FOR;
+          END;
+      - id: body_foreach
+        sql: |-
+          CREATE PROCEDURE p AS
+          BEGIN
+            DECLARE arr INTEGER ARRAY = ARRAY(1, 2, 3);
+            FOREACH x IN :arr DO
+              INSERT INTO t VALUES (:x);
+            END FOR;
+          END;
+      - id: body_loop_break_continue
+        sql: |-
+          CREATE PROCEDURE p AS
+          BEGIN
+            DECLARE i INT = 0;
+            LOOP
+              i = :i + 1;
+              IF :i > 10 THEN
+                BREAK;
+              END IF;
+              CONTINUE;
+            END LOOP;
+          END;
+      - id: body_signal
+        sql: |-
+          CREATE PROCEDURE p AS
+          BEGIN
+            SIGNAL SQL_ERROR_CODE 10001 SET MESSAGE_TEXT = 'custom error';
+          END;
+      - id: body_resignal
+        sql: |-
+          CREATE PROCEDURE p AS
+          BEGIN
+            DECLARE EXIT HANDLER FOR SQLEXCEPTION RESIGNAL;
+            SELECT * FROM t;
+          END;
+      - id: body_dml
+        sql: |-
+          CREATE PROCEDURE p (IN a INT) AS
+          BEGIN
+            INSERT INTO t VALUES (:a);
+            UPDATE t SET c = 1 WHERE a = :a;
+            DELETE FROM t WHERE a = :a;
+          END;
+      - id: body_call
+        sql: |-
+          CREATE PROCEDURE p AS
+          BEGIN
+            CALL q(1, ?);
+          END;
+      - id: body_exec_dynamic_sql
+        sql: |-
+          CREATE PROCEDURE p (IN n NVARCHAR(20)) AS
+          BEGIN
+            EXEC 'SELECT * FROM ' || :n;
+          END;
+      - id: body_execute_immediate
+        sql: |-
+          CREATE PROCEDURE p (IN a NVARCHAR(12)) AS
+          BEGIN
+            EXECUTE IMMEDIATE 'SELECT * FROM ' || :a READS SQL DATA;
+          END;
+      - id: body_return
+        sql: |-
+          CREATE PROCEDURE p AS
+          BEGIN
+            RETURN;
+          END;
+      - id: body_tabvar_search
+        sql: |-
+          CREATE PROCEDURE p AS
+          BEGIN
+            DECLARE pos INT;
+            pos = :tv.SEARCH((key1, key2), ('I', 3));
+          END;
+      - id: language_r
+        sql: |-
+          CREATE PROCEDURE p (IN a INT, OUT b INT) LANGUAGE R AS
+          BEGIN
+            b <- a
+          END;
+        note: "LANGUAGE R body is R code, not SQL; syntax block lists R as a language"
+    examples:
+      - |-
+        CREATE PROCEDURE ProcWithResultView(IN id INT, OUT o1 CUSTOMER)
+         LANGUAGE SQLSCRIPT
+         READS SQL DATA WITH RESULT VIEW ProcView AS
+         BEGIN
+         o1 = SELECT * FROM CUSTOMER WHERE CUST_ID = :id;
+         END;
+      - "CREATE PROCEDURE ProcHeader (IN id INTEGER) AS HEADER ONLY;"
+      - |-
+        CREATE OR REPLACE PROCEDURE test_result_cache
+        LANGUAGE SQLSCRIPT
+        VARIABLE CACHE ON X ENABLE AS
+         BEGIN
+         x = SELECT * FROM test_cache;
+         SELECT * FROM :x;
+         END;

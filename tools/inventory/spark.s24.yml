@@ -1,0 +1,118 @@
+dialect: spark
+engine: Apache Spark SQL
+version: "4.x (docs/latest)"
+source: https://spark.apache.org/docs/latest/sql-ref-syntax.html
+
+statements:
+  - id: loop
+    name: LOOP
+    doc: https://spark.apache.org/docs/latest/control-flow/loop-stmt.html
+    tier: high
+    probes:
+      - id: unlabeled
+        sql: |-
+          outer_lbl: BEGIN
+            LOOP
+              SELECT 1;
+              LEAVE outer_lbl;
+            END LOOP;
+          END;
+        note: "Syntax: [ label : ] LOOP { stmt ; } [...] END LOOP [ label ]; loop label omitted, exited via the enclosing compound label."
+      - id: labeled
+        sql: |-
+          BEGIN
+            lbl: LOOP
+              SELECT 1;
+              LEAVE lbl;
+            END LOOP;
+          END;
+      - id: labeled_end_label
+        sql: |-
+          BEGIN
+            lbl: LOOP
+              SELECT 1;
+              LEAVE lbl;
+            END LOOP lbl;
+          END;
+      - id: multiple_statements
+        sql: |-
+          BEGIN
+            DECLARE n INT DEFAULT 0;
+            lbl: LOOP
+              SET n = n + 1;
+              IF n > 3 THEN LEAVE lbl; END IF;
+              IF n = 2 THEN ITERATE lbl; END IF;
+            END LOOP lbl;
+          END;
+    examples:
+      - |-
+        BEGIN
+          DECLARE sum INT DEFAULT 0;
+          DECLARE num INT DEFAULT 0;
+          sumNumbers: LOOP
+            SET num = num + 1;
+            IF num > 10 THEN
+              LEAVE sumNumbers;
+            END IF;
+            IF num % 2 = 0 THEN
+              ITERATE sumNumbers;
+            END IF;
+            SET sum = sum + num;
+          END LOOP sumNumbers;
+          VALUES (sum);
+        END;
+
+  - id: repeat
+    name: REPEAT
+    doc: https://spark.apache.org/docs/latest/control-flow/repeat-stmt.html
+    tier: high
+    probes:
+      - id: unlabeled
+        sql: |-
+          BEGIN
+            REPEAT
+              SELECT 1;
+            UNTIL true
+            END REPEAT;
+          END;
+      - id: labeled
+        sql: |-
+          BEGIN
+            lbl: REPEAT
+              SELECT 1;
+            UNTIL true
+            END REPEAT;
+          END;
+      - id: labeled_end_label
+        sql: |-
+          BEGIN
+            lbl: REPEAT
+              SELECT 1;
+            UNTIL true
+            END REPEAT lbl;
+          END;
+      - id: multiple_statements
+        sql: |-
+          BEGIN
+            DECLARE n INT DEFAULT 0;
+            lbl: REPEAT
+              SET n = n + 1;
+              IF n = 2 THEN ITERATE lbl; END IF;
+            UNTIL n >= 3
+            END REPEAT lbl;
+          END;
+    examples:
+      - |-
+        BEGIN
+          DECLARE sum INT DEFAULT 0;
+          DECLARE num INT DEFAULT 0;
+          sumNumbers: REPEAT
+            SET num = num + 1;
+            IF num % 2 = 0 THEN
+              ITERATE sumNumbers;
+            END IF;
+            SET sum = sum + num;
+          UNTIL num = 10
+          END REPEAT sumNumbers;
+          VALUES (sum);
+        END;

@@ -26,6 +26,7 @@ export default defineConfig({
     nav: [
       { text: 'Usage', link: '/usage' },
       { text: 'Coverage', link: '/coverage' },
+      { text: 'Inventory', link: '/inventory' },
       { text: 'Changelog', link: '/changelog' },
       { text: 'Downloads', link: '/downloads' },
       { text: 'GitHub', link: 'https://github.com/RelativelyUnknown/Tree-sitter-sql-polyglot' },
@@ -38,6 +39,7 @@ export default defineConfig({
           { text: 'Overview', link: '/' },
           { text: 'Usage', link: '/usage' },
           { text: 'Dialect coverage', link: '/coverage' },
+          { text: 'Statement inventory', link: '/inventory' },
           { text: 'Changelog', link: '/changelog' },
           { text: 'Downloads', link: '/downloads' },
         ],

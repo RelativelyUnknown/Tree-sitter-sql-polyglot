@@ -1,0 +1,107 @@
+dialect: hive
+engine: Apache Hive
+version: "4.x"
+source: https://hive.apache.org/docs/latest/language/languagemanual/
+
+statements:
+  - id: load_data
+    name: LOAD DATA [LOCAL] INPATH
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-dml/
+    tier: high
+    probes:
+      - id: inpath_into_table
+        sql: "LOAD DATA INPATH '/tmp/data.txt' INTO TABLE t;"
+      - id: local
+        sql: "LOAD DATA LOCAL INPATH '/tmp/data.txt' INTO TABLE t;"
+      - id: overwrite
+        sql: "LOAD DATA INPATH '/tmp/data.txt' OVERWRITE INTO TABLE t;"
+      - id: partition
+        sql: "LOAD DATA INPATH '/tmp/data.txt' INTO TABLE t PARTITION (p1='a', p2='b');"
+      - id: local_overwrite_partition
+        sql: "LOAD DATA LOCAL INPATH '/tmp/data.txt' OVERWRITE INTO TABLE t PARTITION (p1='a');"
+      - id: inputformat_serde
+        sql: "LOAD DATA INPATH '/tmp/data.txt' INTO TABLE t INPUTFORMAT 'org.apache.hadoop.mapred.TextInputFormat' SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe';"
+        note: Hive 3.0 or later
+      - id: partition_inputformat_serde
+        sql: "LOAD DATA LOCAL INPATH '/tmp/data.txt' OVERWRITE INTO TABLE t PARTITION (p1='a') INPUTFORMAT 'org.apache.hadoop.mapred.TextInputFormat' SERDE 'org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe';"
+    examples:
+      - "LOAD DATA LOCAL INPATH 'filepath' INTO TABLE tab1;"
+
+  - id: create_database
+    name: CREATE DATABASE / SCHEMA
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE DATABASE d;"
+      - id: schema_if_not_exists
+        sql: "CREATE SCHEMA IF NOT EXISTS d;"
+      - id: comment_location
+        sql: "CREATE DATABASE d COMMENT 'my db' LOCATION '/user/hive/d';"
+      - id: managedlocation
+        sql: "CREATE DATABASE d MANAGEDLOCATION '/user/hive/managed/d';"
+        note: Hive 4.0.0
+      - id: with_dbproperties
+        sql: "CREATE DATABASE d WITH DBPROPERTIES ('creator'='me', 'date'='2024-01-01');"
+      - id: remote
+        sql: "CREATE REMOTE DATABASE d;"
+        note: Hive 4.0.0
+
+  - id: drop_database
+    name: DROP DATABASE / SCHEMA
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP DATABASE d;"
+      - id: schema_if_exists
+        sql: "DROP SCHEMA IF EXISTS d;"
+      - id: restrict
+        sql: "DROP DATABASE d RESTRICT;"
+      - id: cascade
+        sql: "DROP DATABASE IF EXISTS d CASCADE;"
+
+  - id: alter_database
+    name: ALTER DATABASE / SCHEMA
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: medium
+    probes:
+      - id: set_dbproperties
+        sql: "ALTER DATABASE d SET DBPROPERTIES ('k'='v');"
+      - id: schema_set_dbproperties
+        sql: "ALTER SCHEMA d SET DBPROPERTIES ('k'='v', 'k2'='v2');"
+      - id: set_owner_user
+        sql: "ALTER DATABASE d SET OWNER USER u;"
+      - id: set_owner_role
+        sql: "ALTER DATABASE d SET OWNER ROLE r;"
+      - id: set_location
+        sql: "ALTER DATABASE d SET LOCATION '/user/hive/d2';"
+      - id: set_managedlocation
+        sql: "ALTER DATABASE d SET MANAGEDLOCATION '/user/hive/managed/d2';"
+        note: Hive 4.0.0
+
+  - id: use_database
+    name: USE database
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: medium
+    probes:
+      - id: use_name
+        sql: "USE d;"
+      - id: use_default
+        sql: "USE DEFAULT;"
+
+  - id: create_connector
+    name: CREATE CONNECTOR
+    doc: https://hive.apache.org/docs/latest/language/languagemanual-ddl/
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE CONNECTOR c;"
+      - id: if_not_exists
+        sql: "CREATE CONNECTOR IF NOT EXISTS c;"
+      - id: type_url
+        sql: "CREATE CONNECTOR c TYPE 'mysql' URL 'jdbc:mysql://localhost:3306/hive';"
+      - id: comment
+        sql: "CREATE CONNECTOR c COMMENT 'mysql connector';"
+      - id: with_dcproperties
+        sql: "CREATE CONNECTOR c TYPE 'mysql' URL 'jdbc:mysql://localhost:3306/hive' COMMENT 'mysql connector' WITH DCPROPERTIES ('hive.sql.dbcp.username'='hive', 'hive.sql.dbcp.password'='hive');"

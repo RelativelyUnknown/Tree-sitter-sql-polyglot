@@ -1,0 +1,187 @@
+dialect: spanner
+engine: Google Cloud Spanner (GoogleSQL dialect)
+version: "current managed service (docs as of 2026-10)"
+source: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language
+
+statements: []
+
+expressions:
+  - id: b_arithmetic_operators
+    name: Arithmetic and unary operators
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/operators
+    tier: high
+    probes:
+      - { id: add_sub, sql: "SELECT a + b, a - b FROM t;" }
+      - { id: mul_div, sql: "SELECT a * b, a / b FROM t;" }
+      - { id: unary_plus_minus, sql: "SELECT +a, -a FROM t;" }
+      - { id: precedence, sql: "SELECT 1 + 2 * 3 - 4 / 2;" }
+      - { id: interval_add, sql: "SELECT ts + INTERVAL 1 DAY FROM t;" }
+
+  - id: b_bitwise_operators
+    name: Bitwise operators
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/operators
+    tier: high
+    probes:
+      - { id: bit_not, sql: "SELECT ~a FROM t;" }
+      - { id: shifts, sql: "SELECT a << 2, a >> 2 FROM t;" }
+      - { id: and_xor_or, sql: "SELECT a & b, a ^ b, a | b FROM t;" }
+
+  - id: b_concat_operator
+    name: Concatenation operator
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/operators
+    tier: high
+    probes:
+      - { id: string_concat, sql: "SELECT a || b || 'x' FROM t;" }
+      - { id: array_concat, sql: "SELECT [1, 2] || [3] FROM t;" }
+
+  - id: b_comparison_operators
+    name: Comparison operators
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/operators
+    tier: high
+    probes:
+      - { id: relational, sql: "SELECT a < b, a <= b, a > b, a >= b FROM t;" }
+      - { id: equality, sql: "SELECT a = b, a != b, a <> b FROM t;" }
+      - { id: in_where, sql: "SELECT a FROM t WHERE a >= 1 AND b <> 'x';" }
+
+  - id: b_logical_operators
+    name: Logical operators
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/operators
+    tier: high
+    probes:
+      - { id: and_or_not, sql: "SELECT a FROM t WHERE NOT a AND b OR c;" }
+      - { id: parenthesized, sql: "SELECT a FROM t WHERE (a OR b) AND NOT (c AND d);" }
+
+  - id: b_is_predicates
+    name: IS predicates
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/operators
+    tier: high
+    probes:
+      - { id: is_null, sql: "SELECT a FROM t WHERE a IS NULL;" }
+      - { id: is_not_null, sql: "SELECT a FROM t WHERE a IS NOT NULL;" }
+      - { id: is_true, sql: "SELECT a FROM t WHERE b IS TRUE;" }
+      - { id: is_not_true, sql: "SELECT a FROM t WHERE b IS NOT TRUE;" }
+      - { id: is_false, sql: "SELECT a FROM t WHERE b IS FALSE;" }
+      - { id: is_not_false, sql: "SELECT a FROM t WHERE b IS NOT FALSE;" }
+
+  - id: b_between_predicate
+    name: BETWEEN predicate
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/operators
+    tier: high
+    probes:
+      - { id: between, sql: "SELECT a FROM t WHERE a BETWEEN 1 AND 10;" }
+      - { id: not_between, sql: "SELECT a FROM t WHERE a NOT BETWEEN 1 AND 10;" }
+
+  - id: b_like_predicate
+    name: LIKE predicate
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/operators
+    tier: high
+    probes:
+      - { id: like, sql: "SELECT a FROM t WHERE a LIKE 'abc%';" }
+      - { id: not_like, sql: "SELECT a FROM t WHERE a NOT LIKE '%x_';" }
+      - { id: like_bytes, sql: "SELECT a FROM t WHERE b LIKE b'ab%';" }
+
+  - id: b_in_predicate
+    name: IN predicate
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/operators
+    tier: high
+    probes:
+      - { id: in_list, sql: "SELECT a FROM t WHERE a IN (1, 2, 3);" }
+      - { id: not_in_list, sql: "SELECT a FROM t WHERE a NOT IN (1, 2, 3);" }
+      - { id: in_subquery, sql: "SELECT a FROM t WHERE a IN (SELECT b FROM u);" }
+      - { id: not_in_subquery, sql: "SELECT a FROM t WHERE a NOT IN (SELECT b FROM u);" }
+      - { id: in_unnest, sql: "SELECT a FROM t WHERE a IN UNNEST([1, 2, 3]);" }
+      - { id: not_in_unnest, sql: "SELECT a FROM t WHERE a NOT IN UNNEST(arr);" }
+      - { id: struct_in_unnest, sql: "SELECT (a, b) IN UNNEST([(1, 2)]) FROM t;" }
+
+  - id: b_exists_subquery
+    name: EXISTS subquery
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/operators
+    tier: high
+    probes:
+      - { id: exists, sql: "SELECT a FROM t WHERE EXISTS (SELECT 1 FROM u WHERE u.a = t.a);" }
+      - { id: not_exists, sql: "SELECT a FROM t WHERE NOT EXISTS (SELECT 1 FROM u WHERE u.a = t.a);" }
+      - { id: exists_select_list, sql: "SELECT EXISTS (SELECT 1 FROM u) AS e;" }
+
+  - id: b_scalar_array_subquery
+    name: Scalar and ARRAY subqueries
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/subqueries
+    tier: high
+    probes:
+      - { id: scalar_subquery, sql: "SELECT (SELECT MAX(b) FROM u) AS m;" }
+      - { id: scalar_subquery_where, sql: "SELECT a FROM t WHERE a = (SELECT MAX(b) FROM u);" }
+      - { id: array_subquery, sql: "SELECT ARRAY(SELECT b FROM u) AS arr;" }
+
+  - id: b_field_and_subscript_operators
+    name: Field access and subscript operators
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/operators
+    tier: high
+    probes:
+      - { id: field_access, sql: "SELECT s.field FROM t;" }
+      - { id: nested_field_access, sql: "SELECT s.a.b FROM t;" }
+      - { id: array_offset, sql: "SELECT arr[OFFSET(0)] FROM t;" }
+      - { id: array_ordinal, sql: "SELECT arr[ORDINAL(1)] FROM t;" }
+      - { id: array_safe_offset, sql: "SELECT arr[SAFE_OFFSET(5)] FROM t;" }
+      - { id: json_subscript, sql: "SELECT j['a'], j['b'][0] FROM t;" }
+
+  - id: b_case_expression
+    name: CASE expressions
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/conditional_expressions
+    tier: high
+    probes:
+      - { id: simple_case, sql: "SELECT CASE a WHEN 1 THEN 'one' WHEN 2 THEN 'two' ELSE 'many' END FROM t;" }
+      - { id: simple_case_no_else, sql: "SELECT CASE a WHEN 1 THEN 'one' END FROM t;" }
+      - { id: searched_case, sql: "SELECT CASE WHEN a < 0 THEN 'neg' WHEN a = 0 THEN 'zero' ELSE 'pos' END FROM t;" }
+      - { id: nested_case, sql: "SELECT CASE WHEN a > 0 THEN CASE WHEN b > 0 THEN 1 ELSE 2 END ELSE 3 END FROM t;" }
+
+  - id: b_conditional_functions
+    name: Conditional functions
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/conditional_expressions
+    tier: medium
+    probes:
+      - { id: coalesce, sql: "SELECT COALESCE(a, b, 'x') FROM t;" }
+      - { id: if, sql: "SELECT IF(a > 0, 'pos', 'nonpos') FROM t;" }
+      - { id: ifnull, sql: "SELECT IFNULL(a, 0) FROM t;" }
+      - { id: nullif, sql: "SELECT NULLIF(a, 0) FROM t;" }
+
+  - id: b_extract
+    name: EXTRACT
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/timestamp_functions
+    tier: high
+    probes:
+      - { id: extract_timestamp, sql: "SELECT EXTRACT(HOUR FROM ts) FROM t;" }
+      - { id: extract_year_date, sql: "SELECT EXTRACT(YEAR FROM d) FROM t;" }
+      - { id: extract_at_time_zone, sql: "SELECT EXTRACT(DAY FROM ts AT TIME ZONE 'America/Los_Angeles') FROM t;" }
+      - { id: extract_dayofweek, sql: "SELECT EXTRACT(DAYOFWEEK FROM d) FROM t;" }
+      - { id: extract_week_weekday, sql: "SELECT EXTRACT(WEEK(MONDAY) FROM d) FROM t;" }
+      - { id: extract_date_from_ts, sql: "SELECT EXTRACT(DATE FROM ts) FROM t;" }
+    examples:
+      - "SELECT EXTRACT(DAY FROM TIMESTAMP('2008-12-25 05:30:00+00') AT TIME ZONE 'UTC') AS the_day_utc;"
+
+  - id: b_cast
+    name: CAST and SAFE_CAST
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/conversion_rules
+    tier: high
+    probes:
+      - { id: cast, sql: "SELECT CAST(a AS INT64) FROM t;" }
+      - { id: safe_cast, sql: "SELECT SAFE_CAST(a AS FLOAT64) FROM t;" }
+      - { id: cast_string, sql: "SELECT CAST(a AS STRING) FROM t;" }
+      - { id: cast_array, sql: "SELECT CAST(a AS ARRAY<INT64>) FROM t;" }
+      - { id: cast_timestamp, sql: "SELECT CAST(a AS TIMESTAMP) FROM t;" }
+
+  - id: b_with_expression
+    name: WITH expression
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/operators
+    tier: medium
+    probes:
+      - { id: with_expr, sql: "SELECT WITH(a AS '123', b AS CONCAT(a, '456'), CONCAT(b, '789')) AS result;" }
+
+  - id: b_trim_substring_functions
+    name: TRIM, SUBSTRING and string functions with comma-separated arguments
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/string_functions
+    tier: medium
+    note: GoogleSQL has no keyword forms (TRIM(LEADING ... FROM), SUBSTRING ... FROM, POSITION ... IN, OVERLAY); these take plain arguments.
+    probes:
+      - { id: trim, sql: "SELECT TRIM(a), TRIM(a, 'xy') FROM t;" }
+      - { id: ltrim_rtrim, sql: "SELECT LTRIM(a), RTRIM(a, 'xy') FROM t;" }
+      - { id: substring, sql: "SELECT SUBSTRING(a, 2, 3), SUBSTR(a, 2) FROM t;" }
+      - { id: strpos, sql: "SELECT STRPOS(a, 'x') FROM t;" }

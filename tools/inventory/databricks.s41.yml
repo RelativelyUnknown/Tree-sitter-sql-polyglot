@@ -1,0 +1,226 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: repair_table
+    name: REPAIR TABLE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-repair-table
+    tier: medium
+    probes:
+      - id: repair_table
+        sql: "REPAIR TABLE t;"
+      - id: msck_repair_table
+        sql: "MSCK REPAIR TABLE t;"
+      - id: add_partitions
+        sql: "MSCK REPAIR TABLE t ADD PARTITIONS;"
+      - id: drop_partitions
+        sql: "MSCK REPAIR TABLE t DROP PARTITIONS;"
+      - id: sync_partitions
+        sql: "REPAIR TABLE t SYNC PARTITIONS;"
+      - id: sync_metadata
+        sql: "MSCK REPAIR TABLE t SYNC METADATA;"
+    examples:
+      - "MSCK REPAIR TABLE t1;"
+      - "MSCK REPAIR TABLE t1 SYNC METADATA;"
+
+  - id: analyze_table_compute_statistics
+    name: ANALYZE TABLE ... COMPUTE STATISTICS
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-analyze-compute-statistics
+    tier: medium
+    probes:
+      - id: basic
+        sql: "ANALYZE TABLE t COMPUTE STATISTICS;"
+      - id: noscan
+        sql: "ANALYZE TABLE t COMPUTE STATISTICS NOSCAN;"
+      - id: partition
+        sql: "ANALYZE TABLE t PARTITION (p = 1) COMPUTE STATISTICS;"
+      - id: for_columns
+        sql: "ANALYZE TABLE t COMPUTE STATISTICS FOR COLUMNS c1, c2;"
+      - id: for_all_columns
+        sql: "ANALYZE TABLE t COMPUTE STATISTICS FOR ALL COLUMNS;"
+      - id: compute_delta_statistics
+        sql: "ANALYZE TABLE t COMPUTE DELTA STATISTICS;"
+      - id: analyze_tables
+        sql: "ANALYZE TABLES COMPUTE STATISTICS;"
+      - id: analyze_tables_in_schema_noscan
+        sql: "ANALYZE TABLES IN s COMPUTE STATISTICS NOSCAN;"
+      - id: analyze_tables_from_schema
+        sql: "ANALYZE TABLES FROM s COMPUTE STATISTICS;"
+    examples:
+      - "ANALYZE TABLE students COMPUTE STATISTICS NOSCAN;"
+      - "ANALYZE TABLE students PARTITION (student_id = 111111) COMPUTE STATISTICS;"
+      - "ANALYZE TABLE students COMPUTE STATISTICS FOR COLUMNS name;"
+
+  - id: set_tag
+    name: SET TAG
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-set-tag
+    tier: medium
+    probes:
+      - id: catalog
+        sql: "SET TAG ON CATALOG c cost_center = hr;"
+      - id: schema
+        sql: "SET TAG ON SCHEMA s cost_center = hr;"
+      - id: database
+        sql: "SET TAG ON DATABASE s cost_center = hr;"
+      - id: table
+        sql: "SET TAG ON TABLE c.s.t cost_center = hr;"
+      - id: view
+        sql: "SET TAG ON VIEW c.s.v cost_center = hr;"
+      - id: column
+        sql: "SET TAG ON COLUMN t.c pii;"
+      - id: function
+        sql: "SET TAG ON FUNCTION c.s.f cost_center = hr;"
+      - id: procedure
+        sql: "SET TAG ON PROCEDURE c.s.p cost_center = hr;"
+      - id: volume
+        sql: "SET TAG ON VOLUME c.s.v cost_center = hr;"
+      - id: external_metadata
+        sql: "SET TAG ON EXTERNAL METADATA m cost_center = hr;"
+      - id: backticked_key_value
+        sql: "SET TAG ON CATALOG c `cost_center` = `hr`;"
+    examples:
+      - "SET TAG ON CATALOG catalog `cost_center` = `hr`;"
+      - "SET TAG ON TABLE catalog.schema.table cost_center = hr;"
+      - "SET TAG ON COLUMN table.ssn pii;"
+
+  - id: unset_tag
+    name: UNSET TAG
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-unset-tag
+    tier: medium
+    probes:
+      - id: catalog
+        sql: "UNSET TAG ON CATALOG c cost_center;"
+      - id: schema
+        sql: "UNSET TAG ON SCHEMA s cost_center;"
+      - id: database
+        sql: "UNSET TAG ON DATABASE s cost_center;"
+      - id: table
+        sql: "UNSET TAG ON TABLE c.s.t cost_center;"
+      - id: view
+        sql: "UNSET TAG ON VIEW c.s.v cost_center;"
+      - id: column
+        sql: "UNSET TAG ON COLUMN t.c pii;"
+      - id: function
+        sql: "UNSET TAG ON FUNCTION c.s.f cost_center;"
+      - id: procedure
+        sql: "UNSET TAG ON PROCEDURE c.s.p cost_center;"
+      - id: volume
+        sql: "UNSET TAG ON VOLUME c.s.v cost_center;"
+      - id: external_metadata
+        sql: "UNSET TAG ON EXTERNAL METADATA m cost_center;"
+    examples:
+      - "UNSET TAG ON CATALOG catalog cost_center;"
+      - "UNSET TAG ON TABLE catalog.schema.table cost_center;"
+      - "UNSET TAG ON COLUMN table.ssn pii;"
+
+  - id: create_policy
+    name: CREATE POLICY
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-policy
+    tier: medium
+    probes:
+      - id: row_filter
+        sql: "CREATE POLICY p ON TABLE t ROW FILTER f TO u FOR TABLES;"
+      - id: row_filter_on_catalog_full
+        sql: "CREATE OR REPLACE POLICY p ON CATALOG c COMMENT 'cmt' ROW FILTER f TO u1, u2 EXCEPT u3 FOR TABLES WHEN has_tag('a') MATCH COLUMNS has_tag('b') AS x USING COLUMNS (x);"
+      - id: row_filter_on_schema
+        sql: "CREATE POLICY p ON SCHEMA s.d ROW FILTER f TO u FOR TABLES;"
+      - id: row_filter_on_metastore
+        sql: "CREATE POLICY p ON METASTORE ROW FILTER f TO u FOR TABLES;"
+      - id: column_mask
+        sql: "CREATE POLICY p ON TABLE t COLUMN MASK f TO u FOR TABLES ON COLUMN x;"
+      - id: column_mask_full
+        sql: "CREATE POLICY p ON CATALOG c COLUMN MASK f TO u EXCEPT v FOR TABLES WHEN has_tag('a') MATCH COLUMNS has_tag('b') AS x ON COLUMN x USING COLUMNS (4);"
+      - id: grant_policy
+        sql: "CREATE POLICY p ON SCHEMA s TO u EXCEPT v GRANT EXECUTE FOR MODEL SERVICES WHEN has_tag_value('k', 'v');"
+      - id: grant_policy_multiple_privileges
+        sql: "CREATE POLICY p ON CATALOG c TO u GRANT SELECT, EXECUTE FOR TABLES;"
+    examples:
+      - "CREATE POLICY ssn_mask ON CATALOG employees COLUMN MASK ssn_to_last_nr TO 'All Users' EXCEPT 'HR admins' FOR TABLES MATCH COLUMNS has_tag('ssn') AS ssn ON COLUMN ssn USING COLUMNS (4);"
+      - "CREATE POLICY hide_eu_customers ON SCHEMA prod.customers COMMENT 'Hide European customers from sensitive tables' ROW FILTER non_eu_region TO analysts FOR TABLES WHEN has_tag_value('sensitivity', 'high') MATCH COLUMNS has_tag('geo_region') AS region USING COLUMNS (region);"
+      - "CREATE POLICY grant_anthropic_model_services ON SCHEMA system.ai COMMENT 'Grant EXECUTE on Anthropic model services' TO data_scientists EXCEPT contractors GRANT EXECUTE FOR MODEL SERVICES WHEN has_tag_value('ai.model_creator', 'anthropic');"
+
+  - id: drop_policy
+    name: DROP POLICY
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-drop-policy
+    tier: medium
+    probes:
+      - id: on_catalog
+        sql: "DROP POLICY p ON CATALOG c;"
+      - id: on_schema
+        sql: "DROP POLICY p ON SCHEMA s.d;"
+      - id: on_table
+        sql: "DROP POLICY p ON TABLE t;"
+      - id: on_metastore
+        sql: "DROP POLICY p ON METASTORE;"
+    examples:
+      - "DROP POLICY ssn_mask ON CATALOG employees;"
+      - "DROP POLICY hide_eu_customers ON SCHEMA prod.customers;"
+
+  - id: create_connection
+    name: CREATE CONNECTION
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-connection
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE CONNECTION c TYPE POSTGRESQL OPTIONS (host 'h', port '5432');"
+      - id: if_not_exists
+        sql: "CREATE CONNECTION IF NOT EXISTS c TYPE MYSQL OPTIONS (host 'h', port '3306');"
+      - id: comment
+        sql: "CREATE CONNECTION c TYPE POSTGRESQL OPTIONS (host 'h', port '5432') COMMENT 'cmt';"
+      - id: secret_options
+        sql: "CREATE CONNECTION c TYPE POSTGRESQL OPTIONS (host 'h', port '5432', user secret('scope', 'u'), password secret('scope', 'p'));"
+      - id: server_keyword
+        sql: "CREATE SERVER s TYPE POSTGRESQL OPTIONS (host 'h', port '5432');"
+        note: "The page says SERVER can be used instead of CONNECTION for standards compliance."
+    examples:
+      - "CREATE CONNECTION postgresql_connection TYPE POSTGRESQL OPTIONS (host '<hostname>', port '5432', user secret('secrets.r.us', 'postgresUser'), password secret('secrets.r.us', 'postgresPassword'));"
+      - "CREATE CONNECTION slack_conn TYPE HTTP OPTIONS (host 'https://slack.com', port '443', base_path '/api/', bearer_token secret('secrets.r.us', 'slackBearerToken'));"
+
+  - id: alter_connection
+    name: ALTER CONNECTION
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-alter-connection
+    tier: medium
+    probes:
+      - id: set_owner
+        sql: "ALTER CONNECTION c SET OWNER TO u;"
+      - id: owner_to
+        sql: "ALTER CONNECTION c OWNER TO u;"
+      - id: rename_to
+        sql: "ALTER CONNECTION c RENAME TO c2;"
+      - id: options
+        sql: "ALTER CONNECTION c OPTIONS (host 'h', port '3306');"
+    examples:
+      - "ALTER CONNECTION mysql_connection SET OWNER TO `alf@melmak.et`;"
+      - "ALTER CONNECTION mysql_connection RENAME TO `other_mysql_connection`;"
+      - "ALTER CONNECTION mysql_connection OPTIONS (host 'newmysqlhost.us-west-2.amazonaws.com', port '3306');"
+
+  - id: drop_connection
+    name: DROP CONNECTION
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-drop-connection
+    tier: medium
+    probes:
+      - id: basic
+        sql: "DROP CONNECTION c;"
+      - id: if_exists
+        sql: "DROP CONNECTION IF EXISTS c;"
+    examples:
+      - "DROP CONNECTION mysql_connection;"
+
+  - id: create_external_location
+    name: CREATE EXTERNAL LOCATION
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-location
+    tier: medium
+    probes:
+      - id: basic
+        sql: "CREATE EXTERNAL LOCATION l URL 's3://bucket/path' WITH (STORAGE CREDENTIAL cred);"
+      - id: if_not_exists
+        sql: "CREATE EXTERNAL LOCATION IF NOT EXISTS l URL 's3://bucket/path' WITH (STORAGE CREDENTIAL cred);"
+      - id: comment
+        sql: "CREATE EXTERNAL LOCATION l URL 's3://bucket/path' WITH (STORAGE CREDENTIAL cred) COMMENT 'cmt';"
+      - id: backticked_names
+        sql: "CREATE EXTERNAL LOCATION `s3-remote` URL 's3://bucket/path' WITH (STORAGE CREDENTIAL `s3-remote-cred`);"
+    examples:
+      - "CREATE EXTERNAL LOCATION s3_remote URL 's3://us-east-1/location' WITH (STORAGE CREDENTIAL s3_remote_cred) COMMENT 'Default source for AWS exernal data';"
+      - "CREATE EXTERNAL LOCATION `s3-remote` URL 's3://us-east-1/location' WITH (STORAGE CREDENTIAL `s3-remote-cred`) COMMENT 'Default source for AWS exernal data';"

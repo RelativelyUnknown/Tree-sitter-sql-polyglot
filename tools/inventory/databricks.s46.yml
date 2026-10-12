@@ -1,0 +1,278 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: use_database
+    name: USE DATABASE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-usedb
+    tier: medium
+    probes:
+      - id: use_database
+        sql: "USE DATABASE s;"
+        note: The page says USE DATABASE is an alias for USE SCHEMA.
+      - id: use_database_qualified
+        sql: "USE DATABASE c.s;"
+        note: Alias of USE SCHEMA, which takes a schema_name.
+      - id: use_namespace
+        sql: "USE NAMESPACE s;"
+        note: The page says SCHEMA, NAMESPACE and DATABASE are interchangeable.
+
+  - id: use_schema
+    name: USE SCHEMA
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-use-schema
+    tier: medium
+    probes:
+      - id: use_schema
+        sql: "USE SCHEMA s;"
+      - id: use_without_keyword
+        sql: "USE s;"
+        note: SCHEMA is optional in "USE [SCHEMA] schema_name".
+      - id: use_schema_qualified
+        sql: "USE SCHEMA c.s;"
+    examples:
+      - "USE SCHEMA userschema;"
+      - "USE CATALOG some_cat;"
+      - "USE SCHEMA some_schem;"
+
+  - id: list
+    name: LIST
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-list
+    tier: medium
+    probes:
+      - id: basic
+        sql: "LIST 's3://bucket/dir';"
+      - id: with_credential
+        sql: "LIST 's3://bucket/dir' WITH (CREDENTIAL cred);"
+      - id: with_limit
+        sql: "LIST 's3://bucket/dir' LIMIT 2;"
+      - id: with_credential_limit
+        sql: "LIST 's3://bucket/dir' WITH (CREDENTIAL cred) LIMIT 2;"
+    examples:
+      - "LIST 's3://us-east-1-dev/some_dir' WITH ( CREDENTIAL aws_some_dir ) LIMIT 2;"
+
+  - id: grant
+    name: GRANT
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/security-grant
+    tier: medium
+    probes:
+      - id: single_privilege
+        sql: "GRANT SELECT ON TABLE t TO u;"
+      - id: multiple_privileges
+        sql: "GRANT SELECT, MODIFY ON TABLE t TO u;"
+      - id: all_privileges
+        sql: "GRANT ALL PRIVILEGES ON TABLE t TO u;"
+      - id: on_schema
+        sql: "GRANT CREATE ON SCHEMA s TO u;"
+      - id: backtick_principal
+        sql: "GRANT SELECT ON TABLE t TO `alf@melmak.et`;"
+        note: The page requires backticks around principals with special characters.
+      - id: on_catalog
+        sql: "GRANT USE CATALOG ON CATALOG c TO g;"
+    examples:
+      - "GRANT CREATE ON SCHEMA my_schema TO `alf@melmak.et`;"
+      - "GRANT ALL PRIVILEGES ON TABLE forecasts TO finance;"
+      - "GRANT SELECT ON TABLE sample_data TO `alf@melmak.et`;"
+
+  - id: revoke
+    name: REVOKE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/security-revoke
+    tier: medium
+    probes:
+      - id: single_privilege
+        sql: "REVOKE SELECT ON TABLE t FROM u;"
+      - id: multiple_privileges
+        sql: "REVOKE SELECT, MODIFY ON TABLE t FROM u;"
+      - id: all_privileges
+        sql: "REVOKE ALL PRIVILEGES ON SCHEMA s FROM u;"
+      - id: backtick_principal
+        sql: "REVOKE SELECT ON TABLE t FROM `alf@melmak.et`;"
+    examples:
+      - "REVOKE ALL PRIVILEGES ON SCHEMA default FROM `alf@melmak.et`;"
+      - "REVOKE SELECT ON TABLE t FROM aliens;"
+
+  - id: show_grants
+    name: SHOW GRANTS
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/security-show-grant
+    tier: medium
+    probes:
+      - id: on_object
+        sql: "SHOW GRANTS ON TABLE t;"
+      - id: for_principal
+        sql: "SHOW GRANTS u ON TABLE t;"
+      - id: backtick_principal
+        sql: "SHOW GRANTS `alf@melmak.et` ON SCHEMA s;"
+      - id: grant_keyword
+        sql: "SHOW GRANT ON TABLE t;"
+        note: The page says GRANT can be used as an alternative for GRANTS.
+      - id: on_share
+        sql: "SHOW GRANTS ON SHARE some_share;"
+    examples:
+      - "SHOW GRANTS `alf@melmak.et` ON SCHEMA my_schema;"
+      - "SHOW GRANTS ON SHARE some_share;"
+      - "SHOW GRANTS ON CONNECTION mysql_connection;"
+
+  - id: explain_create_materialized_view
+    name: EXPLAIN CREATE MATERIALIZED VIEW
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-qry-explain-materialized-view
+    tier: low
+    probes:
+      - id: basic
+        sql: "EXPLAIN CREATE MATERIALIZED VIEW mv AS SELECT c, SUM(x) AS total FROM t GROUP BY c;"
+
+  - id: create_bloom_filter_index
+    name: CREATE BLOOM FILTER INDEX (deprecated)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/delta-create-bloomfilter-index
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE BLOOMFILTER INDEX ON TABLE t FOR COLUMNS(c OPTIONS (fpp=0.1, numItems=5000));"
+        note: The current page carries no syntax block (it only says the feature is deprecated, with DROP BLOOMFILTER INDEX as the related article); this is the form documented for the statement in earlier versions of the page.
+
+  - id: drop_bloom_filter_index
+    name: DROP BLOOM FILTER INDEX
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/delta-drop-bloomfilter-index
+    tier: low
+    probes:
+      - id: on_table
+        sql: "DROP BLOOMFILTER INDEX ON TABLE t;"
+      - id: for_columns
+        sql: "DROP BLOOMFILTER INDEX ON t FOR COLUMNS(c1, c2);"
+
+  - id: create_streaming_table_auto_cdc
+    name: CREATE STREAMING TABLE ... AUTO CDC
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-streaming-table-auto-cdc
+    tier: low
+    probes:
+      - id: scd_type_1
+        sql: "CREATE OR REFRESH STREAMING TABLE target FLOW AUTO CDC FROM stream(cdc_data.users) KEYS (userId) SEQUENCE BY sequenceNum STORED AS SCD TYPE 1;"
+      - id: scd_type_2_delete_columns
+        sql: "CREATE OR REFRESH STREAMING TABLE target FLOW AUTO CDC FROM stream(cdc_data.users) KEYS (userId) APPLY AS DELETE WHEN operation = 'DELETE' SEQUENCE BY sequenceNum COLUMNS * EXCEPT (operation, sequenceNum) STORED AS SCD TYPE 2;"
+
+  - id: analyze_table_compute_storage_metrics
+    name: ANALYZE TABLE ... COMPUTE STORAGE METRICS
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-analyze-compute-storage-metrics
+    tier: low
+    probes:
+      - id: basic
+        sql: "ANALYZE TABLE t COMPUTE STORAGE METRICS;"
+      - id: using_inventory
+        sql: "ANALYZE TABLE t COMPUTE STORAGE METRICS USING INVENTORY LOCATION 's3://bucket/inventory' CONF conf_name;"
+
+  - id: analyze_table_drop_statistics
+    name: ANALYZE TABLE ... DROP STATISTICS
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-analyze-drop-statistics
+    tier: low
+    probes:
+      - id: basic
+        sql: "ANALYZE TABLE t DROP STATISTICS;"
+      - id: all
+        sql: "ANALYZE TABLE t DROP ALL STATISTICS;"
+      - id: auto
+        sql: "ANALYZE TABLE t DROP AUTO STATISTICS;"
+      - id: manual
+        sql: "ANALYZE TABLE t DROP MANUAL STATISTICS;"
+
+  - id: refresh_foreign
+    name: REFRESH FOREIGN (CATALOG, SCHEMA, and TABLE)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-refresh-foreign
+    tier: low
+    probes:
+      - id: catalog
+        sql: "REFRESH FOREIGN CATALOG c;"
+      - id: schema
+        sql: "REFRESH FOREIGN SCHEMA c.s;"
+      - id: table
+        sql: "REFRESH FOREIGN TABLE c.s.t;"
+      - id: schema_resolve_dbfs_location
+        sql: "REFRESH FOREIGN SCHEMA c.s RESOLVE DBFS LOCATION;"
+
+  - id: sync
+    name: SYNC
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-aux-sync
+    tier: low
+    probes:
+      - id: schema
+        sql: "SYNC SCHEMA main.s FROM hive_metastore.s;"
+      - id: table_as_external_set_owner_dry_run
+        sql: "SYNC TABLE main.s.t AS EXTERNAL FROM hive_metastore.s.t SET OWNER u DRY RUN;"
+
+  - id: create_server
+    name: CREATE SERVER
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-server
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE SERVER IF NOT EXISTS srv TYPE mysql OPTIONS (host 'h', port '3306', user 'u', password 'p') COMMENT 'c';"
+        note: The page says CREATE SERVER is an alias for CREATE CONNECTION; clauses are from the CREATE CONNECTION syntax.
+
+  - id: create_share
+    name: CREATE SHARE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-share
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE SHARE s;"
+      - id: if_not_exists_comment
+        sql: "CREATE SHARE IF NOT EXISTS s COMMENT 'This is customer share';"
+
+  - id: alter_share
+    name: ALTER SHARE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-alter-share
+    tier: low
+    probes:
+      - id: add_table
+        sql: "ALTER SHARE s ADD TABLE my_schema.t COMMENT 'c' PARTITION (c1 = 5) AS shared_schema.shared_t WITH HISTORY;"
+      - id: remove_table
+        sql: "ALTER SHARE s REMOVE TABLE shared_schema.shared_t;"
+      - id: add_schema
+        sql: "ALTER SHARE s ADD SCHEMA sch COMMENT 'c';"
+      - id: rename_to
+        sql: "ALTER SHARE s RENAME TO s2;"
+      - id: set_owner_to
+        sql: "ALTER SHARE s SET OWNER TO u;"
+
+  - id: drop_share
+    name: DROP SHARE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-drop-share
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP SHARE s;"
+      - id: if_exists
+        sql: "DROP SHARE IF EXISTS s;"
+
+  - id: create_recipient
+    name: CREATE RECIPIENT
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-recipient
+    tier: low
+    probes:
+      - id: basic
+        sql: "CREATE RECIPIENT r;"
+      - id: full
+        sql: "CREATE RECIPIENT IF NOT EXISTS r USING ID 'azure:westus:f12dcb34-5678-9d4c-1234-c5ac67f8b90a' COMMENT 'c' PROPERTIES ('country' = 'US');"
+
+  - id: alter_recipient
+    name: ALTER RECIPIENT
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-alter-recipient
+    tier: low
+    probes:
+      - id: rename_to
+        sql: "ALTER RECIPIENT r RENAME TO r2;"
+      - id: owner_to
+        sql: "ALTER RECIPIENT r OWNER TO u;"
+      - id: set_properties
+        sql: "ALTER RECIPIENT r SET PROPERTIES ('country' = 'US');"
+      - id: unset_properties
+        sql: "ALTER RECIPIENT r UNSET PROPERTIES ('country');"
+
+  - id: drop_recipient
+    name: DROP RECIPIENT
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-drop-recipient
+    tier: low
+    probes:
+      - id: basic
+        sql: "DROP RECIPIENT r;"
+      - id: if_exists
+        sql: "DROP RECIPIENT IF EXISTS r;"

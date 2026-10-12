@@ -1,0 +1,310 @@
+dialect: base
+engine: ISO SQL
+version: "SQL:2016"
+source: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html
+
+statements: []
+
+expressions:
+  - id: a_numeric_literals
+    name: Numeric literals
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_5_3_literal
+    tier: high
+    probes:
+      - { id: integer, sql: "SELECT 1, 42, 0;" }
+      - { id: signed, sql: "SELECT -7, +7;" }
+      - { id: exact_decimal, sql: "SELECT 1.5, 10.25, 3., .5;" }
+      - { id: approximate, sql: "SELECT 1E3, 1.5E-2, 2.5e+10, .5E1;" }
+  - id: a_boolean_null_literals
+    name: Boolean literals and NULL
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#boolean-literal
+    tier: high
+    probes:
+      - { id: boolean, sql: "SELECT TRUE, FALSE, UNKNOWN;" }
+      - { id: "null", sql: "SELECT NULL;" }
+  - id: a_character_string_literals
+    name: Character string literals
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#character-string-literal
+    tier: high
+    probes:
+      - { id: single_quoted, sql: "SELECT 'hello';" }
+      - { id: escaped_quote, sql: "SELECT 'it''s';" }
+      - { id: empty, sql: "SELECT '';" }
+      - { id: continued, sql: "SELECT 'abc'\n  'def';" }
+      - { id: charset_introducer, sql: "SELECT _LATIN1'abc';" }
+  - id: a_national_string_literals
+    name: National character string literals
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#national-character-string-literal
+    tier: medium
+    probes:
+      - { id: national, sql: "SELECT N'abc';" }
+      - { id: national_continued, sql: "SELECT N'abc'\n  'def';" }
+  - id: a_unicode_string_literals
+    name: Unicode character string literals
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#Unicode-character-string-literal
+    tier: medium
+    probes:
+      - { id: unicode_default_escape, sql: "SELECT U&'d\\0061t\\+000061';" }
+      - { id: unicode_escape_clause, sql: "SELECT U&'d!0061t!+000061' UESCAPE '!';" }
+  - id: a_binary_string_literals
+    name: Binary string literals
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#binary-string-literal
+    tier: medium
+    probes:
+      - { id: hex, sql: "SELECT X'1F2A';" }
+      - { id: hex_empty, sql: "SELECT X'';" }
+      - { id: hex_spaces, sql: "SELECT X'1F 2A';" }
+  - id: a_datetime_literals
+    name: Date, time and timestamp literals
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#datetime-literal
+    tier: high
+    probes:
+      - { id: date, sql: "SELECT DATE '2020-01-31';" }
+      - { id: time, sql: "SELECT TIME '12:30:45';" }
+      - { id: time_fraction, sql: "SELECT TIME '12:30:45.123';" }
+      - { id: time_zone, sql: "SELECT TIME '12:30:45+05:30';" }
+      - { id: timestamp, sql: "SELECT TIMESTAMP '2020-01-31 12:30:45';" }
+      - { id: timestamp_zone, sql: "SELECT TIMESTAMP '2020-01-31 12:30:45.5-08:00';" }
+  - id: a_interval_literals
+    name: Interval literals
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#interval-literal
+    tier: high
+    probes:
+      - { id: year, sql: "SELECT INTERVAL '1' YEAR;" }
+      - { id: month, sql: "SELECT INTERVAL '3' MONTH;" }
+      - { id: day, sql: "SELECT INTERVAL '5' DAY;" }
+      - { id: hour, sql: "SELECT INTERVAL '2' HOUR;" }
+      - { id: minute, sql: "SELECT INTERVAL '30' MINUTE;" }
+      - { id: second, sql: "SELECT INTERVAL '10.5' SECOND;" }
+      - { id: year_to_month, sql: "SELECT INTERVAL '1-6' YEAR TO MONTH;" }
+      - { id: day_to_hour, sql: "SELECT INTERVAL '1 12' DAY TO HOUR;" }
+      - { id: day_to_second, sql: "SELECT INTERVAL '1 12:30:45' DAY TO SECOND;" }
+      - { id: hour_to_second, sql: "SELECT INTERVAL '12:30:45' HOUR TO SECOND;" }
+      - { id: minute_to_second, sql: "SELECT INTERVAL '30:45' MINUTE TO SECOND;" }
+      - { id: negative, sql: "SELECT INTERVAL -'5' DAY;" }
+      - { id: leading_precision, sql: "SELECT INTERVAL '100' DAY(3);" }
+      - { id: second_precision, sql: "SELECT INTERVAL '5.123' SECOND(1, 3);" }
+      - { id: to_second_precision, sql: "SELECT INTERVAL '1 12:30:45.123' DAY TO SECOND(3);" }
+  - id: a_array_constructors
+    name: Array value constructors and element reference
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_6_42_array_value_constructor
+    tier: medium
+    probes:
+      - { id: by_enumeration, sql: "SELECT ARRAY[1, 2, 3];" }
+      - { id: by_query, sql: "SELECT ARRAY(SELECT a FROM t);" }
+      - { id: trigraph, sql: "SELECT ARRAY??(1, 2??);" }
+      - { id: element_reference, sql: "SELECT a[1] FROM t;" }
+      - { id: concatenation, sql: "SELECT a || ARRAY[4] FROM t;" }
+      - { id: cardinality, sql: "SELECT CARDINALITY(a), MAX_CARDINALITY(a) FROM t;" }
+      - { id: trim_array, sql: "SELECT TRIM_ARRAY(a, 1) FROM t;" }
+  - id: a_multiset_constructors
+    name: Multiset value constructors
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_6_43_multiset_value_expression
+    tier: low
+    probes:
+      - { id: by_enumeration, sql: "SELECT MULTISET[1, 2, 3];" }
+      - { id: by_query, sql: "SELECT MULTISET(SELECT a FROM t);" }
+      - { id: union, sql: "SELECT m MULTISET UNION ALL n FROM t;" }
+  - id: a_row_constructors
+    name: Row value constructors and field reference
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_7_1_row_value_constructor
+    tier: medium
+    probes:
+      - { id: explicit_row, sql: "SELECT ROW(1, 'a');" }
+      - { id: implicit_row, sql: "SELECT (1, 'a');" }
+      - { id: values_row, sql: "VALUES (1, 'a'), (2, 'b');" }
+      - { id: field_reference, sql: "SELECT r.f FROM t;" }
+      - { id: row_comparison, sql: "SELECT * FROM t WHERE (a, b) = (1, 2);" }
+  - id: a_json_constructors
+    name: JSON value constructors
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_6_33_json_value_constructor
+    tier: medium
+    probes:
+      - { id: json_object_keyword, sql: "SELECT JSON_OBJECT('a' VALUE 1, 'b' VALUE 2);" }
+      - { id: json_object_colon, sql: "SELECT JSON_OBJECT('a': 1);" }
+      - { id: json_object_null_clause, sql: "SELECT JSON_OBJECT('a' VALUE NULL ABSENT ON NULL);" }
+      - { id: json_object_unique, sql: "SELECT JSON_OBJECT('a' VALUE 1 WITH UNIQUE KEYS);" }
+      - { id: json_object_returning, sql: "SELECT JSON_OBJECT('a' VALUE 1 RETURNING VARCHAR(100));" }
+      - { id: json_array, sql: "SELECT JSON_ARRAY(1, 2, 3);" }
+      - { id: json_array_null_clause, sql: "SELECT JSON_ARRAY(1, NULL ABSENT ON NULL);" }
+      - { id: json_array_query, sql: "SELECT JSON_ARRAY(SELECT a FROM t);" }
+      - { id: json_array_format, sql: "SELECT JSON_ARRAY(a FORMAT JSON) FROM t;" }
+      - { id: json_objectagg, sql: "SELECT JSON_OBJECTAGG(k VALUE v) FROM t;" }
+      - { id: json_arrayagg, sql: "SELECT JSON_ARRAYAGG(a ORDER BY b) FROM t;" }
+      - { id: json_query, sql: "SELECT JSON_QUERY(j, '$.a') FROM t;" }
+  - id: a_json_predicates_and_functions
+    name: JSON predicates, JSON_VALUE, JSON_EXISTS, JSON_TABLE
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_6_27_json_value_function
+    tier: medium
+    probes:
+      - { id: is_json, sql: "SELECT * FROM t WHERE a IS JSON;" }
+      - { id: is_json_object, sql: "SELECT * FROM t WHERE a IS JSON OBJECT;" }
+      - { id: is_not_json_array, sql: "SELECT * FROM t WHERE a IS NOT JSON ARRAY;" }
+      - { id: is_json_unique, sql: "SELECT * FROM t WHERE a IS JSON WITH UNIQUE KEYS;" }
+      - { id: json_value, sql: "SELECT JSON_VALUE(j, '$.a') FROM t;" }
+      - { id: json_value_returning, sql: "SELECT JSON_VALUE(j, '$.a' RETURNING INTEGER) FROM t;" }
+      - { id: json_value_on_error, sql: "SELECT JSON_VALUE(j, '$.a' DEFAULT 0 ON EMPTY ERROR ON ERROR) FROM t;" }
+      - { id: json_query_wrapper, sql: "SELECT JSON_QUERY(j, '$.a' WITH ARRAY WRAPPER) FROM t;" }
+      - { id: json_exists, sql: "SELECT * FROM t WHERE JSON_EXISTS(j, '$.a');" }
+      - { id: json_exists_passing, sql: "SELECT * FROM t WHERE JSON_EXISTS(j, '$.a ? (@ > $x)' PASSING 1 AS x);" }
+      - { id: json_table, sql: "SELECT * FROM JSON_TABLE(j, '$[*]' COLUMNS (a INTEGER PATH '$.a', n FOR ORDINALITY)) AS jt;" }
+  - id: a_character_types
+    name: Character string types
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_6_1_data_type
+    tier: high
+    probes:
+      - { id: char, sql: "SELECT CAST(a AS CHAR) FROM t;" }
+      - { id: character_length, sql: "SELECT CAST(a AS CHARACTER(10)) FROM t;" }
+      - { id: char_length, sql: "SELECT CAST(a AS CHAR(10)) FROM t;" }
+      - { id: varchar, sql: "SELECT CAST(a AS VARCHAR(10)) FROM t;" }
+      - { id: character_varying, sql: "SELECT CAST(a AS CHARACTER VARYING(10)) FROM t;" }
+      - { id: char_varying, sql: "SELECT CAST(a AS CHAR VARYING(10)) FROM t;" }
+      - { id: length_units, sql: "SELECT CAST(a AS VARCHAR(10 CHARACTERS)) FROM t;" }
+      - { id: length_octets, sql: "SELECT CAST(a AS CHAR(10 OCTETS)) FROM t;" }
+      - { id: clob, sql: "SELECT CAST(a AS CLOB) FROM t;" }
+      - { id: clob_length, sql: "SELECT CAST(a AS CLOB(1M)) FROM t;" }
+      - { id: character_large_object, sql: "SELECT CAST(a AS CHARACTER LARGE OBJECT(1K)) FROM t;" }
+      - { id: char_large_object, sql: "SELECT CAST(a AS CHAR LARGE OBJECT) FROM t;" }
+      - { id: character_set, sql: "SELECT CAST(a AS VARCHAR(10) CHARACTER SET UTF8) FROM t;" }
+      - { id: collate, sql: "SELECT CAST(a AS VARCHAR(10) COLLATE c) FROM t;" }
+  - id: a_national_character_types
+    name: National character string types
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#national-character-string-type
+    tier: medium
+    probes:
+      - { id: national_character, sql: "SELECT CAST(a AS NATIONAL CHARACTER(10)) FROM t;" }
+      - { id: nchar, sql: "SELECT CAST(a AS NCHAR(10)) FROM t;" }
+      - { id: national_char, sql: "SELECT CAST(a AS NATIONAL CHAR) FROM t;" }
+      - { id: national_character_varying, sql: "SELECT CAST(a AS NATIONAL CHARACTER VARYING(10)) FROM t;" }
+      - { id: nchar_varying, sql: "SELECT CAST(a AS NCHAR VARYING(10)) FROM t;" }
+      - { id: nclob, sql: "SELECT CAST(a AS NCLOB(1M)) FROM t;" }
+      - { id: national_character_large_object, sql: "SELECT CAST(a AS NATIONAL CHARACTER LARGE OBJECT) FROM t;" }
+  - id: a_binary_types
+    name: Binary string types
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#binary-string-type
+    tier: medium
+    probes:
+      - { id: binary, sql: "SELECT CAST(a AS BINARY(10)) FROM t;" }
+      - { id: binary_default, sql: "SELECT CAST(a AS BINARY) FROM t;" }
+      - { id: varbinary, sql: "SELECT CAST(a AS VARBINARY(10)) FROM t;" }
+      - { id: binary_varying, sql: "SELECT CAST(a AS BINARY VARYING(10)) FROM t;" }
+      - { id: blob, sql: "SELECT CAST(a AS BLOB) FROM t;" }
+      - { id: blob_length, sql: "SELECT CAST(a AS BLOB(1M)) FROM t;" }
+      - { id: binary_large_object, sql: "SELECT CAST(a AS BINARY LARGE OBJECT(1G)) FROM t;" }
+  - id: a_numeric_types
+    name: Numeric types
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#numeric-type
+    tier: high
+    probes:
+      - { id: smallint, sql: "SELECT CAST(a AS SMALLINT) FROM t;" }
+      - { id: integer, sql: "SELECT CAST(a AS INTEGER) FROM t;" }
+      - { id: int, sql: "SELECT CAST(a AS INT) FROM t;" }
+      - { id: bigint, sql: "SELECT CAST(a AS BIGINT) FROM t;" }
+      - { id: numeric, sql: "SELECT CAST(a AS NUMERIC) FROM t;" }
+      - { id: numeric_precision, sql: "SELECT CAST(a AS NUMERIC(10)) FROM t;" }
+      - { id: numeric_precision_scale, sql: "SELECT CAST(a AS NUMERIC(10, 2)) FROM t;" }
+      - { id: decimal, sql: "SELECT CAST(a AS DECIMAL(10, 2)) FROM t;" }
+      - { id: dec, sql: "SELECT CAST(a AS DEC(10, 2)) FROM t;" }
+      - { id: float, sql: "SELECT CAST(a AS FLOAT) FROM t;" }
+      - { id: float_precision, sql: "SELECT CAST(a AS FLOAT(24)) FROM t;" }
+      - { id: real, sql: "SELECT CAST(a AS REAL) FROM t;" }
+      - { id: double_precision, sql: "SELECT CAST(a AS DOUBLE PRECISION) FROM t;" }
+      - { id: decfloat, sql: "SELECT CAST(a AS DECFLOAT(16)) FROM t;" }
+  - id: a_boolean_type
+    name: BOOLEAN type
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#boolean-type
+    tier: high
+    probes:
+      - { id: boolean, sql: "SELECT CAST(a AS BOOLEAN) FROM t;" }
+  - id: a_datetime_types
+    name: Datetime types
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#datetime-type
+    tier: high
+    probes:
+      - { id: date, sql: "SELECT CAST(a AS DATE) FROM t;" }
+      - { id: time, sql: "SELECT CAST(a AS TIME) FROM t;" }
+      - { id: time_precision, sql: "SELECT CAST(a AS TIME(3)) FROM t;" }
+      - { id: time_with_time_zone, sql: "SELECT CAST(a AS TIME WITH TIME ZONE) FROM t;" }
+      - { id: time_without_time_zone, sql: "SELECT CAST(a AS TIME(3) WITHOUT TIME ZONE) FROM t;" }
+      - { id: timestamp, sql: "SELECT CAST(a AS TIMESTAMP) FROM t;" }
+      - { id: timestamp_precision, sql: "SELECT CAST(a AS TIMESTAMP(6)) FROM t;" }
+      - { id: timestamp_with_time_zone, sql: "SELECT CAST(a AS TIMESTAMP WITH TIME ZONE) FROM t;" }
+      - { id: timestamp_without_time_zone, sql: "SELECT CAST(a AS TIMESTAMP(6) WITHOUT TIME ZONE) FROM t;" }
+  - id: a_interval_types
+    name: Interval types
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#interval-type
+    tier: medium
+    probes:
+      - { id: year, sql: "SELECT CAST(a AS INTERVAL YEAR) FROM t;" }
+      - { id: year_precision, sql: "SELECT CAST(a AS INTERVAL YEAR(4)) FROM t;" }
+      - { id: year_to_month, sql: "SELECT CAST(a AS INTERVAL YEAR TO MONTH) FROM t;" }
+      - { id: month, sql: "SELECT CAST(a AS INTERVAL MONTH) FROM t;" }
+      - { id: day, sql: "SELECT CAST(a AS INTERVAL DAY) FROM t;" }
+      - { id: day_to_second, sql: "SELECT CAST(a AS INTERVAL DAY TO SECOND) FROM t;" }
+      - { id: day_to_second_precision, sql: "SELECT CAST(a AS INTERVAL DAY(2) TO SECOND(3)) FROM t;" }
+      - { id: hour_to_minute, sql: "SELECT CAST(a AS INTERVAL HOUR TO MINUTE) FROM t;" }
+      - { id: minute_to_second, sql: "SELECT CAST(a AS INTERVAL MINUTE TO SECOND) FROM t;" }
+      - { id: second_precision, sql: "SELECT CAST(a AS INTERVAL SECOND(5, 3)) FROM t;" }
+  - id: a_composite_types
+    name: ROW, ARRAY, MULTISET and REF types
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#row-type
+    tier: medium
+    probes:
+      - { id: row_type, sql: "SELECT CAST(a AS ROW(x INTEGER, y VARCHAR(10))) FROM t;" }
+      - { id: array_type, sql: "SELECT CAST(a AS INTEGER ARRAY) FROM t;" }
+      - { id: array_type_cardinality, sql: "SELECT CAST(a AS INTEGER ARRAY[10]) FROM t;" }
+      - { id: array_type_trigraph, sql: "SELECT CAST(a AS INTEGER ARRAY??(10??)) FROM t;" }
+      - { id: multiset_type, sql: "SELECT CAST(a AS INTEGER MULTISET) FROM t;" }
+      - { id: nested_collection, sql: "SELECT CAST(a AS ROW(x INTEGER ARRAY[3]) MULTISET) FROM t;" }
+      - { id: ref_type, sql: "SELECT CAST(a AS REF(s.person)) FROM t;" }
+      - { id: ref_type_scope, sql: "SELECT CAST(a AS REF(person) SCOPE people) FROM t;" }
+      - { id: user_defined_type, sql: "SELECT CAST(a AS s.my_type) FROM t;" }
+  - id: a_cast_specification
+    name: CAST specification
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#_6_13_cast_specification
+    tier: high
+    probes:
+      - { id: cast_basic, sql: "SELECT CAST(a AS INTEGER) FROM t;" }
+      - { id: cast_expression, sql: "SELECT CAST(a + 1 AS VARCHAR(10)) FROM t;" }
+      - { id: cast_null, sql: "SELECT CAST(NULL AS INTEGER);" }
+      - { id: cast_domain, sql: "SELECT CAST(a AS my_domain) FROM t;" }
+      - { id: cast_format, sql: "SELECT CAST(a AS DATE FORMAT 'YYYY-MM-DD') FROM t;" }
+      - { id: cast_nested, sql: "SELECT CAST(CAST(a AS VARCHAR(10)) AS INTEGER) FROM t;" }
+  - id: a_identifier_quoting
+    name: Regular and delimited identifiers
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#delimited-identifier
+    tier: high
+    probes:
+      - { id: regular, sql: "SELECT abc, a_1, a$b FROM t;" }
+      - { id: delimited, sql: "SELECT \"my col\" FROM t;" }
+      - { id: delimited_escaped_quote, sql: "SELECT \"a\"\"b\" FROM t;" }
+      - { id: delimited_keyword, sql: "SELECT \"select\" FROM \"table\";" }
+      - { id: qualified, sql: "SELECT s.t.c FROM s.t;" }
+      - { id: qualified_catalog, sql: "SELECT c FROM cat.s.t;" }
+      - { id: delimited_qualified, sql: "SELECT \"s\".\"t\".\"c\" FROM \"s\".\"t\";" }
+      - { id: unicode_delimited, sql: "SELECT U&\"d\\0061t\" FROM t;" }
+      - { id: unicode_delimited_uescape, sql: "SELECT U&\"d!0061t\" UESCAPE '!' FROM t;" }
+  - id: a_comments
+    name: Comments
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#comment
+    tier: high
+    probes:
+      - { id: simple_comment, sql: "SELECT 1 -- trailing comment\n;" }
+      - { id: simple_comment_line, sql: "-- leading comment\nSELECT 1;" }
+      - { id: bracketed_comment, sql: "SELECT /* inline */ 1;" }
+      - { id: bracketed_multiline, sql: "/* line one\n   line two */\nSELECT 1;" }
+      - { id: bracketed_empty, sql: "SELECT /**/ 1;" }
+      - { id: bracketed_nested, sql: "SELECT /* outer /* inner */ still outer */ 1;" }
+      - { id: comment_between_tokens, sql: "SELECT a /* c */ FROM /* d */ t;" }
+  - id: a_parameters_and_variables
+    name: Dynamic parameters, host parameters and SQL parameter references
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#dynamic-parameter-specification
+    tier: medium
+    probes:
+      - { id: dynamic_parameter, sql: "SELECT * FROM t WHERE a = ?;" }
+      - { id: dynamic_parameter_multiple, sql: "SELECT * FROM t WHERE a = ? AND b > ?;" }
+      - { id: dynamic_parameter_values, sql: "INSERT INTO t (a, b) VALUES (?, ?);" }
+      - { id: dynamic_parameter_cast, sql: "SELECT CAST(? AS INTEGER);" }
+      - { id: host_parameter, sql: "SELECT * FROM t WHERE a = :p;" }
+      - { id: sql_parameter_reference, sql: "CREATE FUNCTION f (p INTEGER) RETURNS INTEGER RETURN p + 1;" }
+      - { id: sql_parameter_qualified, sql: "CREATE FUNCTION f (p INTEGER) RETURNS INTEGER RETURN f.p + 1;" }

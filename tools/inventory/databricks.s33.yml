@@ -1,0 +1,108 @@
+dialect: databricks
+engine: Databricks SQL / Databricks Runtime
+version: "current (docs read 2026-10-04)"
+source: https://docs.databricks.com/aws/en/sql/language-manual/
+
+statements:
+  - id: create_function_external
+    name: CREATE FUNCTION (External)
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-function
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE FUNCTION f AS 'com.example.Udf';"
+      - id: or_replace
+        sql: "CREATE OR REPLACE FUNCTION f AS 'com.example.Udf';"
+      - id: temporary
+        sql: "CREATE TEMPORARY FUNCTION f AS 'com.example.Udf';"
+      - id: or_replace_temporary
+        sql: "CREATE OR REPLACE TEMPORARY FUNCTION f AS 'com.example.Udf';"
+      - id: if_not_exists
+        sql: "CREATE FUNCTION IF NOT EXISTS f AS 'com.example.Udf';"
+      - id: temporary_if_not_exists
+        sql: "CREATE TEMPORARY FUNCTION IF NOT EXISTS f AS 'com.example.Udf';"
+      - id: qualified_name
+        sql: "CREATE FUNCTION s.f AS 'com.example.Udf';"
+      - id: using_jar
+        sql: "CREATE FUNCTION f AS 'com.example.Udf' USING JAR '/tmp/udf.jar';"
+      - id: using_file
+        sql: "CREATE FUNCTION f AS 'com.example.Udf' USING FILE '/tmp/res.txt';"
+      - id: using_archive
+        sql: "CREATE FUNCTION f AS 'com.example.Udf' USING ARCHIVE '/tmp/res.zip';"
+      - id: using_multiple_resources
+        sql: "CREATE FUNCTION f AS 'com.example.Udf' USING JAR '/tmp/udf.jar', FILE '/tmp/res.txt', ARCHIVE '/tmp/res.zip';"
+    examples:
+      - "CREATE FUNCTION simple_udf AS 'SimpleUdf' USING JAR '/tmp/SimpleUdf.jar';"
+      - "CREATE TEMPORARY FUNCTION simple_temp_udf AS 'SimpleUdf' USING JAR '/tmp/SimpleUdf.jar';"
+      - "CREATE OR REPLACE FUNCTION simple_udf AS 'SimpleUdfR' USING JAR '/tmp/SimpleUdfR.jar';"
+
+  - id: create_procedure
+    name: CREATE PROCEDURE
+    doc: https://docs.databricks.com/aws/en/sql/language-manual/sql-ref-syntax-ddl-create-procedure
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE PROCEDURE p() LANGUAGE SQL SQL SECURITY INVOKER AS BEGIN SELECT 1; END;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE PROCEDURE p() LANGUAGE SQL SQL SECURITY INVOKER AS BEGIN SELECT 1; END;"
+      - id: if_not_exists
+        sql: "CREATE PROCEDURE IF NOT EXISTS p() LANGUAGE SQL SQL SECURITY INVOKER AS BEGIN SELECT 1; END;"
+      - id: qualified_name
+        sql: "CREATE PROCEDURE c.s.p() LANGUAGE SQL SQL SECURITY INVOKER AS BEGIN SELECT 1; END;"
+      - id: params
+        sql: "CREATE PROCEDURE p(x INT, y STRING) LANGUAGE SQL SQL SECURITY INVOKER AS BEGIN SELECT x; END;"
+      - id: param_in
+        sql: "CREATE PROCEDURE p(IN x INT) LANGUAGE SQL SQL SECURITY INVOKER AS BEGIN SELECT x; END;"
+      - id: param_out
+        sql: "CREATE PROCEDURE p(OUT x INT) LANGUAGE SQL SQL SECURITY INVOKER AS BEGIN SET x = 1; END;"
+      - id: param_inout
+        sql: "CREATE PROCEDURE p(INOUT x INT) LANGUAGE SQL SQL SECURITY INVOKER AS BEGIN SET x = x + 1; END;"
+      - id: param_default
+        sql: "CREATE PROCEDURE p(x INT DEFAULT 1) LANGUAGE SQL SQL SECURITY INVOKER AS BEGIN SELECT x; END;"
+      - id: param_comment
+        sql: "CREATE PROCEDURE p(x INT COMMENT 'the x') LANGUAGE SQL SQL SECURITY INVOKER AS BEGIN SELECT x; END;"
+      - id: param_default_and_comment
+        sql: "CREATE PROCEDURE p(IN x INT DEFAULT 1 COMMENT 'the x') LANGUAGE SQL SQL SECURITY INVOKER AS BEGIN SELECT x; END;"
+      - id: security_definer
+        sql: "CREATE PROCEDURE p() LANGUAGE SQL SQL SECURITY DEFINER AS BEGIN SELECT 1; END;"
+      - id: not_deterministic
+        sql: "CREATE PROCEDURE p() LANGUAGE SQL SQL SECURITY INVOKER NOT DETERMINISTIC AS BEGIN SELECT 1; END;"
+      - id: comment
+        sql: "CREATE PROCEDURE p() LANGUAGE SQL SQL SECURITY INVOKER COMMENT 'a procedure' AS BEGIN SELECT 1; END;"
+      - id: default_collation
+        sql: "CREATE PROCEDURE p() LANGUAGE SQL SQL SECURITY INVOKER DEFAULT COLLATION UTF8_BINARY AS BEGIN SELECT 1; END;"
+      - id: modifies_sql_data
+        sql: "CREATE PROCEDURE p() LANGUAGE SQL SQL SECURITY INVOKER MODIFIES SQL DATA AS BEGIN SELECT 1; END;"
+      - id: characteristics_any_order
+        sql: "CREATE PROCEDURE p() COMMENT 'c' MODIFIES SQL DATA SQL SECURITY DEFINER NOT DETERMINISTIC LANGUAGE SQL AS BEGIN SELECT 1; END;"
+      - id: body_multiple_statements
+        sql: "CREATE PROCEDURE p() LANGUAGE SQL SQL SECURITY INVOKER AS BEGIN DECLARE v INT DEFAULT 0; SET v = 1; SELECT v; END;"
+    examples:
+      - |-
+        CREATE OR REPLACE PROCEDURE add(x INT, y INT, OUT sum INT, INOUT total INT)
+          LANGUAGE SQL
+          SQL SECURITY INVOKER
+          COMMENT 'Add two numbers'
+        AS BEGIN
+          SET sum = x + y;
+          SET total = total + sum;
+        END;
+      - |-
+        CREATE PROCEDURE greeting(IN mode STRING COMMENT 'informal or formal')
+          LANGUAGE SQL
+          SQL SECURITY INVOKER
+        AS BEGIN
+          SELECT 'Hello!';
+          CASE mode
+            WHEN 'informal' THEN SELECT 'Hi!';
+            WHEN 'formal' THEN SELECT 'Pleased to meet you.';
+          END CASE;
+        END;
+      - |-
+        CREATE OR REPLACE PROCEDURE log_event(IN event STRING)
+          LANGUAGE SQL
+          SQL SECURITY DEFINER
+          MODIFIES SQL DATA
+        AS BEGIN
+          INSERT INTO audit_app.private.audit_log VALUES (current_user(), current_catalog(), current_schema(), event);
+        END;

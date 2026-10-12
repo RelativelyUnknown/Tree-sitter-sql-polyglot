@@ -1,0 +1,383 @@
+dialect: base
+engine: ISO SQL
+version: "SQL:2016"
+source: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html
+
+statements: []
+
+expressions:
+  - id: c_aggregate_basic
+    name: Set function specification
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#set-function-specification
+    tier: high
+    probes:
+      - { id: count_star, sql: "SELECT COUNT(*) FROM t;" }
+      - { id: count_distinct, sql: "SELECT COUNT(DISTINCT c) FROM t;" }
+      - { id: count_all, sql: "SELECT COUNT(ALL c) FROM t;" }
+      - { id: sum_distinct, sql: "SELECT SUM(DISTINCT c) FROM t;" }
+      - { id: avg_max_min, sql: "SELECT AVG(c), MAX(c), MIN(c) FROM t;" }
+      - { id: every_any_some, sql: "SELECT EVERY(b), ANY_VALUE(c), SOME(b) FROM t;" }
+      - { id: stddev_var, sql: "SELECT STDDEV_POP(c), STDDEV_SAMP(c), VAR_POP(c), VAR_SAMP(c) FROM t;" }
+      - { id: collect_array_agg, sql: "SELECT ARRAY_AGG(c ORDER BY d) FROM t;" }
+    examples: []
+
+  - id: c_aggregate_filter
+    name: Aggregate FILTER clause
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#filter-clause
+    tier: high
+    probes:
+      - { id: count_filter, sql: "SELECT COUNT(*) FILTER (WHERE c > 1) FROM t;" }
+      - { id: sum_filter, sql: "SELECT SUM(c) FILTER (WHERE d IS NOT NULL) FROM t;" }
+      - { id: distinct_filter, sql: "SELECT COUNT(DISTINCT c) FILTER (WHERE d = 1) FROM t;" }
+
+  - id: c_aggregate_within_group
+    name: Inverse distribution and hypothetical set functions (WITHIN GROUP)
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#inverse-distribution-function
+    tier: high
+    probes:
+      - { id: percentile_cont, sql: "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY c) FROM t;" }
+      - { id: percentile_disc_desc, sql: "SELECT PERCENTILE_DISC(0.25) WITHIN GROUP (ORDER BY c DESC) FROM t;" }
+      - { id: rank_hypothetical, sql: "SELECT RANK(5) WITHIN GROUP (ORDER BY c) FROM t;" }
+      - { id: dense_rank_hypothetical, sql: "SELECT DENSE_RANK(5) WITHIN GROUP (ORDER BY c) FROM t;" }
+      - { id: percent_rank_hypothetical, sql: "SELECT PERCENT_RANK(5) WITHIN GROUP (ORDER BY c) FROM t;" }
+      - { id: cume_dist_hypothetical, sql: "SELECT CUME_DIST(5) WITHIN GROUP (ORDER BY c) FROM t;" }
+      - { id: within_group_filter, sql: "SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY c) FILTER (WHERE d > 0) FROM t;" }
+      - { id: nulls_ordering, sql: "SELECT PERCENTILE_DISC(0.5) WITHIN GROUP (ORDER BY c ASC NULLS LAST) FROM t;" }
+
+  - id: c_aggregate_listagg
+    name: LISTAGG and ordered aggregates
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#listagg
+    tier: medium
+    probes:
+      - { id: listagg_basic, sql: "SELECT LISTAGG(c, ',') WITHIN GROUP (ORDER BY c) FROM t;" }
+      - { id: listagg_distinct, sql: "SELECT LISTAGG(DISTINCT c, ',') WITHIN GROUP (ORDER BY c) FROM t;" }
+      - { id: listagg_overflow_error, sql: "SELECT LISTAGG(c, ',' ON OVERFLOW ERROR) WITHIN GROUP (ORDER BY c) FROM t;" }
+      - { id: listagg_overflow_truncate, sql: "SELECT LISTAGG(c, ',' ON OVERFLOW TRUNCATE '...' WITH COUNT) WITHIN GROUP (ORDER BY c) FROM t;" }
+      - { id: array_agg_order, sql: "SELECT ARRAY_AGG(c ORDER BY c DESC NULLS FIRST) FROM t;" }
+      - { id: array_agg_max_cardinality, sql: "SELECT ARRAY_AGG(c ORDER BY c) FROM t;" }
+
+  - id: c_aggregate_binary_set
+    name: Binary set functions (CORR, COVAR, REGR)
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#binary-set-function
+    tier: medium
+    probes:
+      - { id: corr, sql: "SELECT CORR(y, x) FROM t;" }
+      - { id: covar, sql: "SELECT COVAR_POP(y, x), COVAR_SAMP(y, x) FROM t;" }
+      - { id: regr_slope_intercept, sql: "SELECT REGR_SLOPE(y, x), REGR_INTERCEPT(y, x) FROM t;" }
+      - { id: regr_count_r2, sql: "SELECT REGR_COUNT(y, x), REGR_R2(y, x), REGR_AVGX(y, x), REGR_AVGY(y, x) FROM t;" }
+      - { id: regr_sxx, sql: "SELECT REGR_SXX(y, x), REGR_SXY(y, x), REGR_SYY(y, x) FROM t;" }
+
+  - id: c_window_over
+    name: Window function OVER clause
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#window-function
+    tier: high
+    probes:
+      - { id: row_number, sql: "SELECT ROW_NUMBER() OVER (ORDER BY c) FROM t;" }
+      - { id: rank_partition, sql: "SELECT RANK() OVER (PARTITION BY a ORDER BY c) FROM t;" }
+      - { id: dense_rank, sql: "SELECT DENSE_RANK() OVER (ORDER BY c DESC) FROM t;" }
+      - { id: percent_rank_cume_dist, sql: "SELECT PERCENT_RANK() OVER (ORDER BY c), CUME_DIST() OVER (ORDER BY c) FROM t;" }
+      - { id: ntile, sql: "SELECT NTILE(4) OVER (ORDER BY c) FROM t;" }
+      - { id: lead_lag, sql: "SELECT LEAD(c, 1, 0) OVER (ORDER BY d), LAG(c) OVER (ORDER BY d) FROM t;" }
+      - { id: lead_ignore_nulls, sql: "SELECT LEAD(c) IGNORE NULLS OVER (ORDER BY d) FROM t;" }
+      - { id: lag_respect_nulls, sql: "SELECT LAG(c, 2) RESPECT NULLS OVER (ORDER BY d) FROM t;" }
+      - { id: first_value, sql: "SELECT FIRST_VALUE(c) OVER (ORDER BY d) FROM t;" }
+      - { id: last_value_ignore_nulls, sql: "SELECT LAST_VALUE(c) IGNORE NULLS OVER (ORDER BY d) FROM t;" }
+      - { id: nth_value_from_first, sql: "SELECT NTH_VALUE(c, 2) FROM FIRST OVER (ORDER BY d) FROM t;" }
+      - { id: nth_value_from_last, sql: "SELECT NTH_VALUE(c, 2) FROM LAST IGNORE NULLS OVER (ORDER BY d) FROM t;" }
+      - { id: aggregate_over, sql: "SELECT SUM(c) OVER (PARTITION BY a) FROM t;" }
+      - { id: aggregate_over_empty, sql: "SELECT COUNT(*) OVER () FROM t;" }
+      - { id: aggregate_distinct_over, sql: "SELECT COUNT(DISTINCT c) OVER (PARTITION BY a) FROM t;" }
+      - { id: aggregate_filter_over, sql: "SELECT SUM(c) FILTER (WHERE d > 0) OVER (PARTITION BY a) FROM t;" }
+      - { id: multi_partition_order, sql: "SELECT SUM(c) OVER (PARTITION BY a, b ORDER BY d ASC NULLS FIRST, e DESC NULLS LAST) FROM t;" }
+
+  - id: c_window_frame
+    name: Window frame clause
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#window-frame-clause
+    tier: high
+    probes:
+      - { id: rows_unbounded_preceding, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS UNBOUNDED PRECEDING) FROM t;" }
+      - { id: rows_current_row, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS CURRENT ROW) FROM t;" }
+      - { id: rows_n_preceding, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS 2 PRECEDING) FROM t;" }
+      - { id: rows_between_unbounded, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) FROM t;" }
+      - { id: rows_between_n, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;" }
+      - { id: rows_between_current_following, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS BETWEEN CURRENT ROW AND 3 FOLLOWING) FROM t;" }
+      - { id: range_unbounded_current, sql: "SELECT SUM(c) OVER (ORDER BY d RANGE BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) FROM t;" }
+      - { id: range_interval, sql: "SELECT SUM(c) OVER (ORDER BY d RANGE BETWEEN INTERVAL '1' DAY PRECEDING AND INTERVAL '1' DAY FOLLOWING) FROM t;" }
+      - { id: groups_frame, sql: "SELECT SUM(c) OVER (ORDER BY d GROUPS BETWEEN 1 PRECEDING AND 1 FOLLOWING) FROM t;" }
+      - { id: exclude_current_row, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW EXCLUDE CURRENT ROW) FROM t;" }
+      - { id: exclude_group, sql: "SELECT SUM(c) OVER (ORDER BY d GROUPS BETWEEN 1 PRECEDING AND 1 FOLLOWING EXCLUDE GROUP) FROM t;" }
+      - { id: exclude_ties, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING EXCLUDE TIES) FROM t;" }
+      - { id: exclude_no_others, sql: "SELECT SUM(c) OVER (ORDER BY d ROWS BETWEEN 1 PRECEDING AND 1 FOLLOWING EXCLUDE NO OTHERS) FROM t;" }
+
+  - id: c_window_named
+    name: Named windows (WINDOW clause)
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#window-clause
+    tier: high
+    probes:
+      - { id: over_window_name, sql: "SELECT SUM(c) OVER w FROM t WINDOW w AS (PARTITION BY a ORDER BY d);" }
+      - { id: over_parenthesized_name, sql: "SELECT SUM(c) OVER (w) FROM t WINDOW w AS (PARTITION BY a);" }
+      - { id: window_refine, sql: "SELECT SUM(c) OVER (w ORDER BY d) FROM t WINDOW w AS (PARTITION BY a);" }
+      - { id: window_frame_in_ref, sql: "SELECT SUM(c) OVER (w ROWS BETWEEN 1 PRECEDING AND CURRENT ROW) FROM t WINDOW w AS (PARTITION BY a ORDER BY d);" }
+      - { id: multiple_windows, sql: "SELECT SUM(c) OVER w1, AVG(c) OVER w2 FROM t WINDOW w1 AS (PARTITION BY a), w2 AS (ORDER BY d);" }
+      - { id: window_chain, sql: "SELECT SUM(c) OVER w2 FROM t WINDOW w1 AS (PARTITION BY a), w2 AS (w1 ORDER BY d);" }
+      - { id: window_with_frame, sql: "SELECT SUM(c) OVER w FROM t WINDOW w AS (ORDER BY d ROWS 1 PRECEDING);" }
+
+  - id: c_lambda
+    name: Lambda expressions
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#value-expression
+    tier: low
+    status: not-applicable
+    reason: ISO SQL:2016 defines no lambda expression syntax; lambdas are a vendor extension (Spark, Trino, DuckDB and others) and the foundation grammar has no production for them.
+
+  - id: c_array_value
+    name: Array value constructor and access
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#array-value-constructor
+    tier: high
+    probes:
+      - { id: array_by_enumeration, sql: "SELECT ARRAY[1, 2, 3];" }
+      - { id: array_empty, sql: "SELECT ARRAY[];" }
+      - { id: array_by_query, sql: "SELECT ARRAY(SELECT c FROM t ORDER BY c);" }
+      - { id: array_element_ref, sql: "SELECT a[1] FROM t;" }
+      - { id: array_element_expr, sql: "SELECT a[c + 1] FROM t;" }
+      - { id: array_concat, sql: "SELECT a || ARRAY[4, 5] FROM t;" }
+      - { id: array_cardinality, sql: "SELECT CARDINALITY(a) FROM t;" }
+      - { id: array_max_cardinality, sql: "SELECT MAX_CARDINALITY(a) FROM t;" }
+      - { id: array_trim, sql: "SELECT TRIM_ARRAY(a, 2) FROM t;" }
+      - { id: array_type_cast, sql: "SELECT CAST(ARRAY[1, 2] AS INTEGER ARRAY[10]);" }
+      - { id: array_type_no_bound, sql: "SELECT CAST(ARRAY[1, 2] AS INTEGER ARRAY);" }
+      - { id: unnest_array, sql: "SELECT x FROM UNNEST(ARRAY[1, 2, 3]) AS u(x);" }
+      - { id: unnest_ordinality, sql: "SELECT x, n FROM UNNEST(ARRAY[1, 2, 3]) WITH ORDINALITY AS u(x, n);" }
+
+  - id: c_multiset_value
+    name: Multiset value constructor and operators
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#multiset-value-expression
+    tier: low
+    probes:
+      - { id: multiset_by_enumeration, sql: "SELECT MULTISET[1, 2, 3];" }
+      - { id: multiset_by_query, sql: "SELECT MULTISET(SELECT c FROM t);" }
+      - { id: multiset_union, sql: "SELECT m1 MULTISET UNION m2 FROM t;" }
+      - { id: multiset_union_distinct, sql: "SELECT m1 MULTISET UNION DISTINCT m2 FROM t;" }
+      - { id: multiset_intersect, sql: "SELECT m1 MULTISET INTERSECT ALL m2 FROM t;" }
+      - { id: multiset_except, sql: "SELECT m1 MULTISET EXCEPT m2 FROM t;" }
+      - { id: multiset_element, sql: "SELECT ELEMENT(m) FROM t;" }
+      - { id: multiset_set, sql: "SELECT SET(m) FROM t;" }
+      - { id: collect_aggregate, sql: "SELECT COLLECT(c) FROM t;" }
+      - { id: fusion_aggregate, sql: "SELECT FUSION(m), INTERSECTION(m) FROM t;" }
+      - { id: member_of, sql: "SELECT 1 FROM t WHERE c MEMBER OF m;" }
+      - { id: submultiset_of, sql: "SELECT 1 FROM t WHERE m1 SUBMULTISET OF m2;" }
+      - { id: is_a_set, sql: "SELECT 1 FROM t WHERE m IS A SET;" }
+      - { id: is_not_a_set, sql: "SELECT 1 FROM t WHERE m IS NOT A SET;" }
+
+  - id: c_row_value
+    name: Row value constructor and field access
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#row-value-constructor
+    tier: high
+    probes:
+      - { id: row_keyword, sql: "SELECT ROW(1, 'a', 2.5);" }
+      - { id: row_parenthesized, sql: "SELECT (1, 'a');" }
+      - { id: row_comparison, sql: "SELECT 1 FROM t WHERE (a, b) = (1, 2);" }
+      - { id: row_less_than, sql: "SELECT 1 FROM t WHERE (a, b) < (1, 2);" }
+      - { id: row_in_list, sql: "SELECT 1 FROM t WHERE (a, b) IN ((1, 2), (3, 4));" }
+      - { id: row_in_subquery, sql: "SELECT 1 FROM t WHERE (a, b) IN (SELECT x, y FROM u);" }
+      - { id: field_reference, sql: "SELECT r.f FROM t;" }
+      - { id: field_of_expression, sql: "SELECT (r).f FROM t;" }
+      - { id: row_type_cast, sql: "SELECT CAST(ROW(1, 'a') AS ROW(x INTEGER, y VARCHAR(10)));" }
+      - { id: row_type_nested, sql: "SELECT CAST(ROW(1, ROW(2, 3)) AS ROW(x INTEGER, y ROW(p INTEGER, q INTEGER)));" }
+
+  - id: c_json_construct
+    name: JSON constructors
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#json-value-constructor
+    tier: medium
+    probes:
+      - { id: json_object_key_value, sql: "SELECT JSON_OBJECT(KEY 'a' VALUE 1, KEY 'b' VALUE 'x');" }
+      - { id: json_object_colon, sql: "SELECT JSON_OBJECT('a' : 1, 'b' : 2);" }
+      - { id: json_object_comma, sql: "SELECT JSON_OBJECT('a', 1);" }
+      - { id: json_object_empty, sql: "SELECT JSON_OBJECT();" }
+      - { id: json_object_null_on_null, sql: "SELECT JSON_OBJECT('a' VALUE c NULL ON NULL) FROM t;" }
+      - { id: json_object_absent_on_null, sql: "SELECT JSON_OBJECT('a' VALUE c ABSENT ON NULL) FROM t;" }
+      - { id: json_object_unique_keys, sql: "SELECT JSON_OBJECT('a' VALUE 1 WITH UNIQUE KEYS);" }
+      - { id: json_object_without_unique, sql: "SELECT JSON_OBJECT('a' VALUE 1 WITHOUT UNIQUE KEYS);" }
+      - { id: json_object_returning, sql: "SELECT JSON_OBJECT('a' VALUE 1 RETURNING VARCHAR(100));" }
+      - { id: json_object_format_json, sql: "SELECT JSON_OBJECT('a' VALUE c FORMAT JSON) FROM t;" }
+      - { id: json_object_returning_format, sql: "SELECT JSON_OBJECT('a' VALUE 1 RETURNING VARCHAR(100) FORMAT JSON ENCODING UTF8);" }
+      - { id: json_array_enum, sql: "SELECT JSON_ARRAY(1, 'a', NULL);" }
+      - { id: json_array_empty, sql: "SELECT JSON_ARRAY();" }
+      - { id: json_array_absent_on_null, sql: "SELECT JSON_ARRAY(1, NULL ABSENT ON NULL);" }
+      - { id: json_array_query, sql: "SELECT JSON_ARRAY(SELECT c FROM t);" }
+      - { id: json_array_returning, sql: "SELECT JSON_ARRAY(1, 2 RETURNING VARCHAR(100));" }
+      - { id: json_objectagg, sql: "SELECT JSON_OBJECTAGG(k VALUE v) FROM t;" }
+      - { id: json_objectagg_options, sql: "SELECT JSON_OBJECTAGG(k : v ABSENT ON NULL WITH UNIQUE KEYS RETURNING VARCHAR(100)) FROM t;" }
+      - { id: json_arrayagg, sql: "SELECT JSON_ARRAYAGG(c) FROM t;" }
+      - { id: json_arrayagg_order, sql: "SELECT JSON_ARRAYAGG(c ORDER BY d DESC NULL ON NULL RETURNING VARCHAR(100)) FROM t;" }
+      - { id: json_parse_literal, sql: "SELECT JSON '{\"a\": 1}';" }
+
+  - id: c_json_query_functions
+    name: JSON query functions and predicates
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#json-query
+    tier: medium
+    probes:
+      - { id: json_exists, sql: "SELECT 1 FROM t WHERE JSON_EXISTS(j, '$.a');" }
+      - { id: json_exists_passing, sql: "SELECT 1 FROM t WHERE JSON_EXISTS(j, '$.a ? (@ > $x)' PASSING 1 AS x);" }
+      - { id: json_exists_on_error, sql: "SELECT 1 FROM t WHERE JSON_EXISTS(j, '$.a' FALSE ON ERROR);" }
+      - { id: json_exists_unknown_on_error, sql: "SELECT 1 FROM t WHERE JSON_EXISTS(j, '$.a' UNKNOWN ON ERROR);" }
+      - { id: json_exists_error_on_error, sql: "SELECT 1 FROM t WHERE JSON_EXISTS(j, '$.a' ERROR ON ERROR);" }
+      - { id: json_value_basic, sql: "SELECT JSON_VALUE(j, '$.a') FROM t;" }
+      - { id: json_value_returning, sql: "SELECT JSON_VALUE(j, '$.a' RETURNING INTEGER) FROM t;" }
+      - { id: json_value_default, sql: "SELECT JSON_VALUE(j, '$.a' DEFAULT 0 ON EMPTY DEFAULT -1 ON ERROR) FROM t;" }
+      - { id: json_value_null_on_empty, sql: "SELECT JSON_VALUE(j, '$.a' NULL ON EMPTY ERROR ON ERROR) FROM t;" }
+      - { id: json_value_passing, sql: "SELECT JSON_VALUE(j, '$.a[$i]' PASSING 1 AS i) FROM t;" }
+      - { id: json_value_format, sql: "SELECT JSON_VALUE(j FORMAT JSON, '$.a') FROM t;" }
+      - { id: json_query_basic, sql: "SELECT JSON_QUERY(j, '$.a') FROM t;" }
+      - { id: json_query_returning_format, sql: "SELECT JSON_QUERY(j, '$.a' RETURNING VARCHAR(100) FORMAT JSON) FROM t;" }
+      - { id: json_query_wrapper, sql: "SELECT JSON_QUERY(j, '$.a' WITH WRAPPER) FROM t;" }
+      - { id: json_query_wrapper_conditional, sql: "SELECT JSON_QUERY(j, '$.a' WITH CONDITIONAL ARRAY WRAPPER) FROM t;" }
+      - { id: json_query_without_wrapper, sql: "SELECT JSON_QUERY(j, '$.a' WITHOUT ARRAY WRAPPER) FROM t;" }
+      - { id: json_query_quotes, sql: "SELECT JSON_QUERY(j, '$.a' KEEP QUOTES ON SCALAR STRING) FROM t;" }
+      - { id: json_query_omit_quotes, sql: "SELECT JSON_QUERY(j, '$.a' OMIT QUOTES) FROM t;" }
+      - { id: json_query_empty_array, sql: "SELECT JSON_QUERY(j, '$.a' EMPTY ARRAY ON EMPTY EMPTY OBJECT ON ERROR) FROM t;" }
+      - { id: json_table_basic, sql: "SELECT * FROM JSON_TABLE(j, '$[*]' COLUMNS (a INTEGER PATH '$.a', b VARCHAR(10) PATH '$.b')) AS jt;" }
+      - { id: json_table_ordinality, sql: "SELECT * FROM JSON_TABLE(j, '$[*]' COLUMNS (n FOR ORDINALITY, a INTEGER PATH '$.a')) AS jt;" }
+      - { id: json_table_exists_column, sql: "SELECT * FROM JSON_TABLE(j, '$[*]' COLUMNS (e INTEGER EXISTS PATH '$.a')) AS jt;" }
+      - { id: json_table_nested, sql: "SELECT * FROM JSON_TABLE(j, '$[*]' COLUMNS (a INTEGER PATH '$.a', NESTED PATH '$.b[*]' COLUMNS (c INTEGER PATH '$.c'))) AS jt;" }
+      - { id: json_table_query_column, sql: "SELECT * FROM JSON_TABLE(j, '$[*]' COLUMNS (a VARCHAR(100) FORMAT JSON PATH '$.a' WITH WRAPPER)) AS jt;" }
+      - { id: json_table_on_error, sql: "SELECT * FROM JSON_TABLE(j, '$[*]' COLUMNS (a INTEGER PATH '$.a') ERROR ON ERROR) AS jt;" }
+      - { id: is_json, sql: "SELECT 1 FROM t WHERE c IS JSON;" }
+      - { id: is_not_json, sql: "SELECT 1 FROM t WHERE c IS NOT JSON;" }
+      - { id: is_json_object, sql: "SELECT 1 FROM t WHERE c IS JSON OBJECT;" }
+      - { id: is_json_array, sql: "SELECT 1 FROM t WHERE c IS JSON ARRAY;" }
+      - { id: is_json_scalar, sql: "SELECT 1 FROM t WHERE c IS JSON SCALAR;" }
+      - { id: is_json_value_unique, sql: "SELECT 1 FROM t WHERE c IS JSON VALUE WITH UNIQUE KEYS;" }
+      - { id: is_json_without_unique, sql: "SELECT 1 FROM t WHERE c IS JSON OBJECT WITHOUT UNIQUE KEYS;" }
+
+  - id: c_json_item_methods
+    name: SQL/JSON path item methods and simplified access
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#json-path-literal
+    tier: low
+    probes:
+      - { id: json_value_path_method, sql: "SELECT JSON_VALUE(j, '$.a.size()') FROM t;" }
+      - { id: json_value_path_strict, sql: "SELECT JSON_VALUE(j, 'strict $.a') FROM t;" }
+      - { id: json_value_path_lax, sql: "SELECT JSON_VALUE(j, 'lax $.a') FROM t;" }
+      - { id: json_value_path_filter, sql: "SELECT JSON_QUERY(j, '$.a[*] ? (@.b > 1)') FROM t;" }
+
+  - id: c_structured_type_access
+    name: Structured type constructors, attribute and method references
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#new-specification
+    tier: low
+    probes:
+      - { id: new_specification, sql: "SELECT NEW addr('a', 'b');" }
+      - { id: attribute_reference, sql: "SELECT p.x FROM t;" }
+      - { id: attribute_reference_expr, sql: "SELECT (p).x FROM t;" }
+      - { id: method_invocation, sql: "SELECT p.m(1, 2) FROM t;" }
+      - { id: static_method, sql: "SELECT addr::make(1) FROM t;" }
+      - { id: subtype_treatment, sql: "SELECT TREAT(p AS emp_type) FROM t;" }
+      - { id: type_predicate, sql: "SELECT 1 FROM t WHERE p IS OF (emp_type);" }
+      - { id: type_predicate_only, sql: "SELECT 1 FROM t WHERE p IS NOT OF (ONLY emp_type, mgr_type);" }
+      - { id: reference_dereference, sql: "SELECT r->x FROM t;" }
+      - { id: deref_ref_function, sql: "SELECT DEREF(r) FROM t;" }
+
+  - id: c_function_string
+    name: Character string functions
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#string-value-function
+    tier: high
+    probes:
+      - { id: substring_from_for, sql: "SELECT SUBSTRING(c FROM 2 FOR 3) FROM t;" }
+      - { id: substring_from, sql: "SELECT SUBSTRING(c FROM 2) FROM t;" }
+      - { id: substring_using, sql: "SELECT SUBSTRING(c FROM 2 FOR 3 USING CHARACTERS) FROM t;" }
+      - { id: substring_regex, sql: "SELECT SUBSTRING_REGEX('a(b+)' IN c FROM 1 OCCURRENCE 1 GROUP 1) FROM t;" }
+      - { id: substring_regex_flag, sql: "SELECT SUBSTRING_REGEX('a(b+)' FLAG 'i' IN c) FROM t;" }
+      - { id: translate_regex, sql: "SELECT TRANSLATE_REGEX('a' IN c WITH 'b' OCCURRENCE ALL) FROM t;" }
+      - { id: upper_lower, sql: "SELECT UPPER(c), LOWER(c) FROM t;" }
+      - { id: trim_both, sql: "SELECT TRIM(BOTH 'x' FROM c) FROM t;" }
+      - { id: trim_leading, sql: "SELECT TRIM(LEADING 'x' FROM c) FROM t;" }
+      - { id: trim_trailing, sql: "SELECT TRIM(TRAILING FROM c) FROM t;" }
+      - { id: trim_plain, sql: "SELECT TRIM(c) FROM t;" }
+      - { id: trim_from_only, sql: "SELECT TRIM('x' FROM c) FROM t;" }
+      - { id: overlay, sql: "SELECT OVERLAY(c PLACING 'xyz' FROM 2 FOR 3) FROM t;" }
+      - { id: overlay_using, sql: "SELECT OVERLAY(c PLACING 'xyz' FROM 2 USING OCTETS) FROM t;" }
+      - { id: position, sql: "SELECT POSITION('a' IN c) FROM t;" }
+      - { id: position_using, sql: "SELECT POSITION('a' IN c USING CHARACTERS) FROM t;" }
+      - { id: position_regex, sql: "SELECT POSITION_REGEX('a+' IN c) FROM t;" }
+      - { id: position_regex_start_after, sql: "SELECT POSITION_REGEX(START 'a+' FLAG 'i' IN c FROM 1 OCCURRENCE 2 GROUP 1) FROM t;" }
+      - { id: char_length, sql: "SELECT CHAR_LENGTH(c), CHARACTER_LENGTH(c), OCTET_LENGTH(c) FROM t;" }
+      - { id: char_length_using, sql: "SELECT CHAR_LENGTH(c USING OCTETS) FROM t;" }
+      - { id: normalize, sql: "SELECT NORMALIZE(c) FROM t;" }
+      - { id: normalize_form, sql: "SELECT NORMALIZE(c, NFKC) FROM t;" }
+      - { id: convert_translate, sql: "SELECT TRANSLATE(c USING utf8_to_latin1) FROM t;" }
+      - { id: concat_operator, sql: "SELECT a || b || 'x' FROM t;" }
+      - { id: like_regex, sql: "SELECT 1 FROM t WHERE c LIKE_REGEX 'a+';" }
+      - { id: like_regex_flag, sql: "SELECT 1 FROM t WHERE c LIKE_REGEX 'a+' FLAG 'i';" }
+      - { id: binary_overlay_position, sql: "SELECT POSITION(x'AA' IN b), OVERLAY(b PLACING x'FF' FROM 1) FROM t;" }
+
+  - id: c_function_numeric
+    name: Numeric value functions
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#numeric-value-function
+    tier: high
+    probes:
+      - { id: abs_mod, sql: "SELECT ABS(c), MOD(c, 3) FROM t;" }
+      - { id: ln_exp, sql: "SELECT LN(c), EXP(c) FROM t;" }
+      - { id: power_sqrt, sql: "SELECT POWER(c, 2), SQRT(c) FROM t;" }
+      - { id: floor_ceil, sql: "SELECT FLOOR(c), CEIL(c), CEILING(c) FROM t;" }
+      - { id: log10_log, sql: "SELECT LOG10(c), LOG(2, c) FROM t;" }
+      - { id: trig, sql: "SELECT SIN(c), COS(c), TAN(c), ASIN(c), ACOS(c), ATAN(c) FROM t;" }
+      - { id: hyperbolic, sql: "SELECT SINH(c), COSH(c), TANH(c) FROM t;" }
+      - { id: width_bucket, sql: "SELECT WIDTH_BUCKET(c, 0, 100, 10) FROM t;" }
+      - { id: extract_year, sql: "SELECT EXTRACT(YEAR FROM d) FROM t;" }
+      - { id: extract_timezone_hour, sql: "SELECT EXTRACT(TIMEZONE_HOUR FROM d) FROM t;" }
+      - { id: arithmetic, sql: "SELECT -c, +c, a + b, a - b, a * b, a / b FROM t;" }
+
+  - id: c_function_datetime
+    name: Datetime value functions and expressions
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#datetime-value-function
+    tier: high
+    probes:
+      - { id: current_date, sql: "SELECT CURRENT_DATE;" }
+      - { id: current_time, sql: "SELECT CURRENT_TIME, CURRENT_TIME(3);" }
+      - { id: current_timestamp, sql: "SELECT CURRENT_TIMESTAMP, CURRENT_TIMESTAMP(6);" }
+      - { id: localtime, sql: "SELECT LOCALTIME, LOCALTIME(3);" }
+      - { id: localtimestamp, sql: "SELECT LOCALTIMESTAMP, LOCALTIMESTAMP(6);" }
+      - { id: at_time_zone, sql: "SELECT ts AT TIME ZONE 'UTC' FROM t;" }
+      - { id: at_local, sql: "SELECT ts AT LOCAL FROM t;" }
+      - { id: interval_subtraction, sql: "SELECT (d1 - d2) DAY TO SECOND FROM t;" }
+      - { id: interval_qualifier_sub, sql: "SELECT (ts1 - ts2) YEAR TO MONTH FROM t;" }
+      - { id: datetime_plus_interval, sql: "SELECT d + INTERVAL '1' DAY FROM t;" }
+      - { id: interval_times_number, sql: "SELECT INTERVAL '1' DAY * 2;" }
+      - { id: interval_divide, sql: "SELECT INTERVAL '10' DAY / 2;" }
+      - { id: extract_fields, sql: "SELECT EXTRACT(MONTH FROM d), EXTRACT(DAY FROM d), EXTRACT(HOUR FROM ts), EXTRACT(MINUTE FROM ts), EXTRACT(SECOND FROM ts) FROM t;" }
+      - { id: overlaps, sql: "SELECT 1 FROM t WHERE (s1, e1) OVERLAPS (s2, e2);" }
+      - { id: date_literal, sql: "SELECT DATE '2024-01-15';" }
+      - { id: time_literal, sql: "SELECT TIME '10:30:00', TIME '10:30:00+02:00';" }
+      - { id: timestamp_literal, sql: "SELECT TIMESTAMP '2024-01-15 10:30:00', TIMESTAMP '2024-01-15 10:30:00-05:00';" }
+
+  - id: c_function_conditional
+    name: Conditional and null-handling functions
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#case-expression
+    tier: high
+    probes:
+      - { id: coalesce, sql: "SELECT COALESCE(a, b, 0) FROM t;" }
+      - { id: nullif, sql: "SELECT NULLIF(a, 0) FROM t;" }
+      - { id: greatest_least, sql: "SELECT GREATEST(a, b), LEAST(a, b) FROM t;" }
+
+  - id: c_function_system
+    name: Session and system value functions
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#general-value-specification
+    tier: medium
+    probes:
+      - { id: current_user, sql: "SELECT CURRENT_USER, SESSION_USER, SYSTEM_USER, USER;" }
+      - { id: current_role, sql: "SELECT CURRENT_ROLE;" }
+      - { id: current_path, sql: "SELECT CURRENT_PATH;" }
+      - { id: current_catalog_schema, sql: "SELECT CURRENT_CATALOG, CURRENT_SCHEMA;" }
+      - { id: current_default_transform_group, sql: "SELECT CURRENT_DEFAULT_TRANSFORM_GROUP;" }
+      - { id: current_transform_group_for_type, sql: "SELECT CURRENT_TRANSFORM_GROUP_FOR_TYPE addr;" }
+
+  - id: c_function_family_misc
+    name: Other ISO functions (ordinary function-call syntax)
+    doc: https://jakewheat.github.io/sql-overview/sql-2016-foundation-grammar.html#routine-invocation
+    tier: medium
+    probes:
+      - { id: routine_invocation, sql: "SELECT f(1, 'a', c) FROM t;" }
+      - { id: routine_invocation_schema, sql: "SELECT s.f(1) FROM t;" }
+      - { id: routine_invocation_named_args, sql: "SELECT f(a => 1, b => 2) FROM t;" }
+      - { id: routine_invocation_no_args, sql: "SELECT f() FROM t;" }
+      - { id: next_value_for, sql: "SELECT NEXT VALUE FOR seq;" }
+      - { id: next_value_for_qualified, sql: "SELECT NEXT VALUE FOR s.seq FROM t;" }
+      - { id: decfloat_function, sql: "SELECT CAST(c AS DECFLOAT(16)) FROM t;" }

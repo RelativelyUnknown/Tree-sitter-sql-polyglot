@@ -1,0 +1,1114 @@
+dialect: hana
+engine: SAP HANA Platform
+version: "2.0 SPS 08 (2.0.08)"
+source: https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/3bc1a0d4611d40c4a6e3fc7c8e80395d.html?version=2.0.08
+
+statements:
+  - id: sqlscript_anonymous_block
+    name: Anonymous Block (DO BEGIN ... END)
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/dec9d68044bd49bcbb45c990ba49c81d.html?version=2.0.08
+    tier: high
+    probes:
+      - id: do_begin_end
+        sql: "DO BEGIN SELECT * FROM dummy; END;"
+      - id: sequential_execution
+        sql: "DO BEGIN SEQUENTIAL EXECUTION SELECT * FROM dummy; END;"
+      - id: parameter_clause_in_out
+        sql: "DO (IN in_var NVARCHAR(24) => 'A', OUT outtab TABLE (J INT, K INT) => ?) BEGIN T1 = SELECT I, 10 AS J FROM tab WHERE z = :in_var; T2 = SELECT I, 20 AS K FROM tab WHERE z = :in_var; T3 = SELECT J, K FROM :T1 AS a, :T2 AS b WHERE a.I = b.I; outtab = SELECT * FROM :T3; END;"
+      - id: parameter_clause_bound_by_placeholder
+        sql: "DO (IN in_var NVARCHAR(24) => ?, OUT outtab TABLE (J INT, K INT) => ?) BEGIN outtab = SELECT I AS J, I AS K FROM tab WHERE z = :in_var; END;"
+      - id: with_hint
+        sql: "DO BEGIN SELECT * FROM dummy; END WITH HINT(ignore_plan_cache);"
+      - id: nested_block
+        sql: "DO BEGIN DECLARE i INT; BEGIN DECLARE j INT; j = 1; END; END;"
+    examples:
+      - |-
+        DO BEGIN
+         DECLARE i INT;
+         FOR i in 1..5 DO
+         SELECT * FROM dummy;
+         END FOR;
+        END WITH HINT(ignore_plan_cache);
+      - |-
+        DO
+        BEGIN
+         DECLARE I INTEGER;
+         CREATE TABLE TAB1 (I INTEGER);
+         FOR I IN 1..10 DO
+         INSERT INTO TAB1 VALUES (:I);
+         END FOR;
+        END;
+      - |-
+        DO (IN J INTEGER => ?)
+        BEGIN
+         DECLARE I, J INTEGER;
+         BEGIN
+         DECLARE EXIT HANDLER FOR SQLEXCEPTION
+         IF ::SQL_ERROR_CODE = 288 THEN
+         DROP TABLE TAB;
+         CREATE TABLE TAB (I INTEGER PRIMARY KEY);
+         ELSE
+         RESIGNAL;
+         END IF;
+         CREATE TABLE TAB (I INTEGER PRIMARY KEY);
+         END;
+         FOR I in 1..3 DO
+         INSERT INTO TAB VALUES (:I);
+         END FOR;
+         IF :J <> 3 THEN
+         SIGNAL SQL_ERROR_CODE 10001;
+         END IF;
+        END;
+
+  - id: sqlscript_declare_scalar
+    name: DECLARE (scalar variables)
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/66b38a60ab3b475f925c224038511c51.html?version=2.0.08
+    tier: high
+    probes:
+      - id: declare_type
+        sql: "DO BEGIN DECLARE a INT; END;"
+      - id: declare_multiple
+        sql: "DO BEGIN DECLARE a, b, c INT; END;"
+      - id: declare_default
+        sql: "DO BEGIN DECLARE c INT DEFAULT 0; END;"
+      - id: declare_equals_default
+        sql: "DO BEGIN DECLARE b INT = 0; END;"
+      - id: declare_constant
+        sql: "DO BEGIN DECLARE CONSTANT k INT = 1; END;"
+      - id: declare_not_null
+        sql: "DO BEGIN DECLARE n INT NOT NULL DEFAULT 1; END;"
+      - id: declare_expression_default
+        sql: "DO BEGIN DECLARE n INT = (SELECT COUNT(*) FROM t) + 1; END;"
+      - id: declare_auto
+        sql: "DO BEGIN DECLARE n AUTO = 1; END;"
+      - id: declare_varchar_type
+        sql: "DO BEGIN DECLARE s NVARCHAR(100) DEFAULT 'abc'; END;"
+      - id: assign_equals
+        sql: "DO BEGIN DECLARE b INT; b = 1; END;"
+      - id: assign_walrus
+        sql: "DO BEGIN DECLARE b INT; b := 1; END;"
+      - id: assign_variable_reference
+        sql: "DO BEGIN DECLARE a INT = 1; DECLARE b INT; b = :a + 1; END;"
+      - id: assign_udf_result
+        sql: "DO BEGIN DECLARE i INTEGER DEFAULT 0; i = SUDF_ADD(1, 2); END;"
+      - id: assign_udf_multiple_outputs
+        sql: "DO BEGIN DECLARE i INTEGER DEFAULT 0; DECLARE j NVARCHAR(5); (i, j) = SUDF_EXPR(1); END;"
+      - id: assign_udf_output_member
+        sql: "DO BEGIN DECLARE a INTEGER DEFAULT 0; a = SUDF_EXPR(1).x; END;"
+      - id: quoted_variable_reference
+        sql: "DO BEGIN DECLARE myvar INT = 0; DECLARE \"MyVar\" INT = 1; SELECT :myvar, :\"MyVar\" FROM dummy; END;"
+
+  - id: sqlscript_select_into
+    name: SELECT INTO (with DEFAULT values)
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/8c738274a3e44694b0d5f709e7db531f.html?version=2.0.08
+    tier: high
+    probes:
+      - id: select_into_scalars
+        sql: "DO BEGIN DECLARE a INT; DECLARE b VARCHAR(10); SELECT A, B INTO a, b FROM t; END;"
+      - id: select_into_default
+        sql: "DO BEGIN DECLARE a INT; DECLARE b VARCHAR(10); SELECT A, B INTO a, b DEFAULT -2+1, NULL FROM t; END;"
+      - id: select_into_where
+        sql: "DO BEGIN DECLARE a INT; SELECT COUNT(*) INTO a FROM t WHERE c = 1; END;"
+      - id: select_into_group_having_order_limit
+        sql: "DO BEGIN DECLARE a INT; SELECT A INTO a FROM t GROUP BY A HAVING COUNT(*) > 0 ORDER BY A LIMIT 1; END;"
+      - id: select_into_set_operator
+        sql: "DO BEGIN DECLARE a INT; SELECT A INTO a FROM t1 UNION ALL SELECT A FROM t2; END;"
+      - id: select_into_array_element
+        sql: "DO BEGIN DECLARE A_COPY INT ARRAY; DECLARE B_COPY VARCHAR(10) ARRAY; SELECT A, B INTO A_COPY[1], B_COPY[1] DEFAULT -2+1, NULL FROM T1; END;"
+      - id: select_into_row_variable
+        sql: "DO BEGIN DECLARE x ROW (a INT, b VARCHAR(10)); SELECT 2, 'b' INTO x FROM dummy; END;"
+    examples:
+      - |-
+        DO BEGIN
+         DECLARE A_COPY INT;
+         DECLARE B_COPY VARCHAR(10);
+         CREATE ROW TABLE T1 (A INT NOT NULL, B VARCHAR(10));
+         SELECT A, B INTO A_COPY, B_COPY DEFAULT -2+1, NULL FROM T1;
+         --(A_COPY,B_COPY) = (-1,?), use default value
+         EXEC 'SELECT A FROM T1' INTO A_COPY DEFAULT 2;
+         --(A_COPY) = (2), exec into statement with default value
+         INSERT INTO T1 VALUES (0, 'sample0');
+         SELECT A, B INTO A_COPY, B_COPY DEFAULT 5, NULL FROM T1;
+         --(A_COPY,B_COPY) = (0,'sample0'), executed as-is
+        END;
+
+  - id: sqlscript_scalar_subquery_expression
+    name: SQL in scalar expressions
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/958a7607ec5a4605a4246a658abc6879.html?version=2.0.08
+    tier: high
+    probes:
+      - id: subquery_in_assignment
+        sql: "DO BEGIN DECLARE x INT; x = (SELECT TOP 1 val FROM mytab) * 10; END;"
+      - id: subquery_in_condition
+        sql: "DO BEGIN IF (SELECT MAX(val) FROM mytab) > 100 THEN SELECT 1 FROM dummy; END IF; END;"
+      - id: subquery_in_declare_default
+        sql: "DO BEGIN DECLARE n INT = (SELECT * FROM empty_tab) + 1; END;"
+    examples:
+      - |-
+        do begin
+         declare n int = (select * from empty_tab) + 1; -- n has null value
+        end;
+
+  - id: sqlscript_declare_table_variable
+    name: DECLARE (table variables) and table variable assignment
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/ea5065d06d14426799d879234d8e3e7b.html?version=2.0.08
+    tier: high
+    probes:
+      - id: declare_table_columns
+        sql: "DO BEGIN DECLARE temp TABLE (n INT); END;"
+      - id: declare_table_type
+        sql: "DO BEGIN DECLARE temp MY_TABLE_TYPE; END;"
+      - id: declare_table_multiple
+        sql: "DO BEGIN DECLARE t1, t2 TABLE (n INT, m VARCHAR(10)); END;"
+      - id: declare_table_default_select
+        sql: "DO BEGIN DECLARE temp MY_TABLE_TYPE DEFAULT SELECT * FROM t; END;"
+      - id: declare_table_equals_select
+        sql: "DO BEGIN DECLARE temp TABLE (n INT) = SELECT 1 AS n FROM dummy; END;"
+      - id: declare_table_default_unnest
+        sql: "DO BEGIN DECLARE arr INT ARRAY = ARRAY(1, 2); DECLARE temp MY_TABLE_TYPE = UNNEST(:arr) AS (i); END;"
+      - id: declare_table_default_apply_filter
+        sql: "DO BEGIN DECLARE temp TABLE (n INT) = APPLY_FILTER(tab, 'n > 1'); END;"
+      - id: declare_table_constant
+        sql: "DO BEGIN DECLARE temp CONSTANT TABLE (I INT) DEFAULT SELECT * FROM t; END;"
+      - id: declare_table_not_null_pk
+        sql: "DO BEGIN DECLARE lt2 TABLE (a INT, b INT, c INT NOT NULL, PRIMARY KEY(a, b)); END;"
+      - id: declare_table_like_variable
+        sql: "DO BEGIN DECLARE lt1 TABLE (a INT); DECLARE lt2 TABLE LIKE :lt1; END;"
+      - id: declare_table_like_table
+        sql: "DO BEGIN DECLARE lt TABLE LIKE t; END;"
+      - id: declare_table_like_default
+        sql: "DO BEGIN DECLARE lt TABLE LIKE t DEFAULT SELECT * FROM t; END;"
+      - id: declare_like_column
+        sql: "DO BEGIN DECLARE v LIKE t.c NOT NULL DEFAULT 1; END;"
+        note: "second DECLARE ... LIKE form on the page: DECLARE <names> [CONSTANT] LIKE {table | :var}.<column> [NOT NULL] [default]"
+      - id: declare_table_auto_select
+        sql: "DO BEGIN DECLARE tab1 AUTO = SELECT 1 AS x FROM dummy; END;"
+      - id: assign_select
+        sql: "DO BEGIN t1 = SELECT * FROM t; END;"
+      - id: assign_from_table_variable
+        sql: "DO BEGIN lt_expensive_books = SELECT title, price, crcy FROM :it_books WHERE price > :minPrice AND crcy = :currency; END;"
+      - id: assign_parenthesized_select
+        sql: "DO BEGIN t1 = (SELECT * FROM t); END;"
+      - id: assign_with_hint_no_inline
+        sql: "DO BEGIN tab = SELECT A, B, C FROM T WHERE A = 1 WITH HINT(NO_INLINE); tab2 = SELECT C FROM :tab WHERE C = 0; END;"
+      - id: assign_with_hint_inline
+        sql: "DO BEGIN tab2 = SELECT I FROM T WITH HINT (INLINE); END;"
+      - id: assign_table_variable
+        sql: "DO BEGIN DECLARE a TABLE (i INT); DECLARE b TABLE (i INT); a = SELECT 1 AS i FROM dummy; b = :a; END;"
+      - id: assign_union_of_variables
+        sql: "DO BEGIN ret_tab = SELECT * FROM :out_tab UNION SELECT * FROM :ret_tab; END;"
+      - id: from_table_variable_alias
+        sql: "DO BEGIN T3 = SELECT J, K FROM :T1 AS a, :T2 AS b WHERE a.I = b.I; END;"
+
+  - id: sqlscript_declare_row_variable
+    name: DECLARE (row-type variables)
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/869b4b1c5c7847cba246eb8e210d72bb.html?version=2.0.08
+    tier: high
+    probes:
+      - id: row_element_list
+        sql: "DO BEGIN DECLARE x ROW (a INT, b VARCHAR(16), c TIMESTAMP); END;"
+      - id: row_multiple_names
+        sql: "DO BEGIN DECLARE x, y ROW (a INT, b VARCHAR(16)); END;"
+      - id: row_like_table
+        sql: "DO BEGIN DECLARE x ROW LIKE t; END;"
+      - id: row_like_variable
+        sql: "DO BEGIN DECLARE CURSOR cur FOR SELECT 1 AS a FROM dummy; DECLARE x ROW LIKE :cur; END;"
+      - id: row_constant_default
+        sql: "DO BEGIN DECLARE CONSTANT x ROW (a INT, b VARCHAR(16)) DEFAULT ROW(1, 'a'); END;"
+      - id: row_equals_default_variable
+        sql: "DO BEGIN DECLARE x ROW (a INT); DECLARE y ROW (a INT) = :x; END;"
+      - id: row_constructor_assign
+        sql: "DO BEGIN DECLARE x ROW (a INT, b VARCHAR(16), c TIMESTAMP); x = ROW(1, 'a', '2000-01-01'); END;"
+      - id: row_field_assign
+        sql: "DO BEGIN DECLARE x ROW (a INT); x.a = 2; END;"
+      - id: row_assign_variable
+        sql: "DO BEGIN DECLARE x, y ROW (a INT); y = :x; END;"
+      - id: row_field_read
+        sql: "DO BEGIN DECLARE y ROW (a INT, b VARCHAR(16)); SELECT :y.a, :y.b FROM dummy; END;"
+      - id: row_fetch_into
+        sql: "DO BEGIN DECLARE CURSOR cur FOR SELECT 1 AS a FROM dummy; DECLARE x ROW LIKE :cur; OPEN cur; FETCH cur INTO x; END;"
+    examples:
+      - |-
+        DO BEGIN
+         DECLARE x, y ROW (a INT, b VARCHAR(16), c TIMESTAMP);
+         x = ROW(1, 'a', '2000-01-01');
+         x.a = 2;
+         y = :x;
+         SELECT :y.a, :y.b, :y.c FROM DUMMY;
+         -- Returns [2, 'a', '2000-01-01']
+        END;
+      - |-
+        DO BEGIN
+         DECLARE CURSOR cur FOR SELECT 1 as a, 'a' as b, to_timestamp('2000-01-01') as c FROM DUMMY;
+         DECLARE x ROW LIKE :cur;
+         OPEN cur;
+         FETCH cur INTO x;
+         SELECT :x.a, :x.b, :x.c FROM DUMMY;
+         -- Returns [1, 'a', '2000-01-01']
+         SELECT 2, 'b', '2000-02-02' INTO x FROM DUMMY;
+         SELECT :x.a, :x.b, :x.c FROM DUMMY;
+         -- Returns [2, 'b', '2000-02-02']
+        END;
+
+  - id: sqlscript_table_variable_cell_access
+    name: Index-based cell access to table variables
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/a94ea1e47d734191be3df6c2ce5f32d6.html?version=2.0.08
+    tier: high
+    probes:
+      - id: write_cell
+        sql: "DO BEGIN DECLARE intab TABLE (A INT, B VARCHAR(20)); intab.A[2] = 5; END;"
+      - id: read_cell
+        sql: "DO BEGIN DECLARE intab TABLE (A INT, B VARCHAR(20)); DECLARE outvar VARCHAR(20); outvar = :intab.B[100]; END;"
+      - id: cell_index_variable
+        sql: "DO BEGIN DECLARE intab TABLE (A INT); DECLARE i INT = 1; DECLARE v INT; v = :intab.A[:i]; END;"
+      - id: cell_index_expression
+        sql: "DO BEGIN DECLARE intab TABLE (A INT); DECLARE i INT = 1; DECLARE v INT; v = :intab.A[:i + 1]; END;"
+      - id: cell_quoted_column
+        sql: "DO BEGIN DECLARE lt TABLE (\"Val1\" INT); DECLARE v INT; v = :lt.\"Val1\"[1]; END;"
+      - id: cell_in_loop_condition
+        sql: "DO BEGIN DECLARE OT TABLE (K VARCHAR(10)); DECLARE IDX INT = 0; WHILE :OT.K[IDX + 1] IS NOT NULL DO IDX = IDX + 1; END WHILE; END;"
+
+  - id: sqlscript_table_variable_insert
+    name: Table variable operators - INSERT
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/36f718be73e745ceae0530aa80850ce3.html?version=2.0.08
+    tier: high
+    probes:
+      - id: insert_row_append
+        sql: "DO BEGIN DECLARE OT TABLE (K VARCHAR(20), V INT); :OT.INSERT(('Sum', 1)); END;"
+      - id: insert_row_at_index
+        sql: "DO BEGIN DECLARE OT TABLE (K VARCHAR(20), V INT); :OT.INSERT(('Sum', 1), 2); END;"
+      - id: insert_row_with_expressions
+        sql: "DO BEGIN DECLARE OT TABLE (K VARCHAR(20), V INT); DECLARE K VARCHAR(20) = 'a'; DECLARE VSUM INT = 0; DECLARE IDX INT = 1; :OT.INSERT(('Sum ' || K, VSUM), IDX); END;"
+      - id: insert_row_column_list
+        sql: "DO BEGIN DECLARE tv TABLE (c1 INT, c2 INT); :tv.(c1, c2).INSERT((1, 2), 1); END;"
+      - id: insert_row_column_list_append
+        sql: "DO BEGIN DECLARE tv TABLE (c1 INT, c2 INT); :tv.(c1).INSERT((1)); END;"
+      - id: insert_table_variable
+        sql: "DO BEGIN DECLARE tab_a TABLE (c INT); DECLARE tab_b TABLE (c INT); :tab_a.insert(:tab_b); END;"
+      - id: insert_table_variable_column_list
+        sql: "DO BEGIN DECLARE tab_a TABLE (col1 INT, COL2 INT); DECLARE tab_b TABLE (x INT, y INT); :tab_a.(col1, COL2).insert(:tab_b); END;"
+      - id: insert_table_variable_position
+        sql: "DO BEGIN DECLARE tab_a TABLE (c INT); DECLARE tab_b TABLE (c INT); :tab_a.INSERT(:tab_b, 5); END;"
+      - id: insert_table_variable_quoted_columns_index_variable
+        sql: "DO BEGIN DECLARE tab_a TABLE (\"a\" INT, \"b\" INT); DECLARE tab_b TABLE (x INT, y INT); DECLARE index_to_insert INT = 1; :tab_a.(\"a\",\"b\").insert(:tab_b, :index_to_insert); END;"
+
+  - id: sqlscript_table_variable_update
+    name: Table variable operators - UPDATE and cell assignment
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/36f718be73e745ceae0530aa80850ce3.html?version=2.0.08
+    tier: high
+    probes:
+      - id: update_operator
+        sql: "DO BEGIN DECLARE tv TABLE (a INT, b INT); :tv.UPDATE((1, 2), 3); END;"
+      - id: update_operator_column_list
+        sql: "DO BEGIN DECLARE tv TABLE (a INT, b INT); :tv.(a).UPDATE((1), 3); END;"
+      - id: assign_row_at_index
+        sql: "DO BEGIN DECLARE tv TABLE (a INT, b INT); tv[3] = (1, 2); END;"
+      - id: assign_row_at_index_expression
+        sql: "DO BEGIN DECLARE OT TABLE (V1 INT, V2 INT); DECLARE MAXIDX INT = 5; DECLARE IDX INT = 1; OT[MAXIDX-IDX+1] = (:IT.V2[:IDX], :IT.V1[:IDX]); END;"
+      - id: assign_row_at_index_column_list
+        sql: "DO BEGIN DECLARE tv TABLE (a INT, b INT); tv.(a)[3] = (1); END;"
+
+  - id: sqlscript_table_variable_delete
+    name: Table variable operators - DELETE
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/36f718be73e745ceae0530aa80850ce3.html?version=2.0.08
+    tier: high
+    probes:
+      - id: delete_all
+        sql: "DO BEGIN DECLARE tv TABLE (a INT); :tv.DELETE(); END;"
+      - id: delete_index
+        sql: "DO BEGIN DECLARE tv TABLE (a INT); :tv.DELETE(1); END;"
+      - id: delete_range
+        sql: "DO BEGIN DECLARE tv TABLE (a INT); :tv.DELETE(1..3); END;"
+      - id: delete_range_cell_expressions
+        sql: "DO BEGIN DECLARE OT_RESULT TABLE (a INT); DECLARE INTERVALS TABLE (FROM_IDX INT, TO_IDX INT); DECLARE IDX INT = 1; :OT_RESULT.DELETE(:INTERVALS.FROM_IDX[IDX] .. :INTERVALS.TO_IDX[IDX]); END;"
+      - id: delete_array_of_indexes
+        sql: "DO BEGIN DECLARE tv TABLE (a INT); DECLARE DEL_IDX INT ARRAY; :tv.DELETE(:DEL_IDX); END;"
+
+  - id: sqlscript_table_variable_search
+    name: Table variable operators - SEARCH
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/1eb7673ed88b4aa9b2cb43959bbbbde0.html?version=2.0.08
+    tier: high
+    probes:
+      - id: search_columns_values
+        sql: "DO BEGIN DECLARE LT1 TABLE (\"Key1\" VARCHAR(10), \"Key2\" INT, \"Val1\" VARCHAR(10)); DECLARE pos INT; pos = :LT1.SEARCH((\"Key1\", \"Key2\"), ('I', 3)); END;"
+      - id: search_single_column
+        sql: "DO BEGIN DECLARE LT TABLE (B INT, A INT); DECLARE pos INT; pos = :LT.SEARCH(B, 1); END;"
+      - id: search_start_position
+        sql: "DO BEGIN DECLARE LT TABLE (B INT, A INT); DECLARE pos INT; pos = :LT.SEARCH((B, A), (1, 2), 3); END;"
+      - id: search_result_as_index
+        sql: "DO BEGIN DECLARE LT1 TABLE (\"Key1\" VARCHAR(10), \"Key2\" INT, \"Val1\" VARCHAR(10)); DECLARE val VARCHAR(10); val = :LT1.\"Val1\"[:LT1.SEARCH((\"Key1\", \"Key2\"), ('E', 5))]; END;"
+      - id: search_then_delete
+        sql: "DO BEGIN DECLARE LT1 TABLE (\"Key1\" VARCHAR(10), \"Key2\" INT); DECLARE pos INT; pos = :LT1.SEARCH((\"Key1\", \"Key2\"), ('M', 3)); :LT1.DELETE(pos); END;"
+
+  - id: sqlscript_table_emptiness_and_count
+    name: IS_EMPTY and RECORD_COUNT
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/3905f921a16f41d6addcf8d7979560c2.html?version=2.0.08
+    tier: high
+    probes:
+      - id: is_empty_in_if
+        sql: "DO BEGIN DECLARE tabvar TABLE (ID INTEGER); IF IS_EMPTY(:tabvar) THEN RETURN; END IF; END;"
+      - id: is_empty_table_name
+        sql: "DO BEGIN IF IS_EMPTY(t) THEN RETURN; END IF; END;"
+      - id: not_is_empty_in_while
+        sql: "DO BEGIN DECLARE STACK TABLE (NODE VARCHAR(30), L INT); WHILE NOT IS_EMPTY(:STACK) DO :STACK.DELETE(1); END WHILE; END;"
+      - id: is_empty_scalar_assignment
+        sql: "DO BEGIN DECLARE tv TABLE (a INT); DECLARE b BOOLEAN; b = IS_EMPTY(:tv); END;"
+        note: "page: IS_EMPTY can also be used in scalar variable assignments"
+      - id: record_count_assignment
+        sql: "DO BEGIN DECLARE tv TABLE (a INT); DECLARE n BIGINT; n = RECORD_COUNT(:tv); END;"
+      - id: record_count_table_name
+        sql: "DO BEGIN DECLARE n BIGINT; n = RECORD_COUNT(t); END;"
+      - id: record_count_for_loop_bound
+        sql: "DO BEGIN DECLARE i INT; DECLARE v INT = 0; DECLARE inTab TABLE (col_a INT); FOR i IN 1 .. RECORD_COUNT(:inTab) DO v = :v + :inTab.col_a[:i]; END FOR; END;"
+    examples:
+      - |-
+        DO (IN inTab TABLE(col_a int) => TAB, OUT v INT => ?)
+         BEGIN
+         DECLARE i int;
+         v = 0;
+         FOR i IN 1 .. RECORD_COUNT(:inTab)
+         DO
+         v = :v + :inTab.col_a[:i];
+         END FOR;
+        END;
+
+  - id: sqlscript_unnest
+    name: UNNEST function
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/4f12887c7941410d802a36c3f1a87a59.html?version=2.0.08
+    tier: high
+    probes:
+      - id: unnest_arrays
+        sql: "DO BEGIN DECLARE arr_id INTEGER ARRAY = ARRAY(1, 2); DECLARE arr_name NVARCHAR(10) ARRAY = ARRAY('name1', 'name2', 'name3'); rst = UNNEST(:arr_id, :arr_name); END;"
+      - id: unnest_as_columns
+        sql: "DO BEGIN DECLARE arr_id INTEGER ARRAY = ARRAY(1, 2); DECLARE arr_name NVARCHAR(10) ARRAY = ARRAY('name1'); rst = UNNEST(:arr_id, :arr_name) AS (ID, NAME); END;"
+      - id: unnest_with_ordinality
+        sql: "DO BEGIN DECLARE amount INTEGER ARRAY = ARRAY(10, 20); rst = UNNEST(:amount) WITH ORDINALITY AS (\"AMOUNT\", \"SEQ\"); END;"
+      - id: unnest_table_variables_star
+        sql: "DO BEGIN t0 = SELECT * FROM tab0 ORDER BY a ASC; t1 = SELECT * FROM tab0 ORDER BY a DESC; lt = UNNEST(:t0, :t1) AS (*, (a AS b)); END;"
+      - id: unnest_table_variables_aliasing_list
+        sql: "DO BEGIN t0 = SELECT * FROM tab0 ORDER BY a ASC; t1 = SELECT * FROM tab0 ORDER BY a DESC; lt = UNNEST(:t0, :t1) AS (*, (a AS b, a AS c)); END;"
+      - id: unnest_array_function
+        sql: "DO BEGIN DECLARE id1, id2 INTEGER ARRAY; rst = UNNEST(:id1 || :id2) WITH ORDINALITY AS (\"ID\", \"SEQ\"); END;"
+      - id: unnest_array_in_declare_default
+        sql: "DO BEGIN DECLARE arr INT ARRAY = ARRAY(1, 2); DECLARE tv TABLE (i INT) = UNNEST(:arr) AS (i); END;"
+    examples:
+      - |-
+        do begin
+         t0 = select * from tab0 order by a asc;
+         t1 = select * from tab0 order by a desc;
+         lt = unnest(:t0, :t1) as (*, (a as b));
+         select * from :lt;
+        end;
+      - |-
+        do begin
+         t0 = select * from tab0 order by a asc;
+         t1 = select * from tab0 order by a desc;
+         lt = unnest(:t0, :t1) as (*, (a as b, a as c));
+         select * from :lt;
+        end;
+
+  - id: sqlscript_dml_on_table_variables
+    name: SQL DML statements on table variables
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/226f2125b7ed4f4aabe731cfed029d7b.html?version=2.0.08
+    tier: high
+    probes:
+      - id: insert_values
+        sql: "DO BEGIN DECLARE lt TABLE (a INT, b VARCHAR(20)); INSERT INTO :lt VALUES (1, 'abc'); END;"
+      - id: insert_select
+        sql: "DO BEGIN DECLARE lt1 TABLE (a INT); DECLARE lt2 TABLE LIKE :lt1; INSERT INTO :lt2 (SELECT * FROM :lt1); END;"
+      - id: update_where
+        sql: "DO BEGIN DECLARE lt TABLE (a INT, b VARCHAR(20)); UPDATE :lt SET b = 'def' WHERE a = 1; END;"
+      - id: delete_where
+        sql: "DO BEGIN DECLARE lt TABLE (a INT, b VARCHAR(20)); DELETE FROM :lt WHERE a = 1; END;"
+      - id: declare_table_type_with_constraints
+        sql: "DO BEGIN DECLARE lt1 tt; END;"
+        note: "variable typed by a table type that carries PRIMARY KEY / NOT NULL constraints"
+      - id: convert_back_to_plain_variable
+        sql: "DO BEGIN DECLARE tab_without_dml TABLE (a INT); DECLARE tab_with_dml TABLE (a INT); tab_without_dml = SELECT * FROM :tab_with_dml; END;"
+
+  - id: sqlscript_sorted_table_variables
+    name: Sorted table variables (SEARCH KEY)
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/9f10ff55cedf4298b3fd7aebe6776a51.html?version=2.0.08
+    tier: high
+    probes:
+      - id: declare_search_key
+        sql: "DO BEGIN DECLARE lt TABLE(key INT, count INT) SEARCH KEY(key); END;"
+      - id: declare_search_key_multiple_columns
+        sql: "DO BEGIN DECLARE mytab TABLE (key1 INT, key2 INT, key3 INT, value INT) SEARCH KEY(key1, key2, key3); END;"
+      - id: declare_table_type_search_key
+        sql: "DO BEGIN DECLARE lt my_table_type SEARCH KEY(a); END;"
+      - id: declare_search_key_primary_key
+        sql: "DO BEGIN DECLARE lt TABLE (a INT, b INT, PRIMARY KEY (a)) SEARCH KEY(a); END;"
+        note: "page: the primary key must consist exactly of the search key columns"
+      - id: search_negative_result_insert
+        sql: "DO BEGIN DECLARE lt TABLE(key INT, count INT) SEARCH KEY(key); DECLARE search_result INT; DECLARE someval INT = 1; search_result = :lt.SEARCH(key, someval); IF search_result > 0 THEN lt.count[search_result] = :lt.count[search_result] + 1; ELSE :lt.INSERT((someval, 0), -search_result); END IF; END;"
+      - id: iterate_same_key
+        sql: "DO BEGIN DECLARE pos INT; DECLARE mytab TABLE (key1 INT, key2 INT, key3 INT, value INT) SEARCH KEY(key1, key2, key3); DECLARE keyval1, keyval2 INT; pos = :mytab.SEARCH((key1, key2), (keyval1, keyval2)); IF pos > 0 THEN WHILE :mytab.key1[pos] = keyval1 AND :mytab.key2[pos] = keyval2 DO pos = pos + 1; END WHILE; END IF; END;"
+
+  - id: sqlscript_global_session_variable
+    name: SET (global session variables)
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/aaef0b96852a4e1d9ce2570bbb1493c9.html?version=2.0.08
+    tier: high
+    probes:
+      - id: set_literal_key
+        sql: "DO BEGIN SET 'MY_VAR' = 'v'; END;"
+      - id: set_variable_value
+        sql: "DO BEGIN DECLARE new_value NVARCHAR(50) = 'x'; SET 'MY_VAR' = :new_value; END;"
+      - id: set_variable_key_expression_value
+        sql: "DO BEGIN DECLARE new_value NVARCHAR(50) = 'x'; DECLARE key_name NVARCHAR(50) = 'k'; SET :key_name = :new_value || '_suffix'; END;"
+      - id: read_with_session_context
+        sql: "DO BEGIN DECLARE v NVARCHAR(50); v = SESSION_CONTEXT('MY_VAR'); END;"
+
+  - id: sqlscript_if
+    name: IF / ELSEIF / ELSE
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/46e875a0d4e446ae9ab08334f13cd1aa.html?version=2.0.08
+    tier: high
+    probes:
+      - id: if_then
+        sql: "DO BEGIN DECLARE a INT = 1; IF :a = 1 THEN SELECT 1 FROM dummy; END IF; END;"
+      - id: if_else
+        sql: "DO BEGIN DECLARE a INT = 1; IF :a = 1 THEN SELECT 1 FROM dummy; ELSE SELECT 2 FROM dummy; END IF; END;"
+      - id: if_elseif
+        sql: "DO BEGIN DECLARE a INT = 1; IF :a = 1 THEN SELECT 1 FROM dummy; ELSEIF :a = 2 THEN SELECT 2 FROM dummy; END IF; END;"
+      - id: if_elseif_else
+        sql: "DO BEGIN DECLARE a INT = 1; IF :a = 1 THEN SELECT 1 FROM dummy; ELSEIF :a = 2 THEN SELECT 2 FROM dummy; ELSE SELECT 3 FROM dummy; END IF; END;"
+      - id: if_multiple_elseif
+        sql: "DO BEGIN DECLARE a INT = 1; IF :a = 1 THEN a = 2; ELSEIF :a = 2 THEN a = 3; ELSEIF :a = 3 THEN a = 4; ELSE a = 5; END IF; END;"
+      - id: if_is_null
+        sql: "DO BEGIN DECLARE found INT; IF :found IS NULL THEN found = 0; END IF; END;"
+      - id: if_is_not_null
+        sql: "DO BEGIN DECLARE found INT; IF :found IS NOT NULL THEN found = 0; END IF; END;"
+      - id: if_comparators
+        sql: "DO BEGIN DECLARE a INT = 1; IF :a < 1 OR :a > 5 OR :a <= 2 OR :a >= 3 OR :a != 4 OR :a <> 6 THEN a = 0; END IF; END;"
+      - id: if_scalar_udf_condition
+        sql: "DO BEGIN DECLARE i INTEGER DEFAULT 1; IF SUDF(:i) = 1 THEN SELECT 1 FROM dummy; END IF; END;"
+      - id: if_between
+        sql: "DO BEGIN DECLARE x INT = 5; DECLARE result NVARCHAR(1); IF :x BETWEEN 0 AND 100 THEN result = 'X'; ELSE result = 'O'; END IF; END;"
+      - id: if_not_between
+        sql: "DO BEGIN DECLARE x INT = 5; IF :x NOT BETWEEN 0 AND 100 THEN x = 0; END IF; END;"
+      - id: if_nested
+        sql: "DO BEGIN DECLARE a INT = 1; IF :a = 1 THEN IF :a > 0 THEN a = 2; END IF; END IF; END;"
+      - id: if_call_in_branch
+        sql: "DO BEGIN DECLARE found INT; IF :found IS NULL THEN CALL ins_msg_proc('result of count(*) cannot be NULL'); ELSE CALL ins_msg_proc('result of count(*) not NULL - as expected'); END IF; END;"
+
+  - id: sqlscript_condition_operators
+    name: IN, EXISTS and BETWEEN conditions in IF / WHILE
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/0a8cbf6c01704de993daa7db51f93485.html?version=2.0.08
+    tier: high
+    probes:
+      - id: in_list
+        sql: "DO BEGIN DECLARE i INT = 1; IF :i IN (1, 2, 3, 6, 8, 11, 12, 100) THEN i = 0; END IF; END;"
+      - id: in_multiple_expressions_not_in
+        sql: "DO BEGIN DECLARE key INT = 1; DECLARE val VARCHAR(10) = 'a'; IF (:key, :val) NOT IN ((1, 'H2O'), (2, 'H2O'), (3, 'abc')) THEN key = 0; END IF; END;"
+      - id: in_subquery
+        sql: "DO BEGIN DECLARE i INT = 1; IF :i NOT IN (SELECT a FROM mytable) THEN i = 0; END IF; END;"
+      - id: in_subquery_table_variable
+        sql: "DO BEGIN DECLARE a INT; DECLARE b INT; DECLARE c INT; DECLARE d INT; DECLARE lt TABLE (id INT, city INT, date INT); IF (:a, :b, :c) IN (SELECT id, city, date FROM :lt WHERE :id < :d) THEN a = 0; END IF; END;"
+      - id: in_subquery_table_function
+        sql: "DO BEGIN DECLARE i INT; DECLARE arr INT ARRAY; FOR i IN 1 .. CARDINALITY(:arr) DO IF :arr[:i] IN (SELECT b FROM tfunc()) THEN i = i; END IF; END FOR; END;"
+      - id: exists_in_if
+        sql: "DO BEGIN DECLARE d DATE; IF EXISTS (SELECT * FROM mytab WHERE date = :d) THEN SELECT 1 FROM dummy; END IF; END;"
+      - id: not_exists_in_if
+        sql: "DO BEGIN DECLARE schema NVARCHAR(10); DECLARE tabname NVARCHAR(10); IF NOT EXISTS (SELECT * FROM SYS.TABLES WHERE schema_name = :schema AND table_name = :tabname) THEN SELECT 1 FROM dummy; END IF; END;"
+      - id: exists_in_while
+        sql: "DO BEGIN DECLARE i INT = 0; WHILE :i < 100 AND EXISTS (SELECT * FROM mytab WHERE a = :i) DO i = :i + 1; END WHILE; END;"
+      - id: not_exists_in_while
+        sql: "DO BEGIN DECLARE z INT = 0; WHILE NOT EXISTS (SELECT * FROM mytab WHERE a > sfunc(:z).r2) DO z = :z + 1; END WHILE; END;"
+      - id: between_in_while
+        sql: "DO BEGIN DECLARE idx INT = 5; WHILE :idx BETWEEN 5 AND 15 DO idx = :idx + 1; END WHILE; END;"
+
+  - id: sqlscript_loop
+    name: LOOP
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/af7a0168b0b24abcaf65a761201fd3b4.html?version=2.0.08
+    tier: high
+    probes:
+      - id: loop_break
+        sql: "DO BEGIN LOOP BREAK; END LOOP; END;"
+      - id: loop_sequential_execution
+        sql: "DO BEGIN LOOP SEQUENTIAL EXECUTION BREAK; END LOOP; END;"
+      - id: loop_declarations
+        sql: "DO BEGIN LOOP DECLARE i INT = 0; BREAK; END LOOP; END;"
+      - id: loop_handler
+        sql: "DO BEGIN LOOP DECLARE EXIT HANDLER FOR SQLEXCEPTION BREAK; SELECT 1 FROM dummy; BREAK; END LOOP; END;"
+      - id: loop_return
+        sql: "DO BEGIN LOOP RETURN; END LOOP; END;"
+
+  - id: sqlscript_while
+    name: WHILE loop
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/6b2f29bbddcc431da72d9602a3049d93.html?version=2.0.08
+    tier: high
+    probes:
+      - id: while_do
+        sql: "DO BEGIN DECLARE v_index1 INT = 0; WHILE :v_index1 < 5 DO v_index1 = :v_index1 + 1; END WHILE; END;"
+      - id: while_nested
+        sql: "DO BEGIN DECLARE v_index1 INT = 0; DECLARE v_index2 INT; WHILE :v_index1 < 5 DO v_index2 = 0; WHILE :v_index2 < 5 DO v_index2 = :v_index2 + 1; END WHILE; v_index1 = :v_index1 + 1; END WHILE; END;"
+      - id: while_is_null
+        sql: "DO BEGIN DECLARE a INT; WHILE :a IS NULL DO a = 1; END WHILE; END;"
+      - id: while_scalar_udf
+        sql: "DO BEGIN DECLARE i INTEGER DEFAULT 3; DECLARE cnt INTEGER DEFAULT 0; WHILE SUDF(:i) > 0 DO cnt = :cnt + 1; i = :i - 1; END WHILE; END;"
+      - id: while_between
+        sql: "DO BEGIN DECLARE idx INT = 5; WHILE :idx BETWEEN 5 AND 15 DO idx = :idx + 1; END WHILE; END;"
+      - id: while_break_continue
+        sql: "DO BEGIN DECLARE i INT = 0; WHILE :i < 10 DO i = :i + 1; IF :i = 3 THEN CONTINUE; END IF; IF :i = 5 THEN BREAK; END IF; END WHILE; END;"
+
+  - id: sqlscript_for_numeric
+    name: FOR loop (numeric range)
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/76ff9f7d7cb24eaa8645f26e4b47c47f.html?version=2.0.08
+    tier: high
+    probes:
+      - id: for_in_range
+        sql: "DO BEGIN DECLARE i INT; FOR i IN 1..5 DO SELECT * FROM dummy; END FOR; END;"
+      - id: for_in_reverse
+        sql: "DO BEGIN DECLARE i INT; FOR i IN REVERSE 1..5 DO SELECT * FROM dummy; END FOR; END;"
+      - id: for_range_expressions
+        sql: "DO BEGIN DECLARE i INT; DECLARE n INT = 3; FOR i IN :n..:n + 2 DO SELECT * FROM dummy; END FOR; END;"
+      - id: for_range_scalar_udf
+        sql: "DO BEGIN DECLARE pos INTEGER DEFAULT 0; DECLARE i INTEGER; FOR i IN 1..SUDF_ADD(1, 2) DO pos = :pos + 1; END FOR; END;"
+      - id: for_sequential_execution
+        sql: "DO BEGIN DECLARE i INT; FOR i IN 1..5 DO SEQUENTIAL EXECUTION SELECT * FROM dummy; END FOR; END;"
+      - id: for_local_declarations
+        sql: "DO BEGIN DECLARE i INT; FOR i IN 1..5 DO DECLARE j INT = :i; SELECT :j FROM dummy; END FOR; END;"
+      - id: for_handler_list
+        sql: "DO BEGIN DECLARE i INT; FOR i IN 1..5 DO DECLARE EXIT HANDLER FOR SQLEXCEPTION SELECT 1 FROM dummy; SELECT 1 / 0 FROM dummy; END FOR; END;"
+      - id: for_range_spaces_around_dots
+        sql: "DO BEGIN DECLARE i INT; FOR i IN 1 .. 10 DO SELECT * FROM dummy; END FOR; END;"
+
+  - id: sqlscript_break_continue
+    name: BREAK and CONTINUE
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/f5f57f41699f4a9ebfea210552dca429.html?version=2.0.08
+    tier: high
+    probes:
+      - id: break_in_for
+        sql: "DO BEGIN DECLARE x INT; FOR x IN 0 .. 10 DO IF :x = 5 THEN BREAK; END IF; END FOR; END;"
+      - id: continue_in_for
+        sql: "DO BEGIN DECLARE x INT; FOR x IN 0 .. 10 DO IF :x < 3 THEN CONTINUE; END IF; END FOR; END;"
+      - id: break_continue_in_loop
+        sql: "DO BEGIN DECLARE x INT = 0; LOOP x = :x + 1; IF :x < 3 THEN CONTINUE; END IF; BREAK; END LOOP; END;"
+
+
+  - id: sqlscript_for_cursor
+    name: FOR loop over a cursor (FOR ... AS)
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/bf373fd6110e4b86a1057eb9b38e9ff8.html?version=2.0.08
+    tier: high
+    probes:
+      - id: for_as_cursor
+        sql: "DO BEGIN DECLARE CURSOR c1 FOR SELECT a FROM t; FOR r AS c1 DO SELECT :r.a FROM dummy; END FOR; END;"
+      - id: for_as_cursor_with_arguments
+        sql: "DO BEGIN DECLARE v_isbn VARCHAR(20) = ''; DECLARE CURSOR c_cursor1 (v_isbn VARCHAR(20)) FOR SELECT isbn, title, price, crcy FROM books ORDER BY isbn; FOR cur_row AS c_cursor1(v_isbn) DO CALL ins_msg_proc('book title is: ' || :cur_row.title); END FOR; END;"
+      - id: for_as_cursor_row_attribute
+        sql: "DO BEGIN DECLARE CURSOR c1 FOR SELECT a FROM t; FOR r AS c1 DO SELECT r.a FROM dummy; END FOR; END;"
+      - id: for_as_cursor_sequential_execution
+        sql: "DO BEGIN DECLARE CURSOR c1 FOR SELECT a FROM t; FOR r AS c1 DO SEQUENTIAL EXECUTION SELECT 1 FROM dummy; END FOR; END;"
+      - id: for_as_cursor_declarations
+        sql: "DO BEGIN DECLARE CURSOR c1 FOR SELECT a FROM t; FOR r AS c1 DO DECLARE j INT = :r.a; SELECT :j FROM dummy; END FOR; END;"
+      - id: for_as_cursor_multiple_arguments
+        sql: "DO BEGIN DECLARE CURSOR c2 (x INT, y INT) FOR SELECT a FROM t WHERE a > :x AND a < :y; FOR r AS c2(1, 10) DO SELECT :r.a FROM dummy; END FOR; END;"
+      - id: for_as_cursor_update_where_current_of
+        sql: "DO BEGIN DECLARE CURSOR cur FOR SELECT * FROM employees FOR UPDATE; FOR r AS cur DO IF r.employee_id < 10000 THEN UPDATE employees SET employee_id = employee_id + 10000 WHERE CURRENT OF cur; ELSE DELETE FROM employees WHERE CURRENT OF cur; END IF; END FOR; END;"
+
+  - id: sqlscript_declare_cursor
+    name: DECLARE CURSOR
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/c5c60c7fadc548b097dbf9321ea6414c.html?version=2.0.08
+    tier: high
+    probes:
+      - id: declare_cursor
+        sql: "DO BEGIN DECLARE CURSOR c1 FOR SELECT a FROM t; END;"
+      - id: declare_cursor_parameter
+        sql: "DO BEGIN DECLARE CURSOR c_cursor1 (v_isbn VARCHAR(20)) FOR SELECT isbn, title, price, crcy FROM books WHERE isbn = :v_isbn ORDER BY isbn; END;"
+      - id: declare_cursor_multiple_parameters
+        sql: "DO BEGIN DECLARE CURSOR c2 (x INTEGER, d DATE, n NVARCHAR(10)) FOR SELECT a FROM t WHERE a = :x AND b = :d AND c = :n; END;"
+      - id: declare_cursor_with_hold
+        sql: "DO BEGIN DECLARE CURSOR mycur WITH HOLD FOR SELECT * FROM mytab; END;"
+      - id: declare_cursor_without_hold
+        sql: "DO BEGIN DECLARE CURSOR mycur WITHOUT HOLD FOR SELECT * FROM mytab; END;"
+      - id: declare_cursor_parameter_with_hold
+        sql: "DO BEGIN DECLARE CURSOR mycur (p INT) WITH HOLD FOR SELECT * FROM mytab WHERE a = :p; END;"
+      - id: declare_cursor_for_update
+        sql: "DO BEGIN DECLARE CURSOR cur FOR SELECT * FROM employees FOR UPDATE; END;"
+      - id: declare_cursor_for_update_of
+        sql: "DO BEGIN DECLARE CURSOR cur FOR SELECT employees.employee_name, departments.department_name FROM employees, departments WHERE employees.department_id = departments.department_id FOR UPDATE OF employees.employee_id, departments.department_id; END;"
+
+  - id: sqlscript_open_fetch_close_cursor
+    name: OPEN, FETCH and CLOSE cursor
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/19f3c2bd8e0b451a9c53fb8c7be6c28d.html?version=2.0.08
+    tier: high
+    probes:
+      - id: open_cursor
+        sql: "DO BEGIN DECLARE CURSOR c1 FOR SELECT a FROM t; OPEN c1; END;"
+      - id: open_cursor_arguments
+        sql: "DO BEGIN DECLARE CURSOR c_cursor1 (v_isbn VARCHAR(20)) FOR SELECT isbn FROM books WHERE isbn = :v_isbn; OPEN c_cursor1('978-3-86894-012-1'); END;"
+      - id: open_cursor_multiple_arguments
+        sql: "DO BEGIN DECLARE CURSOR c2 (x INT, y INT) FOR SELECT a FROM t WHERE a > :x AND a < :y; OPEN c2(1, 10); END;"
+      - id: fetch_into_variables
+        sql: "DO BEGIN DECLARE v_isbn VARCHAR(20); DECLARE v_title VARCHAR(100); DECLARE v_price DECIMAL; DECLARE v_crcy VARCHAR(3); DECLARE CURSOR c_cursor1 FOR SELECT isbn, title, price, crcy FROM books; OPEN c_cursor1; FETCH c_cursor1 INTO v_isbn, v_title, v_price, v_crcy; END;"
+      - id: fetch_into_single_variable
+        sql: "DO BEGIN DECLARE i INT; DECLARE CURSOR mycur FOR SELECT * FROM mytab; OPEN mycur; FETCH mycur INTO i; END;"
+      - id: close_cursor
+        sql: "DO BEGIN DECLARE CURSOR c1 FOR SELECT a FROM t; OPEN c1; CLOSE c1; END;"
+      - id: fetch_loop_with_cursor_attributes
+        sql: "DO BEGIN DECLARE i INT; DECLARE CURSOR c1 FOR SELECT a FROM t; OPEN c1; FETCH c1 INTO i; WHILE NOT c1::NOTFOUND DO FETCH c1 INTO i; END WHILE; CLOSE c1; END;"
+      - id: cursor_attribute_isclosed
+        sql: "DO BEGIN DECLARE CURSOR c1 FOR SELECT a FROM t; IF c1::ISCLOSED THEN OPEN c1; END IF; END;"
+      - id: cursor_attribute_rowcount
+        sql: "DO BEGIN DECLARE n INT; DECLARE CURSOR c1 FOR SELECT a FROM t; OPEN c1; n = c1::ROWCOUNT; END;"
+      - id: open_close_holdable_example
+        sql: "DO BEGIN DECLARE i INT; DECLARE CURSOR mycur WITH HOLD FOR SELECT * FROM mytab; OPEN mycur; ROLLBACK; FETCH mycur INTO i; CLOSE mycur; SELECT :i AS i FROM DUMMY; END;"
+    examples:
+      - "OPEN c_cursor1('978-3-86894-012-1');"
+      - "CLOSE c_cursor1;"
+      - "FETCH c_cursor1 INTO v_isbn, v_title, v_price, v_crcy;"
+
+  - id: sqlscript_updatable_cursor
+    name: UPDATE / DELETE ... WHERE CURRENT OF
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/b09a95041873452b9bd1283c43f7f43b.html?version=2.0.08
+    tier: high
+    probes:
+      - id: update_where_current_of
+        sql: "DO BEGIN DECLARE CURSOR cur FOR SELECT * FROM employees FOR UPDATE; FOR r AS cur DO UPDATE employees SET employee_id = employee_id + 10000 WHERE CURRENT OF cur; END FOR; END;"
+      - id: update_alias_where_current_of
+        sql: "DO BEGIN DECLARE CURSOR cur FOR SELECT * FROM employees FOR UPDATE; FOR r AS cur DO UPDATE employees AS e SET employee_id = employee_id + 1 WHERE CURRENT OF cur; END FOR; END;"
+      - id: update_alias_without_as_where_current_of
+        sql: "DO BEGIN DECLARE CURSOR cur FOR SELECT * FROM employees FOR UPDATE; FOR r AS cur DO UPDATE employees e SET employee_id = employee_id + 1 WHERE CURRENT OF cur; END FOR; END;"
+      - id: delete_where_current_of
+        sql: "DO BEGIN DECLARE CURSOR cur FOR SELECT * FROM employees FOR UPDATE; FOR r AS cur DO DELETE FROM employees WHERE CURRENT OF cur; END FOR; END;"
+      - id: delete_alias_where_current_of
+        sql: "DO BEGIN DECLARE CURSOR cur FOR SELECT * FROM employees FOR UPDATE; FOR r AS cur DO DELETE FROM employees AS e WHERE CURRENT OF cur; END FOR; END;"
+      - id: update_multi_table_for_update_of
+        sql: "DO BEGIN DECLARE CURSOR cur FOR SELECT employees.employee_name, departments.department_name FROM employees, departments WHERE employees.department_id = departments.department_id FOR UPDATE OF employees.employee_id, departments.department_id; FOR r AS cur DO IF r.department_name = 'Development' THEN UPDATE employees SET employee_id = employee_id + 10000, department_id = department_id + 100 WHERE CURRENT OF cur; UPDATE departments SET department_id = department_id + 100 WHERE CURRENT OF cur; ELSEIF r.department_name = 'HR' THEN DELETE FROM employees WHERE CURRENT OF cur; DELETE FROM departments WHERE CURRENT OF cur; END IF; END FOR; END;"
+    examples:
+      - |-
+        DO BEGIN
+         DECLARE CURSOR cur FOR SELECT * FROM employees FOR UPDATE;
+         FOR r AS cur DO
+         IF r.employee_id < 10000 THEN
+         UPDATE employees SET employee_id = employee_id + 10000
+         WHERE CURRENT OF cur;
+         ELSE
+         DELETE FROM employees WHERE CURRENT OF cur;
+         END IF;
+         END FOR;
+        END;
+
+  - id: sqlscript_autonomous_transaction
+    name: BEGIN AUTONOMOUS TRANSACTION
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/4ad70daee8b64b90ab162565ed6f73ef.html?version=2.0.08
+    tier: high
+    probes:
+      - id: autonomous_transaction_block
+        sql: "DO BEGIN BEGIN AUTONOMOUS TRANSACTION INSERT INTO log_table VALUES ('MESSAGE'); END; END;"
+      - id: autonomous_transaction_commit_rollback
+        sql: "DO BEGIN BEGIN AUTONOMOUS TRANSACTION UPDATE t SET a = 1; COMMIT; UPDATE t SET a = 2; ROLLBACK; UPDATE t SET a = 3; END; END;"
+      - id: autonomous_transaction_declarations
+        sql: "DO BEGIN BEGIN AUTONOMOUS TRANSACTION DECLARE x INT = 1; INSERT INTO log_table VALUES (:x); END; END;"
+      - id: autonomous_transaction_handler_list
+        sql: "DO BEGIN BEGIN AUTONOMOUS TRANSACTION DECLARE EXIT HANDLER FOR SQLEXCEPTION RESIGNAL; INSERT INTO log_table VALUES (1); END; END;"
+      - id: autonomous_transaction_nested
+        sql: "DO BEGIN BEGIN AUTONOMOUS TRANSACTION INSERT INTO LOG_TABLE VALUES ('MESSAGE'); BEGIN AUTONOMOUS TRANSACTION ROLLBACK; END; END; END;"
+      - id: autonomous_transaction_in_exit_handler
+        sql: "DO BEGIN DECLARE errCode INT; DECLARE errMsg VARCHAR(5000); DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN AUTONOMOUS TRANSACTION errCode = ::SQL_ERROR_CODE; errMsg = ::SQL_ERROR_MESSAGE; INSERT INTO ERR_TABLE (PARAMETER, SQL_ERROR_CODE, SQL_ERROR_MESSAGE) VALUES (1, :errCode, :errMsg); END; SELECT 1 / 0 FROM DUMMY; END;"
+      - id: autonomous_transaction_control_flow
+        sql: "DO BEGIN BEGIN AUTONOMOUS TRANSACTION DECLARE i INT; FOR i IN 1..3 DO INSERT INTO t VALUES (:i); END FOR; IF :i > 0 THEN SIGNAL SQL_ERROR_CODE 10001; END IF; END; END;"
+
+  - id: sqlscript_commit_rollback
+    name: COMMIT and ROLLBACK in SQLScript
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/e4e1b570e4f04b93ae1538246894b496.html?version=2.0.08
+    tier: high
+    probes:
+      - id: commit_in_block
+        sql: "DO BEGIN UPDATE B_TAB SET V = 3 WHERE ID = 1; COMMIT; END;"
+      - id: rollback_in_block
+        sql: "DO BEGIN UPDATE B_TAB SET V = 4 WHERE ID = 1; ROLLBACK; END;"
+      - id: commit_then_rollback
+        sql: "DO BEGIN UPDATE B_TAB SET V = 3 WHERE ID = 1; COMMIT; UPDATE B_TAB SET V = 4 WHERE ID = 1; ROLLBACK; END;"
+      - id: commit_in_exit_handler
+        sql: "DO BEGIN DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 146 BEGIN ROLLBACK; END; SELECT * FROM t FOR UPDATE NOWAIT; END;"
+        note: "page on DECLARE EXIT HANDLER: for transactional errors the transaction lives inside the handler and COMMIT or ROLLBACK may be used"
+
+  - id: sqlscript_savepoint
+    name: SAVEPOINT, ROLLBACK TO SAVEPOINT, RELEASE SAVEPOINT
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/e933397e9ec84f439f25962f4e193063.html?version=2.0.08
+    tier: high
+    probes:
+      - id: savepoint
+        sql: "DO BEGIN SAVEPOINT save1; END;"
+      - id: rollback_to_savepoint
+        sql: "DO BEGIN SAVEPOINT save1; ROLLBACK TO SAVEPOINT save1; END;"
+      - id: release_savepoint
+        sql: "DO BEGIN SAVEPOINT save1; RELEASE SAVEPOINT save1; END;"
+      - id: savepoint_full_example
+        sql: "DO BEGIN INSERT INTO t1 VALUES (1); SAVEPOINT save1; INSERT INTO t1 VALUES (2); ROLLBACK TO SAVEPOINT save1; SELECT * FROM t1; RELEASE SAVEPOINT save1; END;"
+
+  - id: sqlscript_exec
+    name: EXEC (dynamic SQL)
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/8462312b31d04879b124acb6b0275247.html?version=2.0.08
+    tier: high
+    probes:
+      - id: exec_string
+        sql: "DO BEGIN EXEC 'DELETE from tab'; END;"
+      - id: exec_concatenated_string
+        sql: "DO BEGIN DECLARE i INT = 1; EXEC 'INSERT INTO tab VALUES (' || :i || ')'; END;"
+      - id: exec_into_scalars
+        sql: "DO BEGIN DECLARE K INT; DECLARE J INT; EXEC 'select max(I) as a, min(A) as b from mytable' INTO K, J; END;"
+      - id: exec_into_table_variable
+        sql: "DO BEGIN DECLARE tv TABLE (i INT); EXEC 'select col1 * 10 as i from mytable' INTO tv; END;"
+      - id: exec_into_default
+        sql: "DO BEGIN DECLARE A_COPY INT; EXEC 'SELECT A FROM T1' INTO A_COPY DEFAULT 2; END;"
+      - id: exec_into_array_element_default
+        sql: "DO BEGIN DECLARE A_COPY INT ARRAY; EXEC 'SELECT A FROM T1' INTO A_COPY[1] DEFAULT 2; END;"
+      - id: exec_using_variables
+        sql: "DO BEGIN DECLARE a INT = 123; DECLARE tv TABLE (col1 INT) = SELECT * FROM mytab; DECLARE tv2 TABLE (col1 INT); EXEC 'select col1 + :a as col1 from :tv' INTO tv2 USING :a, :tv; END;"
+      - id: exec_using_positional_parameters
+        sql: "DO BEGIN DECLARE a INT = 2; DECLARE b INT = 3; DECLARE K INT; DECLARE J INT; EXEC 'select max(I) + ? * ? as a, min(A) as b from mytable' INTO K, J USING :a, :b; END;"
+      - id: exec_using_without_into
+        sql: "DO BEGIN DECLARE tv TABLE (col1 INT) = SELECT * FROM mytab; DECLARE a INT = 123; EXEC 'call myproc(:a, :tv)' USING :a, :tv; END;"
+      - id: exec_into_output_parameters
+        sql: "DO (OUT a INT => ?, OUT tv TABLE (i INT) => ?) BEGIN EXEC 'call myproc(:a, :tv)' INTO a, tv; END;"
+      - id: exec_reads_sql_data
+        sql: "DO BEGIN EXEC 'SELECT * FROM tab' READS SQL DATA; END;"
+      - id: exec_into_using_reads_sql_data
+        sql: "DO BEGIN DECLARE lt TABLE (a INT); DECLARE lt0 TABLE (a INT); DECLARE value INT = 1; EXEC 'SELECT * FROM :lt0 WHERE (a = :value)' INTO lt USING :lt0, :value READS SQL DATA; END;"
+      - id: exec_in_read_only_procedure
+        sql: "CREATE PROCEDURE Proc1(IN A NVARCHAR(12)) READS SQL DATA AS BEGIN EXEC 'SELECT * FROM ' || :A; END;"
+    examples:
+      - |-
+        DO (IN tname NVARCHAR(10) => 'mytable')
+        BEGIN
+         DECLARE tv TABLE (i INT);
+         EXEC 'select col1 * 10 as i from ' || :tname INTO tv;
+         SELECT * FROM :tv;
+        END;
+      - |-
+        DO BEGIN
+         DECLARE tv TABLE (col1 INT) = SELECT * FROM mytab;
+         DECLARE a INT = 123;
+         DECLARE tv2 TABLE (col1 INT);
+         EXEC 'select col1 + :a as col1 from :tv' INTO tv2 USING :a, :tv;
+         SELECT * FROM :tv2;
+        END;
+
+  - id: sqlscript_execute_immediate
+    name: EXECUTE IMMEDIATE (dynamic SQL)
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/093c4fd307064f838cb582555c187b9e.html?version=2.0.08
+    tier: high
+    probes:
+      - id: execute_immediate_string
+        sql: "DO BEGIN EXECUTE IMMEDIATE 'SELECT * FROM tab ORDER BY i'; END;"
+      - id: execute_immediate_concatenated
+        sql: "DO BEGIN DECLARE tname NVARCHAR(10) = 'tab'; EXECUTE IMMEDIATE 'SELECT * FROM ' || :tname; END;"
+      - id: execute_immediate_into
+        sql: "DO BEGIN DECLARE K INT; EXECUTE IMMEDIATE 'SELECT MAX(i) FROM tab' INTO K; END;"
+      - id: execute_immediate_into_default
+        sql: "DO BEGIN DECLARE K INT; EXECUTE IMMEDIATE 'SELECT MAX(i) FROM tab' INTO K DEFAULT 0; END;"
+      - id: execute_immediate_using
+        sql: "DO BEGIN DECLARE a INT = 1; EXECUTE IMMEDIATE 'SELECT * FROM tab WHERE i = :a' USING :a; END;"
+      - id: execute_immediate_into_using
+        sql: "DO BEGIN DECLARE a INT = 1; DECLARE tv TABLE (i INT); EXECUTE IMMEDIATE 'SELECT * FROM tab WHERE i = :a' INTO tv USING :a; END;"
+      - id: execute_immediate_reads_sql_data
+        sql: "DO BEGIN EXECUTE IMMEDIATE 'SELECT * FROM tab' READS SQL DATA; END;"
+
+  - id: sqlscript_apply_filter
+    name: APPLY_FILTER
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/a09d584807f84477a64d7625ca45b089.html?version=2.0.08
+    tier: high
+    probes:
+      - id: apply_filter_table
+        sql: "DO BEGIN DECLARE iv_filter NVARCHAR(100) = 'SCHEMA_NAME = ''SYS'''; temp_procedures = APPLY_FILTER(SYS.PROCEDURES, :iv_filter); END;"
+      - id: apply_filter_table_variable
+        sql: "DO BEGIN DECLARE iv_filter NVARCHAR(100) = 'x > 1'; temp_procedures = SELECT SCHEMA_NAME, PROCEDURE_NAME FROM SYS.PROCEDURES; procedures = APPLY_FILTER(:temp_procedures, :iv_filter); END;"
+      - id: apply_filter_string_literal
+        sql: "DO BEGIN lt = APPLY_FILTER(tab, 'a = 1'); END;"
+      - id: apply_filter_filter_variable_concat
+        sql: "DO BEGIN DECLARE v_filter NVARCHAR(100); DECLARE col NVARCHAR(20) = 'a'; DECLARE val NVARCHAR(20) = 'b'; v_filter = :col || ' = ''' || :val || ''''; lt = APPLY_FILTER(:lt0, :v_filter); END;"
+    examples:
+      - "CALL GET_PROCEDURE_NAME(' PROCEDURE_NAME like ''MYPROC%''', ?);"
+
+  - id: sqlscript_declare_exit_handler
+    name: DECLARE EXIT HANDLER
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/ebc8b804be2e44789d767895f32503cf.html?version=2.0.08
+    tier: high
+    probes:
+      - id: exit_handler_sqlexception
+        sql: "DO BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION SELECT 'EXCEPTION was thrown' AS ERROR FROM dummy; SELECT 1 / 0 FROM dummy; END;"
+      - id: exit_handler_system_variables
+        sql: "DO BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION SELECT ::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE FROM DUMMY; SELECT 1 / 0 FROM dummy; END;"
+      - id: exit_handler_sql_error_code
+        sql: "DO BEGIN DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 304 SELECT ::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE FROM DUMMY; SELECT 1 / 0 FROM dummy; END;"
+      - id: exit_handler_condition_name
+        sql: "DO BEGIN DECLARE MY_COND CONDITION FOR SQL_ERROR_CODE 304; DECLARE EXIT HANDLER FOR MY_COND SELECT ::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE FROM DUMMY; SELECT 1 / 0 FROM dummy; END;"
+      - id: exit_handler_multiple_condition_values
+        sql: "DO BEGIN DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 304, SQL_ERROR_CODE 301 SELECT ::SQL_ERROR_CODE FROM DUMMY; SELECT 1 / 0 FROM dummy; END;"
+      - id: exit_handler_block_body
+        sql: "DO BEGIN DECLARE in_var INT = 0; DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 304 BEGIN DECLARE procedure_name NVARCHAR(500) = ::CURRENT_OBJECT_SCHEMA || '.' || ::CURRENT_OBJECT_NAME; DECLARE parameters NVARCHAR(255) = 'IN_VAR = ' || :in_var; INSERT INTO LOG_TABLE VALUES (::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE, :procedure_name, :parameters); END; tab = SELECT 1 / :in_var AS I FROM dummy; END;"
+      - id: exit_handler_for_update_nowait
+        sql: "DO BEGIN DECLARE EXIT HANDLER FOR SQL_ERROR_CODE 146 SELECT 'locked' FROM dummy; SELECT * FROM t FOR UPDATE NOWAIT; END;"
+      - id: exit_handler_if_resignal_body
+        sql: "DO BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION IF ::SQL_ERROR_CODE = 288 THEN DROP TABLE TAB; CREATE TABLE TAB (I INTEGER PRIMARY KEY); ELSE RESIGNAL; END IF; CREATE TABLE TAB (I INTEGER PRIMARY KEY); END;"
+
+  - id: sqlscript_declare_continue_handler
+    name: DECLARE CONTINUE HANDLER
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/0d023eaa35454087aaa0766fcf1dd8bd.html?version=2.0.08
+    tier: high
+    probes:
+      - id: continue_handler_block
+        sql: "DO BEGIN DECLARE A INT = 10; DECLARE CONTINUE HANDLER FOR SQLEXCEPTION BEGIN SELECT ::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE FROM DUMMY; END; A = 1 / 0; SELECT :A FROM DUMMY; END;"
+      - id: continue_handler_single_statement
+        sql: "DO BEGIN DECLARE A INT = 10; DECLARE CONTINUE HANDLER FOR SQLEXCEPTION SELECT ::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE FROM DUMMY; SELECT :A FROM DUMMY; BEGIN A = 1 / 0; A = :A + 1; END; SELECT :A FROM DUMMY; END;"
+      - id: continue_handler_sql_error_code
+        sql: "DO BEGIN DECLARE CONTINUE HANDLER FOR SQL_ERROR_CODE 12346 BEGIN END; SIGNAL SQL_ERROR_CODE 12346; END;"
+      - id: continue_handler_empty_block
+        sql: "DO BEGIN DECLARE CONTINUE HANDLER FOR SQLEXCEPTION BEGIN END; INSERT INTO TAB VALUES (1 / 0); END;"
+      - id: continue_handler_signal_in_handler
+        sql: "DO BEGIN DECLARE CONTINUE HANDLER FOR SQL_ERROR_CODE 12346 BEGIN END; BEGIN DECLARE CONTINUE HANDLER FOR SQL_ERROR_CODE 12345 BEGIN SIGNAL SQL_ERROR_CODE 12346; SELECT ::SQL_ERROR_CODE FROM DUMMY; END; SIGNAL SQL_ERROR_CODE 12345; END; END;"
+      - id: continue_handler_nested_in_exit_handler_scope
+        sql: "DO BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION SELECT ::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE FROM DUMMY; BEGIN DECLARE CONTINUE HANDLER FOR SQLEXCEPTION SELECT ::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE FROM DUMMY; SELECT 1 / 0 FROM DUMMY; END; END;"
+      - id: continue_handler_condition_name
+        sql: "DO BEGIN DECLARE division_by_zero CONDITION FOR SQL_ERROR_CODE 304; DECLARE CONTINUE HANDLER FOR division_by_zero SELECT 1 FROM dummy; SELECT 1 / 0 FROM dummy; END;"
+    examples:
+      - |-
+        DO BEGIN
+         DECLARE A INT = 10;
+         DECLARE CONTINUE HANDLER FOR SQLEXCEPTION BEGIN -- Catch the exception
+         SELECT ::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE FROM DUMMY;
+         END;
+         A = 1 / 0; -- An exception will be thrown
+         SELECT :A FROM DUMMY; -- Continue from this statement after handling the exception
+        END;
+      - |-
+        DO BEGIN
+         DECLARE A INT = 0;
+         DECLARE CONTINUE HANDLER FOR SQLEXCEPTION SELECT ::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE FROM DUMMY;
+         IF A = 1 / 0 THEN -- An error occurs
+         A = 1;
+         ELSE
+         A = 2;
+         END IF;
+         SELECT :A FROM DUMMY; -- Continue from here, Result: 0
+        END;
+      - |-
+        DO BEGIN
+         DECLARE A INT = 10;
+         DECLARE CONTINUE HANDLER FOR SQLEXCEPTION BEGIN
+         SELECT :A FROM DUMMY; -- Result: 10
+         END;
+         A = 1 / 0;
+         SELECT :A FROM DUMMY; -- Result: 10
+        END;
+
+  - id: sqlscript_declare_condition
+    name: DECLARE CONDITION
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/47eb720aed594810b8afb2885e2fa9e4.html?version=2.0.08
+    tier: high
+    probes:
+      - id: condition_for_sql_error_code
+        sql: "DO BEGIN DECLARE division_by_zero CONDITION FOR SQL_ERROR_CODE 304; END;"
+      - id: condition_user_defined
+        sql: "DO BEGIN DECLARE invalid_input CONDITION; END;"
+      - id: condition_user_defined_error_code
+        sql: "DO BEGIN DECLARE invalid_input CONDITION FOR SQL_ERROR_CODE 10000; END;"
+      - id: condition_used_by_handler
+        sql: "DO BEGIN DECLARE division_by_zero CONDITION FOR SQL_ERROR_CODE 304; DECLARE EXIT HANDLER FOR division_by_zero SELECT ::SQL_ERROR_CODE, ::SQL_ERROR_MESSAGE FROM DUMMY; SELECT 1 / 0 FROM dummy; END;"
+
+  - id: sqlscript_signal
+    name: SIGNAL
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/2b525b310e2c42a68a677e2c99e27533.html?version=2.0.08
+    tier: high
+    probes:
+      - id: signal_sql_error_code
+        sql: "DO BEGIN SIGNAL SQL_ERROR_CODE 10000; END;"
+      - id: signal_condition
+        sql: "DO BEGIN DECLARE invalid_input CONDITION FOR SQL_ERROR_CODE 10000; SIGNAL invalid_input; END;"
+      - id: signal_condition_message_text
+        sql: "DO BEGIN DECLARE invalid_input CONDITION FOR SQL_ERROR_CODE 10000; SIGNAL invalid_input SET MESSAGE_TEXT = 'Invalid input arguments'; END;"
+      - id: signal_error_code_message_text
+        sql: "DO BEGIN SIGNAL SQL_ERROR_CODE 10001 SET MESSAGE_TEXT = 'custom'; END;"
+      - id: signal_message_text_expression
+        sql: "DO BEGIN DECLARE start_date DATE = '2011-03-03'; DECLARE end_date DATE = '2010-03-03'; DECLARE invalid_input CONDITION FOR SQL_ERROR_CODE 10000; IF :start_date > :end_date THEN SIGNAL invalid_input SET MESSAGE_TEXT = 'START_DATE = ' || :start_date || ' > END_DATE = ' || :end_date; END IF; END;"
+
+  - id: sqlscript_resignal
+    name: RESIGNAL
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/2b525b310e2c42a68a677e2c99e27533.html?version=2.0.08
+    tier: high
+    probes:
+      - id: resignal_plain
+        sql: "DO BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION RESIGNAL; SELECT 1 / 0 FROM dummy; END;"
+      - id: resignal_message_text
+        sql: "DO BEGIN DECLARE in_var INT = 0; DECLARE EXIT HANDLER FOR SQLEXCEPTION RESIGNAL SET MESSAGE_TEXT = 'for the input parameter in_var = ' || :in_var || ' exception was raised '; SELECT 1 / :in_var FROM dummy; END;"
+      - id: resignal_message_text_original_message
+        sql: "DO BEGIN DECLARE in_var INT = 0; DECLARE EXIT HANDLER FOR SQLEXCEPTION RESIGNAL SET MESSAGE_TEXT = 'in_var = ' || :in_var || ' ' || ::SQL_ERROR_MESSAGE; SELECT 1 / :in_var FROM dummy; END;"
+      - id: resignal_sql_error_code
+        sql: "DO BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION RESIGNAL SQL_ERROR_CODE 10001; SELECT 1 / 0 FROM dummy; END;"
+      - id: resignal_condition
+        sql: "DO BEGIN DECLARE invalid_input CONDITION FOR SQL_ERROR_CODE 10000; DECLARE EXIT HANDLER FOR SQLEXCEPTION RESIGNAL invalid_input; SELECT 1 / 0 FROM dummy; END;"
+      - id: resignal_condition_message_text
+        sql: "DO BEGIN DECLARE invalid_input CONDITION FOR SQL_ERROR_CODE 10000; DECLARE EXIT HANDLER FOR SQLEXCEPTION RESIGNAL invalid_input SET MESSAGE_TEXT = 'x'; SELECT 1 / 0 FROM dummy; END;"
+
+  - id: sqlscript_array_declare
+    name: DECLARE array variable and ARRAY constructor
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/8d4be75f708c4492ab22b6b64784cd63.html?version=2.0.08
+    tier: high
+    probes:
+      - id: declare_array
+        sql: "DO BEGIN DECLARE arr INTEGER ARRAY; END;"
+      - id: declare_array_constructor
+        sql: "DO BEGIN DECLARE array_int INTEGER ARRAY = ARRAY(1, 2, 3); END;"
+      - id: declare_array_multiple_names
+        sql: "DO BEGIN DECLARE id1, id2, id3 INTEGER ARRAY; END;"
+      - id: declare_array_varchar
+        sql: "DO BEGIN DECLARE arrayNvarchar NVARCHAR(20) ARRAY; END;"
+      - id: declare_array_walrus_constructor
+        sql: "DO BEGIN DECLARE array_id Integer ARRAY := ARRAY(1, 2, 3, 4); END;"
+      - id: assign_array_constructor_variables
+        sql: "DO BEGIN DECLARE a NVARCHAR(20) = 'x'; DECLARE b NVARCHAR(20) = 'y'; DECLARE arrayNvarchar NVARCHAR(20) ARRAY; arrayNvarchar = ARRAY(:a, :b); END;"
+      - id: declare_array_auto
+        sql: "DO BEGIN DECLARE arr1 AUTO = ARRAY(1, 2); END;"
+    examples:
+      - |-
+        DO
+        BEGIN
+         DECLARE arr TINYINT ARRAY = ARRAY(1,2,3);
+         DECLARE index_array INTEGER ARRAY = ARRAY(1,2);
+         DECLARE value TINYINT;
+         arr[:index_array[1]] = :arr[:index_array[2]];
+         value = :arr[:index_array[1]];
+         select :value from dummy;
+        END;
+
+  - id: sqlscript_array_element
+    name: Array element access and assignment
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/1083ea3019c54b9b9f5037581d95e1d7.html?version=2.0.08
+    tier: high
+    probes:
+      - id: set_element
+        sql: "DO BEGIN DECLARE id INT ARRAY; id[2] = 10; END;"
+      - id: set_element_variable_index
+        sql: "DO BEGIN DECLARE i INT; DECLARE arr NVARCHAR(15) ARRAY; FOR i IN 1 ..10 DO arr[:i] = 'ARRAY_INDEX ' || :i; END FOR; END;"
+      - id: set_element_spaced_bracket
+        sql: "DO BEGIN DECLARE i INT = 1; DECLARE arr NVARCHAR(15) ARRAY; arr [:i] = 'x'; END;"
+      - id: set_element_udf_index
+        sql: "DO BEGIN DECLARE VARCHAR_ARRAY VARCHAR ARRAY; VARCHAR_ARRAY[func_add(1,0)] = 'i'; END;"
+      - id: set_element_null
+        sql: "DO BEGIN DECLARE array_id Integer ARRAY; array_id[20] = NULL; END;"
+      - id: read_element
+        sql: "DO BEGIN DECLARE arr NVARCHAR(15) ARRAY; DECLARE var NVARCHAR(15); var = :arr[2]; END;"
+      - id: read_element_nested_index
+        sql: "DO BEGIN DECLARE arr TINYINT ARRAY = ARRAY(1,2,3); DECLARE index_array INTEGER ARRAY = ARRAY(1,2); DECLARE value TINYINT; value = :arr[:index_array[1]]; END;"
+
+  - id: sqlscript_array_functions
+    name: ARRAY_AGG, TRIM_ARRAY, CARDINALITY, CONCAT on arrays
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/6649b3fcc87c4a1db20648aeaed5de13.html?version=2.0.08
+    tier: high
+    probes:
+      - id: array_agg
+        sql: "DO BEGIN DECLARE id NVARCHAR(10) ARRAY; DECLARE tab TABLE (A NVARCHAR(10), B INTEGER); tab = SELECT A, B FROM tab1; id = ARRAY_AGG(:tab.A); END;"
+      - id: array_agg_order_by_desc
+        sql: "DO BEGIN DECLARE id NVARCHAR(10) ARRAY; DECLARE tab TABLE (A NVARCHAR(10), B INTEGER); id = ARRAY_AGG(:tab.A ORDER BY B DESC); END;"
+      - id: array_agg_order_by_nulls_first
+        sql: "DO BEGIN DECLARE id NVARCHAR(10) ARRAY; tab = SELECT A FROM ctab; id = ARRAY_AGG(:tab.A ORDER BY A DESC NULLS FIRST); END;"
+      - id: array_agg_order_by_nulls_last
+        sql: "DO BEGIN DECLARE id NVARCHAR(10) ARRAY; tab = SELECT A FROM ctab; id = ARRAY_AGG(:tab.A ORDER BY A ASC NULLS LAST); END;"
+      - id: array_agg_order_by_multiple
+        sql: "DO BEGIN DECLARE id NVARCHAR(10) ARRAY; tab = SELECT A, B FROM tab1; id = ARRAY_AGG(:tab.A ORDER BY B, A DESC); END;"
+      - id: trim_array
+        sql: "DO BEGIN DECLARE array_id Integer ARRAY = ARRAY(1, 2, 3, 4); array_id = TRIM_ARRAY(:array_id, 2); END;"
+      - id: cardinality_assignment
+        sql: "DO BEGIN DECLARE array_id Integer ARRAY; DECLARE n INTEGER; n = CARDINALITY(:array_id); END;"
+      - id: cardinality_in_condition
+        sql: "DO BEGIN DECLARE array_id Integer ARRAY = ARRAY(1, 2, 3); DECLARE n INTEGER; IF CARDINALITY(:array_id) > 0 THEN n = 1; ELSE n = 0; END IF; END;"
+      - id: cardinality_for_bound
+        sql: "DO BEGIN DECLARE i INT; DECLARE arr INT ARRAY = ARRAY(1, 2); FOR i IN 1 .. CARDINALITY(:arr) DO SELECT :arr[:i] FROM dummy; END FOR; END;"
+      - id: concat_function
+        sql: "DO BEGIN DECLARE id1, id2, id3 INTEGER ARRAY; id3 = CONCAT(:id1, :id2); END;"
+      - id: concat_operator
+        sql: "DO BEGIN DECLARE id1, id2, id4 INTEGER ARRAY; id4 = :id1 || :id2; END;"
+      - id: concat_nested
+        sql: "DO BEGIN DECLARE id1, id2, id5 INTEGER ARRAY; id5 = CONCAT(CONCAT(:id1, :id2), CONCAT(:id1, :id2)); END;"
+      - id: concat_array_agg
+        sql: "DO BEGIN DECLARE id4, id5 INTEGER ARRAY; id5 = :id4 || ARRAY_AGG(:rst.\"ID\" ORDER BY \"SEQ\"); END;"
+
+  - id: sqlscript_explicit_parallel_execution
+    name: BEGIN PARALLEL EXECUTION
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/8db200a4f585490c81c4930689ec1a5c.html?version=2.0.08
+    tier: high
+    probes:
+      - id: parallel_execution_updates
+        sql: "DO BEGIN BEGIN PARALLEL EXECUTION UPDATE CTAB1 SET A = A + 1; UPDATE CTAB2 SET A = A + 1; END; END;"
+      - id: parallel_execution_select_into_table
+        sql: "DO BEGIN DECLARE tab TABLE (A INT); BEGIN PARALLEL EXECUTION SELECT * FROM :tab s WHERE s.A = 1 INTO CTAB1; SELECT * FROM :tab s WHERE s.A = 2 INTO CTAB2; END; END;"
+      - id: parallel_execution_calls
+        sql: "DO BEGIN BEGIN PARALLEL EXECUTION CALL cproc1(); CALL cproc2(); CALL cproc3(); END; END;"
+      - id: begin_sequential_execution
+        sql: "DO BEGIN SEQUENTIAL EXECUTION DECLARE i INT; i = 1; END;"
+      - id: procedure_begin_parallel_execution
+        sql: "CREATE PROCEDURE p AS BEGIN PARALLEL EXECUTION CALL cproc1(); CALL cproc2(); END;"
+      - id: procedure_begin_sequential_execution
+        sql: "CREATE PROCEDURE p AS BEGIN SEQUENTIAL EXECUTION CALL cproc1(); CALL cproc2(); END;"
+
+  - id: sqlscript_map_merge
+    name: MAP_MERGE operator
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/84b8fa84d68d49d3a916fd02ac0d2855.html?version=2.0.08
+    tier: high
+    probes:
+      - id: map_merge
+        sql: "DO (OUT ret_tab TABLE(col_a nvarchar(200)) => ?) BEGIN t = SELECT * FROM tab; ret_tab = MAP_MERGE(:t, mapper(:t.col_a)); END;"
+      - id: map_merge_multiple_columns_and_params
+        sql: "DO BEGIN t = SELECT * FROM tab; ret_tab = MAP_MERGE(:t, mapper(:t.col_a, :t.col_b, 'x', 5)); END;"
+      - id: map_merge_table_name
+        sql: "DO BEGIN ret_tab = MAP_MERGE(tab, mapper(tab.col_a)); END;"
+    examples:
+      - |-
+        DO (OUT ret_tab TABLE(col_a nvarchar(200))=>?)
+        BEGIN
+         t = SELECT * FROM tab;
+         ret_tab = MAP_MERGE(:t, mapper(:t.col_a));
+        END;
+
+  - id: sqlscript_map_reduce
+    name: MAP_REDUCE operator
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/17bee883c6e64d0798c2379f0b656569.html?version=2.0.08
+    tier: high
+    probes:
+      - id: map_reduce_function
+        sql: "DO BEGIN result = MAP_REDUCE(tab, mapper(tab.id, tab.sentence) GROUP BY c AS X, reducer(X.c, X)); END;"
+      - id: map_reduce_key_column
+        sql: "DO BEGIN result = MAP_REDUCE(tab, mapper(tab.id, tab.sentence) GROUP BY c AS X, reducer(X.c, X)); END;"
+      - id: map_reduce_procedure_output
+        sql: "DO BEGIN MAP_REDUCE(tab, mapper(tab.id, tab.sentence) GROUP BY c AS X, reducer_proc(X.c, X, result)); END;"
+        note: "reducer procedure form: <reduce procedure>(<params>) with an output table parameter"
+      - id: map_reduce_scalar_parameter
+        sql: "DO BEGIN result = MAP_REDUCE(tab, mapper(tab.id, 1) GROUP BY c AS X, reducer(X.c, X, 'p')); END;"
+
+  - id: sqlscript_system_variables
+    name: System variables (::ROWCOUNT, ::CURRENT_OBJECT_NAME, ::SQL_ERROR_CODE, ...)
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/c849dc1c6b4945289c77a2f194d65aa5.html?version=2.0.08
+    tier: high
+    probes:
+      - id: rowcount_assignment
+        sql: "DO BEGIN DECLARE updated_rows INT; UPDATE T SET VAL = VAL + 1 WHERE VAL = 2; updated_rows = ::ROWCOUNT; END;"
+      - id: rowcount_accumulate
+        sql: "DO BEGIN DECLARE updated_rows INT; UPDATE T SET VAL = VAL + 1 WHERE VAL = 4; updated_rows = ::ROWCOUNT; UPDATE T SET VAL = VAL + 1 WHERE VAL = 2; updated_rows = :updated_rows + ::ROWCOUNT; END;"
+      - id: rowcount_in_select
+        sql: "DO BEGIN INSERT INTO mytab SELECT * FROM mytab2; SELECT ::rowcount FROM dummy; END;"
+      - id: current_object_name_schema
+        sql: "DO BEGIN DECLARE name NVARCHAR(256); DECLARE schema_name NVARCHAR(256); name = ::CURRENT_OBJECT_NAME; schema_name = ::CURRENT_OBJECT_SCHEMA; END;"
+      - id: current_object_as_arguments
+        sql: "DO BEGIN DECLARE full_qualified_name NVARCHAR(256); full_qualified_name = get_full_qualified_name(::CURRENT_OBJECT_SCHEMA, ::CURRENT_OBJECT_NAME); END;"
+      - id: current_line_number
+        sql: "DO BEGIN DECLARE n INT; n = ::CURRENT_LINE_NUMBER; END;"
+      - id: sql_error_variables
+        sql: "DO BEGIN DECLARE EXIT HANDLER FOR SQLEXCEPTION BEGIN DECLARE c INT = ::SQL_ERROR_CODE; DECLARE m NVARCHAR(500) = ::SQL_ERROR_MESSAGE; END; SELECT 1 / 0 FROM dummy; END;"
+
+  - id: sqlscript_return
+    name: RETURN
+    doc: https://help.sap.com/docs/SAP_HANA_PLATFORM/de2486ee947e43e684d39702027f8a94/36f718be73e745ceae0530aa80850ce3.html?version=2.0.08
+    tier: high
+    probes:
+      - id: return_bare_in_block
+        sql: "DO BEGIN DECLARE tabvar TABLE (ID INTEGER); IF IS_EMPTY(:tabvar) THEN RETURN; END IF; END;"
+      - id: return_in_loop
+        sql: "DO BEGIN LOOP RETURN; END LOOP; END;"
+      - id: function_return_select
+        sql: "CREATE FUNCTION mapper (IN a nvarchar(200)) RETURNS TABLE (col_a nvarchar(200)) AS BEGIN ot = SELECT :a AS COL_A FROM dummy; RETURN :ot; END;"
+        note: "RETURN <table variable> in a table UDF body, as shown on the MAP_MERGE page"
+      - id: function_return_select_statement
+        sql: "CREATE FUNCTION f (IN c VARCHAR, IN vals TABLE (id INT, freq INT)) RETURNS TABLE (c VARCHAR, stmt_freq INT) AS BEGIN RETURN SELECT :c AS c, COUNT(DISTINCT(id)) AS stmt_freq FROM :vals; END;"
+        note: "RETURN <select>, as shown on the MAP_REDUCE page"

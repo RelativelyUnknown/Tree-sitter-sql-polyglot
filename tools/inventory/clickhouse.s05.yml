@@ -1,0 +1,81 @@
+dialect: clickhouse
+engine: ClickHouse
+version: "current docs (2026)"
+source: https://clickhouse.com/docs/sql-reference/statements/
+
+statements:
+  - id: create_temporary_table
+    name: CREATE TEMPORARY TABLE
+    doc: https://clickhouse.com/docs/sql-reference/statements/create/table/temporary-table
+    tier: high
+    probes:
+      - id: basic
+        sql: "CREATE TEMPORARY TABLE t (c1 UInt32, c2 String) ENGINE = Memory;"
+      - id: no_engine
+        sql: "CREATE TEMPORARY TABLE t (c1 UInt32, c2 String);"
+        note: "Docs: a temporary table uses the Memory engine when no engine is specified."
+      - id: if_not_exists
+        sql: "CREATE TEMPORARY TABLE IF NOT EXISTS t (c1 UInt32);"
+      - id: or_replace
+        sql: "CREATE OR REPLACE TEMPORARY TABLE t (c1 UInt32);"
+      - id: or_replace_if_not_exists
+        sql: "CREATE OR REPLACE TEMPORARY TABLE IF NOT EXISTS t (c1 UInt32);"
+        note: "Both [OR REPLACE] and [IF NOT EXISTS] appear in the syntax block."
+      - id: default
+        sql: "CREATE TEMPORARY TABLE t (c1 UInt32, c2 UInt32 DEFAULT c1 + 1);"
+      - id: materialized
+        sql: "CREATE TEMPORARY TABLE t (c1 UInt32, c2 UInt32 MATERIALIZED c1 + 1);"
+      - id: alias
+        sql: "CREATE TEMPORARY TABLE t (c1 UInt32, c2 UInt32 ALIAS c1 + 1);"
+      - id: type_omitted
+        sql: "CREATE TEMPORARY TABLE t (c1 DEFAULT 1, c2 UInt32);"
+        note: "Syntax block shows [type1] as optional when a DEFAULT/MATERIALIZED/ALIAS expression is given."
+      - id: engine_non_memory
+        sql: "CREATE TEMPORARY TABLE t (c1 UInt32) ENGINE = MergeTree ORDER BY c1;"
+        note: "Docs: may use any table engine except Replicated and KeeperMap."
+    examples: []
+
+  - id: replace_table
+    name: REPLACE TABLE
+    doc: https://clickhouse.com/docs/sql-reference/statements/create/table/replace-table
+    tier: high
+    probes:
+      - id: replace_basic
+        sql: "REPLACE TABLE t (n UInt64) ENGINE = MergeTree ORDER BY n;"
+      - id: replace_qualified
+        sql: "REPLACE TABLE db.t (n UInt64) ENGINE = MergeTree ORDER BY n;"
+      - id: create_or_replace
+        sql: "CREATE OR REPLACE TABLE t (n UInt64, s String) ENGINE = MergeTree ORDER BY n;"
+      - id: create_or_replace_qualified
+        sql: "CREATE OR REPLACE TABLE db.t (n UInt64) ENGINE = MergeTree ORDER BY n;"
+      - id: replace_as_select
+        sql: "REPLACE TABLE t ENGINE = MergeTree() ORDER BY CounterID AS SELECT * FROM t WHERE CounterID < 12345;"
+      - id: replace_as_table
+        sql: "REPLACE TABLE t AS s ENGINE = MergeTree ORDER BY n;"
+        note: "Docs: all CREATE TABLE syntax forms also work for REPLACE."
+      - id: replace_columns_as_select
+        sql: "REPLACE TABLE t (n UInt64, s String) ENGINE = MergeTree ORDER BY n AS SELECT 1, 'a';"
+      - id: replace_with_settings
+        sql: "REPLACE TABLE t (n UInt64) ENGINE = MergeTree ORDER BY n SETTINGS index_granularity = 8192;"
+      - id: replace_partition_by
+        sql: "REPLACE TABLE t (d Date, n UInt64) ENGINE = MergeTree PARTITION BY toYYYYMM(d) ORDER BY n;"
+    examples:
+      - |-
+        REPLACE TABLE myOldTable
+        ENGINE = MergeTree()
+        ORDER BY CounterID
+        AS
+        SELECT * FROM myOldTable
+        WHERE CounterID <12345;
+      - |-
+        CREATE OR REPLACE TABLE base.t1
+        (
+            n UInt64,
+            s String
+        )
+        ENGINE = MergeTree
+        ORDER BY n;
+      - |-
+        REPLACE TABLE base.t1 (n UInt64)
+        ENGINE = MergeTree
+        ORDER BY n;

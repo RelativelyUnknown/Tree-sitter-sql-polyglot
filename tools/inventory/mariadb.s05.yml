@@ -1,0 +1,115 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements:
+  - id: insert_on_duplicate_key_update
+    name: INSERT ... ON DUPLICATE KEY UPDATE
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-manipulation/inserting-loading-data/insert-on-duplicate-key-update
+    tier: high
+    probes:
+      - id: values_basic
+        sql: "INSERT INTO t (a, b) VALUES (1, 2) ON DUPLICATE KEY UPDATE b = 3;"
+      - id: no_column_list
+        sql: "INSERT INTO t VALUES (1, 'x') ON DUPLICATE KEY UPDATE b = 'x';"
+      - id: value_keyword
+        sql: "INSERT INTO t (a, b) VALUE (1, 2) ON DUPLICATE KEY UPDATE b = 3;"
+      - id: multi_row
+        sql: "INSERT INTO t (a, b, c) VALUES (1, 2, 3), (4, 5, 6) ON DUPLICATE KEY UPDATE c = 0;"
+      - id: default_in_values
+        sql: "INSERT INTO t (a, b) VALUES (1, DEFAULT) ON DUPLICATE KEY UPDATE b = 1;"
+      - id: multiple_assignments
+        sql: "INSERT INTO t (a, b, c) VALUES (1, 2, 3) ON DUPLICATE KEY UPDATE b = 5, c = 6;"
+      - id: values_function
+        sql: "INSERT INTO t (a, b, c) VALUES (1, 2, 3), (4, 5, 6) ON DUPLICATE KEY UPDATE c = VALUES(a) + VALUES(b);"
+        note: VALUES() is valid only inside the ON DUPLICATE KEY UPDATE clause
+      - id: low_priority
+        sql: "INSERT LOW_PRIORITY INTO t (a, b) VALUES (1, 2) ON DUPLICATE KEY UPDATE b = 3;"
+      - id: delayed
+        sql: "INSERT DELAYED INTO t (a, b) VALUES (1, 2) ON DUPLICATE KEY UPDATE b = 3;"
+        note: The page says the DELAYED option is ignored with ON DUPLICATE KEY UPDATE, so it is still accepted
+      - id: high_priority
+        sql: "INSERT HIGH_PRIORITY INTO t (a, b) VALUES (1, 2) ON DUPLICATE KEY UPDATE b = 3;"
+      - id: ignore
+        sql: "INSERT IGNORE INTO t (a, b) VALUES (1, 2) ON DUPLICATE KEY UPDATE b = 3;"
+      - id: without_into
+        sql: "INSERT t (a, b) VALUES (1, 2) ON DUPLICATE KEY UPDATE b = 3;"
+      - id: partition
+        sql: "INSERT INTO t PARTITION (p0, p1) (a, b) VALUES (1, 2) ON DUPLICATE KEY UPDATE b = 3;"
+      - id: set_form
+        sql: "INSERT INTO t SET a = 1, b = 2 ON DUPLICATE KEY UPDATE b = 3;"
+      - id: set_form_default
+        sql: "INSERT INTO t SET a = 1, b = DEFAULT ON DUPLICATE KEY UPDATE b = 3;"
+      - id: select_form
+        sql: "INSERT INTO t (a, b) SELECT x, y FROM s ON DUPLICATE KEY UPDATE b = 3;"
+      - id: select_form_no_columns
+        sql: "INSERT INTO t SELECT x, y FROM s ON DUPLICATE KEY UPDATE b = 3;"
+      - id: select_form_low_priority
+        sql: "INSERT LOW_PRIORITY IGNORE INTO t (a, b) SELECT x, y FROM s ON DUPLICATE KEY UPDATE b = 3;"
+      - id: expression_self_reference
+        sql: "INSERT INTO t (a, b) VALUES (1, 2) ON DUPLICATE KEY UPDATE b = b + 1;"
+    examples:
+      - |-
+        INSERT INTO ins_duplicate VALUES (4,'Gorilla') 
+          ON DUPLICATE KEY UPDATE animal='Gorilla';
+      - |-
+        INSERT INTO ins_duplicate VALUES (1,'Antelope') 
+          ON DUPLICATE KEY UPDATE animal='Antelope';
+      - |-
+        INSERT INTO ins_duplicate VALUES (2,'Lion',13) 
+          ON DUPLICATE KEY UPDATE animal='Lion';
+
+  - id: insert_returning
+    name: INSERT ... RETURNING
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-manipulation/inserting-loading-data/insertreturning
+    tier: high
+    probes:
+      - id: values_returning_columns
+        sql: "INSERT INTO t (id) VALUES (2), (3) RETURNING id, c;"
+      - id: returning_star
+        sql: "INSERT INTO t (id, c) VALUES (1, 'x') RETURNING *;"
+      - id: returning_expression
+        sql: "INSERT INTO t (id, c) VALUES (1, 'Dog'), (2, 'Lion') RETURNING id, id + id, id & id, id || id;"
+      - id: returning_alias
+        sql: "INSERT INTO t (id, c) VALUES (1, 'Dog') RETURNING id AS new_id, UPPER(c) AS up;"
+      - id: returning_function
+        sql: "INSERT INTO t SET id1 = 1, animal1 = 'Bear' RETURNING f(id1), UPPER(animal1);"
+      - id: returning_scalar_subquery
+        sql: "INSERT INTO t (id) VALUES (1) RETURNING id, (SELECT MAX(x) FROM s);"
+      - id: value_keyword
+        sql: "INSERT INTO t (id) VALUE (1) RETURNING id;"
+      - id: no_column_list
+        sql: "INSERT INTO t VALUES (1, 'x') RETURNING id;"
+      - id: default_in_values
+        sql: "INSERT INTO t (id, c) VALUES (1, DEFAULT) RETURNING c;"
+      - id: low_priority
+        sql: "INSERT LOW_PRIORITY INTO t (id) VALUES (1) RETURNING id;"
+      - id: delayed
+        sql: "INSERT DELAYED INTO t (id) VALUES (1) RETURNING id;"
+      - id: high_priority
+        sql: "INSERT HIGH_PRIORITY INTO t (id) VALUES (1) RETURNING id;"
+      - id: ignore
+        sql: "INSERT IGNORE INTO t (id) VALUES (1) RETURNING id;"
+      - id: without_into
+        sql: "INSERT t (id) VALUES (1) RETURNING id;"
+      - id: partition
+        sql: "INSERT INTO t PARTITION (p0) (id) VALUES (1) RETURNING id;"
+      - id: set_form
+        sql: "INSERT INTO t SET id = 1, c = 'x' RETURNING id, c;"
+      - id: select_form
+        sql: "INSERT INTO t (id, c) SELECT x, y FROM s RETURNING id, c;"
+      - id: select_form_other_table_returning
+        sql: "INSERT INTO t (id) SELECT x FROM s RETURNING (SELECT COUNT(*) FROM u);"
+        note: The page says aggregates are usable via INSERT...SELECT...RETURNING only when the RETURNING table differs from the INSERT table
+      - id: on_duplicate_key_update_returning
+        sql: "INSERT INTO t (id, c) VALUES (1, 'x') ON DUPLICATE KEY UPDATE c = 'y' RETURNING id, c;"
+      - id: set_form_on_duplicate_returning
+        sql: "INSERT INTO t SET id = 1, c = 'x' ON DUPLICATE KEY UPDATE c = 'y' RETURNING id;"
+      - id: select_form_on_duplicate_returning
+        sql: "INSERT INTO t (id, c) SELECT x, y FROM s ON DUPLICATE KEY UPDATE c = 'z' RETURNING id;"
+    examples:
+      - "INSERT INTO t2 (id) VALUES (2),(3) RETURNING id,t;"
+      - |-
+        INSERT INTO t2(id,animal) VALUES (1,'Dog'),(2,'Lion'),(3,'Tiger'),(4,'Leopard')  
+          RETURNING id,id+id,id&id,id||id;

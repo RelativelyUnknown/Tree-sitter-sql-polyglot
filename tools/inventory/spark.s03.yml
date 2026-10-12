@@ -1,0 +1,167 @@
+dialect: spark
+engine: Apache Spark SQL
+version: "4.x (docs/latest)"
+source: https://spark.apache.org/docs/latest/sql-ref-syntax.html
+
+statements:
+  - id: create_function_sql
+    name: CREATE FUNCTION (SQL)
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-create-sql-function.html
+    tier: high
+    probes:
+      - id: scalar_basic
+        sql: "CREATE FUNCTION f(x INT) RETURN x + 1;"
+      - id: no_params
+        sql: "CREATE FUNCTION f() RETURN 1;"
+      - id: or_replace
+        sql: "CREATE OR REPLACE FUNCTION f(x INT) RETURN x + 1;"
+      - id: temporary
+        sql: "CREATE TEMPORARY FUNCTION f(x INT) RETURN x + 1;"
+      - id: or_replace_temporary
+        sql: "CREATE OR REPLACE TEMPORARY FUNCTION f(x INT) RETURN x + 1;"
+      - id: if_not_exists
+        sql: "CREATE FUNCTION IF NOT EXISTS f(x INT) RETURN x + 1;"
+      - id: qualified_name
+        sql: "CREATE FUNCTION cat.db.f(x INT) RETURN x + 1;"
+      - id: temporary_session_qualifier
+        sql: "CREATE TEMPORARY FUNCTION session.f(x INT) RETURN x + 1;"
+      - id: temporary_system_session_qualifier
+        sql: "CREATE TEMPORARY FUNCTION system.session.f(x INT) RETURN x + 1;"
+      - id: returns_type
+        sql: "CREATE FUNCTION f(x INT) RETURNS INT RETURN x + 1;"
+      - id: multiple_params
+        sql: "CREATE FUNCTION f(x DOUBLE, y DOUBLE) RETURNS DOUBLE RETURN x * y;"
+      - id: param_default
+        sql: "CREATE FUNCTION f(x INT, y INT DEFAULT 1) RETURNS INT RETURN x + y;"
+      - id: param_comment
+        sql: "CREATE FUNCTION f(x INT COMMENT 'the input') RETURNS INT RETURN x + 1;"
+      - id: param_default_comment
+        sql: "CREATE FUNCTION f(x INT DEFAULT 1 COMMENT 'the input') RETURNS INT RETURN x + 1;"
+      - id: returns_table_with_schema
+        sql: "CREATE FUNCTION f(d INT) RETURNS TABLE (name STRING, id INT) RETURN SELECT name, id FROM t WHERE t.d = f.d;"
+      - id: returns_table_column_comment
+        sql: "CREATE FUNCTION f(d INT) RETURNS TABLE (name STRING COMMENT 'the name') RETURN SELECT name FROM t;"
+      - id: returns_table_no_schema
+        sql: "CREATE FUNCTION f(d INT) RETURNS TABLE RETURN SELECT name FROM t;"
+      - id: language_sql
+        sql: "CREATE FUNCTION f(x INT) RETURNS INT LANGUAGE SQL RETURN x + 1;"
+      - id: deterministic
+        sql: "CREATE FUNCTION f(x INT) RETURNS INT DETERMINISTIC RETURN x + 1;"
+      - id: not_deterministic
+        sql: "CREATE FUNCTION f(x INT) RETURNS INT NOT DETERMINISTIC RETURN x + 1;"
+      - id: comment
+        sql: "CREATE FUNCTION f(x INT) RETURNS INT COMMENT 'adds one' RETURN x + 1;"
+      - id: contains_sql
+        sql: "CREATE FUNCTION f(x INT) RETURNS INT CONTAINS SQL RETURN x + 1;"
+      - id: reads_sql_data
+        sql: "CREATE FUNCTION f(x INT) RETURNS INT READS SQL DATA RETURN (SELECT max(c) FROM t);"
+      - id: multiple_characteristics
+        sql: "CREATE FUNCTION f(x INT) RETURNS INT NOT DETERMINISTIC CONTAINS SQL COMMENT 'adds one' RETURN x + 1;"
+      - id: return_query
+        sql: "CREATE FUNCTION f() RETURNS TABLE (c INT) RETURN SELECT c FROM t;"
+    examples:
+      - "CREATE TEMPORARY FUNCTION hello () RETURNS STRING RETURN 'Hello World!';"
+      - "CREATE FUNCTION area (x DOUBLE, y DOUBLE) RETURNS DOUBLE RETURN x * y;"
+      - "CREATE FUNCTION roll_dice () RETURNS INT NOT DETERMINISTIC CONTAINS SQL COMMENT 'Roll a single 6 sided die' RETURN (rand () * 6)::INT + 1;"
+
+  - id: create_table
+    name: CREATE TABLE
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-ddl-create-table.html
+    tier: high
+    probes:
+      - id: datasource_basic
+        sql: "CREATE TABLE t (id INT, name STRING) USING CSV;"
+      - id: datasource_if_not_exists
+        sql: "CREATE TABLE IF NOT EXISTS t (id INT) USING PARQUET;"
+      - id: datasource_qualified_name
+        sql: "CREATE TABLE db.t (id INT) USING PARQUET;"
+      - id: datasource_column_comment
+        sql: "CREATE TABLE t (id INT COMMENT 'the id', name STRING COMMENT 'the name') USING PARQUET;"
+      - id: datasource_no_using
+        sql: "CREATE TABLE t (id INT, name STRING);"
+      - id: datasource_no_columns_ctas
+        sql: "CREATE TABLE t USING CSV AS SELECT * FROM s;"
+      - id: datasource_options
+        sql: "CREATE TABLE t (id INT) USING PARQUET OPTIONS ('parquet.bloom.filter.enabled' = 'true', 'k' = 'v');"
+      - id: datasource_options_unquoted_key
+        sql: "CREATE TABLE t (id INT) USING CSV OPTIONS (header = true, delimiter = ',');"
+      - id: datasource_partitioned_by
+        sql: "CREATE TABLE t (id INT, age INT) USING CSV PARTITIONED BY (age);"
+      - id: datasource_partitioned_by_multiple
+        sql: "CREATE TABLE t (id INT, a INT, b INT) USING CSV PARTITIONED BY (a, b);"
+      - id: datasource_clustered_by
+        sql: "CREATE TABLE t (id INT, name STRING) USING CSV CLUSTERED BY (id) INTO 4 BUCKETS;"
+      - id: datasource_clustered_by_sorted_by
+        sql: "CREATE TABLE t (id INT, name STRING) USING CSV CLUSTERED BY (id, name) SORTED BY (id ASC, name DESC) INTO 4 BUCKETS;"
+      - id: datasource_clustered_by_sorted_by_default
+        sql: "CREATE TABLE t (id INT) USING CSV CLUSTERED BY (id) SORTED BY (id) INTO 4 BUCKETS;"
+      - id: datasource_location
+        sql: "CREATE TABLE t (id INT) USING PARQUET LOCATION '/tmp/t';"
+      - id: datasource_comment
+        sql: "CREATE TABLE t (id INT) USING CSV COMMENT 'this is a comment';"
+      - id: datasource_tblproperties
+        sql: "CREATE TABLE t (id INT) USING CSV TBLPROPERTIES ('foo' = 'bar');"
+      - id: datasource_ctas
+        sql: "CREATE TABLE t_copy USING CSV AS SELECT * FROM t;"
+      - id: datasource_ctas_columns
+        sql: "CREATE TABLE t_copy (id INT) USING CSV AS SELECT id FROM t;"
+      - id: datasource_ctas_cte_parenthesized
+        sql: "CREATE TABLE t_bucket USING parquet CLUSTERED BY (id) INTO 4 buckets (WITH tmp AS (SELECT * FROM t WHERE id > 100) SELECT * FROM tmp);"
+      - id: datasource_clause_order
+        sql: "CREATE TABLE t (id INT) USING CSV TBLPROPERTIES ('foo' = 'bar') COMMENT 'this is a comment';"
+      - id: datasource_all_clauses
+        sql: "CREATE TABLE IF NOT EXISTS t (id INT, age INT) USING PARQUET OPTIONS ('k' = 'v') PARTITIONED BY (age) CLUSTERED BY (id) SORTED BY (id DESC) INTO 4 BUCKETS LOCATION '/tmp/t' COMMENT 'c' TBLPROPERTIES ('foo' = 'bar') AS SELECT id, age FROM s;"
+      - id: hive_basic
+        sql: "CREATE TABLE t (id INT, name STRING) STORED AS ORC;"
+      - id: hive_external
+        sql: "CREATE EXTERNAL TABLE t (id INT) STORED AS PARQUET LOCATION '/tmp/t';"
+      - id: hive_if_not_exists
+        sql: "CREATE TABLE IF NOT EXISTS t (id INT) STORED AS ORC;"
+      - id: hive_column_comment
+        sql: "CREATE TABLE t (id INT COMMENT 'the id') STORED AS ORC;"
+      - id: hive_comment
+        sql: "CREATE TABLE t (id INT) COMMENT 'this is a comment' STORED AS ORC;"
+      - id: hive_partitioned_by_typed
+        sql: "CREATE TABLE t (id INT, name STRING) PARTITIONED BY (age INT) STORED AS ORC;"
+      - id: hive_partitioned_by_typed_comment
+        sql: "CREATE TABLE t (id INT) PARTITIONED BY (age INT COMMENT 'the age') STORED AS ORC;"
+      - id: hive_partitioned_by_names
+        sql: "CREATE TABLE t (id INT, age INT) PARTITIONED BY (age) STORED AS ORC;"
+      - id: hive_clustered_by
+        sql: "CREATE TABLE t (id INT, name STRING) CLUSTERED BY (id) SORTED BY (id ASC) INTO 4 BUCKETS STORED AS ORC;"
+      - id: hive_row_format_delimited
+        sql: "CREATE TABLE t (id INT, name STRING) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE;"
+      - id: hive_row_format_delimited_all
+        sql: |-
+          CREATE EXTERNAL TABLE t (name STRING, friends ARRAY<STRING>, children MAP<STRING, INT>, address STRUCT<street: STRING, city: STRING>) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' ESCAPED BY '\\' COLLECTION ITEMS TERMINATED BY '_' MAP KEYS TERMINATED BY ':' LINES TERMINATED BY '\n' NULL DEFINED AS 'foonull' STORED AS TEXTFILE LOCATION '/tmp/family/';
+      - id: hive_row_format_serde
+        sql: "CREATE TABLE t (id INT) ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.avro.AvroSerDe' STORED AS AVRO;"
+      - id: hive_row_format_serde_properties
+        sql: "CREATE TABLE t (id INT) ROW FORMAT SERDE 'com.example.SerDe' WITH SERDEPROPERTIES ('k' = 'v') STORED AS TEXTFILE;"
+      - id: hive_stored_as_inputformat_outputformat
+        sql: "CREATE TABLE t ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.avro.AvroSerDe' STORED AS INPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerInputFormat' OUTPUTFORMAT 'org.apache.hadoop.hive.ql.io.avro.AvroContainerOutputFormat';"
+      - id: hive_tblproperties
+        sql: "CREATE TABLE t (id INT) STORED AS ORC TBLPROPERTIES ('foo' = 'bar');"
+      - id: hive_ctas
+        sql: "CREATE TABLE t_copy STORED AS ORC AS SELECT * FROM t;"
+      - id: hive_clause_order
+        sql: "CREATE TABLE t (id INT, name STRING) STORED AS ORC PARTITIONED BY (age INT);"
+      - id: hive_colon_column_types
+        sql: "CREATE TABLE t (id: INT, name: STRING) STORED AS ORC;"
+        note: Hive-format syntax block shows an optional ':' between column name and type (col_name1 [:] col_type1).
+      - id: like_basic
+        sql: "CREATE TABLE t2 LIKE t1;"
+      - id: like_if_not_exists
+        sql: "CREATE TABLE IF NOT EXISTS t2 LIKE t1;"
+      - id: like_using
+        sql: "CREATE TABLE t2 LIKE t1 USING CSV;"
+      - id: like_row_format_stored_as
+        sql: "CREATE TABLE t2 LIKE t1 ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE;"
+      - id: like_tblproperties
+        sql: "CREATE TABLE t2 LIKE t1 TBLPROPERTIES ('owner' = 'xxxx');"
+      - id: like_location
+        sql: "CREATE TABLE t2 LIKE t1 LOCATION '/root1/home';"
+    examples:
+      - "CREATE TABLE student (id INT, name STRING, age INT) USING CSV;"
+      - "CREATE TABLE student_partition_bucket USING parquet PARTITIONED BY (age) CLUSTERED BY (id) INTO 4 buckets AS SELECT * FROM student;"
+      - "CREATE TABLE student (id INT, name STRING) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' STORED AS TEXTFILE;"

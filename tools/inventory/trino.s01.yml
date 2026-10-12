@@ -1,0 +1,99 @@
+dialect: trino
+engine: Trino
+version: "483"
+source: https://trino.io/docs/current/sql.html
+
+statements:
+  - id: alter_materialized_view
+    name: ALTER MATERIALIZED VIEW
+    doc: https://trino.io/docs/current/sql/alter-materialized-view.html
+    tier: high
+    probes:
+      - id: rename_to
+        sql: "ALTER MATERIALIZED VIEW v RENAME TO v2;"
+      - id: rename_to_if_exists
+        sql: "ALTER MATERIALIZED VIEW IF EXISTS v RENAME TO v2;"
+      - id: set_properties
+        sql: "ALTER MATERIALIZED VIEW v SET PROPERTIES x = 'y';"
+      - id: set_properties_multiple
+        sql: "ALTER MATERIALIZED VIEW v SET PROPERTIES foo = 123, \"foo bar\" = 456;"
+      - id: set_properties_default
+        sql: "ALTER MATERIALIZED VIEW v SET PROPERTIES x = DEFAULT;"
+      - id: set_authorization_user
+        sql: "ALTER MATERIALIZED VIEW v SET AUTHORIZATION alice;"
+      - id: set_authorization_user_keyword
+        sql: "ALTER MATERIALIZED VIEW v SET AUTHORIZATION USER alice;"
+      - id: set_authorization_role
+        sql: "ALTER MATERIALIZED VIEW v SET AUTHORIZATION ROLE admin;"
+    examples:
+      - "ALTER MATERIALIZED VIEW people RENAME TO users;"
+      - "ALTER MATERIALIZED VIEW IF EXISTS people RENAME TO users;"
+      - "ALTER MATERIALIZED VIEW people SET PROPERTIES x = 'y';"
+
+  - id: alter_table
+    name: ALTER TABLE
+    doc: https://trino.io/docs/current/sql/alter-table.html
+    tier: high
+    probes:
+      - id: rename_to
+        sql: "ALTER TABLE t RENAME TO t2;"
+      - id: rename_to_if_exists
+        sql: "ALTER TABLE IF EXISTS t RENAME TO t2;"
+      - id: add_column
+        sql: "ALTER TABLE t ADD COLUMN c varchar;"
+      - id: add_column_if_not_exists
+        sql: "ALTER TABLE IF EXISTS t ADD COLUMN IF NOT EXISTS c varchar;"
+      - id: add_column_default
+        sql: "ALTER TABLE t ADD COLUMN c varchar DEFAULT '90210';"
+      - id: add_column_not_null
+        sql: "ALTER TABLE t ADD COLUMN c integer NOT NULL;"
+      - id: add_column_comment
+        sql: "ALTER TABLE t ADD COLUMN c varchar COMMENT 'a comment';"
+      - id: add_column_with_properties
+        sql: "ALTER TABLE t ADD COLUMN c varchar WITH (p = 'v', q = 1);"
+      - id: add_column_first
+        sql: "ALTER TABLE t ADD COLUMN c varchar FIRST;"
+      - id: add_column_last
+        sql: "ALTER TABLE t ADD COLUMN c varchar LAST;"
+      - id: add_column_after
+        sql: "ALTER TABLE t ADD COLUMN c varchar AFTER d;"
+      - id: add_column_all_options
+        sql: "ALTER TABLE t ADD COLUMN c varchar DEFAULT 'x' NOT NULL COMMENT 'cm' WITH (p = 'v') AFTER d;"
+      - id: drop_column
+        sql: "ALTER TABLE t DROP COLUMN c;"
+      - id: drop_column_if_exists
+        sql: "ALTER TABLE IF EXISTS t DROP COLUMN IF EXISTS c;"
+      - id: rename_column
+        sql: "ALTER TABLE t RENAME COLUMN c TO d;"
+      - id: rename_column_if_exists
+        sql: "ALTER TABLE IF EXISTS t RENAME COLUMN IF EXISTS c TO d;"
+      - id: alter_column_set_default
+        sql: "ALTER TABLE t ALTER COLUMN c SET DEFAULT 'x';"
+      - id: alter_column_drop_default
+        sql: "ALTER TABLE t ALTER COLUMN c DROP DEFAULT;"
+      - id: alter_column_set_data_type
+        sql: "ALTER TABLE t ALTER COLUMN c SET DATA TYPE bigint;"
+      - id: alter_column_drop_not_null
+        sql: "ALTER TABLE t ALTER COLUMN c DROP NOT NULL;"
+      - id: alter_column_if_exists
+        sql: "ALTER TABLE IF EXISTS t ALTER COLUMN c DROP NOT NULL;"
+      - id: set_authorization_user
+        sql: "ALTER TABLE t SET AUTHORIZATION alice;"
+      - id: set_authorization_user_keyword
+        sql: "ALTER TABLE t SET AUTHORIZATION USER alice;"
+      - id: set_authorization_role
+        sql: "ALTER TABLE t SET AUTHORIZATION ROLE admin;"
+      - id: set_properties
+        sql: "ALTER TABLE t SET PROPERTIES p = 'v';"
+      - id: set_properties_multiple_default
+        sql: "ALTER TABLE t SET PROPERTIES p = 'v', q = DEFAULT;"
+      - id: execute_command
+        sql: "ALTER TABLE t EXECUTE optimize;"
+      - id: execute_command_parameters
+        sql: "ALTER TABLE example.test.t EXECUTE optimize(file_size_threshold => '16MB');"
+      - id: execute_command_where
+        sql: "ALTER TABLE t EXECUTE optimize WHERE c = 1;"
+    examples:
+      - "ALTER TABLE users RENAME TO people;"
+      - "ALTER TABLE users ADD COLUMN zip varchar AFTER country;"
+      - "ALTER TABLE users ALTER COLUMN id SET DATA TYPE bigint;"

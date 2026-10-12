@@ -1,0 +1,97 @@
+dialect: redshift
+engine: Amazon Redshift
+version: "current"
+source: https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_commands.html
+
+statements:
+  - id: alter_table
+    name: ALTER TABLE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_TABLE.html
+    tier: high
+    probes:
+      - { id: add_constraint_unique, sql: "ALTER TABLE t ADD UNIQUE (c);" }
+      - { id: add_named_primary_key, sql: "ALTER TABLE t ADD CONSTRAINT pk PRIMARY KEY (c1, c2);" }
+      - { id: add_foreign_key, sql: "ALTER TABLE t ADD FOREIGN KEY (c) REFERENCES r (rc);" }
+      - { id: add_foreign_key_no_refcol, sql: "ALTER TABLE t ADD CONSTRAINT fk FOREIGN KEY (c) REFERENCES r;" }
+      - { id: drop_constraint, sql: "ALTER TABLE t DROP CONSTRAINT pk;" }
+      - { id: drop_constraint_restrict, sql: "ALTER TABLE t DROP CONSTRAINT pk RESTRICT;" }
+      - { id: drop_constraint_cascade, sql: "ALTER TABLE t DROP CONSTRAINT pk CASCADE;" }
+      - { id: owner_to, sql: "ALTER TABLE t OWNER TO new_owner;" }
+      - { id: rename_to, sql: "ALTER TABLE t RENAME TO t2;" }
+      - { id: rename_column, sql: "ALTER TABLE t RENAME COLUMN c TO c2;" }
+      - { id: alter_column_type, sql: "ALTER TABLE t ALTER COLUMN c TYPE varchar(300);" }
+      - { id: alter_column_encode, sql: "ALTER TABLE t ALTER COLUMN c ENCODE az64;" }
+      - { id: alter_column_encode_multiple, sql: "ALTER TABLE t ALTER COLUMN c0 ENCODE az64, ALTER COLUMN c1 ENCODE lzo;" }
+      - { id: alter_distkey, sql: "ALTER TABLE t ALTER DISTKEY c;" }
+      - { id: alter_diststyle_all, sql: "ALTER TABLE t ALTER DISTSTYLE ALL;" }
+      - { id: alter_diststyle_even, sql: "ALTER TABLE t ALTER DISTSTYLE EVEN;" }
+      - { id: alter_diststyle_key, sql: "ALTER TABLE t ALTER DISTSTYLE KEY DISTKEY c;" }
+      - { id: alter_diststyle_auto, sql: "ALTER TABLE t ALTER DISTSTYLE AUTO;" }
+      - { id: alter_sortkey, sql: "ALTER TABLE t ALTER SORTKEY (c1, c2);" }
+      - { id: alter_compound_sortkey, sql: "ALTER TABLE t ALTER COMPOUND SORTKEY (c1, c2);" }
+      - { id: alter_sortkey_auto, sql: "ALTER TABLE t ALTER SORTKEY AUTO;" }
+      - { id: alter_sortkey_none, sql: "ALTER TABLE t ALTER SORTKEY NONE;" }
+      - { id: alter_encode_auto, sql: "ALTER TABLE t ALTER ENCODE AUTO;" }
+      - { id: add_column, sql: "ALTER TABLE t ADD COLUMN c integer;" }
+      - { id: add_column_no_keyword, sql: "ALTER TABLE t ADD c integer;" }
+      - { id: add_column_default, sql: "ALTER TABLE t ADD COLUMN c integer DEFAULT 0;" }
+      - { id: add_column_encode, sql: "ALTER TABLE t ADD COLUMN c integer ENCODE az64;" }
+      - { id: add_column_not_null, sql: "ALTER TABLE t ADD COLUMN c integer NOT NULL;" }
+      - { id: add_column_null, sql: "ALTER TABLE t ADD COLUMN c integer NULL;" }
+      - { id: add_column_collate_cs, sql: "ALTER TABLE t ADD COLUMN c varchar(10) COLLATE CASE_SENSITIVE;" }
+      - { id: add_column_collate_ci, sql: "ALTER TABLE t ADD COLUMN c varchar(10) COLLATE CI;" }
+      - { id: add_column_all_options, sql: "ALTER TABLE t ADD COLUMN c varchar(10) DEFAULT 'x' ENCODE lzo NOT NULL COLLATE CASE_INSENSITIVE;" }
+      - { id: drop_column, sql: "ALTER TABLE t DROP COLUMN c;" }
+      - { id: drop_column_no_keyword, sql: "ALTER TABLE t DROP c;" }
+      - { id: drop_column_restrict, sql: "ALTER TABLE t DROP COLUMN c RESTRICT;" }
+      - { id: drop_column_cascade, sql: "ALTER TABLE t DROP COLUMN c CASCADE;" }
+      - { id: rls_on, sql: "ALTER TABLE t ROW LEVEL SECURITY ON;" }
+      - { id: rls_off, sql: "ALTER TABLE t ROW LEVEL SECURITY OFF;" }
+      - { id: rls_on_conjunction_and, sql: "ALTER TABLE t ROW LEVEL SECURITY ON CONJUNCTION TYPE AND;" }
+      - { id: rls_on_conjunction_or, sql: "ALTER TABLE t ROW LEVEL SECURITY ON CONJUNCTION TYPE OR;" }
+      - { id: rls_for_datashares, sql: "ALTER TABLE t ROW LEVEL SECURITY ON FOR DATASHARES;" }
+      - { id: rls_conjunction_for_datashares, sql: "ALTER TABLE t ROW LEVEL SECURITY OFF CONJUNCTION TYPE OR FOR DATASHARES;" }
+      - { id: masking_on_for_datashares, sql: "ALTER TABLE t MASKING ON FOR DATASHARES;" }
+      - { id: masking_off_for_datashares, sql: "ALTER TABLE t MASKING OFF FOR DATASHARES;" }
+      - { id: external_set_location, sql: "ALTER TABLE spectrum.t SET LOCATION 's3://bucket/folder/';" }
+      - { id: external_set_location_manifest, sql: "ALTER TABLE spectrum.t SET LOCATION 's3://bucket/manifest_file';" }
+      - { id: external_set_file_format, sql: "ALTER TABLE spectrum.t SET FILE FORMAT parquet;" }
+      - { id: external_set_table_properties, sql: "ALTER TABLE spectrum.t SET TABLE PROPERTIES ('numRows'='100');" }
+      - { id: external_partition_set_location, sql: "ALTER TABLE spectrum.t PARTITION (sd='2008-01-01') SET LOCATION 's3://bucket/folder/';" }
+      - { id: external_add_partition, sql: "ALTER TABLE spectrum.t ADD PARTITION (sd='2008-01-01') LOCATION 's3://bucket/folder/';" }
+      - { id: external_add_partition_if_not_exists, sql: "ALTER TABLE spectrum.t ADD IF NOT EXISTS PARTITION (sd='2008-01-01') LOCATION 's3://bucket/folder/';" }
+      - { id: external_add_partitions_multiple, sql: "ALTER TABLE spectrum.t ADD IF NOT EXISTS PARTITION (sd='2008-01-01') LOCATION 's3://bucket/f1/' PARTITION (sd='2008-01-02') LOCATION 's3://bucket/f2/';" }
+      - { id: external_drop_partition, sql: "ALTER TABLE spectrum.t DROP PARTITION (sd='2008-01-01');" }
+      - { id: combine_sortkey_distkey, sql: "ALTER TABLE t ALTER SORTKEY (c1, c2), ALTER DISTKEY c1;" }
+      - { id: combine_distkey_sortkey, sql: "ALTER TABLE t ALTER DISTKEY c1, ALTER SORTKEY (c1, c2);" }
+      - { id: combine_sortkey_diststyle_all, sql: "ALTER TABLE t ALTER SORTKEY (c1, c2), ALTER DISTSTYLE ALL;" }
+      - { id: combine_diststyle_all_sortkey, sql: "ALTER TABLE t ALTER DISTSTYLE ALL, ALTER SORTKEY (c1, c2);" }
+    examples:
+      - "alter table users rename to users_bkup;"
+      - "alter table venue rename column venueseats to venuesize;"
+      - "alter table event alter column eventname type varchar(300);"
+
+  - id: begin
+    name: BEGIN
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_BEGIN.html
+    tier: high
+    probes:
+      - { id: begin_basic, sql: "BEGIN;" }
+      - { id: begin_work, sql: "BEGIN WORK;" }
+      - { id: begin_transaction, sql: "BEGIN TRANSACTION;" }
+      - { id: begin_isolation_serializable, sql: "BEGIN ISOLATION LEVEL SERIALIZABLE;" }
+      - { id: begin_isolation_read_uncommitted, sql: "BEGIN ISOLATION LEVEL READ UNCOMMITTED;" }
+      - { id: begin_isolation_read_committed, sql: "BEGIN ISOLATION LEVEL READ COMMITTED;" }
+      - { id: begin_isolation_repeatable_read, sql: "BEGIN ISOLATION LEVEL REPEATABLE READ;" }
+      - { id: begin_read_write, sql: "BEGIN READ WRITE;" }
+      - { id: begin_read_only, sql: "BEGIN READ ONLY;" }
+      - { id: begin_work_isolation_read_only, sql: "BEGIN WORK ISOLATION LEVEL SERIALIZABLE READ ONLY;" }
+      - { id: begin_transaction_isolation_read_write, sql: "BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE READ WRITE;" }
+      - { id: start_transaction, sql: "START TRANSACTION;" }
+      - { id: start_transaction_isolation, sql: "START TRANSACTION ISOLATION LEVEL SERIALIZABLE;" }
+      - { id: start_transaction_read_write, sql: "START TRANSACTION READ WRITE;" }
+      - { id: start_transaction_read_only, sql: "START TRANSACTION READ ONLY;" }
+      - { id: start_transaction_isolation_read_only, sql: "START TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY;" }
+    examples:
+      - "begin;"
+      - "begin read write;"

@@ -1,0 +1,408 @@
+dialect: cockroachdb
+engine: CockroachDB
+version: "v26.3 (stable)"
+source: https://www.cockroachlabs.com/docs/stable/sql-statements
+
+statements:
+  - id: alter_external_connection
+    name: ALTER EXTERNAL CONNECTION
+    doc: https://www.cockroachlabs.com/docs/stable/alter-external-connection
+    tier: low
+    probes:
+      - { id: basic, sql: "ALTER EXTERNAL CONNECTION c AS 's3://bucket?AWS_ACCESS_KEY_ID=k&AWS_SECRET_ACCESS_KEY=s';" }
+      - { id: if_exists, sql: "ALTER EXTERNAL CONNECTION IF EXISTS c AS 'nodelocal://1/path';" }
+
+  - id: alter_partition
+    name: ALTER PARTITION
+    doc: https://www.cockroachlabs.com/docs/stable/alter-partition
+    tier: low
+    probes:
+      - { id: configure_zone_table, sql: "ALTER PARTITION p OF TABLE t CONFIGURE ZONE USING num_replicas = 5;" }
+      - { id: configure_zone_index, sql: "ALTER PARTITION p OF INDEX t@idx CONFIGURE ZONE USING constraints = '[+region=us-east]';" }
+      - { id: configure_zone_all_indexes, sql: "ALTER PARTITION p OF INDEX t@* CONFIGURE ZONE USING gc.ttlseconds = 600;" }
+      - { id: copy_from_parent, sql: "ALTER PARTITION p OF TABLE t CONFIGURE ZONE USING range_min_bytes = COPY FROM PARENT;" }
+      - { id: discard, sql: "ALTER PARTITION p OF TABLE t CONFIGURE ZONE DISCARD;" }
+
+  - id: alter_range
+    name: ALTER RANGE
+    doc: https://www.cockroachlabs.com/docs/stable/alter-range
+    tier: low
+    probes:
+      - { id: configure_zone, sql: "ALTER RANGE default CONFIGURE ZONE USING num_replicas = 5;" }
+      - { id: configure_zone_discard, sql: "ALTER RANGE meta CONFIGURE ZONE DISCARD;" }
+      - { id: relocate_lease, sql: "ALTER RANGE 70 RELOCATE LEASE TO 4;" }
+      - { id: relocate_lease_for_select, sql: "ALTER RANGE RELOCATE LEASE TO 2 FOR SELECT range_id FROM [SHOW RANGES FROM TABLE t WITH DETAILS];" }
+      - { id: relocate_from_to, sql: "ALTER RANGE 45 RELOCATE FROM 2 TO 4;" }
+      - { id: relocate_voters, sql: "ALTER RANGE RELOCATE VOTERS FROM 7 TO 2 FOR SELECT range_id FROM [SHOW RANGES FROM TABLE t WITH DETAILS];" }
+      - { id: relocate_nonvoters, sql: "ALTER RANGE RELOCATE NONVOTERS FROM 7 TO 2 FOR SELECT range_id FROM [SHOW RANGES FROM TABLE t WITH DETAILS];" }
+
+  - id: show_default_session_variables_for_role
+    name: SHOW DEFAULT SESSION VARIABLES FOR ROLE
+    doc: https://www.cockroachlabs.com/docs/stable/show-default-session-variables-for-role
+    tier: low
+    probes:
+      - { id: for_role, sql: "SHOW DEFAULT SESSION VARIABLES FOR ROLE r;" }
+      - { id: for_role_all, sql: "SHOW DEFAULT SESSION VARIABLES FOR ROLE ALL;" }
+
+  - id: show_full_table_scans
+    name: SHOW FULL TABLE SCANS
+    doc: https://www.cockroachlabs.com/docs/stable/show-full-table-scans
+    tier: low
+    probes:
+      - { id: basic, sql: "SHOW FULL TABLE SCANS;" }
+
+  - id: show_locality
+    name: SHOW LOCALITY
+    doc: https://www.cockroachlabs.com/docs/stable/show-locality
+    tier: low
+    probes:
+      - { id: basic, sql: "SHOW LOCALITY;" }
+
+  - id: show_partitions
+    name: SHOW PARTITIONS
+    doc: https://www.cockroachlabs.com/docs/stable/show-partitions
+    tier: low
+    probes:
+      - { id: from_table, sql: "SHOW PARTITIONS FROM TABLE t;" }
+      - { id: from_database, sql: "SHOW PARTITIONS FROM DATABASE d;" }
+      - { id: from_index, sql: "SHOW PARTITIONS FROM INDEX t@idx;" }
+      - { id: from_index_all, sql: "SHOW PARTITIONS FROM INDEX t@*;" }
+
+  - id: show_regions
+    name: SHOW REGIONS
+    doc: https://www.cockroachlabs.com/docs/stable/show-regions
+    tier: low
+    probes:
+      - { id: basic, sql: "SHOW REGIONS;" }
+      - { id: from_cluster, sql: "SHOW REGIONS FROM CLUSTER;" }
+      - { id: from_database, sql: "SHOW REGIONS FROM DATABASE d;" }
+      - { id: from_current_database, sql: "SHOW REGIONS FROM DATABASE;" }
+      - { id: from_all_databases, sql: "SHOW REGIONS FROM ALL DATABASES;" }
+
+  - id: show_super_regions
+    name: SHOW SUPER REGIONS
+    doc: https://www.cockroachlabs.com/docs/stable/show-super-regions
+    tier: low
+    probes:
+      - { id: from_database, sql: "SHOW SUPER REGIONS FROM DATABASE d;" }
+
+  - id: show_ranges
+    name: SHOW RANGES
+    doc: https://www.cockroachlabs.com/docs/stable/show-ranges
+    tier: low
+    probes:
+      - { id: from_database, sql: "SHOW RANGES FROM DATABASE d;" }
+      - { id: from_table, sql: "SHOW RANGES FROM TABLE t;" }
+      - { id: from_index, sql: "SHOW RANGES FROM INDEX t@idx;" }
+      - { id: from_current_catalog, sql: "SHOW RANGES FROM CURRENT_CATALOG;" }
+      - { id: cluster_ranges, sql: "SHOW CLUSTER RANGES;" }
+      - { id: with_options, sql: "SHOW RANGES FROM TABLE t WITH INDEXES, KEYS, DETAILS;" }
+      - { id: cluster_ranges_with_tables, sql: "SHOW CLUSTER RANGES WITH TABLES;" }
+
+  - id: show_range_for_row
+    name: SHOW RANGE FOR ROW
+    doc: https://www.cockroachlabs.com/docs/stable/show-range-for-row
+    tier: low
+    probes:
+      - { id: from_table, sql: "SHOW RANGE FROM TABLE t FOR ROW (1, 'a');" }
+      - { id: from_index, sql: "SHOW RANGE FROM INDEX t@idx FOR ROW (1, 'a');" }
+      - { id: from_index_unqualified, sql: "SHOW RANGE FROM INDEX idx FOR ROW (1);" }
+
+  - id: show_zone_configurations
+    name: SHOW ZONE CONFIGURATIONS
+    doc: https://www.cockroachlabs.com/docs/stable/show-zone-configurations
+    tier: low
+    probes:
+      - { id: all, sql: "SHOW ALL ZONE CONFIGURATIONS;" }
+      - { id: from_range, sql: "SHOW ZONE CONFIGURATION FROM RANGE default;" }
+      - { id: from_database, sql: "SHOW ZONE CONFIGURATION FROM DATABASE d;" }
+      - { id: from_table, sql: "SHOW ZONE CONFIGURATION FROM TABLE t;" }
+      - { id: from_index, sql: "SHOW ZONE CONFIGURATION FROM INDEX t@idx;" }
+      - { id: from_partition, sql: "SHOW ZONE CONFIGURATION FROM PARTITION p OF TABLE t;" }
+      - { id: configurations_plural, sql: "SHOW ZONE CONFIGURATIONS;" }
+
+  - id: drop_provisioned_roles
+    name: DROP PROVISIONED ROLES
+    doc: https://www.cockroachlabs.com/docs/stable/drop-provisioned-roles
+    tier: low
+    probes:
+      - { id: with_source, sql: "DROP PROVISIONED ROLES WITH SOURCE = 'ldap:ldap.example.com';" }
+      - { id: last_login_before, sql: "DROP PROVISIONED ROLES WITH LAST LOGIN BEFORE '2025-01-01';" }
+      - { id: with_limit, sql: "DROP PROVISIONED ROLES WITH SOURCE = 'oidc:example', LIMIT 100;" }
+
+  - id: inspect
+    name: INSPECT
+    doc: https://www.cockroachlabs.com/docs/stable/inspect
+    tier: low
+    probes:
+      - { id: table, sql: "INSPECT TABLE t;" }
+      - { id: database, sql: "INSPECT DATABASE d;" }
+      - { id: as_of_system_time, sql: "INSPECT TABLE t AS OF SYSTEM TIME '-10s';" }
+      - { id: with_options_index, sql: "INSPECT TABLE t WITH OPTIONS INDEX (idx);" }
+      - { id: with_options_detached, sql: "INSPECT TABLE t WITH OPTIONS DETACHED;" }
+
+  - id: show_inspect_errors
+    name: SHOW INSPECT ERRORS
+    doc: https://www.cockroachlabs.com/docs/stable/show-inspect-errors
+    tier: low
+    probes:
+      - { id: basic, sql: "SHOW INSPECT ERRORS;" }
+      - { id: for_table, sql: "SHOW INSPECT ERRORS FOR TABLE t;" }
+      - { id: for_job, sql: "SHOW INSPECT ERRORS FOR JOB 1141477013029322753;" }
+      - { id: with_details, sql: "SHOW INSPECT ERRORS FOR TABLE t WITH DETAILS;" }
+
+  - id: show_transactions
+    name: SHOW TRANSACTIONS
+    doc: https://www.cockroachlabs.com/docs/stable/show-transactions
+    tier: low
+    probes:
+      - { id: basic, sql: "SHOW TRANSACTIONS;" }
+      - { id: all_cluster, sql: "SHOW ALL CLUSTER TRANSACTIONS;" }
+      - { id: local, sql: "SHOW LOCAL TRANSACTIONS;" }
+
+  - id: show_trace_for_session
+    name: SHOW TRACE FOR SESSION
+    doc: https://www.cockroachlabs.com/docs/stable/show-trace
+    tier: low
+    probes:
+      - { id: basic, sql: "SHOW TRACE FOR SESSION;" }
+      - { id: compact_kv, sql: "SHOW COMPACT KV TRACE FOR SESSION;" }
+
+  - id: reset_cluster_setting
+    name: RESET CLUSTER SETTING
+    doc: https://www.cockroachlabs.com/docs/stable/reset-cluster-setting
+    tier: low
+    probes:
+      - { id: basic, sql: "RESET CLUSTER SETTING sql.defaults.distsql;" }
+
+  - id: set_cluster_setting
+    name: SET CLUSTER SETTING
+    doc: https://www.cockroachlabs.com/docs/stable/set-cluster-setting
+    tier: low
+    probes:
+      - { id: equals, sql: "SET CLUSTER SETTING server.time_until_store_dead = '1m30s';" }
+      - { id: to, sql: "SET CLUSTER SETTING cluster.organization TO 'org';" }
+
+  - id: show_all_cluster_settings
+    name: SHOW ALL CLUSTER SETTINGS
+    doc: https://www.cockroachlabs.com/docs/stable/show-cluster-setting
+    tier: low
+    probes:
+      - { id: all, sql: "SHOW ALL CLUSTER SETTINGS;" }
+      - { id: single, sql: "SHOW CLUSTER SETTING sql.defaults.distsql;" }
+      - { id: all_public, sql: "SHOW PUBLIC CLUSTER SETTINGS;" }
+      - { id: all_public_keyword, sql: "SHOW ALL PUBLIC CLUSTER SETTINGS;" }
+
+  - id: show_sessions
+    name: SHOW SESSIONS
+    doc: https://www.cockroachlabs.com/docs/stable/show-sessions
+    tier: low
+    probes:
+      - { id: basic, sql: "SHOW SESSIONS;" }
+      - { id: cluster, sql: "SHOW CLUSTER SESSIONS;" }
+      - { id: all_local, sql: "SHOW ALL LOCAL SESSIONS;" }
+
+  - id: cancel_session
+    name: CANCEL SESSION
+    doc: https://www.cockroachlabs.com/docs/stable/cancel-session
+    tier: low
+    probes:
+      - { id: basic, sql: "CANCEL SESSION '16f4e3c2a0000001';" }
+      - { id: if_exists, sql: "CANCEL SESSION IF EXISTS '16f4e3c2a0000001';" }
+      - { id: sessions_select, sql: "CANCEL SESSIONS SELECT session_id FROM [SHOW SESSIONS] WHERE user_name = 'u';" }
+
+  - id: cancel_query
+    name: CANCEL QUERY
+    doc: https://www.cockroachlabs.com/docs/stable/cancel-query
+    tier: low
+    probes:
+      - { id: basic, sql: "CANCEL QUERY '16f4e3c2a0000001';" }
+      - { id: if_exists, sql: "CANCEL QUERY IF EXISTS '16f4e3c2a0000001';" }
+      - { id: queries_select, sql: "CANCEL QUERIES SELECT query_id FROM [SHOW CLUSTER QUERIES] WHERE user_name = 'u';" }
+
+  - id: show_statement_hints
+    name: SHOW STATEMENT HINTS
+    doc: https://www.cockroachlabs.com/docs/stable/show-statement-hints
+    tier: low
+    probes:
+      - { id: for_fingerprint, sql: "SHOW STATEMENT HINTS FOR $$ SELECT * FROM users WHERE city = _ $$;" }
+      - { id: with_details, sql: "SHOW STATEMENT HINTS FOR $$ SELECT * FROM users WHERE city = _ $$ WITH DETAILS;" }
+      - { id: with_options, sql: "SHOW STATEMENT HINTS FOR 'SELECT 1' WITH OPTIONS (DETAILS);" }
+
+  - id: cancel_job
+    name: CANCEL JOB
+    doc: https://www.cockroachlabs.com/docs/stable/cancel-job
+    tier: low
+    probes:
+      - { id: job, sql: "CANCEL JOB 1;" }
+      - { id: jobs_select, sql: "CANCEL JOBS SELECT job_id FROM [SHOW JOBS] WHERE status = 'running';" }
+      - { id: for_schedule, sql: "CANCEL JOBS FOR SCHEDULE 1;" }
+      - { id: all_type, sql: "CANCEL ALL BACKUP JOBS;" }
+
+  - id: pause_job
+    name: PAUSE JOB
+    doc: https://www.cockroachlabs.com/docs/stable/pause-job
+    tier: low
+    probes:
+      - { id: job, sql: "PAUSE JOB 1;" }
+      - { id: job_with_reason, sql: "PAUSE JOB 1 WITH REASON = 'maintenance';" }
+      - { id: jobs_select, sql: "PAUSE JOBS SELECT job_id FROM [SHOW JOBS] WHERE job_type = 'BACKUP';" }
+      - { id: for_schedule, sql: "PAUSE JOBS FOR SCHEDULE 1;" }
+      - { id: all_type, sql: "PAUSE ALL CHANGEFEED JOBS;" }
+
+  - id: resume_job
+    name: RESUME JOB
+    doc: https://www.cockroachlabs.com/docs/stable/resume-job
+    tier: low
+    probes:
+      - { id: job, sql: "RESUME JOB 1;" }
+      - { id: jobs_select, sql: "RESUME JOBS SELECT job_id FROM [SHOW JOBS] WHERE status = 'paused';" }
+      - { id: for_schedule, sql: "RESUME JOBS FOR SCHEDULE 1;" }
+      - { id: all_type, sql: "RESUME ALL IMPORT JOBS;" }
+
+  - id: show_jobs
+    name: SHOW JOBS
+    doc: https://www.cockroachlabs.com/docs/stable/show-jobs
+    tier: low
+    probes:
+      - { id: basic, sql: "SHOW JOBS;" }
+      - { id: automatic, sql: "SHOW AUTOMATIC JOBS;" }
+      - { id: select, sql: "SHOW JOBS SELECT job_id FROM [SHOW JOBS] WHERE status = 'running';" }
+      - { id: when_complete, sql: "SHOW JOBS WHEN COMPLETE SELECT job_id FROM [SHOW JOBS];" }
+      - { id: for_schedule, sql: "SHOW JOBS FOR SCHEDULE 1;" }
+      - { id: changefeed_jobs, sql: "SHOW CHANGEFEED JOBS;" }
+      - { id: single_job, sql: "SHOW JOB 1;" }
+      - { id: single_job_with_options, sql: "SHOW JOB 1 WITH EXECUTION DETAILS;" }
+      - { id: job_when_complete, sql: "SHOW JOB WHEN COMPLETE 1;" }
+
+  - id: backup
+    name: BACKUP
+    doc: https://www.cockroachlabs.com/docs/stable/backup
+    tier: low
+    probes:
+      - { id: into_cluster, sql: "BACKUP INTO 's3://bucket/path?AUTH=implicit';" }
+      - { id: table, sql: "BACKUP TABLE t INTO 'external://backup_s3';" }
+      - { id: database, sql: "BACKUP DATABASE d INTO 'external://backup_s3';" }
+      - { id: into_latest_in, sql: "BACKUP DATABASE d INTO LATEST IN 'external://backup_s3';" }
+      - { id: as_of_system_time, sql: "BACKUP INTO 'external://backup_s3' AS OF SYSTEM TIME '-10s';" }
+      - { id: with_options, sql: "BACKUP INTO 'external://backup_s3' WITH revision_history, detached;" }
+      - { id: with_option_values, sql: "BACKUP TABLE t INTO 'external://backup_s3' WITH kms = 'aws:///key?REGION=us-east-1';" }
+      - { id: options_parenthesized, sql: "BACKUP INTO 'external://backup_s3' WITH OPTIONS (revision_history);" }
+      - { id: locality_uris, sql: "BACKUP INTO ('external://a?COCKROACH_LOCALITY=default', 'external://b?COCKROACH_LOCALITY=region%3Dus-east');" }
+
+  - id: restore
+    name: RESTORE
+    doc: https://www.cockroachlabs.com/docs/stable/restore
+    tier: low
+    probes:
+      - { id: cluster_latest, sql: "RESTORE FROM LATEST IN 'external://backup_s3';" }
+      - { id: table, sql: "RESTORE TABLE t FROM LATEST IN 'external://backup_s3';" }
+      - { id: tables, sql: "RESTORE TABLE t1, t2 FROM LATEST IN 'external://backup_s3';" }
+      - { id: database, sql: "RESTORE DATABASE d FROM LATEST IN 'external://backup_s3';" }
+      - { id: subdirectory, sql: "RESTORE TABLE t FROM '2023/03/23-213101.37' IN 'external://backup_s3';" }
+      - { id: system_users, sql: "RESTORE SYSTEM USERS FROM LATEST IN 'external://backup_s3';" }
+      - { id: as_of_system_time, sql: "RESTORE FROM LATEST IN 'external://backup_s3' AS OF SYSTEM TIME '2023-01-01 00:00:00';" }
+      - { id: with_options, sql: "RESTORE TABLE t FROM LATEST IN 'external://backup_s3' WITH into_db = 'd2', skip_missing_foreign_keys;" }
+      - { id: options_parenthesized, sql: "RESTORE FROM LATEST IN 'external://backup_s3' WITH OPTIONS (detached);" }
+
+  - id: show_backup
+    name: SHOW BACKUP
+    doc: https://www.cockroachlabs.com/docs/stable/show-backup
+    tier: low
+    probes:
+      - { id: backups_in, sql: "SHOW BACKUPS IN 'external://backup_s3';" }
+      - { id: backups_newer_older, sql: "SHOW BACKUPS IN 'external://backup_s3' NEWER THAN '-7d' OLDER THAN '-1d';" }
+      - { id: backups_with_option, sql: "SHOW BACKUPS IN 'external://backup_s3' WITH REVISION START TIME;" }
+      - { id: from_latest, sql: "SHOW BACKUP FROM LATEST IN 'external://backup_s3';" }
+      - { id: from_subdirectory, sql: "SHOW BACKUP FROM '2022/04/08-142355.33' IN 'external://backup_s3';" }
+      - { id: with_options, sql: "SHOW BACKUP FROM LATEST IN 'external://backup_s3' WITH privileges;" }
+
+  - id: create_schedule_for_backup
+    name: CREATE SCHEDULE FOR BACKUP
+    doc: https://www.cockroachlabs.com/docs/stable/create-schedule-for-backup
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE SCHEDULE FOR BACKUP INTO 'external://backup_s3' RECURRING '@daily';" }
+      - { id: with_label, sql: "CREATE SCHEDULE s FOR BACKUP INTO 'external://backup_s3' RECURRING '@daily';" }
+      - { id: if_not_exists, sql: "CREATE SCHEDULE IF NOT EXISTS s FOR BACKUP INTO 'external://backup_s3' RECURRING '@daily';" }
+      - { id: table_target, sql: "CREATE SCHEDULE s FOR BACKUP TABLE t INTO 'external://backup_s3' RECURRING '@hourly';" }
+      - { id: database_target, sql: "CREATE SCHEDULE s FOR BACKUP DATABASE d INTO 'external://backup_s3' RECURRING '@daily';" }
+      - { id: backup_options, sql: "CREATE SCHEDULE s FOR BACKUP INTO 'external://backup_s3' WITH revision_history RECURRING '@daily';" }
+      - { id: full_backup, sql: "CREATE SCHEDULE s FOR BACKUP INTO 'external://backup_s3' RECURRING '@hourly' FULL BACKUP '@weekly';" }
+      - { id: full_backup_always, sql: "CREATE SCHEDULE s FOR BACKUP INTO 'external://backup_s3' RECURRING '@daily' FULL BACKUP ALWAYS;" }
+      - { id: schedule_options, sql: "CREATE SCHEDULE s FOR BACKUP INTO 'external://backup_s3' RECURRING '@daily' WITH SCHEDULE OPTIONS first_run = 'now', on_previous_running = 'skip';" }
+
+  - id: alter_backup_schedule
+    name: ALTER BACKUP SCHEDULE
+    doc: https://www.cockroachlabs.com/docs/stable/alter-backup-schedule
+    tier: low
+    probes:
+      - { id: set_label, sql: "ALTER BACKUP SCHEDULE 814155335856521217 SET LABEL gcs_backups;" }
+      - { id: set_into, sql: "ALTER BACKUP SCHEDULE 814155335856521217 SET INTO 'external://gcs_storage';" }
+      - { id: set_with, sql: "ALTER BACKUP SCHEDULE 814155335856521217 SET WITH revision_history;" }
+      - { id: set_recurring, sql: "ALTER BACKUP SCHEDULE 814155335856521217 SET RECURRING '@hourly';" }
+      - { id: set_full_backup, sql: "ALTER BACKUP SCHEDULE 814155335856521217 SET FULL BACKUP '@daily';" }
+      - { id: set_full_backup_always, sql: "ALTER BACKUP SCHEDULE 814155335856521217 SET FULL BACKUP ALWAYS;" }
+      - { id: set_schedule_option, sql: "ALTER BACKUP SCHEDULE 814155335856521217 SET SCHEDULE OPTION on_previous_running = 'start';" }
+      - { id: multiple_set, sql: "ALTER BACKUP SCHEDULE 814155335856521217 SET INTO 'external://gcs_storage', SET LABEL gcs_backups;" }
+      - { id: execute_immediately, sql: "ALTER BACKUP SCHEDULE 814155335856521217 EXECUTE IMMEDIATELY;" }
+      - { id: execute_full_immediately, sql: "ALTER BACKUP SCHEDULE 814155335856521217 EXECUTE FULL IMMEDIATELY;" }
+
+  - id: show_schedules
+    name: SHOW SCHEDULES
+    doc: https://www.cockroachlabs.com/docs/stable/show-schedules
+    tier: low
+    probes:
+      - { id: basic, sql: "SHOW SCHEDULES;" }
+      - { id: running, sql: "SHOW RUNNING SCHEDULES;" }
+      - { id: paused, sql: "SHOW PAUSED SCHEDULES;" }
+      - { id: for_backup, sql: "SHOW SCHEDULES FOR BACKUP;" }
+      - { id: for_sql_statistics, sql: "SHOW SCHEDULES FOR SQL STATISTICS;" }
+      - { id: for_changefeed, sql: "SHOW SCHEDULES FOR CHANGEFEED;" }
+      - { id: single, sql: "SHOW SCHEDULE 814155335856521217;" }
+
+  - id: pause_schedules
+    name: PAUSE SCHEDULES
+    doc: https://www.cockroachlabs.com/docs/stable/pause-schedules
+    tier: low
+    probes:
+      - { id: single, sql: "PAUSE SCHEDULE 1;" }
+      - { id: select, sql: "PAUSE SCHEDULES SELECT schedule_id FROM [SHOW SCHEDULES] WHERE label = 's';" }
+
+  - id: resume_schedules
+    name: RESUME SCHEDULES
+    doc: https://www.cockroachlabs.com/docs/stable/resume-schedules
+    tier: low
+    probes:
+      - { id: single, sql: "RESUME SCHEDULE 1;" }
+      - { id: select, sql: "RESUME SCHEDULES SELECT schedule_id FROM [SHOW SCHEDULES] WHERE label = 's';" }
+
+  - id: drop_schedules
+    name: DROP SCHEDULES
+    doc: https://www.cockroachlabs.com/docs/stable/drop-schedules
+    tier: low
+    probes:
+      - { id: single, sql: "DROP SCHEDULE 1;" }
+      - { id: select, sql: "DROP SCHEDULES SELECT schedule_id FROM [SHOW SCHEDULES] WHERE label = 's';" }
+
+  - id: alter_backup
+    name: ALTER BACKUP
+    doc: https://www.cockroachlabs.com/docs/stable/alter-backup
+    tier: low
+    probes:
+      - { id: add_new_kms_latest, sql: "ALTER BACKUP LATEST IN 's3://bucket?AUTH=implicit' ADD NEW_KMS = 'aws:///key?REGION=us-east-1' WITH OLD_KMS = 'aws:///old?REGION=us-east-1';" }
+      - { id: add_new_kms_subdirectory, sql: "ALTER BACKUP '2022/03/23-213101.37' IN 's3://bucket?AUTH=implicit' ADD NEW_KMS = 'aws:///key?REGION=us-east-1' WITH OLD_KMS = 'aws:///old?REGION=us-east-1';" }
+
+  - id: create_changefeed
+    name: CREATE CHANGEFEED
+    doc: https://www.cockroachlabs.com/docs/stable/create-changefeed
+    tier: low
+    probes:
+      - { id: for_table_into_sink, sql: "CREATE CHANGEFEED FOR TABLE t INTO 'kafka://host:9092';" }
+      - { id: for_multiple_tables, sql: "CREATE CHANGEFEED FOR TABLE t1, t2, t3 INTO 'external://kafka_sink';" }
+      - { id: for_table_with_options, sql: "CREATE CHANGEFEED FOR TABLE t INTO 'kafka://host:9092' WITH updated, resolved = '10s';" }
+      - { id: sinkless, sql: "CREATE CHANGEFEED FOR t;" }
+      - { id: for_column_families, sql: "CREATE CHANGEFEED FOR TABLE t FAMILY f1 INTO 'kafka://host:9092';" }
+      - { id: for_database, sql: "CREATE CHANGEFEED FOR DATABASE d INTO 'kafka://host:9092';" }
+      - { id: cdc_query, sql: "CREATE CHANGEFEED INTO 'kafka://host:9092' WITH updated AS SELECT c FROM t WHERE c > 1;" }
+      - { id: cdc_query_sinkless, sql: "CREATE CHANGEFEED WITH updated, resolved AS SELECT * FROM t;" }

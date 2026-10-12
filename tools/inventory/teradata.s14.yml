@@ -1,0 +1,92 @@
+dialect: teradata
+engine: Teradata Vantage (Enterprise IntelliFlex) and VantageCloud Lake
+version: "20.00"
+source: https://docs.teradata.com/reader/X~2C1PifIMPUALz40wgyxQ/DXllu86_qUx3dJlXfCkc6Q
+
+statements:
+  - id: rollback
+    name: ROLLBACK
+    doc: https://docs.teradata.com/reader/4_jiz05LXsLWBbfvKTLneg/b8T9mYUk6E1t6nxkmZVAqw
+    tier: high
+    probes:
+      - id: basic
+        sql: "ROLLBACK;"
+      - id: work
+        sql: "ROLLBACK WORK;"
+      - id: abort_message
+        sql: "ROLLBACK 'aborted';"
+      - id: work_message
+        sql: "ROLLBACK WORK 'aborted';"
+      - id: where
+        sql: "ROLLBACK WHERE c > 10;"
+      - id: from_where
+        sql: "ROLLBACK FROM t WHERE c > 10;"
+      - id: message_from_where
+        sql: "ROLLBACK 'aborted' FROM t WHERE t.c > 10;"
+      - id: where_subquery
+        sql: "ROLLBACK WHERE (SELECT COUNT(*) FROM t) > 10;"
+    examples:
+      - "ROLLBACK WHERE (tab1.euro_col < CAST(0.0 AS euro));"
+      - "ROLLBACK WHERE (tab1.cir_col.area() < 10.0);"
+      - |-
+        ROLLBACK FROM t1
+             WHERE a1 = test.value_expression(2,3);
+
+  - id: update
+    name: UPDATE (UPD)
+    doc: https://docs.teradata.com/reader/4_jiz05LXsLWBbfvKTLneg/RcOO2bgQq1Z6BdXJ~wTVIA
+    tier: high
+    probes:
+      - id: basic
+        sql: "UPDATE t SET c = 1;"
+      - id: upd_abbreviation
+        sql: "UPD t SET c = 1 WHERE d = 2;"
+      - id: where
+        sql: "UPDATE t SET c = 1 WHERE d = 2;"
+      - id: all
+        sql: "UPDATE t SET c = c * 1.1 ALL;"
+      - id: alias
+        sql: "UPDATE t AS a SET c = 1 WHERE a.d = 2;"
+      - id: alias_no_as
+        sql: "UPDATE t a SET c = 1 WHERE a.d = 2;"
+      - id: multiple_set
+        sql: "UPDATE t SET c = 1, d = 2, e = NULL WHERE f = 3;"
+      - id: set_null
+        sql: "UPDATE t SET c = NULL;"
+      - id: mutator_set
+        sql: "UPDATE t SET c.x = 1 WHERE d = 2;"
+      - id: from_clause
+        sql: "UPDATE t FROM s SET c = s.c WHERE t.id = s.id;"
+      - id: from_alias
+        sql: "UPDATE t FROM s AS x SET c = x.c WHERE t.id = x.id;"
+      - id: from_correlation_updated
+        sql: "UPDATE a FROM t AS a, s AS b SET c = c * 1.05 WHERE a.id = b.id;"
+      - id: from_multiple_tables
+        sql: "UPDATE t FROM s1, s2 SET c = s1.c WHERE t.id = s1.id AND s1.id = s2.id;"
+      - id: where_subquery
+        sql: "UPDATE t SET c = 1 WHERE d IN (SELECT e FROM s);"
+      - id: set_scalar_subquery
+        sql: "UPDATE t SET c = (SELECT SUM(x) FROM s WHERE s.id = t.id);"
+      - id: with_isolated_loading
+        sql: "UPDATE WITH ISOLATED LOADING t SET c = c + 1;"
+      - id: with_concurrent_isolated_loading
+        sql: "UPDATE WITH CONCURRENT ISOLATED LOADING t SET c = c + 1;"
+      - id: with_no_isolated_loading
+        sql: "UPDATE WITH NO ISOLATED LOADING t SET c = c + 1;"
+      - id: with_no_concurrent_isolated_loading
+        sql: "UPDATE WITH NO CONCURRENT ISOLATED LOADING t SET c = c + 1;"
+      - id: upd_with_isolated_loading_alias
+        sql: "UPD WITH ISOLATED LOADING t AS a SET c = 1 WHERE a.d = 2;"
+    examples:
+      - |-
+        UPDATE employee
+             SET yrs_exp = 16
+             WHERE empno = 10017;
+      - |-
+        UPDATE employee
+             SET salary = salary * 1.1 ALL ;
+      - |-
+        UPDATE e
+             FROM employee AS e, department AS d
+             SET salary = salary * 1.05
+             WHERE e.emp_no = d.emp_no;

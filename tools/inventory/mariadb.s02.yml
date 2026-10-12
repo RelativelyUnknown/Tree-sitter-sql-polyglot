@@ -1,0 +1,89 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements:
+  - id: union
+    name: UNION
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-manipulation/selecting-data/set-operations/union
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT a FROM t UNION SELECT b FROM s;"
+      - id: all
+        sql: "SELECT a FROM t UNION ALL SELECT b FROM s;"
+      - id: distinct
+        sql: "SELECT a FROM t UNION DISTINCT SELECT b FROM s;"
+      - id: chained
+        sql: "SELECT a FROM t UNION ALL SELECT b FROM s UNION DISTINCT SELECT c FROM u;"
+      - id: order_by
+        sql: "SELECT a FROM t UNION SELECT b FROM s ORDER BY a;"
+      - id: limit
+        sql: "SELECT a FROM t UNION SELECT b FROM s LIMIT 10;"
+      - id: limit_offset_comma
+        sql: "SELECT a FROM t UNION SELECT b FROM s LIMIT 5, 10;"
+      - id: limit_offset_keyword
+        sql: "SELECT a FROM t UNION SELECT b FROM s LIMIT 10 OFFSET 5;"
+      - id: order_by_limit
+        sql: "SELECT a FROM t UNION SELECT b FROM s ORDER BY a LIMIT 10;"
+      - id: parenthesized_operands
+        sql: "(SELECT a FROM t) UNION (SELECT b FROM s);"
+      - id: parenthesized_operand_order_limit
+        sql: "(SELECT a FROM t ORDER BY a LIMIT 5) UNION ALL (SELECT b FROM s ORDER BY b LIMIT 5);"
+      - id: parenthesized_global_order_limit
+        sql: "(SELECT a FROM t) UNION (SELECT b FROM s) ORDER BY a LIMIT 10;"
+      - id: nested_parentheses
+        sql: "((SELECT a FROM t) UNION (SELECT b FROM s)) UNION (SELECT c FROM u);"
+      - id: into_outfile_last
+        sql: "SELECT a FROM t UNION SELECT b FROM s INTO OUTFILE '/tmp/out.txt';"
+      - id: into_dumpfile_last
+        sql: "SELECT a FROM t UNION SELECT b FROM s INTO DUMPFILE '/tmp/out.bin';"
+      - id: into_variable_last
+        sql: "SELECT a FROM t UNION SELECT b FROM s INTO @v;"
+      - id: union_with_except_intersect
+        sql: "SELECT a FROM t UNION SELECT b FROM s EXCEPT SELECT c FROM u INTERSECT SELECT d FROM w;"
+    examples:
+      - "(SELECT e_name AS name, email FROM employees) UNION (SELECT c_name AS name, email FROM customers);"
+      - "(SELECT name, email FROM employees) UNION (SELECT name, email FROM customers) ORDER BY name LIMIT 10;"
+      - "SELECT CAST('x' AS CHAR(1)) UNION SELECT REPEAT('y',4);"
+
+  - id: intersect
+    name: INTERSECT
+    doc: https://mariadb.com/docs/server/reference/sql-statements/data-manipulation/selecting-data/set-operations/intersect
+    tier: high
+    probes:
+      - id: basic
+        sql: "SELECT a FROM t INTERSECT SELECT b FROM s;"
+      - id: all
+        sql: "SELECT a FROM t INTERSECT ALL SELECT b FROM s;"
+      - id: distinct
+        sql: "SELECT a FROM t INTERSECT DISTINCT SELECT b FROM s;"
+      - id: chained
+        sql: "SELECT a FROM t INTERSECT SELECT b FROM s INTERSECT ALL SELECT c FROM u;"
+      - id: mixed_with_union
+        sql: "SELECT a FROM t UNION SELECT b FROM s INTERSECT SELECT c FROM u;"
+      - id: mixed_with_except
+        sql: "SELECT a FROM t EXCEPT SELECT b FROM s INTERSECT SELECT c FROM u;"
+      - id: order_by
+        sql: "SELECT a FROM t INTERSECT SELECT b FROM s ORDER BY a;"
+      - id: limit
+        sql: "SELECT a FROM t INTERSECT SELECT b FROM s LIMIT 10;"
+      - id: limit_offset_comma
+        sql: "SELECT a FROM t INTERSECT SELECT b FROM s LIMIT 5, 10;"
+      - id: limit_offset_keyword
+        sql: "SELECT a FROM t INTERSECT SELECT b FROM s LIMIT 10 OFFSET 5;"
+      - id: order_by_limit
+        sql: "SELECT a FROM t INTERSECT SELECT b FROM s ORDER BY a LIMIT 10;"
+      - id: parenthesized_operands
+        sql: "(SELECT a FROM t) INTERSECT (SELECT b FROM s);"
+      - id: parenthesized_global_order_limit
+        sql: "(SELECT a FROM t) INTERSECT (SELECT b FROM s) ORDER BY a LIMIT 10;"
+      - id: parenthesized_precedence
+        sql: "((SELECT a FROM t) UNION (SELECT b FROM s)) INTERSECT (SELECT c FROM u);"
+      - id: derived_table_operand
+        sql: "(SELECT a, b FROM t) UNION SELECT c, d FROM ((SELECT c, d FROM s) INTERSECT (SELECT e, f FROM u)) dummy_subselect UNION (SELECT 4, 4);"
+    examples:
+      - "(SELECT e_name AS name, email FROM employees) INTERSECT (SELECT c_name AS name, email FROM customers);"
+      - "SELECT i FROM seqs WHERE i <= 3 INTERSECT ALL SELECT i FROM seqs WHERE i>=3;"
+      - "((SELECT a FROM t1) UNION (SELECT b FROM t2)) INTERSECT (SELECT c FROM t3);"

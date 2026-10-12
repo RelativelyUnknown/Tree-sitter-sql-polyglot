@@ -1,0 +1,260 @@
+dialect: postgres
+engine: PostgreSQL
+version: "17"
+source: https://www.postgresql.org/docs/17/sql-commands.html
+
+statements:
+  - id: alter_policy
+    name: ALTER POLICY
+    doc: https://www.postgresql.org/docs/17/sql-alterpolicy.html
+    tier: medium
+    probes:
+      - id: rename_to
+        sql: "ALTER POLICY p ON t RENAME TO p2;"
+      - id: to_roles
+        sql: "ALTER POLICY p ON t TO r1, PUBLIC;"
+      - id: to_special_roles
+        sql: "ALTER POLICY p ON t TO CURRENT_ROLE, CURRENT_USER, SESSION_USER;"
+      - id: using
+        sql: "ALTER POLICY p ON t USING (c > 0);"
+      - id: with_check
+        sql: "ALTER POLICY p ON t WITH CHECK (c > 0);"
+      - id: all_clauses
+        sql: "ALTER POLICY p ON t TO r USING (c > 0) WITH CHECK (c < 100);"
+
+  - id: alter_role
+    name: ALTER ROLE
+    doc: https://www.postgresql.org/docs/17/sql-alterrole.html
+    tier: medium
+    probes:
+      - id: options
+        sql: "ALTER ROLE r WITH SUPERUSER CREATEDB NOCREATEROLE INHERIT LOGIN NOREPLICATION BYPASSRLS;"
+      - id: options_without_with
+        sql: "ALTER ROLE r NOSUPERUSER NOCREATEDB CREATEROLE NOINHERIT NOLOGIN REPLICATION NOBYPASSRLS;"
+      - id: connection_limit
+        sql: "ALTER ROLE r CONNECTION LIMIT 5;"
+      - id: encrypted_password
+        sql: "ALTER ROLE r WITH ENCRYPTED PASSWORD 'secret';"
+      - id: password_null
+        sql: "ALTER ROLE r PASSWORD NULL;"
+      - id: valid_until
+        sql: "ALTER ROLE r VALID UNTIL '2030-01-01';"
+      - id: current_user_spec
+        sql: "ALTER ROLE CURRENT_USER LOGIN;"
+      - id: rename_to
+        sql: "ALTER ROLE r RENAME TO r2;"
+      - id: set_equals
+        sql: "ALTER ROLE r SET work_mem = '64MB';"
+      - id: set_to_default
+        sql: "ALTER ROLE r SET search_path TO DEFAULT;"
+      - id: set_in_database
+        sql: "ALTER ROLE r IN DATABASE d SET client_min_messages = 'debug';"
+      - id: set_all_roles
+        sql: "ALTER ROLE ALL SET work_mem = '64MB';"
+      - id: set_from_current
+        sql: "ALTER ROLE r SET work_mem FROM CURRENT;"
+      - id: reset
+        sql: "ALTER ROLE r RESET work_mem;"
+      - id: reset_all
+        sql: "ALTER ROLE r IN DATABASE d RESET ALL;"
+    examples:
+      - "ALTER ROLE davide WITH PASSWORD 'hu8jmn3';"
+      - "ALTER ROLE miriam CREATEROLE CREATEDB;"
+      - "ALTER ROLE worker_bee SET maintenance_work_mem = 100000;"
+
+  - id: alter_rule
+    name: ALTER RULE
+    doc: https://www.postgresql.org/docs/17/sql-alterrule.html
+    tier: medium
+    probes:
+      - id: rename_to
+        sql: "ALTER RULE rl ON t RENAME TO rl2;"
+    examples:
+      - "ALTER RULE notify_all ON emp RENAME TO notify_me;"
+
+  - id: alter_sequence
+    name: ALTER SEQUENCE
+    doc: https://www.postgresql.org/docs/17/sql-altersequence.html
+    tier: medium
+    probes:
+      - id: if_exists_as_type
+        sql: "ALTER SEQUENCE IF EXISTS s AS bigint;"
+      - id: increment_by
+        sql: "ALTER SEQUENCE s INCREMENT BY 2;"
+      - id: minvalue_maxvalue
+        sql: "ALTER SEQUENCE s MINVALUE 1 MAXVALUE 1000;"
+      - id: no_minvalue_no_maxvalue
+        sql: "ALTER SEQUENCE s NO MINVALUE NO MAXVALUE;"
+      - id: start_with
+        sql: "ALTER SEQUENCE s START WITH 10;"
+      - id: restart
+        sql: "ALTER SEQUENCE s RESTART;"
+      - id: restart_with
+        sql: "ALTER SEQUENCE s RESTART WITH 105;"
+      - id: cache_cycle
+        sql: "ALTER SEQUENCE s CACHE 20 CYCLE;"
+      - id: no_cycle
+        sql: "ALTER SEQUENCE s NO CYCLE;"
+      - id: owned_by_column
+        sql: "ALTER SEQUENCE s OWNED BY t.c;"
+      - id: owned_by_none
+        sql: "ALTER SEQUENCE s OWNED BY NONE;"
+      - id: set_logged
+        sql: "ALTER SEQUENCE s SET LOGGED;"
+      - id: set_unlogged
+        sql: "ALTER SEQUENCE s SET UNLOGGED;"
+      - id: owner_to
+        sql: "ALTER SEQUENCE s OWNER TO new_owner;"
+      - id: owner_to_current_user
+        sql: "ALTER SEQUENCE s OWNER TO CURRENT_USER;"
+      - id: rename_to
+        sql: "ALTER SEQUENCE s RENAME TO s2;"
+      - id: set_schema
+        sql: "ALTER SEQUENCE s SET SCHEMA new_schema;"
+    examples:
+      - "ALTER SEQUENCE serial RESTART WITH 105;"
+
+  - id: alter_trigger
+    name: ALTER TRIGGER
+    doc: https://www.postgresql.org/docs/17/sql-altertrigger.html
+    tier: medium
+    probes:
+      - id: rename_to
+        sql: "ALTER TRIGGER trg ON t RENAME TO trg2;"
+      - id: depends_on_extension
+        sql: "ALTER TRIGGER trg ON t DEPENDS ON EXTENSION ext;"
+      - id: no_depends_on_extension
+        sql: "ALTER TRIGGER trg ON t NO DEPENDS ON EXTENSION ext;"
+    examples:
+      - "ALTER TRIGGER emp_stamp ON emp RENAME TO emp_track_chgs;"
+      - "ALTER TRIGGER emp_stamp ON emp DEPENDS ON EXTENSION emplib;"
+
+  - id: alter_type
+    name: ALTER TYPE
+    doc: https://www.postgresql.org/docs/17/sql-altertype.html
+    tier: medium
+    probes:
+      - id: owner_to
+        sql: "ALTER TYPE ty OWNER TO new_owner;"
+      - id: owner_to_session_user
+        sql: "ALTER TYPE ty OWNER TO SESSION_USER;"
+      - id: rename_to
+        sql: "ALTER TYPE ty RENAME TO ty2;"
+      - id: set_schema
+        sql: "ALTER TYPE ty SET SCHEMA new_schema;"
+      - id: rename_attribute
+        sql: "ALTER TYPE ty RENAME ATTRIBUTE a TO b CASCADE;"
+      - id: add_attribute
+        sql: "ALTER TYPE ty ADD ATTRIBUTE a integer COLLATE \"C\" CASCADE;"
+      - id: drop_attribute
+        sql: "ALTER TYPE ty DROP ATTRIBUTE IF EXISTS a RESTRICT;"
+      - id: alter_attribute_type
+        sql: "ALTER TYPE ty ALTER ATTRIBUTE a SET DATA TYPE bigint CASCADE;"
+      - id: multiple_actions
+        sql: "ALTER TYPE ty ADD ATTRIBUTE a integer, DROP ATTRIBUTE b;"
+      - id: add_value
+        sql: "ALTER TYPE ty ADD VALUE IF NOT EXISTS 'v';"
+      - id: add_value_before
+        sql: "ALTER TYPE ty ADD VALUE 'v' BEFORE 'w';"
+      - id: add_value_after
+        sql: "ALTER TYPE ty ADD VALUE 'v' AFTER 'w';"
+      - id: rename_value
+        sql: "ALTER TYPE ty RENAME VALUE 'v' TO 'w';"
+      - id: set_properties
+        sql: "ALTER TYPE ty SET (SEND = f_send, RECEIVE = f_recv);"
+    examples:
+      - "ALTER TYPE electronic_mail RENAME TO email;"
+      - "ALTER TYPE compfoo ADD ATTRIBUTE f3 int;"
+      - "ALTER TYPE colors ADD VALUE 'orange' AFTER 'red';"
+
+  - id: alter_user
+    name: ALTER USER
+    doc: https://www.postgresql.org/docs/17/sql-alteruser.html
+    tier: medium
+    probes:
+      - id: options
+        sql: "ALTER USER u WITH SUPERUSER CREATEDB CREATEROLE INHERIT LOGIN REPLICATION BYPASSRLS;"
+      - id: negated_options
+        sql: "ALTER USER u NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOLOGIN NOREPLICATION NOBYPASSRLS;"
+      - id: connection_limit
+        sql: "ALTER USER u CONNECTION LIMIT 5;"
+      - id: encrypted_password
+        sql: "ALTER USER u WITH ENCRYPTED PASSWORD 'secret';"
+      - id: password_null
+        sql: "ALTER USER u PASSWORD NULL;"
+      - id: valid_until
+        sql: "ALTER USER u VALID UNTIL '2030-01-01';"
+      - id: current_user_spec
+        sql: "ALTER USER CURRENT_USER LOGIN;"
+      - id: rename_to
+        sql: "ALTER USER u RENAME TO u2;"
+      - id: set_equals
+        sql: "ALTER USER u SET work_mem = '64MB';"
+      - id: set_in_database
+        sql: "ALTER USER u IN DATABASE d SET work_mem TO DEFAULT;"
+      - id: set_all_users
+        sql: "ALTER USER ALL SET work_mem = '64MB';"
+      - id: set_from_current
+        sql: "ALTER USER u SET work_mem FROM CURRENT;"
+      - id: reset
+        sql: "ALTER USER u RESET work_mem;"
+      - id: reset_all
+        sql: "ALTER USER u RESET ALL;"
+
+  - id: analyze
+    name: ANALYZE
+    doc: https://www.postgresql.org/docs/17/sql-analyze.html
+    tier: medium
+    probes:
+      - id: bare
+        sql: "ANALYZE;"
+      - id: table
+        sql: "ANALYZE t;"
+      - id: table_columns
+        sql: "ANALYZE t (a, b);"
+      - id: multiple_tables
+        sql: "ANALYZE t1 (a), t2;"
+      - id: verbose_option
+        sql: "ANALYZE (VERBOSE) t;"
+      - id: verbose_boolean
+        sql: "ANALYZE (VERBOSE true, SKIP_LOCKED false) t;"
+      - id: buffer_usage_limit
+        sql: "ANALYZE (BUFFER_USAGE_LIMIT '256kB') t;"
+      - id: legacy_verbose
+        sql: "ANALYZE VERBOSE t;"
+
+  - id: close
+    name: CLOSE
+    doc: https://www.postgresql.org/docs/17/sql-close.html
+    tier: medium
+    probes:
+      - id: close_cursor
+        sql: "CLOSE cur;"
+      - id: close_all
+        sql: "CLOSE ALL;"
+    examples:
+      - "CLOSE liahona;"
+
+  - id: cluster
+    name: CLUSTER
+    doc: https://www.postgresql.org/docs/17/sql-cluster.html
+    tier: medium
+    probes:
+      - id: bare
+        sql: "CLUSTER;"
+      - id: table
+        sql: "CLUSTER t;"
+      - id: table_using_index
+        sql: "CLUSTER t USING idx;"
+      - id: verbose_option
+        sql: "CLUSTER (VERBOSE) t USING idx;"
+      - id: verbose_boolean
+        sql: "CLUSTER (VERBOSE false);"
+      - id: legacy_verbose
+        sql: "CLUSTER VERBOSE t USING idx;"
+      - id: legacy_index_on_table
+        sql: "CLUSTER idx ON t;"
+    examples:
+      - "CLUSTER employees USING employees_ind;"
+      - "CLUSTER employees;"
+      - "CLUSTER;"

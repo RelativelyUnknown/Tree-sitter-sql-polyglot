@@ -1,0 +1,286 @@
+dialect: trino
+engine: Trino
+version: "483"
+source: https://trino.io/docs/current/sql.html
+
+statements: []
+
+expressions:
+  - id: b_arithmetic_operators
+    name: Arithmetic operators
+    doc: https://trino.io/docs/current/functions/math.html
+    tier: high
+    probes:
+      - { id: binary, sql: "SELECT 1 + 2, 3 - 1, 2 * 3, 7 / 2, 7 % 3;" }
+      - { id: unary, sql: "SELECT -c, +c FROM t;" }
+      - { id: precedence, sql: "SELECT (1 + 2) * 3 - -c / 4 FROM t;" }
+
+  - id: b_comparison_operators
+    name: Comparison operators
+    doc: https://trino.io/docs/current/functions/comparison.html
+    tier: high
+    probes:
+      - { id: relational, sql: "SELECT a < b, a > b, a <= b, a >= b, a = b, a <> b FROM t;" }
+      - { id: not_equal_bang, sql: "SELECT a != b FROM t;" }
+      - { id: row_comparison, sql: "SELECT (a, b) = (1, 2), (a, b) < (1, 2) FROM t;" }
+
+  - id: b_logical_operators
+    name: Logical operators
+    doc: https://trino.io/docs/current/functions/logical.html
+    tier: high
+    probes:
+      - { id: and_or_not, sql: "SELECT a AND b, a OR b, NOT a FROM t;" }
+      - { id: mixed, sql: "SELECT * FROM t WHERE a AND NOT b OR (c AND d);" }
+
+  - id: b_string_operators
+    name: String concatenation operator
+    doc: https://trino.io/docs/current/functions/string.html
+    tier: high
+    probes:
+      - { id: concat, sql: "SELECT 'a' || 'b' || c FROM t;" }
+
+  - id: b_datetime_operators
+    name: Date and time operators
+    doc: https://trino.io/docs/current/functions/datetime.html
+    tier: high
+    probes:
+      - { id: add_interval, sql: "SELECT date '2012-08-08' + interval '2' day;" }
+      - { id: sub_interval, sql: "SELECT timestamp '2012-08-08 01:00' - interval '5' month;" }
+      - { id: interval_arith, sql: "SELECT interval '2' day + interval '3' hour;" }
+      - { id: at_time_zone, sql: "SELECT timestamp '2012-10-31 01:00 UTC' AT TIME ZONE 'America/Los_Angeles';" }
+      - { id: at_time_zone_offset, sql: "SELECT ts AT TIME ZONE '+08:00' FROM t;" }
+      - { id: overlaps, sql: "SELECT (DATE '2020-01-01', DATE '2020-06-01') OVERLAPS (DATE '2020-05-01', DATE '2020-12-31');" }
+      - { id: overlaps_interval, sql: "SELECT (DATE '2020-01-01', INTERVAL '5' MONTH) OVERLAPS (DATE '2020-05-01', INTERVAL '7' MONTH);" }
+
+  - id: b_subscript_and_dereference
+    name: Subscript and field access operators
+    doc: https://trino.io/docs/current/language/types.html
+    tier: medium
+    probes:
+      - { id: array_subscript, sql: "SELECT a[1], m['k'] FROM t;" }
+      - { id: row_field, sql: "SELECT r.f, t.r.f.g FROM t;" }
+      - { id: nested_subscript, sql: "SELECT a[1][2] FROM t;" }
+
+  - id: b_between
+    name: BETWEEN predicate
+    doc: https://trino.io/docs/current/functions/comparison.html
+    tier: high
+    probes:
+      - { id: between, sql: "SELECT 3 BETWEEN 2 AND 6;" }
+      - { id: not_between, sql: "SELECT 3 NOT BETWEEN 2 AND 6;" }
+      - { id: between_asymmetric, sql: "SELECT 3 BETWEEN ASYMMETRIC 2 AND 6;" }
+      - { id: between_symmetric, sql: "SELECT 3 BETWEEN SYMMETRIC 6 AND 2;" }
+      - { id: not_between_symmetric, sql: "SELECT 3 NOT BETWEEN SYMMETRIC 6 AND 2;" }
+    examples:
+      - "SELECT 3 NOT BETWEEN 2 AND 6;"
+      - "SELECT 'Paul' BETWEEN 'John' AND 'Ringo';"
+
+  - id: b_is_null_boolean
+    name: IS NULL, IS TRUE, IS FALSE, IS UNKNOWN
+    doc: https://trino.io/docs/current/functions/comparison.html
+    tier: high
+    probes:
+      - { id: is_null, sql: "SELECT c IS NULL FROM t;" }
+      - { id: is_not_null, sql: "SELECT c IS NOT NULL FROM t;" }
+      - { id: is_true, sql: "SELECT (1 > 0) IS TRUE;" }
+      - { id: is_not_true, sql: "SELECT (1 > 0) IS NOT TRUE;" }
+      - { id: is_false, sql: "SELECT (1 > 2) IS FALSE;" }
+      - { id: is_not_false, sql: "SELECT (1 > 2) IS NOT FALSE;" }
+      - { id: is_unknown, sql: "SELECT b IS UNKNOWN FROM t;" }
+      - { id: is_not_unknown, sql: "SELECT b IS NOT UNKNOWN FROM t;" }
+
+  - id: b_is_distinct_from
+    name: IS DISTINCT FROM
+    doc: https://trino.io/docs/current/functions/comparison.html
+    tier: high
+    probes:
+      - { id: is_distinct_from, sql: "SELECT NULL IS DISTINCT FROM NULL;" }
+      - { id: is_not_distinct_from, sql: "SELECT NULL IS NOT DISTINCT FROM NULL;" }
+    examples:
+      - "SELECT NULL IS DISTINCT FROM NULL;"
+
+  - id: b_quantified_comparison
+    name: Quantified comparison predicates (ALL, ANY, SOME)
+    doc: https://trino.io/docs/current/functions/comparison.html
+    tier: high
+    probes:
+      - { id: any_values, sql: "SELECT 'hello' = ANY (VALUES 'hello', 'world');" }
+      - { id: all_values, sql: "SELECT 21 < ALL (VALUES 19, 20, 21);" }
+      - { id: some_subquery, sql: "SELECT 42 >= SOME (SELECT 41 UNION ALL SELECT 42 UNION ALL SELECT 43);" }
+      - { id: not_equal_all, sql: "SELECT a <> ALL (SELECT c FROM t) FROM s;" }
+    examples:
+      - "SELECT 'hello' = ANY (VALUES 'hello', 'world');"
+      - "SELECT 21 < ALL (VALUES 19, 20, 21);"
+      - "SELECT 42 >= SOME (SELECT 41 UNION ALL SELECT 42 UNION ALL SELECT 43);"
+
+  - id: b_like
+    name: LIKE predicate
+    doc: https://trino.io/docs/current/functions/comparison.html
+    tier: high
+    probes:
+      - { id: like, sql: "SELECT * FROM t WHERE c LIKE 'E%';" }
+      - { id: not_like, sql: "SELECT * FROM t WHERE c NOT LIKE 'E%';" }
+      - { id: like_escape, sql: "SELECT * FROM t WHERE c LIKE 'a\\_%' ESCAPE '\\';" }
+      - { id: not_like_escape, sql: "SELECT * FROM t WHERE c NOT LIKE 'a#_%' ESCAPE '#';" }
+
+  - id: b_in_predicate
+    name: IN predicate
+    doc: https://trino.io/docs/current/functions/comparison.html
+    tier: high
+    probes:
+      - { id: in_list, sql: "SELECT * FROM t WHERE c IN (1, 2, 3);" }
+      - { id: not_in_list, sql: "SELECT * FROM t WHERE c NOT IN (1, 2, 3);" }
+      - { id: in_subquery, sql: "SELECT * FROM t WHERE c IN (SELECT c FROM s);" }
+      - { id: not_in_subquery, sql: "SELECT * FROM t WHERE c NOT IN (SELECT c FROM s);" }
+      - { id: row_in, sql: "SELECT * FROM t WHERE (a, b) IN ((1, 2), (3, 4));" }
+
+  - id: b_exists
+    name: EXISTS predicate
+    doc: https://trino.io/docs/current/functions/comparison.html
+    tier: high
+    probes:
+      - { id: exists, sql: "SELECT * FROM t WHERE EXISTS (SELECT 1 FROM s WHERE s.c = t.c);" }
+      - { id: not_exists, sql: "SELECT * FROM t WHERE NOT EXISTS (SELECT 1 FROM s WHERE s.c = t.c);" }
+
+  - id: b_scalar_subquery
+    name: Scalar subquery
+    doc: https://trino.io/docs/current/sql/select.html
+    tier: high
+    probes:
+      - { id: scalar_in_select, sql: "SELECT (SELECT max(c) FROM s) FROM t;" }
+      - { id: scalar_in_where, sql: "SELECT * FROM t WHERE c > (SELECT avg(c) FROM s);" }
+
+  - id: b_greatest_least
+    name: GREATEST and LEAST
+    doc: https://trino.io/docs/current/functions/comparison.html
+    tier: low
+    probes:
+      - { id: greatest_least, sql: "SELECT greatest(1, 2, 3), least(1, 2, 3);" }
+
+  - id: b_case_simple
+    name: CASE expression, simple form
+    doc: https://trino.io/docs/current/functions/conditional.html
+    tier: high
+    probes:
+      - { id: simple_case, sql: "SELECT CASE a WHEN 1 THEN 'one' WHEN 2 THEN 'two' ELSE 'many' END FROM t;" }
+      - { id: simple_case_no_else, sql: "SELECT CASE a WHEN 1 THEN 'one' END FROM t;" }
+    examples:
+      - "SELECT a, CASE a WHEN 1 THEN 'one' WHEN 2 THEN 'two' ELSE 'many' END;"
+
+  - id: b_case_searched
+    name: CASE expression, searched form
+    doc: https://trino.io/docs/current/functions/conditional.html
+    tier: high
+    probes:
+      - { id: searched_case, sql: "SELECT CASE WHEN a = 1 THEN 'one' WHEN a = 2 THEN 'two' ELSE 'many' END FROM t;" }
+      - { id: searched_case_no_else, sql: "SELECT CASE WHEN a = 1 THEN 'one' END FROM t;" }
+
+  - id: b_case_predicate_fragments
+    name: CASE expression, predicate-fragment WHEN clauses
+    doc: https://trino.io/docs/current/functions/conditional.html
+    tier: medium
+    probes:
+      - { id: when_comparison, sql: "SELECT CASE a WHEN > 100 THEN 'big' ELSE 'other' END FROM t;" }
+      - { id: when_quantified, sql: "SELECT CASE a WHEN = ANY (SELECT c FROM s) THEN 'x' END FROM t;" }
+      - { id: when_between, sql: "SELECT CASE a WHEN BETWEEN 1 AND 10 THEN 'small' END FROM t;" }
+      - { id: when_not_between, sql: "SELECT CASE a WHEN NOT BETWEEN 1 AND 10 THEN 'out' END FROM t;" }
+      - { id: when_in_list, sql: "SELECT CASE a WHEN IN (1, 2, 3) THEN 'x' END FROM t;" }
+      - { id: when_not_in_subquery, sql: "SELECT CASE a WHEN NOT IN (SELECT c FROM s) THEN 'x' END FROM t;" }
+      - { id: when_is_null, sql: "SELECT CASE a WHEN IS NULL THEN 'unknown' END FROM t;" }
+      - { id: when_like_escape, sql: "SELECT CASE a WHEN LIKE 'a%' ESCAPE '\\' THEN 'x' END FROM t;" }
+      - { id: when_is_distinct, sql: "SELECT CASE a WHEN IS DISTINCT FROM 1 THEN 'x' END FROM t;" }
+      - { id: when_mixed, sql: "SELECT a, CASE a WHEN 0 THEN 'zero' WHEN > 100 THEN 'big' WHEN BETWEEN 1 AND 10 THEN 'small' WHEN IS NULL THEN 'unknown' ELSE 'other' END;" }
+
+  - id: b_conditional_forms
+    name: IF, COALESCE, NULLIF, TRY
+    doc: https://trino.io/docs/current/functions/conditional.html
+    tier: medium
+    probes:
+      - { id: if_two, sql: "SELECT if(a > 1, 'y') FROM t;" }
+      - { id: if_three, sql: "SELECT if(a > 1, 'y', 'n') FROM t;" }
+      - { id: coalesce, sql: "SELECT coalesce(a, b, 0) FROM t;" }
+      - { id: nullif, sql: "SELECT nullif(a, 0) FROM t;" }
+      - { id: try, sql: "SELECT TRY(CAST(a AS BIGINT)) FROM t;" }
+
+  - id: b_cast
+    name: CAST and TRY_CAST
+    doc: https://trino.io/docs/current/functions/conversion.html
+    tier: high
+    probes:
+      - { id: cast, sql: "SELECT CAST(c AS bigint) FROM t;" }
+      - { id: try_cast, sql: "SELECT TRY_CAST(c AS integer) FROM t;" }
+      - { id: cast_parameterized, sql: "SELECT CAST(c AS decimal(10, 2)), CAST(c AS varchar(20)) FROM t;" }
+      - { id: cast_timestamp_tz, sql: "SELECT CAST(c AS timestamp(3) with time zone) FROM t;" }
+      - { id: cast_complex, sql: "SELECT CAST(c AS array(map(varchar, row(a integer, b double)))) FROM t;" }
+      - { id: cast_interval, sql: "SELECT CAST(c AS interval day to second) FROM t;" }
+
+  - id: b_extract
+    name: EXTRACT
+    doc: https://trino.io/docs/current/functions/datetime.html
+    tier: high
+    probes:
+      - { id: extract_year, sql: "SELECT extract(YEAR FROM TIMESTAMP '2022-10-20 05:10:00');" }
+      - { id: extract_month, sql: "SELECT extract(MONTH FROM d) FROM t;" }
+      - { id: extract_day, sql: "SELECT extract(DAY FROM d) FROM t;" }
+      - { id: extract_hour, sql: "SELECT extract(HOUR FROM ts) FROM t;" }
+      - { id: extract_dow, sql: "SELECT extract(DOW FROM d), extract(DOY FROM d), extract(QUARTER FROM d), extract(WEEK FROM d), extract(YEAR_OF_WEEK FROM d) FROM t;" }
+      - { id: extract_timezone, sql: "SELECT extract(TIMEZONE_HOUR FROM ts), extract(TIMEZONE_MINUTE FROM ts) FROM t;" }
+    examples:
+      - "SELECT extract(YEAR FROM TIMESTAMP '2022-10-20 05:10:00');"
+
+  - id: b_substring
+    name: SUBSTRING ... FROM ... FOR
+    doc: https://trino.io/docs/current/functions/string.html
+    tier: medium
+    probes:
+      - { id: substring_comma, sql: "SELECT substring('abc', 2), substring('abc', 2, 1);" }
+      - { id: substring_from, sql: "SELECT substring(c FROM 2) FROM t;" }
+      - { id: substring_from_for, sql: "SELECT substring(c FROM 2 FOR 3) FROM t;" }
+    note: The FROM/FOR keyword form is accepted by the Trino SQL grammar (SqlBase.g4 substring rule); the function page documents only the comma form.
+
+  - id: b_trim
+    name: TRIM
+    doc: https://trino.io/docs/current/functions/string.html
+    tier: high
+    probes:
+      - { id: trim_plain, sql: "SELECT trim(c) FROM t;" }
+      - { id: trim_from, sql: "SELECT trim('$' FROM c) FROM t;" }
+      - { id: trim_leading, sql: "SELECT trim(LEADING 'x' FROM c) FROM t;" }
+      - { id: trim_trailing, sql: "SELECT trim(TRAILING 'ER' FROM upper('worker'));" }
+      - { id: trim_both, sql: "SELECT trim(BOTH '$' FROM '$var$');" }
+      - { id: trim_spec_only, sql: "SELECT trim(BOTH FROM c) FROM t;" }
+    examples:
+      - "SELECT trim(BOTH '$' FROM '$var$');"
+      - "SELECT trim(TRAILING 'ER' FROM upper('worker'));"
+
+  - id: b_position
+    name: POSITION
+    doc: https://trino.io/docs/current/functions/string.html
+    tier: medium
+    probes:
+      - { id: position_in, sql: "SELECT position('b' IN 'abc');" }
+      - { id: position_column, sql: "SELECT position(c IN d) FROM t;" }
+
+  - id: b_overlay
+    name: OVERLAY
+    doc: https://trino.io/docs/current/functions/string.html
+    tier: medium
+    probes:
+      - { id: overlay_from, sql: "SELECT overlay('abc' PLACING 'XYZ' FROM 3);" }
+      - { id: overlay_from_for, sql: "SELECT overlay('Txxxxas' PLACING 'hom' FROM 2 FOR 4);" }
+    examples:
+      - "SELECT overlay('Txxxxas' PLACING 'hom' FROM 2 FOR 4);"
+
+  - id: b_normalize
+    name: NORMALIZE
+    doc: https://trino.io/docs/current/functions/string.html
+    tier: low
+    probes:
+      - { id: normalize_form, sql: "SELECT normalize(c, NFKC) FROM t;" }
+
+  - id: b_cast_format
+    name: CAST ... FORMAT
+    doc: https://trino.io/docs/current/functions/conversion.html
+    tier: low
+    status: not-applicable
+    reason: "The Trino 483 conversion page documents only cast(value AS type) and try_cast(value AS type); there is no FORMAT clause."

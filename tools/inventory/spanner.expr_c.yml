@@ -1,0 +1,186 @@
+dialect: spanner
+engine: Google Cloud Spanner (GoogleSQL dialect)
+version: "current managed service (docs as of 2026-10)"
+source: https://cloud.google.com/spanner/docs/reference/standard-sql/data-definition-language
+
+statements: []
+
+expressions:
+  - id: c_aggregate_syntax
+    name: "Aggregate function call syntax"
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/aggregate_functions
+    tier: high
+    probes:
+      - { id: count_star, sql: "SELECT COUNT(*) FROM t;" }
+      - { id: count_distinct, sql: "SELECT COUNT(DISTINCT c) FROM t;" }
+      - { id: sum_distinct, sql: "SELECT SUM(DISTINCT c) FROM t;" }
+      - { id: countif, sql: "SELECT COUNTIF(c > 1) FROM t;" }
+      - { id: any_value_having_max, sql: "SELECT ANY_VALUE(a HAVING MAX b) FROM t;" }
+      - { id: any_value_having_min, sql: "SELECT ANY_VALUE(a HAVING MIN b) FROM t;" }
+      - { id: count_having_max, sql: "SELECT COUNT(DISTINCT a HAVING MAX b) FROM t;" }
+      - { id: array_agg_distinct, sql: "SELECT ARRAY_AGG(DISTINCT c) FROM t;" }
+      - { id: array_agg_ignore_nulls, sql: "SELECT ARRAY_AGG(c IGNORE NULLS) FROM t;" }
+      - { id: array_agg_respect_nulls, sql: "SELECT ARRAY_AGG(c RESPECT NULLS) FROM t;" }
+      - { id: array_agg_order_by, sql: "SELECT ARRAY_AGG(c ORDER BY d DESC) FROM t;" }
+      - { id: array_agg_order_multi, sql: "SELECT ARRAY_AGG(c ORDER BY d ASC, e DESC) FROM t;" }
+      - { id: array_agg_limit, sql: "SELECT ARRAY_AGG(c ORDER BY d LIMIT 2) FROM t;" }
+      - { id: array_agg_having_max, sql: "SELECT ARRAY_AGG(a HAVING MAX b) FROM t;" }
+      - { id: string_agg_delimiter, sql: "SELECT STRING_AGG(c, ', ') FROM t;" }
+      - { id: string_agg_distinct_order_limit, sql: "SELECT STRING_AGG(DISTINCT c, ' & ' ORDER BY c LIMIT 5) FROM t;" }
+      - { id: array_concat_agg, sql: "SELECT ARRAY_CONCAT_AGG(a ORDER BY b LIMIT 2) FROM t;" }
+      - { id: bit_aggregates, sql: "SELECT BIT_AND(c), BIT_OR(c), BIT_XOR(c) FROM t;" }
+      - { id: logical_aggregates, sql: "SELECT LOGICAL_AND(c), LOGICAL_OR(c) FROM t;" }
+      - { id: avg_min_max, sql: "SELECT AVG(c), MIN(c), MAX(c), SUM(c) FROM t;" }
+      - { id: statistical_aggregates, sql: "SELECT STDDEV(c), STDDEV_SAMP(c), VAR_SAMP(c), VARIANCE(c) FROM t;" }
+      - { id: safe_prefix_aggregate, sql: "SELECT SAFE.SUM(c) FROM t;" }
+    examples:
+      - "SELECT COUNT(*) AS count_star, COUNT(DISTINCT x) AS count_dist_x FROM UNNEST([1, 4, 4, 5]) AS x;"
+
+  - id: c_window_syntax
+    name: "Window function calls (OVER, frames, named windows)"
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/aggregate-function-calls
+    tier: high
+    status: not-applicable
+    reason: "The Spanner GoogleSQL reference pages for aggregate function calls, query syntax and operators contain no OVER clause, WINDOW clause or window frame syntax, and the function reference has no window-function category."
+
+  - id: c_lambdas
+    name: "Lambda expressions in array functions"
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/array_functions
+    tier: high
+    probes:
+      - { id: array_filter_element, sql: "SELECT ARRAY_FILTER([1, 2, 3], e -> e > 1);" }
+      - { id: array_filter_element_index, sql: "SELECT ARRAY_FILTER([1, 2, 3], (e, i) -> e > i);" }
+      - { id: array_transform_element, sql: "SELECT ARRAY_TRANSFORM([1, 2, 3], e -> e + 1);" }
+      - { id: array_transform_element_index, sql: "SELECT ARRAY_TRANSFORM([1, 2, 3], (e, i) -> e + i);" }
+      - { id: array_filter_column, sql: "SELECT ARRAY_FILTER(a, x -> x IS NOT NULL) FROM t;" }
+
+  - id: c_array_constructors_access
+    name: "Array constructors, subquery arrays and subscript operator"
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/operators
+    tier: high
+    probes:
+      - { id: array_literal, sql: "SELECT [1, 2, 3];" }
+      - { id: array_literal_typed, sql: "SELECT ARRAY<INT64>[1, 2, 3];" }
+      - { id: array_literal_empty, sql: "SELECT ARRAY<STRING>[];" }
+      - { id: array_subquery, sql: "SELECT ARRAY(SELECT c FROM t);" }
+      - { id: array_subquery_order, sql: "SELECT ARRAY(SELECT c FROM t ORDER BY c DESC LIMIT 3);" }
+      - { id: subscript_offset, sql: "SELECT a[OFFSET(1)] FROM t;" }
+      - { id: subscript_safe_offset, sql: "SELECT a[SAFE_OFFSET(1)] FROM t;" }
+      - { id: subscript_ordinal, sql: "SELECT a[ORDINAL(1)] FROM t;" }
+      - { id: subscript_safe_ordinal, sql: "SELECT a[SAFE_ORDINAL(1)] FROM t;" }
+      - { id: subscript_bare, sql: "SELECT a[1] FROM t;" }
+      - { id: array_concat, sql: "SELECT ARRAY_CONCAT([1, 2], [3, 4]);" }
+      - { id: array_length_first_last, sql: "SELECT ARRAY_LENGTH(a), ARRAY_FIRST(a), ARRAY_LAST(a) FROM t;" }
+      - { id: array_min_max_reverse, sql: "SELECT ARRAY_MAX(a), ARRAY_MIN(a), ARRAY_REVERSE(a) FROM t;" }
+      - { id: array_slice_to_string, sql: "SELECT ARRAY_SLICE(a, 1, 2), ARRAY_TO_STRING(a, ',') FROM t;" }
+      - { id: array_includes_family, sql: "SELECT ARRAY_INCLUDES(a, 1), ARRAY_INCLUDES_ANY(a, [1, 2]), ARRAY_INCLUDES_ALL(a, [1, 2]) FROM t;" }
+      - { id: array_is_distinct, sql: "SELECT ARRAY_IS_DISTINCT(a) FROM t;" }
+      - { id: array_includes_lambda, sql: "SELECT ARRAY_INCLUDES(a, e -> e > 1) FROM t;" }
+      - { id: generate_array, sql: "SELECT GENERATE_ARRAY(1, 10, 2);" }
+      - { id: generate_date_array, sql: "SELECT GENERATE_DATE_ARRAY('2024-01-01', '2024-01-31', INTERVAL 1 WEEK);" }
+      - { id: in_unnest, sql: "SELECT c FROM t WHERE c IN UNNEST([1, 2, 3]);" }
+      - { id: unnest_offset, sql: "SELECT x, o FROM UNNEST([1, 2, 3]) AS x WITH OFFSET AS o;" }
+      - { id: array_equality_exists, sql: "SELECT EXISTS(SELECT 1 FROM t WHERE c = 1);" }
+
+  - id: c_struct_constructors_access
+    name: "STRUCT constructors and field access"
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/data-types
+    tier: high
+    probes:
+      - { id: struct_tuple, sql: "SELECT (1, 'a');" }
+      - { id: struct_keyword, sql: "SELECT STRUCT(1, 'a');" }
+      - { id: struct_aliased, sql: "SELECT STRUCT(1 AS a, 'b' AS b);" }
+      - { id: struct_typed, sql: "SELECT STRUCT<INT64, STRING>(1, 'a');" }
+      - { id: struct_typed_named, sql: "SELECT STRUCT<a INT64, b STRING>(1, 'a');" }
+      - { id: struct_empty, sql: "SELECT STRUCT();" }
+      - { id: struct_field_access, sql: "SELECT s.a, s.b.c FROM t;" }
+      - { id: struct_in_array, sql: "SELECT [STRUCT(1 AS a), STRUCT(2 AS a)];" }
+      - { id: struct_star_expand, sql: "SELECT s.* FROM t;" }
+      - { id: struct_equality, sql: "SELECT (a, b) = (1, 2) FROM t;" }
+      - { id: struct_in_list, sql: "SELECT c FROM t WHERE (a, b) IN ((1, 2), (3, 4));" }
+      - { id: struct_cast, sql: "SELECT CAST(s AS STRUCT<a INT64, b STRING>) FROM t;" }
+      - { id: replace_fields, sql: "SELECT REPLACE_FIELDS(p, 'x' AS name) FROM t;" }
+
+  - id: c_json_syntax
+    name: "JSON literals, constructors, subscript and field access"
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/json_functions
+    tier: high
+    probes:
+      - { id: json_literal, sql: "SELECT JSON '{\"a\": 1}';" }
+      - { id: json_literal_array, sql: "SELECT JSON '[1, 2, 3]';" }
+      - { id: json_subscript_field, sql: "SELECT j['a'] FROM t;" }
+      - { id: json_subscript_index, sql: "SELECT j[0] FROM t;" }
+      - { id: json_subscript_chain, sql: "SELECT j['a']['b'][1] FROM t;" }
+      - { id: json_field_dot, sql: "SELECT j.a.b FROM t;" }
+      - { id: json_query, sql: "SELECT JSON_QUERY(j, '$.a') FROM t;" }
+      - { id: json_value, sql: "SELECT JSON_VALUE(j, '$.a') FROM t;" }
+      - { id: json_value_no_path, sql: "SELECT JSON_VALUE(j) FROM t;" }
+      - { id: json_query_array, sql: "SELECT JSON_QUERY_ARRAY(j, '$.a') FROM t;" }
+      - { id: json_value_array, sql: "SELECT JSON_VALUE_ARRAY(j, '$.a') FROM t;" }
+      - { id: json_object, sql: "SELECT JSON_OBJECT('foo', 10, 'bar', TRUE);" }
+      - { id: json_object_empty, sql: "SELECT JSON_OBJECT();" }
+      - { id: json_array, sql: "SELECT JSON_ARRAY(10, 'a', TRUE);" }
+      - { id: json_array_empty, sql: "SELECT JSON_ARRAY();" }
+      - { id: json_array_append, sql: "SELECT JSON_ARRAY_APPEND(j, '$.a', 1) FROM t;" }
+      - { id: json_array_insert, sql: "SELECT JSON_ARRAY_INSERT(j, '$.a[1]', 1) FROM t;" }
+      - { id: json_set, sql: "SELECT JSON_SET(j, '$.a', 1) FROM t;" }
+      - { id: json_remove, sql: "SELECT JSON_REMOVE(j, '$.a') FROM t;" }
+      - { id: json_strip_nulls, sql: "SELECT JSON_STRIP_NULLS(j) FROM t;" }
+      - { id: json_contains, sql: "SELECT JSON_CONTAINS(j, JSON '{\"a\": 1}') FROM t;" }
+      - { id: json_type, sql: "SELECT JSON_TYPE(j) FROM t;" }
+      - { id: parse_json, sql: "SELECT PARSE_JSON('{\"a\": 1}');" }
+      - { id: parse_json_wide, sql: "SELECT PARSE_JSON('{\"a\": 1}', wide_number_mode => 'round');" }
+      - { id: to_json, sql: "SELECT TO_JSON(t) FROM t;" }
+      - { id: to_json_stringify, sql: "SELECT TO_JSON(c, stringify_wide_numbers => TRUE) FROM t;" }
+      - { id: safe_to_json, sql: "SELECT SAFE_TO_JSON(c) FROM t;" }
+      - { id: to_json_string, sql: "SELECT TO_JSON_STRING(c), TO_JSON_STRING(c, TRUE) FROM t;" }
+      - { id: json_extractors, sql: "SELECT INT64(j), FLOAT64(j), BOOL(j), STRING(j) FROM t;" }
+      - { id: json_extractor_arrays, sql: "SELECT INT64_ARRAY(j), FLOAT64_ARRAY(j), BOOL_ARRAY(j), STRING_ARRAY(j) FROM t;" }
+      - { id: json_lax_extractors, sql: "SELECT LAX_INT64(j), LAX_FLOAT64(j), LAX_BOOL(j), LAX_STRING(j) FROM t;" }
+      - { id: json_cast, sql: "SELECT CAST(j AS JSON) FROM t;" }
+      - { id: json_in_where, sql: "SELECT c FROM t WHERE JSON_VALUE(j, '$.a') = 'x';" }
+    examples:
+      - "SELECT JSON_OBJECT('foo', 10, 'bar', TRUE) AS json_data;"
+
+  - id: c_function_families
+    name: "Ordinary function families"
+    doc: https://cloud.google.com/spanner/docs/reference/standard-sql/functions-all
+    tier: medium
+    probes:
+      - { id: safe_prefix, sql: "SELECT SAFE.SUBSTR(c, 1, 2) FROM t;" }
+      - { id: math_functions, sql: "SELECT ABS(c), ROUND(c, 2), TRUNC(c), CEIL(c), FLOOR(c), SQRT(c), POW(c, 2), MOD(c, 3), DIV(c, 3), LOG(c, 10), EXP(c) FROM t;" }
+      - { id: math_safe_functions, sql: "SELECT SAFE_ADD(a, b), SAFE_DIVIDE(a, b), SAFE_MULTIPLY(a, b), SAFE_NEGATE(a), SAFE_SUBTRACT(a, b), IEEE_DIVIDE(a, b) FROM t;" }
+      - { id: greatest_least, sql: "SELECT GREATEST(a, b, c), LEAST(a, b, c) FROM t;" }
+      - { id: trig_functions, sql: "SELECT SIN(c), COS(c), TAN(c), ATAN2(a, b), SINH(c) FROM t;" }
+      - { id: vector_distance, sql: "SELECT COSINE_DISTANCE(a, b), EUCLIDEAN_DISTANCE(a, b), DOT_PRODUCT(a, b) FROM t;" }
+      - { id: vector_distance_options, sql: "SELECT EUCLIDEAN_DISTANCE(a, [1.0, 2.0], options => JSON '{\"num_leaves_to_search\": 10}') FROM t;" }
+      - { id: approx_vector_distance, sql: "SELECT APPROX_COSINE_DISTANCE(a, b), APPROX_EUCLIDEAN_DISTANCE(a, b), APPROX_DOT_PRODUCT(a, b) FROM t;" }
+      - { id: string_functions, sql: "SELECT CONCAT(a, b), LENGTH(a), LOWER(a), UPPER(a), LPAD(a, 5, 'x'), RPAD(a, 5, 'x'), REPLACE(a, 'x', 'y'), REPEAT(a, 2), REVERSE(a) FROM t;" }
+      - { id: string_trim_substr, sql: "SELECT TRIM(a), LTRIM(a, 'x'), RTRIM(a), SUBSTR(a, 2, 3), SUBSTRING(a, 2), STRPOS(a, 'x'), STARTS_WITH(a, 'x'), ENDS_WITH(a, 'x') FROM t;" }
+      - { id: string_split_format, sql: "SELECT SPLIT(a, ','), FORMAT('%d-%s', 1, 'x'), TO_HEX(b), FROM_BASE64(a), SPLIT_SUBSTR(a, ',', 1, 2) FROM t;" }
+      - { id: regexp_functions, sql: "SELECT REGEXP_CONTAINS(a, r'^x'), REGEXP_EXTRACT(a, r'(\\d+)'), REGEXP_EXTRACT_ALL(a, r'\\d'), REGEXP_REPLACE(a, r'x', 'y') FROM t;" }
+      - { id: date_functions, sql: "SELECT CURRENT_DATE(), DATE_ADD(d, INTERVAL 1 DAY), DATE_SUB(d, INTERVAL 1 MONTH), DATE_DIFF(d, e, DAY), DATE_TRUNC(d, MONTH), FORMAT_DATE('%Y', d), PARSE_DATE('%Y-%m-%d', s), UNIX_DATE(d) FROM t;" }
+      - { id: date_constructor, sql: "SELECT DATE(2024, 1, 31), DATE(ts), DATE(ts, 'UTC') FROM t;" }
+      - { id: extract_date_part, sql: "SELECT EXTRACT(YEAR FROM d), EXTRACT(DAYOFWEEK FROM d), EXTRACT(ISOWEEK FROM d) FROM t;" }
+      - { id: extract_timestamp_timezone, sql: "SELECT EXTRACT(HOUR FROM ts AT TIME ZONE 'America/Los_Angeles') FROM t;" }
+      - { id: timestamp_functions, sql: "SELECT CURRENT_TIMESTAMP(), TIMESTAMP_ADD(ts, INTERVAL 1 HOUR), TIMESTAMP_SUB(ts, INTERVAL 1 DAY), TIMESTAMP_DIFF(ts, us, SECOND), TIMESTAMP_TRUNC(ts, DAY, 'UTC'), FORMAT_TIMESTAMP('%c', ts), PARSE_TIMESTAMP('%Y-%m-%d', s) FROM t;" }
+      - { id: timestamp_conversions, sql: "SELECT TIMESTAMP_SECONDS(1), TIMESTAMP_MILLIS(1), TIMESTAMP_MICROS(1), UNIX_SECONDS(ts), UNIX_MILLIS(ts), UNIX_MICROS(ts), TIMESTAMP('2024-01-01 00:00:00+00') FROM t;" }
+      - { id: pending_commit_timestamp, sql: "INSERT INTO t (k, ts) VALUES (1, PENDING_COMMIT_TIMESTAMP());" }
+      - { id: interval_functions, sql: "SELECT MAKE_INTERVAL(1, 2, 3), JUSTIFY_DAYS(i), JUSTIFY_HOURS(i), JUSTIFY_INTERVAL(i), EXTRACT(DAY FROM i) FROM t;" }
+      - { id: interval_literal, sql: "SELECT INTERVAL 1 DAY, INTERVAL '1-2' YEAR TO MONTH;" }
+      - { id: conversion_functions, sql: "SELECT CAST(a AS STRING), SAFE_CAST(a AS INT64), CAST(ts AS STRING FORMAT 'YYYY') FROM t;" }
+      - { id: bit_functions, sql: "SELECT BIT_COUNT(a), BIT_REVERSE(a, TRUE) FROM t;" }
+      - { id: hash_functions, sql: "SELECT FARM_FINGERPRINT(a), SHA1(a), SHA256(a), SHA512(a) FROM t;" }
+      - { id: compression_functions, sql: "SELECT ZSTD_COMPRESS(a, 3), ZSTD_DECOMPRESS_TO_STRING(b), ZSTD_DECOMPRESS_TO_BYTES(b) FROM t;" }
+      - { id: net_functions, sql: "SELECT NET.HOST(a), NET.IP_FROM_STRING(a), NET.IPV4_TO_INT64(b), NET.REG_DOMAIN(a), NET.PUBLIC_SUFFIX(a) FROM t;" }
+      - { id: utility_functions, sql: "SELECT GENERATE_UUID(), ERROR('boom');" }
+      - { id: sequence_functions, sql: "SELECT GET_NEXT_SEQUENCE_VALUE(SEQUENCE s), GET_INTERNAL_SEQUENCE_STATE(SEQUENCE s);" }
+      - { id: search_functions, sql: "SELECT SEARCH(tl, 'term'), SEARCH_NGRAMS(tl, 'term'), SEARCH_SUBSTRING(tl, 'term'), SCORE(tl, 'term'), SNIPPET(a, 'term') FROM t;" }
+      - { id: search_named_args, sql: "SELECT SEARCH(tl, 'term', language_tag => 'en', enhance_query => TRUE) FROM t;" }
+      - { id: tokenize_functions, sql: "SELECT TOKENIZE_FULLTEXT(a), TOKENIZE_SUBSTRING(a), TOKENIZE_NGRAMS(a), TOKENIZE_NUMBER(n), TOKENIZE_BOOL(b), TOKENIZE_JSON(j), TOKEN(a), TOKENLIST_CONCAT([tl1, tl2]) FROM t;" }
+      - { id: tokenize_named_args, sql: "SELECT TOKENIZE_FULLTEXT(a, language_tag => 'en-us', content_type => 'text/html') FROM t;" }
+      - { id: graph_functions, sql: "SELECT LABELS(n), PROPERTY_NAMES(n), ELEMENT_ID(n), PATH_LENGTH(p), SOURCE_NODE_ID(e), DESTINATION_NODE_ID(e) FROM t;" }
+      - { id: ml_predict, sql: "SELECT * FROM ML.PREDICT(MODEL m, (SELECT c FROM t));" }
+      - { id: ai_functions, sql: "SELECT AI.CLASSIFY(c, ['a', 'b']), AI.IF(c, 'is it good') FROM t;" }
+      - { id: mysql_date_functions, sql: "SELECT DATE_FORMAT(d, '%Y'), DAYNAME(d), DAYOFWEEK(d), FROM_UNIXTIME(1), STR_TO_DATE('2024-01-01', '%Y-%m-%d'), UNIX_TIMESTAMP(ts), YEAR(d), MONTH(d), UTC_TIMESTAMP() FROM t;" }
+      - { id: mysql_sha2, sql: "SELECT SHA2(a, 256) FROM t;" }

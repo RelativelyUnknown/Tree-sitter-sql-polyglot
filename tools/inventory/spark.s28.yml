@@ -1,0 +1,142 @@
+dialect: spark
+engine: Apache Spark SQL
+version: "4.x (docs/latest)"
+source: https://spark.apache.org/docs/latest/sql-ref-syntax.html
+
+statements:
+  - id: add_file
+    name: ADD FILE
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-aux-resource-mgmt-add-file.html
+    tier: medium
+    probes:
+      - { id: add_file, sql: "ADD FILE /tmp/test;" }
+      - { id: add_file_quoted, sql: "ADD FILE '/another/test.txt';" }
+      - { id: add_files_multiple, sql: "ADD FILES \"/path with space/cde.txt\" '/path with space/fgh.txt';" }
+    examples:
+      - "ADD FILE /tmp/test;"
+      - "ADD FILE \"/path/to/file/abc.txt\";"
+      - "ADD FILES \"/path with space/cde.txt\" '/path with space/fgh.txt';"
+
+  - id: add_jar
+    name: ADD JAR
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-aux-resource-mgmt-add-jar.html
+    tier: medium
+    probes:
+      - { id: add_jar, sql: "ADD JAR /tmp/test.jar;" }
+      - { id: add_jar_quoted, sql: "ADD JAR '/some/other.jar';" }
+      - { id: add_jars_multiple, sql: "ADD JARS \"/path with space/def.jar\" '/path with space/ghi.jar';" }
+      - { id: add_jar_ivy, sql: "ADD JAR \"ivy://group:module:version?exclude=group:module&transitive=true\";" }
+    examples:
+      - "ADD JAR /tmp/test.jar;"
+      - "ADD JARS \"/path with space/def.jar\" '/path with space/ghi.jar';"
+      - "ADD JAR \"ivy://group:module:version?transitive=false\";"
+
+  - id: analyze_table
+    name: ANALYZE TABLE
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-aux-analyze-table.html
+    tier: medium
+    probes:
+      - { id: compute_statistics, sql: "ANALYZE TABLE t COMPUTE STATISTICS;" }
+      - { id: noscan, sql: "ANALYZE TABLE t COMPUTE STATISTICS NOSCAN;" }
+      - { id: partition_spec, sql: "ANALYZE TABLE t PARTITION (p = 1) COMPUTE STATISTICS;" }
+      - { id: for_columns, sql: "ANALYZE TABLE t COMPUTE STATISTICS FOR COLUMNS c1, c2;" }
+      - { id: for_all_columns, sql: "ANALYZE TABLE t COMPUTE STATISTICS FOR ALL COLUMNS;" }
+      - { id: analyze_tables, sql: "ANALYZE TABLES COMPUTE STATISTICS;" }
+      - { id: analyze_tables_in_noscan, sql: "ANALYZE TABLES IN db COMPUTE STATISTICS NOSCAN;" }
+      - { id: analyze_tables_from, sql: "ANALYZE TABLES FROM db COMPUTE STATISTICS;" }
+    examples:
+      - "ANALYZE TABLE students COMPUTE STATISTICS NOSCAN;"
+
+  - id: clear_cache
+    name: CLEAR CACHE
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-aux-cache-clear-cache.html
+    tier: medium
+    probes:
+      - { id: clear_cache, sql: "CLEAR CACHE;" }
+    examples:
+      - "CLEAR CACHE;"
+
+  - id: describe_database
+    name: DESCRIBE DATABASE
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-aux-describe-database.html
+    tier: medium
+    probes:
+      - { id: describe_database, sql: "DESCRIBE DATABASE db;" }
+      - { id: desc_database, sql: "DESC DATABASE db;" }
+      - { id: describe_database_extended, sql: "DESCRIBE DATABASE EXTENDED db;" }
+      - { id: describe_schema, sql: "DESCRIBE SCHEMA db;" }
+    examples:
+      - "DESCRIBE DATABASE employees;"
+      - "DESCRIBE DATABASE EXTENDED employees;"
+      - "DESC DATABASE deployment;"
+
+  - id: describe_function
+    name: DESCRIBE FUNCTION
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-aux-describe-function.html
+    tier: medium
+    probes:
+      - { id: describe_function, sql: "DESCRIBE FUNCTION f;" }
+      - { id: desc_function, sql: "DESC FUNCTION f;" }
+      - { id: describe_function_extended, sql: "DESCRIBE FUNCTION EXTENDED f;" }
+      - { id: qualified_function, sql: "DESC FUNCTION system.builtin.abs;" }
+    examples:
+      - "DESC FUNCTION abs;"
+      - "DESC FUNCTION EXTENDED abs;"
+      - "DESC FUNCTION EXTENDED explode;"
+
+  - id: describe_query
+    name: DESCRIBE QUERY
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-aux-describe-query.html
+    tier: medium
+    probes:
+      - { id: describe_query_select, sql: "DESCRIBE QUERY SELECT a FROM t;" }
+      - { id: desc_query_select, sql: "DESC QUERY SELECT a FROM t;" }
+      - { id: describe_without_query_keyword, sql: "DESCRIBE SELECT a FROM t;" }
+      - { id: describe_query_with, sql: "DESCRIBE QUERY WITH cte AS (SELECT a FROM t) SELECT * FROM cte;" }
+      - { id: describe_query_values, sql: "DESC QUERY VALUES (1, 'a') AS v (id, name);" }
+      - { id: describe_query_table, sql: "DESC QUERY TABLE t;" }
+      - { id: describe_query_from_first, sql: "DESCRIBE FROM t SELECT a;" }
+    examples:
+      - "DESCRIBE QUERY SELECT age, sum(age) FROM person GROUP BY age;"
+      - "DESCRIBE QUERY WITH all_names_cte AS (SELECT name from person) SELECT * FROM all_names_cte;"
+      - "DESC QUERY TABLE person;"
+
+  - id: describe_table
+    name: DESCRIBE TABLE
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-aux-describe-table.html
+    tier: medium
+    probes:
+      - { id: describe_table, sql: "DESCRIBE TABLE t;" }
+      - { id: desc_without_table_keyword, sql: "DESC t;" }
+      - { id: qualified_name, sql: "DESCRIBE TABLE db.t;" }
+      - { id: extended, sql: "DESCRIBE TABLE EXTENDED t;" }
+      - { id: formatted, sql: "DESCRIBE TABLE FORMATTED t;" }
+      - { id: partition_spec, sql: "DESCRIBE TABLE EXTENDED t PARTITION (p = 'a');" }
+      - { id: column_name, sql: "DESCRIBE t db.t.c;" }
+      - { id: as_json, sql: "DESC FORMATTED t AS JSON;" }
+    examples:
+      - "DESCRIBE TABLE customer;"
+      - "DESCRIBE TABLE EXTENDED customer PARTITION (state = 'AR');"
+      - "DESC FORMATTED customer AS JSON;"
+
+  - id: refresh
+    name: REFRESH
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-aux-cache-refresh.html
+    tier: medium
+    probes:
+      - { id: refresh_quoted_path, sql: "REFRESH \"hdfs://path/to/table\";" }
+      - { id: refresh_single_quoted_path, sql: "REFRESH '/path/to/table';" }
+    examples:
+      - "REFRESH \"hdfs://path/to/table\";"
+
+  - id: refresh_table
+    name: REFRESH TABLE
+    doc: https://spark.apache.org/docs/latest/sql-ref-syntax-aux-cache-refresh-table.html
+    tier: medium
+    probes:
+      - { id: refresh_table, sql: "REFRESH TABLE t;" }
+      - { id: refresh_table_qualified, sql: "REFRESH TABLE db.v;" }
+      - { id: refresh_without_table_keyword, sql: "REFRESH t;" }
+    examples:
+      - "REFRESH TABLE tbl1;"
+      - "REFRESH TABLE tempDB.view1;"

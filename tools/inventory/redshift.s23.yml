@@ -1,0 +1,205 @@
+dialect: redshift
+engine: Amazon Redshift
+version: "current"
+source: https://docs.aws.amazon.com/redshift/latest/dg/c_SQL_commands.html
+
+statements:
+  - id: show_schemas
+    name: SHOW SCHEMAS
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_SHOW_SCHEMAS.html
+    tier: medium
+    probes:
+      - { id: from_database, sql: "SHOW SCHEMAS FROM DATABASE d;" }
+      - { id: like, sql: "SHOW SCHEMAS FROM DATABASE d LIKE 'pub%';" }
+      - { id: limit, sql: "SHOW SCHEMAS FROM DATABASE d LIMIT 5;" }
+      - { id: like_limit, sql: "SHOW SCHEMAS FROM DATABASE d LIKE 'pub%' LIMIT 5;" }
+    examples:
+      - "SHOW SCHEMAS FROM DATABASE dev;"
+      - "SHOW SCHEMAS FROM DATABASE awsdatacatalog LIMIT 5;"
+
+  - id: show_table
+    name: SHOW TABLE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_SHOW_TABLE.html
+    tier: medium
+    probes:
+      - { id: table, sql: "SHOW TABLE t;" }
+      - { id: schema_qualified, sql: "SHOW TABLE s.t;" }
+    examples:
+      - "show table sales;"
+      - "show table public.category;"
+
+  - id: show_tables
+    name: SHOW TABLES
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_SHOW_TABLES.html
+    tier: medium
+    probes:
+      - { id: from_schema, sql: "SHOW TABLES FROM SCHEMA s;" }
+      - { id: db_schema, sql: "SHOW TABLES FROM SCHEMA d.s;" }
+      - { id: like, sql: "SHOW TABLES FROM SCHEMA d.s LIKE '%view';" }
+      - { id: limit, sql: "SHOW TABLES FROM SCHEMA d.s LIMIT 1;" }
+      - { id: like_limit, sql: "SHOW TABLES FROM SCHEMA d.s LIKE '%view' LIMIT 1;" }
+    examples:
+      - "SHOW TABLES FROM SCHEMA s1;"
+      - "SHOW TABLES FROM SCHEMA dev.s1 LIKE '%view' LIMIT 1;"
+      - "SHOW TABLES FROM SCHEMA awsdatacatalog.mydb LIKE '%';"
+
+  - id: show_view
+    name: SHOW VIEW
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_SHOW_VIEW.html
+    tier: medium
+    probes:
+      - { id: view, sql: "SHOW VIEW v;" }
+      - { id: schema_qualified, sql: "SHOW VIEW s.v;" }
+    examples:
+      - "show view LA_Venues_v;"
+      - "show view public.Sports_v;"
+
+  - id: use
+    name: USE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_USE_command.html
+    tier: medium
+    probes:
+      - { id: use_database, sql: "USE d;" }
+      - { id: show_use, sql: "SHOW USE;" }
+      - { id: reset_use, sql: "RESET USE;" }
+    examples:
+      - "use pdb;"
+
+  - id: vacuum
+    name: VACUUM
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_VACUUM_command.html
+    tier: medium
+    probes:
+      - { id: bare, sql: "VACUUM;" }
+      - { id: table, sql: "VACUUM t;" }
+      - { id: full, sql: "VACUUM FULL t;" }
+      - { id: sort_only, sql: "VACUUM SORT ONLY t;" }
+      - { id: delete_only, sql: "VACUUM DELETE ONLY t;" }
+      - { id: reindex, sql: "VACUUM REINDEX t;" }
+      - { id: recluster, sql: "VACUUM RECLUSTER t;" }
+      - { id: threshold, sql: "VACUUM t TO 75 PERCENT;" }
+      - { id: sort_only_threshold, sql: "VACUUM SORT ONLY t TO 75 PERCENT;" }
+      - { id: recluster_boost, sql: "VACUUM RECLUSTER t BOOST;" }
+    examples:
+      - "vacuum;"
+      - "vacuum sales to 100 percent;"
+      - "vacuum recluster listing boost;"
+
+  - id: alter_external_view
+    name: ALTER EXTERNAL VIEW
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_EXTERNAL_VIEW.html
+    tier: low
+    probes:
+      - { id: as_query, sql: "ALTER EXTERNAL VIEW s.v AS (SELECT 1);" }
+      - { id: remove_definition, sql: "ALTER EXTERNAL VIEW s.v FORCE REMOVE DEFINITION;" }
+
+  - id: alter_identity_provider
+    name: ALTER IDENTITY PROVIDER
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_IDENTITY_PROVIDER.html
+    tier: low
+    probes:
+      - { id: namespace, sql: "ALTER IDENTITY PROVIDER idp NAMESPACE 'ns';" }
+      - { id: parameters_disable, sql: "ALTER IDENTITY PROVIDER idp PARAMETERS '{\"issuer\":\"x\"}' IAM_ROLE 'arn:aws:iam::123456789012:role/r' DISABLE;" }
+
+  - id: alter_system
+    name: ALTER SYSTEM
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_SYSTEM.html
+    tier: low
+    probes:
+      - { id: set_true, sql: "ALTER SYSTEM SET data_catalog_auto_mount = true;" }
+      - { id: set_off, sql: "ALTER SYSTEM SET metadata_security = off;" }
+
+  - id: alter_template
+    name: ALTER TEMPLATE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_ALTER_TEMPLATE.html
+    tier: low
+    probes:
+      - { id: rename, sql: "ALTER TEMPLATE s.tpl RENAME TO tpl2;" }
+      - { id: set, sql: "ALTER TEMPLATE s.tpl SET delimiter TO ',';" }
+
+  - id: analyze_compression
+    name: ANALYZE COMPRESSION
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_ANALYZE_COMPRESSION.html
+    tier: low
+    probes:
+      - { id: table, sql: "ANALYZE COMPRESSION t;" }
+      - { id: columns_comprows, sql: "ANALYZE COMPRESSION t (c1, c2) COMPROWS 1000000;" }
+
+  - id: cancel
+    name: CANCEL
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_CANCEL.html
+    tier: low
+    probes:
+      - { id: pid, sql: "CANCEL 802;" }
+      - { id: pid_message, sql: "CANCEL 802 'Long-running query';" }
+
+  - id: create_external_model
+    name: CREATE EXTERNAL MODEL
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_create_external_model.html
+    tier: low
+    probes:
+      - id: bedrock
+        sql: "CREATE EXTERNAL MODEL m FUNCTION f IAM_ROLE default MODEL_TYPE BEDROCK SETTINGS (MODEL_ID 'anthropic.claude-v2', PROMPT 'p', REQUEST_TYPE UNIFIED, RESPONSE_TYPE VARCHAR);"
+
+  - id: create_external_view
+    name: CREATE EXTERNAL VIEW
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_EXTERNAL_VIEW.html
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE EXTERNAL VIEW s.v AS SELECT 1;" }
+      - { id: if_not_exists, sql: "CREATE EXTERNAL VIEW s.v IF NOT EXISTS AS SELECT c FROM t;" }
+
+  - id: create_identity_provider
+    name: CREATE IDENTITY PROVIDER
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_IDENTITY_PROVIDER.html
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE IDENTITY PROVIDER idp TYPE azure NAMESPACE 'ns';" }
+      - { id: options, sql: "CREATE IDENTITY PROVIDER idp TYPE azure NAMESPACE 'ns' PARAMETERS '{\"issuer\":\"x\"}' IAM_ROLE default AUTO_CREATE_ROLES TRUE INCLUDE GROUPS LIKE 'g%';" }
+
+  - id: create_library
+    name: CREATE LIBRARY
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_LIBRARY.html
+    tier: low
+    probes:
+      - { id: from_s3, sql: "CREATE LIBRARY lib LANGUAGE plpythonu FROM 's3://bucket/lib.zip' IAM_ROLE default;" }
+      - { id: or_replace_https, sql: "CREATE OR REPLACE LIBRARY lib LANGUAGE plpythonu FROM 'https://example.com/lib.zip';" }
+
+  - id: create_model
+    name: CREATE MODEL
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_MODEL.html
+    tier: low
+    probes:
+      - { id: from_table, sql: "CREATE MODEL m FROM t TARGET c FUNCTION f IAM_ROLE default SETTINGS (S3_BUCKET 'bucket');" }
+      - { id: from_query, sql: "CREATE MODEL m FROM (SELECT a, b FROM t) TARGET b FUNCTION f IAM_ROLE default AUTO ON MODEL_TYPE XGBOOST PROBLEM_TYPE BINARY_CLASSIFICATION OBJECTIVE 'F1' SETTINGS (S3_BUCKET 'bucket', MAX_RUNTIME 1800);" }
+
+  - id: create_template
+    name: CREATE TEMPLATE
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_CREATE_TEMPLATE.html
+    tier: low
+    probes:
+      - { id: basic, sql: "CREATE TEMPLATE s.tpl FOR COPY AS CSV DELIMITER ',' IGNOREHEADER 1;" }
+      - { id: or_replace, sql: "CREATE OR REPLACE TEMPLATE tpl FOR COPY FORMAT AS JSON 'auto';" }
+
+  - id: desc_identity_provider
+    name: DESC IDENTITY PROVIDER
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_DESC_IDENTITY_PROVIDER.html
+    tier: low
+    probes:
+      - { id: basic, sql: "DESC IDENTITY PROVIDER azure_idp;" }
+
+  - id: drop_external_view
+    name: DROP EXTERNAL VIEW
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_DROP_EXTERNAL_VIEW.html
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP EXTERNAL VIEW s.v;" }
+      - { id: if_exists, sql: "DROP EXTERNAL VIEW s.v IF EXISTS;" }
+
+  - id: drop_identity_provider
+    name: DROP IDENTITY PROVIDER
+    doc: https://docs.aws.amazon.com/redshift/latest/dg/r_DROP_IDENTITY_PROVIDER.html
+    tier: low
+    probes:
+      - { id: basic, sql: "DROP IDENTITY PROVIDER idp;" }
+      - { id: cascade, sql: "DROP IDENTITY PROVIDER idp CASCADE;" }

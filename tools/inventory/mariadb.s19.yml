@@ -1,0 +1,61 @@
+dialect: mariadb
+engine: MariaDB Server
+version: "11.x (current)"
+source: https://mariadb.com/docs/server/reference/sql-statements
+
+statements:
+  - id: begin_end
+    name: BEGIN ... END
+    doc: https://mariadb.com/docs/server/reference/sql-statements/programmatic-compound-statements/begin-end
+    tier: high
+    probes:
+      - id: not_atomic_block
+        sql: "BEGIN NOT ATOMIC SET @a = 1; CREATE TABLE t (a INT); END;"
+      - id: not_atomic_empty
+        sql: "BEGIN NOT ATOMIC END;"
+        note: statement_list is optional, so the empty compound statement is legal
+      - id: not_atomic_labeled
+        sql: "lbl: BEGIN NOT ATOMIC SELECT 1; END lbl;"
+        note: "[begin_label:] BEGIN [NOT ATOMIC] ... END [end_label]"
+      - id: block_in_procedure
+        sql: "CREATE PROCEDURE p() BEGIN SELECT 1; END;"
+      - id: labeled_block_in_procedure
+        sql: "CREATE PROCEDURE p() lbl: BEGIN SELECT 1; END lbl;"
+      - id: nested_block
+        sql: "CREATE PROCEDURE p() BEGIN DECLARE x INT DEFAULT 1; BEGIN DECLARE y INT DEFAULT 2; SELECT x, y; END; SELECT x; END;"
+      - id: declaration_order
+        sql: "CREATE PROCEDURE p() BEGIN DECLARE v INT DEFAULT 0; DECLARE c CONDITION FOR SQLSTATE '45000'; DECLARE cur CURSOR FOR SELECT a FROM t; DECLARE EXIT HANDLER FOR NOT FOUND BEGIN SET v = 1; END; SELECT v; END;"
+        note: "Documented order: local variables, CONDITIONs, CURSORs, HANDLERs"
+    examples:
+      - |-
+        CREATE PROCEDURE t( )
+        BEGIN
+           DECLARE x TINYINT UNSIGNED DEFAULT 1;
+           BEGIN
+              DECLARE x CHAR(2) DEFAULT '02';
+               DECLARE y TINYINT UNSIGNED DEFAULT 10;
+               SELECT x, y;
+           END;
+           SELECT x;
+        END;
+
+  - id: case_statement
+    name: CASE Statement
+    doc: https://mariadb.com/docs/server/reference/sql-statements/programmatic-compound-statements/case-statement
+    tier: high
+    probes:
+      - id: simple_case
+        sql: "CREATE PROCEDURE p() BEGIN DECLARE v INT DEFAULT 1; CASE v WHEN 2 THEN SELECT v; WHEN 3 THEN SELECT 0; END CASE; END;"
+      - id: simple_case_else
+        sql: "CREATE PROCEDURE p() BEGIN DECLARE v INT DEFAULT 1; CASE v WHEN 2 THEN SELECT v; ELSE SELECT 0; END CASE; END;"
+      - id: searched_case
+        sql: "CREATE PROCEDURE p() BEGIN DECLARE v INT DEFAULT 1; CASE WHEN v = 2 THEN SELECT v; WHEN v = 3 THEN SELECT 0; END CASE; END;"
+      - id: searched_case_else
+        sql: "CREATE PROCEDURE p() BEGIN DECLARE v INT DEFAULT 1; CASE WHEN v = 2 THEN SELECT v; ELSE SELECT 0; END CASE; END;"
+      - id: else_empty_block
+        sql: "CREATE PROCEDURE p() BEGIN DECLARE v INT DEFAULT 1; CASE v WHEN 2 THEN SELECT v; WHEN 3 THEN SELECT 0; ELSE BEGIN END; END CASE; END;"
+        note: Documented idiom for handling no match, since an empty statement_list is not allowed
+      - id: multiple_statements_in_branch
+        sql: "CREATE PROCEDURE p() BEGIN DECLARE v INT DEFAULT 1; CASE v WHEN 1 THEN SET v = 2; SELECT v; ELSE SET v = 0; END CASE; END;"
+      - id: anonymous_block
+        sql: "BEGIN NOT ATOMIC DECLARE v INT DEFAULT 1; CASE v WHEN 1 THEN SELECT 1; ELSE SELECT 0; END CASE; END;"
