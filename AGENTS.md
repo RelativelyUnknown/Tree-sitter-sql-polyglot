@@ -362,6 +362,29 @@ SQL INPUT HERE
 
 ---
 
+## Statement inventory
+
+`tools/inventory.py` measures each dialect against that engine's own documentation. Inventories live in
+`tools/inventory/<dialect>.<part>.yml` (format: `tools/inventory/README.md`): one entry per documented
+statement with a doc URL, tier (high/medium/low), probes and doc examples. A probe is `implemented` when
+we accept it and a reference parser agrees, `gap` when we reject and a reference accepts, `unconfirmed`
+when nobody accepts, `suspect` when only we accept.
+
+```bash
+python tools/inventory.py --dialect <d>   # one dialect, writes tools/inventory-results/<d>.json
+python tools/inventory.py --file <path>   # one inventory file, writes nothing
+python tools/inventory.py --validate      # schema check of every file
+python tools/inventory.py --check         # CI gate: fails on regressions against the recorded results
+python tools/inventory.py --report        # writes the gitignored docs/inventory.md
+```
+
+Refresh the recorded results (`tools/inventory-results/`) after a grammar change that improves a score.
+`tools/inventory-verify/*.json` holds the verdicts from re-reading suspect and unconfirmed probes against
+the docs; the report reads them, so keep the directory. Mark a statement `not-applicable` only with a
+reason checked against the vendor's reference. Db2 targets LUW 12.1.
+
+---
+
 ## Hash-based grammar caching
 
 `scripts/generate.js` hashes all files in `grammar/` plus the grammar entry point. If the hash

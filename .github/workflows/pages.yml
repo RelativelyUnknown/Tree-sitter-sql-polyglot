@@ -18,7 +18,8 @@ permissions:
 jobs:
   # ── Build the VitePress site ────────────────────────────────────────────────
   # The coverage page is generated fresh from the live parsers on every run
-  # (tools/coverage.py); never hand-updated. The downloads page mirrors the
+  # (tools/coverage.py) and the inventory page from tools/inventory-results/
+  # (tools/inventory.py --report); never hand-updated. The downloads page mirrors the
   # base grammar's build artifacts (scripts/docs-prep.js).
   build:
     runs-on: ubuntu-latest
@@ -87,6 +88,11 @@ jobs:
           pip install -r tools/requirements.txt
           bash tools/antlr/setup.sh
           python tools/coverage.py
+
+      # Written from the committed results (tools/inventory-results/); needs
+      # no parsers, so it is cheap and always matches the checked-in baseline.
+      - name: Generate statement inventory report
+        run: python tools/inventory.py --report
 
       - name: Build docs site
         run: npm run docs:build

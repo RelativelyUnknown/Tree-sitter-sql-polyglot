@@ -67,6 +67,7 @@ RESULTS_DIR = ROOT / "tools" / "inventory-results"
 CACHE_DIR = RESULTS_DIR / ".cache"
 CORPUS_JSON = ROOT / "tools" / "corpus.json"
 INVENTORY_MD = ROOT / "docs" / "inventory.md"
+VERIFY_DIR = ROOT / "tools" / "inventory-verify"
 
 TIER_WEIGHT = {"high": 3, "medium": 2, "low": 1}
 STATUSES = {"not-applicable", "not-sql"}
@@ -344,7 +345,26 @@ editLink: false
 """
 
 
+def _engine_version(r: dict) -> str:
+    eng, ver = r.get("engine") or "", str(r.get("version") or "")
+    return eng if ver and ver in eng else f"{eng} {ver}".strip()
+
+
+def verification_stats() -> dict:
+    """dialect -> {verdict: count}, from the verifier sidecars in tools/inventory-verify/."""
+    out = {}
+    for f in sorted(VERIFY_DIR.glob("*.json")):
+        d = f.stem.split(".")[0]
+        if d == "spot-check":
+            continue
+        for v in (json.loads(f.read_text()).get("verdicts") or {}).values():
+            c = out.setdefault(d, {})
+            c[v["verdict"]] = c.get(v["verdict"], 0) + 1
+    return out
+
+
 def render_report(results: dict, corpus: dict) -> str:
+    ver = verification_stats()
     L = ["# Statement inventory", ""]
     L.append(
         "Every statement each engine documents, checked against our grammar. Each statement "
@@ -352,9 +372,19 @@ def render_report(results: dict, corpus: dict) -> str:
         "simplest form counts as partial. The score weights statements by how commonly they're "
         "used (high 3, medium 2, low 1). Source lists live in `tools/inventory/`.")
     L.append("")
+    L.append(
+        "Probes come from each vendor's syntax reference, then get checked against independent "
+        "reference parsers. Where none of them accept a probe, it is either a gap the references "
+        "also miss or a probe that isn't real SQL, so a second pass re-read the vendor page for "
+        "every probe our parser accepted alone (`suspect`) in all dialects, and for every probe "
+        "nobody accepted (`unconfirmed`) in Oracle, Snowflake, Db2, Teradata and ClickHouse. "
+        "The *Re-read* column counts those probes and how many needed a fix or were dropped. "
+        "Plain gaps in the other dialects are corroborated by a reference parser but were not "
+        "re-read against the vendor docs.")
+    L.append("")
     L.append("| Dialect | Version | Score | Full | Partial | Missing | Probes parsed | "
-             "Doc examples parsed | Real-world SQL parsed |")
-    L.append("|---|---|---|---|---|---|---|---|---|")
+             "Re-read vs docs | Doc examples parsed | Real-world SQL parsed |")
+    L.append("|---|---|---|---|---|---|---|---|---|---|")
     for d in sorted(results, key=lambda x: (x != "base", x)):
         r = results[d]
         s, p, ex = r["statements"], r["probes"], r["examples"]
@@ -362,9 +392,12 @@ def render_report(results: dict, corpus: dict) -> str:
         real = (corpus.get("dialects") or {}).get(d)
         real_s = f"{real['parsed']}/{real['total']} ({real['rate']}%)" if real and real.get("total") else "n/a"
         ex_s = f"{ex['parsed']}/{ex['total']}" if ex["total"] else "n/a"
-        L.append(f"| [{d}](#{d}) | {r.get('engine') or ''} {r.get('version') or ''} | {r['score']}% "
+        vc = ver.get(d) or {}
+        re_s = (f"{sum(vc.values())} ({vc.get('fixed', 0)} fixed, {vc.get('dropped', 0)} dropped)"
+                if vc else "n/a")
+        L.append(f"| [{d}](#{d}) | {_engine_version(r)} | {r['score']}% "
                  f"| {s['full']} | {s['partial']} | {s['absent']} "
-                 f"| {p['implemented'] + p['suspect']}/{n_p} | {ex_s} | {real_s} |")
+                 f"| {p['implemented'] + p['suspect']}/{n_p} | {re_s} | {ex_s} | {real_s} |")
     L.append("")
     for d in sorted(results, key=lambda x: (x != "base", x)):
         r = results[d]
