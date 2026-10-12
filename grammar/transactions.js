@@ -1,6 +1,6 @@
 export default {
 
-  transaction: $ => seq(
+  transaction: $ => prec.dynamic(1, seq(
     choice(
       seq(
         $.keyword_begin,
@@ -38,7 +38,7 @@ export default {
       $._commit,
       $._rollback,
     ),
-  ),
+  )),
 
   // ANSI <transaction mode>: isolation level or access mode
   transaction_mode: $ => choice(
@@ -54,6 +54,21 @@ export default {
     ),
     seq($.keyword_read, $.keyword_only),
     seq($.keyword_read, $.keyword_write),
+    $.transaction_diagnostics,
+  ),
+
+  // ANSI <diagnostics size>: DIAGNOSTICS SIZE n
+  transaction_diagnostics: $ => seq(
+    $.keyword_diagnostics,
+    $.keyword_size,
+    $.literal,
+  ),
+
+  // ANSI <transaction chain>: AND [NO] CHAIN
+  _transaction_chain: $ => seq(
+    $.keyword_and,
+    optional($.keyword_no),
+    $.keyword_chain,
   ),
 
   _commit: $ => seq(
@@ -64,6 +79,7 @@ export default {
         $.keyword_work,
       ),
     ),
+    optional($._transaction_chain),
   ),
 
   _rollback: $ => seq(
@@ -74,9 +90,35 @@ export default {
         $.keyword_work,
       ),
     ),
+    optional($._transaction_chain),
+  ),
+
+  // Standalone forms. Scripts routinely issue COMMIT / ROLLBACK / START TRANSACTION as separate
+  // statements; the BEGIN ... COMMIT block above stays the preferred parse when both apply.
+  commit_statement: $ => $._commit,
+
+  rollback_statement: $ => $._rollback,
+
+  start_transaction_statement: $ => seq(
+    $.keyword_start,
+    $.keyword_transaction,
+    optional(
+      seq(
+        $.transaction_mode,
+        repeat(
+          seq(
+            optional(','),
+            $.transaction_mode,
+          ),
+        ),
+      ),
+    ),
   ),
 
   _transaction_statement: $ => choice(
+    $.commit_statement,
+    $.rollback_statement,
+    $.start_transaction_statement,
     $.savepoint_statement,
     $.release_savepoint_statement,
     $.rollback_to_savepoint_statement,
@@ -101,6 +143,7 @@ export default {
         $.keyword_work,
       ),
     ),
+    optional($._transaction_chain),
     $.keyword_to,
     optional($.keyword_savepoint),
     field('name', $.identifier),

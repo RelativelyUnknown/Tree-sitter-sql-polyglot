@@ -164,6 +164,9 @@
   (keyword_leading)
   (keyword_trailing)
   (keyword_trim)
+  (keyword_call)
+  (keyword_characters)
+  (keyword_octets)
   (keyword_both)
 ] @keyword
 
@@ -309,6 +312,9 @@
   (keyword_savepoint)
   (keyword_release)
   (keyword_work)
+  (keyword_chain)
+  (keyword_diagnostics)
+  (keyword_size)
   (keyword_session)
   (keyword_isolation)
   (keyword_level)

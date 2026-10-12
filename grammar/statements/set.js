@@ -6,7 +6,13 @@ export default {
     $.keyword_set,
     choice(
       seq($.keyword_constraints, choice($.keyword_all, comma_list($.identifier, true)), choice($.keyword_deferred, $.keyword_immediate)),
-      seq($.keyword_transaction, $._transaction_mode),
+      // ISO 9075 SET [LOCAL] TRANSACTION <transaction mode> [, ...]
+      seq(
+        optional($.keyword_local),
+        $.keyword_transaction,
+        $.transaction_mode,
+        repeat(seq(optional(','), $.transaction_mode)),
+      ),
       seq($.keyword_transaction, $.keyword_snapshot, $._transaction_mode),
       seq($.keyword_session, $.keyword_characteristics, $.keyword_as, $.keyword_transaction, $._transaction_mode),
     ),

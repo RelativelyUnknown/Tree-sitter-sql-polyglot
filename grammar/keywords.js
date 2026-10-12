@@ -147,6 +147,9 @@ export default {
   keyword_savepoint: _ => make_keyword("savepoint"),
   keyword_release: _ => make_keyword("release"),
   keyword_work: _ => make_keyword("work"),
+  keyword_chain: _ => make_keyword("chain"),
+  keyword_diagnostics: _ => make_keyword("diagnostics"),
+  keyword_size: _ => make_keyword("size"),
   keyword_over: _ => make_keyword("over"),
   keyword_nulls: _ => make_keyword("nulls"),
   keyword_first: _ => make_keyword("first"),
@@ -351,6 +354,9 @@ export default {
   keyword_leading: _ => make_keyword("leading"),
   keyword_trailing: _ => make_keyword("trailing"),
   keyword_trim: _ => make_keyword("trim"),
+  keyword_call: _ => make_keyword("call"),
+  keyword_characters: _ => make_keyword("characters"),
+  keyword_octets: _ => make_keyword("octets"),
 
   // ANSI SQL; WITHIN GROUP (ORDER BY ...)
   keyword_within: _ => make_keyword("within"),

@@ -15,6 +15,7 @@ import set_rules from "./set.js";
 import refresh_rules from "./refresh.js";
 import show_rules from "./show.js";
 import grant_rules from "./grant.js";
+import call_rules from "./call.js";
 
 export default {
 
@@ -27,6 +28,7 @@ export default {
       optional_parenthesis($._dml_read),
       $._transaction_statement,
       $.declare_cursor_statement,
+      $.call_statement,
     ),
   ),
 
@@ -57,6 +59,7 @@ export default {
   ...set_rules,
   ...show_rules,
   ...grant_rules,
+  ...call_rules,
 
   // COMMENT ON is deliberately NOT wired here: it is not ISO SQL, and the
   // base grammar stays strict ANSI (see tools/coverage-probes.yml purity rule).

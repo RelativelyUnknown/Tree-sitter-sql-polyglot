@@ -131,7 +131,7 @@ export default {
             optional($.keyword_distinct),
             field(
               'parameter',
-              $.term,
+              choice($.term, $.named_argument),
             ),
             optional($.order_by)
           )
@@ -145,6 +145,16 @@ export default {
             ),
             $.keyword_from,
             $.term
+          )
+        ),
+        // ISO 9075 <character position expression>: POSITION(needle IN haystack [USING {CHARACTERS | OCTETS}]).
+        // Kept as an invocation form (like unit FROM term above) so `position` is not a reserved word.
+        paren_list(
+          seq(
+            field('needle', $.term),
+            $.keyword_in,
+            field('haystack', $.term),
+            optional(seq($.keyword_using, choice($.keyword_characters, $.keyword_octets))),
           )
         ),
         // _aggregate_function, e.g. group_concat

@@ -28,6 +28,13 @@ export default grammar({
     // derivation of the whole like_expression subtree.
     [$.between_expression, $.binary_expression, $.like_expression],
     [$.create_function],
+    // START TRANSACTION may open a BEGIN ... COMMIT block or stand alone; GLR picks the block
+    // when a COMMIT/ROLLBACK follows (dynamic precedence on `transaction`).
+    // f(x IN list) is the IN operator; f(x IN y [USING ...]) is the POSITION form. Local to a call argument.
+    [$.binary_expression, $.term],
+    [$.transaction, $.start_transaction_statement],
+    [$.transaction, $.commit_statement],
+    [$.transaction, $.rollback_statement],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
