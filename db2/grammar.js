@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, comma_list, paren_list, make_keyword, wrapped_in_parenthesis } from '../grammar/helpers.js';
+import { optional_parenthesis, comma_list, paren_list, make_keyword, wrapped_in_parenthesis, canonicalOrder } from '../grammar/helpers.js';
 import db2_modules_rules from './grammar/modules.js';
 import db2_data_control_rules from './grammar/data_control.js';
 import db2_isolation_rules from './grammar/isolation.js';
@@ -13,7 +13,7 @@ import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
 
-export default grammar(base, {
+export default canonicalOrder(grammar(base, {
   name: 'db2_sql',
 
   conflicts: $ => [
@@ -646,4 +646,4 @@ export default grammar(base, {
     keyword_double: _ => token(prec(1, make_keyword("double"))),
 
   },
-});
+}));

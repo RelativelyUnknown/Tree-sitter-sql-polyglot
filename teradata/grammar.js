@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { comma_list, optional_parenthesis, make_keyword, wrapped_in_parenthesis } from '../grammar/helpers.js';
+import { comma_list, optional_parenthesis, make_keyword, wrapped_in_parenthesis, canonicalOrder } from '../grammar/helpers.js';
 import { createStatementChoices } from './grammar/legacy_statements.js';
 import teradata_statement_rules from './grammar/statements.js';
 import teradata_admin_rules from './grammar/admin.js';
@@ -12,7 +12,7 @@ import dialect_legacy_rules from './grammar/legacy_statements.js';
 // Adds SEL/DEL abbreviations, SET/MULTISET/VOLATILE tables, PRIMARY INDEX,
 // RANGE_N/CASE_N partitioning, COLLECT STATISTICS, CREATE MACRO, TOP n,
 // and QUALIFY.
-export default grammar(base, {
+export default canonicalOrder(grammar(base, {
   name: 'teradata_sql',
 
   // conflicts do not propagate from the parent; base's list is copied
@@ -437,4 +437,4 @@ export default grammar(base, {
     ...teradata_analysis_rules,
 
   },
-});
+}));

@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, comma_list, paren_list, make_keyword, wrapped_in_parenthesis } from '../grammar/helpers.js';
+import { optional_parenthesis, comma_list, paren_list, make_keyword, wrapped_in_parenthesis, canonicalOrder } from '../grammar/helpers.js';
 import oracle_match_recognize_rules from './grammar/match_recognize.js';
 import oracle_hierarchical_rules from './grammar/hierarchical.js';
 import oracle_plsql_rules from './grammar/plsql_blocks.js';
@@ -19,7 +19,7 @@ import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
 
-export default grammar(base, {
+export default canonicalOrder(grammar(base, {
   name: 'oracle_sql',
 
   precedences: $ => [
@@ -705,4 +705,4 @@ export default grammar(base, {
     keyword_shared:       _ => token(prec(1, make_keyword("shared"))),
 
   },
-});
+}));

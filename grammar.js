@@ -4,8 +4,9 @@ import column_list_rules from "./grammar/column-lists.js";
 import expression_rules from "./grammar/expressions.js";
 import transaction_rules from "./grammar/transactions.js";
 import statement_rules from "./grammar/statements/index.js";
+import { canonicalOrder } from './grammar/helpers.js';
 
-export default grammar({
+export default canonicalOrder(grammar({
   name: 'sql',
 
   // /\s/ alone covers every whitespace character including newlines. An earlier
@@ -102,4 +103,4 @@ export default grammar({
 
   }
 
-});
+}));

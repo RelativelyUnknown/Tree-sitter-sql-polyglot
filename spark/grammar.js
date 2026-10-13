@@ -1,5 +1,5 @@
 import hive from '../hive/grammar.js';
-import { paren_list, optional_parenthesis, comma_list, make_keyword } from '../grammar/helpers.js';
+import { paren_list, optional_parenthesis, comma_list, make_keyword, canonicalOrder } from '../grammar/helpers.js';
 import spark_create_rules from './grammar/create.js';
 import spark_optimize_rules from './grammar/optimize.js';
 import spark_spark4_rules from './grammar/spark4_features.js';
@@ -10,7 +10,7 @@ import spark_cache_rules from './grammar/cache.js';
 import spark_resource_rules from './grammar/resource.js';
 import spark_clause_rules from './grammar/clauses.js';
 
-export default grammar(hive, {
+export default canonicalOrder(grammar(hive, {
   name: 'spark_sql',
 
   conflicts: $ => [
@@ -578,4 +578,4 @@ export default grammar(hive, {
     keyword_varying: _ => token(prec(1, make_keyword("varying"))),
 
   },
-});
+}));

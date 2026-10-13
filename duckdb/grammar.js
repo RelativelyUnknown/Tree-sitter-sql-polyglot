@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, make_keyword, wrapped_in_parenthesis } from '../grammar/helpers.js';
+import { optional_parenthesis, make_keyword, wrapped_in_parenthesis, canonicalOrder } from '../grammar/helpers.js';
 import duckdb_select_rules from './grammar/select.js';
 import duckdb_pivot_rules from './grammar/pivot.js';
 import duckdb_expression_rules from './grammar/expressions.js';
@@ -10,7 +10,7 @@ import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
 
-export default grammar(base, {
+export default canonicalOrder(grammar(base, {
   name: 'duckdb_sql',
 
   conflicts: $ => [
@@ -330,4 +330,4 @@ export default grammar(base, {
     ...duckdb_admin_rules,
 
   },
-});
+}));

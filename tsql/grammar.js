@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, comma_list, paren_list, wrapped_in_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { optional_parenthesis, comma_list, paren_list, wrapped_in_parenthesis, make_keyword, canonicalOrder } from '../grammar/helpers.js';
 import tsql_select_rules from './grammar/select.js';
 import tsql_type_rules from './grammar/types.js';
 import tsql_hint_rules from './grammar/hints.js';
@@ -13,7 +13,7 @@ import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
 
-export default grammar(base, {
+export default canonicalOrder(grammar(base, {
   name: 'tsql',
 
   conflicts: $ => [
@@ -567,4 +567,4 @@ export default grammar(base, {
     keyword_returns: _ => token(prec(1, make_keyword("returns"))),
 
   },
-});
+}));

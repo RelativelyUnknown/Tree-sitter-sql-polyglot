@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { paren_list, optional_parenthesis, comma_list, wrapped_in_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { paren_list, optional_parenthesis, comma_list, wrapped_in_parenthesis, make_keyword, canonicalOrder } from '../grammar/helpers.js';
 import { createStatementChoices } from './grammar/legacy_statements.js';
 import hive_storage_rules from './grammar/storage.js';
 import hive_partition_rules from './grammar/partition.js';
@@ -8,7 +8,7 @@ import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
 
-export default grammar(base, {
+export default canonicalOrder(grammar(base, {
   name: 'hive_sql',
 
   conflicts: $ => [
@@ -815,4 +815,4 @@ export default grammar(base, {
     ...hive_lateral_view_rules,
 
   },
-});
+}));

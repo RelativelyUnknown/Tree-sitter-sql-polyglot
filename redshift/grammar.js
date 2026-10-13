@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, make_keyword, comma_list, paren_list } from '../grammar/helpers.js';
+import { optional_parenthesis, make_keyword, comma_list, paren_list, canonicalOrder } from '../grammar/helpers.js';
 import { fromClause } from '../grammar/statements/select.js';
 import rs_create_rules from './grammar/create.js';
 import rs_copy_rules   from './grammar/copy.js';
@@ -10,7 +10,7 @@ import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
 
-export default grammar(base, {
+export default canonicalOrder(grammar(base, {
   name: 'redshift_sql',
 
   conflicts: $ => [
@@ -364,4 +364,4 @@ export default grammar(base, {
     ...redshift_clause_rules,
 
   },
-});
+}));

@@ -1,11 +1,11 @@
 import trino from '../trino/grammar.js';
 import { createStatementChoices } from '../trino/grammar/legacy_statements.js';
-import { optional_parenthesis, paren_list, make_keyword } from '../grammar/helpers.js';
+import { optional_parenthesis, paren_list, make_keyword, canonicalOrder } from '../grammar/helpers.js';
 import athena_statement_rules from './grammar/statements.js';
 import athena_create_rules from './grammar/create.js';
 import athena_admin_rules from './grammar/admin.js';
 
-export default grammar(trino, {
+export default canonicalOrder(grammar(trino, {
   name: 'athena_sql',
 
   conflicts: $ => [
@@ -200,4 +200,4 @@ export default grammar(trino, {
     ...athena_create_rules,
 
   },
-});
+}));

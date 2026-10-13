@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { paren_list, comma_list, optional_parenthesis, wrapped_in_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { paren_list, comma_list, optional_parenthesis, wrapped_in_parenthesis, make_keyword, canonicalOrder } from '../grammar/helpers.js';
 
 import select_rules    from './grammar/select.js';
 import expr_rules      from './grammar/expressions.js';
@@ -14,7 +14,7 @@ import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
 
-export default grammar(base, {
+export default canonicalOrder(grammar(base, {
   name: 'bigquery_sql',
 
   conflicts: $ => [
@@ -403,4 +403,4 @@ export default grammar(base, {
     keyword_returns: _ => token(prec(1, make_keyword("returns"))),
 
   },
-});
+}));

@@ -1,12 +1,12 @@
 import mysql from '../mysql/grammar.js';
-import { make_keyword } from '../grammar/helpers.js';
+import { make_keyword, canonicalOrder } from '../grammar/helpers.js';
 import mariadb_temporal_rules from './grammar/temporal.js';
 import mariadb_versioning_rules from './grammar/versioning.js';
 import mariadb_returning_rules from './grammar/returning.js';
 import mariadb_package_rules from './grammar/package.js';
 import mariadb_invisible_rules from './grammar/invisible.js';
 
-export default grammar(mysql, {
+export default canonicalOrder(grammar(mysql, {
   name: 'mariadb_sql',
 
   conflicts: $ => [
@@ -81,4 +81,4 @@ export default grammar(mysql, {
     ...mariadb_invisible_rules,
 
   },
-});
+}));

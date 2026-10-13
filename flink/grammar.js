@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { comma_list, paren_list, optional_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { comma_list, paren_list, optional_parenthesis, make_keyword, canonicalOrder } from '../grammar/helpers.js';
 import { fromClause } from '../grammar/statements/select.js';
 
 import create_rules from './grammar/create.js';
@@ -16,7 +16,7 @@ import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
 
-export default grammar(base, {
+export default canonicalOrder(grammar(base, {
   name: 'flink_sql',
 
   conflicts: $ => [
@@ -335,4 +335,4 @@ export default grammar(base, {
     keyword_called: _ => token(prec(1, make_keyword("called"))),
 
   },
-});
+}));

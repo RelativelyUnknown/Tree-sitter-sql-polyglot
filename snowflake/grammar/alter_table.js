@@ -51,15 +51,16 @@ export default {
     $.identifier,
   ),
 
-  // ALTER | MODIFY [COLUMN] col action, or ALTER ( col action, ... ). Further columns after a
-  // comma are column_alteration specifications of their own.
-  alter_column: $ => seq(
+  // ALTER | MODIFY [COLUMN] col action [, [COLUMN] col action ...], or ALTER ( col action, ... ).
+  // The comma-separated form is part of this rule (not a free-standing action) so a column name after
+  // the comma cannot be mistaken for the start of an ADD-less column definition.
+  alter_column: $ => prec.right(seq(
     choice($.keyword_alter, $.keyword_modify),
     choice(
-      $.column_alteration,
+      seq($.column_alteration, repeat(seq(',', $.column_alteration))),
       paren_list($.column_alteration, true),
     ),
-  ),
+  )),
 
   column_alteration: $ => seq(
     optional($.keyword_column),
@@ -67,7 +68,7 @@ export default {
     $._column_action,
   ),
 
-  _column_action: $ => choice(
+  _column_action: $ => prec.right(choice(
     seq(choice($.keyword_set, $.keyword_drop), $.keyword_not, $.keyword_null),
     seq(optional(seq($.keyword_set, $.keyword_data)), $.keyword_type, field('type', $._type)),
     field('type', $._type),
@@ -85,12 +86,12 @@ export default {
     seq($.keyword_unset, $.keyword_projection, $.keyword_policy),
     seq($.keyword_set, $.keyword_tag, comma_list($.tag_assignment, true)),
     seq($.keyword_unset, $.keyword_tag, comma_list($.object_reference, true)),
-  ),
+  )),
 
   tag_assignment: $ => seq($.object_reference, '=', $.literal),
 
   // Table-level actions that take no column.
-  snowflake_table_action: $ => choice(
+  snowflake_table_action: $ => prec.right(choice(
     seq($.keyword_set, $.keyword_tag, comma_list($.tag_assignment, true)),
     seq($.keyword_unset, $.keyword_tag, comma_list($.object_reference, true)),
 
@@ -120,7 +121,7 @@ export default {
 
     seq($.keyword_swap, $.keyword_with, $.object_reference),
     seq($.keyword_recluster, optional($.snowflake_property), optional($.where)),
-  ),
+  )),
 
   // EQUALITY(c1, c2) | SUBSTRING(c3) | GEO(c4) | FULL_TEXT(*)
   search_optimization_method: $ => seq(

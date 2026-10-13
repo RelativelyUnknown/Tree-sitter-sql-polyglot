@@ -1,5 +1,5 @@
 import spark from '../spark/grammar.js';
-import { optional_parenthesis, paren_list, comma_list, wrapped_in_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { optional_parenthesis, paren_list, comma_list, wrapped_in_parenthesis, make_keyword, canonicalOrder } from '../grammar/helpers.js';
 
 import vacuum_rules   from './grammar/vacuum.js';
 import restore_rules  from './grammar/restore.js';
@@ -13,7 +13,7 @@ import create_rules   from './grammar/create.js';
 import alter_rules    from './grammar/alter.js';
 import apply_rules    from './grammar/apply.js';
 
-export default grammar(spark, {
+export default canonicalOrder(grammar(spark, {
   name: 'databricks_sql',
 
   conflicts: $ => [
@@ -381,4 +381,4 @@ export default grammar(spark, {
     keyword_generated: _ => token(prec(1, make_keyword("generated"))),
 
   },
-});
+}));

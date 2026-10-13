@@ -1,5 +1,5 @@
 import postgres from '../postgres/grammar.js';
-import { comma_list, optional_parenthesis, wrapped_in_parenthesis, paren_list, make_keyword } from '../grammar/helpers.js';
+import { comma_list, optional_parenthesis, wrapped_in_parenthesis, paren_list, make_keyword, canonicalOrder } from '../grammar/helpers.js';
 import crdb_statement_rules from './grammar/statements.js';
 import crdb_admin_rules from './grammar/admin.js';
 import crdb_clause_rules from './grammar/clauses.js';
@@ -8,7 +8,7 @@ import crdb_clause_rules from './grammar/clauses.js';
 // syntax), layered on the postgres grammar. Adds the CockroachDB-native
 // distributed-SQL surface: AS OF SYSTEM TIME, UPSERT, BACKUP/RESTORE,
 // IMPORT INTO, CREATE CHANGEFEED, hash-sharded indexes, SHOW statements.
-export default grammar(postgres, {
+export default canonicalOrder(grammar(postgres, {
   name: 'cockroachdb_sql',
 
   // conflicts do not propagate from the parent; postgres's list is copied
@@ -299,4 +299,4 @@ export default grammar(postgres, {
     ...crdb_clause_rules,
 
   },
-});
+}));

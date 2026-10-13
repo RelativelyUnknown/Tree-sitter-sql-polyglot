@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { paren_list, optional_parenthesis, comma_list, wrapped_in_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { paren_list, optional_parenthesis, comma_list, wrapped_in_parenthesis, make_keyword, canonicalOrder } from '../grammar/helpers.js';
 
 import qualify_rules     from './grammar/qualify.js';
 import pivot_rules       from './grammar/pivot.js';
@@ -23,7 +23,7 @@ import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
 
-export default grammar(base, {
+export default canonicalOrder(grammar(base, {
   name: 'snowflake_sql',
 
   conflicts: $ => [
@@ -37,6 +37,7 @@ export default grammar(base, {
     [$.between_expression, $.binary_expression, $.like_expression],
     // UNIQUE NOT NULL: NOT starts either a constraint property (NOT ENFORCED) or the next column constraint.
     [$.inline_constraint],
+    [$.alter_column],
     // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
     [$.transaction, $.start_transaction_statement],
     [$.transaction, $.commit_statement],
@@ -392,7 +393,6 @@ export default grammar(base, {
       $.modify_constraint,
       $.rename_constraint,
       $.alter_column,
-      $.column_alteration,
       $.change_column,
       $.drop_column,
       $.rename_object,
@@ -796,4 +796,4 @@ export default grammar(base, {
     keyword_percent: _ => token(prec(1, make_keyword("percent"))),
 
   },
-});
+}));

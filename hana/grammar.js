@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, paren_list, comma_list, make_keyword } from '../grammar/helpers.js';
+import { optional_parenthesis, paren_list, comma_list, make_keyword, canonicalOrder } from '../grammar/helpers.js';
 import { createStatementChoices } from './grammar/legacy_statements.js';
 import { fromClause } from '../grammar/statements/select.js';
 import hana_statement_rules from './grammar/statements.js';
@@ -12,7 +12,7 @@ import dialect_legacy_rules from './grammar/legacy_statements.js';
 // language; the Sybase heritage is wire-level, not syntactic), extends the
 // ANSI base. Adds COLUMN/ROW tables, UPSERT, WITH HINT, and SQLScript
 // procedures with :param references.
-export default grammar(base, {
+export default canonicalOrder(grammar(base, {
   name: 'hana_sql',
 
   // conflicts do not propagate from the parent; base's list is copied
@@ -335,4 +335,4 @@ export default grammar(base, {
     ...hana_admin_rules,
 
   },
-});
+}));

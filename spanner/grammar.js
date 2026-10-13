@@ -1,5 +1,5 @@
 import bigquery from '../bigquery/grammar.js';
-import { make_keyword, optional_parenthesis, paren_list, wrapped_in_parenthesis } from '../grammar/helpers.js';
+import { make_keyword, optional_parenthesis, paren_list, wrapped_in_parenthesis, canonicalOrder } from '../grammar/helpers.js';
 import spanner_ddl_rules from './grammar/ddl.js';
 import spanner_admin_rules from './grammar/admin.js';
 
@@ -8,7 +8,7 @@ import spanner_admin_rules from './grammar/admin.js';
 // Adds the Spanner-native schema surface: trailing PRIMARY KEY, INTERLEAVE
 // IN PARENT, STORING/NULL_FILTERED indexes, CHANGE STREAMs, ROW DELETION
 // POLICY.
-export default grammar(bigquery, {
+export default canonicalOrder(grammar(bigquery, {
   name: 'spanner_sql',
 
   // conflicts do not propagate from the parent; bigquery's list is copied
@@ -292,4 +292,4 @@ export default grammar(bigquery, {
     ...spanner_admin_rules,
 
   },
-});
+}));

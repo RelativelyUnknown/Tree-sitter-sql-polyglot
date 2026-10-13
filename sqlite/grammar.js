@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, comma_list, paren_list, make_keyword, wrapped_in_parenthesis } from '../grammar/helpers.js';
+import { optional_parenthesis, comma_list, paren_list, make_keyword, wrapped_in_parenthesis, canonicalOrder } from '../grammar/helpers.js';
 import { fromClause } from '../grammar/statements/select.js';
 import sqlite_pragma_rules from './grammar/pragma.js';
 import sqlite_attach_rules from './grammar/attach.js';
@@ -8,7 +8,7 @@ import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
 
-export default grammar(base, {
+export default canonicalOrder(grammar(base, {
   name: 'sqlite_sql',
 
   conflicts: $ => [
@@ -411,4 +411,4 @@ export default grammar(base, {
     ...sqlite_virtual_table_rules,
 
   },
-});
+}));

@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { comma_list, optional_parenthesis, wrapped_in_parenthesis, make_keyword, paren_list } from '../grammar/helpers.js';
+import { comma_list, optional_parenthesis, wrapped_in_parenthesis, make_keyword, paren_list, canonicalOrder } from '../grammar/helpers.js';
 import mysql_create_rules from './grammar/create.js';
 import mysql_optimize_rules from './grammar/optimize.js';
 import mysql_load_data_rules from './grammar/load_data.js';
@@ -13,7 +13,7 @@ import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
 
-export default grammar(base, {
+export default canonicalOrder(grammar(base, {
   name: 'mysql_sql',
 
   conflicts: $ => [
@@ -833,4 +833,4 @@ export default grammar(base, {
     keyword_references:   _ => token(prec(1, make_keyword("references"))),
 
   },
-});
+}));

@@ -37,3 +37,15 @@ export function paren_list(field, requireFirst) {
     comma_list(field, requireFirst),
   )
 }
+
+// Tree-sitter's parse-table size depends on the order of the rules in grammar.json: the same grammar
+// builds 9k or 24k states depending on it (the greedy state merging follows rule order). Composing a
+// grammar from many spread files makes the natural order arbitrary, so every grammar applies one
+// canonical order: `program` first, then the keyword rules, then everything else, each alphabetical.
+export function canonicalOrder(g) {
+  const rules = g.grammar.rules;
+  const rank = (n) => (n === 'program' ? 0 : n.startsWith('keyword_') ? 1 : 2);
+  const names = Object.keys(rules).sort((a, b) => rank(a) - rank(b) || (a < b ? -1 : a > b ? 1 : 0));
+  g.grammar.rules = Object.fromEntries(names.map((n) => [n, rules[n]]));
+  return g;
+}
