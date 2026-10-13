@@ -24,20 +24,4 @@ export default {
     ),
   ),
 
-  reset_statement: $ => seq(
-    $.keyword_reset,
-    choice(
-      $.object_reference,
-      $.keyword_all,
-      seq($.keyword_session, $.keyword_authorization),
-      $.keyword_role,
-    ),
-  ),
-
-  use_statement: $ => seq(
-    $.keyword_use,
-    optional(choice($.keyword_database, $.keyword_schema, $.keyword_catalog)),
-    $.object_reference,
-  ),
-
 };

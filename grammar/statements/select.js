@@ -282,24 +282,6 @@ export default {
     ),
   ),
 
-  index_hint: $ => seq(
-    choice(
-      $.keyword_force,
-      $.keyword_use,
-      $.keyword_ignore,
-    ),
-    $.keyword_index,
-    optional(
-      seq(
-        $.keyword_for,
-        $.keyword_join,
-      ),
-    ),
-    wrapped_in_parenthesis(
-      field('index_name', $.identifier),
-    ),
-  ),
-
   join: $ => seq(
     optional($.keyword_natural),
     optional(
@@ -525,11 +507,6 @@ export default {
     optional($.literal),
     choice($.keyword_row, $.keyword_rows),
     choice($.keyword_only, seq($.keyword_with, $.keyword_ties)),
-  ),
-
-  returning: $ => seq(
-    $.keyword_returning,
-    $.select_expression,
   ),
 
 };

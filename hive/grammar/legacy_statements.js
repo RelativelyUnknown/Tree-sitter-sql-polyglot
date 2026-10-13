@@ -804,9 +804,129 @@ const merge_rules = {
 
 };
 
+const misc_rules = {
+  // ---- vendor statements the ISO base no longer defines: COMMENT ON, SHOW TABLES, RESET, USE, index hints, RETURNING
+  comment_statement: $ => seq(
+    $.keyword_comment,
+    $.keyword_on,
+    $._comment_target,
+    $.keyword_is,
+    choice(
+      $.keyword_null,
+      alias($._literal_string, $.literal),
+    ),
+  ),
+
+  _comment_target: $ => choice(
+    // TODO: access method
+    // TODO: aggregate
+    $.cast,
+    // TODO: collation
+    seq($.keyword_column, alias($._qualified_field, $.object_reference)),
+    // TODO: constraint (on domain)
+    // TODO: conversion
+    seq($.keyword_database, $.identifier),
+    // TODO: domain
+    seq($.keyword_extension, $.object_reference),
+    // TODO: event trigger
+    // TODO: foreign data wrapper
+    // TODO: foreign table
+    seq($.keyword_function, $.object_reference, optional($.function_arguments)),
+    seq($.keyword_index, $.object_reference),
+    // TODO: large object
+    seq($.keyword_materialized, $.keyword_view, $.object_reference),
+    // TODO: operator (|class|family)
+    // TODO: policy
+    // TODO: (procedural) language
+    seq($.keyword_procedure, $.object_reference, optional($.function_arguments)),
+    // TODO: publication
+    seq($.keyword_role, $.identifier),
+    // TODO: routine
+    // TODO: rule
+    seq($.keyword_schema, $.identifier),
+    seq($.keyword_sequence, $.object_reference),
+    // TODO: server
+    // TODO: statistics
+    // TODO: subscription
+    seq($.keyword_table, $.object_reference),
+    seq($.keyword_tablespace, $.identifier),
+    // TODO: text search (configuration|dictionary|parser|template)
+    // TODO: transform for
+    seq($.keyword_trigger, $.identifier, $.keyword_on, $.object_reference),
+    seq($.keyword_type, $.identifier),
+    seq($.keyword_view, $.object_reference),
+  ),
+
+  // SHOW TABLES [FROM table] [LIKE pattern]
+  _show_tables: $ => seq(
+    $.keyword_tables,
+    optional(seq($.keyword_from, $._qualified_field)),
+    optional(seq($.keyword_like, $._expression))
+  ),
+
+  reset_statement: $ => seq(
+    $.keyword_reset,
+    choice(
+      $.object_reference,
+      $.keyword_all,
+      seq($.keyword_session, $.keyword_authorization),
+      $.keyword_role,
+    ),
+  ),
+
+  use_statement: $ => seq(
+    $.keyword_use,
+    optional(choice($.keyword_database, $.keyword_schema, $.keyword_catalog)),
+    $.object_reference,
+  ),
+
+  index_hint: $ => seq(
+    choice(
+      $.keyword_force,
+      $.keyword_use,
+      $.keyword_ignore,
+    ),
+    $.keyword_index,
+    optional(
+      seq(
+        $.keyword_for,
+        $.keyword_join,
+      ),
+    ),
+    wrapped_in_parenthesis(
+      field('index_name', $.identifier),
+    ),
+  ),
+
+  returning: $ => seq(
+    $.keyword_returning,
+    $.select_expression,
+  ),
+};
+
 export default {
+  ...misc_rules,
 
   // keywords only the vendor rules in this file use; defined here, not in the ISO base
+  keyword_analyze: _ => make_keyword("analyze"),
+  keyword_explain: _ => make_keyword("explain"),
+  keyword_verbose: _ => make_keyword("verbose"),
+  keyword_tables: _ => make_keyword("tables"),
+  keyword_tablespace: _ => make_keyword("tablespace"),
+  keyword_duplicate: _ => make_keyword("duplicate"),
+  keyword_force: _ => make_keyword("force"),
+  keyword_ignore: _ => make_keyword("ignore"),
+  keyword_use: _ => make_keyword("use"),
+  keyword_include: _ => make_keyword("include"),
+  keyword_character: _ => make_keyword("character"),
+  keyword_reset: _ => make_keyword("reset"),
+  keyword_returning: _ => make_keyword("returning"),
+  keyword_hash: _ => make_keyword("hash"),
+  keyword_conflict: _ => make_keyword("conflict"),
+  keyword_do: _ => make_keyword("do"),
+  keyword_nothing: _ => make_keyword("nothing"),
+  keyword_catalog: _ => make_keyword("catalog"),
+  keyword_extension: _ => make_keyword("extension"),
   keyword_cache: _ => make_keyword("cache"),
   keyword_collate: _ => make_keyword("collate"),
   keyword_concurrently: _ => make_keyword("concurrently"),
