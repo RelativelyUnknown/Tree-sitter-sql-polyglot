@@ -62,8 +62,6 @@
  (keyword_nulls)
  (keyword_last)
  (keyword_default)
- (keyword_collate)
- (keyword_concurrently)
  (keyword_always)
  (keyword_generated)
  (keyword_preceding)
@@ -86,9 +84,7 @@
 [
  (keyword_materialized)
  (keyword_recursive)
- (keyword_temp)
  (keyword_temporary)
- (keyword_unlogged)
  (keyword_external)
  (keyword_volatile)
 ] @storageclass
@@ -170,6 +166,11 @@
   (keyword_occurrence)
   (keyword_characters)
   (keyword_octets)
+  (keyword_global)
+  (keyword_continue)
+  (keyword_identity)
+  (keyword_current_user)
+  (keyword_current_role)
   (keyword_call)
   (keyword_both)
 ] @keyword
@@ -177,7 +178,6 @@
 ; --- DDL object ---
 [
   (keyword_table)
-  (keyword_tables)
   (keyword_key)
   (keyword_references)
   (keyword_usage)
@@ -187,7 +187,6 @@
   (keyword_public)
   (keyword_foreign)
   (keyword_constraint)
-  (keyword_force)
   (keyword_for)
   (keyword_if)
   (keyword_exists)
@@ -207,8 +206,6 @@
   (keyword_no)
   (keyword_data)
   (keyword_type)
-  (keyword_rename)
-  (keyword_refresh)
   (keyword_to)
   (keyword_schema)
   (keyword_authorization)
@@ -245,7 +242,6 @@
   (keyword_row)
   (keyword_comment)
   (keyword_truncate)
-  (keyword_cache)
 ] @keyword
 
 ; --- Function / procedure ---
@@ -270,21 +266,14 @@
 ; --- Role / sequence / database ---
 [
   (keyword_admin)
-  (keyword_connection)
   (keyword_cycle)
   (keyword_database)
-  (keyword_encrypted)
   (keyword_increment)
-  (keyword_none)
-  (keyword_owned)
-  (keyword_password)
   (keyword_role)
   (keyword_sequence)
   (keyword_start)
   (keyword_restart)
-  (keyword_until)
   (keyword_user)
-  (keyword_valid)
   (keyword_action)
   (keyword_definer)
   (keyword_invoker)
@@ -320,7 +309,6 @@
   (keyword_write)
   (keyword_committed)
   (keyword_uncommitted)
-  (keyword_deferrable)
   (keyword_zone)
   (keyword_immediate)
   (keyword_deferred)
@@ -333,7 +321,6 @@
   (keyword_each)
   (keyword_instead)
   (keyword_of)
-  (keyword_initially)
   (keyword_old)
   (keyword_new)
   (keyword_referencing)
@@ -375,8 +362,6 @@
  (keyword_option)
  (keyword_local)
  (keyword_cascaded)
- (keyword_wait)
- (keyword_nowait)
  (keyword_maxvalue)
  (keyword_minvalue)
 ] @type.qualifier

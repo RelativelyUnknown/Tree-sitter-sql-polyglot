@@ -17,6 +17,7 @@ import oracle_admin_ddl_rules from './grammar/admin_ddl.js';
 import oracle_mview_rules from './grammar/mviews.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
+import dialect_legacy_rules from './grammar/legacy_statements.js';
 
 export default grammar(base, {
   name: 'oracle_sql',
@@ -68,6 +69,7 @@ export default grammar(base, {
   rules: {
     ...dialect_transaction_rules,
     ...dialect_alter_rules,
+    ...dialect_legacy_rules,
 
 
     // Extend _create_statement to add CREATE PACKAGE / PACKAGE BODY / SYNONYM / DATABASE LINK

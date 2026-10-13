@@ -14,6 +14,7 @@ import pg_maintenance_rules from './grammar/maintenance.js';
 import pg_object_rules from './grammar/objects.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
+import dialect_legacy_rules from './grammar/legacy_statements.js';
 
 export default grammar(base, {
   name: 'postgres_sql',
@@ -47,6 +48,7 @@ export default grammar(base, {
   rules: {
     ...dialect_transaction_rules,
     ...dialect_alter_rules,
+    ...dialect_legacy_rules,
 
 
     // LIMIT is supported: fromClause with limit re-adds it over the ANSI base.

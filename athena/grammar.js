@@ -1,5 +1,5 @@
 import trino from '../trino/grammar.js';
-import { createStatementChoices } from '../grammar/statements/create.js';
+import { createStatementChoices } from '../trino/grammar/legacy_statements.js';
 import { optional_parenthesis, paren_list, make_keyword } from '../grammar/helpers.js';
 import athena_statement_rules from './grammar/statements.js';
 import athena_create_rules from './grammar/create.js';

@@ -3,7 +3,6 @@ import { optional_parenthesis, wrapped_in_parenthesis } from "../helpers.js";
 import create_rules from "./create.js";
 import alter_rules from "./alter.js";
 import drop_rules from "./drop.js";
-import rename_rules from "./rename.js";
 import merge_rules from "./merge.js";
 import comment_rules from "./comment.js";
 import delete_rules from "./delete.js";
@@ -12,7 +11,6 @@ import update_rules from "./update.js";
 import truncate_rules from "./truncate.js";
 import select_rules from "./select.js";
 import set_rules from "./set.js";
-import refresh_rules from "./refresh.js";
 import show_rules from "./show.js";
 import grant_rules from "./grant.js";
 import call_rules from "./call.js";
@@ -47,10 +45,8 @@ export default {
   ...create_rules,
   ...alter_rules,
   ...drop_rules,
-  ...rename_rules,
   ...merge_rules,
   ...comment_rules,
-  ...refresh_rules,
   ...delete_rules,
   ...insert_rules,
   ...update_rules,
@@ -69,9 +65,7 @@ export default {
     $._create_statement,
     $._alter_statement,
     $._drop_statement,
-    $._rename_statement,
     $._merge_statement,
-    $._refresh_statement,
     $.set_statement,
     $.grant_statement,
     $.revoke_statement,
@@ -97,6 +91,5 @@ export default {
     ),
   ),
 
-  _refresh_statement: $ => $.refresh_materialized_view,
 
 };

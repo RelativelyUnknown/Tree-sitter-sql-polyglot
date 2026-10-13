@@ -1,11 +1,12 @@
 import base from '../grammar.js';
 import { optional_parenthesis, paren_list, comma_list, make_keyword } from '../grammar/helpers.js';
-import { createStatementChoices } from '../grammar/statements/create.js';
+import { createStatementChoices } from './grammar/legacy_statements.js';
 import { fromClause } from '../grammar/statements/select.js';
 import hana_statement_rules from './grammar/statements.js';
 import hana_admin_rules from './grammar/admin.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
+import dialect_legacy_rules from './grammar/legacy_statements.js';
 
 // SAP HANA SQL; standalone lineage (SQLScript is HANA's own procedural
 // language; the Sybase heritage is wire-level, not syntactic), extends the
@@ -49,6 +50,7 @@ export default grammar(base, {
   rules: {
     ...dialect_transaction_rules,
     ...dialect_alter_rules,
+    ...dialect_legacy_rules,
 
 
     // Re-add non-ANSI CREATE forms this dialect supports over the strict ANSI base.

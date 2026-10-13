@@ -1,6 +1,6 @@
 import base from '../grammar.js';
 import { optional_parenthesis, paren_list, comma_list, make_keyword } from '../grammar/helpers.js';
-import { createStatementChoices } from '../grammar/statements/create.js';
+import { createStatementChoices } from './grammar/legacy_statements.js';
 import trino_statement_rules from './grammar/statements.js';
 import trino_type_rules     from './grammar/types.js';
 import trino_expression_rules from './grammar/expressions.js';
@@ -9,6 +9,7 @@ import trino_select_rules   from './grammar/select.js';
 import trino_ddl_rules      from './grammar/ddl.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
+import dialect_legacy_rules from './grammar/legacy_statements.js';
 
 export default grammar(base, {
   name: 'trino_sql',
@@ -42,6 +43,7 @@ export default grammar(base, {
   rules: {
     ...dialect_transaction_rules,
     ...dialect_alter_rules,
+    ...dialect_legacy_rules,
 
 
     // Re-add non-ANSI CREATE forms this dialect supports over the strict ANSI base.

@@ -12,6 +12,7 @@ import objects_rules   from './grammar/objects.js';
 import alter_rules     from './grammar/alter.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
+import dialect_legacy_rules from './grammar/legacy_statements.js';
 
 export default grammar(base, {
   name: 'bigquery_sql',
@@ -46,6 +47,7 @@ export default grammar(base, {
   rules: {
     ...dialect_transaction_rules,
     ...dialect_alter_rules,
+    ...dialect_legacy_rules,
 
 
     // ── Program: add scripting top-level blocks ─────────────────────────────
