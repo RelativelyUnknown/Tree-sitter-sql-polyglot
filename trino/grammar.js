@@ -8,6 +8,7 @@ import trino_clause_rules from './grammar/clauses.js';
 import trino_select_rules   from './grammar/select.js';
 import trino_ddl_rules      from './grammar/ddl.js';
 import dialect_transaction_rules from './grammar/transactions.js';
+import dialect_alter_rules from './grammar/alter_vendor.js';
 
 export default grammar(base, {
   name: 'trino_sql',
@@ -40,6 +41,7 @@ export default grammar(base, {
 
   rules: {
     ...dialect_transaction_rules,
+    ...dialect_alter_rules,
 
 
     // Re-add non-ANSI CREATE forms this dialect supports over the strict ANSI base.

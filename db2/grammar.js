@@ -10,6 +10,7 @@ import db2_procedural_rules from './grammar/procedural.js';
 import db2_admin_ddl_rules from './grammar/admin.js';
 import db2_clause_rules from './grammar/clauses.js';
 import dialect_transaction_rules from './grammar/transactions.js';
+import dialect_alter_rules from './grammar/alter_vendor.js';
 
 export default grammar(base, {
   name: 'db2_sql',
@@ -39,6 +40,7 @@ export default grammar(base, {
 
   rules: {
     ...dialect_transaction_rules,
+    ...dialect_alter_rules,
 
 
     // Extend _ddl_statement to add Db2-specific DDL

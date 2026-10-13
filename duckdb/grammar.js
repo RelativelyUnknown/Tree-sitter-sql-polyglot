@@ -7,6 +7,7 @@ import duckdb_type_rules from './grammar/types.js';
 import duckdb_statement_rules from './grammar/statements.js';
 import duckdb_admin_rules from './grammar/admin.js';
 import dialect_transaction_rules from './grammar/transactions.js';
+import dialect_alter_rules from './grammar/alter_vendor.js';
 
 export default grammar(base, {
   name: 'duckdb_sql',
@@ -53,6 +54,7 @@ export default grammar(base, {
 
   rules: {
     ...dialect_transaction_rules,
+    ...dialect_alter_rules,
 
 
     statement: $ => seq(

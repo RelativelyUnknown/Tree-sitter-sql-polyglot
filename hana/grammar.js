@@ -5,6 +5,7 @@ import { fromClause } from '../grammar/statements/select.js';
 import hana_statement_rules from './grammar/statements.js';
 import hana_admin_rules from './grammar/admin.js';
 import dialect_transaction_rules from './grammar/transactions.js';
+import dialect_alter_rules from './grammar/alter_vendor.js';
 
 // SAP HANA SQL; standalone lineage (SQLScript is HANA's own procedural
 // language; the Sybase heritage is wire-level, not syntactic), extends the
@@ -47,6 +48,7 @@ export default grammar(base, {
 
   rules: {
     ...dialect_transaction_rules,
+    ...dialect_alter_rules,
 
 
     // Re-add non-ANSI CREATE forms this dialect supports over the strict ANSI base.

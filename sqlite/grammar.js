@@ -5,6 +5,7 @@ import sqlite_pragma_rules from './grammar/pragma.js';
 import sqlite_attach_rules from './grammar/attach.js';
 import sqlite_virtual_table_rules from './grammar/virtual_table.js';
 import dialect_transaction_rules from './grammar/transactions.js';
+import dialect_alter_rules from './grammar/alter_vendor.js';
 
 export default grammar(base, {
   name: 'sqlite_sql',
@@ -31,6 +32,7 @@ export default grammar(base, {
 
   rules: {
     ...dialect_transaction_rules,
+    ...dialect_alter_rules,
 
 
     // LIMIT is supported: fromClause with limit re-adds it over the ANSI base.

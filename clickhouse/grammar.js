@@ -8,6 +8,7 @@ import ch_mutation_rules from './grammar/mutations.js';
 import ch_access_control_rules from './grammar/access_control.js';
 import ch_admin_rules from './grammar/admin.js';
 import dialect_transaction_rules from './grammar/transactions.js';
+import dialect_alter_rules from './grammar/alter_vendor.js';
 
 export default grammar(base, {
   name: 'clickhouse_sql',
@@ -49,6 +50,7 @@ export default grammar(base, {
 
   rules: {
     ...dialect_transaction_rules,
+    ...dialect_alter_rules,
 
 
     // ── INSERT: ClickHouse 23.4+ supports INSERT … RETURNING (#119) ─────────

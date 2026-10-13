@@ -7,6 +7,7 @@ import rs_optimize_rules from './grammar/optimize.js';
 import redshift_clause_rules from './grammar/clauses.js';
 import objects_rules  from './grammar/objects.js';
 import dialect_transaction_rules from './grammar/transactions.js';
+import dialect_alter_rules from './grammar/alter_vendor.js';
 
 export default grammar(base, {
   name: 'redshift_sql',
@@ -34,6 +35,7 @@ export default grammar(base, {
 
   rules: {
     ...dialect_transaction_rules,
+    ...dialect_alter_rules,
 
 
     // LIMIT is supported: fromClause with limit re-adds it over the ANSI base.

@@ -13,6 +13,7 @@ import select_rules from './grammar/select.js';
 import ml_rules     from './grammar/ml.js';
 import match_recognize_rules from './grammar/match_recognize.js';
 import dialect_transaction_rules from './grammar/transactions.js';
+import dialect_alter_rules from './grammar/alter_vendor.js';
 
 export default grammar(base, {
   name: 'flink_sql',
@@ -50,6 +51,7 @@ export default grammar(base, {
 
   rules: {
     ...dialect_transaction_rules,
+    ...dialect_alter_rules,
 
 
     // LIMIT is supported: fromClause with limit re-adds it over the ANSI base.

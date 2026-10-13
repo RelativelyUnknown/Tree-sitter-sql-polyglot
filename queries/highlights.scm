@@ -126,7 +126,6 @@
   (keyword_into)
   (keyword_matched)
   (keyword_values)
-  (keyword_value)
   (keyword_attribute)
   (keyword_set)
 ] @keyword
@@ -205,7 +204,6 @@
   (keyword_refresh)
   (keyword_to)
   (keyword_schema)
-  (keyword_owner)
   (keyword_authorization)
 ] @keyword
 
@@ -220,8 +218,6 @@
   (keyword_rlike)
   (keyword_similar)
   (keyword_over)
-  (keyword_change)
-  (keyword_modify)
   (keyword_after)
   (keyword_before)
 ] @keyword
@@ -272,24 +268,19 @@
   (keyword_database)
   (keyword_encrypted)
   (keyword_increment)
-  (keyword_logged)
   (keyword_none)
   (keyword_owned)
   (keyword_password)
-  (keyword_reset)
   (keyword_role)
   (keyword_sequence)
   (keyword_start)
   (keyword_restart)
-  (keyword_tablespace)
   (keyword_until)
   (keyword_user)
   (keyword_valid)
   (keyword_action)
   (keyword_definer)
   (keyword_invoker)
-  (keyword_enable)
-  (keyword_disable)
   (keyword_security)
 ] @keyword
 

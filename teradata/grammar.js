@@ -5,6 +5,7 @@ import teradata_statement_rules from './grammar/statements.js';
 import teradata_admin_rules from './grammar/admin.js';
 import teradata_analysis_rules from './grammar/analysis.js';
 import dialect_transaction_rules from './grammar/transactions.js';
+import dialect_alter_rules from './grammar/alter_vendor.js';
 
 // Teradata SQL; standalone lineage (since 1979), extends the ANSI base.
 // Adds SEL/DEL abbreviations, SET/MULTISET/VOLATILE tables, PRIMARY INDEX,
@@ -42,6 +43,7 @@ export default grammar(base, {
 
   rules: {
     ...dialect_transaction_rules,
+    ...dialect_alter_rules,
 
 
     // No TABLESAMPLE: Teradata uses its own SAMPLE clause (see `from` below),

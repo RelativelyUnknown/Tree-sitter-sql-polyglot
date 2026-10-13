@@ -10,6 +10,7 @@ import mysql_admin_rules from './grammar/admin.js';
 import mysql_admin_ddl_rules from './grammar/admin_ddl.js';
 import mysql_clause_rules from './grammar/clauses.js';
 import dialect_transaction_rules from './grammar/transactions.js';
+import dialect_alter_rules from './grammar/alter_vendor.js';
 
 export default grammar(base, {
   name: 'mysql_sql',
@@ -43,6 +44,7 @@ export default grammar(base, {
 
   rules: {
     ...dialect_transaction_rules,
+    ...dialect_alter_rules,
 
 
     create_table: $ => prec.left(
