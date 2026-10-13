@@ -11,6 +11,9 @@ import scripting_rules   from './grammar/scripting.js';
 import execute_rules     from './grammar/execute.js';
 import copy_rules        from './grammar/copy.js';
 import create_rules      from './grammar/create.js';
+import create_table_rules from './grammar/create_table.js';
+import alter_table_rules from './grammar/alter_table.js';
+import type_rules from './grammar/types.js';
 import alter_rules       from './grammar/alter.js';
 import use_rules         from './grammar/use.js';
 import stage_rules       from './grammar/stage.js';
@@ -30,6 +33,8 @@ export default grammar(base, {
     // Local shift/reduce ambiguity shared with like_expression's optional
     // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
+    // UNIQUE NOT NULL: NOT starts either a constraint property (NOT ENFORCED) or the next column constraint.
+    [$.inline_constraint],
     // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
     [$.transaction, $.start_transaction_statement],
     [$.transaction, $.commit_statement],
@@ -268,7 +273,6 @@ export default grammar(base, {
         $.alter_sequence,
         // Snowflake-specific
         $.alter_session,
-        $.alter_table_masking,
         $.alter_stage,
         $.alter_warehouse_statement,
         $.alter_table_cluster,
@@ -340,25 +344,6 @@ export default grammar(base, {
       ),
     ),
 
-    // ── CREATE TABLE: add CLONE clause ──────────────────────────────────────
-    create_table: $ => prec.left(
-      seq(
-        $.keyword_create,
-        optional(choice($._temporary, $.keyword_unlogged)),
-        $.keyword_table,
-        optional($._if_not_exists),
-        $.object_reference,
-        choice(
-          seq(
-            optional($.column_definitions),
-            optional($.clone_clause),
-            optional(seq($.keyword_as, $.create_query)),
-          ),
-          $.clone_clause,
-        ),
-      ),
-    ),
-
     // ── CREATE SCHEMA: add CLONE clause ─────────────────────────────────────
     create_schema: $ => prec.left(seq(
       $.keyword_create,
@@ -399,19 +384,24 @@ export default grammar(base, {
       $.add_column,
       $.add_constraint,
       $.drop_constraint,
+      $.alter_constraint,
+      $.modify_constraint,
+      $.rename_constraint,
       $.alter_column,
-      $.modify_column,
+      $.column_alteration,
       $.change_column,
       $.drop_column,
       $.rename_object,
       $.rename_column,
       $.set_schema,
       $.change_ownership,
+      $.snowflake_table_action,
       // prec.right: alter_table already comma-separates its specifications,
       // so a ',' after a property is ambiguous between continuing this list
       // and starting the next specification. Right associativity binds it to
-      // the inner list, which is the reading Snowflake documents.
-      prec.right(seq($.keyword_set, comma_list($.snowflake_property, true))),
+      // the inner list, which is the reading Snowflake documents. Properties
+      // may also follow one another with no separator.
+      prec.right(seq($.keyword_set, $.snowflake_property, repeat(seq(optional(','), $.snowflake_property)))),
       prec.right(seq($.keyword_unset, comma_list($.identifier, true))),
     ),
 
@@ -656,6 +646,30 @@ export default grammar(base, {
     keyword_dynamic:        _ => token(prec(1, make_keyword("dynamic"))),
     keyword_warehouse:      _ => token(prec(1, make_keyword("warehouse"))),
     keyword_clone:             _ => token(prec(1, make_keyword("clone"))),
+    keyword_optimization:      _ => token(prec(1, make_keyword("optimization"))),
+    keyword_search:            _ => token(prec(1, make_keyword("search"))),
+    keyword_recluster:         _ => token(prec(1, make_keyword("recluster"))),
+    keyword_global:            _ => token(prec(1, make_keyword("global"))),
+    keyword_transient:         _ => token(prec(1, make_keyword("transient"))),
+    keyword_tags:              _ => token(prec(1, make_keyword("tags"))),
+    keyword_tag:               _ => token(prec(1, make_keyword("tag"))),
+    keyword_template:          _ => token(prec(1, make_keyword("template"))),
+    keyword_autoincrement:     _ => token(prec(1, make_keyword("autoincrement"))),
+    keyword_identity:          _ => token(prec(1, make_keyword("identity"))),
+    keyword_noorder:           _ => token(prec(1, make_keyword("noorder"))),
+    keyword_projection:        _ => token(prec(1, make_keyword("projection"))),
+    keyword_aggregation:       _ => token(prec(1, make_keyword("aggregation"))),
+    keyword_entity:            _ => token(prec(1, make_keyword("entity"))),
+    keyword_allowed:           _ => token(prec(1, make_keyword("allowed"))),
+    keyword_keys:              _ => token(prec(1, make_keyword("keys"))),
+    keyword_lifecycle:         _ => token(prec(1, make_keyword("lifecycle"))),
+    keyword_contact:           _ => token(prec(1, make_keyword("contact"))),
+    keyword_virtual:           _ => token(prec(1, make_keyword("virtual"))),
+    keyword_enforced:          _ => token(prec(1, make_keyword("enforced"))),
+    keyword_rely:              _ => token(prec(1, make_keyword("rely"))),
+    keyword_norely:            _ => token(prec(1, make_keyword("norely"))),
+    keyword_validate:          _ => token(prec(1, make_keyword("validate"))),
+    keyword_novalidate:        _ => token(prec(1, make_keyword("novalidate"))),
     keyword_undrop:            _ => token(prec(1, make_keyword("undrop"))),
     keyword_warehouse_size:    _ => token(prec(1, /[Ww][Aa][Rr][Ee][Hh][Oo][Uu][Ss][Ee]_[Ss][Ii][Zz][Ee]/)),
     keyword_max_cluster_count: _ => token(prec(1, /[Mm][Aa][Xx]_[Cc][Ll][Uu][Ss][Tt][Ee][Rr]_[Cc][Oo][Uu][Nn][Tt]/)),
@@ -754,6 +768,9 @@ export default grammar(base, {
     ...execute_rules,
     ...copy_rules,
     ...create_rules,
+    ...create_table_rules,
+    ...alter_table_rules,
+    ...type_rules,
     ...alter_rules,
     ...use_rules,
     ...stage_rules,
