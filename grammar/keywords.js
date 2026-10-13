@@ -261,7 +261,6 @@ export default {
   keyword_immediate: _ => make_keyword("immediate"),
   keyword_deferred: _ => make_keyword("deferred"),
   keyword_constraints    : _ => make_keyword("constraints"),
-  keyword_snapshot: _ => make_keyword("snapshot"),
   keyword_characteristics: _ => make_keyword("characteristics"),
   keyword_each: _ => make_keyword("each"),
   keyword_instead: _ => make_keyword("instead"),
@@ -355,8 +354,6 @@ export default {
   keyword_trailing: _ => make_keyword("trailing"),
   keyword_trim: _ => make_keyword("trim"),
   keyword_call: _ => make_keyword("call"),
-  keyword_characters: _ => make_keyword("characters"),
-  keyword_octets: _ => make_keyword("octets"),
 
   // ANSI SQL; WITHIN GROUP (ORDER BY ...)
   keyword_within: _ => make_keyword("within"),

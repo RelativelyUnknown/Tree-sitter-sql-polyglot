@@ -165,8 +165,6 @@
   (keyword_trailing)
   (keyword_trim)
   (keyword_call)
-  (keyword_characters)
-  (keyword_octets)
   (keyword_both)
 ] @keyword
 
@@ -329,7 +327,6 @@
   (keyword_immediate)
   (keyword_deferred)
   (keyword_constraints)
-  (keyword_snapshot)
   (keyword_characteristics)
 ] @keyword
 

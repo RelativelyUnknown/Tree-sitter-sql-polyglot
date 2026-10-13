@@ -10,6 +10,7 @@ import ml_rules        from './grammar/ml.js';
 import types_rules     from './grammar/types.js';
 import objects_rules   from './grammar/objects.js';
 import alter_rules     from './grammar/alter.js';
+import dialect_transaction_rules from './grammar/transactions.js';
 
 export default grammar(base, {
   name: 'bigquery_sql',
@@ -24,10 +25,11 @@ export default grammar(base, {
     // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
-    [$.binary_expression, $.term],
     [$.transaction, $.start_transaction_statement],
     [$.transaction, $.commit_statement],
     [$.transaction, $.rollback_statement],
+    [$._commit, $.commit_statement],
+    [$._rollback, $.rollback_statement],
     [$.create_function],
     [$.add_constraint],
     [$.list, $.grouping_set],
@@ -41,6 +43,8 @@ export default grammar(base, {
   ],
 
   rules: {
+    ...dialect_transaction_rules,
+
 
     // ── Program: add scripting top-level blocks ─────────────────────────────
     program: $ => seq(

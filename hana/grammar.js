@@ -4,6 +4,7 @@ import { createStatementChoices } from '../grammar/statements/create.js';
 import { fromClause } from '../grammar/statements/select.js';
 import hana_statement_rules from './grammar/statements.js';
 import hana_admin_rules from './grammar/admin.js';
+import dialect_transaction_rules from './grammar/transactions.js';
 
 // SAP HANA SQL; standalone lineage (SQLScript is HANA's own procedural
 // language; the Sybase heritage is wire-level, not syntactic), extends the
@@ -23,10 +24,11 @@ export default grammar(base, {
     // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
-    [$.binary_expression, $.term],
     [$.transaction, $.start_transaction_statement],
     [$.transaction, $.commit_statement],
     [$.transaction, $.rollback_statement],
+    [$._commit, $.commit_statement],
+    [$._rollback, $.rollback_statement],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
@@ -44,6 +46,8 @@ export default grammar(base, {
   ],
 
   rules: {
+    ...dialect_transaction_rules,
+
 
     // Re-add non-ANSI CREATE forms this dialect supports over the strict ANSI base.
     _create_statement: $ => seq(choice(...createStatementChoices($, { materializedView: true, index: true }))),

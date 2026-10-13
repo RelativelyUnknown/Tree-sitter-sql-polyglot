@@ -15,6 +15,7 @@ import oracle_admin_rules from './grammar/admin.js';
 import oracle_ddl_ext_rules from './grammar/ddl_ext.js';
 import oracle_admin_ddl_rules from './grammar/admin_ddl.js';
 import oracle_mview_rules from './grammar/mviews.js';
+import dialect_transaction_rules from './grammar/transactions.js';
 
 export default grammar(base, {
   name: 'oracle_sql',
@@ -48,10 +49,11 @@ export default grammar(base, {
     // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
-    [$.binary_expression, $.term],
     [$.transaction, $.start_transaction_statement],
     [$.transaction, $.commit_statement],
     [$.transaction, $.rollback_statement],
+    [$._commit, $.commit_statement],
+    [$._rollback, $.rollback_statement],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
@@ -63,6 +65,8 @@ export default grammar(base, {
   ],
 
   rules: {
+    ...dialect_transaction_rules,
+
 
     // Extend _create_statement to add CREATE PACKAGE / PACKAGE BODY / SYNONYM / DATABASE LINK
     _create_statement: $ => seq(

@@ -7,6 +7,7 @@ import ch_system_rules  from './grammar/system.js';
 import ch_mutation_rules from './grammar/mutations.js';
 import ch_access_control_rules from './grammar/access_control.js';
 import ch_admin_rules from './grammar/admin.js';
+import dialect_transaction_rules from './grammar/transactions.js';
 
 export default grammar(base, {
   name: 'clickhouse_sql',
@@ -20,10 +21,11 @@ export default grammar(base, {
     // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
-    [$.binary_expression, $.term],
     [$.transaction, $.start_transaction_statement],
     [$.transaction, $.commit_statement],
     [$.transaction, $.rollback_statement],
+    [$._commit, $.commit_statement],
+    [$._rollback, $.rollback_statement],
     [$.from],
     [$.all_fields_transform, $.all_fields],
     [$.all_fields_transform],
@@ -46,6 +48,8 @@ export default grammar(base, {
   ],
 
   rules: {
+    ...dialect_transaction_rules,
+
 
     // ── INSERT: ClickHouse 23.4+ supports INSERT … RETURNING (#119) ─────────
     _insert_statement: $ => seq(

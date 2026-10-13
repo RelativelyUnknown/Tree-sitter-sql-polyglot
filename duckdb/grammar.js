@@ -6,6 +6,7 @@ import duckdb_expression_rules from './grammar/expressions.js';
 import duckdb_type_rules from './grammar/types.js';
 import duckdb_statement_rules from './grammar/statements.js';
 import duckdb_admin_rules from './grammar/admin.js';
+import dialect_transaction_rules from './grammar/transactions.js';
 
 export default grammar(base, {
   name: 'duckdb_sql',
@@ -19,10 +20,11 @@ export default grammar(base, {
     // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
-    [$.binary_expression, $.term],
     [$.transaction, $.start_transaction_statement],
     [$.transaction, $.commit_statement],
     [$.transaction, $.rollback_statement],
+    [$._commit, $.commit_statement],
+    [$._rollback, $.rollback_statement],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
@@ -50,6 +52,8 @@ export default grammar(base, {
   ],
 
   rules: {
+    ...dialect_transaction_rules,
+
 
     statement: $ => seq(
       optional(seq(

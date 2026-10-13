@@ -9,6 +9,7 @@ import db2_audit_rules from './grammar/audit.js';
 import db2_procedural_rules from './grammar/procedural.js';
 import db2_admin_ddl_rules from './grammar/admin.js';
 import db2_clause_rules from './grammar/clauses.js';
+import dialect_transaction_rules from './grammar/transactions.js';
 
 export default grammar(base, {
   name: 'db2_sql',
@@ -22,10 +23,11 @@ export default grammar(base, {
     // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
-    [$.binary_expression, $.term],
     [$.transaction, $.start_transaction_statement],
     [$.transaction, $.commit_statement],
     [$.transaction, $.rollback_statement],
+    [$._commit, $.commit_statement],
+    [$._rollback, $.rollback_statement],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
@@ -36,6 +38,8 @@ export default grammar(base, {
   ],
 
   rules: {
+    ...dialect_transaction_rules,
+
 
     // Extend _ddl_statement to add Db2-specific DDL
     _ddl_statement: $ => choice(

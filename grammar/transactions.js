@@ -1,46 +1,10 @@
+// ISO 9075 transaction statements. Everything here is in the standard (section 17); the
+// non-ISO spellings that dialects accept (BEGIN blocks, COMMIT TRANSACTION, optional SAVEPOINT,
+// DEFERRABLE / SNAPSHOT modes) live in `vendor_transaction_rules` below, which a dialect opts into.
+
 export default {
 
-  transaction: $ => prec.dynamic(1, seq(
-    choice(
-      seq(
-        $.keyword_begin,
-        optional(
-          choice(
-            $.keyword_transaction,
-            $.keyword_work,
-          ),
-        ),
-      ),
-      seq(
-        $.keyword_start,
-        $.keyword_transaction,
-        optional(
-          seq(
-            $.transaction_mode,
-            repeat(
-              seq(
-                optional(','),
-                $.transaction_mode,
-              ),
-            ),
-          ),
-        ),
-      ),
-    ),
-    optional(';'),
-    repeat(
-      seq(
-        $.statement,
-        ';'
-      ),
-    ),
-    choice(
-      $._commit,
-      $._rollback,
-    ),
-  )),
-
-  // ANSI <transaction mode>: isolation level or access mode
+  // <transaction mode> ::= <isolation level> | <transaction access mode> | <diagnostics size>
   transaction_mode: $ => choice(
     seq(
       $.keyword_isolation,
@@ -57,62 +21,67 @@ export default {
     $.transaction_diagnostics,
   ),
 
-  // ANSI <diagnostics size>: DIAGNOSTICS SIZE n
+  // <diagnostics size> ::= DIAGNOSTICS SIZE <number of conditions>
   transaction_diagnostics: $ => seq(
     $.keyword_diagnostics,
     $.keyword_size,
     $.literal,
   ),
 
-  // ANSI <transaction chain>: AND [NO] CHAIN
+  // AND [ NO ] CHAIN
   _transaction_chain: $ => seq(
     $.keyword_and,
     optional($.keyword_no),
     $.keyword_chain,
   ),
 
-  _commit: $ => seq(
-    $.keyword_commit,
-    optional(
-      choice(
-        $.keyword_transaction,
-        $.keyword_work,
-      ),
-    ),
-    optional($._transaction_chain),
-  ),
-
-  _rollback: $ => seq(
-    $.keyword_rollback,
-    optional(
-      choice(
-        $.keyword_transaction,
-        $.keyword_work,
-      ),
-    ),
-    optional($._transaction_chain),
-  ),
-
-  // Standalone forms. Scripts routinely issue COMMIT / ROLLBACK / START TRANSACTION as separate
-  // statements; the BEGIN ... COMMIT block above stays the preferred parse when both apply.
-  commit_statement: $ => $._commit,
-
-  rollback_statement: $ => $._rollback,
-
+  // <start transaction statement> ::= START TRANSACTION [ <transaction mode> [ , ... ] ]
   start_transaction_statement: $ => seq(
     $.keyword_start,
     $.keyword_transaction,
     optional(
       seq(
         $.transaction_mode,
-        repeat(
-          seq(
-            optional(','),
-            $.transaction_mode,
-          ),
-        ),
+        repeat(seq(',', $.transaction_mode)),
       ),
     ),
+  ),
+
+  // <commit statement> ::= COMMIT [ WORK ] [ AND [ NO ] CHAIN ]
+  commit_statement: $ => seq(
+    $.keyword_commit,
+    optional($.keyword_work),
+    optional($._transaction_chain),
+  ),
+
+  // <rollback statement> ::= ROLLBACK [ WORK ] [ AND [ NO ] CHAIN ] [ <savepoint clause> ]
+  rollback_statement: $ => seq(
+    $.keyword_rollback,
+    optional($.keyword_work),
+    optional($._transaction_chain),
+  ),
+
+  // <savepoint clause> ::= TO SAVEPOINT <savepoint specifier>
+  rollback_to_savepoint_statement: $ => seq(
+    $.keyword_rollback,
+    optional($.keyword_work),
+    optional($._transaction_chain),
+    $.keyword_to,
+    $.keyword_savepoint,
+    field('name', $.identifier),
+  ),
+
+  // <savepoint statement> ::= SAVEPOINT <savepoint specifier>
+  savepoint_statement: $ => seq(
+    $.keyword_savepoint,
+    field('name', $.identifier),
+  ),
+
+  // <release savepoint statement> ::= RELEASE SAVEPOINT <savepoint specifier>
+  release_savepoint_statement: $ => seq(
+    $.keyword_release,
+    $.keyword_savepoint,
+    field('name', $.identifier),
   ),
 
   _transaction_statement: $ => choice(
@@ -122,31 +91,6 @@ export default {
     $.savepoint_statement,
     $.release_savepoint_statement,
     $.rollback_to_savepoint_statement,
-  ),
-
-  savepoint_statement: $ => seq(
-    $.keyword_savepoint,
-    field('name', $.identifier),
-  ),
-
-  release_savepoint_statement: $ => seq(
-    $.keyword_release,
-    optional($.keyword_savepoint),
-    field('name', $.identifier),
-  ),
-
-  rollback_to_savepoint_statement: $ => seq(
-    $.keyword_rollback,
-    optional(
-      choice(
-        $.keyword_transaction,
-        $.keyword_work,
-      ),
-    ),
-    optional($._transaction_chain),
-    $.keyword_to,
-    optional($.keyword_savepoint),
-    field('name', $.identifier),
   ),
 
 };
