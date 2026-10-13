@@ -163,6 +163,13 @@
   (keyword_leading)
   (keyword_trailing)
   (keyword_trim)
+  (keyword_position)
+  (keyword_position_regex)
+  (keyword_substring_regex)
+  (keyword_flag)
+  (keyword_occurrence)
+  (keyword_characters)
+  (keyword_octets)
   (keyword_call)
   (keyword_both)
 ] @keyword

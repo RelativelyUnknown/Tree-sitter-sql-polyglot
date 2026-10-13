@@ -608,3 +608,314 @@ SELECT f(1, b => 'x') FROM t;
         (object_reference
           name: (identifier))))))
 
+
+================================================================================
+Position expression
+================================================================================
+
+SELECT POSITION('x' IN a) FROM t;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (position_expression
+            (keyword_position)
+            (literal)
+            (keyword_in)
+            (field
+              (identifier))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+================================================================================
+Position expression using characters
+================================================================================
+
+SELECT POSITION('x' IN a USING CHARACTERS) FROM t;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (position_expression
+            (keyword_position)
+            (literal)
+            (keyword_in)
+            (field
+              (identifier))
+            (keyword_using)
+            (keyword_characters)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+================================================================================
+Position expression using octets
+================================================================================
+
+SELECT POSITION(lower(c) IN a USING OCTETS) FROM t;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (position_expression
+            (keyword_position)
+            (invocation
+              (object_reference
+                (identifier))
+              (term
+                (field
+                  (identifier))))
+            (keyword_in)
+            (field
+              (identifier))
+            (keyword_using)
+            (keyword_octets)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+================================================================================
+Position as a column name is not the keyword
+================================================================================
+
+SELECT position, t.position FROM t WHERE position = 1;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (literal))))))
+
+================================================================================
+Position with two arguments is an ordinary call
+================================================================================
+
+SELECT position(a, b) FROM t;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (invocation
+            (object_reference
+              (identifier))
+            (term
+              (field
+                (identifier)))
+            (term
+              (field
+                (identifier)))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+================================================================================
+IN operator inside a function call stays an operator
+================================================================================
+
+SELECT count(a IN (1, 2)) FROM t;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (invocation
+            (object_reference
+              (identifier))
+            (term
+              (binary_expression
+                (field
+                  (identifier))
+                (keyword_in)
+                (list
+                  (literal)
+                  (literal))))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+
+================================================================================
+Position regex
+================================================================================
+
+SELECT POSITION_REGEX('a+' IN a) FROM t;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (regex_position_expression
+            (keyword_position_regex)
+            (literal)
+            (keyword_in)
+            (field
+              (identifier))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+================================================================================
+Position regex with all options
+================================================================================
+
+SELECT POSITION_REGEX(START 'a+' FLAG 'i' IN a FROM 2 USING CHARACTERS OCCURRENCE 2 GROUP 1) FROM t;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (regex_position_expression
+            (keyword_position_regex)
+            (keyword_start)
+            (literal)
+            (keyword_flag)
+            (literal)
+            (keyword_in)
+            (field
+              (identifier))
+            (keyword_from)
+            (literal)
+            (keyword_using)
+            (keyword_characters)
+            (keyword_occurrence)
+            (literal)
+            (keyword_group)
+            (literal)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+================================================================================
+Substring regex
+================================================================================
+
+SELECT SUBSTRING_REGEX('a+' FLAG 'i' IN a FROM 3 OCCURRENCE 1 GROUP 2) FROM t;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (regex_substring_expression
+            (keyword_substring_regex)
+            (literal)
+            (keyword_flag)
+            (literal)
+            (keyword_in)
+            (field
+              (identifier))
+            (keyword_from)
+            (literal)
+            (keyword_occurrence)
+            (literal)
+            (keyword_group)
+            (literal)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+================================================================================
+Regex function names are ordinary identifiers elsewhere
+================================================================================
+
+SELECT position_regex, substring_regex(a, b) FROM t;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))
+        (term
+          (invocation
+            (object_reference
+              (identifier))
+            (term
+              (field
+                (identifier)))
+            (term
+              (field
+                (identifier)))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+

@@ -346,6 +346,10 @@ export default {
   keyword_leading: _ => make_keyword("leading"),
   keyword_trailing: _ => make_keyword("trailing"),
   keyword_trim: _ => make_keyword("trim"),
+  keyword_characters: _ => make_keyword("characters"),
+  keyword_octets: _ => make_keyword("octets"),
+  keyword_flag: _ => make_keyword("flag"),
+  keyword_occurrence: _ => make_keyword("occurrence"),
   keyword_call: _ => make_keyword("call"),
 
   // ANSI SQL; WITHIN GROUP (ORDER BY ...)

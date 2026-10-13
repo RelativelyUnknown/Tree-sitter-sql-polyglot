@@ -66,6 +66,14 @@ export default grammar({
     global: $ => [$.keyword_on],
   },
 
+  // ISO POSITION(needle IN haystack): produced by the external scanner only for that shape, so
+  // `position` stays usable as a column name and function name everywhere else.
+  externals: $ => [
+    $._position_call,
+    $._position_regex_call,
+    $._substring_regex_call,
+  ],
+
   rules: {
     program: $ => seq(
       // any number of statements with a terminating ;

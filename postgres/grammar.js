@@ -37,7 +37,8 @@ export default grammar(base, {
     [$.list, $.cube_element],
   ],
 
-  externals: $ => [
+  externals: ($, previous) => [
+    ...previous,
     $._dollar_quoted_string_start_tag,
     $._dollar_quoted_string_end_tag,
     $._dollar_quoted_string,
