@@ -89,6 +89,18 @@ export default {
 
   rollback_statement: $ => $._rollback,
 
+  // Standalone START TRANSACTION also accepts modes without commas (ISO needs commas).
+  start_transaction_statement: $ => seq(
+    $.keyword_start,
+    $.keyword_transaction,
+    optional(
+      seq(
+        $.transaction_mode,
+        repeat(seq(optional(','), $.transaction_mode)),
+      ),
+    ),
+  ),
+
   release_savepoint_statement: $ => seq(
     $.keyword_release,
     optional($.keyword_savepoint),

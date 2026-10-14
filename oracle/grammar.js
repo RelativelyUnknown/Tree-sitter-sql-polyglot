@@ -349,6 +349,9 @@ export default canonicalOrder(grammar(base, {
     // Override _expression to add Oracle date/timestamp literal forms (DATE '...' / TIMESTAMP '...')
     _expression: $ => prec(1, choice(
       $.literal,
+      $.position_expression,
+      $.regex_position_expression,
+      $.regex_substring_expression,
       alias($._qualified_field, $.field),
       $.parameter,
       $.list,

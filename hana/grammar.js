@@ -4,6 +4,7 @@ import { createStatementChoices } from './grammar/legacy_statements.js';
 import { fromClause } from '../grammar/statements/select.js';
 import hana_statement_rules from './grammar/statements.js';
 import hana_admin_rules from './grammar/admin.js';
+import hana_regexpr_rules from './grammar/regexpr.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
@@ -333,6 +334,7 @@ export default canonicalOrder(grammar(base, {
 
     ...hana_statement_rules,
     ...hana_admin_rules,
+    ...hana_regexpr_rules,
 
   },
 }));

@@ -70,6 +70,7 @@ export default {
 
   _column_action: $ => prec.right(choice(
     seq(choice($.keyword_set, $.keyword_drop), $.keyword_not, $.keyword_null),
+    seq(optional($.keyword_not), $.keyword_null),
     seq(optional(seq($.keyword_set, $.keyword_data)), $.keyword_type, field('type', $._type)),
     field('type', $._type),
     seq($.keyword_set, $.keyword_default, $._expression),

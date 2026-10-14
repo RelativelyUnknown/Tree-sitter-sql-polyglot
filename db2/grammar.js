@@ -361,7 +361,7 @@ export default canonicalOrder(grammar(base, {
     keyword_cursors:      _ => token(prec(1, make_keyword("cursors"))),
     keyword_hierarchy:    _ => token(prec(1, make_keyword("hierarchy"))),
     keyword_insensitive:  _ => token(prec(1, make_keyword("insensitive"))),
-    keyword_locks:        _ => make_keyword("locks"),
+    keyword_locks:        _ => token(prec(1, make_keyword("locks"))),
     keyword_mapping:      _ => token(prec(1, make_keyword("mapping"))),
     keyword_method:       _ => make_keyword("method"),
     keyword_modification: _ => make_keyword("modification"),
