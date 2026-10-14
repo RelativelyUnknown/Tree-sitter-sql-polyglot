@@ -317,7 +317,7 @@ export default canonicalOrder(grammar(base, {
     // than a name, so they stay extracted.
     keyword_configuration:   _ => make_keyword("configuration"),
     keyword_containment:     _ => make_keyword("containment"),
-    keyword_filegroup:       _ => make_keyword("filegroup"),
+    keyword_filegroup:       _ => token(prec(1, make_keyword("filegroup"))),
     keyword_name:            _ => make_keyword("name"),
     keyword_remove:          _ => make_keyword("remove"),
     keyword_output:           _ => token(prec(1, make_keyword("output"))),

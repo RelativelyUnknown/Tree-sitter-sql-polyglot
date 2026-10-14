@@ -436,11 +436,10 @@ export default {
     ')',
   ),
 
-  grouping_set: $ => seq(
-    '(',
-    optional(comma_list($._expression, true)),
-    ')',
-  ),
+  // A non-empty `(a, b)` is read as an expression list; only the empty grouping set `()` is a
+  // grouping_set (and wins over the empty list through dynamic precedence), so the result does not
+  // depend on rule order.
+  grouping_set: $ => prec.dynamic(1, seq('(', ')')),
 
   having: $ => seq(
     $.keyword_having,

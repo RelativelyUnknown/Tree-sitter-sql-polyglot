@@ -358,7 +358,7 @@ export default canonicalOrder(grammar(base, {
     keyword_client:       _ => make_keyword("client"),
     keyword_compress:     _ => token(prec(1, make_keyword("compress"))),
     keyword_current_user: _ => token(prec(1, make_keyword("current_user"))),
-    keyword_cursors:      _ => make_keyword("cursors"),
+    keyword_cursors:      _ => token(prec(1, make_keyword("cursors"))),
     keyword_hierarchy:    _ => token(prec(1, make_keyword("hierarchy"))),
     keyword_insensitive:  _ => token(prec(1, make_keyword("insensitive"))),
     keyword_locks:        _ => make_keyword("locks"),
