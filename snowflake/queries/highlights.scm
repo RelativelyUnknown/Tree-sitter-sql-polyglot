@@ -200,3 +200,9 @@
   (keyword_value)
   (keyword_wait)
 ] @keyword
+(keyword_aggregate) @keyword
+(keyword_allowed_values) @keyword
+(keyword_caller) @keyword
+(keyword_managed) @keyword
+(keyword_memoizable) @keyword
+(keyword_output) @keyword

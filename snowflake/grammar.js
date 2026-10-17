@@ -22,9 +22,17 @@ import files_rules      from './grammar/files.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
+import create_routine_rules from './grammar/create_routines.js';
 
 export default canonicalOrder(grammar(base, {
   name: 'snowflake_sql',
+
+  externals: ($, previous) => [
+    ...previous,
+    $._dollar_quoted_string_start_tag,
+    $._dollar_quoted_string_end_tag,
+    $._dollar_quoted_string,
+  ],
 
   conflicts: $ => [
     // Inherited base conflicts
@@ -198,11 +206,10 @@ export default canonicalOrder(grammar(base, {
         $.create_index,
         $.create_function,
         $.create_procedure,
-        $.create_type,
         $.create_database,
         $.create_role,
+        $.create_tag,
         $.create_sequence,
-        $.create_trigger,
         prec.left(seq(
           $.create_schema,
           repeat($._create_statement),
@@ -211,7 +218,6 @@ export default canonicalOrder(grammar(base, {
         $.create_stream,
         $.create_task,
         $.create_dynamic_table,
-        $.create_secure_view,
         $.create_masking_policy,
         $.create_row_access_policy,
         $.create_stage,
@@ -230,7 +236,7 @@ export default canonicalOrder(grammar(base, {
     // parsed as `name = value` pairs rather than enumerated.
     create_integration: $ => prec.left(seq(
       $.keyword_create,
-      optional($._or_replace),
+      optional($._or_replace_or_alter),
       choice(
         $.keyword_storage,
         $.keyword_api,
@@ -348,40 +354,6 @@ export default canonicalOrder(grammar(base, {
         $._set_values,
       ),
     ),
-
-    // ── CREATE SCHEMA: add CLONE clause ─────────────────────────────────────
-    create_schema: $ => prec.left(seq(
-      $.keyword_create,
-      $.keyword_schema,
-      choice(
-        seq(
-          optional($._if_not_exists),
-          $.identifier,
-          optional(seq($.keyword_authorization, $.identifier)),
-          optional($.clone_clause),
-        ),
-        seq(
-          $.keyword_authorization,
-          $.identifier,
-          optional($.clone_clause),
-        ),
-      ),
-    )),
-
-    // ── CREATE DATABASE: add CLONE clause ───────────────────────────────────
-    // CREATE DATABASE db [WITH] <property> … [CLONE src]
-    // snowflake_property rather than base's _with_settings: the latter takes
-    // only an identifier or quoted string as the value, so a numeric option
-    // (DATA_RETENTION_TIME_IN_DAYS = 1) had nowhere to go.
-    create_database: $ => prec.left(seq(
-      $.keyword_create,
-      $.keyword_database,
-      optional($._if_not_exists),
-      $.identifier,
-      optional($.keyword_with),
-      repeat($.snowflake_property),
-      optional($.clone_clause),
-    )),
 
     // base _alter_specifications plus Snowflake's object-property actions:
     //   ALTER TABLE t SET COMMENT = 'x' | UNSET COMMENT
@@ -688,6 +660,12 @@ export default canonicalOrder(grammar(base, {
     keyword_abort:             _ => token(prec(1, make_keyword("abort"))),
     keyword_queries:           _ => token(prec(1, make_keyword("queries"))),
     keyword_schedule:       _ => token(prec(1, make_keyword("schedule"))),
+    keyword_output:         _ => token(prec(1, make_keyword("output"))),
+    keyword_caller:         _ => token(prec(1, make_keyword("caller"))),
+    keyword_memoizable:     _ => token(prec(1, make_keyword("memoizable"))),
+    keyword_aggregate:      _ => token(prec(1, make_keyword("aggregate"))),
+    keyword_allowed_values: _ => token(prec(1, make_keyword("allowed_values"))),
+    keyword_managed:        _ => token(prec(1, make_keyword("managed"))),
     keyword_secure:         _ => token(prec(1, make_keyword("secure"))),
     keyword_masking:        _ => token(prec(1, make_keyword("masking"))),
     keyword_target_lag:     _ => token(prec(1, make_keyword("target_lag"))),
@@ -782,6 +760,8 @@ export default canonicalOrder(grammar(base, {
     ...files_rules,
     // last, so its overrides win over the inherited rules
     ...snowflake_property_rules,
+    ...create_routine_rules,
+    _literal_string: $ => prec(1, choice($._single_quote_string, $._dollar_quoted_string)),
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords

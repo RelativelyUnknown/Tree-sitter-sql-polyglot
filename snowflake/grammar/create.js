@@ -5,7 +5,7 @@ export default {
   // CREATE [OR REPLACE] STREAM [IF NOT EXISTS] name ON TABLE table_name
   create_stream: $ => seq(
     $.keyword_create,
-    optional($._or_replace),
+    optional($._or_replace_or_alter),
     $.keyword_stream,
     optional($._if_not_exists),
     $.object_reference,
@@ -20,7 +20,7 @@ export default {
   //   AS query
   create_task: $ => seq(
     $.keyword_create,
-    optional($._or_replace),
+    optional($._or_replace_or_alter),
     $.keyword_task,
     optional($._if_not_exists),
     $.object_reference,
@@ -48,7 +48,7 @@ export default {
   //   AS query
   create_dynamic_table: $ => seq(
     $.keyword_create,
-    optional($._or_replace),
+    optional($._or_replace_or_alter),
     $.keyword_dynamic,
     $.keyword_table,
     optional($._if_not_exists),
@@ -64,24 +64,11 @@ export default {
     $._dml_read,
   ),
 
-  // CREATE [OR REPLACE] SECURE VIEW [IF NOT EXISTS] name AS query
-  create_secure_view: $ => seq(
-    $.keyword_create,
-    optional($._or_replace),
-    $.keyword_secure,
-    $.keyword_view,
-    optional($._if_not_exists),
-    $.object_reference,
-    optional(paren_list($.identifier)),
-    $.keyword_as,
-    $.create_query,
-  ),
-
   // CREATE [OR REPLACE] MASKING POLICY [IF NOT EXISTS] name
   //   AS (param TYPE [, ...]) RETURNS return_type -> body_expr
   create_masking_policy: $ => seq(
     $.keyword_create,
-    optional($._or_replace),
+    optional($._or_replace_or_alter),
     $.keyword_masking,
     $.keyword_policy,
     optional($._if_not_exists),
@@ -98,7 +85,7 @@ export default {
   //   AS (param TYPE [, ...]) RETURNS BOOLEAN -> body_expr
   create_row_access_policy: $ => seq(
     $.keyword_create,
-    optional($._or_replace),
+    optional($._or_replace_or_alter),
     $.keyword_row,
     $.keyword_access,
     $.keyword_policy,
@@ -118,7 +105,7 @@ export default {
   // CREATE [OR REPLACE] FILE FORMAT [IF NOT EXISTS] name [TYPE = id] [prop = value ...]
   create_file_format_statement: $ => seq(
     $.keyword_create,
-    optional($._or_replace),
+    optional($._or_replace_or_alter),
     $.keyword_file,
     $.keyword_format,
     optional($._if_not_exists),
@@ -157,7 +144,7 @@ export default {
   // CREATE [OR REPLACE] WAREHOUSE [IF NOT EXISTS] name [properties]
   create_warehouse_statement: $ => seq(
     $.keyword_create,
-    optional($._or_replace),
+    optional($._or_replace_or_alter),
     $.keyword_warehouse,
     optional($._if_not_exists),
     $.object_reference,
@@ -183,7 +170,7 @@ export default {
   //   [PARTITION BY (cols)]
   create_external_table: $ => prec.left(seq(
     $.keyword_create,
-    optional($._or_replace),
+    optional($._or_replace_or_alter),
     $.keyword_external,
     $.keyword_table,
     optional($._if_not_exists),

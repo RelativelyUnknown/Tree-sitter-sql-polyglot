@@ -10,7 +10,7 @@ export default {
   create_table: $ => prec.left(
     seq(
       $.keyword_create,
-      optional(choice($._or_replace, seq($.keyword_or, $.keyword_alter))),
+      optional($._or_replace_or_alter),
       optional($._snowflake_table_kind),
       optional(seq($.keyword_read, $.keyword_only)),
       $.keyword_table,
