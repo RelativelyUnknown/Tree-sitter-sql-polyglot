@@ -541,8 +541,6 @@ export default canonicalOrder(grammar(base, {
       alias($._qualified_field, $.field),
       $.parameter,
       $.bind_variable,
-      $.outer_join_marker,
-      $.connect_by_root,
       $.list,
       $.case,
       $.window_function,
