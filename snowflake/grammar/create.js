@@ -134,13 +134,6 @@ export default {
     optional($.time_travel_clause),
   ),
 
-  // UNDROP TABLE|SCHEMA|DATABASE name
-  undrop_statement: $ => seq(
-    $.keyword_undrop,
-    choice($.keyword_table, $.keyword_schema, $.keyword_database),
-    $.object_reference,
-  ),
-
   // CREATE [OR REPLACE] WAREHOUSE [IF NOT EXISTS] name [properties]
   create_warehouse_statement: $ => seq(
     $.keyword_create,

@@ -17,7 +17,7 @@ import type_rules from './grammar/types.js';
 import alter_rules       from './grammar/alter.js';
 import use_rules         from './grammar/use.js';
 import stage_rules       from './grammar/stage.js';
-import show_rules        from './grammar/show.js';
+import object_statement_rules from './grammar/object_statements.js';
 import files_rules      from './grammar/files.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
@@ -179,21 +179,16 @@ export default canonicalOrder(grammar(base, {
       ),
     ),
 
-    // ── DROP: add DROP STAGE ────────────────────────────────────────────────
+    // ── DROP ─────────────────────────────────────────────────────────────
     _drop_statement: $ => seq(
       choice(
         $.drop_table,
         $.drop_view,
         $.drop_materialized_view,
         $.drop_index,
-        $.drop_function,
-        $.drop_procedure,
         $.drop_type,
-        $.drop_database,
-        $.drop_role,
-        $.drop_schema,
         $.drop_sequence,
-        $.drop_stage,
+        $.drop_object,
       ),
     ),
 
@@ -670,6 +665,55 @@ export default canonicalOrder(grammar(base, {
     keyword_condition: _ => token(prec(1, make_keyword("condition"))),
     keyword_frozen: _ => token(prec(1, make_keyword("frozen"))),
     keyword_authentication: _ => token(prec(1, make_keyword("authentication"))),
+    keyword_application: _ => token(prec(1, make_keyword("application"))),
+    keyword_package: _ => token(prec(1, make_keyword("package"))),
+    keyword_compute: _ => token(prec(1, make_keyword("compute"))),
+    keyword_pool: _ => token(prec(1, make_keyword("pool"))),
+    keyword_cortex: _ => token(prec(1, make_keyword("cortex"))),
+    keyword_service: _ => token(prec(1, make_keyword("service"))),
+    keyword_dbt: _ => token(prec(1, make_keyword("dbt"))),
+    keyword_project: _ => token(prec(1, make_keyword("project"))),
+    keyword_dcm: _ => token(prec(1, make_keyword("dcm"))),
+    keyword_event: _ => token(prec(1, make_keyword("event"))),
+    keyword_volume: _ => token(prec(1, make_keyword("volume"))),
+    keyword_hybrid: _ => token(prec(1, make_keyword("hybrid"))),
+    keyword_iceberg: _ => token(prec(1, make_keyword("iceberg"))),
+    keyword_mcp: _ => token(prec(1, make_keyword("mcp"))),
+    keyword_server: _ => token(prec(1, make_keyword("server"))),
+    keyword_model: _ => token(prec(1, make_keyword("model"))),
+    keyword_network: _ => token(prec(1, make_keyword("network"))),
+    keyword_rule: _ => token(prec(1, make_keyword("rule"))),
+    keyword_notebook: _ => token(prec(1, make_keyword("notebook"))),
+    keyword_resource: _ => token(prec(1, make_keyword("resource"))),
+    keyword_monitor: _ => token(prec(1, make_keyword("monitor"))),
+    keyword_semantic: _ => token(prec(1, make_keyword("semantic"))),
+    keyword_share: _ => token(prec(1, make_keyword("share"))),
+    keyword_streamlit: _ => token(prec(1, make_keyword("streamlit"))),
+    keyword_alerts: _ => token(prec(1, make_keyword("alerts"))),
+    keyword_applications: _ => token(prec(1, make_keyword("applications"))),
+    keyword_pools: _ => token(prec(1, make_keyword("pools"))),
+    keyword_connections: _ => token(prec(1, make_keyword("connections"))),
+    keyword_services: _ => token(prec(1, make_keyword("services"))),
+    keyword_projects: _ => token(prec(1, make_keyword("projects"))),
+    keyword_volumes: _ => token(prec(1, make_keyword("volumes"))),
+    keyword_accounts: _ => token(prec(1, make_keyword("accounts"))),
+    keyword_servers: _ => token(prec(1, make_keyword("servers"))),
+    keyword_rules: _ => token(prec(1, make_keyword("rules"))),
+    keyword_objects: _ => token(prec(1, make_keyword("objects"))),
+    keyword_regions: _ => token(prec(1, make_keyword("regions"))),
+    keyword_replication: _ => token(prec(1, make_keyword("replication"))),
+    keyword_monitors: _ => token(prec(1, make_keyword("monitors"))),
+    keyword_shares: _ => token(prec(1, make_keyword("shares"))),
+    keyword_streamlits: _ => token(prec(1, make_keyword("streamlits"))),
+    keyword_variables: _ => token(prec(1, make_keyword("variables"))),
+    keyword_workspaces: _ => token(prec(1, make_keyword("workspaces"))),
+    keyword_imported: _ => token(prec(1, make_keyword("imported"))),
+    keyword_metric: _ => token(prec(1, make_keyword("metric"))),
+    keyword_identifier: _ => token(prec(1, make_keyword("identifier"))),
+    keyword_result: _ => token(prec(1, make_keyword("result"))),
+    keyword_future: _ => token(prec(1, make_keyword("future"))),
+    keyword_deployments: _ => token(prec(1, make_keyword("deployments"))),
+    keyword_history: _ => token(prec(1, make_keyword("history"))),
     keyword_secure:         _ => token(prec(1, make_keyword("secure"))),
     keyword_masking:        _ => token(prec(1, make_keyword("masking"))),
     keyword_target_lag:     _ => token(prec(1, make_keyword("target_lag"))),
@@ -760,7 +804,7 @@ export default canonicalOrder(grammar(base, {
     ...alter_rules,
     ...use_rules,
     ...stage_rules,
-    ...show_rules,
+    ...object_statement_rules,
     ...files_rules,
     // last, so its overrides win over the inherited rules
     ...snowflake_property_rules,
