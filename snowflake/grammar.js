@@ -41,8 +41,6 @@ export default canonicalOrder(grammar(base, {
   ],
 
   conflicts: $ => [
-    // ORDER BY / OFFSET-FETCH after a set operation may belong to its last SELECT or to the whole query expression.
-    [$.from],
     // Inherited base conflicts
     [$.object_reference, $._qualified_field],
     [$.field, $._qualified_field],

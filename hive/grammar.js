@@ -12,8 +12,6 @@ export default canonicalOrder(grammar(base, {
   name: 'hive_sql',
 
   conflicts: $ => [
-    // ORDER BY / OFFSET-FETCH after a set operation may belong to its last SELECT or to the whole query expression.
-    [$.from],
     [$.object_reference, $._qualified_field],
     [$.object_reference],
     // Local shift/reduce ambiguity shared with like_expression's optional

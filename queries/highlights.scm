@@ -331,7 +331,6 @@
 ; --- Procedure / tablesample ---
 [
   (keyword_procedure)
-  (keyword_percent)
   (keyword_tablesample)
   (keyword_bernoulli)
   (keyword_system)

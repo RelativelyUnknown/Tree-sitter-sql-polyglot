@@ -14,8 +14,6 @@ export default canonicalOrder(grammar(bigquery, {
   // conflicts do not propagate from the parent; bigquery's list is copied
   // verbatim, followed by Spanner-specific entries.
   conflicts: $ => [
-    // ORDER BY / OFFSET-FETCH after a set operation may belong to its last SELECT or to the whole query expression.
-    [$.from],
     // bigquery conflicts (copied verbatim)
     [$.object_reference, $._qualified_field],
     [$.field, $._qualified_field],

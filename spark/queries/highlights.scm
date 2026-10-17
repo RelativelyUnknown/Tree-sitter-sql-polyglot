@@ -104,3 +104,4 @@
 [
   (keyword_variant)
 ] @type.builtin
+(keyword_percent) @keyword

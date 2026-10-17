@@ -15,8 +15,6 @@ export default canonicalOrder(grammar(base, {
   name: 'trino_sql',
 
   conflicts: $ => [
-    // ORDER BY / OFFSET-FETCH after a set operation may belong to its last SELECT or to the whole query expression.
-    [$.from],
     [$.object_reference, $._qualified_field],
     [$.field, $._qualified_field],
     [$.object_reference],

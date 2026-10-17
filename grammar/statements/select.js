@@ -86,8 +86,6 @@ export default {
         $._select_statement,
       ),
     ),
-    optional($.order_by),
-    optional($.offset_fetch_clause),
   ),
 
   _select_statement: $ => optional_parenthesis(
