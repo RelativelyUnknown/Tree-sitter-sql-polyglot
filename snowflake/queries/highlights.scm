@@ -30,10 +30,8 @@
   (keyword_stream)
   (keyword_dynamic)
   (keyword_warehouse)
-  (keyword_schedule)
   (keyword_secure)
   (keyword_masking)
-  (keyword_target_lag)
   (keyword_access)
   (keyword_storage)
   (keyword_api)
@@ -53,12 +51,7 @@
 ; Snowflake STAGE DDL keywords
 [
   (keyword_stage)
-  (keyword_url)
-  (keyword_credentials)
   (keyword_file_format)
-  (keyword_copy_options)
-  (keyword_directory)
-  (keyword_encryption)
   (keyword_pattern)
   (keyword_list)
 ] @keyword
@@ -82,6 +75,30 @@
   (keyword_call)
   (keyword_catalog)
   (keyword_clone)
+  (keyword_recluster)
+  (keyword_search)
+  (keyword_optimization)
+  (keyword_global)
+  (keyword_transient)
+  (keyword_tags)
+  (keyword_tag)
+  (keyword_template)
+  (keyword_autoincrement)
+  (keyword_identity)
+  (keyword_noorder)
+  (keyword_projection)
+  (keyword_aggregation)
+  (keyword_entity)
+  (keyword_allowed)
+  (keyword_keys)
+  (keyword_lifecycle)
+  (keyword_contact)
+  (keyword_virtual)
+  (keyword_enforced)
+  (keyword_rely)
+  (keyword_norely)
+  (keyword_validate)
+  (keyword_novalidate)
   (keyword_cluster)
   (keyword_clustering)
   (keyword_columns)
@@ -143,3 +160,173 @@
   (keyword_warehouse_size)
   (keyword_warehouses)
 ] @keyword
+
+; Keywords that moved out of the ISO base grammar into the rules of this dialect
+[
+  (keyword_change)
+  (keyword_collate)
+  (keyword_concurrently)
+  (keyword_connection)
+  (keyword_deferrable)
+  (keyword_disable)
+  (keyword_enable)
+  (keyword_force)
+  (keyword_initially)
+  (keyword_none)
+  (keyword_nowait)
+  (keyword_owner)
+  (keyword_password)
+  (keyword_refresh)
+  (keyword_rename)
+  (keyword_reset)
+  (keyword_tables)
+  (keyword_tablespace)
+  (keyword_temp)
+  (keyword_until)
+  (keyword_value)
+  (keyword_wait)
+] @keyword
+(keyword_aggregate) @keyword
+(keyword_allowed_values) @keyword
+(keyword_caller) @keyword
+(keyword_managed) @keyword
+(keyword_memoizable) @keyword
+(keyword_output) @keyword
+(keyword_alert) @keyword
+(keyword_authentication) @keyword
+(keyword_condition) @keyword
+(keyword_frozen) @keyword
+(keyword_suspended) @keyword
+(keyword_accounts) @keyword
+(keyword_alerts) @keyword
+(keyword_application) @keyword
+(keyword_applications) @keyword
+(keyword_compute) @keyword
+(keyword_connections) @keyword
+(keyword_cortex) @keyword
+(keyword_dbt) @keyword
+(keyword_dcm) @keyword
+(keyword_deployments) @keyword
+(keyword_event) @keyword
+(keyword_future) @keyword
+(keyword_history) @keyword
+(keyword_hybrid) @keyword
+(keyword_iceberg) @keyword
+(keyword_identifier) @keyword
+(keyword_imported) @keyword
+(keyword_mcp) @keyword
+(keyword_metric) @keyword
+(keyword_model) @keyword
+(keyword_monitor) @keyword
+(keyword_monitors) @keyword
+(keyword_network) @keyword
+(keyword_notebook) @keyword
+(keyword_objects) @keyword
+(keyword_package) @keyword
+(keyword_pool) @keyword
+(keyword_pools) @keyword
+(keyword_project) @keyword
+(keyword_projects) @keyword
+(keyword_regions) @keyword
+(keyword_replication) @keyword
+(keyword_resource) @keyword
+(keyword_result) @keyword
+(keyword_rule) @keyword
+(keyword_rules) @keyword
+(keyword_semantic) @keyword
+(keyword_server) @keyword
+(keyword_servers) @keyword
+(keyword_service) @keyword
+(keyword_services) @keyword
+(keyword_share) @keyword
+(keyword_shares) @keyword
+(keyword_streamlit) @keyword
+(keyword_streamlits) @keyword
+(keyword_variables) @keyword
+(keyword_volume) @keyword
+(keyword_volumes) @keyword
+(keyword_workspaces) @keyword
+(keyword_apply) @keyword
+(keyword_attach) @keyword
+(keyword_audit) @keyword
+(keyword_bind) @keyword
+(keyword_endpoint) @keyword
+(keyword_evolve) @keyword
+(keyword_exchange) @keyword
+(keyword_execution) @keyword
+(keyword_import) @keyword
+(keyword_listing) @keyword
+(keyword_manage) @keyword
+(keyword_name) @keyword
+(keyword_operate) @keyword
+(keyword_override) @keyword
+(keyword_ownership) @keyword
+(keyword_packages) @keyword
+(keyword_purchase) @keyword
+(keyword_reference) @keyword
+(keyword_restrictions) @keyword
+(keyword_append_only) @keyword
+(keyword_asof) @keyword
+(keyword_block) @keyword
+(keyword_changes) @keyword
+(keyword_directed) @keyword
+(keyword_error_table) @keyword
+(keyword_information) @keyword
+(keyword_match_condition) @keyword
+(keyword_minus) @keyword
+(keyword_sample) @keyword
+(keyword_seed) @keyword
+(keyword_tabular) @keyword
+(keyword_text) @keyword
+(keyword_top) @keyword
+(keyword_async) @keyword
+(keyword_authorizations) @keyword
+(keyword_await) @keyword
+(keyword_backfill) @keyword
+(keyword_body) @keyword
+(keyword_break) @keyword
+(keyword_cancel) @keyword
+(keyword_close) @keyword
+(keyword_config) @keyword
+(keyword_delegated) @keyword
+(keyword_dimensions) @keyword
+(keyword_dry_run) @keyword
+(keyword_elseif) @keyword
+(keyword_empty) @keyword
+(keyword_enroll) @keyword
+(keyword_exit) @keyword
+(keyword_facts) @keyword
+(keyword_final) @keyword
+(keyword_graph) @keyword
+(keyword_indexing) @keyword
+(keyword_interactive) @keyword
+(keyword_iterate) @keyword
+(keyword_loop) @keyword
+(keyword_matches) @keyword
+(keyword_method) @keyword
+(keyword_metrics) @keyword
+(keyword_mfa) @keyword
+(keyword_movement) @keyword
+(keyword_notify) @keyword
+(keyword_omit) @keyword
+(keyword_open) @keyword
+(keyword_other) @keyword
+(keyword_percent) @keyword
+(keyword_permute) @keyword
+(keyword_person) @keyword
+(keyword_pull) @keyword
+(keyword_repeat) @keyword
+(keyword_require) @keyword
+(keyword_resultset) @keyword
+(keyword_retry) @keyword
+(keyword_reverse) @keyword
+(keyword_run) @keyword
+(keyword_running) @keyword
+(keyword_semantic_view) @keyword
+(keyword_snapshot) @keyword
+(keyword_storage_location) @keyword
+(keyword_subpath) @keyword
+(keyword_suspend_immediate) @keyword
+(keyword_triggers) @keyword
+(keyword_unmatched) @keyword
+(keyword_while) @keyword

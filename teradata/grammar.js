@@ -1,15 +1,18 @@
 import base from '../grammar.js';
-import { comma_list, optional_parenthesis, make_keyword, wrapped_in_parenthesis } from '../grammar/helpers.js';
-import { createStatementChoices } from '../grammar/statements/create.js';
+import { comma_list, optional_parenthesis, make_keyword, wrapped_in_parenthesis, canonicalOrder } from '../grammar/helpers.js';
+import { createStatementChoices } from './grammar/legacy_statements.js';
 import teradata_statement_rules from './grammar/statements.js';
 import teradata_admin_rules from './grammar/admin.js';
 import teradata_analysis_rules from './grammar/analysis.js';
+import dialect_transaction_rules from './grammar/transactions.js';
+import dialect_alter_rules from './grammar/alter_vendor.js';
+import dialect_legacy_rules from './grammar/legacy_statements.js';
 
 // Teradata SQL; standalone lineage (since 1979), extends the ANSI base.
 // Adds SEL/DEL abbreviations, SET/MULTISET/VOLATILE tables, PRIMARY INDEX,
 // RANGE_N/CASE_N partitioning, COLLECT STATISTICS, CREATE MACRO, TOP n,
 // and QUALIFY.
-export default grammar(base, {
+export default canonicalOrder(grammar(base, {
   name: 'teradata_sql',
 
   // conflicts do not propagate from the parent; base's list is copied
@@ -22,6 +25,12 @@ export default grammar(base, {
     // Local shift/reduce ambiguity shared with like_expression's optional
     // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
+    // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
+    [$.transaction, $.start_transaction_statement],
+    [$.transaction, $.commit_statement],
+    [$.transaction, $.rollback_statement],
+    [$._commit, $.commit_statement],
+    [$._rollback, $.rollback_statement],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
@@ -34,6 +43,10 @@ export default grammar(base, {
   ],
 
   rules: {
+    ...dialect_transaction_rules,
+    ...dialect_alter_rules,
+    ...dialect_legacy_rules,
+
 
     // No TABLESAMPLE: Teradata uses its own SAMPLE clause (see `from` below),
     // not the ANSI TABLESAMPLE clause.
@@ -424,4 +437,4 @@ export default grammar(base, {
     ...teradata_analysis_rules,
 
   },
-});
+}));

@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, comma_list, paren_list, wrapped_in_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { optional_parenthesis, comma_list, paren_list, wrapped_in_parenthesis, make_keyword, canonicalOrder } from '../grammar/helpers.js';
 import tsql_select_rules from './grammar/select.js';
 import tsql_type_rules from './grammar/types.js';
 import tsql_hint_rules from './grammar/hints.js';
@@ -9,8 +9,11 @@ import tsql_synapse_rules from './grammar/synapse.js';
 import tsql_security_rules from './grammar/security.js';
 import tsql_database_rules from './grammar/database.js';
 import tsql_admin_rules   from './grammar/admin.js';
+import dialect_transaction_rules from './grammar/transactions.js';
+import dialect_alter_rules from './grammar/alter_vendor.js';
+import dialect_legacy_rules from './grammar/legacy_statements.js';
 
-export default grammar(base, {
+export default canonicalOrder(grammar(base, {
   name: 'tsql',
 
   conflicts: $ => [
@@ -21,6 +24,12 @@ export default grammar(base, {
     // Local shift/reduce ambiguity shared with like_expression's optional
     // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
+    // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
+    [$.transaction, $.start_transaction_statement],
+    [$.transaction, $.commit_statement],
+    [$.transaction, $.rollback_statement],
+    [$._commit, $.commit_statement],
+    [$._rollback, $.rollback_statement],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
@@ -37,6 +46,10 @@ export default grammar(base, {
   ],
 
   rules: {
+    ...dialect_transaction_rules,
+    ...dialect_alter_rules,
+    ...dialect_legacy_rules,
+
 
     // ── Program / batch separator ─────────────────────────────────────────────
     // T-SQL uses ';' OR 'GO' as statement terminators.  Both are optional after
@@ -304,7 +317,7 @@ export default grammar(base, {
     // than a name, so they stay extracted.
     keyword_configuration:   _ => make_keyword("configuration"),
     keyword_containment:     _ => make_keyword("containment"),
-    keyword_filegroup:       _ => make_keyword("filegroup"),
+    keyword_filegroup:       _ => token(prec(1, make_keyword("filegroup"))),
     keyword_name:            _ => make_keyword("name"),
     keyword_remove:          _ => make_keyword("remove"),
     keyword_output:           _ => token(prec(1, make_keyword("output"))),
@@ -554,4 +567,4 @@ export default grammar(base, {
     keyword_returns: _ => token(prec(1, make_keyword("returns"))),
 
   },
-});
+}));

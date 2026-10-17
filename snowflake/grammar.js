@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { paren_list, optional_parenthesis, comma_list, wrapped_in_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { paren_list, optional_parenthesis, comma_list, wrapped_in_parenthesis, make_keyword, canonicalOrder } from '../grammar/helpers.js';
 
 import qualify_rules     from './grammar/qualify.js';
 import pivot_rules       from './grammar/pivot.js';
@@ -11,14 +11,34 @@ import scripting_rules   from './grammar/scripting.js';
 import execute_rules     from './grammar/execute.js';
 import copy_rules        from './grammar/copy.js';
 import create_rules      from './grammar/create.js';
+import create_table_rules from './grammar/create_table.js';
+import alter_table_rules from './grammar/alter_table.js';
+import type_rules from './grammar/types.js';
 import alter_rules       from './grammar/alter.js';
 import use_rules         from './grammar/use.js';
 import stage_rules       from './grammar/stage.js';
-import show_rules        from './grammar/show.js';
+import object_statement_rules from './grammar/object_statements.js';
+import grant_rules from './grammar/grant.js';
+import query_extra_rules from './grammar/query_extras.js';
+import create_object_rules from './grammar/create_objects.js';
+import misc_statement_rules from './grammar/misc_statements.js';
+import alter_other_rules from './grammar/alter_other.js';
 import files_rules      from './grammar/files.js';
+import dialect_transaction_rules from './grammar/transactions.js';
+import dialect_alter_rules from './grammar/alter_vendor.js';
+import dialect_legacy_rules from './grammar/legacy_statements.js';
+import create_routine_rules from './grammar/create_routines.js';
+import alter_object_rules from './grammar/alter_objects.js';
 
-export default grammar(base, {
+export default canonicalOrder(grammar(base, {
   name: 'snowflake_sql',
+
+  externals: ($, previous) => [
+    ...previous,
+    $._dollar_quoted_string_start_tag,
+    $._dollar_quoted_string_end_tag,
+    $._dollar_quoted_string,
+  ],
 
   conflicts: $ => [
     // Inherited base conflicts
@@ -29,6 +49,9 @@ export default grammar(base, {
     // Local shift/reduce ambiguity shared with like_expression's optional
     // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
+    // UNIQUE NOT NULL: NOT starts either a constraint property (NOT ENFORCED) or the next column constraint.
+    [$.inline_constraint],
+    [$.alter_column],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
@@ -48,15 +71,16 @@ export default grammar(base, {
   ],
 
   rules: {
+    ...dialect_transaction_rules,
+    ...dialect_alter_rules,
+    ...dialect_legacy_rules,
+
 
     // ── Program: add scripting top-level blocks ─────────────────────────────
     program: $ => seq(
       repeat(seq(
         choice(
-          $.transaction,
           $.statement,
-          $.declare_block,
-          $.compound_statement,
         ),
         ';',
       )),
@@ -69,6 +93,7 @@ export default grammar(base, {
         $.keyword_explain,
         optional($.keyword_analyze),
         optional($.keyword_verbose),
+        optional(seq($.keyword_using, choice($.keyword_tabular, $.keyword_json, $.keyword_text))),
       )),
       choice(
         $._ddl_statement,
@@ -76,12 +101,29 @@ export default grammar(base, {
         optional_parenthesis($._dml_read),
         $._transaction_statement,
         $.let_statement,
+        $.assignment_statement,
+        $.if_statement,
+        $.case_statement,
+        $.while_statement,
+        $.repeat_statement,
+        $.loop_statement,
+        $.break_statement,
+        $.continue_statement,
+        $.null_statement,
+        $.open_statement,
+        $.fetch_statement,
+        $.close_statement,
+        $.async_statement,
+        $.await_statement,
+        $.cancel_statement,
+        $.compound_statement,
         $.return_statement,
         $.raise_statement,
         $.for_statement,
         $.undrop_statement,
+        $.unset_statement,
         $.call_statement,
-        $.declare_cursor_statement,
+        $.call_with_anonymous_procedure,
       ),
     ),
 
@@ -115,16 +157,6 @@ export default grammar(base, {
 
     // ── TRUNCATE: add the MATERIALIZED VIEW target ─────────────────────────
     // https://docs.snowflake.com/en/sql-reference/sql/truncate-materialized-view
-    _truncate_statement: $ => seq(
-      $.keyword_truncate,
-      choice(
-        seq(optional($.keyword_table), optional($.keyword_only)),
-        seq($.keyword_materialized, $.keyword_view),
-      ),
-      comma_list($.object_reference),
-      optional($._drop_behavior),
-    ),
-
     // ── SELECT … FOR UPDATE [NOWAIT | WAIT <n>] (hybrid tables) ────────────
     _select_statement: $ => optional_parenthesis(
       seq(
@@ -151,21 +183,16 @@ export default grammar(base, {
       ),
     ),
 
-    // ── DROP: add DROP STAGE ────────────────────────────────────────────────
+    // ── DROP ─────────────────────────────────────────────────────────────
     _drop_statement: $ => seq(
       choice(
         $.drop_table,
         $.drop_view,
         $.drop_materialized_view,
         $.drop_index,
-        $.drop_function,
-        $.drop_procedure,
         $.drop_type,
-        $.drop_database,
-        $.drop_role,
-        $.drop_schema,
         $.drop_sequence,
-        $.drop_stage,
+        $.drop_object,
       ),
     ),
 
@@ -179,11 +206,10 @@ export default grammar(base, {
         $.create_index,
         $.create_function,
         $.create_procedure,
-        $.create_type,
         $.create_database,
         $.create_role,
+        $.create_tag,
         $.create_sequence,
-        $.create_trigger,
         prec.left(seq(
           $.create_schema,
           repeat($._create_statement),
@@ -192,7 +218,15 @@ export default grammar(base, {
         $.create_stream,
         $.create_task,
         $.create_dynamic_table,
-        $.create_secure_view,
+        $.create_alert,
+        $.create_pipe,
+        $.create_user,
+        $.create_network_policy,
+        $.create_network_rule,
+        $.create_share,
+        $.create_database_role,
+        $.create_event_table,
+        $.create_account_object,
         $.create_masking_policy,
         $.create_row_access_policy,
         $.create_stage,
@@ -211,7 +245,7 @@ export default grammar(base, {
     // parsed as `name = value` pairs rather than enumerated.
     create_integration: $ => prec.left(seq(
       $.keyword_create,
-      optional($._or_replace),
+      optional($._or_replace_or_alter),
       choice(
         $.keyword_storage,
         $.keyword_api,
@@ -249,19 +283,36 @@ export default grammar(base, {
       choice(
         // base (re-enumerated from grammar/statements/alter.js)
         $.alter_table,
-        $.alter_view,
-        $.alter_materialized_view,
         $.alter_schema,
         $.alter_type,
         $.alter_index,
         $.alter_database,
-        $.alter_role,
         $.alter_sequence,
         // Snowflake-specific
         $.alter_session,
-        $.alter_table_masking,
         $.alter_stage,
-        $.alter_warehouse_statement,
+        $.alter_view,
+        $.alter_materialized_view,
+        $.alter_task,
+        $.alter_dynamic_table,
+        $.alter_alert,
+        $.alter_warehouse,
+        $.alter_stream,
+        $.alter_pipe,
+        $.alter_role,
+        $.alter_user,
+        $.alter_routine,
+        $.alter_file_format,
+        $.alter_share,
+        $.alter_network_policy,
+        $.alter_masking_policy,
+        $.alter_row_access_policy,
+        $.alter_tag,
+        $.alter_external_table,
+        $.alter_iceberg_table,
+        $.alter_integration,
+        $.alter_account_object,
+        $.alter_account,
         $.alter_table_cluster,
       ),
     ),
@@ -307,11 +358,6 @@ export default grammar(base, {
     ),
 
     // ── CALL: invoke a stored procedure ─────────────────────────────────────
-    call_statement: $ => seq(
-      $.keyword_call,
-      field('procedure', $.object_reference),
-      paren_list($._expression),
-    ),
 
     // ── INSERT: add Snowflake INSERT OVERWRITE INTO ─────────────────────────
     insert: $ => seq(
@@ -331,78 +377,29 @@ export default grammar(base, {
       ),
     ),
 
-    // ── CREATE TABLE: add CLONE clause ──────────────────────────────────────
-    create_table: $ => prec.left(
-      seq(
-        $.keyword_create,
-        optional(choice($._temporary, $.keyword_unlogged)),
-        $.keyword_table,
-        optional($._if_not_exists),
-        $.object_reference,
-        choice(
-          seq(
-            optional($.column_definitions),
-            optional($.clone_clause),
-            optional(seq($.keyword_as, $.create_query)),
-          ),
-          $.clone_clause,
-        ),
-      ),
-    ),
-
-    // ── CREATE SCHEMA: add CLONE clause ─────────────────────────────────────
-    create_schema: $ => prec.left(seq(
-      $.keyword_create,
-      $.keyword_schema,
-      choice(
-        seq(
-          optional($._if_not_exists),
-          $.identifier,
-          optional(seq($.keyword_authorization, $.identifier)),
-          optional($.clone_clause),
-        ),
-        seq(
-          $.keyword_authorization,
-          $.identifier,
-          optional($.clone_clause),
-        ),
-      ),
-    )),
-
-    // ── CREATE DATABASE: add CLONE clause ───────────────────────────────────
-    // CREATE DATABASE db [WITH] <property> … [CLONE src]
-    // snowflake_property rather than base's _with_settings: the latter takes
-    // only an identifier or quoted string as the value, so a numeric option
-    // (DATA_RETENTION_TIME_IN_DAYS = 1) had nowhere to go.
-    create_database: $ => prec.left(seq(
-      $.keyword_create,
-      $.keyword_database,
-      optional($._if_not_exists),
-      $.identifier,
-      optional($.keyword_with),
-      repeat($.snowflake_property),
-      optional($.clone_clause),
-    )),
-
     // base _alter_specifications plus Snowflake's object-property actions:
     //   ALTER TABLE t SET COMMENT = 'x' | UNSET COMMENT
     _alter_specifications: $ => choice(
       $.add_column,
       $.add_constraint,
       $.drop_constraint,
+      $.alter_constraint,
+      $.modify_constraint,
+      $.rename_constraint,
       $.alter_column,
-      $.modify_column,
       $.change_column,
       $.drop_column,
       $.rename_object,
       $.rename_column,
       $.set_schema,
       $.change_ownership,
+      $.snowflake_table_action,
       // prec.right: alter_table already comma-separates its specifications,
       // so a ',' after a property is ambiguous between continuing this list
       // and starting the next specification. Right associativity binds it to
-      // the inner list, which is the reading Snowflake documents.
-      prec.right(seq($.keyword_set, comma_list($.snowflake_property, true))),
+      // the inner list, which is the reading Snowflake documents. Properties
+      // may also follow one another with no separator.
+      prec.right(seq($.keyword_set, $.snowflake_property, repeat(seq(optional(','), $.snowflake_property)))),
       prec.right(seq($.keyword_unset, comma_list($.identifier, true))),
     ),
 
@@ -417,9 +414,10 @@ export default grammar(base, {
         $.cross_join,
         $.lateral_join,
         $.lateral_cross_join,
+        $.asof_join,
       )),
       optional($.where),
-      optional($.connect_by_clause),
+      optional(seq($.connect_by_clause, optional($.where))),
       optional($.group_by),
       optional($.having),
       optional($.qualify),
@@ -427,15 +425,6 @@ export default grammar(base, {
       optional($.order_by),
       optional($.limit),
       optional($.offset_fetch_clause),
-    ),
-
-    // Hierarchical query: [START WITH cond] CONNECT BY [NOCYCLE] cond (with PRIOR).
-    connect_by_clause: $ => seq(
-      optional(seq($.keyword_start, $.keyword_with, $._expression)),
-      $.keyword_connect,
-      $.keyword_by,
-      optional($.keyword_nocycle),
-      $._expression,
     ),
 
     // Add PRIOR as a unary operator (re-enumerates the base operator table).
@@ -522,12 +511,14 @@ export default grammar(base, {
           $.invocation,
           $.object_reference,
           wrapped_in_parenthesis($.values),
-          // Snowflake: @stage as a FROM source
-          $.stage_ref,
+          $.semantic_view_clause,
+          // Snowflake: @stage as a FROM source, optionally with (FILE_FORMAT => ..., PATTERN => ...)
+          seq($.stage_ref, optional(paren_list($.named_argument, true))),
           // Snowflake: comma-position LATERAL FLATTEN(...) / LATERAL (subquery)
           seq($.keyword_lateral, choice($.invocation, $.subquery)),
         ),
         optional($.time_travel_clause),
+        optional($.changes_clause),
         optional($.tablesample),
         optional(choice(
           $.pivot_clause,
@@ -538,6 +529,7 @@ export default grammar(base, {
           $._alias,
           optional(alias($._column_list, $.list)),
         )),
+        optional($.tablesample),
       ),
     ),
 
@@ -546,6 +538,7 @@ export default grammar(base, {
       $.literal,
       alias($._qualified_field, $.field),
       $.parameter,
+      $.bind_variable,
       $.list,
       $.case,
       $.window_function,
@@ -647,6 +640,30 @@ export default grammar(base, {
     keyword_dynamic:        _ => token(prec(1, make_keyword("dynamic"))),
     keyword_warehouse:      _ => token(prec(1, make_keyword("warehouse"))),
     keyword_clone:             _ => token(prec(1, make_keyword("clone"))),
+    keyword_optimization:      _ => token(prec(1, make_keyword("optimization"))),
+    keyword_search:            _ => token(prec(1, make_keyword("search"))),
+    keyword_recluster:         _ => token(prec(1, make_keyword("recluster"))),
+    keyword_global:            _ => token(prec(1, make_keyword("global"))),
+    keyword_transient:         _ => token(prec(1, make_keyword("transient"))),
+    keyword_tags:              _ => token(prec(1, make_keyword("tags"))),
+    keyword_tag:               _ => token(prec(1, make_keyword("tag"))),
+    keyword_template:          _ => token(prec(1, make_keyword("template"))),
+    keyword_autoincrement:     _ => token(prec(1, make_keyword("autoincrement"))),
+    keyword_identity:          _ => token(prec(1, make_keyword("identity"))),
+    keyword_noorder:           _ => token(prec(1, make_keyword("noorder"))),
+    keyword_projection:        _ => token(prec(1, make_keyword("projection"))),
+    keyword_aggregation:       _ => token(prec(1, make_keyword("aggregation"))),
+    keyword_entity:            _ => token(prec(1, make_keyword("entity"))),
+    keyword_allowed:           _ => token(prec(1, make_keyword("allowed"))),
+    keyword_keys:              _ => token(prec(1, make_keyword("keys"))),
+    keyword_lifecycle:         _ => token(prec(1, make_keyword("lifecycle"))),
+    keyword_contact:           _ => token(prec(1, make_keyword("contact"))),
+    keyword_virtual:           _ => token(prec(1, make_keyword("virtual"))),
+    keyword_enforced:          _ => token(prec(1, make_keyword("enforced"))),
+    keyword_rely:              _ => token(prec(1, make_keyword("rely"))),
+    keyword_norely:            _ => token(prec(1, make_keyword("norely"))),
+    keyword_validate:          _ => token(prec(1, make_keyword("validate"))),
+    keyword_novalidate:        _ => token(prec(1, make_keyword("novalidate"))),
     keyword_undrop:            _ => token(prec(1, make_keyword("undrop"))),
     keyword_warehouse_size:    _ => token(prec(1, /[Ww][Aa][Rr][Ee][Hh][Oo][Uu][Ss][Ee]_[Ss][Ii][Zz][Ee]/)),
     keyword_max_cluster_count: _ => token(prec(1, /[Mm][Aa][Xx]_[Cc][Ll][Uu][Ss][Tt][Ee][Rr]_[Cc][Oo][Uu][Nn][Tt]/)),
@@ -661,6 +678,151 @@ export default grammar(base, {
     keyword_abort:             _ => token(prec(1, make_keyword("abort"))),
     keyword_queries:           _ => token(prec(1, make_keyword("queries"))),
     keyword_schedule:       _ => token(prec(1, make_keyword("schedule"))),
+    keyword_output:         _ => token(prec(1, make_keyword("output"))),
+    keyword_caller:         _ => token(prec(1, make_keyword("caller"))),
+    keyword_memoizable:     _ => token(prec(1, make_keyword("memoizable"))),
+    keyword_aggregate:      _ => token(prec(1, make_keyword("aggregate"))),
+    keyword_allowed_values: _ => token(prec(1, make_keyword("allowed_values"))),
+    keyword_managed:        _ => token(prec(1, make_keyword("managed"))),
+    keyword_alert: _ => token(prec(1, make_keyword("alert"))),
+    keyword_suspended: _ => token(prec(1, make_keyword("suspended"))),
+    keyword_condition: _ => token(prec(1, make_keyword("condition"))),
+    keyword_frozen: _ => token(prec(1, make_keyword("frozen"))),
+    keyword_authentication: _ => token(prec(1, make_keyword("authentication"))),
+    keyword_application: _ => token(prec(1, make_keyword("application"))),
+    keyword_package: _ => token(prec(1, make_keyword("package"))),
+    keyword_compute: _ => token(prec(1, make_keyword("compute"))),
+    keyword_pool: _ => token(prec(1, make_keyword("pool"))),
+    keyword_cortex: _ => token(prec(1, make_keyword("cortex"))),
+    keyword_service: _ => token(prec(1, make_keyword("service"))),
+    keyword_dbt: _ => token(prec(1, make_keyword("dbt"))),
+    keyword_project: _ => token(prec(1, make_keyword("project"))),
+    keyword_dcm: _ => token(prec(1, make_keyword("dcm"))),
+    keyword_event: _ => token(prec(1, make_keyword("event"))),
+    keyword_volume: _ => token(prec(1, make_keyword("volume"))),
+    keyword_hybrid: _ => token(prec(1, make_keyword("hybrid"))),
+    keyword_iceberg: _ => token(prec(1, make_keyword("iceberg"))),
+    keyword_mcp: _ => token(prec(1, make_keyword("mcp"))),
+    keyword_server: _ => token(prec(1, make_keyword("server"))),
+    keyword_model: _ => token(prec(1, make_keyword("model"))),
+    keyword_network: _ => token(prec(1, make_keyword("network"))),
+    keyword_rule: _ => token(prec(1, make_keyword("rule"))),
+    keyword_notebook: _ => token(prec(1, make_keyword("notebook"))),
+    keyword_resource: _ => token(prec(1, make_keyword("resource"))),
+    keyword_monitor: _ => token(prec(1, make_keyword("monitor"))),
+    keyword_semantic: _ => token(prec(1, make_keyword("semantic"))),
+    keyword_share: _ => token(prec(1, make_keyword("share"))),
+    keyword_streamlit: _ => token(prec(1, make_keyword("streamlit"))),
+    keyword_alerts: _ => token(prec(1, make_keyword("alerts"))),
+    keyword_applications: _ => token(prec(1, make_keyword("applications"))),
+    keyword_pools: _ => token(prec(1, make_keyword("pools"))),
+    keyword_connections: _ => token(prec(1, make_keyword("connections"))),
+    keyword_services: _ => token(prec(1, make_keyword("services"))),
+    keyword_projects: _ => token(prec(1, make_keyword("projects"))),
+    keyword_volumes: _ => token(prec(1, make_keyword("volumes"))),
+    keyword_accounts: _ => token(prec(1, make_keyword("accounts"))),
+    keyword_servers: _ => token(prec(1, make_keyword("servers"))),
+    keyword_rules: _ => token(prec(1, make_keyword("rules"))),
+    keyword_objects: _ => token(prec(1, make_keyword("objects"))),
+    keyword_regions: _ => token(prec(1, make_keyword("regions"))),
+    keyword_replication: _ => token(prec(1, make_keyword("replication"))),
+    keyword_monitors: _ => token(prec(1, make_keyword("monitors"))),
+    keyword_shares: _ => token(prec(1, make_keyword("shares"))),
+    keyword_streamlits: _ => token(prec(1, make_keyword("streamlits"))),
+    keyword_variables: _ => token(prec(1, make_keyword("variables"))),
+    keyword_workspaces: _ => token(prec(1, make_keyword("workspaces"))),
+    keyword_imported: _ => token(prec(1, make_keyword("imported"))),
+    keyword_metric: _ => token(prec(1, make_keyword("metric"))),
+    keyword_identifier: _ => token(prec(1, make_keyword("identifier"))),
+    keyword_result: _ => token(prec(1, make_keyword("result"))),
+    keyword_future: _ => token(prec(1, make_keyword("future"))),
+    keyword_deployments: _ => token(prec(1, make_keyword("deployments"))),
+    keyword_history: _ => token(prec(1, make_keyword("history"))),
+    keyword_name: _ => token(prec(1, make_keyword("name"))),
+    keyword_snapshot: _ => token(prec(1, make_keyword("snapshot"))),
+    keyword_ownership: _ => token(prec(1, make_keyword("ownership"))),
+    keyword_operate: _ => token(prec(1, make_keyword("operate"))),
+    keyword_audit: _ => token(prec(1, make_keyword("audit"))),
+    keyword_evolve: _ => token(prec(1, make_keyword("evolve"))),
+    keyword_attach: _ => token(prec(1, make_keyword("attach"))),
+    keyword_apply: _ => token(prec(1, make_keyword("apply"))),
+    keyword_packages: _ => token(prec(1, make_keyword("packages"))),
+    keyword_bind: _ => token(prec(1, make_keyword("bind"))),
+    keyword_endpoint: _ => token(prec(1, make_keyword("endpoint"))),
+    keyword_import: _ => token(prec(1, make_keyword("import"))),
+    keyword_manage: _ => token(prec(1, make_keyword("manage"))),
+    keyword_execution: _ => token(prec(1, make_keyword("execution"))),
+    keyword_override: _ => token(prec(1, make_keyword("override"))),
+    keyword_restrictions: _ => token(prec(1, make_keyword("restrictions"))),
+    keyword_reference: _ => token(prec(1, make_keyword("reference"))),
+    keyword_purchase: _ => token(prec(1, make_keyword("purchase"))),
+    keyword_exchange: _ => token(prec(1, make_keyword("exchange"))),
+    keyword_listing: _ => token(prec(1, make_keyword("listing"))),
+    keyword_references: _ => token(prec(1, make_keyword("references"))),
+    keyword_error_table: _ => token(prec(1, make_keyword("error_table"))),
+    keyword_tabular: _ => token(prec(1, make_keyword("tabular"))),
+    keyword_text: _ => token(prec(1, make_keyword("text"))),
+    keyword_top: _ => token(prec(1, make_keyword("top"))),
+    keyword_sample: _ => token(prec(1, make_keyword("sample"))),
+    keyword_block: _ => token(prec(1, make_keyword("block"))),
+    keyword_seed: _ => token(prec(1, make_keyword("seed"))),
+    keyword_append_only: _ => token(prec(1, make_keyword("append_only"))),
+    keyword_changes: _ => token(prec(1, make_keyword("changes"))),
+    keyword_information: _ => token(prec(1, make_keyword("information"))),
+    keyword_directed: _ => token(prec(1, make_keyword("directed"))),
+    keyword_asof: _ => token(prec(1, make_keyword("asof"))),
+    keyword_match_condition: _ => token(prec(1, make_keyword("match_condition"))),
+    keyword_minus: _ => token(prec(1, make_keyword("minus"))),
+    keyword_interactive: _ => token(prec(1, make_keyword("interactive"))),
+    keyword_require: _ => token(prec(1, make_keyword("require"))),
+    keyword_backfill: _ => token(prec(1, make_keyword("backfill"))),
+    keyword_enroll: _ => token(prec(1, make_keyword("enroll"))),
+    keyword_mfa: _ => token(prec(1, make_keyword("mfa"))),
+    keyword_method: _ => token(prec(1, make_keyword("method"))),
+    keyword_delegated: _ => token(prec(1, make_keyword("delegated"))),
+    keyword_authorizations: _ => token(prec(1, make_keyword("authorizations"))),
+    keyword_final: _ => token(prec(1, make_keyword("final"))),
+    keyword_running: _ => token(prec(1, make_keyword("running"))),
+    keyword_empty: _ => token(prec(1, make_keyword("empty"))),
+    keyword_matches: _ => token(prec(1, make_keyword("matches"))),
+    keyword_omit: _ => token(prec(1, make_keyword("omit"))),
+    keyword_unmatched: _ => token(prec(1, make_keyword("unmatched"))),
+    keyword_permute: _ => token(prec(1, make_keyword("permute"))),
+    keyword_resultset: _ => token(prec(1, make_keyword("resultset"))),
+    keyword_async: _ => token(prec(1, make_keyword("async"))),
+    keyword_elseif: _ => token(prec(1, make_keyword("elseif"))),
+    keyword_loop: _ => token(prec(1, make_keyword("loop"))),
+    keyword_while: _ => token(prec(1, make_keyword("while"))),
+    keyword_reverse: _ => token(prec(1, make_keyword("reverse"))),
+    keyword_repeat: _ => token(prec(1, make_keyword("repeat"))),
+    keyword_break: _ => token(prec(1, make_keyword("break"))),
+    keyword_exit: _ => token(prec(1, make_keyword("exit"))),
+    keyword_iterate: _ => token(prec(1, make_keyword("iterate"))),
+    keyword_open: _ => token(prec(1, make_keyword("open"))),
+    keyword_close: _ => token(prec(1, make_keyword("close"))),
+    keyword_await: _ => token(prec(1, make_keyword("await"))),
+    keyword_cancel: _ => token(prec(1, make_keyword("cancel"))),
+    keyword_other: _ => token(prec(1, make_keyword("other"))),
+    keyword_dry_run: _ => token(prec(1, make_keyword("dry_run"))),
+    keyword_retry: _ => token(prec(1, make_keyword("retry"))),
+    keyword_graph: _ => token(prec(1, make_keyword("graph"))),
+    keyword_run: _ => token(prec(1, make_keyword("run"))),
+    keyword_config: _ => token(prec(1, make_keyword("config"))),
+    keyword_subpath: _ => token(prec(1, make_keyword("subpath"))),
+    keyword_connect_by_root: _ => token(prec(1, make_keyword("connect_by_root"))),
+    keyword_metrics: _ => token(prec(1, make_keyword("metrics"))),
+    keyword_dimensions: _ => token(prec(1, make_keyword("dimensions"))),
+    keyword_facts: _ => token(prec(1, make_keyword("facts"))),
+    keyword_semantic_view: _ => token(prec(1, make_keyword("semantic_view"))),
+    keyword_body: _ => token(prec(1, make_keyword("body"))),
+    keyword_movement: _ => token(prec(1, make_keyword("movement"))),
+    keyword_indexing: _ => token(prec(1, make_keyword("indexing"))),
+    keyword_storage_location: _ => token(prec(1, make_keyword("storage_location"))),
+    keyword_notify: _ => token(prec(1, make_keyword("notify"))),
+    keyword_triggers: _ => token(prec(1, make_keyword("triggers"))),
+    keyword_pull: _ => token(prec(1, make_keyword("pull"))),
+    keyword_person: _ => token(prec(1, make_keyword("person"))),
+    keyword_suspend_immediate: _ => token(prec(1, make_keyword("suspend_immediate"))),
     keyword_secure:         _ => token(prec(1, make_keyword("secure"))),
     keyword_masking:        _ => token(prec(1, make_keyword("masking"))),
     keyword_target_lag:     _ => token(prec(1, make_keyword("target_lag"))),
@@ -745,13 +907,26 @@ export default grammar(base, {
     ...execute_rules,
     ...copy_rules,
     ...create_rules,
+    ...create_table_rules,
+    ...alter_table_rules,
+    ...type_rules,
     ...alter_rules,
     ...use_rules,
     ...stage_rules,
-    ...show_rules,
+    ...object_statement_rules,
+    ...grant_rules,
+    ...query_extra_rules,
+    ...create_object_rules,
+    ...misc_statement_rules,
+    ...alter_other_rules,
     ...files_rules,
     // last, so its overrides win over the inherited rules
     ...snowflake_property_rules,
+    ...create_routine_rules,
+    ...alter_object_rules,
+    // Snowflake identifiers may contain `$` after the first character (SYSTEM$TYPEOF, METADATA$FILENAME).
+    _identifier: _ => /[A-Za-z_\u00C0-\u017F][0-9A-Za-z_$\u00C0-\u017F]*/,
+    _literal_string: $ => prec(1, choice($._single_quote_string, $._dollar_quoted_string)),
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
@@ -766,4 +941,4 @@ export default grammar(base, {
     keyword_percent: _ => token(prec(1, make_keyword("percent"))),
 
   },
-});
+}));

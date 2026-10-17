@@ -3,18 +3,15 @@ import { optional_parenthesis, wrapped_in_parenthesis } from "../helpers.js";
 import create_rules from "./create.js";
 import alter_rules from "./alter.js";
 import drop_rules from "./drop.js";
-import rename_rules from "./rename.js";
 import merge_rules from "./merge.js";
-import comment_rules from "./comment.js";
 import delete_rules from "./delete.js";
 import insert_rules from "./insert.js";
 import update_rules from "./update.js";
 import truncate_rules from "./truncate.js";
 import select_rules from "./select.js";
 import set_rules from "./set.js";
-import refresh_rules from "./refresh.js";
-import show_rules from "./show.js";
 import grant_rules from "./grant.js";
+import call_rules from "./call.js";
 
 export default {
 
@@ -27,6 +24,7 @@ export default {
       optional_parenthesis($._dml_read),
       $._transaction_statement,
       $.declare_cursor_statement,
+      $.call_statement,
     ),
   ),
 
@@ -45,30 +43,21 @@ export default {
   ...create_rules,
   ...alter_rules,
   ...drop_rules,
-  ...rename_rules,
   ...merge_rules,
-  ...comment_rules,
-  ...refresh_rules,
   ...delete_rules,
   ...insert_rules,
   ...update_rules,
   ...truncate_rules,
   ...select_rules,
   ...set_rules,
-  ...show_rules,
   ...grant_rules,
+  ...call_rules,
 
-  // COMMENT ON is deliberately NOT wired here: it is not ISO SQL, and the
-  // base grammar stays strict ANSI (see tools/coverage-probes.yml purity rule).
-  // Dialects that support it wire $.comment_statement into their own
-  // _ddl_statement overrides.
   _ddl_statement: $ => choice(
     $._create_statement,
     $._alter_statement,
     $._drop_statement,
-    $._rename_statement,
     $._merge_statement,
-    $._refresh_statement,
     $.set_statement,
     $.grant_statement,
     $.revoke_statement,
@@ -94,6 +83,5 @@ export default {
     ),
   ),
 
-  _refresh_statement: $ => $.refresh_materialized_view,
 
 };

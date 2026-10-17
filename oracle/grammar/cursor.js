@@ -38,7 +38,7 @@ export default {
   cursor_open_statement: $ => seq(
     $.keyword_open,
     field('name', $.identifier),
-    optional(paren_list($._expression, true)),
+    optional(paren_list(choice($.named_argument, $._expression), true)),
   ),
 
   // FETCH cursor_name INTO var [, var ...];

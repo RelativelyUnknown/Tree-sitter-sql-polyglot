@@ -10,7 +10,7 @@ export default {
   //   [COMMENT = 'str']
   create_stage: $ => seq(
     $.keyword_create,
-    optional($._or_replace),
+    optional($._or_replace_or_alter),
     optional($._temporary),
     $.keyword_stage,
     optional($._if_not_exists),

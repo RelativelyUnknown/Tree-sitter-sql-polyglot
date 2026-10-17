@@ -34,20 +34,6 @@ export default {
     ),
   ),
 
-  // ALTER TABLE t MODIFY COLUMN col SET MASKING POLICY policy_name
-  alter_table_masking: $ => seq(
-    $.keyword_alter,
-    $.keyword_table,
-    $.object_reference,
-    $.keyword_modify,
-    $.keyword_column,
-    $.identifier,
-    $.keyword_set,
-    $.keyword_masking,
-    $.keyword_policy,
-    $.object_reference,
-  ),
-
   // ALTER TABLE [IF EXISTS] name CLUSTER BY (exprs) | DROP CLUSTERING KEY
   alter_table_cluster: $ => seq(
     $.keyword_alter,

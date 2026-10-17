@@ -1,5 +1,15 @@
 import { optional_parenthesis, paren_list, wrapped_in_parenthesis } from "./helpers.js";
 
+// FROM start, USING units, OCCURRENCE n, GROUP n: each optional, in this order (ISO 9075 regex functions).
+function regex_options($) {
+  return [
+    optional(seq($.keyword_from, $._expression)),
+    optional(seq($.keyword_using, choice($.keyword_characters, $.keyword_octets))),
+    optional(seq($.keyword_occurrence, $._expression)),
+    optional(seq($.keyword_group, $._expression)),
+  ];
+}
+
 export default {
 
   _expression: $ => prec(1,
@@ -25,6 +35,9 @@ export default {
       $.between_expression,
       $.parenthesized_expression,
       $.trim_expression,
+      $.position_expression,
+      $.regex_position_expression,
+      $.regex_substring_expression,
       $.typed_temporal_literal,
       $.datetime_value_function,
       $.like_expression,
@@ -131,7 +144,7 @@ export default {
             optional($.keyword_distinct),
             field(
               'parameter',
-              $.term,
+              choice($.term, $.named_argument),
             ),
             optional($.order_by)
           )
@@ -192,6 +205,57 @@ export default {
       $._expression,
     ),
     ')',
+  ),
+
+  // ISO 9075 <character position expression>:
+  //   POSITION ( <character value expression> IN <character value expression> [ USING <char length units> ] )
+  // The needle cannot be a bare binary expression: `a IN b` there would parse as the IN operator.
+  position_expression: $ => seq(
+    alias($._position_call, $.keyword_position),
+    '(',
+    field('needle', $._position_operand),
+    $.keyword_in,
+    field('haystack', $._expression),
+    optional(seq($.keyword_using, choice($.keyword_characters, $.keyword_octets))),
+    ')',
+  ),
+
+  // <regex position expression>:
+  //   POSITION_REGEX ( [ START | AFTER ] pattern [ FLAG f ] IN subject [ FROM n ] [ USING units ]
+  //                    [ OCCURRENCE n ] [ GROUP n ] )
+  regex_position_expression: $ => seq(
+    alias($._position_regex_call, $.keyword_position_regex),
+    '(',
+    optional(choice($.keyword_start, $.keyword_after)),
+    field('pattern', $._position_operand),
+    optional(seq($.keyword_flag, $.literal)),
+    $.keyword_in,
+    field('subject', $._expression),
+    ...regex_options($),
+    ')',
+  ),
+
+  // <regex substring function>:
+  //   SUBSTRING_REGEX ( pattern [ FLAG f ] IN subject [ FROM n ] [ USING units ] [ OCCURRENCE n ] [ GROUP n ] )
+  regex_substring_expression: $ => seq(
+    alias($._substring_regex_call, $.keyword_substring_regex),
+    '(',
+    field('pattern', $._position_operand),
+    optional(seq($.keyword_flag, $.literal)),
+    $.keyword_in,
+    field('subject', $._expression),
+    ...regex_options($),
+    ')',
+  ),
+
+  _position_operand: $ => choice(
+    $.literal,
+    alias($._qualified_field, $.field),
+    $.parameter,
+    $.invocation,
+    $.cast,
+    $.parenthesized_expression,
+    $.trim_expression,
   ),
 
   parenthesized_expression: $ => prec(2,

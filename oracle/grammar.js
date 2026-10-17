@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, comma_list, paren_list, make_keyword, wrapped_in_parenthesis } from '../grammar/helpers.js';
+import { optional_parenthesis, comma_list, paren_list, make_keyword, wrapped_in_parenthesis, canonicalOrder } from '../grammar/helpers.js';
 import oracle_match_recognize_rules from './grammar/match_recognize.js';
 import oracle_hierarchical_rules from './grammar/hierarchical.js';
 import oracle_plsql_rules from './grammar/plsql_blocks.js';
@@ -15,8 +15,11 @@ import oracle_admin_rules from './grammar/admin.js';
 import oracle_ddl_ext_rules from './grammar/ddl_ext.js';
 import oracle_admin_ddl_rules from './grammar/admin_ddl.js';
 import oracle_mview_rules from './grammar/mviews.js';
+import dialect_transaction_rules from './grammar/transactions.js';
+import dialect_alter_rules from './grammar/alter_vendor.js';
+import dialect_legacy_rules from './grammar/legacy_statements.js';
 
-export default grammar(base, {
+export default canonicalOrder(grammar(base, {
   name: 'oracle_sql',
 
   precedences: $ => [
@@ -47,6 +50,12 @@ export default grammar(base, {
     // Local shift/reduce ambiguity shared with like_expression's optional
     // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
+    // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
+    [$.transaction, $.start_transaction_statement],
+    [$.transaction, $.commit_statement],
+    [$.transaction, $.rollback_statement],
+    [$._commit, $.commit_statement],
+    [$._rollback, $.rollback_statement],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
@@ -58,6 +67,10 @@ export default grammar(base, {
   ],
 
   rules: {
+    ...dialect_transaction_rules,
+    ...dialect_alter_rules,
+    ...dialect_legacy_rules,
+
 
     // Extend _create_statement to add CREATE PACKAGE / PACKAGE BODY / SYNONYM / DATABASE LINK
     _create_statement: $ => seq(
@@ -692,4 +705,4 @@ export default grammar(base, {
     keyword_shared:       _ => token(prec(1, make_keyword("shared"))),
 
   },
-});
+}));

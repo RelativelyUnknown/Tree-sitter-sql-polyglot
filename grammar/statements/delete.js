@@ -1,3 +1,5 @@
+// <delete statement: searched> ::= DELETE FROM <target table> [ [ AS ] <correlation name> ] [ WHERE <condition> ]
+// ONLY and ORDER BY are vendor syntax and live in each dialect's grammar/legacy_statements.js.
 export default {
 
   _delete_statement: $ => seq(
@@ -7,13 +9,9 @@ export default {
 
   _delete_from: $ => seq(
     $.keyword_from,
-    optional(
-      $.keyword_only,
-    ),
     $.object_reference,
+    optional($._alias),
     optional($.where),
-    optional($.order_by),
-    // Strict ANSI base: no LIMIT on DELETE (dialects re-add it in their override)
   ),
 
   delete: $ => seq(

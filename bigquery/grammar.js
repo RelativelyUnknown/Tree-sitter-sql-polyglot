@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { paren_list, comma_list, optional_parenthesis, wrapped_in_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { paren_list, comma_list, optional_parenthesis, wrapped_in_parenthesis, make_keyword, canonicalOrder } from '../grammar/helpers.js';
 
 import select_rules    from './grammar/select.js';
 import expr_rules      from './grammar/expressions.js';
@@ -10,8 +10,11 @@ import ml_rules        from './grammar/ml.js';
 import types_rules     from './grammar/types.js';
 import objects_rules   from './grammar/objects.js';
 import alter_rules     from './grammar/alter.js';
+import dialect_transaction_rules from './grammar/transactions.js';
+import dialect_alter_rules from './grammar/alter_vendor.js';
+import dialect_legacy_rules from './grammar/legacy_statements.js';
 
-export default grammar(base, {
+export default canonicalOrder(grammar(base, {
   name: 'bigquery_sql',
 
   conflicts: $ => [
@@ -23,6 +26,12 @@ export default grammar(base, {
     // Local shift/reduce ambiguity shared with like_expression's optional
     // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
+    // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
+    [$.transaction, $.start_transaction_statement],
+    [$.transaction, $.commit_statement],
+    [$.transaction, $.rollback_statement],
+    [$._commit, $.commit_statement],
+    [$._rollback, $.rollback_statement],
     [$.create_function],
     [$.add_constraint],
     [$.list, $.grouping_set],
@@ -36,6 +45,10 @@ export default grammar(base, {
   ],
 
   rules: {
+    ...dialect_transaction_rules,
+    ...dialect_alter_rules,
+    ...dialect_legacy_rules,
+
 
     // ── Program: add scripting top-level blocks ─────────────────────────────
     program: $ => seq(
@@ -390,4 +403,4 @@ export default grammar(base, {
     keyword_returns: _ => token(prec(1, make_keyword("returns"))),
 
   },
-});
+}));

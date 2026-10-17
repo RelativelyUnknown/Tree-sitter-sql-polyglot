@@ -1,11 +1,14 @@
 import base from '../grammar.js';
-import { paren_list, optional_parenthesis, comma_list, wrapped_in_parenthesis, make_keyword } from '../grammar/helpers.js';
-import { createStatementChoices } from '../grammar/statements/create.js';
+import { paren_list, optional_parenthesis, comma_list, wrapped_in_parenthesis, make_keyword, canonicalOrder } from '../grammar/helpers.js';
+import { createStatementChoices } from './grammar/legacy_statements.js';
 import hive_storage_rules from './grammar/storage.js';
 import hive_partition_rules from './grammar/partition.js';
 import hive_lateral_view_rules from './grammar/lateral_view.js';
+import dialect_transaction_rules from './grammar/transactions.js';
+import dialect_alter_rules from './grammar/alter_vendor.js';
+import dialect_legacy_rules from './grammar/legacy_statements.js';
 
-export default grammar(base, {
+export default canonicalOrder(grammar(base, {
   name: 'hive_sql',
 
   conflicts: $ => [
@@ -14,6 +17,12 @@ export default grammar(base, {
     // Local shift/reduce ambiguity shared with like_expression's optional
     // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
+    // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
+    [$.transaction, $.start_transaction_statement],
+    [$.transaction, $.commit_statement],
+    [$.transaction, $.rollback_statement],
+    [$._commit, $.commit_statement],
+    [$._rollback, $.rollback_statement],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
@@ -28,6 +37,10 @@ export default grammar(base, {
   ],
 
   rules: {
+    ...dialect_transaction_rules,
+    ...dialect_alter_rules,
+    ...dialect_legacy_rules,
+
 
     // Re-add non-ANSI CREATE forms this dialect supports over the strict ANSI base.
     _create_statement: $ => seq(choice(...createStatementChoices($, { materializedView: true }))),
@@ -802,4 +815,4 @@ export default grammar(base, {
     ...hive_lateral_view_rules,
 
   },
-});
+}));
