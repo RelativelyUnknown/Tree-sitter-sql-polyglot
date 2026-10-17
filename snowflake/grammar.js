@@ -23,6 +23,7 @@ import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
 import create_routine_rules from './grammar/create_routines.js';
+import alter_object_rules from './grammar/alter_objects.js';
 
 export default canonicalOrder(grammar(base, {
   name: 'snowflake_sql',
@@ -274,18 +275,16 @@ export default canonicalOrder(grammar(base, {
       choice(
         // base (re-enumerated from grammar/statements/alter.js)
         $.alter_table,
-        $.alter_view,
-        $.alter_materialized_view,
         $.alter_schema,
         $.alter_type,
         $.alter_index,
         $.alter_database,
-        $.alter_role,
         $.alter_sequence,
         // Snowflake-specific
         $.alter_session,
         $.alter_stage,
-        $.alter_warehouse_statement,
+        $.alter_object,
+        $.alter_routine,
         $.alter_table_cluster,
       ),
     ),
@@ -666,6 +665,11 @@ export default canonicalOrder(grammar(base, {
     keyword_aggregate:      _ => token(prec(1, make_keyword("aggregate"))),
     keyword_allowed_values: _ => token(prec(1, make_keyword("allowed_values"))),
     keyword_managed:        _ => token(prec(1, make_keyword("managed"))),
+    keyword_alert: _ => token(prec(1, make_keyword("alert"))),
+    keyword_suspended: _ => token(prec(1, make_keyword("suspended"))),
+    keyword_condition: _ => token(prec(1, make_keyword("condition"))),
+    keyword_frozen: _ => token(prec(1, make_keyword("frozen"))),
+    keyword_authentication: _ => token(prec(1, make_keyword("authentication"))),
     keyword_secure:         _ => token(prec(1, make_keyword("secure"))),
     keyword_masking:        _ => token(prec(1, make_keyword("masking"))),
     keyword_target_lag:     _ => token(prec(1, make_keyword("target_lag"))),
@@ -761,6 +765,9 @@ export default canonicalOrder(grammar(base, {
     // last, so its overrides win over the inherited rules
     ...snowflake_property_rules,
     ...create_routine_rules,
+    ...alter_object_rules,
+    // Snowflake identifiers may contain `$` after the first character (SYSTEM$TYPEOF, METADATA$FILENAME).
+    _identifier: _ => /[A-Za-z_\u00C0-\u017F][0-9A-Za-z_$\u00C0-\u017F]*/,
     _literal_string: $ => prec(1, choice($._single_quote_string, $._dollar_quoted_string)),
 
 

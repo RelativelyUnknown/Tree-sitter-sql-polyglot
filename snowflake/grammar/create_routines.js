@@ -107,7 +107,7 @@ export default {
     $.keyword_returns,
     choice(
       seq($._type, optional(seq($.keyword_not, $.keyword_null))),
-      seq($.keyword_table, '(', optional(comma_list($.column_definition)), ')'),
+      seq($.keyword_table, '(', optional(comma_list($.column_definition, true)), ')'),
     ),
   ),
 
@@ -182,7 +182,7 @@ export default {
     optional($._if_not_exists),
     $.object_reference,
     repeat(choice(
-      seq($.keyword_allowed_values, comma_list(alias($._literal_string, $.literal))),
+      seq($.keyword_allowed_values, comma_list(alias($._literal_string, $.literal), true)),
       seq($.keyword_comment, '=', alias($._literal_string, $.literal)),
       $.snowflake_property,
     )),

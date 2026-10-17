@@ -206,3 +206,8 @@
 (keyword_managed) @keyword
 (keyword_memoizable) @keyword
 (keyword_output) @keyword
+(keyword_alert) @keyword
+(keyword_authentication) @keyword
+(keyword_condition) @keyword
+(keyword_frozen) @keyword
+(keyword_suspended) @keyword
