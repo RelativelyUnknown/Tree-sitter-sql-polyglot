@@ -30,10 +30,8 @@
   (keyword_stream)
   (keyword_dynamic)
   (keyword_warehouse)
-  (keyword_schedule)
   (keyword_secure)
   (keyword_masking)
-  (keyword_target_lag)
   (keyword_access)
   (keyword_storage)
   (keyword_api)
@@ -53,12 +51,7 @@
 ; Snowflake STAGE DDL keywords
 [
   (keyword_stage)
-  (keyword_url)
-  (keyword_credentials)
   (keyword_file_format)
-  (keyword_copy_options)
-  (keyword_directory)
-  (keyword_encryption)
   (keyword_pattern)
   (keyword_list)
 ] @keyword
@@ -170,7 +163,6 @@
 
 ; Keywords that moved out of the ISO base grammar into the rules of this dialect
 [
-  (keyword_cache)
   (keyword_change)
   (keyword_collate)
   (keyword_concurrently)
@@ -178,13 +170,10 @@
   (keyword_deferrable)
   (keyword_disable)
   (keyword_enable)
-  (keyword_encrypted)
   (keyword_force)
   (keyword_initially)
-  (keyword_logged)
   (keyword_none)
   (keyword_nowait)
-  (keyword_owned)
   (keyword_owner)
   (keyword_password)
   (keyword_refresh)
@@ -193,9 +182,7 @@
   (keyword_tables)
   (keyword_tablespace)
   (keyword_temp)
-  (keyword_unlogged)
   (keyword_until)
-  (keyword_valid)
   (keyword_value)
   (keyword_wait)
 ] @keyword
@@ -292,3 +279,54 @@
 (keyword_tabular) @keyword
 (keyword_text) @keyword
 (keyword_top) @keyword
+(keyword_async) @keyword
+(keyword_authorizations) @keyword
+(keyword_await) @keyword
+(keyword_backfill) @keyword
+(keyword_body) @keyword
+(keyword_break) @keyword
+(keyword_cancel) @keyword
+(keyword_close) @keyword
+(keyword_config) @keyword
+(keyword_delegated) @keyword
+(keyword_dimensions) @keyword
+(keyword_dry_run) @keyword
+(keyword_elseif) @keyword
+(keyword_empty) @keyword
+(keyword_enroll) @keyword
+(keyword_exit) @keyword
+(keyword_facts) @keyword
+(keyword_final) @keyword
+(keyword_graph) @keyword
+(keyword_indexing) @keyword
+(keyword_interactive) @keyword
+(keyword_iterate) @keyword
+(keyword_loop) @keyword
+(keyword_matches) @keyword
+(keyword_method) @keyword
+(keyword_metrics) @keyword
+(keyword_mfa) @keyword
+(keyword_movement) @keyword
+(keyword_notify) @keyword
+(keyword_omit) @keyword
+(keyword_open) @keyword
+(keyword_other) @keyword
+(keyword_percent) @keyword
+(keyword_permute) @keyword
+(keyword_person) @keyword
+(keyword_pull) @keyword
+(keyword_repeat) @keyword
+(keyword_require) @keyword
+(keyword_resultset) @keyword
+(keyword_retry) @keyword
+(keyword_reverse) @keyword
+(keyword_run) @keyword
+(keyword_running) @keyword
+(keyword_semantic_view) @keyword
+(keyword_snapshot) @keyword
+(keyword_storage_location) @keyword
+(keyword_subpath) @keyword
+(keyword_suspend_immediate) @keyword
+(keyword_triggers) @keyword
+(keyword_unmatched) @keyword
+(keyword_while) @keyword
