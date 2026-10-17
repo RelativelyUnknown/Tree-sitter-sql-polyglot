@@ -53,6 +53,91 @@ COPY INTO my_table FROM @my_stage FILE_FORMAT = (TYPE = 'CSV');
       (stage_ref)
       (copy_property
         (identifier)
-        (copy_kv
-          (identifier)
-          (literal))))))
+        (copy_list
+          (copy_kv
+            (identifier)
+            (literal)))))))
+
+================================================================================
+COPY INTO table from external location with credentials and file list
+================================================================================
+
+COPY INTO t FROM 's3://b/data' CREDENTIALS = (AWS_KEY_ID = 'x' AWS_SECRET_KEY = 'y') FILES = ('a.csv', 'b.csv') PURGE = TRUE;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (copy_into
+      (keyword_copy)
+      (keyword_into)
+      (object_reference
+        name: (identifier))
+      (keyword_from)
+      (literal)
+      (copy_property
+        (identifier)
+        (copy_list
+          (copy_kv
+            (identifier)
+            (literal))
+          (copy_kv
+            (identifier)
+            (literal))))
+      (copy_property
+        (identifier)
+        (copy_list
+          (literal)
+          (literal)))
+      (copy_property
+        (identifier)
+        (literal
+          (keyword_true))))))
+
+================================================================================
+COPY INTO table without FROM and with column list
+================================================================================
+
+COPY INTO t (a, b) VALIDATION_MODE = 'RETURN_ERRORS';
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (copy_into
+      (keyword_copy)
+      (keyword_into)
+      (object_reference
+        name: (identifier))
+      (identifier)
+      (identifier)
+      (copy_property
+        (identifier)
+        (literal)))))
+
+================================================================================
+COPY INTO table with empty list option
+================================================================================
+
+COPY INTO t FROM @s FILE_FORMAT = (TYPE = CSV NULL_IF = ());
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (copy_into
+      (keyword_copy)
+      (keyword_into)
+      (object_reference
+        name: (identifier))
+      (keyword_from)
+      (stage_ref)
+      (copy_property
+        (identifier)
+        (copy_list
+          (copy_kv
+            (identifier)
+            (identifier))
+          (copy_kv
+            (identifier)
+            (copy_list)))))))
