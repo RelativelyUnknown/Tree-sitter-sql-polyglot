@@ -18,6 +18,7 @@ import alter_rules       from './grammar/alter.js';
 import use_rules         from './grammar/use.js';
 import stage_rules       from './grammar/stage.js';
 import object_statement_rules from './grammar/object_statements.js';
+import grant_rules from './grammar/grant.js';
 import files_rules      from './grammar/files.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
@@ -47,12 +48,6 @@ export default canonicalOrder(grammar(base, {
     // UNIQUE NOT NULL: NOT starts either a constraint property (NOT ENFORCED) or the next column constraint.
     [$.inline_constraint],
     [$.alter_column],
-    // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
-    [$.transaction, $.start_transaction_statement],
-    [$.transaction, $.commit_statement],
-    [$.transaction, $.rollback_statement],
-    [$._commit, $.commit_statement],
-    [$._rollback, $.rollback_statement],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
@@ -81,7 +76,6 @@ export default canonicalOrder(grammar(base, {
     program: $ => seq(
       repeat(seq(
         choice(
-          $.transaction,
           $.statement,
           $.declare_block,
           $.compound_statement,
@@ -714,6 +708,27 @@ export default canonicalOrder(grammar(base, {
     keyword_future: _ => token(prec(1, make_keyword("future"))),
     keyword_deployments: _ => token(prec(1, make_keyword("deployments"))),
     keyword_history: _ => token(prec(1, make_keyword("history"))),
+    keyword_name: _ => token(prec(1, make_keyword("name"))),
+    keyword_snapshot: _ => token(prec(1, make_keyword("snapshot"))),
+    keyword_ownership: _ => token(prec(1, make_keyword("ownership"))),
+    keyword_operate: _ => token(prec(1, make_keyword("operate"))),
+    keyword_audit: _ => token(prec(1, make_keyword("audit"))),
+    keyword_evolve: _ => token(prec(1, make_keyword("evolve"))),
+    keyword_attach: _ => token(prec(1, make_keyword("attach"))),
+    keyword_apply: _ => token(prec(1, make_keyword("apply"))),
+    keyword_packages: _ => token(prec(1, make_keyword("packages"))),
+    keyword_bind: _ => token(prec(1, make_keyword("bind"))),
+    keyword_endpoint: _ => token(prec(1, make_keyword("endpoint"))),
+    keyword_import: _ => token(prec(1, make_keyword("import"))),
+    keyword_manage: _ => token(prec(1, make_keyword("manage"))),
+    keyword_execution: _ => token(prec(1, make_keyword("execution"))),
+    keyword_override: _ => token(prec(1, make_keyword("override"))),
+    keyword_restrictions: _ => token(prec(1, make_keyword("restrictions"))),
+    keyword_reference: _ => token(prec(1, make_keyword("reference"))),
+    keyword_purchase: _ => token(prec(1, make_keyword("purchase"))),
+    keyword_exchange: _ => token(prec(1, make_keyword("exchange"))),
+    keyword_listing: _ => token(prec(1, make_keyword("listing"))),
+    keyword_references: _ => token(prec(1, make_keyword("references"))),
     keyword_secure:         _ => token(prec(1, make_keyword("secure"))),
     keyword_masking:        _ => token(prec(1, make_keyword("masking"))),
     keyword_target_lag:     _ => token(prec(1, make_keyword("target_lag"))),
@@ -805,6 +820,7 @@ export default canonicalOrder(grammar(base, {
     ...use_rules,
     ...stage_rules,
     ...object_statement_rules,
+    ...grant_rules,
     ...files_rules,
     // last, so its overrides win over the inherited rules
     ...snowflake_property_rules,
