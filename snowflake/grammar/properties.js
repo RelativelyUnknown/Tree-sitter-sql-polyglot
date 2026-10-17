@@ -12,7 +12,7 @@ export default {
     field('value', choice(
       $.literal,
       $.identifier,
-      paren_list($._expression, true),
+      seq('(', optional(choice(comma_list($._expression, true), repeat1($.snowflake_property))), ')'),
     )),
   ),
 

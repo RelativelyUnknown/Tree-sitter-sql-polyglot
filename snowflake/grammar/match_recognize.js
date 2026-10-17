@@ -1,15 +1,8 @@
-import { comma_list } from '../../grammar/helpers.js';
+import { comma_list, paren_list } from '../../grammar/helpers.js';
 
+// MATCH_RECOGNIZE: https://docs.snowflake.com/en/sql-reference/constructs/match_recognize
 export default {
 
-  // MATCH_RECOGNIZE (
-  //   [PARTITION BY ...]  [ORDER BY ...]
-  //   [MEASURES ...]
-  //   [ONE ROW PER MATCH | ALL ROWS PER MATCH]
-  //   [AFTER MATCH SKIP ...]
-  //   PATTERN ( pattern_expr )
-  //   DEFINE var AS expr [, ...]
-  // )
   match_recognize_clause: $ => seq(
     $.keyword_match_recognize,
     '(',
@@ -23,19 +16,20 @@ export default {
     ')',
   ),
 
-  // MEASURES expr AS alias [, ...]
+  // MEASURES [FINAL | RUNNING] expr AS alias [, ...]
   measures_clause: $ => seq(
     $.keyword_measures,
     comma_list($.measure_item, true),
   ),
 
   measure_item: $ => seq(
+    optional(choice($.keyword_final, $.keyword_running)),
     $._expression,
-    $.keyword_as,
+    optional($.keyword_as),
     field('alias', $.identifier),
   ),
 
-  // ONE ROW PER MATCH | ALL ROWS PER MATCH
+  // ONE ROW PER MATCH | ALL ROWS PER MATCH [SHOW EMPTY MATCHES | OMIT EMPTY MATCHES | WITH UNMATCHED ROWS]
   rows_per_match: $ => seq(
     choice(
       seq($.keyword_one, $.keyword_row),
@@ -43,9 +37,14 @@ export default {
     ),
     $.keyword_per,
     $.keyword_match,
+    optional(choice(
+      seq($.keyword_show, $.keyword_empty, $.keyword_matches),
+      seq($.keyword_omit, $.keyword_empty, $.keyword_matches),
+      seq($.keyword_with, $.keyword_unmatched, $.keyword_rows),
+    )),
   ),
 
-  // AFTER MATCH SKIP { PAST LAST ROW | TO NEXT ROW | TO FIRST var | TO LAST var }
+  // AFTER MATCH SKIP { PAST LAST ROW | TO NEXT ROW | TO [FIRST | LAST] <symbol> }
   after_match_skip: $ => seq(
     $.keyword_after,
     $.keyword_match,
@@ -53,29 +52,43 @@ export default {
     choice(
       seq($.keyword_past, $.keyword_last, $.keyword_row),
       seq($.keyword_to, $.keyword_next, $.keyword_row),
-      seq($.keyword_to, $.keyword_first, $.identifier),
-      seq($.keyword_to, $.keyword_last, $.identifier),
+      seq($.keyword_to, optional(choice($.keyword_first, $.keyword_last)), $.identifier),
     ),
   ),
 
-  // PATTERN ( pattern_terms )
+  // PATTERN ( <row pattern> ): alternation, concatenation, groups, anchors, exclusion, PERMUTE, quantifiers
   pattern_clause: $ => seq(
     $.keyword_pattern,
     '(',
-    repeat1($.pattern_term),
+    $._pattern_alternation,
     ')',
   ),
 
-  // A single pattern term: IDENTIFIER[quantifier]  or  ( terms )[quantifier]
+  _pattern_alternation: $ => seq($._pattern_sequence, repeat(seq('|', $._pattern_sequence))),
+
+  _pattern_sequence: $ => repeat1($.pattern_term),
+
   pattern_term: $ => seq(
     choice(
       $.identifier,
-      seq('(', repeat1($.pattern_term), ')'),
+      '^',
+      '$',
+      seq('(', $._pattern_alternation, ')'),
+      seq('{', '-', $._pattern_alternation, '-', '}'),
+      seq($.keyword_permute, paren_list($.identifier, true)),
     ),
-    optional(choice('+', '*', '?')),
+    optional($.pattern_quantifier),
   ),
 
-  // DEFINE var AS expr [, ...]
+  // + * ? {n} {n,} {,m} {n,m}, each optionally lazy (followed by ?)
+  pattern_quantifier: $ => seq(
+    choice(
+      '+', '*', '?',
+      seq('{', optional(alias($._natural_number, $.literal)), optional(seq(',', optional(alias($._natural_number, $.literal)))), '}'),
+    ),
+    optional('?'),
+  ),
+
   define_clause: $ => seq(
     $.keyword_define,
     comma_list($.define_item, true),

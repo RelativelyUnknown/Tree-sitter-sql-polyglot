@@ -27,13 +27,26 @@ export default {
     seq(optional(choice($.keyword_local, $.keyword_global)), $._temporary),
     $.keyword_volatile,
     $.keyword_transient,
+    seq(optional($.keyword_transient), choice($.keyword_hybrid, $.keyword_iceberg)),
   ),
+
+  // INDEX name (col, ...) [INCLUDE (col, ...)]  (hybrid tables)
+  index_definition: $ => seq(
+    $.keyword_index,
+    $.identifier,
+    paren_list($.identifier, true),
+    optional(seq($.keyword_include, paren_list($.identifier, true))),
+  ),
+
+  // PARTITION BY (<column | transform>, ...)  (Iceberg tables)
+  iceberg_partition_clause: $ => seq($.keyword_partition, $.keyword_by, paren_list($._expression, true)),
 
   _snowflake_table_clause: $ => choice(
     $.clone_clause,
     seq($.keyword_like, $.object_reference),
     seq($.keyword_using, $.keyword_template, wrapped_in_parenthesis($.create_query)),
     $.cluster_by_clause,
+    $.iceberg_partition_clause,
     seq($.keyword_comment, '=', alias($._literal_string, $.literal)),
     seq($.keyword_copy, choice($.keyword_grants, $.keyword_tags)),
     $.tag_clause,
@@ -107,7 +120,7 @@ export default {
   // ( column_definition | out_of_line_constraint, ... ). CTAS allows bare column names.
   column_definitions: $ => seq(
     '(',
-    comma_list(choice($.column_definition, $.table_constraint, alias($._column, $.column)), true),
+    comma_list(choice($.column_definition, $.table_constraint, $.index_definition, alias($._column, $.column)), true),
     ')',
   ),
 

@@ -196,4 +196,43 @@ export default {
     )),
   ),
 
+  // Legacy outer-join marker: t.c1 = u.c2 (+)
+  outer_join_marker: $ => seq(alias($._qualified_field, $.field), '(', '+', ')'),
+
+  // CONNECT_BY_ROOT <expr>
+  connect_by_root: $ => prec.left('unary_other', seq($.keyword_connect_by_root, $._expression)),
+
+  // START WITH ... CONNECT BY ... may be followed by a WHERE filter
+  connect_by_clause: $ => seq(
+    optional(seq($.keyword_start, $.keyword_with, $._expression)),
+    $.keyword_connect,
+    $.keyword_by,
+    optional($.keyword_nocycle),
+    $._expression,
+  ),
+
+  // [OFFSET n [ROW | ROWS]] [FETCH [FIRST | NEXT] n [ROW | ROWS] [ONLY]]
+  offset_fetch_clause: $ => prec.right(choice(
+    seq($.keyword_offset, $.literal, optional(choice($.keyword_row, $.keyword_rows)), optional($._snowflake_fetch)),
+    $._snowflake_fetch,
+  )),
+
+  _snowflake_fetch: $ => seq(
+    $.keyword_fetch,
+    optional(choice($.keyword_first, $.keyword_next)),
+    $.literal,
+    optional(choice($.keyword_row, $.keyword_rows)),
+    optional($.keyword_only),
+  ),
+
+  // ORDER BY ALL [ASC | DESC] [NULLS { FIRST | LAST }] | ORDER BY <expr> ...
+  order_by: $ => prec.right(seq(
+    $.keyword_order,
+    $.keyword_by,
+    choice(
+      seq($.keyword_all, optional($.direction), optional(seq($.keyword_nulls, choice($.keyword_first, $.keyword_last)))),
+      comma_list($.order_target, true),
+    ),
+  )),
+
 };
