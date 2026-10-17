@@ -1,0 +1,27 @@
+# Temporary: regenerates the Snowflake parser on a CI runner (the grammar needs more memory than the
+# development container has) and uploads the compressed blobs as an artifact. Delete after use.
+name: Regenerate Snowflake blobs
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/regen-snowflake-br.yml"
+jobs:
+  regen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: tree-sitter/setup-action@v2
+        with:
+          install-lib: false
+          tree-sitter-ref: v0.26.3
+      - run: cd snowflake && tree-sitter generate grammar.js && ls -la src/parser.c
+      - run: node scripts/compress-parsers.js snowflake
+      - uses: actions/upload-artifact@v4
+        with:
+          name: snowflake-blobs
+          path: |
+            snowflake/src/parser.c.br
+            snowflake/src/node-types.json.br
