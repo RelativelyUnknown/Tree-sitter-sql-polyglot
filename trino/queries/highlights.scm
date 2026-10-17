@@ -94,7 +94,6 @@
   (keyword_refresh)
   (keyword_rename)
   (keyword_reset)
-  (keyword_snapshot)
   (keyword_tables)
   (keyword_tablespace)
   (keyword_temp)
