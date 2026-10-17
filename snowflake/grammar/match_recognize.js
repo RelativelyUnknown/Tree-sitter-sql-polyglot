@@ -68,17 +68,19 @@ export default {
 
   _pattern_sequence: $ => repeat1($.pattern_term),
 
-  pattern_term: $ => seq(
-    choice(
-      $.identifier,
-      '^',
-      '$',
-      seq('(', $._pattern_alternation, ')'),
-      seq('{', '-', $._pattern_alternation, '-', '}'),
-      seq($.keyword_permute, paren_list($.identifier, true)),
+  pattern_term: $ => prec.right(choice(
+    '^',
+    '$',
+    seq('{', '-', $._pattern_alternation, '-', '}'),
+    seq(
+      choice(
+        $.identifier,
+        seq('(', $._pattern_alternation, ')'),
+        seq($.keyword_permute, paren_list($.identifier, true)),
+      ),
+      optional($.pattern_quantifier),
     ),
-    optional($.pattern_quantifier),
-  ),
+  )),
 
   // + * ? {n} {n,} {,m} {n,m}, each optionally lazy (followed by ?)
   pattern_quantifier: $ => seq(

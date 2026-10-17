@@ -83,7 +83,6 @@ export default {
       $.row_access_policy_clause,
       $.aggregation_policy_clause,
       $.contact_clause,
-      seq($.keyword_copy, $.keyword_grants),
       seq($.keyword_require, $.keyword_user),
       seq($.keyword_backfill, $.keyword_from, $.object_reference, optional(seq($.keyword_start, $.keyword_at, '(', $.time_travel_spec, ')'))),
       seq($.keyword_refresh, $.keyword_using, '(', $._dml_write, ')'),
@@ -184,7 +183,6 @@ export default {
     repeat(choice(
       $._clone_with_grants,
       $.cluster_by_clause,
-      seq($.keyword_copy, $.keyword_grants),
       $.tag_clause,
       $.row_access_policy_clause,
       $._comment_property,
@@ -244,7 +242,6 @@ export default {
     repeat(choice(
       $.clone_clause,
       $.tag_clause,
-      seq($.keyword_with),
       seq($.keyword_from, alias($._literal_string, $.literal)),
       $._comment_property,
       $.snowflake_property,

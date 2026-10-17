@@ -126,7 +126,6 @@ export default canonicalOrder(grammar(base, {
         $.unset_statement,
         $.call_statement,
         $.call_with_anonymous_procedure,
-        $.declare_cursor_statement,
       ),
     ),
 

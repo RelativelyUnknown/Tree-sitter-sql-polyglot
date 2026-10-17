@@ -17,7 +17,7 @@ export default {
     alterHead($, $.keyword_share),
     choice(
       seq(choice($.keyword_add, $.keyword_remove), $._share_accounts, repeat($.snowflake_property)),
-      seq($.keyword_set, choice($._share_accounts, $._set_tag, $._set_properties), repeat($.snowflake_property)),
+      seq($.keyword_set, choice(seq($._share_accounts, repeat($.snowflake_property)), $._set_tag, $._set_properties)),
       seq($.keyword_unset, choice($._unset_tag, $._unset_properties)),
     ),
   ),
@@ -78,7 +78,6 @@ export default {
     choice(
       $._alter_specifications,
       $._cluster_by,
-      seq($.keyword_add, $.keyword_search, $.keyword_optimization, $.keyword_on, $._expression),
     ),
   ),
 

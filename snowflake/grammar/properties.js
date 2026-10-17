@@ -5,15 +5,21 @@ import { comma_list, paren_list } from '../../grammar/helpers.js';
 // `NAME = value` pairs; the shape the reference itself uses.
 export default {
 
-  // <name> [=] { <literal> | <identifier> | ( <list> ) }
-  snowflake_property: $ => seq(
-    field('name', $.identifier),
-    optional('='),
-    field('value', choice(
-      $.literal,
-      $.identifier,
-      seq('(', optional(choice(comma_list($._expression, true), repeat1($.snowflake_property))), ')'),
-    )),
+  // <name> = { <literal> | <identifier> | ( [<list> | <name> = <value> ...] ) }   or   <name> <literal> | <identifier>
+  snowflake_property: $ => choice(
+    seq(
+      field('name', $.identifier),
+      '=',
+      field('value', choice(
+        $.literal,
+        $.identifier,
+        seq('(', optional(comma_list($._expression, true)), ')'),
+      )),
+    ),
+    seq(
+      field('name', $.identifier),
+      field('value', choice($.literal, $.identifier)),
+    ),
   ),
 
   // ALTER DATABASE name { SET <props> | UNSET <names> | <inherited> }

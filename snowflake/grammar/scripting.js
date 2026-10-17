@@ -5,7 +5,7 @@ import { comma_list, paren_list, wrapped_in_parenthesis } from '../../grammar/he
 export default {
 
   // :name bind variable (scripting variables inside SQL statements)
-  bind_variable: $ => seq(':', $.identifier),
+  bind_variable: $ => prec(2, seq(':', $.identifier)),
 
   compound_statement: $ => seq(
     optional($.declare_section),
@@ -37,7 +37,7 @@ export default {
   ),
 
   // <var> := <expr> | (<query>)
-  assignment_statement: $ => seq($.identifier, ':=', choice($._expression, $._resultset_source)),
+  assignment_statement: $ => seq($.identifier, ':=', choice($._expression, seq($.keyword_async, wrapped_in_parenthesis($._dml_read)))),
 
   // LET var [type] { := | DEFAULT } expr | LET c CURSOR FOR query | LET res RESULTSET { := | DEFAULT } (query)
   let_statement: $ => seq(

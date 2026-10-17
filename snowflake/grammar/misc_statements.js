@@ -37,7 +37,7 @@ export default {
   call_statement: $ => seq(
     $.keyword_call,
     field('procedure', $.object_reference),
-    paren_list(choice($.named_argument, $._expression, $._dml_read), false),
+    paren_list(choice($.named_argument, $._expression), false),
     optional(seq($.keyword_into, $.bind_variable)),
   ),
 
