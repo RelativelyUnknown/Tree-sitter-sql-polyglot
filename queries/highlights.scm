@@ -452,3 +452,4 @@
   ","
   "."
 ] @punctuation.delimiter
+(keyword_corresponding) @keyword

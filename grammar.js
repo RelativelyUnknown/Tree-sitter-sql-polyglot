@@ -23,6 +23,8 @@ export default canonicalOrder(grammar({
     [$.object_reference, $._qualified_field],
     [$.field, $._qualified_field],
     [$.object_reference],
+    // ORDER BY / OFFSET-FETCH after a set operation may belong to its last SELECT or to the whole query expression.
+    [$.from],
     // Local shift/reduce ambiguity at the same "what does a trailing NOT
     // belong to" boundary that between_expression/binary_expression already
     // share above; bounded to one lookahead decision, not a duplicate

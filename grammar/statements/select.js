@@ -30,6 +30,13 @@ export function fromClause($, { limit = false, offsetFetch = true } = {}) {
   );
 }
 
+// <join type> ::= INNER | { LEFT | RIGHT | FULL } [OUTER]. Inlined (not a rule) so it shares a prefix
+// with lateral_join instead of forcing a reduce before JOIN.
+const joinType = ($) => choice(
+  $.keyword_inner,
+  seq(choice($.keyword_left, $.keyword_right, $.keyword_full), optional($.keyword_outer)),
+);
+
 export default {
 
   _cte: $ => seq(
@@ -62,21 +69,25 @@ export default {
     ),
   ),
 
+  // <query expression body> ::= <query term> | <body> { UNION | EXCEPT } [ALL | DISTINCT] [<corresponding spec>] <query term>
+  //                           | <term> INTERSECT [ALL | DISTINCT] [<corresponding spec>] <query primary>
   set_operation: $ => seq(
     $._select_statement,
     repeat1(
       seq(
         field(
           "operation",
-          choice(
-            seq($.keyword_union, optional($.keyword_all)),
-            $.keyword_except,
-            $.keyword_intersect,
+          seq(
+            choice($.keyword_union, $.keyword_except, $.keyword_intersect),
+            optional(choice($.keyword_all, $.keyword_distinct)),
+            optional(seq($.keyword_corresponding, optional(seq($.keyword_by, paren_list($.identifier, true))))),
           ),
         ),
         $._select_statement,
       ),
     ),
+    optional($.order_by),
+    optional($.offset_fetch_clause),
   ),
 
   _select_statement: $ => optional_parenthesis(
@@ -257,16 +268,14 @@ export default {
     ),
   ),
 
-  // ANSI: TABLESAMPLE [BERNOULLI | SYSTEM] (n [ROWS | PERCENT])
+  // <sample clause> ::= TABLESAMPLE { BERNOULLI | SYSTEM } ( <sample percentage> ) [ REPEATABLE ( <seed> ) ]
   tablesample: $ => seq(
     $.keyword_tablesample,
-    optional(choice($.keyword_bernoulli, $.keyword_system)),
+    choice($.keyword_bernoulli, $.keyword_system),
     '(',
-    seq(
-      $._natural_number,
-      optional(choice($.keyword_rows, $.keyword_percent)),
-    ),
+    $._natural_number,
     ')',
+    optional(seq($.keyword_repeatable, '(', $._natural_number, ')')),
   ),
 
   values: $ => seq(
@@ -282,32 +291,26 @@ export default {
     ),
   ),
 
-  join: $ => seq(
-    optional($.keyword_natural),
-    optional(
+  // <qualified join> ::= [<join type>] JOIN <table reference> <join specification>
+  // <natural join>   ::= NATURAL [<join type>] JOIN <table factor>
+  // <join type>      ::= INNER | { LEFT | RIGHT | FULL } [OUTER]
+  join: $ => choice(
+    seq(
+      optional(joinType($)),
+      $.keyword_join,
+      $.relation,
+      optional($.join),
       choice(
-        $.keyword_left,
-        seq($.keyword_full, $.keyword_outer),
-        seq($.keyword_left, $.keyword_outer),
-        $.keyword_right,
-        seq($.keyword_right, $.keyword_outer),
-        $.keyword_inner,
-        $.keyword_full,
+        seq($.keyword_on, field('predicate', $._expression)),
+        seq($.keyword_using, alias($._column_list, $.list)),
       ),
     ),
-    $.keyword_join,
-    $.relation,
-    optional($.join),
-    choice(
-      seq(
-        $.keyword_on,
-        field('predicate', $._expression),
-      ),
-      seq(
-        $.keyword_using,
-        alias($._column_list, $.list),
-      )
-    )
+    seq(
+      $.keyword_natural,
+      optional(joinType($)),
+      $.keyword_join,
+      $.relation,
+    ),
   ),
 
   cross_join: $ => prec.right(
@@ -452,28 +455,11 @@ export default {
     comma_list($.order_target, true),
   )),
 
+  // <sort specification> ::= <sort key> [ASC | DESC] [NULLS FIRST | NULLS LAST]
   order_target: $ => seq(
     $._expression,
-    optional(
-      seq(
-        choice(
-          $.direction,
-          seq(
-            $.keyword_using,
-            choice('<', '>', '<=', '>='),
-          ),
-        ),
-        optional(
-          seq(
-            $.keyword_nulls,
-            choice(
-              $.keyword_first,
-              $.keyword_last,
-            ),
-          ),
-        ),
-      ),
-    ),
+    optional($.direction),
+    optional(seq($.keyword_nulls, choice($.keyword_first, $.keyword_last))),
   ),
 
   // prec.right: after LIMIT n, a following OFFSET binds to the limit clause

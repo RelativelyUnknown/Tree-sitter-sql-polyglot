@@ -212,6 +212,7 @@ export default {
   keyword_level: _ => make_keyword("level"),
   keyword_serializable: _ => make_keyword("serializable"),
   keyword_repeatable: _ => make_keyword("repeatable"),
+  keyword_corresponding: _ => make_keyword("corresponding"),
   keyword_read: _ => make_keyword("read"),
   keyword_write: _ => make_keyword("write"),
   keyword_committed: _ => make_keyword("committed"),

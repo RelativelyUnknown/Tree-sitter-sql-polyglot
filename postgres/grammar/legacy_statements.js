@@ -905,6 +905,17 @@ const misc_rules = {
 };
 
 export default {
+
+  // PostgreSQL: ORDER BY <expr> USING <operator> (not ISO); NULLS may follow either form.
+  order_target: $ => seq(
+    $._expression,
+    optional(choice(
+      $.direction,
+      seq($.keyword_using, choice('<', '>', '<=', '>=')),
+    )),
+    optional(seq($.keyword_nulls, choice($.keyword_first, $.keyword_last))),
+  ),
+
   ...misc_rules,
 
   // keywords only the vendor rules in this file use; defined here, not in the ISO base
