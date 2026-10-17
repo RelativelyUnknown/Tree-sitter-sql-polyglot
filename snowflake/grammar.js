@@ -19,6 +19,7 @@ import use_rules         from './grammar/use.js';
 import stage_rules       from './grammar/stage.js';
 import object_statement_rules from './grammar/object_statements.js';
 import grant_rules from './grammar/grant.js';
+import query_extra_rules from './grammar/query_extras.js';
 import files_rules      from './grammar/files.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
@@ -91,6 +92,7 @@ export default canonicalOrder(grammar(base, {
         $.keyword_explain,
         optional($.keyword_analyze),
         optional($.keyword_verbose),
+        optional(seq($.keyword_using, choice($.keyword_tabular, $.keyword_json, $.keyword_text))),
       )),
       choice(
         $._ddl_statement,
@@ -102,6 +104,7 @@ export default canonicalOrder(grammar(base, {
         $.raise_statement,
         $.for_statement,
         $.undrop_statement,
+        $.unset_statement,
         $.call_statement,
         $.declare_cursor_statement,
       ),
@@ -137,16 +140,6 @@ export default canonicalOrder(grammar(base, {
 
     // ── TRUNCATE: add the MATERIALIZED VIEW target ─────────────────────────
     // https://docs.snowflake.com/en/sql-reference/sql/truncate-materialized-view
-    _truncate_statement: $ => seq(
-      $.keyword_truncate,
-      choice(
-        seq(optional($.keyword_table), optional($.keyword_only)),
-        seq($.keyword_materialized, $.keyword_view),
-      ),
-      comma_list($.object_reference),
-      optional($._drop_behavior),
-    ),
-
     // ── SELECT … FOR UPDATE [NOWAIT | WAIT <n>] (hybrid tables) ────────────
     _select_statement: $ => optional_parenthesis(
       seq(
@@ -380,6 +373,7 @@ export default canonicalOrder(grammar(base, {
         $.cross_join,
         $.lateral_join,
         $.lateral_cross_join,
+        $.asof_join,
       )),
       optional($.where),
       optional($.connect_by_clause),
@@ -485,12 +479,13 @@ export default canonicalOrder(grammar(base, {
           $.invocation,
           $.object_reference,
           wrapped_in_parenthesis($.values),
-          // Snowflake: @stage as a FROM source
-          $.stage_ref,
+          // Snowflake: @stage as a FROM source, optionally with (FILE_FORMAT => ..., PATTERN => ...)
+          seq($.stage_ref, optional(paren_list($.named_argument, true))),
           // Snowflake: comma-position LATERAL FLATTEN(...) / LATERAL (subquery)
           seq($.keyword_lateral, choice($.invocation, $.subquery)),
         ),
         optional($.time_travel_clause),
+        optional($.changes_clause),
         optional($.tablesample),
         optional(choice(
           $.pivot_clause,
@@ -501,6 +496,7 @@ export default canonicalOrder(grammar(base, {
           $._alias,
           optional(alias($._column_list, $.list)),
         )),
+        optional($.tablesample),
       ),
     ),
 
@@ -729,6 +725,20 @@ export default canonicalOrder(grammar(base, {
     keyword_exchange: _ => token(prec(1, make_keyword("exchange"))),
     keyword_listing: _ => token(prec(1, make_keyword("listing"))),
     keyword_references: _ => token(prec(1, make_keyword("references"))),
+    keyword_error_table: _ => token(prec(1, make_keyword("error_table"))),
+    keyword_tabular: _ => token(prec(1, make_keyword("tabular"))),
+    keyword_text: _ => token(prec(1, make_keyword("text"))),
+    keyword_top: _ => token(prec(1, make_keyword("top"))),
+    keyword_sample: _ => token(prec(1, make_keyword("sample"))),
+    keyword_block: _ => token(prec(1, make_keyword("block"))),
+    keyword_seed: _ => token(prec(1, make_keyword("seed"))),
+    keyword_append_only: _ => token(prec(1, make_keyword("append_only"))),
+    keyword_changes: _ => token(prec(1, make_keyword("changes"))),
+    keyword_information: _ => token(prec(1, make_keyword("information"))),
+    keyword_directed: _ => token(prec(1, make_keyword("directed"))),
+    keyword_asof: _ => token(prec(1, make_keyword("asof"))),
+    keyword_match_condition: _ => token(prec(1, make_keyword("match_condition"))),
+    keyword_minus: _ => token(prec(1, make_keyword("minus"))),
     keyword_secure:         _ => token(prec(1, make_keyword("secure"))),
     keyword_masking:        _ => token(prec(1, make_keyword("masking"))),
     keyword_target_lag:     _ => token(prec(1, make_keyword("target_lag"))),
@@ -821,6 +831,7 @@ export default canonicalOrder(grammar(base, {
     ...stage_rules,
     ...object_statement_rules,
     ...grant_rules,
+    ...query_extra_rules,
     ...files_rules,
     // last, so its overrides win over the inherited rules
     ...snowflake_property_rules,
