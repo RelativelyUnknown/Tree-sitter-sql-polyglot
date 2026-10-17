@@ -170,6 +170,7 @@
   (keyword_refresh)
   (keyword_rename)
   (keyword_reset)
+  (keyword_snapshot)
   (keyword_tables)
   (keyword_tablespace)
   (keyword_temp)
@@ -179,3 +180,4 @@
   (keyword_value)
   (keyword_wait)
 ] @keyword
+(keyword_percent) @keyword
