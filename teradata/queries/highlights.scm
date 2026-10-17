@@ -130,3 +130,4 @@
   (keyword_value)
   (keyword_wait)
 ] @keyword
+(keyword_percent) @keyword
