@@ -170,8 +170,7 @@ export default {
     head($, $.keyword_sequence),
     repeat(choice(
       $._clone_with_grants,
-      seq($.keyword_with),
-      seq($.keyword_start, optional($.keyword_with), optional('='), alias($._integer, $.literal)),
+      seq(optional($.keyword_with), $.keyword_start, optional($.keyword_with), optional('='), alias($._integer, $.literal)),
       seq($.keyword_increment, optional($.keyword_by), optional('='), alias($._integer, $.literal)),
       $.keyword_order,
       $.keyword_noorder,
