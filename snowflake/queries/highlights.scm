@@ -279,3 +279,17 @@
 (keyword_purchase) @keyword
 (keyword_reference) @keyword
 (keyword_restrictions) @keyword
+(keyword_append_only) @keyword
+(keyword_asof) @keyword
+(keyword_block) @keyword
+(keyword_changes) @keyword
+(keyword_directed) @keyword
+(keyword_error_table) @keyword
+(keyword_information) @keyword
+(keyword_match_condition) @keyword
+(keyword_minus) @keyword
+(keyword_sample) @keyword
+(keyword_seed) @keyword
+(keyword_tabular) @keyword
+(keyword_text) @keyword
+(keyword_top) @keyword
