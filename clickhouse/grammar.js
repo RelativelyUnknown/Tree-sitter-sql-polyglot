@@ -11,6 +11,13 @@ import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
 
+// ClickHouse block comments nest: /* outer /* inner */ outer */. A regex cannot match unbounded
+// nesting, so this one accepts up to three levels.
+function nestedBlockComment(depth) {
+  const inner = depth === 0 ? '' : '|' + nestedBlockComment(depth - 1);
+  return '\\/\\*(?:[^*\\/]|\\*+[^*\\/]|\\/+[^*\\/]' + inner + ')*\\*+\\/';
+}
+
 export default canonicalOrder(grammar(base, {
   name: 'clickhouse_sql',
 
@@ -50,6 +57,8 @@ export default canonicalOrder(grammar(base, {
   ],
 
   rules: {
+
+    marginalia: _ => new RegExp(nestedBlockComment(3)),
     ...dialect_transaction_rules,
     ...dialect_alter_rules,
     ...dialect_legacy_rules,
