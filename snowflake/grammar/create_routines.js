@@ -169,6 +169,7 @@ export default {
       $.tag_clause,
       seq($.keyword_as, $.keyword_replica, $.keyword_of, $.object_reference),
       seq($.keyword_from, $.keyword_listing, alias($._literal_string, $.literal)),
+      seq($.keyword_from, $.keyword_backup, $.keyword_set, $.object_reference, $.keyword_identifier, alias($._literal_string, $.literal)),
       $.snowflake_property,
     )),
   )),

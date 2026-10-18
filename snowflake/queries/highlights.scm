@@ -255,6 +255,7 @@
 (keyword_exchange) @keyword
 (keyword_execution) @keyword
 (keyword_import) @keyword
+(keyword_backup) @keyword
 (keyword_listing) @keyword
 (keyword_manage) @keyword
 (keyword_name) @keyword

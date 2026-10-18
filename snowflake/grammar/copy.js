@@ -57,6 +57,7 @@ export default {
     ')',
   ),
 
-  copy_kv: $ => seq($.identifier, '=', $._copy_value),
+  // KEY is an identifier, or a quoted string for lists such as SECRETS = ('cred' = s1) and HEADERS = ('h' = 'v')
+  copy_kv: $ => seq(choice($.identifier, $.literal), '=', $._copy_value),
 
 };

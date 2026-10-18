@@ -87,18 +87,24 @@ export default {
     optional($.warehouse_properties),
   ),
 
+  // Each property may be introduced by the optional WITH (CREATE WAREHOUSE wh WITH WAREHOUSE_SIZE = ...).
   warehouse_properties: $ => repeat1(
     choice(
-      seq($.keyword_warehouse_size, '=', choice($.identifier, alias($._literal_string, $.literal))),
-      seq($.keyword_max_cluster_count, '=', $._expression),
-      seq($.keyword_min_cluster_count, '=', $._expression),
-      seq($.keyword_scaling_policy, '=', choice($.keyword_standard, $.keyword_economy)),
-      seq($.keyword_auto_suspend, '=', $._expression),
-      seq($.keyword_auto_resume, '=', choice($.keyword_true, $.keyword_false)),
-      seq($.keyword_comment, '=', alias($._literal_string, $.literal)),
+      seq(
+        optional($.keyword_with),
+        choice(
+          seq($.keyword_warehouse_size, '=', choice($.identifier, alias($._literal_string, $.literal))),
+          seq($.keyword_max_cluster_count, '=', $._expression),
+          seq($.keyword_min_cluster_count, '=', $._expression),
+          seq($.keyword_scaling_policy, '=', choice($.keyword_standard, $.keyword_economy)),
+          seq($.keyword_auto_suspend, '=', $._expression),
+          seq($.keyword_auto_resume, '=', choice($.keyword_true, $.keyword_false)),
+          seq($.keyword_comment, '=', alias($._literal_string, $.literal)),
+          // Fallback for the properties the reference adds between releases.
+          $.snowflake_property,
+        ),
+      ),
       $.tag_clause,
-      // Fallback for the properties the reference adds between releases.
-      $.snowflake_property,
     ),
   ),
 

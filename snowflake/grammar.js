@@ -766,6 +766,7 @@ export default canonicalOrder(grammar(base, {
     keyword_purchase: _ => token(prec(1, make_keyword("purchase"))),
     keyword_exchange: _ => token(prec(1, make_keyword("exchange"))),
     keyword_listing: _ => token(prec(1, make_keyword("listing"))),
+    keyword_backup: _ => token(prec(1, make_keyword("backup"))),
     keyword_references: _ => token(prec(1, make_keyword("references"))),
     keyword_error_table: _ => token(prec(1, make_keyword("error_table"))),
     keyword_tabular: _ => token(prec(1, make_keyword("tabular"))),
