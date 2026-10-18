@@ -153,7 +153,12 @@ jobs:
         if: ${{ !cancelled() && steps.gen.outcome == 'success' && matrix.lang == 'base' }}
         run: |
           bash tools/antlr/setup.sh
+          # The root tree-sitter.json lists every dialect; scope it to the base so `tree-sitter parse`
+          # cannot resolve .sql files to a dialect grammar that was not generated in this job.
+          jq '.grammars |= map(select(.path == "."))' tree-sitter.json > /tmp/tree-sitter.json
+          cp /tmp/tree-sitter.json tree-sitter.json
           python tools/coverage.py --check --dialect base
+          git checkout -- tree-sitter.json
 
   # Language bindings build from the committed .br blobs (scripts/inflate-parsers.js), so they
   # never run tree-sitter generate.
