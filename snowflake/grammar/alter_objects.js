@@ -83,7 +83,7 @@ export default {
     choice(
       $.keyword_resume,
       $.keyword_suspend,
-      seq($.keyword_modify, $.keyword_action, $._dml_read),
+      seq($.keyword_modify, $.keyword_action, $.task_body),
       seq($.keyword_modify, $.keyword_condition, $.keyword_exists, '(', $._dml_read, ')'),
       seq($.keyword_from, $.keyword_template, $.object_reference, $.keyword_set, $._set_properties_body),
       seq($.keyword_set, choice($._set_tag, $._set_properties)),
@@ -182,7 +182,7 @@ export default {
     choice($.keyword_function, $.keyword_procedure),
     optional($._if_exists),
     $.object_reference,
-    paren_list($._type, false),
+    paren_list(choice($._type, seq($.keyword_table, paren_list($._type, false))), false),
     choice(
       $.rename_object,
       seq($.keyword_set, choice(

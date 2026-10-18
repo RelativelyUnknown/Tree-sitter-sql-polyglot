@@ -33,17 +33,25 @@ export default {
 
         $.keyword_json,
         $.keyword_xml,
-        $.keyword_string,
+        seq($.keyword_string, optional(paren_list(alias($._integer, $.literal), true))),
 
         $.enum,
 
         seq(
           field('custom_type', $.object_reference),
-          optional(paren_list(alias($._integer, $.literal), true)),
+          optional(paren_list($.type_argument, true)),
         ),
       ),
       optional($.array_size_definition),
     ),
+  ),
+
+  // Arguments of a parameterised type: NUMBER(10, 2), ARRAY(INT NOT NULL), OBJECT(city VARCHAR, zip NUMBER),
+  // MAP(VARCHAR, VARCHAR), VECTOR(FLOAT, 3).
+  type_argument: $ => choice(
+    alias($._integer, $.literal),
+    seq(field('name', $.identifier), $._type, optional(seq($.keyword_not, $.keyword_null))),
+    seq($._type, optional(seq($.keyword_not, $.keyword_null))),
   ),
 
 };

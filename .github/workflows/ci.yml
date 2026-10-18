@@ -84,11 +84,16 @@ jobs:
       - name: Increase swap (ClickHouse generate is memory-bound)
         if: matrix.shard == 'clickhouse'
         run: |
+          # /mnt is the runner's large scratch disk (the root disk has too little free space for a
+          # big swap file), so put the swap file there.
           sudo swapoff -a || true
-          sudo fallocate -l 12G /swapfile
-          sudo chmod 600 /swapfile
-          sudo mkswap /swapfile
-          sudo swapon /swapfile
+          avail_gb=$(df --output=avail -BG /mnt | tail -1 | tr -dc '0-9')
+          size_gb=$(( avail_gb > 40 ? 32 : avail_gb - 4 ))
+          sudo fallocate -l "${size_gb}G" /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+          sudo sysctl vm.swappiness=100 || true
           free -h
 
       - name: Generate parsers
@@ -222,11 +227,16 @@ jobs:
       # and clickhouse needs a from-scratch regen, this avoids an OOM.
       - name: Increase swap (safety net for a clickhouse fallback regen)
         run: |
+          # /mnt is the runner's large scratch disk (the root disk has too little free space for a
+          # big swap file), so put the swap file there.
           sudo swapoff -a || true
-          sudo fallocate -l 12G /swapfile
-          sudo chmod 600 /swapfile
-          sudo mkswap /swapfile
-          sudo swapon /swapfile
+          avail_gb=$(df --output=avail -BG /mnt | tail -1 | tr -dc '0-9')
+          size_gb=$(( avail_gb > 40 ? 32 : avail_gb - 4 ))
+          sudo fallocate -l "${size_gb}G" /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+          sudo sysctl vm.swappiness=100 || true
           free -h
 
       - name: Generate all parsers (no-op when artifacts restored; safety net)

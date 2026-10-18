@@ -416,7 +416,22 @@ export default {
         field('operand', $._expression)
       ))
     ),
+    $._signed_operand,
   ),
+
+  // ISO <sign> <numeric value expression>. The operand excludes literals because a numeric literal
+  // already carries its own optional sign (-1 is one literal), and both readings would be ambiguous.
+  _signed_operand: $ => prec.left('unary_other', seq(
+    field('operator', choice('-', '+')),
+    field('operand', choice(
+      alias($._qualified_field, $.field),
+      $.invocation,
+      $.parenthesized_expression,
+      $.cast,
+      $.case,
+      $.window_function,
+    )),
+  )),
 
   // Postgres syntax for intervals
   // prec.right greedily attaches the optional trailing qualifier
@@ -429,6 +444,7 @@ export default {
     $.keyword_interval,
     $._literal_string,
     optional(field('qualifier', $.identifier)),
+    optional(seq($.keyword_to, field('end_qualifier', $.identifier))),
   )),
 
   between_expression: $ => choice(
@@ -439,6 +455,7 @@ export default {
               prec.left(precedence, seq(
               field('left', $._expression),
               field('operator', operator),
+              optional(choice($.keyword_symmetric, $.keyword_asymmetric)),
               field('low', $._expression),
               $.keyword_and,
               field('high', $._expression)

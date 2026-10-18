@@ -27,7 +27,7 @@ export default {
   // REMOVE <internal_stage> [ PATTERN = '<regex>' ]
   // https://docs.snowflake.com/en/sql-reference/sql/remove
   remove_statement: $ => seq(
-    $.keyword_remove,
+    choice($.keyword_remove, $.keyword_rm),
     field('stage', $.stage_ref),
     optional(seq($.keyword_pattern, '=', alias($._literal_string, $.literal))),
   ),

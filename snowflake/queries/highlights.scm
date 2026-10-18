@@ -330,3 +330,4 @@
 (keyword_triggers) @keyword
 (keyword_unmatched) @keyword
 (keyword_while) @keyword
+(keyword_respect) @keyword

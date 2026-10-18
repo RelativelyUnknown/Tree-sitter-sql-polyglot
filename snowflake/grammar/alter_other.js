@@ -158,6 +158,7 @@ export default {
         $._set_tag,
         $.snowflake_property,
       ))),
+      seq($.keyword_increment, optional($.keyword_by), optional('='), alias($._integer, $.literal)),
       seq($.keyword_unset, choice($._unset_tag, $._unset_properties)),
     ),
   ),

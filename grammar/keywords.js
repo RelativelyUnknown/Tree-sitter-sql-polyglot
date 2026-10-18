@@ -213,6 +213,8 @@ export default {
   keyword_serializable: _ => make_keyword("serializable"),
   keyword_repeatable: _ => make_keyword("repeatable"),
   keyword_corresponding: _ => make_keyword("corresponding"),
+  keyword_symmetric: _ => make_keyword("symmetric"),
+  keyword_asymmetric: _ => make_keyword("asymmetric"),
   keyword_read: _ => make_keyword("read"),
   keyword_write: _ => make_keyword("write"),
   keyword_committed: _ => make_keyword("committed"),

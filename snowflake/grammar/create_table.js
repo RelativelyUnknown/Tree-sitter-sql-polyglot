@@ -208,6 +208,14 @@ export default {
   ),
 
   _constraint_property: $ => choice(
+    seq($.keyword_match, choice($.keyword_full, $.keyword_simple, $.keyword_partial)),
+    seq($.keyword_on, choice($.keyword_update, $.keyword_delete), choice(
+      $.keyword_cascade,
+      $.keyword_restrict,
+      seq($.keyword_set, $.keyword_null),
+      seq($.keyword_set, $.keyword_default),
+      seq($.keyword_no, $.keyword_action),
+    )),
     seq(optional($.keyword_not), $.keyword_enforced),
     seq(optional($.keyword_not), $.keyword_deferrable),
     seq($.keyword_initially, choice($.keyword_deferred, $.keyword_immediate)),

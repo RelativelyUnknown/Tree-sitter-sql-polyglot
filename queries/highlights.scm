@@ -452,3 +452,5 @@
   "."
 ] @punctuation.delimiter
 (keyword_corresponding) @keyword
+(keyword_symmetric) @keyword
+(keyword_asymmetric) @keyword

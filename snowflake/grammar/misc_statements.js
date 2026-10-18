@@ -21,6 +21,14 @@ export default {
     ),
   ),
 
+  // EXECUTE DBT PROJECT [IF EXISTS] name | FROM WORKSPACE w  [<property> ...]
+  execute_dbt_project: $ => seq(
+    $.keyword_execute, $.keyword_dbt, $.keyword_project,
+    optional($._if_exists),
+    choice($.object_reference, seq($.keyword_from, $.keyword_workspace, $.object_reference)),
+    repeat($.snowflake_property),
+  ),
+
   // EXECUTE TASK name [RETRY LAST | RETRY GRAPH RUN GROUP '<id>' | USING CONFIG = '<json>']
   execute_task: $ => seq(
     $.keyword_execute,

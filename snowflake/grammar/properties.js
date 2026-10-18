@@ -12,8 +12,8 @@ export default {
       '=',
       field('value', choice(
         $.literal,
-        $.identifier,
-        seq('(', optional(comma_list($._expression, true)), ')'),
+        $.object_reference,
+        $.copy_list,
       )),
     ),
     seq(

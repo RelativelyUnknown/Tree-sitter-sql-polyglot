@@ -22,6 +22,7 @@ import grant_rules from './grammar/grant.js';
 import query_extra_rules from './grammar/query_extras.js';
 import create_object_rules from './grammar/create_objects.js';
 import misc_statement_rules from './grammar/misc_statements.js';
+import expression_extra_rules from './grammar/expressions_extra.js';
 import alter_other_rules from './grammar/alter_other.js';
 import files_rules      from './grammar/files.js';
 import dialect_transaction_rules from './grammar/transactions.js';
@@ -142,6 +143,7 @@ export default canonicalOrder(grammar(base, {
       // Snowflake additions
       $.execute_immediate_statement,
       $.execute_task,
+      $.execute_dbt_project,
       $.copy_into,
       $.use_statement,
       $.use_secondary_roles,
@@ -443,6 +445,7 @@ export default canonicalOrder(grammar(base, {
           field('operand', $._expression),
         ))
       ),
+      $._signed_operand,
     ),
 
     keyword_connect: _ => token(prec(1, make_keyword("connect"))),
@@ -539,6 +542,12 @@ export default canonicalOrder(grammar(base, {
       alias($._qualified_field, $.field),
       $.parameter,
       $.bind_variable,
+      $.array_constant,
+      $.object_constant,
+      $.lambda_expression,
+      $.spread_expression,
+      $.collate_expression,
+      $.position_expression,
       $.list,
       $.case,
       $.window_function,
@@ -823,6 +832,18 @@ export default canonicalOrder(grammar(base, {
     keyword_pull: _ => token(prec(1, make_keyword("pull"))),
     keyword_person: _ => token(prec(1, make_keyword("person"))),
     keyword_suspend_immediate: _ => token(prec(1, make_keyword("suspend_immediate"))),
+    keyword_respect: _ => token(prec(1, make_keyword("respect"))),
+    keyword_replica: _ => token(prec(1, make_keyword("replica"))),
+    keyword_insufficient: _ => token(prec(1, make_keyword("insufficient"))),
+    keyword_retention: _ => token(prec(1, make_keyword("retention"))),
+    keyword_internal: _ => token(prec(1, make_keyword("internal"))),
+    keyword_simple: _ => token(prec(1, make_keyword("simple"))),
+    keyword_partial: _ => token(prec(1, make_keyword("partial"))),
+    keyword_ls: _ => token(prec(1, make_keyword("ls"))),
+    keyword_class: _ => token(prec(1, make_keyword("class"))),
+    keyword_specification: _ => token(prec(1, make_keyword("specification"))),
+    keyword_workspace: _ => token(prec(1, make_keyword("workspace"))),
+    keyword_rm: _ => token(prec(1, make_keyword("rm"))),
     keyword_secure:         _ => token(prec(1, make_keyword("secure"))),
     keyword_masking:        _ => token(prec(1, make_keyword("masking"))),
     keyword_target_lag:     _ => token(prec(1, make_keyword("target_lag"))),
@@ -918,6 +939,7 @@ export default canonicalOrder(grammar(base, {
     ...query_extra_rules,
     ...create_object_rules,
     ...misc_statement_rules,
+    ...expression_extra_rules,
     ...alter_other_rules,
     ...files_rules,
     // last, so its overrides win over the inherited rules

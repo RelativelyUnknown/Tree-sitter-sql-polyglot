@@ -64,6 +64,8 @@ export default {
       optional($._temporary),
       optional($.keyword_secure),
       optional($.keyword_aggregate),
+      optional($.keyword_external),
+      optional(seq($.keyword_data, $.keyword_metric)),
       $.keyword_function,
       optional($._if_not_exists),
       $.object_reference,
@@ -98,7 +100,7 @@ export default {
   routine_argument: $ => seq(
     optional(choice($.keyword_in, $.keyword_out, $.keyword_inout, $.keyword_input, $.keyword_output)),
     $.identifier,
-    $._type,
+    choice($._type, seq($.keyword_table, '(', comma_list($.column_definition, true), ')')),
     optional(seq($.keyword_default, $._expression)),
   ),
 
@@ -162,7 +164,13 @@ export default {
     $.keyword_database,
     optional($._if_not_exists),
     $.identifier,
-    repeat(choice($.clone_clause, $.tag_clause, $.snowflake_property)),
+    repeat(choice(
+      $.clone_clause,
+      $.tag_clause,
+      seq($.keyword_as, $.keyword_replica, $.keyword_of, $.object_reference),
+      seq($.keyword_from, $.keyword_listing, alias($._literal_string, $.literal)),
+      $.snowflake_property,
+    )),
   )),
 
   create_role: $ => seq(

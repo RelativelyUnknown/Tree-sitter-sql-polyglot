@@ -77,7 +77,7 @@ export default {
 
   // LIST @stage [PATTERN = 'regex']
   list_stage_statement: $ => seq(
-    $.keyword_list,
+    choice($.keyword_list, $.keyword_ls),
     $.stage_ref,
     optional(seq($.keyword_pattern, '=', alias($._literal_string, $.literal))),
   ),

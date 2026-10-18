@@ -20,7 +20,7 @@ export default {
         choice($.object_reference, seq('(', $._dml_read, ')')),
       ),
     ),
-    repeat($.copy_property),
+    repeat(choice($.copy_property, seq($.keyword_partition, $.keyword_by, $._expression))),
   ),
 
   _copy_location: $ => choice($.stage_ref, $.literal),
@@ -44,14 +44,14 @@ export default {
   _copy_value: $ => choice(
     $.copy_list,
     $.literal,
-    $.identifier,
+    $.object_reference,
   ),
 
   // ( KEY = value ... ) or ( 'a', 'b' ) or ()
   copy_list: $ => seq(
     '(',
     optional(choice(
-      repeat1($.copy_kv),
+      repeat1(seq($.copy_kv, optional(','))),
       comma_list($._copy_value),
     )),
     ')',

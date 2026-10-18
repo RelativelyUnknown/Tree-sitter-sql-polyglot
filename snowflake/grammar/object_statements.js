@@ -1,4 +1,4 @@
-import { paren_list } from '../../grammar/helpers.js';
+import { comma_list, paren_list } from '../../grammar/helpers.js';
 
 // DROP / UNDROP / DESCRIBE / SHOW share one object vocabulary in Snowflake. The singular names
 // come from the DROP / DESCRIBE pages, the plural names from the SHOW pages:
@@ -93,7 +93,8 @@ export default {
           field('limit', $._expression),
           optional(seq($.keyword_from, alias($._literal_string, $.literal))),
         )),
-        optional(seq($.keyword_with, $.keyword_privileges, paren_list($.identifier, true))),
+        optional(seq($.keyword_with, $.keyword_privileges, comma_list($.identifier, true))),
+        optional(seq($.keyword_with, $.keyword_primary, $.object_reference)),
       ),
     ),
   ),
@@ -106,6 +107,7 @@ export default {
     seq($.keyword_table, optional($.object_reference)),
     seq($.keyword_application, optional($.keyword_package), $.object_reference),
     seq($.keyword_dcm, $.keyword_project, $.object_reference),
+    seq(choice($.keyword_view, $.keyword_task, $.keyword_warehouse, $.keyword_class), $.object_reference),
     $.object_reference,
   ),
 

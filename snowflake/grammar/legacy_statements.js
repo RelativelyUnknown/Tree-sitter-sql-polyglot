@@ -808,6 +808,7 @@ const misc_rules = {
   // ---- vendor statements the ISO base no longer defines: COMMENT ON, SHOW TABLES, RESET, USE, index hints, RETURNING
   comment_statement: $ => seq(
     $.keyword_comment,
+    optional($._if_exists),
     $.keyword_on,
     $._comment_target,
     $.keyword_is,
