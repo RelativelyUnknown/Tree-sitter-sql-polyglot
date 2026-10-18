@@ -277,6 +277,16 @@ export default canonicalOrder(grammar(base, {
       optional($.limit),
     ),
 
+    // TABLESAMPLE SYSTEM ( <number> PERCENT )
+    tablesample: $ => seq(
+      $.keyword_tablesample,
+      $.keyword_system,
+      '(',
+      $._natural_number,
+      $.keyword_percent,
+      ')',
+    ),
+
     // ── relation: add UNNEST as a FROM source ───────────────────────────────
     relation: $ => prec.right(
       seq(
