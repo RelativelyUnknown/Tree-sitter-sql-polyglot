@@ -134,6 +134,18 @@ export default canonicalOrder(grammar(bigquery, {
 
     // Spanner-specific keywords (dialect-level per AGENTS.md)
     keyword_stored:        _ => token(prec(1, make_keyword("stored"))),
+    keyword_reservoir:     _ => token(prec(1, make_keyword("reservoir"))),
+
+    // TABLESAMPLE { BERNOULLI | RESERVOIR } ( <n> { PERCENT | ROWS } ) [ REPEATABLE ( <seed> ) ]
+    tablesample: $ => seq(
+      $.keyword_tablesample,
+      choice($.keyword_bernoulli, $.keyword_reservoir),
+      '(',
+      $._natural_number,
+      choice($.keyword_percent, $.keyword_rows),
+      ')',
+      optional(seq($.keyword_repeatable, '(', $._natural_number, ')')),
+    ),
     keyword_sql:           _ => token(prec(1, make_keyword("sql"))),
 
     // Spanner GoogleSQL has no SQL-level FOR SYSTEM_TIME AS OF (stale reads are
