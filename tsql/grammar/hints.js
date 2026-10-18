@@ -2,6 +2,17 @@ import { comma_list, paren_list, wrapped_in_parenthesis } from '../../grammar/he
 
 export default {
 
+  // TABLESAMPLE [ SYSTEM ] ( <number> [ PERCENT | ROWS ] ) [ REPEATABLE ( <seed> ) ]
+  tablesample: $ => seq(
+    $.keyword_tablesample,
+    optional($.keyword_system),
+    '(',
+    choice($._natural_number, /\d+\.\d+/),
+    optional(choice($.keyword_percent, $.keyword_rows)),
+    ')',
+    optional(seq($.keyword_repeatable, '(', $._natural_number, ')')),
+  ),
+
   // Override relation to support T-SQL table hints AND PIVOT/UNPIVOT.
   // T-SQL syntax: table_name [PIVOT|UNPIVOT (...)] [[AS] alias] [WITH (hint [,...])]
   relation: $ => prec.right(
