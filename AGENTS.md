@@ -106,7 +106,7 @@ scripts/
 bindings/                       # Node/Python/Rust/Go/Swift language bindings
 docs/                           # VitePress site (index, changelog; coverage is generated)
 .github/workflows/
-  ci.yml                        # Build, corpus tests and coverage on macOS/Ubuntu/Windows
+  ci.yml                        # One job per grammar (generate, test, blobs, inventory); bindings on 3 OSes
   pages.yml                     # Builds and deploys the docs site
   publish.yml, tag.yml          # Release automation
 ```
@@ -269,11 +269,9 @@ Use `spark/grammar.js` as the canonical example of `grammar(base, overrides)`.
    npm run generate:my_dialect
    ```
 
-7. Add the CI steps to `.github/workflows/ci.yml`:
-   ```yaml
-   - run: cd my_dialect && tree-sitter generate grammar.js
-   ```
-   and a `parser-test-action` step for `grammar-path: my_dialect`.
+7. Add the dialect to the `grammar` job's `lang` matrix in `.github/workflows/ci.yml`. Each grammar is
+   generated, tested and checked in its own job (generate, corpus tests, committed `.br` blobs current,
+   inventory regressions), so nothing else in the workflow changes.
 
 8. Wire the dialect into the compiled Rust/Node/Python/Go/Swift/CMake packages (this is separate from
    step 4's per-dialect `<dialect>/tree-sitter.json`, which only registers it for standalone

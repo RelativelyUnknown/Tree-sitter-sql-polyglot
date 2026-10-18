@@ -1,91 +1,75 @@
 name: Build/test
+
 on:
   push:
-    branches:
-      - "main"
-      - "release/**"
+    branches: ["main", "release/**"]
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
-    branches:
-      - 'main'
-      - 'release/**'
+    branches: ["main", "release/**"]
 
-# Cancel superseded runs of the same PR/branch; a new push obsoletes the
-# previous run, so don't pay for both.
+# A new push obsoletes the previous run of the same PR/branch.
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
+env:
+  TREE_SITTER_REF: v0.26.3
+
 jobs:
-  # ── Corpus tests, sharded by dialect group ──────────────────────────────────
-  # Corpus tests are OS-independent, so this runs on ubuntu only. Shards run
-  # in parallel, each generating and testing only its own dialects; a dialect
-  # stays in its parent's shard (spark→hive, databricks→spark, mariadb→mysql,
-  # athena→trino).
-  #
-  # generate.js hash-caches per grammar, including ancestor-chain files, so a
-  # postgres-only change only regenerates postgres. ~/.cache/tree-sitter
-  # caches compiled test libraries so `tree-sitter test` skips unchanged ones.
-  test:
+  # One job per grammar: the base and each of the 22 dialects is generated, tested and checked on
+  # its own runner, so one grammar's memory use or failure never affects another's.
+  # Raise max-parallel if the account's runner budget allows.
+  grammar:
+    name: grammar (${{ matrix.lang }})
     runs-on: ubuntu-latest
+    timeout-minutes: 120
     strategy:
       fail-fast: false
-      # Running all 5 shards at once exceeds this account's concurrent-runner
-      # capacity and gets one reclaimed mid-generate.
-      max-parallel: 2
+      max-parallel: 3
       matrix:
-        include:
-          - shard: base
-            dialects: ""
-          - shard: hive-chain
-            dialects: "hive spark databricks oracle db2 hana"
-          - shard: pg-mysql
-            dialects: "postgres mysql mariadb sqlite duckdb cockroachdb"
-          - shard: warehouse
-            dialects: "snowflake bigquery spanner tsql flink"
-          # ClickHouse alone can exceed the runner's memory ceiling during
-          # generate (see tools/coverage-probes.yml); isolated so nothing
-          # else competes for the budget.
-          - shard: clickhouse
-            dialects: "clickhouse"
-          - shard: trino-chain
-            dialects: "trino athena redshift teradata"
+        lang:
+          - base
+          - spark
+          - postgres
+          - mysql
+          - databricks
+          - snowflake
+          - bigquery
+          - mariadb
+          - sqlite
+          - hive
+          - oracle
+          - db2
+          - tsql
+          - duckdb
+          - trino
+          - athena
+          - redshift
+          - clickhouse
+          - flink
+          - cockroachdb
+          - spanner
+          - teradata
+          - hana
     steps:
       - uses: actions/checkout@v4
       - uses: tree-sitter/setup-action@v2
         with:
           install-lib: false
-          tree-sitter-ref: v0.26.3
-
-      - uses: actions/cache@v4
+          tree-sitter-ref: ${{ env.TREE_SITTER_REF }}
+      - uses: actions/setup-node@v4
         with:
-          path: |
-            src/parser.c
-            src/node-types.json
-            src/grammar.json
-            src/tree_sitter/
-            */src/parser.c
-            */src/node-types.json
-            */src/grammar.json
-            */src/tree_sitter/
-            .grammar-cache/
-            ~/.cache/tree-sitter/
-          # Bumped v2 -> v3: some v2 entries had a hash marker newer than the
-          # parser.c it described, so generate.js skipped regeneration and
-          # served a stale parser.c (surfaced as coverage regressions once the
-          # coverage job reused those artifacts).
-          key: parsers-v3-${{ matrix.shard }}-${{ hashFiles('grammar.js', 'grammar/**', '*/grammar.js', '*/grammar/**') }}
-          restore-keys: |
-            parsers-v3-${{ matrix.shard }}-
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: tools/requirements.txt
 
-      # ClickHouse's generate step can peak near the runner's memory limit;
-      # swap gives it headroom instead of an OOM kill ("the runner has
-      # received a shutdown signal").
-      - name: Increase swap (ClickHouse generate is memory-bound)
-        if: matrix.shard == 'clickhouse'
+      # Large grammars need more than the runner's RAM while building the parse table. The swap
+      # file goes on /mnt, the runner's large scratch disk.
+      - name: Add swap
         run: |
-          # /mnt is the runner's large scratch disk (the root disk has too little free space for a
-          # big swap file), so put the swap file there.
           sudo swapoff -a || true
           avail_gb=$(df --output=avail -BG /mnt | tail -1 | tr -dc '0-9')
           size_gb=$(( avail_gb > 40 ? 32 : avail_gb - 4 ))
@@ -93,382 +77,159 @@ jobs:
           sudo chmod 600 /mnt/swapfile
           sudo mkswap /mnt/swapfile
           sudo swapon /mnt/swapfile
-          sudo sysctl vm.swappiness=100 || true
           free -h
 
-      - name: Generate parsers
-        # GENERATE_CONCURRENCY=1: two heavy grammars generating at once can
-        # OOM the runner ("the runner has received a shutdown signal").
-        env:
-          GENERATE_CONCURRENCY: 1
+      # Always a real `tree-sitter generate` (no hash cache), so what is tested is what is built.
+      - name: Generate
         run: |
-          if [ -z "${{ matrix.dialects }}" ]; then
-            node scripts/generate.js
+          if [ "${{ matrix.lang }}" = base ]; then
+            tree-sitter generate grammar.js
           else
-            node scripts/generate-all.js ${{ matrix.dialects }}
+            cd "${{ matrix.lang }}" && tree-sitter generate grammar.js
           fi
 
-      # Lets the coverage job reuse these parsers instead of regenerating all
-      # 22 from scratch. Built with the same tree-sitter-cli pin coverage.py
-      # uses, so they're ABI-compatible.
-      - name: Upload parsers for coverage reuse
-        uses: actions/upload-artifact@v4
-        with:
-          name: parsers-${{ matrix.shard }}
-          # upload-artifact@v4 excludes dot-prefixed paths by default, which
-          # would drop .grammar-cache/'s hash markers.
-          include-hidden-files: true
-          path: |
-            src/parser.c
-            src/*.json
-            src/tree_sitter/
-            */src/parser.c
-            */src/*.json
-            */src/tree_sitter/
-            .grammar-cache/
-          retention-days: 1
-          if-no-files-found: warn
-
-      # Rust build cache for the base parser-test-action (cargo test of the
-      # Rust binding is the slowest part of the base shard).
-      - uses: Swatinem/rust-cache@v2
-        if: matrix.shard == 'base'
-
-      - name: Run tests (base SQL)
-        if: matrix.shard == 'base'
-        uses: tree-sitter/parser-test-action@v3
-        with:
-          test-rust: true
-          test-node: false
-          # Python (base + postgres, cross-OS) now lives entirely in
-          # test_python_os; this shard doesn't need its own Python run too.
-          test-python: false
-          # generate: true (the default) would regenerate every grammar.js in
-          # the checkout, not just base; base is already generated above.
-          generate: false
-          # --grammar-path implies --rebuild, which compiles every grammar
-          # tree-sitter.json declares, not just the one selected; that needs
-          # all 22 dialects' parser.c, which this shard never generates.
-          # Scope tree-sitter.json itself to base for this run instead.
-          test-parser-cmd: |
+      - name: Corpus tests
+        run: |
+          if [ "${{ matrix.lang }}" = base ]; then
+            # --grammar-path implies a rebuild of every grammar tree-sitter.json declares; scope
+            # the config to the base grammar for this run.
             jq '.grammars |= map(select(.path == "."))' tree-sitter.json > /tmp/tree-sitter.json
             cp /tmp/tree-sitter.json tree-sitter.json
             tree-sitter test --grammar-path .
             git checkout -- tree-sitter.json
+          else
+            cd "${{ matrix.lang }}" && tree-sitter test
+          fi
 
-      - name: Keyword/highlights sync check
-        if: matrix.shard == 'base'
-        run: scripts/test-keywords.sh
+      # The committed .br blobs are what the Node, Python, Rust, Go, C and Swift packages build
+      # from, so they must match the grammar. On a mismatch the fresh blobs are uploaded below.
+      - name: Committed parser blobs are current
+        id: blobs
+        run: node scripts/check-blobs.js "${{ matrix.lang }}"
 
-      # Dialect counterpart of the keyword check above: every keyword in a
-      # dialect's node-types.json needs a capture in its bundled highlights.
-      - name: Dialect highlights cover every keyword
-        if: matrix.shard == 'base'
-        run: node scripts/bundle-highlights.js --check
-
-      - name: Run dialect corpus tests
-        if: matrix.dialects != ''
+      - name: Upload fresh blobs when stale
+        if: failure() && steps.blobs.outcome == 'failure'
         run: |
-          for d in ${{ matrix.dialects }}; do
-            echo "::group::tree-sitter test ($d)"
-            (cd "$d" && tree-sitter test)
-            echo "::endgroup::"
-          done
+          node scripts/compress-parsers.js "${{ matrix.lang }}"
+          mkdir -p /tmp/blobs
+          if [ "${{ matrix.lang }}" = base ]; then cp src/*.br /tmp/blobs/; else cp "${{ matrix.lang }}"/src/*.br /tmp/blobs/; fi
+      - uses: actions/upload-artifact@v4
+        if: failure() && steps.blobs.outcome == 'failure'
+        with:
+          name: fresh-blobs-${{ matrix.lang }}
+          path: /tmp/blobs
+          retention-days: 7
 
-  # ── Corroborated feature coverage ───────────────────────────────────────────
-  # tools/coverage.py parses every probe in tools/coverage-probes.yml against
-  # our parsers and independent reference parsers (SQLGlot, ANTLR grammars-v4,
-  # pglast, sqlfluff), scoring against ISO Core. Fails on regressions, new
-  # "suspect" probes, or ANSI purity violations. Baseline: tools/coverage.json.
-  coverage:
-    # Runs after the test matrix, not alongside it: both regenerating in
-    # parallel exceeds this account's concurrent-runner capacity.
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: tree-sitter/setup-action@v2
-        with:
-          install-lib: false
-          tree-sitter-ref: v0.26.3
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      - name: Install Python tools
+        run: pip install -r tools/requirements.txt
+
+      # Base only: every keyword needs a highlight capture, in the base and in every dialect's
+      # bundled query.
+      - name: Keyword and highlight sync
+        if: matrix.lang == 'base'
+        run: |
+          scripts/test-keywords.sh
+          node scripts/bundle-highlights.js --check
+
+      # Dialect only: probes that used to parse in tools/inventory-results/ must still parse.
+      - name: Statement inventory
+        if: matrix.lang != 'base'
+        run: python tools/inventory.py --check --dialect "${{ matrix.lang }}"
+
+      # Base only: ANSI purity and regressions against independent reference parsers.
       - uses: actions/setup-java@v4
+        if: matrix.lang == 'base'
         with:
           distribution: temurin
           java-version: "17"
-
-      # Caches only the ANTLR reference-parser build. Deliberately NOT caching
-      # ~/.cache/tree-sitter/: tree-sitter reuses a compiled parser .so based
-      # on source mtime, and a downloaded (not regenerated) parser.c has an
-      # older mtime than a stale cached .so would, which would silently parse
-      # with outdated features. Compiling parser.c fresh is cheap, so always
-      # do that instead (see "Force fresh parser compilation" below).
-      - uses: actions/cache@v4
-        with:
-          path: |
-            tools/antlr/build/
-            tools/antlr/*.jar
-          key: coverage-deps-v2-${{ hashFiles('tools/antlr/setup.sh') }}
-          restore-keys: |
-            coverage-deps-v2-
-
-      # Reuses parsers the test matrix already built. merge-multiple
-      # reconstructs root src/ and every <dialect>/src/, plus the
-      # .grammar-cache/*.hash markers, so generate:all below is a no-op.
-      - name: Download parsers from test matrix
-        uses: actions/download-artifact@v4
-        with:
-          pattern: parsers-*
-          merge-multiple: true
-
-      # Safety net for generate:all below: if an artifact failed to transport
-      # and clickhouse needs a from-scratch regen, this avoids an OOM.
-      - name: Increase swap (safety net for a clickhouse fallback regen)
+      - name: ANSI purity and reference-parser coverage
+        if: matrix.lang == 'base'
         run: |
-          # /mnt is the runner's large scratch disk (the root disk has too little free space for a
-          # big swap file), so put the swap file there.
-          sudo swapoff -a || true
-          avail_gb=$(df --output=avail -BG /mnt | tail -1 | tr -dc '0-9')
-          size_gb=$(( avail_gb > 40 ? 32 : avail_gb - 4 ))
-          sudo fallocate -l "${size_gb}G" /mnt/swapfile
-          sudo chmod 600 /mnt/swapfile
-          sudo mkswap /mnt/swapfile
-          sudo swapon /mnt/swapfile
-          sudo sysctl vm.swappiness=100 || true
-          free -h
-
-      - name: Generate all parsers (no-op when artifacts restored; safety net)
-        # No-ops when every parser transported cleanly; regenerates only what
-        # a failed artifact upload is missing.
-        env:
-          GENERATE_CONCURRENCY: 1
-        run: npm run generate:all
-
-      # Forces a recompile so coverage.py never parses with a stale cached
-      # .so (see the cache step above).
-      - name: Force fresh parser compilation
-        run: |
-          rm -rf ~/.cache/tree-sitter
-          # only touch files that already exist; never create an empty scanner.c
-          find . -type f \( -name parser.c -o -name scanner.c -o -name scanner.cc \) \
-            -path '*src/*' -exec touch {} +
-
-      # Log per-grammar parser size (src/parser.c bytes), STATE_COUNT /
-      # LARGE_STATE_COUNT and declared-conflict count, ranked, so GLR
-      # table growth is visible in every run without regenerating.
-      - name: Log grammar/parser sizes
-        run: python tools/glr_scan.py --no-generate --no-stress
-
-      - name: Install corroborators
-        run: |
-          pip install -r tools/requirements.txt
           bash tools/antlr/setup.sh
+          python tools/coverage.py --check --dialect base
 
-      # No TREE_SITTER_BIN override: must stay pinned to the CLI version
-      # generate.js used, or an ABI mismatch produces false regressions.
-      - name: Coverage gate (regressions / suspects / purity)
-        run: python tools/coverage.py --check
-
-      # Statement inventory: parses every probe in tools/inventory/ with our
-      # parsers only and fails if a probe that used to parse in
-      # tools/inventory-results/ no longer does. Reference parsers are not
-      # re-run here; their verdicts are cached in the committed results.
-      - name: Statement inventory gate (regressions)
-        run: python tools/inventory.py --check
-
-      # Full run for the human-readable report + job summary. Runs even if the
-      # gate failed, so a red PR still gets a diagnosable report.
-      - name: Build coverage report
-        if: always()
-        run: python tools/coverage.py
-
-      - name: Upload coverage report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: |
-            docs/coverage.md
-            tools/coverage.json
-          retention-days: 30
-
-  # ── Go native binding (OS matrix) ────────────────────────────────────────────
-  # Go already has a can-load-grammar test per dialect (bindings/go/<dialect>),
-  # so Ubuntu runs the full 23-dialect suite; macOS/Windows only need
-  # base+postgres to confirm cgo compiles there too (same Layer-2 tradeoff as
-  # the other package types below, testing all 22 dialects on every OS is
-  # unnecessary cost this account's runner budget doesn't have).
-  test_go:
+  # Language bindings build from the committed .br blobs (scripts/inflate-parsers.js), so they
+  # never run tree-sitter generate.
+  bindings:
+    name: ${{ matrix.binding }} (${{ matrix.os }})
+    # After the grammar jobs, so the two groups never compete for runners, and so the blobs they
+    # build from have been checked. Runs even when a grammar job failed.
+    needs: grammar
+    if: ${{ !cancelled() }}
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-2025]
+        binding: [go, node, python, rust, c]
+        os: [ubuntu-latest, macos-latest, windows-2025]
+        include:
+          - { binding: swift, os: macos-latest }
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      # cgo needs the real parser.c/scanner.c on disk; inflate the committed
-      # .br blobs.
       - run: node scripts/inflate-parsers.js
+
       - uses: actions/setup-go@v5
+        if: matrix.binding == 'go'
         with:
           go-version: "1.23"
           cache-dependency-path: go.sum
-      - name: Build and test (all 22 dialects)
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          go build ./bindings/go/...
-          go test ./bindings/go/...
-      - name: Build and test (base + postgres)
-        if: matrix.os != 'ubuntu-latest'
-        run: |
-          go build ./bindings/go ./bindings/go/postgres
-          go test ./bindings/go ./bindings/go/postgres
-
-  # ── Per-package-type OS matrices (base + postgres only) ─────────────────────
-  # Every packaging surface below gets the same treatment: does the native
-  # build toolchain for this language work on macOS/Ubuntu/Windows? Base and
-  # postgres (simple + full-featured) are enough signal for that - Go above is
-  # the one language that also gets a full 22-dialect pass, on Ubuntu only.
-
-  test_node_os:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest, ubuntu-latest, windows-2025]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      # npm ci runs the install hook: inflate-parsers.js decompresses the
-      # committed .br blobs, then node-gyp-build compiles the native addons
-      # (all 22, since binding.gyp declares every dialect as its own target -
-      # there's no cheaper "just build postgres" option here, unlike Go/Rust).
-      - run: npm ci
-      - run: node --test bindings/node/binding_test.js bindings/node/binding_postgres_test.js
-
-  test_python_os:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest, ubuntu-latest, windows-2025]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - run: node scripts/inflate-parsers.js
       - uses: actions/setup-python@v5
+        if: matrix.binding == 'python'
         with:
           python-version: "3.12"
-      # setup.py builds every dialect's extension module unconditionally
-      # (same all-or-nothing shape as the Node addon build above). The
-      # `core` extra pulls in the `tree_sitter` runtime package the tests
-      # import - pyproject.toml keeps it optional so consumers can bring
-      # their own tree-sitter version instead.
-      # A regular (not editable) install, so the tests see the wheel's real
-      # layout: setup.py's build step copies the highlights queries into the
-      # package, and an editable install skips that step.
-      - run: pip install ".[core]"
-      - run: python -m unittest discover -s bindings/python/tests -p "test_*.py" -v
-
-  test_rust_os:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest, ubuntu-latest, windows-2025]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - run: node scripts/inflate-parsers.js
       - uses: dtolnay/rust-toolchain@stable
+        if: matrix.binding == 'rust'
       - uses: Swatinem/rust-cache@v2
-      # --no-default-features: default is already empty, but explicit here
-      # since `postgres` alone should compile base + postgres, not all 22.
-      - run: cargo test --no-default-features --features postgres
-
-  test_c_os:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest, ubuntu-latest, windows-2025]
-    steps:
-      - uses: actions/checkout@v4
+        if: matrix.binding == 'rust'
       - uses: tree-sitter/setup-action/cli@v2
-      # -DTREE_SITTER_SQL_POSTGRES=ON mirrors `cargo build --features
-      # postgres`: one configure/build produces base + postgres together.
-      - name: Configure and build base + postgres
+        if: matrix.binding == 'c'
+
+      - name: Build and test
         run: |
-          cmake -S . -B build -DTREE_SITTER_SQL_POSTGRES=ON
-          cmake --build build --config Release
+          case "${{ matrix.binding }}" in
+            go)
+              if [ "${{ matrix.os }}" = ubuntu-latest ]; then
+                go build ./bindings/go/... && go test ./bindings/go/...
+              else
+                go build ./bindings/go ./bindings/go/postgres && go test ./bindings/go ./bindings/go/postgres
+              fi ;;
+            node)
+              npm ci
+              node --test bindings/node/binding_test.js bindings/node/binding_postgres_test.js ;;
+            python)
+              pip install ".[core]"
+              python -m unittest discover -s bindings/python/tests -p "test_*.py" -v ;;
+            rust)
+              cargo test --no-default-features --features postgres ;;
+            c)
+              cmake -S . -B build -DTREE_SITTER_SQL_POSTGRES=ON
+              cmake --build build --config Release ;;
+            swift)
+              swift build --build-tests
+              swift test --skip-build -q ;;
+          esac
 
-  # ── Swift native binding (macOS only, full dialect suite) ───────────────────
-  # No Linux/Windows Swift toolchain here, so there's no separate OS matrix to
-  # trim - this one job already covers all 22 dialects + base on Swift's only
-  # supported OS in this CI, base+postgres included.
-  test_swift:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      # Package.swift's targets compile parser.c/scanner.c directly; inflate
-      # the committed .br blobs first, same as the other bindings.
-      - run: node scripts/inflate-parsers.js
-      - run: swift build --build-tests
-      - run: swift test --skip-build -q
-
-  # ── Validate corpus file integrity ──────────────────────────────────────────
-  validate_tests:
-    runs-on: ["ubuntu-latest"]
-    strategy:
-      fail-fast: true
+  # Expected parse trees must not contain error nodes (errors.txt holds the intentional error tests).
+  corpus-lint:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: |
-          STATUS=0
-          # Match tree-sitter error NODES in expected parse trees (the S-expression
-          # forms "(ERROR", "(MISSING", "(UNEXPECTED") rather than the bare words,
-          # which legitimately appear in valid SQL (e.g. EXCEPTION WHEN ERROR THEN,
-          # ERROR_MESSAGE(), RAISERROR(...)). errors.txt holds intentional error tests.
-          for dir in test spark/test databricks/test postgres/test mysql/test snowflake/test mariadb/test sqlite/test hive/test oracle/test db2/test duckdb/test trino/test athena/test redshift/test bigquery/test tsql/test clickhouse/test flink/test cockroachdb/test spanner/test teradata/test hana/test; do
-            if [[ $(grep -rnE --exclude=errors.txt '\(ERROR' "$dir/" 2>/dev/null | wc -l) -gt 0 ]]; then
-                echo "Found 'ERROR' in $dir: "
-                grep -rnE --exclude=errors.txt '\(ERROR' "$dir/" | cut -f1,2 -d:
-                STATUS=1
-            fi
-            if [[ $(grep -rnE --exclude=errors.txt '\(MISSING' "$dir/" 2>/dev/null | wc -l) -gt 0 ]]; then
-                echo "Found 'MISSING' in $dir: "
-                grep -rnE --exclude=errors.txt '\(MISSING' "$dir/" | cut -f1,2 -d:
-                STATUS=1
-            fi
-            if [[ $(grep -rnE --exclude=errors.txt '\(UNEXPECTED' "$dir/" 2>/dev/null | wc -l) -gt 0 ]]; then
-                echo "Found 'UNEXPECTED' in $dir: "
-                grep -rnE --exclude=errors.txt '\(UNEXPECTED' "$dir/" | cut -f1,2 -d:
-                STATUS=1
-            fi
-          done
-          exit $STATUS
+          if grep -rnE --exclude=errors.txt '\((ERROR|MISSING|UNEXPECTED)' test */test; then
+            echo "Error nodes found in expected parse trees (listed above)."
+            exit 1
+          fi
 
-  # ── Aggregate gate for branch protection ────────────────────────────────────
-  # Branch protection requires this single check instead of every matrix-shard
-  # context individually, so adding/renaming a shard never needs a settings
-  # change. See .github/branch-protection/main.json.
+  # The single required check for branch protection (.github/branch-protection/main.json).
   ci-passed:
     if: always()
-    needs: [test, coverage, test_go, test_node_os, test_python_os, test_rust_os, test_c_os, test_swift, validate_tests]
+    needs: [grammar, bindings, corpus-lint]
     runs-on: ubuntu-latest
     steps:
       - run: |
