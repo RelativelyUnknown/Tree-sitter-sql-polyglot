@@ -332,3 +332,14 @@
 (keyword_unmatched) @keyword
 (keyword_while) @keyword
 (keyword_respect) @keyword
+(keyword_class) @keyword
+(keyword_insufficient) @keyword
+(keyword_internal) @keyword
+(keyword_ls) @keyword
+(keyword_partial) @keyword
+(keyword_replica) @keyword
+(keyword_retention) @keyword
+(keyword_rm) @keyword
+(keyword_simple) @keyword
+(keyword_specification) @keyword
+(keyword_workspace) @keyword
