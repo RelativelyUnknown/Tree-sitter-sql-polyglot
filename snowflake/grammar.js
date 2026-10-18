@@ -544,7 +544,6 @@ export default canonicalOrder(grammar(base, {
       $.bind_variable,
       $.array_constant,
       $.object_constant,
-      $.lambda_expression,
       $.spread_expression,
       $.collate_expression,
       $.position_expression,

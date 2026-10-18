@@ -16,13 +16,6 @@ export default {
     '}',
   ),
 
-  // (a INT) -> expr: a lambda parameter with a declared type. Untyped lambdas parse as the -> operator.
-  lambda_expression: $ => prec.right(seq(
-    field('parameter', seq($.identifier, $._type)),
-    '->',
-    field('body', $._expression),
-  )),
-
   // ** [1, 2]: expands an array into function arguments or an IN list
   spread_expression: $ => prec.right(seq('**', $._expression)),
 
