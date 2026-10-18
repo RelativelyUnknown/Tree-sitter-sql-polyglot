@@ -13,6 +13,17 @@ export default {
     field('name', choice($.identifier, $.parameter)),
   ),
 
+  // `_qualified_field` already accepts a parameter as its name, so the base's separate
+  // `parameter` alternative would only make `POSITION(? IN x)` ambiguous.
+  _position_operand: $ => choice(
+    $.literal,
+    alias($._qualified_field, $.field),
+    $.invocation,
+    $.cast,
+    $.parenthesized_expression,
+    $.trim_expression,
+  ),
+
   // SELECT [ALL | DISTINCT] [TOP n] <list>
   select: $ => seq(
     $.keyword_select,

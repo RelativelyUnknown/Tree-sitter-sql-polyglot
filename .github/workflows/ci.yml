@@ -81,6 +81,7 @@ jobs:
 
       # Always a real `tree-sitter generate` (no hash cache), so what is tested is what is built.
       - name: Generate
+        id: gen
         run: |
           if [ "${{ matrix.lang }}" = base ]; then
             tree-sitter generate grammar.js
@@ -88,7 +89,28 @@ jobs:
             cd "${{ matrix.lang }}" && tree-sitter generate grammar.js
           fi
 
+      # The committed .br blobs are what the Node, Python, Rust, Go, C and Swift packages build
+      # from, so they must match the grammar. On a mismatch the fresh blobs are uploaded below.
+      - name: Committed parser blobs are current
+        id: blobs
+        if: ${{ !cancelled() && steps.gen.outcome == 'success' }}
+        run: node scripts/check-blobs.js "${{ matrix.lang }}"
+
+      - name: Upload fresh blobs when stale
+        if: ${{ !cancelled() && steps.blobs.outcome == 'failure' }}
+        run: |
+          node scripts/compress-parsers.js "${{ matrix.lang }}"
+          mkdir -p /tmp/blobs
+          if [ "${{ matrix.lang }}" = base ]; then cp src/*.br /tmp/blobs/; else cp "${{ matrix.lang }}"/src/*.br /tmp/blobs/; fi
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() && steps.blobs.outcome == 'failure' }}
+        with:
+          name: fresh-blobs-${{ matrix.lang }}
+          path: /tmp/blobs
+          retention-days: 7
+
       - name: Corpus tests
+        if: ${{ !cancelled() && steps.gen.outcome == 'success' }}
         run: |
           if [ "${{ matrix.lang }}" = base ]; then
             # --grammar-path implies a rebuild of every grammar tree-sitter.json declares; scope
@@ -101,49 +123,31 @@ jobs:
             cd "${{ matrix.lang }}" && tree-sitter test
           fi
 
-      # The committed .br blobs are what the Node, Python, Rust, Go, C and Swift packages build
-      # from, so they must match the grammar. On a mismatch the fresh blobs are uploaded below.
-      - name: Committed parser blobs are current
-        id: blobs
-        run: node scripts/check-blobs.js "${{ matrix.lang }}"
-
-      - name: Upload fresh blobs when stale
-        if: failure() && steps.blobs.outcome == 'failure'
-        run: |
-          node scripts/compress-parsers.js "${{ matrix.lang }}"
-          mkdir -p /tmp/blobs
-          if [ "${{ matrix.lang }}" = base ]; then cp src/*.br /tmp/blobs/; else cp "${{ matrix.lang }}"/src/*.br /tmp/blobs/; fi
-      - uses: actions/upload-artifact@v4
-        if: failure() && steps.blobs.outcome == 'failure'
-        with:
-          name: fresh-blobs-${{ matrix.lang }}
-          path: /tmp/blobs
-          retention-days: 7
-
       - name: Install Python tools
+        if: ${{ !cancelled() && steps.gen.outcome == 'success' }}
         run: pip install -r tools/requirements.txt
 
       # Base only: every keyword needs a highlight capture, in the base and in every dialect's
       # bundled query.
       - name: Keyword and highlight sync
-        if: matrix.lang == 'base'
+        if: ${{ !cancelled() && steps.gen.outcome == 'success' && matrix.lang == 'base' }}
         run: |
           scripts/test-keywords.sh
           node scripts/bundle-highlights.js --check
 
       # Dialect only: probes that used to parse in tools/inventory-results/ must still parse.
       - name: Statement inventory
-        if: matrix.lang != 'base'
+        if: ${{ !cancelled() && steps.gen.outcome == 'success' && matrix.lang != 'base' }}
         run: python tools/inventory.py --check --dialect "${{ matrix.lang }}"
 
       # Base only: ANSI purity and regressions against independent reference parsers.
       - uses: actions/setup-java@v4
-        if: matrix.lang == 'base'
+        if: ${{ !cancelled() && steps.gen.outcome == 'success' && matrix.lang == 'base' }}
         with:
           distribution: temurin
           java-version: "17"
       - name: ANSI purity and reference-parser coverage
-        if: matrix.lang == 'base'
+        if: ${{ !cancelled() && steps.gen.outcome == 'success' && matrix.lang == 'base' }}
         run: |
           bash tools/antlr/setup.sh
           python tools/coverage.py --check --dialect base
