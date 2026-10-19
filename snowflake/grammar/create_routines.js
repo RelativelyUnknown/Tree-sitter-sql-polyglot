@@ -153,6 +153,7 @@ export default {
     $.object_reference,
     repeat(choice(
       $.clone_clause,
+      $.backup_set_clause,
       seq($.keyword_with, $.keyword_managed, $.keyword_access),
       $.tag_clause,
       seq($.keyword_comment, '=', alias($._literal_string, $.literal)),
@@ -174,7 +175,7 @@ export default {
       seq($.keyword_from, $.keyword_listing, alias($._literal_string, $.literal)),
       seq($.keyword_from, $.keyword_share, $.object_reference),
       $.contact_clause,
-      seq($.keyword_from, $.keyword_backup, $.keyword_set, $.object_reference, $.keyword_identifier, alias($._literal_string, $.literal)),
+      $.backup_set_clause,
       $.snowflake_property,
     )),
   )),

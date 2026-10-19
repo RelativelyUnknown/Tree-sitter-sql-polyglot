@@ -43,6 +43,7 @@ export default {
 
   _snowflake_table_clause: $ => choice(
     $.clone_clause,
+    $.backup_set_clause,
     seq($.keyword_like, $.object_reference),
     seq($.keyword_using, $.keyword_template, wrapped_in_parenthesis($.create_query)),
     $.cluster_by_clause,

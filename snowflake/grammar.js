@@ -978,6 +978,7 @@ export default canonicalOrder(grammar(base, {
       '(',
       choice(
         alias($._literal_string, $.literal),
+        alias($._integer, $.literal),
         seq($.parameter, repeat(seq('.', $.identifier))),
         $.bind_variable,
       ),

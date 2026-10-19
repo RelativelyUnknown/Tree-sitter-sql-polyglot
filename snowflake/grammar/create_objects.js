@@ -78,6 +78,7 @@ export default {
     optional($.column_definitions),
     repeat(choice(
       $._clone_with_grants,
+      $.backup_set_clause,
       $.cluster_by_clause,
       $.tag_clause,
       $.row_access_policy_clause,

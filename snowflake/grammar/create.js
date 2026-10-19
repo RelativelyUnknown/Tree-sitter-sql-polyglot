@@ -66,6 +66,12 @@ export default {
     ),
   ),
 
+  // FROM BACKUP SET <backup_set> IDENTIFIER '<backup_id>'
+  backup_set_clause: $ => seq(
+    $.keyword_from, $.keyword_backup, $.keyword_set, $.object_reference,
+    $.keyword_identifier, alias($._literal_string, $.literal),
+  ),
+
   // CLONE source_object [AT / BEFORE time_travel]
   clone_clause: $ => seq(
     $.keyword_clone,
