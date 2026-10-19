@@ -28,7 +28,16 @@ export default {
     field('body', $._expression),
   )),
 
-  lambda_parameter: $ => seq(field('name', $.identifier), $._type),
+  lambda_parameter: $ => seq(field('name', $.identifier), $._lambda_type),
+
+  // Built-in types only: a custom type name would start like a select-list alias and make
+  // `SELECT a b` ambiguous with a parameter.
+  _lambda_type: $ => choice(
+    $.keyword_boolean,
+    $.smallint, $.int, $.bigint, $.decimal, $.numeric, $.double, $.float,
+    $.char, $.varchar,
+    $.keyword_date, $.time, $.timestamp,
+  ),
 
   // INTERVAL '5' YEAR(2) [TO MONTH]   with optional leading / fractional precision
   interval: $ => prec.right(seq(
