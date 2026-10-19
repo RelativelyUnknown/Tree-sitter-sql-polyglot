@@ -29,13 +29,12 @@ export default {
         $.keyword_date,
         $.time,
         $.timestamp,
-        // INTERVAL [<field> [(p)] TO <field> [(p)]]
+        // INTERVAL [<field> [(p)] [TO <field> [(p)]]]
         prec.right(1, seq(
           $.keyword_interval,
           optional(seq(
             $.identifier, optional($._interval_precision),
-            $.keyword_to,
-            $.identifier, optional($._interval_precision),
+            optional(seq($.keyword_to, $.identifier, optional($._interval_precision))),
           )),
         )),
 
