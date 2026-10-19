@@ -272,11 +272,19 @@ export default canonicalOrder(grammar(base, {
         $.keyword_comment,
       )),
       '=',
-      field('value', choice($.literal, $.identifier, $.list, $.integration_option_group)),
+      field('value', choice($.literal, $.identifier, $.integration_option_group)),
     ),
 
-    // REST_AUTHENTICATION = (TYPE = BEARER BEARER_TOKEN = 'tok'): a parenthesised group of options
-    integration_option_group: $ => seq('(', repeat1($.integration_option), ')'),
+    // REST_AUTHENTICATION = (TYPE = BEARER BEARER_TOKEN = 'tok'): a parenthesised group of options,
+    // or a plain list of values: ALLOWED_LOCATIONS = ('s3://a/', 's3://b/')
+    integration_option_group: $ => seq(
+      '(',
+      optional(choice(
+        repeat1($.integration_option),
+        comma_list(choice($.literal, $.identifier), true),
+      )),
+      ')',
+    ),
 
     keyword_storage:      _ => token(prec(1, make_keyword("storage"))),
     keyword_api:          _ => token(prec(1, make_keyword("api"))),
