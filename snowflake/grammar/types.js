@@ -30,7 +30,7 @@ export default {
         $.time,
         $.timestamp,
         // INTERVAL [<field> [(p)] TO <field> [(p)]]
-        prec.right(seq(
+        prec.right(1, seq(
           $.keyword_interval,
           optional(seq(
             $.identifier, optional($._interval_precision),

@@ -20,6 +20,23 @@ export default {
     '}',
   ),
 
+  // Window frame bounds: base bounds plus INTERVAL '1 day' PRECEDING | FOLLOWING (RANGE frames)
+  frame_definition: $ => seq(
+    choice(
+      seq($.keyword_unbounded, $.keyword_preceding),
+      seq(
+        field('start', choice($.identifier, $.binary_expression, alias($._literal_string, $.literal), alias($._integer, $.literal), $.interval)),
+        $.keyword_preceding,
+      ),
+      $._current_row,
+      seq(
+        field('end', choice($.identifier, $.binary_expression, alias($._literal_string, $.literal), alias($._integer, $.literal), $.interval)),
+        $.keyword_following,
+      ),
+      seq($.keyword_unbounded, $.keyword_following),
+    ),
+  ),
+
   // -INTERVAL '1 month': base operands plus an interval
   _signed_operand: $ => prec.left('unary_other', seq(
     field('operator', choice('-', '+')),
