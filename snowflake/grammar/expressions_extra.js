@@ -20,6 +20,20 @@ export default {
     '}',
   ),
 
+  // -INTERVAL '1 month': base operands plus an interval
+  _signed_operand: $ => prec.left('unary_other', seq(
+    field('operator', choice('-', '+')),
+    field('operand', choice(
+      alias($._qualified_field, $.field),
+      $.invocation,
+      $.parenthesized_expression,
+      $.cast,
+      $.case,
+      $.window_function,
+      $.interval,
+    )),
+  )),
+
   // a INT -> a * 2   and   (acc INT, val INT) -> acc + val
   // Untyped lambdas (a -> a * 2) parse as ordinary binary expressions.
   lambda_expression: $ => prec.right(seq(

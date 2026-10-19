@@ -29,7 +29,15 @@ export default {
         $.keyword_date,
         $.time,
         $.timestamp,
-        $.keyword_interval,
+        // INTERVAL [<field> [(p)] TO <field> [(p)]]
+        prec.right(seq(
+          $.keyword_interval,
+          optional(seq(
+            $.identifier, optional($._interval_precision),
+            $.keyword_to,
+            $.identifier, optional($._interval_precision),
+          )),
+        )),
 
         $.keyword_json,
         $.keyword_xml,
@@ -44,6 +52,14 @@ export default {
       ),
       optional($.array_size_definition),
     ),
+  ),
+
+  // TIMESTAMP WITH [LOCAL] TIME ZONE | WITHOUT TIME ZONE
+  _include_time_zone: $ => seq(
+    choice($.keyword_with, $.keyword_without),
+    optional($.keyword_local),
+    $.keyword_time,
+    $.keyword_zone,
   ),
 
   // Arguments of a parameterised type: NUMBER(10, 2), ARRAY(INT NOT NULL), OBJECT(city VARCHAR, zip NUMBER),

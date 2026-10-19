@@ -517,6 +517,8 @@ export default canonicalOrder(grammar(base, {
           $.invocation,
           $.object_reference,
           wrapped_in_parenthesis($.values),
+          // Snowflake: FROM VALUES (1), (2) without the outer parentheses
+          $.values,
           $.semantic_view_clause,
           // Snowflake: @stage as a FROM source, optionally with (FILE_FORMAT => ..., PATTERN => ...)
           seq($.stage_ref, optional(paren_list($.named_argument, true))),
@@ -585,13 +587,19 @@ export default canonicalOrder(grammar(base, {
         $.object_reference,
         choice(
           // Snowflake named arguments
-          paren_list(
-            seq(
-              field('name', $.identifier),
-              '=>',
-              field('value', $._expression),
+          // (positional arguments may precede the named ones: FLATTEN(v, RECURSIVE => TRUE))
+          seq(
+            '(',
+            repeat(seq(field('parameter', $.term), ',')),
+            comma_list(
+              seq(
+                field('name', choice($.identifier, alias($.keyword_recursive, $.identifier))),
+                '=>',
+                field('value', $._expression),
+              ),
+              true,
             ),
-            true,
+            ')',
           ),
           // default invocation
           paren_list(
@@ -604,7 +612,7 @@ export default canonicalOrder(grammar(base, {
           // EXTRACT(unit FROM term)
           paren_list(
             seq(
-              field('unit', $.object_reference),
+              field('unit', choice($.object_reference, alias($._literal_string, $.literal))),
               $.keyword_from,
               $.term,
             ),
@@ -784,6 +792,7 @@ export default canonicalOrder(grammar(base, {
     keyword_top: _ => token(prec(1, make_keyword("top"))),
     keyword_sample: _ => token(prec(1, make_keyword("sample"))),
     keyword_block: _ => token(prec(1, make_keyword("block"))),
+    keyword_repeatable: _ => token(prec(1, make_keyword("repeatable"))),
     keyword_seed: _ => token(prec(1, make_keyword("seed"))),
     keyword_append_only: _ => token(prec(1, make_keyword("append_only"))),
     keyword_changes: _ => token(prec(1, make_keyword("changes"))),
