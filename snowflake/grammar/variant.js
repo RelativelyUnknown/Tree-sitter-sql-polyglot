@@ -18,6 +18,7 @@ export default {
     repeat(choice(
       seq('.', $.identifier),
       seq('[', $._expression, ']'),
+      seq(':', $.identifier),
     )),
   )),
 

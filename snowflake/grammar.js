@@ -570,6 +570,7 @@ export default canonicalOrder(grammar(base, {
       $.parenthesized_expression,
       // Snowflake-specific
       $.variant_access,
+      $.lambda_expression,
     )),
 
     // base invocation plus Snowflake named arguments: fn(name => value, …)
@@ -666,6 +667,7 @@ export default canonicalOrder(grammar(base, {
     keyword_keys:              _ => token(prec(1, make_keyword("keys"))),
     keyword_lifecycle:         _ => token(prec(1, make_keyword("lifecycle"))),
     keyword_contact:           _ => token(prec(1, make_keyword("contact"))),
+    keyword_try_cast: _ => token(prec(1, make_keyword("try_cast"))),
     keyword_failover: _ => token(prec(1, make_keyword("failover"))),
     keyword_edition: _ => token(prec(1, make_keyword("edition"))),
     keyword_feature: _ => token(prec(1, make_keyword("feature"))),

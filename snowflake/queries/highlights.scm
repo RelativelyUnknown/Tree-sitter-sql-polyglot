@@ -151,6 +151,7 @@
   (keyword_swap)
   (keyword_purge)
   (keyword_failover)
+  (keyword_try_cast)
   (keyword_edition)
   (keyword_feature)
   (keyword_tasks)
