@@ -152,6 +152,7 @@
   (keyword_purge)
   (keyword_failover)
   (keyword_try_cast)
+  (keyword_connect_by_root)
   (keyword_edition)
   (keyword_feature)
   (keyword_tasks)
