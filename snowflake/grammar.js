@@ -534,6 +534,7 @@ export default canonicalOrder(grammar(base, {
           $.invocation,
           $.object_reference,
           wrapped_in_parenthesis($.values),
+          $.joined_relation,
           $.semantic_view_clause,
           // Snowflake: @stage as a FROM source, optionally with (FILE_FORMAT => ..., PATTERN => ...)
           seq($.stage_ref, optional(paren_list($.named_argument, true))),
@@ -593,6 +594,7 @@ export default canonicalOrder(grammar(base, {
       $.lambda_expression,
       $.connect_by_root,
       $.outer_join_marker,
+      $.date_function,
     )),
 
     // base invocation plus Snowflake named arguments: fn(name => value, …)
@@ -802,6 +804,7 @@ export default canonicalOrder(grammar(base, {
     keyword_top: _ => token(prec(1, make_keyword("top"))),
     keyword_sample: _ => token(prec(1, make_keyword("sample"))),
     keyword_block: _ => token(prec(1, make_keyword("block"))),
+    keyword_fields: _ => token(prec(1, make_keyword("fields"))),
     keyword_repeatable: _ => token(prec(1, make_keyword("repeatable"))),
     keyword_seed: _ => token(prec(1, make_keyword("seed"))),
     keyword_append_only: _ => token(prec(1, make_keyword("append_only"))),

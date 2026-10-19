@@ -120,6 +120,9 @@ export default {
     )),
   ),
 
+  // ( u RIGHT OUTER JOIN v ON ... ): a parenthesised join used as one side of an outer join
+  joined_relation: $ => seq('(', $.relation, repeat1(choice($.join, $.cross_join)), ')'),
+
   cross_join: $ => prec.right(seq(
     $.keyword_cross,
     optional($.keyword_directed),

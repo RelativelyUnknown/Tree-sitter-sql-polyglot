@@ -43,6 +43,8 @@ export default {
         seq($.keyword_string, optional(paren_list(alias($._integer, $.literal), true))),
 
         $.enum,
+        // ARRAY(INT), ARRAY(OBJECT(...)): structured array
+        seq($.keyword_array, optional(paren_list($.type_argument, true))),
 
         seq(
           field('custom_type', $.object_reference),

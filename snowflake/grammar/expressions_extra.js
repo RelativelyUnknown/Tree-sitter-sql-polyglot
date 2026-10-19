@@ -88,9 +88,13 @@ export default {
         field('parameter', $._expression),
         $.keyword_as,
         $._type,
+        optional(seq(choice($.keyword_rename, $.keyword_add), $.keyword_fields)),
       ),
     ),
   ),
+
+  // DATE('05/10/2024', 'MM/DD/YYYY'): the DATE function; DATE is a keyword elsewhere
+  date_function: $ => seq(field('name', $.keyword_date), paren_list($._expression, true)),
 
   // ** [1, 2]: expands an array into function arguments or an IN list
   spread_expression: $ => prec.right(seq('**', $._expression)),
@@ -111,6 +115,7 @@ export default {
   // fn(...) [IGNORE | RESPECT NULLS] OVER (...)
   window_function: $ => seq(
     $.invocation,
+    optional(seq($.keyword_from, choice($.keyword_first, $.keyword_last))),
     optional(seq(choice($.keyword_ignore, $.keyword_respect), $.keyword_nulls)),
     $.keyword_over,
     choice(
