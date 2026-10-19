@@ -45,11 +45,14 @@ export default {
   call_statement: $ => seq(
     $.keyword_call,
     field('procedure', $.object_reference),
-    paren_list(choice($.named_argument, $._expression, $.call_subquery_argument), false),
+    choice(
+      paren_list(choice($.named_argument, $._expression), false),
+      seq('(', $.call_subquery_argument, ')'),
+    ),
     optional(seq($.keyword_into, $.bind_variable)),
   ),
 
-  // CALL p(SELECT ...): a query without its own parentheses as the argument.
+  // CALL p(SELECT ...): a query without its own parentheses as the only argument.
   call_subquery_argument: $ => seq($.select, optional($.from)),
 
   // WITH name AS PROCEDURE (...) RETURNS ... [AS <body>] [, <cte> ...] CALL name(...) [INTO :var]
