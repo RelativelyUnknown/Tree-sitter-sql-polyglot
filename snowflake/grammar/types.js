@@ -44,7 +44,7 @@ export default {
 
         $.enum,
         // ARRAY(INT), ARRAY(OBJECT(...)): structured array
-        seq($.keyword_array, optional(paren_list($.type_argument, true))),
+        seq($.keyword_array, paren_list($.type_argument, true)),
 
         seq(
           field('custom_type', $.object_reference),
