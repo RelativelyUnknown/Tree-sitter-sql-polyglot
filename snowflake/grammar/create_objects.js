@@ -251,7 +251,7 @@ export default {
         choice($.keyword_notify, $.keyword_suspend, $.keyword_suspend_immediate),
       ))),
       $._comment_property,
-      $.snowflake_property,
+      seq(optional($.keyword_with), $.snowflake_property),
     )),
   ),
 

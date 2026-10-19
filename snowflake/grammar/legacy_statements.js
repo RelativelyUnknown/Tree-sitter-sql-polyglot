@@ -189,6 +189,7 @@ const create_rules = {
 
   create_index: $ => seq(
     $.keyword_create,
+    optional($._or_replace),
     optional($.keyword_unique),
     $.keyword_index,
     optional(
@@ -517,7 +518,7 @@ const drop_rules = {
     $.keyword_index,
     optional($.keyword_concurrently),
     optional($._if_exists),
-    field('name', $.identifier),
+    field('name', $.object_reference),
     optional($._drop_behavior),
     optional(
       seq(

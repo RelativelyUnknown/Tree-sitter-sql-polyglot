@@ -22,41 +22,4 @@ export default {
     ),
   ),
 
-  // ALTER DATABASE name { SET <props> | UNSET <names> | <inherited> }
-  alter_database: $ => seq(
-    $.keyword_alter,
-    $.keyword_database,
-    optional($._if_exists),
-    $.identifier,
-    choice(
-      $.rename_object,
-      $.change_ownership,
-      seq($.keyword_set, comma_list($.snowflake_property, true)),
-      seq($.keyword_unset, comma_list($.identifier, true)),
-      seq(
-        $.keyword_swap,
-        $.keyword_with,
-        field('target', $.object_reference),
-      ),
-    ),
-  ),
-
-  // ALTER SCHEMA name { SET <props> | UNSET <names> | RENAME TO | SWAP WITH }
-  alter_schema: $ => seq(
-    $.keyword_alter,
-    $.keyword_schema,
-    optional($._if_exists),
-    $.identifier,
-    choice(
-      seq(choice($.keyword_rename, $.keyword_owner), $.keyword_to, $.identifier),
-      seq($.keyword_set, comma_list($.snowflake_property, true)),
-      seq($.keyword_unset, comma_list($.identifier, true)),
-      seq(
-        $.keyword_swap,
-        $.keyword_with,
-        field('target', $.object_reference),
-      ),
-    ),
-  ),
-
 };

@@ -43,13 +43,15 @@ export default {
     optional($._if_exists),
     $._snowflake_object_name,
     optional($._drop_behavior),
+    optional($.keyword_purge),
   ),
 
-  // UNDROP <object> name | IDENTIFIER(<id>)
+  // UNDROP <object> name [RENAME TO new_name]
   undrop_statement: $ => seq(
     $.keyword_undrop,
     choice($._snowflake_object_kind, $.keyword_table, $.keyword_type),
-    choice($.object_reference, seq($.keyword_identifier, '(', $._expression, ')')),
+    $.object_reference,
+    optional(seq($.keyword_rename, $.keyword_to, $.identifier)),
   ),
 
   // DESCRIBE | DESC <object> name [TYPE = COLUMNS | STAGE]
@@ -95,6 +97,7 @@ export default {
         )),
         optional(seq($.keyword_with, $.keyword_privileges, comma_list($.identifier, true))),
         optional(seq($.keyword_with, $.keyword_primary, $.object_reference)),
+        optional(seq($.keyword_on, choice($.keyword_account, seq($.keyword_user, $.object_reference)))),
       ),
     ),
   ),

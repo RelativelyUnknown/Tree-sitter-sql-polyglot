@@ -35,6 +35,7 @@ export default {
     $.keyword_boolean,
     '->',
     $._expression,
+    optional(seq($.keyword_comment, '=', alias($._literal_string, $.literal))),
   ),
 
   // param_name TYPE  (used in MASKING POLICY / ROW ACCESS POLICY signatures)

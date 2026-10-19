@@ -52,10 +52,13 @@ export default {
     '(',
     optional(choice(
       repeat1(seq($.copy_kv, optional(','))),
-      comma_list($._copy_value),
+      comma_list(choice($._copy_value, $.copy_aliased_value)),
     )),
     ')',
   ),
+
+  // 'value' AS 'alias', as in IMPORTS = ('@stage/file.zip' AS 'f')
+  copy_aliased_value: $ => seq($.literal, $.keyword_as, $.literal),
 
   // KEY is an identifier, or a quoted string for lists such as SECRETS = ('cred' = s1) and HEADERS = ('h' = 'v')
   copy_kv: $ => seq(choice($.identifier, $.literal), '=', $._copy_value),

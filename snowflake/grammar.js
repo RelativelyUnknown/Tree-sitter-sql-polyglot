@@ -917,6 +917,7 @@ export default canonicalOrder(grammar(base, {
     keyword_files:          _ => token(prec(1, make_keyword("files"))),
     keyword_unset:          _ => token(prec(1, make_keyword("unset"))),
     keyword_swap:           _ => token(prec(1, make_keyword("swap"))),
+    keyword_purge:          _ => token(prec(1, make_keyword("purge"))),
 
     // ── Spread all Snowflake rule modules ───────────────────────────────────
     ...qualify_rules,
@@ -949,6 +950,36 @@ export default canonicalOrder(grammar(base, {
     // Snowflake identifiers may contain `$` after the first character (SYSTEM$TYPEOF, METADATA$FILENAME).
     _identifier: _ => /[A-Za-z_\u00C0-\u017F][0-9A-Za-z_$\u00C0-\u017F]*/,
     _literal_string: $ => prec(1, choice($._single_quote_string, $._dollar_quoted_string)),
+
+    // Single-quoted strings take backslash escapes ('it\'s') as well as doubled quotes.
+    _single_quote_string: _ => seq(
+      /([uU]&|[nN])?'([^'\\]|''|\\[\s\S])*'/,
+      repeat(/'([^'\\]|''|\\[\s\S])*'/),
+    ),
+    // Double-quoted identifiers take doubled quotes ("a""b").
+    _double_quote_string: _ => /"([^"]|"")*"/,
+    // Exponent markers are case-insensitive: 1.234E2, 15e-03.
+    _integer: _ => seq(
+      optional(choice('-', '+')),
+      /(0[xX][0-9A-Fa-f]+(_[0-9A-Fa-f]+)*)|(0[oO][0-7]+(_[0-7]+)*)|(0[bB][01]+(_[01]+)*)|(\d+(_\d+)*([eE][+-]?\d+(_\d+)*)?)/,
+    ),
+    _decimal_number: _ => seq(
+      optional(choice('-', '+')),
+      /((\d+(_\d+)*)?[.]\d+(_\d+)*([eE][+-]?\d+(_\d+)*)?)|(\d+(_\d+)*[.](\d+(_\d+)*)?[eE][+-]?\d+(_\d+)*)/,
+    ),
+
+    // IDENTIFIER('db.s.t') / IDENTIFIER($var) / IDENTIFIER(:bind): a name resolved at run time.
+    identifier: $ => choice($._identifier, $._double_quote_string, $.identifier_function),
+    identifier_function: $ => seq(
+      $.keyword_identifier,
+      '(',
+      choice(
+        alias($._literal_string, $.literal),
+        seq($.parameter, repeat(seq('.', $.identifier))),
+        $.bind_variable,
+      ),
+      ')',
+    ),
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords

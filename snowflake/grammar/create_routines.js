@@ -96,10 +96,13 @@ export default {
 
   routine_arguments: $ => paren_list($.routine_argument, false),
 
-  // [IN | OUT | INPUT | OUTPUT] name type [DEFAULT expr]
+  _argument_mode: $ => choice($.keyword_in, $.keyword_out, $.keyword_inout, $.keyword_input, $.keyword_output),
+
+  // name [IN | OUT | INPUT | OUTPUT] type [DEFAULT expr]   (the mode may also lead the name)
   routine_argument: $ => seq(
-    optional(choice($.keyword_in, $.keyword_out, $.keyword_inout, $.keyword_input, $.keyword_output)),
+    optional($._argument_mode),
     $.identifier,
+    optional($._argument_mode),
     choice($._type, seq($.keyword_table, '(', comma_list($.column_definition, true), ')')),
     optional(seq($.keyword_default, $._expression)),
   ),
@@ -169,6 +172,8 @@ export default {
       $.tag_clause,
       seq($.keyword_as, $.keyword_replica, $.keyword_of, $.object_reference),
       seq($.keyword_from, $.keyword_listing, alias($._literal_string, $.literal)),
+      seq($.keyword_from, $.keyword_share, $.object_reference),
+      $.contact_clause,
       seq($.keyword_from, $.keyword_backup, $.keyword_set, $.object_reference, $.keyword_identifier, alias($._literal_string, $.literal)),
       $.snowflake_property,
     )),

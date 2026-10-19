@@ -149,6 +149,7 @@
   (keyword_streams)
   (keyword_suspend)
   (keyword_swap)
+  (keyword_purge)
   (keyword_tasks)
   (keyword_terse)
   (keyword_transactions)
