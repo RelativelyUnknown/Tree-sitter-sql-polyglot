@@ -408,11 +408,20 @@ export default canonicalOrder(grammar(base, {
       prec.right(seq($.keyword_unset, comma_list($.identifier, true))),
     ),
 
+    from_values: $ => seq(
+      $.values,
+      optional(seq($._alias, optional(alias($._column_list, $.list)))),
+    ),
+
     // ── SELECT / FROM: add QUALIFY after HAVING ─────────────────────────────
     from: $ => seq(
       $.keyword_from,
       optional($.keyword_only),
-      comma_list($.relation, true),
+      choice(
+        comma_list($.relation, true),
+        // FROM VALUES (1), (2) without the outer parentheses (a lone source, so its commas are the list's)
+        $.from_values,
+      ),
       optional($.index_hint),
       repeat(choice(
         $.join,
@@ -517,8 +526,6 @@ export default canonicalOrder(grammar(base, {
           $.invocation,
           $.object_reference,
           wrapped_in_parenthesis($.values),
-          // Snowflake: FROM VALUES (1), (2) without the outer parentheses
-          $.values,
           $.semantic_view_clause,
           // Snowflake: @stage as a FROM source, optionally with (FILE_FORMAT => ..., PATTERN => ...)
           seq($.stage_ref, optional(paren_list($.named_argument, true))),
