@@ -219,7 +219,7 @@ export default {
     $.keyword_connect,
     $.keyword_by,
     optional($.keyword_nocycle),
-    $._expression,
+    comma_list($._expression, true),
   ),
 
   // [OFFSET n [ROW | ROWS]] [FETCH [FIRST | NEXT] n [ROW | ROWS] [ONLY]]

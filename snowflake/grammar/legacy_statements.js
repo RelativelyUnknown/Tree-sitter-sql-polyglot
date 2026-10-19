@@ -79,7 +79,7 @@ const create_rules = {
     ),
   ),
 
-  create_query: $ => $._dml_read,
+  create_query: $ => choice($._dml_read, wrapped_in_parenthesis($._dml_read)),
 
   create_view: $ => prec.right(
     seq(

@@ -5,7 +5,8 @@ import { comma_list, paren_list, wrapped_in_parenthesis } from '../../grammar/he
 export default {
 
   // :name bind variable (scripting variables inside SQL statements)
-  bind_variable: $ => prec(2, seq(':', $.identifier)),
+  // :name or :1 (numbered binding)
+  bind_variable: $ => prec(2, seq(':', choice($.identifier, alias($._integer, $.literal)))),
 
   compound_statement: $ => seq(
     optional($.declare_section),

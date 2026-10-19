@@ -55,6 +55,13 @@ export default {
   // CALL p(SELECT ...): a query without its own parentheses as the only argument.
   call_subquery_argument: $ => seq($.select, optional($.from)),
 
+  // name => value; RECURSIVE is a keyword elsewhere but a plain argument name here (FLATTEN(..., RECURSIVE => TRUE))
+  named_argument: $ => seq(
+    field('name', choice($.identifier, alias($.keyword_recursive, $.identifier))),
+    '=>',
+    field('value', $._expression),
+  ),
+
   // WITH name AS PROCEDURE (...) RETURNS ... [AS <body>] [, <cte> ...] CALL name(...) [INTO :var]
   call_with_anonymous_procedure: $ => seq(
     $.keyword_with,

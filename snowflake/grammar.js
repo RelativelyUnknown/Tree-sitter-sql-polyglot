@@ -571,6 +571,8 @@ export default canonicalOrder(grammar(base, {
       // Snowflake-specific
       $.variant_access,
       $.lambda_expression,
+      $.connect_by_root,
+      $.outer_join_marker,
     )),
 
     // base invocation plus Snowflake named arguments: fn(name => value, …)
