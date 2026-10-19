@@ -272,8 +272,11 @@ export default canonicalOrder(grammar(base, {
         $.keyword_comment,
       )),
       '=',
-      field('value', choice($.literal, $.identifier, $.list)),
+      field('value', choice($.literal, $.identifier, $.list, $.integration_option_group)),
     ),
+
+    // REST_AUTHENTICATION = (TYPE = BEARER BEARER_TOKEN = 'tok'): a parenthesised group of options
+    integration_option_group: $ => seq('(', repeat1($.integration_option), ')'),
 
     keyword_storage:      _ => token(prec(1, make_keyword("storage"))),
     keyword_api:          _ => token(prec(1, make_keyword("api"))),

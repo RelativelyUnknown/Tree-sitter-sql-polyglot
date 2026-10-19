@@ -1,4 +1,4 @@
-import { paren_list, comma_list } from '../../grammar/helpers.js';
+import { paren_list, comma_list, wrapped_in_parenthesis } from '../../grammar/helpers.js';
 
 export default {
 
@@ -115,9 +115,10 @@ export default {
     ),
   ),
 
-  // CREATE [OR REPLACE] EXTERNAL TABLE [IF NOT EXISTS] name (columns)
-  //   [WITH] LOCATION = @stage [FILE_FORMAT = (props)] [PATTERN = 'regex']
-  //   [PARTITION BY (cols)]
+  // CREATE [OR REPLACE] EXTERNAL TABLE [IF NOT EXISTS] name [(columns)] [USING TEMPLATE (query)]
+  //   [INTEGRATION = '...'] [WITH] LOCATION = @stage [FILE_FORMAT = (props)] [PATTERN = 'regex']
+  //   [PARTITION BY (cols)] [COPY GRANTS] [COMMENT = '...'] [ROW ACCESS POLICY ...] [TAG (...)]
+  //   plus the plain NAME = value properties (AUTO_REFRESH, PARTITION_TYPE, TABLE_FORMAT, AWS_SNS_TOPIC, ...)
   create_external_table: $ => prec.left(seq(
     $.keyword_create,
     optional($._or_replace_or_alter),
@@ -128,6 +129,8 @@ export default {
     optional(paren_list($.external_table_column, true)),
     repeat(
       choice(
+        seq($.keyword_using, $.keyword_template, wrapped_in_parenthesis($.create_query)),
+        seq($.keyword_integration, '=', alias($._literal_string, $.literal)),
         seq(optional($.keyword_with), $.keyword_location, '=', $.stage_ref),
         seq(
           $.keyword_file_format,
@@ -136,6 +139,11 @@ export default {
         ),
         seq($.keyword_pattern, '=', alias($._literal_string, $.literal)),
         seq($.keyword_partition, $.keyword_by, paren_list($.identifier, true)),
+        seq($.keyword_copy, $.keyword_grants),
+        seq($.keyword_comment, '=', alias($._literal_string, $.literal)),
+        $.row_access_policy_clause,
+        $.tag_clause,
+        $.snowflake_property,
       ),
     ),
   )),
@@ -144,12 +152,7 @@ export default {
   external_table_column: $ => seq(
     field('name', $.identifier),
     field('type', $._type),
-    optional(
-      seq(
-        $.keyword_as,
-        seq('(', $._expression, ')'),
-      ),
-    ),
+    optional(seq($.keyword_as, $._expression)),
   ),
 
 };
