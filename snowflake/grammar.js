@@ -59,6 +59,8 @@ export default canonicalOrder(grammar(base, {
     [$.list, $.cube_element],
     // Snowflake-specific conflicts
     [$._function_return, $.return_statement],
+    // ARRAY(x INT): x is an argument name or the start of a custom type name.
+    [$.object_reference, $.type_argument],
     // `*` starts both a plain all_fields and a transformed one.
     [$.all_fields_transform, $.all_fields],
     // Consecutive INTO clauses in a multi-table INSERT.
