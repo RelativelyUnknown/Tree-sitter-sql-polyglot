@@ -631,22 +631,20 @@ export default canonicalOrder(grammar(base, {
       seq(
         $.object_reference,
         choice(
-          // Snowflake named arguments
-          // Snowflake named arguments (RECURSIVE is a keyword elsewhere but a plain name here)
+          // default invocation; each argument is positional or named (name => value), and they may be mixed:
+          // FLATTEN(v, RECURSIVE => TRUE). RECURSIVE is a keyword elsewhere but a plain name here.
           paren_list(
-            seq(
-              field('name', choice($.identifier, alias($.keyword_recursive, $.identifier))),
-              '=>',
-              field('value', $._expression),
-            ),
-            true,
-          ),
-          // default invocation
-          paren_list(
-            seq(
-              optional($.keyword_distinct),
-              field('parameter', $.term),
-              optional($.order_by),
+            choice(
+              seq(
+                optional($.keyword_distinct),
+                field('parameter', $.term),
+                optional($.order_by),
+              ),
+              seq(
+                field('name', choice($.identifier, alias($.keyword_recursive, $.identifier))),
+                '=>',
+                field('value', $._expression),
+              ),
             ),
           ),
           // EXTRACT(unit FROM term)
