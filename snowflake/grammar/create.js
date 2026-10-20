@@ -73,7 +73,7 @@ export default {
   ),
 
   // CLONE source_object [AT / BEFORE time_travel]
-  clone_clause: $ => seq(
+  clone_clause: $ => prec.right(seq(
     $.keyword_clone,
     $.object_reference,
     optional($.time_travel_clause),
@@ -82,7 +82,7 @@ export default {
       seq($.keyword_ignore, $.keyword_hybrid, $.keyword_tables),
       seq($.keyword_include, $.keyword_internal, $.keyword_stages),
     )),
-  ),
+  )),
 
   // CREATE [OR REPLACE] WAREHOUSE [IF NOT EXISTS] name [properties]
   create_warehouse_statement: $ => seq(
