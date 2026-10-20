@@ -39,7 +39,7 @@ const PLURAL = [
   'users', 'variables', 'views', 'warehouses', 'workspaces', 'imported keys', 'unique keys',
   'accounts', 'agents', 'aggregation policies', 'application packages', 'application roles', 'application services',
   'artifact repositories', 'authentication policies', 'available listings', 'available offers',
-  'available organization profiles', 'backup policies', 'backup sets', 'backups', 'caller grants', 'channels', 'classes',
+  'available organization profiles', 'backup policies', 'backup sets', 'backups', 'channels', 'classes',
   'code bundles', 'compute pool instance families', 'configurations', 'contacts', 'cortex base models',
   'data metric functions', 'data movement policies', 'data movement rules', 'database roles', 'datasets',
   'delegated authorizations', 'endpoints', 'entities', 'event routing table', 'event routing tables', 'experiments',
