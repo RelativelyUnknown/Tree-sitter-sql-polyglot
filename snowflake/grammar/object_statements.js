@@ -198,11 +198,11 @@ export default {
   ),
 
   _show_scope: $ => choice(
-    seq($.keyword_account, optional($.object_reference)),
+    prec.right(seq($.keyword_account, optional($.object_reference))),
     $.keyword_session,
-    seq($.keyword_database, optional($.object_reference)),
-    seq($.keyword_schema, optional($.object_reference)),
-    seq($.keyword_table, optional($.object_reference)),
+    prec.right(seq($.keyword_database, optional($.object_reference))),
+    prec.right(seq($.keyword_schema, optional($.object_reference))),
+    prec.right(seq($.keyword_table, optional($.object_reference))),
     seq($.keyword_application, optional($.keyword_package), $.object_reference),
     seq($.keyword_dcm, $.keyword_project, $.object_reference),
     seq($.keyword_event, $.keyword_routing, $.keyword_table, choice($.object_reference, wrapped_in_parenthesis($.object_reference))),
