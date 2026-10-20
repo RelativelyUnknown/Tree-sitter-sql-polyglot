@@ -84,7 +84,7 @@ export default {
       seq($.keyword_backup, $.keyword_policy, $.object_reference),
       seq($.keyword_snapshot, $.keyword_policy, $.object_reference),
       seq($.keyword_managed, $.keyword_access),
-      seq($.keyword_rules, repeat1(seq($.identifier, '=', $.copy_list))),
+      seq($.keyword_rules, $.identifier, '=', $.copy_list),
     )),
     seq($.keyword_ignore, $.keyword_edition, $.keyword_check),
     seq($.keyword_language, $.identifier),
