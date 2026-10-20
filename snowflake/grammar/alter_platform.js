@@ -62,7 +62,10 @@ export default {
     seq($.keyword_drop, $.keyword_deployment, $.identifier),
     seq(choice($.keyword_enable, $.keyword_disable), $.keyword_failover, optional(seq($.keyword_to, $.keyword_accounts, comma_list($.object_reference, true)))),
     // versioned objects (models, listings, datasets, profiles, connectors, external agents)
-    seq($.keyword_add, $.keyword_version, optional($._if_not_exists), optional($._version_name), optional(seq($.keyword_from, $._version_source)), repeat($._version_clause)),
+    seq($.keyword_add, $.keyword_version, optional($._if_not_exists), choice(
+      seq($._version_name, optional(seq($.keyword_from, $._version_source)), repeat($._version_clause)),
+      seq($.keyword_from, $._version_source, repeat($._version_clause)),
+    )),
     seq($.keyword_drop, $.keyword_version, optional($._if_exists), $._version_name),
     seq($.keyword_modify, $.keyword_version, $._version_name, $.keyword_set, $._set_properties_body),
     seq($.keyword_version, $._version_name, $.keyword_set, $._set_properties_body),
