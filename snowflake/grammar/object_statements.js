@@ -181,7 +181,7 @@ export default {
     seq(field('name', $.identifier), '=', choice($.keyword_true, $.keyword_false)),
   ),
 
-  _show_privilege: $ => seq($.identifier, optional(choice($.identifier, $.keyword_table))),
+  _show_privilege: $ => prec.right(seq($.identifier, optional(choice($.identifier, $.keyword_table)))),
 
   _show_on_target: $ => choice(
     $.keyword_account,
