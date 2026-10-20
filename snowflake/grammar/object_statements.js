@@ -19,12 +19,12 @@ const SINGULAR = [
   'openflow connector', 'openflow data plane integration', 'openflow deployment', 'openflow runtime',
   'organization profile', 'organization user', 'organization user group', 'packages policy', 'postgres instance',
   'privacy policy', 'projection policy', 'replication group', 'restricted session scope', 'rss', 'secret',
-  'service', 'snapshot policy', 'snapshot set', 'storage lifecycle policy', 'type',
+  'service', 'snapshot policy', 'snapshot set', 'storage lifecycle policy',
 ];
 
 // Kinds only DESCRIBE knows: DESCRIBE <kind> name [IN APPLICATION app] ...
 const DESCRIBE_ONLY = [
-  'available listing', 'available organization profile', 'configuration', 'specification',
+  'available listing', 'available organization profile', 'configuration', 'specification', 'type',
 ];
 
 const PLURAL = [
@@ -88,7 +88,7 @@ export default {
   // UNDROP <object> name [RENAME TO new_name]
   undrop_statement: $ => seq(
     $.keyword_undrop,
-    choice($._snowflake_object_kind, $.keyword_table),
+    choice($._snowflake_object_kind, $.keyword_table, $.keyword_type),
     $.object_reference,
     optional(seq($.keyword_rename, $.keyword_to, $.identifier)),
   ),

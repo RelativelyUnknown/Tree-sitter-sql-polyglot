@@ -10,6 +10,8 @@ import variant_rules     from './grammar/variant.js';
 import scripting_rules   from './grammar/scripting.js';
 import execute_rules     from './grammar/execute.js';
 import object_keyword_rules from './grammar/object_keywords.js';
+import create_platform_rules from './grammar/create_platform.js';
+import alter_platform_rules from './grammar/alter_platform.js';
 import copy_rules        from './grammar/copy.js';
 import create_rules      from './grammar/create.js';
 import create_table_rules from './grammar/create_table.js';
@@ -246,6 +248,13 @@ export default canonicalOrder(grammar(base, {
         $.create_file_format_statement,
         $.create_external_table,
         $.create_integration,
+        $.create_platform_object,
+        $.create_dataset,
+        $.create_replication_group,
+        $.create_ai_function,
+        $.create_interactive_table,
+        $.create_type,
+        $.create_semantic_view,
       ),
     ),
 
@@ -335,6 +344,11 @@ export default canonicalOrder(grammar(base, {
         $.alter_iceberg_table,
         $.alter_integration,
         $.alter_account_object,
+        $.alter_platform_object,
+        $.alter_application,
+        $.alter_application_package,
+        $.alter_semantic_view,
+        $.alter_organization,
         $.alter_account,
         $.alter_table_cluster,
       ),
@@ -970,6 +984,8 @@ export default canonicalOrder(grammar(base, {
     ...scripting_rules,
     ...execute_rules,
     ...object_keyword_rules,
+    ...create_platform_rules,
+    ...alter_platform_rules,
     ...copy_rules,
     ...create_rules,
     ...create_table_rules,

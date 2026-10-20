@@ -243,16 +243,11 @@ export default {
     optional($._if_not_exists),
     $.object_reference,
     repeat(choice(
-      $.clone_clause,
-      $.tag_clause,
-      seq($.keyword_from, alias($._literal_string, $.literal)),
-      seq($.keyword_from, $.keyword_specification, alias($._literal_string, $.literal)),
-      seq($.keyword_triggers, repeat1(seq(
+      prec.right(seq($.keyword_triggers, repeat1(seq(
         $.keyword_on, alias($._natural_number, $.literal), $.keyword_percent, $.keyword_do,
         choice($.keyword_notify, $.keyword_suspend, $.keyword_suspend_immediate),
-      ))),
-      $._comment_property,
-      seq(optional($.keyword_with), $.snowflake_property),
+      )))),
+      $._platform_clause,
     )),
   ),
 
