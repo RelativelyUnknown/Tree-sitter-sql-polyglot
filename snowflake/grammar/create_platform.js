@@ -116,13 +116,13 @@ export default {
   ),
 
   // (arg TYPE, ...) RETURNS type -> expression
-  _policy_signature: $ => seq(
+  _policy_signature: $ => prec.right(seq(
     paren_list(seq($.identifier, $._type), false),
     $.keyword_returns,
     $._type,
     '->',
     $._expression,
-  ),
+  )),
 
   // CREATE {FAILOVER | REPLICATION} GROUP [IF NOT EXISTS] name
   //   { AS REPLICA OF src | OBJECT_TYPES = a, b ALLOWED_DATABASES = d1, d2 ... }
