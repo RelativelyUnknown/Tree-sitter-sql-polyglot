@@ -47,6 +47,8 @@ export default canonicalOrder(grammar(base, {
   conflicts: $ => [
     // Inherited base conflicts
     [$.object_reference, $._qualified_field],
+    // FROM FIRST | LAST after a window call vs the FROM clause of the enclosing SELECT.
+    [$._expression, $.window_function],
     [$.field, $._qualified_field],
     [$._column, $._qualified_field],
     [$.object_reference],
@@ -602,6 +604,8 @@ export default canonicalOrder(grammar(base, {
       $.invocation,
       $.binary_expression,
       $.subscript,
+      $.path_access,
+      $.parameterized_literal,
       $.unary_expression,
       $.array,
       $.interval,

@@ -113,7 +113,9 @@ export default {
   )),
 
   // fn(...) [IGNORE | RESPECT NULLS] OVER (...)
-  window_function: $ => seq(
+  // Same precedence as the plain invocation so that FROM FIRST | LAST is an explicit conflict (resolved by GLR:
+  // `SELECT f(x) FROM t` and `NTH_VALUE(x, 2) FROM LAST OVER (...)` both start with FROM after the call).
+  window_function: $ => prec(1, seq(
     $.invocation,
     optional(seq($.keyword_from, choice($.keyword_first, $.keyword_last))),
     optional(seq(choice($.keyword_ignore, $.keyword_respect), $.keyword_nulls)),
@@ -122,6 +124,22 @@ export default {
       $.identifier,
       $.window_specification,
     ),
+  )),
+
+  // PERIOD(DATE) '[2024-01-01, 2024-12-31)': a parameterised type name followed by a string literal
+  parameterized_literal: $ => seq(
+    field('type', $.object_reference),
+    '(',
+    choice($.keyword_date, $.time, $.timestamp),
+    ')',
+    alias($._literal_string, $.literal),
   ),
+
+  // v:a[0].b[1].c: a dotted field after an array subscript continues the semi-structured path
+  path_access: $ => prec.left('binary_is', seq(
+    field('expression', choice($.subscript, $.path_access)),
+    '.',
+    field('name', $.identifier),
+  )),
 
 };

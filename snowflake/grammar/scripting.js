@@ -4,9 +4,11 @@ import { comma_list, paren_list, wrapped_in_parenthesis } from '../../grammar/he
 //   [DECLARE <declarations>] BEGIN <statements> [EXCEPTION <handlers>] END
 export default {
 
-  // :name bind variable (scripting variables inside SQL statements)
-  // :name bind variable (scripting variables inside SQL statements)
-  bind_variable: $ => prec(2, seq(':', $.identifier)),
+  // :name bind variable (scripting variables inside SQL statements) or :1 (numbered binding).
+  // The numbered form is one token so that `[:2]` does not compete with a slice.
+  bind_variable: $ => prec(2, choice(seq(':', $.identifier), $.bind_position)),
+
+  bind_position: _ => token(/:[0-9]+/),
 
   compound_statement: $ => seq(
     optional($.declare_section),
