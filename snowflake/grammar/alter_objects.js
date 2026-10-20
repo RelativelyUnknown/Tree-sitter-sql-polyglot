@@ -135,9 +135,11 @@ export default {
   ),
 
   alter_user: $ => seq(
-    $.keyword_alter, $.keyword_user, optional($._if_exists), $.object_reference,
+    $.keyword_alter, $.keyword_user, optional($._if_exists), optional($.object_reference),
     choice(
       $.rename_object,
+      $._key_pair_action,
+      $._pat_action,
       seq($.keyword_abort, $.keyword_all, $.keyword_queries),
       seq($.keyword_reset, $.keyword_password),
       seq($.keyword_enroll, $.keyword_mfa),
@@ -175,7 +177,7 @@ export default {
 
   // UNSET name [, name ...]
   _unset_properties: $ => comma_list($._unset_name, true),
-  _unset_name: $ => $.identifier,
+  _unset_name: $ => choice($.identifier, $.keyword_warehouse),
 
   alter_routine: $ => seq(
     $.keyword_alter,

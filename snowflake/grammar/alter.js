@@ -9,7 +9,7 @@ export default {
     $.keyword_alter,
     $.keyword_session,
     choice(
-      seq($.keyword_set, comma_list($.session_parameter, true)),
+      seq($.keyword_set, $.session_parameter, repeat(seq(optional(','), $.session_parameter))),
       seq($.keyword_unset, comma_list($.identifier, true)),
     ),
   ),

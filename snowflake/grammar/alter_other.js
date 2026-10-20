@@ -78,13 +78,20 @@ export default {
     choice(
       $._alter_specifications,
       $._cluster_by,
+      seq($.keyword_convert, $.keyword_to, $.keyword_managed, repeat($.snowflake_property)),
+      seq($.keyword_drop, $.keyword_partition, $.keyword_by, paren_list($._expression, true)),
+      seq($.keyword_replace, $.keyword_partition, $.keyword_by, paren_list($._expression, true), $.keyword_with, paren_list($._expression, true)),
+      seq($.keyword_refresh, optional(alias($._literal_string, $.literal))),
     ),
   ),
 
   // ALTER [STORAGE | API | NOTIFICATION | SECURITY | CATALOG] INTEGRATION name { SET .. | UNSET .. }
   alter_integration: $ => seq(
     alterHead($, optional(choice($.keyword_storage, $.keyword_api, $.keyword_notification, $.keyword_security, $.keyword_catalog)), $.keyword_integration),
-    choice(...setUnset($)),
+    choice(
+      seq($.keyword_refresh, $.identifier),
+      ...setUnset($),
+    ),
   ),
 
   // Policies, monitors and other objects whose ALTER page offers rename, SET / UNSET and a few verbs.
@@ -131,6 +138,11 @@ export default {
       seq(choice($.keyword_enable, $.keyword_disable), choice($.keyword_replication, $.keyword_failover), optional(seq($.keyword_to, $.keyword_accounts, comma_list($.object_reference, true), optional(seq($.keyword_ignore, $.keyword_edition, $.keyword_check))))),
       $.keyword_primary,
       $.keyword_refresh,
+      seq(choice($.keyword_suspend, $.keyword_resume), $.keyword_discovery),
+      seq($.keyword_update, $.keyword_linked_catalog, choice(
+        seq(choice($.keyword_add, $.keyword_remove), paren_list(alias($._literal_string, $.literal), true), choice($.keyword_to, $.keyword_from), $.identifier),
+        seq($.keyword_set, $._set_properties_body),
+      )),
       seq($.keyword_set, choice($._set_contact, seq($.keyword_feature, $.keyword_policy, $.object_reference, optional($.keyword_force)), $._set_tag, $._set_properties)),
       seq($.keyword_unset, choice($._unset_tag, $._unset_properties)),
     ),

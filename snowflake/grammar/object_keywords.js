@@ -129,4 +129,7 @@ export default {
   keyword_token: _ => token(prec(1, make_keyword("token"))),
   keyword_upgrade: _ => token(prec(1, make_keyword("upgrade"))),
   keyword_visibility: _ => token(prec(1, make_keyword("visibility"))),
+  keyword_convert: _ => token(prec(1, make_keyword("convert"))),
+  keyword_discovery: _ => token(prec(1, make_keyword("discovery"))),
+  keyword_linked_catalog: _ => token(prec(1, make_keyword("linked_catalog"))),
 };
