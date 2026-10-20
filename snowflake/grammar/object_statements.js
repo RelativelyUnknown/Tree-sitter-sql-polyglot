@@ -134,7 +134,7 @@ export default {
           )),
           seq($.keyword_in, choice($.keyword_database, $.keyword_schema, seq($.keyword_dcm, $.keyword_project)), $.object_reference),
         )),
-        optional(seq($.keyword_limit, $._expression)),
+        optional(seq($.keyword_limit, alias($._integer, $.literal))),
       ),
       seq(
         choice($._snowflake_object_kind_plural, $.keyword_deployments),
@@ -171,7 +171,7 @@ export default {
     seq($.keyword_exclude, $.keyword_jobs),
     seq(
       $.keyword_limit,
-      field('limit', $._expression),
+      field('limit', alias($._integer, $.literal)),
       optional(seq($.keyword_from, alias($._literal_string, $.literal))),
     ),
     seq($.keyword_with, $.keyword_privileges, comma_list($._show_privilege, true)),
