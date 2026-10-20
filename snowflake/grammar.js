@@ -9,6 +9,7 @@ import snowflake_property_rules from './grammar/properties.js';
 import variant_rules     from './grammar/variant.js';
 import scripting_rules   from './grammar/scripting.js';
 import execute_rules     from './grammar/execute.js';
+import object_keyword_rules from './grammar/object_keywords.js';
 import copy_rules        from './grammar/copy.js';
 import create_rules      from './grammar/create.js';
 import create_table_rules from './grammar/create_table.js';
@@ -147,6 +148,12 @@ export default canonicalOrder(grammar(base, {
       $.execute_immediate_statement,
       $.execute_task,
       $.execute_dbt_project,
+      $.execute_alert,
+      $.execute_dcm_project,
+      $.execute_job_service,
+      $.execute_notebook,
+      $.execute_notebook_project,
+      $.execute_code_bundle,
       $.copy_into,
       $.use_statement,
       $.use_secondary_roles,
@@ -962,6 +969,7 @@ export default canonicalOrder(grammar(base, {
     ...variant_rules,
     ...scripting_rules,
     ...execute_rules,
+    ...object_keyword_rules,
     ...copy_rules,
     ...create_rules,
     ...create_table_rules,
