@@ -62,6 +62,9 @@ export default canonicalOrder(grammar(base, {
     // PERIOD(TIME) / PERIOD(TIMESTAMP) vs f(time) / f(timestamp) with columns of those names.
     [$._qualified_field, $.time],
     [$._qualified_field, $.timestamp],
+    // A column named index / primary / foreign vs the INDEX / PRIMARY KEY / FOREIGN KEY table clauses.
+    [$._column, $.index_definition],
+    [$._column, $.table_constraint],
     // FROM FIRST | LAST after a window call vs the FROM clause of the enclosing SELECT.
     [$._expression, $.window_function],
     [$.field, $._qualified_field],
