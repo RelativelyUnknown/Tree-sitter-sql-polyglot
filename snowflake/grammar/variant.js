@@ -7,7 +7,7 @@ export default {
   //   col:obj.arr[0]::STRING ; cast (:: cast is handled by base binary_expression)
   //
   // Precedence 10 ensures colon binds tightly to the left-hand field/invocation.
-  variant_access: $ => prec.left(10, seq(
+  variant_access: $ => prec.right(10, seq(
     choice(
       alias($._qualified_field, $.field),
       $.invocation,
@@ -18,6 +18,7 @@ export default {
     repeat(choice(
       seq('.', $.identifier),
       seq('[', $._expression, ']'),
+      seq(':', $.identifier),
     )),
   )),
 

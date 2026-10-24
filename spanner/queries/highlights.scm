@@ -40,6 +40,7 @@
   (keyword_skip)
   (keyword_sql)
   (keyword_statistics)
+  (keyword_reservoir)
   (keyword_stored)
   (keyword_synonym)
 ] @keyword

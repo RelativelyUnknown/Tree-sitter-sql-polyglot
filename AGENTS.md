@@ -91,22 +91,32 @@ test/corpus/                    # Base SQL corpus tests
   tree-sitter.json              # Grammar registration and metadata
 
 tools/
-  coverage.py                   # Corroborated coverage: our parse vs. reference parsers
-  coverage-probes.yml           # Per-dialect statement inventory and probes
+  inventory.py                  # Statement inventory vs. each vendor's docs (CI gate + baseline refresh)
+  inventory/                    # Per-dialect statement and probe lists (YAML, see inventory/README.md)
+  inventory-results/            # Recorded inventory results, the baseline for inventory.py --check
+  inventory-verify/             # Verdicts from re-reading suspect/unconfirmed probes against the docs
+  coverage.py                   # Corroborated coverage: our parse vs. reference parsers (CI gate)
+  coverage-probes.yml           # Shared feature probes for coverage.py
   coverage.json                 # Recorded baseline, used by coverage.py --check
-  glr_scan.py                   # Parse-table size, state count, generate time and RSS
-  parse_bench.py                # Parse throughput on real and GLR-stressing workloads
+  requirements.txt              # Python dependencies of the tools above
+  antlr/                        # ANTLR corroborator setup (grammars and jars are fetched, never committed)
+  perf/                         # Manual cost measurements, not run by CI
+    glr_scan.py                 #   Parse-table size, state count, generate time and RSS
+    parse_bench.py              #   Parse throughput on real and GLR-stressing workloads
+  corpus/                       # Manual real-world SQL audit, feeds the docs inventory page
+    corpus_audit.py, sources.yml, corpus.json
 scripts/
   generate.js                   # Hash-cached wrapper around tree-sitter generate
   generate-all.js               # Generates every parser, concurrency capped by memory
   test-keywords.sh              # Checks keyword and highlights.scm sync
   bundle-highlights.js          # Builds <dialect>/queries/highlights.bundled.scm (gitignored) for the packages
   bump-version.sh               # Bumps the version in all 5 manifest files
+  apply-ci-artifacts.js         # Copies CI's fresh-blobs-*/fresh-inventory-* artifacts into the tree
   docs-prep.js                  # Prepares generated pages for the VitePress site
 bindings/                       # Node/Python/Rust/Go/Swift language bindings
 docs/                           # VitePress site (index, changelog; coverage is generated)
 .github/workflows/
-  ci.yml                        # Build, corpus tests and coverage on macOS/Ubuntu/Windows
+  ci.yml                        # One job per grammar (generate, test, blobs, inventory); bindings on 3 OSes
   pages.yml                     # Builds and deploys the docs site
   publish.yml, tag.yml          # Release automation
 ```
@@ -258,22 +268,17 @@ Use `spark/grammar.js` as the canonical example of `grammar(base, overrides)`.
 4. Create `<dialect>/tree-sitter.json` with the grammar registration and metadata block.
    `spark/tree-sitter.json` has the structure to copy.
 
-5. Add the npm scripts to `package.json`:
-   ```json
-   "generate:my_dialect": "node scripts/generate.js my_dialect",
-   "test:corpus:my_dialect": "cd my_dialect && npx --yes --package=tree-sitter-cli@v0.26.3 -- tree-sitter test"
-   ```
+5. Nothing to add to `package.json`: `npm run generate -- my_dialect` and `cd my_dialect && npx tree-sitter test`
+   work for any dialect directory.
 
 6. Generate the parser:
    ```bash
-   npm run generate:my_dialect
+   npm run generate -- my_dialect
    ```
 
-7. Add the CI steps to `.github/workflows/ci.yml`:
-   ```yaml
-   - run: cd my_dialect && tree-sitter generate grammar.js
-   ```
-   and a `parser-test-action` step for `grammar-path: my_dialect`.
+7. Add the dialect to the `grammar` job's `lang` matrix in `.github/workflows/ci.yml`. Each grammar is
+   generated, tested and checked in its own job (generate, corpus tests, committed `.br` blobs current,
+   inventory regressions), so nothing else in the workflow changes.
 
 8. Wire the dialect into the compiled Rust/Node/Python/Go/Swift/CMake packages (this is separate from
    step 4's per-dialect `<dialect>/tree-sitter.json`, which only registers it for standalone
@@ -316,20 +321,14 @@ npm run generate:all
 
 # Generate individual parsers
 npm run generate              # base SQL
-npm run generate:spark        # Spark/Hive dialect
-npm run generate:databricks   # Databricks dialect (depends on spark)
-npm run generate:postgres     # PostgreSQL dialect
-npm run generate:mysql        # MySQL/MariaDB dialect
+npm run generate -- spark     # one dialect, by directory name (databricks depends on spark)
 
 # Force regeneration (bypasses cache)
 npm run generate:force
 
 # Run tests
 npm run test:corpus           # base SQL corpus
-npm run test:corpus:spark     # Spark corpus
-npm run test:corpus:databricks  # Databricks corpus
-npm run test:corpus:postgres  # PostgreSQL corpus
-npm run test:corpus:mysql     # MySQL corpus
+(cd spark && npx tree-sitter test)   # one dialect's corpus
 npm run test:keywords         # Keyword and highlights.scm sync check
 
 # Debug a parse tree
@@ -378,7 +377,11 @@ python tools/inventory.py --check         # CI gate: fails on regressions agains
 python tools/inventory.py --report        # writes the gitignored docs/inventory.md
 ```
 
-Refresh the recorded results (`tools/inventory-results/`) after a grammar change that improves a score.
+CI recomputes the results for each dialect on every run (`Refresh inventory results` step in `ci.yml`). When
+they differ from the committed file it uploads a `fresh-inventory-<dialect>` artifact: copy that file over
+`tools/inventory-results/<dialect>.json` and commit it, the same way as the `fresh-blobs-<dialect>`
+artifact. `gh run download <run-id> -D /tmp/ci && node scripts/apply-ci-artifacts.js /tmp/ci` places both kinds. The step never fails the build; only `--check` does, and only on a regression. No local
+parser build is needed to refresh the baseline.
 `tools/inventory-verify/*.json` holds the verdicts from re-reading suspect and unconfirmed probes against
 the docs; the report reads them, so keep the directory. Mark a statement `not-applicable` only with a
 reason checked against the vendor's reference. Db2 targets LUW 12.1.
@@ -429,8 +432,8 @@ reason when the engine demonstrably has no such statement, checked against that 
 reference rather than inferred from a corroborator (SQLGlot's dialect parsers share one base
 parser, so it accepts plenty of statements an engine does not have).
 
-`tools/glr_scan.py` reports what a grammar costs to build (parse-table bytes, state count,
-generation time, peak memory) and `tools/parse_bench.py` reports what it costs to run. Use the
+`tools/perf/glr_scan.py` reports what a grammar costs to build (parse-table bytes, state count,
+generation time, peak memory) and `tools/perf/parse_bench.py` reports what it costs to run. Use the
 numbers rather than an argument when justifying a grammar change on performance grounds.
 
 ---

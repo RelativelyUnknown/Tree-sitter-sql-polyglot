@@ -87,10 +87,10 @@ You need Node and the tree-sitter CLI (`npm install -g tree-sitter-cli`).
 ```bash
 npm install                  # unpacks the committed parsers and builds the Node addons
 npm run generate             # regenerate the base parser after editing grammar/
-npm run generate:postgres    # or a single dialect
+npm run generate -- postgres # or a single dialect
 npm run generate:all         # or everything
 npm run test:corpus          # base corpus tests
-npm run test:corpus:postgres # a dialect's corpus tests
+(cd postgres && npx tree-sitter test)  # a dialect's corpus tests
 ```
 
 A base grammar change affects every dialect, so regenerate and test all of them. Generation is

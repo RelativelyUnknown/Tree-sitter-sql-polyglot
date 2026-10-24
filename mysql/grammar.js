@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { comma_list, optional_parenthesis, wrapped_in_parenthesis, make_keyword, paren_list } from '../grammar/helpers.js';
+import { comma_list, optional_parenthesis, wrapped_in_parenthesis, make_keyword, paren_list, canonicalOrder } from '../grammar/helpers.js';
 import mysql_create_rules from './grammar/create.js';
 import mysql_optimize_rules from './grammar/optimize.js';
 import mysql_load_data_rules from './grammar/load_data.js';
@@ -9,8 +9,11 @@ import mysql_partition_rules from './grammar/partition.js';
 import mysql_admin_rules from './grammar/admin.js';
 import mysql_admin_ddl_rules from './grammar/admin_ddl.js';
 import mysql_clause_rules from './grammar/clauses.js';
+import dialect_transaction_rules from './grammar/transactions.js';
+import dialect_alter_rules from './grammar/alter_vendor.js';
+import dialect_legacy_rules from './grammar/legacy_statements.js';
 
-export default grammar(base, {
+export default canonicalOrder(grammar(base, {
   name: 'mysql_sql',
 
   conflicts: $ => [
@@ -21,6 +24,12 @@ export default grammar(base, {
     // Local shift/reduce ambiguity shared with like_expression's optional
     // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
+    // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
+    [$.transaction, $.start_transaction_statement],
+    [$.transaction, $.commit_statement],
+    [$.transaction, $.rollback_statement],
+    [$._commit, $.commit_statement],
+    [$._rollback, $.rollback_statement],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
@@ -35,6 +44,10 @@ export default grammar(base, {
   ],
 
   rules: {
+    ...dialect_transaction_rules,
+    ...dialect_alter_rules,
+    ...dialect_legacy_rules,
+
 
     create_table: $ => prec.left(
       seq(
@@ -463,6 +476,7 @@ export default grammar(base, {
         $.user_variable,
         $.match_against,
         $.literal,
+        $.position_expression,
         alias($._qualified_field, $.field),
         $.parameter,
         $.list,
@@ -820,4 +834,4 @@ export default grammar(base, {
     keyword_references:   _ => token(prec(1, make_keyword("references"))),
 
   },
-});
+}));

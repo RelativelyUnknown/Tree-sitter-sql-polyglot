@@ -19,7 +19,7 @@ export default {
   call_statement: $ => seq(
     $.keyword_call,
     field('procedure', $.object_reference),
-    optional(paren_list($._expression)),
+    optional(paren_list(choice($.named_argument, $._expression))),
   ),
 
   // REFRESH TABLE t [, …] [INCREMENTAL | NOT INCREMENTAL]

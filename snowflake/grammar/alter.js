@@ -9,7 +9,7 @@ export default {
     $.keyword_alter,
     $.keyword_session,
     choice(
-      seq($.keyword_set, comma_list($.session_parameter, true)),
+      seq($.keyword_set, $.session_parameter, repeat(seq(optional(','), $.session_parameter))),
       seq($.keyword_unset, comma_list($.identifier, true)),
     ),
   ),
@@ -32,20 +32,6 @@ export default {
       seq($.keyword_resume, optional(seq($.keyword_if, $.keyword_suspend))),
       seq($.keyword_abort, $.keyword_all, $.keyword_queries),
     ),
-  ),
-
-  // ALTER TABLE t MODIFY COLUMN col SET MASKING POLICY policy_name
-  alter_table_masking: $ => seq(
-    $.keyword_alter,
-    $.keyword_table,
-    $.object_reference,
-    $.keyword_modify,
-    $.keyword_column,
-    $.identifier,
-    $.keyword_set,
-    $.keyword_masking,
-    $.keyword_policy,
-    $.object_reference,
   ),
 
   // ALTER TABLE [IF EXISTS] name CLUSTER BY (exprs) | DROP CLUSTERING KEY

@@ -1,13 +1,14 @@
-import { comma_list } from "../helpers.js";
-
+// <truncate table statement> ::= TRUNCATE TABLE <target table> [ CONTINUE IDENTITY | RESTART IDENTITY ]
 export default {
 
   _truncate_statement: $ => seq(
     $.keyword_truncate,
-    optional($.keyword_table),
-    optional($.keyword_only),
-    comma_list($.object_reference),
-    optional($._drop_behavior),
+    $.keyword_table,
+    $.object_reference,
+    optional(choice(
+      seq($.keyword_continue, $.keyword_identity),
+      seq($.keyword_restart, $.keyword_identity),
+    )),
   ),
 
 };

@@ -1,5 +1,5 @@
 import spark from '../spark/grammar.js';
-import { optional_parenthesis, paren_list, comma_list, wrapped_in_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { optional_parenthesis, paren_list, comma_list, wrapped_in_parenthesis, make_keyword, canonicalOrder } from '../grammar/helpers.js';
 
 import vacuum_rules   from './grammar/vacuum.js';
 import restore_rules  from './grammar/restore.js';
@@ -13,7 +13,7 @@ import create_rules   from './grammar/create.js';
 import alter_rules    from './grammar/alter.js';
 import apply_rules    from './grammar/apply.js';
 
-export default grammar(spark, {
+export default canonicalOrder(grammar(spark, {
   name: 'databricks_sql',
 
   conflicts: $ => [
@@ -23,6 +23,12 @@ export default grammar(spark, {
     // Local shift/reduce ambiguity shared with like_expression's optional
     // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
+    // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
+    [$.transaction, $.start_transaction_statement],
+    [$.transaction, $.commit_statement],
+    [$.transaction, $.rollback_statement],
+    [$._commit, $.commit_statement],
+    [$._rollback, $.rollback_statement],
     [$.from],
     [$.create_function],
     [$.list, $.grouping_set],
@@ -375,4 +381,4 @@ export default grammar(spark, {
     keyword_generated: _ => token(prec(1, make_keyword("generated"))),
 
   },
-});
+}));

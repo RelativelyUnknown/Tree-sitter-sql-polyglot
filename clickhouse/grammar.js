@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, comma_list, paren_list, make_keyword } from '../grammar/helpers.js';
+import { optional_parenthesis, comma_list, paren_list, make_keyword, canonicalOrder } from '../grammar/helpers.js';
 import ch_type_rules    from './grammar/types.js';
 import ch_select_rules  from './grammar/select.js';
 import ch_create_rules  from './grammar/create.js';
@@ -7,8 +7,18 @@ import ch_system_rules  from './grammar/system.js';
 import ch_mutation_rules from './grammar/mutations.js';
 import ch_access_control_rules from './grammar/access_control.js';
 import ch_admin_rules from './grammar/admin.js';
+import dialect_transaction_rules from './grammar/transactions.js';
+import dialect_alter_rules from './grammar/alter_vendor.js';
+import dialect_legacy_rules from './grammar/legacy_statements.js';
 
-export default grammar(base, {
+// ClickHouse block comments nest: /* outer /* inner */ outer */. A regex cannot match unbounded
+// nesting, so this one accepts up to three levels.
+function nestedBlockComment(depth) {
+  const inner = depth === 0 ? '' : '|' + nestedBlockComment(depth - 1);
+  return '\\/\\*(?:[^*\\/]|\\*+[^*\\/]|\\/+[^*\\/]' + inner + ')*\\*+\\/';
+}
+
+export default canonicalOrder(grammar(base, {
   name: 'clickhouse_sql',
 
   conflicts: $ => [
@@ -19,6 +29,12 @@ export default grammar(base, {
     // Local shift/reduce ambiguity shared with like_expression's optional
     // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
+    // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
+    [$.transaction, $.start_transaction_statement],
+    [$.transaction, $.commit_statement],
+    [$.transaction, $.rollback_statement],
+    [$._commit, $.commit_statement],
+    [$._rollback, $.rollback_statement],
     [$.from],
     [$.all_fields_transform, $.all_fields],
     [$.all_fields_transform],
@@ -41,6 +57,12 @@ export default grammar(base, {
   ],
 
   rules: {
+
+    marginalia: _ => new RegExp(nestedBlockComment(3)),
+    ...dialect_transaction_rules,
+    ...dialect_alter_rules,
+    ...dialect_legacy_rules,
+
 
     // ── INSERT: ClickHouse 23.4+ supports INSERT … RETURNING (#119) ─────────
     _insert_statement: $ => seq(
@@ -444,4 +466,4 @@ export default grammar(base, {
     keyword_rows: _ => token(prec(1, make_keyword("rows"))),
 
   },
-});
+}));
