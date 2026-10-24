@@ -2,7 +2,7 @@ import { comma_list, paren_list, wrapped_in_parenthesis } from '../../grammar/he
 
 export default {
 
-  // EXECUTE IMMEDIATE { 'sql' | :var | var } [USING (v, ...)]
+  // EXECUTE IMMEDIATE { 'sql' | :var | var | expression, e.g. v || ',(80)' } [USING (v, ...)]
   // EXECUTE IMMEDIATE FROM { @stage/file | 'path' } [USING (k => v, ...)] [DRY_RUN = { TRUE | FALSE }]
   execute_immediate_statement: $ => seq(
     $.keyword_execute,
@@ -15,7 +15,7 @@ export default {
         optional(seq($.keyword_dry_run, '=', choice($.keyword_true, $.keyword_false))),
       ),
       seq(
-        choice(alias($._literal_string, $.literal), $.parameter, $.bind_variable, $.identifier),
+        $._expression,
         optional(seq($.keyword_using, paren_list($._expression, true))),
       ),
     ),
