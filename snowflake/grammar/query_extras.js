@@ -24,6 +24,28 @@ export default {
     $.trim_expression,
   ),
 
+  // RESAMPLE(USING col INCREMENT BY <step> [METADATA_COLUMNS <expr> [AS a], ...] [PARTITION BY cols])
+  resample_clause: $ => seq(
+    $.keyword_resample,
+    '(',
+    $.keyword_using,
+    field('column', $._expression),
+    $.keyword_increment,
+    $.keyword_by,
+    field('step', $._expression),
+    optional(seq($.keyword_metadata_columns, comma_list($.term, true))),
+    optional($.partition_by),
+    ')',
+  ),
+
+  // PARTITION BY [EXCLUDING] <expr>, ...   (EXCLUDING: semantic-view window metrics)
+  partition_by: $ => seq(
+    $.keyword_partition,
+    $.keyword_by,
+    optional($.keyword_excluding),
+    comma_list($._expression, true),
+  ),
+
   // SELECT [ALL | DISTINCT] [TOP n] <list>
   select: $ => seq(
     $.keyword_select,
@@ -118,6 +140,8 @@ export default {
       seq($.keyword_on, field('predicate', $._expression)),
       seq($.keyword_using, alias($._column_list, $.list)),
     )),
+    // FIRST(u) | LAST(u): which side's row a join keeps when matches repeat
+    optional(seq(choice($.keyword_first, $.keyword_last), wrapped_in_parenthesis($.identifier))),
   ),
 
   // ( u RIGHT OUTER JOIN v ON ... ): a parenthesised join used as one side of an outer join
@@ -197,7 +221,9 @@ export default {
   ),
 
   // UNION [ALL | DISTINCT] [BY NAME], EXCEPT / MINUS, INTERSECT
-  set_operation: $ => seq(
+  // A trailing ORDER BY / LIMIT after a parenthesised last operand orders the whole result; after a bare
+  // operand it still belongs to that operand (the lower precedence makes the shift win).
+  set_operation: $ => prec(-1, seq(
     $._select_statement,
     repeat1(seq(
       field('operation', choice(
@@ -208,7 +234,12 @@ export default {
       )),
       $._select_statement,
     )),
-  ),
+    optional(choice(
+      seq($.order_by, optional(choice($.limit, $.offset_fetch_clause))),
+      $.limit,
+      $.offset_fetch_clause,
+    )),
+  )),
 
   // Legacy outer-join marker: t.c1 = u.c2 (+)
   outer_join_marker: $ => seq(alias($._qualified_field, $.field), '(', '+', ')'),

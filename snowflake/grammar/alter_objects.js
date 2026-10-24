@@ -176,8 +176,8 @@ export default {
   _set_properties_body: $ => seq($.snowflake_property, repeat(seq(optional(','), $.snowflake_property))),
 
   // UNSET name [, name ...]
-  _unset_properties: $ => comma_list($._unset_name, true),
-  _unset_name: $ => choice($.identifier, $.keyword_warehouse),
+  _unset_properties: $ => prec.right(repeat1(seq($._unset_name, optional(',')))),
+  _unset_name: $ => choice($.identifier, $.keyword_warehouse, seq($.keyword_dcm, $.keyword_project)),
 
   alter_routine: $ => seq(
     $.keyword_alter,

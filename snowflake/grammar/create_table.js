@@ -24,7 +24,7 @@ export default {
 
   // [LOCAL | GLOBAL] {TEMP | TEMPORARY} | VOLATILE | TRANSIENT
   _snowflake_table_kind: $ => choice(
-    seq(optional(choice($.keyword_local, $.keyword_global)), $._temporary),
+    seq(optional(choice($.keyword_local, $.keyword_global, $.keyword_scoped)), $._temporary),
     $.keyword_volatile,
     $.keyword_transient,
     seq(optional($.keyword_transient), choice($.keyword_hybrid, $.keyword_iceberg)),
@@ -45,6 +45,8 @@ export default {
     $.clone_clause,
     $.backup_set_clause,
     seq($.keyword_like, $.object_reference),
+    // FROM ARCHIVE OF src [AS alias] [WHERE cond]
+    seq($.keyword_from, $.keyword_archive, $.keyword_of, $.object_reference, optional(seq($.keyword_as, $.identifier)), optional($.where)),
     seq($.keyword_using, $.keyword_template, wrapped_in_parenthesis($.create_query)),
     $.cluster_by_clause,
     $.iceberg_partition_clause,
@@ -136,7 +138,6 @@ export default {
     $.keyword_null,
     seq($.keyword_collate, alias($._literal_string, $.literal)),
     seq($.keyword_default, $._expression),
-    seq($.keyword_check, wrapped_in_parenthesis($._expression)),
     $.identity_clause,
     seq($.keyword_comment, alias($._literal_string, $.literal)),
     seq(optional($.keyword_generated), optional($.keyword_always), $.keyword_as, wrapped_in_parenthesis($._expression), optional($.keyword_virtual)),
@@ -173,10 +174,11 @@ export default {
     $.object_reference,
   ),
 
-  // [CONSTRAINT name] {UNIQUE | PRIMARY KEY | [FOREIGN KEY] REFERENCES t [(col)]} [properties]
+  // [CONSTRAINT name] {UNIQUE | PRIMARY KEY | CHECK (expr) | [FOREIGN KEY] REFERENCES t [(col)]} [properties]
   inline_constraint: $ => seq(
     optional(seq($.keyword_constraint, field('name', $.identifier))),
     choice(
+      seq($.keyword_check, wrapped_in_parenthesis($._expression)),
       $.keyword_unique,
       seq($.keyword_primary, $.keyword_key),
       seq(

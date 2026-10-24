@@ -156,6 +156,7 @@ export default {
       $.backup_set_clause,
       seq($.keyword_with, $.keyword_managed, $.keyword_access),
       $.tag_clause,
+      $.contact_clause,
       seq($.keyword_comment, '=', alias($._literal_string, $.literal)),
       $.snowflake_property,
     )),

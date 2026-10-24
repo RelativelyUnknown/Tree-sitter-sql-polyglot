@@ -44,7 +44,7 @@ const PLURAL = [
   'data metric functions', 'data movement policies', 'data movement rules', 'database roles', 'datasets',
   'delegated authorizations', 'endpoints', 'entities', 'event routing table', 'event routing tables', 'experiments',
   'external access integrations', 'external agents', 'external consumers', 'failover groups', 'feature policies',
-  'git branches', 'git repositories', 'git tags', 'image repositories', 'images', 'indexes', 'interactive tables',
+  'gateways', 'git branches', 'git repositories', 'git tags', 'image repositories', 'images', 'indexes', 'interactive tables',
   'job services', 'join policies', 'listings', 'maintenance policies', 'managed accounts', 'mfa methods',
   'model monitors', 'models', 'multi party approval policies', 'nodes', 'notebook projects', 'notebooks', 'offers',
   'online feature tables', 'openflow connector definitions', 'openflow connectors',

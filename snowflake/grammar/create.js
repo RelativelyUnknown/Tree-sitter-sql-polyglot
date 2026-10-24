@@ -17,6 +17,7 @@ export default {
     $._type,
     '->',
     $._expression,
+    repeat(choice($._comment_property, $.snowflake_property)),
   ),
 
   // CREATE [OR REPLACE] ROW ACCESS POLICY [IF NOT EXISTS] name

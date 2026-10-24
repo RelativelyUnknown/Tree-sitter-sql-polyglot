@@ -18,6 +18,8 @@ export default {
         choice(
           alias($._literal_string, $.literal),
           $.parameter,
+          $.bind_variable,
+          $.identifier,
         ),
         optional(seq(
           $.keyword_using,
@@ -33,6 +35,9 @@ export default {
     $.keyword_task,
     $.object_reference,
   ),
+
+  // EXECUTE EXPERIMENT name
+  execute_experiment: $ => seq($.keyword_execute, $.keyword_experiment, $.object_reference),
 
   // EXECUTE ALERT name
   execute_alert: $ => seq($.keyword_execute, $.keyword_alert, $.object_reference),

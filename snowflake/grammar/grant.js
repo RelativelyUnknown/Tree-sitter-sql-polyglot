@@ -25,6 +25,8 @@ export default {
         optional($.copy_grants_clause)),
       seq($.keyword_caller, $._grant_privileges, $.keyword_on, $._grant_target, $.keyword_to, $._grantee),
       seq($.keyword_all, $.keyword_caller, $.keyword_privileges, $.keyword_on, $._grant_target, $.keyword_to, $._grantee),
+      seq($.keyword_inherited, $.keyword_caller, $._grant_privileges, $.keyword_on, $._inherited_target, $.keyword_to, $._grantee),
+      seq($.keyword_service, $.keyword_role, $.service_role_reference, $.keyword_to, $._grantee),
     ),
     optional(seq($.keyword_with, $.keyword_grant, $.keyword_option)),
   ),
@@ -36,6 +38,8 @@ export default {
       seq($._grant_privileges, $.keyword_on, $._grant_target, $.keyword_from, $._grantee),
       seq($._grant_role_kind, $.object_reference, $.keyword_from, $._grantee),
       seq($.keyword_caller, $._grant_privileges, $.keyword_on, $._grant_target, $.keyword_from, $._grantee),
+      seq(optional($.keyword_all), $.keyword_inherited, $.keyword_caller, optional($.keyword_privileges), $.keyword_on, $._inherited_target, $.keyword_from, $._grantee),
+      seq($.keyword_service, $.keyword_role, $.service_role_reference, $.keyword_from, $._grantee),
     ),
     optional(choice($.keyword_cascade, $.keyword_restrict)),
   ),
@@ -73,6 +77,14 @@ export default {
     seq(choice($._snowflake_object_kind, $.keyword_table, $.keyword_view, $.keyword_function, $.keyword_procedure, $.keyword_sequence),
       $.object_reference, optional(paren_list($._type, false))),
     $.object_reference,
+  ),
+
+  // ON { ALL | FUTURE } <objects> IN { ACCOUNT | DATABASE d | SCHEMA s }
+  _inherited_target: $ => seq(
+    choice($.keyword_all, $.keyword_future),
+    $._snowflake_object_kind_plural,
+    $.keyword_in,
+    choice($.keyword_account, seq(choice($.keyword_database, $.keyword_schema), $.object_reference)),
   ),
 
   _grantee: $ => choice(

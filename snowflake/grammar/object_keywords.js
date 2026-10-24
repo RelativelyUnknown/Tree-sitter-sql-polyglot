@@ -132,4 +132,11 @@ export default {
   keyword_convert: _ => token(prec(1, make_keyword("convert"))),
   keyword_discovery: _ => token(prec(1, make_keyword("discovery"))),
   keyword_linked_catalog: _ => token(prec(1, make_keyword("linked_catalog"))),
+  keyword_inherited: _ => token(prec(1, make_keyword("inherited"))),
+  keyword_scoped: _ => token(prec(1, make_keyword("scoped"))),
+  keyword_archive: _ => token(prec(1, make_keyword("archive"))),
+  keyword_excluding: _ => token(prec(1, make_keyword("excluding"))),
+  keyword_expectation: _ => token(prec(1, make_keyword("expectation"))),
+  keyword_resample: _ => token(prec(1, make_keyword("resample"))),
+  keyword_metadata_columns: _ => token(prec(1, make_keyword("metadata_columns"))),
 };

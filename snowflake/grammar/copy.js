@@ -23,13 +23,17 @@ export default {
     repeat(choice($.copy_property, seq($.keyword_partition, $.keyword_by, $._expression))),
   ),
 
-  _copy_location: $ => choice($.stage_ref, $.literal),
+  _copy_location: $ => choice($.stage_ref, $.literal, $.unquoted_url),
 
   _copy_source: $ => choice(
     $.stage_ref,
     $.literal,
+    $.unquoted_url,
     seq('(', $._dml_read, ')'),
   ),
+
+  // s3://bucket/path, gcs://bucket/path, azure://account/container/path written without quotes
+  unquoted_url: _ => token(prec(2, /[A-Za-z0-9]+:\/\/[^\s;'"(),]+/)),
 
   // @stage_name  @~  @%table  @stage/path
   stage_ref: _ => /@[~%a-zA-Z0-9_./]*/,

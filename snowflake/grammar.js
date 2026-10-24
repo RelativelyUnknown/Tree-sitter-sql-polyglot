@@ -159,6 +159,7 @@ export default canonicalOrder(grammar(base, {
       $.execute_task,
       $.execute_dbt_project,
       $.execute_alert,
+      $.execute_experiment,
       $.execute_dcm_project,
       $.execute_job_service,
       $.execute_notebook,
@@ -299,7 +300,7 @@ export default canonicalOrder(grammar(base, {
         $.keyword_comment,
       )),
       '=',
-      field('value', choice($.literal, $.identifier, $.integration_option_group)),
+      field('value', choice($.literal, $.object_reference, $.integration_option_group)),
     ),
 
     // REST_AUTHENTICATION = (TYPE = BEARER BEARER_TOKEN = 'tok'): a parenthesised group of options,
@@ -308,7 +309,8 @@ export default canonicalOrder(grammar(base, {
       '(',
       optional(choice(
         repeat1($.integration_option),
-        comma_list(choice($.literal, $.identifier), true),
+        // values, or 'header' = 'value' pairs (WEBHOOK_HEADERS)
+        comma_list(choice(seq($.literal, '=', $.literal), $.literal, $.identifier), true),
       )),
       ')',
     ),
@@ -419,6 +421,8 @@ export default canonicalOrder(grammar(base, {
       choice(
         $._insert_values,
         $._set_values,
+        // INSERT INTO t VALUES 12: a single bare value
+        seq($.keyword_values, $.literal),
       ),
     ),
 
@@ -588,6 +592,7 @@ export default canonicalOrder(grammar(base, {
           optional(alias($._column_list, $.list)),
         )),
         optional($.tablesample),
+        optional($.resample_clause),
       ),
     ),
 

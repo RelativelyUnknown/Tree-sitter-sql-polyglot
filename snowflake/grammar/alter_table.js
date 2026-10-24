@@ -1,4 +1,4 @@
-import { comma_list, paren_list } from '../../grammar/helpers.js';
+import { comma_list, paren_list, wrapped_in_parenthesis } from '../../grammar/helpers.js';
 
 // ALTER TABLE actions Snowflake documents beyond the shared ones:
 // https://docs.snowflake.com/en/sql-reference/sql/alter-table
@@ -57,13 +57,24 @@ export default {
   alter_column: $ => prec.right(seq(
     choice($.keyword_alter, $.keyword_modify),
     choice(
-      seq($.column_alteration, repeat(seq(',', $.column_alteration))),
+      seq($.column_alteration, repeat(choice(
+        seq(',', $.column_alteration),
+        // ", COLUMN d ..." is one token: after a SET TAG list a plain ',' would be ambiguous between the
+        // next tag and the next column
+        seq(alias($._comma_column, ','), alias($._column_alteration_body, $.column_alteration)),
+      ))),
       paren_list($.column_alteration, true),
     ),
   )),
 
+  _comma_column: _ => token(/,\s*[Cc][Oo][Ll][Uu][Mm][Nn]\s+/),
+
   column_alteration: $ => seq(
     optional($.keyword_column),
+    $._column_alteration_body,
+  ),
+
+  _column_alteration_body: $ => seq(
     field('name', $.identifier),
     $._column_action,
   ),
@@ -71,9 +82,10 @@ export default {
   _column_action: $ => prec.right(choice(
     seq(choice($.keyword_set, $.keyword_drop), $.keyword_not, $.keyword_null),
     seq(optional($.keyword_not), $.keyword_null),
-    seq(optional(seq($.keyword_set, $.keyword_data)), $.keyword_type, field('type', $._type)),
+    seq(optional(seq($.keyword_set, $.keyword_data)), $.keyword_type, field('type', $._type), optional(seq($.keyword_rename, $.keyword_fields))),
     field('type', $._type),
     seq($.keyword_set, $.keyword_default, $._expression),
+    seq($.keyword_set, $.keyword_write, $.keyword_default, $._expression),
     seq($.keyword_drop, $.keyword_default),
     seq($.keyword_comment, alias($._literal_string, $.literal)),
     seq($.keyword_unset, $.keyword_comment),
@@ -120,9 +132,37 @@ export default {
     seq($.keyword_add, $.keyword_search, $.keyword_optimization, optional(seq($.keyword_on, comma_list($.search_optimization_method, true)))),
     seq($.keyword_drop, $.keyword_search, $.keyword_optimization, optional(seq($.keyword_on, comma_list($.search_optimization_method, true)))),
 
+    // ADD | DROP | MODIFY DATA METRIC FUNCTION fn ON (cols) ...
+    seq($.keyword_add, $.keyword_data, $.keyword_metric, $.keyword_function, $.object_reference, $.keyword_on, $._dmf_arguments, repeat($._dmf_option)),
+    seq($.keyword_drop, $.keyword_data, $.keyword_metric, $.keyword_function, $.object_reference, $.keyword_on, $._dmf_arguments),
+    seq($.keyword_modify, $.keyword_data, $.keyword_metric, $.keyword_function, $.object_reference, $.keyword_on, $._dmf_arguments, choice(
+      $.keyword_suspend,
+      $.keyword_resume,
+      seq($.keyword_add, $.keyword_expectation, $.identifier, wrapped_in_parenthesis($._expression)),
+      seq($.keyword_drop, $.keyword_expectation, $.identifier),
+    )),
+
     seq($.keyword_swap, $.keyword_with, $.object_reference),
     seq($.keyword_recluster, optional($.snowflake_property), optional($.where)),
   )),
+
+  // (col, TABLE other(col), ...)
+  _dmf_arguments: $ => paren_list(
+    choice(
+      seq($.keyword_table, $.object_reference, paren_list($.identifier, true)),
+      $.identifier,
+    ),
+    true,
+  ),
+
+  _dmf_option: $ => choice(
+    seq($.keyword_within, $.keyword_group, paren_list($.identifier, true)),
+    seq($.keyword_group, $.keyword_limit, alias($._integer, $.literal)),
+    seq($.keyword_filter, wrapped_in_parenthesis($._expression)),
+    seq($.keyword_expectation, $.identifier, wrapped_in_parenthesis($._expression)),
+    seq($.keyword_execute, $.keyword_as, $.keyword_role, $.identifier),
+    $.snowflake_property,
+  ),
 
   // EQUALITY(c1, c2) | SUBSTRING(c3) | GEO(c4) | FULL_TEXT(*)
   search_optimization_method: $ => seq(

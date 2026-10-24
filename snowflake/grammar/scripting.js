@@ -37,10 +37,11 @@ export default {
   _resultset_source: $ => choice(
     wrapped_in_parenthesis($._dml_read),
     seq($.keyword_async, wrapped_in_parenthesis($._dml_read)),
+    wrapped_in_parenthesis($.execute_immediate_statement),
   ),
 
-  // <var> := <expr> | (<query>)
-  assignment_statement: $ => seq($.identifier, ':=', choice($._expression, seq($.keyword_async, wrapped_in_parenthesis($._dml_read)))),
+  // <var> := <expr> | (<query>) | (EXECUTE IMMEDIATE ...)
+  assignment_statement: $ => seq($.identifier, ':=', choice($._expression, seq($.keyword_async, wrapped_in_parenthesis($._dml_read)), wrapped_in_parenthesis($.execute_immediate_statement))),
 
   // LET var [type] { := | DEFAULT } expr | LET c CURSOR FOR query | LET res RESULTSET { := | DEFAULT } (query)
   let_statement: $ => seq(
