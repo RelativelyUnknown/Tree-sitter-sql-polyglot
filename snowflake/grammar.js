@@ -51,6 +51,8 @@ export default canonicalOrder(grammar(base, {
     // next table clause (LIKE other_table) can start.
     [$.where, $.like_expression],
     [$.drop_column],
+    // ARRAY(subquery) vs a column named array.
+    [$._qualified_field, $.array],
     // FROM FIRST | LAST after a window call vs the FROM clause of the enclosing SELECT.
     [$._expression, $.window_function],
     [$.field, $._qualified_field],
