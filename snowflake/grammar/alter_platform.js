@@ -44,7 +44,6 @@ export default {
     )),
     seq($.keyword_unset, choice(
       $._unset_tag,
-      seq($.keyword_dcm, $.keyword_project),
       seq($.keyword_rule, $.identifier),
       repeat1(seq($._unset_name, optional(','))),
     )),
