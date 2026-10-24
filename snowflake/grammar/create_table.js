@@ -127,6 +127,13 @@ export default {
     ')',
   ),
 
+  // Keywords that Snowflake does not reserve are valid column names: CREATE TABLE t (index INT, primary INT).
+  _column: $ => choice(
+    $.identifier,
+    alias($._literal_string, $.literal),
+    alias(choice($.keyword_primary, $.keyword_foreign, $.keyword_index, $.keyword_identifier), $.identifier),
+  ),
+
   column_definition: $ => prec.left(seq(
     field('name', $._column),
     field('type', $._type),
