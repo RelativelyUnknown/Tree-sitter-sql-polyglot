@@ -105,7 +105,6 @@ tools/
     parse_bench.py              #   Parse throughput on real and GLR-stressing workloads
   corpus/                       # Manual real-world SQL audit, feeds the docs inventory page
     corpus_audit.py, sources.yml, corpus.json
-  dev/grammar_outline.py        # Prints a dialect's resolved grammar as compact EBNF
 scripts/
   generate.js                   # Hash-cached wrapper around tree-sitter generate
   generate-all.js               # Generates every parser, concurrency capped by memory
@@ -268,15 +267,12 @@ Use `spark/grammar.js` as the canonical example of `grammar(base, overrides)`.
 4. Create `<dialect>/tree-sitter.json` with the grammar registration and metadata block.
    `spark/tree-sitter.json` has the structure to copy.
 
-5. Add the npm scripts to `package.json`:
-   ```json
-   "generate:my_dialect": "node scripts/generate.js my_dialect",
-   "test:corpus:my_dialect": "cd my_dialect && npx --yes --package=tree-sitter-cli@v0.26.3 -- tree-sitter test"
-   ```
+5. Nothing to add to `package.json`: `npm run generate -- my_dialect` and `cd my_dialect && npx tree-sitter test`
+   work for any dialect directory.
 
 6. Generate the parser:
    ```bash
-   npm run generate:my_dialect
+   npm run generate -- my_dialect
    ```
 
 7. Add the dialect to the `grammar` job's `lang` matrix in `.github/workflows/ci.yml`. Each grammar is
@@ -324,20 +320,14 @@ npm run generate:all
 
 # Generate individual parsers
 npm run generate              # base SQL
-npm run generate:spark        # Spark/Hive dialect
-npm run generate:databricks   # Databricks dialect (depends on spark)
-npm run generate:postgres     # PostgreSQL dialect
-npm run generate:mysql        # MySQL/MariaDB dialect
+npm run generate -- spark     # one dialect, by directory name (databricks depends on spark)
 
 # Force regeneration (bypasses cache)
 npm run generate:force
 
 # Run tests
 npm run test:corpus           # base SQL corpus
-npm run test:corpus:spark     # Spark corpus
-npm run test:corpus:databricks  # Databricks corpus
-npm run test:corpus:postgres  # PostgreSQL corpus
-npm run test:corpus:mysql     # MySQL corpus
+(cd spark && npx tree-sitter test)   # one dialect's corpus
 npm run test:keywords         # Keyword and highlights.scm sync check
 
 # Debug a parse tree
