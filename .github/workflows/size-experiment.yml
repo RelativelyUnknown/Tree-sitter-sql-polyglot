@@ -1,0 +1,96 @@
+name: Size experiment
+
+# Throwaway investigation (never part of the required checks): generates the snowflake parser once per
+# variant from .github/experiments/size/variants.py, each variant reverting one group of recent grammar
+# changes in the CI checkout only, and records STATE_COUNT / parser size / time / peak memory.
+# Triggered by pushing a change under .github/experiments/size/.
+on:
+  push:
+    branches: ["ccr-8a94165f-4twjn1"]
+    paths: [".github/experiments/size/**"]
+
+concurrency:
+  group: size-experiment-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  variant:
+    name: size (${{ matrix.variant }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        variant:
+          - baseline
+          - no_pipe
+          - no_archive_where_conflict
+          - no_set_op_tail_and_from_prec
+          - no_dmf
+          - no_resample
+          - no_comma_column
+          - no_inline_check
+          - no_integration_changes
+          - no_copy_changes
+          - no_grant_changes
+          - no_partition_excluding
+          - no_join_first_last
+          - no_exec_immediate
+          - no_unset_and_misc
+          - no_alter_column_extras
+    steps:
+      - uses: actions/checkout@v4
+      - uses: tree-sitter/setup-action@v2
+        with:
+          install-lib: false
+          tree-sitter-ref: v0.26.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Add swap
+        run: |
+          sudo swapoff -a || true
+          avail_gb=$(df --output=avail -BG /mnt | tail -1 | tr -dc '0-9')
+          size_gb=$(( avail_gb > 40 ? 32 : avail_gb - 4 ))
+          sudo fallocate -l "${size_gb}G" /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+
+      - name: Apply variant
+        run: python3 .github/experiments/size/variants.py "${{ matrix.variant }}"
+
+      - name: Generate and measure
+        run: |
+          cd snowflake
+          /usr/bin/time -v -o /tmp/time.txt tree-sitter generate grammar.js
+          mkdir -p /tmp/out
+          python3 - <<'PY'
+          import json, re, os
+          t = open('/tmp/time.txt').read()
+          src = open('src/parser.c').read()
+          def d(n):
+              m = re.search(r'#define %s (\d+)' % n, src)
+              return int(m.group(1)) if m else None
+          el = re.search(r'Elapsed \(wall clock\) time.*: (.*)', t).group(1)
+          rss = int(re.search(r'Maximum resident set size \(kbytes\): (\d+)', t).group(1))
+          out = {
+              'variant': '${{ matrix.variant }}',
+              'states': d('STATE_COUNT'), 'large_states': d('LARGE_STATE_COUNT'),
+              'symbols': d('SYMBOL_COUNT'), 'tokens': d('TOKEN_COUNT'), 'productions': d('PRODUCTION_ID_COUNT'),
+              'parser_c_bytes': os.path.getsize('src/parser.c'),
+              'wall': el, 'peak_rss_mb': rss // 1024,
+          }
+          json.dump(out, open('/tmp/out/result.json', 'w'))
+          print(json.dumps(out))
+          open(os.environ['GITHUB_STEP_SUMMARY'], 'a').write('```json\n' + json.dumps(out) + '\n```\n')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: size-${{ matrix.variant }}
+          path: /tmp/out
+          retention-days: 7
