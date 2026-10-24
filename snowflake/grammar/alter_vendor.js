@@ -157,6 +157,7 @@ export default {
     ),
     optional($._if_exists),
     field('name', $.identifier),
+    repeat(seq(',', field('name', $.identifier))),
   ),
 
   rename_column: $ => seq(

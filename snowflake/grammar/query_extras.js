@@ -33,8 +33,10 @@ export default {
     $.keyword_increment,
     $.keyword_by,
     field('step', $._expression),
-    optional(seq($.keyword_metadata_columns, comma_list($.term, true))),
-    optional($.partition_by),
+    repeat(choice(
+      seq($.keyword_metadata_columns, comma_list($.term, true)),
+      $.partition_by,
+    )),
     ')',
   ),
 

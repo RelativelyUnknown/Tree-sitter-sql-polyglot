@@ -48,7 +48,7 @@ export default {
 
         seq(
           field('custom_type', $.object_reference),
-          optional(paren_list($.type_argument, true)),
+          optional(choice(paren_list($.type_argument, true), seq('(', ')'))),
         ),
       ),
       optional($.array_size_definition),

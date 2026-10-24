@@ -45,6 +45,7 @@ Artifacts:
 import argparse
 import json
 import os
+import re
 import shlex
 import shutil
 import subprocess
@@ -301,13 +302,49 @@ def probe_for(feature: dict, dialect: str):
     return override.get("probe", feature["probe"]), None
 
 
+_NODE_SPAN = re.compile(r"\((\w+) \[(\d+), (\d+)\] - \[(\d+), (\d+)\]")
+_PARSE_LINE = re.compile(r"^(.*?\.sql)\s+Parse:")
+
+
+def _failed_parses(stdout: str, files: dict) -> set:
+    """Paths whose tree has an ERROR/MISSING node or a zero-width named node, plus any file the CLI
+    never reported on (unreadable, or the run stopped early).
+
+    `tree-sitter parse --time` prints each file's tree followed by a `<path>  Parse: ...` line."""
+    bad, seen = set(), set()
+    tree: list = []
+    for line in stdout.split("\n"):
+        m = _PARSE_LINE.match(line)
+        if not m:
+            tree.append(line)
+            continue
+        path = m.group(1)
+        text = "\n".join(tree)
+        tree = []
+        seen.add(path)
+        if "(ERROR" in text or "(MISSING" in text:
+            bad.add(path)
+            continue
+        for name, r0, c0, r1, c1 in _NODE_SPAN.findall(text):
+            if name != "program" and (r0, c0) == (r1, c1):
+                bad.add(path)
+                break
+    return bad | (set(files) - seen)
+
+
 def ours_parses(dialect: str, probes: dict) -> dict:
     """Parse each probe with the dialect's tree-sitter parser. {feature_id: ok}.
 
-    Uses one `tree-sitter parse -q` over a temp file per probe. Grammar
+    Uses one `tree-sitter parse` over a temp file per probe. Grammar
     resolution is forced file-relative with an empty parser-directories config,
     so a global ~/.config/tree-sitter config cannot silently reroute every .sql
     to the base grammar (see the original scorecard for the full rationale).
+
+    A probe fails when its tree has an ERROR or MISSING node, and also when it has a zero-width
+    named node. The CLI (-q, --stat) and node.has_error() both miss one case: when error recovery
+    inserts a missing *hidden* token (an identifier that is not there), the parse is reported as
+    successful and the only trace is a visible node that spans no text. That is how
+    `CREATE TABLE;` used to count as parsed.
     """
     results: dict = {}
     if not probes:
@@ -323,7 +360,7 @@ def ours_parses(dialect: str, probes: dict) -> dict:
         config_path = probe_dir / "ts-config.json"
         config_path.write_text('{"parser-directories": []}\n')
         cmd = shlex.split(TS_BIN) + [
-            "parse", "-q", "--config-path", str(config_path), *files.keys()
+            "parse", "--time", "--config-path", str(config_path), *files.keys()
         ]
         proc = subprocess.run(
             cmd, cwd=dialect_dir(dialect), capture_output=True, text=True, timeout=600,
@@ -337,9 +374,9 @@ def ours_parses(dialect: str, probes: dict) -> dict:
                 f"tree-sitter could not load the {dialect} grammar "
                 f"(run `tree-sitter generate --no-parser` in {dialect_dir(dialect)}):\n"
                 + failed_output[:2000])
+        bad = _failed_parses(proc.stdout, files)
         for path, fid in files.items():
-            rel = str(Path(path).relative_to(dialect_dir(dialect)))
-            results[fid] = path not in failed_output and rel not in failed_output
+            results[fid] = path not in bad
         if proc.returncode not in (0, 1):
             for fid in files.values():
                 results[fid] = False

@@ -36,7 +36,7 @@ export default {
   unquoted_url: _ => token(prec(2, /[A-Za-z0-9]+:\/\/[^\s;'"(),]+/)),
 
   // @stage_name  @~  @%table  @stage/path
-  stage_ref: _ => /@[~%a-zA-Z0-9_./]*/,
+  stage_ref: _ => /@[~%a-zA-Z0-9_./-]*/,
 
   // KEY = value  (e.g. FILE_FORMAT = (TYPE = CSV), PURGE = TRUE, FILES = ('a', 'b'))
   copy_property: $ => seq(

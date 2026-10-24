@@ -140,4 +140,5 @@ export default {
   keyword_resample: _ => token(prec(1, make_keyword("resample"))),
   keyword_metadata_columns: _ => token(prec(1, make_keyword("metadata_columns"))),
   keyword_gateways: _ => token(prec(1, make_keyword("gateways"))),
+  keyword_exchange: _ => token(prec(1, make_keyword("exchange"))),
 };

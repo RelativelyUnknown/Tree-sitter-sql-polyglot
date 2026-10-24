@@ -70,6 +70,10 @@ INVENTORY_MD = ROOT / "docs" / "inventory.md"
 VERIFY_DIR = ROOT / "tools" / "inventory-verify"
 
 TIER_WEIGHT = {"high": 3, "medium": 2, "low": 1}
+# Which parse check produced a results file. 1 = `parse -q` (a recovered parse with an inserted hidden
+# token counted as success); 2 = coverage.ours_parses also rejects zero-width named nodes. --check does
+# not compare against a baseline from an older check: probes it counted as parsed may not have.
+MEASURE = 2
 STATUSES = {"not-applicable", "not-sql"}
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9_]*$")
 
@@ -363,6 +367,7 @@ def evaluate_dialect(inv, corroborators, cache, run_corroborators=True):
     ex_ok = sum(s.get("examples_parsed", 0) for s in stmts.values())
     ex_n = sum(s.get("examples_total", 0) for s in stmts.values())
     return {
+        "measure": MEASURE,
         "engine": inv.get("engine"), "version": inv.get("version"), "source": inv.get("source"),
         "score": round(100.0 * got / total, 1) if total else 0.0,
         "weighted": weighted_score(stmts),
@@ -585,7 +590,13 @@ def main() -> int:
         failures = []
         for d, r in results.items():
             res = RESULTS_DIR / f"{d}.json"
-            was = (json.loads(res.read_text()).get("entries") or {}) if res.exists() else {}
+            baseline = json.loads(res.read_text()) if res.exists() else {}
+            if baseline and baseline.get("measure", 1) < MEASURE:
+                print(f"[inventory] {d}: baseline was measured with an older parse check "
+                      f"(measure {baseline.get('measure', 1)} < {MEASURE}); skipping the regression comparison. "
+                      "Commit the fresh-inventory artifact to move the baseline to the current check.")
+                continue
+            was = baseline.get("entries") or {}
             for key, st in r["entries"].items():
                 for pid, pr in (st.get("probes") or {}).items():
                     old = ((was.get(key) or {}).get("probes") or {}).get(pid)
@@ -593,7 +604,7 @@ def main() -> int:
                             and old["status"] in ("implemented", "suspect")
                             and pr["status"] not in ("implemented", "suspect")):
                         failures.append(f"{d}: {key}.{pid} used to parse: {pr['sql'][:100]}")
-            floor = ((json.loads(res.read_text()).get("weighted") or {}).get("score")) if res.exists() else None
+            floor = (baseline.get("weighted") or {}).get("score") if baseline else None
             now = r["weighted"]["score"]
             if floor is not None and now < floor - 0.05:
                 failures.append(f"{d}: weighted score {now}% fell below the recorded {floor}%")

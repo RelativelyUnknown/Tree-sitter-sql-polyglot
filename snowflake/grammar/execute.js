@@ -15,12 +15,7 @@ export default {
         choice($.stage_ref, alias($._literal_string, $.literal)),
       ),
       seq(
-        choice(
-          alias($._literal_string, $.literal),
-          $.parameter,
-          $.bind_variable,
-          $.identifier,
-        ),
+        $._expression,
         optional(seq(
           $.keyword_using,
           paren_list($._expression, true),

@@ -87,6 +87,14 @@ export default canonicalOrder(grammar(base, {
     ...dialect_alter_rules,
     ...dialect_legacy_rules,
 
+    // Type and clause keywords that Snowflake does not reserve are valid column names: SELECT date, time FROM t.
+    field: $ => field('name', choice(
+      $.identifier,
+      alias(choice(
+        $.keyword_date, $.keyword_time, $.keyword_timestamp, $.keyword_array, $.keyword_interval,
+        $.keyword_top, $.keyword_identifier,
+      ), $.identifier),
+    )),
 
     // ── Program: add scripting top-level blocks ─────────────────────────────
     program: $ => seq(
@@ -193,7 +201,7 @@ export default canonicalOrder(grammar(base, {
             $.select_expression,
           ),
         ),
-        optional($.from),
+        optional(choice($.from, $.where)),
         optional($.locking_clause),
       ),
     ),

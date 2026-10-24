@@ -53,6 +53,7 @@ export default {
     $.keyword_publish,
     $.keyword_upgrade,
     $.keyword_primary,
+    seq($.keyword_refresh, optional(alias($._literal_string, $.literal))),
     seq($.keyword_terminate, optional($.keyword_cascade)),
     seq($.keyword_commit, optional(choice($.keyword_run, $._comment_property)), optional($.identifier)),
     seq($.keyword_as, alias($._literal_string, $.literal)),

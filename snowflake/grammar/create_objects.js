@@ -124,6 +124,8 @@ export default {
     head($, $.keyword_alert),
     choice(
       $._clone_with_grants,
+      // FROM TEMPLATE name <property> ...   (no IF / THEN: the template supplies the condition and action)
+      seq($.keyword_from, $.keyword_template, $.object_reference, repeat(choice($.tag_clause, $._comment_property, $.snowflake_property))),
       seq(
         repeat(choice($.tag_clause, $._comment_property, $.snowflake_property)),
         $.keyword_if, '(', $.keyword_exists, '(', $._dml_read, ')', ')',

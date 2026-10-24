@@ -142,6 +142,7 @@ export default {
       seq($.keyword_update, $.keyword_linked_catalog, choice(
         seq(choice($.keyword_add, $.keyword_remove), paren_list(alias($._literal_string, $.literal), true), choice($.keyword_to, $.keyword_from), $.identifier),
         seq($.keyword_set, $._set_properties_body),
+        seq($.keyword_unset, $._unset_properties),
       )),
       seq($.keyword_set, choice($._set_contact, seq($.keyword_feature, $.keyword_policy, $.object_reference, optional($.keyword_force)), $._set_tag, $._set_properties)),
       seq($.keyword_unset, choice($._unset_tag, $._unset_properties)),
