@@ -479,3 +479,11 @@
 (keyword_versions) @keyword
 (keyword_visibility) @keyword
 (keyword_workload) @keyword
+(keyword_archive) @keyword
+(keyword_excluding) @keyword
+(keyword_expectation) @keyword
+(keyword_gateways) @keyword
+(keyword_inherited) @keyword
+(keyword_metadata_columns) @keyword
+(keyword_resample) @keyword
+(keyword_scoped) @keyword

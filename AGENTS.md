@@ -111,6 +111,7 @@ scripts/
   test-keywords.sh              # Checks keyword and highlights.scm sync
   bundle-highlights.js          # Builds <dialect>/queries/highlights.bundled.scm (gitignored) for the packages
   bump-version.sh               # Bumps the version in all 5 manifest files
+  apply-ci-artifacts.js         # Copies CI's fresh-blobs-*/fresh-inventory-* artifacts into the tree
   docs-prep.js                  # Prepares generated pages for the VitePress site
 bindings/                       # Node/Python/Rust/Go/Swift language bindings
 docs/                           # VitePress site (index, changelog; coverage is generated)
@@ -379,7 +380,7 @@ python tools/inventory.py --report        # writes the gitignored docs/inventory
 CI recomputes the results for each dialect on every run (`Refresh inventory results` step in `ci.yml`). When
 they differ from the committed file it uploads a `fresh-inventory-<dialect>` artifact: copy that file over
 `tools/inventory-results/<dialect>.json` and commit it, the same way as the `fresh-blobs-<dialect>`
-artifact. The step never fails the build; only `--check` does, and only on a regression. No local
+artifact. `gh run download <run-id> -D /tmp/ci && node scripts/apply-ci-artifacts.js /tmp/ci` places both kinds. The step never fails the build; only `--check` does, and only on a regression. No local
 parser build is needed to refresh the baseline.
 `tools/inventory-verify/*.json` holds the verdicts from re-reading suspect and unconfirmed probes against
 the docs; the report reads them, so keep the directory. Mark a statement `not-applicable` only with a
