@@ -219,7 +219,9 @@ def corroborate(dialect, items, corroborators, cache):
     for k, sql in items.items():
         h = sql_hash(sql)
         cached = cache.get(h, {})
-        verdicts = {}
+        # A corroborator that is not installed here (ANTLR needs a JDK and a build) keeps the verdicts
+        # already recorded for it, so a run without it cannot change a probe's status.
+        verdicts = dict(cached)
         for c in active:
             if c.name in cached:
                 verdicts[c.name] = cached[c.name]
