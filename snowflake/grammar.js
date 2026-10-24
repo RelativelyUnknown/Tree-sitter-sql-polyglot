@@ -50,6 +50,7 @@ export default canonicalOrder(grammar(base, {
     // CREATE TABLE ... FROM ARCHIVE OF t WHERE cond LIKE ...: the condition can continue with LIKE or the
     // next table clause (LIKE other_table) can start.
     [$.where, $.like_expression],
+    [$.drop_column],
     // FROM FIRST | LAST after a window call vs the FROM clause of the enclosing SELECT.
     [$._expression, $.window_function],
     [$.field, $._qualified_field],
