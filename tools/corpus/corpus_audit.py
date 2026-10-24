@@ -6,7 +6,7 @@ parses.
 The statement inventory (tools/inventory.py) measures coverage against the
 vendor's documentation, one minimal probe per documented form. This measures
 the other side: SQL people actually write, taken from test suites that are
-valid by construction. The sources are pinned in tools/corpus-sources.yml:
+valid by construction. The sources are pinned in tools/corpus/sources.yml:
 
   sqlfluff fixtures    test/fixtures/dialects/<d>/*.sql, split into statements
                        by sqlfluff's own parser; statements sqlfluff can't parse
@@ -28,9 +28,9 @@ keywords and the token where our parse first breaks, which ranks the gaps
 that real SQL hits most.
 
 Usage:
-  python tools/corpus_audit.py --fetch           # clone the pinned sources
-  python tools/corpus_audit.py                   # all dialects; writes tools/corpus.json
-  python tools/corpus_audit.py --dialect duckdb --show 20
+  python tools/corpus/corpus_audit.py --fetch           # clone the pinned sources
+  python tools/corpus/corpus_audit.py                   # all dialects; writes tools/corpus/corpus.json
+  python tools/corpus/corpus_audit.py --dialect duckdb --show 20
 """
 
 import argparse
@@ -47,11 +47,11 @@ from pathlib import Path
 
 import yaml
 
-ROOT = Path(__file__).resolve().parent.parent
-SOURCES = ROOT / "tools" / "corpus-sources.yml"
-CACHE = ROOT / "tools" / "corpus-cache"
+ROOT = Path(__file__).resolve().parent.parent.parent
+SOURCES = ROOT / "tools" / "corpus" / "sources.yml"
+CACHE = ROOT / "tools" / "corpus" / "cache"
 EXTRACTED = CACHE / "extracted"
-OUT = ROOT / "tools" / "corpus.json"
+OUT = ROOT / "tools" / "corpus" / "corpus.json"
 TS_LIB = Path(os.environ.get("TREE_SITTER_LIBDIR", Path.home() / ".cache" / "tree-sitter" / "lib"))
 
 # Per source and dialect, at most this many statements (a deterministic sample

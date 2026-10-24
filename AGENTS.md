@@ -91,11 +91,21 @@ test/corpus/                    # Base SQL corpus tests
   tree-sitter.json              # Grammar registration and metadata
 
 tools/
-  coverage.py                   # Corroborated coverage: our parse vs. reference parsers
-  coverage-probes.yml           # Per-dialect statement inventory and probes
+  inventory.py                  # Statement inventory vs. each vendor's docs (CI gate + baseline refresh)
+  inventory/                    # Per-dialect statement and probe lists (YAML, see inventory/README.md)
+  inventory-results/            # Recorded inventory results, the baseline for inventory.py --check
+  inventory-verify/             # Verdicts from re-reading suspect/unconfirmed probes against the docs
+  coverage.py                   # Corroborated coverage: our parse vs. reference parsers (CI gate)
+  coverage-probes.yml           # Shared feature probes for coverage.py
   coverage.json                 # Recorded baseline, used by coverage.py --check
-  glr_scan.py                   # Parse-table size, state count, generate time and RSS
-  parse_bench.py                # Parse throughput on real and GLR-stressing workloads
+  requirements.txt              # Python dependencies of the tools above
+  antlr/                        # ANTLR corroborator setup (grammars and jars are fetched, never committed)
+  perf/                         # Manual cost measurements, not run by CI
+    glr_scan.py                 #   Parse-table size, state count, generate time and RSS
+    parse_bench.py              #   Parse throughput on real and GLR-stressing workloads
+  corpus/                       # Manual real-world SQL audit, feeds the docs inventory page
+    corpus_audit.py, sources.yml, corpus.json
+  dev/grammar_outline.py        # Prints a dialect's resolved grammar as compact EBNF
 scripts/
   generate.js                   # Hash-cached wrapper around tree-sitter generate
   generate-all.js               # Generates every parser, concurrency capped by memory
@@ -376,7 +386,11 @@ python tools/inventory.py --check         # CI gate: fails on regressions agains
 python tools/inventory.py --report        # writes the gitignored docs/inventory.md
 ```
 
-Refresh the recorded results (`tools/inventory-results/`) after a grammar change that improves a score.
+CI recomputes the results for each dialect on every run (`Refresh inventory results` step in `ci.yml`). When
+they differ from the committed file it uploads a `fresh-inventory-<dialect>` artifact: copy that file over
+`tools/inventory-results/<dialect>.json` and commit it, the same way as the `fresh-blobs-<dialect>`
+artifact. The step never fails the build; only `--check` does, and only on a regression. No local
+parser build is needed to refresh the baseline.
 `tools/inventory-verify/*.json` holds the verdicts from re-reading suspect and unconfirmed probes against
 the docs; the report reads them, so keep the directory. Mark a statement `not-applicable` only with a
 reason checked against the vendor's reference. Db2 targets LUW 12.1.
@@ -427,8 +441,8 @@ reason when the engine demonstrably has no such statement, checked against that 
 reference rather than inferred from a corroborator (SQLGlot's dialect parsers share one base
 parser, so it accepts plenty of statements an engine does not have).
 
-`tools/glr_scan.py` reports what a grammar costs to build (parse-table bytes, state count,
-generation time, peak memory) and `tools/parse_bench.py` reports what it costs to run. Use the
+`tools/perf/glr_scan.py` reports what a grammar costs to build (parse-table bytes, state count,
+generation time, peak memory) and `tools/perf/parse_bench.py` reports what it costs to run. Use the
 numbers rather than an argument when justifying a grammar change on performance grounds.
 
 ---

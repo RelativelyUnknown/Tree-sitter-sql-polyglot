@@ -65,7 +65,7 @@ ROOT = Path(__file__).resolve().parent.parent
 INVENTORY_DIR = ROOT / "tools" / "inventory"
 RESULTS_DIR = ROOT / "tools" / "inventory-results"
 CACHE_DIR = RESULTS_DIR / ".cache"
-CORPUS_JSON = ROOT / "tools" / "corpus.json"
+CORPUS_JSON = ROOT / "tools" / "corpus" / "corpus.json"
 INVENTORY_MD = ROOT / "docs" / "inventory.md"
 VERIFY_DIR = ROOT / "tools" / "inventory-verify"
 

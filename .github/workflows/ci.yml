@@ -140,8 +140,35 @@ jobs:
 
       # Dialect only: probes that used to parse in tools/inventory-results/ must still parse.
       - name: Statement inventory
+        id: inventory
         if: ${{ !cancelled() && steps.gen.outcome == 'success' && matrix.lang != 'base' }}
         run: python tools/inventory.py --check --dialect "${{ matrix.lang }}"
+
+      # Recompute the committed results (reference-parser verdicts are cached in them, so only new or
+      # edited probes reach sqlfluff and friends). When they differ, the fresh file is uploaded: copy it
+      # over tools/inventory-results/<dialect>.json and commit. Never fails the build, so a green run
+      # with a notice means the baseline can ratchet up, not that anything is broken.
+      - name: Refresh inventory results
+        id: inventory_refresh
+        if: ${{ !cancelled() && steps.inventory.outcome == 'success' && matrix.lang != 'base' }}
+        continue-on-error: true
+        run: |
+          python tools/inventory.py --dialect "${{ matrix.lang }}" | tee /tmp/inventory.txt
+          grep '^\[inventory\]' /tmp/inventory.txt >> "$GITHUB_STEP_SUMMARY" || true
+          if git diff --quiet -- "tools/inventory-results/${{ matrix.lang }}.json"; then
+            echo "Committed inventory results are current."
+          else
+            mkdir -p /tmp/inventory
+            cp "tools/inventory-results/${{ matrix.lang }}.json" /tmp/inventory/
+            echo "stale=true" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Inventory results changed::tools/inventory-results/${{ matrix.lang }}.json differs from this run; download the fresh-inventory-${{ matrix.lang }} artifact and commit it."
+          fi
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() && steps.inventory_refresh.outputs.stale == 'true' }}
+        with:
+          name: fresh-inventory-${{ matrix.lang }}
+          path: /tmp/inventory
+          retention-days: 7
 
       # Base only: ANSI purity and regressions against independent reference parsers.
       - uses: actions/setup-java@v4

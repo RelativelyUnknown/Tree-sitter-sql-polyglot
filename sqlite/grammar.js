@@ -69,7 +69,7 @@ export default canonicalOrder(grammar(base, {
         // SIMILAR TO is deliberately absent: it is ISO SQL that SQLite does
         // not implement, and every extra operator sharing the
         // pattern_matching precedence multiplies this dialect's parse table
-        // (see tools/glr_scan.py on LIKE-family ambiguity).
+        // (see tools/perf/glr_scan.py on LIKE-family ambiguity).
         [$.keyword_glob, 'pattern_matching'],
         [$.not_glob, 'pattern_matching'],
         [$.keyword_match, 'pattern_matching'],

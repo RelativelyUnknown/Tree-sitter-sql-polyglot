@@ -11,9 +11,9 @@ prints one line per rule, with keyword tokens shown as their SQL word:
 
 `[x]` is optional, `(a | b)` a choice, `{x}` zero or more, `{x}+` one or more.
 
-    python tools/grammar_outline.py postgres            # whole grammar
-    python tools/grammar_outline.py postgres create_    # rules whose name contains create_
-    python tools/grammar_outline.py postgres --tests    # corpus test names only
+    python tools/dev/grammar_outline.py postgres            # whole grammar
+    python tools/dev/grammar_outline.py postgres create_    # rules whose name contains create_
+    python tools/dev/grammar_outline.py postgres --tests    # corpus test names only
 """
 
 import json
@@ -21,7 +21,7 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = Path(__file__).resolve().parent.parent.parent
 
 
 def grammar_dir(dialect: str) -> Path:
