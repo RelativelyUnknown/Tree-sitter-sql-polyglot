@@ -53,6 +53,8 @@ export default canonicalOrder(grammar(base, {
     [$.drop_column],
     // ARRAY(subquery) vs a column named array.
     [$._qualified_field, $.array],
+    // DATE(expr) function vs a column named date.
+    [$._qualified_field, $.date_function],
     // FROM FIRST | LAST after a window call vs the FROM clause of the enclosing SELECT.
     [$._expression, $.window_function],
     [$.field, $._qualified_field],
