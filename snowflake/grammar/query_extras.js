@@ -10,7 +10,15 @@ export default {
 
   _qualified_field: $ => seq(
     optional(seq(optional_parenthesis($.object_reference), '.')),
-    field('name', choice($.identifier, $.parameter)),
+    field('name', choice(
+      $.identifier,
+      $.parameter,
+      // Type and clause keywords that Snowflake does not reserve are valid column names: SELECT date, time FROM t.
+      alias(choice(
+        $.keyword_date, $.keyword_time, $.keyword_timestamp, $.keyword_array, $.keyword_interval,
+        $.keyword_top, $.keyword_identifier,
+      ), $.identifier),
+    )),
   ),
 
   // `_qualified_field` already accepts a parameter as its name, so the base's separate
