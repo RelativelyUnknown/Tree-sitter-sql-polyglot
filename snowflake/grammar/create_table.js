@@ -46,7 +46,7 @@ export default {
     $.backup_set_clause,
     seq($.keyword_like, $.object_reference),
     // FROM ARCHIVE OF src [AS alias] [WHERE cond]
-    seq($.keyword_from, $.keyword_archive, $.keyword_of, $.object_reference, optional(seq($.keyword_as, $.identifier)), optional($.where)),
+    prec.right(seq($.keyword_from, $.keyword_archive, $.keyword_of, $.object_reference, optional(seq($.keyword_as, $.identifier)), optional($.where))),
     seq($.keyword_using, $.keyword_template, wrapped_in_parenthesis($.create_query)),
     $.cluster_by_clause,
     $.iceberg_partition_clause,
