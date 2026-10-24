@@ -57,6 +57,8 @@ export default canonicalOrder(grammar(base, {
     [$._qualified_field, $.date_function],
     // IDENTIFIER(...) function vs a column named identifier.
     [$._qualified_field, $.identifier_function],
+    // PERIOD(DATE) '...' typed literal vs f(date) with a column named date.
+    [$._qualified_field, $.parameterized_literal],
     // FROM FIRST | LAST after a window call vs the FROM clause of the enclosing SELECT.
     [$._expression, $.window_function],
     [$.field, $._qualified_field],
