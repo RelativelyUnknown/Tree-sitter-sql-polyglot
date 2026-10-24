@@ -458,7 +458,9 @@ export default canonicalOrder(grammar(base, {
     ),
 
     // ── SELECT / FROM: add QUALIFY after HAVING ─────────────────────────────
-    from: $ => seq(
+    // prec.right: a trailing ORDER BY / LIMIT / FETCH after the last operand of a set operation belongs to that
+    // operand's FROM, not to the set operation (a parenthesised last operand leaves it to the set operation)
+    from: $ => prec.right(seq(
       $.keyword_from,
       optional($.keyword_only),
       choice(
@@ -483,7 +485,7 @@ export default canonicalOrder(grammar(base, {
       optional($.order_by),
       optional($.limit),
       optional($.offset_fetch_clause),
-    ),
+    )),
 
     // Add PRIOR as a unary operator (re-enumerates the base operator table).
     unary_expression: $ => choice(
