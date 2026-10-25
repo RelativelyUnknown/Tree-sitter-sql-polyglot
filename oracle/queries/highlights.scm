@@ -280,3 +280,5 @@
 (keyword_store) @keyword
 (keyword_virtual) @keyword
 (keyword_visible) @keyword
+(keyword_deferrable) @keyword
+(keyword_initially) @keyword

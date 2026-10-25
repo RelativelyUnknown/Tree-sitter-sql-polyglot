@@ -65,6 +65,8 @@ export default canonicalOrder(grammar(base, {
     [$._function_return, $.return_statement],
     [$.cursor_for_loop, $.for_statement],
     [$.pragma_statement, $._qualified_field],
+    // INMEMORY NO MEMCOMPRESS vs INMEMORY, then the next property NO INMEMORY / NO FLASHBACK ARCHIVE.
+    [$.inmemory_clause],
   ],
 
   rules: {

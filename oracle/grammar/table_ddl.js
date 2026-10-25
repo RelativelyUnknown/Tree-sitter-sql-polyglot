@@ -58,7 +58,9 @@ export default {
 
   // A column needs a datatype, except where the type is inferred or already
   // known: virtual columns (`b AS (a * 2)`), `MODIFY (c NULL)`, `MODIFY (c
-  // INVISIBLE)`. The typeless form therefore requires at least one property.
+  // INVISIBLE)`. The typeless form takes properties and NULL / NOT NULL only;
+  // key and CHECK constraints stay on typed columns, since `ADD x CHECK (...)`
+  // is an unnamed ADD CONSTRAINT.
   column_definition: $ => prec.left(choice(
     seq(
       field('name', $._column),
@@ -67,13 +69,14 @@ export default {
     ),
     seq(
       field('name', $._column),
-      repeat1($._column_constraint),
+      repeat1($._typeless_column_property),
     ),
   )),
 
   _constraint_name: $ => seq($.keyword_constraint, field('name', $.identifier)),
 
   _column_constraint: $ => prec.left(choice(
+    $._column_property,
     seq(
       optional($._constraint_name),
       choice(
@@ -86,6 +89,14 @@ export default {
       ),
       repeat($._constraint_state),
     ),
+  )),
+
+  _typeless_column_property: $ => prec.left(choice(
+    $._column_property,
+    seq(choice($.keyword_null, $._not_null), repeat($._constraint_state)),
+  )),
+
+  _column_property: $ => prec.left(choice(
     $._default_expression,
     $.direction,
     $._column_comment,
@@ -170,9 +181,9 @@ export default {
   // ENCRYPT [USING 'alg'] [IDENTIFIED BY pw] ['integrity'] [[NO] SALT]
   _encrypt_clause: $ => seq(
     $.keyword_encrypt,
-    optional(seq($.keyword_using, $.literal)),
+    optional(seq($.keyword_using, alias($._literal_string, $.literal))),
     optional(seq($.keyword_identified, $.keyword_by, $.identifier)),
-    optional($.literal),
+    optional(alias($._literal_string, $.literal)),
     optional(seq(optional($.keyword_no), $.keyword_salt)),
   ),
 

@@ -193,7 +193,7 @@ export default {
     seq($.keyword_pctfree, $.literal),
     seq($.keyword_pctused, $.literal),
     seq($.keyword_initrans, $.literal),
-    seq($.keyword_parallel, optional($.literal)),
+    seq($.keyword_parallel, optional(alias($._natural_number, $.literal))),
     $.keyword_noparallel,
     $.keyword_cache,
     $.keyword_nocache,
