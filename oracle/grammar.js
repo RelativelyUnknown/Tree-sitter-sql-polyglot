@@ -21,6 +21,7 @@ import oracle_alter_table_rules from './grammar/alter_table.js';
 import oracle_index_ddl_rules from './grammar/index_ddl.js';
 import oracle_query_rules from './grammar/query.js';
 import oracle_dml_rules from './grammar/dml.js';
+import oracle_plsql_core_rules from './grammar/plsql.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
@@ -68,7 +69,6 @@ export default canonicalOrder(grammar(base, {
     [$.list, $.cube_element],
     [$.assignment_statement, $._qualified_field],
     [$._function_return, $.return_statement],
-    [$.cursor_for_loop, $.for_statement],
     [$.pragma_statement, $._qualified_field],
     // INMEMORY NO MEMCOMPRESS vs INMEMORY, then the next property NO INMEMORY / NO FLASHBACK ARCHIVE.
     [$.inmemory_clause],
@@ -205,6 +205,7 @@ export default canonicalOrder(grammar(base, {
 
     // procedural control-flow (IF/WHILE/LOOP/FOR/RETURN/EXIT/CONTINUE/NULL/ASSIGN)
     statement: $ => seq(
+      repeat($.statement_label),
       optional(seq(
         $.keyword_explain,
         optional($.keyword_analyze),
@@ -218,7 +219,6 @@ export default canonicalOrder(grammar(base, {
         $.compound_statement,
         $.forall_statement,
         $.execute_immediate_statement,
-        $.cursor_for_loop,
         $.cursor_open_statement,
         $.cursor_fetch_statement,
         $.cursor_close_statement,
@@ -227,6 +227,9 @@ export default canonicalOrder(grammar(base, {
         $.while_statement,
         $.loop_statement,
         $.for_statement,
+        $.case_statement,
+        $.raise_statement,
+        $.goto_statement,
         $.return_statement,
         $.exit_statement,
         $.continue_statement,
@@ -633,6 +636,7 @@ export default canonicalOrder(grammar(base, {
     ...oracle_index_ddl_rules,
     ...oracle_query_rules,
     ...oracle_dml_rules,
+    ...oracle_plsql_core_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords

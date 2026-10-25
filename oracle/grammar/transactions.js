@@ -50,12 +50,7 @@ export default {
       ),
     ),
     optional(';'),
-    repeat(
-      seq(
-        $.statement,
-        ';'
-      ),
-    ),
+    repeat($._plsql_stmt),
     choice(
       $._commit,
       $._rollback,

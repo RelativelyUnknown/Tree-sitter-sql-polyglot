@@ -49,22 +49,10 @@ export default {
 
   // Package spec items: variable declarations, procedure/function forward
   // declarations, cursor declarations, exception declarations, and pragmas.
-  _package_spec_item: $ => choice(
-    $.variable_declaration,
-    $.cursor_declaration,
-    $.package_exception_declaration,
-    $.package_subprogram_declaration,
-    $.package_pragma,
-  ),
+  _package_spec_item: $ => $._declaration,
 
-  // Package body items may be any spec item plus full subprogram bodies.
-  _package_body_item: $ => choice(
-    $.variable_declaration,
-    $.cursor_declaration,
-    $.package_exception_declaration,
-    $.package_subprogram_body,
-    $.package_pragma,
-  ),
+  // Package body items are the same declarations, including full subprogram definitions.
+  _package_body_item: $ => $._declaration,
 
   // name EXCEPTION;
   package_exception_declaration: $ => seq(
