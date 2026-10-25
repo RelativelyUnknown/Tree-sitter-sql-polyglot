@@ -16,6 +16,9 @@ import oracle_ddl_ext_rules from './grammar/ddl_ext.js';
 import oracle_admin_ddl_rules from './grammar/admin_ddl.js';
 import oracle_mview_rules from './grammar/mviews.js';
 import oracle_table_ddl_rules from './grammar/table_ddl.js';
+import oracle_storage_rules from './grammar/storage.js';
+import oracle_alter_table_rules from './grammar/alter_table.js';
+import oracle_index_ddl_rules from './grammar/index_ddl.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
@@ -67,6 +70,40 @@ export default canonicalOrder(grammar(base, {
     [$.pragma_statement, $._qualified_field],
     // INMEMORY NO MEMCOMPRESS vs INMEMORY, then the next property NO INMEMORY / NO FLASHBACK ARCHIVE.
     [$.inmemory_clause],
+    // Clauses that end in a list of segment attributes, followed by more table attributes:
+    // `MOVE CACHE` is MOVE with an attribute or MOVE then CACHE.
+    [$.move_clause],
+    [$.add_overflow_clause],
+    [$.alter_partition],
+    [$.partition_definition],
+    [$.subpartition_definition],
+    [$.index_partition_action],
+    // COMPRESS FOR OLTP | QUERY | ARCHIVE vs COMPRESS, then the FOR STAGING table property.
+    [$.compression_clause],
+    // Constraint state (ENABLE / DISABLE / VALIDATE …) vs the next ALTER TABLE clause that starts the same way.
+    [$.add_unnamed_constraint],
+    [$.modify_constraint_clause],
+    [$.alter_constraint_state],
+    [$.constraint],
+    // … KEEP INDEX / DROP INDEX tail vs the next DROP clause.
+    [$.drop_key_clause],
+    [$.drop_constraint],
+    // FLASHBACK ARCHIVE [name]: the name vs a following column definition (ADD is optional there).
+    [$._oracle_table_attribute],
+    // ENCRYPT … NO SALT vs a following NO FLASHBACK ARCHIVE / NO INMEMORY / NO DROP clause.
+    [$._encrypt_clause],
+    // OVERFLOW <attributes> vs the table's own attributes that follow.
+    [$._index_organized_option],
+    // USING INDEX <attributes> vs the attributes of the statement that follow.
+    [$._constraint_state],
+    // MODIFY (c) ADD DOMAIN d / DROP DOMAIN vs a following ADD / DROP clause.
+    [$.modify_columns_clause],
+    // Index key `((c) …`: a composite key column list or the start of an expression.
+    [$._column, $._qualified_field, $.object_reference],
+    // LOB … STORE AS [segment name] vs a following column definition (ADD is optional there).
+    [$.lob_storage_clause],
+    // DEFAULT x NOT NULL: the NOT NULL is part of the default or a separate constraint.
+    [$._default_expression],
   ],
 
   rules: {
@@ -528,14 +565,18 @@ export default canonicalOrder(grammar(base, {
           repeat($._oracle_table_property),
           $.keyword_as, $.create_query,
         ),
+        // Object table: OF type [(constraints)] [OBJECT IDENTIFIER IS {SYSTEM GENERATED | PRIMARY KEY}]
+        seq(
+          $.keyword_of, $.object_reference,
+          optional(paren_list(choice($.constraint, $.column_definition), true)),
+          optional(seq($.keyword_object, $.keyword_identifier, $.keyword_is,
+            choice(seq($.keyword_system, $.keyword_generated), $._primary_key))),
+          repeat($._oracle_table_property),
+        ),
+        // Staging table for an exchange: FOR EXCHANGE WITH TABLE t
+        seq($.keyword_for, $.keyword_exchange, $.keyword_with, $.keyword_table, $.object_reference),
       ),
     )),
-
-    // ORGANIZATION {HEAP | INDEX | EXTERNAL}; index-organized tables (IOT) etc.
-    organization_clause: $ => seq(
-      $.keyword_organization,
-      choice($.keyword_heap, $.keyword_index, $.keyword_external),
-    ),
 
     // Oracle trigger with a PL/SQL block body (base mandates the Postgres
     // EXECUTE FUNCTION tail instead).
@@ -631,6 +672,9 @@ export default canonicalOrder(grammar(base, {
     ...oracle_mview_rules,
     ...oracle_admin_rules,
     ...oracle_match_recognize_rules,
+    ...oracle_storage_rules,
+    ...oracle_alter_table_rules,
+    ...oracle_index_ddl_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
@@ -720,6 +764,9 @@ export default canonicalOrder(grammar(base, {
     keyword_model:        _ => token(prec(1, make_keyword("model"))),
     keyword_shared:       _ => token(prec(1, make_keyword("shared"))),
     keyword_encrypted:    _ => token(prec(1, make_keyword("encrypted"))),
+
+    // Oracle identifiers may contain $ and # after the first character (ora$ptt_t, v$session).
+    _identifier: _ => /[A-Za-z_\u00C0-\u017F][0-9A-Za-z_$#\u00C0-\u017F]*/,
 
   },
 }));
