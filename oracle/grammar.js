@@ -15,6 +15,7 @@ import oracle_admin_rules from './grammar/admin.js';
 import oracle_ddl_ext_rules from './grammar/ddl_ext.js';
 import oracle_admin_ddl_rules from './grammar/admin_ddl.js';
 import oracle_mview_rules from './grammar/mviews.js';
+import oracle_table_ddl_rules from './grammar/table_ddl.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
@@ -500,20 +501,32 @@ export default canonicalOrder(grammar(base, {
     keyword_sample:         _ => token(prec(1, make_keyword("sample"))),
     keyword_statistics:     _ => token(prec(1, make_keyword("statistics"))),
 
-    // Override create_table to add optional partition clause
+    // Oracle CREATE TABLE: table kind, column list (or CTAS column names), the
+    // table properties in any order, then AS query. ORGANIZATION and PARTITION BY
+    // are table properties; the older "after AS query" position is kept.
     create_table: $ => prec.left(seq(
       $.keyword_create,
       optional($._or_replace),
-      optional($._temporary),
+      optional($._oracle_table_kind),
       $.keyword_table,
       optional($._if_not_exists),
       $.object_reference,
-      seq(
-        optional($.column_definitions),
-        optional(seq($.keyword_as, $.create_query)),
+      optional($.sharing_clause),
+      choice(
+        seq(
+          optional($.column_definitions),
+          repeat($._oracle_table_property),
+          optional(seq(
+            $.keyword_as, $.create_query,
+            repeat(choice($.organization_clause, $.table_partition_by)),
+          )),
+        ),
+        seq(
+          paren_list($.identifier, true),
+          repeat($._oracle_table_property),
+          $.keyword_as, $.create_query,
+        ),
       ),
-      optional($.organization_clause),
-      optional($.table_partition_by),
     )),
 
     // ORGANIZATION {HEAP | INDEX | EXTERNAL}; index-organized tables (IOT) etc.
@@ -610,6 +623,7 @@ export default canonicalOrder(grammar(base, {
     ...oracle_type_rules,
     ...oracle_hint_rules,
     ...oracle_partition_rules,
+    ...oracle_table_ddl_rules,
     ...oracle_ddl_ext_rules,
     ...oracle_admin_ddl_rules,
     ...oracle_mview_rules,
@@ -703,6 +717,7 @@ export default canonicalOrder(grammar(base, {
     keyword_locked:       _ => token(prec(1, make_keyword("locked"))),
     keyword_model:        _ => token(prec(1, make_keyword("model"))),
     keyword_shared:       _ => token(prec(1, make_keyword("shared"))),
+    keyword_encrypted:    _ => token(prec(1, make_keyword("encrypted"))),
 
   },
 }));
