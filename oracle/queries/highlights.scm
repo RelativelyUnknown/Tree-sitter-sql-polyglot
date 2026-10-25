@@ -395,3 +395,9 @@
 (keyword_signature) @keyword
 (keyword_sql_macro) @keyword
 (keyword_subtype) @keyword
+(keyword_bulk_exceptions) @keyword
+(keyword_bulk_rowcount) @keyword
+(keyword_found) @keyword
+(keyword_isopen) @keyword
+(keyword_notfound) @keyword
+(keyword_rowcount) @keyword

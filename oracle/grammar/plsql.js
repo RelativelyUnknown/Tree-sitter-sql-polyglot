@@ -1,4 +1,6 @@
 import { comma_list, paren_list, wrapped_in_parenthesis, make_keyword } from '../../grammar/helpers.js';
+import create_function_rules from '../../grammar/statements/create-function.js';
+import create_procedure_rules from '../../grammar/statements/create-procedure.js';
 
 // PL/SQL: blocks, declarations, subprograms, control flow and CREATE FUNCTION / PROCEDURE
 // (Oracle PL/SQL Language Reference 26ai). Statements inside a body end with ';' and may carry
@@ -8,6 +10,14 @@ const kw = (word) => token(prec(1, make_keyword(word)));
 
 export default {
 
+  keyword_bulk_exceptions: _ => kw('bulk_exceptions'),
+  keyword_bulk_rowcount:  _ => kw('bulk_rowcount'),
+  keyword_found:          _ => kw('found'),
+  keyword_isopen:         _ => kw('isopen'),
+  keyword_notfound:       _ => kw('notfound'),
+  keyword_rowcount:       _ => kw('rowcount'),
+  keyword_sequence: _ => kw('sequence'),
+  keyword_definer:        _ => kw('definer'),
   keyword_aggregate:      _ => kw('aggregate'),
   keyword_accessible:     _ => kw('accessible'),
   keyword_array:          _ => kw('array'),
@@ -214,7 +224,7 @@ export default {
   _subprogram_property: $ => choice(
     seq($.keyword_authid, choice($.keyword_current_user, $.keyword_definer)),
     $.keyword_deterministic,
-    seq($.keyword_pipelined, optional(seq($.keyword_row, $.keyword_polymorphic)), optional(seq($.keyword_using, $.object_reference))),
+    seq($.keyword_pipelined, optional(seq($.keyword_row, $.keyword_polymorphic))),
     seq(
       $.keyword_parallel_enable,
       optional(wrapped_in_parenthesis(seq(
@@ -301,7 +311,14 @@ export default {
 
   // ── CREATE FUNCTION / PROCEDURE ────────────────────────────────────────
 
-  create_function: $ => seq(
+  // The ISO / PostgreSQL-style forms (RETURNS, BEGIN ATOMIC, dollar-quoted bodies) this dialect
+  // inherited stay accepted next to the Oracle form.
+  create_function: $ => choice($._oracle_create_function, $._ansi_create_function),
+  create_procedure: $ => choice($._oracle_create_procedure, $._ansi_create_procedure),
+  _ansi_create_function: create_function_rules.create_function,
+  _ansi_create_procedure: create_procedure_rules.create_procedure,
+
+  _oracle_create_function: $ => seq(
     $.keyword_create,
     optional($._or_replace),
     optional(choice($.keyword_editionable, $.keyword_noneditionable)),
@@ -315,12 +332,12 @@ export default {
     repeat($._subprogram_property),
     choice(
       seq(choice($.keyword_is, $.keyword_as), choice($._subprogram_body, $.call_specification)),
-      seq($.keyword_aggregate, $.keyword_using, $.object_reference),
-      seq($.keyword_pipelined, $.keyword_using, $.object_reference),
+      // AGGREGATE USING impl | PIPELINED [ROW POLYMORPHIC] USING impl (PIPELINED is a property)
+      seq(optional($.keyword_aggregate), $.keyword_using, $.object_reference),
     ),
   ),
 
-  create_procedure: $ => seq(
+  _oracle_create_procedure: $ => seq(
     $.keyword_create,
     optional($._or_replace),
     optional(choice($.keyword_editionable, $.keyword_noneditionable)),
@@ -468,6 +485,232 @@ export default {
     ),
     optional(seq($.keyword_while, field('while', $._expression))),
     optional(seq($.keyword_when, field('when', $._expression))),
+  ),
+
+
+  // ── Cursors, dynamic SQL, bulk operations ──────────────────────────────
+
+  _cursor_target: $ => choice($.identifier, $.parameter),
+
+  // OPEN c [(args)] | OPEN cv FOR {select | 'dynamic sql'} [USING …]
+  cursor_open_statement: $ => seq(
+    $.keyword_open,
+    field('name', $._cursor_target),
+    choice(
+      optional(paren_list(choice($.named_argument, $._expression), true)),
+      seq(
+        $.keyword_for,
+        choice($._dml_read, $._expression),
+        optional($.using_clause),
+      ),
+    ),
+  ),
+
+  // USING [IN | OUT | IN OUT] expr, …
+  using_clause: $ => seq(
+    $.keyword_using,
+    comma_list(seq(
+      optional(choice($.keyword_in, $.keyword_out, seq($.keyword_in, $.keyword_out))),
+      $._expression,
+    ), true),
+  ),
+
+  _into_target: $ => choice(alias($._qualified_field, $.field), $.parameter),
+
+  // FETCH c INTO a, b | FETCH c BULK COLLECT INTO coll [LIMIT n]
+  cursor_fetch_statement: $ => seq(
+    $.keyword_fetch,
+    field('name', $._cursor_target),
+    choice(
+      seq($.keyword_into, comma_list($._into_target, true)),
+      seq(
+        $.keyword_bulk, $.keyword_collect, $.keyword_into,
+        comma_list($._into_target, true),
+        optional(seq($.keyword_limit, $._expression)),
+      ),
+    ),
+  ),
+
+  cursor_close_statement: $ => seq(
+    $.keyword_close,
+    field('name', $._cursor_target),
+  ),
+
+  // EXECUTE IMMEDIATE sql [[BULK COLLECT] INTO …] [USING …] [{RETURNING | RETURN} [BULK COLLECT] INTO …]
+  execute_immediate_statement: $ => seq(
+    $.keyword_execute,
+    $.keyword_immediate,
+    field('sql', $._expression),
+    optional(seq(
+      optional(seq($.keyword_bulk, $.keyword_collect)),
+      $.keyword_into,
+      comma_list($._into_target, true),
+    )),
+    optional($.using_clause),
+    optional(seq(
+      choice($.keyword_returning, $.keyword_return),
+      optional(seq($.keyword_bulk, $.keyword_collect)),
+      $.keyword_into,
+      comma_list($._into_target, true),
+    )),
+  ),
+
+  // FORALL i IN {lo .. hi | INDICES OF c [BETWEEN a AND b] | VALUES OF c} [SAVE EXCEPTIONS] dml
+  forall_statement: $ => seq(
+    $.keyword_forall,
+    field('index', $.identifier),
+    $.keyword_in,
+    choice(
+      seq(
+        field('lower', $._expression),
+        '..',
+        field('upper', $._expression),
+      ),
+      seq(
+        choice($.keyword_indices, $.keyword_values), $.keyword_of,
+        field('collection', choice($.object_reference, $.invocation)),
+        optional(prec.left('between', seq($.keyword_between, $._expression, $.keyword_and, $._expression))),
+      ),
+    ),
+    optional(seq($.keyword_save, $.keyword_exceptions)),
+    choice(
+      $.insert,
+      $._update_statement,
+      $._delete_statement,
+      $._merge_statement,
+      $.execute_immediate_statement,
+    ),
+  ),
+
+  // cursor%FOUND, SQL%ROWCOUNT, SQL%BULK_ROWCOUNT(i), SQL%BULK_EXCEPTIONS(i).ERROR_CODE
+  cursor_attribute: $ => prec.left(seq(
+    field('cursor', choice(alias($._qualified_field, $.field), $.parameter)),
+    '%',
+    choice(
+      $.keyword_found,
+      $.keyword_notfound,
+      $.keyword_isopen,
+      $.keyword_rowcount,
+      seq($.keyword_bulk_rowcount, wrapped_in_parenthesis($._expression)),
+      seq(
+        $.keyword_bulk_exceptions,
+        optional(wrapped_in_parenthesis($._expression)),
+        optional(seq('.', $.identifier)),
+      ),
+    ),
+  )),
+
+  // Function call or qualified expression: arguments may be positional, name => value, or the
+  // constructor choices of a qualified expression (t(1 => 'one'), t(FOR i IN 1 .. 5 => i * 2),
+  // r_t(1, OTHERS => 0)).
+  invocation: $ => prec(1,
+    seq(
+      $.object_reference,
+      choice(
+        // default invocation
+        paren_list(
+          seq(
+            optional($.keyword_distinct),
+            field(
+              'parameter',
+              choice($.term, $.named_argument, $._qualified_choice),
+            ),
+            optional($.order_by)
+          )
+        ),
+        // https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html#function_extract
+        paren_list(
+          seq(
+            field(
+              'unit',
+              $.object_reference,
+            ),
+            $.keyword_from,
+            $.term
+          )
+        ),
+        // _aggregate_function, e.g. group_concat
+        wrapped_in_parenthesis(
+          seq(
+            optional($.keyword_distinct),
+            field('parameter', $.term),
+            optional($.order_by),
+            optional(seq(
+              choice($.keyword_separator, ','),
+              alias($._literal_string, $.literal)
+            )),
+            optional($.limit),
+          ),
+        ),
+      ),
+      optional($.filter_expression),
+      optional($.within_group),
+    ),
+  ),
+
+  _qualified_choice: $ => choice(
+    $.index_choice,
+    $.iterator_choice,
+    seq($.keyword_others, '=>', $._expression),
+  ),
+
+  index_choice: $ => seq(
+    field('index', choice($.literal, $.binary_expression, $.parameter)),
+    '=>',
+    field('value', $._expression),
+  ),
+
+  iterator_choice: $ => seq(
+    $.keyword_for, $.for_iterand, $.keyword_in,
+    comma_list($.for_control, true),
+    optional(choice(seq($.keyword_index, $._expression), $.keyword_sequence)),
+    '=>',
+    field('value', $._expression),
+  ),
+
+  // f(i)(j) and f(i).field: calls and element access chained on a call
+  call_chain: $ => prec.left(seq(
+    $.invocation,
+    repeat1(choice(
+      wrapped_in_parenthesis($._expression),
+      seq('.', $.identifier),
+    )),
+  )),
+
+  // :arr(i) element of a host array
+  bind_array_element: $ => seq($.parameter, wrapped_in_parenthesis($._expression)),
+
+  // a ** b
+  exponent_expression: $ => prec.left('binary_exp', seq(
+    field('left', $._expression),
+    '**',
+    field('right', $._expression),
+  )),
+
+  // q'{text}', q'[text]', q'(text)', q'<text>', q'!text!' and friends
+  _q_quote_string: _ => token(choice(
+    /[nN]?[qQ]'\{([^}]|\}[^'])*\}'/,
+    /[nN]?[qQ]'\[([^\]]|\][^'])*\]'/,
+    /[nN]?[qQ]'\(([^)]|\)[^'])*\)'/,
+    /[nN]?[qQ]'<([^>]|>[^'])*>'/,
+    /[nN]?[qQ]'!([^!]|![^'])*!'/,
+    /[nN]?[qQ]'#([^#]|#[^'])*#'/,
+    /[nN]?[qQ]'\|([^|]|\|[^'])*\|'/,
+    /[nN]?[qQ]'\/([^/]|\/[^'])*\/'/,
+  )),
+
+  _literal_string: $ => prec(
+    1,
+    choice($._single_quote_string, $._q_quote_string),
+  ),
+
+  // WHERE CURRENT OF cursor
+  where: $ => seq(
+    $.keyword_where,
+    choice(
+      field('predicate', $._expression),
+      seq($.keyword_current, $.keyword_of, $.identifier),
+    ),
   ),
 
   // target := expr, where the target is a variable, field, collection element or host variable

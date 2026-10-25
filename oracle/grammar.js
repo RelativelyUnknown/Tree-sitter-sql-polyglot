@@ -63,7 +63,13 @@ export default canonicalOrder(grammar(base, {
     [$.transaction, $.rollback_statement],
     [$._commit, $.commit_statement],
     [$._rollback, $.rollback_statement],
-    [$.create_function],
+    [$._oracle_create_function, $._ansi_create_function],
+    [$._oracle_create_procedure, $._ansi_create_procedure],
+    // Both CREATE FUNCTION forms start `name type DEFAULT`: a plsql_parameter or a function_argument.
+    [$.function_argument, $._plsql_type],
+    // The inherited bodies repeat their option lists on both sides of the body.
+    [$._ansi_create_function],
+    [$._ansi_create_procedure],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
@@ -409,6 +415,10 @@ export default canonicalOrder(grammar(base, {
       $.timestamp_literal,
       $.keep_aggregate,
       $.outer_join_column,
+      $.cursor_attribute,
+      $.call_chain,
+      $.bind_array_element,
+      $.exponent_expression,
     )),
 
     // FIRST/LAST aggregate: fn(args) KEEP (DENSE_RANK {FIRST|LAST} ORDER BY …)

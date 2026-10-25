@@ -125,6 +125,8 @@ export default {
         $.keyword_values,
         comma_list(alias(paren_list(choice($._expression, $.keyword_default), true), $.list), true),
       ),
+      // INSERT … VALUES record | VALUES coll(i) (PL/SQL records)
+      seq($.keyword_values, choice($.invocation, $.object_reference)),
       seq($.keyword_by, choice($.keyword_name, $.keyword_position), $._dml_read),
       $._dml_read,
     ),
