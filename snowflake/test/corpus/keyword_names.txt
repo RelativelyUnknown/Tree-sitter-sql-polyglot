@@ -149,3 +149,93 @@ EXECUTE IMMEDIATE v2 || ',(80)';
           name: (identifier))
         operator: (op_other)
         right: (literal)))))
+
+================================================================================
+Keywords that are not reserved as column names in CREATE TABLE and INSERT
+================================================================================
+
+CREATE TABLE t (index INT, primary INT, foreign INT, identifier INT);
+INSERT INTO t (index, identifier) VALUES (1, 2);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_table)
+      (object_reference
+        name: (identifier))
+      (column_definitions
+        (column_definition
+          name: (identifier)
+          type: (int
+            (keyword_int)))
+        (column_definition
+          name: (identifier)
+          type: (int
+            (keyword_int)))
+        (column_definition
+          name: (identifier)
+          type: (int
+            (keyword_int)))
+        (column_definition
+          name: (identifier)
+          type: (int
+            (keyword_int))))))
+  (statement
+    (insert
+      (keyword_insert)
+      (keyword_into)
+      (object_reference
+        name: (identifier))
+      (list
+        (column
+          (identifier))
+        (column
+          (identifier)))
+      (keyword_values)
+      (list
+        (literal)
+        (literal)))))
+
+================================================================================
+Table constraints still parse next to keyword-named columns
+================================================================================
+
+CREATE TABLE t (index INT, a INT, PRIMARY KEY (a), FOREIGN KEY (a) REFERENCES u (b), INDEX ix (a));
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_table)
+      (object_reference
+        name: (identifier))
+      (column_definitions
+        (column_definition
+          name: (identifier)
+          type: (int
+            (keyword_int)))
+        (column_definition
+          name: (identifier)
+          type: (int
+            (keyword_int)))
+        (table_constraint
+          (keyword_primary)
+          (keyword_key)
+          (identifier))
+        (table_constraint
+          (keyword_foreign)
+          (keyword_key)
+          (identifier)
+          (keyword_references)
+          (object_reference
+            name: (identifier))
+          (identifier))
+        (index_definition
+          (keyword_index)
+          (identifier)
+          (identifier))))))
