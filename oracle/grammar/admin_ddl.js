@@ -203,7 +203,7 @@ export default {
   call_statement: $ => prec.right(seq(
     $.keyword_call,
     field('procedure', $.object_reference),
-    paren_list($._expression),
+    paren_list(choice($.named_argument, $._expression)),
     optional(seq($.keyword_into, field('target', $.parameter))),
   )),
 

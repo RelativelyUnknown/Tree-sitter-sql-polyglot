@@ -1,5 +1,5 @@
 import bigquery from '../bigquery/grammar.js';
-import { make_keyword, optional_parenthesis, paren_list, wrapped_in_parenthesis } from '../grammar/helpers.js';
+import { make_keyword, optional_parenthesis, paren_list, wrapped_in_parenthesis, canonicalOrder } from '../grammar/helpers.js';
 import spanner_ddl_rules from './grammar/ddl.js';
 import spanner_admin_rules from './grammar/admin.js';
 
@@ -8,7 +8,7 @@ import spanner_admin_rules from './grammar/admin.js';
 // Adds the Spanner-native schema surface: trailing PRIMARY KEY, INTERLEAVE
 // IN PARENT, STORING/NULL_FILTERED indexes, CHANGE STREAMs, ROW DELETION
 // POLICY.
-export default grammar(bigquery, {
+export default canonicalOrder(grammar(bigquery, {
   name: 'spanner_sql',
 
   // conflicts do not propagate from the parent; bigquery's list is copied
@@ -22,6 +22,12 @@ export default grammar(bigquery, {
     // Local shift/reduce ambiguity shared with like_expression's optional
     // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
+    // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
+    [$.transaction, $.start_transaction_statement],
+    [$.transaction, $.commit_statement],
+    [$.transaction, $.rollback_statement],
+    [$._commit, $.commit_statement],
+    [$._rollback, $.rollback_statement],
     [$.create_function],
     [$.add_constraint],
     [$.list, $.grouping_set],
@@ -128,6 +134,18 @@ export default grammar(bigquery, {
 
     // Spanner-specific keywords (dialect-level per AGENTS.md)
     keyword_stored:        _ => token(prec(1, make_keyword("stored"))),
+    keyword_reservoir:     _ => token(prec(1, make_keyword("reservoir"))),
+
+    // TABLESAMPLE { BERNOULLI | RESERVOIR } ( <n> { PERCENT | ROWS } ) [ REPEATABLE ( <seed> ) ]
+    tablesample: $ => seq(
+      $.keyword_tablesample,
+      choice($.keyword_bernoulli, $.keyword_reservoir),
+      '(',
+      $._natural_number,
+      choice($.keyword_percent, $.keyword_rows),
+      ')',
+      optional(seq($.keyword_repeatable, '(', $._natural_number, ')')),
+    ),
     keyword_sql:           _ => token(prec(1, make_keyword("sql"))),
 
     // Spanner GoogleSQL has no SQL-level FOR SYSTEM_TIME AS OF (stale reads are
@@ -286,4 +304,4 @@ export default grammar(bigquery, {
     ...spanner_admin_rules,
 
   },
-});
+}));

@@ -110,3 +110,32 @@
 [
   (keyword_map)
 ] @type.builtin
+
+; Keywords that moved out of the ISO base grammar into the rules of this dialect
+[
+  (keyword_cache)
+  (keyword_collate)
+  (keyword_concurrently)
+  (keyword_connection)
+  (keyword_deferrable)
+  (keyword_encrypted)
+  (keyword_initially)
+  (keyword_logged)
+  (keyword_modify)
+  (keyword_none)
+  (keyword_nowait)
+  (keyword_owned)
+  (keyword_owner)
+  (keyword_password)
+  (keyword_refresh)
+  (keyword_rename)
+  (keyword_reset)
+  (keyword_tables)
+  (keyword_tablespace)
+  (keyword_temp)
+  (keyword_unlogged)
+  (keyword_until)
+  (keyword_valid)
+  (keyword_value)
+  (keyword_wait)
+] @keyword

@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { comma_list, optional_parenthesis, paren_list, wrapped_in_parenthesis, make_keyword } from '../grammar/helpers.js';
+import { comma_list, optional_parenthesis, paren_list, wrapped_in_parenthesis, make_keyword, canonicalOrder } from '../grammar/helpers.js';
 import { fromClause } from '../grammar/statements/select.js';
 import pg_copy_rules from './grammar/copy.js';
 import pg_optimize_rules from './grammar/optimize.js';
@@ -12,8 +12,11 @@ import pg_notify_rules from './grammar/notify.js';
 import pg_statement_rules from './grammar/statements.js';
 import pg_maintenance_rules from './grammar/maintenance.js';
 import pg_object_rules from './grammar/objects.js';
+import dialect_transaction_rules from './grammar/transactions.js';
+import dialect_alter_rules from './grammar/alter_vendor.js';
+import dialect_legacy_rules from './grammar/legacy_statements.js';
 
-export default grammar(base, {
+export default canonicalOrder(grammar(base, {
   name: 'postgres_sql',
 
   conflicts: $ => [
@@ -23,19 +26,30 @@ export default grammar(base, {
     // Local shift/reduce ambiguity shared with like_expression's optional
     // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
+    // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
+    [$.transaction, $.start_transaction_statement],
+    [$.transaction, $.commit_statement],
+    [$.transaction, $.rollback_statement],
+    [$._commit, $.commit_statement],
+    [$._rollback, $.rollback_statement],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
   ],
 
-  externals: $ => [
+  externals: ($, previous) => [
+    ...previous,
     $._dollar_quoted_string_start_tag,
     $._dollar_quoted_string_end_tag,
     $._dollar_quoted_string,
   ],
 
   rules: {
+    ...dialect_transaction_rules,
+    ...dialect_alter_rules,
+    ...dialect_legacy_rules,
+
 
     // LIMIT is supported: fromClause with limit re-adds it over the ANSI base.
     from: $ => fromClause($, { limit: true }),
@@ -272,6 +286,7 @@ export default grammar(base, {
     _expression: $ => prec(1,
       choice(
         $.literal,
+        $.position_expression,
         alias($._qualified_field, $.field),
         $.parameter,
         $.list,
@@ -796,4 +811,4 @@ export default grammar(base, {
     ...pg_object_rules,
 
   },
-});
+}));

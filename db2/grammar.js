@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, comma_list, paren_list, make_keyword, wrapped_in_parenthesis } from '../grammar/helpers.js';
+import { optional_parenthesis, comma_list, paren_list, make_keyword, wrapped_in_parenthesis, canonicalOrder } from '../grammar/helpers.js';
 import db2_modules_rules from './grammar/modules.js';
 import db2_data_control_rules from './grammar/data_control.js';
 import db2_isolation_rules from './grammar/isolation.js';
@@ -9,8 +9,11 @@ import db2_audit_rules from './grammar/audit.js';
 import db2_procedural_rules from './grammar/procedural.js';
 import db2_admin_ddl_rules from './grammar/admin.js';
 import db2_clause_rules from './grammar/clauses.js';
+import dialect_transaction_rules from './grammar/transactions.js';
+import dialect_alter_rules from './grammar/alter_vendor.js';
+import dialect_legacy_rules from './grammar/legacy_statements.js';
 
-export default grammar(base, {
+export default canonicalOrder(grammar(base, {
   name: 'db2_sql',
 
   conflicts: $ => [
@@ -21,6 +24,12 @@ export default grammar(base, {
     // Local shift/reduce ambiguity shared with like_expression's optional
     // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
+    // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
+    [$.transaction, $.start_transaction_statement],
+    [$.transaction, $.commit_statement],
+    [$.transaction, $.rollback_statement],
+    [$._commit, $.commit_statement],
+    [$._rollback, $.rollback_statement],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
@@ -31,6 +40,10 @@ export default grammar(base, {
   ],
 
   rules: {
+    ...dialect_transaction_rules,
+    ...dialect_alter_rules,
+    ...dialect_legacy_rules,
+
 
     // Extend _ddl_statement to add Db2-specific DDL
     _ddl_statement: $ => choice(
@@ -345,10 +358,10 @@ export default grammar(base, {
     keyword_client:       _ => make_keyword("client"),
     keyword_compress:     _ => token(prec(1, make_keyword("compress"))),
     keyword_current_user: _ => token(prec(1, make_keyword("current_user"))),
-    keyword_cursors:      _ => make_keyword("cursors"),
+    keyword_cursors:      _ => token(prec(1, make_keyword("cursors"))),
     keyword_hierarchy:    _ => token(prec(1, make_keyword("hierarchy"))),
     keyword_insensitive:  _ => token(prec(1, make_keyword("insensitive"))),
-    keyword_locks:        _ => make_keyword("locks"),
+    keyword_locks:        _ => token(prec(1, make_keyword("locks"))),
     keyword_mapping:      _ => token(prec(1, make_keyword("mapping"))),
     keyword_method:       _ => make_keyword("method"),
     keyword_modification: _ => make_keyword("modification"),
@@ -633,4 +646,4 @@ export default grammar(base, {
     keyword_double: _ => token(prec(1, make_keyword("double"))),
 
   },
-});
+}));

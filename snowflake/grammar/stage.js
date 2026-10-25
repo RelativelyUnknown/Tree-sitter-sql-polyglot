@@ -10,7 +10,7 @@ export default {
   //   [COMMENT = 'str']
   create_stage: $ => seq(
     $.keyword_create,
-    optional($._or_replace),
+    optional($._or_replace_or_alter),
     optional($._temporary),
     $.keyword_stage,
     optional($._if_not_exists),
@@ -77,7 +77,7 @@ export default {
 
   // LIST @stage [PATTERN = 'regex']
   list_stage_statement: $ => seq(
-    $.keyword_list,
+    choice($.keyword_list, $.keyword_ls),
     $.stage_ref,
     optional(seq($.keyword_pattern, '=', alias($._literal_string, $.literal))),
   ),

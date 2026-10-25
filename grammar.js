@@ -4,8 +4,9 @@ import column_list_rules from "./grammar/column-lists.js";
 import expression_rules from "./grammar/expressions.js";
 import transaction_rules from "./grammar/transactions.js";
 import statement_rules from "./grammar/statements/index.js";
+import { canonicalOrder } from './grammar/helpers.js';
 
-export default grammar({
+export default canonicalOrder(grammar({
   name: 'sql',
 
   // /\s/ alone covers every whitespace character including newlines. An earlier
@@ -66,15 +67,20 @@ export default grammar({
     global: $ => [$.keyword_on],
   },
 
+  // ISO POSITION(needle IN haystack): produced by the external scanner only for that shape, so
+  // `position` stays usable as a column name and function name everywhere else.
+  externals: $ => [
+    $._position_call,
+    $._position_regex_call,
+    $._substring_regex_call,
+  ],
+
   rules: {
     program: $ => seq(
-      // any number of transactions or statements with a terminating ;
+      // any number of statements with a terminating ;
       repeat(
         seq(
-          choice(
-            $.transaction,
-            $.statement,
-          ),
+          $.statement,
           ';',
         ),
       ),
@@ -97,4 +103,4 @@ export default grammar({
 
   }
 
-});
+}));

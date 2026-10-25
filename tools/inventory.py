@@ -65,11 +65,15 @@ ROOT = Path(__file__).resolve().parent.parent
 INVENTORY_DIR = ROOT / "tools" / "inventory"
 RESULTS_DIR = ROOT / "tools" / "inventory-results"
 CACHE_DIR = RESULTS_DIR / ".cache"
-CORPUS_JSON = ROOT / "tools" / "corpus.json"
+CORPUS_JSON = ROOT / "tools" / "corpus" / "corpus.json"
 INVENTORY_MD = ROOT / "docs" / "inventory.md"
 VERIFY_DIR = ROOT / "tools" / "inventory-verify"
 
 TIER_WEIGHT = {"high": 3, "medium": 2, "low": 1}
+# Which parse check produced a results file. 1 = `parse -q` (a recovered parse with an inserted hidden
+# token counted as success); 2 = coverage.ours_parses also rejects zero-width named nodes. --check does
+# not compare against a baseline from an older check: probes it counted as parsed may not have.
+MEASURE = 2
 STATUSES = {"not-applicable", "not-sql"}
 ID_RE = re.compile(r"^[a-z0-9][a-z0-9_]*$")
 
@@ -219,7 +223,9 @@ def corroborate(dialect, items, corroborators, cache):
     for k, sql in items.items():
         h = sql_hash(sql)
         cached = cache.get(h, {})
-        verdicts = {}
+        # A corroborator that is not installed here (ANTLR needs a JDK and a build) keeps the verdicts
+        # already recorded for it, so a run without it cannot change a probe's status.
+        verdicts = dict(cached)
         for c in active:
             if c.name in cached:
                 verdicts[c.name] = cached[c.name]
@@ -257,6 +263,62 @@ def load_cache(dialect: str) -> dict:
         for h, v in (json.loads(res.read_text()).get("corroboration_cache") or {}).items():
             cache[h] = {**v, **cache.get(h, {})}
     return cache
+
+
+# Weighted completeness: what share of each statement category's probes we parse, weighted so that
+# queries, data changes and DDL count for more than grants and transactions. Statements that fit no
+# category (SHOW, SET, EXPLAIN, utility) are reported but not scored. Target: WEIGHTED_TARGET per dialect.
+CATEGORY_WEIGHT = {"DQL": 0.30, "DML": 0.25, "DDL": 0.30, "DCL": 0.075, "TCL": 0.075}
+WEIGHTED_TARGET = 75.0
+_CATEGORY_RULES = [
+    ("DCL", r"grant|revoke|deny|role|user|login|policy|privilege|permission|password|security_label"),
+    ("TCL", r"^(begin|commit|rollback|savepoint|release|start_transaction|set_transaction|transaction|"
+            r"end|abort|prepare_transaction)\b|^(begin|start|set)_?transaction|savepoint|"
+            r"commit|rollback"),
+    ("DML", r"^(insert|update|delete|merge|upsert|replace|copy|load|unload|export|import|call|put|get)"),
+    ("DQL", r"^(select|values|with|table|query|pipe|from|where|group_by|having|order_by|qualify|limit|"
+            r"offset|hints|for_clause|set_operat|join|window|pivot|unpivot|match_recognize|subquery|"
+            r"tablesample|sample|lateral|unnest)"),
+    ("DDL", r"^(create|alter|drop|rename|comment|truncate|undrop|analyze_table|declare_type)"),
+]
+
+
+def category_of(key: str, rec: dict):
+    """DQL/DML/DDL/DCL/TCL for an inventory entry, or None for utility statements."""
+    if rec.get("section") == "expressions":
+        return "DQL"
+    ident = key.split(".", 1)[-1]
+    if re.match(r"(show|describe|help|use|explain)_?", ident):
+        return None
+    for cat, pattern in _CATEGORY_RULES:
+        if re.search(pattern, ident):
+            return cat
+    return None
+
+
+def weighted_score(entries: dict) -> dict:
+    """Weighted completeness over high and medium tier probes (suspect counts as parsed)."""
+    cats = {c: [0, 0] for c in CATEGORY_WEIGHT}
+    unscored = 0
+    for key, rec in entries.items():
+        if rec.get("tier") not in ("high", "medium") or not rec.get("probes"):
+            continue
+        cat = category_of(key, rec)
+        n = len(rec["probes"])
+        if cat is None:
+            unscored += n
+            continue
+        ok = sum(1 for p in rec["probes"].values() if p["status"] in ("implemented", "suspect"))
+        cats[cat][0] += ok
+        cats[cat][1] += n
+    pct = {c: (100.0 * ok / n if n else None) for c, (ok, n) in cats.items()}
+    live = {c: w for c, w in CATEGORY_WEIGHT.items() if pct[c] is not None}
+    wsum = sum(live.values())
+    score = sum(pct[c] * w for c, w in live.items()) / wsum if wsum else 0.0
+    return {"score": round(score, 1),
+            "categories": {c: {"ok": cats[c][0], "total": cats[c][1],
+                               "pct": None if pct[c] is None else round(pct[c], 1)} for c in cats},
+            "unscored_probes": unscored}
 
 
 def evaluate_dialect(inv, corroborators, cache, run_corroborators=True):
@@ -305,8 +367,10 @@ def evaluate_dialect(inv, corroborators, cache, run_corroborators=True):
     ex_ok = sum(s.get("examples_parsed", 0) for s in stmts.values())
     ex_n = sum(s.get("examples_total", 0) for s in stmts.values())
     return {
+        "measure": MEASURE,
         "engine": inv.get("engine"), "version": inv.get("version"), "source": inv.get("source"),
         "score": round(100.0 * got / total, 1) if total else 0.0,
+        "weighted": weighted_score(stmts),
         "statements": {st: count("statements", st)
                        for st in ("full", "partial", "absent", "not-applicable", "not-sql")},
         "probes": {st: sum(1 for p in all_probes if p["status"] == st)
@@ -322,7 +386,8 @@ def print_dialect(d, r, verbose):
     print(f"[inventory] {d:<12} {r['score']:>5}%  statements full/partial/absent "
           f"{s['full']}/{s['partial']}/{s['absent']} (n/a {s['not-applicable'] + s['not-sql']})  "
           f"probes ok {p['implemented']} gap {p['gap']} unconfirmed {p['unconfirmed']} "
-          f"suspect {p['suspect']}  examples {r['examples']['parsed']}/{r['examples']['total']}")
+          f"suspect {p['suspect']}  examples {r['examples']['parsed']}/{r['examples']['total']}  "
+          f"weighted {(r.get('weighted') or weighted_score(r['entries']))['score']}%")
     if not verbose:
         return
     for key, st in r["entries"].items():
@@ -525,7 +590,13 @@ def main() -> int:
         failures = []
         for d, r in results.items():
             res = RESULTS_DIR / f"{d}.json"
-            was = (json.loads(res.read_text()).get("entries") or {}) if res.exists() else {}
+            baseline = json.loads(res.read_text()) if res.exists() else {}
+            if baseline and baseline.get("measure", 1) < MEASURE:
+                print(f"[inventory] {d}: baseline was measured with an older parse check "
+                      f"(measure {baseline.get('measure', 1)} < {MEASURE}); skipping the regression comparison. "
+                      "Commit the fresh-inventory artifact to move the baseline to the current check.")
+                continue
+            was = baseline.get("entries") or {}
             for key, st in r["entries"].items():
                 for pid, pr in (st.get("probes") or {}).items():
                     old = ((was.get(key) or {}).get("probes") or {}).get(pid)
@@ -533,6 +604,10 @@ def main() -> int:
                             and old["status"] in ("implemented", "suspect")
                             and pr["status"] not in ("implemented", "suspect")):
                         failures.append(f"{d}: {key}.{pid} used to parse: {pr['sql'][:100]}")
+            floor = (baseline.get("weighted") or {}).get("score") if baseline else None
+            now = r["weighted"]["score"]
+            if floor is not None and now < floor - 0.05:
+                failures.append(f"{d}: weighted score {now}% fell below the recorded {floor}%")
         if failures:
             print("\nFAILED: regressions against tools/inventory-results/:")
             for f in failures:

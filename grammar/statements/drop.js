@@ -1,14 +1,14 @@
+// ISO 9075 DROP statements. Each takes a required <drop behavior> (CASCADE | RESTRICT), except DROP ROLE.
+// IF EXISTS and DROP INDEX / MATERIALIZED VIEW / DATABASE / USER / GROUP are vendor syntax and live in
+// each dialect's grammar/legacy_statements.js.
 export default {
 
   _drop_statement: $ => seq(
     choice(
       $.drop_table,
       $.drop_view,
-      $.drop_materialized_view,
-      $.drop_index,
       $.drop_type,
       $.drop_schema,
-      $.drop_database,
       $.drop_role,
       $.drop_sequence,
       $.drop_function,
@@ -16,104 +16,20 @@ export default {
     ),
   ),
 
-  drop_table: $ => seq(
-    $.keyword_drop,
-    $.keyword_table,
-    optional($._if_exists),
-    $.object_reference,
-    optional($._drop_behavior),
-  ),
+  drop_table: $ => seq($.keyword_drop, $.keyword_table, $.object_reference, $._drop_behavior),
 
-  drop_view: $ => seq(
-    $.keyword_drop,
-    $.keyword_view,
-    optional($._if_exists),
-    $.object_reference,
-    optional($._drop_behavior),
-  ),
+  drop_view: $ => seq($.keyword_drop, $.keyword_view, $.object_reference, $._drop_behavior),
 
-  drop_materialized_view: $ => seq(
-    $.keyword_drop,
-    $.keyword_materialized,
-    $.keyword_view,
-    optional($._if_exists),
-    $.object_reference,
-    optional($._drop_behavior),
-  ),
+  drop_schema: $ => seq($.keyword_drop, $.keyword_schema, $.identifier, $._drop_behavior),
 
-  drop_schema: $ => seq(
-    $.keyword_drop,
-    $.keyword_schema,
-    optional($._if_exists),
-    $.identifier,
-    optional($._drop_behavior)
-  ),
+  drop_role: $ => seq($.keyword_drop, $.keyword_role, $.identifier),
 
-  drop_database: $ => prec.left(seq(
-    $.keyword_drop,
-    $.keyword_database,
-    optional($._if_exists),
-    $.identifier,
-    optional($.keyword_with),
-    optional($.keyword_force),
-  )),
+  drop_type: $ => seq($.keyword_drop, $.keyword_type, $.object_reference, $._drop_behavior),
 
-  drop_role: $ => seq(
-    $.keyword_drop,
-    choice(
-      $.keyword_group,
-      $.keyword_role,
-      $.keyword_user,
-    ),
-    optional($._if_exists),
-    $.identifier,
-  ),
+  drop_sequence: $ => seq($.keyword_drop, $.keyword_sequence, $.object_reference, $._drop_behavior),
 
-  drop_type: $ => seq(
-    $.keyword_drop,
-    $.keyword_type,
-    optional($._if_exists),
-    $.object_reference,
-    optional($._drop_behavior),
-  ),
+  drop_function: $ => seq($.keyword_drop, $.keyword_function, $.object_reference, $._drop_behavior),
 
-  drop_sequence: $ => seq(
-    $.keyword_drop,
-    $.keyword_sequence,
-    optional($._if_exists),
-    $.object_reference,
-    optional($._drop_behavior),
-  ),
-
-  drop_index: $ => seq(
-    $.keyword_drop,
-    $.keyword_index,
-    optional($.keyword_concurrently),
-    optional($._if_exists),
-    field('name', $.identifier),
-    optional($._drop_behavior),
-    optional(
-      seq(
-          $.keyword_on,
-          $.object_reference,
-      ),
-    ),
-  ),
-
-  drop_function: $ => seq(
-    $.keyword_drop,
-    $.keyword_function,
-    optional($._if_exists),
-    $.object_reference,
-    optional($._drop_behavior),
-  ),
-
-  drop_procedure: $ => seq(
-    $.keyword_drop,
-    $.keyword_procedure,
-    optional($._if_exists),
-    $.object_reference,
-    optional($._drop_behavior),
-  ),
+  drop_procedure: $ => seq($.keyword_drop, $.keyword_procedure, $.object_reference, $._drop_behavior),
 
 };

@@ -1,11 +1,11 @@
 import trino from '../trino/grammar.js';
-import { createStatementChoices } from '../grammar/statements/create.js';
-import { optional_parenthesis, paren_list, make_keyword } from '../grammar/helpers.js';
+import { createStatementChoices } from '../trino/grammar/legacy_statements.js';
+import { optional_parenthesis, paren_list, make_keyword, canonicalOrder } from '../grammar/helpers.js';
 import athena_statement_rules from './grammar/statements.js';
 import athena_create_rules from './grammar/create.js';
 import athena_admin_rules from './grammar/admin.js';
 
-export default grammar(trino, {
+export default canonicalOrder(grammar(trino, {
   name: 'athena_sql',
 
   conflicts: $ => [
@@ -15,6 +15,12 @@ export default grammar(trino, {
     // Local shift/reduce ambiguity shared with like_expression's optional
     // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
+    // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
+    [$.transaction, $.start_transaction_statement],
+    [$.transaction, $.commit_statement],
+    [$.transaction, $.rollback_statement],
+    [$._commit, $.commit_statement],
+    [$._rollback, $.rollback_statement],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
@@ -194,4 +200,4 @@ export default grammar(trino, {
     ...athena_create_rules,
 
   },
-});
+}));

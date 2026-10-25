@@ -2,6 +2,16 @@ import { comma_list, paren_list, optional_parenthesis, make_keyword } from '../.
 
 export default {
 
+  // TABLESAMPLE [ BERNOULLI | SYSTEM ] ( <percentage> ) [ REPEATABLE ( <seed> ) ]; the method is optional in HANA.
+  tablesample: $ => seq(
+    $.keyword_tablesample,
+    optional(choice($.keyword_bernoulli, $.keyword_system)),
+    '(',
+    $._natural_number,
+    ')',
+    optional(seq($.keyword_repeatable, '(', $._natural_number, ')')),
+  ),
+
   // HANA: CREATE [COLUMN|ROW] [GLOBAL TEMPORARY|LOCAL TEMPORARY] TABLE
   create_table: $ => prec.right(
     seq(

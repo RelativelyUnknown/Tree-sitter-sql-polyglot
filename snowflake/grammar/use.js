@@ -1,3 +1,5 @@
+import { comma_list } from '../../grammar/helpers.js';
+
 export default {
 
   // USE [DATABASE | SCHEMA | WAREHOUSE | ROLE] name
@@ -22,6 +24,7 @@ export default {
     choice(
       $.keyword_all,
       $.keyword_none,
+      comma_list($.identifier, true),
     ),
   ),
 

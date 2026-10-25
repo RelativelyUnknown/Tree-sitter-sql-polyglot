@@ -1,46 +1,10 @@
+// ISO 9075 transaction statements. Everything here is in the standard (section 17); the
+// non-ISO spellings that dialects accept (BEGIN blocks, COMMIT TRANSACTION, optional SAVEPOINT,
+// DEFERRABLE / SNAPSHOT modes) live in `vendor_transaction_rules` below, which a dialect opts into.
+
 export default {
 
-  transaction: $ => seq(
-    choice(
-      seq(
-        $.keyword_begin,
-        optional(
-          choice(
-            $.keyword_transaction,
-            $.keyword_work,
-          ),
-        ),
-      ),
-      seq(
-        $.keyword_start,
-        $.keyword_transaction,
-        optional(
-          seq(
-            $.transaction_mode,
-            repeat(
-              seq(
-                optional(','),
-                $.transaction_mode,
-              ),
-            ),
-          ),
-        ),
-      ),
-    ),
-    optional(';'),
-    repeat(
-      seq(
-        $.statement,
-        ';'
-      ),
-    ),
-    choice(
-      $._commit,
-      $._rollback,
-    ),
-  ),
-
-  // ANSI <transaction mode>: isolation level or access mode
+  // <transaction mode> ::= <isolation level> | <transaction access mode> | <diagnostics size>
   transaction_mode: $ => choice(
     seq(
       $.keyword_isolation,
@@ -54,56 +18,79 @@ export default {
     ),
     seq($.keyword_read, $.keyword_only),
     seq($.keyword_read, $.keyword_write),
+    $.transaction_diagnostics,
   ),
 
-  _commit: $ => seq(
+  // <diagnostics size> ::= DIAGNOSTICS SIZE <number of conditions>
+  transaction_diagnostics: $ => seq(
+    $.keyword_diagnostics,
+    $.keyword_size,
+    $.literal,
+  ),
+
+  // AND [ NO ] CHAIN
+  _transaction_chain: $ => seq(
+    $.keyword_and,
+    optional($.keyword_no),
+    $.keyword_chain,
+  ),
+
+  // <start transaction statement> ::= START TRANSACTION [ <transaction mode> [ , ... ] ]
+  start_transaction_statement: $ => seq(
+    $.keyword_start,
+    $.keyword_transaction,
+    optional(
+      seq(
+        $.transaction_mode,
+        repeat(seq(',', $.transaction_mode)),
+      ),
+    ),
+  ),
+
+  // <commit statement> ::= COMMIT [ WORK ] [ AND [ NO ] CHAIN ]
+  commit_statement: $ => seq(
     $.keyword_commit,
-    optional(
-      choice(
-        $.keyword_transaction,
-        $.keyword_work,
-      ),
-    ),
+    optional($.keyword_work),
+    optional($._transaction_chain),
   ),
 
-  _rollback: $ => seq(
+  // <rollback statement> ::= ROLLBACK [ WORK ] [ AND [ NO ] CHAIN ] [ <savepoint clause> ]
+  rollback_statement: $ => seq(
     $.keyword_rollback,
-    optional(
-      choice(
-        $.keyword_transaction,
-        $.keyword_work,
-      ),
-    ),
+    optional($.keyword_work),
+    optional($._transaction_chain),
   ),
 
-  _transaction_statement: $ => choice(
-    $.savepoint_statement,
-    $.release_savepoint_statement,
-    $.rollback_to_savepoint_statement,
+  // <savepoint clause> ::= TO SAVEPOINT <savepoint specifier>
+  rollback_to_savepoint_statement: $ => seq(
+    $.keyword_rollback,
+    optional($.keyword_work),
+    optional($._transaction_chain),
+    $.keyword_to,
+    $.keyword_savepoint,
+    field('name', $.identifier),
   ),
 
+  // <savepoint statement> ::= SAVEPOINT <savepoint specifier>
   savepoint_statement: $ => seq(
     $.keyword_savepoint,
     field('name', $.identifier),
   ),
 
+  // <release savepoint statement> ::= RELEASE SAVEPOINT <savepoint specifier>
   release_savepoint_statement: $ => seq(
     $.keyword_release,
-    optional($.keyword_savepoint),
+    $.keyword_savepoint,
     field('name', $.identifier),
   ),
 
-  rollback_to_savepoint_statement: $ => seq(
-    $.keyword_rollback,
-    optional(
-      choice(
-        $.keyword_transaction,
-        $.keyword_work,
-      ),
-    ),
-    $.keyword_to,
-    optional($.keyword_savepoint),
-    field('name', $.identifier),
+  _transaction_statement: $ => choice(
+    $.commit_statement,
+    $.rollback_statement,
+    $.start_transaction_statement,
+    $.savepoint_statement,
+    $.release_savepoint_statement,
+    $.rollback_to_savepoint_statement,
   ),
 
 };

@@ -1,5 +1,8 @@
 import { comma_list } from "../helpers.js";
 
+// <insert statement> ::= INSERT INTO <table> { [ (cols) ] VALUES rows | [ (cols) ] <query> | DEFAULT VALUES }
+// ON CONFLICT, ON DUPLICATE KEY UPDATE, INSERT ... SET and an optional INTO are vendor syntax and live in
+// each dialect's grammar/legacy_statements.js.
 export default {
 
   _insert_statement: $ => seq(
@@ -8,52 +11,12 @@ export default {
 
   insert: $ => seq(
     $.keyword_insert,
-    optional($.keyword_into),
+    $.keyword_into,
     $.object_reference,
-    optional(
-      seq(
-        $.keyword_as,
-        field('alias', $.identifier)
-      ),
-    ),
     choice(
       $._insert_values,
-      $._set_values,
+      seq($.keyword_default, $.keyword_values),
     ),
-  ),
-
-  _on_conflict: $ => seq(
-    $.keyword_on,
-    $.keyword_conflict,
-    optional($.conflict_target),
-    $.keyword_do,
-    choice(
-      $.keyword_nothing,
-      seq(
-        $.keyword_update,
-        $._set_values,
-        optional($.where),
-      ),
-    ),
-  ),
-
-  // ON CONFLICT (col [, …]) [WHERE predicate] | ON CONSTRAINT name
-  conflict_target: $ => choice(
-    seq('(', comma_list($._expression), ')', optional($.where)),
-    seq($.keyword_on, $.keyword_constraint, field('name', $.identifier)),
-  ),
-
-  _on_duplicate_key_update: $ => seq(
-    $.keyword_on,
-    $.keyword_duplicate,
-    $.keyword_key,
-    $.keyword_update,
-    $.assignment_list,
-  ),
-
-  assignment_list: $ => seq(
-    $.assignment,
-    repeat(seq(',', $.assignment)),
   ),
 
   assignment: $ => seq(
@@ -78,6 +41,7 @@ export default {
     ),
   ),
 
+  // <set clause list> ::= <set clause> [ , ... ]
   _set_values: $ => seq(
     $.keyword_set,
     comma_list($.assignment, true),

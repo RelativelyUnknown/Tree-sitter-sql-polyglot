@@ -1,5 +1,5 @@
 import postgres from '../postgres/grammar.js';
-import { comma_list, optional_parenthesis, wrapped_in_parenthesis, paren_list, make_keyword } from '../grammar/helpers.js';
+import { comma_list, optional_parenthesis, wrapped_in_parenthesis, paren_list, make_keyword, canonicalOrder } from '../grammar/helpers.js';
 import crdb_statement_rules from './grammar/statements.js';
 import crdb_admin_rules from './grammar/admin.js';
 import crdb_clause_rules from './grammar/clauses.js';
@@ -8,7 +8,7 @@ import crdb_clause_rules from './grammar/clauses.js';
 // syntax), layered on the postgres grammar. Adds the CockroachDB-native
 // distributed-SQL surface: AS OF SYSTEM TIME, UPSERT, BACKUP/RESTORE,
 // IMPORT INTO, CREATE CHANGEFEED, hash-sharded indexes, SHOW statements.
-export default grammar(postgres, {
+export default canonicalOrder(grammar(postgres, {
   name: 'cockroachdb_sql',
 
   // conflicts do not propagate from the parent; postgres's list is copied
@@ -20,6 +20,12 @@ export default grammar(postgres, {
     // Local shift/reduce ambiguity shared with like_expression's optional
     // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
+    // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
+    [$.transaction, $.start_transaction_statement],
+    [$.transaction, $.commit_statement],
+    [$.transaction, $.rollback_statement],
+    [$._commit, $.commit_statement],
+    [$._rollback, $.rollback_statement],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
@@ -293,4 +299,4 @@ export default grammar(postgres, {
     ...crdb_clause_rules,
 
   },
-});
+}));

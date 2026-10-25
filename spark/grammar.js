@@ -1,5 +1,5 @@
 import hive from '../hive/grammar.js';
-import { paren_list, optional_parenthesis, comma_list, make_keyword } from '../grammar/helpers.js';
+import { paren_list, optional_parenthesis, comma_list, make_keyword, canonicalOrder } from '../grammar/helpers.js';
 import spark_create_rules from './grammar/create.js';
 import spark_optimize_rules from './grammar/optimize.js';
 import spark_spark4_rules from './grammar/spark4_features.js';
@@ -10,7 +10,7 @@ import spark_cache_rules from './grammar/cache.js';
 import spark_resource_rules from './grammar/resource.js';
 import spark_clause_rules from './grammar/clauses.js';
 
-export default grammar(hive, {
+export default canonicalOrder(grammar(hive, {
   name: 'spark_sql',
 
   conflicts: $ => [
@@ -20,6 +20,12 @@ export default grammar(hive, {
     // Local shift/reduce ambiguity shared with like_expression's optional
     // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
+    // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
+    [$.transaction, $.start_transaction_statement],
+    [$.transaction, $.commit_statement],
+    [$.transaction, $.rollback_statement],
+    [$._commit, $.commit_statement],
+    [$._rollback, $.rollback_statement],
     [$.from],
     [$.create_function],
     [$.list, $.grouping_set],
@@ -225,6 +231,7 @@ export default grammar(hive, {
     // Override _expression to add collate and variant_path
     _expression: $ => prec(1, choice(
       $.literal,
+      $.position_expression,
       alias($._qualified_field, $.field),
       $.parameter,
       $.list,
@@ -572,4 +579,4 @@ export default grammar(hive, {
     keyword_varying: _ => token(prec(1, make_keyword("varying"))),
 
   },
-});
+}));

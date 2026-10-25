@@ -1,11 +1,14 @@
 import base from '../grammar.js';
-import { optional_parenthesis, comma_list, paren_list, make_keyword, wrapped_in_parenthesis } from '../grammar/helpers.js';
+import { optional_parenthesis, comma_list, paren_list, make_keyword, wrapped_in_parenthesis, canonicalOrder } from '../grammar/helpers.js';
 import { fromClause } from '../grammar/statements/select.js';
 import sqlite_pragma_rules from './grammar/pragma.js';
 import sqlite_attach_rules from './grammar/attach.js';
 import sqlite_virtual_table_rules from './grammar/virtual_table.js';
+import dialect_transaction_rules from './grammar/transactions.js';
+import dialect_alter_rules from './grammar/alter_vendor.js';
+import dialect_legacy_rules from './grammar/legacy_statements.js';
 
-export default grammar(base, {
+export default canonicalOrder(grammar(base, {
   name: 'sqlite_sql',
 
   conflicts: $ => [
@@ -16,6 +19,12 @@ export default grammar(base, {
     // Local shift/reduce ambiguity shared with like_expression's optional
     // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
+    // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
+    [$.transaction, $.start_transaction_statement],
+    [$.transaction, $.commit_statement],
+    [$.transaction, $.rollback_statement],
+    [$._commit, $.commit_statement],
+    [$._rollback, $.rollback_statement],
     [$.create_function],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
@@ -23,6 +32,10 @@ export default grammar(base, {
   ],
 
   rules: {
+    ...dialect_transaction_rules,
+    ...dialect_alter_rules,
+    ...dialect_legacy_rules,
+
 
     // LIMIT is supported: fromClause with limit re-adds it over the ANSI base.
     // SQLite paging is LIMIT/OFFSET only; no ANSI OFFSET…FETCH FIRST.
@@ -56,7 +69,7 @@ export default grammar(base, {
         // SIMILAR TO is deliberately absent: it is ISO SQL that SQLite does
         // not implement, and every extra operator sharing the
         // pattern_matching precedence multiplies this dialect's parse table
-        // (see tools/glr_scan.py on LIKE-family ambiguity).
+        // (see tools/perf/glr_scan.py on LIKE-family ambiguity).
         [$.keyword_glob, 'pattern_matching'],
         [$.not_glob, 'pattern_matching'],
         [$.keyword_match, 'pattern_matching'],
@@ -398,4 +411,4 @@ export default grammar(base, {
     ...sqlite_virtual_table_rules,
 
   },
-});
+}));
