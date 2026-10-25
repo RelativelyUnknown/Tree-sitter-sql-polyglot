@@ -20,6 +20,7 @@ import oracle_storage_rules from './grammar/storage.js';
 import oracle_alter_table_rules from './grammar/alter_table.js';
 import oracle_index_ddl_rules from './grammar/index_ddl.js';
 import oracle_query_rules from './grammar/query.js';
+import oracle_dml_rules from './grammar/dml.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
@@ -109,6 +110,14 @@ export default canonicalOrder(grammar(base, {
     [$.dblink_name],
     // FROM t PARTITION BY a, b: the comma continues the partition list or starts the next table.
     [$.partition_by],
+    // INSERT ALL INTO t (c, d) …: the parenthesis opens a column list or the final parenthesised subquery.
+    [$.insert_into_clause],
+    // TABLE(…) (+) outer join marker vs TABLE(…) followed by a parenthesised column list.
+    [$.table_collection],
+    // INSERT … SELECT … FOR UPDATE NOWAIT: the wait belongs to the lock clause or to the INSERT.
+    [$.locking_clause],
+    // LOG ERRORS INTO t vs LOG ERRORS followed by the next INTO clause of a multitable INSERT.
+    [$.log_errors_clause],
   ],
 
   rules: {
@@ -583,43 +592,6 @@ export default canonicalOrder(grammar(base, {
       $.compound_statement,
     ),
 
-    // Override INSERT to add optional RETURNING INTO
-    insert: $ => seq(
-      $.keyword_insert,
-      optional($.keyword_into),
-      $.object_reference,
-      optional(seq($.keyword_as, field('alias', $.identifier))),
-      choice(
-        $._insert_values,
-        $._set_values,
-      ),
-      optional($.returning_into_clause),
-    ),
-
-    // Override UPDATE to add optional WHERE and RETURNING INTO
-    update: $ => seq(
-      $.keyword_update,
-      optional($.keyword_only),
-      $.relation,
-      $._set_values,
-      optional($.where),
-      optional($.returning_into_clause),
-    ),
-
-    // Override _delete_statement to add optional RETURNING INTO
-    _delete_statement: $ => seq(
-      $.delete,
-      alias($._oracle_delete_from, $.from),
-    ),
-
-    _oracle_delete_from: $ => seq(
-      $.keyword_from,
-      optional($.keyword_only),
-      $.object_reference,
-      optional($.where),
-      optional($.returning_into_clause),
-    ),
-
     // Extend _alter_specifications to include Oracle partition operations
     _alter_specifications: $ => choice(
       $.add_column,
@@ -660,6 +632,7 @@ export default canonicalOrder(grammar(base, {
     ...oracle_alter_table_rules,
     ...oracle_index_ddl_rules,
     ...oracle_query_rules,
+    ...oracle_dml_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords

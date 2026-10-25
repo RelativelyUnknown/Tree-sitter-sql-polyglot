@@ -369,3 +369,6 @@
 (keyword_block) @keyword
 (keyword_seed) @keyword
 (keyword_versions) @keyword
+(keyword_errors) @keyword
+(keyword_name) @keyword
+(keyword_seconds) @keyword

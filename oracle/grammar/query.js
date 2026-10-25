@@ -84,7 +84,7 @@ export default {
   // TABLE (collection_expression) [(+)]
   table_collection: $ => seq(
     $.keyword_table,
-    wrapped_in_parenthesis($._expression),
+    wrapped_in_parenthesis(choice($._dml_read, $._expression)),
     optional(seq('(', '+', ')')),
   ),
 
