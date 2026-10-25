@@ -365,3 +365,7 @@
 (keyword_varray) @keyword
 (keyword_version) @keyword
 (keyword_xmltype) @keyword
+(keyword_apply) @keyword
+(keyword_block) @keyword
+(keyword_seed) @keyword
+(keyword_versions) @keyword

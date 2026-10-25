@@ -19,6 +19,7 @@ import oracle_table_ddl_rules from './grammar/table_ddl.js';
 import oracle_storage_rules from './grammar/storage.js';
 import oracle_alter_table_rules from './grammar/alter_table.js';
 import oracle_index_ddl_rules from './grammar/index_ddl.js';
+import oracle_query_rules from './grammar/query.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
@@ -104,6 +105,10 @@ export default canonicalOrder(grammar(base, {
     [$.lob_storage_clause],
     // DEFAULT x NOT NULL: the NOT NULL is part of the default or a separate constraint.
     [$._default_expression],
+    // t@link.example.com: the dots continue the link name or start a qualified field.
+    [$.dblink_name],
+    // FROM t PARTITION BY a, b: the comma continues the partition list or starts the next table.
+    [$.partition_by],
   ],
 
   rules: {
@@ -238,13 +243,15 @@ export default canonicalOrder(grammar(base, {
     from: $ => seq(
       $.keyword_from,
       optional($.keyword_only),
-      comma_list($.relation, true),
+      comma_list(choice($.relation, $.lateral_relation), true),
       repeat(
         choice(
           $.join,
           $.cross_join,
           $.lateral_join,
           $.lateral_cross_join,
+          $.apply_join,
+          $.join_to_one,
         ),
       ),
       optional($.where),
@@ -257,30 +264,6 @@ export default canonicalOrder(grammar(base, {
       optional($.order_by),
       // Oracle paging is FETCH FIRST/ROWNUM; no LIMIT keyword.
       optional($.offset_fetch_clause),
-    ),
-
-    // Override relation to add FLASHBACK AS OF clause
-    relation: $ => prec.right(
-      seq(
-        choice(
-          $.subquery,
-          $.invocation,
-          $.json_table,
-          $.xmltable,
-          $.object_reference,
-          wrapped_in_parenthesis($.values),
-        ),
-        optional($.flashback_clause),
-        optional($.tablesample),
-        optional(choice($.pivot_clause, $.unpivot_clause)),
-        optional($.match_recognize_clause),
-        optional(
-          seq(
-            $._alias,
-            optional(alias($._column_list, $.list)),
-          ),
-        ),
-      ),
     ),
 
     // JSON_TABLE(expr, 'path' COLUMNS ( col type [PATH 'p'] [, …] ))
@@ -413,6 +396,7 @@ export default canonicalOrder(grammar(base, {
       $.date_literal,
       $.timestamp_literal,
       $.keep_aggregate,
+      $.outer_join_column,
     )),
 
     // FIRST/LAST aggregate: fn(args) KEEP (DENSE_RANK {FIRST|LAST} ORDER BY …)
@@ -675,6 +659,7 @@ export default canonicalOrder(grammar(base, {
     ...oracle_storage_rules,
     ...oracle_alter_table_rules,
     ...oracle_index_ddl_rules,
+    ...oracle_query_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords

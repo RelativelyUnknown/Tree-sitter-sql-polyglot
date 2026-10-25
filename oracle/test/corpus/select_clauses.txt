@@ -1,0 +1,1215 @@
+================================================================================
+Oracle SELECT TABLE REFERENCE: dblink
+================================================================================
+
+SELECT c FROM t@remote;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)
+          (dblink_name
+            (identifier)))))))
+
+================================================================================
+Oracle SELECT TABLE REFERENCE: lateral
+================================================================================
+
+SELECT x.c FROM t, LATERAL (SELECT c FROM u WHERE u.id = t.id) x;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (lateral_relation
+        (keyword_lateral)
+        (subquery
+          (select
+            (keyword_select)
+            (select_expression
+              (term
+                (field
+                  (identifier)))))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                (identifier)))
+            (where
+              (keyword_where)
+              (binary_expression
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier))
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier))))))
+        (identifier)))))
+
+================================================================================
+Oracle SELECT TABLE REFERENCE: only
+================================================================================
+
+SELECT c FROM ONLY (s.v);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (keyword_only)
+        (object_reference
+          (identifier)
+          (identifier))))))
+
+================================================================================
+Oracle SELECT TABLE REFERENCE: partition for
+================================================================================
+
+SELECT c FROM t PARTITION FOR (100);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (partition_extension
+          (keyword_partition)
+          (keyword_for)
+          (literal))))))
+
+================================================================================
+Oracle SELECT TABLE REFERENCE: partition with alias
+================================================================================
+
+SELECT x.c FROM t PARTITION (p1) x;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (partition_extension
+          (keyword_partition)
+          (identifier))
+        (identifier)))))
+
+================================================================================
+Oracle SELECT TABLE REFERENCE: schema dblink qualified
+================================================================================
+
+SELECT c FROM s.t@remote.example.com;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)
+          (identifier)
+          (dblink_name
+            (identifier)
+            (identifier)
+            (identifier)))))))
+
+================================================================================
+Oracle SELECT TABLE REFERENCE: subpartition for
+================================================================================
+
+SELECT c FROM t SUBPARTITION FOR (100, 'A');
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (partition_extension
+          (keyword_subpartition)
+          (keyword_for)
+          (literal)
+          (literal))))))
+
+================================================================================
+Oracle SELECT TABLE REFERENCE: subquery with check option
+================================================================================
+
+SELECT c FROM (SELECT c FROM t WITH CHECK OPTION CONSTRAINT ck);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (restricted_subquery
+          (select
+            (keyword_select)
+            (select_expression
+              (term
+                (field
+                  (identifier)))))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                (identifier))))
+          (keyword_with)
+          (keyword_check)
+          (keyword_option)
+          (keyword_constraint)
+          (identifier))))))
+
+================================================================================
+Oracle SELECT TABLE REFERENCE: subquery with read only
+================================================================================
+
+SELECT c FROM (SELECT c FROM t WITH READ ONLY);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (restricted_subquery
+          (select
+            (keyword_select)
+            (select_expression
+              (term
+                (field
+                  (identifier)))))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                (identifier))))
+          (keyword_with)
+          (keyword_read)
+          (keyword_only))))))
+
+================================================================================
+Oracle SELECT TABLE REFERENCE: table collection outer
+================================================================================
+
+SELECT x.* FROM t, TABLE(t.arr) (+) x;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields
+            (object_reference
+              (identifier))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (relation
+        (table_collection
+          (keyword_table)
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))
+        (identifier)))))
+
+================================================================================
+Oracle SELECT JOINS: cross apply
+================================================================================
+
+SELECT t.c, v.d FROM t CROSS APPLY (SELECT d FROM u WHERE u.id = t.id) v;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (apply_join
+        (keyword_cross)
+        (keyword_apply)
+        (subquery
+          (select
+            (keyword_select)
+            (select_expression
+              (term
+                (field
+                  (identifier)))))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                (identifier)))
+            (where
+              (keyword_where)
+              (binary_expression
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier))
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier))))))
+        (identifier)))))
+
+================================================================================
+Oracle SELECT JOINS: cross apply collection
+================================================================================
+
+SELECT t.c, x.column_value FROM t CROSS APPLY TABLE(t.arr) x;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (apply_join
+        (keyword_cross)
+        (keyword_apply)
+        (table_collection
+          (keyword_table)
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))
+        (identifier)))))
+
+================================================================================
+Oracle SELECT JOINS: join to one
+================================================================================
+
+SELECT oi.c, o.d FROM s.oi oi JOIN TO ONE (s.o o, s.p p);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)
+          (identifier))
+        (identifier))
+      (join_to_one
+        (keyword_join)
+        (keyword_to)
+        (keyword_one)
+        (relation
+          (object_reference
+            (identifier)
+            (identifier))
+          (identifier))
+        (relation
+          (object_reference
+            (identifier)
+            (identifier))
+          (identifier))))))
+
+================================================================================
+Oracle SELECT JOINS: join to one outer
+================================================================================
+
+SELECT oi.c, o.d FROM oi JOIN TO ONE (LEFT OUTER JOIN o ON oi.oid = o.id LEFT OUTER JOIN p ON oi.pid = p.id);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (join_to_one
+        (keyword_join)
+        (keyword_to)
+        (keyword_one)
+        (join
+          (keyword_left)
+          (keyword_outer)
+          (keyword_join)
+          (relation
+            (object_reference
+              (identifier)))
+          (keyword_on)
+          (binary_expression
+            (field
+              (object_reference
+                (identifier))
+              (identifier))
+            (field
+              (object_reference
+                (identifier))
+              (identifier))))
+        (join
+          (keyword_left)
+          (keyword_outer)
+          (keyword_join)
+          (relation
+            (object_reference
+              (identifier)))
+          (keyword_on)
+          (binary_expression
+            (field
+              (object_reference
+                (identifier))
+              (identifier))
+            (field
+              (object_reference
+                (identifier))
+              (identifier))))))))
+
+================================================================================
+Oracle SELECT JOINS: oracle outer join operator
+================================================================================
+
+SELECT t.c, u.d FROM t, u WHERE t.id = u.id (+);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (relation
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (outer_join_column
+            (field
+              (object_reference
+                (identifier))
+              (identifier))))))))
+
+================================================================================
+Oracle SELECT JOINS: oracle outer join operator multi
+================================================================================
+
+SELECT t.c, u.d FROM t, u WHERE t.id = u.id(+) AND u.k(+) = 10;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (relation
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (binary_expression
+          (binary_expression
+            (field
+              (object_reference
+                (identifier))
+              (identifier))
+            (outer_join_column
+              (field
+                (object_reference
+                  (identifier))
+                (identifier))))
+          (keyword_and)
+          (binary_expression
+            (outer_join_column
+              (field
+                (object_reference
+                  (identifier))
+                (identifier)))
+            (literal)))))))
+
+================================================================================
+Oracle SELECT JOINS: outer apply
+================================================================================
+
+SELECT t.c, v.d FROM t OUTER APPLY (SELECT d FROM u WHERE u.id = t.id) v;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (apply_join
+        (keyword_outer)
+        (keyword_apply)
+        (subquery
+          (select
+            (keyword_select)
+            (select_expression
+              (term
+                (field
+                  (identifier)))))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                (identifier)))
+            (where
+              (keyword_where)
+              (binary_expression
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier))
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier))))))
+        (identifier)))))
+
+================================================================================
+Oracle SELECT JOINS: parenthesized join
+================================================================================
+
+SELECT t.c FROM t JOIN (u JOIN v ON u.id = v.id) ON t.id = u.id;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (join
+        (keyword_join)
+        (relation
+          (relation
+            (object_reference
+              (identifier)))
+          (join
+            (keyword_join)
+            (relation
+              (object_reference
+                (identifier)))
+            (keyword_on)
+            (binary_expression
+              (field
+                (object_reference
+                  (identifier))
+                (identifier))
+              (field
+                (object_reference
+                  (identifier))
+                (identifier)))))
+        (keyword_on)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))))
+
+================================================================================
+Oracle SELECT JOINS: parenthesized join in from
+================================================================================
+
+SELECT t.c FROM (t JOIN u ON t.id = u.id);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (relation
+          (object_reference
+            (identifier)))
+        (join
+          (keyword_join)
+          (relation
+            (object_reference
+              (identifier)))
+          (keyword_on)
+          (binary_expression
+            (field
+              (object_reference
+                (identifier))
+              (identifier))
+            (field
+              (object_reference
+                (identifier))
+              (identifier))))))))
+
+================================================================================
+Oracle SELECT JOINS: partitioned outer join left side
+================================================================================
+
+SELECT t.c, u.d FROM t PARTITION BY (t.k) RIGHT OUTER JOIN u ON t.id = u.id;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (partition_by
+          (keyword_partition)
+          (keyword_by)
+          (parenthesized_expression
+            (field
+              (object_reference
+                (identifier))
+              (identifier)))))
+      (join
+        (keyword_right)
+        (keyword_outer)
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier)))
+        (keyword_on)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))))
+
+================================================================================
+Oracle SELECT JOINS: partitioned outer join right side
+================================================================================
+
+SELECT t.c, u.d FROM t LEFT OUTER JOIN u PARTITION BY (u.k) ON t.id = u.id;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (join
+        (keyword_left)
+        (keyword_outer)
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier))
+          (partition_by
+            (keyword_partition)
+            (keyword_by)
+            (parenthesized_expression
+              (field
+                (object_reference
+                  (identifier))
+                (identifier)))))
+        (keyword_on)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))))
+
+================================================================================
+Oracle SELECT JOINS: partitioned outer join unparenthesized
+================================================================================
+
+SELECT t.c, u.d FROM t LEFT OUTER JOIN u PARTITION BY u.k, u.j ON t.id = u.id;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (join
+        (keyword_left)
+        (keyword_outer)
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier))
+          (partition_by
+            (keyword_partition)
+            (keyword_by)
+            (field
+              (object_reference
+                (identifier))
+              (identifier))
+            (field
+              (object_reference
+                (identifier))
+              (identifier))))
+        (keyword_on)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))))
+
+================================================================================
+Oracle SELECT SAMPLE: sample
+================================================================================
+
+SELECT COUNT(*) FROM t SAMPLE (10);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (invocation
+            (object_reference
+              (identifier))
+            (term
+              (all_fields))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (sample_clause
+          (keyword_sample)
+          (literal))))))
+
+================================================================================
+Oracle SELECT SAMPLE: sample block
+================================================================================
+
+SELECT COUNT(*) FROM t SAMPLE BLOCK (10);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (invocation
+            (object_reference
+              (identifier))
+            (term
+              (all_fields))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (sample_clause
+          (keyword_sample)
+          (keyword_block)
+          (literal))))))
+
+================================================================================
+Oracle SELECT SAMPLE: sample block seed alias
+================================================================================
+
+SELECT COUNT(*) FROM t SAMPLE BLOCK (0.5) SEED (42) x;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (invocation
+            (object_reference
+              (identifier))
+            (term
+              (all_fields))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (sample_clause
+          (keyword_sample)
+          (keyword_block)
+          (literal)
+          (keyword_seed)
+          (literal))
+        (identifier)))))
+
+================================================================================
+Oracle SELECT SAMPLE: sample dblink partition
+================================================================================
+
+SELECT c FROM t PARTITION (p1) SAMPLE (5);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (partition_extension
+          (keyword_partition)
+          (identifier))
+        (sample_clause
+          (keyword_sample)
+          (literal))))))
+
+================================================================================
+Oracle SELECT SAMPLE: sample seed
+================================================================================
+
+SELECT COUNT(*) FROM t SAMPLE (10) SEED (1);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (invocation
+            (object_reference
+              (identifier))
+            (term
+              (all_fields))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (sample_clause
+          (keyword_sample)
+          (literal)
+          (keyword_seed)
+          (literal))))))
+
+================================================================================
+Oracle SELECT FLASHBACK QUERY: as of period for
+================================================================================
+
+SELECT c FROM t AS OF PERIOD FOR valid_time DATE '2024-01-01';
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (flashback_clause
+          (keyword_as)
+          (keyword_of)
+          (keyword_period)
+          (keyword_for)
+          (identifier)
+          (date_literal
+            (keyword_date)
+            (literal)))))))
+
+================================================================================
+Oracle SELECT FLASHBACK QUERY: versions between scn minmax
+================================================================================
+
+SELECT c, versions_startscn, versions_operation FROM t VERSIONS BETWEEN SCN MINVALUE AND MAXVALUE;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))
+        (term
+          (field
+            (identifier)))
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (flashback_clause
+          (keyword_versions)
+          (keyword_between)
+          (keyword_scn)
+          (keyword_minvalue)
+          (keyword_and)
+          (keyword_maxvalue))))))
+
+================================================================================
+Oracle SELECT FLASHBACK QUERY: versions between timestamp
+================================================================================
+
+SELECT c FROM t VERSIONS BETWEEN TIMESTAMP SYSTIMESTAMP - INTERVAL '10' MINUTE AND SYSTIMESTAMP - INTERVAL '1' MINUTE;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (flashback_clause
+          (keyword_versions)
+          (keyword_between)
+          (keyword_timestamp)
+          (binary_expression
+            (field
+              (identifier))
+            (interval
+              (keyword_interval)
+              (identifier)))
+          (keyword_and)
+          (binary_expression
+            (field
+              (identifier))
+            (interval
+              (keyword_interval)
+              (identifier))))))))
+
+================================================================================
+Oracle SELECT FLASHBACK QUERY: versions period for
+================================================================================
+
+SELECT c FROM t VERSIONS PERIOD FOR valid_time BETWEEN DATE '2024-01-01' AND DATE '2024-12-31';
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (flashback_clause
+          (keyword_versions)
+          (keyword_period)
+          (keyword_for)
+          (identifier)
+          (keyword_between)
+          (date_literal
+            (keyword_date)
+            (literal))
+          (keyword_and)
+          (date_literal
+            (keyword_date)
+            (literal)))))))
