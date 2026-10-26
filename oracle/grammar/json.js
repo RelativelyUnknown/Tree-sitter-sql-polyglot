@@ -223,6 +223,7 @@ export default {
   json_constructor: $ => seq(
     $.keyword_json,
     choice(
+      seq('(', comma_list($._expression, true), ')'),
       seq('{', optional(comma_list($.json_entry, true)), '}'),
       seq('[', optional(comma_list($._expression, true)), ']'),
     ),
@@ -235,19 +236,22 @@ export default {
     $.keyword_is,
     optional($.keyword_not),
     $.keyword_json,
-    repeat(choice(
-      $._json_format,
-      $.keyword_strict,
-      $.keyword_lax,
-      seq(choice($.keyword_allow, $.keyword_disallow), $.keyword_scalars),
-      seq($.keyword_with, $.keyword_unique, $.keyword_keys),
-      seq($.keyword_without, $.keyword_unique, $.keyword_keys),
-      seq($.keyword_validate, $._json_path),
-      $.keyword_object,
-      $.keyword_array,
-      $.keyword_scalar,
-    )),
+    repeat($._json_condition_option),
+    optional(seq('(', repeat1($._json_condition_option), ')')),
   )),
+
+  _json_condition_option: $ => choice(
+    $._json_format,
+    $.keyword_strict,
+    $.keyword_lax,
+    seq(choice($.keyword_allow, $.keyword_disallow), $.keyword_scalars),
+    seq($.keyword_with, $.keyword_unique, $.keyword_keys),
+    seq($.keyword_without, $.keyword_unique, $.keyword_keys),
+    seq($.keyword_validate, $._json_path),
+    $.keyword_object,
+    $.keyword_array,
+    $.keyword_scalar,
+  ),
 
   // ── JSON_TABLE ─────────────────────────────────────────────────────────
 
@@ -269,9 +273,10 @@ export default {
   json_table_column: $ => choice(
     // name FOR ORDINALITY
     seq(field('name', $.identifier), $.keyword_for, $.keyword_ordinality),
-    // NESTED [PATH] 'path' COLUMNS (…)
+    // NESTED [PATH] 'path' COLUMNS (…) | NESTED name[*] COLUMNS (…)
     seq(
-      $.keyword_nested, optional($.keyword_path), $._json_path,
+      $.keyword_nested, optional($.keyword_path),
+      choice($._json_path, seq($.identifier, optional($.json_array_step))),
       $.keyword_columns, '(', comma_list($.json_table_column, true), ')',
     ),
     // name [type] [TRUNCATE] [FORMAT JSON] [wrapper] [quotes] [EXISTS] [PATH 'p'] [on-clauses]
@@ -291,7 +296,7 @@ export default {
   ),
 
   // FROM t NESTED doc COLUMNS (…): table-level shorthand
-  nested_columns_relation: $ => seq(
+  nested_columns_clause: $ => seq(
     $.keyword_nested, $.identifier, $.keyword_columns,
     '(', comma_list($.json_table_column, true), ')',
   ),
@@ -299,11 +304,16 @@ export default {
   // ── Dot notation ───────────────────────────────────────────────────────
 
   // po.doc.LineItems[0].Part.UPCCode, a.b[*].c, a.b[0 to 2], a.b.number()
-  json_object_access: $ => prec.left(seq(
-    alias($._qualified_field, $.field),
-    choice(
-      seq($.json_array_step, repeat($._json_step)),
-      seq('.', $.identifier, '(', ')', repeat($._json_step)),
+  json_object_access: $ => prec.left(choice(
+    // [*] / [a to b] / [a, b] as the first step (a plain [n] parses as a subscript)
+    seq(alias($._qualified_field, $.field), $.json_array_step, repeat($._json_step)),
+    // x.y[0].z: the inherited subscript followed by more steps
+    seq($.subscript, repeat1($._json_step)),
+    // a.b.c.d.e (five or more parts) and trailing method calls such as .number()
+    seq(
+      alias($._qualified_field, $.field),
+      '.', $.identifier, optional(seq('(', ')')),
+      repeat($._json_step),
     ),
   )),
 

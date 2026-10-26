@@ -42,6 +42,7 @@ export default {
         $.subquery,
         $.invocation,
         $.json_table,
+        seq($.object_reference, $.nested_columns_clause),
         $.xmltable,
         $.object_reference,
         wrapped_in_parenthesis($.values),
