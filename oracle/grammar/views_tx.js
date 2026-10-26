@@ -124,7 +124,6 @@ export default {
     $.modify_constraint_clause,
     $.modify_columns_clause,
     $.annotations_clause,
-    seq($.keyword_modify, $.keyword_constraint, field('name', $.identifier)),
   ),
 
   drop_view: $ => seq(
