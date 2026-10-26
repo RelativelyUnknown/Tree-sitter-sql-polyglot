@@ -210,7 +210,8 @@ export default {
       $.annotations_clause,
       seq($.keyword_default, $.keyword_collation, $.identifier),
       seq($.keyword_evaluate, $.keyword_using, choice(seq($.keyword_current, $.keyword_edition), $.keyword_null, $.identifier)),
-      seq($.keyword_using, choice(seq($.keyword_no, $.keyword_index), seq($.keyword_index, repeat($._oracle_physical_attribute)))),
+      // USING INDEX's physical attributes are the outer _oracle_physical_attribute alternatives
+      seq($.keyword_using, optional($.keyword_no), $.keyword_index),
       seq(choice($.keyword_enable, $.keyword_disable), $.keyword_concurrent, $.keyword_refresh),
       seq(choice($.keyword_enable, $.keyword_disable), $.keyword_on, $.keyword_query, $.keyword_computation),
     )),
