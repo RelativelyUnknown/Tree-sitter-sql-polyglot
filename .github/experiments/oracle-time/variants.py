@@ -6,6 +6,8 @@ GROUPS = {
     'no_mv': ['mv_refresh_clause', 'create_materialized_view', 'mv_column', 'drop_materialized_view'],
     'no_tx': ['_commit', '_rollback', 'set_statement', '_set_transaction_option'],
     'no_alter_view': ['alter_view'],
+    'no_view_constraints': [],
+    'no_view_column_props': [],
     'no_misc': ['_truncate_statement', 'lock_table_statement', 'call_statement', 'drop_index'],
 }
 p = 'oracle/grammar/views_tx.js'
