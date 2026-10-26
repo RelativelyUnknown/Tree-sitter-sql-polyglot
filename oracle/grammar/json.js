@@ -27,7 +27,7 @@ export default {
   keyword_keys:          _ => kw('keys'),
   keyword_lax:           _ => kw('lax'),
   keyword_mismatch:      _ => kw('mismatch'),
-  keyword_nested:        _ => kw('nested'),
+  keyword_error:         _ => kw('error'),
   keyword_omit:          _ => kw('omit'),
   keyword_ordered:       _ => kw('ordered'),
   keyword_ordinality:    _ => kw('ordinality'),
@@ -158,7 +158,6 @@ export default {
     $.keyword_strict,
     seq($.keyword_with, $.keyword_unique, $.keyword_keys),
     seq($.keyword_without, $.keyword_unique, $.keyword_keys),
-    $._json_format,
   ),
 
   json_object_function: $ => seq(
@@ -302,15 +301,16 @@ export default {
   // po.doc.LineItems[0].Part.UPCCode, a.b[*].c, a.b[0 to 2], a.b.number()
   json_object_access: $ => prec.left(seq(
     alias($._qualified_field, $.field),
-    repeat1(choice(
-      $.json_array_step,
-      seq('.', $.identifier, '(', ')'),
-    )),
-    repeat(choice(
-      $.json_array_step,
-      seq('.', $.identifier, optional(seq('(', ')'))),
-    )),
+    choice(
+      seq($.json_array_step, repeat($._json_step)),
+      seq('.', $.identifier, '(', ')', repeat($._json_step)),
+    ),
   )),
+
+  _json_step: $ => choice(
+    $.json_array_step,
+    prec.right(seq('.', $.identifier, optional(seq('(', ')')))),
+  ),
 
   json_array_step: $ => seq(
     '[',

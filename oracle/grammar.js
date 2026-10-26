@@ -23,6 +23,7 @@ import oracle_query_rules from './grammar/query.js';
 import oracle_dml_rules from './grammar/dml.js';
 import oracle_plsql_core_rules from './grammar/plsql.js';
 import oracle_views_tx_rules from './grammar/views_tx.js';
+import oracle_json_rules from './grammar/json.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
@@ -288,26 +289,6 @@ export default canonicalOrder(grammar(base, {
       optional($.offset_fetch_clause),
     ),
 
-    // JSON_TABLE(expr, 'path' COLUMNS ( col type [PATH 'p'] [, …] ))
-    json_table: $ => seq(
-      $.keyword_json_table,
-      '(',
-      $._expression,
-      ',',
-      alias($._literal_string, $.literal),
-      $.keyword_columns,
-      '(',
-      comma_list($.json_table_column, true),
-      ')',
-      ')',
-    ),
-
-    json_table_column: $ => seq(
-      field('name', $.identifier),
-      $._type,
-      optional(seq($.keyword_path, alias($._literal_string, $.literal))),
-    ),
-
     // XMLTABLE('xpath' [PASSING expr] COLUMNS col type [PATH 'p'] [, …])
     xmltable: $ => seq(
       $.keyword_xmltable,
@@ -423,6 +404,10 @@ export default canonicalOrder(grammar(base, {
       $.call_chain,
       $.bind_array_element,
       $.exponent_expression,
+      $.json_function,
+      $.json_constructor,
+      $.is_json_condition,
+      $.json_object_access,
     )),
 
     // FIRST/LAST aggregate: fn(args) KEEP (DENSE_RANK {FIRST|LAST} ORDER BY …)
@@ -652,6 +637,7 @@ export default canonicalOrder(grammar(base, {
     ...oracle_dml_rules,
     ...oracle_plsql_core_rules,
     ...oracle_views_tx_rules,
+    ...oracle_json_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
