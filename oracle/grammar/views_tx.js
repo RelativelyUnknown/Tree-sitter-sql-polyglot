@@ -45,7 +45,7 @@ export default {
       $.object_reference,
       optional($.sharing_clause),
       optional(choice(
-        paren_list(choice($.view_column, $.constraint), true),
+        paren_list(choice($.view_column, alias($.view_constraint, $.constraint)), true),
         // Object view: OF type [UNDER view | WITH OBJECT {IDENTIFIER | ID} {DEFAULT | (expr, …)}]
         seq(
           $.keyword_of, $.object_reference,
@@ -90,8 +90,32 @@ export default {
       $.keyword_invisible,
       $._encrypt_clause,
       $.annotations_clause,
-      seq(choice($.keyword_unique, $._primary_key), repeat($._constraint_state)),
+      seq(choice($.keyword_unique, $._primary_key), repeat($._view_constraint_state)),
     )),
+  ),
+
+  // View constraints are declarative (DISABLE NOVALIDATE, optionally RELY): no USING INDEX or
+  // EXCEPTIONS INTO, which keeps the constraint machinery of CREATE TABLE out of view contexts.
+  _view_constraint_state: $ => choice(
+    seq(optional($.keyword_not), $.keyword_deferrable),
+    seq($.keyword_initially, choice($.keyword_immediate, $.keyword_deferred)),
+    $.keyword_rely,
+    $.keyword_norely,
+    $.keyword_enable,
+    $.keyword_disable,
+    $.keyword_validate,
+    $.keyword_novalidate,
+  ),
+
+  // [CONSTRAINT name] {UNIQUE | PRIMARY KEY | FOREIGN KEY} (cols) [REFERENCES …] [state …]
+  view_constraint: $ => seq(
+    optional(seq($.keyword_constraint, field('name', $.identifier))),
+    choice(
+      seq($._primary_key, $.ordered_columns),
+      seq($.keyword_unique, $.ordered_columns),
+      seq(optional($.keyword_foreign), $.keyword_key, $.ordered_columns, $._oracle_references),
+    ),
+    repeat($._view_constraint_state),
   ),
 
   // ALTER VIEW v {COMPILE | RECOMPILE | READ ONLY | READ WRITE | EDITIONABLE | constraints | …}
