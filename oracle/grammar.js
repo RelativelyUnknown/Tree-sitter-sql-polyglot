@@ -22,6 +22,7 @@ import oracle_index_ddl_rules from './grammar/index_ddl.js';
 import oracle_query_rules from './grammar/query.js';
 import oracle_dml_rules from './grammar/dml.js';
 import oracle_plsql_core_rules from './grammar/plsql.js';
+import oracle_views_tx_rules from './grammar/views_tx.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
@@ -124,6 +125,9 @@ export default canonicalOrder(grammar(base, {
     [$.locking_clause],
     // LOG ERRORS INTO t vs LOG ERRORS followed by the next INTO clause of a multitable INSERT.
     [$.log_errors_clause],
+    // SET CONSTRAINTS c DEFERRED: the generic SET statement or SET CONSTRAINTS.
+    [$.set_statement, $.object_reference],
+    [$.table_partition_by],
   ],
 
   rules: {
@@ -647,6 +651,7 @@ export default canonicalOrder(grammar(base, {
     ...oracle_query_rules,
     ...oracle_dml_rules,
     ...oracle_plsql_core_rules,
+    ...oracle_views_tx_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
