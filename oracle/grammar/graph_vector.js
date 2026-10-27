@@ -57,8 +57,7 @@ export default {
     $.object_reference,
     optional(seq($.keyword_as, $.identifier)),
     optional($._graph_key),
-    repeat($._graph_label),
-    optional($._graph_properties),
+    optional(choice(repeat1($._graph_label), $._graph_properties)),
   ),
 
   graph_edge_table: $ => seq(
@@ -73,8 +72,7 @@ export default {
     optional($._graph_key),
     optional(seq($.keyword_references, $.object_reference, optional(paren_list($.identifier, true)))),
     optional($.object_reference),
-    repeat($._graph_label),
-    optional($._graph_properties),
+    optional(choice(repeat1($._graph_label), $._graph_properties)),
   ),
 
   _graph_key: $ => seq($.keyword_key, paren_list($.identifier, true)),
