@@ -88,6 +88,7 @@ export default {
     repeat(choice(
       $._file_clause,
       $._tablespace_option,
+      choice($.keyword_online, $.keyword_offline),
       seq($.keyword_default, choice($.compression_clause, $.inmemory_clause, $.storage_clause)),
     )),
   ),
@@ -98,7 +99,6 @@ export default {
     choice($.keyword_logging, $.keyword_nologging),
     seq(optional($.keyword_no), $.keyword_force, $.keyword_logging),
     seq($.keyword_encryption, $.keyword_using, alias($._literal_string, $.literal), optional(alias($._literal_string, $.literal)), $.keyword_encrypt),
-    choice($.keyword_online, $.keyword_offline),
     seq($.keyword_extent, $.keyword_management, choice(
       $.keyword_dictionary,
       seq($.keyword_local, optional(choice(
