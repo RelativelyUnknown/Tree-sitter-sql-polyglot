@@ -576,3 +576,15 @@
 (keyword_vector) @keyword
 (keyword_vertex) @keyword
 (keyword_nothing) @keyword
+(keyword_compound) @keyword
+(keyword_crossedition) @keyword
+(keyword_follows) @keyword
+(keyword_forward) @keyword
+(keyword_logoff) @keyword
+(keyword_logon) @keyword
+(keyword_parent) @keyword
+(keyword_pluggable) @keyword
+(keyword_precedes) @keyword
+(keyword_servererror) @keyword
+(keyword_shutdown) @keyword
+(keyword_startup) @keyword
