@@ -144,8 +144,6 @@ export default canonicalOrder(grammar(base, {
     [$._legacy_alter_type, $.object_reference],
     // CREATE DOMAIN d AS t ANNOTATIONS (...): a column property or the domain's own clause.
     [$._column_property, $.create_domain_statement],
-    // CREATE TRIGGER: the earlier generic form and the Oracle form share a prefix.
-    [$._legacy_create_trigger, $._oracle_create_trigger],
   ],
 
   rules: {

@@ -1,5 +1,4 @@
 import { comma_list, paren_list, wrapped_in_parenthesis, make_keyword } from '../../grammar/helpers.js';
-import legacy_rules from './legacy_statements.js';
 
 // PL/SQL stored units and the small DDL around them (Oracle SQL Language Reference 26ai):
 // ALTER FUNCTION / PROCEDURE, DROP TRIGGER, the IF [NOT] EXISTS / EDITIONABLE / SHARING forms of
@@ -158,10 +157,9 @@ export default {
 
   // ── Triggers ───────────────────────────────────────────────────────────
 
-  _legacy_create_trigger: legacy_rules.create_trigger,
-  create_trigger: $ => choice($._legacy_create_trigger, $._oracle_create_trigger),
-
-  _oracle_create_trigger: $ => seq(
+  // Replaces the Oracle rule of grammar.js (BEFORE/AFTER/INSTEAD OF, FOR EACH ROW, WHEN, block body),
+  // which this form accepts in full.
+  create_trigger: $ => seq(
     $.keyword_create,
     optional($._or_replace),
     optional($._editionable_clause),
