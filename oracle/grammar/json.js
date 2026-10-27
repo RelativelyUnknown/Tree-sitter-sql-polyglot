@@ -309,10 +309,11 @@ export default {
     seq(alias($._qualified_field, $.field), $.json_array_step, repeat($._json_step)),
     // x.y[0].z: the inherited subscript followed by more steps
     seq($.subscript, repeat1($._json_step)),
-    // a.b.c.d.e (five or more parts) and trailing method calls such as .number()
+    // trailing item method calls such as a.b.number(). Longer plain paths stay ordinary fields:
+    // a branch for five or more parts would also claim every shorter qualified field.
     seq(
       alias($._qualified_field, $.field),
-      '.', $.identifier, optional(seq('(', ')')),
+      '.', $.identifier, '(', ')',
       repeat($._json_step),
     ),
   )),
