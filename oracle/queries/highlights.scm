@@ -575,3 +575,4 @@
 (keyword_samples_per_partition) @keyword
 (keyword_vector) @keyword
 (keyword_vertex) @keyword
+(keyword_nothing) @keyword
