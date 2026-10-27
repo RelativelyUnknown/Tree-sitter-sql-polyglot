@@ -506,3 +506,10 @@
 (keyword_scale) @keyword
 (keyword_shard) @keyword
 (keyword_extend) @keyword
+(keyword_delegate) @keyword
+(keyword_hierarchy) @keyword
+(keyword_inherit) @keyword
+(keyword_java) @keyword
+(keyword_mining) @keyword
+(keyword_debug) @keyword
+(keyword_resource) @keyword
