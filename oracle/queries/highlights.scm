@@ -519,3 +519,8 @@
 (keyword_settings) @keyword
 (keyword_specification) @keyword
 (keyword_usecase) @keyword
+(keyword_chained) @keyword
+(keyword_credential) @keyword
+(keyword_dangling) @keyword
+(keyword_graph) @keyword
+(keyword_property) @keyword

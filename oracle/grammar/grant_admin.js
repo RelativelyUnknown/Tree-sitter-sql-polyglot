@@ -17,7 +17,6 @@ export default {
   keyword_debug:      _ => kw('debug'),
   keyword_resource:   _ => kw('resource'),
   keyword_rewrite:    _ => kw('rewrite'),
-  keyword_dimension:  _ => kw('dimension'),
   keyword_library:    _ => kw('library'),
 
   // ── Privileges ─────────────────────────────────────────────────────────
