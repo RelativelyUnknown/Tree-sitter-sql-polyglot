@@ -29,7 +29,7 @@ import oracle_sequence_profile_rules from './grammar/sequence_profile.js';
 import oracle_grant_rules from './grammar/grant_admin.js';
 import oracle_program_rules from './grammar/program_admin.js';
 import oracle_utility_rules from './grammar/utility_admin.js';
-import oracle_type_rules from './grammar/type_admin.js';
+import oracle_type_admin_rules from './grammar/type_admin.js';
 import oracle_session_rules from './grammar/session_admin.js';
 import oracle_graph_rules from './grammar/graph_vector.js';
 import dialect_transaction_rules from './grammar/transactions.js';
@@ -635,8 +635,6 @@ export default canonicalOrder(grammar(base, {
     ...oracle_package_rules,
     ...oracle_procedural_rules,
     ...oracle_type_rules,
-    ...oracle_session_rules,
-    ...oracle_graph_rules,
     ...oracle_hint_rules,
     ...oracle_partition_rules,
     ...oracle_table_ddl_rules,
@@ -658,7 +656,7 @@ export default canonicalOrder(grammar(base, {
     ...oracle_grant_rules,
     ...oracle_program_rules,
     ...oracle_utility_rules,
-    ...oracle_type_rules,
+    ...oracle_type_admin_rules,
     ...oracle_session_rules,
     ...oracle_graph_rules,
 

@@ -46,7 +46,7 @@ export default {
       seq(
         $.keyword_as,
         choice(
-          seq($.keyword_object, $._object_type_body),
+          seq($.keyword_object, optional($._object_type_body)),
           seq($.keyword_table, $.keyword_of, $._type, optional($._not_null)),
           seq(
             choice($.keyword_varray, seq($.keyword_varying, $.keyword_array)),
@@ -55,17 +55,19 @@ export default {
           ),
         ),
       ),
-      seq($.keyword_under, $.object_reference, $._object_type_body),
+      seq($.keyword_under, $.object_reference, optional($._object_type_body)),
     ),
   ),
 
-  _object_type_body: $ => seq(
-    optional(seq(
+  _object_type_body: $ => choice(
+    seq(
       $.keyword_external, $.keyword_name, alias($._literal_string, $.literal),
       $.keyword_language, $.keyword_java, $.keyword_using, $.identifier,
-    )),
-    optional(paren_list($._type_element, true)),
-    repeat($._type_modifier),
+      optional(paren_list($._type_element, true)),
+      repeat($._type_modifier),
+    ),
+    seq(paren_list($._type_element, true), repeat($._type_modifier)),
+    repeat1($._type_modifier),
   ),
 
   _type_modifier: $ => seq(
