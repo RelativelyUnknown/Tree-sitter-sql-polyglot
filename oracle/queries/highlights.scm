@@ -513,3 +513,9 @@
 (keyword_mining) @keyword
 (keyword_debug) @keyword
 (keyword_resource) @keyword
+(keyword_choose) @keyword
+(keyword_display) @keyword
+(keyword_flexible) @keyword
+(keyword_settings) @keyword
+(keyword_specification) @keyword
+(keyword_usecase) @keyword

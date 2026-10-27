@@ -44,6 +44,12 @@ export default {
     $.create_profile,
     $.alter_profile,
     $.drop_profile,
+    $.alter_synonym_statement,
+    $.alter_package_statement,
+    $.alter_trigger_statement,
+    $.create_domain_statement,
+    $.alter_domain_statement,
+    $.drop_domain_statement,
   ),
 
   // 'file' [SIZE n] [REUSE] [AUTOEXTEND …]
