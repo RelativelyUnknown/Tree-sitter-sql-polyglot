@@ -50,6 +50,9 @@ export default {
     $.create_domain_statement,
     $.alter_domain_statement,
     $.drop_domain_statement,
+    $.create_property_graph_statement,
+    $.create_vector_index_statement,
+    $.alter_duality_view_statement,
   ),
 
   // 'file' [SIZE n] [REUSE] [AUTOEXTEND …]

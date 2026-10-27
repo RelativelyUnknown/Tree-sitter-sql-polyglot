@@ -31,6 +31,7 @@ import oracle_program_rules from './grammar/program_admin.js';
 import oracle_utility_rules from './grammar/utility_admin.js';
 import oracle_type_rules from './grammar/type_admin.js';
 import oracle_session_rules from './grammar/session_admin.js';
+import oracle_graph_rules from './grammar/graph_vector.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
@@ -635,6 +636,7 @@ export default canonicalOrder(grammar(base, {
     ...oracle_procedural_rules,
     ...oracle_type_rules,
     ...oracle_session_rules,
+    ...oracle_graph_rules,
     ...oracle_hint_rules,
     ...oracle_partition_rules,
     ...oracle_table_ddl_rules,
@@ -658,6 +660,7 @@ export default canonicalOrder(grammar(base, {
     ...oracle_utility_rules,
     ...oracle_type_rules,
     ...oracle_session_rules,
+    ...oracle_graph_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
