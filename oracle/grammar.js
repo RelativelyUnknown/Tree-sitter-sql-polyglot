@@ -140,6 +140,7 @@ export default canonicalOrder(grammar(base, {
     // CREATE/ALTER TYPE: the earlier generic forms and the Oracle forms share a prefix.
     [$._legacy_create_type, $._oracle_create_type],
     [$._legacy_alter_type, $._oracle_alter_type],
+    [$._legacy_alter_type, $.object_reference],
   ],
 
   rules: {
