@@ -24,6 +24,8 @@ import oracle_dml_rules from './grammar/dml.js';
 import oracle_plsql_core_rules from './grammar/plsql.js';
 import oracle_views_tx_rules from './grammar/views_tx.js';
 import oracle_json_rules from './grammar/json.js';
+import oracle_tablespace_rules from './grammar/tablespace.js';
+import oracle_sequence_profile_rules from './grammar/sequence_profile.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
@@ -212,6 +214,8 @@ export default canonicalOrder(grammar(base, {
       $.truncate_cluster_statement,
       $.drop_cluster_statement,
       $.context_statement,
+      // grammar/tablespace.js and the other admin modules
+      $._oracle_admin_statement,
     ),
 
     // procedural control-flow (IF/WHILE/LOOP/FOR/RETURN/EXIT/CONTINUE/NULL/ASSIGN)
@@ -638,6 +642,8 @@ export default canonicalOrder(grammar(base, {
     ...oracle_plsql_core_rules,
     ...oracle_views_tx_rules,
     ...oracle_json_rules,
+    ...oracle_tablespace_rules,
+    ...oracle_sequence_profile_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
