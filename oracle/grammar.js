@@ -29,6 +29,7 @@ import oracle_sequence_profile_rules from './grammar/sequence_profile.js';
 import oracle_grant_rules from './grammar/grant_admin.js';
 import oracle_program_rules from './grammar/program_admin.js';
 import oracle_utility_rules from './grammar/utility_admin.js';
+import oracle_type_rules from './grammar/type_admin.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
@@ -134,6 +135,9 @@ export default canonicalOrder(grammar(base, {
     // SET CONSTRAINTS c DEFERRED: the generic SET statement or SET CONSTRAINTS.
     [$.set_statement, $.object_reference],
     [$.table_partition_by],
+    // CREATE/ALTER TYPE: the earlier generic forms and the Oracle forms share a prefix.
+    [$._legacy_create_type, $._oracle_create_type],
+    [$._legacy_alter_type, $._oracle_alter_type],
   ],
 
   rules: {
@@ -650,6 +654,7 @@ export default canonicalOrder(grammar(base, {
     ...oracle_grant_rules,
     ...oracle_program_rules,
     ...oracle_utility_rules,
+    ...oracle_type_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords

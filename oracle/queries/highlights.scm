@@ -524,3 +524,16 @@
 (keyword_dangling) @keyword
 (keyword_graph) @keyword
 (keyword_property) @keyword
+(keyword_constructor) @keyword
+(keyword_convert) @keyword
+(keyword_element) @keyword
+(keyword_final) @keyword
+(keyword_map) @keyword
+(keyword_static) @keyword
+(keyword_instantiable) @keyword
+(keyword_member) @keyword
+(keyword_oid) @keyword
+(keyword_overriding) @keyword
+(keyword_result) @keyword
+(keyword_self) @keyword
+(keyword_substitutable) @keyword
