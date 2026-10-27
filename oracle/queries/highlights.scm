@@ -537,3 +537,11 @@
 (keyword_result) @keyword
 (keyword_self) @keyword
 (keyword_substitutable) @keyword
+(keyword_active) @keyword
+(keyword_advise) @keyword
+(keyword_ddl) @keyword
+(keyword_guard) @keyword
+(keyword_resumable) @keyword
+(keyword_sync) @keyword
+(keyword_visibility) @keyword
+(keyword_timeout) @keyword
