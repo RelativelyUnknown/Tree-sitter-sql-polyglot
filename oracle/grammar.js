@@ -36,6 +36,7 @@ import oracle_unit_rules from './grammar/plsql_units.js';
 import oracle_mvlog_rules from './grammar/mvlog_admin.js';
 import oracle_account_rules from './grammar/account_admin.js';
 import oracle_misc_rules from './grammar/misc_admin.js';
+import oracle_expr_rules from './grammar/expr_extras.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
@@ -429,6 +430,10 @@ export default canonicalOrder(grammar(base, {
       $.is_json_condition,
       $.json_object_access,
       $.bind_record_field,
+      $.caret_equals_expression,
+      $.like_variant_expression,
+      $.at_time_zone_expression,
+      $.field_dblink_expression,
     )),
 
     // FIRST/LAST aggregate: fn(args) KEEP (DENSE_RANK {FIRST|LAST} ORDER BY …)
@@ -671,6 +676,7 @@ export default canonicalOrder(grammar(base, {
     ...oracle_mvlog_rules,
     ...oracle_account_rules,
     ...oracle_misc_rules,
+    ...oracle_expr_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
