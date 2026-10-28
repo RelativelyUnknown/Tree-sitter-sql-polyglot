@@ -205,7 +205,7 @@ export default {
   // NATIONAL CHAR[ACTER] [VARYING] (n) | CHAR VARYING (n) | NCHAR VARYING (n)
   national_char_type: $ => choice(
     seq(
-      $.keyword_national, choice($.keyword_char, $.keyword_character),
+      $.keyword_national, $.keyword_char,
       optional($.keyword_varying),
       optional(wrapped_in_parenthesis(alias($._natural_number, $.literal))),
     ),
