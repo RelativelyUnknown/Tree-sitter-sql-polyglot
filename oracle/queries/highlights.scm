@@ -608,3 +608,4 @@
 (keyword_quota) @keyword
 (keyword_unlock) @keyword
 (keyword_users) @keyword
+(keyword_snapshot) @keyword
