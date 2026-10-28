@@ -148,6 +148,8 @@ export default canonicalOrder(grammar(base, {
     [$._legacy_alter_type, $.object_reference],
     // CREATE DOMAIN d AS t ANNOTATIONS (...): a column property or the domain's own clause.
     [$._column_property, $.create_domain_statement],
+    // CHAR VARYING: keyword_varchar already spells CHARACTER VARYING.
+    [$.keyword_char, $.keyword_varchar],
   ],
 
   rules: {
