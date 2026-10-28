@@ -21,6 +21,11 @@ GROUPS = {
     'no_views': ['create_view', 'create_materialized_view', 'alter_view', 'drop_view', 'drop_materialized_view'],
     'no_mvlog': ['create_materialized_view_log', 'alter_materialized_view_log', 'drop_materialized_view_log'],
     'no_trigger': ['create_trigger'],
+    'no_json_function': ['json_function'],
+    'no_json_constructor': ['json_constructor'],
+    'no_is_json': ['is_json_condition'],
+    'no_json_access': ['json_object_access'],
+    'no_json_table': ['json_table'],
     'no_dml': ['multi_table_insert', 'lock_table_statement', 'purge_statement', 'flashback_statement'],
 }
 names = GROUPS[sys.argv[1]]
