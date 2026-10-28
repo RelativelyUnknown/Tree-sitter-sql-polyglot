@@ -72,6 +72,7 @@ export default canonicalOrder(grammar(base, {
     // Local shift/reduce ambiguity shared with like_expression's optional
     // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
+    [$.between_expression, $.binary_expression, $.like_expression, $.like_variant_expression],
     // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
     [$.transaction, $.start_transaction_statement],
     [$.transaction, $.commit_statement],
