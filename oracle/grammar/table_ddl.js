@@ -159,7 +159,7 @@ export default {
     $.keyword_default,
     optional(seq(
       $.keyword_on, $.keyword_null,
-      optional(seq($.keyword_for, $.keyword_insert, $.keyword_and, $.keyword_update)),
+      optional(seq($.keyword_for, $.keyword_insert, choice(seq($.keyword_and, $.keyword_update), $.keyword_only))),
     )),
     choice(
       $._inner_default_expression,

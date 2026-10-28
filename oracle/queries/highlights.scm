@@ -609,3 +609,6 @@
 (keyword_unlock) @keyword
 (keyword_users) @keyword
 (keyword_snapshot) @keyword
+(keyword_bucket) @keyword
+(keyword_hybrid) @keyword
+(keyword_iceberg) @keyword

@@ -54,6 +54,7 @@ export default {
     $.create_vector_index_statement,
     $.alter_duality_view_statement,
     $._oracle_unit_statement,
+    $._oracle_misc_statement,
   ),
 
   // 'file' [SIZE n] [REUSE] [AUTOEXTEND …]
