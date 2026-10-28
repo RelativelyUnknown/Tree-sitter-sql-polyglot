@@ -588,3 +588,7 @@
 (keyword_servererror) @keyword
 (keyword_shutdown) @keyword
 (keyword_startup) @keyword
+(keyword_asynchronous) @keyword
+(keyword_hour) @keyword
+(keyword_minute) @keyword
+(keyword_synchronous) @keyword
