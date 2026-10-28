@@ -612,3 +612,4 @@
 (keyword_bucket) @keyword
 (keyword_hybrid) @keyword
 (keyword_iceberg) @keyword
+(keyword_catalog) @keyword
