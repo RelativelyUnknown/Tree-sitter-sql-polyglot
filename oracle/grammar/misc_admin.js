@@ -102,7 +102,7 @@ export default {
     $.keyword_create, $.keyword_iceberg, $.keyword_table,
     optional($._if_not_exists),
     field('name', $.object_reference),
-    paren_list(seq($.identifier, choice($._type, $.keyword_string)), true),
+    paren_list(seq($.identifier, $._type), true),
     optional(seq($.keyword_within, $.keyword_catalog, $.identifier)),
     optional(seq($.keyword_storage, $.keyword_location, choice($.identifier, alias($._literal_string, $.literal)))),
     optional(seq(
