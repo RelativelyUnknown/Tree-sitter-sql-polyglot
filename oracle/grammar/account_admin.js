@@ -129,4 +129,13 @@ export default {
     ),
   )),
 
+  create_role: $ => prec.left(seq(
+    $.keyword_create,
+    choice($.keyword_user, $.keyword_role, $.keyword_group),
+    optional($._if_not_exists),
+    $.identifier,
+    optional($.keyword_with),
+    repeat(choice($._user_access_role_config, $._role_options)),
+  )),
+
 };

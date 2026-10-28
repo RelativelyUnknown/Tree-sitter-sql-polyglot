@@ -16,8 +16,6 @@ export default {
 
   // ── Materialized view logs ─────────────────────────────────────────────
 
-  _mv_log_kind: $ => choice($.keyword_materialized, $.keyword_snapshot),
-
   _mv_log_value: $ => choice(
     seq(
       choice(
@@ -78,7 +76,7 @@ export default {
 
   alter_materialized_view_log: $ => prec.right(seq(
     $.keyword_alter,
-    $._mv_log_kind,
+    choice(seq($.keyword_materialized, $.keyword_view), $.keyword_snapshot),
     $.keyword_log,
     optional($.keyword_force),
     optional($._if_exists),
@@ -99,7 +97,7 @@ export default {
 
   drop_materialized_view_log: $ => seq(
     $.keyword_drop,
-    $._mv_log_kind,
+    choice(seq($.keyword_materialized, $.keyword_view), $.keyword_snapshot),
     $.keyword_log,
     optional($._if_exists),
     $.keyword_on,
