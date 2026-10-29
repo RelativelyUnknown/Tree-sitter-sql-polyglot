@@ -15,12 +15,16 @@ export default {
           $.statement,
         ),
         ';',
+        optional($.sqlplus_slash),
       ),
     ),
     optional(
       $.statement,
     ),
   ),
+
+  // SQL*Plus runs the buffer on a line holding only '/'
+  sqlplus_slash: _ => '/',
 
   transaction: $ => prec.dynamic(1, seq(
     choice(
@@ -50,12 +54,7 @@ export default {
       ),
     ),
     optional(';'),
-    repeat(
-      seq(
-        $.statement,
-        ';'
-      ),
-    ),
+    repeat($._plsql_stmt),
     choice(
       $._commit,
       $._rollback,

@@ -116,7 +116,9 @@ scripts/
 bindings/                       # Node/Python/Rust/Go/Swift language bindings
 docs/                           # VitePress site (index, changelog; coverage is generated)
 .github/workflows/
-  ci.yml                        # One job per grammar (generate, test, blobs, inventory); bindings on 3 OSes
+  ci.yml                        # One job per changed grammar (generate, test, blobs, inventory); bindings on 3 OSes.
+                                # scripts/changed-grammars.js picks the grammars: a dialect and the dialects that
+                                # extend it, everything for base/shared changes, nothing for docs-only changes
   pages.yml                     # Builds and deploys the docs site
   publish.yml, tag.yml          # Release automation
 ```

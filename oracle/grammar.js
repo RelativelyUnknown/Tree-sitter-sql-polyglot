@@ -15,6 +15,28 @@ import oracle_admin_rules from './grammar/admin.js';
 import oracle_ddl_ext_rules from './grammar/ddl_ext.js';
 import oracle_admin_ddl_rules from './grammar/admin_ddl.js';
 import oracle_mview_rules from './grammar/mviews.js';
+import oracle_table_ddl_rules from './grammar/table_ddl.js';
+import oracle_storage_rules from './grammar/storage.js';
+import oracle_alter_table_rules from './grammar/alter_table.js';
+import oracle_index_ddl_rules from './grammar/index_ddl.js';
+import oracle_query_rules from './grammar/query.js';
+import oracle_dml_rules from './grammar/dml.js';
+import oracle_plsql_core_rules from './grammar/plsql.js';
+import oracle_views_tx_rules from './grammar/views_tx.js';
+import oracle_json_rules from './grammar/json.js';
+import oracle_tablespace_rules from './grammar/tablespace.js';
+import oracle_sequence_profile_rules from './grammar/sequence_profile.js';
+import oracle_grant_rules from './grammar/grant_admin.js';
+import oracle_program_rules from './grammar/program_admin.js';
+import oracle_utility_rules from './grammar/utility_admin.js';
+import oracle_type_admin_rules from './grammar/type_admin.js';
+import oracle_session_rules from './grammar/session_admin.js';
+import oracle_graph_rules from './grammar/graph_vector.js';
+import oracle_unit_rules from './grammar/plsql_units.js';
+import oracle_mvlog_rules from './grammar/mvlog_admin.js';
+import oracle_account_rules from './grammar/account_admin.js';
+import oracle_misc_rules from './grammar/misc_admin.js';
+import oracle_expr_rules from './grammar/expr_extras.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
@@ -56,14 +78,78 @@ export default canonicalOrder(grammar(base, {
     [$.transaction, $.rollback_statement],
     [$._commit, $.commit_statement],
     [$._rollback, $.rollback_statement],
-    [$.create_function],
+    [$._oracle_create_function, $._ansi_create_function],
+    [$._oracle_create_procedure, $._ansi_create_procedure],
+    // Both CREATE FUNCTION forms start `name type DEFAULT`: a plsql_parameter or a function_argument.
+    [$.function_argument, $._plsql_type],
+    // The inherited bodies repeat their option lists on both sides of the body.
+    [$._ansi_create_function],
+    [$._ansi_create_procedure],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
     [$.assignment_statement, $._qualified_field],
     [$._function_return, $.return_statement],
-    [$.cursor_for_loop, $.for_statement],
     [$.pragma_statement, $._qualified_field],
+    // INMEMORY NO MEMCOMPRESS vs INMEMORY, then the next property NO INMEMORY / NO FLASHBACK ARCHIVE.
+    [$.inmemory_clause],
+    // Clauses that end in a list of segment attributes, followed by more table attributes:
+    // `MOVE CACHE` is MOVE with an attribute or MOVE then CACHE.
+    [$.move_clause],
+    [$.add_overflow_clause],
+    [$.alter_partition],
+    [$.partition_definition],
+    [$.subpartition_definition],
+    [$.index_partition_action],
+    // COMPRESS FOR OLTP | QUERY | ARCHIVE vs COMPRESS, then the FOR STAGING table property.
+    [$.compression_clause],
+    // Constraint state (ENABLE / DISABLE / VALIDATE …) vs the next ALTER TABLE clause that starts the same way.
+    [$.add_unnamed_constraint],
+    [$.modify_constraint_clause],
+    [$.alter_constraint_state],
+    [$.constraint],
+    // … KEEP INDEX / DROP INDEX tail vs the next DROP clause.
+    [$.drop_key_clause],
+    [$.drop_constraint],
+    // FLASHBACK ARCHIVE [name]: the name vs a following column definition (ADD is optional there).
+    [$._oracle_table_attribute],
+    // ENCRYPT … NO SALT vs a following NO FLASHBACK ARCHIVE / NO INMEMORY / NO DROP clause.
+    [$._encrypt_clause],
+    // OVERFLOW <attributes> vs the table's own attributes that follow.
+    [$._index_organized_option],
+    // USING INDEX <attributes> vs the attributes of the statement that follow.
+    [$._constraint_state],
+    // MODIFY (c) ADD DOMAIN d / DROP DOMAIN vs a following ADD / DROP clause.
+    [$.modify_columns_clause],
+    // Index key `((c) …`: a composite key column list or the start of an expression.
+    [$._column, $._qualified_field, $.object_reference],
+    // LOB … STORE AS [segment name] vs a following column definition (ADD is optional there).
+    [$.lob_storage_clause],
+    // DEFAULT x NOT NULL: the NOT NULL is part of the default or a separate constraint.
+    [$._default_expression],
+    // t@link.example.com: the dots continue the link name or start a qualified field.
+    [$.dblink_name],
+    // FROM t PARTITION BY a, b: the comma continues the partition list or starts the next table.
+    [$.partition_by],
+    // INSERT ALL INTO t (c, d) …: the parenthesis opens a column list or the final parenthesised subquery.
+    [$.insert_into_clause],
+    // TABLE(…) (+) outer join marker vs TABLE(…) followed by a parenthesised column list.
+    [$.table_collection],
+    // INSERT … SELECT … FOR UPDATE NOWAIT: the wait belongs to the lock clause or to the INSERT.
+    [$.locking_clause],
+    // LOG ERRORS INTO t vs LOG ERRORS followed by the next INTO clause of a multitable INSERT.
+    [$.log_errors_clause],
+    // SET CONSTRAINTS c DEFERRED: the generic SET statement or SET CONSTRAINTS.
+    [$.set_statement, $.object_reference],
+    [$.table_partition_by],
+    // CREATE/ALTER TYPE: the earlier generic forms and the Oracle forms share a prefix.
+    [$._legacy_create_type, $._oracle_create_type],
+    [$._legacy_alter_type, $._oracle_alter_type],
+    [$._legacy_alter_type, $.object_reference],
+    // CREATE DOMAIN d AS t ANNOTATIONS (...): a column property or the domain's own clause.
+    [$._column_property, $.create_domain_statement],
+    // CHAR VARYING: keyword_varchar already spells CHARACTER VARYING.
+    [$.keyword_char, $.keyword_varchar],
   ],
 
   rules: {
@@ -147,10 +233,13 @@ export default canonicalOrder(grammar(base, {
       $.truncate_cluster_statement,
       $.drop_cluster_statement,
       $.context_statement,
+      // grammar/tablespace.js and the other admin modules
+      $._oracle_admin_statement,
     ),
 
     // procedural control-flow (IF/WHILE/LOOP/FOR/RETURN/EXIT/CONTINUE/NULL/ASSIGN)
     statement: $ => seq(
+      repeat($.statement_label),
       optional(seq(
         $.keyword_explain,
         optional($.keyword_analyze),
@@ -164,7 +253,6 @@ export default canonicalOrder(grammar(base, {
         $.compound_statement,
         $.forall_statement,
         $.execute_immediate_statement,
-        $.cursor_for_loop,
         $.cursor_open_statement,
         $.cursor_fetch_statement,
         $.cursor_close_statement,
@@ -173,6 +261,9 @@ export default canonicalOrder(grammar(base, {
         $.while_statement,
         $.loop_statement,
         $.for_statement,
+        $.case_statement,
+        $.raise_statement,
+        $.goto_statement,
         $.return_statement,
         $.exit_statement,
         $.continue_statement,
@@ -198,13 +289,15 @@ export default canonicalOrder(grammar(base, {
     from: $ => seq(
       $.keyword_from,
       optional($.keyword_only),
-      comma_list($.relation, true),
+      comma_list(choice($.relation, $.lateral_relation), true),
       repeat(
         choice(
           $.join,
           $.cross_join,
           $.lateral_join,
           $.lateral_cross_join,
+          $.apply_join,
+          $.join_to_one,
         ),
       ),
       optional($.where),
@@ -217,50 +310,6 @@ export default canonicalOrder(grammar(base, {
       optional($.order_by),
       // Oracle paging is FETCH FIRST/ROWNUM; no LIMIT keyword.
       optional($.offset_fetch_clause),
-    ),
-
-    // Override relation to add FLASHBACK AS OF clause
-    relation: $ => prec.right(
-      seq(
-        choice(
-          $.subquery,
-          $.invocation,
-          $.json_table,
-          $.xmltable,
-          $.object_reference,
-          wrapped_in_parenthesis($.values),
-        ),
-        optional($.flashback_clause),
-        optional($.tablesample),
-        optional(choice($.pivot_clause, $.unpivot_clause)),
-        optional($.match_recognize_clause),
-        optional(
-          seq(
-            $._alias,
-            optional(alias($._column_list, $.list)),
-          ),
-        ),
-      ),
-    ),
-
-    // JSON_TABLE(expr, 'path' COLUMNS ( col type [PATH 'p'] [, …] ))
-    json_table: $ => seq(
-      $.keyword_json_table,
-      '(',
-      $._expression,
-      ',',
-      alias($._literal_string, $.literal),
-      $.keyword_columns,
-      '(',
-      comma_list($.json_table_column, true),
-      ')',
-      ')',
-    ),
-
-    json_table_column: $ => seq(
-      field('name', $.identifier),
-      $._type,
-      optional(seq($.keyword_path, alias($._literal_string, $.literal))),
     ),
 
     // XMLTABLE('xpath' [PASSING expr] COLUMNS col type [PATH 'p'] [, …])
@@ -373,6 +422,16 @@ export default canonicalOrder(grammar(base, {
       $.date_literal,
       $.timestamp_literal,
       $.keep_aggregate,
+      $.outer_join_column,
+      $.cursor_attribute,
+      $.call_chain,
+      $.bind_array_element,
+      $.exponent_expression,
+      $.json_function,
+      $.json_constructor,
+      $.is_json_condition,
+      $.json_object_access,
+      $.bind_record_field,
     )),
 
     // FIRST/LAST aggregate: fn(args) KEEP (DENSE_RANK {FIRST|LAST} ORDER BY …)
@@ -500,27 +559,43 @@ export default canonicalOrder(grammar(base, {
     keyword_sample:         _ => token(prec(1, make_keyword("sample"))),
     keyword_statistics:     _ => token(prec(1, make_keyword("statistics"))),
 
-    // Override create_table to add optional partition clause
+    // Oracle CREATE TABLE: table kind, column list (or CTAS column names), the
+    // table properties in any order, then AS query. ORGANIZATION and PARTITION BY
+    // are table properties; the older "after AS query" position is kept.
     create_table: $ => prec.left(seq(
       $.keyword_create,
       optional($._or_replace),
-      optional($._temporary),
+      optional($._oracle_table_kind),
       $.keyword_table,
       optional($._if_not_exists),
       $.object_reference,
-      seq(
-        optional($.column_definitions),
-        optional(seq($.keyword_as, $.create_query)),
+      optional($.sharing_clause),
+      choice(
+        seq(
+          optional($.column_definitions),
+          repeat($._oracle_table_property),
+          optional(seq(
+            $.keyword_as, $.create_query,
+            repeat(choice($.organization_clause, $.table_partition_by)),
+          )),
+        ),
+        seq(
+          paren_list($.identifier, true),
+          repeat($._oracle_table_property),
+          $.keyword_as, $.create_query,
+        ),
+        // Object table: OF type [(constraints)] [OBJECT IDENTIFIER IS {SYSTEM GENERATED | PRIMARY KEY}]
+        seq(
+          $.keyword_of, $.object_reference,
+          optional(paren_list(choice($.constraint, $.column_definition), true)),
+          optional(seq($.keyword_object, $.keyword_identifier, $.keyword_is,
+            choice(seq($.keyword_system, $.keyword_generated), $._primary_key))),
+          repeat($._oracle_table_property),
+        ),
+        // Staging table for an exchange: FOR EXCHANGE WITH TABLE t
+        seq($.keyword_for, $.keyword_exchange, $.keyword_with, $.keyword_table, $.object_reference),
       ),
-      optional($.organization_clause),
-      optional($.table_partition_by),
     )),
-
-    // ORGANIZATION {HEAP | INDEX | EXTERNAL}; index-organized tables (IOT) etc.
-    organization_clause: $ => seq(
-      $.keyword_organization,
-      choice($.keyword_heap, $.keyword_index, $.keyword_external),
-    ),
 
     // Oracle trigger with a PL/SQL block body (base mandates the Postgres
     // EXECUTE FUNCTION tail instead).
@@ -541,43 +616,6 @@ export default canonicalOrder(grammar(base, {
       optional(seq($.keyword_for, $.keyword_each, $.keyword_row)),
       optional(seq($.keyword_when, wrapped_in_parenthesis($._expression))),
       $.compound_statement,
-    ),
-
-    // Override INSERT to add optional RETURNING INTO
-    insert: $ => seq(
-      $.keyword_insert,
-      optional($.keyword_into),
-      $.object_reference,
-      optional(seq($.keyword_as, field('alias', $.identifier))),
-      choice(
-        $._insert_values,
-        $._set_values,
-      ),
-      optional($.returning_into_clause),
-    ),
-
-    // Override UPDATE to add optional WHERE and RETURNING INTO
-    update: $ => seq(
-      $.keyword_update,
-      optional($.keyword_only),
-      $.relation,
-      $._set_values,
-      optional($.where),
-      optional($.returning_into_clause),
-    ),
-
-    // Override _delete_statement to add optional RETURNING INTO
-    _delete_statement: $ => seq(
-      $.delete,
-      alias($._oracle_delete_from, $.from),
-    ),
-
-    _oracle_delete_from: $ => seq(
-      $.keyword_from,
-      optional($.keyword_only),
-      $.object_reference,
-      optional($.where),
-      optional($.returning_into_clause),
     ),
 
     // Extend _alter_specifications to include Oracle partition operations
@@ -610,11 +648,33 @@ export default canonicalOrder(grammar(base, {
     ...oracle_type_rules,
     ...oracle_hint_rules,
     ...oracle_partition_rules,
+    ...oracle_table_ddl_rules,
     ...oracle_ddl_ext_rules,
     ...oracle_admin_ddl_rules,
     ...oracle_mview_rules,
     ...oracle_admin_rules,
     ...oracle_match_recognize_rules,
+    ...oracle_storage_rules,
+    ...oracle_alter_table_rules,
+    ...oracle_index_ddl_rules,
+    ...oracle_query_rules,
+    ...oracle_dml_rules,
+    ...oracle_plsql_core_rules,
+    ...oracle_views_tx_rules,
+    ...oracle_json_rules,
+    ...oracle_tablespace_rules,
+    ...oracle_sequence_profile_rules,
+    ...oracle_grant_rules,
+    ...oracle_program_rules,
+    ...oracle_utility_rules,
+    ...oracle_type_admin_rules,
+    ...oracle_session_rules,
+    ...oracle_graph_rules,
+    ...oracle_unit_rules,
+    ...oracle_mvlog_rules,
+    ...oracle_account_rules,
+    ...oracle_misc_rules,
+    ...oracle_expr_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
@@ -703,6 +763,10 @@ export default canonicalOrder(grammar(base, {
     keyword_locked:       _ => token(prec(1, make_keyword("locked"))),
     keyword_model:        _ => token(prec(1, make_keyword("model"))),
     keyword_shared:       _ => token(prec(1, make_keyword("shared"))),
+    keyword_encrypted:    _ => token(prec(1, make_keyword("encrypted"))),
+
+    // Oracle identifiers may contain $ and # after the first character (ora$ptt_t, v$session).
+    _identifier: _ => /[A-Za-z_\u00C0-\u017F][0-9A-Za-z_$#\u00C0-\u017F]*/,
 
   },
 }));

@@ -2,16 +2,6 @@ import { comma_list, paren_list } from '../../grammar/helpers.js';
 
 export default {
 
-  // AS OF SCN expr | AS OF TIMESTAMP expr
-  flashback_clause: $ => seq(
-    $.keyword_as,
-    $.keyword_of,
-    choice(
-      seq($.keyword_scn, $._expression),
-      seq($.keyword_timestamp, $._expression),
-    ),
-  ),
-
   // CREATE [OR REPLACE] [PUBLIC] SYNONYM name FOR ref [@dblink]
   create_synonym_statement: $ => seq(
     $.keyword_create,

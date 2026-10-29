@@ -8,6 +8,7 @@ export default {
       $.select,
       optional(
         seq(
+          optional(seq($.keyword_bulk, $.keyword_collect)),
           $.keyword_into,
           $.select_expression,
         ),
