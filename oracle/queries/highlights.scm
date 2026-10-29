@@ -613,3 +613,9 @@
 (keyword_hybrid) @keyword
 (keyword_iceberg) @keyword
 (keyword_catalog) @keyword
+(keyword_conversion) @keyword
+(keyword_float32) @keyword
+(keyword_float64) @keyword
+(keyword_int8) @keyword
+(keyword_multiset) @keyword
+(keyword_sparse) @keyword

@@ -36,6 +36,7 @@ import oracle_unit_rules from './grammar/plsql_units.js';
 import oracle_mvlog_rules from './grammar/mvlog_admin.js';
 import oracle_account_rules from './grammar/account_admin.js';
 import oracle_misc_rules from './grammar/misc_admin.js';
+import oracle_expr_rules from './grammar/expr_extras.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
@@ -147,6 +148,8 @@ export default canonicalOrder(grammar(base, {
     [$._legacy_alter_type, $.object_reference],
     // CREATE DOMAIN d AS t ANNOTATIONS (...): a column property or the domain's own clause.
     [$._column_property, $.create_domain_statement],
+    // CHAR VARYING: keyword_varchar already spells CHARACTER VARYING.
+    [$.keyword_char, $.keyword_varchar],
   ],
 
   rules: {
@@ -671,6 +674,7 @@ export default canonicalOrder(grammar(base, {
     ...oracle_mvlog_rules,
     ...oracle_account_rules,
     ...oracle_misc_rules,
+    ...oracle_expr_rules,
 
 
     // Lexer-precedence guards: this dialect declares token(prec(1)) keywords
