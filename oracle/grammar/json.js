@@ -98,30 +98,19 @@ export default {
   // ── Functions ──────────────────────────────────────────────────────────
 
   json_function: $ => choice(
-    $.json_value_function,
-    $.json_query_function,
-    $.json_exists_function,
+    $.json_path_function,
     $.json_object_function,
     $.json_array_function,
     $.json_objectagg_function,
-    $.json_arrayagg_function,
     $.json_serialize_function,
     $.json_transform_function,
   ),
 
-  json_value_function: $ => seq(
-    $.keyword_json_value, '(',
-    $._expression, optional($._json_format), ',', $._json_path,
-    repeat(choice(
-      $._json_returning,
-      $._json_passing,
-      $._json_on_clause,
-    )),
-    ')',
-  ),
-
-  json_query_function: $ => seq(
-    $.keyword_json_query, '(',
+  // JSON_VALUE / JSON_QUERY / JSON_EXISTS share one rule: the three differ only in which of
+  // RETURNING / PASSING / WRAPPER / QUOTES / ON clauses they take, and one expression context
+  // keeps the parse table small.
+  json_path_function: $ => seq(
+    choice($.keyword_json_value, $.keyword_json_query, $.keyword_json_exists), '(',
     $._expression, optional($._json_format), ',', $._json_path,
     repeat(choice(
       $._json_returning,
@@ -130,13 +119,6 @@ export default {
       $._json_quotes,
       $._json_on_clause,
     )),
-    ')',
-  ),
-
-  json_exists_function: $ => seq(
-    $.keyword_json_exists, '(',
-    $._expression, optional($._json_format), ',', $._json_path,
-    repeat(choice($._json_passing, $._json_on_clause)),
     ')',
   ),
 
@@ -174,16 +156,10 @@ export default {
     ')',
   ),
 
+  // JSON_ARRAY and JSON_ARRAYAGG (the aggregate takes one element and an ORDER BY)
   json_array_function: $ => seq(
-    $.keyword_json_array, '(',
+    choice($.keyword_json_array, $.keyword_json_arrayagg), '(',
     optional(comma_list(seq($._expression, optional($._json_format)), true)),
-    repeat(choice($._json_null_clause, $._json_returning, $.keyword_strict)),
-    ')',
-  ),
-
-  json_arrayagg_function: $ => seq(
-    $.keyword_json_arrayagg, '(',
-    $._expression, optional($._json_format),
     optional($.order_by),
     repeat(choice($._json_null_clause, $._json_returning, $.keyword_strict)),
     ')',
