@@ -7,16 +7,16 @@ PARAM = "field('parameter', $._expression)"
 TYPE = "$._type"
 TAIL = ""
 v = sys.argv[1]
-if v == 'multiset':
-    PARAM = "field('parameter', choice($._expression, seq($.keyword_multiset, $.subquery)))"
-elif v == 'domain':
-    TYPE = "choice($._type, seq($.keyword_domain, $.object_reference))"
-elif v == 'default':
-    TAIL = "optional(seq($.keyword_default, $._expression, $.keyword_on, $.keyword_conversion, $.keyword_error)),"
-elif v == 'format':
-    TAIL = "optional(seq(',', $._expression, optional(seq(',', $._expression)))),"
-elif v != 'plain':
-    raise SystemExit('unknown variant ' + v)
+MULTISET = "field('parameter', choice($._expression, seq($.keyword_multiset, $.subquery)))"
+DOMAIN = "choice($._type, seq($.keyword_domain, $.object_reference))"
+DEFAULT = "optional(seq($.keyword_default, $._expression, $.keyword_on, $.keyword_conversion, $.keyword_error)),"
+FORMAT = "optional(seq(',', $._expression, optional(seq(',', $._expression)))),"
+parts = set(v.split('+')) if v != 'plain' else set()
+if 'multiset' in parts: PARAM = MULTISET
+if 'domain' in parts: TYPE = DOMAIN
+if 'default' in parts: TAIL += DEFAULT
+if 'format' in parts: TAIL += FORMAT
+assert parts <= {'multiset', 'domain', 'default', 'format'}, v
 
 new = """  cast: $ => seq(
     field('name', $.keyword_cast),
