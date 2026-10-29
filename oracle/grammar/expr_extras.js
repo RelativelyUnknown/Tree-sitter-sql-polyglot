@@ -1,7 +1,7 @@
 import { comma_list, paren_list, wrapped_in_parenthesis, make_keyword } from '../../grammar/helpers.js';
 
 // Expression and datatype forms the earlier Oracle rules lack (Oracle SQL Language Reference 26ai):
-// scientific numbers, interval literal precisions, CAST with DEFAULT ... ON CONVERSION ERROR / DOMAIN / MULTISET, function
+// scientific numbers, interval literal precisions, CAST with DOMAIN / MULTISET, function
 // arguments with USING and DEFAULT ... ON CONVERSION ERROR, and the remaining builtin and ANSI types.
 
 const kw = (word) => token(prec(1, make_keyword(word)));
@@ -44,7 +44,7 @@ export default {
     )),
   )),
 
-  // ── Operators ──────────────────────────────────────────────────────────
+  // ── CAST and function arguments ────────────────────────────────────────
 
   cast: $ => seq(
     field('name', $.keyword_cast),
@@ -52,8 +52,6 @@ export default {
     field('parameter', choice($._expression, seq($.keyword_multiset, $.subquery))),
     $.keyword_as,
     choice($._type, seq($.keyword_domain, $.object_reference)),
-    optional(seq($.keyword_default, $._expression, $.keyword_on, $.keyword_conversion, $.keyword_error)),
-    optional(seq(',', $._expression, optional(seq(',', $._expression)))),
     ')',
   ),
 
