@@ -13,10 +13,8 @@ export default {
   keyword_inherit:    _ => kw('inherit'),
   keyword_java:       _ => kw('java'),
   keyword_mining:     _ => kw('mining'),
-  keyword_model:      _ => kw('model'),
   keyword_debug:      _ => kw('debug'),
   keyword_resource:   _ => kw('resource'),
-  keyword_rewrite:    _ => kw('rewrite'),
   keyword_library:    _ => kw('library'),
 
   // ── Privileges ─────────────────────────────────────────────────────────

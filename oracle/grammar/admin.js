@@ -31,28 +31,6 @@ export default {
     ),
   ),
 
-  // ANALYZE TABLE t COMPUTE STATISTICS | ESTIMATE STATISTICS [SAMPLE n ROWS|PERCENT]
-  //   | VALIDATE STRUCTURE [CASCADE]
-  // ANALYZE INDEX idx VALIDATE STRUCTURE
-  analyze_statement: $ => seq(
-    $.keyword_analyze,
-    choice($.keyword_table, $.keyword_index),
-    $.object_reference,
-    choice(
-      seq($.keyword_compute, $.keyword_statistics),
-      seq(
-        $.keyword_estimate,
-        $.keyword_statistics,
-        optional(seq(
-          $.keyword_sample,
-          alias($._integer, $.literal),
-          choice($.keyword_rows, $.keyword_percent),
-        )),
-      ),
-      seq($.keyword_validate, $.keyword_structure, optional($.keyword_cascade)),
-    ),
-  ),
-
   // MODEL [IGNORE|KEEP NAV] [RETURN UPDATED|ALL ROWS]
   //   [PARTITION BY (…)] DIMENSION BY (…) MEASURES (…)
   //   RULES [UPDATE | UPSERT [ALL]] [SEQUENTIAL|AUTOMATIC ORDER]
@@ -111,28 +89,6 @@ export default {
     ']',
   ),
 
-  // ALTER SESSION SET param = value [param = value …]
-  // ALTER SESSION ENABLE|DISABLE|FORCE PARALLEL DML|DDL|QUERY
-  alter_session_statement: $ => prec.right(seq(
-    $.keyword_alter,
-    $.keyword_session,
-    choice(
-      seq(
-        $.keyword_set,
-        repeat1(seq(
-          field('parameter', $.identifier),
-          '=',
-          field('value', choice($._expression, $.keyword_serializable)),
-        )),
-      ),
-      seq(
-        choice($.keyword_enable, $.keyword_disable, $.keyword_force),
-        $.keyword_parallel,
-        $.identifier,
-      ),
-    ),
-  )),
-
   // ALTER SYSTEM …
   alter_system_statement: $ => prec.right(seq(
     $.keyword_alter,
@@ -168,49 +124,5 @@ export default {
       seq($.keyword_archive, $.keyword_log, $.keyword_current),
     ),
   )),
-
-  // CREATE [OR REPLACE] DIRECTORY name AS 'path'
-  create_directory_statement: $ => seq(
-    $.keyword_create,
-    optional($._or_replace),
-    $.keyword_directory,
-    field('name', $.identifier),
-    $.keyword_as,
-    field('path', alias($._literal_string, $.literal)),
-  ),
-
-  // DROP DIRECTORY name
-  drop_directory_statement: $ => seq(
-    $.keyword_drop,
-    $.keyword_directory,
-    field('name', $.identifier),
-  ),
-
-  // GRANT READ, WRITE ON DIRECTORY dir TO user
-  _privilege_type: $ => choice(
-    $.keyword_select,
-    $.keyword_insert,
-    $.keyword_update,
-    $.keyword_delete,
-    $.keyword_execute,
-    $.keyword_usage,
-    $.keyword_references,
-    $.keyword_trigger,
-    $.keyword_read,
-    $.keyword_write,
-    seq($.keyword_all, optional($.keyword_privileges)),
-  ),
-
-  _grant_object: $ => choice(
-    seq($.keyword_table, $.object_reference),
-    seq($.keyword_view, $.object_reference),
-    seq($.keyword_schema, $.object_reference),
-    seq($.keyword_database, $.object_reference),
-    seq($.keyword_function, $.object_reference),
-    seq($.keyword_procedure, $.object_reference),
-    seq($.keyword_sequence, $.object_reference),
-    seq($.keyword_directory, $.object_reference),
-    $.object_reference,
-  ),
 
 };

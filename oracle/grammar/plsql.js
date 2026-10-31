@@ -22,10 +22,8 @@ export default {
   keyword_constant:       _ => kw('constant'),
   keyword_deterministic:  _ => kw('deterministic'),
   keyword_goto:           _ => kw('goto'),
-  keyword_java:           _ => kw('java'),
   keyword_javascript:     _ => kw('javascript'),
   keyword_language:       _ => kw('language'),
-  keyword_library:        _ => kw('library'),
   keyword_mle:            _ => kw('mle'),
   keyword_module:         _ => kw('module'),
   keyword_nocopy:         _ => kw('nocopy'),
@@ -506,8 +504,6 @@ export default {
     ), true),
   ),
 
-  _into_target: $ => choice(alias($._qualified_field, $.field), $.parameter),
-
   // FETCH c INTO a, b | FETCH c BULK COLLECT INTO coll [LIMIT n]
   cursor_fetch_statement: $ => seq(
     $.keyword_fetch,
@@ -639,12 +635,6 @@ export default {
     ),
   ),
 
-  _qualified_choice: $ => choice(
-    $.index_choice,
-    $.iterator_choice,
-    seq($.keyword_others, '=>', $._expression),
-  ),
-
   index_choice: $ => seq(
     field('index', choice($.literal, $.binary_expression, $.parameter)),
     '=>',
@@ -702,19 +692,6 @@ export default {
       field('predicate', $._expression),
       seq($.keyword_current, $.keyword_of, $.identifier),
     ),
-  ),
-
-  // target := expr, where the target is a variable, field, collection element or host variable
-  assignment_statement: $ => seq(
-    field('target', choice(
-      $.identifier,
-      $._qualified_field,
-      $.parameter,
-      $.invocation,
-      seq($.parameter, ':', $.identifier),
-    )),
-    ':=',
-    field('value', $._expression),
   ),
 
 };

@@ -12,7 +12,6 @@ export default {
 
   keyword_advanced:        _ => kw('advanced'),
   keyword_annotations:     _ => kw('annotations'),
-  keyword_archival:        _ => kw('archival'),
   keyword_basic:           _ => kw('basic'),
   keyword_capacity:        _ => kw('capacity'),
   keyword_compress:        _ => kw('compress'),
@@ -55,16 +54,6 @@ export default {
   keyword_visible:         _ => kw('visible'),
 
   // ── Columns ────────────────────────────────────────────────────────────
-
-  // A column needs a datatype, except where the type is inferred or already known: virtual
-  // columns (`b AS (a * 2)`). That untyped form is only valid inside a parenthesised column list
-  // (see typeless_column_definition), never as a bare `ADD col …`, where `ADD x CHECK (…)` is an
-  // unnamed ADD CONSTRAINT.
-  column_definition: $ => prec.left(seq(
-    field('name', $._column),
-    field('type', $._type),
-    repeat($._column_constraint),
-  )),
 
   typeless_column_definition: $ => prec.left(seq(
     field('name', $._column),

@@ -5,25 +5,6 @@ import { comma_list, paren_list } from '../../grammar/helpers.js';
 // https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/
 export default {
 
-  // LOCK TABLE t [, …] [PARTITION (p) | SUBPARTITION (p)]
-  //   IN <lockmode> MODE [NOWAIT | WAIT n]
-  lock_table_statement: $ => prec.right(seq(
-    $.keyword_lock,
-    $.keyword_table,
-    comma_list($.object_reference, true),
-    optional(seq(
-      choice($.keyword_partition, $.keyword_subpartition),
-      paren_list($._expression, true),
-    )),
-    $.keyword_in,
-    field('mode', $._lock_mode),
-    $.keyword_mode,
-    optional(choice(
-      $.keyword_nowait,
-      seq($.keyword_wait, alias($._natural_number, $.literal)),
-    )),
-  )),
-
   _lock_mode: $ => choice(
     seq($.keyword_row, $.keyword_share),
     seq($.keyword_row, $.keyword_exclusive),
@@ -32,48 +13,6 @@ export default {
     $.keyword_share,
     $.keyword_exclusive,
   ),
-
-  // PURGE { TABLE t | INDEX i | TABLESPACE ts [USER u]
-  //       | RECYCLEBIN | DBA_RECYCLEBIN }
-  purge_statement: $ => prec.right(seq(
-    $.keyword_purge,
-    choice(
-      seq($.keyword_table, field('name', $.object_reference)),
-      seq($.keyword_index, field('name', $.object_reference)),
-      seq(
-        $.keyword_tablespace,
-        field('name', $.object_reference),
-        optional(seq($.keyword_user, field('user', $.identifier))),
-      ),
-      field('scope', $.identifier),
-    ),
-  )),
-
-  // FLASHBACK TABLE t [, …] TO { SCN e | TIMESTAMP e | RESTORE POINT r
-  //   | BEFORE DROP [RENAME TO new] }
-  // FLASHBACK DATABASE TO …
-  flashback_statement: $ => prec.right(seq(
-    $.keyword_flashback,
-    choice(
-      seq($.keyword_table, comma_list($.object_reference, true)),
-      seq($.keyword_database, optional(field('name', $.object_reference))),
-    ),
-    $.keyword_to,
-    choice(
-      seq($.keyword_scn, field('scn', $._expression)),
-      seq($.keyword_timestamp, field('timestamp', $._expression)),
-      seq(
-        $.keyword_restore,
-        $.keyword_point,
-        field('restore_point', $.identifier),
-      ),
-      seq(
-        $.keyword_before,
-        $.keyword_drop,
-        optional(seq($.keyword_rename, $.keyword_to, field('new_name', $.object_reference))),
-      ),
-    ),
-  )),
 
   // CREATE [OR REPLACE] RESTORE POINT name  |  DROP RESTORE POINT name
   restore_point_statement: $ => seq(
@@ -197,14 +136,6 @@ export default {
   role_grant: $ => prec.right(seq(
     field('role', $.identifier),
     optional(seq($.keyword_identified, $.keyword_by, field('password', $.identifier))),
-  )),
-
-  // CALL proc(arg [, …]) [INTO :host_variable]
-  call_statement: $ => prec.right(seq(
-    $.keyword_call,
-    field('procedure', $.object_reference),
-    paren_list(choice($.named_argument, $._expression)),
-    optional(seq($.keyword_into, field('target', $.parameter))),
   )),
 
 };
