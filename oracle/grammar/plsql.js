@@ -1,6 +1,4 @@
 import { comma_list, paren_list, wrapped_in_parenthesis, make_keyword } from '../../grammar/helpers.js';
-import create_function_rules from '../../grammar/statements/create-function.js';
-import create_procedure_rules from '../../grammar/statements/create-procedure.js';
 
 // PL/SQL: blocks, declarations, subprograms, control flow and CREATE FUNCTION / PROCEDURE
 // (Oracle PL/SQL Language Reference 26ai). Statements inside a body end with ';' and may carry
@@ -311,14 +309,7 @@ export default {
 
   // ── CREATE FUNCTION / PROCEDURE ────────────────────────────────────────
 
-  // The ISO / PostgreSQL-style forms (RETURNS, BEGIN ATOMIC, dollar-quoted bodies) this dialect
-  // inherited stay accepted next to the Oracle form.
-  create_function: $ => choice($._oracle_create_function, $._ansi_create_function),
-  create_procedure: $ => choice($._oracle_create_procedure, $._ansi_create_procedure),
-  _ansi_create_function: create_function_rules.create_function,
-  _ansi_create_procedure: create_procedure_rules.create_procedure,
-
-  _oracle_create_function: $ => seq(
+  create_function: $ => seq(
     $.keyword_create,
     optional($._or_replace),
     optional(choice($.keyword_editionable, $.keyword_noneditionable)),
@@ -337,7 +328,7 @@ export default {
     ),
   ),
 
-  _oracle_create_procedure: $ => seq(
+  create_procedure: $ => seq(
     $.keyword_create,
     optional($._or_replace),
     optional(choice($.keyword_editionable, $.keyword_noneditionable)),

@@ -78,13 +78,6 @@ export default canonicalOrder(grammar(base, {
     [$.transaction, $.rollback_statement],
     [$._commit, $.commit_statement],
     [$._rollback, $.rollback_statement],
-    [$._oracle_create_function, $._ansi_create_function],
-    [$._oracle_create_procedure, $._ansi_create_procedure],
-    // Both CREATE FUNCTION forms start `name type DEFAULT`: a plsql_parameter or a function_argument.
-    [$.function_argument, $._plsql_type],
-    // The inherited bodies repeat their option lists on both sides of the body.
-    [$._ansi_create_function],
-    [$._ansi_create_procedure],
     [$.list, $.grouping_set],
     [$.list, $.rollup_element],
     [$.list, $.cube_element],
@@ -142,10 +135,6 @@ export default canonicalOrder(grammar(base, {
     // SET CONSTRAINTS c DEFERRED: the generic SET statement or SET CONSTRAINTS.
     [$.set_statement, $.object_reference],
     [$.table_partition_by],
-    // CREATE/ALTER TYPE: the earlier generic forms and the Oracle forms share a prefix.
-    [$._legacy_create_type, $._oracle_create_type],
-    [$._legacy_alter_type, $._oracle_alter_type],
-    [$._legacy_alter_type, $.object_reference],
     // CREATE DOMAIN d AS t ANNOTATIONS (...): a column property or the domain's own clause.
     [$._column_property, $.create_domain_statement],
     // CHAR VARYING: keyword_varchar already spells CHARACTER VARYING.

@@ -1,10 +1,7 @@
 import { comma_list, paren_list, make_keyword } from '../../grammar/helpers.js';
-import legacy_rules from './legacy_statements.js';
-import vendor_rules from './alter_vendor.js';
 
 // CREATE TYPE / ALTER TYPE (Oracle SQL Language Reference 26ai): object types with member, static,
-// map, order and constructor methods, subtypes, nested tables and varrays. The generic forms of
-// the earlier definitions stay accepted next to the Oracle ones.
+// map, order and constructor methods, subtypes, nested tables and varrays.
 
 const kw = (word) => token(prec(1, make_keyword(word)));
 
@@ -24,14 +21,9 @@ export default {
   keyword_self:         _ => kw('self'),
   keyword_substitutable: _ => kw('substitutable'),
 
-  create_type: $ => choice($._legacy_create_type, $._oracle_create_type),
-  alter_type: $ => choice($._legacy_alter_type, $._oracle_alter_type),
-  _legacy_create_type: legacy_rules.create_type,
-  _legacy_alter_type: vendor_rules.alter_type,
-
   // ── CREATE TYPE ────────────────────────────────────────────────────────
 
-  _oracle_create_type: $ => seq(
+  create_type: $ => seq(
     $.keyword_create,
     optional($._or_replace),
     optional($._editionable_clause),
@@ -104,7 +96,7 @@ export default {
 
   // ── ALTER TYPE ─────────────────────────────────────────────────────────
 
-  _oracle_alter_type: $ => seq(
+  alter_type: $ => seq(
     $.keyword_alter,
     $.keyword_type,
     optional($._if_exists),
