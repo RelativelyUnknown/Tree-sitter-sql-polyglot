@@ -34,7 +34,8 @@ export default {
     optional(seq($.keyword_oid, alias($._literal_string, $.literal))),
     optional($.sharing_clause),
     optional(seq($.keyword_authid, choice($.keyword_current_user, $.keyword_definer))),
-    choice(
+    // CREATE TYPE t; declares an incomplete type
+    optional(choice(
       seq(
         $.keyword_as,
         choice(
@@ -48,7 +49,7 @@ export default {
         ),
       ),
       seq($.keyword_under, $.object_reference, optional($._object_type_body)),
-    ),
+    )),
   ),
 
   _object_type_body: $ => choice(

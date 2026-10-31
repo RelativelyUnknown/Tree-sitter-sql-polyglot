@@ -21,7 +21,6 @@
   (keyword_continue)
   (keyword_loop)
   (keyword_declare)
-  (keyword_atomic)
 ] @keyword
 
 ; Locking, MODEL, ALTER SYSTEM/SESSION, DIRECTORY, ANALYZE (#101, #107, #108, #111)
