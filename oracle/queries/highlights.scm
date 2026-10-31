@@ -618,3 +618,6 @@
 (keyword_int8) @keyword
 (keyword_multiset) @keyword
 (keyword_sparse) @keyword
+(keyword_main) @keyword
+(keyword_single) @keyword
+(keyword_decrement) @keyword
