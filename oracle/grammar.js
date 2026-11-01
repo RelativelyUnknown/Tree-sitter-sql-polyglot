@@ -135,6 +135,8 @@ export default canonicalOrder(grammar(base, {
     // SET CONSTRAINTS c DEFERRED: the generic SET statement or SET CONSTRAINTS.
     [$.set_statement, $.object_reference],
     [$.table_partition_by],
+    // MODEL rule `s[ANY] ORDER BY y = expr`: the `=` continues the sort expression or is the rule's assignment.
+    [$.binary_expression, $.order_target],
     // CREATE DOMAIN d AS t ANNOTATIONS (...): a column property or the domain's own clause.
     [$._column_property, $.create_domain_statement],
     // CHAR VARYING: keyword_varchar already spells CHARACTER VARYING.
