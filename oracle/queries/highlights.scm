@@ -621,3 +621,9 @@
 (keyword_main) @keyword
 (keyword_single) @keyword
 (keyword_decrement) @keyword
+(keyword_running) @keyword
+(keyword_permute) @keyword
+(keyword_subset) @keyword
+(keyword_unmatched) @keyword
+(keyword_show) @keyword
+(keyword_matches) @keyword

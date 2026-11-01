@@ -1,6 +1,15 @@
-import { comma_list } from '../../grammar/helpers.js';
+import { comma_list, paren_list, make_keyword } from '../../grammar/helpers.js';
+
+const kw = (word) => token(prec(1, make_keyword(word)));
 
 export default {
+
+  keyword_running:   _ => kw('running'),
+  keyword_permute:   _ => kw('permute'),
+  keyword_subset:    _ => kw('subset'),
+  keyword_unmatched: _ => kw('unmatched'),
+  keyword_show:      _ => kw('show'),
+  keyword_matches:   _ => kw('matches'),
 
   // MATCH_RECOGNIZE (
   //   [PARTITION BY ...]  [ORDER BY ...]
@@ -19,6 +28,7 @@ export default {
     optional($.rows_per_match),
     optional($.after_match_skip),
     $.pattern_clause,
+    optional($.subset_clause),
     $.define_clause,
     ')',
   ),
@@ -30,6 +40,7 @@ export default {
   ),
 
   measure_item: $ => seq(
+    optional(choice($.keyword_running, $.keyword_final)),
     $._expression,
     $.keyword_as,
     field('alias', $.identifier),
@@ -43,6 +54,11 @@ export default {
     ),
     $.keyword_per,
     $.keyword_match,
+    optional(choice(
+      seq($.keyword_show, $.keyword_empty, $.keyword_matches),
+      seq($.keyword_omit, $.keyword_empty, $.keyword_matches),
+      seq($.keyword_with, $.keyword_unmatched, $.keyword_rows),
+    )),
   ),
 
   // AFTER MATCH SKIP { PAST LAST ROW | TO NEXT ROW | TO FIRST var | TO LAST var }
@@ -55,24 +71,53 @@ export default {
       seq($.keyword_to, $.keyword_next, $.keyword_row),
       seq($.keyword_to, $.keyword_first, $.identifier),
       seq($.keyword_to, $.keyword_last, $.identifier),
+      seq($.keyword_to, $.identifier),
     ),
   ),
 
-  // PATTERN ( pattern_terms )
+  // PATTERN ( row pattern ): variables, ( ), |, ^ and $ anchors, {- exclusion -}, PERMUTE (…)
   pattern_clause: $ => seq(
     $.keyword_pattern,
     '(',
-    repeat1($.pattern_term),
+    $._pattern_alternation,
     ')',
   ),
 
-  // A single pattern term: IDENTIFIER[quantifier]  or  ( terms )[quantifier]
+  _pattern_alternation: $ => seq(
+    repeat1($.pattern_term),
+    repeat(seq('|', repeat1($.pattern_term))),
+  ),
+
   pattern_term: $ => seq(
     choice(
       $.identifier,
-      seq('(', repeat1($.pattern_term), ')'),
+      '^',
+      '$',
+      seq('(', $._pattern_alternation, ')'),
+      seq('{-', repeat1($.pattern_term), '-}'),
+      seq($.keyword_permute, paren_list($.identifier, true)),
     ),
-    optional(choice('+', '*', '?')),
+    optional($.pattern_quantifier),
+  ),
+
+  // + * ? {n} {n,} {,m} {n,m}, each optionally followed by ? (reluctant)
+  pattern_quantifier: $ => seq(
+    choice(
+      '+',
+      '*',
+      '?',
+      seq('{', choice(
+        seq(alias($._natural_number, $.literal), optional(seq(',', optional(alias($._natural_number, $.literal))))),
+        seq(',', alias($._natural_number, $.literal)),
+      ), '}'),
+    ),
+    optional('?'),
+  ),
+
+  // SUBSET ab = (a, b) [, …]
+  subset_clause: $ => seq(
+    $.keyword_subset,
+    comma_list(seq($.identifier, '=', paren_list($.identifier, true)), true),
   ),
 
   // DEFINE var AS expr [, ...]
