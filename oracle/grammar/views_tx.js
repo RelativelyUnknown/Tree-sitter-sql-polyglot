@@ -1,5 +1,4 @@
-import { ordered_optionals } from './ordered.js';
-import { comma_list, paren_list, wrapped_in_parenthesis, make_keyword } from '../../grammar/helpers.js';
+import { comma_list, paren_list, wrapped_in_parenthesis, make_keyword, ordered_optionals } from '../../grammar/helpers.js';
 
 // Views, materialized views, DROP INDEX / VIEW and the transaction-control statements
 // (Oracle SQL Language Reference 26ai).

@@ -1,5 +1,5 @@
 import base from '../grammar.js';
-import { optional_parenthesis, comma_list, paren_list, make_keyword, wrapped_in_parenthesis, canonicalOrder } from '../grammar/helpers.js';
+import { optional_parenthesis, comma_list, paren_list, make_keyword, wrapped_in_parenthesis, canonicalOrder, ordered_optionals } from '../grammar/helpers.js';
 import oracle_match_recognize_rules from './grammar/match_recognize.js';
 import oracle_hierarchical_rules from './grammar/hierarchical.js';
 import oracle_plsql_rules from './grammar/plsql_blocks.js';
@@ -38,7 +38,6 @@ import oracle_account_rules from './grammar/account_admin.js';
 import oracle_misc_rules from './grammar/misc_admin.js';
 import oracle_expr_rules from './grammar/expr_extras.js';
 import oracle_select_clause_rules from './grammar/select_clauses.js';
-import { ordered_optionals } from './grammar/ordered.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';

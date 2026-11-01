@@ -1,5 +1,4 @@
-import { ordered_optionals } from './ordered.js';
-import { comma_list, paren_list, wrapped_in_parenthesis, make_keyword } from '../../grammar/helpers.js';
+import { comma_list, paren_list, wrapped_in_parenthesis, make_keyword, ordered_optionals } from '../../grammar/helpers.js';
 
 // Table references, joins and flashback in the FROM clause (Oracle SQL Language Reference 26ai,
 // SELECT: table_reference, query_table_expression, joined_table, flashback_query_clause).
