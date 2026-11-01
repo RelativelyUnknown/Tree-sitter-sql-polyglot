@@ -1,8 +1,7 @@
 import { comma_list, paren_list, wrapped_in_parenthesis, make_keyword } from '../../grammar/helpers.js';
 
-// Oracle SELECT clauses the ANSI base leaves out (Oracle SQL Language Reference 26ai): SEARCH / CYCLE and
-// a VALUES body on each subquery factoring clause, and row limiting with expressions, PERCENT, APPROX /
-// EXACT and TARGET ACCURACY, QUALIFY, and multiple named windows.
+// Oracle SELECT clauses the ANSI base leaves out (Oracle SQL Language Reference 26ai): row limiting with
+// expressions, PERCENT, APPROX / EXACT and TARGET ACCURACY, QUALIFY, and multiple named windows.
 
 const kw = (word) => token(prec(1, make_keyword(word)));
 
@@ -10,13 +9,10 @@ export default {
 
   keyword_approx:      _ => kw('approx'),
   keyword_approximate: _ => kw('approximate'),
-  keyword_breadth:     _ => kw('breadth'),
-  keyword_depth:       _ => kw('depth'),
   keyword_efsearch:    _ => kw('efsearch'),
   keyword_exact:       _ => kw('exact'),
   keyword_probes:      _ => kw('probes'),
   keyword_qualify:     _ => kw('qualify'),
-  keyword_search:      _ => kw('search'),
 
   // QUALIFY condition: filters rows after window functions are evaluated
   qualify: $ => seq(
@@ -38,49 +34,6 @@ export default {
       optional($.order_by),
       optional($.window_frame),
     ),
-  ),
-
-  // name [(cols)] AS [[NOT] MATERIALIZED] (query | VALUES …) [SEARCH …] [CYCLE …]
-  cte: $ => seq(
-    field('name', $.identifier),
-    optional(paren_list(field('argument', $.identifier))),
-    $.keyword_as,
-    optional(seq(optional($.keyword_not), $.keyword_materialized)),
-    wrapped_in_parenthesis(
-      choice(
-        alias(choice($._dml_read, $._dml_write), $.statement),
-        $.values,
-      ),
-    ),
-    optional($.search_clause),
-    optional($.cycle_clause),
-  ),
-
-  // SEARCH {BREADTH | DEPTH} FIRST BY col [ASC | DESC] [NULLS FIRST | LAST] [, …] SET ordering_column
-  search_clause: $ => seq(
-    $.keyword_search,
-    choice($.keyword_breadth, $.keyword_depth),
-    $.keyword_first,
-    $.keyword_by,
-    comma_list(seq(
-      $.identifier,
-      optional(choice($.keyword_asc, $.keyword_desc)),
-      optional(seq($.keyword_nulls, choice($.keyword_first, $.keyword_last))),
-    ), true),
-    $.keyword_set,
-    field('ordering_column', $.identifier),
-  ),
-
-  // CYCLE col [, …] SET cycle_mark_column TO mark_value DEFAULT no_cycle_value
-  cycle_clause: $ => seq(
-    $.keyword_cycle,
-    comma_list($.identifier, true),
-    $.keyword_set,
-    field('mark_column', $.identifier),
-    $.keyword_to,
-    $._expression,
-    $.keyword_default,
-    $._expression,
   ),
 
   // [OFFSET n {ROW | ROWS}] [FETCH [APPROX | APPROXIMATE | EXACT] {FIRST | NEXT} [n [PERCENT]] {ROW | ROWS}
