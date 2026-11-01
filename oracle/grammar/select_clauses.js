@@ -2,7 +2,7 @@ import { comma_list, paren_list, wrapped_in_parenthesis, make_keyword } from '..
 
 // Oracle SELECT clauses the ANSI base leaves out (Oracle SQL Language Reference 26ai): SEARCH / CYCLE and
 // a VALUES body on each subquery factoring clause, and row limiting with expressions, PERCENT, APPROX /
-// EXACT and TARGET ACCURACY.
+// EXACT and TARGET ACCURACY, QUALIFY, and multiple named windows.
 
 const kw = (word) => token(prec(1, make_keyword(word)));
 
@@ -15,7 +15,30 @@ export default {
   keyword_efsearch:    _ => kw('efsearch'),
   keyword_exact:       _ => kw('exact'),
   keyword_probes:      _ => kw('probes'),
+  keyword_qualify:     _ => kw('qualify'),
   keyword_search:      _ => kw('search'),
+
+  // QUALIFY condition: filters rows after window functions are evaluated
+  qualify: $ => seq(
+    $.keyword_qualify,
+    field('predicate', $._expression),
+  ),
+
+  // WINDOW w1 AS (…) [, w2 AS (…)]
+  window_clause: $ => seq(
+    $.keyword_window,
+    comma_list(seq($.identifier, $.keyword_as, $.window_specification), true),
+  ),
+
+  // ( [existing_window] [PARTITION BY …] [ORDER BY …] [frame] )
+  window_specification: $ => wrapped_in_parenthesis(
+    seq(
+      optional($.identifier),
+      optional($.partition_by),
+      optional($.order_by),
+      optional($.window_frame),
+    ),
+  ),
 
   // name [(cols)] AS [[NOT] MATERIALIZED] (query | VALUES …) [SEARCH …] [CYCLE …]
   cte: $ => seq(

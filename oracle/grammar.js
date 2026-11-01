@@ -136,6 +136,7 @@ export default canonicalOrder(grammar(base, {
     // SET CONSTRAINTS c DEFERRED: the generic SET statement or SET CONSTRAINTS.
     [$.set_statement, $.object_reference],
     [$.table_partition_by],
+    [$.qualify],
     // MODEL rule `s[ANY] ORDER BY y = expr`: the `=` continues the sort expression or is the rule's assignment.
     [$.binary_expression, $.order_target],
     // CREATE DOMAIN d AS t ANNOTATIONS (...): a column property or the domain's own clause.
@@ -297,6 +298,7 @@ export default canonicalOrder(grammar(base, {
       optional($.group_by),
       optional($.having),
       optional($.window_clause),
+      optional($.qualify),
       optional($.model_clause),
       optional($.order_siblings_by),
       optional($.order_by),
@@ -327,22 +329,35 @@ export default canonicalOrder(grammar(base, {
     keyword_path:       _ => token(prec(1, make_keyword("path"))),
     keyword_passing:    _ => token(prec(1, make_keyword("passing"))),
 
-    // PIVOT ( agg [alias] [, …] FOR col IN ( value [alias] [, …] ) )
+    // PIVOT [XML] ( agg [alias] [, …] FOR {col | (cols)} IN ( {value | (values)} [alias] [, …] | ANY [, ANY] | subquery ) )
     pivot_clause: $ => seq(
       $.keyword_pivot,
+      optional($.keyword_xml),
       '(',
       comma_list(seq($.invocation, optional($._alias)), true),
       $.keyword_for,
       choice($.identifier, paren_list($.identifier, true)),
       $.keyword_in,
-      paren_list(seq(
-        choice(alias($._literal_string, $.literal), alias($._integer, $.literal), $.identifier),
-        optional($._alias),
-      ), true),
+      choice(
+        paren_list(seq($._pivot_value, optional($._alias)), true),
+        seq('(', comma_list($.keyword_any, true), ')'),
+        $.subquery,
+      ),
       ')',
     ),
 
-    // UNPIVOT [INCLUDE|EXCLUDE NULLS] ( value_col FOR name_col IN ( col [, …] ) )
+    _pivot_value: $ => choice(
+      $._pivot_atom,
+      paren_list($._pivot_atom, true),
+    ),
+
+    _pivot_atom: $ => choice(
+      alias($._literal_string, $.literal),
+      alias($._integer, $.literal),
+      $.identifier,
+    ),
+
+    // UNPIVOT [INCLUDE|EXCLUDE NULLS] ( {col | (cols)} FOR {col | (cols)} IN ( {col | (cols)} [AS {literal | (literals)}] [, …] ) )
     unpivot_clause: $ => seq(
       $.keyword_unpivot,
       optional(seq(choice($.keyword_include, $.keyword_exclude), $.keyword_nulls)),
@@ -351,7 +366,10 @@ export default canonicalOrder(grammar(base, {
       $.keyword_for,
       choice($.identifier, paren_list($.identifier, true)),
       $.keyword_in,
-      paren_list($.identifier, true),
+      paren_list(seq(
+        choice($.identifier, paren_list($.identifier, true)),
+        optional(seq($.keyword_as, $._pivot_value)),
+      ), true),
       ')',
     ),
 

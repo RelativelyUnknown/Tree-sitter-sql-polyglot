@@ -635,3 +635,4 @@
 (keyword_exact) @keyword
 (keyword_probes) @keyword
 (keyword_search) @keyword
+(keyword_qualify) @keyword
