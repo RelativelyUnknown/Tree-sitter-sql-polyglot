@@ -241,6 +241,10 @@ jobs:
         if: matrix.binding == 'c'
 
       - name: Build and test
+        env:
+          # ubuntu-latest moved to a GCC that rejects the undeclared fdopen() in go-tree-sitter's C
+          # sources (implicit function declarations became errors); declare it the POSIX way.
+          CGO_CFLAGS: ${{ matrix.os == 'ubuntu-latest' && '-D_POSIX_C_SOURCE=200809L' || '' }}
         run: |
           case "${{ matrix.binding }}" in
             go)
