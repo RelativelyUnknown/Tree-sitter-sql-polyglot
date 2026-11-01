@@ -1,0 +1,44 @@
+name: Oracle states report
+
+# Throwaway investigation (never a required check): generates the oracle parser with
+# --report-states-for-rule - and prints how many parse states each rule takes part in.
+on:
+  push:
+    branches: ["ccr-7b871ec0-wgknnh"]
+    paths: [".github/experiments/oracle-states/**"]
+
+jobs:
+  report:
+    name: states report
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: tree-sitter/setup-action@v2
+        with:
+          install-lib: false
+          tree-sitter-ref: v0.26.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Add swap
+        run: |
+          sudo swapoff -a || true
+          avail_gb=$(df --output=avail -BG /mnt | tail -1 | tr -dc '0-9')
+          size_gb=$(( avail_gb > 40 ? 32 : avail_gb - 4 ))
+          sudo fallocate -l "${size_gb}G" /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+      - name: Generate with the states report
+        run: |
+          cd oracle
+          mkdir -p /tmp/out
+          tree-sitter generate grammar.js -o /tmp/out --report-states-for-rule - 2> /tmp/report.txt
+          grep -E "STATE_COUNT|SYMBOL_COUNT" /tmp/out/parser.c | head -3
+          echo "--- top 70 rules by states"
+          grep -P '\t\d+' /tmp/report.txt | sort -t$'\t' -k2 -n -r | head -70
+      - uses: actions/upload-artifact@v4
+        with:
+          name: oracle-states-report
+          path: /tmp/report.txt
