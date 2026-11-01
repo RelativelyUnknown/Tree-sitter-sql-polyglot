@@ -1,3 +1,4 @@
+import { ordered_optionals } from './ordered.js';
 import { comma_list, paren_list, wrapped_in_parenthesis, make_keyword } from '../../grammar/helpers.js';
 
 // Table references, joins and flashback in the FROM clause (Oracle SQL Language Reference 26ai,
@@ -51,20 +52,20 @@ export default {
         // (t JOIN u ON …)
         wrapped_in_parenthesis(seq($.relation, repeat1($.join))),
       ),
-      optional($.partition_extension),
-      optional($.flashback_clause),
-      optional(choice($.tablesample, $.sample_clause)),
-      optional(choice($.pivot_clause, $.unpivot_clause)),
-      optional($.match_recognize_clause),
-      optional(
-        seq(
-          $._alias,
-          optional(alias($._column_list, $.list)),
-        ),
-      ),
-      optional($.partition_by),
+      optional($._relation_clauses_0),
     ),
   ),
+
+  // partition, flashback, sampling, pivoting, row pattern matching, alias, partitioned join, in this order
+  ...ordered_optionals('_relation_clauses', [
+    $ => $.partition_extension,
+    $ => $.flashback_clause,
+    $ => choice($.tablesample, $.sample_clause),
+    $ => choice($.pivot_clause, $.unpivot_clause),
+    $ => $.match_recognize_clause,
+    $ => seq($._alias, optional(alias($._column_list, $.list))),
+    $ => $.partition_by,
+  ]),
 
   // , LATERAL (subquery) [alias] as a comma-separated FROM item
   lateral_relation: $ => seq($.keyword_lateral, $.subquery, optional($._alias)),

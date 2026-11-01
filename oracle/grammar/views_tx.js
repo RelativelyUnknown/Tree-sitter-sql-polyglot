@@ -1,3 +1,4 @@
+import { ordered_optionals } from './ordered.js';
 import { comma_list, paren_list, wrapped_in_parenthesis, make_keyword } from '../../grammar/helpers.js';
 
 // Views, materialized views, DROP INDEX / VIEW and the transaction-control statements
@@ -27,19 +28,25 @@ export default {
 
   // ── Views ──────────────────────────────────────────────────────────────
 
+  // CREATE [OR REPLACE] [[NO] FORCE] [TEMPORARY] [EDITIONING | EDITIONABLE [EDITIONING] | NONEDITIONABLE]
+  //   [JSON COLLECTION] [RECURSIVE] VIEW
+  ...ordered_optionals('_view_modifiers', [
+    $ => $._or_replace,
+    $ => seq(optional($.keyword_no), $.keyword_force),
+    $ => $._temporary,
+    $ => choice(
+      $.keyword_editioning,
+      seq($.keyword_editionable, optional($.keyword_editioning)),
+      $.keyword_noneditionable,
+    ),
+    $ => seq($.keyword_json, $.keyword_collection),
+    $ => $.keyword_recursive,
+  ]),
+
   create_view: $ => prec.right(
     seq(
       $.keyword_create,
-      optional($._or_replace),
-      optional(seq(optional($.keyword_no), $.keyword_force)),
-      optional($._temporary),
-      optional(choice(
-        $.keyword_editioning,
-        seq($.keyword_editionable, optional($.keyword_editioning)),
-        $.keyword_noneditionable,
-      )),
-      optional(seq($.keyword_json, $.keyword_collection)),
-      optional($.keyword_recursive),
+      optional($._view_modifiers_0),
       $.keyword_view,
       optional($._if_not_exists),
       $.object_reference,

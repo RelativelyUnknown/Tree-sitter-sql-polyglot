@@ -38,6 +38,7 @@ import oracle_account_rules from './grammar/account_admin.js';
 import oracle_misc_rules from './grammar/misc_admin.js';
 import oracle_expr_rules from './grammar/expr_extras.js';
 import oracle_select_clause_rules from './grammar/select_clauses.js';
+import { ordered_optionals } from './grammar/ordered.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
@@ -295,18 +296,22 @@ export default canonicalOrder(grammar(base, {
           $.join_to_one,
         ),
       ),
-      optional($.where),
-      optional($.connect_by_clause),
-      optional($.group_by),
-      optional($.having),
-      optional($.window_clause),
-      optional($.qualify),
-      optional($.model_clause),
-      optional($.order_siblings_by),
-      optional($.order_by),
-      // Oracle paging is FETCH FIRST/ROWNUM; no LIMIT keyword.
-      optional($.offset_fetch_clause),
+      optional($._from_clauses_0),
     ),
+
+    // WHERE … FETCH, in this order. Oracle paging is FETCH FIRST/ROWNUM; no LIMIT keyword.
+    ...ordered_optionals('_from_clauses', [
+      $ => $.where,
+      $ => $.connect_by_clause,
+      $ => $.group_by,
+      $ => $.having,
+      $ => $.window_clause,
+      $ => $.qualify,
+      $ => $.model_clause,
+      $ => $.order_siblings_by,
+      $ => $.order_by,
+      $ => $.offset_fetch_clause,
+    ]),
 
     // XMLTABLE('xpath' [PASSING expr] COLUMNS col type [PATH 'p'] [, …])
     xmltable: $ => seq(
