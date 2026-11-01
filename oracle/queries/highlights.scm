@@ -627,3 +627,11 @@
 (keyword_unmatched) @keyword
 (keyword_show) @keyword
 (keyword_matches) @keyword
+(keyword_approx) @keyword
+(keyword_approximate) @keyword
+(keyword_breadth) @keyword
+(keyword_depth) @keyword
+(keyword_efsearch) @keyword
+(keyword_exact) @keyword
+(keyword_probes) @keyword
+(keyword_search) @keyword
