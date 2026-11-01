@@ -137,6 +137,8 @@ export default canonicalOrder(grammar(base, {
     [$.set_statement, $.object_reference],
     [$.table_partition_by],
     [$.qualify],
+    // FETCH FIRST n ROWS ONLY WITH TARGET ACCURACY: the WITH can also belong to what follows the query.
+    [$._fetch_first_clause],
     // MODEL rule `s[ANY] ORDER BY y = expr`: the `=` continues the sort expression or is the rule's assignment.
     [$.binary_expression, $.order_target],
     // CREATE DOMAIN d AS t ANNOTATIONS (...): a column property or the domain's own clause.
