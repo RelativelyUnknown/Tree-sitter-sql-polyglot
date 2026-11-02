@@ -633,3 +633,5 @@
 (keyword_qualify) @keyword
 (keyword_minus) @keyword
 (keyword_connect_by_root) @keyword
+(keyword_forever) @keyword
+(keyword_milliseconds) @keyword
