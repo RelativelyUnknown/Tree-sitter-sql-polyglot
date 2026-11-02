@@ -86,7 +86,7 @@ export default {
     $.keyword_database,
     $.keyword_link,
     optional($._if_not_exists),
-    $.object_reference,
+    $.dblink_name,
     optional(seq(
       $.keyword_connect,
       choice(

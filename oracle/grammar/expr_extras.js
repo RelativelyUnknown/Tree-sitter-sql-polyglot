@@ -13,6 +13,13 @@ export default {
   keyword_float64:    _ => kw('float64'),
   keyword_int8:       _ => kw('int8'),
   keyword_multiset:   _ => kw('multiset'),
+
+  // LIKE and its Oracle character-set variants LIKEC (Unicode complete characters),
+  // LIKE2 (UCS2 code points) and LIKE4 (UCS4 code points).
+  keyword_like: _ => /[lL][iI][kK][eE]([cC]|[24])?/,
+
+  // Oracle's not-equal spelling ^= next to the inherited operator set.
+  op_other: ($, previous) => choice(previous, token('^=')),
   keyword_sparse:     _ => kw('sparse'),
 
   // ── Numbers ────────────────────────────────────────────────────────────

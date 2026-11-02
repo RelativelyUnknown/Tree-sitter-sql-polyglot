@@ -645,3 +645,4 @@
 (keyword_noinsert) @keyword
 (keyword_noupdate) @keyword
 (keyword_nodelete) @keyword
+(keyword_count) @keyword

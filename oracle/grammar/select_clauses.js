@@ -9,6 +9,7 @@ const kw = (word) => token(prec(1, make_keyword(word)));
 export default {
 
   keyword_approx:      _ => kw('approx'),
+  keyword_count:           _ => token(prec(1, make_keyword('count'))),
   keyword_approximate: _ => kw('approximate'),
   keyword_breadth:     _ => kw('breadth'),
   keyword_depth:       _ => kw('depth'),

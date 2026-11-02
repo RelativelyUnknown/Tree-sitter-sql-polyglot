@@ -627,12 +627,26 @@ export default {
               choice($.keyword_separator, ','),
               alias($._literal_string, $.literal)
             )),
+            optional($._listagg_overflow),
             optional($.limit),
           ),
         ),
       ),
       optional($.filter_expression),
       optional($.within_group),
+    ),
+  ),
+
+  // LISTAGG ... ON OVERFLOW ERROR | TRUNCATE ['indicator'] [WITH | WITHOUT COUNT]
+  _listagg_overflow: $ => seq(
+    $.keyword_on, $.keyword_overflow,
+    choice(
+      $.keyword_error,
+      seq(
+        $.keyword_truncate,
+        optional(alias($._literal_string, $.literal)),
+        optional(seq(choice($.keyword_with, $.keyword_without), $.keyword_count)),
+      ),
     ),
   ),
 
