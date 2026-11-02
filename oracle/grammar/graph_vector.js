@@ -173,7 +173,7 @@ export default {
 
   create_duality_view_statement: $ => seq(
     $.keyword_create,
-    optional(seq($.keyword_or, $.keyword_replace)),
+    optional($._or_replace),
     $.keyword_json,
     $.keyword_relational,
     $.keyword_duality,
