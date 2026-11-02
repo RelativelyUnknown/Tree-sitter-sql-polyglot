@@ -128,13 +128,23 @@ export default {
     ),
   ),
 
-  // The cell reference on the right of a rule: s[2024], s['a', 2023], s[ANY]; also x[a:b] slices
+  // A cell reference or JSON array step on a named value: s[2024], s['a', 2023], s[ANY], r.v[1],
+  // po.doc.items[*], po.doc.items[0 to 2]. The left side is a (qualified) name, not any expression,
+  // so [ never continues an arbitrary expression. x[a:b] slices stay.
   subscript: $ => prec.left('binary_is',
     seq(
-      field('expression', $._expression),
+      field('expression', alias($._qualified_field, $.field)),
       '[',
       choice(
-        comma_list(choice(field('subscript', $._expression), $.keyword_any), true),
+        comma_list(
+          choice(
+            field('subscript', $._expression),
+            $.keyword_any,
+            '*',
+            seq($._expression, $.keyword_to, $._expression),
+          ),
+          true,
+        ),
         seq(
           optional(field('lower', $._expression)),
           ':',

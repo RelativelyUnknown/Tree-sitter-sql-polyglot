@@ -434,7 +434,6 @@
 (keyword_json_transform) @keyword
 (keyword_json_value) @keyword
 (keyword_keys) @keyword
-(keyword_lax) @keyword
 (keyword_mismatch) @keyword
 (keyword_missing) @keyword
 (keyword_omit) @keyword
@@ -445,7 +444,6 @@
 (keyword_remove) @keyword
 (keyword_rename_op) @keyword
 (keyword_scalar) @keyword
-(keyword_scalars) @keyword
 (keyword_unconditional) @keyword
 (keyword_unknown) @keyword
 (keyword_wrapper) @keyword

@@ -25,7 +25,6 @@ export default {
   keyword_json_transform: _ => kw('json_transform'),
   keyword_json_value:    _ => kw('json_value'),
   keyword_keys:          _ => kw('keys'),
-  keyword_lax:           _ => kw('lax'),
   keyword_mismatch:      _ => kw('mismatch'),
   keyword_error:         _ => kw('error'),
   keyword_omit:          _ => kw('omit'),
@@ -34,7 +33,6 @@ export default {
   keyword_pretty:        _ => kw('pretty'),
   keyword_quotes:        _ => kw('quotes'),
   keyword_scalar:        _ => kw('scalar'),
-  keyword_scalars:       _ => kw('scalars'),
   keyword_strict:        _ => kw('strict'),
   keyword_unconditional: _ => kw('unconditional'),
   keyword_unknown:       _ => kw('unknown'),
@@ -205,29 +203,14 @@ export default {
     ),
   ),
 
-  // expr IS [NOT] JSON [FORMAT JSON] [STRICT | LAX] [ALLOW | DISALLOW SCALARS]
-  //   [WITH | WITHOUT UNIQUE KEYS] [VALIDATE 'schema' | OBJECT | ARRAY | SCALAR …]
+  // expr IS [NOT] JSON [OBJECT | ARRAY | SCALAR]
   is_json_condition: $ => prec.left('binary_is', seq(
     field('left', $._expression),
     $.keyword_is,
     optional($.keyword_not),
     $.keyword_json,
-    repeat($._json_condition_option),
-    optional(seq('(', repeat1($._json_condition_option), ')')),
+    optional(choice($.keyword_object, $.keyword_array, $.keyword_scalar)),
   )),
-
-  _json_condition_option: $ => choice(
-    $._json_format,
-    $.keyword_strict,
-    $.keyword_lax,
-    seq(choice($.keyword_allow, $.keyword_disallow), $.keyword_scalars),
-    seq($.keyword_with, $.keyword_unique, $.keyword_keys),
-    seq($.keyword_without, $.keyword_unique, $.keyword_keys),
-    seq($.keyword_validate, $._json_path),
-    $.keyword_object,
-    $.keyword_array,
-    $.keyword_scalar,
-  ),
 
   // ── JSON_TABLE ─────────────────────────────────────────────────────────
 
@@ -279,11 +262,9 @@ export default {
 
   // ── Dot notation ───────────────────────────────────────────────────────
 
-  // po.doc.LineItems[0].Part.UPCCode, a.b[*].c, a.b[0 to 2], a.b.number()
+  // po.doc.LineItems[0].Part.UPCCode, a.b[*].c, a.b.number()
   json_object_access: $ => prec.left(choice(
-    // [*] / [a to b] / [a, b] as the first step (a plain [n] parses as a subscript)
-    seq(alias($._qualified_field, $.field), $.json_array_step, repeat($._json_step)),
-    // x.y[0].z: the inherited subscript followed by more steps
+    // x.y[0].z: a subscript followed by more steps
     seq($.subscript, repeat1($._json_step)),
     // trailing item method calls such as a.b.number(). Longer plain paths stay ordinary fields:
     // a branch for five or more parts would also claim every shorter qualified field.
