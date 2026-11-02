@@ -443,6 +443,7 @@ export default canonicalOrder(grammar(base, {
       $.call_chain,
       $.bind_array_element,
       $.exponent_expression,
+      $.at_time_zone_expression,
       $.json_function,
       $.json_constructor,
       $.is_json_condition,

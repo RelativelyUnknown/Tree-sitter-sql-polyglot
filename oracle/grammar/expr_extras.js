@@ -58,6 +58,16 @@ export default {
 
   _cast_format: $ => seq(',', $._expression, optional(seq(',', $._expression))),
 
+  // expr AT TIME ZONE zone | expr AT LOCAL
+  at_time_zone_expression: $ => prec.left('binary_other', seq(
+    field('left', $._expression),
+    $.keyword_at,
+    choice(
+      $.keyword_local,
+      seq($.keyword_time, $.keyword_zone, field('zone', $._expression)),
+    ),
+  )),
+
   cast: $ => seq(
     field('name', $.keyword_cast),
     '(',
