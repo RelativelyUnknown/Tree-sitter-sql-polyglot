@@ -631,3 +631,5 @@
 (keyword_exact) @keyword
 (keyword_probes) @keyword
 (keyword_qualify) @keyword
+(keyword_minus) @keyword
+(keyword_connect_by_root) @keyword

@@ -25,7 +25,13 @@ export default {
     optional(
       choice(
         $.keyword_nowait,
-        seq($.keyword_wait, alias($._integer, $.literal)),
+        seq(
+          $.keyword_wait,
+          choice(
+            $.keyword_forever,
+            seq(alias($._integer, $.literal), optional(choice($.keyword_seconds, $.keyword_milliseconds))),
+          ),
+        ),
         seq($.keyword_skip, $.keyword_locked),
       ),
     ),

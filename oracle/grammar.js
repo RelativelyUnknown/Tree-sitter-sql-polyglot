@@ -302,8 +302,7 @@ export default canonicalOrder(grammar(base, {
     ...ordered_optionals('_from_clauses', [
       $ => $.where,
       $ => $.connect_by_clause,
-      $ => $.group_by,
-      $ => $.having,
+      $ => $._group_having,
       $ => $.window_clause,
       $ => $.qualify,
       $ => $.model_clause,
@@ -403,6 +402,7 @@ export default canonicalOrder(grammar(base, {
         [$.keyword_all, 'unary_not'],
         [$.op_unary_other, 'unary_other'],
         [$.keyword_prior, 'unary_prior'],
+        [$.keyword_connect_by_root, 'unary_prior'],
       ].map(([operator, precedence]) =>
         prec.left(precedence, seq(
           field('operator', operator),

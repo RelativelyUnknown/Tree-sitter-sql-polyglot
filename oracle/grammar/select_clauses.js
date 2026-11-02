@@ -11,8 +11,68 @@ export default {
   keyword_approximate: _ => kw('approximate'),
   keyword_efsearch:    _ => kw('efsearch'),
   keyword_exact:       _ => kw('exact'),
+  keyword_minus:       _ => kw('minus'),
   keyword_probes:      _ => kw('probes'),
   keyword_qualify:     _ => kw('qualify'),
+  keyword_connect_by_root: _ => kw('connect_by_root'),
+
+  // query { UNION | INTERSECT | MINUS | EXCEPT } [ALL | DISTINCT] query …
+  set_operation: $ => seq(
+    $._select_statement,
+    repeat1(
+      seq(
+        field(
+          "operation",
+          seq(
+            choice($.keyword_union, $.keyword_except, $.keyword_intersect, $.keyword_minus),
+            optional(choice($.keyword_all, $.keyword_distinct)),
+            optional(seq($.keyword_corresponding, optional(seq($.keyword_by, paren_list($.identifier, true))))),
+          ),
+        ),
+        $._select_statement,
+      ),
+    ),
+  ),
+
+  // GROUP BY ALL groups by every non-aggregated item of the select list
+  group_by: $ => prec.left(seq(
+    $.keyword_group,
+    $.keyword_by,
+    choice(
+      $.keyword_all,
+      comma_list(choice(
+        $._expression,
+        $.rollup_clause,
+        $.cube_clause,
+        $.grouping_sets_clause,
+      ), true),
+    ),
+  )),
+
+  // GROUP BY and HAVING may come in either order
+  _group_having: $ => choice(
+    seq($.group_by, optional($.having)),
+    seq($.having, optional($.group_by)),
+  ),
+
+  // START WITH may precede or follow CONNECT BY
+  connect_by_clause: $ => choice(
+    seq($._start_with, $._connect_by),
+    seq($._connect_by, optional($._start_with)),
+  ),
+
+  _start_with: $ => seq(
+    $.keyword_start,
+    $.keyword_with,
+    field('start_condition', $._expression),
+  ),
+
+  _connect_by: $ => seq(
+    $.keyword_connect,
+    $.keyword_by,
+    optional($.keyword_nocycle),
+    field('condition', $._expression),
+  ),
 
   // QUALIFY condition: filters rows after window functions are evaluated
   qualify: $ => seq(
