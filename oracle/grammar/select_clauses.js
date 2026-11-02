@@ -1,7 +1,8 @@
 import { comma_list, paren_list, wrapped_in_parenthesis, make_keyword } from '../../grammar/helpers.js';
 
 // Oracle SELECT clauses the ANSI base leaves out (Oracle SQL Language Reference 26ai): row limiting with
-// expressions, PERCENT, APPROX / EXACT and TARGET ACCURACY, QUALIFY, and multiple named windows.
+// expressions, PERCENT, APPROX / EXACT and TARGET ACCURACY, QUALIFY, multiple named windows, subquery factoring
+// with SEARCH / CYCLE / VALUES, and PL/SQL declarations in WITH.
 
 const kw = (word) => token(prec(1, make_keyword(word)));
 
@@ -9,11 +10,14 @@ export default {
 
   keyword_approx:      _ => kw('approx'),
   keyword_approximate: _ => kw('approximate'),
+  keyword_breadth:     _ => kw('breadth'),
+  keyword_depth:       _ => kw('depth'),
   keyword_efsearch:    _ => kw('efsearch'),
   keyword_exact:       _ => kw('exact'),
   keyword_minus:       _ => kw('minus'),
   keyword_probes:      _ => kw('probes'),
   keyword_qualify:     _ => kw('qualify'),
+  keyword_search:      _ => kw('search'),
   keyword_connect_by_root: _ => kw('connect_by_root'),
 
   // query { UNION | INTERSECT | MINUS | EXCEPT } [ALL | DISTINCT] query …
@@ -72,6 +76,67 @@ export default {
     $.keyword_by,
     optional($.keyword_nocycle),
     field('condition', $._expression),
+  ),
+
+  // WITH [FUNCTION / PROCEDURE declarations] [RECURSIVE] cte [, cte …]; the declarations end with ';'
+  _cte: $ => seq(
+    $.keyword_with,
+    choice(
+      seq(
+        repeat1($.subprogram_definition),
+        optional($._cte_list),
+      ),
+      $._cte_list,
+    ),
+  ),
+
+  _cte_list: $ => seq(
+    optional($.keyword_recursive),
+    $.cte,
+    repeat(seq(',', $.cte)),
+  ),
+
+  // name [(cols)] AS [[NOT] MATERIALIZED] (query | VALUES …) [SEARCH …] [CYCLE …]
+  cte: $ => seq(
+    field('name', $.identifier),
+    optional(paren_list(field('argument', $.identifier))),
+    $.keyword_as,
+    optional(seq(optional($.keyword_not), $.keyword_materialized)),
+    wrapped_in_parenthesis(
+      choice(
+        alias(choice($._dml_read, $._dml_write), $.statement),
+        $.values,
+      ),
+    ),
+    optional($.search_clause),
+    optional($.cycle_clause),
+  ),
+
+  // SEARCH {BREADTH | DEPTH} FIRST BY col [ASC | DESC] [NULLS FIRST | LAST] [, …] SET ordering_column
+  search_clause: $ => seq(
+    $.keyword_search,
+    choice($.keyword_breadth, $.keyword_depth),
+    $.keyword_first,
+    $.keyword_by,
+    comma_list(seq(
+      $.identifier,
+      optional(choice($.keyword_asc, $.keyword_desc)),
+      optional(seq($.keyword_nulls, choice($.keyword_first, $.keyword_last))),
+    ), true),
+    $.keyword_set,
+    field('ordering_column', $.identifier),
+  ),
+
+  // CYCLE col [, …] SET cycle_mark_column TO mark_value DEFAULT no_cycle_value
+  cycle_clause: $ => seq(
+    $.keyword_cycle,
+    comma_list($.identifier, true),
+    $.keyword_set,
+    field('mark_column', $.identifier),
+    $.keyword_to,
+    $._expression,
+    $.keyword_default,
+    $._expression,
   ),
 
   // QUALIFY condition: filters rows after window functions are evaluated

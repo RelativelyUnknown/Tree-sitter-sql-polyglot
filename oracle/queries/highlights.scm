@@ -635,3 +635,6 @@
 (keyword_connect_by_root) @keyword
 (keyword_forever) @keyword
 (keyword_milliseconds) @keyword
+(keyword_breadth) @keyword
+(keyword_depth) @keyword
+(keyword_search) @keyword
