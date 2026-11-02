@@ -639,3 +639,9 @@
 (keyword_depth) @keyword
 (keyword_search) @keyword
 (keyword_respect) @keyword
+(keyword_flex) @keyword
+(keyword_unnest) @keyword
+(keyword_nocheck) @keyword
+(keyword_noinsert) @keyword
+(keyword_noupdate) @keyword
+(keyword_nodelete) @keyword

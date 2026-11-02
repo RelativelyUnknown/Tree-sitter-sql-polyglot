@@ -18,6 +18,12 @@ export default {
   keyword_distance:        _ => kw('distance'),
   keyword_distribute:      _ => kw('distribute'),
   keyword_duality:         _ => kw('duality'),
+  keyword_flex:            _ => kw('flex'),
+  keyword_unnest:          _ => kw('unnest'),
+  keyword_nocheck:         _ => kw('nocheck'),
+  keyword_noinsert:        _ => kw('noinsert'),
+  keyword_noupdate:        _ => kw('noupdate'),
+  keyword_nodelete:        _ => kw('nodelete'),
   keyword_duplicate:       _ => kw('duplicate'),
   keyword_edge:            _ => kw('edge'),
   keyword_efconstruction:  _ => kw('efconstruction'),
@@ -163,6 +169,84 @@ export default {
     choice($.keyword_enable, $.keyword_disable),
     $.keyword_logical,
     $.keyword_replication,
+  ),
+
+  create_duality_view_statement: $ => seq(
+    $.keyword_create,
+    optional(seq($.keyword_or, $.keyword_replace)),
+    $.keyword_json,
+    $.keyword_relational,
+    $.keyword_duality,
+    $.keyword_view,
+    optional($._if_not_exists),
+    field('name', $.object_reference),
+    $.keyword_as,
+    choice($._duality_query, $._duality_graphql),
+  ),
+
+  // SELECT JSON {'key' : column [WITH tags], ...} FROM table [WITH tags] [WHERE ...]
+  _duality_query: $ => seq(
+    $.keyword_select,
+    $.keyword_json,
+    '{',
+    comma_list($._duality_member),
+    '}',
+    $.keyword_from,
+    $.relation,
+    optional($._duality_tags),
+    optional($.where),
+  ),
+
+  _duality_member: $ => choice(
+    seq(
+      alias($._literal_string, $.literal),
+      ':',
+      choice(
+        $._expression,
+        seq('[', $._duality_query, ']'),
+        seq('(', $._duality_query, ')'),
+      ),
+      optional($._duality_tags),
+    ),
+    seq($._expression, $.keyword_as, $.keyword_flex),
+    seq($.keyword_unnest, '(', $._duality_query, ')'),
+  ),
+
+  _duality_tags: $ => seq($.keyword_with, repeat1($._duality_tag)),
+
+  _duality_tag: $ => choice(
+    $.keyword_check,
+    $.keyword_nocheck,
+    $.keyword_insert,
+    $.keyword_noinsert,
+    $.keyword_update,
+    $.keyword_noupdate,
+    $.keyword_delete,
+    $.keyword_nodelete,
+  ),
+
+  // GraphQL form: table @insert @update {key : column, ...}
+  _duality_graphql: $ => seq(
+    $.object_reference,
+    repeat($._duality_graphql_tag),
+    $._duality_graphql_object,
+  ),
+
+  _duality_graphql_tag: $ => seq('@', choice(
+    $.keyword_insert, $.keyword_noinsert,
+    $.keyword_update, $.keyword_noupdate,
+    $.keyword_delete, $.keyword_nodelete,
+    $.keyword_check, $.keyword_nocheck,
+  )),
+
+  _duality_graphql_object: $ => seq('{', comma_list($._duality_graphql_member), '}'),
+
+  _duality_graphql_member: $ => seq(
+    $.identifier,
+    ':',
+    $.object_reference,
+    repeat($._duality_graphql_tag),
+    optional($._duality_graphql_object),
   ),
 
 };
