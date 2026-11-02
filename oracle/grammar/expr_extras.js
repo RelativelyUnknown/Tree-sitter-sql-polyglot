@@ -1,4 +1,5 @@
 import { comma_list, paren_list, wrapped_in_parenthesis, make_keyword } from '../../grammar/helpers.js';
+import { OP_OTHER_TOKENS } from '../../grammar/expressions.js';
 
 // Expression and datatype forms the earlier Oracle rules lack (Oracle SQL Language Reference 26ai):
 // scientific numbers, interval literal precisions, CAST with DOMAIN / MULTISET / DEFAULT … ON CONVERSION ERROR, function
@@ -19,7 +20,7 @@ export default {
   keyword_like: _ => /[lL][iI][kK][eE]([cC]|[24])?/,
 
   // Oracle's not-equal spelling ^= next to the inherited operator set.
-  op_other: ($, previous) => choice(previous, token('^=')),
+  op_other: _ => token(choice(...OP_OTHER_TOKENS, '^=')),
   keyword_sparse:     _ => kw('sparse'),
 
   // ── Numbers ────────────────────────────────────────────────────────────
