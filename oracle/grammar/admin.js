@@ -124,7 +124,7 @@ export default {
     $.keyword_for,
     choice($.identifier, paren_list($.identifier, true)),
     choice(
-      seq($.keyword_in, paren_list($._expression, true)),
+      seq($.keyword_in, choice(paren_list($._expression, true), $.subquery)),
       seq(
         optional(seq($.keyword_like, $._expression)),
         $.keyword_from, $._expression,
