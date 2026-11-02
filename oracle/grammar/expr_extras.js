@@ -46,9 +46,17 @@ export default {
 
   // ── CAST and function arguments ────────────────────────────────────────
 
-  // The default value and the format / NLS arguments of CAST are literals, NULL or binds. A full expression here
-  // costs about 3,000 parse-table action indexes for no practical gain.
-  _cast_literal: $ => choice($.literal, $.keyword_null, $.parameter),
+  // DEFAULT … ON CONVERSION ERROR and the format / NLS arguments. A hidden rule: the only thing that can follow it
+  // is the closing parenthesis, so its states exist once instead of once for every context CAST can end in.
+  _cast_options: $ => choice(
+    seq(
+      $.keyword_default, $._expression, $.keyword_on, $.keyword_conversion, $.keyword_error,
+      optional($._cast_format),
+    ),
+    $._cast_format,
+  ),
+
+  _cast_format: $ => seq(',', $._expression, optional(seq(',', $._expression))),
 
   cast: $ => seq(
     field('name', $.keyword_cast),
@@ -56,8 +64,7 @@ export default {
     field('parameter', choice($._expression, seq($.keyword_multiset, $.subquery))),
     $.keyword_as,
     choice($._type, seq($.keyword_domain, $.object_reference)),
-    optional(seq($.keyword_default, $._cast_literal, $.keyword_on, $.keyword_conversion, $.keyword_error)),
-    optional(seq(',', $._cast_literal, optional(seq(',', $._cast_literal)))),
+    optional($._cast_options),
     ')',
   ),
 
