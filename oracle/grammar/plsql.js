@@ -1,4 +1,4 @@
-import { comma_list, paren_list, wrapped_in_parenthesis, make_keyword } from '../../grammar/helpers.js';
+import { comma_list, paren_list, wrapped_in_parenthesis, make_keyword, ordered_optionals } from '../../grammar/helpers.js';
 
 // PL/SQL: blocks, declarations, subprograms, control flow and CREATE FUNCTION / PROCEDURE
 // (Oracle PL/SQL Language Reference 26ai). Statements inside a body end with ';' and may carry
@@ -622,13 +622,7 @@ export default {
           seq(
             optional($.keyword_distinct),
             field('parameter', $.term),
-            optional($.order_by),
-            optional(seq(
-              choice($.keyword_separator, ','),
-              alias($._literal_string, $.literal)
-            )),
-            optional($._listagg_overflow),
-            optional($.limit),
+            optional($._agg_tail_0),
           ),
         ),
       ),
@@ -636,6 +630,14 @@ export default {
       optional($.within_group),
     ),
   ),
+
+  // order_by, separator, overflow and limit keep their order; chained to avoid 2^n productions
+  ...ordered_optionals('_agg_tail', [
+    $ => $.order_by,
+    $ => seq(choice($.keyword_separator, ','), alias($._literal_string, $.literal)),
+    $ => $._listagg_overflow,
+    $ => $.limit,
+  ]),
 
   // LISTAGG ... ON OVERFLOW ERROR | TRUNCATE ['indicator'] [WITH | WITHOUT COUNT]
   _listagg_overflow: $ => seq(
