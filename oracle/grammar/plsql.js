@@ -602,6 +602,7 @@ export default {
               'parameter',
               choice($.term, $.named_argument, $._qualified_choice),
             ),
+            optional($._nulls_treatment),
             optional($.order_by)
           )
         ),

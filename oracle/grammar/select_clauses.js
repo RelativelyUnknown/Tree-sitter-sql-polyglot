@@ -17,6 +17,7 @@ export default {
   keyword_minus:       _ => kw('minus'),
   keyword_probes:      _ => kw('probes'),
   keyword_qualify:     _ => kw('qualify'),
+  keyword_respect:     _ => kw('respect'),
   keyword_search:      _ => kw('search'),
   keyword_connect_by_root: _ => kw('connect_by_root'),
 
@@ -137,6 +138,48 @@ export default {
     $._expression,
     $.keyword_default,
     $._expression,
+  ),
+
+  // {RESPECT | IGNORE} NULLS on a call argument or between the call and OVER
+  _nulls_treatment: $ => seq(choice($.keyword_respect, $.keyword_ignore), $.keyword_nulls),
+
+  window_function: $ => seq(
+    $.invocation,
+    optional($._nulls_treatment),
+    $.keyword_over,
+    choice(
+      $.identifier,
+      $.window_specification,
+    ),
+  ),
+
+  // A frame bound is a number, a name, an expression or an INTERVAL (RANGE BETWEEN INTERVAL '30' DAY PRECEDING …)
+  frame_definition: $ => seq(
+    choice(
+      seq($.keyword_unbounded, $.keyword_preceding),
+      seq(
+        field('start', choice(
+          $.identifier,
+          $.binary_expression,
+          $.interval,
+          alias($._literal_string, $.literal),
+          alias($._integer, $.literal),
+        )),
+        $.keyword_preceding,
+      ),
+      $._current_row,
+      seq(
+        field('end', choice(
+          $.identifier,
+          $.binary_expression,
+          $.interval,
+          alias($._literal_string, $.literal),
+          alias($._integer, $.literal),
+        )),
+        $.keyword_following,
+      ),
+      seq($.keyword_unbounded, $.keyword_following),
+    ),
   ),
 
   // QUALIFY condition: filters rows after window functions are evaluated

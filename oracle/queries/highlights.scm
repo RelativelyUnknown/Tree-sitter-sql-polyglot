@@ -638,3 +638,4 @@
 (keyword_breadth) @keyword
 (keyword_depth) @keyword
 (keyword_search) @keyword
+(keyword_respect) @keyword
