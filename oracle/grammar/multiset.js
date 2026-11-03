@@ -18,13 +18,21 @@ export default {
     $.keyword_set,
   )),
 
+  // expr [NOT] MEMBER [OF] expr | expr [NOT] SUBMULTISET [OF] expr; NOT is part of the operator, as in not_like
   multiset_condition: $ => prec.left('binary_relation', seq(
     field('left', $._expression),
-    optional($.keyword_not),
-    choice($.keyword_member, $.keyword_submultiset),
+    choice(
+      $.keyword_member,
+      $.keyword_submultiset,
+      $.not_member,
+      $.not_submultiset,
+    ),
     optional($.keyword_of),
     field('right', $._expression),
   )),
+
+  not_member: $ => seq($.keyword_not, $.keyword_member),
+  not_submultiset: $ => seq($.keyword_not, $.keyword_submultiset),
 
   multiset_operation: $ => prec.left('binary_other', seq(
     field('left', $._expression),
