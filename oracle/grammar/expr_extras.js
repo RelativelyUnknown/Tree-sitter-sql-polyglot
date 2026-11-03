@@ -27,6 +27,12 @@ export default {
     )),
   )),
 
+  // CURSOR(subquery) in a select list or as an argument
+  cursor_expression: $ => seq($.keyword_cursor, $.subquery),
+
+  // NEW type(args): an object type constructor
+  new_expression: $ => seq($.keyword_new, $.invocation),
+
   keyword_multiset:   _ => kw('multiset'),
 
   // LIKE and its Oracle character-set variants LIKEC (Unicode complete characters),
@@ -34,7 +40,8 @@ export default {
   keyword_like: _ => /[lL][iI][kK][eE]([cC]|[24])?/,
 
   // Oracle's not-equal spelling ^= next to the inherited operator set.
-  op_other: _ => token(choice(...OP_OTHER_TOKENS, '^=')),
+  // ^= is Oracle's not-equal; <=> and <#> are the cosine and negative inner product vector distances
+  op_other: _ => token(choice(...OP_OTHER_TOKENS, '^=', '<=>', '<#>')),
   keyword_sparse:     _ => kw('sparse'),
 
   // ── Numbers ────────────────────────────────────────────────────────────
@@ -165,6 +172,7 @@ export default {
         $.keyword_xml,
         $.keyword_string,
         $.enum,
+        seq($.keyword_ref, field('custom_type', $.object_reference)),
         field('custom_type', $.object_reference),
       ),
       optional($.array_size_definition),

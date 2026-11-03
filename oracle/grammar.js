@@ -448,6 +448,8 @@ export default canonicalOrder(grammar(base, {
       $.bind_array_element,
       $.exponent_expression,
       $.at_time_zone_expression,
+      $.cursor_expression,
+      $.new_expression,
       $.json_function,
       $.json_constructor,
       $.is_json_condition,
