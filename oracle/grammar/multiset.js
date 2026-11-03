@@ -7,7 +7,8 @@ const kw = (word) => token(prec(1, make_keyword(word)));
 
 export default {
 
-  keyword_a:            _ => kw('a'),
+  // No precedence bump: a one-letter token at prec 1 would beat longer keywords that start with A (AFTER, ALL, AS …)
+  keyword_a:            _ => make_keyword('a'),
   keyword_submultiset:  _ => kw('submultiset'),
 
   // expr IS [NOT] A SET, at the precedence of the other IS conditions
