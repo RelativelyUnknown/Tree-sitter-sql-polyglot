@@ -1,4 +1,4 @@
-import { comma_list, paren_list, make_keyword } from '../../grammar/helpers.js';
+import { comma_list, paren_list, make_keyword, ordered_optionals } from '../../grammar/helpers.js';
 
 // CREATE TYPE / ALTER TYPE (Oracle SQL Language Reference 26ai): object types with member, static,
 // map, order and constructor methods, subtypes, nested tables and varrays.
@@ -25,31 +25,42 @@ export default {
 
   create_type: $ => seq(
     $.keyword_create,
-    optional($._or_replace),
-    optional($._editionable_clause),
+    optional($._type_prefix_0),
     $.keyword_type,
     optional($._if_not_exists),
     field('name', $.object_reference),
-    optional($.keyword_force),
-    optional(seq($.keyword_oid, alias($._literal_string, $.literal))),
-    optional($.sharing_clause),
-    optional(seq($.keyword_authid, choice($.keyword_current_user, $.keyword_definer))),
+    optional($._type_option_0),
     // CREATE TYPE t; declares an incomplete type
-    optional(choice(
-      seq(
-        $.keyword_as,
-        choice(
-          seq($.keyword_object, optional($._object_type_body)),
-          seq($.keyword_table, $.keyword_of, $._type, optional($._not_null)),
-          seq(
-            choice($.keyword_varray, seq($.keyword_varying, $.keyword_array)),
-            paren_list(alias($._natural_number, $.literal), true),
-            $.keyword_of, $._type, optional($._not_null),
-          ),
+    optional($._type_definition),
+  ),
+
+  // [OR REPLACE] [EDITIONABLE | NONEDITIONABLE], then FORCE, OID, SHARING and AUTHID, each in this order
+  ...ordered_optionals('_type_prefix', [
+    $ => $._or_replace,
+    $ => $._editionable_clause,
+  ]),
+
+  ...ordered_optionals('_type_option', [
+    $ => $.keyword_force,
+    $ => seq($.keyword_oid, alias($._literal_string, $.literal)),
+    $ => $.sharing_clause,
+    $ => seq($.keyword_authid, choice($.keyword_current_user, $.keyword_definer)),
+  ]),
+
+  _type_definition: $ => choice(
+    seq(
+      $.keyword_as,
+      choice(
+        seq($.keyword_object, optional($._object_type_body)),
+        seq($.keyword_table, $.keyword_of, $._type, optional($._not_null)),
+        seq(
+          choice($.keyword_varray, seq($.keyword_varying, $.keyword_array)),
+          paren_list(alias($._natural_number, $.literal), true),
+          $.keyword_of, $._type, optional($._not_null),
         ),
       ),
-      seq($.keyword_under, $.object_reference, optional($._object_type_body)),
-    )),
+    ),
+    seq($.keyword_under, $.object_reference, optional($._object_type_body)),
   ),
 
   _object_type_body: $ => choice(

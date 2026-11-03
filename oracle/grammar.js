@@ -342,7 +342,7 @@ export default canonicalOrder(grammar(base, {
       '(',
       comma_list(seq($.invocation, optional($._alias)), true),
       $.keyword_for,
-      choice($.identifier, paren_list($.identifier, true)),
+      $._column_or_columns,
       $.keyword_in,
       choice(
         paren_list(seq($._pivot_value, optional($._alias)), true),
@@ -368,16 +368,18 @@ export default canonicalOrder(grammar(base, {
       $.keyword_unpivot,
       optional(seq(choice($.keyword_include, $.keyword_exclude), $.keyword_nulls)),
       '(',
-      choice($.identifier, paren_list($.identifier, true)),
+      $._column_or_columns,
       $.keyword_for,
-      choice($.identifier, paren_list($.identifier, true)),
+      $._column_or_columns,
       $.keyword_in,
       paren_list(seq(
-        choice($.identifier, paren_list($.identifier, true)),
+        $._column_or_columns,
         optional(seq($.keyword_as, $._pivot_value)),
       ), true),
       ')',
     ),
+
+    _column_or_columns: $ => choice($.identifier, paren_list($.identifier, true)),
 
     keyword_pivot:   _ => token(prec(1, make_keyword("pivot"))),
     keyword_match_recognize: _ => token(prec(1, /[Mm][Aa][Tt][Cc][Hh]_[Rr][Ee][Cc][Oo][Gg][Nn][Ii][Zz][Ee]/)),

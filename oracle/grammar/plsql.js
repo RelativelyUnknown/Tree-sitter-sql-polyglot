@@ -309,13 +309,11 @@ export default {
 
   create_function: $ => seq(
     $.keyword_create,
-    optional($._or_replace),
-    optional(choice($.keyword_editionable, $.keyword_noneditionable)),
+    optional($._type_prefix_0),
     $.keyword_function,
     optional($._if_not_exists),
     field('name', $.object_reference),
-    optional($.sharing_clause),
-    optional(paren_list($.plsql_parameter, true)),
+    optional($._unit_signature_0),
     $.keyword_return,
     choice($._plsql_type, $.keyword_table),
     repeat($._subprogram_property),
@@ -326,15 +324,19 @@ export default {
     ),
   ),
 
+  // [SHARING …] [(parameters)] of a CREATE FUNCTION / PROCEDURE head, in this order
+  ...ordered_optionals('_unit_signature', [
+    $ => $.sharing_clause,
+    $ => paren_list($.plsql_parameter, true),
+  ]),
+
   create_procedure: $ => seq(
     $.keyword_create,
-    optional($._or_replace),
-    optional(choice($.keyword_editionable, $.keyword_noneditionable)),
+    optional($._type_prefix_0),
     $.keyword_procedure,
     optional($._if_not_exists),
     field('name', $.object_reference),
-    optional($.sharing_clause),
-    optional(paren_list($.plsql_parameter, true)),
+    optional($._unit_signature_0),
     repeat($._subprogram_property),
     choice($.keyword_is, $.keyword_as),
     choice($._subprogram_body, $.call_specification),
@@ -595,17 +597,7 @@ export default {
       $.object_reference,
       choice(
         // default invocation
-        paren_list(
-          seq(
-            optional($.keyword_distinct),
-            field(
-              'parameter',
-              choice($.term, $.named_argument, $._qualified_choice),
-            ),
-            optional($._nulls_treatment),
-            optional($.order_by)
-          )
-        ),
+        paren_list($._invocation_argument),
         // https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html#function_extract
         paren_list(
           seq(
@@ -618,18 +610,34 @@ export default {
           )
         ),
         // _aggregate_function, e.g. group_concat
-        wrapped_in_parenthesis(
-          seq(
-            optional($.keyword_distinct),
-            field('parameter', $.term),
-            optional($._agg_tail_0),
-          ),
-        ),
+        wrapped_in_parenthesis($._invocation_aggregate_argument),
       ),
-      optional($.filter_expression),
-      optional($.within_group),
+      optional($._invocation_tail_0),
     ),
   ),
+
+  // The pieces of invocation are hidden rules so their optionals add up instead of multiplying.
+  _invocation_argument: $ => seq(
+    optional($.keyword_distinct),
+    field(
+      'parameter',
+      choice($.term, $.named_argument, $._qualified_choice),
+    ),
+    optional($._nulls_treatment),
+    optional($.order_by),
+  ),
+
+  _invocation_aggregate_argument: $ => seq(
+    optional($.keyword_distinct),
+    field('parameter', $.term),
+    optional($._agg_tail_0),
+  ),
+
+  // [FILTER (WHERE …)] [WITHIN GROUP (ORDER BY …)], in this order
+  ...ordered_optionals('_invocation_tail', [
+    $ => $.filter_expression,
+    $ => $.within_group,
+  ]),
 
   // order_by, separator, overflow and limit keep their order; chained to avoid 2^n productions
   ...ordered_optionals('_agg_tail', [

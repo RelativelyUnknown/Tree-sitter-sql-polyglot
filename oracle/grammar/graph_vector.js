@@ -1,4 +1,4 @@
-import { comma_list, paren_list, wrapped_in_parenthesis, make_keyword } from '../../grammar/helpers.js';
+import { comma_list, paren_list, wrapped_in_parenthesis, make_keyword, ordered_optionals } from '../../grammar/helpers.js';
 
 // CREATE PROPERTY GRAPH, CREATE VECTOR INDEX and ALTER JSON RELATIONAL DUALITY VIEW (Oracle SQL
 // Language Reference 26ai). Reached through _oracle_admin_statement.
@@ -71,15 +71,18 @@ export default {
     optional(seq($.keyword_as, $.identifier)),
     optional($._graph_key),
     $.keyword_source,
-    optional($._graph_key),
-    optional(seq($.keyword_references, $.object_reference, optional(paren_list($.identifier, true)))),
-    optional($.object_reference),
+    optional($._graph_endpoint_0),
     $.keyword_destination,
-    optional($._graph_key),
-    optional(seq($.keyword_references, $.object_reference, optional(paren_list($.identifier, true)))),
-    optional($.object_reference),
+    optional($._graph_endpoint_0),
     optional(choice(repeat1($._graph_label), $._graph_properties)),
   ),
+
+  // [KEY (cols)] [REFERENCES vertex [(cols)]] [vertex], in this order
+  ...ordered_optionals('_graph_endpoint', [
+    $ => $._graph_key,
+    $ => seq($.keyword_references, $.object_reference, optional(paren_list($.identifier, true))),
+    $ => $.object_reference,
+  ]),
 
   _graph_key: $ => seq($.keyword_key, paren_list($.identifier, true)),
 

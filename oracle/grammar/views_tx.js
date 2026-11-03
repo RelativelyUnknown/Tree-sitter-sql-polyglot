@@ -50,41 +50,45 @@ export default {
       optional($._if_not_exists),
       $.object_reference,
       optional($.sharing_clause),
-      optional(choice(
-        paren_list(choice($.view_column, alias($.view_constraint, $.constraint)), true),
-        // Object view: OF type [UNDER view | WITH OBJECT {IDENTIFIER | ID} {DEFAULT | (expr, …)}]
-        seq(
-          $.keyword_of, $.object_reference,
-          optional(choice(
-            seq($.keyword_under, $.object_reference),
-            seq(
-              $.keyword_with, $.keyword_object,
-              choice($.keyword_identifier, $.keyword_id),
-              choice($.keyword_default, paren_list($._expression, true)),
-            ),
-          )),
-        ),
-      )),
-      repeat(choice(
-        seq($.keyword_bequeath, choice($.keyword_current_user, $.keyword_definer)),
-        seq($.keyword_default, $.keyword_collation, $.identifier),
-        $.annotations_clause,
-      )),
+      optional($._view_spec),
+      repeat($._view_option),
       $.keyword_as,
       $.create_query,
-      optional(
+      optional($._view_check_tail),
+    ),
+  ),
+
+  _view_spec: $ => choice(
+    paren_list(choice($.view_column, alias($.view_constraint, $.constraint)), true),
+    // Object view: OF type [UNDER view | WITH OBJECT {IDENTIFIER | ID} {DEFAULT | (expr, …)}]
+    seq(
+      $.keyword_of, $.object_reference,
+      optional(choice(
+        seq($.keyword_under, $.object_reference),
         seq(
-          $.keyword_with,
-          choice(
-            seq(
-              optional(choice($.keyword_local, $.keyword_cascaded)),
-              $._check_option,
-              optional(seq($.keyword_constraint, $.identifier)),
-            ),
-            seq($.keyword_read, $.keyword_only),
-          ),
+          $.keyword_with, $.keyword_object,
+          choice($.keyword_identifier, $.keyword_id),
+          choice($.keyword_default, paren_list($._expression, true)),
         ),
+      )),
+    ),
+  ),
+
+  _view_option: $ => choice(
+    seq($.keyword_bequeath, choice($.keyword_current_user, $.keyword_definer)),
+    seq($.keyword_default, $.keyword_collation, $.identifier),
+    $.annotations_clause,
+  ),
+
+  _view_check_tail: $ => seq(
+    $.keyword_with,
+    choice(
+      seq(
+        optional(choice($.keyword_local, $.keyword_cascaded)),
+        $._check_option,
+        optional(seq($.keyword_constraint, $.identifier)),
       ),
+      seq($.keyword_read, $.keyword_only),
     ),
   ),
 

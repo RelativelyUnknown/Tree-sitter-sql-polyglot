@@ -1,4 +1,4 @@
-import { comma_list, optional_parenthesis, paren_list, wrapped_in_parenthesis, make_keyword } from '../../grammar/helpers.js';
+import { comma_list, optional_parenthesis, paren_list, wrapped_in_parenthesis, make_keyword, ordered_optionals } from '../../grammar/helpers.js';
 
 export default {
 
@@ -51,22 +51,27 @@ export default {
     optional(seq($.keyword_main, $.identifier)),
     $._model_columns,
     repeat($._model_option),
-    optional($.keyword_rules),
-    optional(choice(
+    optional($._model_tail_0),
+    paren_list($.model_rule, true),
+  ),
+
+  // [RULES] [UPDATE | UPSERT [ALL]] [SEQUENTIAL | AUTOMATIC ORDER] [ITERATE (n) [UNTIL (cond)]], in this order
+  ...ordered_optionals('_model_tail', [
+    $ => $.keyword_rules,
+    $ => choice(
       $.keyword_update,
       seq($.keyword_upsert, optional($.keyword_all)),
-    )),
-    optional(seq(
+    ),
+    $ => seq(
       choice($.keyword_sequential, $.keyword_automatic),
       $.keyword_order,
-    )),
-    optional(seq(
+    ),
+    $ => seq(
       $.keyword_iterate,
       wrapped_in_parenthesis(alias($._integer, $.literal)),
       optional(seq($.keyword_until, wrapped_in_parenthesis($._expression))),
-    )),
-    paren_list($.model_rule, true),
-  ),
+    ),
+  ]),
 
   // {IGNORE | KEEP} NAV | UNIQUE {DIMENSION | SINGLE REFERENCE} | RETURN {UPDATED | ALL} ROWS
   _model_option: $ => choice(

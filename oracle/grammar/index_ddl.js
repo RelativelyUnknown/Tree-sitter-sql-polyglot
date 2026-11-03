@@ -1,4 +1,4 @@
-import { paren_list, comma_list, wrapped_in_parenthesis } from '../../grammar/helpers.js';
+import { paren_list, comma_list, wrapped_in_parenthesis, ordered_optionals } from '../../grammar/helpers.js';
 
 // CREATE INDEX / ALTER INDEX (Oracle SQL Language Reference 26ai). Segment attributes, compression
 // and partitioning come from storage.js and partition.js.
@@ -19,20 +19,22 @@ export default {
     choice(
       // ON CLUSTER c
       seq($.keyword_cluster, $.object_reference),
-      seq(
-        optional($.keyword_only),
-        $.object_reference,
-        optional(field('alias', $.identifier)),
-        optional(seq($.keyword_using, field('index_type', $.identifier))),
-        $.index_fields,
-        // bitmap join index: … FROM t, u WHERE …
-        optional(seq(
-          $.keyword_from,
-          comma_list(seq($.object_reference, optional(field('alias', $.identifier))), true),
-        )),
-      ),
+      $._index_table_spec,
     ),
     repeat($._index_property),
+  ),
+
+  _index_table_spec: $ => seq(
+    optional($.keyword_only),
+    $.object_reference,
+    optional(field('alias', $.identifier)),
+    optional(seq($.keyword_using, field('index_type', $.identifier))),
+    $.index_fields,
+    // bitmap join index: … FROM t, u WHERE …
+    optional(seq(
+      $.keyword_from,
+      comma_list(seq($.object_reference, optional(field('alias', $.identifier))), true),
+    )),
   ),
 
   // An index key: column, function, or expression (c + (c * d)); same shape as the base rule.
@@ -44,19 +46,16 @@ export default {
       field('column', $._qualified_field),
       field('column', $._column),
     ),
-    optional(seq($.keyword_collate, $.identifier)),
-    optional($._operator_class),
-    optional(choice($.keyword_hash, $.direction)),
-    optional(
-      seq(
-        $.keyword_nulls,
-        choice(
-          $.keyword_first,
-          $.keyword_last
-        )
-      )
-    ),
+    optional($._index_field_tail_0),
   ),
+
+  // COLLATE c, operator class, HASH | ASC | DESC, NULLS FIRST | LAST, in this order
+  ...ordered_optionals('_index_field_tail', [
+    $ => seq($.keyword_collate, $.identifier),
+    $ => $._operator_class,
+    $ => choice($.keyword_hash, $.direction),
+    $ => seq($.keyword_nulls, choice($.keyword_first, $.keyword_last)),
+  ]),
 
   _qualified_index_name: $ => alias(
     seq(field('schema', $.identifier), '.', field('name', $.identifier)),

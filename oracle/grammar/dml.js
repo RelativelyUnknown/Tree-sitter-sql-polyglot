@@ -239,37 +239,39 @@ export default {
       ),
     ),
     $.keyword_then,
-    choice(
-      $.keyword_delete,
-      seq(
-        $.keyword_update,
-        $._set_values,
-        optional($.where),
-        optional(seq($.keyword_delete, $.keyword_where, field('delete_condition', $._expression))),
-      ),
-      // INSERT [(cols)] VALUES (…) [WHERE cond]
-      seq(
-        $.keyword_insert,
-        optional($._insert_columns),
-        $.keyword_values,
-        alias(paren_list(choice($._expression, $.keyword_default), true), $.list),
-        optional($.where),
-      ),
-      // INSERT [(cols)] subquery | INSERT BY NAME | POSITION subquery
-      seq(
-        $.keyword_insert,
-        optional($._insert_columns),
-        choice(
-          seq($.keyword_by, choice($.keyword_name, $.keyword_position), $._dml_read),
-          $._dml_read,
-        ),
-      ),
-      seq(
-        $.keyword_insert,
-        $._set_values,
-        optional($.where),
+    $._when_action,
+  )),
+
+  _when_action: $ => choice(
+    $.keyword_delete,
+    seq(
+      $.keyword_update,
+      $._set_values,
+      optional($.where),
+      optional(seq($.keyword_delete, $.keyword_where, field('delete_condition', $._expression))),
+    ),
+    // INSERT [(cols)] VALUES (…) [WHERE cond]
+    seq(
+      $.keyword_insert,
+      optional($._insert_columns),
+      $.keyword_values,
+      alias(paren_list(choice($._expression, $.keyword_default), true), $.list),
+      optional($.where),
+    ),
+    // INSERT [(cols)] subquery | INSERT BY NAME | POSITION subquery
+    seq(
+      $.keyword_insert,
+      optional($._insert_columns),
+      choice(
+        seq($.keyword_by, choice($.keyword_name, $.keyword_position), $._dml_read),
+        $._dml_read,
       ),
     ),
-  )),
+    seq(
+      $.keyword_insert,
+      $._set_values,
+      optional($.where),
+    ),
+  ),
 
 };
