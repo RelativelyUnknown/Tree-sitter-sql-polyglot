@@ -38,6 +38,7 @@ import oracle_account_rules from './grammar/account_admin.js';
 import oracle_misc_rules from './grammar/misc_admin.js';
 import oracle_expr_rules from './grammar/expr_extras.js';
 import oracle_select_clause_rules from './grammar/select_clauses.js';
+import oracle_xml_rules from './grammar/xml_functions.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
@@ -316,6 +317,7 @@ export default canonicalOrder(grammar(base, {
     xmltable: $ => seq(
       $.keyword_xmltable,
       '(',
+      optional(seq($.xml_namespaces, ',')),
       alias($._literal_string, $.literal),
       optional(seq($.keyword_passing, $._expression)),
       $.keyword_columns,
@@ -325,8 +327,14 @@ export default canonicalOrder(grammar(base, {
 
     xmltable_column: $ => seq(
       field('name', $.identifier),
-      $._type,
-      optional(seq($.keyword_path, alias($._literal_string, $.literal))),
+      choice(
+        seq($.keyword_for, $.keyword_ordinality),
+        seq(
+          $._type,
+          optional(seq($.keyword_path, alias($._literal_string, $.literal))),
+          optional(seq($.keyword_default, $._expression)),
+        ),
+      ),
     ),
 
     keyword_json_table: _ => token(prec(1, make_keyword("json_table"))),
@@ -450,6 +458,11 @@ export default canonicalOrder(grammar(base, {
       $.at_time_zone_expression,
       $.cursor_expression,
       $.new_expression,
+      $.xmlquery,
+      $.xmlexists,
+      $.xmlcast,
+      $.xmlserialize,
+      $.xmlparse,
       $.json_function,
       $.json_constructor,
       $.is_json_condition,
@@ -662,6 +675,7 @@ export default canonicalOrder(grammar(base, {
     ),
 
     ...oracle_hierarchical_rules,
+    ...oracle_xml_rules,
     ...oracle_plsql_rules,
     ...oracle_bulk_rules,
     ...oracle_merge_rules,

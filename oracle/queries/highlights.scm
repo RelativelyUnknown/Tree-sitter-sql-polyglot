@@ -652,3 +652,16 @@
 (keyword_beginning) @keyword
 (keyword_fact) @keyword
 (keyword_hierarchies) @keyword
+(keyword_xmlquery) @keyword
+(keyword_xmlexists) @keyword
+(keyword_xmlcast) @keyword
+(keyword_xmlserialize) @keyword
+(keyword_xmlparse) @keyword
+(keyword_xmlnamespaces) @keyword
+(keyword_document) @keyword
+(keyword_content) @keyword
+(keyword_wellformed) @keyword
+(keyword_encoding) @keyword
+(keyword_indent) @keyword
+(keyword_hide) @keyword
+(keyword_defaults) @keyword
