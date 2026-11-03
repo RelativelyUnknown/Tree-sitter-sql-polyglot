@@ -10,17 +10,20 @@ export default {
   keyword_a:            _ => kw('a'),
   keyword_submultiset:  _ => kw('submultiset'),
 
+  // expr IS [NOT] A SET, at the precedence of the other IS conditions
+  is_a_set_condition: $ => prec.left('binary_is', seq(
+    field('left', $._expression),
+    choice($.keyword_is, $.is_not),
+    $.keyword_a,
+    $.keyword_set,
+  )),
+
   multiset_condition: $ => prec.left('binary_relation', seq(
     field('left', $._expression),
-    choice(
-      seq(choice($.keyword_is, $.is_not), $.keyword_a, $.keyword_set),
-      seq(
-        optional($.keyword_not),
-        choice($.keyword_member, $.keyword_submultiset),
-        optional($.keyword_of),
-        field('right', $._expression),
-      ),
-    ),
+    optional($.keyword_not),
+    choice($.keyword_member, $.keyword_submultiset),
+    optional($.keyword_of),
+    field('right', $._expression),
   )),
 
   multiset_operation: $ => prec.left('binary_other', seq(

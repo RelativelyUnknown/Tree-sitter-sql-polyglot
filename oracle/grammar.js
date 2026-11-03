@@ -460,6 +460,7 @@ export default canonicalOrder(grammar(base, {
       $.at_time_zone_expression,
       $.cursor_expression,
       $.new_expression,
+      $.is_a_set_condition,
       $.multiset_condition,
       $.multiset_operation,
       $.xmlquery,
