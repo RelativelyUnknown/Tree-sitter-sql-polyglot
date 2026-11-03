@@ -597,7 +597,17 @@ export default {
       $.object_reference,
       choice(
         // default invocation
-        paren_list($._invocation_argument),
+        paren_list(
+          seq(
+            optional($.keyword_distinct),
+            field(
+              'parameter',
+              choice($.term, $.named_argument, $._qualified_choice),
+            ),
+            optional($._nulls_treatment),
+            optional($.order_by)
+          )
+        ),
         // https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html#function_extract
         paren_list(
           seq(
@@ -610,27 +620,16 @@ export default {
           )
         ),
         // _aggregate_function, e.g. group_concat
-        wrapped_in_parenthesis($._invocation_aggregate_argument),
+        wrapped_in_parenthesis(
+          seq(
+            optional($.keyword_distinct),
+            field('parameter', $.term),
+            optional($._agg_tail_0),
+          ),
+        ),
       ),
       optional($._invocation_tail_0),
     ),
-  ),
-
-  // The pieces of invocation are hidden rules so their optionals add up instead of multiplying.
-  _invocation_argument: $ => seq(
-    optional($.keyword_distinct),
-    field(
-      'parameter',
-      choice($.term, $.named_argument, $._qualified_choice),
-    ),
-    optional($._nulls_treatment),
-    optional($.order_by),
-  ),
-
-  _invocation_aggregate_argument: $ => seq(
-    optional($.keyword_distinct),
-    field('parameter', $.term),
-    optional($._agg_tail_0),
   ),
 
   // [FILTER (WHERE …)] [WITHIN GROUP (ORDER BY …)], in this order
