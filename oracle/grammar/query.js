@@ -45,6 +45,7 @@ export default {
         seq($.object_reference, $.nested_columns_clause),
         $.xmltable,
         $.inline_external_table,
+        $.graph_table,
         seq($.keyword_analytic, $.keyword_view, wrapped_in_parenthesis($.analytic_view_subquery)),
         $.object_reference,
         wrapped_in_parenthesis($.values),

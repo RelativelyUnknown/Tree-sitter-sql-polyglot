@@ -665,3 +665,4 @@
 (keyword_indent) @keyword
 (keyword_hide) @keyword
 (keyword_defaults) @keyword
+(keyword_graph_table) @keyword
