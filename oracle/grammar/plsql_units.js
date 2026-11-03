@@ -127,8 +127,7 @@ export default {
 
   create_type_body_statement: $ => seq(
     $.keyword_create,
-    optional($._or_replace),
-    optional($._editionable_clause),
+    optional($._type_prefix_0),
     $.keyword_type,
     $.keyword_body,
     optional($._if_not_exists),
