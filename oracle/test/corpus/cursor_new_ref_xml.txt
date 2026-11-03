@@ -1,0 +1,346 @@
+================================================================================
+Oracle CURSOR EXPRESSIONS: as function argument
+================================================================================
+
+SELECT f(CURSOR(SELECT c FROM t)) FROM DUAL;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (invocation
+            (object_reference
+              (identifier))
+            (term
+              (cursor_expression
+                (keyword_cursor)
+                (subquery
+                  (select
+                    (keyword_select)
+                    (select_expression
+                      (term
+                        (field
+                          (identifier)))))
+                  (from
+                    (keyword_from)
+                    (relation
+                      (object_reference
+                        (identifier)))))))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+================================================================================
+Oracle CURSOR EXPRESSIONS: in select list
+================================================================================
+
+SELECT d.name, CURSOR(SELECT e.name FROM e WHERE e.did = d.id) FROM d;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))
+        (term
+          (cursor_expression
+            (keyword_cursor)
+            (subquery
+              (select
+                (keyword_select)
+                (select_expression
+                  (term
+                    (field
+                      (object_reference
+                        (identifier))
+                      (identifier)))))
+              (from
+                (keyword_from)
+                (relation
+                  (object_reference
+                    (identifier)))
+                (where
+                  (keyword_where)
+                  (binary_expression
+                    (field
+                      (object_reference
+                        (identifier))
+                      (identifier))
+                    (field
+                      (object_reference
+                        (identifier))
+                      (identifier))))))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+================================================================================
+Oracle TYPE CONSTRUCTOR EXPRESSIONS: new constructor
+================================================================================
+
+SELECT NEW s.person_t('Bob', 1234) FROM DUAL;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (new_expression
+            (keyword_new)
+            (invocation
+              (object_reference
+                (identifier)
+                (identifier))
+              (term
+                (literal))
+              (term
+                (literal)))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+================================================================================
+Oracle USER DEFINED AND SUPPLIED TYPES: object and ref
+================================================================================
+
+CREATE TABLE t (a s.person_t, b REF person_t);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (column_definitions
+        (column_definition
+          (identifier)
+          (object_reference
+            (identifier)
+            (identifier)))
+        (column_definition
+          (identifier)
+          (keyword_ref)
+          (object_reference
+            (identifier)))))))
+
+================================================================================
+Oracle VECTOR FUNCTIONS: distance operators
+================================================================================
+
+SELECT v <-> :q, v <=> :q, v <#> :q FROM t;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (binary_expression
+            (field
+              (identifier))
+            (op_other)
+            (parameter)))
+        (term
+          (binary_expression
+            (field
+              (identifier))
+            (op_other)
+            (parameter)))
+        (term
+          (binary_expression
+            (field
+              (identifier))
+            (op_other)
+            (parameter)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+================================================================================
+Oracle XML FUNCTIONS: xmlcast xmlexists
+================================================================================
+
+SELECT XMLCAST(XMLQUERY('/a/b' PASSING doc RETURNING CONTENT) AS VARCHAR2(100)) FROM t WHERE XMLEXISTS('/a[b=1]' PASSING BY VALUE doc);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (xmlcast
+            (keyword_xmlcast)
+            (xmlquery
+              (keyword_xmlquery)
+              (literal)
+              (keyword_passing)
+              (field
+                (identifier))
+              (keyword_returning)
+              (keyword_content))
+            (keyword_as)
+            (varchar2
+              (keyword_varchar2)
+              (literal))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (xmlexists
+          (keyword_xmlexists)
+          (literal)
+          (keyword_passing)
+          (keyword_by)
+          (keyword_value)
+          (field
+            (identifier)))))))
+
+================================================================================
+Oracle XML FUNCTIONS: xmlquery
+================================================================================
+
+SELECT XMLQUERY('//Area' PASSING spec RETURNING CONTENT NULL ON EMPTY) FROM w;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (xmlquery
+            (keyword_xmlquery)
+            (literal)
+            (keyword_passing)
+            (field
+              (identifier))
+            (keyword_returning)
+            (keyword_content)
+            (keyword_null)
+            (keyword_on)
+            (keyword_empty)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+================================================================================
+Oracle XML FUNCTIONS: xmlserialize xmlparse
+================================================================================
+
+SELECT XMLSERIALIZE(CONTENT doc AS CLOB INDENT SIZE = 2), XMLPARSE(DOCUMENT '<a/>' WELLFORMED) FROM t;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (xmlserialize
+            (keyword_xmlserialize)
+            (keyword_content)
+            (field
+              (identifier))
+            (keyword_as)
+            (clob
+              (keyword_clob))
+            (keyword_indent)
+            (keyword_size)
+            (literal)))
+        (term
+          (xmlparse
+            (keyword_xmlparse)
+            (keyword_document)
+            (literal)
+            (keyword_wellformed)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+================================================================================
+Oracle XML FUNCTIONS: xmltable namespaces ordinality
+================================================================================
+
+SELECT x.* FROM t, XMLTABLE(XMLNAMESPACES('urn:x' AS "p"), '/p:a/p:b' PASSING t.doc COLUMNS rn FOR ORDINALITY, v NUMBER PATH '@v' DEFAULT 0) x;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields
+            (object_reference
+              (identifier))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (relation
+        (xmltable
+          (keyword_xmltable)
+          (xml_namespaces
+            (keyword_xmlnamespaces)
+            (literal)
+            (keyword_as)
+            (identifier))
+          (literal)
+          (keyword_passing)
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (keyword_columns)
+          (xmltable_column
+            (identifier)
+            (keyword_for)
+            (keyword_ordinality))
+          (xmltable_column
+            (identifier)
+            (number_type
+              (keyword_number))
+            (keyword_path)
+            (literal)
+            (keyword_default)
+            (literal)))
+        (identifier)))))
