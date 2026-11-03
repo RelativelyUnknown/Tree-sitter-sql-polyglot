@@ -666,3 +666,5 @@
 (keyword_hide) @keyword
 (keyword_defaults) @keyword
 (keyword_graph_table) @keyword
+(keyword_a) @keyword
+(keyword_submultiset) @keyword
