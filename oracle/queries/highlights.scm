@@ -646,3 +646,9 @@
 (keyword_noupdate) @keyword
 (keyword_nodelete) @keyword
 (keyword_count) @keyword
+(keyword_across) @keyword
+(keyword_analytic) @keyword
+(keyword_ancestor) @keyword
+(keyword_beginning) @keyword
+(keyword_fact) @keyword
+(keyword_hierarchies) @keyword

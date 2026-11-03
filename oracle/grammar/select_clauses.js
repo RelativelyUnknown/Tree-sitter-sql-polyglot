@@ -9,6 +9,12 @@ const kw = (word) => token(prec(1, make_keyword(word)));
 export default {
 
   keyword_approx:      _ => kw('approx'),
+  keyword_across:      _ => kw('across'),
+  keyword_analytic:    _ => kw('analytic'),
+  keyword_ancestor:    _ => kw('ancestor'),
+  keyword_beginning:   _ => kw('beginning'),
+  keyword_fact:        _ => kw('fact'),
+  keyword_hierarchies: _ => kw('hierarchies'),
   keyword_count:           _ => token(prec(1, make_keyword('count'))),
   keyword_approximate: _ => kw('approximate'),
   keyword_breadth:     _ => kw('breadth'),
@@ -94,8 +100,44 @@ export default {
 
   _cte_list: $ => seq(
     optional($.keyword_recursive),
-    $.cte,
-    repeat(seq(',', $.cte)),
+    $._cte_item,
+    repeat(seq(',', $._cte_item)),
+  ),
+
+  _cte_item: $ => choice($.cte, $.analytic_view_cte),
+
+  // name ANALYTIC VIEW AS (USING av …)
+  analytic_view_cte: $ => seq(
+    field('name', $.identifier),
+    $.keyword_analytic, $.keyword_view, $.keyword_as,
+    wrapped_in_parenthesis($.analytic_view_subquery),
+  ),
+
+  // USING analytic_view [HIERARCHIES (h, …)] [FILTER FACT (…)] [ADD MEASURES (m AS (expr), …)]
+  analytic_view_subquery: $ => seq(
+    $.keyword_using,
+    $.object_reference,
+    optional($.hierarchies_clause),
+    optional(seq($.keyword_filter, $.keyword_fact, paren_list($._analytic_filter, true))),
+    optional(seq($.keyword_add, $.keyword_measures, paren_list($.analytic_measure, true))),
+  ),
+
+  hierarchies_clause: $ => seq($.keyword_hierarchies, paren_list($.identifier, true)),
+
+  _analytic_filter: $ => choice(
+    seq($.identifier, $.keyword_to, $._expression),
+    $._expression,
+  ),
+
+  analytic_measure: $ => seq($.identifier, $.keyword_as, wrapped_in_parenthesis($._expression)),
+
+  // OVER (HIERARCHY h OFFSET n [ACROSS ANCESTOR AT LEVEL l [POSITION FROM {BEGINNING | END}]]) in analytic views
+  _hierarchy_window: $ => seq(
+    $.keyword_hierarchy, $.identifier, $.keyword_offset, $._expression,
+    optional(seq(
+      $.keyword_across, $.keyword_ancestor, $.keyword_at, $.keyword_level, $.identifier,
+      optional(seq($.keyword_position, $.keyword_from, choice($.keyword_beginning, $.keyword_end))),
+    )),
   ),
 
   // name [(cols)] AS [[NOT] MATERIALIZED] (query | VALUES …) [SEARCH …] [CYCLE …]
@@ -197,11 +239,14 @@ export default {
 
   // ( [existing_window] [PARTITION BY …] [ORDER BY …] [frame] )
   window_specification: $ => wrapped_in_parenthesis(
-    seq(
-      optional($.identifier),
-      optional($.partition_by),
-      optional($.order_by),
-      optional($.window_frame),
+    choice(
+      seq(
+        optional($.identifier),
+        optional($.partition_by),
+        optional($.order_by),
+        optional($.window_frame),
+      ),
+      $._hierarchy_window,
     ),
   ),
 
