@@ -410,6 +410,7 @@ export default canonicalOrder(grammar(base, {
           field('operand', $._expression)
         ))
       ),
+      $._signed_operand,
     ),
 
     // Override _expression to add Oracle date/timestamp literal forms (DATE '...' / TIMESTAMP '...')

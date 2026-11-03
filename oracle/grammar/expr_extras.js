@@ -13,6 +13,20 @@ export default {
   keyword_float32:    _ => kw('float32'),
   keyword_float64:    _ => kw('float64'),
   keyword_int8:       _ => kw('int8'),
+  // ISO <sign> <numeric value expression>; a signed operand may itself be signed (- -c)
+  _signed_operand: $ => prec.left('unary_other', seq(
+    field('operator', choice('-', '+')),
+    field('operand', choice(
+      alias($._qualified_field, $.field),
+      $.invocation,
+      $.parenthesized_expression,
+      $.cast,
+      $.case,
+      $.window_function,
+      $._signed_operand,
+    )),
+  )),
+
   keyword_multiset:   _ => kw('multiset'),
 
   // LIKE and its Oracle character-set variants LIKEC (Unicode complete characters),
