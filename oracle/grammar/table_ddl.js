@@ -350,14 +350,37 @@ export default {
   // (TYPE t DEFAULT DIRECTORY d ACCESS PARAMETERS (…) LOCATION ('f', …)) [REJECT LIMIT {n | UNLIMITED}]
   external_table_spec: $ => seq(
     '(',
-    repeat(choice(
-      seq($.keyword_type, $.identifier),
-      seq($.keyword_default, $.keyword_directory, $.identifier),
-      seq($.keyword_access, $.keyword_parameters, choice($._access_parameter_group, alias($._literal_string, $.literal))),
-      seq($.keyword_location, paren_list(alias($._literal_string, $.literal), true)),
-    )),
+    repeat($._external_option),
     ')',
-    optional(seq($.keyword_reject, $.keyword_limit, choice(alias($._natural_number, $.literal), $.keyword_unlimited))),
+    optional($._reject_limit),
+  ),
+
+  _external_option: $ => choice(
+    seq($.keyword_type, $.identifier),
+    seq($.keyword_default, $.keyword_directory, $.identifier),
+    seq($.keyword_access, $.keyword_parameters, choice($._access_parameter_group, alias($._literal_string, $.literal))),
+    seq($.keyword_location, paren_list(alias($._literal_string, $.literal), true)),
+  ),
+
+  _reject_limit: $ => seq($.keyword_reject, $.keyword_limit, choice(alias($._natural_number, $.literal), $.keyword_unlimited)),
+
+  // EXTERNAL ((column definitions) options [REJECT LIMIT n]) as a FROM item
+  inline_external_table: $ => seq(
+    $.keyword_external,
+    '(',
+    paren_list($.column_definition, true),
+    repeat($._external_option),
+    optional($._reject_limit),
+    ')',
+  ),
+
+  // table EXTERNAL MODIFY (options [REJECT LIMIT n])
+  external_modify_clause: $ => seq(
+    $.keyword_external, $.keyword_modify,
+    '(',
+    repeat($._external_option),
+    optional($._reject_limit),
+    ')',
   ),
 
   // The access driver's own parameter language (ORACLE_LOADER, ORACLE_DATAPUMP, …) is opaque to SQL:

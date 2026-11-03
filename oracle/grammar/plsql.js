@@ -671,7 +671,10 @@ export default {
     $.invocation,
     repeat1(choice(
       wrapped_in_parenthesis($._expression),
-      seq('.', $.identifier, optional(paren_list(choice($.named_argument, $._expression)))),
+      seq('.', $.identifier, optional(choice(
+        paren_list(choice($.named_argument, $._expression), true),
+        seq('(', ')'),
+      ))),
     )),
   )),
 

@@ -44,6 +44,7 @@ export default {
         $.json_table,
         seq($.object_reference, $.nested_columns_clause),
         $.xmltable,
+        $.inline_external_table,
         $.object_reference,
         wrapped_in_parenthesis($.values),
         seq($.keyword_only, wrapped_in_parenthesis($.object_reference)),
@@ -57,6 +58,7 @@ export default {
 
   // partition, flashback, sampling, pivoting, row pattern matching, alias, partitioned join, in this order
   ...ordered_optionals('_relation_clauses', [
+    $ => $.external_modify_clause,
     $ => $.partition_extension,
     $ => $.flashback_clause,
     $ => choice($.tablesample, $.sample_clause),
