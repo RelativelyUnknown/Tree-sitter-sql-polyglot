@@ -217,7 +217,8 @@ export default {
 
   // a path of five or more names (t.doc.a.b.c): JSON dot notation past what a qualified name holds
   json_dot_path: $ => seq(
-    alias($._qualified_field, $.field),
+    // four names written out, so a shorter dotted name stays an ordinary field
+    $.identifier, '.', $.identifier, '.', $.identifier, '.', $.identifier,
     $._json_dot_path_tail,
   ),
 
