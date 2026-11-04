@@ -3,19 +3,19 @@ import { comma_list, optional_parenthesis, paren_list, wrapped_in_parenthesis, m
 export default {
 
   // Oracle: SELECT … FOR UPDATE [OF cols] [NOWAIT | WAIT n | SKIP LOCKED]
-  _select_statement: $ => optional_parenthesis(
-    seq(
-      $.select,
-      optional(
-        seq(
-          optional(seq($.keyword_bulk, $.keyword_collect)),
-          $.keyword_into,
-          $.select_expression,
-        ),
+  _select_statement: $ => optional_parenthesis($._select_core),
+
+  _select_core: $ => seq(
+    $.select,
+    optional(
+      seq(
+        optional(seq($.keyword_bulk, $.keyword_collect)),
+        $.keyword_into,
+        $.select_expression,
       ),
-      optional($.from),
-      repeat($.locking_clause),
     ),
+    optional($.from),
+    repeat($.locking_clause),
   ),
 
   locking_clause: $ => seq(

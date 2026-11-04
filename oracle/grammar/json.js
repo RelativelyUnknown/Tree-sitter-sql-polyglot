@@ -1,4 +1,4 @@
-import { comma_list, paren_list, wrapped_in_parenthesis, make_keyword } from '../../grammar/helpers.js';
+import { comma_list, paren_list, wrapped_in_parenthesis, make_keyword, ordered_optionals } from '../../grammar/helpers.js';
 
 // SQL/JSON (Oracle SQL Language Reference 26ai): JSON_VALUE / JSON_QUERY / JSON_EXISTS /
 // JSON_OBJECT / JSON_ARRAY / JSON_OBJECTAGG / JSON_ARRAYAGG / JSON_SERIALIZE / JSON_TRANSFORM,
@@ -203,14 +203,30 @@ export default {
     ),
   ),
 
-  // expr IS [NOT] JSON [OBJECT | ARRAY | SCALAR]
+  // expr IS [NOT] JSON [OBJECT | ARRAY | SCALAR] [STRICT | LAX] [ALLOW | DISALLOW SCALARS] [WITH | WITHOUT UNIQUE KEYS]
   is_json_condition: $ => prec.left('binary_is', seq(
     field('left', $._expression),
     $.keyword_is,
     optional($.keyword_not),
     $.keyword_json,
     optional(choice($.keyword_object, $.keyword_array, $.keyword_scalar)),
+    optional($._json_condition_option_0),
   )),
+
+  ...ordered_optionals('_json_condition_option', [
+    $ => choice($.keyword_strict, $.keyword_lax),
+    $ => seq(choice($.keyword_allow, $.keyword_disallow), $.keyword_scalars),
+    $ => seq(choice($.keyword_with, $.keyword_without), $.keyword_unique, $.keyword_keys),
+  ]),
+
+  keyword_lax:      _ => token(prec(1, make_keyword('lax'))),
+  keyword_scalars:  _ => token(prec(1, make_keyword('scalars'))),
+
+  // a path of five or more names (t.doc.a.b.c): JSON dot notation past what a qualified name holds
+  json_dot_path: $ => seq(
+    alias($._qualified_field, $.field),
+    repeat1(seq('.', $.identifier)),
+  ),
 
   // ── JSON_TABLE ─────────────────────────────────────────────────────────
 

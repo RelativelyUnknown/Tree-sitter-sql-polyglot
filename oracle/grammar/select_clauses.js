@@ -29,21 +29,35 @@ export default {
   keyword_connect_by_root: _ => kw('connect_by_root'),
 
   // query { UNION | INTERSECT | MINUS | EXCEPT } [ALL | DISTINCT] query …
-  set_operation: $ => seq(
-    $._select_statement,
-    repeat1(
+  set_operation: $ => choice(
+    seq($._select_statement, repeat1($._set_operand)),
+    // a parenthesised last operand may be followed by the ORDER BY / row limiting of the whole set operation:
+    // (SELECT …) UNION (SELECT …) ORDER BY 1
+    seq(
+      $._select_statement,
+      repeat($._set_operand),
+      $._set_operator,
+      wrapped_in_parenthesis($._select_core),
+      $._set_operation_tail,
+    ),
+  ),
+
+  _set_operand: $ => seq($._set_operator, $._select_statement),
+
+  _set_operator: $ => seq(
+    field(
+      "operation",
       seq(
-        field(
-          "operation",
-          seq(
-            choice($.keyword_union, $.keyword_except, $.keyword_intersect, $.keyword_minus),
-            optional(choice($.keyword_all, $.keyword_distinct)),
-            optional(seq($.keyword_corresponding, optional(seq($.keyword_by, paren_list($.identifier, true))))),
-          ),
-        ),
-        $._select_statement,
+        choice($.keyword_union, $.keyword_except, $.keyword_intersect, $.keyword_minus),
+        optional(choice($.keyword_all, $.keyword_distinct)),
+        optional(seq($.keyword_corresponding, optional(seq($.keyword_by, paren_list($.identifier, true))))),
       ),
     ),
+  ),
+
+  _set_operation_tail: $ => choice(
+    seq($.order_by, optional($.offset_fetch_clause)),
+    $.offset_fetch_clause,
   ),
 
   // GROUP BY ALL groups by every non-aggregated item of the select list

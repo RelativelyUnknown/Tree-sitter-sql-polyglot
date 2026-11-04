@@ -45,6 +45,32 @@ import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
 
+// Known gaps (Oracle SQL Language Reference 26ai probes in tools/inventory/oracle.*.yml that still do not parse).
+// Each one was tried or priced and left out on purpose; tools/inventory-results/oracle.json is the live list.
+//
+// NOTE: Parse-table budget. tree-sitter stores parse actions in a 16-bit index, so the largest action index must stay
+//       below 65,535 (`grep -o 'ACTIONS([0-9]*)' oracle/src/parser.c`). A grammar that overflows it stops parsing even
+//       plain SELECT. Price every addition against that number, and keep optional runs in hidden rules or
+//       ordered_optionals() chains so they add up instead of multiplying. A declared conflict on a core rule such as
+//       `from` is far too expensive (it measured 70,492 and took the build from 25 to 88 minutes).
+//
+// TODO: ADD a trailing `/` after a SQL statement that has no `;` (SQL*Plus scripts: `CREATE VIEW v AS SELECT … <newline> /`).
+// NOTE: `/` after a PL/SQL block or after `;` already parses. After SQL it is also the division operator
+//       (`RETURN x /`, `WHERE a /`), which made every statement ending in an expression ambiguous. Needs an external
+//       scanner that only accepts a `/` standing alone on its line.
+//
+// TODO: ADD number literals with a trailing dot (`SELECT 5. FROM DUAL`).
+// NOTE: The lexer would read the PL/SQL range `1..10` as `1.` followed by `.10`.
+//
+// TODO: ADD `NTH_VALUE(expr, n) FROM {FIRST | LAST}` before IGNORE NULLS.
+// NOTE: The `FROM` collides with the FROM clause of the enclosing select; needs a conflict declaration on a core rule.
+//
+// TODO: ADD an index key made of a path plus a method call: `CREATE MULTIVALUE INDEX i ON t x (x.jcol.credit_score.numberOnly())`.
+// NOTE: Index keys take a qualified field, an invocation or an expression, not `a.b.c.method()` on a deep path.
+//
+// TODO: ADD `IS JSON VALIDATE '<json schema>'`.
+// NOTE: The other IS JSON options (STRICT/LAX, ALLOW/DISALLOW SCALARS, WITH/WITHOUT UNIQUE KEYS) are in json.js.
+
 export default canonicalOrder(grammar(base, {
   name: 'oracle_sql',
 
@@ -464,6 +490,7 @@ export default canonicalOrder(grammar(base, {
       $.cursor_expression,
       $.new_expression,
       $.remote_reference,
+      $.json_dot_path,
       $.collate_expression,
       $.interval_qualified_expression,
       $.is_a_set_condition,

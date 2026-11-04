@@ -668,3 +668,5 @@
 (keyword_graph_table) @keyword
 (keyword_a) @keyword
 (keyword_submultiset) @keyword
+(keyword_lax) @keyword
+(keyword_scalars) @keyword
