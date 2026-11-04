@@ -1,0 +1,43 @@
+name: Oracle size experiment
+# Throwaway: builds the Oracle parser with parts of the last batch switched off and reports the parse-action index
+# and state count of each, to price the parts. Delete after use.
+on:
+  push:
+    branches: ["ccr-7b871ec0-wgknnh"]
+    paths: [".github/experiments/oracle-size-3/**"]
+
+jobs:
+  variant:
+    name: oracle (${{ matrix.variant }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [all, no_json_opts, no_dot_path, no_set_b, none]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: tree-sitter/setup-action@v2
+        with:
+          install-lib: false
+          tree-sitter-ref: v0.26.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Add swap
+        run: |
+          sudo swapoff -a || true
+          avail_gb=$(df --output=avail -BG /mnt | tail -1 | tr -dc '0-9')
+          size_gb=$(( avail_gb > 40 ? 32 : avail_gb - 4 ))
+          sudo fallocate -l "${size_gb}G" /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+      - name: Apply variant
+        run: python3 .github/experiments/oracle-size-3/apply.py "${{ matrix.variant }}"
+      - name: Generate and measure
+        run: |
+          cd oracle && tree-sitter generate grammar.js
+          A=$(grep -o 'ACTIONS([0-9]*)' src/parser.c | sed 's/[^0-9]//g' | sort -n | tail -1)
+          S=$(grep -m1 'define STATE_COUNT' src/parser.c | tr -dc '0-9')
+          echo "RESULT variant=${{ matrix.variant }} max_action=$A states=$S"
