@@ -44,16 +44,7 @@ export default {
         $._select_statement,
       ),
     ),
-    optional($._set_operation_tail),
   ),
-
-  // ORDER BY / row limiting of the whole set operation, needed when the last operand is parenthesised
-  // ((SELECT …) UNION (SELECT …) ORDER BY 1). When the last operand is not parenthesised the same clauses
-  // already attach to it, which stays the preferred reading.
-  _set_operation_tail: $ => prec.dynamic(-1, choice(
-    seq($.order_by, optional($.offset_fetch_clause)),
-    $.offset_fetch_clause,
-  )),
 
   // GROUP BY ALL groups by every non-aggregated item of the select list
   group_by: $ => prec.left(seq(

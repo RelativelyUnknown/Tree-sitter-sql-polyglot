@@ -143,8 +143,6 @@ export default canonicalOrder(grammar(base, {
     [$.set_statement, $.object_reference],
     [$.table_partition_by],
     [$.qualify],
-    // ORDER BY / FETCH after the last FROM: part of the select, or of the enclosing set operation
-    [$.from],
     [$._duality_query, $.json_constructor],
     // FETCH FIRST n ROWS ONLY WITH TARGET ACCURACY: the WITH can also belong to what follows the query.
     [$._fetch_first_clause],
