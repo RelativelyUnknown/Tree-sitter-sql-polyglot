@@ -624,11 +624,11 @@ export default {
     optional($._argument_tail_0),
   ),
 
-  // [IGNORE | RESPECT NULLS] [ORDER BY …] [SEPARATOR 's' | , 's'] [ON OVERFLOW …] [LIMIT …]
+  // [IGNORE | RESPECT NULLS] [ORDER BY …] [SEPARATOR 's'] [ON OVERFLOW …] [LIMIT …]; a trailing , 's' is the next argument
   ...ordered_optionals('_argument_tail', [
     $ => $._nulls_treatment,
     $ => $.order_by,
-    $ => seq(choice($.keyword_separator, ','), alias($._literal_string, $.literal)),
+    $ => seq($.keyword_separator, alias($._literal_string, $.literal)),
     $ => $._listagg_overflow,
     $ => $.limit,
   ]),
