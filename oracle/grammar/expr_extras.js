@@ -27,6 +27,29 @@ export default {
     )),
   )),
 
+  // expr COLLATE collation, binding tighter than any binary operator
+  collate_expression: $ => prec.left('binary_exp', seq(
+    field('expression', $._expression),
+    $.keyword_collate,
+    field('collation', $.identifier),
+  )),
+
+  // (datetime - datetime) DAY [(p)] TO SECOND [(p)] | YEAR [(p)] TO MONTH
+  interval_qualified_expression: $ => prec.left('binary_exp', seq(
+    field('expression', $.parenthesized_expression),
+    choice(
+      seq(
+        $.keyword_day, optional(wrapped_in_parenthesis(alias($._natural_number, $.literal))),
+        $.keyword_to,
+        $.keyword_second, optional(wrapped_in_parenthesis(alias($._natural_number, $.literal))),
+      ),
+      seq(
+        $.keyword_year, optional(wrapped_in_parenthesis(alias($._natural_number, $.literal))),
+        $.keyword_to, $.keyword_month,
+      ),
+    ),
+  )),
+
   // CURSOR(subquery) in a select list or as an argument
   cursor_expression: $ => seq($.keyword_cursor, $.subquery),
 

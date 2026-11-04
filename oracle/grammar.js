@@ -182,7 +182,7 @@ export default canonicalOrder(grammar(base, {
         $.create_operator,
         prec.left(seq(
           $.create_schema,
-          repeat($._create_statement),
+          repeat(choice($._create_statement, $.grant_statement)),
         )),
       ),
     ),
@@ -461,6 +461,8 @@ export default canonicalOrder(grammar(base, {
       $.at_time_zone_expression,
       $.cursor_expression,
       $.new_expression,
+      $.collate_expression,
+      $.interval_qualified_expression,
       $.is_a_set_condition,
       $.multiset_condition,
       $.multiset_operation,

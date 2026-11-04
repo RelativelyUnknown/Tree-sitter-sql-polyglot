@@ -60,7 +60,12 @@ export default {
     comma_list(seq(optional(choice($.keyword_old, $.keyword_new)), $._expression), true),
     optional(seq($.keyword_bulk, $.keyword_collect)),
     $.keyword_into,
-    comma_list(choice($.identifier, $.parameter), true),
+    comma_list(choice(
+      $.identifier,
+      // PL/SQL record field: r.id
+      alias(seq($.identifier, repeat1(seq('.', $.identifier))), $.field),
+      $.parameter,
+    ), true),
   ),
 
   _dml_tail: $ => choice(
