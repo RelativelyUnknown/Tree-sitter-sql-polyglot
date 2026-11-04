@@ -68,8 +68,14 @@ import dialect_legacy_rules from './grammar/legacy_statements.js';
 // TODO: ADD an index key made of a path plus a method call: `CREATE MULTIVALUE INDEX i ON t x (x.jcol.credit_score.numberOnly())`.
 // NOTE: Index keys take a qualified field, an invocation or an expression, not `a.b.c.method()` on a deep path.
 //
-// TODO: ADD `IS JSON VALIDATE '<json schema>'`.
-// NOTE: The other IS JSON options (STRICT/LAX, ALLOW/DISALLOW SCALARS, WITH/WITHOUT UNIQUE KEYS) are in json.js.
+// TODO: ADD the rest of the IS JSON options: `ALLOW | DISALLOW SCALARS`, `WITH | WITHOUT UNIQUE KEYS` and `VALIDATE '<json schema>'`.
+// NOTE: `IS [NOT] JSON [STRICT | LAX]` is in json.js. The UNIQUE KEYS tail measured +2,300 parse actions on its own (the
+//       WITH after an expression collides with WITH TIES / WITH CHECK OPTION in every expression-end state).
+//
+// TODO: ADD RUNNING / FINAL on a navigation function nested in another: `PREV(FINAL LAST(b.v), 1)` in MATCH_RECOGNIZE.
+// NOTE: Written as an extra argument alternative of every function call, it cost about 500 parse actions; it was dropped
+//       to fit IS JSON STRICT / deep JSON paths / ORDER BY after a parenthesised set operand. `FINAL LAST(...)` as a
+//       whole measure already parses.
 
 export default canonicalOrder(grammar(base, {
   name: 'oracle_sql',

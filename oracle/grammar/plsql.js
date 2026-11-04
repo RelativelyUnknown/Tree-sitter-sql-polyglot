@@ -619,7 +619,7 @@ export default {
     optional($.keyword_distinct),
     field(
       'parameter',
-      choice($.term, $.named_argument, $._qualified_choice, $.match_navigation),
+      choice($.term, $.named_argument, $._qualified_choice),
     ),
     optional($._argument_tail_0),
   ),
@@ -638,12 +638,6 @@ export default {
     $ => $.filter_expression,
     $ => $.within_group,
   ]),
-
-  // RUNNING / FINAL before a navigation call nested in another: PREV(FINAL LAST(b.v), 1)
-  match_navigation: $ => seq(
-    choice($.keyword_running, $.keyword_final),
-    $.invocation,
-  ),
 
   // LISTAGG ... ON OVERFLOW ERROR | TRUNCATE ['indicator'] [WITH | WITHOUT COUNT]
   _listagg_overflow: $ => seq(
