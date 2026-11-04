@@ -77,6 +77,8 @@ export default canonicalOrder(grammar(base, {
     // ESCAPE tail; kept in sync with the base grammar's conflicts.
     [$.between_expression, $.binary_expression, $.like_expression],
     [$.between_expression, $.binary_expression, $.like_expression, $.multiset_condition],
+    // (expr) DAY … TO SECOND against a purge/interval clause that takes a bare expression before DAY
+    [$._expression, $.interval_qualified_expression],
     // Base transaction/call additions (conflicts do not propagate from the parent; kept in sync with grammar.js).
     [$.transaction, $.start_transaction_statement],
     [$.transaction, $.commit_statement],
