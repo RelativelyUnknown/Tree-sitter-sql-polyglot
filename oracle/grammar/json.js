@@ -225,8 +225,11 @@ export default {
   // a path of five or more names (t.doc.a.b.c): JSON dot notation past what a qualified name holds
   json_dot_path: $ => seq(
     alias($._qualified_field, $.field),
-    repeat1(seq('.', $.identifier)),
+    $._json_dot_path_tail,
   ),
+
+  // written out instead of repeat1(): an identical repeat would be shared with unrelated rules and make them conflict
+  _json_dot_path_tail: $ => prec.right(seq('.', $.identifier, optional($._json_dot_path_tail))),
 
   // ── JSON_TABLE ─────────────────────────────────────────────────────────
 
