@@ -602,7 +602,7 @@ export default {
             optional($.keyword_distinct),
             field(
               'parameter',
-              choice($.term, $.named_argument, $._qualified_choice),
+              choice($.term, $.named_argument, $._qualified_choice, $.match_navigation),
             ),
             optional($._nulls_treatment),
             optional($.order_by)
@@ -637,6 +637,12 @@ export default {
     $ => $.filter_expression,
     $ => $.within_group,
   ]),
+
+  // RUNNING / FINAL before a navigation call nested in another: PREV(FINAL LAST(b.v), 1)
+  match_navigation: $ => seq(
+    choice($.keyword_running, $.keyword_final),
+    $.invocation,
+  ),
 
   // order_by, separator, overflow and limit keep their order; chained to avoid 2^n productions
   ...ordered_optionals('_agg_tail', [

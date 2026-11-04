@@ -50,6 +50,13 @@ export default {
     ),
   )),
 
+  // schema.object.column@dblink, for example a sequence pseudocolumn over a database link
+  remote_reference: $ => seq(
+    alias($._qualified_field, $.field),
+    '@',
+    field('dblink', $.dblink_name),
+  ),
+
   // CURSOR(subquery) in a select list or as an argument
   cursor_expression: $ => seq($.keyword_cursor, $.subquery),
 
