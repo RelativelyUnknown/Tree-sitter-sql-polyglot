@@ -15,7 +15,8 @@ export default {
   keyword_milliseconds: _ => kw('milliseconds'),
 
   // Bind variables: :name, :1, ? and $1
-  parameter: _ => token(choice('?', /\$[0-9]+/, /:[A-Za-z_][A-Za-z0-9_$#]*/, /:[0-9]+/)),
+  // :name, optionally with an indicator variable (:name:ind)
+  parameter: _ => token(choice('?', /\$[0-9]+/, /:[A-Za-z_][A-Za-z0-9_$#]*(:[A-Za-z_][A-Za-z0-9_$#]*)?/, /:[0-9]+/)),
 
   // ── Targets and shared clauses ─────────────────────────────────────────
 

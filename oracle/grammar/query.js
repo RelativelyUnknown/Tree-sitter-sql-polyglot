@@ -32,7 +32,12 @@ export default {
     optional(seq('@', field('dblink', $.dblink_name))),
   ),
 
-  dblink_name: $ => seq($.identifier, repeat(seq('.', $.identifier))),
+  // remote[.domain …][@connection_qualifier]
+  dblink_name: $ => seq(
+    $.identifier,
+    repeat(seq('.', $.identifier)),
+    optional(seq('@', $.identifier)),
+  ),
 
   // table, view, subquery, collection or inline relation, with the clauses that qualify it
   relation: $ => prec.right(
