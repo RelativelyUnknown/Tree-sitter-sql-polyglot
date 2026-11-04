@@ -266,12 +266,18 @@ export default {
     $.keyword_fetch,
     optional(choice($.keyword_approx, $.keyword_approximate, $.keyword_exact)),
     choice($.keyword_first, $.keyword_next),
-    optional(choice(
-      seq($._expression, optional($.keyword_percent)),
-      // FETCH FIRST n PARTITIONS BY expr, ..., m ROWS ONLY: the last item is the row count
-      seq($._expression, $.keyword_partitions, $.keyword_by, comma_list($._expression)),
-    )),
+    optional($._fetch_count),
     choice($.keyword_row, $.keyword_rows),
+    $._fetch_end,
+  ),
+
+  _fetch_count: $ => choice(
+    seq($._expression, optional($.keyword_percent)),
+    // FETCH FIRST n PARTITIONS BY expr, ..., m ROWS ONLY: the last item is the row count
+    seq($._expression, $.keyword_partitions, $.keyword_by, comma_list($._expression)),
+  ),
+
+  _fetch_end: $ => seq(
     choice($.keyword_only, seq($.keyword_with, $.keyword_ties)),
     optional($._target_accuracy),
   ),

@@ -606,38 +606,46 @@ export default canonicalOrder(grammar(base, {
     // are table properties; the older "after AS query" position is kept.
     create_table: $ => prec.left(seq(
       $.keyword_create,
-      optional($._or_replace),
-      optional($._oracle_table_kind),
+      optional($._table_prefix_0),
       $.keyword_table,
       optional($._if_not_exists),
       $.object_reference,
       optional($.sharing_clause),
-      choice(
-        seq(
-          optional($.column_definitions),
-          repeat($._oracle_table_property),
-          optional(seq(
-            $.keyword_as, $.create_query,
-            repeat(choice($.organization_clause, $.table_partition_by)),
-          )),
-        ),
-        seq(
-          paren_list($.identifier, true),
-          repeat($._oracle_table_property),
-          $.keyword_as, $.create_query,
-        ),
-        // Object table: OF type [(constraints)] [OBJECT IDENTIFIER IS {SYSTEM GENERATED | PRIMARY KEY}]
-        seq(
-          $.keyword_of, $.object_reference,
-          optional(paren_list(choice($.constraint, $.column_definition), true)),
-          optional(seq($.keyword_object, $.keyword_identifier, $.keyword_is,
-            choice(seq($.keyword_system, $.keyword_generated), $._primary_key))),
-          repeat($._oracle_table_property),
-        ),
-        // Staging table for an exchange: FOR EXCHANGE WITH TABLE t
-        seq($.keyword_for, $.keyword_exchange, $.keyword_with, $.keyword_table, $.object_reference),
-      ),
+      optional($._table_body),
     )),
+
+    _table_as_clause: $ => seq(
+      $.keyword_as, $.create_query,
+      repeat(choice($.organization_clause, $.table_partition_by)),
+    ),
+
+    // [OR REPLACE] [GLOBAL TEMPORARY | PRIVATE TEMPORARY | IMMUTABLE …], in this order
+    ...ordered_optionals('_table_prefix', [
+      $ => $._or_replace,
+      $ => $._oracle_table_kind,
+    ]),
+
+    // What follows the table name; absent for a bare CREATE TABLE t.
+    _table_body: $ => choice(
+      seq($.column_definitions, repeat($._oracle_table_property), optional($._table_as_clause)),
+      seq(repeat1($._oracle_table_property), optional($._table_as_clause)),
+      $._table_as_clause,
+      seq(
+        paren_list($.identifier, true),
+        repeat($._oracle_table_property),
+        $.keyword_as, $.create_query,
+      ),
+      // Object table: OF type [(constraints)] [OBJECT IDENTIFIER IS {SYSTEM GENERATED | PRIMARY KEY}]
+      seq(
+        $.keyword_of, $.object_reference,
+        optional(paren_list(choice($.constraint, $.column_definition), true)),
+        optional(seq($.keyword_object, $.keyword_identifier, $.keyword_is,
+          choice(seq($.keyword_system, $.keyword_generated), $._primary_key))),
+        repeat($._oracle_table_property),
+      ),
+      // Staging table for an exchange: FOR EXCHANGE WITH TABLE t
+      seq($.keyword_for, $.keyword_exchange, $.keyword_with, $.keyword_table, $.object_reference),
+    ),
 
     // Oracle trigger with a PL/SQL block body (base mandates the Postgres
     // EXECUTE FUNCTION tail instead).

@@ -74,33 +74,37 @@ export default {
     $.keyword_domain,
     optional($._if_not_exists),
     field('name', $.object_reference),
-    choice(
-      seq(
-        $.keyword_as,
-        choice(
-          seq($._type, repeat($._column_constraint)),
-          seq($.keyword_enum, paren_list($._domain_enum_value, true)),
-          paren_list(seq(
-            $.identifier, $.keyword_as, $._type,
-            optional($.keyword_strict),
-            repeat($._column_constraint),
-          ), true),
-        ),
-      ),
-      // FLEXIBLE DOMAIN d (c1, c2) CHOOSE DOMAIN USING (t type) FROM CASE … | DECODE(…)
-      seq(
-        paren_list($.identifier, true),
-        $.keyword_choose, $.keyword_domain, $.keyword_using,
-        paren_list(seq($.identifier, $._type), true),
-        $.keyword_from,
-        choice($.case, $.invocation),
+    $._domain_definition,
+    repeat($._domain_option),
+  ),
+
+  _domain_definition: $ => choice(
+    seq(
+      $.keyword_as,
+      choice(
+        seq($._type, repeat($._column_constraint)),
+        seq($.keyword_enum, paren_list($._domain_enum_value, true)),
+        paren_list(seq(
+          $.identifier, $.keyword_as, $._type,
+          optional($.keyword_strict),
+          repeat($._column_constraint),
+        ), true),
       ),
     ),
-    repeat(choice(
-      seq($.keyword_display, $._expression),
-      seq($.keyword_order, $._expression),
-      $.annotations_clause,
-    )),
+    // FLEXIBLE DOMAIN d (c1, c2) CHOOSE DOMAIN USING (t type) FROM CASE … | DECODE(…)
+    seq(
+      paren_list($.identifier, true),
+      $.keyword_choose, $.keyword_domain, $.keyword_using,
+      paren_list(seq($.identifier, $._type), true),
+      $.keyword_from,
+      choice($.case, $.invocation),
+    ),
+  ),
+
+  _domain_option: $ => choice(
+    seq($.keyword_display, $._expression),
+    seq($.keyword_order, $._expression),
+    $.annotations_clause,
   ),
 
   alter_domain_statement: $ => seq(
