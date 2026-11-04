@@ -277,10 +277,10 @@ export default {
     seq($._expression, $.keyword_partitions, $.keyword_by, comma_list($._expression)),
   ),
 
-  _fetch_end: $ => seq(
+  _fetch_end: $ => prec.right(seq(
     choice($.keyword_only, seq($.keyword_with, $.keyword_ties)),
     optional($._target_accuracy),
-  ),
+  )),
 
   // WITH TARGET ACCURACY [n] [PARAMETERS (EFSEARCH n | NEIGHBOR PARTITION PROBES n …)]
   _target_accuracy: $ => seq(
