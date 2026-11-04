@@ -54,8 +54,11 @@ export default {
   remote_reference: $ => seq(
     alias($._qualified_field, $.field),
     '@',
-    field('dblink', $.dblink_name),
+    field('dblink', alias($._remote_link, $.identifier)),
   ),
+
+  // remote[.domain …][@connection_qualifier] as a single token: a rule here costs parse states after every expression
+  _remote_link: _ => token(/[A-Za-z_][A-Za-z0-9_$#]*(\.[A-Za-z_][A-Za-z0-9_$#]*)*(@[A-Za-z_][A-Za-z0-9_$#]*)?/),
 
   // CURSOR(subquery) in a select list or as an argument
   cursor_expression: $ => seq($.keyword_cursor, $.subquery),

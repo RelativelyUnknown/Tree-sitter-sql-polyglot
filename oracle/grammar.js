@@ -71,11 +71,6 @@ import dialect_legacy_rules from './grammar/legacy_statements.js';
 // TODO: ADD the rest of the IS JSON options: `ALLOW | DISALLOW SCALARS`, `WITH | WITHOUT UNIQUE KEYS` and `VALIDATE '<json schema>'`.
 // NOTE: `IS [NOT] JSON [STRICT | LAX]` is in json.js. The UNIQUE KEYS tail measured +2,300 parse actions on its own (the
 //       WITH after an expression collides with WITH TIES / WITH CHECK OPTION in every expression-end state).
-//
-// TODO: ADD RUNNING / FINAL on a navigation function nested in another: `PREV(FINAL LAST(b.v), 1)` in MATCH_RECOGNIZE.
-// NOTE: Written as an extra argument alternative of every function call, it cost about 500 parse actions; it was dropped
-//       to fit IS JSON STRICT / deep JSON paths / ORDER BY after a parenthesised set operand. `FINAL LAST(...)` as a
-//       whole measure already parses.
 
 export default canonicalOrder(grammar(base, {
   name: 'oracle_sql',
