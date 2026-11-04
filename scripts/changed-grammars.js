@@ -15,10 +15,19 @@
  *   - docs, markdown and unrelated workflows rebuild nothing;
  *   - anything it does not recognise rebuilds everything, and so does a diff it cannot compute.
  *
- * Writes `matrix`, `run_grammars` and `run_bindings` to $GITHUB_OUTPUT when set, and always prints
- * the decision.
+ * On top of that, a grammar whose inputs are byte-identical to a build that already passed is not built
+ * again: every grammar job records a cache marker keyed by a fingerprint of the committed files it
+ * depends on (grammarFingerprint) when it succeeds, and this script drops the grammars whose marker
+ * exists. The same applies to the bindings jobs (bindingsFingerprint). Needs GH_TOKEN and
+ * GITHUB_REPOSITORY; without them nothing is skipped. Bump CACHE_VERSION to invalidate every marker.
+ *
+ *   node scripts/changed-grammars.js --fingerprints          # print each fingerprint, no GitHub access
+ *
+ * Writes `matrix`, `run_grammars`, `run_bindings` and `bindings_key` to $GITHUB_OUTPUT when set, and
+ * always prints the decision.
  */
 
+import { createHash } from 'crypto';
 import { execFileSync } from 'child_process';
 import { appendFileSync, existsSync, readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
@@ -146,6 +155,82 @@ export function decide(files, list) {
   return { langs: list.filter((d) => chosen.has(d)), bindings: bindings || chosen.size > 0 };
 }
 
+// Bump to invalidate every recorded marker (for example after changing what a grammar job checks).
+export const CACHE_VERSION = 'v1';
+const GRAMMAR_KEY = `grammar-ok-${CACHE_VERSION}-`;
+const BINDINGS_KEY = `bindings-ok-${CACHE_VERSION}-`;
+
+export const grammarCacheKey = (lang, fp) => `${GRAMMAR_KEY}${lang}-${fp}`;
+export const bindingsCacheKey = (fp) => `${BINDINGS_KEY}${fp}`;
+
+// sha256 over `git ls-files -s` (mode, blob id, path) of the pathspecs: the committed content they
+// select, nothing from the working tree.
+function treeFingerprint(pathspecs) {
+  const listing = execFileSync('git', ['ls-files', '-s', '--', ...pathspecs], { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 28 });
+  return createHash('sha256').update(listing).digest('hex').slice(0, 16);
+}
+
+// The chain of dialects a dialect extends, nearest first, without `base`.
+function ancestors(lang, parent) {
+  const out = [];
+  for (let p = parent[lang]; p && p !== 'base'; p = parent[p]) out.push(p);
+  return out;
+}
+
+// Everything the grammar job for `lang` reads: generates, tests, checks blobs against, and compares
+// inventory results of. The base job also reads every dialect's committed blobs and queries (the
+// highlight sync), so it is fingerprinted over the whole repository minus docs and bindings.
+export function grammarFingerprint(lang, list) {
+  if (lang === 'base') {
+    return treeFingerprint([
+      '.', ':(exclude)docs', ':(exclude)bindings', ':(exclude).github', ':(exclude).claude',
+      ':(exclude,glob)**/*.md', ':(exclude)Sources', ':(exclude)Tests',
+    ]);
+  }
+  const parent = parents(list);
+  return treeFingerprint([
+    `${lang}/`,
+    ...ancestors(lang, parent).map((a) => `${a}/`),
+    // the ANSI grammar and the machinery every dialect build runs
+    'grammar.js', 'grammar/', 'src/scanner.c', 'src/tree_sitter/', 'scripts/',
+    'package.json', 'package-lock.json', 'tree-sitter.json',
+    ':(glob)tools/*.py', ':(glob)tools/*.yml', ':(glob)tools/*.json', 'tools/requirements.txt',
+    `:(glob)tools/inventory/${lang}.*`, `:(glob)tools/inventory-results/${lang}.*`, `:(glob)tools/inventory-verify/${lang}.*`,
+  ]);
+}
+
+// What the bindings jobs build from: the binding sources, packaging files, and every dialect's
+// committed parser blobs and queries.
+export function bindingsFingerprint() {
+  return treeFingerprint([
+    'bindings/', 'Sources/', 'Tests/', 'scripts/', 'queries/',
+    ':(glob)**/src/*.br', ':(glob)*/queries/*.scm', ':(glob)*/tree-sitter.json',
+    'Cargo.toml', 'Cargo.lock', 'setup.py', 'pyproject.toml', 'Package.swift', 'CMakeLists.txt',
+    'binding.gyp', 'go.mod', 'go.sum', 'MANIFEST.in', 'package.json', 'package-lock.json', 'tree-sitter.json',
+  ]);
+}
+
+// Keys of the markers already recorded in the Actions cache, or null when it cannot be asked.
+function recordedMarkers() {
+  const repo = process.env.GITHUB_REPOSITORY;
+  if (!repo || !process.env.GH_TOKEN) return null;
+  const keys = new Set();
+  try {
+    for (const prefix of [GRAMMAR_KEY, BINDINGS_KEY]) {
+      const out = execFileSync(
+        'gh',
+        ['api', '--paginate', '-X', 'GET', `repos/${repo}/actions/caches`, '-f', `key=${prefix}`, '-f', 'per_page=100', '-q', '.actions_caches[].key'],
+        { cwd: ROOT, encoding: 'utf8' },
+      );
+      out.split('\n').filter(Boolean).forEach((k) => keys.add(k));
+    }
+    return keys;
+  } catch (e) {
+    console.log(`[changed-grammars] could not read the cache markers (${String(e.message).split('\n')[0]}); skipping nothing`);
+    return null;
+  }
+}
+
 function changedFiles(base, head) {
   if (!base || !head || /^0+$/.test(base)) return null;
   try {
@@ -165,6 +250,13 @@ function changedFiles(base, head) {
 
 function main() {
   const list = dialects();
+
+  if (process.argv[2] === '--fingerprints') {
+    for (const d of list) console.log(`${d.padEnd(12)} ${grammarFingerprint(d, list)}`);
+    console.log(`${'bindings'.padEnd(12)} ${bindingsFingerprint()}`);
+    return;
+  }
+
   let langs;
   let bindings;
   let why;
@@ -180,13 +272,25 @@ function main() {
     why = `${files.length} changed file(s)`;
   }
 
+  // Drop what already passed with byte-identical inputs.
+  const fps = Object.fromEntries(langs.map((d) => [d, grammarFingerprint(d, list)]));
+  const bindingsFp = bindingsFingerprint();
+  const markers = recordedMarkers();
+  const built = markers ? langs.filter((d) => markers.has(grammarCacheKey(d, fps[d]))) : [];
+  if (built.length) langs = langs.filter((d) => !built.includes(d));
+  const bindingsBuilt = Boolean(markers && bindings && markers.has(bindingsCacheKey(bindingsFp)));
+  if (bindingsBuilt) bindings = false;
+
   console.log(`[changed-grammars] ${why}: ${langs.length ? langs.join(' ') : '(no grammar jobs)'}; bindings ${bindings ? 'run' : 'skipped'}`);
+  if (built.length) console.log(`[changed-grammars] already built with identical inputs, skipped: ${built.join(' ')}`);
+  if (bindingsBuilt) console.log('[changed-grammars] bindings already built with identical inputs, skipped');
 
   const out = process.env.GITHUB_OUTPUT;
   if (out) {
-    appendFileSync(out, `matrix=${JSON.stringify({ lang: langs })}\n`);
+    appendFileSync(out, `matrix=${JSON.stringify({ include: langs.map((d) => ({ lang: d, key: grammarCacheKey(d, fps[d]) })) })}\n`);
     appendFileSync(out, `run_grammars=${langs.length > 0}\n`);
     appendFileSync(out, `run_bindings=${bindings}\n`);
+    appendFileSync(out, `bindings_key=${bindingsCacheKey(bindingsFp)}\n`);
   }
 }
 

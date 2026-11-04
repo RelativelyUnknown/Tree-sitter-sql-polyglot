@@ -22,12 +22,21 @@ jobs:
   # Decides which grammars this change needs (scripts/changed-grammars.js): a dialect and the
   # dialects that extend it, everything when the ANSI base or the build machinery changes, nothing
   # for docs. A push to main is diffed against the previous head, a PR against its base.
+  #
+  # A grammar is not built again when its inputs are byte-identical to a build that already passed:
+  # each grammar job records a cache marker keyed by a fingerprint of the committed files it depends
+  # on (see the end of the job), and `changes` drops the grammars whose marker exists. The bindings
+  # jobs work the same way. Bump CACHE_VERSION in scripts/changed-grammars.js to rebuild everything.
   changes:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
     outputs:
       matrix: ${{ steps.diff.outputs.matrix }}
       run_grammars: ${{ steps.diff.outputs.run_grammars }}
       run_bindings: ${{ steps.diff.outputs.run_bindings }}
+      bindings_key: ${{ steps.diff.outputs.bindings_key }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,6 +47,7 @@ jobs:
       - name: Select grammars
         id: diff
         env:
+          GH_TOKEN: ${{ github.token }}
           EVENT: ${{ github.event_name }}
           PR_BASE: ${{ github.event.pull_request.base.sha }}
           PR_HEAD: ${{ github.event.pull_request.head.sha }}
@@ -197,6 +207,15 @@ jobs:
           python tools/coverage.py --check --dialect base
           git checkout -- tree-sitter.json
 
+      # Reached only when every step above passed: record that these exact inputs build and test
+      # clean, so a later commit that leaves this grammar untouched does not build it again.
+      - name: Record successful build
+        run: echo "${{ matrix.key }}" > /tmp/grammar-ok
+      - uses: actions/cache/save@v4
+        with:
+          path: /tmp/grammar-ok
+          key: ${{ matrix.key }}
+
   # Language bindings build from the committed .br blobs (scripts/inflate-parsers.js), so they
   # never run tree-sitter generate.
   bindings:
@@ -268,6 +287,19 @@ jobs:
               swift build --build-tests
               swift test --skip-build -q ;;
           esac
+
+  # Records that the bindings built and tested clean for these exact inputs (blobs, binding sources,
+  # packaging files), so an unrelated later commit does not run them again.
+  record-bindings:
+    needs: [changes, bindings]
+    if: ${{ needs.bindings.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "${{ needs.changes.outputs.bindings_key }}" > /tmp/bindings-ok
+      - uses: actions/cache/save@v4
+        with:
+          path: /tmp/bindings-ok
+          key: ${{ needs.changes.outputs.bindings_key }}
 
   # Expected parse trees must not contain error nodes (errors.txt holds the intentional error tests).
   corpus-lint:

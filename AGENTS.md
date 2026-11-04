@@ -118,7 +118,12 @@ docs/                           # VitePress site (index, changelog; coverage is 
 .github/workflows/
   ci.yml                        # One job per changed grammar (generate, test, blobs, inventory); bindings on 3 OSes.
                                 # scripts/changed-grammars.js picks the grammars: a dialect and the dialects that
-                                # extend it, everything for base/shared changes, nothing for docs-only changes
+                                # extend it, everything for base/shared changes, nothing for docs-only changes.
+                                # A grammar whose inputs are byte-identical to a build that already passed is
+                                # skipped: each passing job saves a cache marker keyed by a fingerprint of its
+                                # committed inputs, and `changes` drops grammars whose marker exists (same for
+                                # the bindings). `node scripts/changed-grammars.js --fingerprints` prints them;
+                                # bump CACHE_VERSION in that script to rebuild everything.
   pages.yml                     # Builds and deploys the docs site
   publish.yml, tag.yml          # Release automation
 ```
