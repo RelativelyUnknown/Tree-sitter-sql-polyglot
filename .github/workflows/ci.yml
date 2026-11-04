@@ -1,6 +1,8 @@
 name: Build/test
 
 on:
+  # Manual run: builds every grammar whose inputs have not already built clean (see `changes`).
+  workflow_dispatch:
   push:
     branches: ["main", "release/**"]
   pull_request:
@@ -56,6 +58,8 @@ jobs:
         run: |
           if [ "$EVENT" = pull_request ]; then
             node scripts/changed-grammars.js "$PR_BASE" "$PR_HEAD"
+          elif [ "$EVENT" = workflow_dispatch ]; then
+            node scripts/changed-grammars.js --all
           else
             node scripts/changed-grammars.js "$PUSH_BEFORE" "$PUSH_AFTER"
           fi
