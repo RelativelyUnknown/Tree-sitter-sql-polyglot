@@ -216,11 +216,11 @@ export default {
   keyword_lax:      _ => token(prec(1, make_keyword('lax'))),
 
   // a path of five or more names (t.doc.a.b.c): JSON dot notation past what a qualified name holds
-  json_dot_path: $ => seq(
-    // four names written out, so a shorter dotted name stays an ordinary field
-    $.identifier, '.', $.identifier, '.', $.identifier, '.', $.identifier,
+  // Lower dynamic precedence: a shorter dotted name is also a valid qualified field, and the field reading must win.
+  json_dot_path: $ => prec.dynamic(-10, seq(
+    alias($._qualified_field, $.field),
     $._json_dot_path_tail,
-  ),
+  )),
 
   // written out instead of repeat1(): an identical repeat would be shared with unrelated rules and make them conflict
   _json_dot_path_tail: $ => prec.right(seq('.', $.identifier, optional($._json_dot_path_tail))),
