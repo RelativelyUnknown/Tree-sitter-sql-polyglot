@@ -78,7 +78,7 @@ export default {
     repeat($._domain_option),
   ),
 
-  _domain_definition: $ => choice(
+  _domain_definition: $ => prec.right(choice(
     seq(
       $.keyword_as,
       choice(
@@ -99,7 +99,7 @@ export default {
       $.keyword_from,
       choice($.case, $.invocation),
     ),
-  ),
+  )),
 
   _domain_option: $ => choice(
     seq($.keyword_display, $._expression),
