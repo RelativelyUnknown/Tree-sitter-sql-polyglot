@@ -58,15 +58,19 @@ export default {
   // {RETURN | RETURNING} [OLD | NEW] expr, … [BULK COLLECT] INTO target, …
   returning_into_clause: $ => seq(
     choice($.keyword_returning, $.keyword_return),
-    comma_list(seq(optional(choice($.keyword_old, $.keyword_new)), $._expression), true),
+    comma_list($._returning_item, true),
     optional(seq($.keyword_bulk, $.keyword_collect)),
     $.keyword_into,
-    comma_list(choice(
-      $.identifier,
-      // PL/SQL record field: r.id
-      alias(seq($.identifier, repeat1(seq('.', $.identifier))), $.field),
-      $.parameter,
-    ), true),
+    comma_list($._returning_target, true),
+  ),
+
+  _returning_item: $ => seq(optional(choice($.keyword_old, $.keyword_new)), $._expression),
+
+  _returning_target: $ => choice(
+    $.identifier,
+    // PL/SQL record field: r.id
+    alias(seq($.identifier, repeat1(seq('.', $.identifier))), $.field),
+    $.parameter,
   ),
 
   _dml_tail: $ => choice(

@@ -596,18 +596,8 @@ export default {
     seq(
       $.object_reference,
       choice(
-        // default invocation
-        paren_list(
-          seq(
-            optional($.keyword_distinct),
-            field(
-              'parameter',
-              choice($.term, $.named_argument, $._qualified_choice, $.match_navigation),
-            ),
-            optional($._nulls_treatment),
-            optional($.order_by)
-          )
-        ),
+        // arguments, including the aggregate forms (group_concat, LISTAGG … ON OVERFLOW)
+        paren_list($._invocation_argument),
         // https://dev.mysql.com/doc/refman/8.4/en/date-and-time-functions.html#function_extract
         paren_list(
           seq(
@@ -619,18 +609,29 @@ export default {
             $.term
           )
         ),
-        // _aggregate_function, e.g. group_concat
-        wrapped_in_parenthesis(
-          seq(
-            optional($.keyword_distinct),
-            field('parameter', $.term),
-            optional($._agg_tail_0),
-          ),
-        ),
       ),
       optional($._invocation_tail_0),
     ),
   ),
+
+  // One argument: [DISTINCT] value, then the clauses a function argument can carry, in this order
+  _invocation_argument: $ => seq(
+    optional($.keyword_distinct),
+    field(
+      'parameter',
+      choice($.term, $.named_argument, $._qualified_choice, $.match_navigation),
+    ),
+    optional($._argument_tail_0),
+  ),
+
+  // [IGNORE | RESPECT NULLS] [ORDER BY …] [SEPARATOR 's' | , 's'] [ON OVERFLOW …] [LIMIT …]
+  ...ordered_optionals('_argument_tail', [
+    $ => $._nulls_treatment,
+    $ => $.order_by,
+    $ => seq(choice($.keyword_separator, ','), alias($._literal_string, $.literal)),
+    $ => $._listagg_overflow,
+    $ => $.limit,
+  ]),
 
   // [FILTER (WHERE …)] [WITHIN GROUP (ORDER BY …)], in this order
   ...ordered_optionals('_invocation_tail', [
@@ -643,14 +644,6 @@ export default {
     choice($.keyword_running, $.keyword_final),
     $.invocation,
   ),
-
-  // order_by, separator, overflow and limit keep their order; chained to avoid 2^n productions
-  ...ordered_optionals('_agg_tail', [
-    $ => $.order_by,
-    $ => seq(choice($.keyword_separator, ','), alias($._literal_string, $.literal)),
-    $ => $._listagg_overflow,
-    $ => $.limit,
-  ]),
 
   // LISTAGG ... ON OVERFLOW ERROR | TRUNCATE ['indicator'] [WITH | WITHOUT COUNT]
   _listagg_overflow: $ => seq(
