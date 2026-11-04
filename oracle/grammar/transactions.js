@@ -19,7 +19,7 @@ export default {
       ),
     ),
     optional(
-      seq($.statement, optional($.sqlplus_slash)),
+      $.statement,
     ),
   ),
 
