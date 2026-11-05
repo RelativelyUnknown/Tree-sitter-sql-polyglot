@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [A, B, C]
+        variant: [D, E, T]
     steps:
       - uses: actions/checkout@v4
       - uses: tree-sitter/setup-action@v2
@@ -36,8 +36,8 @@ jobs:
         run: python3 .github/experiments/oracle-inline-1/apply.py "${{ matrix.variant }}"
       - name: Generate and measure
         run: |
-          cd oracle && tree-sitter generate grammar.js 2>&1 | tail -15
+          cd oracle && tree-sitter generate grammar.js 2>&1 | tail -4
           g() { grep -m1 "define $1 " src/parser.c | tr -dc 0-9; }
           A=$(grep -o 'ACTIONS([0-9]*)' src/parser.c | sed 's/[^0-9]//g' | sort -n | tail -1)
           S=$(g SYMBOL_COUNT); L=$(g LARGE_STATE_COUNT)
-          echo "RESULT variant=${{ matrix.variant }} max_action=$A states=$(g STATE_COUNT) symbols=$S large=$L cells_M=$(python3 -c "print(round($S*$L/1e6,2))")"
+          echo "RESULT variant=${{ matrix.variant }} max_action=$A states=$(g STATE_COUNT) symbols=$S large=$L cells_M=$(awk -v s=$S -v l=$L "BEGIN{printf \"%.2f\", s*l/1e6}")"
