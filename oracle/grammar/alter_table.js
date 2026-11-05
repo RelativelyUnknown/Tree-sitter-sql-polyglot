@@ -109,7 +109,7 @@ export default {
   ),
 
   modify_column_definition: $ => prec.left(seq(
-    field('name', $._column),
+    $._column,
     optional(field('type', $._type)),
     repeat(choice(
       $._column_constraint,
@@ -162,7 +162,7 @@ export default {
     $.keyword_drop,
     optional($.keyword_column),
     optional($._if_exists),
-    field('name', $.identifier),
+    $.identifier,
     repeat($._drop_column_option),
   ),
 

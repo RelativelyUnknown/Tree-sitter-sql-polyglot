@@ -72,14 +72,14 @@ export default {
       repeat1($.exception_handler),
     )),
     $.keyword_end,
-    optional(field('label', $.identifier)),
+    optional($.identifier),
   ),
 
   // WHEN name [OR name …] THEN statements
   exception_handler: $ => seq(
     $.keyword_when,
-    field('exception_name', choice($.object_reference, $.keyword_others)),
-    repeat(seq($.keyword_or, field('exception_name', choice($.object_reference, $.keyword_others)))),
+    choice($.object_reference, $.keyword_others),
+    repeat(seq($.keyword_or, choice($.object_reference, $.keyword_others))),
     $.keyword_then,
     repeat1($._plsql_stmt),
   ),
@@ -99,7 +99,7 @@ export default {
 
   // name [CONSTANT] type [NOT NULL] [{:= | DEFAULT} expr];
   variable_declaration: $ => seq(
-    field('name', $.identifier),
+    $.identifier,
     optional($.keyword_constant),
     $._plsql_type,
     optional(seq($.keyword_not, $.keyword_null)),
@@ -110,14 +110,14 @@ export default {
   // A type: a SQL type, name%TYPE, name%ROWTYPE
   _plsql_type: $ => choice(
     $._type,
-    seq(field('base', $.object_reference), $.type_attribute),
-    seq(field('base', $.object_reference), $.rowtype_attribute),
+    seq($.object_reference, $.type_attribute),
+    seq($.object_reference, $.rowtype_attribute),
   ),
 
   // TYPE name IS {RECORD (…) | TABLE OF … [INDEX BY …] | VARRAY(n) OF … | REF CURSOR [RETURN …]};
   type_declaration: $ => seq(
     $.keyword_type,
-    field('name', $.identifier),
+    $.identifier,
     $.keyword_is,
     choice(
       seq($.keyword_record, paren_list($.record_field, true)),
@@ -138,7 +138,7 @@ export default {
   ),
 
   record_field: $ => seq(
-    field('name', $.identifier),
+    $.identifier,
     $._plsql_type,
     optional(seq($.keyword_not, $.keyword_null)),
     optional(seq(choice($.keyword_default, ':='), $._expression)),
@@ -147,7 +147,7 @@ export default {
   // SUBTYPE name IS type [RANGE lo .. hi] [NOT NULL];
   subtype_declaration: $ => seq(
     $.keyword_subtype,
-    field('name', $.identifier),
+    $.identifier,
     $.keyword_is,
     $._plsql_type,
     optional(seq($.keyword_range, $._expression, '..', $._expression)),
@@ -158,7 +158,7 @@ export default {
   // CURSOR name [(params)] [RETURN type] [IS select];
   cursor_declaration: $ => seq(
     $.keyword_cursor,
-    field('name', $.identifier),
+    $.identifier,
     optional(paren_list($.cursor_param, true)),
     optional(seq($.keyword_return, $._plsql_type)),
     optional(seq($.keyword_is, $._dml_read)),
@@ -166,7 +166,7 @@ export default {
   ),
 
   cursor_param: $ => seq(
-    field('name', $.identifier),
+    $.identifier,
     optional($.keyword_in),
     field('type', $._plsql_type),
     optional(seq(choice($.keyword_default, ':='), $._expression)),
@@ -174,7 +174,7 @@ export default {
 
   // name EXCEPTION;
   exception_declaration: $ => seq(
-    field('name', $.identifier),
+    $.identifier,
     $.keyword_exception,
     ';',
   ),
@@ -190,7 +190,7 @@ export default {
   // ── Subprograms ────────────────────────────────────────────────────────
 
   plsql_parameter: $ => seq(
-    field('name', $.identifier),
+    $.identifier,
     optional(choice(
       $.keyword_in,
       $.keyword_out,
@@ -204,12 +204,12 @@ export default {
   _subprogram_heading: $ => choice(
     seq(
       $.keyword_procedure,
-      field('name', $.identifier),
+      $.identifier,
       optional(paren_list($.plsql_parameter, true)),
     ),
     seq(
       $.keyword_function,
-      field('name', $.identifier),
+      $.identifier,
       optional(paren_list($.plsql_parameter, true)),
       $.keyword_return,
       choice($._plsql_type, $.keyword_table),
@@ -312,7 +312,7 @@ export default {
     optional($._type_prefix_0),
     $.keyword_function,
     optional($._if_not_exists),
-    field('name', $.object_reference),
+    $.object_reference,
     optional($._unit_signature_0),
     $.keyword_return,
     choice($._plsql_type, $.keyword_table),
@@ -335,7 +335,7 @@ export default {
     optional($._type_prefix_0),
     $.keyword_procedure,
     optional($._if_not_exists),
-    field('name', $.object_reference),
+    $.object_reference,
     optional($._unit_signature_0),
     repeat($._subprogram_property),
     choice($.keyword_is, $.keyword_as),
@@ -370,7 +370,7 @@ export default {
     repeat($._plsql_stmt),
     $.keyword_end,
     $.keyword_loop,
-    optional(field('label', $.identifier)),
+    optional($.identifier),
   ),
 
   loop_statement: $ => seq(
@@ -378,13 +378,13 @@ export default {
     repeat($._plsql_stmt),
     $.keyword_end,
     $.keyword_loop,
-    optional(field('label', $.identifier)),
+    optional($.identifier),
   ),
 
   // CASE [selector] WHEN … THEN … [ELSE …] END CASE [label]
   case_statement: $ => seq(
     $.keyword_case,
-    optional(field('selector', $._expression)),
+    optional($._expression),
     repeat1(seq(
       $.keyword_when,
       comma_list($._case_when_value, true),
@@ -394,7 +394,7 @@ export default {
     optional(seq($.keyword_else, repeat($._plsql_stmt))),
     $.keyword_end,
     $.keyword_case,
-    optional(field('label', $.identifier)),
+    optional($.identifier),
   ),
 
   // a value, or a dangling predicate (< 0, > 100, IS NULL)
@@ -407,13 +407,13 @@ export default {
   // EXIT [label] [WHEN cond] / CONTINUE [label] [WHEN cond]
   exit_statement: $ => seq(
     $.keyword_exit,
-    optional(field('label', $.identifier)),
+    optional($.identifier),
     optional(seq($.keyword_when, field('condition', $._expression))),
   ),
 
   continue_statement: $ => seq(
     $.keyword_continue,
-    optional(field('label', $.identifier)),
+    optional($.identifier),
     optional(seq($.keyword_when, field('condition', $._expression))),
   ),
 
@@ -444,12 +444,12 @@ export default {
     repeat($._plsql_stmt),
     $.keyword_end,
     $.keyword_loop,
-    optional(field('label', $.identifier)),
+    optional($.identifier),
   ),
 
   for_iterand: $ => seq(
-    field('name', $.identifier),
-    optional(seq(',', field('name', $.identifier))),
+    $.identifier,
+    optional(seq(',', $.identifier)),
     optional($.keyword_mutable),
     optional($._plsql_type),
   ),
@@ -459,7 +459,7 @@ export default {
       seq(
         optional($.keyword_reverse),
         field('lower', $._expression), '..', field('upper', $._expression),
-        optional(seq($.keyword_by, field('step', $._expression))),
+        optional(seq($.keyword_by, $._expression)),
       ),
       seq($.keyword_repeat, $._expression),
       seq(
@@ -474,8 +474,8 @@ export default {
       ),
       $._expression,
     ),
-    optional(seq($.keyword_while, field('while', $._expression))),
-    optional(seq($.keyword_when, field('when', $._expression))),
+    optional(seq($.keyword_while, $._expression)),
+    optional(seq($.keyword_when, $._expression)),
   ),
 
 
@@ -486,7 +486,7 @@ export default {
   // OPEN c [(args)] | OPEN cv FOR {select | 'dynamic sql'} [USING …]
   cursor_open_statement: $ => seq(
     $.keyword_open,
-    field('name', $._cursor_target),
+    $._cursor_target,
     choice(
       optional(paren_list(choice($.named_argument, $._expression), true)),
       seq(
@@ -509,7 +509,7 @@ export default {
   // FETCH c INTO a, b | FETCH c BULK COLLECT INTO coll [LIMIT n]
   cursor_fetch_statement: $ => seq(
     $.keyword_fetch,
-    field('name', $._cursor_target),
+    $._cursor_target,
     choice(
       seq($.keyword_into, comma_list($._into_target, true)),
       seq(
@@ -522,7 +522,7 @@ export default {
 
   cursor_close_statement: $ => seq(
     $.keyword_close,
-    field('name', $._cursor_target),
+    $._cursor_target,
   ),
 
   // EXECUTE IMMEDIATE sql [[BULK COLLECT] INTO …] [USING …] [{RETURNING | RETURN} [BULK COLLECT] INTO …]
@@ -557,7 +557,7 @@ export default {
       ),
       seq(
         choice($.keyword_indices, $.keyword_values), $.keyword_of,
-        field('collection', choice($.object_reference, $.invocation)),
+        choice($.object_reference, $.invocation),
         optional(prec.left('between', seq($.keyword_between, $._expression, $.keyword_and, $._expression))),
       ),
     ),
@@ -573,7 +573,7 @@ export default {
 
   // cursor%FOUND, SQL%ROWCOUNT, SQL%BULK_ROWCOUNT(i), SQL%BULK_EXCEPTIONS(i).ERROR_CODE
   cursor_attribute: $ => prec.left(seq(
-    field('cursor', choice(alias($._qualified_field, $.field), $.parameter)),
+    choice(alias($._qualified_field, $.field), $.parameter),
     '%',
     choice(
       $.keyword_found,

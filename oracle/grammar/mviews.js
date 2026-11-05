@@ -45,7 +45,7 @@ export default {
     choice(
       seq(
         $.keyword_on,
-        field('table', $.object_reference),
+        $.object_reference,
         paren_list($._expression, true),
       ),
       seq($.keyword_as, $.create_query),
@@ -76,7 +76,7 @@ export default {
   ),
 
   _oracle_storage_option: $ => seq(
-    field('name', $.identifier),
+    $.identifier,
     field('value', choice($.literal, $.identifier)),
   ),
 

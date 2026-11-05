@@ -119,7 +119,7 @@ export default {
 
   // s[2024], s[ANY, c = 'a'], s[FOR y IN (2024, 2025)], s[FOR y FROM 1 TO 9 INCREMENT 1]
   model_cell: $ => seq(
-    field('name', $.identifier),
+    $.identifier,
     '[',
     comma_list(choice($._expression, $.keyword_any, $.model_for_loop), true),
     ']',

@@ -12,7 +12,7 @@ export default {
     optional(
       seq(
         optional($._if_not_exists),
-        choice(field('column', $._column), $._qualified_index_name),
+        choice($._column, $._qualified_index_name),
       ),
     ),
     $.keyword_on,
@@ -28,7 +28,7 @@ export default {
     optional($.keyword_only),
     $.object_reference,
     optional(field('alias', $.identifier)),
-    optional(seq($.keyword_using, field('index_type', $.identifier))),
+    optional(seq($.keyword_using, $.identifier)),
     $.index_fields,
     // bitmap join index: … FROM t, u WHERE …
     optional(seq(
@@ -42,9 +42,9 @@ export default {
     choice(
       field('expression', wrapped_in_parenthesis($._expression)),
       field('expression', $.binary_expression),
-      field('function', $.invocation),
-      field('column', $._qualified_field),
-      field('column', $._column),
+      $.invocation,
+      $._qualified_field,
+      $._column,
     ),
     optional($._index_field_tail_0),
   ),
@@ -58,7 +58,7 @@ export default {
   ]),
 
   _qualified_index_name: $ => alias(
-    seq(field('schema', $.identifier), '.', field('name', $.identifier)),
+    seq(field('schema', $.identifier), '.', $.identifier),
     $.object_reference,
   ),
 

@@ -13,7 +13,7 @@ export default {
     // Required, unlike Oracle's own optional name: leaving it optional makes
     // `CREATE DATABASE LINK …` ambiguous with this rule at the point where
     // only the LINK keyword distinguishes them.
-    field('name', $.identifier),
+    $.identifier,
     repeat($._oracle_database_clause),
   )),
 
@@ -22,12 +22,12 @@ export default {
       optional($.keyword_national),
       $.keyword_character,
       $.keyword_set,
-      field('charset', $.identifier),
+      $.identifier,
     ),
     seq($.keyword_user, field('user', $.identifier),
-        $.keyword_identified, $.keyword_by, field('password', $._expression)),
+        $.keyword_identified, $.keyword_by, $._expression),
     seq($.keyword_default, optional($.keyword_temporary), $.keyword_tablespace,
-        field('tablespace', $.identifier)),
+        $.identifier),
   ),
 
   // CREATE [OR REPLACE] OPERATOR name
@@ -39,7 +39,7 @@ export default {
     optional($._or_replace),
     $.keyword_operator,
     optional($._if_not_exists),
-    field('name', $.object_reference),
+    $.object_reference,
     comma_list($.operator_binding, true),
   )),
 
@@ -47,9 +47,9 @@ export default {
     $.keyword_binding,
     paren_list($._type, true),
     $.keyword_return,
-    field('return_type', $._type),
+    $._type,
     $.keyword_using,
-    field('implementation', $.object_reference),
+    $.object_reference,
   ),
 
 };

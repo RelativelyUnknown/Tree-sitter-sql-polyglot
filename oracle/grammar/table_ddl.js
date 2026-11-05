@@ -56,7 +56,7 @@ export default {
   // ── Columns ────────────────────────────────────────────────────────────
 
   typeless_column_definition: $ => prec.left(seq(
-    field('name', $._column),
+    $._column,
     repeat1($._typeless_column_property),
   )),
 
@@ -67,7 +67,7 @@ export default {
     ')',
   ),
 
-  _constraint_name: $ => seq($.keyword_constraint, field('name', $.identifier)),
+  _constraint_name: $ => seq($.keyword_constraint, $.identifier),
 
   _column_constraint: $ => prec.left(choice(
     $._column_property,
@@ -193,7 +193,7 @@ export default {
 
   annotation: $ => seq(
     optional(choice($.keyword_add, $.keyword_drop, $.keyword_replace)),
-    field('name', $.identifier),
+    $.identifier,
     optional(field('value', alias($._literal_string, $.literal))),
   ),
 
@@ -215,7 +215,7 @@ export default {
 
   _constraint_literal: $ => seq(
     $.keyword_constraint,
-    field('name', $.identifier),
+    $.identifier,
     choice(
       seq($._primary_key, $.ordered_columns),
       seq($.keyword_unique, $.ordered_columns),

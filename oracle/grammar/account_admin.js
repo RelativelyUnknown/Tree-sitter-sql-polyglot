@@ -90,22 +90,22 @@ export default {
 
   _role_options: $ => choice(
     $._account_option,
-    field('option', $.identifier),
+    $.identifier,
     seq(
       $.keyword_valid,
       $.keyword_until,
-      field('valid_until', alias($._literal_string, $.literal)),
+      alias($._literal_string, $.literal),
     ),
     seq(
       $.keyword_connection,
       $.keyword_limit,
-      field('connection_limit', alias($._integer, $.literal)),
+      alias($._integer, $.literal),
     ),
     seq(
       optional($.keyword_encrypted),
       $.keyword_password,
       choice(
-        field('password', alias($._literal_string, $.literal)),
+        alias($._literal_string, $.literal),
         $.keyword_null,
       ),
     ),
@@ -123,7 +123,7 @@ export default {
         optional(seq($.keyword_in, $.keyword_database, $.identifier)),
         choice(
           seq($.keyword_set, $.set_configuration),
-          seq($.keyword_reset, choice($.keyword_all, field('option', $.identifier))),
+          seq($.keyword_reset, choice($.keyword_all, $.identifier)),
         ),
       ),
     ),

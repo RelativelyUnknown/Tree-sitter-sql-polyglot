@@ -81,7 +81,7 @@ export default {
   release_savepoint_statement: $ => seq(
     $.keyword_release,
     optional($.keyword_savepoint),
-    field('name', $.identifier),
+    $.identifier,
   ),
 
   rollback_to_savepoint_statement: $ => seq(
@@ -95,7 +95,7 @@ export default {
     optional($._transaction_chain),
     $.keyword_to,
     optional($.keyword_savepoint),
-    field('name', $.identifier),
+    $.identifier,
   ),
 
   // PostgreSQL-style full mode list: ISOLATION LEVEL ... READ {WRITE|ONLY} [NOT] DEFERRABLE.

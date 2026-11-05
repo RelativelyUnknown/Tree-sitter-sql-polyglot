@@ -31,7 +31,7 @@ export default {
   collate_expression: $ => prec.left('binary_exp', seq(
     field('expression', $._expression),
     $.keyword_collate,
-    field('collation', $.identifier),
+    $.identifier,
   )),
 
   // (datetime - datetime) DAY [(p)] TO SECOND [(p)] | YEAR [(p)] TO MONTH
@@ -54,7 +54,7 @@ export default {
   remote_reference: $ => seq(
     alias($._qualified_field, $.field),
     '@',
-    field('dblink', alias($._remote_link, $.identifier)),
+    alias($._remote_link, $.identifier),
   ),
 
   // remote[.domain …][@connection_qualifier] as a single token: a rule here costs parse states after every expression
@@ -96,12 +96,12 @@ export default {
     $.keyword_interval,
     $._literal_string,
     optional(seq(
-      field('qualifier', $.identifier),
+      $.identifier,
       optional(paren_list(alias($._natural_number, $.literal), true)),
     )),
     optional(seq(
       $.keyword_to,
-      field('end_qualifier', $.identifier),
+      $.identifier,
       optional(paren_list(alias($._natural_number, $.literal), true)),
     )),
   )),
@@ -126,7 +126,7 @@ export default {
     $.keyword_at,
     choice(
       $.keyword_local,
-      seq($.keyword_time, $.keyword_zone, field('zone', $._expression)),
+      seq($.keyword_time, $.keyword_zone, $._expression),
     ),
   )),
 

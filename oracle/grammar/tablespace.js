@@ -99,7 +99,7 @@ export default {
     optional(choice($.keyword_temporary, $.keyword_undo)),
     $.keyword_tablespace,
     optional($._if_not_exists),
-    field('name', $.identifier),
+    $.identifier,
     repeat(choice(
       $._file_clause,
       $._tablespace_option,
@@ -131,7 +131,7 @@ export default {
     $.keyword_alter,
     $.keyword_tablespace,
     optional($._if_exists),
-    field('name', $.identifier),
+    $.identifier,
     $._alter_tablespace_action,
   ),
 
@@ -168,7 +168,7 @@ export default {
     $.keyword_drop,
     $.keyword_tablespace,
     optional($._if_exists),
-    field('name', $.identifier),
+    $.identifier,
     optional(seq(
       $.keyword_including, $.keyword_contents,
       optional(choice(

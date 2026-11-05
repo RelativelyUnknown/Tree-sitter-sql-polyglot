@@ -46,18 +46,18 @@ const create_rules = {
   table_option: $ => choice(
     seq($.keyword_default, $.keyword_character, $.keyword_set, $.identifier),
     seq($.keyword_collate, $.identifier),
-    field('name', $.keyword_default),
+    $.keyword_default,
     seq(
-      field('name', choice($.identifier, $._literal_string)),
+      choice($.identifier, $._literal_string),
       '=',
       field('value', choice($.identifier, $._literal_string, alias($._integer, $.literal))),
     ),
   ),
 
   _operator_class: $ => seq(
-    field('opclass', $.identifier),
+    $.identifier,
     optional(
-      field('opclass_parameters', wrapped_in_parenthesis(comma_list($.term)))
+      wrapped_in_parenthesis(comma_list($.term))
     )
   ),
 
@@ -107,7 +107,7 @@ const create_rules = {
   )),
 
   _with_settings: $ => seq(
-        field('name', $.identifier),
+        $.identifier,
         optional('='),
         field('value', choice($.identifier, alias($._single_quote_string, $.literal))),
   ),
@@ -138,7 +138,7 @@ const create_rules = {
   ),
 
   enum_elements: $ => seq(
-    paren_list(field('enum_element', alias($._literal_string, $.literal))),
+    paren_list(alias($._literal_string, $.literal)),
   ),
 
 };
@@ -203,7 +203,7 @@ const rename_rules = {
         $.keyword_nowait,
         seq(
           $.keyword_wait,
-          field('timeout', alias($._natural_number, $.literal))
+          alias($._natural_number, $.literal)
         )
       )
     ),
@@ -268,7 +268,7 @@ const insert_rules = {
   // ON CONFLICT (col [, …]) [WHERE predicate] | ON CONSTRAINT name
   conflict_target: $ => choice(
     seq('(', comma_list($._expression), ')', optional($.where)),
-    seq($.keyword_on, $.keyword_constraint, field('name', $.identifier)),
+    seq($.keyword_on, $.keyword_constraint, $.identifier),
   ),
 
   _on_duplicate_key_update: $ => seq(
@@ -399,7 +399,7 @@ const misc_rules = {
       ),
     ),
     wrapped_in_parenthesis(
-      field('index_name', $.identifier),
+      $.identifier,
     ),
   ),
 

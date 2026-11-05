@@ -11,7 +11,7 @@ export default {
 
   // name EXCEPTION;
   package_exception_declaration: $ => seq(
-    field('name', $.identifier),
+    $.identifier,
     $.keyword_exception,
     ';',
   ),
@@ -21,15 +21,15 @@ export default {
     choice(
       seq(
         $.keyword_procedure,
-        field('name', $.identifier),
+        $.identifier,
         optional(paren_list($.function_argument, true)),
       ),
       seq(
         $.keyword_function,
-        field('name', $.identifier),
+        $.identifier,
         optional(paren_list($.function_argument, true)),
         $.keyword_return,
-        field('return_type', $._type),
+        $._type,
       ),
     ),
     ';',
@@ -41,15 +41,15 @@ export default {
     choice(
       seq(
         $.keyword_procedure,
-        field('name', $.identifier),
+        $.identifier,
         optional(paren_list($.function_argument, true)),
       ),
       seq(
         $.keyword_function,
-        field('name', $.identifier),
+        $.identifier,
         optional(paren_list($.function_argument, true)),
         $.keyword_return,
-        field('return_type', $._type),
+        $._type,
       ),
     ),
     choice($.keyword_is, $.keyword_as),

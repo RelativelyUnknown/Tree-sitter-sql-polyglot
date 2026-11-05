@@ -30,7 +30,7 @@ export default {
   //   [FROM source | USING 'manifest.xml'] [options]
   create_pluggable_database: $ => seq(
     $.keyword_create, $.keyword_pluggable, $.keyword_database,
-    field('name', $.identifier),
+    $.identifier,
     optional($._pdb_kind),
     optional($._pdb_admin_user),
     optional($._pdb_source),
@@ -137,7 +137,7 @@ export default {
   // DROP PLUGGABLE DATABASE pdb [KEEP DATAFILES | INCLUDING DATAFILES]
   drop_pluggable_database: $ => seq(
     $.keyword_drop, $.keyword_pluggable, $.keyword_database,
-    field('name', $.identifier),
+    $.identifier,
     optional(seq(choice($.keyword_keep, $.keyword_including), $.keyword_datafiles)),
   ),
 

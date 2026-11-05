@@ -60,7 +60,7 @@ export default {
     $.keyword_drop,
     $.keyword_directory,
     optional($._if_exists),
-    field('name', $.identifier),
+    $.identifier,
   ),
 
   drop_package: $ => seq(
@@ -86,14 +86,14 @@ export default {
   alter_property_graph_statement: $ => seq(
     $.keyword_alter, $.keyword_property, $.keyword_graph,
     optional($._if_exists),
-    field('name', $.object_reference),
+    $.object_reference,
     $.keyword_compile,
   ),
 
   drop_property_graph_statement: $ => seq(
     $.keyword_drop, $.keyword_property, $.keyword_graph,
     optional($._if_exists),
-    field('name', $.object_reference),
+    $.object_reference,
   ),
 
   // ── Iceberg tables ─────────────────────────────────────────────────────
@@ -101,7 +101,7 @@ export default {
   create_iceberg_table_statement: $ => seq(
     $.keyword_create, $.keyword_iceberg, $.keyword_table,
     optional($._if_not_exists),
-    field('name', $.object_reference),
+    $.object_reference,
     paren_list(seq($.identifier, $._type), true),
     optional(seq($.keyword_within, $.keyword_catalog, $.identifier)),
     optional(seq($.keyword_storage, $.keyword_location, choice($.identifier, alias($._literal_string, $.literal)))),
@@ -123,7 +123,7 @@ export default {
   drop_iceberg_table_statement: $ => seq(
     $.keyword_drop, $.keyword_iceberg, $.keyword_table,
     optional($._if_exists),
-    field('name', $.object_reference),
+    $.object_reference,
     optional(seq($.keyword_within, $.keyword_catalog, $.identifier)),
     optional($.keyword_purge),
   ),
@@ -133,7 +133,7 @@ export default {
   create_hybrid_vector_index_statement: $ => seq(
     $.keyword_create, $.keyword_hybrid, $.keyword_vector, $.keyword_index,
     optional($._if_not_exists),
-    field('name', $.object_reference),
+    $.object_reference,
     $.keyword_on,
     $.object_reference,
     paren_list($.identifier, true),

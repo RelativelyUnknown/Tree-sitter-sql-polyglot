@@ -97,7 +97,7 @@ export default {
         $.keyword_year,
         seq(
           $.keyword_year,
-          wrapped_in_parenthesis(field('year_precision', alias($._natural_number, $.literal))),
+          wrapped_in_parenthesis(alias($._natural_number, $.literal)),
         ),
       ),
     ),
@@ -113,7 +113,7 @@ export default {
         $.keyword_day,
         seq(
           $.keyword_day,
-          wrapped_in_parenthesis(field('day_precision', alias($._natural_number, $.literal))),
+          wrapped_in_parenthesis(alias($._natural_number, $.literal)),
         ),
       ),
     ),
@@ -123,7 +123,7 @@ export default {
         $.keyword_second,
         seq(
           $.keyword_second,
-          wrapped_in_parenthesis(field('fractional_precision', alias($._natural_number, $.literal))),
+          wrapped_in_parenthesis(alias($._natural_number, $.literal)),
         ),
       ),
     ),

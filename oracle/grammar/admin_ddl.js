@@ -19,7 +19,7 @@ export default {
     choice(seq($.keyword_create, optional($._or_replace)), $.keyword_drop),
     $.keyword_restore,
     $.keyword_point,
-    field('name', $.identifier),
+    $.identifier,
   ),
 
   // CREATE CLUSTER c (col type [, …]) [option …]
@@ -28,7 +28,7 @@ export default {
   create_cluster_statement: $ => prec.right(seq(
     $.keyword_create,
     $.keyword_cluster,
-    field('name', $.object_reference),
+    $.object_reference,
     $.column_definitions,
     repeat($._cluster_option),
   )),
@@ -38,20 +38,20 @@ export default {
   _cluster_option: $ => choice(
     seq($.keyword_size, field('size', choice($.literal, $.identifier))),
     seq($.keyword_storage, '(', repeat1(choice($.identifier, $.literal)), ')'),
-    seq(field('option', $.identifier), field('value', choice($.literal, $.identifier))),
+    seq($.identifier, field('value', choice($.literal, $.identifier))),
   ),
 
   truncate_cluster_statement: $ => prec.right(seq(
     $.keyword_truncate,
     $.keyword_cluster,
-    field('name', $.object_reference),
+    $.object_reference,
     optional(seq(choice($.keyword_drop, $.keyword_reuse), $.keyword_storage)),
   )),
 
   drop_cluster_statement: $ => prec.right(seq(
     $.keyword_drop,
     $.keyword_cluster,
-    field('name', $.object_reference),
+    $.object_reference,
     optional(seq(
       $.keyword_including,
       $.keyword_tables,
@@ -64,9 +64,9 @@ export default {
   context_statement: $ => prec.right(seq(
     choice(seq($.keyword_create, optional($._or_replace)), $.keyword_drop),
     $.keyword_context,
-    field('name', $.identifier),
+    $.identifier,
     optional(seq($.keyword_using, field('package', $.object_reference))),
-    repeat(field('option', $.identifier)),
+    repeat($.identifier),
   )),
 
   // AUDIT POLICY p [BY u [, …] | EXCEPT u [, …]] [WHENEVER [NOT] SUCCESSFUL]
@@ -74,7 +74,7 @@ export default {
   audit_policy_statement: $ => prec.right(seq(
     choice($.keyword_audit, $.keyword_noaudit),
     $.keyword_policy,
-    field('name', $.identifier),
+    $.identifier,
     optional(seq(
       choice($.keyword_by, $.keyword_except),
       comma_list(field('user', $.identifier), true),
@@ -101,7 +101,7 @@ export default {
   _statistics_association: $ => choice(
     seq($.keyword_default, $.keyword_selectivity, field('selectivity', $.literal)),
     seq($.keyword_default, $.keyword_cost, paren_list($._expression, true)),
-    seq($.keyword_using, field('function', $.object_reference)),
+    seq($.keyword_using, $.object_reference),
   ),
 
   // EXPLAIN PLAN [SET STATEMENT_ID = '…'] [INTO table] FOR <statement>
@@ -110,11 +110,11 @@ export default {
     $.keyword_plan,
     optional(seq(
       $.keyword_set,
-      field('statement_id_key', $.identifier),
+      $.identifier,
       '=',
-      field('statement_id', alias($._literal_string, $.literal)),
+      alias($._literal_string, $.literal),
     )),
-    optional(seq($.keyword_into, field('table', $.object_reference))),
+    optional(seq($.keyword_into, $.object_reference)),
     $.keyword_for,
     $.statement,
   ),
@@ -135,7 +135,7 @@ export default {
 
   role_grant: $ => prec.right(seq(
     field('role', $.identifier),
-    optional(seq($.keyword_identified, $.keyword_by, field('password', $.identifier))),
+    optional(seq($.keyword_identified, $.keyword_by, $.identifier)),
   )),
 
 };

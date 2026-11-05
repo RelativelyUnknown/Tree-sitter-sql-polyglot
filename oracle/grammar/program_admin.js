@@ -34,7 +34,7 @@ export default {
     optional($.keyword_public),
     $.keyword_synonym,
     optional($._if_exists),
-    field('name', $.object_reference),
+    $.object_reference,
     choice($.keyword_compile, $._editionable_clause),
   ),
 
@@ -42,7 +42,7 @@ export default {
     $.keyword_alter,
     $.keyword_package,
     optional($._if_exists),
-    field('name', $.object_reference),
+    $.object_reference,
     choice($.compile_clause, $._editionable_clause),
   ),
 
@@ -50,7 +50,7 @@ export default {
     $.keyword_alter,
     $.keyword_trigger,
     optional($._if_exists),
-    field('name', $.object_reference),
+    $.object_reference,
     choice(
       $.keyword_enable,
       $.keyword_disable,
@@ -73,7 +73,7 @@ export default {
     optional(choice($.keyword_flexible, $.keyword_usecase)),
     $.keyword_domain,
     optional($._if_not_exists),
-    field('name', $.object_reference),
+    $.object_reference,
     $._domain_definition,
     repeat($._domain_option),
   ),
@@ -112,7 +112,7 @@ export default {
     optional($.keyword_usecase),
     $.keyword_domain,
     optional($._if_exists),
-    field('name', $.object_reference),
+    $.object_reference,
     choice(
       seq(choice($.keyword_add, $.keyword_modify), choice(
         seq($.keyword_display, $._expression),
@@ -128,7 +128,7 @@ export default {
     optional($.keyword_usecase),
     $.keyword_domain,
     optional($._if_exists),
-    field('name', $.object_reference),
+    $.object_reference,
     optional(seq($.keyword_force, optional($.keyword_preserve))),
   ),
 

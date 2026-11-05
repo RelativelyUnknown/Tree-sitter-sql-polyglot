@@ -62,7 +62,7 @@ export default {
     $.keyword_log,
     optional($._if_not_exists),
     $.keyword_on,
-    field('table', $.object_reference),
+    $.object_reference,
     repeat(choice(
       $._oracle_physical_attribute,
       $.table_partition_by,
@@ -81,7 +81,7 @@ export default {
     optional($.keyword_force),
     optional($._if_exists),
     $.keyword_on,
-    field('table', $.object_reference),
+    $.object_reference,
     repeat1(choice(
       seq($.keyword_add, comma_list($._mv_log_value, true)),
       $._mv_log_new_values,
@@ -101,7 +101,7 @@ export default {
     $.keyword_log,
     optional($._if_exists),
     $.keyword_on,
-    field('table', $.object_reference),
+    $.object_reference,
   ),
 
   // ── Small additions ────────────────────────────────────────────────────
@@ -144,16 +144,16 @@ export default {
     $.keyword_flashback,
     choice(
       seq($.keyword_table, comma_list($.object_reference, true)),
-      seq($.keyword_database, optional(field('name', $.object_reference))),
+      seq($.keyword_database, optional($.object_reference)),
     ),
     $.keyword_to,
     choice(
-      seq($.keyword_scn, field('scn', $._expression)),
-      seq($.keyword_timestamp, field('timestamp', $._expression)),
+      seq($.keyword_scn, $._expression),
+      seq($.keyword_timestamp, $._expression),
       seq($.keyword_restore, $.keyword_point, field('restore_point', $.identifier)),
       seq(
         $.keyword_before, $.keyword_drop,
-        optional(seq($.keyword_rename, $.keyword_to, field('new_name', $.object_reference))),
+        optional(seq($.keyword_rename, $.keyword_to, $.object_reference)),
       ),
     ),
     optional(seq(choice($.keyword_enable, $.keyword_disable), $.keyword_triggers)),
@@ -162,12 +162,12 @@ export default {
   purge_statement: $ => prec.right(seq(
     $.keyword_purge,
     choice(
-      seq($.keyword_table, field('name', $.object_reference)),
-      seq($.keyword_index, field('name', $.object_reference)),
+      seq($.keyword_table, $.object_reference),
+      seq($.keyword_index, $.object_reference),
       seq(
         $.keyword_tablespace,
         optional($.keyword_set),
-        field('name', $.object_reference),
+        $.object_reference,
         optional(seq($.keyword_user, field('user', $.identifier))),
       ),
       field('scope', $.identifier),

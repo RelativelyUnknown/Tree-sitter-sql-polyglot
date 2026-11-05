@@ -21,19 +21,6 @@
                       "/std:c11",
                       "/utf-8",
                     ],
-                    # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
-                    # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
-                    # A /GL- in cflags does not undo it (the project still carries WholeProgramOptimization), so
-                    # set the project properties: size-optimised, no whole-program optimisation, no link-time codegen.
-                    "msvs_settings": {
-                        "VCCLCompilerTool": {
-                            "Optimization": 1,
-                            "WholeProgramOptimization": "false",
-                        },
-                        "VCLinkerTool": {
-                            "LinkTimeCodeGeneration": 0,
-                        },
-                    },
                 }],
             ],
         },
@@ -58,19 +45,6 @@
                       "/std:c11",
                       "/utf-8",
                     ],
-                    # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
-                    # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
-                    # A /GL- in cflags does not undo it (the project still carries WholeProgramOptimization), so
-                    # set the project properties: size-optimised, no whole-program optimisation, no link-time codegen.
-                    "msvs_settings": {
-                        "VCCLCompilerTool": {
-                            "Optimization": 1,
-                            "WholeProgramOptimization": "false",
-                        },
-                        "VCLinkerTool": {
-                            "LinkTimeCodeGeneration": 0,
-                        },
-                    },
                 }],
             ],
         },
@@ -95,19 +69,6 @@
                       "/std:c11",
                       "/utf-8",
                     ],
-                    # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
-                    # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
-                    # A /GL- in cflags does not undo it (the project still carries WholeProgramOptimization), so
-                    # set the project properties: size-optimised, no whole-program optimisation, no link-time codegen.
-                    "msvs_settings": {
-                        "VCCLCompilerTool": {
-                            "Optimization": 1,
-                            "WholeProgramOptimization": "false",
-                        },
-                        "VCLinkerTool": {
-                            "LinkTimeCodeGeneration": 0,
-                        },
-                    },
                 }],
             ],
         },
@@ -132,19 +93,6 @@
                       "/std:c11",
                       "/utf-8",
                     ],
-                    # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
-                    # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
-                    # A /GL- in cflags does not undo it (the project still carries WholeProgramOptimization), so
-                    # set the project properties: size-optimised, no whole-program optimisation, no link-time codegen.
-                    "msvs_settings": {
-                        "VCCLCompilerTool": {
-                            "Optimization": 1,
-                            "WholeProgramOptimization": "false",
-                        },
-                        "VCLinkerTool": {
-                            "LinkTimeCodeGeneration": 0,
-                        },
-                    },
                 }],
             ],
         },
@@ -169,19 +117,6 @@
                       "/std:c11",
                       "/utf-8",
                     ],
-                    # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
-                    # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
-                    # A /GL- in cflags does not undo it (the project still carries WholeProgramOptimization), so
-                    # set the project properties: size-optimised, no whole-program optimisation, no link-time codegen.
-                    "msvs_settings": {
-                        "VCCLCompilerTool": {
-                            "Optimization": 1,
-                            "WholeProgramOptimization": "false",
-                        },
-                        "VCLinkerTool": {
-                            "LinkTimeCodeGeneration": 0,
-                        },
-                    },
                 }],
             ],
         },
@@ -206,19 +141,6 @@
                       "/std:c11",
                       "/utf-8",
                     ],
-                    # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
-                    # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
-                    # A /GL- in cflags does not undo it (the project still carries WholeProgramOptimization), so
-                    # set the project properties: size-optimised, no whole-program optimisation, no link-time codegen.
-                    "msvs_settings": {
-                        "VCCLCompilerTool": {
-                            "Optimization": 1,
-                            "WholeProgramOptimization": "false",
-                        },
-                        "VCLinkerTool": {
-                            "LinkTimeCodeGeneration": 0,
-                        },
-                    },
                 }],
             ],
         },
@@ -243,19 +165,6 @@
                       "/std:c11",
                       "/utf-8",
                     ],
-                    # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
-                    # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
-                    # A /GL- in cflags does not undo it (the project still carries WholeProgramOptimization), so
-                    # set the project properties: size-optimised, no whole-program optimisation, no link-time codegen.
-                    "msvs_settings": {
-                        "VCCLCompilerTool": {
-                            "Optimization": 1,
-                            "WholeProgramOptimization": "false",
-                        },
-                        "VCLinkerTool": {
-                            "LinkTimeCodeGeneration": 0,
-                        },
-                    },
                 }],
             ],
         },
@@ -280,19 +189,6 @@
                       "/std:c11",
                       "/utf-8",
                     ],
-                    # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
-                    # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
-                    # A /GL- in cflags does not undo it (the project still carries WholeProgramOptimization), so
-                    # set the project properties: size-optimised, no whole-program optimisation, no link-time codegen.
-                    "msvs_settings": {
-                        "VCCLCompilerTool": {
-                            "Optimization": 1,
-                            "WholeProgramOptimization": "false",
-                        },
-                        "VCLinkerTool": {
-                            "LinkTimeCodeGeneration": 0,
-                        },
-                    },
                 }],
             ],
         },
@@ -317,19 +213,6 @@
                       "/std:c11",
                       "/utf-8",
                     ],
-                    # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
-                    # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
-                    # A /GL- in cflags does not undo it (the project still carries WholeProgramOptimization), so
-                    # set the project properties: size-optimised, no whole-program optimisation, no link-time codegen.
-                    "msvs_settings": {
-                        "VCCLCompilerTool": {
-                            "Optimization": 1,
-                            "WholeProgramOptimization": "false",
-                        },
-                        "VCLinkerTool": {
-                            "LinkTimeCodeGeneration": 0,
-                        },
-                    },
                 }],
             ],
         },
@@ -354,19 +237,6 @@
                       "/std:c11",
                       "/utf-8",
                     ],
-                    # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
-                    # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
-                    # A /GL- in cflags does not undo it (the project still carries WholeProgramOptimization), so
-                    # set the project properties: size-optimised, no whole-program optimisation, no link-time codegen.
-                    "msvs_settings": {
-                        "VCCLCompilerTool": {
-                            "Optimization": 1,
-                            "WholeProgramOptimization": "false",
-                        },
-                        "VCLinkerTool": {
-                            "LinkTimeCodeGeneration": 0,
-                        },
-                    },
                 }],
             ],
         },
@@ -391,19 +261,6 @@
                       "/std:c11",
                       "/utf-8",
                     ],
-                    # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
-                    # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
-                    # A /GL- in cflags does not undo it (the project still carries WholeProgramOptimization), so
-                    # set the project properties: size-optimised, no whole-program optimisation, no link-time codegen.
-                    "msvs_settings": {
-                        "VCCLCompilerTool": {
-                            "Optimization": 1,
-                            "WholeProgramOptimization": "false",
-                        },
-                        "VCLinkerTool": {
-                            "LinkTimeCodeGeneration": 0,
-                        },
-                    },
                 }],
             ],
         },
@@ -428,19 +285,6 @@
                       "/std:c11",
                       "/utf-8",
                     ],
-                    # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
-                    # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
-                    # A /GL- in cflags does not undo it (the project still carries WholeProgramOptimization), so
-                    # set the project properties: size-optimised, no whole-program optimisation, no link-time codegen.
-                    "msvs_settings": {
-                        "VCCLCompilerTool": {
-                            "Optimization": 1,
-                            "WholeProgramOptimization": "false",
-                        },
-                        "VCLinkerTool": {
-                            "LinkTimeCodeGeneration": 0,
-                        },
-                    },
                 }],
             ],
         },
@@ -465,19 +309,6 @@
                       "/std:c11",
                       "/utf-8",
                     ],
-                    # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
-                    # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
-                    # A /GL- in cflags does not undo it (the project still carries WholeProgramOptimization), so
-                    # set the project properties: size-optimised, no whole-program optimisation, no link-time codegen.
-                    "msvs_settings": {
-                        "VCCLCompilerTool": {
-                            "Optimization": 1,
-                            "WholeProgramOptimization": "false",
-                        },
-                        "VCLinkerTool": {
-                            "LinkTimeCodeGeneration": 0,
-                        },
-                    },
                 }],
             ],
         },
@@ -502,19 +333,6 @@
                       "/std:c11",
                       "/utf-8",
                     ],
-                    # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
-                    # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
-                    # A /GL- in cflags does not undo it (the project still carries WholeProgramOptimization), so
-                    # set the project properties: size-optimised, no whole-program optimisation, no link-time codegen.
-                    "msvs_settings": {
-                        "VCCLCompilerTool": {
-                            "Optimization": 1,
-                            "WholeProgramOptimization": "false",
-                        },
-                        "VCLinkerTool": {
-                            "LinkTimeCodeGeneration": 0,
-                        },
-                    },
                 }],
             ],
         },
@@ -539,19 +357,6 @@
                       "/std:c11",
                       "/utf-8",
                     ],
-                    # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
-                    # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
-                    # A /GL- in cflags does not undo it (the project still carries WholeProgramOptimization), so
-                    # set the project properties: size-optimised, no whole-program optimisation, no link-time codegen.
-                    "msvs_settings": {
-                        "VCCLCompilerTool": {
-                            "Optimization": 1,
-                            "WholeProgramOptimization": "false",
-                        },
-                        "VCLinkerTool": {
-                            "LinkTimeCodeGeneration": 0,
-                        },
-                    },
                 }],
             ],
         },
@@ -576,19 +381,6 @@
                       "/std:c11",
                       "/utf-8",
                     ],
-                    # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
-                    # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
-                    # A /GL- in cflags does not undo it (the project still carries WholeProgramOptimization), so
-                    # set the project properties: size-optimised, no whole-program optimisation, no link-time codegen.
-                    "msvs_settings": {
-                        "VCCLCompilerTool": {
-                            "Optimization": 1,
-                            "WholeProgramOptimization": "false",
-                        },
-                        "VCLinkerTool": {
-                            "LinkTimeCodeGeneration": 0,
-                        },
-                    },
                 }],
             ],
         },
@@ -613,19 +405,6 @@
                       "/std:c11",
                       "/utf-8",
                     ],
-                    # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
-                    # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
-                    # A /GL- in cflags does not undo it (the project still carries WholeProgramOptimization), so
-                    # set the project properties: size-optimised, no whole-program optimisation, no link-time codegen.
-                    "msvs_settings": {
-                        "VCCLCompilerTool": {
-                            "Optimization": 1,
-                            "WholeProgramOptimization": "false",
-                        },
-                        "VCLinkerTool": {
-                            "LinkTimeCodeGeneration": 0,
-                        },
-                    },
                 }],
             ],
         },
@@ -650,19 +429,6 @@
                       "/std:c11",
                       "/utf-8",
                     ],
-                    # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
-                    # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
-                    # A /GL- in cflags does not undo it (the project still carries WholeProgramOptimization), so
-                    # set the project properties: size-optimised, no whole-program optimisation, no link-time codegen.
-                    "msvs_settings": {
-                        "VCCLCompilerTool": {
-                            "Optimization": 1,
-                            "WholeProgramOptimization": "false",
-                        },
-                        "VCLinkerTool": {
-                            "LinkTimeCodeGeneration": 0,
-                        },
-                    },
                 }],
             ],
         },
@@ -687,19 +453,6 @@
                       "/std:c11",
                       "/utf-8",
                     ],
-                    # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
-                    # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
-                    # A /GL- in cflags does not undo it (the project still carries WholeProgramOptimization), so
-                    # set the project properties: size-optimised, no whole-program optimisation, no link-time codegen.
-                    "msvs_settings": {
-                        "VCCLCompilerTool": {
-                            "Optimization": 1,
-                            "WholeProgramOptimization": "false",
-                        },
-                        "VCLinkerTool": {
-                            "LinkTimeCodeGeneration": 0,
-                        },
-                    },
                 }],
             ],
         },
@@ -724,19 +477,6 @@
                       "/std:c11",
                       "/utf-8",
                     ],
-                    # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
-                    # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
-                    # A /GL- in cflags does not undo it (the project still carries WholeProgramOptimization), so
-                    # set the project properties: size-optimised, no whole-program optimisation, no link-time codegen.
-                    "msvs_settings": {
-                        "VCCLCompilerTool": {
-                            "Optimization": 1,
-                            "WholeProgramOptimization": "false",
-                        },
-                        "VCLinkerTool": {
-                            "LinkTimeCodeGeneration": 0,
-                        },
-                    },
                 }],
             ],
         },
@@ -761,19 +501,6 @@
                       "/std:c11",
                       "/utf-8",
                     ],
-                    # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
-                    # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
-                    # A /GL- in cflags does not undo it (the project still carries WholeProgramOptimization), so
-                    # set the project properties: size-optimised, no whole-program optimisation, no link-time codegen.
-                    "msvs_settings": {
-                        "VCCLCompilerTool": {
-                            "Optimization": 1,
-                            "WholeProgramOptimization": "false",
-                        },
-                        "VCLinkerTool": {
-                            "LinkTimeCodeGeneration": 0,
-                        },
-                    },
                 }],
             ],
         },
@@ -798,19 +525,6 @@
                       "/std:c11",
                       "/utf-8",
                     ],
-                    # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
-                    # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
-                    # A /GL- in cflags does not undo it (the project still carries WholeProgramOptimization), so
-                    # set the project properties: size-optimised, no whole-program optimisation, no link-time codegen.
-                    "msvs_settings": {
-                        "VCCLCompilerTool": {
-                            "Optimization": 1,
-                            "WholeProgramOptimization": "false",
-                        },
-                        "VCLinkerTool": {
-                            "LinkTimeCodeGeneration": 0,
-                        },
-                    },
                 }],
             ],
         },
@@ -835,19 +549,6 @@
                       "/std:c11",
                       "/utf-8",
                     ],
-                    # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
-                    # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
-                    # A /GL- in cflags does not undo it (the project still carries WholeProgramOptimization), so
-                    # set the project properties: size-optimised, no whole-program optimisation, no link-time codegen.
-                    "msvs_settings": {
-                        "VCCLCompilerTool": {
-                            "Optimization": 1,
-                            "WholeProgramOptimization": "false",
-                        },
-                        "VCLinkerTool": {
-                            "LinkTimeCodeGeneration": 0,
-                        },
-                    },
                 }],
             ],
         }

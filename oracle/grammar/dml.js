@@ -258,7 +258,7 @@ export default {
       $.keyword_update,
       $._set_values,
       optional($.where),
-      optional(seq($.keyword_delete, $.keyword_where, field('delete_condition', $._expression))),
+      optional(seq($.keyword_delete, $.keyword_where, $._expression)),
     ),
     // INSERT [(cols)] VALUES (…) [WHERE cond]
     seq(

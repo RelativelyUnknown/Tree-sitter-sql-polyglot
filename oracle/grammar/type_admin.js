@@ -28,7 +28,7 @@ export default {
     optional($._type_prefix_0),
     $.keyword_type,
     optional($._if_not_exists),
-    field('name', $.object_reference),
+    $.object_reference,
     optional($._type_option_0),
     // CREATE TYPE t; declares an incomplete type
     optional($._type_definition),
@@ -94,7 +94,7 @@ export default {
       seq($.keyword_static, $._subprogram_heading),
       seq(
         $.keyword_constructor, $.keyword_function,
-        field('name', $.identifier),
+        $.identifier,
         optional(paren_list($.plsql_parameter, true)),
         $.keyword_return, $.keyword_self, $.keyword_as, $.keyword_result,
       ),
@@ -112,7 +112,7 @@ export default {
     $.keyword_alter,
     $.keyword_type,
     optional($._if_exists),
-    field('name', $.object_reference),
+    $.object_reference,
     choice(
       $.compile_clause,
       $._editionable_clause,

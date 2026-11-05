@@ -244,7 +244,7 @@ export default {
 
   json_table_column: $ => choice(
     // name FOR ORDINALITY
-    seq(field('name', $.identifier), $.keyword_for, $.keyword_ordinality),
+    seq($.identifier, $.keyword_for, $.keyword_ordinality),
     // NESTED [PATH] 'path' COLUMNS (…) | NESTED name[*] COLUMNS (…)
     seq(
       $.keyword_nested, optional($.keyword_path),
@@ -253,7 +253,7 @@ export default {
     ),
     // name [type] [TRUNCATE] [FORMAT JSON] [wrapper] [quotes] [EXISTS] [PATH 'p'] [on-clauses]
     seq(
-      field('name', $.identifier),
+      $.identifier,
       optional($._type),
       repeat(choice(
         $.keyword_truncate,

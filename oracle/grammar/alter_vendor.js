@@ -52,7 +52,7 @@ export default {
   alter_column: $ => seq(
     $.keyword_alter,
     optional($.keyword_column),
-    field('name', $.identifier),
+    $.identifier,
     choice(
       seq(
         choice($.keyword_set, $.keyword_drop),
@@ -85,7 +85,7 @@ export default {
       $.keyword_column,
     ),
     optional($._if_exists),
-    field('old_name', $.identifier),
+    $.identifier,
     $.column_definition,
     optional($.column_position),
   ),
@@ -94,7 +94,7 @@ export default {
     $.keyword_first,
     seq(
       $.keyword_after,
-      field('col_name', $.identifier),
+      $.identifier,
     ),
   ),
 
@@ -103,9 +103,9 @@ export default {
     optional(
       $.keyword_column,
     ),
-    field('old_name', $.identifier),
+    $.identifier,
     $.keyword_to,
-    field('new_name', $.identifier),
+    $.identifier,
   ),
 
   alter_schema: $ => seq(
@@ -132,7 +132,7 @@ export default {
         $.keyword_reset,
         choice(
           $.keyword_all,
-          field('configuration_parameter', $.identifier)
+          $.identifier
         ),
       ),
       seq(
@@ -146,7 +146,7 @@ export default {
     ),
 
   set_configuration: $ => seq(
-    field('option', $.identifier),
+    $.identifier,
     choice(
       seq($.keyword_from, $.keyword_current),
       seq(

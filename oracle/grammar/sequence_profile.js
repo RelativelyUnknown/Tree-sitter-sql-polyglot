@@ -41,7 +41,7 @@ export default {
 
   _sequence_option: $ => choice(
     seq($.keyword_as, $._type),
-    seq($.keyword_increment, optional($.keyword_by), field('increment', alias($._integer, $.literal))),
+    seq($.keyword_increment, optional($.keyword_by), alias($._integer, $.literal)),
     seq($.keyword_minvalue, choice($.literal, seq($.keyword_no, $.keyword_minvalue))),
     seq($.keyword_no, $.keyword_minvalue),
     $.keyword_nominvalue,
@@ -49,7 +49,7 @@ export default {
     seq($.keyword_no, $.keyword_maxvalue),
     $.keyword_nomaxvalue,
     seq($.keyword_start, optional($.keyword_with), field('start', alias($._integer, $.literal))),
-    seq($.keyword_cache, field('cache', alias($._integer, $.literal))),
+    seq($.keyword_cache, alias($._integer, $.literal)),
     $.keyword_nocache,
     seq(optional($.keyword_no), $.keyword_cycle),
     $.keyword_nocycle,
@@ -87,8 +87,8 @@ export default {
     choice(
       repeat1(choice(
         $._sequence_option,
-        seq($.keyword_restart, optional(seq($.keyword_start, $.keyword_with, field('restart', alias($._integer, $.literal))))),
-        seq($.keyword_restart, optional($.keyword_with), field('restart', alias($._integer, $.literal))),
+        seq($.keyword_restart, optional(seq($.keyword_start, $.keyword_with, alias($._integer, $.literal)))),
+        seq($.keyword_restart, optional($.keyword_with), alias($._integer, $.literal)),
       )),
       $.rename_object,
       $.change_ownership,
@@ -136,21 +136,21 @@ export default {
     $.keyword_create,
     optional($.keyword_mandatory),
     $.keyword_profile,
-    field('name', $.identifier),
+    $.identifier,
     $._profile_body,
   ),
 
   alter_profile: $ => seq(
     $.keyword_alter,
     $.keyword_profile,
-    field('name', $.identifier),
+    $.identifier,
     $._profile_body,
   ),
 
   drop_profile: $ => seq(
     $.keyword_drop,
     $.keyword_profile,
-    field('name', $.identifier),
+    $.identifier,
     optional($.keyword_cascade),
   ),
 

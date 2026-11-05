@@ -134,16 +134,16 @@ export default {
     prec.left('between', seq(
       $.keyword_versions, $.keyword_between,
       optional(choice($.keyword_scn, $.keyword_timestamp)),
-      field('low', choice($.keyword_minvalue, $._expression)),
+      choice($.keyword_minvalue, $._expression),
       $.keyword_and,
-      field('high', choice($.keyword_maxvalue, $._expression)),
+      choice($.keyword_maxvalue, $._expression),
     )),
     prec.left('between', seq(
       $.keyword_versions, $.keyword_period, $.keyword_for, $.identifier,
       $.keyword_between,
-      field('low', $._expression),
+      $._expression,
       $.keyword_and,
-      field('high', $._expression),
+      $._expression,
     )),
   ),
 

@@ -359,7 +359,7 @@ export default canonicalOrder(grammar(base, {
     ),
 
     xmltable_column: $ => seq(
-      field('name', $.identifier),
+      $.identifier,
       choice(
         seq($.keyword_for, $.keyword_ordinality),
         seq(

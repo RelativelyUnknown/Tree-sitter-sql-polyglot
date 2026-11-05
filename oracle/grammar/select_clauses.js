@@ -90,7 +90,7 @@ export default {
   _start_with: $ => seq(
     $.keyword_start,
     $.keyword_with,
-    field('start_condition', $._expression),
+    $._expression,
   ),
 
   _connect_by: $ => seq(
@@ -122,7 +122,7 @@ export default {
 
   // name ANALYTIC VIEW AS (USING av …)
   analytic_view_cte: $ => seq(
-    field('name', $.identifier),
+    $.identifier,
     $.keyword_analytic, $.keyword_view, $.keyword_as,
     wrapped_in_parenthesis($.analytic_view_subquery),
   ),
@@ -156,8 +156,8 @@ export default {
 
   // name [(cols)] AS [[NOT] MATERIALIZED] (query | VALUES …) [SEARCH …] [CYCLE …]
   cte: $ => seq(
-    field('name', $.identifier),
-    optional(paren_list(field('argument', $.identifier))),
+    $.identifier,
+    optional(paren_list($.identifier)),
     $.keyword_as,
     optional(seq(optional($.keyword_not), $.keyword_materialized)),
     wrapped_in_parenthesis(
@@ -182,7 +182,7 @@ export default {
       optional(seq($.keyword_nulls, choice($.keyword_first, $.keyword_last))),
     ), true),
     $.keyword_set,
-    field('ordering_column', $.identifier),
+    $.identifier,
   ),
 
   // CYCLE col [, …] SET cycle_mark_column TO mark_value DEFAULT no_cycle_value
@@ -190,7 +190,7 @@ export default {
     $.keyword_cycle,
     comma_list($.identifier, true),
     $.keyword_set,
-    field('mark_column', $.identifier),
+    $.identifier,
     $.keyword_to,
     $._expression,
     $.keyword_default,

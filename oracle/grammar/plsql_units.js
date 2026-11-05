@@ -31,19 +31,19 @@ export default {
 
   alter_function_statement: $ => seq(
     $.keyword_alter, $.keyword_function, optional($._if_exists),
-    field('name', $.object_reference),
+    $.object_reference,
     choice($.compile_clause, $._editionable_clause),
   ),
 
   alter_procedure_statement: $ => seq(
     $.keyword_alter, $.keyword_procedure, optional($._if_exists),
-    field('name', $.object_reference),
+    $.object_reference,
     choice($.compile_clause, $._editionable_clause),
   ),
 
   drop_trigger_statement: $ => seq(
     $.keyword_drop, $.keyword_trigger, optional($._if_exists),
-    field('name', $.object_reference),
+    $.object_reference,
   ),
 
   // ── Synonyms and directories ───────────────────────────────────────────
@@ -76,10 +76,10 @@ export default {
     optional($._or_replace),
     $.keyword_directory,
     optional($._if_not_exists),
-    field('name', $.identifier),
+    $.identifier,
     optional($.sharing_clause),
     $.keyword_as,
-    field('path', alias($._literal_string, $.literal)),
+    alias($._literal_string, $.literal),
   ),
 
   // ── Packages ───────────────────────────────────────────────────────────
@@ -101,7 +101,7 @@ export default {
     $.keyword_package,
     optional($._editionable_clause),
     optional($._if_not_exists),
-    field('name', $.object_reference),
+    $.object_reference,
     repeat($._package_property),
     choice($.keyword_is, $.keyword_as),
     repeat($._package_spec_item),
@@ -116,7 +116,7 @@ export default {
     $.keyword_package,
     $.keyword_body,
     optional($._if_not_exists),
-    field('name', $.object_reference),
+    $.object_reference,
     choice($.keyword_is, $.keyword_as),
     repeat($._package_body_item),
     $.keyword_end,
@@ -131,7 +131,7 @@ export default {
     $.keyword_type,
     $.keyword_body,
     optional($._if_not_exists),
-    field('name', $.object_reference),
+    $.object_reference,
     choice($.keyword_is, $.keyword_as),
     repeat1($._type_body_element),
     $.keyword_end,
@@ -145,7 +145,7 @@ export default {
     ),
     seq(
       $.keyword_constructor, $.keyword_function,
-      field('name', $.identifier),
+      $.identifier,
       optional(paren_list($.plsql_parameter, true)),
       $.keyword_return, $.keyword_self, $.keyword_as, $.keyword_result,
       choice($.keyword_is, $.keyword_as),
@@ -164,7 +164,7 @@ export default {
     optional($._editionable_clause),
     $.keyword_trigger,
     optional($._if_not_exists),
-    field('name', $.object_reference),
+    $.object_reference,
     optional($.sharing_clause),
     optional(seq($.keyword_default, $.keyword_collation, $.identifier)),
     choice(

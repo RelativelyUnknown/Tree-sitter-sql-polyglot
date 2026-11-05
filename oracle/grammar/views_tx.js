@@ -119,7 +119,7 @@ export default {
 
   // [CONSTRAINT name] {UNIQUE | PRIMARY KEY | FOREIGN KEY} (cols) [REFERENCES …] [state …]
   view_constraint: $ => seq(
-    optional(seq($.keyword_constraint, field('name', $.identifier))),
+    optional(seq($.keyword_constraint, $.identifier)),
     choice(
       seq($._primary_key, $.ordered_columns),
       seq($.keyword_unique, $.ordered_columns),
@@ -184,7 +184,7 @@ export default {
     $.keyword_index,
     optional($.keyword_concurrently),
     optional($._if_exists),
-    field('name', $.object_reference),
+    $.object_reference,
     repeat(choice(
       $._drop_behavior,
       $.keyword_online,
