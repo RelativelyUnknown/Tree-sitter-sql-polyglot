@@ -41,6 +41,7 @@ import oracle_select_clause_rules from './grammar/select_clauses.js';
 import oracle_xml_rules from './grammar/xml_functions.js';
 import oracle_graph_table_rules from './grammar/graph_table.js';
 import oracle_multiset_rules from './grammar/multiset.js';
+import oracle_pluggable_rules from './grammar/pluggable_db.js';
 import dialect_transaction_rules from './grammar/transactions.js';
 import dialect_alter_rules from './grammar/alter_vendor.js';
 import dialect_legacy_rules from './grammar/legacy_statements.js';
@@ -725,6 +726,7 @@ export default canonicalOrder(grammar(base, {
     ...oracle_xml_rules,
     ...oracle_graph_table_rules,
     ...oracle_multiset_rules,
+    ...oracle_pluggable_rules,
     ...oracle_plsql_rules,
     ...oracle_bulk_rules,
     ...oracle_merge_rules,
