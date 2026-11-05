@@ -14,12 +14,27 @@ export default {
     $.keyword_exclusive,
   ),
 
-  // CREATE [OR REPLACE] RESTORE POINT name  |  DROP RESTORE POINT name
-  restore_point_statement: $ => seq(
-    choice(seq($.keyword_create, optional($._or_replace)), $.keyword_drop),
-    $.keyword_restore,
-    $.keyword_point,
-    $.identifier,
+  // CREATE [CLEAN] RESTORE POINT name [FOR PLUGGABLE DATABASE pdb] [AS OF {SCN | TIMESTAMP} expr]
+  //   [PRESERVE | GUARANTEE FLASHBACK DATABASE]
+  // DROP RESTORE POINT name [FOR PLUGGABLE DATABASE pdb]
+  restore_point_statement: $ => choice(
+    seq(
+      $.keyword_create,
+      optional($.keyword_clean),
+      $.keyword_restore,
+      $.keyword_point,
+      $.identifier,
+      optional(seq($.keyword_for, $.keyword_pluggable, $.keyword_database, $.identifier)),
+      optional(seq($.keyword_as, $.keyword_of, choice($.keyword_scn, $.keyword_timestamp), $._expression)),
+      optional(choice($.keyword_preserve, seq($.keyword_guarantee, $.keyword_flashback, $.keyword_database))),
+    ),
+    seq(
+      $.keyword_drop,
+      $.keyword_restore,
+      $.keyword_point,
+      $.identifier,
+      optional(seq($.keyword_for, $.keyword_pluggable, $.keyword_database, $.identifier)),
+    ),
   ),
 
   // CREATE CLUSTER c (col type [, …]) [option …]

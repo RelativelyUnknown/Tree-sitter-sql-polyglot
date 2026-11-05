@@ -155,6 +155,7 @@
   (keyword_query)
   (keyword_rebuild)
   (keyword_restore)
+  (keyword_clean)
   (keyword_returning)
   (keyword_reuse)
   (keyword_rewrite)

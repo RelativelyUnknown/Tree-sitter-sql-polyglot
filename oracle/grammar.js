@@ -792,6 +792,8 @@ export default canonicalOrder(grammar(base, {
     keyword_flashback:    _ => token(prec(1, make_keyword("flashback"))),
     keyword_restore:      _ => token(prec(1, make_keyword("restore"))),
     keyword_point:        _ => token(prec(1, make_keyword("point"))),
+    // Same precedence as keyword_cleanup, so that longest match still wins for CLEANUP.
+    keyword_clean:        _ => token(prec(1, make_keyword("clean"))),
     keyword_cluster:      _ => token(prec(1, make_keyword("cluster"))),
     keyword_size:         _ => token(prec(1, make_keyword("size"))),
     keyword_storage:      _ => token(prec(1, make_keyword("storage"))),
