@@ -20,6 +20,11 @@
                     "cflags_c": [
                       "/std:c11",
                       "/utf-8",
+                      # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
+                      # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
+                      # Later flags win, so these restore a size-optimised build without /GL.
+                      "/O1",
+                      "/GL-",
                     ],
                 }],
             ],
@@ -44,6 +49,11 @@
                     "cflags_c": [
                       "/std:c11",
                       "/utf-8",
+                      # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
+                      # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
+                      # Later flags win, so these restore a size-optimised build without /GL.
+                      "/O1",
+                      "/GL-",
                     ],
                 }],
             ],
@@ -68,6 +78,11 @@
                     "cflags_c": [
                       "/std:c11",
                       "/utf-8",
+                      # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
+                      # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
+                      # Later flags win, so these restore a size-optimised build without /GL.
+                      "/O1",
+                      "/GL-",
                     ],
                 }],
             ],
@@ -92,6 +107,11 @@
                     "cflags_c": [
                       "/std:c11",
                       "/utf-8",
+                      # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
+                      # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
+                      # Later flags win, so these restore a size-optimised build without /GL.
+                      "/O1",
+                      "/GL-",
                     ],
                 }],
             ],
@@ -116,6 +136,11 @@
                     "cflags_c": [
                       "/std:c11",
                       "/utf-8",
+                      # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
+                      # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
+                      # Later flags win, so these restore a size-optimised build without /GL.
+                      "/O1",
+                      "/GL-",
                     ],
                 }],
             ],
@@ -140,6 +165,11 @@
                     "cflags_c": [
                       "/std:c11",
                       "/utf-8",
+                      # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
+                      # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
+                      # Later flags win, so these restore a size-optimised build without /GL.
+                      "/O1",
+                      "/GL-",
                     ],
                 }],
             ],
@@ -164,6 +194,11 @@
                     "cflags_c": [
                       "/std:c11",
                       "/utf-8",
+                      # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
+                      # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
+                      # Later flags win, so these restore a size-optimised build without /GL.
+                      "/O1",
+                      "/GL-",
                     ],
                 }],
             ],
@@ -188,6 +223,11 @@
                     "cflags_c": [
                       "/std:c11",
                       "/utf-8",
+                      # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
+                      # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
+                      # Later flags win, so these restore a size-optimised build without /GL.
+                      "/O1",
+                      "/GL-",
                     ],
                 }],
             ],
@@ -212,6 +252,11 @@
                     "cflags_c": [
                       "/std:c11",
                       "/utf-8",
+                      # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
+                      # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
+                      # Later flags win, so these restore a size-optimised build without /GL.
+                      "/O1",
+                      "/GL-",
                     ],
                 }],
             ],
@@ -236,6 +281,11 @@
                     "cflags_c": [
                       "/std:c11",
                       "/utf-8",
+                      # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
+                      # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
+                      # Later flags win, so these restore a size-optimised build without /GL.
+                      "/O1",
+                      "/GL-",
                     ],
                 }],
             ],
@@ -260,6 +310,11 @@
                     "cflags_c": [
                       "/std:c11",
                       "/utf-8",
+                      # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
+                      # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
+                      # Later flags win, so these restore a size-optimised build without /GL.
+                      "/O1",
+                      "/GL-",
                     ],
                 }],
             ],
@@ -284,6 +339,11 @@
                     "cflags_c": [
                       "/std:c11",
                       "/utf-8",
+                      # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
+                      # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
+                      # Later flags win, so these restore a size-optimised build without /GL.
+                      "/O1",
+                      "/GL-",
                     ],
                 }],
             ],
@@ -308,6 +368,11 @@
                     "cflags_c": [
                       "/std:c11",
                       "/utf-8",
+                      # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
+                      # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
+                      # Later flags win, so these restore a size-optimised build without /GL.
+                      "/O1",
+                      "/GL-",
                     ],
                 }],
             ],
@@ -332,6 +397,11 @@
                     "cflags_c": [
                       "/std:c11",
                       "/utf-8",
+                      # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
+                      # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
+                      # Later flags win, so these restore a size-optimised build without /GL.
+                      "/O1",
+                      "/GL-",
                     ],
                 }],
             ],
@@ -356,6 +426,11 @@
                     "cflags_c": [
                       "/std:c11",
                       "/utf-8",
+                      # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
+                      # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
+                      # Later flags win, so these restore a size-optimised build without /GL.
+                      "/O1",
+                      "/GL-",
                     ],
                 }],
             ],
@@ -380,6 +455,11 @@
                     "cflags_c": [
                       "/std:c11",
                       "/utf-8",
+                      # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
+                      # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
+                      # Later flags win, so these restore a size-optimised build without /GL.
+                      "/O1",
+                      "/GL-",
                     ],
                 }],
             ],
@@ -404,6 +484,11 @@
                     "cflags_c": [
                       "/std:c11",
                       "/utf-8",
+                      # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
+                      # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
+                      # Later flags win, so these restore a size-optimised build without /GL.
+                      "/O1",
+                      "/GL-",
                     ],
                 }],
             ],
@@ -428,6 +513,11 @@
                     "cflags_c": [
                       "/std:c11",
                       "/utf-8",
+                      # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
+                      # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
+                      # Later flags win, so these restore a size-optimised build without /GL.
+                      "/O1",
+                      "/GL-",
                     ],
                 }],
             ],
@@ -452,6 +542,11 @@
                     "cflags_c": [
                       "/std:c11",
                       "/utf-8",
+                      # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
+                      # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
+                      # Later flags win, so these restore a size-optimised build without /GL.
+                      "/O1",
+                      "/GL-",
                     ],
                 }],
             ],
@@ -476,6 +571,11 @@
                     "cflags_c": [
                       "/std:c11",
                       "/utf-8",
+                      # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
+                      # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
+                      # Later flags win, so these restore a size-optimised build without /GL.
+                      "/O1",
+                      "/GL-",
                     ],
                 }],
             ],
@@ -500,6 +600,11 @@
                     "cflags_c": [
                       "/std:c11",
                       "/utf-8",
+                      # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
+                      # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
+                      # Later flags win, so these restore a size-optimised build without /GL.
+                      "/O1",
+                      "/GL-",
                     ],
                 }],
             ],
@@ -524,6 +629,11 @@
                     "cflags_c": [
                       "/std:c11",
                       "/utf-8",
+                      # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
+                      # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
+                      # Later flags win, so these restore a size-optimised build without /GL.
+                      "/O1",
+                      "/GL-",
                     ],
                 }],
             ],
@@ -548,6 +658,11 @@
                     "cflags_c": [
                       "/std:c11",
                       "/utf-8",
+                      # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
+                      # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
+                      # Later flags win, so these restore a size-optimised build without /GL.
+                      "/O1",
+                      "/GL-",
                     ],
                 }],
             ],
