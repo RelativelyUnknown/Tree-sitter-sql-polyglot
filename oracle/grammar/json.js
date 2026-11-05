@@ -206,8 +206,8 @@ export default {
   // expr IS [NOT] JSON [OBJECT | ARRAY | SCALAR] [STRICT | LAX]
   is_json_condition: $ => prec.left('binary_is', seq(
     field('left', $._expression),
-    $.keyword_is,
-    optional($.keyword_not),
+    // IS and IS NOT as alternatives, like is_a_set_condition: a separate NOT lost to the binary IS NOT operator
+    choice($.keyword_is, $.is_not),
     $.keyword_json,
     optional(choice($.keyword_object, $.keyword_array, $.keyword_scalar)),
     optional(choice($.keyword_strict, $.keyword_lax)),
