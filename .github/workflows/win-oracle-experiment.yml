@@ -1,0 +1,48 @@
+name: Windows Oracle addon experiment
+# Throwaway: builds only the Oracle node addon on Windows in several configurations. Delete after use.
+on:
+  push:
+    branches: ["ccr-7b871ec0-wgknnh"]
+    paths: [".github/experiments/win-oracle-1/**"]
+
+jobs:
+  variant:
+    name: win oracle (${{ matrix.variant }})
+    runs-on: windows-2025
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [current, x64env, noopt, clangcl]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: ilammy/msvc-dev-cmd@v1
+        if: matrix.variant == 'x64env'
+        with:
+          arch: x64
+      - run: node scripts/inflate-parsers.js oracle
+      - run: npm ci --ignore-scripts
+      - name: Apply variant
+        run: |
+          case "${{ matrix.variant }}" in
+            noopt) sed -i 's/"Optimization": 1,/"Optimization": 0,/' binding.gyp ;;
+          esac
+          grep -c '"Optimization"' binding.gyp
+      - name: Configure and build the Oracle addon only
+        env:
+          PreferredToolArchitecture: x64
+        run: |
+          EXTRA=""
+          if [ "${{ matrix.variant }}" = clangcl ]; then EXTRA="--msvs_toolset=ClangCL"; fi
+          npx node-gyp configure $EXTRA
+          P="build/tree_sitter_sql_oracle_binding.vcxproj"
+          ls "$P"
+          START=$(date +%s)
+          "C:/Program Files/Microsoft Visual Studio/18/Enterprise/MSBuild/Current/Bin/MSBuild.exe" "$P" -p:Configuration=Release -p:Platform=x64 -v:minimal -m:1 2>&1 | grep -vE "warning C6|warning C4" | tail -15
+          echo "RESULT variant=${{ matrix.variant }} exit=${PIPESTATUS[0]} seconds=$(( $(date +%s) - START ))"
