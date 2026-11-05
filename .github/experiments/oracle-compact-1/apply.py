@@ -4,6 +4,15 @@ variant = sys.argv[1]
 shadow = []
 KEEP = ['alias','condition','custom_type','database','end','end_name','escape','expression','index','kind','left','lower','mode','name','operand','operation','operator','package','parameter','precision','predicate','restore_point','right','role','scale','schema','scope','selectivity','size','sql','start','subscript','target','type','upper','user','value']
 only_oracle = False
+if variant == "oracle_all":
+    only_oracle = True
+    shadow.append("const field = (n, r) => r;")
+if variant == "oracle_name":
+    only_oracle = True
+    shadow.append("const field = (n, r) => n === 'name' ? r : globalThis.field(n, r);")
+if variant == "oracle_keepq":
+    only_oracle = True
+    shadow.append("const field = (n, r) => ['alias','value'].includes(n) ? globalThis.field(n, r) : r;")
 if variant == "unused_oracle":
     only_oracle = True
     shadow.append("const field = (n, r) => (%s).includes(n) ? globalThis.field(n, r) : r;" % repr(KEEP))
