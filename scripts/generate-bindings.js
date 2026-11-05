@@ -329,12 +329,20 @@ NODE_API_MODULE(tree_sitter_sql_${d.ident}_binding, Init)
                     "cflags_c": [
                       "/std:c11",
                       "/utf-8",
-                      # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
-                      # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
-                      # Later flags win, so these restore a size-optimised build without /GL.
-                      "/O1",
-                      "/GL-",
                     ],
+                    # node-gyp's Release default (/O2 with whole-program optimisation /GL) runs the MSVC compiler
+                    # out of heap space (C1060) on the largest generated parsers (Oracle: over a million lines).
+                    # A /GL- in cflags does not undo it (the project still carries WholeProgramOptimization), so
+                    # set the project properties: size-optimised, no whole-program optimisation, no link-time codegen.
+                    "msvs_settings": {
+                        "VCCLCompilerTool": {
+                            "Optimization": 1,
+                            "WholeProgramOptimization": "false",
+                        },
+                        "VCLinkerTool": {
+                            "LinkTimeCodeGeneration": 0,
+                        },
+                    },
                 }],
             ],`;
 
