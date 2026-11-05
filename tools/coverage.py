@@ -75,7 +75,7 @@ editLink: false
 
 TS_BIN = os.environ.get(
     "TREE_SITTER_BIN",
-    "npx --yes --package=tree-sitter-cli@v0.26.3 -- tree-sitter",
+    "npx --yes --package=tree-sitter-cli@v0.27.1 -- tree-sitter",
 )
 
 

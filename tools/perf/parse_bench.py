@@ -62,7 +62,7 @@ PROBES_FILE = ROOT / "tools" / "coverage-probes.yml"
 
 CLI = os.environ.get(
     "TREE_SITTER_BIN",
-    "npx --yes --package=tree-sitter-cli@v0.26.3 -- tree-sitter",
+    "npx --yes --package=tree-sitter-cli@v0.27.1 -- tree-sitter",
 )
 
 # Same list, same order as tools/perf/glr_scan.py and scripts/generate-all.js.
