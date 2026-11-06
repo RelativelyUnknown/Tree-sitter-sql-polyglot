@@ -1,0 +1,3408 @@
+================================================================================
+Oracle UPDATE: column list expressions
+================================================================================
+
+UPDATE t SET (c, d) = (1, DEFAULT) WHERE id = 2;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (update
+      (keyword_update)
+      (relation
+        (object_reference
+          (identifier)))
+      (keyword_set)
+      (assignment
+        (field
+          (identifier))
+        (field
+          (identifier))
+        (list)
+        (list
+          (literal))
+        (list
+          (keyword_default))
+        (list))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (literal))))))
+
+================================================================================
+Oracle UPDATE: column list subquery
+================================================================================
+
+UPDATE t a SET (c, d) = (SELECT AVG(c), AVG(d) FROM u b WHERE a.id = b.id) WHERE a.k = 1;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (update
+      (keyword_update)
+      (relation
+        (object_reference
+          (identifier))
+        (identifier))
+      (keyword_set)
+      (assignment
+        (field
+          (identifier))
+        (field
+          (identifier))
+        (subquery
+          (select
+            (keyword_select)
+            (select_expression
+              (term
+                (invocation
+                  (object_reference
+                    (identifier))
+                  (term
+                    (field
+                      (identifier)))))
+              (term
+                (invocation
+                  (object_reference
+                    (identifier))
+                  (term
+                    (field
+                      (identifier)))))))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                (identifier))
+              (identifier))
+            (where
+              (keyword_where)
+              (binary_expression
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier))
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier)))))))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (literal))))))
+
+================================================================================
+Oracle UPDATE: dblink
+================================================================================
+
+UPDATE t@remote SET c = c * 1.1 WHERE d = 'x';
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (update
+      (keyword_update)
+      (relation
+        (object_reference
+          (identifier)
+          (dblink_name
+            (identifier))))
+      (keyword_set)
+      (assignment
+        (field
+          (identifier))
+        (binary_expression
+          (field
+            (identifier))
+          (literal)))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (literal))))))
+
+================================================================================
+Oracle UPDATE: from clause
+================================================================================
+
+UPDATE t SET t.c = u.c FROM u WHERE u.id = t.id;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (update
+      (keyword_update)
+      (relation
+        (object_reference
+          (identifier)))
+      (keyword_set)
+      (assignment
+        (field
+          (object_reference
+            (identifier))
+          (identifier))
+        (field
+          (object_reference
+            (identifier))
+          (identifier)))
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))))
+
+================================================================================
+Oracle UPDATE: from join
+================================================================================
+
+UPDATE t SET t.c = u.c FROM u JOIN v ON u.id = v.id WHERE u.id = t.id;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (update
+      (keyword_update)
+      (relation
+        (object_reference
+          (identifier)))
+      (keyword_set)
+      (assignment
+        (field
+          (object_reference
+            (identifier))
+          (identifier))
+        (field
+          (object_reference
+            (identifier))
+          (identifier)))
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (join
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier)))
+        (keyword_on)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (field
+            (object_reference
+              (identifier))
+            (identifier))))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))))
+
+================================================================================
+Oracle UPDATE: log errors
+================================================================================
+
+UPDATE t SET c = c + 1 LOG ERRORS INTO errlog ('upd') REJECT LIMIT UNLIMITED;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (update
+      (keyword_update)
+      (relation
+        (object_reference
+          (identifier)))
+      (keyword_set)
+      (assignment
+        (field
+          (identifier))
+        (binary_expression
+          (field
+            (identifier))
+          (literal)))
+      (log_errors_clause
+        (keyword_log)
+        (keyword_errors)
+        (keyword_into)
+        (object_reference
+          (identifier))
+        (literal)
+        (keyword_reject)
+        (keyword_limit)
+        (keyword_unlimited)))))
+
+================================================================================
+Oracle UPDATE: mixed set
+================================================================================
+
+UPDATE t SET c = 1, (d, e) = (SELECT d, e FROM u WHERE u.id = 1) WHERE id = 2;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (update
+      (keyword_update)
+      (relation
+        (object_reference
+          (identifier)))
+      (keyword_set)
+      (assignment
+        (field
+          (identifier))
+        (literal))
+      (assignment
+        (field
+          (identifier))
+        (field
+          (identifier))
+        (subquery
+          (select
+            (keyword_select)
+            (select_expression
+              (term
+                (field
+                  (identifier)))
+              (term
+                (field
+                  (identifier)))))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                (identifier)))
+            (where
+              (keyword_where)
+              (binary_expression
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier))
+                (literal))))))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (literal))))))
+
+================================================================================
+Oracle UPDATE: nowait
+================================================================================
+
+UPDATE t SET c = 1 WHERE id = 2 NOWAIT;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (update
+      (keyword_update)
+      (relation
+        (object_reference
+          (identifier)))
+      (keyword_set)
+      (assignment
+        (field
+          (identifier))
+        (literal))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (literal)))
+      (keyword_nowait))))
+
+================================================================================
+Oracle UPDATE: only
+================================================================================
+
+UPDATE ONLY (v) SET c = 1;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (update
+      (keyword_update)
+      (relation
+        (keyword_only)
+        (object_reference
+          (identifier)))
+      (keyword_set)
+      (assignment
+        (field
+          (identifier))
+        (literal)))))
+
+================================================================================
+Oracle UPDATE: order by
+================================================================================
+
+UPDATE t SET c = c + 1 WHERE d > 0 ORDER BY id;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (update
+      (keyword_update)
+      (relation
+        (object_reference
+          (identifier)))
+      (keyword_set)
+      (assignment
+        (field
+          (identifier))
+        (binary_expression
+          (field
+            (identifier))
+          (literal)))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (literal)))
+      (order_by
+        (keyword_order)
+        (keyword_by)
+        (order_target
+          (field
+            (identifier)))))))
+
+================================================================================
+Oracle UPDATE: partition
+================================================================================
+
+UPDATE t PARTITION (p1) x SET x.c = 1 WHERE d > 10;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (update
+      (keyword_update)
+      (relation
+        (object_reference
+          (identifier))
+        (partition_extension
+          (keyword_partition)
+          (identifier))
+        (identifier))
+      (keyword_set)
+      (assignment
+        (field
+          (object_reference
+            (identifier))
+          (identifier))
+        (literal))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (literal))))))
+
+================================================================================
+Oracle UPDATE: partition for
+================================================================================
+
+UPDATE t PARTITION FOR (100) SET c = 1;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (update
+      (keyword_update)
+      (relation
+        (object_reference
+          (identifier))
+        (partition_extension
+          (keyword_partition)
+          (keyword_for)
+          (literal)))
+      (keyword_set)
+      (assignment
+        (field
+          (identifier))
+        (literal)))))
+
+================================================================================
+Oracle UPDATE: return into
+================================================================================
+
+UPDATE t SET c = 1 WHERE id = 2 RETURN c INTO :b1;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (update
+      (keyword_update)
+      (relation
+        (object_reference
+          (identifier)))
+      (keyword_set)
+      (assignment
+        (field
+          (identifier))
+        (literal))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (literal)))
+      (returning_into_clause
+        (keyword_return)
+        (field
+          (identifier))
+        (keyword_into)
+        (parameter)))))
+
+================================================================================
+Oracle UPDATE: returning aggregate
+================================================================================
+
+UPDATE t SET c = c * 1.1 WHERE d = 100 RETURNING SUM(c) INTO :b1;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (update
+      (keyword_update)
+      (relation
+        (object_reference
+          (identifier)))
+      (keyword_set)
+      (assignment
+        (field
+          (identifier))
+        (binary_expression
+          (field
+            (identifier))
+          (literal)))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (literal)))
+      (returning_into_clause
+        (keyword_returning)
+        (invocation
+          (object_reference
+            (identifier))
+          (term
+            (field
+              (identifier))))
+        (keyword_into)
+        (parameter)))))
+
+================================================================================
+Oracle UPDATE: returning into
+================================================================================
+
+UPDATE t SET c = c + 1 WHERE id = 2 RETURNING c * 2, d INTO :b1, :b2;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (update
+      (keyword_update)
+      (relation
+        (object_reference
+          (identifier)))
+      (keyword_set)
+      (assignment
+        (field
+          (identifier))
+        (binary_expression
+          (field
+            (identifier))
+          (literal)))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (literal)))
+      (returning_into_clause
+        (keyword_returning)
+        (binary_expression
+          (field
+            (identifier))
+          (literal))
+        (field
+          (identifier))
+        (keyword_into)
+        (parameter)
+        (parameter)))))
+
+================================================================================
+Oracle UPDATE: returning old new
+================================================================================
+
+UPDATE t SET c = c + 1 WHERE id = 2 RETURNING OLD c, NEW c INTO :b1, :b2;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (update
+      (keyword_update)
+      (relation
+        (object_reference
+          (identifier)))
+      (keyword_set)
+      (assignment
+        (field
+          (identifier))
+        (binary_expression
+          (field
+            (identifier))
+          (literal)))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (literal)))
+      (returning_into_clause
+        (keyword_returning)
+        (keyword_old)
+        (field
+          (identifier))
+        (keyword_new)
+        (field
+          (identifier))
+        (keyword_into)
+        (parameter)
+        (parameter)))))
+
+================================================================================
+Oracle UPDATE: set value
+================================================================================
+
+UPDATE t p SET VALUE(p) = (SELECT VALUE(q) FROM u q WHERE p.id = q.id) WHERE p.id = 10;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (update
+      (keyword_update)
+      (relation
+        (object_reference
+          (identifier))
+        (identifier))
+      (keyword_set)
+      (assignment
+        (keyword_value)
+        (identifier)
+        (subquery
+          (select
+            (keyword_select)
+            (select_expression
+              (term
+                (invocation
+                  (object_reference
+                    (identifier))
+                  (term
+                    (field
+                      (identifier)))))))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                (identifier))
+              (identifier))
+            (where
+              (keyword_where)
+              (binary_expression
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier))
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier)))))))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (literal))))))
+
+================================================================================
+Oracle UPDATE: subquery target check option
+================================================================================
+
+UPDATE (SELECT c, d FROM t WHERE d > 0 WITH CHECK OPTION) SET c = 1;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (update
+      (keyword_update)
+      (relation
+        (restricted_subquery
+          (select
+            (keyword_select)
+            (select_expression
+              (term
+                (field
+                  (identifier)))
+              (term
+                (field
+                  (identifier)))))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                (identifier)))
+            (where
+              (keyword_where)
+              (binary_expression
+                (field
+                  (identifier))
+                (literal))))
+          (keyword_with)
+          (keyword_check)
+          (keyword_option)))
+      (keyword_set)
+      (assignment
+        (field
+          (identifier))
+        (literal)))))
+
+================================================================================
+Oracle UPDATE: table collection
+================================================================================
+
+UPDATE TABLE(SELECT h.people FROM h WHERE h.id = 1) p SET p.salary = p.salary + 100;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (update
+      (keyword_update)
+      (relation
+        (table_collection
+          (keyword_table)
+          (select
+            (keyword_select)
+            (select_expression
+              (term
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier)))))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                (identifier)))
+            (where
+              (keyword_where)
+              (binary_expression
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier))
+                (literal)))))
+        (identifier))
+      (keyword_set)
+      (assignment
+        (field
+          (object_reference
+            (identifier))
+          (identifier))
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (literal))))))
+
+================================================================================
+Oracle UPDATE: using clause
+================================================================================
+
+UPDATE t SET t.c = u.c USING u WHERE u.id = t.id;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (update
+      (keyword_update)
+      (relation
+        (object_reference
+          (identifier)))
+      (keyword_set)
+      (assignment
+        (field
+          (object_reference
+            (identifier))
+          (identifier))
+        (field
+          (object_reference
+            (identifier))
+          (identifier)))
+      (keyword_using)
+      (relation
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))))
+
+================================================================================
+Oracle UPDATE: wait seconds
+================================================================================
+
+UPDATE t SET c = 1 WHERE id = 2 WAIT 10 SECONDS;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (update
+      (keyword_update)
+      (relation
+        (object_reference
+          (identifier)))
+      (keyword_set)
+      (assignment
+        (field
+          (identifier))
+        (literal))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (literal)))
+      (keyword_wait)
+      (literal)
+      (keyword_seconds))))
+
+================================================================================
+Oracle INSERT: by name
+================================================================================
+
+INSERT INTO t BY NAME SELECT a AS c, b AS d FROM u;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert
+      (keyword_insert)
+      (keyword_into)
+      (relation
+        (object_reference
+          (identifier)))
+      (keyword_by)
+      (keyword_name)
+      (select
+        (keyword_select)
+        (select_expression
+          (term
+            (field
+              (identifier))
+            (keyword_as)
+            (identifier))
+          (term
+            (field
+              (identifier))
+            (keyword_as)
+            (identifier))))
+      (from
+        (keyword_from)
+        (relation
+          (object_reference
+            (identifier)))))))
+
+================================================================================
+Oracle INSERT: by position
+================================================================================
+
+INSERT INTO t BY POSITION SELECT a, b FROM u;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert
+      (keyword_insert)
+      (keyword_into)
+      (relation
+        (object_reference
+          (identifier)))
+      (keyword_by)
+      (keyword_position)
+      (select
+        (keyword_select)
+        (select_expression
+          (term
+            (field
+              (identifier)))
+          (term
+            (field
+              (identifier)))))
+      (from
+        (keyword_from)
+        (relation
+          (object_reference
+            (identifier)))))))
+
+================================================================================
+Oracle INSERT: dblink
+================================================================================
+
+INSERT INTO t@remote VALUES (1, 'a');
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert
+      (keyword_insert)
+      (keyword_into)
+      (relation
+        (object_reference
+          (identifier)
+          (dblink_name
+            (identifier))))
+      (keyword_values)
+      (list)
+      (list
+        (literal))
+      (list
+        (literal))
+      (list))))
+
+================================================================================
+Oracle INSERT: into subquery
+================================================================================
+
+INSERT INTO (SELECT c, d FROM t) VALUES (1, 'a');
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert
+      (keyword_insert)
+      (keyword_into)
+      (relation
+        (subquery
+          (select
+            (keyword_select)
+            (select_expression
+              (term
+                (field
+                  (identifier)))
+              (term
+                (field
+                  (identifier)))))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                (identifier))))))
+      (keyword_values)
+      (list)
+      (list
+        (literal))
+      (list
+        (literal))
+      (list))))
+
+================================================================================
+Oracle INSERT: into subquery check option
+================================================================================
+
+INSERT INTO (SELECT c, d FROM t WHERE c < 10 WITH CHECK OPTION) VALUES (1, 'a');
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert
+      (keyword_insert)
+      (keyword_into)
+      (relation
+        (restricted_subquery
+          (select
+            (keyword_select)
+            (select_expression
+              (term
+                (field
+                  (identifier)))
+              (term
+                (field
+                  (identifier)))))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                (identifier)))
+            (where
+              (keyword_where)
+              (binary_expression
+                (field
+                  (identifier))
+                (literal))))
+          (keyword_with)
+          (keyword_check)
+          (keyword_option)))
+      (keyword_values)
+      (list)
+      (list
+        (literal))
+      (list
+        (literal))
+      (list))))
+
+================================================================================
+Oracle INSERT: into table collection
+================================================================================
+
+INSERT INTO TABLE(SELECT h.people FROM h WHERE h.id = 1) VALUES ('Smith', 10);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert
+      (keyword_insert)
+      (keyword_into)
+      (relation
+        (table_collection
+          (keyword_table)
+          (select
+            (keyword_select)
+            (select_expression
+              (term
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier)))))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                (identifier)))
+            (where
+              (keyword_where)
+              (binary_expression
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier))
+                (literal))))))
+      (keyword_values)
+      (list)
+      (list
+        (literal))
+      (list
+        (literal))
+      (list))))
+
+================================================================================
+Oracle INSERT: log errors
+================================================================================
+
+INSERT INTO t SELECT c, d FROM u LOG ERRORS;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert
+      (keyword_insert)
+      (keyword_into)
+      (relation
+        (object_reference
+          (identifier)))
+      (select
+        (keyword_select)
+        (select_expression
+          (term
+            (field
+              (identifier)))
+          (term
+            (field
+              (identifier)))))
+      (from
+        (keyword_from)
+        (relation
+          (object_reference
+            (identifier))))
+      (log_errors_clause
+        (keyword_log)
+        (keyword_errors)))))
+
+================================================================================
+Oracle INSERT: log errors full
+================================================================================
+
+INSERT INTO t SELECT c, d FROM u LOG ERRORS INTO s.errlog ('tag') REJECT LIMIT 10;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert
+      (keyword_insert)
+      (keyword_into)
+      (relation
+        (object_reference
+          (identifier)))
+      (select
+        (keyword_select)
+        (select_expression
+          (term
+            (field
+              (identifier)))
+          (term
+            (field
+              (identifier)))))
+      (from
+        (keyword_from)
+        (relation
+          (object_reference
+            (identifier))))
+      (log_errors_clause
+        (keyword_log)
+        (keyword_errors)
+        (keyword_into)
+        (object_reference
+          (identifier)
+          (identifier))
+        (literal)
+        (keyword_reject)
+        (keyword_limit)
+        (literal)))))
+
+================================================================================
+Oracle INSERT: log errors unlimited
+================================================================================
+
+INSERT INTO t VALUES (1, 'a') LOG ERRORS INTO errlog REJECT LIMIT UNLIMITED;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert
+      (keyword_insert)
+      (keyword_into)
+      (relation
+        (object_reference
+          (identifier)))
+      (keyword_values)
+      (list)
+      (list
+        (literal))
+      (list
+        (literal))
+      (list)
+      (log_errors_clause
+        (keyword_log)
+        (keyword_errors)
+        (keyword_into)
+        (object_reference
+          (identifier))
+        (keyword_reject)
+        (keyword_limit)
+        (keyword_unlimited)))))
+
+================================================================================
+Oracle INSERT: nowait
+================================================================================
+
+INSERT INTO t VALUES (1, 'a') NOWAIT;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert
+      (keyword_insert)
+      (keyword_into)
+      (relation
+        (object_reference
+          (identifier)))
+      (keyword_values)
+      (list)
+      (list
+        (literal))
+      (list
+        (literal))
+      (list)
+      (keyword_nowait))))
+
+================================================================================
+Oracle INSERT: partition
+================================================================================
+
+INSERT INTO t PARTITION (p1) VALUES (1, 'a');
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert
+      (keyword_insert)
+      (keyword_into)
+      (relation
+        (object_reference
+          (identifier))
+        (partition_extension
+          (keyword_partition)
+          (identifier)))
+      (keyword_values)
+      (list)
+      (list
+        (literal))
+      (list
+        (literal))
+      (list))))
+
+================================================================================
+Oracle INSERT: partition for
+================================================================================
+
+INSERT INTO t PARTITION FOR (100) (c, d) VALUES (100, 'a');
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert
+      (keyword_insert)
+      (keyword_into)
+      (relation
+        (object_reference
+          (identifier))
+        (partition_extension
+          (keyword_partition)
+          (keyword_for)
+          (literal)))
+      (list)
+      (column
+        (identifier))
+      (list
+        (column
+          (identifier)))
+      (list)
+      (keyword_values)
+      (list)
+      (list
+        (literal))
+      (list
+        (literal))
+      (list))))
+
+================================================================================
+Oracle INSERT: return into
+================================================================================
+
+INSERT INTO t (c, d) VALUES (1, 'a') RETURN c INTO :b1;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert
+      (keyword_insert)
+      (keyword_into)
+      (relation
+        (object_reference
+          (identifier)))
+      (list)
+      (column
+        (identifier))
+      (list
+        (column
+          (identifier)))
+      (list)
+      (keyword_values)
+      (list)
+      (list
+        (literal))
+      (list
+        (literal))
+      (list)
+      (returning_into_clause
+        (keyword_return)
+        (field
+          (identifier))
+        (keyword_into)
+        (parameter)))))
+
+================================================================================
+Oracle INSERT: returning into
+================================================================================
+
+INSERT INTO t (c, d) VALUES (1, 'a') RETURNING c * 2, d INTO :b1, :b2;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert
+      (keyword_insert)
+      (keyword_into)
+      (relation
+        (object_reference
+          (identifier)))
+      (list)
+      (column
+        (identifier))
+      (list
+        (column
+          (identifier)))
+      (list)
+      (keyword_values)
+      (list)
+      (list
+        (literal))
+      (list
+        (literal))
+      (list)
+      (returning_into_clause
+        (keyword_returning)
+        (binary_expression
+          (field
+            (identifier))
+          (literal))
+        (field
+          (identifier))
+        (keyword_into)
+        (parameter)
+        (parameter)))))
+
+================================================================================
+Oracle INSERT: returning new
+================================================================================
+
+INSERT INTO t (c, d) VALUES (1, 'a') RETURNING NEW c, NEW d INTO :b1, :b2;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert
+      (keyword_insert)
+      (keyword_into)
+      (relation
+        (object_reference
+          (identifier)))
+      (list)
+      (column
+        (identifier))
+      (list
+        (column
+          (identifier)))
+      (list)
+      (keyword_values)
+      (list)
+      (list
+        (literal))
+      (list
+        (literal))
+      (list)
+      (returning_into_clause
+        (keyword_returning)
+        (keyword_new)
+        (field
+          (identifier))
+        (keyword_new)
+        (field
+          (identifier))
+        (keyword_into)
+        (parameter)
+        (parameter)))))
+
+================================================================================
+Oracle INSERT: schema alias
+================================================================================
+
+INSERT INTO s.t x (x.c, x.d) VALUES (1, 'a');
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert
+      (keyword_insert)
+      (keyword_into)
+      (relation
+        (object_reference
+          (identifier)
+          (identifier))
+        (identifier))
+      (list)
+      (field)
+      (field
+        (identifier))
+      (list
+        (field)
+        (field
+          (identifier)))
+      (list)
+      (keyword_values)
+      (list)
+      (list
+        (literal))
+      (list
+        (literal))
+      (list))))
+
+================================================================================
+Oracle INSERT: set clause multi row
+================================================================================
+
+INSERT INTO t SET (c = 1, d = 'a'), (c = 2, d = 'b');
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert
+      (keyword_insert)
+      (keyword_into)
+      (relation
+        (object_reference
+          (identifier)))
+      (keyword_set)
+      (assignment
+        (field
+          (identifier))
+        (literal))
+      (assignment
+        (field
+          (identifier))
+        (literal))
+      (assignment
+        (field
+          (identifier))
+        (literal))
+      (assignment
+        (field
+          (identifier))
+        (literal)))))
+
+================================================================================
+Oracle INSERT: set clause parenthesized
+================================================================================
+
+INSERT INTO t SET (c = 1, d = 'a');
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert
+      (keyword_insert)
+      (keyword_into)
+      (relation
+        (object_reference
+          (identifier)))
+      (keyword_set)
+      (assignment
+        (field
+          (identifier))
+        (literal))
+      (assignment
+        (field
+          (identifier))
+        (literal)))))
+
+================================================================================
+Oracle INSERT: subpartition
+================================================================================
+
+INSERT INTO t SUBPARTITION (sp1) VALUES (1, 'a');
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert
+      (keyword_insert)
+      (keyword_into)
+      (relation
+        (object_reference
+          (identifier))
+        (partition_extension
+          (keyword_subpartition)
+          (identifier)))
+      (keyword_values)
+      (list)
+      (list
+        (literal))
+      (list
+        (literal))
+      (list))))
+
+================================================================================
+Oracle INSERT: wait
+================================================================================
+
+INSERT INTO t VALUES (1, 'a') WAIT 10;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (insert
+      (keyword_insert)
+      (keyword_into)
+      (relation
+        (object_reference
+          (identifier)))
+      (keyword_values)
+      (list)
+      (list
+        (literal))
+      (list
+        (literal))
+      (list)
+      (keyword_wait)
+      (literal))))
+
+================================================================================
+Oracle DELETE: alias
+================================================================================
+
+DELETE FROM s.t x WHERE x.c = 1;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (delete
+      (keyword_delete))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)
+          (identifier))
+        (identifier))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (literal))))))
+
+================================================================================
+Oracle DELETE: dblink
+================================================================================
+
+DELETE FROM s.t@remote WHERE c > 3000;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (delete
+      (keyword_delete))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)
+          (identifier)
+          (dblink_name
+            (identifier))))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (literal))))))
+
+================================================================================
+Oracle DELETE: from clause
+================================================================================
+
+DELETE FROM t FROM u WHERE t.id = u.id;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (delete
+      (keyword_delete))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))))
+
+================================================================================
+Oracle DELETE: from join
+================================================================================
+
+DELETE FROM t x FROM u JOIN v ON u.id = v.id WHERE x.id = u.id;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (delete
+      (keyword_delete))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (identifier))
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (join
+        (keyword_join)
+        (relation
+          (object_reference
+            (identifier)))
+        (keyword_on)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (field
+            (object_reference
+              (identifier))
+            (identifier))))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))))
+
+================================================================================
+Oracle DELETE: log errors
+================================================================================
+
+DELETE FROM t WHERE c = 1 LOG ERRORS INTO errlog REJECT LIMIT 10;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (delete
+      (keyword_delete))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (literal)))
+      (log_errors_clause
+        (keyword_log)
+        (keyword_errors)
+        (keyword_into)
+        (object_reference
+          (identifier))
+        (keyword_reject)
+        (keyword_limit)
+        (literal)))))
+
+================================================================================
+Oracle DELETE: nowait
+================================================================================
+
+DELETE FROM t WHERE c = 1 NOWAIT;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (delete
+      (keyword_delete))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (literal)))
+      (keyword_nowait))))
+
+================================================================================
+Oracle DELETE: only
+================================================================================
+
+DELETE FROM ONLY (v) WHERE c = 1;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (delete
+      (keyword_delete))
+    (from
+      (keyword_from)
+      (relation
+        (keyword_only)
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (literal))))))
+
+================================================================================
+Oracle DELETE: partition
+================================================================================
+
+DELETE FROM t PARTITION (p1) WHERE c > 1000;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (delete
+      (keyword_delete))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (partition_extension
+          (keyword_partition)
+          (identifier)))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (literal))))))
+
+================================================================================
+Oracle DELETE: returning into
+================================================================================
+
+DELETE FROM t WHERE c = 1 RETURNING d INTO :b1;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (delete
+      (keyword_delete))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (literal)))
+      (returning_into_clause
+        (keyword_returning)
+        (field
+          (identifier))
+        (keyword_into)
+        (parameter)))))
+
+================================================================================
+Oracle DELETE: returning old
+================================================================================
+
+DELETE FROM t WHERE c = 1 RETURNING OLD d INTO :b1;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (delete
+      (keyword_delete))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (literal)))
+      (returning_into_clause
+        (keyword_returning)
+        (keyword_old)
+        (field
+          (identifier))
+        (keyword_into)
+        (parameter)))))
+
+================================================================================
+Oracle DELETE: subpartition for
+================================================================================
+
+DELETE FROM t SUBPARTITION FOR (100, 'A');
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (delete
+      (keyword_delete))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))
+        (partition_extension
+          (keyword_subpartition)
+          (keyword_for)
+          (literal)
+          (literal))))))
+
+================================================================================
+Oracle DELETE: subquery target
+================================================================================
+
+DELETE FROM (SELECT * FROM t) WHERE c = 1;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (delete
+      (keyword_delete))
+    (from
+      (keyword_from)
+      (relation
+        (subquery
+          (select
+            (keyword_select)
+            (select_expression
+              (term
+                (all_fields))))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                (identifier))))))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (literal))))))
+
+================================================================================
+Oracle DELETE: subquery target no from
+================================================================================
+
+DELETE (SELECT * FROM t WHERE d > 0) WHERE c = 1;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (delete
+      (keyword_delete))
+    (from
+      (relation
+        (subquery
+          (select
+            (keyword_select)
+            (select_expression
+              (term
+                (all_fields))))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                (identifier)))
+            (where
+              (keyword_where)
+              (binary_expression
+                (field
+                  (identifier))
+                (literal))))))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (literal))))))
+
+================================================================================
+Oracle DELETE: table collection
+================================================================================
+
+DELETE TABLE(SELECT h.people FROM h WHERE h.id = 1) p WHERE p.salary > 1000;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (delete
+      (keyword_delete))
+    (from
+      (relation
+        (table_collection
+          (keyword_table)
+          (select
+            (keyword_select)
+            (select_expression
+              (term
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier)))))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                (identifier)))
+            (where
+              (keyword_where)
+              (binary_expression
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier))
+                (literal)))))
+        (identifier))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (literal))))))
+
+================================================================================
+Oracle DELETE: tuple in subquery
+================================================================================
+
+DELETE t x WHERE (x.c, x.d) IN (SELECT c, MAX(d) FROM t GROUP BY c);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (delete
+      (keyword_delete))
+    (from
+      (relation
+        (object_reference
+          (identifier))
+        (identifier))
+      (where
+        (keyword_where)
+        (binary_expression
+          (list
+            (field
+              (object_reference
+                (identifier))
+              (identifier))
+            (field
+              (object_reference
+                (identifier))
+              (identifier)))
+          (keyword_in)
+          (subquery
+            (select
+              (keyword_select)
+              (select_expression
+                (term
+                  (field
+                    (identifier)))
+                (term
+                  (invocation
+                    (object_reference
+                      (identifier))
+                    (term
+                      (field
+                        (identifier)))))))
+            (from
+              (keyword_from)
+              (relation
+                (object_reference
+                  (identifier)))
+              (group_by
+                (keyword_group)
+                (keyword_by)
+                (field
+                  (identifier))))))))))
+
+================================================================================
+Oracle DELETE: using clause
+================================================================================
+
+DELETE FROM t USING u WHERE t.id = u.id;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (delete
+      (keyword_delete))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (keyword_using)
+      (relation
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (field
+            (object_reference
+              (identifier))
+            (identifier)))))))
+
+================================================================================
+Oracle DELETE: wait
+================================================================================
+
+DELETE FROM t WHERE c = 1 WAIT 10;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (delete
+      (keyword_delete))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (literal)))
+      (keyword_wait)
+      (literal))))
+
+================================================================================
+Oracle DELETE: without from
+================================================================================
+
+DELETE t WHERE c = 1;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (delete
+      (keyword_delete))
+    (from
+      (relation
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (identifier))
+          (literal))))))
+
+================================================================================
+Oracle MERGE: insert set
+================================================================================
+
+MERGE INTO t USING u ON (t.id = u.id) WHEN NOT MATCHED THEN INSERT SET id = u.id, c = u.c;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (keyword_merge)
+    (keyword_into)
+    (relation
+      (object_reference
+        (identifier)))
+    (keyword_using)
+    (relation
+      (object_reference
+        (identifier)))
+    (keyword_on)
+    (parenthesized_expression
+      (binary_expression
+        (field
+          (object_reference
+            (identifier))
+          (identifier))
+        (field
+          (object_reference
+            (identifier))
+          (identifier))))
+    (when_clause
+      (keyword_when)
+      (keyword_not)
+      (keyword_matched)
+      (keyword_then)
+      (keyword_insert)
+      (keyword_set)
+      (assignment
+        (field
+          (identifier))
+        (field
+          (object_reference
+            (identifier))
+          (identifier)))
+      (assignment
+        (field
+          (identifier))
+        (field
+          (object_reference
+            (identifier))
+          (identifier))))))
+
+================================================================================
+Oracle MERGE: insert where
+================================================================================
+
+MERGE INTO t USING u ON (t.id = u.id) WHEN NOT MATCHED THEN INSERT (t.id, t.c) VALUES (u.id, u.c) WHERE (u.c <= 8000);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (keyword_merge)
+    (keyword_into)
+    (relation
+      (object_reference
+        (identifier)))
+    (keyword_using)
+    (relation
+      (object_reference
+        (identifier)))
+    (keyword_on)
+    (parenthesized_expression
+      (binary_expression
+        (field
+          (object_reference
+            (identifier))
+          (identifier))
+        (field
+          (object_reference
+            (identifier))
+          (identifier))))
+    (when_clause
+      (keyword_when)
+      (keyword_not)
+      (keyword_matched)
+      (keyword_then)
+      (keyword_insert)
+      (list)
+      (field)
+      (field
+        (identifier))
+      (list
+        (field)
+        (field
+          (identifier)))
+      (list)
+      (keyword_values)
+      (list)
+      (list
+        (field
+          (object_reference
+            (identifier))
+          (identifier)))
+      (list
+        (field
+          (object_reference
+            (identifier))
+          (identifier)))
+      (list)
+      (where
+        (keyword_where)
+        (parenthesized_expression
+          (binary_expression
+            (field
+              (object_reference
+                (identifier))
+              (identifier))
+            (literal)))))))
+
+================================================================================
+Oracle MERGE: log errors
+================================================================================
+
+MERGE INTO t USING u ON (t.id = u.id) WHEN MATCHED THEN UPDATE SET t.c = u.c LOG ERRORS INTO errlog ('m') REJECT LIMIT UNLIMITED;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (keyword_merge)
+    (keyword_into)
+    (relation
+      (object_reference
+        (identifier)))
+    (keyword_using)
+    (relation
+      (object_reference
+        (identifier)))
+    (keyword_on)
+    (parenthesized_expression
+      (binary_expression
+        (field
+          (object_reference
+            (identifier))
+          (identifier))
+        (field
+          (object_reference
+            (identifier))
+          (identifier))))
+    (when_clause
+      (keyword_when)
+      (keyword_matched)
+      (keyword_then)
+      (keyword_update)
+      (keyword_set)
+      (assignment
+        (field
+          (object_reference
+            (identifier))
+          (identifier))
+        (field
+          (object_reference
+            (identifier))
+          (identifier))))
+    (log_errors_clause
+      (keyword_log)
+      (keyword_errors)
+      (keyword_into)
+      (object_reference
+        (identifier))
+      (literal)
+      (keyword_reject)
+      (keyword_limit)
+      (keyword_unlimited))))
+
+================================================================================
+Oracle MERGE: nowait
+================================================================================
+
+MERGE INTO t USING u ON (t.id = u.id) WHEN MATCHED THEN UPDATE SET t.c = u.c NOWAIT;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (keyword_merge)
+    (keyword_into)
+    (relation
+      (object_reference
+        (identifier)))
+    (keyword_using)
+    (relation
+      (object_reference
+        (identifier)))
+    (keyword_on)
+    (parenthesized_expression
+      (binary_expression
+        (field
+          (object_reference
+            (identifier))
+          (identifier))
+        (field
+          (object_reference
+            (identifier))
+          (identifier))))
+    (when_clause
+      (keyword_when)
+      (keyword_matched)
+      (keyword_then)
+      (keyword_update)
+      (keyword_set)
+      (assignment
+        (field
+          (object_reference
+            (identifier))
+          (identifier))
+        (field
+          (object_reference
+            (identifier))
+          (identifier))))
+    (keyword_nowait)))
+
+================================================================================
+Oracle MERGE: returning into
+================================================================================
+
+MERGE INTO t USING u ON (t.id = u.id) WHEN MATCHED THEN UPDATE SET t.c = u.c RETURNING NEW t.c INTO :b1;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (keyword_merge)
+    (keyword_into)
+    (relation
+      (object_reference
+        (identifier)))
+    (keyword_using)
+    (relation
+      (object_reference
+        (identifier)))
+    (keyword_on)
+    (parenthesized_expression
+      (binary_expression
+        (field
+          (object_reference
+            (identifier))
+          (identifier))
+        (field
+          (object_reference
+            (identifier))
+          (identifier))))
+    (when_clause
+      (keyword_when)
+      (keyword_matched)
+      (keyword_then)
+      (keyword_update)
+      (keyword_set)
+      (assignment
+        (field
+          (object_reference
+            (identifier))
+          (identifier))
+        (field
+          (object_reference
+            (identifier))
+          (identifier))))
+    (returning_into_clause
+      (keyword_returning)
+      (keyword_new)
+      (field
+        (object_reference
+          (identifier))
+        (identifier))
+      (keyword_into)
+      (parameter))))
+
+================================================================================
+Oracle MERGE: update and insert
+================================================================================
+
+MERGE INTO t USING u ON (t.id = u.id) WHEN MATCHED THEN UPDATE SET t.c = u.c WHEN NOT MATCHED THEN INSERT (t.id, t.c) VALUES (u.id, u.c);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (keyword_merge)
+    (keyword_into)
+    (relation
+      (object_reference
+        (identifier)))
+    (keyword_using)
+    (relation
+      (object_reference
+        (identifier)))
+    (keyword_on)
+    (parenthesized_expression
+      (binary_expression
+        (field
+          (object_reference
+            (identifier))
+          (identifier))
+        (field
+          (object_reference
+            (identifier))
+          (identifier))))
+    (when_clause
+      (keyword_when)
+      (keyword_matched)
+      (keyword_then)
+      (keyword_update)
+      (keyword_set)
+      (assignment
+        (field
+          (object_reference
+            (identifier))
+          (identifier))
+        (field
+          (object_reference
+            (identifier))
+          (identifier))))
+    (when_clause
+      (keyword_when)
+      (keyword_not)
+      (keyword_matched)
+      (keyword_then)
+      (keyword_insert)
+      (list)
+      (field)
+      (field
+        (identifier))
+      (list
+        (field)
+        (field
+          (identifier)))
+      (list)
+      (keyword_values)
+      (list)
+      (list
+        (field
+          (object_reference
+            (identifier))
+          (identifier)))
+      (list
+        (field
+          (object_reference
+            (identifier))
+          (identifier)))
+      (list))))
+
+================================================================================
+Oracle MERGE: update column list subquery
+================================================================================
+
+MERGE INTO t USING u ON (t.id = u.id) WHEN MATCHED THEN UPDATE SET (t.c, t.d) = (SELECT c, d FROM v WHERE v.id = u.id);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (keyword_merge)
+    (keyword_into)
+    (relation
+      (object_reference
+        (identifier)))
+    (keyword_using)
+    (relation
+      (object_reference
+        (identifier)))
+    (keyword_on)
+    (parenthesized_expression
+      (binary_expression
+        (field
+          (object_reference
+            (identifier))
+          (identifier))
+        (field
+          (object_reference
+            (identifier))
+          (identifier))))
+    (when_clause
+      (keyword_when)
+      (keyword_matched)
+      (keyword_then)
+      (keyword_update)
+      (keyword_set)
+      (assignment
+        (field
+          (object_reference
+            (identifier))
+          (identifier))
+        (field
+          (object_reference
+            (identifier))
+          (identifier))
+        (subquery
+          (select
+            (keyword_select)
+            (select_expression
+              (term
+                (field
+                  (identifier)))
+              (term
+                (field
+                  (identifier)))))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                (identifier)))
+            (where
+              (keyword_where)
+              (binary_expression
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier))
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier))))))))))
+
+================================================================================
+Oracle MERGE: update where
+================================================================================
+
+MERGE INTO t USING u ON (t.id = u.id) WHEN MATCHED THEN UPDATE SET t.c = u.c WHERE u.k > 0;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (keyword_merge)
+    (keyword_into)
+    (relation
+      (object_reference
+        (identifier)))
+    (keyword_using)
+    (relation
+      (object_reference
+        (identifier)))
+    (keyword_on)
+    (parenthesized_expression
+      (binary_expression
+        (field
+          (object_reference
+            (identifier))
+          (identifier))
+        (field
+          (object_reference
+            (identifier))
+          (identifier))))
+    (when_clause
+      (keyword_when)
+      (keyword_matched)
+      (keyword_then)
+      (keyword_update)
+      (keyword_set)
+      (assignment
+        (field
+          (object_reference
+            (identifier))
+          (identifier))
+        (field
+          (object_reference
+            (identifier))
+          (identifier)))
+      (where
+        (keyword_where)
+        (binary_expression
+          (field
+            (object_reference
+              (identifier))
+            (identifier))
+          (literal))))))
+
+================================================================================
+Oracle MERGE: using values
+================================================================================
+
+MERGE INTO t USING (VALUES (1, 'a'), (2, 'b')) v (id, c) ON (t.id = v.id) WHEN MATCHED THEN UPDATE SET t.c = v.c WHEN NOT MATCHED THEN INSERT (id, c) VALUES (v.id, v.c);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (keyword_merge)
+    (keyword_into)
+    (relation
+      (object_reference
+        (identifier)))
+    (keyword_using)
+    (relation
+      (values
+        (keyword_values)
+        (list
+          (literal)
+          (literal))
+        (list
+          (literal)
+          (literal)))
+      (identifier)
+      (list
+        (column
+          (identifier))
+        (column
+          (identifier))))
+    (keyword_on)
+    (parenthesized_expression
+      (binary_expression
+        (field
+          (object_reference
+            (identifier))
+          (identifier))
+        (field
+          (object_reference
+            (identifier))
+          (identifier))))
+    (when_clause
+      (keyword_when)
+      (keyword_matched)
+      (keyword_then)
+      (keyword_update)
+      (keyword_set)
+      (assignment
+        (field
+          (object_reference
+            (identifier))
+          (identifier))
+        (field
+          (object_reference
+            (identifier))
+          (identifier))))
+    (when_clause
+      (keyword_when)
+      (keyword_not)
+      (keyword_matched)
+      (keyword_then)
+      (keyword_insert)
+      (list)
+      (column
+        (identifier))
+      (list
+        (column
+          (identifier)))
+      (list)
+      (keyword_values)
+      (list)
+      (list
+        (field
+          (object_reference
+            (identifier))
+          (identifier)))
+      (list
+        (field
+          (object_reference
+            (identifier))
+          (identifier)))
+      (list))))
+
+================================================================================
+Oracle MERGE: wait
+================================================================================
+
+MERGE INTO t USING u ON (t.id = u.id) WHEN MATCHED THEN UPDATE SET t.c = u.c WAIT 10;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (keyword_merge)
+    (keyword_into)
+    (relation
+      (object_reference
+        (identifier)))
+    (keyword_using)
+    (relation
+      (object_reference
+        (identifier)))
+    (keyword_on)
+    (parenthesized_expression
+      (binary_expression
+        (field
+          (object_reference
+            (identifier))
+          (identifier))
+        (field
+          (object_reference
+            (identifier))
+          (identifier))))
+    (when_clause
+      (keyword_when)
+      (keyword_matched)
+      (keyword_then)
+      (keyword_update)
+      (keyword_set)
+      (assignment
+        (field
+          (object_reference
+            (identifier))
+          (identifier))
+        (field
+          (object_reference
+            (identifier))
+          (identifier))))
+    (keyword_wait)
+    (literal)))
+
+================================================================================
+Oracle MERGE: without using
+================================================================================
+
+MERGE INTO t ON (id = :id) WHEN MATCHED THEN UPDATE SET c = :c WHEN NOT MATCHED THEN INSERT (id, c) VALUES (:id, :c);
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (keyword_merge)
+    (keyword_into)
+    (relation
+      (object_reference
+        (identifier)))
+    (keyword_on)
+    (parenthesized_expression
+      (binary_expression
+        (field
+          (identifier))
+        (parameter)))
+    (when_clause
+      (keyword_when)
+      (keyword_matched)
+      (keyword_then)
+      (keyword_update)
+      (keyword_set)
+      (assignment
+        (field
+          (identifier))
+        (parameter)))
+    (when_clause
+      (keyword_when)
+      (keyword_not)
+      (keyword_matched)
+      (keyword_then)
+      (keyword_insert)
+      (list)
+      (column
+        (identifier))
+      (list
+        (column
+          (identifier)))
+      (list)
+      (keyword_values)
+      (list)
+      (list
+        (parameter))
+      (list
+        (parameter))
+      (list))))
+
+================================================================================
+Oracle INSERT MULTITABLE: conditional without all
+================================================================================
+
+INSERT WHEN a > 0 THEN INTO t VALUES (a, b) SELECT a, b FROM v;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (multi_table_insert
+      (keyword_insert)
+      (keyword_when)
+      (binary_expression
+        (field
+          (identifier))
+        (literal))
+      (keyword_then)
+      (insert_into_clause
+        (keyword_into)
+        (relation
+          (object_reference
+            (identifier)))
+        (keyword_values)
+        (list)
+        (list
+          (field
+            (identifier)))
+        (list
+          (field
+            (identifier)))
+        (list))
+      (select
+        (keyword_select)
+        (select_expression
+          (term
+            (field
+              (identifier)))
+          (term
+            (field
+              (identifier)))))
+      (from
+        (keyword_from)
+        (relation
+          (object_reference
+            (identifier)))))))
+
+================================================================================
+Oracle INSERT MULTITABLE: hint
+================================================================================
+
+INSERT /*+ APPEND */ ALL INTO t VALUES (a, b) SELECT a, b FROM v;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (multi_table_insert
+      (keyword_insert)
+      (marginalia)
+      (keyword_all)
+      (insert_into_clause
+        (keyword_into)
+        (relation
+          (object_reference
+            (identifier)))
+        (keyword_values)
+        (list)
+        (list
+          (field
+            (identifier)))
+        (list
+          (field
+            (identifier)))
+        (list))
+      (select
+        (keyword_select)
+        (select_expression
+          (term
+            (field
+              (identifier)))
+          (term
+            (field
+              (identifier)))))
+      (from
+        (keyword_from)
+        (relation
+          (object_reference
+            (identifier)))))))
+
+================================================================================
+Oracle INSERT MULTITABLE: insert all dual
+================================================================================
+
+INSERT ALL INTO t (c, d) VALUES (1, 'a') INTO t (c, d) VALUES (2, 'b') SELECT * FROM DUAL;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (multi_table_insert
+      (keyword_insert)
+      (keyword_all)
+      (insert_into_clause
+        (keyword_into)
+        (relation
+          (object_reference
+            (identifier)))
+        (list)
+        (column
+          (identifier))
+        (list
+          (column
+            (identifier)))
+        (list)
+        (keyword_values)
+        (list)
+        (list
+          (literal))
+        (list
+          (literal))
+        (list))
+      (insert_into_clause
+        (keyword_into)
+        (relation
+          (object_reference
+            (identifier)))
+        (list)
+        (column
+          (identifier))
+        (list
+          (column
+            (identifier)))
+        (list)
+        (keyword_values)
+        (list)
+        (list
+          (literal))
+        (list
+          (literal))
+        (list))
+      (select
+        (keyword_select)
+        (select_expression
+          (term
+            (all_fields))))
+      (from
+        (keyword_from)
+        (relation
+          (object_reference
+            (identifier)))))))
+
+================================================================================
+Oracle INSERT MULTITABLE: insert all no values
+================================================================================
+
+INSERT ALL INTO t INTO u SELECT a, b FROM v;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (multi_table_insert
+      (keyword_insert)
+      (keyword_all)
+      (insert_into_clause
+        (keyword_into)
+        (relation
+          (object_reference
+            (identifier))))
+      (insert_into_clause
+        (keyword_into)
+        (relation
+          (object_reference
+            (identifier))))
+      (select
+        (keyword_select)
+        (select_expression
+          (term
+            (field
+              (identifier)))
+          (term
+            (field
+              (identifier)))))
+      (from
+        (keyword_from)
+        (relation
+          (object_reference
+            (identifier)))))))
+
+================================================================================
+Oracle INSERT MULTITABLE: insert all unconditional
+================================================================================
+
+INSERT ALL INTO t (c, d) VALUES (a, b) INTO u (c) VALUES (a) SELECT a, b FROM v;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (multi_table_insert
+      (keyword_insert)
+      (keyword_all)
+      (insert_into_clause
+        (keyword_into)
+        (relation
+          (object_reference
+            (identifier)))
+        (list)
+        (column
+          (identifier))
+        (list
+          (column
+            (identifier)))
+        (list)
+        (keyword_values)
+        (list)
+        (list
+          (field
+            (identifier)))
+        (list
+          (field
+            (identifier)))
+        (list))
+      (insert_into_clause
+        (keyword_into)
+        (relation
+          (object_reference
+            (identifier)))
+        (list)
+        (column
+          (identifier))
+        (list)
+        (keyword_values)
+        (list)
+        (list
+          (field
+            (identifier)))
+        (list))
+      (select
+        (keyword_select)
+        (select_expression
+          (term
+            (field
+              (identifier)))
+          (term
+            (field
+              (identifier)))))
+      (from
+        (keyword_from)
+        (relation
+          (object_reference
+            (identifier)))))))
+
+================================================================================
+Oracle INSERT MULTITABLE: insert all when
+================================================================================
+
+INSERT ALL WHEN a <= 100 THEN INTO t WHEN a > 100 THEN INTO u SELECT a, b FROM v;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (multi_table_insert
+      (keyword_insert)
+      (keyword_all)
+      (keyword_when)
+      (binary_expression
+        (field
+          (identifier))
+        (literal))
+      (keyword_then)
+      (insert_into_clause
+        (keyword_into)
+        (relation
+          (object_reference
+            (identifier))))
+      (keyword_when)
+      (binary_expression
+        (field
+          (identifier))
+        (literal))
+      (keyword_then)
+      (insert_into_clause
+        (keyword_into)
+        (relation
+          (object_reference
+            (identifier))))
+      (select
+        (keyword_select)
+        (select_expression
+          (term
+            (field
+              (identifier)))
+          (term
+            (field
+              (identifier)))))
+      (from
+        (keyword_from)
+        (relation
+          (object_reference
+            (identifier)))))))
+
+================================================================================
+Oracle INSERT MULTITABLE: insert all when else
+================================================================================
+
+INSERT ALL WHEN a <= 100 THEN INTO t VALUES (a, b) ELSE INTO u VALUES (a, b) SELECT a, b FROM v;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (multi_table_insert
+      (keyword_insert)
+      (keyword_all)
+      (keyword_when)
+      (binary_expression
+        (field
+          (identifier))
+        (literal))
+      (keyword_then)
+      (insert_into_clause
+        (keyword_into)
+        (relation
+          (object_reference
+            (identifier)))
+        (keyword_values)
+        (list)
+        (list
+          (field
+            (identifier)))
+        (list
+          (field
+            (identifier)))
+        (list))
+      (keyword_else)
+      (insert_into_clause
+        (keyword_into)
+        (relation
+          (object_reference
+            (identifier)))
+        (keyword_values)
+        (list)
+        (list
+          (field
+            (identifier)))
+        (list
+          (field
+            (identifier)))
+        (list))
+      (select
+        (keyword_select)
+        (select_expression
+          (term
+            (field
+              (identifier)))
+          (term
+            (field
+              (identifier)))))
+      (from
+        (keyword_from)
+        (relation
+          (object_reference
+            (identifier)))))))
+
+================================================================================
+Oracle INSERT MULTITABLE: insert first
+================================================================================
+
+INSERT FIRST WHEN a <= 100 THEN INTO t VALUES (a, b) WHEN a <= 200 THEN INTO u VALUES (a, b) ELSE INTO w VALUES (a, b) SELECT a, b FROM v;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (multi_table_insert
+      (keyword_insert)
+      (keyword_first)
+      (keyword_when)
+      (binary_expression
+        (field
+          (identifier))
+        (literal))
+      (keyword_then)
+      (insert_into_clause
+        (keyword_into)
+        (relation
+          (object_reference
+            (identifier)))
+        (keyword_values)
+        (list)
+        (list
+          (field
+            (identifier)))
+        (list
+          (field
+            (identifier)))
+        (list))
+      (keyword_when)
+      (binary_expression
+        (field
+          (identifier))
+        (literal))
+      (keyword_then)
+      (insert_into_clause
+        (keyword_into)
+        (relation
+          (object_reference
+            (identifier)))
+        (keyword_values)
+        (list)
+        (list
+          (field
+            (identifier)))
+        (list
+          (field
+            (identifier)))
+        (list))
+      (keyword_else)
+      (insert_into_clause
+        (keyword_into)
+        (relation
+          (object_reference
+            (identifier)))
+        (keyword_values)
+        (list)
+        (list
+          (field
+            (identifier)))
+        (list
+          (field
+            (identifier)))
+        (list))
+      (select
+        (keyword_select)
+        (select_expression
+          (term
+            (field
+              (identifier)))
+          (term
+            (field
+              (identifier)))))
+      (from
+        (keyword_from)
+        (relation
+          (object_reference
+            (identifier)))))))
+
+================================================================================
+Oracle INSERT MULTITABLE: log errors
+================================================================================
+
+INSERT ALL INTO t VALUES (a, b) LOG ERRORS INTO errlog REJECT LIMIT UNLIMITED INTO u VALUES (a, b) SELECT a, b FROM v;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (multi_table_insert
+      (keyword_insert)
+      (keyword_all)
+      (insert_into_clause
+        (keyword_into)
+        (relation
+          (object_reference
+            (identifier)))
+        (keyword_values)
+        (list)
+        (list
+          (field
+            (identifier)))
+        (list
+          (field
+            (identifier)))
+        (list)
+        (log_errors_clause
+          (keyword_log)
+          (keyword_errors)
+          (keyword_into)
+          (object_reference
+            (identifier))
+          (keyword_reject)
+          (keyword_limit)
+          (keyword_unlimited)))
+      (insert_into_clause
+        (keyword_into)
+        (relation
+          (object_reference
+            (identifier)))
+        (keyword_values)
+        (list)
+        (list
+          (field
+            (identifier)))
+        (list
+          (field
+            (identifier)))
+        (list))
+      (select
+        (keyword_select)
+        (select_expression
+          (term
+            (field
+              (identifier)))
+          (term
+            (field
+              (identifier)))))
+      (from
+        (keyword_from)
+        (relation
+          (object_reference
+            (identifier)))))))
+
+================================================================================
+Oracle INSERT MULTITABLE: set clause
+================================================================================
+
+INSERT ALL INTO t SET c = a, d = b INTO u SET c = a SELECT a, b FROM v;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (multi_table_insert
+      (keyword_insert)
+      (keyword_all)
+      (insert_into_clause
+        (keyword_into)
+        (relation
+          (object_reference
+            (identifier)))
+        (keyword_set)
+        (assignment
+          (field
+            (identifier))
+          (field
+            (identifier)))
+        (assignment
+          (field
+            (identifier))
+          (field
+            (identifier))))
+      (insert_into_clause
+        (keyword_into)
+        (relation
+          (object_reference
+            (identifier)))
+        (keyword_set)
+        (assignment
+          (field
+            (identifier))
+          (field
+            (identifier))))
+      (select
+        (keyword_select)
+        (select_expression
+          (term
+            (field
+              (identifier)))
+          (term
+            (field
+              (identifier)))))
+      (from
+        (keyword_from)
+        (relation
+          (object_reference
+            (identifier)))))))
+
+================================================================================
+Oracle INSERT MULTITABLE: when multiple into
+================================================================================
+
+INSERT ALL WHEN a > 0 THEN INTO t (c) VALUES (a) INTO u (c) VALUES (b) SELECT a, b FROM v;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (multi_table_insert
+      (keyword_insert)
+      (keyword_all)
+      (keyword_when)
+      (binary_expression
+        (field
+          (identifier))
+        (literal))
+      (keyword_then)
+      (insert_into_clause
+        (keyword_into)
+        (relation
+          (object_reference
+            (identifier)))
+        (list)
+        (column
+          (identifier))
+        (list)
+        (keyword_values)
+        (list)
+        (list
+          (field
+            (identifier)))
+        (list))
+      (insert_into_clause
+        (keyword_into)
+        (relation
+          (object_reference
+            (identifier)))
+        (list)
+        (column
+          (identifier))
+        (list)
+        (keyword_values)
+        (list)
+        (list
+          (field
+            (identifier)))
+        (list))
+      (select
+        (keyword_select)
+        (select_expression
+          (term
+            (field
+              (identifier)))
+          (term
+            (field
+              (identifier)))))
+      (from
+        (keyword_from)
+        (relation
+          (object_reference
+            (identifier)))))))

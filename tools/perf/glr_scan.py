@@ -49,7 +49,7 @@ REPORT_MD = ROOT / "tools" / "perf" / "glr_report.md"
 
 CLI = os.environ.get(
     "TREE_SITTER_BIN",
-    "npx --yes --package=tree-sitter-cli@v0.26.3 -- tree-sitter",
+    "npx --yes --package=tree-sitter-cli@v0.27.1 -- tree-sitter",
 )
 
 # base + the 22 dialects, in the canonical order used by scripts/generate-all.js.

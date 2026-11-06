@@ -339,37 +339,41 @@ const create_rules = {
     // sqlite
     optional($._if_not_exists),
     $.object_reference,
-    choice(
-      $.keyword_before,
-      $.keyword_after,
-      seq($.keyword_instead, $.keyword_of),
-    ),
+    $._trigger_timing,
     $._create_trigger_event,
     repeat(seq($.keyword_or, $._create_trigger_event)),
     $.keyword_on,
     $.object_reference,
-    repeat(
-      choice(
-        seq($.keyword_from, $.object_reference),
-        choice(
-          seq($.keyword_not, $.keyword_deferrable),
-          $.keyword_deferrable,
-          seq($.keyword_initially, $.keyword_immediate),
-          seq($.keyword_initially, $.keyword_deferred),
-        ),
-        seq($.keyword_referencing, choice($.keyword_old, $.keyword_new), $.keyword_table, optional($.keyword_as), $.identifier),
-        seq(
-          $.keyword_for,
-          optional($.keyword_each),
-          choice($.keyword_row, $.keyword_statement),
-        ),
-        seq($.keyword_when, wrapped_in_parenthesis($._expression)),
-      ),
-    ),
+    repeat($._trigger_clause),
     $.keyword_execute,
     choice($.keyword_function, $.keyword_procedure),
     $.object_reference,
     paren_list(field('parameter', $.term)),
+  ),
+
+  _trigger_timing: $ => choice(
+    $.keyword_before,
+    $.keyword_after,
+    seq($.keyword_instead, $.keyword_of),
+  ),
+
+  _trigger_deferrable: $ => choice(
+    seq($.keyword_not, $.keyword_deferrable),
+    $.keyword_deferrable,
+    seq($.keyword_initially, $.keyword_immediate),
+    seq($.keyword_initially, $.keyword_deferred),
+  ),
+
+  _trigger_clause: $ => choice(
+    seq($.keyword_from, $.object_reference),
+    $._trigger_deferrable,
+    seq($.keyword_referencing, choice($.keyword_old, $.keyword_new), $.keyword_table, optional($.keyword_as), $.identifier),
+    seq(
+      $.keyword_for,
+      optional($.keyword_each),
+      choice($.keyword_row, $.keyword_statement),
+    ),
+    seq($.keyword_when, wrapped_in_parenthesis($._expression)),
   ),
 
   _create_trigger_event: $ => choice(

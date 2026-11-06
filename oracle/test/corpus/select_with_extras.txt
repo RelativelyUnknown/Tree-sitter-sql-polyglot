@@ -1,0 +1,511 @@
+================================================================================
+Oracle SELECT WITH CLAUSE: cycle
+================================================================================
+
+WITH q (id, pid) AS (SELECT id, pid FROM t WHERE pid IS NULL UNION ALL SELECT t.id, t.pid FROM q, t WHERE q.id = t.pid) CYCLE id SET is_cycle TO 'Y' DEFAULT 'N' SELECT id, is_cycle FROM q;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (keyword_with)
+    (cte
+      (identifier)
+      (identifier)
+      (identifier)
+      (keyword_as)
+      (statement
+        (set_operation
+          (select
+            (keyword_select)
+            (select_expression
+              (term
+                (field
+                  (identifier)))
+              (term
+                (field
+                  (identifier)))))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                (identifier)))
+            (where
+              (keyword_where)
+              (binary_expression
+                (field
+                  (identifier))
+                (keyword_is)
+                (literal
+                  (keyword_null)))))
+          (keyword_union)
+          (keyword_all)
+          (select
+            (keyword_select)
+            (select_expression
+              (term
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier)))
+              (term
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier)))))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                (identifier)))
+            (relation
+              (object_reference
+                (identifier)))
+            (where
+              (keyword_where)
+              (binary_expression
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier))
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier)))))))
+      (cycle_clause
+        (keyword_cycle)
+        (identifier)
+        (keyword_set)
+        (identifier)
+        (keyword_to)
+        (literal)
+        (keyword_default)
+        (literal)))
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+================================================================================
+Oracle SELECT WITH CLAUSE: plsql function
+================================================================================
+
+WITH FUNCTION f(x NUMBER) RETURN NUMBER IS BEGIN RETURN x * 2; END; SELECT f(c) FROM t;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (keyword_with)
+    (subprogram_definition
+      (keyword_function)
+      (identifier)
+      (plsql_parameter
+        (identifier)
+        (number_type
+          (keyword_number)))
+      (keyword_return)
+      (number_type
+        (keyword_number))
+      (keyword_is)
+      (keyword_begin)
+      (statement
+        (return_statement
+          (keyword_return)
+          (binary_expression
+            (field
+              (identifier))
+            (literal))))
+      (keyword_end))
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (invocation
+            (object_reference
+              (identifier))
+            (term
+              (field
+                (identifier)))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+================================================================================
+Oracle SELECT WITH CLAUSE: plsql function with cte
+================================================================================
+
+WITH FUNCTION f(x NUMBER) RETURN NUMBER IS BEGIN RETURN x; END; q AS (SELECT c FROM t) SELECT f(c) FROM q;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (keyword_with)
+    (subprogram_definition
+      (keyword_function)
+      (identifier)
+      (plsql_parameter
+        (identifier)
+        (number_type
+          (keyword_number)))
+      (keyword_return)
+      (number_type
+        (keyword_number))
+      (keyword_is)
+      (keyword_begin)
+      (statement
+        (return_statement
+          (keyword_return)
+          (field
+            (identifier))))
+      (keyword_end))
+    (cte
+      (identifier)
+      (keyword_as)
+      (statement
+        (select
+          (keyword_select)
+          (select_expression
+            (term
+              (field
+                (identifier)))))
+        (from
+          (keyword_from)
+          (relation
+            (object_reference
+              (identifier))))))
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (invocation
+            (object_reference
+              (identifier))
+            (term
+              (field
+                (identifier)))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+================================================================================
+Oracle SELECT WITH CLAUSE: plsql procedure and function
+================================================================================
+
+WITH PROCEDURE p(x NUMBER) IS BEGIN NULL; END; FUNCTION f(x NUMBER) RETURN NUMBER IS BEGIN p(x); RETURN x; END; SELECT f(c) FROM t;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (keyword_with)
+    (subprogram_definition
+      (keyword_procedure)
+      (identifier)
+      (plsql_parameter
+        (identifier)
+        (number_type
+          (keyword_number)))
+      (keyword_is)
+      (keyword_begin)
+      (statement
+        (null_statement
+          (keyword_null)))
+      (keyword_end))
+    (subprogram_definition
+      (keyword_function)
+      (identifier)
+      (plsql_parameter
+        (identifier)
+        (number_type
+          (keyword_number)))
+      (keyword_return)
+      (number_type
+        (keyword_number))
+      (keyword_is)
+      (keyword_begin)
+      (procedure_call_statement
+        (invocation
+          (object_reference
+            (identifier))
+          (term
+            (field
+              (identifier)))))
+      (statement
+        (return_statement
+          (keyword_return)
+          (field
+            (identifier))))
+      (keyword_end))
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (invocation
+            (object_reference
+              (identifier))
+            (term
+              (field
+                (identifier)))))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+================================================================================
+Oracle SELECT WITH CLAUSE: search breadth first
+================================================================================
+
+WITH q (id, pid) AS (SELECT id, pid FROM t WHERE pid IS NULL UNION ALL SELECT t.id, t.pid FROM q, t WHERE q.id = t.pid) SEARCH BREADTH FIRST BY id DESC NULLS LAST SET ord SELECT id FROM q ORDER BY ord;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (keyword_with)
+    (cte
+      (identifier)
+      (identifier)
+      (identifier)
+      (keyword_as)
+      (statement
+        (set_operation
+          (select
+            (keyword_select)
+            (select_expression
+              (term
+                (field
+                  (identifier)))
+              (term
+                (field
+                  (identifier)))))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                (identifier)))
+            (where
+              (keyword_where)
+              (binary_expression
+                (field
+                  (identifier))
+                (keyword_is)
+                (literal
+                  (keyword_null)))))
+          (keyword_union)
+          (keyword_all)
+          (select
+            (keyword_select)
+            (select_expression
+              (term
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier)))
+              (term
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier)))))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                (identifier)))
+            (relation
+              (object_reference
+                (identifier)))
+            (where
+              (keyword_where)
+              (binary_expression
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier))
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier)))))))
+      (search_clause
+        (keyword_search)
+        (keyword_breadth)
+        (keyword_first)
+        (keyword_by)
+        (identifier)
+        (keyword_desc)
+        (keyword_nulls)
+        (keyword_last)
+        (keyword_set)
+        (identifier)))
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (order_by
+        (keyword_order)
+        (keyword_by)
+        (order_target
+          (field
+            (identifier)))))))
+
+================================================================================
+Oracle SELECT WITH CLAUSE: search depth first
+================================================================================
+
+WITH q (id, pid) AS (SELECT id, pid FROM t WHERE pid IS NULL UNION ALL SELECT t.id, t.pid FROM q, t WHERE q.id = t.pid) SEARCH DEPTH FIRST BY id SET ord SELECT id FROM q ORDER BY ord;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (keyword_with)
+    (cte
+      (identifier)
+      (identifier)
+      (identifier)
+      (keyword_as)
+      (statement
+        (set_operation
+          (select
+            (keyword_select)
+            (select_expression
+              (term
+                (field
+                  (identifier)))
+              (term
+                (field
+                  (identifier)))))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                (identifier)))
+            (where
+              (keyword_where)
+              (binary_expression
+                (field
+                  (identifier))
+                (keyword_is)
+                (literal
+                  (keyword_null)))))
+          (keyword_union)
+          (keyword_all)
+          (select
+            (keyword_select)
+            (select_expression
+              (term
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier)))
+              (term
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier)))))
+          (from
+            (keyword_from)
+            (relation
+              (object_reference
+                (identifier)))
+            (relation
+              (object_reference
+                (identifier)))
+            (where
+              (keyword_where)
+              (binary_expression
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier))
+                (field
+                  (object_reference
+                    (identifier))
+                  (identifier)))))))
+      (search_clause
+        (keyword_search)
+        (keyword_depth)
+        (keyword_first)
+        (keyword_by)
+        (identifier)
+        (keyword_set)
+        (identifier)))
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (order_by
+        (keyword_order)
+        (keyword_by)
+        (order_target
+          (field
+            (identifier)))))))
+
+================================================================================
+Oracle SELECT WITH CLAUSE: values
+================================================================================
+
+WITH x (a, b) AS (VALUES (1, 2), (3, 4)) SELECT a, b FROM x;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (keyword_with)
+    (cte
+      (identifier)
+      (identifier)
+      (identifier)
+      (keyword_as)
+      (values
+        (keyword_values)
+        (list
+          (literal)
+          (literal))
+        (list
+          (literal)
+          (literal))))
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (field
+            (identifier)))
+        (term
+          (field
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))

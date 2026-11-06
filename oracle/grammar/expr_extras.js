@@ -1,0 +1,261 @@
+import { comma_list, paren_list, wrapped_in_parenthesis, make_keyword } from '../../grammar/helpers.js';
+import { OP_OTHER_TOKENS } from '../../grammar/expressions.js';
+
+// Expression and datatype forms the earlier Oracle rules lack (Oracle SQL Language Reference 26ai):
+// scientific numbers, interval literal precisions, CAST with DOMAIN / MULTISET / DEFAULT … ON CONVERSION ERROR, function
+// arguments with USING and DEFAULT ... ON CONVERSION ERROR, and the remaining builtin and ANSI types.
+
+const kw = (word) => token(prec(1, make_keyword(word)));
+
+export default {
+
+  keyword_conversion: _ => kw('conversion'),
+  keyword_float32:    _ => kw('float32'),
+  keyword_float64:    _ => kw('float64'),
+  keyword_int8:       _ => kw('int8'),
+  // ISO <sign> <numeric value expression>; a signed operand may itself be signed (- -c)
+  _signed_operand: $ => prec.left('unary_other', seq(
+    field('operator', choice('-', '+')),
+    field('operand', choice(
+      alias($._qualified_field, $.field),
+      $.invocation,
+      $.parenthesized_expression,
+      $.cast,
+      $.case,
+      $.window_function,
+      $._signed_operand,
+    )),
+  )),
+
+  // expr COLLATE collation, binding tighter than any binary operator
+  collate_expression: $ => prec.left('binary_exp', seq(
+    field('expression', $._expression),
+    $.keyword_collate,
+    $.identifier,
+  )),
+
+  // (datetime - datetime) DAY [(p)] TO SECOND [(p)] | YEAR [(p)] TO MONTH
+  interval_qualified_expression: $ => prec.left('binary_exp', seq(
+    field('expression', $.parenthesized_expression),
+    choice(
+      seq(
+        $.keyword_day, optional(wrapped_in_parenthesis(alias($._natural_number, $.literal))),
+        $.keyword_to,
+        $.keyword_second, optional(wrapped_in_parenthesis(alias($._natural_number, $.literal))),
+      ),
+      seq(
+        $.keyword_year, optional(wrapped_in_parenthesis(alias($._natural_number, $.literal))),
+        $.keyword_to, $.keyword_month,
+      ),
+    ),
+  )),
+
+  // schema.object.column@dblink, for example a sequence pseudocolumn over a database link
+  remote_reference: $ => seq(
+    alias($._qualified_field, $.field),
+    '@',
+    alias($._remote_link, $.identifier),
+  ),
+
+  // remote[.domain …][@connection_qualifier] as a single token: a rule here costs parse states after every expression
+  _remote_link: _ => token(/[A-Za-z_][A-Za-z0-9_$#]*(\.[A-Za-z_][A-Za-z0-9_$#]*)*(@[A-Za-z_][A-Za-z0-9_$#]*)?/),
+
+  // CURSOR(subquery) in a select list or as an argument
+  cursor_expression: $ => seq($.keyword_cursor, $.subquery),
+
+  // NEW type(args): an object type constructor
+  new_expression: $ => seq($.keyword_new, $.invocation),
+
+  keyword_multiset:   _ => kw('multiset'),
+
+  // LIKE and its Oracle character-set variants LIKEC (Unicode complete characters),
+  // LIKE2 (UCS2 code points) and LIKE4 (UCS4 code points).
+  keyword_like: _ => /[lL][iI][kK][eE]([cC]|[24])?/,
+
+  // Oracle's not-equal spelling ^= next to the inherited operator set.
+  // ^= is Oracle's not-equal; <=> and <#> are the cosine and negative inner product vector distances
+  op_other: _ => token(choice(...OP_OTHER_TOKENS, '^=', '<=>', '<#>')),
+  keyword_sparse:     _ => kw('sparse'),
+
+  // ── Numbers ────────────────────────────────────────────────────────────
+
+  _integer: $ => seq(
+    optional(choice('-', '+')),
+    /(0[xX][0-9A-Fa-f]+(_[0-9A-Fa-f]+)*)|(0[oO][0-7]+(_[0-7]+)*)|(0[bB][01]+(_[01]+)*)|(\d+(_\d+)*([eE][+-]?\d+(_\d+)*)?)/,
+  ),
+
+  _decimal_number: $ => seq(
+    optional(choice('-', '+')),
+    /((\d+(_\d+)*)?[.]\d+(_\d+)*([eE][+-]?\d+(_\d+)*)?)|(\d+(_\d+)*[.](\d+(_\d+)*)?[eE][+-]?\d+(_\d+)*)/,
+  ),
+
+  // ── Intervals ──────────────────────────────────────────────────────────
+
+  // INTERVAL '4 5:12' DAY(3) TO SECOND(3)
+  interval: $ => prec.right(seq(
+    $.keyword_interval,
+    $._literal_string,
+    optional(seq(
+      $.identifier,
+      optional(paren_list(alias($._natural_number, $.literal), true)),
+    )),
+    optional(seq(
+      $.keyword_to,
+      $.identifier,
+      optional(paren_list(alias($._natural_number, $.literal), true)),
+    )),
+  )),
+
+  // ── CAST and function arguments ────────────────────────────────────────
+
+  // DEFAULT … ON CONVERSION ERROR and the format / NLS arguments. A hidden rule: the only thing that can follow it
+  // is the closing parenthesis, so its states exist once instead of once for every context CAST can end in.
+  _cast_options: $ => choice(
+    seq(
+      $.keyword_default, $._expression, $.keyword_on, $.keyword_conversion, $.keyword_error,
+      optional($._cast_format),
+    ),
+    $._cast_format,
+  ),
+
+  _cast_format: $ => seq(',', $._expression, optional(seq(',', $._expression))),
+
+  // expr AT TIME ZONE zone | expr AT LOCAL
+  at_time_zone_expression: $ => prec.left('binary_other', seq(
+    field('left', $._expression),
+    $.keyword_at,
+    choice(
+      $.keyword_local,
+      seq($.keyword_time, $.keyword_zone, $._expression),
+    ),
+  )),
+
+  cast: $ => seq(
+    field('name', $.keyword_cast),
+    '(',
+    field('parameter', choice($._expression, seq($.keyword_multiset, $.subquery))),
+    $.keyword_as,
+    choice($._type, seq($.keyword_domain, $.object_reference)),
+    optional($._cast_options),
+    ')',
+  ),
+
+  _qualified_choice: $ => choice(
+    $.index_choice,
+    $.iterator_choice,
+    seq($.keyword_others, '=>', $._expression),
+    // CHR(196 USING NCHAR_CS), TRANSLATE(c USING CHAR_CS)
+    seq($._expression, $.keyword_using, $.identifier),
+    // TO_NUMBER(c DEFAULT 0 ON CONVERSION ERROR, fmt)
+    seq($._expression, $.keyword_default, $._expression, $.keyword_on, $.keyword_conversion, $.keyword_error),
+  ),
+
+  _into_target: $ => choice(
+    alias($._qualified_field, $.field),
+    $.parameter,
+    seq($.parameter, $.parameter),
+  ),
+
+  // ── Datatypes ──────────────────────────────────────────────────────────
+
+  _type: $ => prec.left(
+    seq(
+      choice(
+        $.number_type,
+        $.number_star_type,
+        $.varchar2,
+        $.nvarchar2,
+        $.clob,
+        $.nclob,
+        $.blob,
+        $.bfile,
+        $.raw_type,
+        $.rowid,
+        $.urowid,
+        $.urowid_size_type,
+        $.long_type,
+        $.binary_float,
+        $.binary_double,
+        $.interval_year_to_month,
+        $.interval_day_to_second,
+        $.vector_type,
+        $.json_type,
+        $.national_char_type,
+        $.char_semantics_type,
+        $.keyword_boolean,
+        $.bit,
+        $.binary,
+        $.varbinary,
+        $.smallint,
+        $.int,
+        $.bigint,
+        $.decimal,
+        $.numeric,
+        $.double,
+        $.float,
+        $.char,
+        $.varchar,
+        $.nchar,
+        $.nvarchar,
+        $.keyword_date,
+        $.time,
+        $.timestamp,
+        $.keyword_interval,
+        $.keyword_json,
+        $.keyword_xml,
+        $.keyword_string,
+        $.enum,
+        seq($.keyword_ref, field('custom_type', $.object_reference)),
+        field('custom_type', $.object_reference),
+      ),
+      optional($.array_size_definition),
+    ),
+  ),
+
+  number_star_type: $ => seq(
+    $.keyword_number, '(', '*', optional(seq(',', alias($._natural_number, $.literal))), ')',
+  ),
+
+  urowid_size_type: $ => seq($.keyword_urowid, wrapped_in_parenthesis(alias($._natural_number, $.literal))),
+
+  // VECTOR | VECTOR(dims [, format [, SPARSE]]) with * for "any"
+  vector_type: $ => seq(
+    $.keyword_vector,
+    optional(seq(
+      '(',
+      choice('*', alias($._natural_number, $.literal)),
+      optional(seq(
+        ',',
+        choice('*', $.keyword_float32, $.keyword_float64, $.keyword_int8, $.keyword_binary),
+        optional(seq(',', $.keyword_sparse)),
+      )),
+      ')',
+    )),
+  ),
+
+  json_type: $ => seq(
+    $.keyword_json,
+    '(',
+    choice($.keyword_object, $.keyword_array, $.keyword_scalar),
+    ')',
+  ),
+
+  // NATIONAL CHAR[ACTER] [VARYING] (n) | CHAR VARYING (n) | NCHAR VARYING (n)
+  national_char_type: $ => choice(
+    seq(
+      $.keyword_national, $.keyword_char,
+      optional($.keyword_varying),
+      optional(wrapped_in_parenthesis(alias($._natural_number, $.literal))),
+    ),
+    seq(
+      choice($.keyword_char, $.keyword_nchar), $.keyword_varying,
+      optional(wrapped_in_parenthesis(alias($._natural_number, $.literal))),
+    ),
+  ),
+
+  // CHAR(10 BYTE | CHAR)
+  char_semantics_type: $ => seq(
+    $.keyword_char, '(', alias($._natural_number, $.literal), choice($.keyword_byte, $.keyword_char), ')',
+  ),
+
+};

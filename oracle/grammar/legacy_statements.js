@@ -35,31 +35,6 @@ export function createStatementChoices($, { materializedView = false, index = fa
 
 const create_rules = {
 
-  // Strict ANSI base: CREATE MATERIALIZED VIEW and CREATE INDEX are not ISO SQL;
-  // dialects that support them opt in via createStatementChoices (below) in
-  // their own _create_statement override. The rule definitions remain for reuse.
-  _create_statement: $ => seq(
-    choice(...createStatementChoices($)),
-  ),
-
-  // left precedence because 'quoted' table options otherwise conflict with
-  // `create function` string bodies; if you remove this precedence you will
-  // have to also disable the `_literal_string` choice for the `name` field
-  // in =-assigned `table_option`s
-  create_table: $ => prec.left(
-    seq(
-      $.keyword_create,
-      optional($._temporary),
-      $.keyword_table,
-      optional($._if_not_exists),
-      $.object_reference,
-      seq(
-        optional($.column_definitions),
-        optional(seq($.keyword_as, $.create_query)),
-      ),
-    ),
-  ),
-
   storage_parameters: $ => seq(
     $.keyword_with,
     paren_list(
@@ -71,73 +46,18 @@ const create_rules = {
   table_option: $ => choice(
     seq($.keyword_default, $.keyword_character, $.keyword_set, $.identifier),
     seq($.keyword_collate, $.identifier),
-    field('name', $.keyword_default),
+    $.keyword_default,
     seq(
-      field('name', choice($.identifier, $._literal_string)),
+      choice($.identifier, $._literal_string),
       '=',
       field('value', choice($.identifier, $._literal_string, alias($._integer, $.literal))),
     ),
   ),
 
-  create_query: $ => $._dml_read,
-
-  create_view: $ => prec.right(
-    seq(
-      $.keyword_create,
-      optional($._or_replace),
-      optional($._temporary),
-      optional($.keyword_recursive),
-      $.keyword_view,
-      optional($._if_not_exists),
-      $.object_reference,
-      optional(paren_list($.identifier)),
-      $.keyword_as,
-      $.create_query,
-      optional(
-        seq(
-          $.keyword_with,
-          optional(
-            choice(
-              $.keyword_local,
-              $.keyword_cascaded,
-            )
-          ),
-          $._check_option,
-        ),
-      ),
-    ),
-  ),
-
-  create_materialized_view: $ => prec.right(
-    seq(
-      $.keyword_create,
-      optional($._or_replace),
-      $.keyword_materialized,
-      $.keyword_view,
-      optional($._if_not_exists),
-      $.object_reference,
-      $.keyword_as,
-      $.create_query,
-      optional(
-        choice(
-          seq(
-            $.keyword_with,
-            $.keyword_data,
-          ),
-          seq(
-            $.keyword_with,
-            $.keyword_no,
-            $.keyword_data,
-          )
-        )
-      )
-    ),
-  ),
-
   _operator_class: $ => seq(
-    field('opclass', $.identifier),
+    $.identifier,
     optional(
-      field('opclass_parameters', wrapped_in_parenthesis(comma_list($.term)))
+      wrapped_in_parenthesis(comma_list($.term))
     )
   ),
 
@@ -149,26 +69,6 @@ const create_rules = {
       ),
     ),
     optional($.keyword_hash),
-  ),
-
-  _index_field: $ => seq(
-    choice(
-      field('expression', wrapped_in_parenthesis($._expression)),
-      field('function', $.invocation),
-      field('column', $._column),
-    ),
-    optional(seq($.keyword_collate, $.identifier)),
-    optional($._operator_class),
-    optional(choice($.keyword_hash, $.direction)),
-    optional(
-      seq(
-        $.keyword_nulls,
-        choice(
-          $.keyword_first,
-          $.keyword_last
-        )
-      )
-    ),
   ),
 
   index_fields: $ => wrapped_in_parenthesis(
@@ -185,35 +85,6 @@ const create_rules = {
   covering_columns: $ => seq(
     $.keyword_include,
     $.index_fields,
-  ),
-
-  create_index: $ => seq(
-    $.keyword_create,
-    optional($.keyword_unique),
-    $.keyword_index,
-    optional(
-      seq(
-        optional($._if_not_exists),
-        field('column', $._column),
-      ),
-    ),
-    $.keyword_on,
-    optional($.keyword_only),
-    seq(
-      $.object_reference,
-      optional(
-        seq(
-          $.keyword_using,
-          field('index_type', $.identifier),
-        ),
-      ),
-      $.index_fields
-    ),
-    optional($.covering_columns),
-    optional($.tablespace),
-    optional(
-      $.where,
-    ),
   ),
 
   ...create_function_rules,
@@ -236,59 +107,9 @@ const create_rules = {
   )),
 
   _with_settings: $ => seq(
-        field('name', $.identifier),
+        $.identifier,
         optional('='),
         field('value', choice($.identifier, alias($._single_quote_string, $.literal))),
-  ),
-
-  create_database: $ => prec.left(seq(
-    $.keyword_create,
-    $.keyword_database,
-    optional($._if_not_exists),
-    $.identifier,
-    optional($.keyword_with),
-    repeat(
-      $._with_settings
-    ),
-  )),
-
-  create_role: $ => prec.left(seq(
-    $.keyword_create,
-    choice(
-      $.keyword_user,
-      $.keyword_role,
-      $.keyword_group,
-    ),
-    $.identifier,
-    optional($.keyword_with),
-    repeat(
-      choice(
-        $._user_access_role_config,
-        $._role_options,
-      ),
-    ),
-  )),
-
-  _role_options: $ => choice(
-    field('option', $.identifier),
-    seq(
-      $.keyword_valid,
-      $.keyword_until,
-      field('valid_until', alias($._literal_string, $.literal))
-    ),
-    seq(
-      $.keyword_connection,
-      $.keyword_limit,
-      field('connection_limit', alias($._integer, $.literal))
-    ),
-    seq(
-      optional($.keyword_encrypted),
-      $.keyword_password,
-      choice(
-        field('password', alias($._literal_string, $.literal)),
-        $.keyword_null,
-      ),
-    ),
   ),
 
   _user_access_role_config: $ => seq(
@@ -299,76 +120,6 @@ const create_rules = {
       $.keyword_user,
     ),
     comma_list($.identifier, true),
-  ),
-
-  create_sequence: $ => seq(
-    $.keyword_create,
-    optional(
-      choice(
-        choice($.keyword_temporary, $.keyword_temp),
-        $.keyword_unlogged,
-      )
-    ),
-    $.keyword_sequence,
-    optional($._if_not_exists),
-    $.object_reference,
-    repeat(
-      choice(
-        seq($.keyword_as, $._type),
-        seq($.keyword_increment, optional($.keyword_by), field('increment', alias($._integer, $.literal))),
-        seq($.keyword_minvalue, choice($.literal, seq($.keyword_no, $.keyword_minvalue))),
-        seq($.keyword_no, $.keyword_minvalue),
-        seq($.keyword_maxvalue, choice($.literal, seq($.keyword_no, $.keyword_maxvalue))),
-        seq($.keyword_no, $.keyword_maxvalue),
-        seq($.keyword_start, optional($.keyword_with), field('start', alias($._integer, $.literal))),
-        seq($.keyword_cache, field('cache', alias($._integer, $.literal))),
-        seq(optional($.keyword_no), $.keyword_cycle),
-        seq($.keyword_owned, $.keyword_by, choice($.keyword_none, $.object_reference)),
-      )
-    ),
-  ),
-
-  create_trigger: $ => seq(
-    $.keyword_create,
-    optional($._or_replace),
-    optional($.keyword_constraint),
-    // sqlite
-    optional($._temporary),
-    $.keyword_trigger,
-    // sqlite
-    optional($._if_not_exists),
-    $.object_reference,
-    choice(
-      $.keyword_before,
-      $.keyword_after,
-      seq($.keyword_instead, $.keyword_of),
-    ),
-    $._create_trigger_event,
-    repeat(seq($.keyword_or, $._create_trigger_event)),
-    $.keyword_on,
-    $.object_reference,
-    repeat(
-      choice(
-        seq($.keyword_from, $.object_reference),
-        choice(
-          seq($.keyword_not, $.keyword_deferrable),
-          $.keyword_deferrable,
-          seq($.keyword_initially, $.keyword_immediate),
-          seq($.keyword_initially, $.keyword_deferred),
-        ),
-        seq($.keyword_referencing, choice($.keyword_old, $.keyword_new), $.keyword_table, optional($.keyword_as), $.identifier),
-        seq(
-          $.keyword_for,
-          optional($.keyword_each),
-          choice($.keyword_row, $.keyword_statement),
-        ),
-        seq($.keyword_when, wrapped_in_parenthesis($._expression)),
-      ),
-    ),
-    $.keyword_execute,
-    choice($.keyword_function, $.keyword_procedure),
-    $.object_reference,
-    paren_list(field('parameter', $.term)),
   ),
 
   _create_trigger_event: $ => choice(
@@ -386,87 +137,13 @@ const create_rules = {
     $.keyword_truncate,
   ),
 
-  create_type: $ => prec.left(seq(
-    $.keyword_create,
-    $.keyword_type,
-    $.object_reference,
-    optional(
-      seq(
-        choice(
-          seq(
-            $.keyword_as,
-            $.column_definitions,
-            optional(seq($.keyword_collate, $.identifier))
-          ),
-          seq(
-            $.keyword_as,
-            $.keyword_enum,
-            $.enum_elements,
-          ),
-          seq(
-            optional(
-              seq(
-                $.keyword_as,
-                $.keyword_range,
-              )
-            ),
-            paren_list(
-              $._with_settings
-            ),
-          ),
-        ),
-      ),
-    ),
-  )),
-
   enum_elements: $ => seq(
-    paren_list(field('enum_element', alias($._literal_string, $.literal))),
+    paren_list(alias($._literal_string, $.literal)),
   ),
 
 };
 
 const drop_rules = {
-
-  _drop_statement: $ => seq(
-    choice(
-      $.drop_table,
-      $.drop_view,
-      $.drop_materialized_view,
-      $.drop_index,
-      $.drop_type,
-      $.drop_schema,
-      $.drop_database,
-      $.drop_role,
-      $.drop_sequence,
-      $.drop_function,
-      $.drop_procedure,
-    ),
-  ),
-
-  drop_table: $ => seq(
-    $.keyword_drop,
-    $.keyword_table,
-    optional($._if_exists),
-    $.object_reference,
-    optional($._drop_behavior),
-  ),
-
-  drop_view: $ => seq(
-    $.keyword_drop,
-    $.keyword_view,
-    optional($._if_exists),
-    $.object_reference,
-    optional($._drop_behavior),
-  ),
-
-  drop_materialized_view: $ => seq(
-    $.keyword_drop,
-    $.keyword_materialized,
-    $.keyword_view,
-    optional($._if_exists),
-    $.object_reference,
-    optional($._drop_behavior),
-  ),
 
   drop_schema: $ => seq(
     $.keyword_drop,
@@ -485,46 +162,12 @@ const drop_rules = {
     optional($.keyword_force),
   )),
 
-  drop_role: $ => seq(
-    $.keyword_drop,
-    choice(
-      $.keyword_group,
-      $.keyword_role,
-      $.keyword_user,
-    ),
-    optional($._if_exists),
-    $.identifier,
-  ),
-
-  drop_type: $ => seq(
-    $.keyword_drop,
-    $.keyword_type,
-    optional($._if_exists),
-    $.object_reference,
-    optional($._drop_behavior),
-  ),
-
   drop_sequence: $ => seq(
     $.keyword_drop,
     $.keyword_sequence,
     optional($._if_exists),
     $.object_reference,
     optional($._drop_behavior),
-  ),
-
-  drop_index: $ => seq(
-    $.keyword_drop,
-    $.keyword_index,
-    optional($.keyword_concurrently),
-    optional($._if_exists),
-    field('name', $.identifier),
-    optional($._drop_behavior),
-    optional(
-      seq(
-          $.keyword_on,
-          $.object_reference,
-      ),
-    ),
   ),
 
   drop_function: $ => seq(
@@ -560,7 +203,7 @@ const rename_rules = {
         $.keyword_nowait,
         seq(
           $.keyword_wait,
-          field('timeout', alias($._natural_number, $.literal))
+          alias($._natural_number, $.literal)
         )
       )
     ),
@@ -603,37 +246,9 @@ const refresh_rules = {
 
 const truncate_rules = {
 
-  _truncate_statement: $ => seq(
-    $.keyword_truncate,
-    optional($.keyword_table),
-    optional($.keyword_only),
-    comma_list($.object_reference),
-    optional($._drop_behavior),
-  ),
-
 };
 
 const insert_rules = {
-
-  _insert_statement: $ => seq(
-    $.insert,
-  ),
-
-  insert: $ => seq(
-    $.keyword_insert,
-    optional($.keyword_into),
-    $.object_reference,
-    optional(
-      seq(
-        $.keyword_as,
-        field('alias', $.identifier)
-      ),
-    ),
-    choice(
-      $._insert_values,
-      $._set_values,
-    ),
-  ),
 
   _on_conflict: $ => seq(
     $.keyword_on,
@@ -653,7 +268,7 @@ const insert_rules = {
   // ON CONFLICT (col [, …]) [WHERE predicate] | ON CONSTRAINT name
   conflict_target: $ => choice(
     seq('(', comma_list($._expression), ')', optional($.where)),
-    seq($.keyword_on, $.keyword_constraint, field('name', $.identifier)),
+    seq($.keyword_on, $.keyword_constraint, $.identifier),
   ),
 
   _on_duplicate_key_update: $ => seq(
@@ -664,54 +279,9 @@ const insert_rules = {
     $.assignment_list,
   ),
 
-  assignment_list: $ => seq(
-    $.assignment,
-    repeat(seq(',', $.assignment)),
-  ),
-
-  assignment: $ => seq(
-    field('left',
-      alias(
-        $._qualified_field,
-        $.field,
-      ),
-    ),
-    '=',
-    field('right', $._expression),
-  ),
-
-  _insert_values: $ => seq(
-    optional(alias($._column_list, $.list)),
-    choice(
-      seq(
-        $.keyword_values,
-        comma_list($.list, true),
-      ),
-      $._dml_read,
-    ),
-  ),
-
-  _set_values: $ => seq(
-    $.keyword_set,
-    comma_list($.assignment, true),
-  ),
-
 }
 
 const update_rules = {
-
-  _update_statement: $ => seq(
-    $.update,
-  ),
-
-  update: $ => seq(
-    $.keyword_update,
-    optional($.keyword_only),
-    choice(
-      $._mysql_update_statement,
-      $._postgres_update_statement,
-    ),
-  ),
 
   _mysql_update_statement: $ => prec(0,
     seq(
@@ -734,11 +304,6 @@ const update_rules = {
 
 const delete_rules = {
 
-  _delete_statement: $ => seq(
-    $.delete,
-    alias($._delete_from, $.from),
-  ),
-
   _delete_from: $ => seq(
     $.keyword_from,
     optional(
@@ -750,73 +315,13 @@ const delete_rules = {
     // Strict ANSI base: no LIMIT on DELETE (dialects re-add it in their override)
   ),
 
-  delete: $ => seq(
-    $.keyword_delete,
-  ),
-
 };
 
 const merge_rules = {
 
-  _merge_statement: $=> seq(
-    $.keyword_merge,
-    optional($.keyword_into),
-    optional($.keyword_table),
-    $.object_reference,
-    optional($._alias),
-    $.keyword_using,
-    choice(
-      $.subquery,
-      $.object_reference
-    ),
-    optional($._alias),
-    optional(seq(
-      $.keyword_on,
-      optional_parenthesis(field('predicate', $._expression)),
-    )),
-    repeat1($.when_clause)
-  ),
-
-  when_clause: $ => prec.left(seq(
-    $.keyword_when,
-    optional($.keyword_not),
-    $.keyword_matched,
-    optional(
-      seq(
-        $.keyword_and,
-        optional_parenthesis(field('predicate', $._expression))
-      )
-    ),
-    $.keyword_then,
-    choice(
-      $.keyword_delete,
-      seq(
-        $.keyword_update,
-        $._set_values,
-      ),
-      seq(
-        $.keyword_insert,
-        $._insert_values
-      ),
-      optional($.where)
-    )
-  )),
-
 };
 
 const misc_rules = {
-  // ---- vendor statements the ISO base no longer defines: COMMENT ON, SHOW TABLES, RESET, USE, index hints, RETURNING
-  comment_statement: $ => seq(
-    $.keyword_comment,
-    $.keyword_on,
-    $._comment_target,
-    $.keyword_is,
-    choice(
-      $.keyword_null,
-      alias($._literal_string, $.literal),
-    ),
-  ),
-
   _comment_target: $ => choice(
     // TODO: access method
     // TODO: aggregate
@@ -894,7 +399,7 @@ const misc_rules = {
       ),
     ),
     wrapped_in_parenthesis(
-      field('index_name', $.identifier),
+      $.identifier,
     ),
   ),
 
@@ -913,7 +418,6 @@ export default {
   keyword_verbose: _ => make_keyword("verbose"),
   keyword_tables: _ => make_keyword("tables"),
   keyword_tablespace: _ => make_keyword("tablespace"),
-  keyword_duplicate: _ => make_keyword("duplicate"),
   keyword_force: _ => make_keyword("force"),
   keyword_ignore: _ => make_keyword("ignore"),
   keyword_use: _ => make_keyword("use"),
@@ -930,15 +434,11 @@ export default {
   keyword_cache: _ => make_keyword("cache"),
   keyword_collate: _ => make_keyword("collate"),
   keyword_concurrently: _ => make_keyword("concurrently"),
-  keyword_connection: _ => make_keyword("connection"),
   keyword_deferrable: _ => make_keyword("deferrable"),
-  keyword_encrypted: _ => make_keyword("encrypted"),
-  keyword_initially: _ => make_keyword("initially"),
   keyword_none: _ => make_keyword("none"),
   keyword_nowait: _ => make_keyword("nowait"),
   keyword_owned: _ => make_keyword("owned"),
   keyword_password: _ => make_keyword("password"),
-  keyword_refresh: _ => make_keyword("refresh"),
   keyword_rename: _ => make_keyword("rename"),
   keyword_unlogged: _ => make_keyword("unlogged"),
   keyword_until: _ => make_keyword("until"),
@@ -954,28 +454,6 @@ export default {
   ...update_rules,
   ...delete_rules,
   ...merge_rules,
-
-  _ddl_statement: $ => choice(
-    $._create_statement,
-    $._alter_statement,
-    $._drop_statement,
-    $._rename_statement,
-    $._merge_statement,
-    $._refresh_statement,
-    $.set_statement,
-    $.grant_statement,
-    $.revoke_statement,
-  ),
-
-  _dml_write: $ => seq(
-    optional($._cte),
-    choice(
-      $._delete_statement,
-      $._insert_statement,
-      $._update_statement,
-      $._truncate_statement,
-    ),
-  ),
 
   _refresh_statement: $ => $.refresh_materialized_view,
 };

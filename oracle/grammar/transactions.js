@@ -15,12 +15,16 @@ export default {
           $.statement,
         ),
         ';',
+        optional($.sqlplus_slash),
       ),
     ),
     optional(
       $.statement,
     ),
   ),
+
+  // SQL*Plus runs the buffer on a line holding only '/'
+  sqlplus_slash: _ => '/',
 
   transaction: $ => prec.dynamic(1, seq(
     choice(
@@ -50,39 +54,12 @@ export default {
       ),
     ),
     optional(';'),
-    repeat(
-      seq(
-        $.statement,
-        ';'
-      ),
-    ),
+    repeat($._plsql_stmt),
     choice(
       $._commit,
       $._rollback,
     ),
   )),
-
-  _commit: $ => seq(
-    $.keyword_commit,
-    optional(
-      choice(
-        $.keyword_transaction,
-        $.keyword_work,
-      ),
-    ),
-    optional($._transaction_chain),
-  ),
-
-  _rollback: $ => seq(
-    $.keyword_rollback,
-    optional(
-      choice(
-        $.keyword_transaction,
-        $.keyword_work,
-      ),
-    ),
-    optional($._transaction_chain),
-  ),
 
   // Standalone COMMIT / ROLLBACK also take the TRANSACTION spelling.
   commit_statement: $ => $._commit,
@@ -104,7 +81,7 @@ export default {
   release_savepoint_statement: $ => seq(
     $.keyword_release,
     optional($.keyword_savepoint),
-    field('name', $.identifier),
+    $.identifier,
   ),
 
   rollback_to_savepoint_statement: $ => seq(
@@ -118,7 +95,7 @@ export default {
     optional($._transaction_chain),
     $.keyword_to,
     optional($.keyword_savepoint),
-    field('name', $.identifier),
+    $.identifier,
   ),
 
   // PostgreSQL-style full mode list: ISOLATION LEVEL ... READ {WRITE|ONLY} [NOT] DEFERRABLE.

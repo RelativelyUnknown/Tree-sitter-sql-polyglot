@@ -12,7 +12,6 @@ export default {
   keyword_change: _ => make_keyword("change"),
   keyword_disable: _ => make_keyword("disable"),
   keyword_enable: _ => make_keyword("enable"),
-  keyword_logged: _ => make_keyword("logged"),
   keyword_modify: _ => make_keyword("modify"),
   keyword_owner: _ => make_keyword("owner"),
   keyword_value: _ => make_keyword("value"),
@@ -29,49 +28,6 @@ export default {
       $.alter_role,
       $.alter_sequence,
     ),
-  ),
-
-  alter_table: $ => seq(
-    $.keyword_alter,
-    $.keyword_table,
-    optional($._if_exists),
-    optional($.keyword_only),
-    $.object_reference,
-    choice(
-      seq(
-        $._alter_specifications,
-        repeat(
-          seq(
-            ",",
-            $._alter_specifications
-          )
-        )
-      ),
-      seq(
-        choice(
-          $.keyword_enable,
-          $.keyword_disable,
-          seq(optional($.keyword_no), $.keyword_force),
-        ),
-        $.keyword_row,
-        $.keyword_level,
-        $.keyword_security,
-      ),
-    ),
-  ),
-
-  _alter_specifications: $ => choice(
-    $.add_column,
-    $.add_constraint,
-    $.drop_constraint,
-    $.alter_column,
-    $.modify_column,
-    $.change_column,
-    $.drop_column,
-    $.rename_object,
-    $.rename_column,
-    $.set_schema,
-    $.change_ownership,
   ),
 
   // TODO: optional `keyword_add` is necessary to allow for chained alter statements in t-sql
@@ -93,18 +49,10 @@ export default {
     $.constraint,
   ),
 
-  drop_constraint: $ => seq(
-    $.keyword_drop,
-    $.keyword_constraint,
-    optional($._if_exists),
-    $.identifier,
-    optional($._drop_behavior),
-  ),
-
   alter_column: $ => seq(
     $.keyword_alter,
     optional($.keyword_column),
-    field('name', $.identifier),
+    $.identifier,
     choice(
       seq(
         choice($.keyword_set, $.keyword_drop),
@@ -137,7 +85,7 @@ export default {
       $.keyword_column,
     ),
     optional($._if_exists),
-    field('old_name', $.identifier),
+    $.identifier,
     $.column_definition,
     optional($.column_position),
   ),
@@ -146,17 +94,8 @@ export default {
     $.keyword_first,
     seq(
       $.keyword_after,
-      field('col_name', $.identifier),
+      $.identifier,
     ),
-  ),
-
-  drop_column: $ => seq(
-    $.keyword_drop,
-    optional(
-      $.keyword_column,
-    ),
-    optional($._if_exists),
-    field('name', $.identifier),
   ),
 
   rename_column: $ => seq(
@@ -164,36 +103,9 @@ export default {
     optional(
       $.keyword_column,
     ),
-    field('old_name', $.identifier),
+    $.identifier,
     $.keyword_to,
-    field('new_name', $.identifier),
-  ),
-
-  alter_view: $ => seq(
-    $.keyword_alter,
-    $.keyword_view,
-    optional($._if_exists),
-    $.object_reference,
-    choice(
-      $.rename_object,
-      $.rename_column,
-      $.set_schema,
-      $.change_ownership,
-      seq($.keyword_as, $._dml_read),
-    ),
-  ),
-
-  alter_materialized_view: $ => seq(
-    $.keyword_alter,
-    $.keyword_materialized,
-    $.keyword_view,
-    optional($._if_exists),
-    $.object_reference,
-    choice(
-      $.rename_object,
-      $.set_schema,
-      $.change_ownership,
-    ),
+    $.identifier,
   ),
 
   alter_schema: $ => seq(
@@ -220,7 +132,7 @@ export default {
         $.keyword_reset,
         choice(
           $.keyword_all,
-          field('configuration_parameter', $.identifier)
+          $.identifier
         ),
       ),
       seq(
@@ -233,37 +145,8 @@ export default {
       ),
     ),
 
-  alter_role: $ => prec.left(seq(
-    $.keyword_alter,
-    choice(
-      $.keyword_role,
-      $.keyword_group,
-      $.keyword_user,
-    ),
-    choice($.identifier, $.keyword_all),
-    choice(
-      $.rename_object,
-      seq(optional($.keyword_with),repeat($._role_options)),
-      seq(
-        optional(seq($.keyword_in, $.keyword_database, $.identifier)),
-        choice(
-          seq(
-            $.keyword_set,
-            $.set_configuration,
-          ),
-          seq(
-            $.keyword_reset,
-            choice(
-              $.keyword_all,
-              field('option', $.identifier),
-            )),
-        ),
-      )
-    ),
-  )),
-
   set_configuration: $ => seq(
-    field('option', $.identifier),
+    $.identifier,
     choice(
       seq($.keyword_from, $.keyword_current),
       seq(
@@ -275,122 +158,6 @@ export default {
         )
       )
     ),
-  ),
-
-  alter_index: $ => seq(
-    $.keyword_alter,
-    $.keyword_index,
-    optional($._if_exists),
-    $.identifier,
-    choice(
-      $.rename_object,
-      seq($.keyword_reset, paren_list($.identifier)),
-      seq(
-        $.keyword_set,
-        choice(
-          seq($.keyword_tablespace, $.identifier),
-          paren_list(seq($.identifier, '=', field('value', $.literal)))
-        ),
-      ),
-    ),
-  ),
-
-  alter_sequence: $ => seq(
-    $.keyword_alter,
-    $.keyword_sequence,
-    optional($._if_exists),
-    $.object_reference,
-    choice(
-      repeat1(
-        choice(
-          seq($.keyword_as, $._type),
-          seq($.keyword_increment, optional($.keyword_by), $.literal),
-          seq($.keyword_minvalue, choice($.literal, seq($.keyword_no, $.keyword_minvalue))),
-          seq($.keyword_maxvalue, choice($.literal, seq($.keyword_no, $.keyword_maxvalue))),
-          seq($.keyword_start, optional($.keyword_with), field('start', alias($._integer, $.literal))),
-          seq($.keyword_restart, optional($.keyword_with), field('restart', alias($._integer, $.literal))),
-          seq($.keyword_cache, field('cache', alias($._integer, $.literal))),
-          seq(optional($.keyword_no), $.keyword_cycle),
-          seq($.keyword_owned, $.keyword_by, choice($.keyword_none, $.object_reference)),
-        ),
-      ),
-      $.rename_object,
-      $.change_ownership,
-      seq(
-        $.keyword_set,
-        choice(
-          choice($.keyword_logged, $.keyword_unlogged),
-          seq($.keyword_schema, $.identifier)
-        ),
-      ),
-    ),
-  ),
-
-  alter_type: $ => seq(
-    $.keyword_alter,
-    $.keyword_type,
-    $.identifier,
-    choice(
-      $.change_ownership,
-      $.set_schema,
-      $.rename_object,
-      seq(
-        $.keyword_rename,
-        $.keyword_attribute,
-        $.identifier,
-        $.keyword_to,
-        $.identifier,
-        optional($._drop_behavior)
-      ),
-      seq(
-        $.keyword_add,
-        $.keyword_value,
-        optional($._if_not_exists),
-          alias($._single_quote_string,$.literal),
-        optional(
-          seq(
-            choice($.keyword_before, $.keyword_after),
-            alias($._single_quote_string,$.literal),
-          )
-        ),
-      ),
-      seq(
-        $.keyword_rename,
-        $.keyword_value,
-        alias($._single_quote_string,$.literal),
-        $.keyword_to,
-        alias($._single_quote_string,$.literal),
-      ),
-      seq(
-        choice(
-          seq(
-            $.keyword_add,
-            $.keyword_attribute,
-            $.identifier,
-            $._type
-          ),
-          seq($.keyword_drop,
-            $.keyword_attribute,
-            optional($._if_exists),
-            $.identifier),
-          seq(
-            $.keyword_alter,
-            $.keyword_attribute,
-            $.identifier,
-            optional(seq($.keyword_set, $.keyword_data)),
-            $.keyword_type,
-            $._type
-          ),
-        ),
-        optional(seq($.keyword_collate, $.identifier)),
-        optional($._drop_behavior)
-      )
-    ),
-  ),
-
-  _drop_behavior: $ => choice(
-    $.keyword_cascade,
-    $.keyword_restrict,
   ),
 
   rename_object: $ => seq(

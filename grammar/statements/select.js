@@ -1,4 +1,4 @@
-import { comma_list, optional_parenthesis, paren_list, wrapped_in_parenthesis } from "../helpers.js";
+import { comma_list, optional_parenthesis, paren_list, wrapped_in_parenthesis, ordered_optionals } from "../helpers.js";
 
 // Shared FROM-clause builder. The base grammar instantiates it WITHOUT the
 // non-ANSI LIMIT clause (strict ANSI purity); dialects that support LIMIT
@@ -8,6 +8,10 @@ import { comma_list, optional_parenthesis, paren_list, wrapped_in_parenthesis } 
 // offsetFetch: false. Dialects with additional clauses (PREWHERE, QUALIFY, …)
 // define their own `from` and do not use this builder.
 export function fromClause($, { limit = false, offsetFetch = true } = {}) {
+  // The clause tail is an ordered chain of hidden rules (see ordered_optionals), one per flag combination.
+  const chain = limit
+    ? (offsetFetch ? '_from_clauses_limit' : '_from_clauses_limit_only')
+    : (offsetFetch ? '_from_clauses' : '_from_clauses_plain');
   return seq(
     $.keyword_from,
     optional($.keyword_only),
@@ -20,15 +24,18 @@ export function fromClause($, { limit = false, offsetFetch = true } = {}) {
         $.lateral_cross_join,
       ),
     ),
-    optional($.where),
-    optional($.group_by),
-    optional($.having),
-    optional($.window_clause),
-    optional($.order_by),
-    ...(limit ? [optional($.limit)] : []),
-    ...(offsetFetch ? [optional($.offset_fetch_clause)] : []),
+    optional($[`${chain}_0`]),
   );
 }
+
+// WHERE … [LIMIT] [OFFSET … FETCH], in this order
+const fromTail = [
+  $ => $.where,
+  $ => $.group_by,
+  $ => $.having,
+  $ => $.window_clause,
+  $ => $.order_by,
+];
 
 // <join type> ::= INNER | { LEFT | RIGHT | FULL } [OUTER]. Inlined (not a rule) so it shares a prefix
 // with lateral_join instead of forcing a reduce before JOIN.
@@ -246,6 +253,11 @@ export default {
   // Strict ANSI base: LIMIT/OFFSET are not ISO SQL; base keeps only the ANSI
   // OFFSET … FETCH form (fromClause without limit). Dialects that support LIMIT
   // override `from` with fromClause($, { limit: true }).
+  ...ordered_optionals('_from_clauses', [...fromTail, $ => $.offset_fetch_clause]),
+  ...ordered_optionals('_from_clauses_limit', [...fromTail, $ => $.limit, $ => $.offset_fetch_clause]),
+  ...ordered_optionals('_from_clauses_limit_only', [...fromTail, $ => $.limit]),
+  ...ordered_optionals('_from_clauses_plain', fromTail),
+
   from: $ => fromClause($),
 
   relation: $ => prec.right(

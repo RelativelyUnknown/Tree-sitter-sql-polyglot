@@ -8,21 +8,15 @@ export default {
     optional($._if_not_exists),
     $.object_reference,
     optional($.function_arguments),
-    repeat(
-      choice(
-        $.function_language,
-        $.function_security,
-        $.function_safety,
-      ),
-    ),
+    repeat($._procedure_option),
     $.procedure_body,
-    repeat(
-      choice(
-        $.function_language,
-        $.function_security,
-        $.function_safety,
-      ),
-    ),
+    repeat($._procedure_option),
+  ),
+
+  _procedure_option: $ => choice(
+    $.function_language,
+    $.function_security,
+    $.function_safety,
   ),
 
   procedure_body: $ => choice(

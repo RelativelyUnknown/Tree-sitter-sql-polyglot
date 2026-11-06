@@ -154,41 +154,43 @@ export default {
   ),
 
   _key_constraint: $ => seq(
-    choice(
-      seq(
-        $.keyword_unique,
-        optional(
-          choice(
-            $.keyword_index,
-            $.keyword_key,
-            seq($.keyword_nulls, optional($.keyword_not), $.keyword_distinct),
-          ),
-        ),
-      ),
-      seq(optional($.keyword_foreign), $.keyword_key, optional($._if_not_exists)),
-      $.keyword_index,
-    ),
+    $._key_kind,
     optional(field('name', $.identifier)),
     $.ordered_columns,
-    optional(
+    optional($._references_clause),
+  ),
+
+  _key_kind: $ => choice(
+    seq(
+      $.keyword_unique,
+      optional(
+        choice(
+          $.keyword_index,
+          $.keyword_key,
+          seq($.keyword_nulls, optional($.keyword_not), $.keyword_distinct),
+        ),
+      ),
+    ),
+    seq(optional($.keyword_foreign), $.keyword_key, optional($._if_not_exists)),
+    $.keyword_index,
+  ),
+
+  _references_clause: $ => seq(
+    $.keyword_references,
+    $.object_reference,
+    paren_list($.identifier, true),
+    repeat(
       seq(
-        $.keyword_references,
-        $.object_reference,
-        paren_list($.identifier, true),
-        repeat(
+        $.keyword_on,
+        choice($.keyword_delete, $.keyword_update),
+        choice(
+          seq($.keyword_no, $.keyword_action),
+          $.keyword_restrict,
+          $.keyword_cascade,
           seq(
-            $.keyword_on,
-            choice($.keyword_delete, $.keyword_update),
-            choice(
-              seq($.keyword_no, $.keyword_action),
-              $.keyword_restrict,
-              $.keyword_cascade,
-              seq(
-                $.keyword_set,
-                choice($.keyword_null, $.keyword_default),
-                  optional(paren_list($.identifier, true))
-              ),
-            ),
+            $.keyword_set,
+            choice($.keyword_null, $.keyword_default),
+            optional(paren_list($.identifier, true))
           ),
         ),
       ),

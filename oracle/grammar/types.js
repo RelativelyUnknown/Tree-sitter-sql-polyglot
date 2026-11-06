@@ -2,57 +2,6 @@ import { wrapped_in_parenthesis } from '../../grammar/helpers.js';
 
 export default {
 
-  // Override _type to include Oracle-specific types before the custom_type fallback.
-  // All base type alternatives are preserved.
-  _type: $ => prec.left(
-    seq(
-      choice(
-        // Oracle-specific types
-        $.number_type,
-        $.varchar2,
-        $.nvarchar2,
-        $.clob,
-        $.nclob,
-        $.blob,
-        $.bfile,
-        $.raw_type,
-        $.rowid,
-        $.urowid,
-        $.long_type,
-        $.binary_float,
-        $.binary_double,
-        $.interval_year_to_month,
-        $.interval_day_to_second,
-        // Base types (unchanged)
-        $.keyword_boolean,
-        $.bit,
-        $.binary,
-        $.varbinary,
-        $.smallint,
-        $.int,
-        $.bigint,
-        $.decimal,
-        $.numeric,
-        $.double,
-        $.float,
-        $.char,
-        $.varchar,
-        $.nchar,
-        $.nvarchar,
-        $.keyword_date,
-        $.time,
-        $.timestamp,
-        $.keyword_interval,
-        $.keyword_json,
-        $.keyword_xml,
-        $.keyword_string,
-        $.enum,
-        field('custom_type', $.object_reference),
-      ),
-      optional($.array_size_definition),
-    ),
-  ),
-
   // NUMBER[(precision[, scale])]
   number_type: $ => prec.right(1,
     choice(
@@ -148,7 +97,7 @@ export default {
         $.keyword_year,
         seq(
           $.keyword_year,
-          wrapped_in_parenthesis(field('year_precision', alias($._natural_number, $.literal))),
+          wrapped_in_parenthesis(alias($._natural_number, $.literal)),
         ),
       ),
     ),
@@ -164,7 +113,7 @@ export default {
         $.keyword_day,
         seq(
           $.keyword_day,
-          wrapped_in_parenthesis(field('day_precision', alias($._natural_number, $.literal))),
+          wrapped_in_parenthesis(alias($._natural_number, $.literal)),
         ),
       ),
     ),
@@ -174,7 +123,7 @@ export default {
         $.keyword_second,
         seq(
           $.keyword_second,
-          wrapped_in_parenthesis(field('fractional_precision', alias($._natural_number, $.literal))),
+          wrapped_in_parenthesis(alias($._natural_number, $.literal)),
         ),
       ),
     ),

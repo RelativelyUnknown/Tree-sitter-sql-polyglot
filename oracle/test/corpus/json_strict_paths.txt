@@ -1,0 +1,225 @@
+================================================================================
+Oracle IS JSON: strict in a check constraint
+================================================================================
+
+CREATE TABLE t (doc CLOB CONSTRAINT c CHECK (doc IS JSON STRICT));
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (create_table
+      (keyword_create)
+      (keyword_table)
+      (object_reference
+        (identifier))
+      (column_definitions
+        (column_definition
+          (identifier)
+          (clob
+            (keyword_clob))
+          (keyword_constraint)
+          (identifier)
+          (keyword_check)
+          (is_json_condition
+            (field
+              (identifier))
+            (keyword_is)
+            (keyword_json)
+            (keyword_strict)))))))
+
+================================================================================
+Oracle IS JSON: lax condition
+================================================================================
+
+SELECT * FROM t WHERE doc IS JSON LAX;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (is_json_condition
+          (field
+            (identifier))
+          (keyword_is)
+          (keyword_json)
+          (keyword_lax))))))
+
+================================================================================
+Oracle IS JSON: object strict
+================================================================================
+
+SELECT * FROM t WHERE doc IS JSON OBJECT STRICT;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (is_json_condition
+          (field
+            (identifier))
+          (keyword_is)
+          (keyword_json)
+          (keyword_object)
+          (keyword_strict))))))
+
+================================================================================
+Oracle JSON DOT NOTATION: long path stays a path
+================================================================================
+
+SELECT t.doc.a.b.c.d FROM t;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (json_dot_path
+            (field
+              (object_reference
+                (identifier)
+                (identifier)
+                (identifier))
+              (identifier))
+            (identifier)
+            (identifier)))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier))))))
+
+================================================================================
+Oracle SET OPERATION: parenthesised operand with row limiting
+================================================================================
+
+(SELECT c FROM t) UNION ALL (SELECT c FROM u) ORDER BY 1 FETCH FIRST 5 ROWS ONLY;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (set_operation
+      (select
+        (keyword_select)
+        (select_expression
+          (term
+            (field
+              (identifier)))))
+      (from
+        (keyword_from)
+        (relation
+          (object_reference
+            (identifier))))
+      (keyword_union)
+      (keyword_all)
+      (select
+        (keyword_select)
+        (select_expression
+          (term
+            (field
+              (identifier)))))
+      (from
+        (keyword_from)
+        (relation
+          (object_reference
+            (identifier))))
+      (order_by
+        (keyword_order)
+        (keyword_by)
+        (order_target
+          (literal)))
+      (offset_fetch_clause
+        (keyword_fetch)
+        (keyword_first)
+        (literal)
+        (keyword_rows)
+        (keyword_only)))))
+
+================================================================================
+Oracle IS JSON: negated
+================================================================================
+
+SELECT * FROM t WHERE doc IS NOT JSON;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (is_json_condition
+          (field
+            (identifier))
+          (is_not
+            (keyword_is)
+            (keyword_not))
+          (keyword_json))))))
+
+================================================================================
+Oracle IS JSON: negated strict
+================================================================================
+
+SELECT * FROM t WHERE doc IS NOT JSON STRICT;
+
+--------------------------------------------------------------------------------
+
+(program
+  (statement
+    (select
+      (keyword_select)
+      (select_expression
+        (term
+          (all_fields))))
+    (from
+      (keyword_from)
+      (relation
+        (object_reference
+          (identifier)))
+      (where
+        (keyword_where)
+        (is_json_condition
+          (field
+            (identifier))
+          (is_not
+            (keyword_is)
+            (keyword_not))
+          (keyword_json)
+          (keyword_strict))))))

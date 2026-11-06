@@ -1,6 +1,8 @@
 name: Build/test
 
 on:
+  # Manual run: builds every grammar whose inputs have not already built clean (see `changes`).
+  workflow_dispatch:
   push:
     branches: ["main", "release/**"]
   pull_request:
@@ -13,47 +15,69 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  TREE_SITTER_REF: v0.26.3
+  TREE_SITTER_REF: v0.27.1
   # tools/coverage.py and tools/inventory.py use this CLI (the one setup-action installs, same pin)
   # instead of fetching tree-sitter-cli through npx.
   TREE_SITTER_BIN: tree-sitter
 
 jobs:
+  # Decides which grammars this change needs (scripts/changed-grammars.js): a dialect and the
+  # dialects that extend it, everything when the ANSI base or the build machinery changes, nothing
+  # for docs. A push to main is diffed against the previous head, a PR against its base.
+  #
+  # A grammar is not built again when its inputs are byte-identical to a build that already passed:
+  # each grammar job records a cache marker keyed by a fingerprint of the committed files it depends
+  # on (see the end of the job), and `changes` drops the grammars whose marker exists. The bindings
+  # jobs work the same way. Bump CACHE_VERSION in scripts/changed-grammars.js to rebuild everything.
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      matrix: ${{ steps.diff.outputs.matrix }}
+      run_grammars: ${{ steps.diff.outputs.run_grammars }}
+      run_bindings: ${{ steps.diff.outputs.run_bindings }}
+      bindings_key: ${{ steps.diff.outputs.bindings_key }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Select grammars
+        id: diff
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.sha }}
+        run: |
+          if [ "$EVENT" = pull_request ]; then
+            node scripts/changed-grammars.js "$PR_BASE" "$PR_HEAD"
+          elif [ "$EVENT" = workflow_dispatch ]; then
+            node scripts/changed-grammars.js --all
+          else
+            node scripts/changed-grammars.js "$PUSH_BEFORE" "$PUSH_AFTER"
+          fi
+
   # One job per grammar: the base and each of the 22 dialects is generated, tested and checked on
-  # its own runner, so one grammar's memory use or failure never affects another's.
+  # its own runner, so one grammar's memory use or failure never affects another's. Only the
+  # grammars `changes` selected run.
   # Raise max-parallel if the account's runner budget allows.
   grammar:
     name: grammar (${{ matrix.lang }})
+    needs: changes
+    if: ${{ needs.changes.outputs.run_grammars == 'true' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: 240
     strategy:
       fail-fast: false
       max-parallel: 3
-      matrix:
-        lang:
-          - base
-          - spark
-          - postgres
-          - mysql
-          - databricks
-          - snowflake
-          - bigquery
-          - mariadb
-          - sqlite
-          - hive
-          - oracle
-          - db2
-          - tsql
-          - duckdb
-          - trino
-          - athena
-          - redshift
-          - clickhouse
-          - flink
-          - cockroachdb
-          - spanner
-          - teradata
-          - hana
+      matrix: ${{ fromJSON(needs.changes.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v4
       - uses: tree-sitter/setup-action@v2
@@ -187,14 +211,24 @@ jobs:
           python tools/coverage.py --check --dialect base
           git checkout -- tree-sitter.json
 
+      # Reached only when every step above passed: record that these exact inputs build and test
+      # clean, so a later commit that leaves this grammar untouched does not build it again.
+      - name: Record successful build
+        run: echo "${{ matrix.key }}" > /tmp/grammar-ok
+      - uses: actions/cache/save@v4
+        with:
+          path: /tmp/grammar-ok
+          key: ${{ matrix.key }}
+
   # Language bindings build from the committed .br blobs (scripts/inflate-parsers.js), so they
   # never run tree-sitter generate.
   bindings:
     name: ${{ matrix.binding }} (${{ matrix.os }})
     # After the grammar jobs, so the two groups never compete for runners, and so the blobs they
-    # build from have been checked. Runs even when a grammar job failed.
-    needs: grammar
-    if: ${{ !cancelled() }}
+    # build from have been checked. Runs even when a grammar job failed, and is skipped when the
+    # change touches neither a grammar nor the bindings.
+    needs: [changes, grammar]
+    if: ${{ !cancelled() && needs.changes.outputs.run_bindings == 'true' }}
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -230,6 +264,13 @@ jobs:
         if: matrix.binding == 'c'
 
       - name: Build and test
+        env:
+          # ubuntu-latest moved to a GCC that rejects the undeclared fdopen() in go-tree-sitter's C
+          # sources (implicit function declarations became errors); declare it the POSIX way.
+          CGO_CFLAGS: ${{ matrix.os == 'ubuntu-latest' && '-D_POSIX_C_SOURCE=200809L' || '' }}
+          # node-gyp builds one addon per dialect; on Windows compile them one at a time, or the runner runs out of
+          # memory and drops ("The hosted runner lost communication with the server").
+          npm_config_jobs: ${{ matrix.os == 'windows-2025' && '1' || 'max' }}
         run: |
           case "${{ matrix.binding }}" in
             go)
@@ -254,6 +295,19 @@ jobs:
               swift test --skip-build -q ;;
           esac
 
+  # Records that the bindings built and tested clean for these exact inputs (blobs, binding sources,
+  # packaging files), so an unrelated later commit does not run them again.
+  record-bindings:
+    needs: [changes, bindings]
+    if: ${{ needs.bindings.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "${{ needs.changes.outputs.bindings_key }}" > /tmp/bindings-ok
+      - uses: actions/cache/save@v4
+        with:
+          path: /tmp/bindings-ok
+          key: ${{ needs.changes.outputs.bindings_key }}
+
   # Expected parse trees must not contain error nodes (errors.txt holds the intentional error tests).
   corpus-lint:
     runs-on: ubuntu-latest
@@ -268,7 +322,7 @@ jobs:
   # The single required check for branch protection (.github/branch-protection/main.json).
   ci-passed:
     if: always()
-    needs: [grammar, bindings, corpus-lint]
+    needs: [changes, grammar, bindings, corpus-lint]
     runs-on: ubuntu-latest
     steps:
       - run: |
